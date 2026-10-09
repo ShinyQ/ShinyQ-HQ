@@ -243,7 +243,7 @@ test.describe("tiers and views", () => {
       const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas");
       canvas?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
     });
-    await expect(page.getByText("Switched to lite view")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("status").filter({ hasText: en.hud.staticNotice })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
   });
