@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import type { Locale, TimelineEntry } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
+import { OrgLogo } from "./OrgLogo";
 
 const TYPE_TONE: Record<TimelineEntry["type"], string> = {
   job: "text-amber border-amber/40",
@@ -25,7 +26,10 @@ export async function TimelineItem({ entry, locale, headingLevel = 3 }: { entry:
           {entry.role[locale]}
         </Link>
       </Heading>
-      <p className="text-sm text-ink-2">{entry.org}</p>
+      <p className="mt-1 flex items-center gap-2 text-sm text-ink-2">
+        {entry.logo && <OrgLogo logo={entry.logo} locale={locale} size={24} />}
+        {entry.org}
+      </p>
       <p className="mt-2 text-sm leading-6 text-ink-2">{entry.summary[locale]}</p>
     </article>
   );

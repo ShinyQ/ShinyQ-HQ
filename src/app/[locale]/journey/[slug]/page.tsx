@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ChipList } from "@/components/Chip";
+import { OrgLogo } from "@/components/OrgLogo";
 import { ConfidenceBadge } from "@/components/MetricTile";
 import { ExternalLink } from "@/components/ExternalLink";
 import { Container } from "@/components/Section";
@@ -57,8 +58,9 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
         <h1 className="mt-3 text-[26px] leading-[32px] font-extrabold tracking-tight text-ink sm:text-[32px] sm:leading-[38px]">
           {entry.role[locale]}
         </h1>
-        <p className="mt-2 text-lg text-ink">
-          {entry.url ? <ExternalLink href={entry.url}>{entry.org}</ExternalLink> : entry.org}
+        <p className="mt-2 flex items-center gap-3 text-lg text-ink">
+          {entry.logo && <OrgLogo logo={entry.logo} locale={locale} />}
+          <span>{entry.url ? <ExternalLink href={entry.url}>{entry.org}</ExternalLink> : entry.org}</span>
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-3 text-sm text-ink-2">
           {formatPeriod(entry.start, entry.end, locale)}
@@ -89,7 +91,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
             <h2 id="stack" className="label mb-3 text-ink-2">
               {tc("stack")}
             </h2>
-            <ChipList items={entry.stack} />
+            <ChipList items={entry.stack} logos />
           </section>
         )}
 

@@ -682,7 +682,17 @@
             "IndoBERT"
           ],
           "discipline": "data",
-          "confidence": "verified"
+          "confidence": "verified",
+          "logo": {
+            "src": "/logos/telkom-university.webp",
+            "alt": {
+              "en": "Telkom University logo",
+              "id": "Logo Telkom University"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "shumi-2019",
@@ -727,7 +737,17 @@
           "discipline": "software",
           "podRef": "anime-figure-ecommerce",
           "url": "https://shumi.shop/",
-          "confidence": "verified"
+          "confidence": "verified",
+          "logo": {
+            "src": "/logos/shumi.webp",
+            "alt": {
+              "en": "Shumi logo",
+              "id": "Logo Shumi"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "campus-and-community-2020",
@@ -769,7 +789,17 @@
             "Python"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/telkom-university.webp",
+            "alt": {
+              "en": "Telkom University logo",
+              "id": "Logo Telkom University"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "research-vaccination-sentiment-2020",
@@ -872,7 +902,17 @@
             "Go"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/telkom-university.webp",
+            "alt": {
+              "en": "Telkom University logo",
+              "id": "Logo Telkom University"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "digitiket-2021",
@@ -1161,7 +1201,17 @@
           ],
           "discipline": "software",
           "podRef": "payments-realtime-backend",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/mnc.webp",
+            "alt": {
+              "en": "MNC Group logo",
+              "id": "Logo MNC Group"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "sentiboard-2022",
@@ -1201,7 +1251,17 @@
           ],
           "discipline": "ai",
           "url": "https://huggingface.co/ShinyQ/indobert-sentiment-analysis-indonesian-university-reviews",
-          "confidence": "verified"
+          "confidence": "verified",
+          "logo": {
+            "src": "/logos/telkom-university.webp",
+            "alt": {
+              "en": "Telkom University logo",
+              "id": "Logo Telkom University"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "bandung-techno-park-2022",
@@ -1279,7 +1339,17 @@
           "highlights": [],
           "stack": [],
           "discipline": "other",
-          "confidence": "verified"
+          "confidence": "verified",
+          "logo": {
+            "src": "/logos/telkom-university.webp",
+            "alt": {
+              "en": "Telkom University logo",
+              "id": "Logo Telkom University"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "jatis-2023",
@@ -1326,7 +1396,17 @@
           ],
           "discipline": "software",
           "podRef": "multi-tenant-saas-platform",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/jatis.webp",
+            "alt": {
+              "en": "Jatis logo",
+              "id": "Logo Jatis"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "bssn-2023",
@@ -1367,7 +1447,17 @@
           ],
           "discipline": "software",
           "podRef": "vulnerability-scanning-automation",
-          "confidence": "verified"
+          "confidence": "verified",
+          "logo": {
+            "src": "/logos/bssn.webp",
+            "alt": {
+              "en": "BSSN logo",
+              "id": "Logo BSSN"
+            },
+            "width": 127,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "jublia-2023",
@@ -1412,7 +1502,17 @@
           ],
           "discipline": "software",
           "podRef": "event-tech-search-backend",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/jublia.webp",
+            "alt": {
+              "en": "Jublia logo",
+              "id": "Logo Jublia"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "crypto-tracker-2024",
@@ -1483,7 +1583,17 @@
           ],
           "discipline": "software",
           "podRef": "digital-banking-integrations",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "logo": {
+            "src": "/logos/jenius.webp",
+            "alt": {
+              "en": "Jenius logo",
+              "id": "Logo Jenius"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          }
         },
         {
           "id": "sp500-optimizer-2024",
@@ -3115,7 +3225,68 @@
             "DigitalOcean"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/anime-figure-ecommerce/01-storefront.webp",
+              "alt": {
+                "en": "Storefront home with a promotional banner, categories and top products",
+                "id": "Beranda toko dengan banner promosi, kategori dan produk teratas"
+              },
+              "width": 1516,
+              "height": 1020,
+              "redacted": true
+            },
+            {
+              "src": "/media/anime-figure-ecommerce/02-catalog.webp",
+              "alt": {
+                "en": "Catalog with availability and category filters for pre-order and ready-stock figures",
+                "id": "Katalog dengan filter ketersediaan dan kategori untuk figure pre-order dan ready stock"
+              },
+              "width": 1232,
+              "height": 958,
+              "redacted": true
+            },
+            {
+              "src": "/media/anime-figure-ecommerce/03-latest-items.webp",
+              "alt": {
+                "en": "Latest items grid of trading card booster packs",
+                "id": "Grid item terbaru berisi booster pack trading card"
+              },
+              "width": 1278,
+              "height": 1275,
+              "redacted": true
+            },
+            {
+              "src": "/media/anime-figure-ecommerce/04-admin-items.webp",
+              "alt": {
+                "en": "Admin item management with stock, price and down-payment per product",
+                "id": "Manajemen item admin dengan stok, harga dan uang muka per produk"
+              },
+              "width": 1600,
+              "height": 1062,
+              "redacted": true
+            },
+            {
+              "src": "/media/anime-figure-ecommerce/05-admin-banners.webp",
+              "alt": {
+                "en": "Admin banner management for homepage promotions",
+                "id": "Manajemen banner admin untuk promosi beranda"
+              },
+              "width": 1600,
+              "height": 804,
+              "redacted": true
+            },
+            {
+              "src": "/media/anime-figure-ecommerce/06-business-case.webp",
+              "alt": {
+                "en": "Brand presentation: e-commerce specialized to fulfill hobby needs",
+                "id": "Presentasi brand: e-commerce khusus untuk memenuhi kebutuhan hobi"
+              },
+              "width": 1279,
+              "height": 717,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "vulnerability-scanning-automation",
@@ -3294,7 +3465,48 @@
             "Sentry"
           ],
           "hologram": "shield",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/vulnerability-scanning-automation/01-main-deck.webp",
+              "alt": {
+                "en": "Main deck with finding risk status, remediation statistics, monitored assets and a monthly findings report",
+                "id": "Main deck dengan status risiko temuan, statistik remediasi, aset yang dipantau dan laporan temuan bulanan"
+              },
+              "width": 1600,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/vulnerability-scanning-automation/02-protected-site.webp",
+              "alt": {
+                "en": "Protected site view with risk distribution, top finding categories and assets (placeholder data)",
+                "id": "Tampilan protected site dengan distribusi risiko, kategori temuan teratas dan aset (data contoh)"
+              },
+              "width": 1600,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/vulnerability-scanning-automation/03-risk-profile.webp",
+              "alt": {
+                "en": "Asset group risk profiles with remediation deadline adjustments",
+                "id": "Profil risiko grup aset dengan penyesuaian tenggat remediasi"
+              },
+              "width": 1600,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/vulnerability-scanning-automation/04-comparison-report.webp",
+              "alt": {
+                "en": "Before and after comparison report of a test scan",
+                "id": "Laporan perbandingan sebelum dan sesudah untuk scan uji"
+              },
+              "width": 1190,
+              "height": 1684,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "limited-quota-event-ticketing",
@@ -3816,7 +4028,68 @@
             "Chart.js"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/university-alumni-platforms/01-alumni-portal.webp",
+              "alt": {
+                "en": "Alumni portal home with news and gallery sections",
+                "id": "Beranda portal alumni dengan bagian berita dan galeri"
+              },
+              "width": 1600,
+              "height": 1600,
+              "redacted": true
+            },
+            {
+              "src": "/media/university-alumni-platforms/02-counseling-dashboard.webp",
+              "alt": {
+                "en": "Counseling dashboard with requested and scheduled sessions",
+                "id": "Dashboard konseling dengan sesi yang diajukan dan terjadwal"
+              },
+              "width": 1600,
+              "height": 1141,
+              "redacted": true
+            },
+            {
+              "src": "/media/university-alumni-platforms/03-alumni-gallery.webp",
+              "alt": {
+                "en": "Alumni gallery article with photo and video attachments",
+                "id": "Artikel galeri alumni dengan lampiran foto dan video"
+              },
+              "width": 1600,
+              "height": 1928,
+              "redacted": true
+            },
+            {
+              "src": "/media/university-alumni-platforms/04-gallery-editor.webp",
+              "alt": {
+                "en": "Gallery content form for uploading photos and videos",
+                "id": "Formulir konten galeri untuk mengunggah foto dan video"
+              },
+              "width": 1600,
+              "height": 1682,
+              "redacted": true
+            },
+            {
+              "src": "/media/university-alumni-platforms/05-counseling-services.webp",
+              "alt": {
+                "en": "Public counseling services and information page",
+                "id": "Halaman publik layanan dan informasi konseling"
+              },
+              "width": 1600,
+              "height": 1957,
+              "redacted": true
+            },
+            {
+              "src": "/media/university-alumni-platforms/06-counseling-form.webp",
+              "alt": {
+                "en": "Scheduled counseling form",
+                "id": "Formulir konseling terjadwal"
+              },
+              "width": 1600,
+              "height": 1117,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "voice-ai-contact-center",
@@ -4068,7 +4341,78 @@
             "GitHub Actions"
           ],
           "hologram": "waveform",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/voice-ai-contact-center/01-call-in-progress.webp",
+              "alt": {
+                "en": "Browser voice call in progress: the assistant is speaking while the live transcript shows the caller's claim question",
+                "id": "Panggilan suara di browser sedang berlangsung: asisten berbicara sementara transkrip langsung menampilkan pertanyaan klaim penelepon"
+              },
+              "width": 1280,
+              "height": 720,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/02-assistant-picker.webp",
+              "alt": {
+                "en": "Assistant picker where a caller chooses an English claims assistant or an Indonesian policy assistant",
+                "id": "Pemilih asisten tempat penelepon memilih asisten klaim berbahasa Inggris atau asisten polis berbahasa Indonesia"
+              },
+              "width": 1280,
+              "height": 720,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/03-architecture.webp",
+              "alt": {
+                "en": "Architecture overview: experience, voice, intelligence and data layers built on Azure and OpenAI services",
+                "id": "Ringkasan arsitektur: lapisan experience, voice, intelligence dan data yang dibangun di atas layanan Azure dan OpenAI"
+              },
+              "width": 1280,
+              "height": 994,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/04-intelligence-layer.webp",
+              "alt": {
+                "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
+                "id": "Diagram reasoning loop: intent, pengambilan knowledge, reasoning multi-agent dan confidence scoring sebelum resolve atau eskalasi"
+              },
+              "width": 1280,
+              "height": 1084,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/05-agents-admin.webp",
+              "alt": {
+                "en": "Operations console listing voice agents with status, realtime model, knowledge base and escalation tier",
+                "id": "Operations console berisi daftar voice agent dengan status, model realtime, knowledge base dan tier eskalasi"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/06-knowledge-detail.webp",
+              "alt": {
+                "en": "Knowledge base detail with indexed documents, ingestion status and semantic search settings",
+                "id": "Detail knowledge base dengan dokumen terindeks, status ingestion dan pengaturan semantic search"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/07-analytics.webp",
+              "alt": {
+                "en": "Call analytics dashboard with resolution rate, handoff rate and daily call volume",
+                "id": "Dashboard analitik panggilan dengan tingkat resolusi, tingkat handoff dan volume panggilan harian"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "ai-code-security-platform",
@@ -4334,7 +4678,68 @@
             "Bicep"
           ],
           "hologram": "shield",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-code-security-platform/01-scan-overview.webp",
+              "alt": {
+                "en": "Scan overview for a demo repository: security gate failed, severity breakdown and scanner timings",
+                "id": "Ringkasan scan untuk repository demo: security gate gagal, rincian severity dan durasi scanner"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-code-security-platform/02-scan-findings.webp",
+              "alt": {
+                "en": "Findings table ranked by risk with KEV and EPSS signals across eight scanners",
+                "id": "Tabel temuan yang diurutkan berdasarkan risiko dengan sinyal KEV dan EPSS dari delapan scanner"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-code-security-platform/03-finding-drawer.webp",
+              "alt": {
+                "en": "Finding drawer for a SQL injection: code excerpt, location and a time-boxed suppression request",
+                "id": "Drawer temuan SQL injection: potongan kode, lokasi dan permintaan suppression dengan batas waktu"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-code-security-platform/04-repositories.webp",
+              "alt": {
+                "en": "Repositories page with default-branch posture and the latest scan per repository",
+                "id": "Halaman repository dengan postur default branch dan scan terakhir per repository"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-code-security-platform/05-security-policy.webp",
+              "alt": {
+                "en": "Security policy controls that decide when the pull request check blocks a merge",
+                "id": "Kontrol security policy yang menentukan kapan pengecekan pull request memblokir merge"
+              },
+              "width": 1440,
+              "height": 1200,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-code-security-platform/06-assistant-chat.webp",
+              "alt": {
+                "en": "AI security agent explaining whether a dependency CVE is exploitable and how to fix it",
+                "id": "AI security agent menjelaskan apakah CVE dependency dapat dieksploitasi dan cara memperbaikinya"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "fraud-review-platform",
@@ -4587,7 +4992,58 @@
             "Azure Managed Applications"
           ],
           "hologram": "documents",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/fraud-review-platform/01-product-overview.webp",
+              "alt": {
+                "en": "Product overview: detect anomalies in procurement documents and review them with confidence",
+                "id": "Ringkasan produk: mendeteksi anomali pada dokumen pengadaan dan meninjaunya dengan yakin"
+              },
+              "width": 1280,
+              "height": 720,
+              "redacted": true
+            },
+            {
+              "src": "/media/fraud-review-platform/02-home.webp",
+              "alt": {
+                "en": "Reviewer home with cases that need attention, verdict mix and what changed this week (synthetic data)",
+                "id": "Beranda reviewer dengan kasus yang perlu perhatian, komposisi verdict dan perubahan minggu ini (data sintetis)"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/fraud-review-platform/03-high-risk-result.webp",
+              "alt": {
+                "en": "High-risk analysis result with score, findings and evidence for each finding",
+                "id": "Hasil analisis berisiko tinggi dengan skor, temuan dan bukti untuk setiap temuan"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/fraud-review-platform/04-history.webp",
+              "alt": {
+                "en": "Analysis history filtered by verdict, with scores and report links (synthetic data)",
+                "id": "Riwayat analisis yang difilter berdasarkan verdict, dengan skor dan tautan laporan (data sintetis)"
+              },
+              "width": 1440,
+              "height": 1116,
+              "redacted": true
+            },
+            {
+              "src": "/media/fraud-review-platform/05-statistics.webp",
+              "alt": {
+                "en": "Admin statistics: analyses per day, verdict distribution and transaction log",
+                "id": "Statistik admin: analisis per hari, distribusi verdict dan log transaksi"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "ai-cv-screening-platform",
@@ -4788,7 +5244,48 @@
             "Bicep"
           ],
           "hologram": "documents",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-cv-screening-platform/01-product-overview.webp",
+              "alt": {
+                "en": "Product overview: AI-powered CV screening with structured parsing, requirement matching and ranking",
+                "id": "Ringkasan produk: screening CV berbasis AI dengan parsing terstruktur, pencocokan requirement dan pemeringkatan"
+              },
+              "width": 1280,
+              "height": 720,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/02-jobs.webp",
+              "alt": {
+                "en": "Jobs list with status and number of candidates screened per position",
+                "id": "Daftar lowongan dengan status dan jumlah kandidat yang telah discreening per posisi"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/03-ai-input-redaction.webp",
+              "alt": {
+                "en": "AI input redaction setting that hides contact and identity details before the model reads a CV",
+                "id": "Pengaturan redaksi input AI yang menyembunyikan kontak dan identitas sebelum model membaca CV"
+              },
+              "width": 1440,
+              "height": 918,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/04-usage.webp",
+              "alt": {
+                "en": "AI usage page with requests, pages read, estimated spend and per-activity cost",
+                "id": "Halaman penggunaan AI dengan jumlah request, halaman yang dibaca, estimasi biaya dan biaya per aktivitas"
+              },
+              "width": 1440,
+              "height": 900,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "bank-statement-analyzer",
@@ -5101,7 +5598,48 @@
             "GitHub Actions"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-app-accelerator/01-dashboard.webp",
+              "alt": {
+                "en": "Template dashboard with conversations, active agents, cost and usage by model",
+                "id": "Dashboard template dengan percakapan, agent aktif, biaya dan penggunaan per model"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/02-agent-picker.webp",
+              "alt": {
+                "en": "Chat start screen where the user picks one of the built-in agents",
+                "id": "Layar awal chat tempat pengguna memilih salah satu agent bawaan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/03-agents.webp",
+              "alt": {
+                "en": "Agent management table with identifiers, descriptions and tool counts",
+                "id": "Tabel manajemen agent dengan identifier, deskripsi dan jumlah tool"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/04-chat.webp",
+              "alt": {
+                "en": "Chat thread where an agent rewrites a TypeScript fetch wrapper",
+                "id": "Thread chat tempat agent menulis ulang fetch wrapper TypeScript"
+              },
+              "width": 1600,
+              "height": 869,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "fabric-forecasting-dashboard",
@@ -5889,7 +6427,68 @@
             "Entra ID"
           ],
           "hologram": "graph",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ticketing-assistant-replatform/01-product-overview.webp",
+              "alt": {
+                "en": "Product overview: AI that classifies, prioritizes and drafts responses to tickets",
+                "id": "Ringkasan produk: AI yang mengklasifikasikan, memprioritaskan dan menyusun draf respons tiket"
+              },
+              "width": 1280,
+              "height": 721,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/02-assistant-home.webp",
+              "alt": {
+                "en": "Assistant home with suggested questions about tickets, documents and board analytics",
+                "id": "Beranda asisten dengan saran pertanyaan tentang tiket, dokumen dan analitik board"
+              },
+              "width": 1600,
+              "height": 874,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/03-at-risk-tickets.webp",
+              "alt": {
+                "en": "Assistant answer listing the tickets at risk of missing the sprint deadline",
+                "id": "Jawaban asisten berisi daftar tiket yang berisiko melewati tenggat sprint"
+              },
+              "width": 1600,
+              "height": 874,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/04-status-charts.webp",
+              "alt": {
+                "en": "Assistant-generated charts of overdue tickets grouped by status and priority",
+                "id": "Grafik buatan asisten untuk tiket terlambat yang dikelompokkan berdasarkan status dan prioritas"
+              },
+              "width": 1600,
+              "height": 874,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/05-ai-triage.webp",
+              "alt": {
+                "en": "Ticket detail with an AI triage panel that suggests priority and category",
+                "id": "Detail tiket dengan panel AI triage yang menyarankan prioritas dan kategori"
+              },
+              "width": 1600,
+              "height": 874,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/06-backlog.webp",
+              "alt": {
+                "en": "Board backlog with ticket status and overdue badges",
+                "id": "Backlog board dengan status tiket dan penanda keterlambatan"
+              },
+              "width": 1600,
+              "height": 874,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "mining-coa-assistant",
@@ -5952,7 +6551,18 @@
             "Managed Identity"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/mining-coa-assistant/01-multi-agent-flow.webp",
+              "alt": {
+                "en": "Multi-agent flow: a question in Indonesian or English is matched to accounts and policy documents, then resolved or escalated",
+                "id": "Alur multi-agent: pertanyaan dalam bahasa Indonesia atau Inggris dicocokkan ke akun dan dokumen kebijakan, lalu diselesaikan atau dieskalasi"
+              },
+              "width": 1600,
+              "height": 900,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "credit-scoring-poc",
@@ -6013,7 +6623,38 @@
             "Next.js"
           ],
           "hologram": "chart",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/credit-scoring-poc/01-product-overview.webp",
+              "alt": {
+                "en": "Product overview: explainable credit scoring and default prediction running in the browser",
+                "id": "Ringkasan produk: credit scoring dan prediksi gagal bayar yang dapat dijelaskan, berjalan di browser"
+              },
+              "width": 1280,
+              "height": 720,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/02-credit-analysis.webp",
+              "alt": {
+                "en": "Credit analysis form with a score gauge and the factors that pushed the score up or down",
+                "id": "Formulir analisis kredit dengan gauge skor dan faktor yang menaikkan atau menurunkan skor"
+              },
+              "width": 1600,
+              "height": 859,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/03-model-performance.webp",
+              "alt": {
+                "en": "Model performance page comparing XGBoost, LightGBM, logistic regression and random forest",
+                "id": "Halaman performa model yang membandingkan XGBoost, LightGBM, logistic regression dan random forest"
+              },
+              "width": 1600,
+              "height": 866,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "bank-genai-governance",
@@ -6196,7 +6837,18 @@
             "GitHub Spec Kit"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/solutions-marketing-site/01-landing.webp",
+              "alt": {
+                "en": "Bilingual landing page hero for an enterprise AI on Azure practice",
+                "id": "Hero halaman landing bilingual untuk praktik enterprise AI di Azure"
+              },
+              "width": 1280,
+              "height": 800,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "insurer-contact-center-architecture",

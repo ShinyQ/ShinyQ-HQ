@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -36,6 +36,27 @@ describe("assets", () => {
     const pods = content.floors.labs.pods as { id: string; client?: string; assets: AssetLike[] }[];
     const unredacted = pods.flatMap((p) => (p.client ? p.assets.filter((a) => !a.redacted).map(() => p.id) : []));
     expect(unredacted).toEqual([]);
+  });
+
+  it("marks every pod gallery image as privacy reviewed, with a thumbnail and pod-slug folder", () => {
+    const pods = content.floors.labs.pods as { slug: string; assets: AssetLike[] }[];
+    const problems = pods.flatMap((p) =>
+      p.assets.flatMap((a) => {
+        const issues: string[] = [];
+        if (!a.redacted) issues.push(`${p.slug}: ${a.src} not reviewed`);
+        if (!a.src.startsWith(`/media/${p.slug}/`)) issues.push(`${p.slug}: ${a.src} outside /media/${p.slug}/`);
+        if (!existsSync(path.join(root, "public", a.src.replace(/\.webp$/, ".thumb.webp")))) issues.push(`${a.src} has no thumbnail`);
+        return issues;
+      }),
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it("keeps committed media under the size budget", () => {
+    const dir = path.join(root, "public", "media");
+    const walk = (d: string): number =>
+      readdirSync(d, { withFileTypes: true }).reduce((sum, e) => sum + (e.isDirectory() ? walk(path.join(d, e.name)) : statSync(path.join(d, e.name)).size), 0);
+    expect(walk(dir) / 1024 / 1024).toBeLessThan(25);
   });
 
   it("ships the KAW monogram", () => {

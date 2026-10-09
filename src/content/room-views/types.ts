@@ -17,6 +17,8 @@ export interface RoomMetric {
 
 export interface RoomLinkItem {
   title: string;
+  /** Logo path under public/ shown before the title (contact channels, model hubs). */
+  logo?: string;
   meta?: string;
   /** Locale-less internal route ("/labs/x") or an absolute https URL. */
   href?: string;
@@ -30,6 +32,8 @@ export interface RoomSection {
   bullets?: string[];
   items?: RoomLinkItem[];
   chips?: string[];
+  /** Logo per chip (same order as `chips`), null when the chip is text-only. */
+  chipLogos?: (string | null)[];
 }
 
 export type ArchitectureNodeKind = "client" | "service" | "ai" | "data" | "human" | "external";
@@ -45,8 +49,11 @@ export interface RoomStackItem {
   logo?: string;
 }
 
+/** Same shape as `GalleryImage` (`@/content/media`) so the drawer can reuse `Gallery`. */
 export interface RoomImage {
   src: string;
+  /** 480 px thumbnail next to `src`. */
+  thumb: string;
   alt: string;
   width: number;
   height: number;
@@ -80,6 +87,8 @@ export interface RoomView {
   code: string;
   title: string;
   subtitle?: string;
+  /** Organization logo shown next to the subtitle (career rooms). */
+  logo?: { src: string; alt: string };
   /** Header metadata line items (role, period, client, org). */
   meta: string[];
   /** Small badges next to the code (tier, wing, type). */

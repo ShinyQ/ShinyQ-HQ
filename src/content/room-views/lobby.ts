@@ -1,7 +1,7 @@
 import { getCertifications, getProfile, getSkills, getStats } from "../load";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
-import { chain, messages, roomId, single } from "./shared";
+import { chain, chipLogos, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** L1 Lobby: profile hologram, stats ring, skills wall and certifications wall. */
@@ -36,7 +36,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       kind: "lobby",
       title: m.hud.rooms.skills,
       accent: "green",
-      sections: getSkills().map((g) => ({ title: g.label[locale], chips: [...g.items] })),
+      sections: getSkills().map((g) => ({ title: g.label[locale], chips: [...g.items], chipLogos: chipLogos(g.items) })),
       page: "/#skills",
     }),
     single({

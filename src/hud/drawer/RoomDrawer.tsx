@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomLinkItem, RoomMetric, RoomSection, RoomView } from "@/content/room-views/types";
+import { Gallery as ImageGallery } from "@/components/Gallery";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
 import { renderReadme } from "./ascii";
@@ -64,7 +65,13 @@ function ItemLink({ item }: { item: RoomLinkItem }) {
   const t = useTranslations("common");
   const body = (
     <>
-      <span className="block text-sm font-semibold text-ink">{item.title}</span>
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+        {item.logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.logo} alt="" width={16} height={16} className="size-4 shrink-0 object-contain" />
+        )}
+        {item.title}
+      </span>
       {item.meta && <span className="block text-[13px] leading-5 text-ink-2">{item.meta}</span>}
     </>
   );
@@ -116,14 +123,14 @@ export function Sections({ sections }: { sections: RoomSection[] }) {
               ))}
             </ul>
           )}
-          {section.chips && <Chips items={section.chips} />}
+          {section.chips && <Chips items={section.chips} logos={section.chipLogos} />}
         </section>
       ))}
     </>
   );
 }
 
-function Chips({ items, logos }: { items: string[]; logos?: (string | undefined)[] }) {
+function Chips({ items, logos }: { items: string[]; logos?: (string | null | undefined)[] }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((item, i) => (
@@ -145,16 +152,7 @@ function Gallery({ view }: { view: RoomView }) {
   return (
     <section className="space-y-2">
       <h3 className="label text-ink-2">{t("gallery")}</h3>
-      <ul className="grid grid-cols-2 gap-2">
-        {view.gallery.map((img) => (
-          <li key={img.src}>
-            <a href={img.src} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg border border-glass-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.src} alt={img.alt} width={img.width} height={img.height} loading="lazy" className="h-auto w-full" />
-            </a>
-          </li>
-        ))}
-      </ul>
+      <ImageGallery images={view.gallery} label={`${t("gallery")}: ${view.title}`} layout="strip" />
     </section>
   );
 }
@@ -499,7 +497,17 @@ export function RoomDrawer({
           <h2 id={titleId} className="mt-2 text-[22px] leading-7 font-extrabold tracking-tight text-ink sm:text-[26px] sm:leading-8">
             {view.title}
           </h2>
-          {view.subtitle && <p className="mt-1 text-[15px] leading-6 text-ink-2">{view.subtitle}</p>}
+          {view.subtitle && (
+            <p className="mt-1 flex items-center gap-2 text-[15px] leading-6 text-ink-2">
+              {view.logo && (
+                <span className="inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-0.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={view.logo.src} alt={view.logo.alt} width={24} height={24} className="h-full w-full object-contain" />
+                </span>
+              )}
+              <span>{view.subtitle}</span>
+            </p>
+          )}
           {view.meta.length > 0 && <p className="mt-1 text-[13px] leading-5 text-ink-3">{view.meta.join(" · ")}</p>}
         </div>
         <Overflow readme={readme} onToggleReadme={onToggleReadme} page={view.page} onLeave={onLeave} />

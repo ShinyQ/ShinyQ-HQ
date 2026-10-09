@@ -1,6 +1,8 @@
 import en from "../../../messages/en.json";
 import id from "../../../messages/id.json";
+import { toGalleryImages } from "../media";
 import type { Asset, Locale, RoomId } from "../schema";
+import { getTechLogo } from "../tech";
 import type { RoomImage, RoomStackItem, RoomView } from "./types";
 
 export type Messages = typeof en;
@@ -14,12 +16,27 @@ export function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? `{${key}}`);
 }
 
+/** Stack chips with logos from the tech registry; unknown names stay text-only. */
 export function stackItems(names: readonly string[]): RoomStackItem[] {
-  return names.map((name) => ({ name }));
+  return names.map((name) => {
+    const logo = getTechLogo(name);
+    return logo ? { name, logo: logo.src } : { name };
+  });
+}
+
+/** Logo for a link item title (e.g. "GitHub", "Hugging Face"), omitted when none exists. */
+export function linkLogo(title: string): { logo?: string } {
+  const logo = getTechLogo(title);
+  return logo ? { logo: logo.src } : {};
+}
+
+/** Logo per chip for `RoomSection.chipLogos`. */
+export function chipLogos(names: readonly string[]): (string | null)[] {
+  return names.map((name) => getTechLogo(name)?.src ?? null);
 }
 
 export function galleryOf(assets: readonly Asset[], locale: Locale): RoomImage[] {
-  return assets.map((a) => ({ src: a.src, alt: a.alt[locale], width: a.width, height: a.height }));
+  return toGalleryImages(assets, locale);
 }
 
 /** Links a list of views as a prev/next sequence (the drawer's arrows). */

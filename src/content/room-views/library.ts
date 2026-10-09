@@ -3,7 +3,7 @@ import { getContact, getLibrary, getPosts, getProfile } from "../load";
 import type { Locale } from "../schema";
 import { isResearch, publicationDate, researchPublications } from "../selectors";
 import { formatDate, formatYearMonth } from "@/lib/format";
-import { chain, fill, messages, roomId, single } from "./shared";
+import { chain, chipLogos, fill, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** L4 Library (Phase 5a): posts (hosted ones link their /blog page, Medium ones open externally), the research shelf, the models shelf and the talks stage. */
@@ -21,7 +21,7 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       accent: "white",
       sections: [
         ...(post.languages.includes(locale) ? [] : [{ body: fill(m.drawer.rooms.writtenIn, { languages: badge(post.languages) }) }]),
-        ...(post.tags.length ? [{ title: m.drawer.rooms.tags, chips: [...post.tags] }] : []),
+        ...(post.tags.length ? [{ title: m.drawer.rooms.tags, chips: [...post.tags], chipLogos: chipLogos(post.tags) }] : []),
       ],
       page: post.url ? undefined : `/blog/${post.slug}`,
       external: post.url,
@@ -32,8 +32,8 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
   const asOf = metrics ? formatYearMonth(metrics.asOf, locale) : "";
   const contact = getContact();
   const profiles = [
-    ...(contact.googleScholar ? [{ title: "Google Scholar", href: contact.googleScholar, external: true }] : []),
-    ...(contact.ieeeXplore ? [{ title: "IEEE Xplore", href: contact.ieeeXplore, external: true }] : []),
+    ...(contact.googleScholar ? [{ title: "Google Scholar", href: contact.googleScholar, external: true, ...linkLogo("Google Scholar") }] : []),
+    ...(contact.ieeeXplore ? [{ title: "IEEE Xplore", href: contact.ieeeXplore, external: true, ...linkLogo("IEEE Xplore") }] : []),
   ];
   const research = single({
     id: roomId("L4", "research"),
@@ -76,6 +76,7 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
             meta: [m.library.kind[p.kind], p.venue, String(p.year)].filter(Boolean).join(" · "),
             href: p.url,
             external: Boolean(p.url),
+            ...(p.kind === "model" ? linkLogo("Hugging Face") : {}),
           })),
         },
       ],
