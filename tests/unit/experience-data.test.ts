@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildExperienceData, countRooms } from "@/content/experience";
-import { getCertifications, getStats } from "@/content/load";
+import { buildCareerData, buildExperienceData, countRooms } from "@/content/experience";
+import { getAwards, getCertifications, getPublicRepos, getSideProjects, getStats, getYears } from "@/content/load";
 
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 
@@ -38,6 +38,28 @@ describe("buildExperienceData", () => {
     expect([...data.years].sort()).toEqual(data.years);
     expect(data.roomCount).toBe(countRooms());
     expect(data.roomCount).toBeGreaterThan(10);
+  });
+
+  it("carries the Career Archive by year with the prologue folded into 2019", () => {
+    const en = buildCareerData("en");
+    const id = buildCareerData("id");
+    expect(en.years.map((y) => y.year)).toEqual(getYears().map((y) => y.year));
+    expect(en.years.flatMap((y) => y.entries.map((e) => e.slug))).toEqual(getYears().flatMap((y) => y.entries.map((e) => e.slug)));
+    const all = en.years.flatMap((y) => y.entries);
+    expect(all.find((e) => e.slug === "jenius-2024")).toMatchObject({ type: "job", org: "Jenius (SMBC Indonesia)" });
+    expect(all.find((e) => e.slug === "jenius-2024")?.period).toMatch(/ to /);
+    expect(all.find((e) => e.slug === "prologue-2016")?.prologue).toBe(true);
+    expect(all.find((e) => e.slug === "telkom-university-2019")?.prologue).toBe(false);
+    expect(en.years[0].entries[0].role).not.toBe(id.years[0].entries[0].role);
+    expect(all.filter((e) => /[\u2013\u2014]/.test(e.period))).toEqual([]);
+  });
+
+  it("fills the trophy cases and the Workshop annex", () => {
+    const data = buildCareerData("en");
+    expect(data.years.reduce((n, y) => n + y.awards, 0)).toBe(getAwards().length);
+    expect(data.sideProjects.map((p) => p.id)).toEqual(getSideProjects().map((p) => p.id));
+    expect(data.repos).toHaveLength(getPublicRepos().length);
+    expect(data.models).toHaveLength(3);
   });
 
   it("is serializable", () => {

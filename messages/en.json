@@ -305,6 +305,14 @@
       "cancelled": "o_o mission cancelled",
       "copied": "Email copied ^_^",
       "copyFailed": "Could not copy, email is {email}"
+    },
+    "career": {
+      "prologue": "Prologue",
+      "workshop": "Workshop annex",
+      "repos": "Public repositories",
+      "models": "Hugging Face models",
+      "window": "L3 Labs above",
+      "scrubHint": "Swipe left or right to travel through the years"
     }
   },
   "drawer": {
@@ -364,7 +372,9 @@
       "availability": "Availability",
       "downloads": "Downloads",
       "cvPage": "Open the CV page",
-      "cvPdf": "CV PDF ({locale})"
+      "cvPdf": "CV PDF ({locale})",
+      "placings": "Placings",
+      "models": "Hugging Face models"
     },
     "directory": "Wing directory",
     "signSoftware": "Software Wing",

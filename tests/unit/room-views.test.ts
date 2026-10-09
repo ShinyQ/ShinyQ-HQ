@@ -62,6 +62,17 @@ describe("room views (Glass Drawer content)", () => {
     });
   }
 
+  it("lists each year's placings in its trophy case and the models in the Workshop annex", () => {
+    const views = buildRoomViews("en");
+    const trophies = views["L2:trophy-case-2022"].sections.find((s) => s.title === "Placings");
+    expect(trophies?.items?.length).toBeGreaterThan(0);
+    expect(trophies?.items?.every((i) => i.meta?.includes("2022"))).toBe(true);
+    expect(views["L2:jenius-2024"].sections.some((s) => s.title === "Placings")).toBe(false);
+    expect(views["L2:jenius-2024"].link?.room).toBe("L3:digital-banking-integrations");
+    expect(views["L2:prologue-2016"].meta).toContain("Prologue");
+    expect(views["L2:workshop"].sections.find((s) => s.title === "Hugging Face models")?.items).toHaveLength(3);
+  });
+
   it("resolves the locale", () => {
     const pod = getPods().find((p) => p.tier === "hero")!;
     expect(buildRoomViews("en")[`L3:${pod.slug}`].title).toBe(pod.title.en);

@@ -1,4 +1,5 @@
 import type { FloorId } from "@/content/schema";
+import { buildCorridor } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
@@ -8,7 +9,7 @@ export const FLOOR_IDS = ["L1", "L2", "L3", "L4", "RF"] as const satisfies reado
 export const SLAB_THICKNESS = 0.4;
 
 /** Floors whose 3D content is built. Others are placeholders and keep the URL at /{locale}. */
-export const READY_FLOORS: readonly FloorId[] = ["L1", "L3"];
+export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -100,6 +101,13 @@ function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec
   };
 }
 
+/** L2: the Career Archive corridor when its data is known, else the placeholder corridor. */
+function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
+  if (!extras.career) return standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 });
+  const corridor = buildCorridor(extras.career);
+  return { ...standard("L2", corridor.bounds, corridor.obstacles), doors: corridor.doors, scrubStops: corridor.stops };
+}
+
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, kiosk } = LOBBY;
@@ -115,7 +123,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       ],
       LOBBY.spawn,
     ),
-    L2: standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 }),
+    L2: careerLayout(yearCount, extras),
     // Atrium in front of the shaft door, wings as mirror halls running east (Phase 4 plan, decision 1).
     L3: buildLabsLayout(extras.labs ?? []).floor,
     L4: standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }),
