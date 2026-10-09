@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useMemo, type RefObject } from "react";
+import "../text-config";
 import { CameraDirector } from "../camera/CameraDirector";
 import { buildFloorLayouts, COLORS } from "../config";
 import { Rover } from "../rover/Rover";

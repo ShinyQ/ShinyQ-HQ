@@ -27,6 +27,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "^0.186.1",
+    "troika-three-text": "^0.52.4",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
