@@ -10,10 +10,12 @@ import type { ExperienceData } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
 
 const ACCENTS = [COLORS.green, COLORS.cyan, COLORS.violet, COLORS.amber, COLORS.pink, "#60a5fa"];
-const TILE_W = 3.4;
-const TILE_H = 1.9;
+const { w: TILE_W, h: TILE_H, y: TILE_Y, stagger: TILE_STAGGER } = LOBBY.statsTile;
 
-/** Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). */
+/**
+ * Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). Tiles
+ * billboard toward the camera, so they read from any orbit angle, and float above the rover.
+ */
 export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
   const ring = useRef<Group>(null);
 
@@ -32,7 +34,7 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
           const a = (i / stats.length) * Math.PI * 2 + Math.PI / 4;
           const accent = ACCENTS[i % ACCENTS.length];
           return (
-            <Billboard key={stat.id} position={[Math.sin(a) * LOBBY.statsRadius, 3.6 + (i % 2) * 0.5, Math.cos(a) * LOBBY.statsRadius]}>
+            <Billboard key={stat.id} position={[Math.sin(a) * LOBBY.statsRadius, TILE_Y + (i % 2) * TILE_STAGGER, Math.cos(a) * LOBBY.statsRadius]}>
               <mesh>
                 <planeGeometry args={[TILE_W, TILE_H]} />
                 <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />

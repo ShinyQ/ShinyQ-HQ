@@ -25,7 +25,8 @@ import {
 const FOG_DENSITY = 0.012;
 const RAIL_FORWARD = { x: 0, z: -1 };
 const INTRO_FOG_DENSITY = 0.005;
-const FOLLOW_LOOK_AHEAD = { desktop: 4, tablet: 4, mobile: 5 } as const;
+/** The follow camera aims this far ahead of the rover, so the floor in front fills the frame. */
+const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
 
 /**
  * Applies the active camera rig every frame with critically damped smoothing. The follow rig

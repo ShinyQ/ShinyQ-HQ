@@ -35,7 +35,7 @@ const DEFAULT_SAY_MS = 2400;
 /** Lobby room stops in front of each element (appendix 01 section 2). */
 const LOBBY_STOPS: Record<string, Vec2> = {
   profile: { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.hologram.radius + 1.8 },
-  stats: { x: LOBBY.hologram.x + 5.5, z: LOBBY.hologram.z + 4.5 },
+  stats: { x: LOBBY.hologram.x + LOBBY.statsRadius * 0.7, z: LOBBY.hologram.z + LOBBY.statsRadius * 0.7 },
   skills: { x: LOBBY.skillsWall.x, z: LOBBY.skillsWall.z + 2.6 },
   certifications: { x: LOBBY.certWall.x - 2.6, z: LOBBY.certWall.z },
 };

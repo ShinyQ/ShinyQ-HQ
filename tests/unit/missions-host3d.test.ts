@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StateStorage } from "zustand/middleware";
-import { buildFloorLayouts } from "@/experience/config";
+import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { isAutoOpenClaimed, claimAutoOpen, register3DHost, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
 import { LIBRARY_STOPS, postStop } from "@/experience/floors/library/layout";
@@ -71,8 +71,8 @@ describe("roomTarget", () => {
 
   it("stops in front of Lobby elements", () => {
     const p = roomTarget(ROOMS[0], "L1:skills", layouts, years);
-    expect(p.x).toBe(0);
-    expect(p.z).toBeGreaterThan(-15);
+    expect(p.x).toBe(LOBBY.skillsWall.x);
+    expect(p.z).toBeGreaterThan(LOBBY.skillsWall.z + 1);
   });
 
   it("uses the year segment on L2, pod doors on L3 and the wing directory for listed items", () => {
@@ -120,7 +120,7 @@ describe("3D mission host", () => {
     const { rover, host } = setup();
     await host.driveTo("L1:skills", { signal: signal(), missionId: "m" });
     expect(rover.autopilot?.state).toBe("done");
-    expect(rover.autopilot?.point.x).toBe(0);
+    expect(rover.autopilot?.point.x).toBe(LOBBY.skillsWall.x);
   });
 
   it("stops waiting when the mission is aborted", async () => {

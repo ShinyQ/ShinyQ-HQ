@@ -91,7 +91,7 @@ describe("wall auto-face", () => {
 
   it("finds Lobby zones", () => {
     expect(zoneAt("L1", inside)?.id).toBe("L1:certifications");
-    expect(zoneAt("L1", { x: 0, z: 6 })).toBeNull();
+    expect(zoneAt("L1", { x: 14, z: 6 })).toBeNull();
     expect(zoneAt("L4", inside)).toBeNull();
   });
 

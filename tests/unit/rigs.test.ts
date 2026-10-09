@@ -23,16 +23,16 @@ describe("camera rigs", () => {
   });
 
   it("uses the follow offsets per camera class", () => {
-    expect(followPose("desktop", [0, 0, 0])).toEqual({ position: [14, 15, 14], target: [0, 0, 0], fov: 38 });
+    expect(followPose("desktop", [0, 0, 0])).toEqual({ position: [16, 18, 16], target: [0, 0, 0], fov: 40 });
     expect(followPose("tablet", [1, 14, 2]).position).toEqual([17, 32, 18]);
     expect(followPose("mobile", [0, 0, 0]).fov).toBe(50);
   });
 
   it("applies yaw and zoom to the follow offset", () => {
     const yawed = followPose("desktop", [0, 0, 0], Math.PI / 2);
-    expect(yawed.position[0]).toBeCloseTo(14);
-    expect(yawed.position[2]).toBeCloseTo(-14);
-    expect(followPose("desktop", [0, 0, 0], 0, 1.25).position[1]).toBeCloseTo(18.75);
+    expect(yawed.position[0]).toBeCloseTo(16);
+    expect(yawed.position[2]).toBeCloseTo(-16);
+    expect(followPose("desktop", [0, 0, 0], 0, 1.25).position[1]).toBeCloseTo(22.5);
   });
 
   it("places the rail camera beside the corridor", () => {
@@ -78,18 +78,18 @@ describe("camera rigs", () => {
   it("orbits a full turn and keeps the distance", () => {
     const base = followPose("desktop", [0, 0, 0]).position;
     const half = followPose("desktop", [0, 0, 0], Math.PI).position;
-    expect(half[0]).toBeCloseTo(-14);
-    expect(half[2]).toBeCloseTo(-14);
+    expect(half[0]).toBeCloseTo(-16);
+    expect(half[2]).toBeCloseTo(-16);
     const full = followPose("desktop", [0, 0, 0], Math.PI * 2).position;
     full.forEach((v, i) => expect(v).toBeCloseTo(base[i]));
   });
 
   it("raises and lowers the camera within the pitch limits", () => {
-    const radius = Math.hypot(14, 15, 14);
+    const radius = Math.hypot(16, 18, 16);
     const up = followPose("desktop", [0, 0, 0], 0, 1, 0.3).position;
     const down = followPose("desktop", [0, 0, 0], 0, 1, -0.3).position;
-    expect(up[1]).toBeGreaterThan(15);
-    expect(down[1]).toBeLessThan(15);
+    expect(up[1]).toBeGreaterThan(18);
+    expect(down[1]).toBeLessThan(18);
     expect(Math.hypot(...up)).toBeCloseTo(radius);
     const top = followPose("desktop", [0, 0, 0], 0, 1, 5).position;
     expect(Math.asin(top[1] / radius)).toBeCloseTo(PITCH_LIMITS[1]);

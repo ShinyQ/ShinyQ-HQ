@@ -8,11 +8,14 @@ import { FONTS, GlassBox } from "../../tower/primitives";
 import type { LogoQuad } from "./logoAtlas";
 import { LogoQuads } from "./LogoQuads";
 
-const ITEM_SIZE = 0.27;
-const ITEM_LINE = 1.32;
-const ITEM_TOP = 0.95;
-const ICON = 0.27;
-const ICON_GAP = 0.38;
+// Sized for 10 u columns on the re-spaced 40 u wall (appendix 01 section 2).
+const ITEM_SIZE = 0.34;
+const ITEM_LINE = 1.3;
+const ITEM_TOP = 1.05;
+const ICON = 0.34;
+const ICON_GAP = 0.48;
+const COLUMN_PAD = 0.9;
+const LABEL_SIZE = 0.38;
 
 const GROUP_ACCENT: Record<string, string> = {
   software: COLORS.cyan,
@@ -29,7 +32,7 @@ export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]
   const quads = useMemo<LogoQuad[]>(
     () =>
       skills.flatMap((group, i) => {
-        const left = -w / 2 + i * column + 0.45;
+        const left = -w / 2 + i * column + COLUMN_PAD;
         return group.logos.flatMap((src, j) =>
           src ? [{ src, x: left + ICON / 2, y: h - ITEM_TOP - (j + 0.5) * ITEM_SIZE * ITEM_LINE, size: ICON }] : [],
         );
@@ -43,14 +46,14 @@ export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]
         {title.toUpperCase()}
       </Text>
       {skills.map((group, i) => {
-        const left = -w / 2 + i * column + 0.45;
+        const left = -w / 2 + i * column + COLUMN_PAD;
         const accent = GROUP_ACCENT[group.id] ?? COLORS.white;
         return (
           <group key={group.id} position={[left, 0, d / 2 + 0.03]}>
-            <Text font={FONTS.monoBold} fontSize={0.3} letterSpacing={0.08} color={accent} anchorX="left" anchorY="top" position={[0, h - 0.35, 0]} maxWidth={column - 0.8} material-toneMapped={false}>
+            <Text font={FONTS.monoBold} fontSize={LABEL_SIZE} letterSpacing={0.08} color={accent} anchorX="left" anchorY="top" position={[0, h - 0.35, 0]} maxWidth={column - 2 * COLUMN_PAD} material-toneMapped={false}>
               {group.label.toUpperCase()}
             </Text>
-            <Text font={FONTS.sans} fontSize={ITEM_SIZE} color="#e4e4e7" anchorX="left" anchorY="top" position={[ICON_GAP, h - ITEM_TOP, 0]} lineHeight={ITEM_LINE} maxWidth={column - 0.8 - ICON_GAP} whiteSpace="nowrap">
+            <Text font={FONTS.sans} fontSize={ITEM_SIZE} color="#e4e4e7" anchorX="left" anchorY="top" position={[ICON_GAP, h - ITEM_TOP, 0]} lineHeight={ITEM_LINE} maxWidth={column - 2 * COLUMN_PAD - ICON_GAP} whiteSpace="nowrap">
               {group.items.join("\n")}
             </Text>
           </group>

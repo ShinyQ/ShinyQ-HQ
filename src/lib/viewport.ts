@@ -9,8 +9,13 @@ export function viewportClass(width: number, height: number): ViewportClass {
   return "desktop";
 }
 
-/** Camera value set (appendix 03 section 2). Landscape phones use the tablet values. */
+/**
+ * Camera value set (appendix 03 section 2). Landscape phones use the tablet values; portrait
+ * screens of any width (tablets standing up) use the portrait values, whose wider FOV and higher
+ * offset frame the Lobby plaza on a narrow, tall viewport.
+ */
 export function cameraClass(width: number, height: number): ViewportClass {
   if (isLandscapePhone(width, height)) return "tablet";
+  if (height > width * 1.15) return "mobile";
   return viewportClass(width, height);
 }

@@ -13,7 +13,7 @@ export interface CameraPose {
 
 /** Follow rig per camera class (appendix 03 section 2). */
 export const FOLLOW: Record<ViewportClass, { fov: number; offset: Vec3 }> = {
-  desktop: { fov: 38, offset: [14, 15, 14] },
+  desktop: { fov: 40, offset: [16, 18, 16] },
   tablet: { fov: 42, offset: [16, 18, 16] },
   mobile: { fov: 50, offset: [18, 24, 18] },
 };

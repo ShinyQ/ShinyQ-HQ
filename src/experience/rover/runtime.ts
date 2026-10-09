@@ -1,3 +1,4 @@
+import { LOBBY } from "../config";
 import type { AutopilotRequest } from "../missions/host3d";
 import type { RoverFace, Vec2 } from "../types";
 
@@ -6,9 +7,9 @@ import type { RoverFace, Vec2 } from "../types";
  * camera. Mutated in useFrame, never read during React render.
  */
 export const roverRuntime = {
-  x: 0,
+  x: LOBBY.spawn.x as number,
   y: 0,
-  z: 6,
+  z: LOBBY.spawn.z as number,
   heading: Math.PI / 4,
   speed: 0,
   tilt: 0,

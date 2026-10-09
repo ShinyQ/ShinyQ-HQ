@@ -51,14 +51,14 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 
 | Rig | Used on | Desktop | Tablet | Mobile portrait |
 |---|---|---|---|---|
-| Follow (3/4 iso-ish) | L1, L3, L4, RF | FOV 38°, offset (14, 15, 14) | FOV 42°, offset (16, 18, 16) | FOV 50°, offset (18, 24, 18) |
+| Follow (3/4 iso-ish) | L1, L3, L4, RF | FOV 40°, offset (16, 18, 16), aiming 6 u ahead of the rover (pulled back from 38° / (14, 15, 14) so the re-spaced Lobby plaza fits) | FOV 42°, offset (16, 18, 16) | FOV 50°, offset (18, 24, 18) |
 | Rail (side view) | L2 | FOV 40°, camera at (roverX, 13, 24), looking at (roverX + 4, 0, 0); yaw around the rover limited to ±35° | FOV 45°, (roverX, 15, 28) | FOV 55°, (roverX, 18, 34) |
 | Elevator dolly | Floor change | Tweens the rig's y by `FLOOR_GAP` per floor, easeInOutCubic, 0.8 s | Same | Same |
 | Hologram fly-in | Hero pods | 9 u in front of the pod stage at eye height 4 u, FOV 35° | FOV 42° | FOV 50° |
 | Intro orbit | Boot | Radius 70 u around the tower, 120°, 2.5 s | Radius 80 u | Radius 90 u |
 
 - Smoothing: critically damped spring with a 0.18 s half-life.
-- Landscape phones use the tablet values.
+- Landscape phones use the tablet values. Portrait screens of any width (height above 1.15× the width, for example a 1024 × 1366 tablet) use the mobile portrait values.
 - **Horizontal orbit (follow rig, every floor except the L2 rail).** The camera turns left and right all the way around the rover (unrestricted yaw). Up and down is only a small tilt, about ±9° from the default elevation, so the view never goes underground or top-down. Zoom stays within 0.6× to 1.5× of the offset. The chosen view persists while driving (keyboard steering stays camera-relative) and never springs back on its own.
 - **Reset view.** The HUD reset button, `0` or `Home` ease back to the default angle, pitch and zoom (nearest full turn, about 0.5 s; instant under reduced motion).
 - **Rail.** L2 keeps its side view; the same rotate inputs swing it around the rover by at most ±35°.
