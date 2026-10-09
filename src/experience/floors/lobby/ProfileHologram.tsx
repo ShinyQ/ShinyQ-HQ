@@ -7,6 +7,7 @@ import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, LOBBY } from "../../config";
 import { FONTS, FloorLine } from "../../tower/primitives";
+import { HOLOGRAM } from "./layout";
 
 function hexGeometry(r: number) {
   const pts: number[] = [];
@@ -25,7 +26,7 @@ const circle = (r: number, n = 48): [number, number][] =>
 /** Rotating wireframe KAW monogram on a pedestal, with the name and headline floating above (C5: no photo). */
 export function ProfileHologram({ name, monogram, headline }: { name: string; monogram: string; headline: string }) {
   const spin = useRef<Group>(null);
-  const outer = useMemo(() => hexGeometry(2.3), []);
+  const outer = useMemo(() => hexGeometry(HOLOGRAM.hexRadius), []);
   const inner = useMemo(() => hexGeometry(1.8), []);
   const ring = useMemo(() => circle(3.05), []);
   const { x, z, radius } = LOBBY.hologram;
@@ -34,7 +35,7 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
     if (!spin.current) return;
     const reduced = getHQStore().getState().reducedMotion;
     spin.current.rotation.y += Math.min(dt, 0.1) * (reduced ? 0.15 : 0.4);
-    spin.current.position.y = 3.4 + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.2) * 0.12);
+    spin.current.position.y = HOLOGRAM.y + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.2) * 0.12);
   });
 
   return (
@@ -50,7 +51,7 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
         <cylinderGeometry args={[1.2, 2.6, 3, 6, 1, true]} />
         <meshBasicMaterial color={COLORS.green} transparent opacity={0.06} depthWrite={false} toneMapped={false} />
       </mesh>
-      <group ref={spin} position={[0, 3.4, 0]}>
+      <group ref={spin} position={[0, HOLOGRAM.y, 0]}>
         <lineLoop geometry={outer}>
           <lineBasicMaterial color={COLORS.cyan} toneMapped={false} />
         </lineLoop>
@@ -74,7 +75,7 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
           {monogram}
         </Text>
       </group>
-      <Billboard position={[0, 6.6, 0]}>
+      <Billboard position={[0, LOBBY.titleY, 0]}>
         <Text font={FONTS.sansBold} fontSize={0.78} color="#f4f4f5" anchorX="center" anchorY="bottom" maxWidth={14} textAlign="center">
           {name}
         </Text>

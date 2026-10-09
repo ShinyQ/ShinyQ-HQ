@@ -6,9 +6,9 @@ import { useState } from "react";
 import { COLORS, LOBBY } from "../../config";
 import type { ExperienceData } from "../../types";
 import { BoxEdges, FONTS, GlassBox } from "../../tower/primitives";
+import { CERT_BADGE } from "./layout";
 
-const BADGE_W = 1.75;
-const BADGE_H = 2.3;
+const { w: BADGE_W, h: BADGE_H } = CERT_BADGE;
 
 export interface CertLabels {
   title: string;
@@ -27,7 +27,7 @@ function Badge({ cert, labels, z }: { cert: ExperienceData["certifications"][num
   };
   return (
     <group
-      position={[LOBBY.certWall.x - 1.05, 2.75, z]}
+      position={[LOBBY.certWall.x - CERT_BADGE.offset, CERT_BADGE.y, z]}
       // Louvered toward the default camera so badges read from the plaza (local +z faces -x, +z).
       rotation={[0, -Math.PI / 4, 0]}
       onClick={cert.url ? open : undefined}

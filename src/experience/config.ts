@@ -73,16 +73,28 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   maxZ: cz + d / 2,
 });
 
-/** Lobby element positions (appendix 01 section 2). */
+/**
+ * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator so the walls
+ * keep a clear walkway (at least 4 u) outside the lane ring; see tests/unit/lobby-layout.test.ts.
+ */
 export const LOBBY = {
-  spawn: { x: 0, z: 6 },
-  hologram: { x: 0, z: -6, radius: 3 },
-  statsRadius: 7,
-  skillsWall: { x: 0, z: -15, w: 30, d: 1, h: 6 },
-  certWall: { x: 21, z: -4, w: 1, d: 14, h: 5 },
-  kiosk: { x: -8, z: 8, w: 3, d: 2 },
-  laneRadius: 10,
+  bounds: { minX: -24, maxX: 28, minZ: -24, maxZ: 18 },
+  /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
+  spawn: { x: 14, z: 6 },
+  hologram: { x: 6, z: -4, radius: 3 },
+  /** Name and headline float above the stats tiles. */
+  titleY: 7.6,
+  statsRadius: 10,
+  /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
+  statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
+  skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 6.5 },
+  certWall: { x: 25.5, z: -4, w: 1, d: 16, h: 5 },
+  kiosk: { x: 2, z: 15, w: 3, d: 2 },
+  laneRadius: 12,
 } as const;
+
+/** Rover height used for clearance checks (antenna tip included). */
+export const ROVER_HEIGHT = 2.8;
 
 /** L2 corridor length for the placeholder: from x = -20 to -20 + 14 * years + 20. */
 export function corridorEnd(yearCount: number): number {
@@ -116,7 +128,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
   return {
     L1: standard(
       "L1",
-      { minX: -24, maxX: 24, minZ: -16, maxZ: 16 },
+      LOBBY.bounds,
       [
         rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
         rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),

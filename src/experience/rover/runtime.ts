@@ -1,3 +1,4 @@
+import { LOBBY } from "../config";
 import type { AutopilotRequest } from "../missions/host3d";
 import type { RoverFace, Vec2 } from "../types";
 
@@ -6,9 +7,9 @@ import type { RoverFace, Vec2 } from "../types";
  * camera. Mutated in useFrame, never read during React render.
  */
 export const roverRuntime = {
-  x: 0,
+  x: LOBBY.spawn.x as number,
   y: 0,
-  z: 6,
+  z: LOBBY.spawn.z as number,
   heading: Math.PI / 4,
   speed: 0,
   tilt: 0,
@@ -22,6 +23,10 @@ export const roverRuntime = {
   hopUntil: 0,
   /** Horizontal camera forward, used for camera-relative steering. */
   cameraForward: { x: -1, z: -1 } as Vec2,
+  /** Follow-camera yaw offset from the default angle (debug and test probe). */
+  cameraYaw: 0,
+  /** L2 rail yaw (limited to RAIL_MAX_YAW). */
+  cameraRailYaw: 0,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
   /** Mission autopilot request (see missions/host3d.ts). */

@@ -1,17 +1,16 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { FogExp2, PerspectiveCamera, Vector3 } from "three";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore } from "@/store/useHQStore";
-import { intents } from "../input/intents";
+import { intents, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { cameraFocus } from "./focus";
+import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
 import {
-  clampYaw,
-  clampZoom,
   followPose,
   forwardOf,
   hologramShift,
@@ -26,15 +25,17 @@ import {
 const FOG_DENSITY = 0.012;
 const RAIL_FORWARD = { x: 0, z: -1 };
 const INTRO_FOG_DENSITY = 0.005;
-const YAW_RETURN_DELAY = 2;
-const FOLLOW_LOOK_AHEAD = { desktop: 4, tablet: 4, mobile: 5 } as const;
+/** The follow camera aims this far ahead of the rover, so the floor in front fills the frame. */
+const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
 
-/** Applies the active camera rig every frame with critically damped smoothing. */
-export function CameraDirector() {
+/**
+ * Applies the active camera rig every frame with critically damped smoothing. The follow rig
+ * turns all the way around the rover (drag, twist, trackpad, Q/E, buttons) with a small tilt;
+ * the view persists until reset.
+ */
+export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
   const local = useRef({
-    yaw: 0,
-    zoom: 1,
-    lastOrbit: -Infinity,
+    orbit: createOrbitState(),
     now: 0,
     introStart: null as number | null,
     ready: false,
@@ -48,12 +49,18 @@ export function CameraDirector() {
   useEffect(
     () =>
       intents.on((intent) => {
-        const l = local.current;
+        const { orbit } = local.current;
+        const s = getHQStore().getState();
+        const rail = selectRig(s.phase, s.floor) === "rail";
         if (intent.type === "orbit") {
-          l.yaw = clampYaw(l.yaw + intent.dyaw);
-          l.lastOrbit = l.now;
+          // On the L2 rail a one-finger swipe scrubs through the years; it does not turn the view.
+          if (rail && intent.source === "touch") return;
+          if (intent.smooth) rotateStep(orbit, Math.sign(intent.dyaw), rail);
+          else rotate(orbit, intent.dyaw, intent.dpitch ?? 0, rail);
         } else if (intent.type === "zoom") {
-          l.zoom = clampZoom(l.zoom * intent.factor);
+          zoomBy(orbit, intent.factor);
+        } else if (intent.type === "view") {
+          resetView(orbit);
         }
       }),
     [],
@@ -70,7 +77,14 @@ export function CameraDirector() {
     const rig = selectRig(s.phase, s.floor);
     const roverTarget: [number, number, number] = [roverRuntime.x, roverRuntime.y + 1, roverRuntime.z];
 
-    if (l.now - l.lastOrbit > YAW_RETURN_DELAY) l.yaw += (0 - l.yaw) * springFactor(dt, 0.35);
+    const { orbit } = l;
+    const exploring = s.phase === "explore" || s.phase === "elevator";
+    const axis = exploring ? rotateAxisFromKeys(held.current ?? []) : 0;
+    if (axis) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, 0, rig === "rail");
+    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime), s.reducedMotion);
+    stepOrbit(orbit, dt, s.reducedMotion);
+    roverRuntime.cameraYaw = orbit.yaw;
+    roverRuntime.cameraRailYaw = orbit.railYaw;
 
     let desired: CameraPose;
     let snap = false;
@@ -94,12 +108,12 @@ export function CameraDirector() {
         if (t >= INTRO_DURATION) s.finishIntro();
       }
     } else if (rig === "rail") {
-      desired = railPose(cls, roverRuntime.x, roverRuntime.y, l.zoom, roverRuntime.z);
+      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom, roverRuntime.z, orbit.railYaw);
     } else {
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const f = roverRuntime.cameraForward;
-      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], l.yaw, l.zoom);
+      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom, orbit.pitch);
     }
 
     l.desiredPos.set(...desired.position);

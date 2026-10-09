@@ -14,6 +14,10 @@ describe("viewport classes", () => {
     expect(viewportClass(844, 390)).toBe("mobile");
     expect(cameraClass(844, 390)).toBe("tablet");
     expect(cameraClass(390, 844)).toBe("mobile");
+    expect(cameraClass(1024, 1366)).toBe("mobile");
+    expect(cameraClass(800, 1000)).toBe("mobile");
+    expect(cameraClass(1366, 1024)).toBe("desktop");
+    expect(cameraClass(900, 900)).toBe("tablet");
   });
 });
 
@@ -31,7 +35,7 @@ describe("tower config", () => {
     expect(layouts.L1.approach).toEqual({ x: -21, z: 0 });
     expect(layouts.RF.door).toEqual({ x: -20, z: 0 });
     expect(layouts.RF.approach).toEqual({ x: -17, z: 0 });
-    expect(layouts.L1.spawn).toEqual({ x: 0, z: 6 });
+    expect(layouts.L1.spawn).toEqual({ x: 14, z: 6 });
   });
 
   it("sizes the L2 corridor from the year count", () => {

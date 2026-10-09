@@ -13,6 +13,7 @@ import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
 import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
+import { ViewControls } from "./ViewControls";
 
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
@@ -107,6 +108,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {phase === "intro" ? <IntroSkip /> : <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
+          {phase !== "intro" && phase !== "room" && <ViewControls />}
         </>
       )}
       <FloorAnnouncer data={data} />

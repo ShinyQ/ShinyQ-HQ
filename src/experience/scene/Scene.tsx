@@ -40,7 +40,7 @@ export function Scene({
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
       <Rover tier={tier} />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
-      <CameraDirector />
+      <CameraDirector held={held} />
       {tier === "full" && (
         <Suspense fallback={null}>
           <Effects />

@@ -240,9 +240,14 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
           gl={{ antialias: tier === "full", powerPreference: "high-performance" }}
           camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
           onCreated={({ gl }) => {
-            gl.domElement.addEventListener("webglcontextlost", (event) => {
+            const canvas = gl.domElement;
+            canvas.addEventListener("webglcontextlost", (event) => {
               event.preventDefault();
-              getHQStore().getState().setTier("static");
+              // Unmounting (Page view) also loses the context on purpose; only a canvas that is
+              // still on the page has really crashed.
+              window.setTimeout(() => {
+                if (canvas.isConnected) getHQStore().getState().setTier("static");
+              }, 0);
             });
           }}
           role="img"

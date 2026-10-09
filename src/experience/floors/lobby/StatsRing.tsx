@@ -3,26 +3,56 @@
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import type { Group } from "three";
+import { PerspectiveCamera, Vector3, type Group } from "three";
 import { getHQStore } from "@/store/useHQStore";
+import { roverRuntime } from "../../rover/runtime";
 import { COLORS, LOBBY } from "../../config";
 import type { ExperienceData } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
 
 const ACCENTS = [COLORS.green, COLORS.cyan, COLORS.violet, COLORS.amber, COLORS.pink, "#60a5fa"];
-const TILE_W = 3.4;
-const TILE_H = 1.9;
+const { w: TILE_W, h: TILE_H, y: TILE_Y, stagger: TILE_STAGGER } = LOBBY.statsTile;
 
-/** Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). */
+/**
+ * Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). Tiles
+ * billboard toward the camera, so they read from any orbit angle, and float above the rover.
+ */
 export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
   const ring = useRef<Group>(null);
+  const tiles = useRef<(Group | null)[]>([]);
+  const scratch = useRef({ tile: new Vector3(), rover: new Vector3() });
 
-  useFrame((state, dt) => {
+  useFrame((state, rawDt) => {
     if (!ring.current) return;
+    const dt = Math.min(rawDt, 0.1);
     const reduced = getHQStore().getState().reducedMotion;
-    if (reduced) return;
-    ring.current.rotation.y += Math.min(dt, 0.1) * 0.06;
-    ring.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+    if (!reduced) {
+      ring.current.rotation.y += dt * 0.06;
+      ring.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+    }
+
+    // A tile that sits between the camera and the rover on screen shrinks away, so the rover is
+    // never hidden behind the ring (it returns once the view is clear).
+    const camera = state.camera as PerspectiveCamera;
+    const { tile: tp, rover: rp } = scratch.current;
+    rp.set(roverRuntime.x, roverRuntime.y + 1.4, roverRuntime.z);
+    const roverDistance = rp.distanceTo(camera.position);
+    rp.project(camera);
+    const tanHalf = Math.tan(((camera.fov / 2) * Math.PI) / 180);
+    const k = reduced ? 1 : 1 - Math.exp(-dt * 12);
+    for (const tile of tiles.current) {
+      if (!tile) continue;
+      tile.getWorldPosition(tp);
+      const distance = tp.distanceTo(camera.position);
+      tp.project(camera);
+      // Tile half-size plus the rover's half-size (about 1 u wide, 1.6 u tall), in screen units.
+      const halfY = (TILE_H / 2 + 1.6) / (distance * tanHalf);
+      const halfX = (TILE_W / 2 + 1.0) / (distance * tanHalf * camera.aspect);
+      const covers = distance < roverDistance && Math.abs(tp.x - rp.x) < halfX && Math.abs(tp.y - rp.y) < halfY;
+      const scale = tile.scale.x + ((covers ? 0.001 : 1) - tile.scale.x) * k;
+      tile.scale.setScalar(scale);
+      tile.visible = scale > 0.01;
+    }
   });
 
   return (
@@ -32,7 +62,12 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
           const a = (i / stats.length) * Math.PI * 2 + Math.PI / 4;
           const accent = ACCENTS[i % ACCENTS.length];
           return (
-            <Billboard key={stat.id} position={[Math.sin(a) * LOBBY.statsRadius, 3.6 + (i % 2) * 0.5, Math.cos(a) * LOBBY.statsRadius]}>
+            <Billboard
+              key={stat.id}
+              ref={(node) => {
+                tiles.current[i] = node;
+              }}
+              position={[Math.sin(a) * LOBBY.statsRadius, TILE_Y + (i % 2) * TILE_STAGGER, Math.cos(a) * LOBBY.statsRadius]}>
               <mesh>
                 <planeGeometry args={[TILE_W, TILE_H]} />
                 <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />

@@ -18,16 +18,17 @@ function buildLanes(): P[][] {
     const a = (i / 64) * Math.PI * 2;
     return [HX + Math.cos(a) * LOBBY.laneRadius, HZ + Math.sin(a) * LOBBY.laneRadius];
   });
+  // Spurs leave the ring outward, so nothing crosses the plaza under the stats tiles.
   const spoke = (to: P): P[] => {
     const dx = to[0] - HX;
     const dz = to[1] - HZ;
     const len = Math.hypot(dx, dz);
-    return [[HX + (dx / len) * 3.4, HZ + (dz / len) * 3.4], to];
+    return [[HX + (dx / len) * LOBBY.laneRadius, HZ + (dz / len) * LOBBY.laneRadius], to];
   };
   return [
     ring,
     spoke([LOBBY.kiosk.x + 1.2, LOBBY.kiosk.z - 1.2]),
-    spoke([0, LOBBY.skillsWall.z + 0.8]),
+    spoke([LOBBY.skillsWall.x, LOBBY.skillsWall.z + 1.2]),
     spoke([LOBBY.certWall.x - 1.4, LOBBY.certWall.z]),
     spoke([-21, 0]),
   ];

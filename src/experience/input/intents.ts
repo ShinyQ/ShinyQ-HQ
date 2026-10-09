@@ -16,7 +16,14 @@ export type Intent =
   | { type: "terminal" }
   | { type: "toggle"; what: "sound" | "lang" | "readme" }
   | { type: "zoom"; factor: number }
-  | { type: "orbit"; dyaw: number };
+  | { type: "orbit"; dyaw: number; dpitch?: number; smooth?: boolean; source: OrbitSource }
+  | { type: "view"; action: "reset" };
+
+/**
+ * Where a camera rotation came from. Floors may filter by source (for example, L2 can keep a
+ * one-finger `touch` drag for scrubbing through time).
+ */
+export type OrbitSource = "mouse" | "touch" | "twist" | "wheel" | "keys" | "button";
 
 export type IntentListener = (intent: Intent) => void;
 
@@ -104,6 +111,9 @@ export function keyToIntent(key: string, ctx: KeyContext = {}): Intent | null {
       return { type: "toggle", what: "readme" };
     case "enter":
       return ctx.inControl ? null : { type: "terminal" };
+    case "0":
+    case "home":
+      return { type: "view", action: "reset" };
     default:
       return null;
   }
@@ -153,4 +163,60 @@ export function applyDeadZone(x: number, y: number, deadZone = 0.12): { x: numbe
   if (mag <= deadZone) return { x: 0, y: 0 };
   const scaled = Math.min(1, (mag - deadZone) / (1 - deadZone));
   return { x: (x / mag) * scaled, y: (y / mag) * scaled };
+}
+
+const ROTATE_KEYS: Record<string, number> = { q: -1, e: 1 };
+
+export function isRotateKey(key: string): boolean {
+  return key.toLowerCase() in ROTATE_KEYS;
+}
+
+/** Held Q/E as a rotation axis (Q left = -1, E right = +1). Shift doubles the speed. */
+export function rotateAxisFromKeys(held: Iterable<string>): number {
+  let axis = 0;
+  let fast = false;
+  for (const key of held) {
+    const k = key.toLowerCase();
+    axis += ROTATE_KEYS[k] ?? 0;
+    if (k === "shift") fast = true;
+  }
+  return Math.sign(axis) * (fast ? 2 : 1);
+}
+
+/** Pixels a pointer must travel before a press becomes a drag (below it, it is a click or tap). */
+export const DRAG_THRESHOLD = { mouse: 6, pen: 6, touch: 8 } as const;
+
+export function exceedsDragThreshold(dx: number, dy: number, pointerType: string): boolean {
+  const limit = DRAG_THRESHOLD[pointerType as keyof typeof DRAG_THRESHOLD] ?? DRAG_THRESHOLD.mouse;
+  return Math.hypot(dx, dy) > limit;
+}
+
+export type WheelKind = "zoom" | "rotate" | "elevator" | null;
+
+/**
+ * Splits wheel input: pinch on a trackpad arrives as ctrl+wheel (zoom), a horizontal two-finger
+ * swipe (or shift+wheel) is deltaX (rotate), and vertical scrolling stays the elevator.
+ */
+export function classifyWheel({ dx, dy, ctrl }: { dx: number; dy: number; ctrl: boolean }): WheelKind {
+  if (ctrl) return dy !== 0 ? "zoom" : null;
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax === 0 && ay === 0) return null;
+  return ax > ay ? "rotate" : "elevator";
+}
+
+type Point = { x: number; y: number };
+
+const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+/** Rotation of the line between two touch points, in radians (positive = clockwise on screen). */
+export function twistDelta(a0: Point, b0: Point, a1: Point, b1: Point): number {
+  const before = Math.atan2(b0.y - a0.y, b0.x - a0.x);
+  const after = Math.atan2(b1.y - a1.y, b1.x - a1.x);
+  return wrapPi(after - before);
+}
+
+/** Zoom factor for a pinch: fingers apart (distance grows) zooms in (factor below 1). */
+export function pinchFactor(before: number, after: number): number {
+  return before > 0 && after > 0 ? before / after : 1;
 }

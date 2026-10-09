@@ -17,19 +17,23 @@ All units are world units (1 u ≈ 1 m). Y is up. Each floor is a separate group
 
 ## 2. Floor L1: Lobby (spawn)
 
-Footprint: 48 × 32 u, centered at the origin. Accent: green `#34d399`.
+Footprint: 52 × 42 u, x from -24 to 28 and z from -24 to 18. The west edge stays at the elevator door (the shaft is fixed at x = -28), so the plaza sits east of the origin. Accent: green `#34d399`.
 
 | Element | Position (x, z) | Size (w × d) | Content |
 |---|---|---|---|
-| Spawn point | (0, 6) | | Rover start, facing -z |
-| Profile hologram | (0, -6) | Pedestal radius 3 | Rotating wireframe monogram "KAW", with name and headline floating above |
-| Stats ring | Around the hologram, radius 7 | 4 to 6 floating tiles | Headline stats (see appendix 07) |
-| Skills wall | (0, -15) | 30 × 1, height 6 | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data |
-| Certifications wall | (21, -4) | 1 × 14, height 5 | Certification badges with "verify" links |
-| Mission kiosk | (-8, 8) | 3 × 2 | Diegetic mirror of the Rover Terminal missions |
+| Spawn point | (14, 6) | | Rover start on the default camera diagonal from the plaza, turned toward the camera |
+| Profile hologram | (6, -4) | Pedestal radius 3 | Rotating wireframe monogram "KAW" (hexagon radius 2.3, center height 3.4) |
+| Name and headline | Above the hologram, height 7.6 | Text block up to 14 wide | Billboarded, always above the stats tiles |
+| Stats ring | Around the hologram, radius 10 | 4 to 6 tiles, 3.4 × 1.9, center height 4.25 (staggered +0.5) | Headline stats (see appendix 07). Tiles billboard toward the camera and float above the rover (bottom above 2.8 u), so they read from any orbit angle and never block the walkway. |
+| Lane ring (walkable) | Around the hologram, radius 12 | Rover footprint 10.5 to 13.5 | Clear of every element at rover height |
+| Skills wall | (6, -22.5) | 40 × 1, height 6.5 | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column) |
+| Certifications wall | (25.5, -4) | 1 × 16, height 5 | Certification badges with "verify" links, louvered 45° toward the plaza |
+| Mission kiosk | (2, 15) | 3 × 2 | Diegetic mirror of the Rover Terminal missions |
 | Elevator door | (-24, 0) | | |
 
-Lanes: one ring lane around the hologram (radius 10) and spokes to the kiosk, both walls and the elevator.
+Lanes: one ring lane around the hologram (radius 12) and spurs leaving the ring outward to the kiosk, both walls and the elevator.
+
+Spacing rules (enforced by `tests/unit/lobby-layout.test.ts`): no two elements' bounding boxes overlap at any stats ring rotation (billboards counted at full width in x and z), nothing reaches into the walkable ring below rover height, and every wall and the kiosk keeps at least 4 u of walkway outside the ring. View zones in front of the skills and certifications walls turn the camera to face them (appendix 03).
 
 ## 3. Floor L2: Career Archive (timeline corridor)
 

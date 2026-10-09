@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { asReturningVisitor, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -116,12 +116,13 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
+    // Lobby slab x -24 to 28, z -24 to 18, minus the rover radius.
     expect(rover.x).toBeGreaterThan(-23.01);
-    expect(rover.x).toBeLessThan(23.01);
-    expect(rover.z).toBeGreaterThan(-15.01);
-    expect(rover.z).toBeLessThan(15.01);
-    // Never inside the hologram pedestal.
-    expect(Math.abs(rover.x) > 3.9 || rover.z > -2.1 || rover.z < -9.9).toBe(true);
+    expect(rover.x).toBeLessThan(27.01);
+    expect(rover.z).toBeGreaterThan(-23.01);
+    expect(rover.z).toBeLessThan(17.01);
+    // Never inside the hologram pedestal at (6, -4).
+    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z + 4) > 3.9).toBe(true);
   });
 
   test("click to move drives to the clicked point", async ({ page }) => {
@@ -204,15 +205,51 @@ test.describe("tiers and views", () => {
     await expect(page.getByTestId("hq")).toHaveCount(0);
   });
 
-  test("page view hides the tower and Explore in 3D brings it back", async ({ page }) => {
+  test("page view shows a prominent Back to 3D button right away", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await enterHQ(page);
     await page.getByRole("button", { name: "Page view" }).click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("#site-shell")).not.toHaveAttribute("inert", "");
+    const back = page.getByRole("button", { name: "Back to 3D" });
+    // Visible right away (same render as the switch), without scrolling, and focus lands on the
+    // page content. The timeout only covers slow SwiftShader frames unmounting the canvas.
+    await expect(back).toBeInViewport({ ratio: 1, timeout: 20_000 });
+    await expect(page.locator("#main")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(back).toBeFocused();
+    // Still there after scrolling and across reloads in the same session.
+    await page.mouse.wheel(0, 2000);
+    await expect(back).toBeInViewport({ ratio: 1 });
     await page.reload();
-    await expect(page.getByRole("button", { name: "Explore in 3D" })).toBeVisible();
-    await page.getByRole("button", { name: "Explore in 3D" }).click();
+    await expect(back).toBeInViewport({ ratio: 1 });
+    await back.click();
     await waitForHQ(page);
+  });
+
+  test("the 3 key returns from page view", async ({ page }) => {
+    await enterHQ(page);
+    await page.getByRole("button", { name: "Page view" }).click();
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press("3");
+    await waitForHQ(page);
+  });
+
+  test("a real WebGL context loss falls back to the static page", async ({ page }) => {
+    await enterHQ(page);
+    await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas");
+      canvas?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+    });
+    await expect(page.getByText("Switched to lite view")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("hq")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
+  });
+
+  test("static tier shows no Back to 3D button", async ({ page }) => {
+    await page.goto("/en?tier=static");
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
   });
 
   test("the language toggle resumes on the same floor", async ({ page }) => {
@@ -283,5 +320,131 @@ test.describe("missions in 3D", () => {
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
     expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+  });
+});
+
+const cameraYaw = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __hq: { rover: { cameraYaw: number } } }).__hq.rover.cameraYaw);
+
+test.describe("free orbit camera", () => {
+  test("mouse drag rotates the view; a click without drag still moves the rover", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const before = await snapshot(page);
+    // Drag on empty floor, left of the rover, with the left button.
+    await page.mouse.move(300, 600);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(300 + i * 30, 600);
+    await page.mouse.up();
+    const yaw = await cameraYaw(page);
+    expect(yaw).toBeLessThan(-1);
+    // Dragging rotated only: the rover did not drive off.
+    const after = await snapshot(page);
+    expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
+
+    // Right-button drag rotates too.
+    await page.mouse.move(400, 600);
+    await page.mouse.down({ button: "right" });
+    for (let i = 1; i <= 5; i++) await page.mouse.move(400 - i * 30, 600);
+    await page.mouse.up({ button: "right" });
+    expect(await cameraYaw(page)).toBeGreaterThan(yaw + 0.5);
+
+    // The view persists (no spring-back) and a plain click still drives.
+    await page.waitForTimeout(2500);
+    expect(Math.abs((await cameraYaw(page)) - yaw)).toBeGreaterThan(0.5);
+    await waitForCameraSettle(page);
+    const start = (await snapshot(page)).rover;
+    await page.mouse.click(560, 520);
+    await waitForRoverMove(page, start, 1.5);
+  });
+
+  test("trackpad deltaX, Q/E and the reset button", async ({ page }) => {
+    await enterHQ(page);
+    await page.mouse.move(640, 400);
+    await page.mouse.wheel(300, 0);
+    await expect.poll(() => cameraYaw(page)).toBeLessThan(-0.5);
+    expect((await snapshot(page)).floor).toBe("L1");
+
+    const beforeKey = await cameraYaw(page);
+    await page.keyboard.down("e");
+    await page.waitForTimeout(800);
+    await page.keyboard.up("e");
+    expect(await cameraYaw(page)).toBeGreaterThan(beforeKey + 0.3);
+
+    await page.getByRole("button", { name: "Rotate view right (E)" }).click();
+    await page.getByRole("button", { name: "Reset view (0)" }).click();
+    await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
+
+    await page.keyboard.press("q");
+    await page.keyboard.press("0");
+    await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
+  });
+});
+
+test.describe("free orbit on touch", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+
+  test("one-finger drag rotates, a tap still moves", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    await expect(page.getByRole("group", { name: "View" })).toBeVisible();
+    const before = await snapshot(page);
+    // A slow horizontal drag across empty floor (not a swipe).
+    const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
+    const cdp = await page.context().newCDPSession(page);
+    let timestamp = Date.now() / 1000;
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [points[0]], timestamp });
+    for (const p of points.slice(1)) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: (timestamp += 0.05) });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: (timestamp += 0.05) });
+    await cdp.detach();
+    expect(await cameraYaw(page)).toBeLessThan(-0.8);
+    const after = await snapshot(page);
+    expect(after.floor).toBe("L1");
+    expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
+
+    await waitForCameraSettle(page);
+    await page.touchscreen.tap(150, 600);
+    await waitForRoverMove(page, after.rover, 1.5);
+
+    await page.getByRole("button", { name: "Rotate view left (Q)" }).click();
+    await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
+  });
+});
+
+test.describe("orbit on every floor", () => {
+  const yaws = (page: Page) =>
+    page.evaluate(() => {
+      const r = (window as unknown as { __hq: { rover: { cameraYaw: number; cameraRailYaw: number } } }).__hq.rover;
+      return { yaw: r.cameraYaw, rail: r.cameraRailYaw };
+    });
+
+  for (const { path, floor } of [
+    { path: "/en/library", floor: "L4" },
+    { path: "/en/contact", floor: "RF" },
+  ]) {
+    test(`Q/E turn the follow camera freely on ${floor}`, async ({ page }) => {
+      await asReturningVisitor(page);
+      await page.goto(`${path}?tier=lite`);
+      await waitForHQ(page);
+      await waitForPhase(page, "explore", 60_000);
+      expect((await snapshot(page)).floor).toBe(floor);
+      await page.keyboard.down("e");
+      await expect.poll(async () => (await yaws(page)).yaw, { timeout: 30_000 }).toBeGreaterThan(0.6);
+      await page.keyboard.up("e");
+    });
+  }
+
+  test("the L2 rail keeps its side view with limited yaw", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en/journey?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore", 60_000);
+    await page.keyboard.down("e");
+    await expect.poll(async () => (await yaws(page)).rail, { timeout: 30_000 }).toBeGreaterThan(0.55);
+    await page.waitForTimeout(1500);
+    await page.keyboard.up("e");
+    const { rail, yaw } = await yaws(page);
+    expect(rail).toBeLessThanOrEqual((35 * Math.PI) / 180 + 1e-6);
+    expect(yaw).toBe(0);
   });
 });
