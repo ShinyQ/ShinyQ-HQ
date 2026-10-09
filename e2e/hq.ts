@@ -20,6 +20,8 @@ type HQWindow = Window & {
 /** Marks the visitor as returning, so the boot overlay is skipped and only the intro plays. */
 export async function asReturningVisitor(page: Page) {
   await page.addInitScript(() => {
+    // The Rover Terminal auto-opens once per browser; tests open it explicitly.
+    localStorage.setItem("hq:terminal-seen", "1");
     if (!localStorage.getItem("hq:v1")) {
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));
     }

@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale } from "@/content/schema";
+import { HudLaunchers } from "@/hud/HudLaunchers";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitch } from "./LocaleSwitch";
 
@@ -29,6 +30,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
           <span aria-hidden="true" className="animate-pulse text-cyan motion-reduce:animate-none">_</span>
           <span className="sr-only">: {t("backToHq")}</span>
         </Link>
+        <HudLaunchers />
         <LocaleSwitch label={t("language")} />
         <nav aria-label={t("label")} className="order-last -mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 sm:order-none sm:mx-0 sm:w-auto sm:px-0">
           <ul className="flex gap-1 whitespace-nowrap">

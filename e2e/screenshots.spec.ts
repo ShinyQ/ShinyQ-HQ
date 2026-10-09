@@ -1,4 +1,4 @@
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import { asReturningVisitor, waitForFloor, waitForHQ, waitForPhase } from "./hq";
 import { heroPod } from "./routes";
 
@@ -44,6 +44,7 @@ for (const viewport of VIEWPORTS) {
     test(`${page.name} (HTML) @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
       const tab = await context.newPage();
+      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
       await tab.goto(`${page.path}?tier=static`, { waitUntil: "networkidle" });
       await tab.evaluate(() => document.fonts.ready);
       await expect(tab.locator("h1").first()).toBeVisible();
@@ -81,4 +82,31 @@ for (const viewport of VIEWPORTS) {
     await page.screenshot({ path: shot("hq-l2-rail", viewport) });
     await context.close();
   });
+}
+
+const OVERLAYS = [
+  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Missions" }).click() },
+  {
+    name: "palette",
+    open: async (tab: Page) => {
+      await tab.getByRole("button", { name: /Open search/ }).click();
+      await tab.keyboard.type("azure");
+    },
+  },
+];
+
+for (const viewport of VIEWPORTS) {
+  for (const overlay of OVERLAYS) {
+    test(`${overlay.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      const tab = await context.newPage();
+      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+      await tab.goto("/en?tier=static", { waitUntil: "networkidle" });
+      await tab.evaluate(() => document.fonts.ready);
+      await overlay.open(tab);
+      await expect(tab.getByRole("dialog")).toBeVisible();
+      await tab.screenshot({ path: shot(overlay.name, viewport), fullPage: false });
+      await context.close();
+    });
+  }
 }

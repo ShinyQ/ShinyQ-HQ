@@ -237,6 +237,75 @@
     "constructionLabel": "Sedang dibangun",
     "constructionHint": "Baca lantai ini sebagai halaman lewat Quick view",
     "statusSoon": "segera ^_^",
-    "statusHello": "halo!"
+    "statusHello": "halo!",
+    "rooms": {
+      "profile": "Hologram profil",
+      "stats": "Statistik utama",
+      "skills": "Dinding skill",
+      "certifications": "Dinding sertifikasi",
+      "workshop": "Ruang workshop",
+      "publications": "Rak publikasi",
+      "talks": "Panggung talks",
+      "contact": "Terminal komunikasi",
+      "cv": "Kios CV"
+    },
+    "launcher": {
+      "missions": "Misi",
+      "search": "Cari",
+      "searchShortcut": "Buka pencarian ({shortcut})"
+    },
+    "terminal": {
+      "title": "Terminal Rover",
+      "prompt": "rover@hq:~$ ./missions",
+      "greeting": {
+        "morning": "selamat pagi",
+        "afternoon": "selamat siang",
+        "evening": "selamat sore",
+        "night": "selamat malam"
+      },
+      "question": "mau ke mana kita? ^_^",
+      "options": "Misi",
+      "driveMyself": "saya nyetir sendiri",
+      "hint": "1 sampai 8, panah dan Enter, atau Esc",
+      "close": "Tutup terminal"
+    },
+    "palette": {
+      "title": "Palet perintah",
+      "label": "Cari misi, ruangan, tahun dan aksi",
+      "placeholder": "Cari misi, ruangan, tahun, aksi",
+      "results": "Hasil",
+      "empty": "Tidak ada hasil untuk \"{query}\"",
+      "groups": {
+        "missions": "Misi",
+        "recent": "Terakhir dikunjungi",
+        "rooms": "Ruangan",
+        "years": "Tahun",
+        "actions": "Aksi"
+      },
+      "filter": {
+        "pods": "Hanya pod",
+        "rooms": "Hanya ruangan",
+        "posts": "Hanya tulisan"
+      },
+      "clearFilter": "Hapus filter",
+      "hint": "Panah atas dan bawah untuk pindah, Enter untuk menjalankan, Tab untuk lompat grup, Esc untuk menutup",
+      "year": "Tahun {year}",
+      "entries": "{count} entri",
+      "close": "Tutup pencarian"
+    },
+    "actions": {
+      "downloadCv": "Unduh CV",
+      "copyEmail": "Salin email",
+      "toggleLanguage": "Read in English",
+      "toggleSound": "Nyalakan atau matikan suara",
+      "quickView": "Tampilan ringkas"
+    },
+    "status": {
+      "running": "Misi berjalan: {mission}",
+      "cancel": "Batalkan misi",
+      "cancelled": "o_o misi dibatalkan",
+      "copied": "Email tersalin ^_^",
+      "copyFailed": "Gagal menyalin, emailnya {email}"
+    }
   }
 }

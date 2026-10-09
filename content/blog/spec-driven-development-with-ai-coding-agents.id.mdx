@@ -1,0 +1,80 @@
+---
+title: "Spec-driven development bersama AI coding agent"
+date: "2026-10-09"
+excerpt: "Cara saya membangun portal manajemen vendor sebagai satu-satunya engineer dalam sekitar enam minggu: spec bernomor lebih dulu, AI coding agent yang mengimplementasikan di balik CI gate, dan setiap merge saya yang memutuskan. Ditambah bug yang tetap lolos."
+tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-review", "case-study"]
+readingTime: "6 min"
+---
+
+Dari 21 Agustus sampai 4 Oktober 2026, saya membangun portal manajemen vendor untuk sebuah unit bisnis di grup, dan saya satu-satunya engineer di repositori itu. Cakupannya onboarding vendor, purchase order, penerimaan barang, invoice dengan verifikasi pajak, dan approval bertingkat, di atas FastAPI, PostgreSQL, dan Next.js, lalu di-deploy ke Azure App Service. Di akhir periode, ada 51 spec bernomor, 21 domain backend, dan 110 migrasi Alembic. Produknya sendiri tidak punya fitur AI. Cara membangunnya yang memakai AI.
+
+Sebagian besar kode ditulis oleh AI coding agent (GitHub Copilot dan Claude). Bagian saya: menulis spec, merancang arsitektur, me-review pull request, dan memutuskan apa yang boleh di-merge. Tulisan ini menjelaskan kenapa pembagian kerja itu hanya jalan karena spec ditulis lebih dulu, dan bug apa saja yang tetap lolos.
+
+## Kenapa spec dulu, baru kode
+
+Begitu agent yang menulis kode, kecepatan mengetik bukan lagi hambatan. Yang langka justru dua hal: tahu persis apa arti "benar", dan punya cara untuk mengeceknya. Agent bisa menghasilkan approval engine yang kelihatan masuk akal dengan cepat. Tapi apakah itu approval engine yang dibutuhkan bisnis, agent tidak bisa menjawabnya, dan riwayat chat yang panjang bukan tempat yang baik untuk menyimpan jawaban itu.
+
+Karena itu, commit pertama saya bukan kode. Isinya blueprint lengkap yang ditulis dengan GitHub Spec Kit: lima belas spec yang mencakup domain, identitas, data, dan deployment, plus sebuah constitution berisi aturan yang wajib diikuti setiap agent. Setiap spec fitur sesudahnya membawa ID task, ID acceptance criteria, dan ID business rule sendiri. Di akhir proyek, jumlah referensi ID itu di repositori mencapai ribuan.
+
+Spec juga murah untuk diubah selama masih berupa tulisan. Di hari kedua, saya mengganti Cosmos DB di blueprint dengan PostgreSQL karena domainnya butuh integritas relasional dan constraint, lalu mencatat alasannya di decision record. Di hari keempat, saya menjalankan adversarial consistency review terhadap seluruh spec dan memperbaiki 24 defect, kebanyakan berupa spec yang saling bertentangan, sebelum ada agent yang membangun di atasnya. Dua perubahan itu cukup dibayar dengan satu siang mengedit dokumen, bukan dengan migrasi.
+
+## Alur kerjanya
+
+Setiap fitur melewati jalur yang sama:
+
+```
+spec bernomor (ID task, AC, business rule)
+  -> constitution + file konvensi agent
+  -> agent mengerjakan di worktree sendiri
+  -> pull request, CI gate
+  -> saya review, saya merge
+```
+
+Constitution dan file konvensi berisi aturan yang gampang dilanggar tapi mahal kalau baru diperbaiki belakangan. Contohnya two-boundary rule: tier Next.js hanya memegang presentasi dan backend-for-frontend, sedangkan seluruh business logic ada di FastAPI. Contoh lain: permission selalu diturunkan ulang dari database di setiap request, tidak pernah dipercaya dari sisi client.
+
+Untuk tahap yang besar, saya menjalankan beberapa agent secara paralel, masing-masing di git worktree terpisah, lalu mengintegrasikan branch mereka lewat pull request fan-in. CI gate yang membuat semua itu tetap bisa di-review dengan aman. Selain typecheck, lint, build, bundle-size budget, dan ruff, CI juga menjalankan guard yang mengaitkan pekerjaan ke ID spec, drift check untuk TypeScript API client yang di-generate, secret scan, architecture test, dan extended tier yang berjalan di atas service PostgreSQL 16 sungguhan. Deploy hanya jalan setelah CI hijau.
+
+Gate itu benar-benar bekerja. Dari run CI terbaru yang tercatat sejak 1 September, 140 dari 488 gagal. Saya tidak mengklasifikasikan kegagalan itu, jadi saya tidak bisa bilang berapa yang berasal dari kesalahan agent, kesalahan saya, atau gangguan infrastruktur.
+
+Ke-179 pull request semuanya saya buka dan saya merge sendiri. Artinya juga ada hal yang kurang enak diakui: tidak ada reviewer manusia kedua.
+
+## Saat alur kerja dipusatkan ke purchase order
+
+Model awalnya dibangun di sekitar dokumen penerimaan barang. Di bulan September, pihak bisnis menyetujui proses yang direvisi (pada 11 September) yang memindahkan pusat produk ke purchase order: satu PO workspace bersama untuk vendor dan staf internal, dokumen diganti di tempat, dan referensi yang disimpan persis, bukan lagi "dokumen terbaru yang menang". Setelah itu, arahan product owner pada 25 September menghapus approval matrix yang bisa dikonfigurasi, diganti dengan rute yang ditentukan di kode.
+
+Perubahan ini saya tulis sebagai spec bernomor yang baru, dan pivot ke purchase order masuk antara 9 hingga 16 September. Penghapusan approval matrix memakai migrasi expand and contract, jadi data lama tetap bisa dibaca selama routing baru mengambil alih.
+
+Ini penalaran saya, bukan hasil pengukuran: spec membantu karena perubahan itu lebih dulu menjadi diff antar dokumen sebelum menjadi diff di kode. Saya bisa melihat acceptance criteria mana yang tergantikan, memberi agent task yang batasnya jelas terhadap spec baru, dan mengandalkan ledger guard untuk menandai pekerjaan yang tidak punya requirement. Saya tidak punya pembanding, jadi saya tidak bisa bilang berapa banyak waktu yang dihemat.
+
+Biayanya baru terasa belakangan. Spec yang sudah tergantikan meninggalkan kode yang tidak lagi terjangkau, dan kode itu baru saya bersihkan dalam satu putaran khusus test debt dan dead code pada 4 Oktober. Spec memberi tahu agent apa yang harus dibangun. Tidak ada yang memberi tahu apa yang harus dihapus.
+
+## Yang tetap lolos
+
+Repositori tidak mencatat siapa yang menulis tiap baris, saya atau agent. Sebagian besar kode ditulis agent dan semuanya saya setujui, jadi kegagalan berikut saya anggap kesalahan saya.
+
+**CI hijau yang tidak pernah menjalankan integration tier.** Integration test butuh URL database. Kalau URL itu tidak ada, pytest melewati seluruh tier dan CI tetap melaporkan hijau. Begitu suite lengkap dijalankan terhadap PostgreSQL sungguhan, muncul 45 failure dan 301 error, dan 5 di antaranya defect yang nyata. Saya memperbaiki 5 defect itu, membuat kebutuhan database menjadi eksplisit, dan mengoreksi klaim tentang apa yang dicek oleh CI. Test yang di-skip adalah kegagalan yang diam, dan agent yang beriterasi terhadap CI seperti itu tidak punya cara untuk tahu.
+
+**Cookie sesi yang baru rusak dengan data realistis.** Login memakai sealed HttpOnly cookie yang membungkus token bertanda tangan, dan token itu membawa permission user. Dengan 58 permission grant, ukuran cookie mencapai 4.234 sampai 4.491 byte, melewati batas sekitar 4 KB yang diterima browser, dan login staf mengembalikan 500. Test sebelumnya lolos karena fixture memakai signature palsu sepanjang 9 karakter. Saya mencoba memecah cookie (chunking), lalu kompresi (tidak tersedia di edge runtime), dan akhirnya memperbaiki desainnya: token sekarang hanya menyimpan kode yang dibutuhkan UI untuk gating, 2.083 byte, karena backend memang menurunkan ulang permission di setiap request.
+
+**Login yang berhasil, lalu lupa siapa Anda.** Setelah login lewat Entra ID, callback mengembalikan 200, tapi pengecekan sesi berikutnya mengembalikan 401, "session does not exist". Dengan memantau dari koneksi database kedua, saya bisa melihat barisnya sebenarnya ada, hanya saja sedikit terlambat. Dependency FastAPI yang memegang transaksi melakukan commit saat teardown, dan di versi yang saya pin, teardown itu berjalan setelah response terkirim. Browser lebih cepat daripada commit. Ini bukan bug login saja: semua endpoint yang menulis data punya urutan yang sama. Perbaikannya melakukan commit sebelum response dikirim, dan gagal secara eksplisit kalau langkah itu tidak ada.
+
+Tidak satu pun dari ketiganya adalah celah di spec. Masalahnya ada di lifecycle framework, batas browser, dan konfigurasi CI, area yang memang tidak dijelaskan oleh spec. Kesimpulan saya: agent mengikuti spec dan test yang diberikan, dan kalau lingkungan test-nya keliru, agent ikut mewarisi kekeliruan itu.
+
+## Yang akan saya pertahankan dan ubah
+
+Dipertahankan:
+
+- Spec bernomor dengan ID task, acceptance criteria, dan business rule, yang di-review secara adversarial sebelum ada kode.
+- Satu constitution dan file konvensi yang dibaca semua agent, dengan aturan arsitektur yang dijaga oleh test.
+- CI yang mengecek traceability dan kontrak, bukan hanya unit test.
+- Manusia yang memegang merge gate.
+
+Diubah:
+
+- Reviewer manusia kedua untuk autentikasi, approval, dan alur yang berkaitan dengan pembayaran. Memegang semua merge sendirian adalah bagian paling lemah dari alur ini.
+- CI yang fail-closed sejak hari pertama: tier yang di-skip harus membuat build gagal.
+- Fixture yang bentuk dan ukurannya mirip production, plus smoke test di environment yang sudah ter-deploy terhadap identity provider sungguhan sebelum login dianggap selesai.
+- Penghapusan kode sebagai bagian dari setiap spec yang menggantikan spec lama.
+- Pengukuran. Saya tidak mencatat waktu per spec, defect berdasarkan asalnya, atau baseline tanpa agent. Karena itu tulisan ini tidak membuat klaim produktivitas apa pun. Lain kali, saya akan mencatat semuanya sejak spec pertama.
+
+Sekarang saya memakai setup yang sama, GitHub Spec Kit dengan constitution berversi, di setidaknya sembilan repositori. Agent yang mengetik sebagian besar kodenya. Spec, review, dan hasil akhirnya tetap tanggung jawab saya.
