@@ -159,11 +159,11 @@
       "dataset": "Dataset"
     },
     "research": "Research",
-    "researchIntro": "Peer-reviewed papers and the BSc thesis publication.",
+    "researchIntro": "My peer-reviewed papers and BSc thesis publication.",
     "authors": "Authors",
     "doi": "DOI",
     "pdf": "PDF",
-    "code": "Code",
+    "code": "Source code",
     "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
     "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
     "profiles": "Research profiles"
@@ -212,7 +212,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive, or click a spot on the floor. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Quick view opens the portfolio as a page.",
+    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive, or click a spot on the floor. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Quick view opens the portfolio as a page.",
     "floor": "Floor",
     "visited": "Rooms visited",
     "elevator": "Elevator",
@@ -223,7 +223,7 @@
     "pageViewHint": "Show this page without the 3D tower",
     "explore3d": "Explore in 3D",
     "back3d": "Back to 3D",
-    "back3dHint": "Return to the 3D tower (shortcut: 3)",
+    "back3dHint": "Return to the tower in 3D. Press 3.",
     "language": "Language",
     "sound": "Sound",
     "menu": "Menu",
@@ -324,18 +324,18 @@
       "repos": "Public repositories",
       "models": "Hugging Face models",
       "window": "L3 Labs above",
-      "scrubHint": "Swipe left or right to travel through the years"
+      "scrubHint": "Years: swipe left to advance, right to go back"
     },
     "world": {
-      "lectern": "Reading lectern",
+      "lectern": "Reading desk",
       "read": "Read",
-      "comms": "Comms",
-      "cvHint": "Click to download"
+      "comms": "Contact links",
+      "cvHint": "Open CV downloads"
     },
     "view": {
-      "label": "View",
-      "rotateLeft": "Rotate view left (Q)",
-      "rotateRight": "Rotate view right (E)",
+      "label": "View controls",
+      "rotateLeft": "Rotate left (Q)",
+      "rotateRight": "Rotate right (E)",
       "reset": "Reset view (0)"
     }
   },
@@ -397,14 +397,14 @@
       "downloads": "Downloads",
       "cvPage": "Open the CV page",
       "cvPdf": "CV PDF ({locale})",
-      "placings": "Placings",
+      "placings": "Competition results",
       "models": "Hugging Face models",
       "readPost": "Read post",
       "emailMe": "Email me",
       "copyEmail": "Copy email",
-      "copied": "Copied ^_^",
-      "copyFailed": "Could not copy. The address is {email}",
-      "writtenIn": "Written in {languages}"
+      "copied": "Email copied ^_^",
+      "copyFailed": "Could not copy email. Contact me at {email}.",
+      "writtenIn": "Available in {languages} only"
     },
     "directory": "Wing directory",
     "signSoftware": "Software Wing",
@@ -417,6 +417,6 @@
     "previous": "Previous image",
     "next": "Next image",
     "counter": "Image {index} of {total}",
-    "hint": "Use the left and right arrow keys or swipe to move between images. Press Escape to close."
+    "hint": "Images: left/right arrows or swipe · Close: Esc"
   }
 }
