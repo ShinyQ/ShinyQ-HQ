@@ -205,15 +205,51 @@ test.describe("tiers and views", () => {
     await expect(page.getByTestId("hq")).toHaveCount(0);
   });
 
-  test("page view hides the tower and Explore in 3D brings it back", async ({ page }) => {
+  test("page view shows a prominent Back to 3D button right away", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await enterHQ(page);
     await page.getByRole("button", { name: "Page view" }).click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("#site-shell")).not.toHaveAttribute("inert", "");
+    const back = page.getByRole("button", { name: "Back to 3D" });
+    // Visible right away (same render as the switch), without scrolling, and focus lands on the
+    // page content. The timeout only covers slow SwiftShader frames unmounting the canvas.
+    await expect(back).toBeInViewport({ ratio: 1, timeout: 20_000 });
+    await expect(page.locator("#main")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(back).toBeFocused();
+    // Still there after scrolling and across reloads in the same session.
+    await page.mouse.wheel(0, 2000);
+    await expect(back).toBeInViewport({ ratio: 1 });
     await page.reload();
-    await expect(page.getByRole("button", { name: "Explore in 3D" })).toBeVisible();
-    await page.getByRole("button", { name: "Explore in 3D" }).click();
+    await expect(back).toBeInViewport({ ratio: 1 });
+    await back.click();
     await waitForHQ(page);
+  });
+
+  test("the 3 key returns from page view", async ({ page }) => {
+    await enterHQ(page);
+    await page.getByRole("button", { name: "Page view" }).click();
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press("3");
+    await waitForHQ(page);
+  });
+
+  test("a real WebGL context loss falls back to the static page", async ({ page }) => {
+    await enterHQ(page);
+    await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas");
+      canvas?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+    });
+    await expect(page.getByText("Switched to lite view")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("hq")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
+  });
+
+  test("static tier shows no Back to 3D button", async ({ page }) => {
+    await page.goto("/en?tier=static");
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
   });
 
   test("the language toggle resumes on the same floor", async ({ page }) => {

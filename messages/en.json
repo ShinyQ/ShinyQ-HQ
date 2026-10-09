@@ -222,6 +222,8 @@
     "pageView": "Page view",
     "pageViewHint": "Show this page without the 3D tower",
     "explore3d": "Explore in 3D",
+    "back3d": "Back to 3D",
+    "back3dHint": "Return to the 3D tower (shortcut: 3)",
     "language": "Language",
     "sound": "Sound",
     "menu": "Menu",

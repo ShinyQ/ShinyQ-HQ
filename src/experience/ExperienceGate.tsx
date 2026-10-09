@@ -58,6 +58,14 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
+  const back3D = () => {
+    try {
+      sessionStorage.removeItem(VIEW_KEY);
+    } catch {
+      // Storage can be unavailable; the toggle still works for this render.
+    }
+    setView("3d");
+  };
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
   // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
@@ -77,25 +85,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   }
   if (tier === "static") return null;
 
-  if (view === "page") {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          try {
-            sessionStorage.removeItem(VIEW_KEY);
-          } catch {
-            // Storage can be unavailable; the toggle still works for this render.
-          }
-          setView("3d");
-        }}
-        className="glass no-print fixed right-4 bottom-4 z-40 inline-flex min-h-11 items-center gap-2 px-4 font-semibold text-cyan transition hover:text-ink"
-      >
-        <span aria-hidden="true">&#9650;</span>
-        {t("explore3d")}
-      </button>
-    );
-  }
+  if (view === "page") return <BackTo3D onBack={back3D} label={t("back3d")} hint={t("back3dHint")} />;
 
   return createPortal(
     <Experience
@@ -110,8 +100,50 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
           // Ignore storage errors; the view still switches.
         }
         setView("page");
+        // Hand focus to the page content; the Back to 3D button is the first stop on Tab.
+        window.requestAnimationFrame(() => document.getElementById("main")?.focus({ preventScroll: true }));
       }}
     />,
     document.body,
+  );
+}
+
+/**
+ * Page view's way back: a fixed, solid cyan button in the bottom-right corner, visible without
+ * scrolling on every viewport. It is the first focusable element in <main>, and the `3` key
+ * triggers it too.
+ */
+function BackTo3D({ onBack, label, hint }: { onBack: () => void; label: string; hint: string }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "3" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "")) return;
+      if (document.querySelector("[role='dialog'][aria-modal='true']")) return;
+      e.preventDefault();
+      onBack();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onBack]);
+
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      title={hint}
+      aria-keyshortcuts="3"
+      data-testid="back-to-3d"
+      className="no-print fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 inline-flex min-h-12 items-center gap-2.5 rounded-full bg-cyan px-5 font-semibold text-void shadow-[0_0_32px_-4px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4 sm:right-6 sm:bottom-6 sm:min-h-14 sm:px-6 sm:text-[17px]"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z" />
+        <path d="M3 7l9 5 9-5M12 12v10" />
+      </svg>
+      {label}
+      <kbd aria-hidden="true" className="label hidden rounded border border-void/30 px-1.5 py-0.5 text-void/80 sm:inline">
+        3
+      </kbd>
+    </button>
   );
 }

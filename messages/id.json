@@ -222,6 +222,8 @@
     "pageView": "Tampilan halaman",
     "pageViewHint": "Tampilkan halaman ini tanpa menara 3D",
     "explore3d": "Jelajahi dalam 3D",
+    "back3d": "Kembali ke 3D",
+    "back3dHint": "Kembali ke menara 3D (pintasan: 3)",
     "language": "Bahasa",
     "sound": "Suara",
     "menu": "Menu",
