@@ -12,7 +12,7 @@ import { Director } from "./Director";
 const Effects = lazy(() => import("./Effects"));
 
 export interface SceneLabels extends TowerLabels {
-  rover: { soon: string; hello: string };
+  rover: { hello: string };
 }
 
 export function Scene({

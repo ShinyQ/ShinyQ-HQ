@@ -1,3 +1,4 @@
+import type { AutopilotRequest } from "../missions/host3d";
 import type { RoverFace, Vec2 } from "../types";
 
 /**
@@ -23,6 +24,10 @@ export const roverRuntime = {
   cameraForward: { x: -1, z: -1 } as Vec2,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
+  /** Mission autopilot request (see missions/host3d.ts). */
+  autopilot: null as AutopilotRequest | null,
+  /** A mission was cancelled: show o_o for 600 ms. */
+  cancelFlash: false,
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
 };

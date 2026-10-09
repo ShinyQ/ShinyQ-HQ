@@ -5,7 +5,10 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import type { FloorId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
+import { openTerminal } from "@/hud/events";
+import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
+import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
@@ -24,7 +27,7 @@ const lerp2 = (a: Vec2, b: Vec2, t: number): Vec2 => ({ x: a.x + (b.x - a.x) * t
 export interface DirectorProps {
   layouts: Record<FloorId, FloorLayout>;
   held: RefObject<Set<string>>;
-  labels: { soon: string; hello: string };
+  labels: { hello: string };
   onToggleLang: () => void;
 }
 
@@ -49,11 +52,10 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
   });
 
   useEffect(() => {
-    const say = (text: string) => {
-      roverRuntime.status = text;
-      state.current.statusUntil = state.current.now + 2;
-    };
+    const missionRunning = () => store.getState().mission?.status === "running";
     return intents.on((intent: Intent) => {
+      // Any manual world input cancels a running mission and returns control (appendix 02).
+      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel") && missionRunning()) cancelMission();
       const s = store.getState();
       const local = state.current;
       const controller = local.controller;
@@ -91,18 +93,16 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           else if (intent.what === "lang") onToggleLang();
           break;
         case "terminal":
-        case "palette":
-          // The Rover Terminal and the command palette arrive in Phase 5.
           if (s.phase === "explore") {
-            say(labels.soon);
             roverRuntime.hopUntil = local.now + 0.35;
+            openTerminal();
           }
           break;
         default:
           break;
       }
     });
-  }, [store, grids, labels, onToggleLang]);
+  }, [store, grids, onToggleLang]);
 
   useFrame((three, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);
@@ -117,8 +117,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.status = labels.hello;
       local.statusUntil = now + 2;
       roverRuntime.hopUntil = now + 0.35;
+      // First visit: the Rover Terminal opens once the intro hands over (appendix 02 section 4).
+      if (isAutoOpenClaimed() && shouldAutoOpenTerminal()) window.setTimeout(openTerminal, 400);
     }
     local.prevPhase = s.phase;
+
+    if (roverRuntime.cancelFlash) {
+      roverRuntime.cancelFlash = false;
+      local.blockedUntil = now + BLOCKED_FACE_S;
+      local.controller?.clearPath();
+      roverRuntime.target = null;
+    }
 
     local.controller ??= new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
     const controller = local.controller;
@@ -130,6 +139,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     if (input) intents.emit({ type: "move", x: input.x, y: input.y });
     const move = local.pendingMove;
     local.pendingMove = null;
+    if (move && s.mission?.status === "running") cancelMission();
 
     const canDrive = s.phase === "explore" || (s.phase === "elevator" && s.ride?.stage === "toDoor");
     const manual = canDrive && move ? cameraRelative(move, roverRuntime.cameraForward) : null;
@@ -188,8 +198,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       }
       roverRuntime.target = null;
     } else if (s.phase === "explore") {
+      const request = roverRuntime.autopilot;
+      if (request?.state === "pending" && !manual) {
+        const path = findPath(grids[s.floor], controller.pose, request.point);
+        if (path?.length) {
+          controller.setPath(path, true);
+          request.state = "driving";
+        } else request.state = "done";
+      }
       const result = controller.step(dt, manual, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
       if (manual) roverRuntime.target = null;
+      if (request?.state === "driving" && (result.arrived || result.blocked || manual || !controller.following)) request.state = "done";
       if (result.arrived) {
         local.arrivedUntil = now + ARRIVED_FACE_S;
         roverRuntime.flagUntil = now + ARRIVED_FACE_S;

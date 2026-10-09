@@ -11,7 +11,9 @@ import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion
 import { serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore } from "@/store/useHQStore";
-import { READY_FLOORS } from "./config";
+import { buildFloorLayouts, READY_FLOORS } from "./config";
+import { onMissionState, register3DHost } from "./missions/bridge";
+import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { Scene, type SceneLabels } from "./scene/Scene";
@@ -93,6 +95,23 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
     };
   }, []);
 
+  // Missions run against the 3D world while the tower is open (MissionHud proxies to this host).
+  const layouts = useMemo(() => buildFloorLayouts(data.years.length), [data.years.length]);
+  useEffect(() => {
+    const store = getHQStore();
+    const offHost = register3DHost(
+      (deps) => create3DHost(deps, { store, rover: roverRuntime, layouts, years: data.years }),
+      () => store.getState().visited,
+    );
+    const offState = onMissionState((m) =>
+      store.getState().setMission(m.missionId ? { id: m.missionId, step: m.step, status: m.status } : null),
+    );
+    return () => {
+      offHost();
+      offState();
+    };
+  }, [layouts, data.years]);
+
   // URL sync: floors with 3D content get their route; placeholders keep /{locale}.
   useEffect(() => {
     const store = getHQStore();
@@ -113,15 +132,15 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
       lobby: {
         skillsTitle: tHome("skillsTitle"),
         certs: { title: tHome("certsTitle"), verify: tCommon("verify"), inProgress: tCommon("inProgress") },
-        kiosk: { title: t("kioskTitle"), soon: t("kioskSoon") },
+        kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
-      rover: { soon: t("statusSoon"), hello: t("statusHello") },
+      rover: { hello: t("statusHello") },
     }),
     [t, tHome, tCommon],
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
+    <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
       <div ref={world} className="absolute inset-0 touch-none select-none" data-testid="hq-world">
         <Canvas
           dpr={tier === "full" ? [1, 2] : [1, 1.5]}

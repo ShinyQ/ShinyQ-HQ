@@ -7,6 +7,7 @@ import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "@/experience/missions/host";
 import { roomFromPath } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionRunner } from "@/experience/missions/runner";
+import { isAutoOpenClaimed, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { CommandPalette } from "./CommandPalette";
 import { onHudCommand } from "./events";
@@ -87,15 +88,31 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
   }, []);
 
   const runner: MissionRunner = useMemo(() => {
-    const host: MissionHost = createStaticHost({
+    const deps: HostDeps = {
       locale,
       rooms: index.rooms,
       navigate: (href) => router.push(href),
-      onSay: (text, ms) => say(text, ms),
-      onPalette: (next) => showPalette(next ?? null),
-    });
-    return createMissionRunner({ host, missions: index.missions, rooms: index.rooms, visited: readRecent });
+      say: (text, ms) => say(text, ms),
+      openPalette: (next) => showPalette(next ?? null),
+    };
+    const staticHost = createStaticHost({ ...deps, onSay: deps.say, onPalette: deps.openPalette });
+    // The 3D experience registers its own host while it is open (see missions/bridge.ts).
+    const current = () => resolveHost(deps, staticHost);
+    const host: MissionHost = {
+      get isStatic() {
+        return current().isStatic;
+      },
+      elevator: (floor, ctx) => current().elevator(floor, ctx),
+      driveTo: (target, ctx) => current().driveTo(target, ctx),
+      openRoom: (room, tab, ctx) => current().openRoom(room, tab, ctx),
+      say: (text, ms, ctx) => current().say(text, ms, ctx),
+      openPalette: (filter, ctx) => current().openPalette(filter, ctx),
+      finish: (status, id) => current().finish?.(status, id),
+    };
+    return createMissionRunner({ host, missions: index.missions, rooms: index.rooms, visited: () => visitedRooms() ?? readRecent() });
   }, [locale, index, router, say, showPalette]);
+
+  useEffect(() => registerRunner(runner), [runner]);
 
   const entries = useMemo(() => buildPaletteEntries(index, STATIC_ACTIONS), [index]);
   const terminalMissions = useMemo(() => orderTerminalMissions(index.missions, visit), [index.missions, visit]);
@@ -105,7 +122,10 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     const visitTimer = window.setTimeout(() => setVisit(countVisit()), 0);
     const autoTimer =
       autoOpenOnLobby && pathname === `/${locale}` && shouldAutoOpenTerminal()
-        ? window.setTimeout(showTerminal, AUTO_OPEN_DELAY_MS)
+        ? window.setTimeout(() => {
+            // In 3D the terminal opens after the intro instead (Director).
+            if (!isAutoOpenClaimed()) showTerminal();
+          }, AUTO_OPEN_DELAY_MS)
         : undefined;
     const offCommand = onHudCommand((command) => (command.type === "terminal" ? showTerminal() : showPalette(command.filter ?? null)));
     const onKeyDown = (event: KeyboardEvent) => {

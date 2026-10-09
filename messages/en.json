@@ -233,10 +233,9 @@
     "skipIntro": "Skip intro",
     "staticNotice": "Switched to lite view",
     "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskSoon": "Missions come online soon",
+    "kioskHint": "Click the kiosk or the rover for missions",
     "constructionLabel": "Under construction",
     "constructionHint": "Read this floor as a page in Quick view",
-    "statusSoon": "soon ^_^",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",

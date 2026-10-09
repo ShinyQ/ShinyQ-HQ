@@ -9,13 +9,13 @@ import { FONTS, GlassBox } from "../../tower/primitives";
 
 export interface KioskLabels {
   title: string;
-  soon: string;
+  hint: string;
 }
 
-/** Diegetic mirror of the Rover Terminal missions. The runner arrives in Phase 5, so it is a placeholder. */
+/** Diegetic mirror of the Rover Terminal missions; clicking it opens the terminal. */
 export function MissionKiosk({ missions, labels }: { missions: ExperienceData["missions"]; labels: KioskLabels }) {
   const { x, z, w, d } = LOBBY.kiosk;
-  const lines = [labels.title, ...missions.slice(0, 5).map((m, i) => `${i + 1}. ${m.label}`), "", `> ${labels.soon}`].join("\n");
+  const lines = [labels.title, ...missions.slice(0, 5).map((m, i) => `${i + 1}. ${m.label}`), "", `> ${labels.hint}`].join("\n");
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     intents.emit({ type: "terminal" });

@@ -27,6 +27,11 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const keys = held.current;
     const onKeyDown = (e: KeyboardEvent) => {
+      // Modal HUD overlays (boot, Rover Terminal, palette) own the keyboard while open.
+      if (document.querySelector("[role='dialog'][aria-modal='true']")) {
+        keys.clear();
+        return;
+      }
       const target = e.target instanceof Element ? e.target : null;
       const inText = Boolean(target?.closest(TEXT_INPUT));
       const inControl = Boolean(target?.closest(CONTROL));

@@ -233,10 +233,9 @@
     "skipIntro": "Lewati intro",
     "staticNotice": "Beralih ke tampilan ringan",
     "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskSoon": "Misi segera hadir",
+    "kioskHint": "Klik kiosk atau rover untuk membuka misi",
     "constructionLabel": "Sedang dibangun",
     "constructionHint": "Baca lantai ini sebagai halaman lewat Quick view",
-    "statusSoon": "segera ^_^",
     "statusHello": "halo!",
     "rooms": {
       "profile": "Hologram profil",

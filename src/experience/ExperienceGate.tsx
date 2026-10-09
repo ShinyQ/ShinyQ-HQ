@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { decideTier, readTierInputs } from "@/lib/gpu-tier";
+import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData, GpuTier } from "./types";
 
@@ -41,6 +42,13 @@ export function ExperienceGate({ data }: { data: ExperienceData }) {
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = mounted ? (lost ? "static" : detectTier()) : null;
+  const immersive = tier !== null && tier !== "static" && view === "3d";
+
+  // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
+  useEffect(() => {
+    claimAutoOpen(immersive);
+    return () => claimAutoOpen(false);
+  }, [immersive]);
 
   if (!tier) return null;
 

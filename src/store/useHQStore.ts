@@ -71,6 +71,8 @@ export interface HQState {
   openRoom: (room: RoomId) => void;
   closeRoom: () => void;
   startMission: (id: string) => void;
+  /** Mirrors the mission runner state without changing the phase (the rover keeps driving in explore). */
+  setMission: (mission: MissionState | null) => void;
   cancelMission: () => void;
   markVisited: (room: RoomId) => void;
   setLocale: (locale: Locale) => void;
@@ -145,6 +147,7 @@ export function createHQStore(storage?: StateStorage) {
         },
         closeRoom: () => set({ activeRoom: null, phase: "explore" }),
         startMission: (id) => set({ mission: { id, step: 0, status: "running" }, phase: "autopilot" }),
+        setMission: (mission) => set({ mission }),
         cancelMission: () => {
           const { mission } = get();
           if (mission?.status === "running") set({ mission: { ...mission, status: "cancelled" }, phase: "explore" });

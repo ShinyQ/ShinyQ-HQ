@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { LOCALES, type Locale } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
+import { HudLaunchers } from "./HudLaunchers";
 import { useHQStore } from "@/store/useHQStore";
 
 function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
@@ -50,6 +51,7 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
   );
 }
 
+const launcher = "glass inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
 const pill = "glass inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
 
 /** Desktop and tablet top-right controls (appendix 04 section 2). */
@@ -57,6 +59,7 @@ export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleL
   const t = useTranslations("hud");
   return (
     <div className="pointer-events-auto absolute top-4 right-4 flex items-center gap-2">
+      <HudLaunchers buttonClassName={launcher} />
       <Link href="/quick" className={pill}>
         {t("quickView")}
       </Link>
@@ -76,7 +79,9 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
   const id = useId();
   return (
     <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2">
-      <button
+      <div className="flex items-center gap-2">
+        <HudLaunchers buttonClassName={launcher} />
+        <button
         type="button"
         aria-expanded={open}
         aria-controls={id}
@@ -86,8 +91,9 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-        </svg>
-      </button>
+          </svg>
+        </button>
+      </div>
       {open && (
         <div id={id} className="glass flex w-56 flex-col gap-2 p-3">
           <Link href="/quick" className={`${pill} justify-center`}>

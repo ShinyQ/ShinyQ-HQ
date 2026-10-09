@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
 
@@ -229,5 +230,48 @@ test.describe("tiers and views", () => {
     await expect(sound).toHaveAttribute("aria-pressed", "true");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hq:v1") ?? "{}").state.sound);
     expect(saved).toBe(true);
+  });
+});
+
+test.describe("missions in 3D", () => {
+  test("the HUD Missions button runs hire through the tower", async ({ page }) => {
+    const errors = collectErrors(page);
+    await enterHQ(page);
+    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
+    await expect(terminal).toBeVisible();
+    await page.keyboard.press("5");
+    await expect(terminal).toBeHidden();
+    // The rover drives to the elevator and rides to the Roof before the contact page opens.
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride !== null);
+    await expect(page).toHaveURL(/\/en\/contact$/, { timeout: 60_000 });
+    expect(errors).toEqual([]);
+  });
+
+  test("manual input cancels a running mission", async ({ page }) => {
+    await enterHQ(page);
+    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    await page.getByRole("option", { name: /Walk me through your journey/ }).click();
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "running");
+    await page.keyboard.down("s");
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "cancelled");
+    await page.keyboard.up("s");
+    expect((await snapshot(page)).floor).toBe("L1");
+  });
+
+  test("the terminal opens after the intro on the first visit", async ({ page }) => {
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await page.waitForTimeout(1200);
+    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Skip intro" }).click();
+    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("the 3D HUD has no serious accessibility violations", async ({ page }) => {
+    await enterHQ(page);
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
   });
 });

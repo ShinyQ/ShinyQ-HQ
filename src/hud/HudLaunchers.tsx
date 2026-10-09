@@ -8,10 +8,11 @@ const noop = () => () => {};
 const isApple = () => /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent);
 
 /** Header entry points for the missions HUD: Rover Terminal and command palette (⌘K). */
-export function HudLaunchers() {
+export function HudLaunchers({ buttonClassName }: { buttonClassName?: string } = {}) {
   const t = useTranslations("hud.launcher");
   const shortcut = useSyncExternalStore(noop, () => (isApple() ? "⌘K" : "Ctrl K"), () => "Ctrl K");
   const button =
+    buttonClassName ??
     "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border border-glass-border px-2.5 text-sm text-ink-2 transition hover:border-cyan/50 hover:text-ink";
   return (
     <div className="flex items-center gap-1.5">
