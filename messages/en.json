@@ -200,5 +200,76 @@
   "root": {
     "redirecting": "Opening ShinyQ HQ…",
     "choose": "Choose a language"
+  },
+  "hud": {
+    "rooms": {
+      "profile": "Profile hologram",
+      "stats": "Headline stats",
+      "skills": "Skills wall",
+      "certifications": "Certifications wall",
+      "workshop": "Workshop annex",
+      "publications": "Publications shelf",
+      "talks": "Talks stage",
+      "contact": "Comms terminals",
+      "cv": "CV kiosk"
+    },
+    "launcher": {
+      "missions": "Missions",
+      "search": "Search",
+      "searchShortcut": "Open search ({shortcut})"
+    },
+    "terminal": {
+      "title": "Rover Terminal",
+      "prompt": "rover@hq:~$ ./missions",
+      "greeting": {
+        "morning": "good morning",
+        "afternoon": "good afternoon",
+        "evening": "good evening",
+        "night": "hello, night owl"
+      },
+      "question": "where should we go? ^_^",
+      "options": "Missions",
+      "driveMyself": "drive myself",
+      "hint": "1 to 8, arrows and Enter, or Esc",
+      "close": "Close terminal"
+    },
+    "palette": {
+      "title": "Command palette",
+      "label": "Search missions, rooms, years and actions",
+      "placeholder": "Search missions, rooms, years, actions",
+      "results": "Results",
+      "empty": "No results for \"{query}\"",
+      "groups": {
+        "missions": "Missions",
+        "recent": "Recent",
+        "rooms": "Rooms",
+        "years": "Years",
+        "actions": "Actions"
+      },
+      "filter": {
+        "pods": "Pods only",
+        "rooms": "Rooms only",
+        "posts": "Posts only"
+      },
+      "clearFilter": "Clear filter",
+      "hint": "Up and down to move, Enter to run, Tab to jump groups, Esc to close",
+      "year": "Year {year}",
+      "entries": "{count, plural, one {# entry} other {# entries}}",
+      "close": "Close search"
+    },
+    "actions": {
+      "downloadCv": "Download CV",
+      "copyEmail": "Copy email",
+      "toggleLanguage": "Baca dalam Bahasa Indonesia",
+      "toggleSound": "Toggle sound",
+      "quickView": "Quick view"
+    },
+    "status": {
+      "running": "Mission running: {mission}",
+      "cancel": "Cancel mission",
+      "cancelled": "o_o mission cancelled",
+      "copied": "Email copied ^_^",
+      "copyFailed": "Could not copy, email is {email}"
+    }
   }
 }

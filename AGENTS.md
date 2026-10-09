@@ -43,10 +43,13 @@ src/
   content/safety.ts             blocklist loading and forbidden patterns
   i18n/                         next-intl routing, request config, navigation, assertLocale
   lib/                          format (Intl dates), accent class maps, site metadata helpers
-  experience/ hud/ store/       reserved for Phases 1 to 5 (main spec section 4.3)
-tests/unit/                     Vitest: schema, selectors, format, safety helpers
+  experience/missions/          pure mission system: host.ts (MissionHost), rooms.ts (room catalog), runner.ts, surprise.ts, staticHost.ts
+  hud/                          RoverTerminal, CommandPalette, search, MissionHud (static wiring), HudLaunchers, events
+  experience/* store/           other folders reserved for Phases 1 to 5 (main spec section 4.3)
+tests/unit/                     Vitest: schema, selectors, format, safety helpers, missions, search
+tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud
 tests/content/                  Vitest: dataset, public safety, assets
-e2e/                            Playwright smoke tests and opt-in screenshots
+e2e/                            Playwright smoke tests, missions + axe, opt-in screenshots
 ```
 
 ## Content access
@@ -55,6 +58,14 @@ e2e/                            Playwright smoke tests and opt-in screenshots
 - Types come from `@/content/schema` (`Pod`, `TimelineEntry`, `Mission`, `MissionStep`, `RoomId`, `Locale`, ...). Do not redeclare them.
 - Room ids are `${FloorId}:${slug}` (`L3:voice-ai-contact-center`, `L2:jenius-2024`, `RF:contact`). `id === slug` for pods and timeline entries.
 - Schema additions beyond appendix 06 (keep them documented here): `Confidence` also allows `"self-reported"` (C4); `Profile.monogram/subheadline/currentRole/timezone/story/principles`; `Certification.code`; `TimelineEntry.url/confidence`; `Pod.client`; `PostRef.url` (external posts such as Medium get no `/blog` page); `Contact.medium`; `SideProject.year`; top-level `awards[]`; mission steps `{ kind: "palette", filter }` and `{ kind: "surprise" }`.
+
+## Missions and HUD
+
+- The runner (`createMissionRunner`) is framework-free and talks to the world only through `MissionHost` (`src/experience/missions/host.ts`). The static tier uses `createStaticHost` (route navigation, one page load per mission); the 3D tier implements the same interface on top of the store. Never import React, the store or three.js into `experience/missions/`.
+- Rooms come from `buildRoomCatalog` (`rooms.ts`). Room ids beyond pods, career entries and posts: `L1:profile`, `L1:stats`, `L1:skills`, `L1:certifications`, `L2:workshop`, `L4:publications`, `L4:talks`, `RF:contact`, `RF:cv`. Every room has a static `path` (open) and `floorPath` (drive).
+- The layout builds a serializable `HudIndex` on the server (`src/hud/index-data.ts`) so zod and the dataset never ship to the client. HUD components get data through props.
+- Open HUD overlays from anywhere with `openPalette(filter?)` / `openTerminal()` from `src/hud/events.ts` (window `hq:hud` events).
+- localStorage keys owned by the HUD: `hq:terminal-seen` (first-visit auto-open, Lobby only), `hq:recent` (recent rooms on the static tier), `hq:visits` (alternates best-swe and best-ai). Tests and screenshots that must not see the auto-open terminal set `hq:terminal-seen`.
 
 ## i18n
 

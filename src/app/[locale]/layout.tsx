@@ -3,7 +3,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getProfile } from "@/content/load";
+import { getContent, getProfile } from "@/content/load";
+import { buildHudIndex } from "@/hud/index-data";
+import { MissionHud } from "@/hud/MissionHud";
 import { assertLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
 import { SITE_URL, pageMetadata } from "@/lib/site";
@@ -47,6 +49,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             {children}
           </main>
           <SiteFooter locale={locale} />
+          <MissionHud locale={locale} index={buildHudIndex(getContent())} />
         </NextIntlClientProvider>
       </body>
     </html>
