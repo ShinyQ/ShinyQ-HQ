@@ -1,0 +1,111 @@
+name: Deploy
+
+# Production deploy of the static export to Cloudflare Pages.
+# Nothing deploys until the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+# secrets and the CF_PAGES_PROJECT repository variable are all set.
+# The Pages project's production branch must be `main`, otherwise the
+# `--branch=main` deploy below is published as a preview. See docs/deploy.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+
+jobs:
+  build:
+    name: Build, CV and e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Set site URL
+        # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
+        # default in src/lib/site.ts applies otherwise.
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          if [ -n "$SITE_URL" ]; then
+            echo "NEXT_PUBLIC_SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
+          fi
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Build static export and CV PDFs
+        run: bun run build
+      - name: Playwright smoke tests
+        run: bun run e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-deploy
+          path: playwright-report/
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-production
+          path: out/
+          retention-days: 30
+
+  deploy:
+    name: Cloudflare Pages production
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+    steps:
+      - name: Check deploy configuration
+        id: gate
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] && [ -n "$CF_PAGES_PROJECT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID or the CF_PAGES_PROJECT variable is not set; skipping the production deploy."
+          fi
+      - uses: actions/download-artifact@v8
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          name: site-production
+          path: out
+      - uses: oven-sh/setup-bun@v2
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          bunx wrangler@3 pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true | tee deploy.log
+          URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Summary
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
+        run: |
+          {
+            echo "Deployed ${{ github.sha }} to Cloudflare Pages project \`$CF_PAGES_PROJECT\`."
+            echo ""
+            echo "- Deployment: ${{ steps.deploy.outputs.url }}"
+            echo "- Production: $SITE_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

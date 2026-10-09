@@ -1,0 +1,33 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "bun scripts/serve-static.ts --port 4320 --dir out",
+      "startServerReadyPattern": "Serving",
+      "startServerReadyTimeout": 30000,
+      "url": [
+        "http://127.0.0.1:4320/en",
+        "http://127.0.0.1:4320/en/quick",
+        "http://127.0.0.1:4320/en/labs/voice-ai-contact-center"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "chromeFlags": "--no-sandbox"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500, "aggregationMethod": "median-run" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.05, "aggregationMethod": "median-run" }],
+        "total-blocking-time": ["error", { "maxNumericValue": 300, "aggregationMethod": "median-run" }],
+        "resource-summary:script:size": ["warn", { "maxNumericValue": 358400 }],
+        "categories:performance": ["warn", { "minScore": 0.8 }],
+        "categories:accessibility": ["warn", { "minScore": 0.9 }],
+        "categories:seo": ["warn", { "minScore": 0.9 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
+    }
+  }
+}
