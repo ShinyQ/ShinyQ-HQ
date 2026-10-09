@@ -1,0 +1,74 @@
+"use client";
+
+import { Suspense } from "react";
+import type { FloorId } from "@/content/schema";
+import { useHQStore } from "@/store/useHQStore";
+import { COLORS, FLOOR_IDS, floorIndex, floorY } from "../config";
+import { Lobby, type LobbyLabels } from "../floors/Lobby";
+import type { ExperienceData, FloorLayout, GpuTier } from "../types";
+import { ElevatorShaft } from "./ElevatorShaft";
+import { FloorLevel } from "./FloorLevel";
+import { PlaceholderFloor, type PlaceholderLabels } from "./PlaceholderFloor";
+import { BoxEdges } from "./primitives";
+
+export interface TowerLabels {
+  placeholder: PlaceholderLabels;
+  lobby: LobbyLabels;
+}
+
+const FRAME_TOP = floorY("RF") + 10;
+
+/** Floors render full detail only next to the current floor or the ride target; the rest are silhouettes. */
+function nearFloors(floor: FloorId, target: FloorId | null, exterior: boolean): FloorId[] {
+  return FLOOR_IDS.filter((id) => {
+    if (exterior && id === "L1") return true;
+    const d = Math.abs(floorIndex(id) - floorIndex(floor));
+    const dt = target ? Math.abs(floorIndex(id) - floorIndex(target)) : Infinity;
+    return Math.min(d, dt) <= 1;
+  });
+}
+
+export function Tower({
+  layouts,
+  data,
+  labels,
+  tier,
+}: {
+  layouts: Record<FloorId, FloorLayout>;
+  data: ExperienceData;
+  labels: TowerLabels;
+  tier: GpuTier;
+}) {
+  const floor = useHQStore((s) => s.floor);
+  const target = useHQStore((s) => s.ride?.to ?? null);
+  const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
+  const near = nearFloors(floor, target, exterior);
+
+  return (
+    <group name="tower">
+      {FLOOR_IDS.map((id) => {
+        const isNear = near.includes(id);
+        return (
+          <FloorLevel key={id} layout={layouts[id]} near={isNear} interactive={id === floor}>
+            {isNear && (
+              <Suspense fallback={null}>
+                {id === "L1" ? (
+                  <Lobby data={data} labels={labels.lobby} tier={tier} />
+                ) : (
+                  <PlaceholderFloor
+                    layout={layouts[id]}
+                    name={data.floors[id].name}
+                    labels={labels.placeholder}
+                    years={id === "L2" && (floor === "L2" || target === "L2") ? data.years : undefined}
+                  />
+                )}
+              </Suspense>
+            )}
+          </FloorLevel>
+        );
+      })}
+      <ElevatorShaft layouts={layouts} near={near} />
+      <BoxEdges size={[108, FRAME_TOP + 1, 48]} position={[0, FRAME_TOP / 2 - 0.5, 0]} color={COLORS.grid} opacity={0.22} />
+    </group>
+  );
+}

@@ -87,7 +87,8 @@ export interface HQState {
 export const STORE_KEY = "hq:v1";
 const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal"];
 
-export const initialRover: RoverState = { x: 0, z: 6, heading: Math.PI, speed: 0, face: "idle" };
+/** Spawn at the Lobby spawn point, turned toward the default follow camera so the face greets the visitor. */
+export const initialRover: RoverState = { x: 0, z: 6, heading: Math.PI / 4, speed: 0, face: "idle" };
 
 function resolveTarget(base: FloorId, target: ElevatorTarget): FloorId | undefined {
   if (target === "up") return FLOOR_IDS[floorIndex(base) + 1];
