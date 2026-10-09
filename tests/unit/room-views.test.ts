@@ -95,4 +95,17 @@ describe("room views (Glass Drawer content)", () => {
     expect(view.gallery).toHaveLength(pod.assets.length);
     expect(view.gallery[0]).toMatchObject({ src: pod.assets[0].src, alt: pod.assets[0].alt.id, thumb: pod.assets[0].src.replace(/\.webp$/, ".thumb.webp") });
   });
+
+  it("gives career rooms org logos, stack logos and galleries from their pods", () => {
+    const views = buildRoomViews("en");
+    const jenius = views["L2:jenius-2024"];
+    expect(jenius.logo).toEqual({ src: "/logos/jenius.webp", alt: "Jenius logo" });
+    expect(jenius.stack.find((s) => s.name === "Kafka")?.logo).toBe("/tech/kafka.svg");
+    const shumi = views["L2:shumi-2019"];
+    expect(shumi.gallery.length).toBeGreaterThan(1);
+    expect(shumi.gallery[0].src).toMatch(/^\/media\/anime-figure-ecommerce\//);
+    const metrodata = views["L2:metrodata-2026"];
+    expect(metrodata.gallery.length).toBeGreaterThan(3);
+    expect(new Set(metrodata.gallery.map((g) => g.src.split("/")[2])).size).toBe(metrodata.gallery.length);
+  });
 });

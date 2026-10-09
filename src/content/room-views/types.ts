@@ -85,6 +85,8 @@ export interface RoomView {
   code: string;
   title: string;
   subtitle?: string;
+  /** Organization logo shown next to the subtitle (career rooms). */
+  logo?: { src: string; alt: string };
   /** Header metadata line items (role, period, client, org). */
   meta: string[];
   /** Small badges next to the code (tier, wing, type). */
