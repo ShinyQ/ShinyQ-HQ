@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { loadRoomViews } from "./data";
 import { drawerLayout } from "./layout";
 import { RoomDrawer } from "./RoomDrawer";
-import { createRoomUrlSync } from "./urlSync";
+import { createRoomUrlSync, leaveRoomForPage } from "./urlSync";
 
 function subscribeResize(onChange: () => void) {
   window.addEventListener("resize", onChange);
@@ -139,6 +139,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
         } catch {
           // Without storage the next page opens in 3D, which still shows the room.
         }
+        leaveRoomForPage();
         getHQStore().getState().closeRoom();
       }}
     />

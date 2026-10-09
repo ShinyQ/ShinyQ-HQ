@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { StateStorage } from "zustand/middleware";
-import { createRoomUrlSync, withView, type UrlEnv } from "@/hud/drawer/urlSync";
+import { createRoomUrlSync, leaveRoomForPage, withView, type UrlEnv } from "@/hud/drawer/urlSync";
 import { createHQStore, type HQStore } from "@/store/useHQStore";
 
 const memory = (): StateStorage => {
@@ -84,6 +84,33 @@ describe("room URL sync", () => {
     // Closing went back instead of adding an entry, so Back now leaves the floor page.
     store.getState().openRoom("L3:voice-ai");
     expect(h.entries).toHaveLength(2);
+    off();
+  });
+
+  it("leaves the URL alone when the room closes for a page link, so the navigation is not cancelled", () => {
+    const h = fakeEnv("/en/labs?tier=lite");
+    const off = createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true });
+    store.getState().openRoom("L3:voice-ai");
+    leaveRoomForPage();
+    store.getState().closeRoom();
+    expect(h.url()).toBe("/en/labs/voice-ai?tier=lite");
+    expect(h.entries).toHaveLength(2);
+    // The flag is consumed: a normal close goes back again.
+    store.getState().openRoom("L3:fraud");
+    store.getState().closeRoom();
+    expect(h.url()).toBe("/en/labs?tier=lite");
+    off();
+  });
+
+  it("keeps rooms without their own page on the floor URL", () => {
+    store.getState().resume("L4");
+    const h = fakeEnv("/en/library?tier=lite");
+    const off = createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true, hasPage: (room) => room === "L4:hosted" });
+    store.getState().openRoom("L4:research");
+    expect(h.url()).toBe("/en/library?tier=lite");
+    store.getState().closeRoom();
+    store.getState().openRoom("L4:hosted");
+    expect(h.url()).toBe("/en/blog/hosted?tier=lite");
     off();
   });
 

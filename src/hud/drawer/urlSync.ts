@@ -27,6 +27,16 @@ interface RoomEntry {
   hqPushed?: boolean;
 }
 
+let leaving = false;
+
+/**
+ * Call before closing the room for a page link ("Read post", "Full case study"): the router is about
+ * to navigate, so the close must not run `history.back()` or rewrite the URL, which would cancel it.
+ */
+export function leaveRoomForPage() {
+  leaving = true;
+}
+
 /** Keeps the query (e.g. `?tier=lite`) and sets or removes `view=architecture`. */
 export function withView(path: string, search: string, view: HQView): string {
   const params = new URLSearchParams(search);
@@ -81,6 +91,7 @@ export function createRoomUrlSync({
     // While a back() is in flight, only replace; the popstate handler resyncs afterwards.
     if (s.activeRoom && !prev.activeRoom && !pendingBack) write("push", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
     else if (s.activeRoom) write("replace", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
+    else if (prev.activeRoom && leaving) leaving = false;
     else if (prev.activeRoom && s.floor === prev.floor) {
       const top = entry();
       if (top?.hqPushed && top.hqRoom === prev.activeRoom && !pendingBack) {
