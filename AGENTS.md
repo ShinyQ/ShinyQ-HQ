@@ -27,14 +27,17 @@ content/
   .safety-blocklist.local.txt   PRIVATE, gitignored; real codenames and repo names
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
+public/_headers, _redirects     Cloudflare Pages headers (CSP, caching) and redirects (/cv.pdf)
 scripts/
   build-cv.ts                   prints /{locale}/cv to out/cv/*.pdf after next build
-  serve-static.ts               serves out/ like Cloudflare Pages (used by e2e and CV)
+  serve-static.ts               serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, CV, Lighthouse)
   validate-fragment.ts          schema + safety check for content files
 src/
   app/(root)/                   "/" language redirect (own root layout)
   app/[locale]/                 all localized routes (root layout with <html lang>)
   app/global-not-found.tsx      404.html
+  app/sitemap.ts, robots.ts     static metadata routes (all locales, hreflang alternates)
+  app/og/[...path]/route.tsx    build-time OG PNGs: /og/{locale}.png, /og/{locale}/{labs,blog}/{slug}.png
   components/                   static-page UI (server components unless noted)
   content/schema.ts             zod schemas, types via z.infer (appendix 06 + additions below)
   content/load.ts               getContent() and typed accessors
@@ -43,10 +46,15 @@ src/
   content/safety.ts             blocklist loading and forbidden patterns
   i18n/                         next-intl routing, request config, navigation, assertLocale
   lib/                          format (Intl dates), accent class maps, site metadata helpers
+  lib/site.ts                   SITE_URL, pageMetadata, ogImagePath, beacon token
+  lib/routes.ts                 allPagePaths() for the sitemap (keep in sync with generateStaticParams)
+  lib/jsonld.ts                 schema.org Person, WebSite, CreativeWork (pods), BlogPosting (posts)
+  lib/og.tsx, og-cards.ts       Neon Grid OG card renderer and the list of cards
+  lib/audio/                    procedural Web Audio engine + useAudio hook (see its README)
   experience/missions/          pure mission system: host.ts (MissionHost), rooms.ts (room catalog), runner.ts, surprise.ts, staticHost.ts
   hud/                          RoverTerminal, CommandPalette, search, MissionHud (static wiring), HudLaunchers, events
   experience/* store/           other folders reserved for Phases 1 to 5 (main spec section 4.3)
-tests/unit/                     Vitest: schema, selectors, format, safety helpers, missions, search
+tests/unit/                     Vitest: schema, selectors, format, safety helpers, missions, search, SEO, audio
 tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud
 tests/content/                  Vitest: dataset, public safety, assets
 e2e/                            Playwright smoke tests, missions + axe, opt-in screenshots
@@ -72,7 +80,8 @@ e2e/                            Playwright smoke tests, missions + axe, opt-in s
 - Locales `en` (default) and `id`, always prefixed. `/` is a static page that redirects using `localStorage["hq:locale"]`, then `navigator.language`.
 - In server components call `assertLocale((await params).locale)` then `setRequestLocale(locale)`, and use `getTranslations({ locale, namespace })`.
 - Use `Link` from `@/i18n/navigation` for internal links (it adds the locale prefix). Dates go through `src/lib/format.ts` (`formatYearMonth`, `formatPeriod`, `formatDate`); ranges are written "X to Y" / "X hingga Y", never with dashes.
-- Metadata: `pageMetadata({ locale, path, title, description })` from `src/lib/site.ts` adds canonical and `hreflang` alternates.
+- Metadata: `pageMetadata({ locale, path, title, description, type?, publishedTime?, tags?, image? })` from `src/lib/site.ts` adds canonical, `hreflang` alternates, Open Graph and Twitter cards. `image` defaults to `/og/{locale}.png`; use `ogImagePath(...)` for pod and post cards. A page that sets `openGraph` replaces the parent's, so always go through `pageMetadata`.
+- New page routes must be added to `src/lib/routes.ts` (sitemap). New pods and hosted posts get OG cards and sitemap entries automatically.
 
 ## Styling
 
@@ -91,7 +100,10 @@ e2e/                            Playwright smoke tests, missions + axe, opt-in s
 - Package manager: Bun. Scripts: `dev`, `build` (export + CV PDFs), `build:web`, `typecheck` (`next typegen && tsc`), `lint`, `test`, `e2e`, `screenshots`, `serve`, `validate:content`.
 - Before pushing: `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`). Prefer the `rtk` git wrapper. One PR per phase; do not merge without the owner.
-- CI (`.github/workflows/ci.yml`) runs check, build + e2e, and a Cloudflare Pages preview to the separate `shinyq-hq` project only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist. Production (`kurniadi.pages.dev`) is Phase 6 only.
+- CI (`.github/workflows/ci.yml`) runs check, build + e2e, a non-blocking Lighthouse CI job (`lighthouserc.json`, appendix 08 budgets), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
+- Production (`.github/workflows/deploy.yml`) deploys `out/` on push to `main` only when both secrets and the `CF_PAGES_PROJECT` variable are set. Owner setup: `docs/deploy.md`.
+- Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset, from `vars.CF_BEACON_TOKEN`).
+- Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add.
 
 ## Next.js version notes
 
