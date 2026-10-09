@@ -10,6 +10,7 @@ const RADIUS = 60;
 export function Joystick() {
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
+  const active = useRef<number | null>(null);
 
   const update = (e: PointerEvent<HTMLDivElement>) => {
     const rect = base.current?.getBoundingClientRect();
@@ -26,7 +27,9 @@ export function Joystick() {
     setKnob({ x: dx * RADIUS, y: dy * RADIUS });
   };
 
-  const release = () => {
+  const release = (e: PointerEvent<HTMLDivElement>) => {
+    if (active.current !== e.pointerId) return;
+    active.current = null;
     setJoystick(0, 0, false);
     setKnob({ x: 0, y: 0 });
   };
@@ -38,11 +41,16 @@ export function Joystick() {
       aria-hidden="true"
       data-testid="joystick"
       onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
+        active.current = e.pointerId;
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // Capture can fail for synthetic pointers; tracking the id is enough.
+        }
         update(e);
       }}
       onPointerMove={(e) => {
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) update(e);
+        if (active.current === e.pointerId) update(e);
       }}
       onPointerUp={release}
       onPointerCancel={release}

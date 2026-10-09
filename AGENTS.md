@@ -27,6 +27,7 @@ content/
   .safety-blocklist.local.txt   PRIVATE, gitignored; real codenames and repo names
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
+public/fonts/                   Inter + JetBrains Mono woff for in-world troika Text (OFL)
 scripts/
   build-cv.ts                   prints /{locale}/cv to out/cv/*.pdf after next build
   serve-static.ts               serves out/ like Cloudflare Pages (used by e2e and CV)
@@ -40,13 +41,16 @@ src/
   content/load.ts               getContent() and typed accessors
   content/selectors.ts          pure sorting and grouping helpers
   content/blog.ts               MDX discovery with translation fallback
+  content/experience.ts         buildExperienceData(locale, floorNames): small payload for the 3D chunk
   content/safety.ts             blocklist loading and forbidden patterns
   i18n/                         next-intl routing, request config, navigation, assertLocale
-  lib/                          format (Intl dates), accent class maps, site metadata helpers
-  experience/ hud/ store/       reserved for Phases 1 to 5 (main spec section 4.3)
-tests/unit/                     Vitest: schema, selectors, format, safety helpers
+  lib/                          format, accent maps, site metadata, gpu-tier, url-sync, viewport, audio stub
+  experience/                   3D experience (see "3D experience" below)
+  hud/                          HTML HUD over the canvas (profile card, elevator panel, controls, boot, joystick)
+  store/useHQStore.ts           zustand store (appendix 06 section 2 plus documented additions)
+tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync
 tests/content/                  Vitest: dataset, public safety, assets
-e2e/                            Playwright smoke tests and opt-in screenshots
+e2e/                            Playwright: static routes, 3D experience (experience.spec.ts), opt-in screenshots
 ```
 
 ## Content access
@@ -62,6 +66,18 @@ e2e/                            Playwright smoke tests and opt-in screenshots
 - In server components call `assertLocale((await params).locale)` then `setRequestLocale(locale)`, and use `getTranslations({ locale, namespace })`.
 - Use `Link` from `@/i18n/navigation` for internal links (it adds the locale prefix). Dates go through `src/lib/format.ts` (`formatYearMonth`, `formatPeriod`, `formatDate`); ranges are written "X to Y" / "X hingga Y", never with dashes.
 - Metadata: `pageMetadata({ locale, path, title, description })` from `src/lib/site.ts` adds canonical and `hreflang` alternates.
+
+## 3D experience (Phases 1 and 2)
+
+- `ExperienceGate` (client) runs on `/{locale}` only. It decides the tier (`src/lib/gpu-tier.ts`, `?tier=full|lite|static` override), then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page. While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
+- The 3D chunk gets its content as a serializable `ExperienceData` prop from the server page, so it never bundles `site-content.json` or zod. Add Lobby data there, not by importing `@/content/load` in client code.
+- Data flow: input sources (`input/useInputSources.ts`, HUD buttons, joystick) emit intents on the `intents` bus. `scene/Director.tsx` consumes them each frame and drives the elevator ride machine (`tower/elevator.ts`), the `RoverController` (`rover/controller.ts`, `nav/navgrid.ts`, `nav/collision.ts`) and the store. Per-frame pose lives in `rover/runtime.ts` (mutated in `useFrame`, never read in render). HUD and scene talk only through the store and intents.
+- Pure modules (config, elevator, rigs, movement, faces, navgrid, collision, intents, url-sync, gpu-tier, viewport) must stay free of React and three side effects so Vitest can run them in node.
+- Floors above the rover render as ghosts each frame (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`. Only the current floor, the ride target and their neighbours mount content.
+- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content (Phase 2: `["L1"]`). URL sync writes floor routes only for ready floors; placeholders keep `/{locale}` and the HUD links to their HTML page. Add a floor there when its phase ships, and mount the gate on its route.
+- Store additions beyond appendix 06: `ride` (elevator ride state), `device` (`viewport`, `camera`, `coarse`), `reducedMotion`, `notice`. Persisted keys stay `visited`, `firstVisit`, `locale`, `sound` (key `hq:v1`). `sessionStorage` keys: `hq:view` (page view), `hq:resume` (language switch resumes the floor without boot or intro).
+- Deviations from the spec (kept deliberately): the tier gate is a local heuristic instead of `detect-gpu` (no runtime CDN fetch); the L3 elevator door stays at `(-24, 0)` until Phase 4 resolves the atrium door at `(0, -7)` against the shaft at `x = -28`; the rover spawns turned toward the camera so its face greets the visitor.
+- `window.__hq` exposes `{ store, rover }` for Playwright. E2E tests run WebGL on SwiftShader (`playwright.config.ts` launch args).
 
 ## Styling
 
