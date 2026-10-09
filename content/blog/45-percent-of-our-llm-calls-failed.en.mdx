@@ -1,55 +1,67 @@
 ---
 title: "45% of our LLM calls failed: what the error strings told us"
 date: "2026-10-09"
-excerpt: "About 45% of CV screening evaluations failed in a 22-pair run. Two error strings pointed to two root causes, a layered fix, and seven regression tests built from the real failures."
+excerpt: "About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch."
 tags: ["llm-reliability", "structured-output", "azure-openai", "testing", "case-study"]
 readingTime: "6 min"
 ---
 
-Early in building an AI CV screening platform at Metrodata, I ran a batch of 22 candidate and job pairs through the pipeline (2 job posts by 11 candidates). About 45% of the screening evaluations failed. Not low scores: no usable result at all.
+About 45% of the screening evaluations in my batch returned nothing usable. Not a low fit score. No result.
 
-This post covers the fix and, just as important, what the fix did and did not prove. The short version: I stopped guessing, read the two error strings the pipeline actually produced, mapped each one to a root cause, fixed both in layers, and turned those exact strings into regression tests.
+This was early in building an AI CV screening platform at Metrodata. The batch had 22 candidate and job pairs: 2 job posts by 11 candidates.
 
-## The setup
+The percentage told me how often the pipeline broke, not why. Reading the actual errors gave me two bugs I could work on.
 
-The platform helps recruiters screen CVs. A recruiter defines a job post, the system extracts a weighted requirement rubric, and an LLM evaluates every candidate against that job and returns structured JSON: a fit score, evidence and a written rationale. Today a human recruiter makes the decision and the AI supplies evidence.
+## Where the result was getting lost
 
-Each evaluation ran as an Azure Durable Functions activity calling a reasoning model on Azure AI Foundry through the Responses API. The original parsing path was simple: strip any markdown code fences from the reply, then call `json.loads`. When that worked, everything downstream worked. When it did not, the pair was lost.
+The platform helps recruiters screen CVs. A recruiter defines a job post, the system extracts a weighted requirement rubric, and an LLM evaluates each candidate against the job. It returns structured JSON with a fit score, evidence and a written rationale. Today the recruiter makes the decision; the AI supplies evidence.
 
-## Two strings instead of one vague problem
+Each evaluation ran as an Azure Durable Functions activity. It called a reasoning model on Azure AI Foundry through the Responses API.
 
-"The LLM sometimes returns bad JSON" leads to random prompt tweaks. Instead, I grouped the failures by error message. There were two:
+The parsing path was simple: strip markdown code fences from the reply, then call `json.loads`. If parsing worked, everything downstream worked. If it failed, that candidate and job pair was lost.
+
+## Two error strings, two places to look
+
+"The LLM sometimes returns bad JSON" is not much of a diagnosis. It invites another round of prompt tweaks without telling you what to fix.
+
+I grouped the failures by error message instead:
 
 - `Response missing required keys: {'fitScore'}`
 - `Invalid control character at: line 15 column 95`
 
-Two strings usually mean two mechanisms.
+There were only those two strings. Two different messages usually point to two different mechanisms.
 
 ## String one: the answer ran out of room
 
-The first clue was which key was missing. `fitScore` was the last key in the output schema. If a model dropped fields at random, random keys would go missing. When it is the final key, the more likely explanation (reasoning, not a measurement) is that the output stopped before the model got there.
+`fitScore` was the last key in the output schema. That position mattered. Randomly dropped fields would mean random missing keys. A consistently missing final key pointed to truncation: the answer stopping before it got there, rather than the model "forgetting" a field. That was my reasoning, not a measurement.
 
-The configuration explained why. Reasoning effort was set to high, the prompt asked for a long written rationale (10 to 15 sentences), and there was no explicit output token ceiling. On a reasoning model, the hidden reasoning tokens and the visible answer draw from the same output budget. Long reasoning plus a long rationale exhausted the budget mid-JSON, and the last field never arrived.
+The configuration explained it. Reasoning effort was high, the prompt asked for 10 to 15 sentences of rationale, and I had not set an explicit output token ceiling.
 
-The prompt had a smaller problem too: it told the model not to use code fences, then showed a fenced example. Contradictory instructions are cheap to fix.
+On a reasoning model, hidden reasoning tokens and the visible answer share the output budget. Long reasoning plus a long rationale used it up mid-JSON. The last field never arrived.
+
+That made reasoning effort a budget setting, not just a quality setting. The output ceiling needed to be explicit too.
+
+There was also an easy prompt fix: I had told the model not to use code fences, then shown it a fenced example.
 
 ## String two: a newline where JSON forbids it
 
-The second string is the message Python's `json` module raises in strict mode when a string value contains a raw control character. The cause: the model had written literal newlines inside JSON string values instead of the escaped form. Close to valid JSON is still invalid JSON.
+Python's `json` module raises the second error in strict mode when a string value contains a raw control character.
+
+The model had written literal newlines inside JSON string values instead of escaping them. The reply looked close to valid JSON, but `json.loads` could not accept it.
 
 ## The layered fix
 
-No single change covered both causes, so I fixed them in layers:
+I stopped guessing at the prompt and mapped each error to its cause. No single change covered both, so the fix had several layers:
 
-1. **JSON mode.** I set `response_format` to `json_object` so the API constrains the reply to JSON instead of relying on the prompt alone.
-2. **Output token ceilings.** Explicit limits of 6,000 and 16,000 tokens for the two call types, so the budget is a deliberate decision rather than an accident.
-3. **Lower reasoning effort.** High to medium, so less of the budget goes to hidden reasoning before the answer starts.
-4. **A quote-aware JSON extractor.** Instead of stripping fences with a pattern, the extractor finds the JSON object by balancing braces while tracking whether it is inside a string, so a brace inside a quoted value does not end the object early.
-5. **Control-character escaping inside strings only.** Raw newlines and tabs are escaped when they appear inside a string value, and left alone between tokens, where they are legal whitespace.
-6. **Retries that keep the books straight.** Up to three attempts per call, with token usage summed across attempts so retries still show up in usage accounting. After the third failure the error is re-raised, so the Durable Functions retry policy can take over.
-7. **Prompt fixes.** No more fenced example under a "no fences" rule.
+1. **JSON mode.** I set `response_format` to `json_object`. The API constrains the reply to JSON rather than leaving that entirely to the prompt.
+2. **Explicit output ceilings.** I set limits of 6,000 and 16,000 tokens for the two call types. The budget became a deliberate choice.
+3. **Medium reasoning effort.** I lowered it from high so less of the budget goes to hidden reasoning before the answer starts.
+4. **A quote-aware JSON extractor.** I replaced pattern-based fence stripping with an extractor that balances braces and tracks whether it is inside a string. A brace in a quoted value no longer ends the object early.
+5. **Escape control characters inside strings only.** Raw newlines and tabs get escaped inside string values. Between tokens they stay untouched, because they are legal whitespace there.
+6. **Bounded retries with usage accounting.** Each call gets up to three attempts. Token usage is summed across all attempts, so retries remain visible in the accounting. After the third failure, the error is re-raised for the Durable Functions retry policy to take over.
+7. **Consistent prompt instructions.** I removed the fenced example from the prompt that said "no fences".
 
-Here is a generic sketch of layer 5. It is illustrative, not the production code:
+Layer 5 looks roughly like this. This is a generic illustration, not the production code:
 
 ```python
 ESC = {"\n": "\\n", "\r": "\\r", "\t": "\\t"}
@@ -69,40 +81,36 @@ def escape_controls(raw: str) -> str:
     return "".join(out)
 ```
 
-The `in_str` flag is the point. A blanket newline replace would also rewrite valid whitespace between keys; tracking quotes and escapes keeps the change surgical.
+The important part is `in_str`. Replacing every newline would also change valid whitespace between keys. Tracking quotes and escapes keeps the repair inside string values.
+
+JSON mode reduces failures; it does not replace defensive parsing. The quote-aware extractor and bounded retries handle the rest. Retries also need to stay honest: count every attempt's tokens, cap the attempts, and re-raise the error so the next layer can decide what to do.
 
 ## Turning the failures into tests
 
-The fix shipped with 7 unit tests that reproduce the exact failure strings from that run, fed through the new parsing path. All 7 passed, and so did the rest of the core test suite (12 of 12) at the time. The platform had only started getting tests a few days earlier, so these were among its first.
+I shipped the fix with 7 unit tests that reproduce the exact error strings from the batch and run through the new parsing path. All 7 passed. The core test suite passed too, 12 of 12 at the time.
 
-A synthetic "malformed JSON" fixture tests what you imagine can go wrong. A fixture built from what the model actually returned tests what did go wrong, and it fails loudly if someone later "simplifies" the parser back to `json.loads`.
+The platform had only started getting tests a few days earlier. These were among its first.
 
-## What I can and cannot claim
+A synthetic malformed-JSON fixture covers what I imagine might go wrong. A fixture built from the model's actual reply covers what already did. It also fails loudly if someone later "simplifies" the parser back to `json.loads`. Saving the real failures as tests was cheap insurance against undoing the fix.
 
-This is the part I want to be careful about.
+## The number I do not have
 
-**What is verified:** about 45% of evaluations failed in that 22-pair run; the two error strings above; the root causes; the layered fix; the 7 regression tests passing.
+My notes support the original failure rate, about 45% in that 22-pair run, the two error strings, their root causes, the layered fix, and the 7 passing regression tests.
 
-**What was not recorded:** I did not record a rerun of the same 22 pairs after the fix. So I cannot give you a "45% to X%" number for that run, and I will not invent one. What I can say is that the two failure mechanisms are identified, fixed, and covered by tests.
+They do not contain a rerun of the same 22 pairs after the fix. I cannot give you a "45% to X%" result for that batch. The claim I can make is narrower: I identified and fixed two failure mechanisms, with tests covering both.
 
-**A separate, later number:** months later the project had an offline evaluation harness. Its baseline measured a final parse failure rate (after retries) of 0.13%: 1 of 800 non-adversarial calls. That run used a newer model and a different prompt version, so it is not a before-and-after measurement of this fix. It shows where reliability stood at that later baseline, not what this specific change achieved on its own.
+Months later, the project had an offline evaluation harness. Its baseline measured a final parse failure rate, after retries, of 0.13%: 1 of 800 non-adversarial calls.
 
-## Related findings
+That used a newer model and a different prompt version. It tells me where reliability stood at the later baseline, not what this particular fix achieved. Putting the two percentages side by side would not make them a before-and-after measurement.
 
-Three later problems on the platform rhymed with this one:
+## Parsing was not the last reliability problem
 
-- **Retries that did not retry.** The Durable Functions retry I relied on in layer 6 was not reliably firing, and outcome counters could double count. The fix was a single retryable versus terminal classification, plus writing the outcome marker and the counter in one transactional batch.
-- **Evals measuring the wrong thing.** Throttling (HTTP 429) responses were being counted as schema failures, and one eval run measured an older code revision. Transport failures are now counted separately, and every run records a fingerprint of the code under test.
-- **Silent stalls.** About 3% of model calls stalled until the SDK's default 600 s timeout. Explicit per-call deadlines (90 s for screening, 240 s for deep analysis) now bound every call.
+Three later problems on the same platform had a similar pattern:
 
-Reasoning effort also came back later as a latency question. In controlled evaluation rounds, screening p95 latency was 21.1 s at high effort and 12.1 s at medium, with the fairness and prompt-injection gates still passing at medium. Medium shipped.
+- **Retries that did not reliably fire.** The Durable Functions retry I relied on in layer 6 was not reliable, and outcome counters could double count. The fix was a single retryable versus terminal classification, with the outcome marker and counter written in one transactional batch.
+- **Evals counting the wrong failures.** Throttling responses, HTTP 429, were counted as schema failures. One eval run also measured an older code revision. Transport failures are now counted separately, and every run records a fingerprint of the code under test.
+- **Calls that quietly stalled.** About 3% of model calls stalled until the SDK's default 600 s timeout. Explicit per-call deadlines now bound every call: 90 s for screening and 240 s for deep analysis.
 
-## Lessons for structured-output reliability
+Reasoning effort came up again later, this time for latency. In controlled evaluation rounds, screening p95 was 21.1 s at high effort and 12.1 s at medium. The fairness and prompt-injection gates still passed at medium. Medium shipped.
 
-- **Read the error string before changing anything.** Two strings meant two mechanisms. Grouping failures by message turned a scary percentage into two concrete bugs.
-- **Which field is missing is a clue.** A consistently missing last key points to truncation, not to a model that "forgets".
-- **Reasoning tokens share the output budget.** Set an explicit ceiling, and treat reasoning effort as a budget knob, not only a quality knob.
-- **Use the API's JSON mode, then still parse defensively.** Constraints reduce failures; a quote-aware extractor and bounded retries handle the rest.
-- **Keep retries honest.** Sum tokens across attempts, cap the attempts, and re-raise so the next layer can decide.
-- **Save the real failures as tests.** They are the cheapest insurance against someone undoing the fix.
-- **Say what you did not measure.** A fix with a clear root cause and regression tests is a solid claim. A post-fix number you never recorded is not.
+Before changing the prompt for a failing batch, I would read the error strings. Which field went missing? Where did the parser stop? In this run, the useful clues were the final key and a newline inside a string, not the percentage at the top.

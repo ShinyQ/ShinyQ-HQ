@@ -1,43 +1,57 @@
 ---
 title: "Why the better fraud engine shipped in shadow mode"
 date: "2026-10-09"
-excerpt: "My hybrid rules plus LLM fraud engine cut false positives on clean packets from 36.4% to 9.1% offline, then failed its recall gate. This is why it runs in production shadow mode instead of deciding anything."
+excerpt: "I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
 ---
 
-In late September 2026 I finished a second-generation risk engine for our internal AI document review platform at Metrodata. On the development gold set it cut the false-positive rate on noisy but clean procurement packets from 36.4% to 9.1%. It also dropped High-risk recall from 1.000 to 0.841, which failed a release gate I had written down before the run. So the engine went to production in shadow mode: it runs alongside the live pipeline, its output is stored, and users never see it. The shadow rollout record counts 0 of 3,780 runs in which it changed user-visible output.
+I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
 
-Here is why I made that call, and what would reverse it.
+That was the result on noisy but clean procurement packets in the development gold set. High-risk recall went the other way: 1.000 to 0.841. The engine missed more of the packets it needed to catch.
 
-## Why clean packets matter most
+I finished this second-generation risk engine in late September 2026 for our internal AI document review platform at Metrodata. Before the evaluation, I had written down a release gate for recall. The engine failed it. So I shipped it in production shadow mode: it runs beside the live pipeline, stores its output, and never shows that output to users.
 
-The platform reviews transaction document packets (invoices, receipts, purchase orders, vendor forms, contracts). It runs OCR with Azure Document Intelligence, asks Azure OpenAI for per-document findings, then produces a cross-document verdict and a 0 to 100 risk score. It is decision support, not an automated judge.
+## The packets I wanted to stop flagging
 
-The packets that hurt the early versions were not the fraudulent ones. They were clean packets with messy administration: a missing stamp, an odd date format, a page scanned at an angle. The model read that noise as fraud. My reasoning, not a measured fact: a reviewer who sees a red flag on a packet they know is fine starts doubting every flag after it, including the real ones. A false positive on a clean packet costs more trust than one missed flag.
+The platform reviews transaction document packets: invoices, receipts, purchase orders, vendor forms and contracts. Azure Document Intelligence handles OCR. Azure OpenAI produces findings for each document, followed by a cross-document verdict and a risk score from 0 to 100. It is decision support, not an automated judge.
 
-## Gold sets and gates before opinions
+The early versions struggled with packets that were clean but administratively messy. A missing stamp. An odd date format. A page scanned at an angle. The model treated that noise as fraud.
 
-Before touching prompts I built an evaluation harness: labelled gold sets (21 to 90 cases each, plus generated mutations), a development set and a held-out set, frozen baselines, and metrics with confidence intervals for false-positive rate (FPR), false-negative rate, High-risk recall, fail-open rate and prompt-injection success. Gates on those metrics ran through a dedicated eval workflow and local CI.
+My concern was trust. If a reviewer knows a packet is fine and sees a red flag anyway, why would they trust the next flag? My reasoning was that a false positive on a clean packet costs more trust than one missed flag. I did not measure that.
 
-The first baseline was ugly. On the development set, 90.9% of noisy clean packets were flagged. Worse, the guardrail meant to soften a verdict when findings were clearly harmless was failing open, with a fail-open rate of 76.2%. It used a majority rule: if roughly half the findings matched a list of safe patterns, the verdict was relaxed. Some safe patterns were also far too broad.
+That is why I kept noisy-but-clean inputs as their own evaluation slice. An average across all packets can hide exactly the problem I was trying to fix.
 
-Two changes fixed most of it: a strict rule (every finding must match a safe pattern, and every adjustment is disclosed in the output) and a narrow safe list for administrative noise. Offline, noisy-clean FPR fell from 90.9% to 36.4% on the development set and from 100% to 50.0% on the held-out set, fail-open went from 76.2% to 0%, and High-risk recall was 0.91.
+## The first fix was the guardrail
 
-A model upgrade later reminded me that prompts are part of the classifier. With the new model, a prompt block describing the buyer as a trusted party biased the verdicts. After trimming it, live evaluation runs showed FPR moving from 26.1% to 21.7% and prompt-injection success from 11.1% to 3.7%. A paired run (23 cases, 3 repeats each) of party-neutral wording against the old framing measured FPR at 18.8% against 36.9%. These are evaluation runs, not production outcomes.
+Before changing prompts, I built an evaluation harness with labelled gold sets of 21 to 90 cases each, plus generated mutations. I separated development and held-out sets, froze the baselines, and measured false-positive rate (FPR), false-negative rate, High-risk recall, fail-open rate and prompt-injection success, with confidence intervals. A dedicated eval workflow and local CI ran the gates.
 
-## The hybrid engine
+The first baseline flagged 90.9% of noisy clean packets on the development set. The guardrail was failing too: its fail-open rate was 76.2%.
 
-36.4% was still too high, and I had run out of safe tweaks to a design where the LLM decides everything. So I wrote a spec for engine v2, which moves the verdict out of the model:
+That guardrail was supposed to soften a verdict when the findings were clearly harmless. Instead, it used a majority rule. If roughly half the findings matched safe patterns, it relaxed the verdict. Some of those patterns were far too broad.
 
-- Normalizers clean extracted values (names, account numbers, dates) before anything compares them.
-- A deterministic rules catalog raises findings such as cross-document mismatches, each with a severity.
-- A rubric risk engine combines findings with noisy-OR inside a group, takes the maximum across groups, and applies severity floors so a critical finding cannot be averaged away.
-- An evidence verifier checks that each finding points at text that really exists in the extracted document.
+I tightened both parts: every finding had to match a safe pattern, and the safe list covered only a narrow set of administrative noise. Every adjustment also had to appear in the output. The guardrail needed to fail closed, not quietly wave a packet through.
+
+Offline, noisy-clean FPR fell from 90.9% to 36.4% on development and from 100% to 50.0% on held-out. Fail-open fell from 76.2% to 0%. High-risk recall was 0.91.
+
+A later model upgrade exposed a different problem. A prompt block described the buyer as a trusted party, and that framing biased the new model's verdicts. After I trimmed it, live evaluation runs showed FPR falling from 26.1% to 21.7% and prompt-injection success from 11.1% to 3.7%.
+
+I also compared party-neutral wording with the old framing in a paired run: 23 cases, 3 repeats each. FPR was 18.8% with neutral wording against 36.9% with the old framing. These were evaluation runs, not production outcomes.
+
+The prompt was part of the classifier. I needed to treat both prompt changes and model upgrades as releases, and rerun the gates for each change.
+
+## Moving the verdict out of the LLM
+
+36.4% was still too high. I had run out of safe tweaks to a design where the LLM decided everything, so I wrote a spec for engine v2:
+
+- Normalizers clean extracted names, account numbers and dates before comparison.
+- A deterministic rules catalog raises findings, such as cross-document mismatches, with a severity for each one.
+- A rubric risk engine combines findings using noisy-OR within a group, takes the maximum across groups, then applies severity floors. A critical finding cannot disappear into an average.
+- An evidence verifier checks that each finding points to text that actually exists in the extracted document.
 - Duplicate fingerprints, keyed with HMAC, catch documents reused across packets.
-- The LLM still contributes findings, a semantic review and the narrative, but it no longer owns the score.
+- The LLM still supplies findings, a semantic review and the narrative. It no longer owns the score.
 
-The scoring shape, simplified (not the production code):
+Here is the scoring shape, simplified. This is not the production code:
 
 ```
 p_group = 1 - prod(1 - p_i for p_i in group)
@@ -45,24 +59,28 @@ score = max(p_group for each group)
 score = max(score, floor[worst_severity])
 ```
 
-Every score carries a trace of which rules fired, so a verdict can be explained and replayed.
+Each score carries a trace of the rules that fired, so the verdict can be explained and replayed.
 
 ## Better precision, worse recall
 
-I compared engine v2 (baseline N1) against the best LLM pipeline (baseline B2) offline on gold set v0.2.1, with gates defined before the run:
+I compared engine v2, baseline N1, with the best LLM pipeline, baseline B2, offline on gold set v0.2.1. The gates were already defined:
 
 - Noisy-clean FPR: 36.4% to 9.1%.
 - FPR across all packets expected to be Low risk: 17.4% to 9.1%.
 - High-risk recall: 1.000 to 0.841.
 - Held-out set v0.3: FPR 50.0% to 0.0%, but High-risk recall only 0.429.
 
-The engine was more precise, but it missed High-risk packets the old pipeline caught, and the held-out numbers said that was no development-set fluke. Gate G3, the High-risk recall gate, failed. My reading: rule thresholds trade recall for precision, and I had tuned them while staring at false positives.
+The engine was more precise. It also missed High-risk packets that the old pipeline caught. Held-out recall of 0.429 showed that this was not just a development-set fluke. Gate G3, the High-risk recall gate, failed.
 
-## Shipping it dark
+My reading was that the rule thresholds traded recall for precision, and I had tuned them with my attention fixed on false positives. Writing the gates before the run mattered here. Without them, the better FPR could have talked me into releasing a worse system.
 
-I had three options: switch it on and accept the recall loss, keep tuning offline, or deploy it where it could see real packets without deciding anything. I chose the third.
+There is a sample-size caveat too. Some slices are small. The noisy-clean rates move in steps consistent with about eleven packets, so one packet shifts the rate by roughly nine points. That is my inference; the exact slice size is not recorded here.
 
-In shadow mode the existing pipeline still produces the verdict and the report users see. Engine v2 runs alongside it, and its output is written to storage for comparison only. In outline:
+## Production, without control of the verdict
+
+I could switch it on and accept the recall loss, keep tuning offline, or let it see real packets without deciding anything. I chose the third. Shadow mode let me learn from real data without asking users to pay for that trade-off.
+
+The existing pipeline still produces the verdict and report users see. Engine v2 runs alongside it and writes its output to storage for comparison only:
 
 ```
 verdict = current_pipeline(packet)  # user sees
@@ -70,36 +88,32 @@ shadow = engine_v2(packet)  # stored only
 save_shadow(packet.id, shadow)
 ```
 
-The rollout record counts 0 of 3,780 runs in which the shadow engine changed user-visible output. Real case volume on this platform is still small, so I read that number as proof that the shadow path is isolated, not as proof that the engine is accurate. A breakdown of what those 3,780 runs were is not in my notes.
+The rollout record counts 0 of 3,780 runs in which the shadow engine changed user-visible output. That tells me the shadow path is isolated. It does not tell me the engine is accurate.
 
-## What the shadow run found
+Real case volume on this platform is still small, and my notes do not break down what those 3,780 runs were.
 
-The real deployment path surfaced defects the gold sets missed. Shadow findings recorded against one rollout included three data-quality problems:
+## What real deployment exposed
 
-1. A conflicting-values rule fired because one document had a trailing period after the bank account holder's name.
-2. Per-file extraction could end up partial without that being obvious.
+The deployment path caught defects the gold sets had missed. Shadow findings from one rollout recorded three data-quality problems:
+
+1. A conflicting-values rule fired because a document had a trailing period after the bank account holder's name.
+2. Per-file extraction could be partial without making that obvious.
 3. An OCR status message was misleading.
 
-All three were fixed. I did not record a before and after metric for them, and root-cause detail beyond those descriptions is not in my notes.
+All three were fixed. I have no before-and-after metric for them, and my notes contain no root-cause detail beyond those descriptions.
 
-A related lesson came from switching to Document Intelligence Layout extraction: account numbers wrapped onto the next line with a hyphen produced 7 false bank-account mismatch findings. After a normalization fix, a live evaluation scored the engine at High-risk recall 1.000 and FPR 0 on v0.2.1. The engine is still in shadow mode. My view: one good run on the development set is encouraging, but it is not the bar I set.
+Switching to Document Intelligence Layout extraction exposed a related issue. Account numbers wrapped onto the next line with a hyphen produced 7 false bank-account mismatch findings. After a normalization fix, a live evaluation measured High-risk recall at 1.000 and FPR at 0 on v0.2.1.
 
-## What would have to be true to promote it
+That was a good development-set run. The engine is still in shadow mode.
 
-This is my reasoning, not a recorded plan:
+## What would convince me to promote it
 
-- High-risk recall passes G3 on the held-out set, not only on the development set, and holds across repeated runs.
-- Noisy-clean FPR stays well below the current pipeline on both sets.
-- Fail-open stays at 0%.
-- Shadow verdicts agree with reviewer decisions on real packets, which needs more real cases than the platform has today.
-- Every disagreement between the two engines is reviewed by hand, because each one is either a missed fraud or a false alarm avoided.
+This is my reasoning, not a recorded plan. Before giving engine v2 control of the verdict, I would want:
 
-## Lessons for teams shipping LLM classifiers
+- High-risk recall to pass G3 on held-out, not just development, and hold across repeated runs.
+- Noisy-clean FPR to stay well below the current pipeline on both sets.
+- Fail-open to stay at 0%.
+- Shadow verdicts to agree with reviewer decisions on real packets. That needs more real cases than the platform has today.
+- Every disagreement between the engines reviewed by hand, because each one is either a missed fraud or a false alarm avoided.
 
-1. Measure false positives on clean but messy inputs as their own slice. Averages hide them.
-2. Make guardrails fail closed, and show every adjustment in the output.
-3. Write gates down before the run. Otherwise a better-looking number will talk you into a worse system.
-4. Treat prompts and model versions as releases: rerun the gates on every change.
-5. Report held-out numbers next to development numbers. The 0.429 held-out recall told me more than any development metric.
-6. When a candidate wins one metric and loses another, shadow mode lets you learn from real data without making users pay for the trade-off.
-7. Be honest about sample size. Some of my slices are small: the noisy-clean rates move in steps consistent with about eleven packets (my inference; the exact slice size is not recorded here), so one packet shifts the rate by roughly nine points.
+I put held-out numbers beside development numbers for a reason: that 0.429 recall told me more than any development metric. One good run on development is encouraging, but it is not the bar I set for letting the engine decide.
