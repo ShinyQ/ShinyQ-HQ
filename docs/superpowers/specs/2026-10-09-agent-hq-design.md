@@ -48,7 +48,7 @@ A vertical tower of five floors connected by a glass elevator shaft. Every floor
 |---|---|---|---|
 | RF | Roof · Comms | Open deck with a beacon antenna | Contact links, CV download, socials, "hire me" beacon |
 | L4 | Library | Rows of holographic shelves | Blog posts, publications and theses, Hugging Face models, talks and workshops |
-| L3 | Labs | Central atrium with a **Software Wing** (west) and an **AI Wing** (east), each with hero and featured pods | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
+| L3 | Labs | An atrium at the elevator with a **Software Wing** and an **AI Wing** running side by side as mirror halls (appendix 01 section 4), each with hero and featured pods | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
 | L2 | Career Archive | **Timeline corridor** from 2019 to 2026 with year rooms alternating left and right | Jobs, freelance, education, competitions and awards, ordered by time |
 | L1 | Lobby (spawn) | Hub plaza | Profile hologram, headline stats, skills wall, certifications, mission board |
 
