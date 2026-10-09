@@ -1869,8 +1869,8 @@
                 "id": "sftp-service",
                 "label": "MFT / SFTP service",
                 "sublabel": {
-                  "en": "In-house, scheduled transfers",
-                  "id": "In-house, transfer terjadwal"
+                  "en": "In-house, scheduled partner files",
+                  "id": "In-house, file partner terjadwal"
                 },
                 "layer": 1,
                 "row": 1,
@@ -1902,8 +1902,8 @@
                 "id": "postgresql",
                 "label": "PostgreSQL",
                 "sublabel": {
-                  "en": "Policy records",
-                  "id": "Data polis"
+                  "en": "Service data",
+                  "id": "Data layanan"
                 },
                 "layer": 2,
                 "row": 2,
@@ -2110,8 +2110,8 @@
                 "id": "marketplace-api",
                 "label": "Express API on Bun",
                 "sublabel": {
-                  "en": "Orders, auctions, wallets",
-                  "id": "Order, lelang, dompet"
+                  "en": "Orders, auctions, wallet ledger",
+                  "id": "Order, lelang, ledger dompet"
                 },
                 "layer": 1,
                 "row": 0,
@@ -2121,8 +2121,8 @@
                 "id": "chat-gateway",
                 "label": "Socket.IO chat",
                 "sublabel": {
-                  "en": "Buyer-seller negotiation",
-                  "id": "Negosiasi pembeli dan penjual"
+                  "en": "Opens after payment",
+                  "id": "Terbuka setelah pembayaran"
                 },
                 "layer": 1,
                 "row": 1,
@@ -2132,8 +2132,8 @@
                 "id": "postgresql",
                 "label": "PostgreSQL",
                 "sublabel": {
-                  "en": "Orders and wallet ledger",
-                  "id": "Order dan ledger dompet"
+                  "en": "Single source of truth",
+                  "id": "Satu-satunya sumber data"
                 },
                 "layer": 2,
                 "row": 0,
@@ -2151,17 +2151,6 @@
                 "kind": "data"
               },
               {
-                "id": "monitoring",
-                "label": "Prometheus and Grafana",
-                "sublabel": {
-                  "en": "Metrics and uptime probes",
-                  "id": "Metrik dan probe uptime"
-                },
-                "layer": 2,
-                "row": 2,
-                "kind": "service"
-              },
-              {
                 "id": "payment-gateway",
                 "label": "iPaymu",
                 "sublabel": {
@@ -2176,8 +2165,8 @@
                 "id": "object-storage",
                 "label": "AWS S3",
                 "sublabel": {
-                  "en": "Presigned uploads",
-                  "id": "Upload presigned"
+                  "en": "Ticket files, presigned uploads",
+                  "id": "File tiket, upload presigned"
                 },
                 "layer": 3,
                 "row": 1,
@@ -2214,12 +2203,6 @@
                 "from": "chat-gateway",
                 "to": "postgresql",
                 "label": "messages"
-              },
-              {
-                "from": "marketplace-api",
-                "to": "monitoring",
-                "label": "metrics",
-                "async": true
               },
               {
                 "from": "marketplace-api",
@@ -2323,8 +2306,8 @@
             "id": "Satu-satunya engineer sekaligus operator: saya rancang, arahkan, review, dan rilis bersama AI coding agents"
           },
           "problem": {
-            "en": "A business unit in the group needed a vendor portal built around purchase orders: vendor onboarding, delivery documents, invoices, verification across several tax types, and parallel accounting and tax approvals, integrated with SAP. Feedback arrived weekly from the business owner, including a user acceptance round that reshaped the workflow.",
-            "id": "Sebuah unit bisnis di grup membutuhkan portal vendor yang berpusat pada purchase order: onboarding vendor, dokumen pengiriman, invoice, verifikasi untuk beberapa jenis pajak, serta approval akuntansi dan pajak yang berjalan paralel, terintegrasi dengan SAP. Masukan dari pemilik bisnis datang tiap minggu, termasuk satu putaran UAT yang mengubah alur kerjanya."
+            "en": "A business unit in the group needed a vendor portal built around purchase orders: vendor onboarding, delivery documents, invoices, verification across several tax types, and parallel accounting and tax approvals, with an SAP integration that could not take the portal down. Feedback arrived weekly from the business owner, including a user acceptance round that reshaped the workflow.",
+            "id": "Sebuah unit bisnis di grup membutuhkan portal vendor yang berpusat pada purchase order: onboarding vendor, dokumen pengiriman, invoice, verifikasi untuk beberapa jenis pajak, serta approval akuntansi dan pajak yang berjalan paralel, ditambah integrasi SAP yang tidak boleh ikut menjatuhkan portal. Masukan dari pemilik bisnis datang tiap minggu, termasuk satu putaran UAT yang mengubah alur kerjanya."
           },
           "approach": [
             {
@@ -2336,8 +2319,8 @@
               "id": "Memodelkan 21 domain backend dengan FastAPI dan PostgreSQL lewat 110 migrasi Alembic, lalu menata ulang alur kerja agar berpusat pada purchase order setelah masukan UAT."
             },
             {
-              "en": "Put SAP behind a provider port with a circuit breaker, so a slow ERP cannot cascade into the portal.",
-              "id": "Menaruh integrasi SAP di balik provider port dengan circuit breaker, sehingga ERP yang lambat tidak ikut menjatuhkan portal."
+              "en": "Put SAP behind a provider port with retries, rate limits and a circuit breaker, so a slow ERP cannot cascade into the portal; today the port serves seeded procurement data.",
+              "id": "Menaruh SAP di balik provider port dengan retry, rate limit, dan circuit breaker, sehingga ERP yang lambat tidak ikut menjatuhkan portal; saat ini port tersebut melayani data procurement hasil seed."
             },
             {
               "en": "Secured sign-in with Entra ID single sign-on plus local Argon2id accounts, with roles re-checked on every request; deployed with Bicep, VNet integration and Key Vault references.",
@@ -2376,8 +2359,8 @@
                 "id": "web-portal",
                 "label": "Next.js portal",
                 "sublabel": {
-                  "en": "Desktop and mobile views",
-                  "id": "Tampilan desktop dan mobile"
+                  "en": "UI and BFF, sealed session",
+                  "id": "UI dan BFF, sesi tersegel"
                 },
                 "layer": 1,
                 "row": 0,
@@ -2387,8 +2370,8 @@
                 "id": "fastapi-backend",
                 "label": "FastAPI backend",
                 "sublabel": {
-                  "en": "21 domains on App Service",
-                  "id": "21 domain di App Service"
+                  "en": "21 domains, roles checked per request",
+                  "id": "21 domain, peran dicek per request"
                 },
                 "layer": 2,
                 "row": 0,
@@ -2406,11 +2389,11 @@
                 "kind": "data"
               },
               {
-                "id": "key-vault",
-                "label": "Key Vault",
+                "id": "blob-storage",
+                "label": "Blob Storage",
                 "sublabel": {
-                  "en": "Secrets by reference",
-                  "id": "Secret lewat referensi"
+                  "en": "Documents, direct browser upload",
+                  "id": "Dokumen, upload langsung dari browser"
                 },
                 "layer": 3,
                 "row": 1,
@@ -2431,8 +2414,8 @@
                 "id": "sap-erp",
                 "label": "SAP ERP",
                 "sublabel": {
-                  "en": "Provider port, circuit breaker",
-                  "id": "Provider port, circuit breaker"
+                  "en": "Provider port, seeded data today",
+                  "id": "Provider port, saat ini data seed"
                 },
                 "layer": 3,
                 "row": 3,
@@ -2442,16 +2425,23 @@
             "edges": [
               {
                 "from": "vendors",
-                "to": "web-portal"
+                "to": "web-portal",
+                "label": "HTTPS"
               },
               {
                 "from": "approvers",
-                "to": "web-portal"
+                "to": "web-portal",
+                "label": "HTTPS"
               },
               {
                 "from": "web-portal",
                 "to": "fastapi-backend",
                 "label": "REST"
+              },
+              {
+                "from": "web-portal",
+                "to": "blob-storage",
+                "label": "direct upload"
               },
               {
                 "from": "fastapi-backend",
@@ -2460,8 +2450,8 @@
               },
               {
                 "from": "fastapi-backend",
-                "to": "key-vault",
-                "label": "secrets"
+                "to": "blob-storage",
+                "label": "documents"
               },
               {
                 "from": "fastapi-backend",
@@ -2471,7 +2461,7 @@
               {
                 "from": "fastapi-backend",
                 "to": "sap-erp",
-                "label": "ERP calls"
+                "label": "circuit breaker"
               }
             ]
           },
@@ -3884,8 +3874,8 @@
                 "id": "caller",
                 "label": "Caller",
                 "sublabel": {
-                  "en": "Phone or web",
-                  "id": "Telepon atau web"
+                  "en": "Browser over WebRTC",
+                  "id": "Browser lewat WebRTC"
                 },
                 "layer": 0,
                 "row": 0,
@@ -3894,6 +3884,10 @@
               {
                 "id": "supervisor",
                 "label": "Supervisor",
+                "sublabel": {
+                  "en": "Next.js operator console",
+                  "id": "Console operator Next.js"
+                },
                 "layer": 0,
                 "row": 2,
                 "kind": "human"
@@ -3910,19 +3904,12 @@
                 "kind": "service"
               },
               {
-                "id": "console",
-                "label": "Next.js operator console",
-                "sublabel": {
-                  "en": "Takeover and hand-back",
-                  "id": "Ambil alih dan kembalikan"
-                },
-                "layer": 1,
-                "row": 2,
-                "kind": "client"
-              },
-              {
                 "id": "backend",
                 "label": "FastAPI realtime backend",
+                "sublabel": {
+                  "en": "Cancellable tools, 2.5 s budget",
+                  "id": "Tool bisa dibatalkan, budget 2,5 detik"
+                },
                 "layer": 2,
                 "row": 1,
                 "kind": "service"
@@ -3930,6 +3917,10 @@
               {
                 "id": "realtime",
                 "label": "Azure OpenAI Realtime",
+                "sublabel": {
+                  "en": "Speech to speech, barge-in",
+                  "id": "Speech-to-speech, barge-in"
+                },
                 "layer": 3,
                 "row": 0,
                 "kind": "ai"
@@ -3958,10 +3949,10 @@
               },
               {
                 "id": "ingest",
-                "label": "Document Intelligence ingestion",
+                "label": "Knowledge ingestion",
                 "sublabel": {
-                  "en": "Durable Functions",
-                  "id": "Durable Functions"
+                  "en": "Durable Functions, Document Intelligence",
+                  "id": "Durable Functions, Document Intelligence"
                 },
                 "layer": 4,
                 "row": 1,
@@ -3996,12 +3987,8 @@
               },
               {
                 "from": "supervisor",
-                "to": "console"
-              },
-              {
-                "from": "console",
                 "to": "backend",
-                "label": "human takeover"
+                "label": "takeover, hand-back"
               },
               {
                 "from": "ingest",
@@ -4139,8 +4126,8 @@
                 "id": "developers",
                 "label": "Developers",
                 "sublabel": {
-                  "en": "Pull requests",
-                  "id": "Pull request"
+                  "en": "Open pull requests",
+                  "id": "Membuka pull request"
                 },
                 "layer": 0,
                 "row": 0,
@@ -4149,6 +4136,10 @@
               {
                 "id": "security-team",
                 "label": "Security team",
+                "sublabel": {
+                  "en": "Next.js dashboard, Entra ID",
+                  "id": "Dashboard Next.js, Entra ID"
+                },
                 "layer": 0,
                 "row": 1,
                 "kind": "human"
@@ -4165,19 +4156,12 @@
                 "kind": "external"
               },
               {
-                "id": "dashboard",
-                "label": "Next.js dashboard",
-                "sublabel": {
-                  "en": "Entra ID sign-in",
-                  "id": "Sign-in Entra ID"
-                },
-                "layer": 1,
-                "row": 1,
-                "kind": "client"
-              },
-              {
                 "id": "api",
-                "label": "FastAPI API",
+                "label": "FastAPI control plane",
+                "sublabel": {
+                  "en": "Repo-scoped tokens, no repo code",
+                  "id": "Token per repo, tanpa kode repo"
+                },
                 "layer": 2,
                 "row": 0,
                 "kind": "service"
@@ -4185,18 +4169,11 @@
               {
                 "id": "service-bus",
                 "label": "Service Bus",
-                "layer": 3,
-                "row": 0,
-                "kind": "service"
-              },
-              {
-                "id": "scan-jobs",
-                "label": "Container Apps Jobs",
                 "sublabel": {
-                  "en": "KEDA-scaled, 8 engines, isolated",
-                  "id": "Diskalakan KEDA, 8 engine, terisolasi"
+                  "en": "Scan and fix queues",
+                  "id": "Antrean scan dan fix"
                 },
-                "layer": 4,
+                "layer": 3,
                 "row": 0,
                 "kind": "service"
               },
@@ -4212,11 +4189,22 @@
                 "kind": "ai"
               },
               {
+                "id": "scan-jobs",
+                "label": "Container Apps Jobs",
+                "sublabel": {
+                  "en": "8 engines, isolated, KEDA-scaled",
+                  "id": "8 engine, terisolasi, diskalakan KEDA"
+                },
+                "layer": 4,
+                "row": 0,
+                "kind": "service"
+              },
+              {
                 "id": "cosmos",
                 "label": "Cosmos DB",
                 "sublabel": {
-                  "en": "Findings and vector search",
-                  "id": "Finding dan vector search"
+                  "en": "Findings and vector index",
+                  "id": "Finding dan vector index"
                 },
                 "layer": 4,
                 "row": 1,
@@ -4235,20 +4223,27 @@
                 "label": "webhook"
               },
               {
+                "from": "security-team",
+                "to": "api",
+                "label": "dashboard, chat"
+              },
+              {
                 "from": "api",
                 "to": "service-bus",
-                "label": "scan job",
+                "label": "scan, fix jobs",
                 "async": true
               },
               {
                 "from": "service-bus",
                 "to": "scan-jobs",
+                "label": "KEDA trigger",
                 "async": true
               },
               {
                 "from": "scan-jobs",
-                "to": "cosmos",
-                "label": "findings"
+                "to": "api",
+                "label": "results",
+                "async": true
               },
               {
                 "from": "api",
@@ -4257,20 +4252,13 @@
               },
               {
                 "from": "api",
-                "to": "cosmos"
+                "to": "cosmos",
+                "label": "findings"
               },
               {
-                "from": "security-team",
-                "to": "dashboard"
-              },
-              {
-                "from": "dashboard",
-                "to": "api"
-              },
-              {
-                "from": "api",
+                "from": "scan-jobs",
                 "to": "github-app",
-                "label": "check run, fix PR"
+                "label": "check runs, fix PRs"
               }
             ]
           },
@@ -4314,8 +4302,8 @@
             {
               "value": "~9 min",
               "label": {
-                "en": "Production cut-over that closed the reproduced code-execution path",
-                "id": "Cut-over produksi yang menutup celah eksekusi kode temuan audit"
+                "en": "Outage window to cut production over to isolated scan jobs, closing the reproduced code-execution path",
+                "id": "Jeda layanan saat cut-over produksi ke job scan terisolasi, yang menutup celah eksekusi kode temuan audit"
               },
               "context": {
                 "en": "Part of the 14-item isolation hardening, delivered with Contributor-level cloud rights.",
@@ -4405,7 +4393,11 @@
                 "label": "Procurement reviewer",
                 "layer": 0,
                 "row": 0,
-                "kind": "human"
+                "kind": "human",
+                "sublabel": {
+                  "en": "Uploads a document packet",
+                  "id": "Mengunggah paket dokumen"
+                }
               },
               {
                 "id": "web",
@@ -4423,14 +4415,18 @@
                 "label": "FastAPI backend",
                 "layer": 2,
                 "row": 0,
-                "kind": "service"
+                "kind": "service",
+                "sublabel": {
+                  "en": "Two-pass pipeline, live progress",
+                  "id": "Pipeline dua tahap, progres live"
+                }
               },
               {
                 "id": "ocr",
                 "label": "Document Intelligence",
                 "sublabel": {
-                  "en": "OCR",
-                  "id": "OCR"
+                  "en": "OCR: Read, then Layout",
+                  "id": "OCR: Read, lalu Layout"
                 },
                 "layer": 3,
                 "row": 0,
@@ -4440,8 +4436,8 @@
                 "id": "agents",
                 "label": "Agent Framework YAML agents",
                 "sublabel": {
-                  "en": "Two-pass review",
-                  "id": "Review dua tahap"
+                  "en": "Per-document, then cross-document",
+                  "id": "Per dokumen, lalu lintas dokumen"
                 },
                 "layer": 3,
                 "row": 1,
@@ -4452,14 +4448,18 @@
                 "label": "Azure OpenAI",
                 "layer": 4,
                 "row": 1,
-                "kind": "ai"
+                "kind": "ai",
+                "sublabel": {
+                  "en": "Inputs screened by Prompt Shields",
+                  "id": "Input disaring Prompt Shields"
+                }
               },
               {
                 "id": "risk-engine",
                 "label": "Hybrid risk engine",
                 "sublabel": {
-                  "en": "Shadow mode",
-                  "id": "Shadow mode"
+                  "en": "Rules plus LLM, shadow mode",
+                  "id": "Rules plus LLM, shadow mode"
                 },
                 "layer": 3,
                 "row": 2,
@@ -4485,7 +4485,8 @@
               },
               {
                 "from": "web",
-                "to": "api"
+                "to": "api",
+                "label": "REST, live progress"
               },
               {
                 "from": "api",
@@ -4499,7 +4500,8 @@
               },
               {
                 "from": "agents",
-                "to": "openai"
+                "to": "openai",
+                "label": "model calls"
               },
               {
                 "from": "api",
