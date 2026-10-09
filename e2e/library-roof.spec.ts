@@ -1,18 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 
 test.describe.configure({ timeout: 150_000 });
 
 const BLOG_POST = "the-sun-the-moon-and-the-dark-sea";
-
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
 
 async function runMission(page: Page, missionId: string) {
   const label = content.missions.find((mission) => mission.id === missionId)!.label.en;

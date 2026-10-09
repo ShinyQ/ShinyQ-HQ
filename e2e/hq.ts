@@ -28,6 +28,20 @@ export async function asReturningVisitor(page: Page) {
   });
 }
 
+/**
+ * Collects page errors and any request to another origin. The local server does not apply the
+ * production CSP from public/_headers, so a runtime CDN fetch only fails on Cloudflare.
+ */
+export function collectErrors(page: Page) {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.protocol.startsWith("http") && url.hostname !== "127.0.0.1" && url.hostname !== "localhost") errors.push(`cross-origin request: ${url.href}`);
+  });
+  return errors;
+}
+
 export async function snapshot(page: Page): Promise<HQSnapshot> {
   return page.evaluate(() => {
     const hq = (window as unknown as HQWindow).__hq;
