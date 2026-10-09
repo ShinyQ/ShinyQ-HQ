@@ -1,0 +1,80 @@
+---
+title: "Spec-driven development with AI coding agents"
+date: "2026-10-09"
+excerpt: "How I built a vendor management portal as the only engineer in about six weeks: numbered specs first, AI coding agents implementing behind CI gates, and every merge decided by me. Plus the bugs the process did not catch."
+tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-review", "case-study"]
+readingTime: "6 min"
+---
+
+Between 21 August and 4 October 2026 I built a vendor management portal for a business unit in the group, as the only engineer on the repository. It covers vendor onboarding, purchase orders, delivery acceptance, invoices with tax verification and multi-step approvals, on FastAPI, PostgreSQL and Next.js, deployed to Azure App Service. By the end it had 51 numbered specs, 21 backend domains and 110 Alembic migrations. The product has no AI features. The way it was built does.
+
+AI coding agents (GitHub Copilot and Claude) wrote most of the code. I wrote the specs, designed the architecture, reviewed the pull requests and decided what merged. This post is about why that split only worked because the specs came first, and about the bugs that got through anyway.
+
+## Why specs before code
+
+When an agent writes the code, typing stops being the bottleneck. The scarce things are knowing what "correct" means and being able to check it. An agent will produce a plausible approval engine quickly. Whether it is the approval engine the business needs is a question the agent cannot answer, and a long chat history is a poor place to keep that answer.
+
+So the first commit was not code. It was a full blueprint written with GitHub Spec Kit: fifteen specs covering the domain, identity, data and deployment, plus a constitution with the rules every agent had to follow. Every feature spec after that carried its own task IDs, acceptance-criteria IDs and business-rule IDs, and by the end the repository referenced thousands of them.
+
+Specs are also cheap to change while they are still prose. On day two I replaced Cosmos DB in the blueprint with PostgreSQL, because the domain needed relational integrity and constraints, and recorded the reason in a decision record. On day four I ran an adversarial consistency review across the specs and fixed 24 defects, mostly specs contradicting each other, before any agent built on top of them. Both changes cost an afternoon of editing instead of a migration.
+
+## The loop
+
+Every feature went through the same path:
+
+```
+numbered spec (task, AC and business-rule IDs)
+  -> constitution + agent conventions file
+  -> agent implements in its own worktree
+  -> pull request, CI gates
+  -> my review, my merge
+```
+
+The constitution and conventions file held the rules that are easy to violate and expensive to fix later. One example is the two-boundary rule: the Next.js tier holds presentation and a backend-for-frontend only, and all business logic lives in FastAPI. Another is that permissions are re-derived from the database on every request, never trusted from the client.
+
+For the bigger stages I ran several agents in parallel, each in a separate git worktree, and integrated their branches through fan-in pull requests. The CI gates were what made that safe to review. Besides typecheck, lint, build, a bundle-size budget and ruff, CI ran guards that tie work back to spec IDs, a drift check on the generated TypeScript API client, a secret scan, architecture tests, and an extended tier against a real PostgreSQL 16 service. Deploys only ran after CI was green.
+
+The gates did real work. Of the latest recorded CI runs from 1 September onward, 140 of 488 failed. I did not classify those failures, so I cannot say how many were agent mistakes, my mistakes or infrastructure noise.
+
+Every one of the 179 pull requests was opened and merged by me. That also means something less flattering: there was no second human reviewer.
+
+## When the workflow re-centred on purchase orders
+
+The first model was built around delivery acceptance documents. In September the business side approved a revised process (on 11 September) that moved the centre of the product to the purchase order: one shared PO workspace for vendors and internal staff, documents replaced in place, and exact stored references instead of "the newest document wins". Later, direction from the product owner on 25 September removed the configurable approval matrix in favour of routes resolved in code.
+
+I wrote these changes as new numbered specs, and the purchase-order pivot landed between 9 and 16 September. The approval-matrix removal used an expand and contract migration, so existing data stayed readable while the new routing took over.
+
+My reasoning on why specs helped here, not a measurement: the change became a diff between documents before it became a diff in code. I could see which acceptance criteria were superseded, give agents bounded tasks against the new spec, and rely on the ledger guard to flag work with no requirement behind it. I have no counterfactual, so I cannot say how much time this saved.
+
+The cost showed up later. Superseded specs left unreachable code behind, and I did not retire it until a dedicated test-debt and dead-code pass on 4 October. Specs told the agents what to build. Nothing told them what to delete.
+
+## What got through anyway
+
+The repository does not record who wrote each line, me or an agent. Agents wrote most of the code and I approved all of it, so I treat these failures as mine.
+
+**A green CI that never ran the integration tier.** The integration tests needed a database URL. When it was missing, pytest skipped the tier and CI reported green. Running the full suite against a real PostgreSQL produced 45 failures and 301 errors, of which 5 were real defects. I fixed those 5, made the database requirement explicit, and corrected what CI claimed to check. A skipped test is a silent failure, and an agent iterating against that CI had no way to know.
+
+**A session cookie that only broke with realistic data.** Sign-in uses a sealed HttpOnly cookie that wraps a signed token, and the token carried the user's permissions. With 58 permission grants the cookie reached 4,234 to 4,491 bytes, past the roughly 4 KB that browsers accept, and staff sign-ins returned 500. The tests had passed because a fixture used a 9-character fake signature. I tried chunking the cookie, then compression (not available on the edge runtime), and then fixed the actual design: the token now keeps only the codes the UI needs for gating, 2,083 bytes, since the backend re-derives permissions on every request anyway.
+
+**A sign-in that succeeded and then forgot you.** After Entra ID sign-in, the callback returned 200 and the next session check returned 401, "session does not exist". Watching from a second database connection, I could see the rows did exist, just slightly too late. The FastAPI dependency that owned the transaction committed during teardown, and in the version I had pinned that teardown ran after the response was sent. The browser was faster than the commit. It was not a login bug: every write endpoint had the same ordering. The fix commits before the response goes out and fails loudly if that step is missing.
+
+None of these were spec gaps. They lived in a framework lifecycle, a browser limit and a CI configuration, places a spec does not describe. My takeaway: agents follow the spec and the tests they are given, and if the test environment is wrong, they inherit the mistake.
+
+## What I would keep and change
+
+Keep:
+
+- Numbered specs with task, acceptance and business-rule IDs, reviewed adversarially before any code exists.
+- One constitution and conventions file that every agent reads, with architecture rules backed by tests.
+- CI that checks traceability and contracts, not only unit tests.
+- A human who owns the merge gate.
+
+Change:
+
+- A second human reviewer for authentication, approvals and payment-related flows. Owning every merge alone was the weakest part of the loop.
+- Fail-closed CI from day one: a skipped tier fails the build.
+- Production-shaped fixtures, and a deployed smoke test against the real identity provider before calling sign-in done.
+- Deletion as part of every superseding spec.
+- Measurement. I did not record time per spec, defects by origin, or a baseline without agents. That is why this post makes no productivity claim. Next time I will track those from the first spec.
+
+I now run the same setup, GitHub Spec Kit with versioned constitutions, across at least nine repositories. Agents typed most of the code. The specs, the review and the outcomes are mine.

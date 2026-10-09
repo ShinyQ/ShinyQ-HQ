@@ -1,0 +1,108 @@
+---
+title: "45% panggilan LLM kami gagal: apa kata pesan error-nya"
+date: "2026-10-09"
+excerpt: "Sekitar 45% evaluasi screening CV gagal dalam run 22 pasang. Dua pesan error menunjuk ke dua akar masalah, perbaikan berlapis, dan tujuh regression test yang dibangun dari kegagalan asli."
+tags: ["llm-reliability", "structured-output", "azure-openai", "testing", "case-study"]
+readingTime: "6 min"
+---
+
+Di awal membangun platform AI CV screening di Metrodata, saya menjalankan satu batch berisi 22 pasang kandidat dan lowongan (2 job post kali 11 kandidat) lewat pipeline. Sekitar 45% evaluasi screening gagal. Bukan skornya rendah, tapi memang tidak ada hasil yang bisa dipakai sama sekali.
+
+Tulisan ini membahas perbaikannya, dan yang sama pentingnya, apa yang dibuktikan dan tidak dibuktikan oleh perbaikan itu. Versi singkatnya: saya berhenti menebak, membaca dua pesan error yang benar-benar muncul dari pipeline, memetakan masing-masing ke akar masalahnya, memperbaiki keduanya secara berlapis, lalu menjadikan pesan error persis itu sebagai regression test.
+
+## Konteksnya
+
+Platform ini membantu recruiter melakukan screening CV. Recruiter membuat job post, sistem mengekstrak rubric kebutuhan berbobot, lalu LLM mengevaluasi setiap kandidat terhadap lowongan tersebut dan mengembalikan JSON terstruktur: fit score, bukti, dan alasan tertulis. Sekarang keputusan ada di tangan recruiter, AI hanya menyediakan bukti.
+
+Setiap evaluasi berjalan sebagai activity Azure Durable Functions yang memanggil reasoning model di Azure AI Foundry lewat Responses API. Jalur parsing awalnya sederhana: buang code fence markdown dari balasan model, lalu panggil `json.loads`. Kalau berhasil, semua proses setelahnya ikut berhasil. Kalau gagal, pasangan itu hilang.
+
+## Dua pesan error, bukan satu masalah yang kabur
+
+Diagnosis seperti "LLM kadang mengembalikan JSON yang rusak" biasanya berujung pada utak-atik prompt secara acak. Jadi saya mengelompokkan kegagalan berdasarkan pesan error-nya. Ternyata hanya ada dua:
+
+- `Response missing required keys: {'fitScore'}`
+- `Invalid control character at: line 15 column 95`
+
+Dua pesan berbeda biasanya berarti dua mekanisme berbeda.
+
+## Pesan pertama: jawabannya kehabisan ruang
+
+Petunjuk pertama ada di key yang hilang. `fitScore` adalah key terakhir di schema output. Kalau model membuang field secara acak, key yang hilang juga akan acak. Kalau yang hilang justru key terakhir, penjelasan yang lebih masuk akal (ini penalaran saya, bukan hasil pengukuran) adalah output berhenti sebelum model sampai ke sana.
+
+Konfigurasinya menjelaskan kenapa. Reasoning effort di-set ke high, prompt meminta alasan tertulis yang panjang (10 sampai 15 kalimat), dan tidak ada batas token output yang eksplisit. Pada reasoning model, token reasoning yang tersembunyi dan jawaban yang terlihat memakai budget output yang sama. Reasoning panjang ditambah alasan panjang menghabiskan budget di tengah JSON, sehingga field terakhir tidak pernah muncul.
+
+Prompt-nya juga punya masalah kecil: model diminta tidak memakai code fence, tapi contoh yang diberikan justru dibungkus code fence. Instruksi yang saling bertentangan seperti ini murah untuk diperbaiki.
+
+## Pesan kedua: newline di tempat yang dilarang JSON
+
+Pesan kedua adalah error yang dilempar modul `json` Python dalam mode strict ketika sebuah string value berisi control character mentah. Penyebabnya: model menulis newline literal di dalam string value JSON, bukan bentuk yang sudah di-escape. JSON yang hampir valid tetap saja tidak valid.
+
+## Perbaikan berlapis
+
+Tidak ada satu perubahan yang menutup kedua penyebab sekaligus, jadi saya memperbaikinya berlapis:
+
+1. **JSON mode.** Saya mengatur `response_format` ke `json_object` supaya API membatasi balasan ke JSON, tidak hanya mengandalkan prompt.
+2. **Batas token output.** Batas eksplisit 6.000 dan 16.000 token untuk dua jenis panggilan, supaya budget menjadi keputusan yang disengaja, bukan kebetulan.
+3. **Reasoning effort diturunkan.** Dari high ke medium, supaya porsi budget yang terpakai untuk reasoning tersembunyi sebelum jawaban dimulai jadi lebih kecil.
+4. **JSON extractor yang paham tanda kutip.** Alih-alih membuang fence dengan pattern, extractor mencari objek JSON dengan menyeimbangkan kurung kurawal sambil melacak apakah posisinya sedang di dalam string. Dengan begitu, kurung kurawal di dalam value yang dikutip tidak mengakhiri objek terlalu cepat.
+5. **Escape control character hanya di dalam string.** Newline dan tab mentah di-escape kalau muncul di dalam string value, dan dibiarkan kalau berada di antara token, karena di sana statusnya whitespace yang sah.
+6. **Retry yang tetap rapi pencatatannya.** Maksimal tiga percobaan per panggilan, dengan penggunaan token dijumlahkan dari semua percobaan supaya retry tetap tercatat di usage accounting. Setelah percobaan ketiga gagal, error dilempar ulang supaya retry policy Durable Functions bisa mengambil alih.
+7. **Perbaikan prompt.** Tidak ada lagi contoh ber-fence di bawah aturan "jangan pakai fence".
+
+Berikut sketsa generik untuk lapisan 5. Ini ilustrasi, bukan kode produksi:
+
+```python
+ESC = {"\n": "\\n", "\r": "\\r", "\t": "\\t"}
+
+def escape_controls(raw: str) -> str:
+    out, in_str, esc = [], False, False
+    for ch in raw:
+        if esc:
+            esc = False
+        elif in_str and ch == "\\":
+            esc = True
+        elif ch == '"':
+            in_str = not in_str
+        elif in_str and ord(ch) < 0x20:
+            ch = ESC.get(ch, f"\\u{ord(ch):04x}")
+        out.append(ch)
+    return "".join(out)
+```
+
+Kuncinya ada di flag `in_str`. Mengganti semua newline secara membabi buta juga akan mengubah whitespace yang sah di antara key. Dengan melacak tanda kutip dan escape, perubahannya tetap presisi.
+
+## Mengubah kegagalan menjadi test
+
+Perbaikan ini dirilis bersama 7 unit test yang mereproduksi pesan error persis dari run tersebut, lalu menjalankannya lewat jalur parsing yang baru. Ketujuhnya lolos, begitu juga seluruh test suite core saat itu (12 dari 12). Platform ini baru mulai punya test beberapa hari sebelumnya, jadi test ini termasuk yang paling awal.
+
+Fixture "JSON rusak" yang sintetis hanya menguji apa yang kita bayangkan bisa salah. Fixture yang dibangun dari balasan model yang sebenarnya menguji apa yang memang sudah salah, dan akan gagal dengan jelas kalau suatu hari ada yang "menyederhanakan" parser kembali ke `json.loads`.
+
+## Apa yang bisa dan tidak bisa saya klaim
+
+Bagian ini yang paling ingin saya jaga ketelitiannya.
+
+**Yang terverifikasi:** sekitar 45% evaluasi gagal pada run 22 pasang itu; dua pesan error di atas; akar masalahnya; perbaikan berlapisnya; dan 7 regression test yang lolos.
+
+**Yang tidak tercatat:** saya tidak mencatat run ulang untuk 22 pasang yang sama setelah perbaikan. Jadi saya tidak bisa memberi angka "dari 45% menjadi X%" untuk run itu, dan saya tidak akan mengarangnya. Yang bisa saya katakan: dua mekanisme kegagalan itu sudah teridentifikasi, diperbaiki, dan dilindungi test.
+
+**Angka terpisah yang datang belakangan:** beberapa bulan kemudian proyek ini sudah punya offline evaluation harness. Baseline-nya mengukur tingkat parse failure akhir (setelah retry) sebesar 0,13%: 1 dari 800 panggilan non-adversarial. Run itu memakai model yang lebih baru dan versi prompt yang berbeda, jadi itu bukan pengukuran sebelum dan sesudah untuk perbaikan ini. Angka itu menunjukkan posisi reliability di baseline yang lebih baru, bukan hasil perubahan ini secara mandiri.
+
+## Temuan terkait
+
+Tiga masalah berikutnya di platform yang sama punya pola serupa:
+
+- **Retry yang tidak benar-benar retry.** Retry Durable Functions yang saya andalkan di lapisan 6 ternyata tidak selalu jalan, dan counter hasil bisa terhitung dua kali. Solusinya: satu klasifikasi tunggal untuk error yang retryable dan terminal, ditambah penulisan outcome marker dan counter dalam satu transactional batch.
+- **Eval yang mengukur hal yang salah.** Respons throttling (HTTP 429) ikut terhitung sebagai schema failure, dan satu run eval ternyata mengukur revisi kode yang lebih lama. Sekarang transport failure dihitung terpisah, dan setiap run mencatat fingerprint dari kode yang diuji.
+- **Panggilan yang diam-diam macet.** Sekitar 3% panggilan model macet sampai timeout default SDK 600 s. Deadline eksplisit per panggilan (90 s untuk screening, 240 s untuk deep analysis) sekarang membatasi setiap panggilan.
+
+Reasoning effort juga muncul lagi belakangan sebagai urusan latency. Dalam beberapa putaran evaluasi terkontrol, latency p95 screening adalah 21,1 s di effort high dan 12,1 s di medium, dengan gate fairness dan prompt injection tetap lolos di medium. Yang dirilis adalah medium.
+
+## Pelajaran untuk reliability structured output
+
+- **Baca pesan error-nya sebelum mengubah apa pun.** Dua pesan berarti dua mekanisme. Mengelompokkan kegagalan berdasarkan pesan mengubah persentase yang menakutkan menjadi dua bug yang konkret.
+- **Field mana yang hilang itu petunjuk.** Key terakhir yang konsisten hilang mengarah ke truncation, bukan ke model yang "lupa".
+- **Token reasoning berbagi budget output.** Pasang batas eksplisit, dan perlakukan reasoning effort sebagai pengatur budget, bukan hanya pengatur kualitas.
+- **Pakai JSON mode dari API, lalu tetap parse secara defensif.** Batasan mengurangi kegagalan; extractor yang paham tanda kutip dan retry yang terbatas menangani sisanya.
+- **Jaga retry tetap jujur.** Jumlahkan token dari semua percobaan, batasi jumlah percobaan, dan lempar ulang error supaya lapisan berikutnya bisa memutuskan.
+- **Simpan kegagalan asli sebagai test.** Ini asuransi paling murah agar perbaikan tidak dibatalkan tanpa sadar.
+- **Sebutkan apa yang tidak diukur.** Perbaikan dengan akar masalah yang jelas dan regression test adalah klaim yang kuat. Angka pasca-perbaikan yang tidak pernah dicatat bukan klaim.

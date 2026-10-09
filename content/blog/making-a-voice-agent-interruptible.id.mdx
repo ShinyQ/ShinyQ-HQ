@@ -1,0 +1,95 @@
+---
+title: "Cara kami membuat voice agent bisa diinterupsi"
+date: "2026-10-09"
+excerpt: "Barge-in pada voice agent speech-to-speech untuk contact center kami rusak dengan dua cara berbeda. Ini cara saya memperbaiki keduanya, bagaimana A/B kecil yang terkontrol mengukur penurunan dari sekitar 2 detik menjadi 0,2 detik, dan eksperimen yang tidak didukung data."
+tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
+readingTime: "6 min"
+---
+
+Hal paling manusiawi yang dilakukan penelepon adalah memotong pembicaraan. Di voice agent realtime untuk contact center yang saya pimpin di Metrodata, memotong agent saat ia sedang mencari jawaban di knowledge base dulu butuh sekitar dua detik sampai benar-benar berhenti. Setelah dua perbaikan, A/B test yang terkontrol menunjukkan angka sekitar 0,2 detik.
+
+Tulisan ini membahas apa yang rusak, bagaimana saya mengukur perbaikannya (dengan sampel kecil, dan saya akan terbuka soal itu), serta eksperimen yang tidak membuahkan hasil dan tidak pernah dinyalakan.
+
+## Apa arti barge-in untuk agent speech-to-speech
+
+Agent ini berjalan di atas Azure OpenAI Realtime. Audio penelepon dikirim secara streaming, model membalas dengan audio suara secara streaming juga, dan pada mode default tidak ada tahap speech-to-text dan text-to-speech yang terpisah. Di tengahnya ada backend Python FastAPI: menjembatani media channel ke model, menjalankan tool seperti pencarian knowledge lewat Azure AI Search, dan mengalihkan panggilan ke operator manusia jika diperlukan.
+
+Barge-in terjadi ketika penelepon mulai bicara saat agent sedang bicara, atau baru akan bicara. Agent yang baik melakukan tiga hal:
+
+1. Menghentikan audio yang sedang didengar penelepon.
+2. Berhenti menghasilkan sisa jawaban.
+3. Menyamakan ingatannya tentang percakapan dengan apa yang benar-benar didengar penelepon.
+
+Langkah ketiga yang sering dilewatkan. Kalau model mengira sudah menyampaikan satu paragraf penuh padahal penelepon baru mendengar separuhnya, jawaban berikutnya akan dibangun di atas kalimat yang tidak pernah sampai ke siapa pun.
+
+## Masalah pertama: selesai bagi model, masih diputar bagi penelepon
+
+Bug pertama mudah dijelaskan: interupsi diabaikan begitu model selesai menghasilkan jawaban. Logika cancel kami langsung return saat model melaporkan response sudah selesai. Padahal pada saat itu media channel (waktu itu Azure Communication Services) masih bisa punya antrean audio yang belum diputar. Dari sisi penelepon, agent masih bicara, dan tidak ada yang menghentikannya.
+
+Masalahnya punya sisi kedua. Saat kami melakukan truncate pada percakapan, posisinya dihitung dari jumlah byte audio yang sudah kami teruskan, bukan dari apa yang sudah didengar penelepon. Jadi context model masih berisi audio yang sebenarnya masih tertahan di buffer.
+
+Perbaikannya adalah barge-in yang playout-aware. Sebuah playout tracker kecil memperkirakan berapa milidetik dari response saat ini yang benar-benar sudah diputar ke penelepon. Saat barge-in, urutannya penting. Berikut sketsa sederhananya, bukan kode produksi:
+
+```
+on caller speech start:
+    heard_ms = playout.heard_ms()
+    channel.stop_audio()      # drop queued audio
+    realtime.cancel()         # if still generating
+    realtime.truncate(item_id, heard_ms)
+```
+
+Hening dulu, karena itu yang pertama kali dirasakan penelepon. Setelah itu generation dibatalkan, lalu conversation item di-truncate pada posisi yang sudah didengar, sehingga context model berakhir tepat di titik yang sampai ke telinga penelepon.
+
+Catatan jujur: saya tidak mencatat angka sebelum dan sesudah khusus untuk perbaikan ini. Perbaikan ini dirilis sebagai salah satu item prioritas tertinggi dari architecture review internal, dan pengukuran di bawah mencakup jalur kode yang berbeda.
+
+## Masalah kedua: agent tidak bisa mendengar saat sedang mencari
+
+Masalah kedua lebih terasa. Setiap kali agent sedang mencari di knowledge base, memotongnya butuh sekitar dua detik. Penyebabnya, tool pencarian knowledge dijalankan inline di receive loop provider, yaitu coroutine yang membaca setiap event dari model realtime. Selama loop itu menunggu hasil pencarian, ia tidak membaca event lain, termasuk sinyal bahwa penelepon sudah mulai bicara.
+
+Perbaikannya memindahkan eksekusi tool keluar dari loop. Setiap tool call sekarang berjalan di asyncio task tersendiri yang bisa dibatalkan, dengan satu batas waktu 2,5 detik. Perubahan yang sama menambahkan satu response gate, sehingga hanya ada satu response yang berjalan pada satu waktu, dan membuat hand-off ke operator manusia menjadi non-blocking. Lagi-lagi sketsa sederhana:
+
+```
+task = asyncio.create_task(
+    asyncio.wait_for(search(query), timeout=2.5))
+# the receive loop keeps reading events
+# on barge-in: task.cancel()
+```
+
+Sekarang barge-in saat pencarian akan membatalkan task tersebut, dan loop tidak pernah berhenti mendengarkan. Alasan saya memakai satu batas waktu, bukan beberapa timeout yang bertumpuk: hanya ada satu angka yang perlu dipahami, dan saat waktunya habis agent melanjutkan percakapan, bukan macet.
+
+## Cara saya mengukurnya
+
+Saya ingin pengujian yang satu-satunya perbedaan antar arm adalah jalur kodenya. Kami sudah punya voice evaluation harness: media emulator yang memutar rekaman audio penelepon ke backend seolah-olah panggilan sungguhan, satu set golden question, dan LLM judge yang terkalibrasi untuk menilai kualitas jawaban. Saya menambahkan A/B lama versus baru ke harness itu, dengan jalur lama dijalankan lewat adapter legacy.
+
+Kedua arm memakai model deployment yang sama, search index yang sama, dan audio penelepon yang sama. A/B utama saya jalankan dari runner sekali pakai di Azure Container Instances, bukan dari laptop, supaya jaringan lokal saya tidak ikut memengaruhi hasil; hasil dari laptop hanya disimpan sebagai lampiran.
+
+Hasil pada giliran yang memakai knowledge base:
+
+- Latency barge-in pada jalur lama: 1.875 sampai 2.140 ms.
+- Latency barge-in pada jalur baru: 93 sampai 220 ms.
+- Jalur baru menjawab pertanyaan knowledge di 4 dari 4 panggilan. Jalur lama mengalihkan ke manusia di 4 dari 4 panggilan.
+
+Sekarang batasannya. Sampelnya n=4 panggilan per arm. Itu cukup untuk melihat selisih sekitar sepuluh kali lipat terjadi berulang, tetapi tidak cukup untuk persentil atau confidence interval. Panggilan ini dijalankan oleh harness di runner eksperimen, bukan traffic pelanggan, dan saya tidak punya pengukuran barge-in dari produksi untuk dikutip. Pengujian ini juga hanya mencakup barge-in saat giliran knowledge, bukan giliran percakapan biasa.
+
+## Yang tidak didukung oleh data
+
+Belakangan kami memindahkan voice channel ke LiveKit self-hosted, dan muncul masalah turn-taking yang berbeda: agent bicara menimpa penelepon. Tingkat cut-off di lingkungan live tercatat 53,3%.
+
+Hipotesis pertama saya adalah sinyal berhenti tidak sampai ke media layer dengan cukup cepat. Saya membuat reproduksi LiveKit lokal dengan trace berbasis monotonic clock, menjalankannya dengan model palsu dan model sungguhan, dan menuliskan aturan verdict sebelum menjalankan apa pun. Hipotesis itu sebagian besar terbantahkan: hanya sekitar 80 ms audio yang terdengar setelah clear. Penyebab sebenarnya adalah provider meng-commit giliran penelepon saat ada jeda alami, dan response basi yang tidak pernah dibatalkan.
+
+Saya merilis start-hold dan pembatalan response basi, lalu mengukur ulang di lingkungan live. Tingkat cut-off menjadi 60,0%. Angkanya tidak turun. Catatan saya tidak menyimpan jumlah giliran di balik kedua persentase itu, jadi anggap saja sebagai indikasi arah, tetapi yang jelas angka itu tidak menunjukkan perbaikan. Saya menuliskannya sebagai hasil negatif, bukan mengklaim masalahnya sudah beres.
+
+Rangkaian eksperimen yang sama menguji dua ide latency untuk giliran knowledge: klip audio singkat sebagai tanda "sedang dicek" yang diputar selama pencarian, dan aturan yang mendorong model mengucapkan kalimat pertama yang pendek lebih awal. Keduanya ditolak oleh verdict yang sudah ditetapkan sebelumnya, dan penyajian hasil prefetch tidak bisa diuji dengan bersih sehingga dilaporkan sebagai blocked. Beberapa hari sebelumnya, pengecekan yang juga ditetapkan di awal terhadap dua usulan perubahan default latency menolak masing-masing perubahan maupun gabungan keduanya, sehingga default tetap seperti semula.
+
+Tidak satu pun dari perubahan ini dinyalakan. Lever yang ditolak oleh eksperimen cut-off kemudian dihapus dari codebase, bukan dibiarkan sebagai switch yang tidur.
+
+## Pelajaran untuk membangun voice agent realtime
+
+- Lacak apa yang didengar penelepon, bukan apa yang dihasilkan model atau yang sudah Anda kirim. Lakukan truncate berdasarkan waktu yang sudah didengar.
+- Berhenti dengan urutan yang benar: hening dulu, lalu cancel, lalu perbaiki context model.
+- Jangan pernah menunggu I/O yang lambat di receive loop realtime. Jalankan tool sebagai task yang bisa dibatalkan dengan satu batas waktu.
+- Ukur dengan A/B yang perbedaannya hanya di jalur kode, jalankan di luar laptop Anda, dan cantumkan n.
+- Tulis aturan verdict sebelum eksperimen, dan terima hasil negatifnya. Masalah cut-off belum terselesaikan, dan catatannya mengatakan begitu.
+- Hapus apa yang ditolak oleh data.
+
+Catatan soal proses: setiap perbaikan di atas dimulai dari spec tertulis. Saya mengarahkan AI coding agent untuk sebagian besar implementasinya, lalu me-review dan melakukan merge. Pengukuranlah yang membuat perubahan-perubahan itu layak dipercaya, bagi saya sendiri maupun bagi orang lain.
