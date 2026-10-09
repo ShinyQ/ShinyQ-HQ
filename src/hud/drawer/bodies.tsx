@@ -2,6 +2,8 @@ import type { ComponentType } from "react";
 import type { Locale } from "@/content/schema";
 import type { RoomView } from "@/content/room-views/types";
 import type { RoomKind } from "@/experience/missions/rooms";
+import { ResearchBody } from "./ResearchBody";
+import { RoofBody } from "./RoofBody";
 
 export interface RoomBodyProps {
   view: RoomView;
@@ -13,4 +15,7 @@ export interface RoomBodyProps {
  * generic sections (metrics, sections, stack, gallery) register a component here, one line each.
  * Rooms without an entry use the generic renderer in RoomDrawer.
  */
-export const ROOM_BODIES: Partial<Record<RoomKind, ComponentType<RoomBodyProps>>> = {};
+export const ROOM_BODIES: Partial<Record<RoomKind, ComponentType<RoomBodyProps>>> = {
+  research: ResearchBody,
+  roof: RoofBody,
+};

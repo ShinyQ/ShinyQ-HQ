@@ -100,4 +100,32 @@ export interface ExperienceData {
   labs: { pods: LabPod[]; wings: Record<Wing, string> };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
   career: CareerData;
+  library: LibraryData;
+  roof: RoofData;
+}
+
+/** L4 payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/library.ts`). Posts keep `getPosts()` order (newest first), like the room catalog. */
+export interface LibraryData {
+  posts: {
+    slug: string;
+    title: string;
+    date: string;
+    languages: ("en" | "id")[];
+    /** External (Medium) posts have no `/blog` page. */
+    url: string | null;
+  }[];
+  /** Papers and the thesis (newest first). */
+  research: { id: string; title: string; kind: "paper" | "thesis"; year: number; publisher: string | null }[];
+  /** Google Scholar style profile metrics with their date, if published. */
+  researchMetrics: { source: string; citations: number; hIndex: number; asOf: string } | null;
+  /** Models and datasets (the models shelf, room `L4:publications`). */
+  models: { id: string; title: string; kind: "model" | "dataset"; venue: string | null; year: number }[];
+  talks: { id: string; title: string; event: string; date: string; role: "speaker" | "author" | "trainer" }[];
+}
+
+/** RF payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/roof.ts`). */
+export interface RoofData {
+  availability: string;
+  email: string;
+  channels: { id: "linkedin" | "github" | "huggingface" | "medium" | "googleScholar" | "ieeeXplore"; label: string; href: string }[];
 }

@@ -1,7 +1,7 @@
-import { groupEntriesByYear, sortPods } from "@/content/selectors";
+import { groupEntriesByYear, isResearch, sortPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
 
-export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "roof";
+export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -35,7 +35,7 @@ export interface YearInfo {
 }
 
 /** UI labels for structural rooms that have no content title (they come from `messages/*.json` `hud.rooms`). */
-export type StructuralRoom = "profile" | "stats" | "skills" | "certifications" | "workshop" | "publications" | "talks" | "contact" | "cv";
+export type StructuralRoom = "profile" | "stats" | "skills" | "certifications" | "workshop" | "publications" | "talks" | "contact" | "cv" | "research";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
@@ -132,7 +132,18 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
       surpriseWeight: post.url ? 0 : 1,
     });
   }
-  add({ floor: "L4", slug: "publications", kind: "shelf", title: labels.publications, keywords: library.publications.flatMap((p) => [p.title, p.kind, String(p.year)]), path: "/library#publications", floorPath: "/library#publications", surpriseWeight: 0 });
+  const research = library.publications.filter((p) => isResearch(p.kind));
+  add({
+    floor: "L4",
+    slug: "research",
+    kind: "research",
+    title: labels.research,
+    keywords: ["research", "riset", "paper", "publication", "Google Scholar", "IEEE", ...research.flatMap((p) => [p.title, p.kind, String(p.year), p.venue ?? "", p.publisher ?? "", p.doi ?? ""])].filter(Boolean),
+    path: "/library#research",
+    floorPath: "/library#research",
+    surpriseWeight: 0.5,
+  });
+  add({ floor: "L4", slug: "publications", kind: "shelf", title: labels.publications, keywords: library.publications.filter((p) => !isResearch(p.kind)).flatMap((p) => [p.title, p.kind, String(p.year), p.venue ?? ""]).filter(Boolean), path: "/library#publications", floorPath: "/library#publications", surpriseWeight: 0 });
   add({ floor: "L4", slug: "talks", kind: "shelf", title: labels.talks, keywords: library.talks.flatMap((t) => [t.title.en, t.title.id, t.event]), path: "/library#talks", floorPath: "/library#talks", surpriseWeight: 0 });
 
   // RF Roof

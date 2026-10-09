@@ -6422,31 +6422,83 @@
         {
           "id": "ewallet-sentiment-cnn-lstm",
           "title": "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method",
+          "authors": [
+            "Ananda Affan Fattahila",
+            "Fendi Irfan Amorokhman",
+            "Kaenova Mahendra Auditama",
+            "Kurniadi Ahmad Wijaya",
+            "Ade Romadhony"
+          ],
+          "venue": "2021 International Conference on Artificial Intelligence and Big Data Analytics (ICAIBDA)",
+          "publisher": "IEEE",
+          "date": "2021-10-27",
           "year": 2021,
           "kind": "paper",
-          "url": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet"
+          "doi": "10.1109/icaibda53487.2021.9689712",
+          "url": "https://doi.org/10.1109/icaibda53487.2021.9689712",
+          "code": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet",
+          "citations": 10,
+          "summary": {
+            "en": "Uses CNN and LSTM models to read the sentiment of Indonesian digital wallet app reviews.",
+            "id": "Memakai model CNN dan LSTM untuk membaca sentimen ulasan aplikasi dompet digital Indonesia."
+          }
         },
         {
           "id": "covid-19-herd-immunity-study",
           "title": "Study on the Dynamics of COVID-19 Cases in Achieving Herd Immunity in Indonesia",
+          "authors": [
+            "Pratama Azmi Atmajaya",
+            "Kurniadi Ahmad Wijaya",
+            "Alif Adwitiya Pratama",
+            "Aditya Firman Ihsan"
+          ],
+          "venue": "2021 International Conference on Intelligent Cybernetics Technology & Applications (ICICyTA)",
+          "publisher": "IEEE",
+          "date": "2021-12-01",
           "year": 2021,
           "kind": "paper",
-          "url": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast"
+          "doi": "10.1109/icicyta53712.2021.9689122",
+          "url": "https://doi.org/10.1109/icicyta53712.2021.9689122",
+          "code": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast",
+          "summary": {
+            "en": "Forecasts COVID-19 case trends in Indonesia to study how the country could reach herd immunity.",
+            "id": "Memprediksi tren kasus COVID-19 di Indonesia untuk mempelajari jalan menuju herd immunity."
+          }
         },
         {
           "id": "sentiboard-paper",
-          "title": "Aplikasi Sentiboard (Dashboard Sentimen Universitas Menggunakan Model IndoBERT)",
+          "title": "Implementasi Model IndoBERT pada Dashboard Sentimen Media Sosial (Studi Kasus Universitas XYZ)",
+          "authors": [
+            "Kurniadi Ahmad Wijaya"
+          ],
+          "venue": "eProceedings of Engineering, Vol. 10 No. 4",
+          "publisher": "Telkom University",
+          "date": "2023-08",
           "year": 2023,
           "kind": "paper",
-          "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App"
+          "url": "https://repositori.telkomuniversity.ac.id/pustaka/187904/implementasi-model-indobert-pada-dashboard-sentimen-media-sosial-studi-kasus-universitas-xyz-.html",
+          "pdf": "https://openlibrarypublications.telkomuniversity.ac.id/index.php/engineering/article/download/20853/20321",
+          "code": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
+          "citations": 3,
+          "summary": {
+            "en": "Applies an IndoBERT model to a dashboard that tracks social media sentiment about a university (BSc thesis publication).",
+            "id": "Menerapkan model IndoBERT pada dashboard yang memantau sentimen media sosial tentang sebuah universitas (publikasi skripsi S1)."
+          }
         },
         {
           "id": "sentiboard-bsc-thesis",
           "title": "Sentiboard: University Sentiment Dashboard Using IndoBERT",
+          "authors": [
+            "Kurniadi Ahmad Wijaya"
+          ],
           "venue": "Telkom University",
           "year": 2023,
           "kind": "thesis",
-          "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App"
+          "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
+          "summary": {
+            "en": "BSc thesis: Sentiboard, a university sentiment dashboard built on IndoBERT.",
+            "id": "Skripsi S1: Sentiboard, dashboard sentimen universitas berbasis IndoBERT."
+          }
         },
         {
           "id": "indobert-university-reviews-model",
@@ -6534,7 +6586,13 @@
           "date": "2022-01",
           "role": "trainer"
         }
-      ]
+      ],
+      "researchMetrics": {
+        "source": "Google Scholar",
+        "citations": 13,
+        "hIndex": 2,
+        "asOf": "2026-10"
+      }
     },
     "roof": {
       "contact": {
@@ -6542,7 +6600,9 @@
         "linkedin": "https://www.linkedin.com/in/kurniadiwijaya",
         "github": "https://github.com/ShinyQ",
         "huggingface": "https://huggingface.co/ShinyQ",
-        "medium": "https://kurniadiahmadwijaya.medium.com/"
+        "medium": "https://kurniadiahmadwijaya.medium.com/",
+        "googleScholar": "https://scholar.google.com/citations?user=u8OY1foAAAAJ",
+        "ieeeXplore": "https://ieeexplore.ieee.org/author/37089283106"
       },
       "availability": {
         "en": "Open to interesting software and AI engineering conversations",

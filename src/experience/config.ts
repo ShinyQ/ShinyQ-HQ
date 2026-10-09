@@ -1,6 +1,8 @@
 import type { FloorId } from "@/content/schema";
 import { buildCorridor } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
+import { LIBRARY_DOORS, libraryObstacles } from "./floors/library/layout";
+import { ROOF_DOORS, roofObstacles } from "./floors/roof/layout";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
 /** Tower constants from spec appendix 01 section 1. */
@@ -9,7 +11,7 @@ export const FLOOR_IDS = ["L1", "L2", "L3", "L4", "RF"] as const satisfies reado
 export const SLAB_THICKNESS = 0.4;
 
 /** Floors whose 3D content is built. Others are placeholders and keep the URL at /{locale}. */
-export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3"];
+export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -126,7 +128,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
     L2: careerLayout(yearCount, extras),
     // Atrium in front of the shaft door, wings as mirror halls running east (Phase 4 plan, decision 1).
     L3: buildLabsLayout(extras.labs ?? []).floor,
-    L4: standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }),
-    RF: standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }),
+    // Deep links spawn L4 and RF in front of their content (the follow camera looks toward -x, -z).
+    L4: { ...standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }, libraryObstacles(), { x: 4, z: 3.5 }), doors: LIBRARY_DOORS },
+    RF: { ...standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, roofObstacles(), { x: 4, z: 12 }), doors: ROOF_DOORS },
   };
 }

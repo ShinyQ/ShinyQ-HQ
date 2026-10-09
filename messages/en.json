@@ -144,7 +144,7 @@
     "title": "Library",
     "intro": "Writing, publications, models and talks.",
     "posts": "Blog",
-    "publications": "Publications and models",
+    "publications": "Models and datasets",
     "talks": "Talks and workshops",
     "onMedium": "On Medium",
     "role": {
@@ -157,7 +157,16 @@
       "thesis": "Thesis",
       "model": "Model",
       "dataset": "Dataset"
-    }
+    },
+    "research": "Research",
+    "researchIntro": "Peer-reviewed papers and the BSc thesis publication.",
+    "authors": "Authors",
+    "doi": "DOI",
+    "pdf": "PDF",
+    "code": "Code",
+    "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
+    "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
+    "profiles": "Research profiles"
   },
   "blog": {
     "back": "Back to the Library",
@@ -243,10 +252,11 @@
       "skills": "Skills wall",
       "certifications": "Certifications wall",
       "workshop": "Workshop annex",
-      "publications": "Publications shelf",
+      "publications": "Models shelf",
       "talks": "Talks stage",
       "contact": "Comms terminals",
-      "cv": "CV kiosk"
+      "cv": "CV kiosk",
+      "research": "Research shelf"
     },
     "launcher": {
       "missions": "Missions",
@@ -313,6 +323,12 @@
       "models": "Hugging Face models",
       "window": "L3 Labs above",
       "scrubHint": "Swipe left or right to travel through the years"
+    },
+    "world": {
+      "lectern": "Reading lectern",
+      "read": "Read",
+      "comms": "Comms",
+      "cvHint": "Click to download"
     }
   },
   "drawer": {
@@ -374,7 +390,13 @@
       "cvPage": "Open the CV page",
       "cvPdf": "CV PDF ({locale})",
       "placings": "Placings",
-      "models": "Hugging Face models"
+      "models": "Hugging Face models",
+      "readPost": "Read post",
+      "emailMe": "Email me",
+      "copyEmail": "Copy email",
+      "copied": "Copied ^_^",
+      "copyFailed": "Could not copy. The address is {email}",
+      "writtenIn": "Written in {languages}"
     },
     "directory": "Wing directory",
     "signSoftware": "Software Wing",

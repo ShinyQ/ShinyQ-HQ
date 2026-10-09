@@ -98,14 +98,6 @@ test.describe("elevator", () => {
     await waitForFloor(page, "L1");
   });
 
-  test("placeholder floors link to their HTML page", async ({ page }) => {
-    await enterHQ(page);
-    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L4"]').click();
-    await waitForFloor(page, "L4");
-    await expect(page.getByRole("link", { name: "Read the Library page" })).toHaveAttribute("href", "/en/library");
-    expect(new URL(page.url()).pathname).toBe("/en");
-  });
-
   test("built floors sync their route", async ({ page }) => {
     await enterHQ(page);
     await page.keyboard.press("PageUp");
@@ -259,9 +251,10 @@ test.describe("missions in 3D", () => {
     await expect(terminal).toBeVisible();
     await page.keyboard.press("5");
     await expect(terminal).toBeHidden();
-    // The rover drives to the elevator and rides to the Roof before the contact page opens.
+    // The rover drives to the elevator, rides to the Roof and opens the comms terminals in the drawer.
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride !== null);
-    await expect(page).toHaveURL(/\/en\/contact$/, { timeout: 60_000 });
+    await expect(page.getByTestId("room-drawer")).toHaveAttribute("data-room", "RF:contact", { timeout: 60_000 });
+    await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     expect(errors).toEqual([]);
   });
 

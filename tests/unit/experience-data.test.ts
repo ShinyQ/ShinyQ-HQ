@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildCareerData, buildExperienceData, countRooms } from "@/content/experience";
-import { getAwards, getCertifications, getPublicRepos, getSideProjects, getStats, getYears } from "@/content/load";
+import { getAwards, getCertifications, getContent, getLibrary, getPublicRepos, getRoof, getSideProjects, getStats, getYears } from "@/content/load";
+import { TERMINAL_COUNT } from "@/experience/floors/roof/layout";
+import { buildRoomCatalog, type StructuralLabels } from "@/experience/missions/rooms";
+import en from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 
@@ -65,5 +69,36 @@ describe("buildExperienceData", () => {
   it("is serializable", () => {
     const data = buildExperienceData("id", names);
     expect(JSON.parse(JSON.stringify(data))).toEqual(data);
+  });
+
+  it("carries the Library in the room catalog's post order", () => {
+    const data = buildExperienceData("en", names);
+    const labels = Object.fromEntries(
+      Object.entries(en.hud.rooms).map(([k, v]) => [k, { en: v, id: idMessages.hud.rooms[k as keyof typeof idMessages.hud.rooms] }]),
+    ) as StructuralLabels;
+    const catalog = buildRoomCatalog(getContent(), labels).filter((r) => r.kind === "post");
+    expect(data.library.posts.map((p) => p.slug)).toEqual(catalog.map((r) => r.slug));
+    expect(data.library.research.length + data.library.models.length).toBe(getLibrary().publications.length);
+    expect(data.library.research.map((p) => p.kind).every((k) => k === "paper" || k === "thesis")).toBe(true);
+    expect(data.library.models.length).toBeGreaterThan(0);
+    expect(data.library.researchMetrics).toMatchObject({ source: "Google Scholar", asOf: "2026-10" });
+    expect(data.library.talks).toHaveLength(getLibrary().talks.length);
+    const medium = data.library.posts.filter((p) => p.url);
+    expect(medium.length).toBeGreaterThan(0);
+    for (const p of medium) expect(p.url).toMatch(/^https:\/\//);
+    expect(buildExperienceData("id", names).library.posts[0].title).toBe(getLibrary().posts.find((p) => p.slug === data.library.posts[0].slug)!.title.id);
+  });
+
+  it("carries the Roof: availability, email and channels", () => {
+    const en = buildExperienceData("en", names).roof;
+    const id = buildExperienceData("id", names).roof;
+    const roof = getRoof();
+    expect(en.availability).toBe(roof.availability.en);
+    expect(id.availability).toBe(roof.availability.id);
+    expect(en.email).toBe(roof.contact.email);
+    expect(en.channels.map((c) => c.id)).toEqual(["linkedin", "github", "huggingface", "medium", "googleScholar", "ieeeXplore"]);
+    // One comms terminal per channel plus email.
+    expect(en.channels.length + 1).toBe(TERMINAL_COUNT);
+    expect(en.channels.find((c) => c.id === "github")?.href).toBe(roof.contact.github);
   });
 });

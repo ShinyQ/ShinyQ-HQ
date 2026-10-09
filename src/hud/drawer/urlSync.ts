@@ -27,6 +27,16 @@ interface RoomEntry {
   hqPushed?: boolean;
 }
 
+let leaving = false;
+
+/**
+ * Call before closing the room for a page link ("Read post", "Full case study"): the router is about
+ * to navigate, so the close must not run `history.back()` or rewrite the URL, which would cancel it.
+ */
+export function leaveRoomForPage() {
+  leaving = true;
+}
+
 /** Keeps the query (e.g. `?tier=lite`) and sets or removes `view=architecture`. */
 export function withView(path: string, search: string, view: HQView): string {
   const params = new URLSearchParams(search);
@@ -47,17 +57,20 @@ export function createRoomUrlSync({
   locale,
   env,
   isReady,
+  hasPage = () => true,
 }: {
   store: RoomUrlStore;
   locale: Locale;
   env: UrlEnv;
   isReady: (floor: FloorId) => boolean;
+  /** Rooms without their own route (L4 shelves, Medium posts) keep the floor URL while open. */
+  hasPage?: (room: RoomId) => boolean;
 }): () => void {
   let applying = false;
   let pendingBack = false;
   const viewOf = (phase: string): HQView => (phase === "hologram" ? "architecture" : null);
   const urlFor = (floor: FloorId, room: RoomId | null, view: HQView) =>
-    withView(serializeHQUrl({ locale, floor: isReady(floor) ? floor : "L1", activeRoom: room, view: null }), env.location.search, view);
+    withView(serializeHQUrl({ locale, floor: isReady(floor) ? floor : "L1", activeRoom: room && hasPage(room) ? room : null, view: null }), env.location.search, view);
   const entry = () => (env.history.state as RoomEntry | null) ?? null;
   const write = (mode: "push" | "replace", url: string, room: RoomId | null) => {
     const current = `${env.location.pathname}${env.location.search}`;
@@ -78,6 +91,7 @@ export function createRoomUrlSync({
     // While a back() is in flight, only replace; the popstate handler resyncs afterwards.
     if (s.activeRoom && !prev.activeRoom && !pendingBack) write("push", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
     else if (s.activeRoom) write("replace", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
+    else if (prev.activeRoom && leaving) leaving = false;
     else if (prev.activeRoom && s.floor === prev.floor) {
       const top = entry();
       if (top?.hqPushed && top.hqRoom === prev.activeRoom && !pendingBack) {
@@ -104,7 +118,10 @@ export function createRoomUrlSync({
     }
     applying = true;
     try {
-      const room = parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : null;
+      // Rooms without their own route are remembered in the history entry instead of the URL.
+      const remembered = entry()?.hqRoom ?? null;
+      const room =
+        parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : remembered && remembered.startsWith(`${s.floor}:`) && !hasPage(remembered) ? remembered : null;
       if (room && room !== s.activeRoom) s.openRoom(room);
       else if (!room && s.activeRoom) s.closeRoom();
       const now = store.getState();
