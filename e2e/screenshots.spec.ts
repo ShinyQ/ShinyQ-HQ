@@ -74,7 +74,7 @@ for (const viewport of VIEWPORTS) {
 
 }
 
-type HQState = { __hq: { store: { getState: () => { phase: string; rover: { x: number } } }; rover: { drawCalls: number } } };
+type HQState = { __hq: { store: { getState: () => { phase: string; rover: { x: number } } } } };
 
 /** Opens an L2 route in 3D (floor routes skip boot and intro) and waits for the corridor to draw. */
 async function openL2(browser: Browser, v: Viewport, path: string, phase: "explore" | "room") {
@@ -85,7 +85,8 @@ async function openL2(browser: Browser, v: Viewport, path: string, phase: "explo
   await waitForHQ(page);
   await waitForPhase(page, phase);
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForFunction(() => (window as unknown as HQState).__hq.rover.drawCalls > 10, null, { timeout: 60_000 });
+  // In-world text (troika) builds its glyphs slowly on SwiftShader (draw call counts are not reliable with bloom).
+  await page.waitForTimeout(6000);
   return { context, page };
 }
 
