@@ -6,7 +6,7 @@ import { fontClassName } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "404 · ShinyQ HQ",
+  title: `404 · ${en.meta.siteName}`,
   description: en.notFound.body,
 };
 
