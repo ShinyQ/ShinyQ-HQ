@@ -9,6 +9,7 @@ import { structuralLabels } from "@/hud/index-data";
 const content = getContent();
 const missions = content.missions;
 const rooms = buildRoomCatalog(content, structuralLabels());
+const journeySay = missions.find((mission) => mission.id === "journey")!.steps.find((step) => step.kind === "say")!;
 
 type Call = string;
 
@@ -45,7 +46,7 @@ describe("mission runner: catalog", () => {
   const expected: Record<string, Call[]> = {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
-    journey: ["elevator L2", "drive L2:prologue-2016", "say drive or swipe forward in time 2400"],
+    journey: ["elevator L2", "drive L2:prologue-2016", `say ${journeySay.text.en} 2400`],
     projects: ["elevator L3", "palette pods"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],

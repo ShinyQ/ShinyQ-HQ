@@ -103,7 +103,8 @@ describe("MissionHud on static pages", () => {
     act(() => openTerminal());
     const journey = index.missions.find((m) => m.id === "journey")!;
     await userEvent.click(screen.getByRole("option", { name: journey.label.en }));
-    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("drive or swipe forward in time"));
+    const say = journey.steps.find((step) => step.kind === "say")!;
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(say.text.en));
     expect(nav.push).toHaveBeenCalledWith("/en/journey#y2019");
   });
 

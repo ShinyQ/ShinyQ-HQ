@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import en from "../messages/en.json";
+import data from "../content/site-content.json";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -103,7 +105,7 @@ test.describe("elevator", () => {
     await page.keyboard.press("PageUp");
     await waitForFloor(page, "L2");
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
-    await expect(page.getByRole("link", { name: "Read the Career Archive page" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: en.hud.openFloorPage.replace("{name}", en.floors.L2) })).toHaveCount(0);
   });
 });
 
@@ -241,7 +243,7 @@ test.describe("tiers and views", () => {
       const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas");
       canvas?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
     });
-    await expect(page.getByText("Switched to lite view")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("status").filter({ hasText: en.hud.staticNotice })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
   });
@@ -298,7 +300,7 @@ test.describe("missions in 3D", () => {
   test("manual input cancels a running mission", async ({ page }) => {
     await enterHQ(page);
     await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
-    await page.getByRole("option", { name: /Walk me through your journey/ }).click();
+    await page.getByRole("option", { name: data.missions.find((mission) => mission.id === "journey")!.label.en }).click();
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "running");
     await page.keyboard.down("s");
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "cancelled");
@@ -371,7 +373,7 @@ test.describe("free orbit camera", () => {
     await page.keyboard.up("e");
     expect(await cameraYaw(page)).toBeGreaterThan(beforeKey + 0.3);
 
-    await page.getByRole("button", { name: "Rotate view right (E)" }).click();
+    await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await page.getByRole("button", { name: "Reset view (0)" }).click();
     await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
 
@@ -387,7 +389,7 @@ test.describe("free orbit on touch", () => {
   test("one-finger drag rotates, a tap still moves", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
-    await expect(page.getByRole("group", { name: "View" })).toBeVisible();
+    await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
     const before = await snapshot(page);
     // A slow horizontal drag across empty floor (not a swipe).
     const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
@@ -406,7 +408,7 @@ test.describe("free orbit on touch", () => {
     await page.touchscreen.tap(150, 600);
     await waitForRoverMove(page, after.rover, 1.5);
 
-    await page.getByRole("button", { name: "Rotate view left (Q)" }).click();
+    await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
   });
 });

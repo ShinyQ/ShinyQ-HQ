@@ -15,6 +15,7 @@ const NAV = [
 
 export async function SiteHeader({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "nav" });
+  const tm = await getTranslations({ locale, namespace: "meta" });
   return (
     <header className="no-print sticky top-0 z-30 border-b border-glass-border bg-void/80 backdrop-blur-md">
       <a
@@ -26,7 +27,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="group mr-auto flex min-h-11 items-center gap-2 font-mono text-sm font-semibold text-ink">
           <span aria-hidden="true" className="text-cyan">&gt;</span>
-          <span>ShinyQ HQ</span>
+          <span>{tm("siteName")}</span>
           <span aria-hidden="true" className="animate-pulse text-cyan motion-reduce:animate-none">_</span>
           <span className="sr-only">: {t("backToHq")}</span>
         </Link>

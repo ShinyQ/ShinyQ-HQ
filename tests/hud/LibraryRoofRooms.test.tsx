@@ -56,7 +56,7 @@ describe("Library rooms in the drawer", () => {
   it("a hosted post shows its language badge, a note when untranslated, and Read post", () => {
     const drawer = open("L4:the-sun-the-moon-and-the-dark-sea");
     expect(drawer).toHaveTextContent("ID");
-    expect(within(drawer).getByText("Written in ID")).toBeInTheDocument();
+    expect(within(drawer).getByText(en.drawer.rooms.writtenIn.replace("{languages}", "ID"))).toBeInTheDocument();
     expect(within(drawer).getByRole("link", { name: "Read post" })).toHaveAttribute("href", "/en/blog/the-sun-the-moon-and-the-dark-sea");
   });
 
@@ -64,17 +64,17 @@ describe("Library rooms in the drawer", () => {
     const post = getPosts().find((p) => p.languages.length === 2 && !p.url)!;
     const drawer = open(`L4:${post.slug}` as RoomId, "id");
     expect(drawer).toHaveTextContent("EN/ID");
-    expect(within(drawer).queryByText(/Ditulis dalam/)).toBeNull();
+    expect(within(drawer).queryByText(id.drawer.rooms.writtenIn.replace("{languages}", "EN/ID"))).toBeNull();
     expect(within(drawer).getByRole("link", { name: "Baca tulisan" })).toHaveAttribute("href", `/id/blog/${post.slug}`);
   });
 
   it("a Medium post opens externally in a new tab", () => {
     const post = getPosts().find((p) => p.url)!;
     const drawer = open(`L4:${post.slug}` as RoomId);
-    const link = within(drawer).getByRole("link", { name: /Read the post/ });
+    const link = within(drawer).getByRole("link", { name: new RegExp(`^${en.drawer.external}`) });
     expect(link).toHaveAttribute("href", post.url);
     expect(link).toHaveAttribute("target", "_blank");
-    expect(within(drawer).queryByRole("link", { name: "Read post" })).toBeNull();
+    expect(within(drawer).queryByRole("link", { name: en.drawer.rooms.readPost })).toBeNull();
   });
 });
 
@@ -113,7 +113,7 @@ describe("Roof rooms in the drawer", () => {
     await user.click(within(drawer).getByRole("button", { name: "Copy email" }));
     expect(writeText).toHaveBeenCalledWith(roof.contact.email);
     expect(play).toHaveBeenCalledWith("click");
-    expect(await within(drawer).findByRole("status")).toHaveTextContent("Copied ^_^");
+    expect(await within(drawer).findByRole("status")).toHaveTextContent(en.drawer.rooms.copied);
   });
 
   it("shows the address when copying fails", async () => {

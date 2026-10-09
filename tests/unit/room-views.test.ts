@@ -4,6 +4,7 @@ import { buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
+import en from "../../messages/en.json";
 
 const catalog = buildRoomCatalog(getContent(), structuralLabels());
 
@@ -64,10 +65,10 @@ describe("room views (Glass Drawer content)", () => {
 
   it("lists each year's placings in its trophy case and the models in the Workshop annex", () => {
     const views = buildRoomViews("en");
-    const trophies = views["L2:trophy-case-2022"].sections.find((s) => s.title === "Placings");
+    const trophies = views["L2:trophy-case-2022"].sections.find((s) => s.title === en.drawer.rooms.placings);
     expect(trophies?.items?.length).toBeGreaterThan(0);
     expect(trophies?.items?.every((i) => i.meta?.includes("2022"))).toBe(true);
-    expect(views["L2:jenius-2024"].sections.some((s) => s.title === "Placings")).toBe(false);
+    expect(views["L2:jenius-2024"].sections.some((s) => s.title === en.drawer.rooms.placings)).toBe(false);
     expect(views["L2:jenius-2024"].link?.room).toBe("L3:digital-banking-integrations");
     expect(views["L2:prologue-2016"].meta).toContain("Prologue");
     expect(views["L2:workshop"].sections.find((s) => s.title === "Hugging Face models")?.items).toHaveLength(3);

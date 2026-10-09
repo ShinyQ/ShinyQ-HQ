@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import { fontClassName } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "404 · ShinyQ HQ",
-  description: "Room not found.",
+  title: `404 · ${en.meta.siteName}`,
+  description: en.notFound.body,
 };
 
 export default function GlobalNotFound() {
@@ -16,14 +18,15 @@ export default function GlobalNotFound() {
           <p className="font-mono text-4xl text-cyan" aria-hidden="true">
             o_o
           </p>
-          <h1 className="mt-4 text-2xl font-extrabold text-ink">Room not found</h1>
-          <p className="mt-2 text-ink-2">The rover could not find that room. / Rover tidak menemukan ruangan itu.</p>
+          <h1 className="mt-4 text-2xl font-extrabold text-ink">{en.notFound.title}</h1>
+          <p className="mt-2 text-ink-2">{en.notFound.body}</p>
+          <p lang="id" className="mt-2 text-ink-2">{id.notFound.body}</p>
           <p className="mt-6 flex justify-center gap-4">
             <Link className="link" href="/en">
-              Lobby (EN)
+              {en.notFound.home} (EN)
             </Link>
-            <Link className="link" href="/id">
-              Lobi (ID)
+            <Link className="link" href="/id" lang="id">
+              {id.notFound.home} (ID)
             </Link>
           </p>
         </main>

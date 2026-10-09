@@ -79,14 +79,14 @@ describe("RoomDrawer", () => {
     const user = userEvent.setup();
     render(<Harness view={hero} />);
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["Overview", "Architecture", "Results", "Stack"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(Object.values(en.drawer.tabs));
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
     await user.click(tabs[2]);
     expect(screen.getByRole("tab", { name: "Results" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getAllByTestId("metric")).toHaveLength(hero.metrics.length);
     await user.keyboard("{ArrowRight}");
-    expect(screen.getByRole("tab", { name: "Stack" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Stack" })).toHaveFocus();
+    expect(screen.getByRole("tab", { name: en.drawer.tabs.stack })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: en.drawer.tabs.stack })).toHaveFocus();
     expect(screen.getByText(hero.stack[0].name)).toBeInTheDocument();
     await user.keyboard("{ArrowRight}");
     expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
@@ -105,7 +105,7 @@ describe("RoomDrawer", () => {
     const { unmount } = render(<Harness view={hero} onHologram={onHologram} />);
     await user.click(screen.getByRole("button", { name: /View architecture/ }));
     expect(onHologram).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: "Full case study" })).toHaveAttribute("href", `/en${hero.page}`);
+    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("href", `/en${hero.page}`);
     unmount();
     render(<Harness view={listed} />);
     expect(screen.queryByRole("button", { name: /View architecture/ })).toBeNull();

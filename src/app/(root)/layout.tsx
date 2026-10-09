@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { OG_IMAGE_SIZE, SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
+import { getProfile } from "@/content/load";
+import en from "../../../messages/en.json";
 import { fontClassName } from "../fonts";
 import "../globals.css";
 
-const TITLE = "ShinyQ HQ · Kurniadi Ahmad Wijaya";
-const DESCRIPTION = "Software Engineer and AI Engineer (Azure). Choose English or Bahasa Indonesia.";
+const TITLE = `${SITE_NAME} · ${getProfile().name}`;
+const DESCRIPTION = en.meta.description;
 const IMAGE = { url: ogImagePath({ kind: "default", locale: "en" }), ...OG_IMAGE_SIZE, type: "image/png", alt: SITE_NAME };
 
 export const metadata: Metadata = {
