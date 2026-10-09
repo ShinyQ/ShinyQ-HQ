@@ -1,0 +1,6 @@
+# Cloudflare Pages redirects. Copied to out/_redirects by next build.
+# "/" is intentionally not redirected: it is a static language redirect page.
+# Old site CV path (appendix 08, Phase 6).
+/cv.pdf /cv/kurniadi-ahmad-wijaya-cv-en.pdf 301
+/en/cv.pdf /cv/kurniadi-ahmad-wijaya-cv-en.pdf 301
+/id/cv.pdf /cv/kurniadi-ahmad-wijaya-cv-id.pdf 301

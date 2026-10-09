@@ -19,3 +19,5 @@ next-env.d.ts
 content/.safety-blocklist.local.txt
 content/_fragments/
 /screenshots/
+# Lighthouse CI reports
+.lighthouseci/

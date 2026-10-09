@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
+import { JsonLd } from "@/components/JsonLd";
 import { MetricTile } from "@/components/MetricTile";
 import { Container, Section } from "@/components/Section";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
@@ -12,7 +13,8 @@ import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
-import { pageMetadata } from "@/lib/site";
+import { podJsonLd } from "@/lib/jsonld";
+import { ogImagePath, pageMetadata } from "@/lib/site";
 
 export const dynamicParams = false;
 
@@ -25,7 +27,15 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/labs/[sl
   const locale = assertLocale(raw);
   const pod = getPod(slug);
   if (!pod) return {};
-  return pageMetadata({ locale, path: `/labs/${slug}`, title: pod.title[locale], description: pod.tagline[locale] });
+  return pageMetadata({
+    locale,
+    path: `/labs/${slug}`,
+    title: pod.title[locale],
+    description: pod.tagline[locale],
+    type: "article",
+    tags: pod.stack,
+    image: ogImagePath({ kind: "labs", locale, slug }),
+  });
 }
 
 export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slug]">) {
@@ -43,6 +53,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
 
   return (
     <Container>
+      <JsonLd data={podJsonLd(pod, locale)} />
       <article>
         <header className="pt-10 pb-2 sm:pt-16">
           <p className="mb-4">

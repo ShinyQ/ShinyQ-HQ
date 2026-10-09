@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ChipList } from "@/components/Chip";
+import { JsonLd } from "@/components/JsonLd";
 import { Container } from "@/components/Section";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
@@ -10,7 +11,8 @@ import { LOCALES } from "@/content/schema";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/format";
-import { pageMetadata } from "@/lib/site";
+import { postJsonLd } from "@/lib/jsonld";
+import { ogImagePath, pageMetadata } from "@/lib/site";
 
 export const dynamicParams = false;
 
@@ -25,7 +27,16 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/blog/[sl
   const locale = assertLocale(raw);
   const post = getPost(slug);
   if (!post) return {};
-  return pageMetadata({ locale, path: `/blog/${slug}`, title: post.title[locale], description: post.excerpt[locale] });
+  return pageMetadata({
+    locale,
+    path: `/blog/${slug}`,
+    title: post.title[locale],
+    description: post.excerpt[locale],
+    type: "article",
+    publishedTime: post.date,
+    tags: post.tags,
+    image: ogImagePath({ kind: "blog", locale, slug }),
+  });
 }
 
 export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog/[slug]">) {
@@ -41,6 +52,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
 
   return (
     <Container>
+      <JsonLd data={postJsonLd(post, locale, found.locale)} />
       <article className="mx-auto max-w-2xl pt-10 sm:pt-16" lang={found.locale}>
         <p className="mb-4" lang={locale}>
           <Link href="/library" className="link text-sm">

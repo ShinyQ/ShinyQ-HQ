@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Analytics } from "@/components/Analytics";
+import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getContent, getProfile } from "@/content/load";
@@ -8,7 +10,8 @@ import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { assertLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
-import { SITE_URL, pageMetadata } from "@/lib/site";
+import { personJsonLd, websiteJsonLd } from "@/lib/jsonld";
+import { SITE_NAME, SITE_URL, pageMetadata } from "@/lib/site";
 import { fontClassName } from "../fonts";
 import "../globals.css";
 
@@ -29,11 +32,12 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   const profile = getProfile();
   const base = `${profile.name} · ${profile.headline[locale]}`;
   return {
+    ...pageMetadata({ locale, path: "/", title: base, description: t("description") }),
     metadataBase: new URL(SITE_URL),
     title: { default: base, template: `%s · ${t("siteName")}` },
-    description: t("description"),
-    authors: [{ name: profile.name }],
-    ...pageMetadata({ locale, path: "/", description: t("description") }),
+    applicationName: SITE_NAME,
+    authors: [{ name: profile.name, url: `${SITE_URL}/${locale}` }],
+    creator: profile.name,
   };
 }
 
@@ -51,6 +55,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <SiteFooter locale={locale} />
           <MissionHud locale={locale} index={buildHudIndex(getContent())} />
         </NextIntlClientProvider>
+        <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
+        <Analytics />
       </body>
     </html>
   );
