@@ -3229,8 +3229,8 @@
             {
               "src": "/media/anime-figure-ecommerce/01-storefront.webp",
               "alt": {
-                "en": "Storefront home with a promotional banner, categories and top products",
-                "id": "Beranda toko dengan banner promosi, kategori dan produk teratas"
+                "en": "Store homepage showing a promotion banner, product categories and top products",
+                "id": "Beranda toko menampilkan banner promosi, kategori produk dan produk unggulan"
               },
               "width": 1516,
               "height": 1020,
@@ -3239,8 +3239,8 @@
             {
               "src": "/media/anime-figure-ecommerce/02-catalog.webp",
               "alt": {
-                "en": "Catalog with availability and category filters for pre-order and ready-stock figures",
-                "id": "Katalog dengan filter ketersediaan dan kategori untuk figure pre-order dan ready stock"
+                "en": "Figure catalog with category and availability filters for pre-order and ready-stock items",
+                "id": "Katalog figure dengan filter kategori dan ketersediaan pre-order atau ready stock"
               },
               "width": 1232,
               "height": 958,
@@ -3249,8 +3249,8 @@
             {
               "src": "/media/anime-figure-ecommerce/03-latest-items.webp",
               "alt": {
-                "en": "Latest items grid of trading card booster packs",
-                "id": "Grid item terbaru berisi booster pack trading card"
+                "en": "Trading card booster packs in the latest products grid",
+                "id": "Booster pack trading card pada grid produk terbaru"
               },
               "width": 1278,
               "height": 1275,
@@ -3259,8 +3259,8 @@
             {
               "src": "/media/anime-figure-ecommerce/04-admin-items.webp",
               "alt": {
-                "en": "Admin item management with stock, price and down-payment per product",
-                "id": "Manajemen item admin dengan stok, harga dan uang muka per produk"
+                "en": "Admin product list showing stock, price and down payment for each item",
+                "id": "Daftar produk admin menampilkan stok, harga dan uang muka setiap item"
               },
               "width": 1600,
               "height": 1062,
@@ -3269,8 +3269,8 @@
             {
               "src": "/media/anime-figure-ecommerce/05-admin-banners.webp",
               "alt": {
-                "en": "Admin banner management for homepage promotions",
-                "id": "Manajemen banner admin untuk promosi beranda"
+                "en": "Admin screen for managing homepage promotion banners",
+                "id": "Halaman admin untuk mengelola banner promosi di beranda"
               },
               "width": 1600,
               "height": 804,
@@ -3279,8 +3279,8 @@
             {
               "src": "/media/anime-figure-ecommerce/06-business-case.webp",
               "alt": {
-                "en": "Brand presentation: e-commerce specialized to fulfill hobby needs",
-                "id": "Presentasi brand: e-commerce khusus untuk memenuhi kebutuhan hobi"
+                "en": "Shumi e-commerce presentation for hobby products, with a mobile storefront preview",
+                "id": "Presentasi e-commerce Shumi untuk produk hobi, dengan pratinjau toko di perangkat mobile"
               },
               "width": 1279,
               "height": 717,
@@ -3469,8 +3469,8 @@
             {
               "src": "/media/vulnerability-scanning-automation/01-main-deck.webp",
               "alt": {
-                "en": "Main deck with finding risk status, remediation statistics, monitored assets and a monthly findings report",
-                "id": "Main deck dengan status risiko temuan, statistik remediasi, aset yang dipantau dan laporan temuan bulanan"
+                "en": "Main deck dashboard showing finding risk levels, remediation statistics, monitored assets and monthly findings",
+                "id": "Dashboard Main deck menampilkan tingkat risiko temuan, statistik remediasi, aset yang dipantau dan laporan temuan bulanan"
               },
               "width": 1600,
               "height": 900,
@@ -3479,8 +3479,8 @@
             {
               "src": "/media/vulnerability-scanning-automation/02-protected-site.webp",
               "alt": {
-                "en": "Protected site view with risk distribution, top finding categories and assets (placeholder data)",
-                "id": "Tampilan protected site dengan distribusi risiko, kategori temuan teratas dan aset (data contoh)"
+                "en": "Protected site dashboard showing risk distribution, leading finding categories and assets (placeholder data)",
+                "id": "Dashboard protected site menampilkan distribusi risiko, kategori temuan terbanyak dan aset (data contoh)"
               },
               "width": 1600,
               "height": 900,
@@ -3489,8 +3489,8 @@
             {
               "src": "/media/vulnerability-scanning-automation/03-risk-profile.webp",
               "alt": {
-                "en": "Asset group risk profiles with remediation deadline adjustments",
-                "id": "Profil risiko grup aset dengan penyesuaian tenggat remediasi"
+                "en": "Asset group risk profiles and controls to adjust remediation deadlines",
+                "id": "Profil risiko grup aset dan kontrol untuk mengubah tenggat remediasi"
               },
               "width": 1600,
               "height": 900,
@@ -3499,8 +3499,8 @@
             {
               "src": "/media/vulnerability-scanning-automation/04-comparison-report.webp",
               "alt": {
-                "en": "Before and after comparison report of a test scan",
-                "id": "Laporan perbandingan sebelum dan sesudah untuk scan uji"
+                "en": "Test scan report comparing results before and after",
+                "id": "Laporan scan uji yang membandingkan hasil sebelum dan sesudah"
               },
               "width": 1190,
               "height": 1684,
@@ -4032,8 +4032,8 @@
             {
               "src": "/media/university-alumni-platforms/01-alumni-portal.webp",
               "alt": {
-                "en": "Alumni portal home with news and gallery sections",
-                "id": "Beranda portal alumni dengan bagian berita dan galeri"
+                "en": "Alumni portal homepage showing news and a gallery",
+                "id": "Beranda portal alumni menampilkan berita dan galeri"
               },
               "width": 1600,
               "height": 1600,
@@ -4042,8 +4042,8 @@
             {
               "src": "/media/university-alumni-platforms/02-counseling-dashboard.webp",
               "alt": {
-                "en": "Counseling dashboard with requested and scheduled sessions",
-                "id": "Dashboard konseling dengan sesi yang diajukan dan terjadwal"
+                "en": "Counseling dashboard listing session requests and scheduled sessions",
+                "id": "Dashboard konseling menampilkan pengajuan sesi dan sesi yang sudah dijadwalkan"
               },
               "width": 1600,
               "height": 1141,
@@ -4052,8 +4052,8 @@
             {
               "src": "/media/university-alumni-platforms/03-alumni-gallery.webp",
               "alt": {
-                "en": "Alumni gallery article with photo and video attachments",
-                "id": "Artikel galeri alumni dengan lampiran foto dan video"
+                "en": "Alumni gallery article showing attached photos and videos",
+                "id": "Artikel galeri alumni menampilkan lampiran foto dan video"
               },
               "width": 1600,
               "height": 1928,
@@ -4062,8 +4062,8 @@
             {
               "src": "/media/university-alumni-platforms/04-gallery-editor.webp",
               "alt": {
-                "en": "Gallery content form for uploading photos and videos",
-                "id": "Formulir konten galeri untuk mengunggah foto dan video"
+                "en": "Gallery upload form for photos and videos",
+                "id": "Formulir unggah foto dan video ke galeri"
               },
               "width": 1600,
               "height": 1682,
@@ -4072,8 +4072,8 @@
             {
               "src": "/media/university-alumni-platforms/05-counseling-services.webp",
               "alt": {
-                "en": "Public counseling services and information page",
-                "id": "Halaman publik layanan dan informasi konseling"
+                "en": "Public page describing counseling services",
+                "id": "Halaman publik berisi informasi layanan konseling"
               },
               "width": 1600,
               "height": 1957,
@@ -4082,8 +4082,8 @@
             {
               "src": "/media/university-alumni-platforms/06-counseling-form.webp",
               "alt": {
-                "en": "Scheduled counseling form",
-                "id": "Formulir konseling terjadwal"
+                "en": "Scheduled counseling form with title, description and poster fields",
+                "id": "Formulir konseling terjadwal dengan kolom judul, deskripsi dan poster"
               },
               "width": 1600,
               "height": 1117,
@@ -4345,8 +4345,8 @@
             {
               "src": "/media/voice-ai-contact-center/01-call-in-progress.webp",
               "alt": {
-                "en": "Browser voice call in progress: the assistant is speaking while the live transcript shows the caller's claim question",
-                "id": "Panggilan suara di browser sedang berlangsung: asisten berbicara sementara transkrip langsung menampilkan pertanyaan klaim penelepon"
+                "en": "Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim",
+                "id": "Panggilan aktif di browser: asisten berbicara, sementara transkrip live menampilkan pertanyaan penelepon tentang klaim"
               },
               "width": 1280,
               "height": 720,
@@ -4355,8 +4355,8 @@
             {
               "src": "/media/voice-ai-contact-center/02-assistant-picker.webp",
               "alt": {
-                "en": "Assistant picker where a caller chooses an English claims assistant or an Indonesian policy assistant",
-                "id": "Pemilih asisten tempat penelepon memilih asisten klaim berbahasa Inggris atau asisten polis berbahasa Indonesia"
+                "en": "Assistant selection screen offering claims help in English or policy help in Indonesian",
+                "id": "Halaman pemilihan asisten untuk bantuan klaim dalam bahasa Inggris atau polis dalam bahasa Indonesia"
               },
               "width": 1280,
               "height": 720,
@@ -4365,8 +4365,8 @@
             {
               "src": "/media/voice-ai-contact-center/03-architecture.webp",
               "alt": {
-                "en": "Architecture overview: experience, voice, intelligence and data layers built on Azure and OpenAI services",
-                "id": "Ringkasan arsitektur: lapisan experience, voice, intelligence dan data yang dibangun di atas layanan Azure dan OpenAI"
+                "en": "Azure and OpenAI architecture diagram arranged into experience, voice, intelligence and data layers",
+                "id": "Diagram arsitektur Azure dan OpenAI dengan layer experience, voice, intelligence dan data"
               },
               "width": 1280,
               "height": 994,
@@ -4375,8 +4375,8 @@
             {
               "src": "/media/voice-ai-contact-center/04-intelligence-layer.webp",
               "alt": {
-                "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
-                "id": "Diagram reasoning loop: intent, pengambilan knowledge, reasoning multi-agent dan confidence scoring sebelum resolve atau eskalasi"
+                "en": "Reasoning loop diagram showing intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolution or escalation",
+                "id": "Diagram reasoning loop menampilkan intent, knowledge retrieval, multi-agent reasoning dan confidence scoring sebelum penyelesaian atau eskalasi"
               },
               "width": 1280,
               "height": 1084,
@@ -4385,8 +4385,8 @@
             {
               "src": "/media/voice-ai-contact-center/05-agents-admin.webp",
               "alt": {
-                "en": "Operations console listing voice agents with status, realtime model, knowledge base and escalation tier",
-                "id": "Operations console berisi daftar voice agent dengan status, model realtime, knowledge base dan tier eskalasi"
+                "en": "Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier",
+                "id": "Daftar voice agent di operations console, dengan status, model realtime, knowledge base dan tier eskalasi"
               },
               "width": 1440,
               "height": 900,
@@ -4395,8 +4395,8 @@
             {
               "src": "/media/voice-ai-contact-center/06-knowledge-detail.webp",
               "alt": {
-                "en": "Knowledge base detail with indexed documents, ingestion status and semantic search settings",
-                "id": "Detail knowledge base dengan dokumen terindeks, status ingestion dan pengaturan semantic search"
+                "en": "Knowledge base detail showing indexed documents, ingestion status and semantic search settings",
+                "id": "Halaman detail knowledge base menampilkan dokumen terindeks, status ingestion dan pengaturan semantic search"
               },
               "width": 1440,
               "height": 900,
@@ -4405,8 +4405,8 @@
             {
               "src": "/media/voice-ai-contact-center/07-analytics.webp",
               "alt": {
-                "en": "Call analytics dashboard with resolution rate, handoff rate and daily call volume",
-                "id": "Dashboard analitik panggilan dengan tingkat resolusi, tingkat handoff dan volume panggilan harian"
+                "en": "Call analytics dashboard charting resolution rate, handoff rate and daily call volume",
+                "id": "Dashboard analitik panggilan menampilkan tingkat penyelesaian, tingkat handoff dan volume panggilan harian"
               },
               "width": 1440,
               "height": 900,
@@ -4682,8 +4682,8 @@
             {
               "src": "/media/ai-code-security-platform/01-scan-overview.webp",
               "alt": {
-                "en": "Scan overview for a demo repository: security gate failed, severity breakdown and scanner timings",
-                "id": "Ringkasan scan untuk repository demo: security gate gagal, rincian severity dan durasi scanner"
+                "en": "Demo repository scan with a failed security gate, findings by severity and scanner durations",
+                "id": "Hasil scan repository demo dengan security gate gagal, temuan menurut severity dan durasi scanner"
               },
               "width": 1440,
               "height": 900,
@@ -4692,8 +4692,8 @@
             {
               "src": "/media/ai-code-security-platform/02-scan-findings.webp",
               "alt": {
-                "en": "Findings table ranked by risk with KEV and EPSS signals across eight scanners",
-                "id": "Tabel temuan yang diurutkan berdasarkan risiko dengan sinyal KEV dan EPSS dari delapan scanner"
+                "en": "Risk-ranked findings from eight scanners, with KEV and EPSS signals",
+                "id": "Tabel temuan dari delapan scanner, diurutkan menurut risiko dengan sinyal KEV dan EPSS"
               },
               "width": 1440,
               "height": 900,
@@ -4702,8 +4702,8 @@
             {
               "src": "/media/ai-code-security-platform/03-finding-drawer.webp",
               "alt": {
-                "en": "Finding drawer for a SQL injection: code excerpt, location and a time-boxed suppression request",
-                "id": "Drawer temuan SQL injection: potongan kode, lokasi dan permintaan suppression dengan batas waktu"
+                "en": "SQL injection detail panel showing the code excerpt, location and time-limited suppression request",
+                "id": "Panel detail SQL injection menampilkan potongan kode, lokasi dan permintaan suppression berbatas waktu"
               },
               "width": 1440,
               "height": 900,
@@ -4712,8 +4712,8 @@
             {
               "src": "/media/ai-code-security-platform/04-repositories.webp",
               "alt": {
-                "en": "Repositories page with default-branch posture and the latest scan per repository",
-                "id": "Halaman repository dengan postur default branch dan scan terakhir per repository"
+                "en": "Repository list showing default-branch security status and each repository's latest scan",
+                "id": "Daftar repository menampilkan status keamanan default branch dan hasil scan terbaru masing-masing repository"
               },
               "width": 1440,
               "height": 900,
@@ -4722,8 +4722,8 @@
             {
               "src": "/media/ai-code-security-platform/05-security-policy.webp",
               "alt": {
-                "en": "Security policy controls that decide when the pull request check blocks a merge",
-                "id": "Kontrol security policy yang menentukan kapan pengecekan pull request memblokir merge"
+                "en": "Security policy settings for pull request checks that block merges",
+                "id": "Pengaturan security policy untuk pemeriksaan pull request yang memblokir merge"
               },
               "width": 1440,
               "height": 1200,
@@ -4732,8 +4732,8 @@
             {
               "src": "/media/ai-code-security-platform/06-assistant-chat.webp",
               "alt": {
-                "en": "AI security agent explaining whether a dependency CVE is exploitable and how to fix it",
-                "id": "AI security agent menjelaskan apakah CVE dependency dapat dieksploitasi dan cara memperbaikinya"
+                "en": "AI security agent response assessing a dependency CVE's exploitability and proposed fix",
+                "id": "Respons AI security agent menilai apakah CVE pada dependency dapat dieksploitasi dan mengusulkan perbaikan"
               },
               "width": 1440,
               "height": 900,
@@ -4996,8 +4996,8 @@
             {
               "src": "/media/fraud-review-platform/01-product-overview.webp",
               "alt": {
-                "en": "Product overview: detect anomalies in procurement documents and review them with confidence",
-                "id": "Ringkasan produk: mendeteksi anomali pada dokumen pengadaan dan meninjaunya dengan yakin"
+                "en": "Procurement fraud review overview with a dashboard preview for document analysis and evidence review",
+                "id": "Ringkasan produk review fraud pengadaan, dengan pratinjau dashboard untuk analisis dokumen dan peninjauan bukti"
               },
               "width": 1280,
               "height": 720,
@@ -5006,8 +5006,8 @@
             {
               "src": "/media/fraud-review-platform/02-home.webp",
               "alt": {
-                "en": "Reviewer home with cases that need attention, verdict mix and what changed this week (synthetic data)",
-                "id": "Beranda reviewer dengan kasus yang perlu perhatian, komposisi verdict dan perubahan minggu ini (data sintetis)"
+                "en": "Reviewer dashboard showing cases needing attention, verdict distribution and this week's changes (synthetic data)",
+                "id": "Dashboard reviewer menampilkan kasus yang perlu ditinjau, distribusi verdict dan perubahan minggu ini (data sintetis)"
               },
               "width": 1440,
               "height": 900,
@@ -5016,8 +5016,8 @@
             {
               "src": "/media/fraud-review-platform/03-high-risk-result.webp",
               "alt": {
-                "en": "High-risk analysis result with score, findings and evidence for each finding",
-                "id": "Hasil analisis berisiko tinggi dengan skor, temuan dan bukti untuk setiap temuan"
+                "en": "High-risk analysis showing the score and supporting evidence for each finding",
+                "id": "Hasil analisis berisiko tinggi menampilkan skor dan bukti pendukung setiap temuan"
               },
               "width": 1440,
               "height": 900,
@@ -5026,8 +5026,8 @@
             {
               "src": "/media/fraud-review-platform/04-history.webp",
               "alt": {
-                "en": "Analysis history filtered by verdict, with scores and report links (synthetic data)",
-                "id": "Riwayat analisis yang difilter berdasarkan verdict, dengan skor dan tautan laporan (data sintetis)"
+                "en": "Analysis history with a verdict filter, scores and links to reports (synthetic data)",
+                "id": "Riwayat analisis dengan filter verdict, skor dan tautan ke laporan (data sintetis)"
               },
               "width": 1440,
               "height": 1116,
@@ -5036,8 +5036,8 @@
             {
               "src": "/media/fraud-review-platform/05-statistics.webp",
               "alt": {
-                "en": "Admin statistics: analyses per day, verdict distribution and transaction log",
-                "id": "Statistik admin: analisis per hari, distribusi verdict dan log transaksi"
+                "en": "Admin dashboard showing daily analysis counts, verdict distribution and a transaction log",
+                "id": "Dashboard statistik admin menampilkan jumlah analisis harian, distribusi verdict dan log transaksi"
               },
               "width": 1440,
               "height": 900,
@@ -5248,8 +5248,8 @@
             {
               "src": "/media/ai-cv-screening-platform/01-product-overview.webp",
               "alt": {
-                "en": "Product overview: AI-powered CV screening with structured parsing, requirement matching and ranking",
-                "id": "Ringkasan produk: screening CV berbasis AI dengan parsing terstruktur, pencocokan requirement dan pemeringkatan"
+                "en": "CV screening overview with a recruitment dashboard preview, structured parsing, role matching and candidate ranking",
+                "id": "Ringkasan screening CV dengan pratinjau dashboard rekrutmen, parsing terstruktur, pencocokan requirement posisi dan peringkat kandidat"
               },
               "width": 1280,
               "height": 720,
@@ -5258,8 +5258,8 @@
             {
               "src": "/media/ai-cv-screening-platform/02-jobs.webp",
               "alt": {
-                "en": "Jobs list with status and number of candidates screened per position",
-                "id": "Daftar lowongan dengan status dan jumlah kandidat yang telah discreening per posisi"
+                "en": "Job openings list showing status and screened candidate counts for each position",
+                "id": "Daftar lowongan menampilkan status dan jumlah kandidat yang sudah melalui screening untuk setiap posisi"
               },
               "width": 1440,
               "height": 900,
@@ -5268,8 +5268,8 @@
             {
               "src": "/media/ai-cv-screening-platform/03-ai-input-redaction.webp",
               "alt": {
-                "en": "AI input redaction setting that hides contact and identity details before the model reads a CV",
-                "id": "Pengaturan redaksi input AI yang menyembunyikan kontak dan identitas sebelum model membaca CV"
+                "en": "AI input redaction setting to hide contact and identity details before the model reads a CV",
+                "id": "Pengaturan AI input redaction untuk menyamarkan detail kontak dan identitas sebelum model membaca CV"
               },
               "width": 1440,
               "height": 918,
@@ -5278,8 +5278,8 @@
             {
               "src": "/media/ai-cv-screening-platform/04-usage.webp",
               "alt": {
-                "en": "AI usage page with requests, pages read, estimated spend and per-activity cost",
-                "id": "Halaman penggunaan AI dengan jumlah request, halaman yang dibaca, estimasi biaya dan biaya per aktivitas"
+                "en": "AI usage report showing request counts, pages read, estimated spending and costs by activity",
+                "id": "Laporan penggunaan AI menampilkan jumlah request, halaman yang dibaca, estimasi pengeluaran dan biaya tiap aktivitas"
               },
               "width": 1440,
               "height": 900,
@@ -5602,8 +5602,8 @@
             {
               "src": "/media/ai-app-accelerator/01-dashboard.webp",
               "alt": {
-                "en": "Template dashboard with conversations, active agents, cost and usage by model",
-                "id": "Dashboard template dengan percakapan, agent aktif, biaya dan penggunaan per model"
+                "en": "Template dashboard showing conversations, active agents, costs and usage per model",
+                "id": "Dashboard template menampilkan percakapan, agent aktif, biaya dan penggunaan tiap model"
               },
               "width": 1600,
               "height": 1000,
@@ -5612,8 +5612,8 @@
             {
               "src": "/media/ai-app-accelerator/02-agent-picker.webp",
               "alt": {
-                "en": "Chat start screen where the user picks one of the built-in agents",
-                "id": "Layar awal chat tempat pengguna memilih salah satu agent bawaan"
+                "en": "Chat start screen for choosing one of the built-in agents",
+                "id": "Layar awal chat untuk memilih salah satu agent bawaan"
               },
               "width": 1600,
               "height": 1000,
@@ -5622,8 +5622,8 @@
             {
               "src": "/media/ai-app-accelerator/03-agents.webp",
               "alt": {
-                "en": "Agent management table with identifiers, descriptions and tool counts",
-                "id": "Tabel manajemen agent dengan identifier, deskripsi dan jumlah tool"
+                "en": "Agent management table listing identifiers, descriptions and the number of tools",
+                "id": "Tabel pengelolaan agent menampilkan identifier, deskripsi dan jumlah tool"
               },
               "width": 1600,
               "height": 1000,
@@ -5632,8 +5632,8 @@
             {
               "src": "/media/ai-app-accelerator/04-chat.webp",
               "alt": {
-                "en": "Chat thread where an agent rewrites a TypeScript fetch wrapper",
-                "id": "Thread chat tempat agent menulis ulang fetch wrapper TypeScript"
+                "en": "Chat conversation showing an agent rewrite a TypeScript fetch wrapper",
+                "id": "Percakapan chat menampilkan agent yang menulis ulang fetch wrapper TypeScript"
               },
               "width": 1600,
               "height": 869,
@@ -6431,8 +6431,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/01-product-overview.webp",
               "alt": {
-                "en": "Product overview: AI that classifies, prioritizes and drafts responses to tickets",
-                "id": "Ringkasan produk: AI yang mengklasifikasikan, memprioritaskan dan menyusun draf respons tiket"
+                "en": "Ticketing product overview with a board preview and AI classification, prioritization and response drafts",
+                "id": "Ringkasan produk ticketing dengan pratinjau board serta klasifikasi, prioritas dan draf respons tiket dari AI"
               },
               "width": 1280,
               "height": 721,
@@ -6441,8 +6441,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/02-assistant-home.webp",
               "alt": {
-                "en": "Assistant home with suggested questions about tickets, documents and board analytics",
-                "id": "Beranda asisten dengan saran pertanyaan tentang tiket, dokumen dan analitik board"
+                "en": "Assistant start screen suggesting questions about tickets, documents and board analytics",
+                "id": "Layar awal asisten menampilkan saran pertanyaan tentang tiket, dokumen dan analitik board"
               },
               "width": 1600,
               "height": 874,
@@ -6451,8 +6451,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/03-at-risk-tickets.webp",
               "alt": {
-                "en": "Assistant answer listing the tickets at risk of missing the sprint deadline",
-                "id": "Jawaban asisten berisi daftar tiket yang berisiko melewati tenggat sprint"
+                "en": "Assistant response listing tickets at risk of missing the sprint deadline",
+                "id": "Respons asisten menampilkan tiket yang berisiko melewati tenggat sprint"
               },
               "width": 1600,
               "height": 874,
@@ -6461,8 +6461,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/04-status-charts.webp",
               "alt": {
-                "en": "Assistant-generated charts of overdue tickets grouped by status and priority",
-                "id": "Grafik buatan asisten untuk tiket terlambat yang dikelompokkan berdasarkan status dan prioritas"
+                "en": "Overdue ticket charts generated by the assistant, grouped by status and priority",
+                "id": "Grafik tiket terlambat dari asisten, dikelompokkan menurut status dan prioritas"
               },
               "width": 1600,
               "height": 874,
@@ -6471,8 +6471,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/05-ai-triage.webp",
               "alt": {
-                "en": "Ticket detail with an AI triage panel that suggests priority and category",
-                "id": "Detail tiket dengan panel AI triage yang menyarankan prioritas dan kategori"
+                "en": "Ticket detail panel with AI triage suggestions for priority and category",
+                "id": "Panel detail tiket dengan saran prioritas dan kategori dari AI triage"
               },
               "width": 1600,
               "height": 874,
@@ -6481,8 +6481,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/06-backlog.webp",
               "alt": {
-                "en": "Board backlog with ticket status and overdue badges",
-                "id": "Backlog board dengan status tiket dan penanda keterlambatan"
+                "en": "Ticket backlog showing status and overdue badges",
+                "id": "Backlog tiket menampilkan status dan penanda keterlambatan"
               },
               "width": 1600,
               "height": 874,
@@ -6555,8 +6555,8 @@
             {
               "src": "/media/mining-coa-assistant/01-multi-agent-flow.webp",
               "alt": {
-                "en": "Multi-agent flow: a question in Indonesian or English is matched to accounts and policy documents, then resolved or escalated",
-                "id": "Alur multi-agent: pertanyaan dalam bahasa Indonesia atau Inggris dicocokkan ke akun dan dokumen kebijakan, lalu diselesaikan atau dieskalasi"
+                "en": "Multi-agent flow diagram matching Indonesian or English questions to accounts and policy documents before resolution or escalation",
+                "id": "Diagram alur multi-agent mencocokkan pertanyaan berbahasa Indonesia atau Inggris dengan akun dan dokumen kebijakan sebelum penyelesaian atau eskalasi"
               },
               "width": 1600,
               "height": 900,
@@ -6627,8 +6627,8 @@
             {
               "src": "/media/credit-scoring-poc/01-product-overview.webp",
               "alt": {
-                "en": "Product overview: explainable credit scoring and default prediction running in the browser",
-                "id": "Ringkasan produk: credit scoring dan prediksi gagal bayar yang dapat dijelaskan, berjalan di browser"
+                "en": "Browser-based credit scoring and default prediction overview, with factor explanations and a dashboard preview",
+                "id": "Ringkasan credit scoring dan prediksi gagal bayar di browser, dengan penjelasan faktor dan pratinjau dashboard"
               },
               "width": 1280,
               "height": 720,
@@ -6637,8 +6637,8 @@
             {
               "src": "/media/credit-scoring-poc/02-credit-analysis.webp",
               "alt": {
-                "en": "Credit analysis form with a score gauge and the factors that pushed the score up or down",
-                "id": "Formulir analisis kredit dengan gauge skor dan faktor yang menaikkan atau menurunkan skor"
+                "en": "Credit analysis form showing a score gauge and factors that raise or lower the score",
+                "id": "Formulir analisis kredit menampilkan gauge skor dan faktor yang menaikkan atau menurunkan skor"
               },
               "width": 1600,
               "height": 859,
@@ -6647,8 +6647,8 @@
             {
               "src": "/media/credit-scoring-poc/03-model-performance.webp",
               "alt": {
-                "en": "Model performance page comparing XGBoost, LightGBM, logistic regression and random forest",
-                "id": "Halaman performa model yang membandingkan XGBoost, LightGBM, logistic regression dan random forest"
+                "en": "Model performance comparison for XGBoost, LightGBM, logistic regression and random forest",
+                "id": "Perbandingan performa model XGBoost, LightGBM, logistic regression dan random forest"
               },
               "width": 1600,
               "height": 866,
@@ -6841,8 +6841,8 @@
             {
               "src": "/media/solutions-marketing-site/01-landing.webp",
               "alt": {
-                "en": "Bilingual landing page hero for an enterprise AI on Azure practice",
-                "id": "Hero halaman landing bilingual untuk praktik enterprise AI di Azure"
+                "en": "Enterprise AI on Azure landing page with English and Indonesian controls, project search and example use cases",
+                "id": "Landing page enterprise AI di Azure dengan pilihan bahasa Inggris dan Indonesia, pencarian proyek dan contoh use case"
               },
               "width": 1280,
               "height": 800,
@@ -7091,8 +7091,8 @@
           "code": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet",
           "citations": 10,
           "summary": {
-            "en": "Uses CNN and LSTM models to read the sentiment of Indonesian digital wallet app reviews.",
-            "id": "Memakai model CNN dan LSTM untuk membaca sentimen ulasan aplikasi dompet digital Indonesia."
+            "en": "Analyzes sentiment in Indonesian digital wallet app reviews with CNN and LSTM.",
+            "id": "Menganalisis sentimen ulasan aplikasi dompet digital Indonesia dengan CNN dan LSTM."
           }
         },
         {
@@ -7113,8 +7113,8 @@
           "url": "https://doi.org/10.1109/icicyta53712.2021.9689122",
           "code": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast",
           "summary": {
-            "en": "Forecasts COVID-19 case trends in Indonesia to study how the country could reach herd immunity.",
-            "id": "Memprediksi tren kasus COVID-19 di Indonesia untuk mempelajari jalan menuju herd immunity."
+            "en": "Forecasts COVID-19 case trends to study Indonesia's path to herd immunity.",
+            "id": "Memprediksi tren kasus COVID-19 untuk mengkaji kemungkinan tercapainya herd immunity di Indonesia."
           }
         },
         {
@@ -7133,8 +7133,8 @@
           "code": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
           "citations": 3,
           "summary": {
-            "en": "Applies an IndoBERT model to a dashboard that tracks social media sentiment about a university (BSc thesis publication).",
-            "id": "Menerapkan model IndoBERT pada dashboard yang memantau sentimen media sosial tentang sebuah universitas (publikasi skripsi S1)."
+            "en": "Tracks social media sentiment about a university in an IndoBERT dashboard (BSc thesis publication).",
+            "id": "Memantau sentimen media sosial tentang sebuah universitas melalui dashboard IndoBERT (publikasi skripsi S1)."
           }
         },
         {
@@ -7148,8 +7148,8 @@
           "kind": "thesis",
           "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
           "summary": {
-            "en": "BSc thesis: Sentiboard, a university sentiment dashboard built on IndoBERT.",
-            "id": "Skripsi S1: Sentiboard, dashboard sentimen universitas berbasis IndoBERT."
+            "en": "My BSc thesis: Sentiboard, a university sentiment dashboard using IndoBERT.",
+            "id": "Skripsi S1 saya: Sentiboard, dashboard sentimen universitas menggunakan IndoBERT."
           }
         },
         {
