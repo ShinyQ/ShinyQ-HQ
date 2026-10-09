@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as an **AI Engineer (Azure)** with platform and evaluation depth, and tells the growth story from 2019 to now.
+Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as a **Software Engineer and AI Engineer (Azure)**: a backend and full-stack foundation (2019 to 2025: e-commerce, payments, fintech, SaaS) and enterprise AI platforms on Azure (2026), presented as one continuous craft with equal billing.
 
 ### Success criteria
 
@@ -26,6 +26,7 @@ A balanced mix of recruiters and hiring managers, consulting clients and leads, 
 - No AI or LLM backend: the "guide" is deterministic selection, not chat.
 - No user accounts, CMS, comments or analytics dashboards in v1.
 - No external 3D models or textures in v1: all geometry is procedural.
+- Story quests and a quest log are designed but deferred to v1.1 (see appendix 02).
 
 ## 2. Concept: Agent HQ
 
@@ -47,7 +48,7 @@ A vertical tower of five floors connected by a glass elevator shaft. Every floor
 |---|---|---|---|
 | RF | Roof · Comms | Open deck with a beacon antenna | Contact links, CV download, socials, "hire me" beacon |
 | L4 | Library | Rows of holographic shelves | Blog posts, publications and theses, Hugging Face models, talks and workshops |
-| L3 | AI Labs | Grid of project pods connected by lanes | 2026 AI projects as pods (hero and featured tiers) |
+| L3 | Labs | Central atrium with a **Software Wing** (west) and an **AI Wing** (east), each with hero and featured pods | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
 | L2 | Career Archive | **Timeline corridor** from 2019 to 2026 with year rooms alternating left and right | Jobs, freelance, education, competitions and awards, ordered by time |
 | L1 | Lobby (spawn) | Hub plaza | Profile hologram, headline stats, skills wall, certifications, mission board |
 
@@ -88,7 +89,7 @@ Missions are data: `{ id, label, floor, targetRoomId, path? }`. Running a missio
 ### 2.6 Room experience
 
 - **Glass Drawer (default for every room).** A right side panel on desktop (≥ 900 px) and a bottom sheet on tablet portrait and mobile. Tabs: Overview, Architecture, Results, Stack. It shows big metric tiles, a short "what I did" list, prev/next room navigation and a link to the full case-study page. The 3D pod stays visible and animated behind it.
-- **Hologram view (hero pods only, 3 to 5).** A "View architecture" button flies the camera into the pod and dims the world. The architecture diagram assembles as an in-world hologram (nodes and edges from data) with animated packets, and metric cards float alongside. Arrow keys or swipe move between hero pods.
+- **Hologram view (hero pods only, 3 per wing).** A "View architecture" button flies the camera into the pod and dims the world. The architecture diagram assembles as an in-world hologram (nodes and edges from data) with animated packets, and metric cards float alongside. Arrow keys or swipe move between hero pods.
 - **Rover README (easter egg).** Pressing `t` in any room shows the same content as a terminal `cat README.md` view: an ASCII architecture diagram, bar-chart results and keyboard shortcuts.
 
 ### 2.7 HUD (HTML overlay, not WebGL)
@@ -122,29 +123,28 @@ All content comes from the consolidated evidence dossier compiled from local sou
 
 ### 3.3 Content model
 
-One file, `content/site-content.json`, validated at build time by zod schemas in `src/content/schema.ts`. Top-level shape:
+One file, `content/site-content.json` (all user-facing text localized as `{ en, id }`), validated at build time by zod schemas in `src/content/schema.ts`. Top-level shape:
 
 ```ts
 {
-  profile, stats[],
+  profile, stats[], skills[], certifications[],
   floors: {
-    lobby,
-    careerArchive: { years: [{ year, rooms[] }] },
-    aiLabs: { pods[] },
+    careerArchive: { entries[] },        // grouped into year rooms at runtime
+    labs: { pods[] },                    // Pod.wing = "software" | "ai"
     library: { posts[], publications[], talks[] },
-    roof: { contact, cv }
+    roof: { contact, availability, cv }
   },
-  sideProjects[], publicRepos[], certifications[], awards[], missions[]
+  sideProjects[], publicRepos[], missions[]
 }
 ```
 
-A pod has: `id, slug, title, tagline, period, role, problem, approach[], architecture { nodes[], edges[] }, results[] { metric, context, confidence }, stack[], tier ("hero" | "featured" | "listed"), assets[]`.
+The full type definitions are in [appendix 06](agent-hq/06-data-contracts.md), and the floor-by-floor content is in [appendix 07](agent-hq/07-content-map.md).
 
-Rooms, pods, year rooms, missions and ⌘K entries are all **generated from this data**. Blog posts are MDX files in `content/blog/`.
+Rooms, pods, year rooms, missions and ⌘K entries are all **generated from this data**. Blog posts are MDX files in `content/blog/` (`slug.en.mdx`, `slug.id.mdx`).
 
 ### 3.4 Open content decisions
 
-These are tracked in the dossier's `conflicts.md` and must be resolved before launch. They include canonical job dates and titles across CVs and LinkedIn, which metrics to publish, the profile photo, the headline wording, and whether the employer name appears on the current-role card.
+Nine owner decisions (hackathon outcomes, employer wording, client names in the CV, pre-2026 metrics, photo, Jenius dates, Master's status, naming freelance clients, JagaRupa classification) are listed with their defaults in [appendix 07, section 7](agent-hq/07-content-map.md#7-decisions-required-before-launch). Phase 0 proceeds with the defaults; launch requires confirmation.
 
 ## 4. Architecture
 
@@ -157,18 +157,22 @@ These are tracked in the dossier's `conflicts.md` and must be resolved before la
 | State | zustand store |
 | Styling | Tailwind CSS for the HUD and all HTML pages |
 | Content | JSON plus MDX, zod validation at build time |
+| i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
+| Audio | Web Audio API wrapper, lazy-loaded, muted by default |
+| Analytics | Cloudflare Web Analytics (cookieless) |
+| CV PDF | Rendered from the `/cv` route with Playwright at build time, one per locale |
 | Testing | Vitest (unit), Playwright (e2e and visual at 3 viewports) |
 | Package manager | Bun |
 | Hosting | Cloudflare Pages (`kurniadi.pages.dev`), deployed by GitHub Actions |
 
 ### 4.2 Routes
 
-Every route renders meaningful HTML without WebGL, then mounts the 3D experience client-side when supported.
+All routes are prefixed with the locale (`/en/...`, `/id/...`); `/` redirects by browser language. Every route renders meaningful HTML without WebGL, then mounts the 3D experience client-side when supported. Full URL scheme: appendix 06.
 
 | Route | Purpose |
 |---|---|
 | `/` | Tower experience (spawn in L1) plus a server-rendered summary for SEO |
-| `/labs/[slug]` | AI Lab pod case study; with 3D it opens L3 at that pod with the drawer open |
+| `/labs` and `/labs/[slug]` | Labs overview and pod case studies (both wings); with 3D it opens L3 at that pod with the drawer open |
 | `/journey` and `/journey/[slug]` | Career timeline and entries (L2) |
 | `/library` and `/blog/[slug]` | Blog and publications (L4) |
 | `/contact` | Roof content |
@@ -183,7 +187,7 @@ src/
   content/              schema.ts (zod), load.ts (typed accessors), selectors
   experience/
     Experience.tsx      canvas root, GPU tier gate, suspense
-    tower/              Tower.tsx, Elevator.tsx, floors/{Lobby,CareerArchive,AiLabs,Library,Roof}.tsx
+    tower/              Tower.tsx, Elevator.tsx, floors/{Lobby,CareerArchive,Labs,Library,Roof}.tsx
     rooms/              Room.tsx, Pod.tsx, YearRoom.tsx, holograms/*
     rover/              Rover.tsx (mesh + face screen), useRoverController.ts
     camera/             rigs: follow, rail (L2), elevator dolly, hologram fly-in
@@ -243,7 +247,7 @@ Rules:
 | 1 | Tower shell, elevator, camera rigs, input layer, store | Ride the elevator through five neon floors |
 | 2 | Screen Rover and L1 Lobby (profile hologram, stats, mission board) | Drive around the Lobby |
 | 3 | L2 Career Archive corridor (rail camera, year rooms) | Time-travel from 2019 to 2026 |
-| 4 | L3 AI Labs pods, Glass Drawer, hologram view for hero pods | AI work as explorable pods |
+| 4 | L3 Labs (Software Wing and AI Wing), Glass Drawer, hologram view for hero pods | Software and AI work as explorable pods |
 | 5 | L4 Library, Roof, Rover Terminal, ⌘K, mission runner | Every mission works end to end |
 | 6 | Polish: GPU tiers, a11y, SEO, performance budgets, README easter egg | Launch-ready on all devices |
 
@@ -256,3 +260,31 @@ Rules:
 | Private client information leaks | Public-safety lint in tests plus a curated public-only dataset |
 | Content goes stale again | Single data file, rooms generated from data, no expiring asset URLs |
 | The neon look feels generic | A distinctive tower structure, the Screen Rover character and terminal personality |
+
+## 8. Product decisions
+
+| Topic | Decision |
+|---|---|
+| Positioning | Software Engineer and AI Engineer (Azure), equal billing |
+| Language | Bilingual EN / ID with a HUD toggle; English default |
+| Sound | Ambient sound and UI blips, muted by default, toggle persists |
+| Analytics | Cloudflare Web Analytics, cookieless, no consent banner |
+| Domain | Launch on `kurniadi.pages.dev`; repoint `kurniadi.dev` DNS later |
+| CV | Generated from site data at build time (EN and ID), so it is always in sync and public-safe |
+| Availability | Roof beacon: "Open to interesting software and AI engineering conversations" |
+| Guide | Deterministic missions only, no AI backend |
+
+## 9. Appendices
+
+Detailed, implementation-level specs. Where an appendix and this document disagree, the appendix wins for its topic.
+
+| # | Appendix | Covers |
+|---|---|---|
+| 01 | [World and layout](agent-hq/01-world-and-layout.md) | Tower constants, floor-by-floor geometry, room placement, intro |
+| 02 | [Interaction and states](agent-hq/02-interaction-and-states.md) | State machine, transitions, mission runner and catalog, Rover Terminal, palette, drawer, hologram, README |
+| 03 | [Rover, camera and input](agent-hq/03-rover-camera-input.md) | Rover geometry, faces, movement tuning, camera rigs per breakpoint, input intents |
+| 04 | [HUD, responsive and i18n](agent-hq/04-hud-responsive-i18n.md) | Breakpoints, HUD layout per device, Quick view, EN/ID, copy guidelines |
+| 05 | [Visual and audio tokens](agent-hq/05-visual-audio-tokens.md) | Colors, materials, lighting, bloom, typography, motion, sound list |
+| 06 | [Data contracts](agent-hq/06-data-contracts.md) | Content types, store shape, room IDs, URL scheme, analytics |
+| 07 | [Content map](agent-hq/07-content-map.md) | What goes on every floor and in every room, pre-launch decisions |
+| 08 | [Quality and acceptance](agent-hq/08-quality-acceptance.md) | GPU tiers, browser support, performance budgets, test strategy, acceptance per phase |
