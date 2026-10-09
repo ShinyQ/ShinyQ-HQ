@@ -4,8 +4,9 @@ import type { Rect, Vec2 } from "../types";
 import { springFactor } from "./rigs";
 
 /**
- * Free orbit state for the follow rig (appendix 03 section 2): unbounded yaw, clamped pitch and
- * zoom, eased steps and reset, and a gentle auto-face toward walls that user rotation cancels.
+ * Horizontal orbit state for the follow rig (appendix 03 section 2): unbounded yaw around the
+ * rover, a small tilt (about 9 degrees either way), clamped zoom, eased steps and reset, and a
+ * gentle auto-face toward walls that user rotation cancels.
  * Pure TypeScript so it can be unit tested.
  */
 export interface OrbitState {
@@ -28,7 +29,8 @@ export interface OrbitState {
   suppressedZone: string | null;
 }
 
-export const PITCH_RANGE = [-0.35, 0.5] as const;
+/** Tilt allowed around the default elevation (owner decision: left/right free, up/down a little). */
+export const PITCH_RANGE = [-0.16, 0.16] as const;
 export const ZOOM_RANGE = [0.6, 1.5] as const;
 export const RAIL_MAX_YAW = (35 * Math.PI) / 180;
 /** Q/E rotation speed (Shift doubles it). */
@@ -116,12 +118,17 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
   L1: [
     {
       id: "L1:certifications",
-      area: { minX: LOBBY.certWall.x - 8, maxX: LOBBY.certWall.x, minZ: LOBBY.certWall.z - 9, maxZ: LOBBY.certWall.z + 9 },
+      area: { minX: LOBBY.certWall.x - 7, maxX: LOBBY.certWall.x, minZ: LOBBY.certWall.z - 10, maxZ: LOBBY.certWall.z + 10 },
       yaw: -Math.PI / 2,
     },
     {
       id: "L1:skills",
-      area: { minX: LOBBY.skillsWall.x - 15, maxX: LOBBY.skillsWall.x + 15, minZ: LOBBY.skillsWall.z, maxZ: LOBBY.skillsWall.z + 6 },
+      area: {
+        minX: LOBBY.skillsWall.x - LOBBY.skillsWall.w / 2,
+        maxX: LOBBY.skillsWall.x + LOBBY.skillsWall.w / 2,
+        minZ: LOBBY.skillsWall.z,
+        maxZ: LOBBY.skillsWall.z + 6,
+      },
       yaw: -Math.PI / 4,
     },
   ],

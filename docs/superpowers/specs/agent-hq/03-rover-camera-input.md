@@ -59,7 +59,7 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 
 - Smoothing: critically damped spring with a 0.18 s half-life.
 - Landscape phones use the tablet values.
-- **Free orbit (follow rig, every floor except the L2 rail).** The camera orbits the rover a full 360° in yaw, with pitch clamped to 17° to 72° of elevation and zoom within 0.6× to 1.5× of the offset. The chosen view persists while driving (keyboard steering stays camera-relative) and never springs back on its own.
+- **Horizontal orbit (follow rig, every floor except the L2 rail).** The camera turns left and right all the way around the rover (unrestricted yaw). Up and down is only a small tilt, about ±9° from the default elevation, so the view never goes underground or top-down. Zoom stays within 0.6× to 1.5× of the offset. The chosen view persists while driving (keyboard steering stays camera-relative) and never springs back on its own.
 - **Reset view.** The HUD reset button, `0` or `Home` ease back to the default angle, pitch and zoom (nearest full turn, about 0.5 s; instant under reduced motion).
 - **Rail.** L2 keeps its side view; the same rotate inputs swing it around the rover by at most ±35°.
 - **Auto-face.** When the rover walks into a wall's view zone (Lobby skills wall, certifications wall), the camera eases to face the wall head on. Any manual rotation inside the zone cancels it until the rover leaves. Off under reduced motion.
@@ -70,7 +70,7 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 | Action | Mac / PC (mouse) | Mac trackpad | Keyboard | Tablet and phone |
 |---|---|---|---|---|
 | Rotate | Drag with the left or right button (past 6 px) on empty floor | Two-finger horizontal swipe | `Q` / `E` (hold `Shift` for 2× speed) | One-finger drag past 8 px on empty space, or two-finger twist |
-| Tilt | Vertical part of a mouse drag | | | Two-finger vertical drag |
+| Tilt (±9° only) | Vertical part of a mouse drag | | | Two-finger vertical drag (one-finger vertical swipes stay the elevator) |
 | Zoom | Ctrl+wheel | Pinch | | Pinch |
 | Reset view | HUD reset button | HUD reset button | `0` or `Home` | HUD reset button |
 | Rotate step (45°) | HUD rotate buttons | HUD rotate buttons | Tab to the HUD rotate buttons | HUD rotate buttons (bottom right) |

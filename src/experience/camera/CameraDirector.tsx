@@ -29,7 +29,8 @@ const FOLLOW_LOOK_AHEAD = { desktop: 4, tablet: 4, mobile: 5 } as const;
 
 /**
  * Applies the active camera rig every frame with critically damped smoothing. The follow rig
- * orbits freely (drag, twist, trackpad, Q/E, buttons); the view persists until reset.
+ * turns all the way around the rover (drag, twist, trackpad, Q/E, buttons) with a small tilt;
+ * the view persists until reset.
  */
 export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
   const local = useRef({
