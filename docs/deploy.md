@@ -1,6 +1,46 @@
 # Deploying ShinyQ HQ
 
-The site is a Next.js static export (`out/`) hosted on Cloudflare Pages. GitHub Actions builds it and uploads it with `wrangler pages deploy` (Direct Upload). Nothing is deployed until the owner finishes the setup below; until then both deploy jobs log a notice and skip.
+The site is a Next.js static export (`out/`) hosted on Cloudflare Pages. GitHub Actions builds it and uploads it with `wrangler pages deploy` (Direct Upload). CI deploys stay off until the owner adds the two Cloudflare secrets (section 3); until then both deploy jobs log a notice and skip, and production is updated with the manual redeploy below.
+
+## Current state (production cutover, 2026-10-09)
+
+| Item | Value |
+| --- | --- |
+| Production project | `kurniadi`, Direct Upload, production branch `main` |
+| Production URL | https://kurniadi.pages.dev |
+| Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6` (never pushed, so every deploy is a preview) |
+| Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
+| Repository secrets | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`: not set yet, so `deploy.yml` and the `preview` job skip the upload |
+
+The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
+
+Notes:
+
+- Per-deployment URLs such as `https://<hash>.kurniadi.pages.dev` are behind an existing Cloudflare Access application (account level, not part of the Pages project). Only `kurniadi.pages.dev` itself is public.
+- The old project had automatic Cloudflare Web Analytics enabled. The new project does not. Re-enable it in the dashboard (Pages project > Metrics) or set `CF_BEACON_TOKEN` (section 4), not both.
+
+## Manual redeploy (until CI deploys are enabled)
+
+From a clean checkout of `main`, with `wrangler` logged in to the account that owns the project (`bunx wrangler@3 login`, once):
+
+```sh
+git switch main && git pull
+bun install --frozen-lockfile
+bun run typecheck && bun run lint && bun run test
+NEXT_PUBLIC_SITE_URL=https://kurniadi.pages.dev bun run build
+bun run e2e
+bunx wrangler@3 pages deploy out --project-name=kurniadi --branch=main \
+  --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
+```
+
+`--branch=main` matches the production branch, so the upload goes live on `kurniadi.pages.dev` at once. Then run the checks in section 5, step 3.
+
+## Enable automatic CI deploys
+
+1. Create an account-scoped API token with **Account > Cloudflare Pages > Edit** only (section 2). No zone, Workers or DNS permissions are needed.
+2. Add the secrets: `gh secret set CLOUDFLARE_API_TOKEN` and `gh secret set CLOUDFLARE_ACCOUNT_ID` (section 3).
+3. `CF_PAGES_PROJECT=kurniadi` is already set. Optionally set `SITE_URL` and `CF_BEACON_TOKEN` (section 4).
+4. Run `gh workflow run deploy.yml --ref main` and watch it with `gh run watch`. From then on every push to `main` deploys to production, and every pull request from this repository gets a preview on `shinyq-hq`.
 
 ## Overview
 
@@ -28,7 +68,7 @@ flowchart LR
 
 ## 1. Choose the Pages project
 
-The production URL `kurniadi.pages.dev` belongs to the Cloudflare Pages project named `kurniadi`, which currently serves the old site. A `*.pages.dev` subdomain is tied to the project name and cannot be moved to another project.
+Done for production on 2026-10-09 (see "Current state"); kept for reference. The production URL `kurniadi.pages.dev` belongs to the Cloudflare Pages project named `kurniadi`. A `*.pages.dev` subdomain is tied to the project name and cannot be moved to another project. Deleting a project frees its name at once: the cutover deleted and recreated `kurniadi` within seconds.
 
 ### Option A: reuse `kurniadi` (keeps kurniadi.pages.dev)
 
