@@ -8,6 +8,7 @@ import { structuralLabels } from "@/hud/index-data";
 
 const content = getContent();
 const rooms = buildRoomCatalog(content, structuralLabels());
+const journeySay = content.missions.find((mission) => mission.id === "journey")!.steps.find((step) => step.kind === "say")!;
 
 function setup(locale: Locale = "en") {
   const events: string[] = [];
@@ -33,8 +34,8 @@ describe("static mission host", () => {
     ["hire", "id", ["nav /id/contact"]],
     ["cv", "en", ["nav /en/cv"]],
     ["blog", "en", ["nav /en/blog/the-sun-the-moon-and-the-dark-sea"]],
-    ["journey", "en", ["nav /en/journey#y2019", "say drive or swipe forward in time 2400"]],
-    ["journey", "id", ["nav /id/journey#y2019", "say maju atau geser untuk menembus waktu 2400"]],
+    ["journey", "en", ["nav /en/journey#y2019", `say ${journeySay.text.en} 2400`]],
+    ["journey", "id", ["nav /id/journey#y2019", `say ${journeySay.text.id} 2400`]],
     ["projects", "en", ["nav /en/labs", "palette pods"]],
   ] as const)("maps %s (%s) to one navigation", async (mission, locale, expected) => {
     const { runner, events } = setup(locale);

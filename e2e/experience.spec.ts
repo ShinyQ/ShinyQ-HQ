@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import en from "../messages/en.json";
+import data from "../content/site-content.json";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -103,7 +105,7 @@ test.describe("elevator", () => {
     await page.keyboard.press("PageUp");
     await waitForFloor(page, "L2");
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
-    await expect(page.getByRole("link", { name: "Read the Career Archive page" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: en.hud.openFloorPage.replace("{name}", en.floors.L2) })).toHaveCount(0);
   });
 });
 
@@ -298,7 +300,7 @@ test.describe("missions in 3D", () => {
   test("manual input cancels a running mission", async ({ page }) => {
     await enterHQ(page);
     await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
-    await page.getByRole("option", { name: /Walk me through your journey/ }).click();
+    await page.getByRole("option", { name: data.missions.find((mission) => mission.id === "journey")!.label.en }).click();
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "running");
     await page.keyboard.down("s");
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "cancelled");

@@ -56,11 +56,11 @@ describe("RoverTerminal", () => {
     const dialog = screen.getByRole("dialog", { name: "Rover Terminal" });
     expect(dialog).toHaveTextContent("rover@hq:~$ ./missions");
     expect(dialog).toHaveTextContent("good morning.");
-    expect(dialog).toHaveTextContent("where should we go? ^_^");
+    expect(dialog).toHaveTextContent(en.hud.terminal.question);
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(missions.length + 1);
     expect(options[0]).toHaveTextContent(`[1]${missions[0].label.en}`);
-    expect(options.at(-1)).toHaveTextContent("[esc]drive myself");
+    expect(options.at(-1)).toHaveTextContent(`[esc]${en.hud.terminal.driveMyself}`);
   });
 
   it("focuses the mission list on open", () => {
@@ -124,14 +124,14 @@ describe("RoverTerminal", () => {
       expect(typed()).toBe("");
       act(() => vi.advanceTimersByTime(12 * 10));
       expect(typed()).toContain("rover@hq");
-      expect(typed()).not.toContain("where should we go");
+      expect(typed()).not.toContain(en.hud.terminal.question);
       act(() => vi.advanceTimersByTime(12 * 200));
-      expect(typed()).toContain("where should we go? ^_^");
+      expect(typed()).toContain(en.hud.terminal.question);
     });
 
     it("keeps the full text available to screen readers while typing", () => {
       renderTerminal({ reducedMotion: false });
-      expect(screen.getByRole("dialog")).toHaveTextContent("good morning. where should we go? ^_^");
+      expect(screen.getByRole("dialog")).toHaveTextContent(`${en.hud.terminal.greeting.morning}. ${en.hud.terminal.question}`);
     });
 
     it("shows the full text immediately on the second open", () => {
@@ -150,7 +150,7 @@ describe("RoverTerminal", () => {
         </NextIntlClientProvider>,
       );
       const typed = screen.getByRole("dialog").querySelector("[aria-hidden='true'].min-h-\\[60px\\]")!.textContent;
-      expect(typed).toContain("where should we go? ^_^");
+      expect(typed).toContain(en.hud.terminal.question);
     });
   });
 
@@ -158,8 +158,8 @@ describe("RoverTerminal", () => {
     renderTerminal({ now: new Date(2026, 9, 9, 20, 0) }, "id");
     const dialog = screen.getByRole("dialog", { name: "Terminal Rover" });
     expect(dialog).toHaveTextContent("selamat malam.");
-    expect(dialog).toHaveTextContent("mau ke mana kita? ^_^");
-    expect(screen.getAllByRole("option").at(-1)).toHaveTextContent("saya nyetir sendiri");
+    expect(dialog).toHaveTextContent(id.hud.terminal.question);
+    expect(screen.getAllByRole("option").at(-1)).toHaveTextContent(id.hud.terminal.driveMyself);
   });
 });
 

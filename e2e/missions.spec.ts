@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { heroPod } from "./routes";
+import rawData from "../content/site-content.json";
+import { SiteContentSchema } from "../src/content/schema";
+
+const data = SiteContentSchema.parse(rawData);
+const mission = (id: string) => data.missions.find((entry) => entry.id === id)!;
 
 /** Marks the Rover Terminal as seen so it does not auto-open. */
 async function seenTerminal(page: Page) {
@@ -68,7 +73,7 @@ test.describe("missions on static pages", () => {
     await page.getByRole("button", { name: "Missions" }).click();
     const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
     await expect(terminal).toContainText("rover@hq:~$ ./missions");
-    await expect(terminal.getByRole("option").nth(4)).toContainText("Hire / contact");
+    await expect(terminal.getByRole("option").nth(4)).toContainText(mission("hire").label.en);
     await page.keyboard.press("5");
     await expect(page).toHaveURL(/\/en\/contact$/);
     await expect(terminal).toBeHidden();
@@ -77,15 +82,15 @@ test.describe("missions on static pages", () => {
   test("journey drives to 2019 and the rover speaks", async ({ page }) => {
     await page.goto("/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
-    await page.getByRole("option", { name: /Walk me through your journey/ }).click();
+    await page.getByRole("option", { name: mission("journey").label.en }).click();
     await expect(page).toHaveURL(/\/en\/journey#y2019$/);
-    await expect(page.getByRole("status").filter({ hasText: "drive or swipe forward in time" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: mission("journey").steps.find((step) => step.kind === "say")!.text.en })).toBeVisible();
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {
     await page.goto("/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
-    await page.getByRole("option", { name: "All projects" }).click();
+    await page.getByRole("option", { name: mission("projects").label.en }).click();
     await expect(page).toHaveURL(/\/en\/labs$/);
     const palette = page.getByRole("dialog", { name: "Command palette" });
     await expect(palette.getByRole("button", { name: "Clear filter" })).toBeVisible();

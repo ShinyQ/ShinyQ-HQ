@@ -34,6 +34,7 @@ export default async function LobbyPage({ params }: PageProps<"/[locale]">) {
   const t = await getTranslations({ locale, namespace: "home" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const tf = await getTranslations({ locale, namespace: "floors" });
+  const tContact = await getTranslations({ locale, namespace: "contact" });
   const profile = getProfile();
   const roof = getRoof();
   const wings = (["software", "ai"] as const).map((wing) => ({
@@ -78,7 +79,7 @@ export default async function LobbyPage({ params }: PageProps<"/[locale]">) {
               </dd>
             </div>
             <div className="flex gap-2">
-              <dt className="sr-only">Location</dt>
+              <dt className="sr-only">{tContact("location")}</dt>
               <dd className="text-ink-2">
                 {profile.location[locale]} ({profile.timezone})
               </dd>
