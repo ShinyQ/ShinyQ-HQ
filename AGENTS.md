@@ -27,7 +27,7 @@ content/
   .safety-blocklist.local.txt   PRIVATE, gitignored; real codenames and repo names
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
-public/fonts/                   Inter + JetBrains Mono woff for in-world troika Text (OFL)
+public/fonts/                   Inter + JetBrains Mono woff for in-world troika Text (OFL); jetbrains-mono-symbols-700 is the troika fallback (arrows, shapes) so nothing loads from a CDN
 public/tech/                    tech logos (svg/webp, see its README for sources), resolved by src/content/tech.ts
 public/logos/                   company and school logos (TimelineEntry.logo), 128 px webp
 public/media/<pod-slug>/        pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide)
