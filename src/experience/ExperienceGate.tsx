@@ -15,14 +15,29 @@ const Experience = dynamic(() => import("./Experience"), { ssr: false });
 export const VIEW_KEY = "hq:view";
 
 let detected: GpuTier | undefined;
-/** Probes WebGL once per page load (creating contexts is not free). */
-function detectTier(): GpuTier {
-  detected ??= decideTier(readTierInputs(window.location.search));
-  return detected;
-}
+let scheduled = false;
+const tierListeners = new Set<() => void>();
 
-const noopSubscribe = () => () => {};
-const useMounted = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
+/**
+ * Probes WebGL once per page load, after the commit that mounts the gate. Creating a context is not
+ * free (seconds on software renderers such as SwiftShader), so it must never run during render:
+ * a client navigation into a gated route would block until the probe finishes.
+ */
+function subscribeTier(listener: () => void) {
+  tierListeners.add(listener);
+  if (detected === undefined && !scheduled) {
+    scheduled = true;
+    window.setTimeout(() => {
+      detected ??= decideTier(readTierInputs(window.location.search));
+      tierListeners.forEach((l) => l());
+    }, 0);
+  }
+  return () => {
+    tierListeners.delete(listener);
+  };
+}
+const readDetectedTier = () => detected ?? null;
+const readServerTier = () => null;
 
 function readView(): "3d" | "page" {
   try {
@@ -39,10 +54,10 @@ function readView(): "3d" | "page" {
  */
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
-  const mounted = useMounted();
+  const detectedTier = useSyncExternalStore(subscribeTier, readDetectedTier, readServerTier);
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
-  const tier = mounted ? (lost ? "static" : detectTier()) : null;
+  const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
   // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
