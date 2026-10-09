@@ -159,11 +159,11 @@
       "dataset": "Dataset"
     },
     "research": "Riset",
-    "researchIntro": "Makalah yang ditinjau sejawat dan publikasi skripsi S1.",
+    "researchIntro": "Makalah saya yang melalui peer review dan publikasi skripsi S1.",
     "authors": "Penulis",
     "doi": "DOI",
     "pdf": "PDF",
-    "code": "Kode",
+    "code": "Kode sumber",
     "citations": "{count} sitasi di {source}, per {date}",
     "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
     "profiles": "Profil riset"
@@ -212,7 +212,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir, atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Buka Ringkasan untuk membaca portofolio dalam tampilan halaman.",
+    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir, atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Buka Ringkasan untuk membaca portofolio dalam tampilan halaman.",
     "floor": "Lantai",
     "visited": "Ruang yang dikunjungi",
     "elevator": "Lift",
@@ -223,7 +223,7 @@
     "pageViewHint": "Tampilkan halaman ini tanpa menara 3D",
     "explore3d": "Jelajahi dalam 3D",
     "back3d": "Kembali ke 3D",
-    "back3dHint": "Kembali ke menara 3D (pintasan: 3)",
+    "back3dHint": "Kembali ke menara dalam 3D. Tekan 3.",
     "language": "Bahasa",
     "sound": "Suara",
     "menu": "Menu",
@@ -320,22 +320,22 @@
     },
     "career": {
       "prologue": "Prolog",
-      "workshop": "Ruang Workshop",
+      "workshop": "Ruang workshop",
       "repos": "Repositori publik",
       "models": "Model Hugging Face",
-      "window": "L3 Labs di atas",
-      "scrubHint": "Geser ke kiri atau kanan untuk menjelajah tahun"
+      "window": "Labs di lantai L3",
+      "scrubHint": "Tahun: geser ke kiri untuk maju, ke kanan untuk kembali"
     },
     "world": {
       "lectern": "Meja baca",
       "read": "Baca",
-      "comms": "Komunikasi",
-      "cvHint": "Klik untuk mengunduh"
+      "comms": "Tautan kontak",
+      "cvHint": "Buka pilihan unduhan CV"
     },
     "view": {
-      "label": "Tampilan",
-      "rotateLeft": "Putar tampilan ke kiri (Q)",
-      "rotateRight": "Putar tampilan ke kanan (E)",
+      "label": "Kontrol tampilan",
+      "rotateLeft": "Putar ke kiri (Q)",
+      "rotateRight": "Putar ke kanan (E)",
       "reset": "Atur ulang tampilan (0)"
     }
   },
@@ -397,14 +397,14 @@
       "downloads": "Unduhan",
       "cvPage": "Buka halaman CV",
       "cvPdf": "PDF CV ({locale})",
-      "placings": "Prestasi",
+      "placings": "Hasil kompetisi",
       "models": "Model Hugging Face",
       "readPost": "Baca tulisan",
       "emailMe": "Kirim email",
       "copyEmail": "Salin email",
-      "copied": "Tersalin ^_^",
-      "copyFailed": "Gagal menyalin. Alamatnya {email}",
-      "writtenIn": "Ditulis dalam {languages}"
+      "copied": "Email tersalin ^_^",
+      "copyFailed": "Email gagal disalin. Hubungi saya di {email}.",
+      "writtenIn": "Hanya tersedia dalam {languages}"
     },
     "directory": "Direktori sayap",
     "signSoftware": "Software Wing",
@@ -417,6 +417,6 @@
     "previous": "Gambar sebelumnya",
     "next": "Gambar berikutnya",
     "counter": "Gambar {index} dari {total}",
-    "hint": "Gunakan tombol panah kiri dan kanan atau geser untuk berpindah gambar. Tekan Escape untuk menutup."
+    "hint": "Gambar: panah kiri/kanan atau geser · Tutup: Esc"
   }
 }
