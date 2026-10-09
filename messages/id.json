@@ -401,5 +401,14 @@
     "directory": "Direktori sayap",
     "signSoftware": "Software Wing",
     "signAi": "AI Wing"
+  },
+  "gallery": {
+    "title": "Galeri",
+    "open": "Buka gambar {index} dari {total}: {alt}",
+    "close": "Tutup penampil gambar",
+    "previous": "Gambar sebelumnya",
+    "next": "Gambar berikutnya",
+    "counter": "Gambar {index} dari {total}",
+    "hint": "Gunakan tombol panah kiri dan kanan atau geser untuk berpindah gambar. Tekan Escape untuk menutup."
   }
 }

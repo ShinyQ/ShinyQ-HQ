@@ -401,5 +401,14 @@
     "directory": "Wing directory",
     "signSoftware": "Software Wing",
     "signAi": "AI Wing"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "open": "Open image {index} of {total}: {alt}",
+    "close": "Close image viewer",
+    "previous": "Previous image",
+    "next": "Next image",
+    "counter": "Image {index} of {total}",
+    "hint": "Use the left and right arrow keys or swipe to move between images. Press Escape to close."
   }
 }
