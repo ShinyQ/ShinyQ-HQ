@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { asReturningVisitor, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -408,5 +408,43 @@ test.describe("free orbit on touch", () => {
 
     await page.getByRole("button", { name: "Rotate view left (Q)" }).click();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
+  });
+});
+
+test.describe("orbit on every floor", () => {
+  const yaws = (page: Page) =>
+    page.evaluate(() => {
+      const r = (window as unknown as { __hq: { rover: { cameraYaw: number; cameraRailYaw: number } } }).__hq.rover;
+      return { yaw: r.cameraYaw, rail: r.cameraRailYaw };
+    });
+
+  for (const { path, floor } of [
+    { path: "/en/library", floor: "L4" },
+    { path: "/en/contact", floor: "RF" },
+  ]) {
+    test(`Q/E turn the follow camera freely on ${floor}`, async ({ page }) => {
+      await asReturningVisitor(page);
+      await page.goto(`${path}?tier=lite`);
+      await waitForHQ(page);
+      await waitForPhase(page, "explore", 60_000);
+      expect((await snapshot(page)).floor).toBe(floor);
+      await page.keyboard.down("e");
+      await expect.poll(async () => (await yaws(page)).yaw, { timeout: 30_000 }).toBeGreaterThan(0.6);
+      await page.keyboard.up("e");
+    });
+  }
+
+  test("the L2 rail keeps its side view with limited yaw", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en/journey?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore", 60_000);
+    await page.keyboard.down("e");
+    await expect.poll(async () => (await yaws(page)).rail, { timeout: 30_000 }).toBeGreaterThan(0.55);
+    await page.waitForTimeout(1500);
+    await page.keyboard.up("e");
+    const { rail, yaw } = await yaws(page);
+    expect(rail).toBeLessThanOrEqual((35 * Math.PI) / 180 + 1e-6);
+    expect(yaw).toBe(0);
   });
 });

@@ -84,6 +84,7 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
     if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime), s.reducedMotion);
     stepOrbit(orbit, dt, s.reducedMotion);
     roverRuntime.cameraYaw = orbit.yaw;
+    roverRuntime.cameraRailYaw = orbit.railYaw;
 
     let desired: CameraPose;
     let snap = false;

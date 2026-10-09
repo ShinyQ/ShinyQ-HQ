@@ -25,6 +25,8 @@ export const roverRuntime = {
   cameraForward: { x: -1, z: -1 } as Vec2,
   /** Follow-camera yaw offset from the default angle (debug and test probe). */
   cameraYaw: 0,
+  /** L2 rail yaw (limited to RAIL_MAX_YAW). */
+  cameraRailYaw: 0,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
   /** Mission autopilot request (see missions/host3d.ts). */
