@@ -27,6 +27,8 @@ export interface OrbitState {
   zone: string | null;
   /** Zone in which the visitor rotated by hand; no auto-face there until the rover leaves it. */
   suppressedZone: string | null;
+  /** Zoom set by a view zone; restored to 1 on exit unless the visitor zoomed by hand meanwhile. */
+  zoneZoom: number | null;
 }
 
 /** Tilt allowed around the default elevation (owner decision: left/right free, up/down a little). */
@@ -57,6 +59,7 @@ export function createOrbitState(): OrbitState {
     easing: false,
     zone: null,
     suppressedZone: null,
+    zoneZoom: null,
   };
 }
 
@@ -93,6 +96,7 @@ export function resetView(s: OrbitState): void {
   s.pitchTarget = 0;
   s.zoomTarget = 1;
   s.railYawTarget = 0;
+  s.zoneZoom = null;
   s.easing = true;
   if (s.zone) s.suppressedZone = s.zone;
 }
@@ -100,6 +104,7 @@ export function resetView(s: OrbitState): void {
 export function zoomBy(s: OrbitState, factor: number): void {
   s.zoom = clamp(s.zoom * factor, ZOOM_RANGE[0], ZOOM_RANGE[1]);
   s.zoomTarget = s.zoom;
+  s.zoneZoom = null;
 }
 
 /** A floor area where the camera turns to face something (a wall) when the rover walks in. */
@@ -108,6 +113,8 @@ export interface ViewZone {
   area: Rect;
   /** Follow yaw (offset from the default angle) that faces the feature head on. */
   yaw: number;
+  /** Optional zoom so a wide feature fits the view. */
+  zoom?: number;
 }
 
 /**
@@ -130,6 +137,8 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
         maxZ: LOBBY.skillsWall.z + 6,
       },
       yaw: -Math.PI / 4,
+      // The 40 u wall needs a wider view than the default follow distance.
+      zoom: 1.45,
     },
   ],
 };
@@ -148,11 +157,20 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
   s.zone = id;
   if (!zone) {
     s.suppressedZone = null;
+    if (s.zoneZoom !== null) {
+      s.zoomTarget = 1;
+      s.zoneZoom = null;
+      s.easing = true;
+    }
     return;
   }
   if (reduced || s.suppressedZone === zone.id) return;
   s.yawTarget = nearestAngle(zone.yaw, s.yaw);
   s.pitchTarget = 0;
+  if (zone.zoom) {
+    s.zoomTarget = zone.zoom;
+    s.zoneZoom = zone.zoom;
+  }
   s.easing = true;
 }
 

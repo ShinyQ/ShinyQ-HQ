@@ -117,6 +117,29 @@ describe("wall auto-face", () => {
     expect(s.yaw).toBeCloseTo(cert.yaw);
   });
 
+  it("zooms out for a wide wall and restores the zoom on exit", () => {
+    const skills = VIEW_ZONES.L1!.find((z) => z.id === "L1:skills")!;
+    const s = createOrbitState();
+    updateZone(s, skills, false);
+    settle(s);
+    expect(s.zoom).toBeCloseTo(skills.zoom!);
+    updateZone(s, null, false);
+    settle(s);
+    expect(s.zoom).toBeCloseTo(1);
+  });
+
+  it("keeps a manual zoom when leaving a zone", () => {
+    const skills = VIEW_ZONES.L1!.find((z) => z.id === "L1:skills")!;
+    const s = createOrbitState();
+    updateZone(s, skills, false);
+    settle(s);
+    zoomBy(s, 0.8);
+    const manual = s.zoom;
+    updateZone(s, null, false);
+    settle(s);
+    expect(s.zoom).toBeCloseTo(manual);
+  });
+
   it("stays off under reduced motion", () => {
     const s = createOrbitState();
     updateZone(s, cert, true);
