@@ -233,7 +233,7 @@
       "name": "Microsoft Certified: Azure AI Apps and Agents Developer Associate",
       "issuer": "Microsoft",
       "issued": "2026-09",
-      "credentialUrl": "https://www.linkedin.com/in/kurniadiwijaya/details/certifications/",
+      "credentialUrl": "https://learn.microsoft.com/api/credentials/share/en-us/KurniadiAhmadWijaya-0298/49FE315C859AD1F3?sharingId=813CCE48E6426863",
       "status": "earned"
     },
     {
@@ -242,7 +242,7 @@
       "name": "Microsoft Certified: Azure AI Fundamentals",
       "issuer": "Microsoft",
       "issued": "2026-05",
-      "credentialUrl": "https://www.linkedin.com/in/kurniadiwijaya/details/certifications/",
+      "credentialUrl": "https://learn.microsoft.com/api/credentials/share/en-gb/KurniadiAhmadWijaya-0298/3700132DB946AF8?sharingId=813CCE48E6426863",
       "status": "earned"
     },
     {
@@ -251,7 +251,7 @@
       "name": "Microsoft Certified: Azure Fundamentals",
       "issuer": "Microsoft",
       "issued": "2026-05",
-      "credentialUrl": "https://www.linkedin.com/in/kurniadiwijaya/details/certifications/",
+      "credentialUrl": "https://learn.microsoft.com/en-gb/users/kurniadiahmadwijaya-0298/credentials/9a18c9ca520493f3",
       "status": "earned"
     },
     {
@@ -3145,7 +3145,7 @@
             "id": "Scan terjadwal, kepemilikan aset, dan statistik remediasi untuk badan siber nasional Indonesia."
           },
           "period": {
-            "start": "2023-04",
+            "start": "2023-05",
             "end": "2023-07"
           },
           "role": {
@@ -3286,8 +3286,8 @@
                 "id": "Ter-merge dalam sekitar tiga setengah bulan, dari migrasi pertama sampai export terjadwal"
               },
               "context": {
-                "en": "Counted from the repository's pull request history (Apr to Jul 2023)",
-                "id": "Dihitung dari riwayat pull request repositori (Apr sampai Jul 2023)"
+                "en": "Counted from the repository's pull request history",
+                "id": "Dihitung dari riwayat pull request repositori"
               },
               "confidence": "verified"
             }
