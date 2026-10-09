@@ -21,6 +21,7 @@
   --color-white: #e5e7eb;
   --color-terminal-bg: #03140e;
   --color-terminal-fg: #34d399;
+  --color-terminal-hi: #ecfdf5;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
