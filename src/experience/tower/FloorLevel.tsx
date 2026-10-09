@@ -6,7 +6,7 @@ import { useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, floorY, SLAB_THICKNESS } from "../config";
-import { intents } from "../input/intents";
+import { DRAG_THRESHOLD, intents } from "../input/intents";
 import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
 import { GridLines } from "./primitives";
@@ -16,8 +16,9 @@ const SOLID = 1;
 const GHOST = 0.03;
 
 function onFloorClick(e: ThreeEvent<MouseEvent>) {
-  // Ignore clicks that ended an orbit drag.
-  if (e.delta > 6) return;
+  // A press that travelled past the drag threshold rotated the view; it is not click-to-move.
+  const pointerType = "pointerType" in e.nativeEvent ? String((e.nativeEvent as PointerEvent).pointerType) : "mouse";
+  if (e.delta > DRAG_THRESHOLD[pointerType as keyof typeof DRAG_THRESHOLD] || e.delta > DRAG_THRESHOLD.touch) return;
   e.stopPropagation();
   intents.emit({ type: "goto", point: { x: e.point.x, z: e.point.z } });
 }

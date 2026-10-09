@@ -212,7 +212,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "A neon tower with five floors. Drive the Screen Rover with the arrow keys or WASD, or click the floor to move. Change floors with the elevator panel, the mouse wheel or PageUp and PageDown. Every floor is also available as a normal page through Quick view.",
+    "canvasDescription": "A neon tower with five floors. Drive the Screen Rover with the arrow keys or WASD, or click the floor to move. Rotate the view by dragging, with Q and E, or with the rotate buttons; press 0 to reset it. Change floors with the elevator panel, the mouse wheel or PageUp and PageDown. Every floor is also available as a normal page through Quick view.",
     "floor": "Floor",
     "visited": "Rooms visited",
     "elevator": "Elevator",
@@ -226,8 +226,8 @@
     "sound": "Sound",
     "menu": "Menu",
     "profile": "Profile",
-    "hintFine": "WASD or arrows to drive · Click the floor to move · Wheel or PgUp/PgDn for floors",
-    "hintCoarse": "Tap to move · Joystick to drive · Swipe up or down for floors",
+    "hintFine": "WASD or arrows to drive · Click to move · Drag or Q/E to rotate · Wheel or PgUp/PgDn for floors",
+    "hintCoarse": "Tap to move · Drag to rotate · Swipe up or down for floors",
     "underConstruction": "{name} is under construction in 3D.",
     "openFloorPage": "Read the {name} page",
     "joystick": "Drive joystick",
@@ -329,6 +329,12 @@
       "read": "Read",
       "comms": "Comms",
       "cvHint": "Click to download"
+    },
+    "view": {
+      "label": "View",
+      "rotateLeft": "Rotate view left (Q)",
+      "rotateRight": "Rotate view right (E)",
+      "reset": "Reset view (0)"
     }
   },
   "drawer": {

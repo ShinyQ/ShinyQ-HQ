@@ -34,23 +34,34 @@ export const INTRO_DURATION = INTRO_ORBIT + INTRO_FLY;
 export const TOWER_CENTER: Vec3 = [0, 28, 0];
 
 export const SPRING_HALF_LIFE = 0.18;
-export const MAX_YAW = (25 * Math.PI) / 180;
-export const ZOOM_RANGE = [0.8, 1.25] as const;
+/** Absolute elevation limits for the follow camera (17 to 72 degrees). */
+export const PITCH_LIMITS = [0.3, 1.25] as const;
 
 export function selectRig(phase: string, floor: FloorId): RigKind {
   if (phase === "boot" || phase === "intro") return "intro";
   return floor === "L2" ? "rail" : "follow";
 }
 
-export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1): CameraPose {
+/**
+ * Follow camera orbiting `target`. `yaw` (unbounded) turns the default offset around the vertical
+ * axis; `pitch` raises or lowers it from the default elevation, within PITCH_LIMITS.
+ */
+export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
   const { fov, offset } = FOLLOW[cls];
   const [ox, oy, oz] = offset;
+  const ground = Math.hypot(ox, oz);
+  const base = Math.atan2(oy, ground);
+  const elevation = Math.max(PITCH_LIMITS[0], Math.min(PITCH_LIMITS[1], base + pitch));
+  const radius = Math.hypot(ground, oy);
+  // Exact default offset when the pitch is unchanged.
+  const horizontal = elevation === base ? 1 : (radius * Math.cos(elevation)) / ground;
+  const vertical = elevation === base ? oy : radius * Math.sin(elevation);
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
-  const rx = ox * c + oz * s;
-  const rz = -ox * s + oz * c;
+  const rx = (ox * c + oz * s) * horizontal;
+  const rz = (-ox * s + oz * c) * horizontal;
   return {
-    position: [target[0] + rx * zoom, target[1] + oy * zoom, target[2] + rz * zoom],
+    position: [target[0] + rx * zoom, target[1] + vertical * zoom, target[2] + rz * zoom],
     target,
     fov,
   };
@@ -65,11 +76,12 @@ export function railShift(roverZ: number): number {
   return out > 0 ? Math.sign(roverZ) * out : 0;
 }
 
-export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0): CameraPose {
+/** Side-on rail camera for the L2 corridor; `yaw` (already clamped) swings it around the rover. */
+export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0): CameraPose {
   const { fov, y, z } = RAIL[cls];
   const shift = railShift(roverZ);
   return {
-    position: [roverX, floorY + y * zoom, z * zoom + shift],
+    position: [roverX + Math.sin(yaw) * z * zoom, floorY + y * zoom, Math.cos(yaw) * z * zoom + shift],
     target: [roverX + RAIL_LOOK_AHEAD, floorY, shift],
     fov,
   };
@@ -117,9 +129,6 @@ export function forwardOf(pose: CameraPose): Vec2 {
   const len = Math.hypot(x, z) || 1;
   return { x: x / len, z: z / len };
 }
-
-export const clampYaw = (yaw: number) => Math.max(-MAX_YAW, Math.min(MAX_YAW, yaw));
-export const clampZoom = (zoom: number) => Math.max(ZOOM_RANGE[0], Math.min(ZOOM_RANGE[1], zoom));
 
 /** Hologram fly-in (appendix 03 section 2): eye height 4 u, at least 9 u in front of the stage. */
 export const HOLOGRAM_RIG: Record<ViewportClass, { fov: number; distance: number; eye: number }> = {

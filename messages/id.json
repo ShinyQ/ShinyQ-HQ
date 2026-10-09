@@ -212,7 +212,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Menara neon dengan lima lantai. Kendarai Screen Rover dengan tombol panah atau WASD, atau klik lantai untuk bergerak. Pindah lantai dengan panel lift, scroll mouse, atau PageUp dan PageDown. Setiap lantai juga tersedia sebagai halaman biasa lewat Quick view.",
+    "canvasDescription": "Menara neon dengan lima lantai. Kendarai Screen Rover dengan tombol panah atau WASD, atau klik lantai untuk bergerak. Putar tampilan dengan menyeret, dengan Q dan E, atau dengan tombol putar; tekan 0 untuk mengatur ulang. Pindah lantai dengan panel lift, scroll mouse, atau PageUp dan PageDown. Setiap lantai juga tersedia sebagai halaman biasa lewat Quick view.",
     "floor": "Lantai",
     "visited": "Ruangan dikunjungi",
     "elevator": "Lift",
@@ -226,8 +226,8 @@
     "sound": "Suara",
     "menu": "Menu",
     "profile": "Profil",
-    "hintFine": "WASD atau panah untuk menyetir · Klik lantai untuk bergerak · Scroll atau PgUp/PgDn untuk pindah lantai",
-    "hintCoarse": "Ketuk untuk bergerak · Joystick untuk menyetir · Geser ke atas atau bawah untuk pindah lantai",
+    "hintFine": "WASD atau panah untuk menyetir · Klik untuk bergerak · Seret atau Q/E untuk memutar · Scroll atau PgUp/PgDn untuk pindah lantai",
+    "hintCoarse": "Ketuk untuk bergerak · Seret untuk memutar · Geser ke atas atau bawah untuk pindah lantai",
     "underConstruction": "{name} versi 3D sedang dibangun.",
     "openFloorPage": "Baca halaman {name}",
     "joystick": "Joystick kemudi",
@@ -329,6 +329,12 @@
       "read": "Baca",
       "comms": "Komunikasi",
       "cvHint": "Klik untuk mengunduh"
+    },
+    "view": {
+      "label": "Tampilan",
+      "rotateLeft": "Putar tampilan ke kiri (Q)",
+      "rotateRight": "Putar tampilan ke kanan (E)",
+      "reset": "Atur ulang tampilan (0)"
     }
   },
   "drawer": {

@@ -22,6 +22,8 @@ export const roverRuntime = {
   hopUntil: 0,
   /** Horizontal camera forward, used for camera-relative steering. */
   cameraForward: { x: -1, z: -1 } as Vec2,
+  /** Follow-camera yaw offset from the default angle (debug and test probe). */
+  cameraYaw: 0,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
   /** Mission autopilot request (see missions/host3d.ts). */

@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  clampYaw,
-  clampZoom,
   followPose,
   forwardOf,
   INTRO_DURATION,
   INTRO_SWEEP,
   introAngle,
   introPose,
-  MAX_YAW,
+  PITCH_LIMITS,
   railPose,
   railShift,
   selectRig,
@@ -71,12 +69,38 @@ describe("camera rigs", () => {
     expect(springFactor(0)).toBe(0);
   });
 
-  it("derives the horizontal forward and clamps yaw and zoom", () => {
+  it("derives the horizontal forward", () => {
     const f = forwardOf(followPose("desktop", [0, 0, 0]));
     expect(f.x).toBeCloseTo(-Math.SQRT1_2);
     expect(f.z).toBeCloseTo(-Math.SQRT1_2);
-    expect(clampYaw(1)).toBe(MAX_YAW);
-    expect(clampZoom(2)).toBe(1.25);
-    expect(clampZoom(0.1)).toBe(0.8);
+  });
+
+  it("orbits a full turn and keeps the distance", () => {
+    const base = followPose("desktop", [0, 0, 0]).position;
+    const half = followPose("desktop", [0, 0, 0], Math.PI).position;
+    expect(half[0]).toBeCloseTo(-14);
+    expect(half[2]).toBeCloseTo(-14);
+    const full = followPose("desktop", [0, 0, 0], Math.PI * 2).position;
+    full.forEach((v, i) => expect(v).toBeCloseTo(base[i]));
+  });
+
+  it("raises and lowers the camera within the pitch limits", () => {
+    const radius = Math.hypot(14, 15, 14);
+    const up = followPose("desktop", [0, 0, 0], 0, 1, 0.3).position;
+    const down = followPose("desktop", [0, 0, 0], 0, 1, -0.3).position;
+    expect(up[1]).toBeGreaterThan(15);
+    expect(down[1]).toBeLessThan(15);
+    expect(Math.hypot(...up)).toBeCloseTo(radius);
+    const top = followPose("desktop", [0, 0, 0], 0, 1, 5).position;
+    expect(Math.asin(top[1] / radius)).toBeCloseTo(PITCH_LIMITS[1]);
+    const low = followPose("desktop", [0, 0, 0], 0, 1, -5).position;
+    expect(Math.asin(low[1] / radius)).toBeCloseTo(PITCH_LIMITS[0]);
+  });
+
+  it("swings the rail camera around the rover", () => {
+    const pose = railPose("desktop", 10, 14, 1, 0, Math.PI / 6);
+    expect(pose.position[0]).toBeCloseTo(10 + 12);
+    expect(pose.position[2]).toBeCloseTo(24 * Math.cos(Math.PI / 6));
+    expect(pose.target).toEqual([14, 14, 0]);
   });
 });
