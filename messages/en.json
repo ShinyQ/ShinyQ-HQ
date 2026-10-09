@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "siteName": "ShinyQ HQ",
+    "description": "Kurniadi Ahmad Wijaya: Software Engineer and AI Engineer (Azure). Case studies, career journey, writing and contact.",
+    "quick": "Quick view",
+    "journey": "Journey",
+    "labs": "Labs",
+    "library": "Library",
+    "contact": "Contact",
+    "cv": "CV"
+  },
+  "nav": {
+    "label": "Main",
+    "backToHq": "Back to HQ",
+    "quick": "Quick view",
+    "journey": "Journey",
+    "labs": "Labs",
+    "library": "Library",
+    "contact": "Contact",
+    "cv": "CV",
+    "language": "Language",
+    "skip": "Skip to content"
+  },
+  "floors": {
+    "L1": "Lobby",
+    "L2": "Career Archive",
+    "L3": "Labs",
+    "L4": "Library",
+    "RF": "Roof · Comms"
+  },
+  "common": {
+    "present": "Present",
+    "readMore": "Read more",
+    "caseStudy": "Full case study",
+    "viewAll": "View all",
+    "stack": "Stack",
+    "highlights": "Highlights",
+    "previous": "Previous",
+    "next": "Next",
+    "external": "opens in a new tab",
+    "downloadCv": "Download CV",
+    "downloadCvLocale": "Download CV ({locale})",
+    "email": "Email",
+    "copyEmail": "Copy email",
+    "copied": "Copied",
+    "confidence": {
+      "verified": "Verified",
+      "strongly-inferred": "Strongly inferred",
+      "self-reported": "Self-reported"
+    },
+    "tier": {
+      "hero": "Hero",
+      "featured": "Featured",
+      "listed": "Listed"
+    },
+    "wing": {
+      "software": "Software Wing",
+      "ai": "AI Wing"
+    },
+    "type": {
+      "job": "Job",
+      "freelance": "Freelance",
+      "education": "Education",
+      "award": "Awards",
+      "milestone": "Milestone"
+    },
+    "langBadge": {
+      "en": "EN",
+      "id": "ID"
+    },
+    "inProgress": "in progress",
+    "verify": "Verify"
+  },
+  "home": {
+    "eyebrow": "Agent HQ · Lobby",
+    "currentRole": "Now",
+    "ctaQuick": "Quick view",
+    "ctaLabs": "Explore the Labs",
+    "statsTitle": "Headline stats",
+    "wingsTitle": "Two wings, one craft",
+    "wingsIntro": "Software engineering since 2019 and enterprise AI on Azure since 2026, presented side by side.",
+    "journeyTitle": "Latest on the journey",
+    "skillsTitle": "Skills wall",
+    "certsTitle": "Certifications",
+    "howTitle": "How I work",
+    "directoryTitle": "Tower directory",
+    "directoryIntro": "The 3D tower is under construction. Every floor is already open as a page.",
+    "storyTitle": "The story so far"
+  },
+  "quick": {
+    "title": "Quick view",
+    "intro": "Everything on one page: profile, highlights, timeline, projects, certifications, writing and contact.",
+    "toc": "On this page",
+    "profile": "Profile",
+    "stats": "Stats",
+    "software": "Software engineering highlights",
+    "ai": "AI engineering highlights",
+    "timeline": "Timeline",
+    "projects": "Side projects",
+    "certifications": "Certifications",
+    "awards": "Awards",
+    "library": "Library",
+    "contact": "Contact",
+    "skills": "Skills"
+  },
+  "journey": {
+    "title": "Journey 2019 to 2026",
+    "intro": "The Career Archive: jobs, freelance work, education, research and awards, in the order they happened.",
+    "yearNav": "Jump to year",
+    "prologue": "Prologue",
+    "workshop": "Workshop annex",
+    "workshopIntro": "Side projects and public repositories.",
+    "repos": "Public repositories",
+    "stars": "{count, plural, one {# star} other {# stars}}",
+    "seeCaseStudy": "See the case study on L3",
+    "back": "Back to the journey"
+  },
+  "labs": {
+    "title": "Labs",
+    "intro": "Case studies from both wings. The Software Wing covers backend and full-stack systems from 2019 onward; the AI Wing covers enterprise AI platforms on Azure from 2026.",
+    "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",
+    "aiIntro": "Enterprise AI platforms on Azure, shipped with evaluation gates.",
+    "directory": "Wing directory",
+    "problem": "Problem",
+    "approach": "What I did",
+    "architecture": "Architecture",
+    "architectureFlow": "Data flow",
+    "results": "Results",
+    "client": "Client",
+    "role": "Role",
+    "period": "Period",
+    "back": "Back to the Labs",
+    "timeline": "On the journey",
+    "nodeKind": {
+      "client": "Client",
+      "service": "Service",
+      "ai": "AI",
+      "data": "Data",
+      "human": "Human",
+      "external": "External"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "intro": "Writing, publications, models and talks.",
+    "posts": "Blog",
+    "publications": "Publications and models",
+    "talks": "Talks and workshops",
+    "onMedium": "On Medium",
+    "role": {
+      "speaker": "Speaker",
+      "author": "Author",
+      "trainer": "Trainer"
+    },
+    "kind": {
+      "paper": "Paper",
+      "thesis": "Thesis",
+      "model": "Model",
+      "dataset": "Dataset"
+    }
+  },
+  "blog": {
+    "back": "Back to the Library",
+    "translationMissing": "This post is only available in {language}. It is shown in its original language.",
+    "languageName": {
+      "en": "English",
+      "id": "Indonesian"
+    }
+  },
+  "contact": {
+    "title": "Roof · Comms",
+    "intro": "The fastest way to reach me.",
+    "beacon": "Beacon",
+    "channels": "Channels",
+    "cvTitle": "CV kiosk",
+    "cvIntro": "Generated from the same data as this site, in English and Indonesian.",
+    "location": "Location"
+  },
+  "cv": {
+    "title": "Curriculum Vitae",
+    "summary": "Summary",
+    "experience": "Experience",
+    "projects": "Selected projects",
+    "education": "Education",
+    "certifications": "Certifications",
+    "awards": "Awards",
+    "skills": "Skills",
+    "print": "This page is the source of the PDF CV.",
+    "awardsSummary": "{count} competition placings from 2018 to 2022, including:"
+  },
+  "notFound": {
+    "title": "Room not found",
+    "body": "The rover could not find that room.",
+    "home": "Return to the Lobby"
+  },
+  "footer": {
+    "built": "Content is generated from one validated data file.",
+    "source": "Source on GitHub"
+  },
+  "root": {
+    "redirecting": "Opening ShinyQ HQ…",
+    "choose": "Choose a language"
+  }
+}

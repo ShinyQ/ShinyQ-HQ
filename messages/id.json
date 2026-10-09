@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "siteName": "ShinyQ HQ",
+    "description": "Kurniadi Ahmad Wijaya: Software Engineer dan AI Engineer (Azure). Studi kasus, perjalanan karier, tulisan, dan kontak.",
+    "quick": "Ringkasan",
+    "journey": "Perjalanan",
+    "labs": "Labs",
+    "library": "Perpustakaan",
+    "contact": "Kontak",
+    "cv": "CV"
+  },
+  "nav": {
+    "label": "Utama",
+    "backToHq": "Kembali ke HQ",
+    "quick": "Ringkasan",
+    "journey": "Perjalanan",
+    "labs": "Labs",
+    "library": "Perpustakaan",
+    "contact": "Kontak",
+    "cv": "CV",
+    "language": "Bahasa",
+    "skip": "Langsung ke konten"
+  },
+  "floors": {
+    "L1": "Lobi",
+    "L2": "Arsip Karier",
+    "L3": "Labs",
+    "L4": "Perpustakaan",
+    "RF": "Atap · Komunikasi"
+  },
+  "common": {
+    "present": "Sekarang",
+    "readMore": "Baca selengkapnya",
+    "caseStudy": "Studi kasus lengkap",
+    "viewAll": "Lihat semua",
+    "stack": "Stack",
+    "highlights": "Sorotan",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya",
+    "external": "terbuka di tab baru",
+    "downloadCv": "Unduh CV",
+    "downloadCvLocale": "Unduh CV ({locale})",
+    "email": "Email",
+    "copyEmail": "Salin email",
+    "copied": "Tersalin",
+    "confidence": {
+      "verified": "Terverifikasi",
+      "strongly-inferred": "Didukung bukti kuat",
+      "self-reported": "Dilaporkan sendiri"
+    },
+    "tier": {
+      "hero": "Unggulan",
+      "featured": "Pilihan",
+      "listed": "Daftar"
+    },
+    "wing": {
+      "software": "Software Wing",
+      "ai": "AI Wing"
+    },
+    "type": {
+      "job": "Pekerjaan",
+      "freelance": "Freelance",
+      "education": "Pendidikan",
+      "award": "Penghargaan",
+      "milestone": "Tonggak"
+    },
+    "langBadge": {
+      "en": "EN",
+      "id": "ID"
+    },
+    "inProgress": "dalam proses",
+    "verify": "Verifikasi"
+  },
+  "home": {
+    "eyebrow": "Agent HQ · Lobi",
+    "currentRole": "Saat ini",
+    "ctaQuick": "Lihat ringkasan",
+    "ctaLabs": "Jelajahi Labs",
+    "statsTitle": "Angka utama",
+    "wingsTitle": "Dua sayap, satu keahlian",
+    "wingsIntro": "Software engineering sejak 2019 dan AI enterprise di Azure sejak 2026, ditampilkan berdampingan.",
+    "journeyTitle": "Terbaru dari perjalanan saya",
+    "skillsTitle": "Dinding keahlian",
+    "certsTitle": "Sertifikasi",
+    "howTitle": "Cara saya bekerja",
+    "directoryTitle": "Direktori gedung",
+    "directoryIntro": "Menara 3D sedang dibangun. Setiap lantai sudah bisa dibuka sebagai halaman.",
+    "storyTitle": "Cerita sejauh ini"
+  },
+  "quick": {
+    "title": "Ringkasan",
+    "intro": "Semua dalam satu halaman: profil, sorotan, linimasa, proyek, sertifikasi, tulisan, dan kontak.",
+    "toc": "Di halaman ini",
+    "profile": "Profil",
+    "stats": "Angka",
+    "software": "Sorotan software engineering",
+    "ai": "Sorotan AI engineering",
+    "timeline": "Linimasa",
+    "projects": "Proyek sampingan",
+    "certifications": "Sertifikasi",
+    "awards": "Penghargaan",
+    "library": "Perpustakaan",
+    "contact": "Kontak",
+    "skills": "Keahlian"
+  },
+  "journey": {
+    "title": "Perjalanan 2019 hingga 2026",
+    "intro": "Arsip Karier: pekerjaan, proyek freelance, pendidikan, riset, dan penghargaan, sesuai urutan waktunya.",
+    "yearNav": "Lompat ke tahun",
+    "prologue": "Prolog",
+    "workshop": "Ruang Workshop",
+    "workshopIntro": "Proyek sampingan dan repositori publik.",
+    "repos": "Repositori publik",
+    "stars": "{count} bintang",
+    "seeCaseStudy": "Lihat studi kasusnya di L3",
+    "back": "Kembali ke perjalanan"
+  },
+  "labs": {
+    "title": "Labs",
+    "intro": "Studi kasus dari kedua sayap. Software Wing berisi sistem backend dan full-stack sejak 2019, sedangkan AI Wing berisi platform AI enterprise di Azure sejak 2026.",
+    "softwareIntro": "Sistem backend, full-stack, fintech, dan SaaS.",
+    "aiIntro": "Platform AI enterprise di Azure yang dirilis dengan evaluation gate.",
+    "directory": "Direktori sayap",
+    "problem": "Masalah",
+    "approach": "Yang saya kerjakan",
+    "architecture": "Arsitektur",
+    "architectureFlow": "Alur data",
+    "results": "Hasil",
+    "client": "Klien",
+    "role": "Peran",
+    "period": "Periode",
+    "back": "Kembali ke Labs",
+    "timeline": "Di perjalanan karier",
+    "nodeKind": {
+      "client": "Klien",
+      "service": "Layanan",
+      "ai": "AI",
+      "data": "Data",
+      "human": "Manusia",
+      "external": "Eksternal"
+    }
+  },
+  "library": {
+    "title": "Perpustakaan",
+    "intro": "Tulisan, publikasi, model, dan sesi berbagi.",
+    "posts": "Blog",
+    "publications": "Publikasi dan model",
+    "talks": "Talk dan workshop",
+    "onMedium": "Di Medium",
+    "role": {
+      "speaker": "Pembicara",
+      "author": "Penyusun",
+      "trainer": "Pengajar"
+    },
+    "kind": {
+      "paper": "Makalah",
+      "thesis": "Skripsi",
+      "model": "Model",
+      "dataset": "Dataset"
+    }
+  },
+  "blog": {
+    "back": "Kembali ke Perpustakaan",
+    "translationMissing": "Tulisan ini hanya tersedia dalam {language}, jadi ditampilkan dalam bahasa aslinya.",
+    "languageName": {
+      "en": "bahasa Inggris",
+      "id": "bahasa Indonesia"
+    }
+  },
+  "contact": {
+    "title": "Atap · Komunikasi",
+    "intro": "Cara tercepat untuk menghubungi saya.",
+    "beacon": "Beacon",
+    "channels": "Kanal",
+    "cvTitle": "Kios CV",
+    "cvIntro": "Dibuat dari data yang sama dengan situs ini, dalam bahasa Inggris dan Indonesia.",
+    "location": "Lokasi"
+  },
+  "cv": {
+    "title": "Curriculum Vitae",
+    "summary": "Ringkasan",
+    "experience": "Pengalaman",
+    "projects": "Proyek pilihan",
+    "education": "Pendidikan",
+    "certifications": "Sertifikasi",
+    "awards": "Penghargaan",
+    "skills": "Keahlian",
+    "print": "Halaman ini adalah sumber CV versi PDF.",
+    "awardsSummary": "{count} kali juara lomba dari 2018 hingga 2022, di antaranya:"
+  },
+  "notFound": {
+    "title": "Ruangan tidak ditemukan",
+    "body": "Rover tidak menemukan ruangan itu.",
+    "home": "Kembali ke Lobi"
+  },
+  "footer": {
+    "built": "Konten dibuat dari satu file data yang tervalidasi.",
+    "source": "Kode sumber di GitHub"
+  },
+  "root": {
+    "redirecting": "Membuka ShinyQ HQ…",
+    "choose": "Pilih bahasa"
+  }
+}
