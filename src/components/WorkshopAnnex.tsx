@@ -14,7 +14,7 @@ export async function SideProjectGrid({ projects, locale }: { projects: readonly
             {p.year && <span className="label ml-2 text-ink-3">{p.year}</span>}
           </h3>
           <p className="text-sm leading-6 text-ink-2">{p.summary[locale]}</p>
-          <ChipList items={p.stack} />
+          <ChipList items={p.stack} logos />
           {(p.url || p.repo) && (
             <p className="mt-auto flex gap-4 pt-1 text-[13px]">
               {p.url && (

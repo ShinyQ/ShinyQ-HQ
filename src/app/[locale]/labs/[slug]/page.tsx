@@ -5,10 +5,12 @@ import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
+import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
 import { MetricTile } from "@/components/MetricTile";
 import { Container, Section } from "@/components/Section";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
+import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
 import { adjacent } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
@@ -49,6 +51,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
 
   const t = await getTranslations({ locale, namespace: "labs" });
   const tc = await getTranslations({ locale, namespace: "common" });
+  const tg = await getTranslations({ locale, namespace: "gallery" });
   const siblings = getPods(pod.wing);
   const { prev, next } = adjacent(siblings, siblings.findIndex((p) => p.id === pod.id));
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
@@ -100,6 +103,12 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
           </ul>
         </Section>
 
+        {pod.assets.length > 0 && (
+          <Section id="gallery" title={tg("title")}>
+            <Gallery images={toGalleryImages(pod.assets, locale)} label={`${tg("title")}: ${pod.title[locale]}`} />
+          </Section>
+        )}
+
         <Section id="problem" title={t("problem")}>
           <p className="max-w-3xl text-base leading-7 text-ink-2">{pod.problem[locale]}</p>
         </Section>
@@ -124,7 +133,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
         )}
 
         <Section id="stack" title={tc("stack")}>
-          <ChipList items={pod.stack} label={tc("stack")} />
+          <ChipList items={pod.stack} label={tc("stack")} logos />
         </Section>
 
         {entry && (

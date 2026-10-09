@@ -60,6 +60,7 @@ export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
     dateCreated: pod.period.start,
     ...(pod.period.end !== "present" ? { dateModified: pod.period.end } : {}),
     keywords: pod.stack.join(", "),
+    ...(pod.assets.length > 0 ? { image: pod.assets.slice(0, 3).map((a) => absoluteUrl(a.src)) } : {}),
     genre: pod.wing === "ai" ? "AI engineering" : "Software engineering",
     creator: { "@id": PERSON_ID },
     author: { "@id": PERSON_ID },

@@ -24,7 +24,7 @@ export function SkillsWall({ skills, locale }: { skills: readonly SkillGroup[]; 
       {skills.map((group) => (
         <div key={group.id} className="glass p-4">
           <h3 className="mb-3 font-bold text-ink">{group.label[locale]}</h3>
-          <ChipList items={group.items} label={group.label[locale]} />
+          <ChipList items={group.items} label={group.label[locale]} logos />
         </div>
       ))}
     </div>
