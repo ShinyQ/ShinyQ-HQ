@@ -313,6 +313,12 @@
       "models": "Hugging Face models",
       "window": "L3 Labs above",
       "scrubHint": "Swipe left or right to travel through the years"
+    },
+    "world": {
+      "lectern": "Reading lectern",
+      "read": "Read",
+      "comms": "Comms",
+      "cvHint": "Click to download"
     }
   },
   "drawer": {
@@ -374,7 +380,13 @@
       "cvPage": "Open the CV page",
       "cvPdf": "CV PDF ({locale})",
       "placings": "Placings",
-      "models": "Hugging Face models"
+      "models": "Hugging Face models",
+      "readPost": "Read post",
+      "emailMe": "Email me",
+      "copyEmail": "Copy email",
+      "copied": "Copied ^_^",
+      "copyFailed": "Could not copy. The address is {email}",
+      "writtenIn": "Written in {languages}"
     },
     "directory": "Wing directory",
     "signSoftware": "Software Wing",

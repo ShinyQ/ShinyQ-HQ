@@ -313,6 +313,12 @@
       "models": "Model Hugging Face",
       "window": "L3 Labs di atas",
       "scrubHint": "Geser ke kiri atau kanan untuk menjelajah tahun"
+    },
+    "world": {
+      "lectern": "Meja baca",
+      "read": "Baca",
+      "comms": "Komunikasi",
+      "cvHint": "Klik untuk mengunduh"
     }
   },
   "drawer": {
@@ -374,7 +380,13 @@
       "cvPage": "Buka halaman CV",
       "cvPdf": "PDF CV ({locale})",
       "placings": "Prestasi",
-      "models": "Model Hugging Face"
+      "models": "Model Hugging Face",
+      "readPost": "Baca tulisan",
+      "emailMe": "Kirim email",
+      "copyEmail": "Salin email",
+      "copied": "Tersalin ^_^",
+      "copyFailed": "Gagal menyalin. Alamatnya {email}",
+      "writtenIn": "Ditulis dalam {languages}"
     },
     "directory": "Direktori sayap",
     "signSoftware": "Software Wing",

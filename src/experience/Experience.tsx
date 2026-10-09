@@ -90,6 +90,8 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
   const tDrawer = useTranslations("drawer");
+  const tLibrary = useTranslations("library");
+  const tContact = useTranslations("contact");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -175,7 +177,12 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  useRoomUrlSync(data.locale);
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves and Medium posts keep /library.
+  const hasPage = useMemo(() => {
+    const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
+    return (room: RoomId) => !room.startsWith("L4:") || hosted.has(room);
+  }, [data.library.posts]);
+  useRoomUrlSync(data.locale, hasPage);
 
   const labels: SceneLabels = useMemo(
     () => ({
@@ -193,9 +200,25 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
         models: t("career.models"),
         window: t("career.window"),
       },
+      library: {
+        blog: tLibrary("posts"),
+        onMedium: tLibrary("onMedium"),
+        publications: tLibrary("publications"),
+        talks: tLibrary("talks"),
+        kind: { paper: tLibrary("kind.paper"), thesis: tLibrary("kind.thesis"), model: tLibrary("kind.model"), dataset: tLibrary("kind.dataset") },
+        lectern: t("world.lectern"),
+        read: t("world.read"),
+      },
+      roof: {
+        beacon: tContact("beacon"),
+        comms: t("world.comms"),
+        email: tCommon("email"),
+        cvTitle: tContact("cvTitle"),
+        cvHint: t("world.cvHint"),
+      },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon, tDrawer],
+    [t, tHome, tCommon, tDrawer, tLibrary, tContact],
   );
 
   return (

@@ -6,7 +6,9 @@ import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorIndex, floorY } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import { Labs, type LabsLabels } from "../floors/Labs";
+import { Library, type LibraryLabels } from "../floors/Library";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
+import { Roof, type RoofLabels } from "../floors/Roof";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { FloorLevel } from "./FloorLevel";
@@ -18,6 +20,8 @@ export interface TowerLabels {
   lobby: LobbyLabels;
   labs: LabsLabels;
   career: CareerLabels;
+  library: LibraryLabels;
+  roof: RoofLabels;
 }
 
 const FRAME_TOP = floorY("RF") + 10;
@@ -62,6 +66,10 @@ export function Tower({
                   <Labs data={data} labels={labels.labs} tier={tier} />
                 ) : id === "L2" ? (
                   <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
+                ) : id === "L4" ? (
+                  <Library library={data.library} labels={labels.library} />
+                ) : id === "RF" ? (
+                  <Roof roof={data.roof} labels={labels.roof} tier={tier} />
                 ) : (
                   <PlaceholderFloor layout={layouts[id]} name={data.floors[id].name} labels={labels.placeholder} />
                 )}
