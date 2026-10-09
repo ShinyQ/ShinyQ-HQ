@@ -50,15 +50,17 @@ export function FloorLevel({
   const edges = useMemo(() => new EdgesGeometry(new BoxGeometry(w, SLAB_THICKNESS, d)), [w, d]);
 
   useFrame(() => {
-    const phase = getHQStore().getState().phase;
+    const { phase, ride } = getHQStore().getState();
     const exterior = phase === "boot" || phase === "intro";
     const above = !exterior && y > roverRuntime.y + 0.5;
+    // Content under the current slab is hidden by it, so skip drawing it unless the elevator is moving.
+    const below = !exterior && !ride && y < roverRuntime.y - 0.5;
     if (fill.current) {
       fill.current.opacity = above ? GHOST : SOLID;
       fill.current.depthWrite = !above;
     }
     if (edge.current) edge.current.opacity = above ? 0.16 : 0.95;
-    if (content.current) content.current.visible = !above;
+    if (content.current) content.current.visible = !above && !below;
   });
 
   return (
