@@ -1,0 +1,15 @@
+# Committed default public-safety blocklist.
+# The real list of internal codenames and private repository names is NOT kept
+# in this public repo. Put it in content/.safety-blocklist.local.txt (gitignored)
+# or the SAFETY_BLOCKLIST env var / CI secret (comma or newline separated).
+# Plain terms match case-insensitively on word boundaries; /regex/ terms are
+# case-sensitive regular expressions.
+
+# Azure resource name prefixes followed by an environment-like suffix
+/\b(?:rg|kv|st|cosmos|srch|aoai|func|app|ca|cae|acr|sb|appi|log)-[a-z0-9]+-(?:dev|stg|staging|prod|prd|uat|test)\b/
+
+# Personal data that must never ship
+/\bNIK\b/
+/\bNPWP\b/
+/[Ss]alary/
+/[Gg]aji/

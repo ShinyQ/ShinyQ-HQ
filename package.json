@@ -1,0 +1,49 @@
+{
+  "name": "shinyq-hq",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && bun scripts/build-cv.ts",
+    "build:web": "next build",
+    "build:cv": "bun scripts/build-cv.ts",
+    "serve": "bun scripts/serve-static.ts",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts",
+    "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "next-intl": "^4.14.9",
+    "next-mdx-remote": "^6.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/turbopack": "^4",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "packageManager": "bun@1.4.1",
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}
