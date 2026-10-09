@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, enterHQ, waitForFloor, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
+import en from "../messages/en.json";
+import data from "../content/site-content.json";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -49,13 +51,13 @@ test.describe("L3 Labs in 3D", () => {
     await page.keyboard.press("Control+k");
     const palette = page.getByRole("dialog", { name: "Command palette" });
     await page.keyboard.type("voice");
-    await expect(palette.getByRole("option").first()).toContainText("Voice");
+    await expect(palette.getByRole("option").first()).toContainText(data.floors.labs.pods.find((pod) => pod.slug === "voice-ai-contact-center")!.title.en);
     await page.keyboard.press("Enter");
     await waitForFloor(page, "L3").catch(() => undefined);
     await waitForRoom(page, "L3:voice-ai-contact-center");
     const drawer = page.getByTestId("room-drawer");
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByRole("heading", { level: 2 })).toHaveText("Realtime Voice AI Contact Center");
+    await expect(drawer.getByRole("heading", { level: 2 })).toHaveText(data.floors.labs.pods.find((pod) => pod.slug === "voice-ai-contact-center")!.title.en);
     await expect(page).toHaveURL(/\/en\/labs\/voice-ai-contact-center\?tier=lite$/);
     await page.keyboard.press("Escape");
     await expect(drawer).toBeHidden();
@@ -73,7 +75,7 @@ test.describe("L3 Labs in 3D", () => {
     expect((await state(page)).floor).toBe("L3");
     const drawer = page.getByRole("dialog", { name: /.+/ }).and(page.getByTestId("room-drawer"));
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByRole("tab")).toHaveText(["Overview", "Architecture", "Results", "Stack"]);
+    await expect(drawer.getByRole("tab")).toHaveText(Object.values(en.drawer.tabs));
     await drawer.getByRole("tab", { name: "Results" }).click();
     await expect(drawer.getByTestId("metric").first()).toBeVisible();
     // Next pod in the wing replaces the URL.
@@ -105,7 +107,7 @@ test.describe("L3 Labs in 3D", () => {
     const next = heroes[(index + 1) % heroes.length];
     await expect(hologram).toHaveAttribute("data-room", `L3:${next}`);
     await expect(page).toHaveURL(new RegExp(`/en/labs/${next}\\?tier=lite&view=architecture$`));
-    await page.getByRole("button", { name: "Previous hero pod" }).click();
+    await page.getByRole("button", { name: en.drawer.hologram.prev }).click();
     await expect(hologram).toHaveAttribute("data-room", `L3:${heroPod.slug}`);
     await page.keyboard.press("Escape");
     await waitForRoom(page, `L3:${heroPod.slug}`);

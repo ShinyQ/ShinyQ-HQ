@@ -28,7 +28,7 @@ test.describe("command palette", () => {
     const palette = page.getByRole("dialog", { name: "Command palette" });
     await expect(palette).toBeVisible();
     await page.keyboard.type("voice");
-    await expect(palette.getByRole("option").first()).toContainText("Voice");
+    await expect(palette.getByRole("option").first()).toContainText(data.floors.labs.pods.find((pod) => pod.slug === "voice-ai-contact-center")!.title.en);
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/en\/labs\/voice-ai-contact-center$/);
     await expect(page.locator("h1").first()).toBeVisible();
