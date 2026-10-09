@@ -114,7 +114,12 @@ export interface LibraryData {
     /** External (Medium) posts have no `/blog` page. */
     url: string | null;
   }[];
-  publications: { id: string; title: string; kind: "paper" | "thesis" | "model" | "dataset"; venue: string | null; year: number; url: string | null }[];
+  /** Papers and the thesis (newest first). */
+  research: { id: string; title: string; kind: "paper" | "thesis"; year: number; publisher: string | null }[];
+  /** Google Scholar style profile metrics with their date, if published. */
+  researchMetrics: { source: string; citations: number; hIndex: number; asOf: string } | null;
+  /** Models and datasets (the models shelf, room `L4:publications`). */
+  models: { id: string; title: string; kind: "model" | "dataset"; venue: string | null; year: number }[];
   talks: { id: string; title: string; event: string; date: string; role: "speaker" | "author" | "trainer" }[];
 }
 
@@ -122,5 +127,5 @@ export interface LibraryData {
 export interface RoofData {
   availability: string;
   email: string;
-  channels: { id: "linkedin" | "github" | "huggingface" | "medium"; label: string; href: string }[];
+  channels: { id: "linkedin" | "github" | "huggingface" | "medium" | "googleScholar" | "ieeeXplore"; label: string; href: string }[];
 }

@@ -29,6 +29,8 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
     { label: "GitHub", href: contact.github },
     ...(contact.huggingface ? [{ label: "Hugging Face", href: contact.huggingface }] : []),
     ...(contact.medium ? [{ label: "Medium", href: contact.medium }] : []),
+    ...(contact.googleScholar ? [{ label: "Google Scholar", href: contact.googleScholar }] : []),
+    ...(contact.ieeeXplore ? [{ label: "IEEE Xplore", href: contact.ieeeXplore }] : []),
   ];
 
   return (

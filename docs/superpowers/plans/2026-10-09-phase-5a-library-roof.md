@@ -97,3 +97,12 @@ Modified: `config.ts` (READY_FLOORS, L4/RF obstacles, doors, spawns), `types.ts`
 - [ ] `e2e/library-roof.spec.ts`: blog, hire, cv missions end to end (`?tier=lite`), email copy, CV download link, deep links for both locales, Medium link target, draw call budget on L4 and RF.
 - [ ] Update `e2e/experience.spec.ts` (hire now stays in 3D), add L4/RF to `screenshots.spec.ts` (3 viewports).
 - [ ] `AGENTS.md` (READY_FLOORS, layout modules, goToRoom, startFloor, room panel); run the full check suite; commit; push; PR "Phase 5a: Library and Roof" with screenshots.
+
+### Task 8: Research (owner addition)
+
+The owner asked for research publications as a portfolio type of their own. Records verified by the coordinator (Crossref and Google Scholar); existing entries are updated, not duplicated, and nothing about the Master's degree is added.
+
+- [ ] Schema (additive, documented in AGENTS.md): research metadata on `Publication`, `library.researchMetrics` with `asOf`, `Contact.googleScholar` and `Contact.ieeeXplore`.
+- [ ] Content: the two IEEE papers (DOI, authors, venue, date, citations), the eProceedings paper (replaces the old Sentiboard paper entry), summaries in EN and ID, Scholar metrics as of Oct 2026.
+- [ ] Room `L4:research` (kind `research`) in the catalog and Cmd-K; `L4:publications` becomes the models shelf. 3D Research shelf east of the blog shelves with a door trigger; two more comms terminals (Google Scholar, IEEE Xplore).
+- [ ] Drawer `ResearchBody` (owner highlighted, venue, DOI, summary, dated citations, profiles); `/library` Research section and Quick view; tests. The CV page has no publications section, so it is unchanged. No `research` mission: the terminal maps missions to keys 1 to 8 and the catalog already has eight.

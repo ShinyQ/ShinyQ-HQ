@@ -1,10 +1,12 @@
-import { getLibrary, getPosts } from "../load";
+import { createTranslator } from "next-intl";
+import { getContact, getLibrary, getPosts, getProfile } from "../load";
 import type { Locale } from "../schema";
+import { isResearch, publicationDate, researchPublications } from "../selectors";
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { chain, fill, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
-/** L4 Library (Phase 5a): posts (hosted ones link their /blog page, Medium ones open externally), the publications shelf and the talks stage. */
+/** L4 Library (Phase 5a): posts (hosted ones link their /blog page, Medium ones open externally), the research shelf, the models shelf and the talks stage. */
 export function buildLibraryViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const library = getLibrary();
@@ -25,7 +27,43 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       external: post.url,
     }),
   );
+  const t = createTranslator({ locale, messages: m, namespace: "library" });
+  const metrics = library.researchMetrics;
+  const asOf = metrics ? formatYearMonth(metrics.asOf, locale) : "";
+  const contact = getContact();
+  const profiles = [
+    ...(contact.googleScholar ? [{ title: "Google Scholar", href: contact.googleScholar, external: true }] : []),
+    ...(contact.ieeeXplore ? [{ title: "IEEE Xplore", href: contact.ieeeXplore, external: true }] : []),
+  ];
+  const research = single({
+    id: roomId("L4", "research"),
+    kind: "research",
+    title: m.hud.rooms.research,
+    subtitle: m.library.researchIntro,
+    accent: "amber",
+    research: {
+      self: getProfile().name,
+      profiles,
+      metrics: metrics ? t("metrics", { citations: metrics.citations, hIndex: metrics.hIndex, source: metrics.source, date: asOf }) : undefined,
+      items: researchPublications(library.publications).map((p) => ({
+        id: p.id,
+        title: p.title,
+        kind: m.library.kind[p.kind],
+        authors: p.authors ?? [getProfile().name],
+        venue: [p.venue, p.publisher].filter(Boolean).join(", ") || undefined,
+        date: publicationDate(p, locale),
+        doi: p.doi,
+        href: p.url,
+        pdf: p.pdf,
+        code: p.code,
+        citations: p.citations !== undefined && metrics ? t("citations", { count: p.citations, source: metrics.source, date: asOf }) : undefined,
+        summary: p.summary?.[locale],
+      })),
+    },
+    page: "/library#research",
+  });
   const shelves = [
+    research,
     single({
       id: roomId("L4", "publications"),
       kind: "shelf",
@@ -33,7 +71,7 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       accent: "white",
       sections: [
         {
-          items: library.publications.map((p) => ({
+          items: library.publications.filter((p) => !isResearch(p.kind)).map((p) => ({
             title: p.title,
             meta: [m.library.kind[p.kind], p.venue, String(p.year)].filter(Boolean).join(" · "),
             href: p.url,

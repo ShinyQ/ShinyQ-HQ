@@ -11,8 +11,8 @@ export const ROOF = {
   kiosk: { x: 10, z: 6, w: 3, d: 2 },
 } as const;
 
-/** Email plus LinkedIn, GitHub, Hugging Face and Medium. */
-export const TERMINAL_COUNT = 5;
+/** Email plus LinkedIn, GitHub, Hugging Face, Medium, Google Scholar and IEEE Xplore. */
+export const TERMINAL_COUNT = 7;
 const STOP_GAP = 2.4;
 
 export interface TerminalSlot {

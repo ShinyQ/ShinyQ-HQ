@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { PostList, PublicationList, TalkList } from "@/components/LibraryBlocks";
+import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { MetricTile } from "@/components/MetricTile";
 import { Monogram } from "@/components/Monogram";
 import { PodCard } from "@/components/PodCard";
@@ -10,6 +10,7 @@ import { TimelineItem } from "@/components/TimelineItem";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
 import { getAwards, getCertifications, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
 import { LOCALES } from "@/content/schema";
+import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
 import { cvPdfPath, pageMetadata } from "@/lib/site";
@@ -119,8 +120,10 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
 
       <Section id="library" eyebrow="L4" title={t("library")}>
         <PostList posts={getPosts()} locale={locale} />
+        <h3 className="mt-8 mb-3 font-bold text-ink">{tl("research")}</h3>
+        <ResearchList publications={library.publications} self={profile.name} contact={roof.contact} metrics={library.researchMetrics} locale={locale} />
         <h3 className="mt-8 mb-3 font-bold text-ink">{tl("publications")}</h3>
-        <PublicationList publications={library.publications} locale={locale} />
+        <PublicationList publications={library.publications.filter((p) => !isResearch(p.kind))} locale={locale} />
         <h3 className="mt-8 mb-3 font-bold text-ink">{tl("talks")}</h3>
         <TalkList talks={library.talks} locale={locale} />
       </Section>

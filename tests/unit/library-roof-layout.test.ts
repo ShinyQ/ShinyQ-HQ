@@ -22,10 +22,10 @@ function expectReachable(floor: "L4" | "RF", stop: Vec2) {
 }
 
 describe("L4 Library layout", () => {
-  it("is a ready floor with shelves, lectern, publications and stage as obstacles", () => {
+  it("is a ready floor with shelves, lectern, models shelf, stage and research shelf as obstacles", () => {
     expect(READY_FLOORS).toEqual(expect.arrayContaining(["L1", "L4", "RF"]));
     expect(layouts.L4.obstacles).toEqual(libraryObstacles());
-    expect(layouts.L4.obstacles).toHaveLength(5);
+    expect(layouts.L4.obstacles).toHaveLength(6);
     expect(layouts.L4.bounds).toEqual({ minX: -24, maxX: 24, minZ: -16, maxZ: 16 });
   });
 
@@ -64,9 +64,11 @@ describe("L4 Library layout", () => {
     }
   });
 
-  it("parks in front of the publications shelf and the talks stage", () => {
+  it("parks in front of the models shelf, the talks stage and the research shelf next to the blog", () => {
     expectReachable("L4", LIBRARY_STOPS.publications);
     expectReachable("L4", LIBRARY_STOPS.talks);
+    expectReachable("L4", LIBRARY_STOPS.research);
+    expect(LIBRARY.research.x).toBeGreaterThan(LIBRARY.shelves.x + LIBRARY.shelves.w / 2);
     expect(LIBRARY_STOPS.talks.x).toBe(16);
   });
 });
@@ -86,8 +88,9 @@ describe("RF Roof layout", () => {
       expect(Math.hypot(t.x - ROOF.beacon.x, t.z - ROOF.beacon.z)).toBeCloseTo(10);
       expect(t.z).toBeGreaterThan(ROOF.beacon.z);
     }
-    expect(slots[2]).toMatchObject({ x: 0, angle: 0 });
-    expect(slots[0].x).toBeCloseTo(-slots[4].x);
+    const middle = Math.floor(TERMINAL_COUNT / 2);
+    expect(slots[middle]).toMatchObject({ x: 0, angle: 0 });
+    expect(slots[0].x).toBeCloseTo(-slots[TERMINAL_COUNT - 1].x);
   });
 
   it("parks in front of the middle terminal and the CV kiosk at (10, 6)", () => {
@@ -110,8 +113,9 @@ describe("deep link spawns", () => {
 });
 
 describe("door triggers", () => {
-  it("open the publications shelf, the talks stage, the comms terminals and the CV kiosk at their stops", () => {
+  it("open the research shelf, the models shelf, the talks stage, the comms terminals and the CV kiosk at their stops", () => {
     expect(layouts.L4.doors).toEqual([
+      { room: "L4:research", at: LIBRARY_STOPS.research },
       { room: "L4:publications", at: LIBRARY_STOPS.publications },
       { room: "L4:talks", at: LIBRARY_STOPS.talks },
     ]);

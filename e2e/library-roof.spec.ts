@@ -179,4 +179,28 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(drawer).toHaveCount(0);
     expect((await snapshot(page)).phase).toBe("explore");
   });
+
+  test("the Research shelf opens from Cmd-K with highlighted authors and DOIs", async ({ page }) => {
+    await enterFloorRoute(page, "/en/library");
+    await page.keyboard.press("Control+k");
+    await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
+    await page.keyboard.type("Research shelf");
+    await page.keyboard.press("Enter");
+    await waitForRoom(page, "L4:research");
+    const drawer = page.getByTestId("room-drawer");
+    await expect(drawer.getByTestId("research-item")).toHaveCount(4);
+    await expect(drawer.locator("strong", { hasText: "Kurniadi Ahmad Wijaya" }).first()).toBeVisible();
+    await expect(drawer.getByRole("link", { name: /DOI 10\.1109\/icaibda53487/ })).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
+    await expectRoverNear(page, { x: 22.2, z: -7 });
+  });
+});
+
+test("the static Library page has a Research section", async ({ page }) => {
+  await page.goto("/en/library?tier=static");
+  const research = page.locator("#research");
+  await expect(research.getByRole("heading", { name: "Research" })).toBeVisible();
+  await expect(research.getByRole("link", { name: /DOI 10\.1109\/icicyta53712/ })).toHaveAttribute("href", "https://doi.org/10.1109/icicyta53712.2021.9689122");
+  await expect(research.getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("href", "https://scholar.google.com/citations?user=u8OY1foAAAAJ");
+  await expect(research).toContainText("as of Oct 2026");
 });

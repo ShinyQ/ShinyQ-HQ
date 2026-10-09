@@ -78,6 +78,26 @@ describe("Library rooms in the drawer", () => {
   });
 });
 
+describe("Research shelf in the drawer", () => {
+  it("lists papers with the owner highlighted among the authors, venue, DOI link, summary and profiles", () => {
+    const drawer = open("L4:research");
+    const items = within(drawer).getAllByTestId("research-item");
+    expect(items.length).toBe(4);
+    const ewallet = items.find((li) => li.textContent?.includes("Indonesian Digital Wallet"))!;
+    expect(within(ewallet).getByText("Kurniadi Ahmad Wijaya").tagName).toBe("STRONG");
+    expect(ewallet).toHaveTextContent("Ananda Affan Fattahila");
+    expect(ewallet).toHaveTextContent("ICAIBDA");
+    expect(within(ewallet).getByRole("link", { name: /DOI 10\.1109\/icaibda53487\.2021\.9689712/ })).toHaveAttribute(
+      "href",
+      "https://doi.org/10.1109/icaibda53487.2021.9689712",
+    );
+    expect(ewallet).toHaveTextContent(/10 citations on Google Scholar, as of Oct 2026/);
+    expect(within(drawer).getByText(/13 citations · h-index 2 on Google Scholar, as of Oct 2026/)).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("href", "https://scholar.google.com/citations?user=u8OY1foAAAAJ");
+    expect(within(drawer).getByRole("link", { name: /IEEE Xplore/ })).toHaveAttribute("target", "_blank");
+  });
+});
+
 describe("Roof rooms in the drawer", () => {
   it("comms terminals: mailto, copy with a click sound, and the channels in new tabs", async () => {
     const user = userEvent.setup();
@@ -87,7 +107,7 @@ describe("Roof rooms in the drawer", () => {
     const drawer = open("RF:contact");
     expect(drawer).toHaveTextContent(roof.availability.en);
     expect(within(drawer).getByRole("link", { name: "Email me" })).toHaveAttribute("href", `mailto:${roof.contact.email}`);
-    for (const label of ["LinkedIn", "GitHub", "Hugging Face", "Medium"]) {
+    for (const label of ["LinkedIn", "GitHub", "Hugging Face", "Medium", "Google Scholar", "IEEE Xplore"]) {
       expect(within(drawer).getByRole("link", { name: new RegExp(`^${label}`) })).toHaveAttribute("target", "_blank");
     }
     await user.click(within(drawer).getByRole("button", { name: "Copy email" }));

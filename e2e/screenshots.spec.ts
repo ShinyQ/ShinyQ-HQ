@@ -71,6 +71,7 @@ const FLOOR_SHOTS = [
   { name: "hq-rf-roof", path: "/en/contact" },
   { name: "hq-l4-post", path: "/en/library", query: "The Sun, The Moon", room: "L4:the-sun-the-moon-and-the-dark-sea" },
   { name: "hq-rf-comms", path: "/en/contact", query: "Comms terminals", room: "RF:contact" },
+  { name: "hq-l4-research", path: "/en/library", query: "Research shelf", room: "L4:research" },
 ] as const;
 
 for (const viewport of VIEWPORTS) {

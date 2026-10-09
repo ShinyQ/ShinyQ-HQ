@@ -206,6 +206,24 @@ export const PublicationSchema = z.strictObject({
   year: z.number().int().min(2000).max(2100),
   url: httpsUrl.optional(),
   kind: z.enum(["paper", "thesis", "model", "dataset"]),
+  // Research metadata (papers and the thesis); all optional and additive.
+  authors: z.array(nonEmpty).min(1).optional(),
+  publisher: nonEmpty.optional(),
+  date: z.union([IsoDateSchema, YearMonthSchema]).optional(),
+  doi: z.string().regex(/^10\.\d{4,9}\/\S+$/, "Expected a DOI such as 10.1109/abc.2021.123").optional(),
+  /** Citation count from `library.researchMetrics.source`, as of `library.researchMetrics.asOf`. */
+  citations: z.number().int().nonnegative().optional(),
+  summary: LocalizedTextSchema.optional(),
+  pdf: httpsUrl.optional(),
+  code: httpsUrl.optional(),
+});
+
+/** Scholar profile metrics shown on the Research shelf, always with their date. */
+export const ResearchMetricsSchema = z.strictObject({
+  source: nonEmpty,
+  citations: z.number().int().nonnegative(),
+  hIndex: z.number().int().nonnegative(),
+  asOf: YearMonthSchema,
 });
 
 export const TalkSchema = z.strictObject({
@@ -222,6 +240,8 @@ export const ContactSchema = z.strictObject({
   github: httpsUrl,
   huggingface: httpsUrl.optional(),
   medium: httpsUrl.optional(),
+  googleScholar: httpsUrl.optional(),
+  ieeeXplore: httpsUrl.optional(),
 });
 
 export const CvSectionSchema = z.enum([
@@ -297,6 +317,7 @@ export const SiteContentSchema = z.strictObject({
       posts: z.array(PostRefSchema),
       publications: z.array(PublicationSchema),
       talks: z.array(TalkSchema),
+      researchMetrics: ResearchMetricsSchema.optional(),
     }),
     roof: z.strictObject({
       contact: ContactSchema,
@@ -330,6 +351,7 @@ export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type Pod = z.infer<typeof PodSchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
+export type ResearchMetrics = z.infer<typeof ResearchMetricsSchema>;
 export type Talk = z.infer<typeof TalkSchema>;
 export type Contact = z.infer<typeof ContactSchema>;
 export type CvSection = z.infer<typeof CvSectionSchema>;

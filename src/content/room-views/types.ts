@@ -52,6 +52,26 @@ export interface RoomImage {
   height: number;
 }
 
+/** One paper or thesis on the Research shelf (Phase 5a). */
+export interface RoomResearchItem {
+  id: string;
+  title: string;
+  /** Localized kind label ("Paper", "Thesis"). */
+  kind: string;
+  authors: string[];
+  venue?: string;
+  /** Localized date or year. */
+  date: string;
+  doi?: string;
+  /** Primary link (DOI resolver or repository). */
+  href?: string;
+  pdf?: string;
+  code?: string;
+  /** Localized citation line with its source and date. */
+  citations?: string;
+  summary?: string;
+}
+
 export interface RoomView {
   id: RoomId;
   floor: FloorId;
@@ -86,6 +106,8 @@ export interface RoomView {
   next?: RoomId;
   /** Tabs this room supports (tabs variant). */
   tabs: DrawerTab[];
+  /** Research shelf: papers with authors, venue and DOI; `self` is the owner's name to highlight. */
+  research?: { items: RoomResearchItem[]; self: string; profiles: RoomLinkItem[]; metrics?: string };
 }
 
 export type RoomViews = Record<RoomId, RoomView>;

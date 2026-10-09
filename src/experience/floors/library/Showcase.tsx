@@ -14,7 +14,10 @@ export interface ShowcaseLabels {
   read: string;
   publications: string;
   talks: string;
-  kind: Record<LibraryData["publications"][number]["kind"], string>;
+  research: string;
+  /** Profile metrics line, already formatted with its date (empty when none). */
+  metrics: string;
+  kind: Record<"paper" | "thesis" | "model" | "dataset", string>;
 }
 
 /** Reading lectern: shows the newest hosted post and opens it. */
@@ -49,8 +52,8 @@ export function Lectern({ post, labels }: { post: LibraryData["posts"][number] |
 
 const KIND_COLOR = { paper: COLORS.cyan, thesis: COLORS.amber, model: COLORS.violet, dataset: COLORS.green } as const;
 
-/** Publications shelf: papers, the thesis and Hugging Face models as framed plates. */
-export function PublicationsShelf({ publications, labels }: { publications: LibraryData["publications"]; labels: ShowcaseLabels }) {
+/** Models shelf (room `L4:publications`): Hugging Face models and datasets as framed plates. */
+export function PublicationsShelf({ publications, labels }: { publications: LibraryData["models"]; labels: ShowcaseLabels }) {
   const [hover, setHover] = useState(false);
   const { x, z, w, d, h } = LIBRARY.publications;
   const plateW = Math.min(2.4, (w - 0.6) / Math.max(1, publications.length) - 0.25);
@@ -110,6 +113,67 @@ export function TalksStage({ talks, labels }: { talks: LibraryData["talks"]; lab
       {[-1, 1].map((side) => (
         <GlassBox key={side} size={[0.12, 3.9, 0.12]} position={[side * ((w - 0.6) / 2 + 0.1), h + 1.95, -d / 2 + 0.3]} color={COLORS.violet} fillOpacity={0.3} edgeOpacity={0.6} />
       ))}
+    </group>
+  );
+}
+
+/**
+ * Research shelf east of the blog shelves: one plate per paper or thesis (newest first) and a profile
+ * plate with the Scholar metrics and their date. Plates face +x, toward the follow camera.
+ */
+export function ResearchShelf({ research, labels }: { research: LibraryData["research"]; labels: ShowcaseLabels }) {
+  const [hover, setHover] = useState(false);
+  const { x, z, w, d, h } = LIBRARY.research;
+  const plates = research.length + (labels.metrics ? 1 : 0);
+  const step = (d - 0.6) / Math.max(1, plates);
+  const plateW = Math.min(2.3, step - 0.25);
+  const handlers = roomHandlers("L4:research", setHover);
+  const at = (i: number) => z + d / 2 - 0.3 - step * (i + 0.5);
+  return (
+    <group name="research-shelf">
+      <GlassBox size={[w, h, d]} position={[x, h / 2, z]} color={COLORS.amber} fillOpacity={0.04} edgeOpacity={hover ? 0.95 : 0.6} />
+      <Text
+        font={FONTS.monoBold}
+        fontSize={0.48}
+        letterSpacing={0.14}
+        color={COLORS.amber}
+        anchorX="center"
+        anchorY="bottom"
+        position={[x, h + 0.25, z]}
+        rotation={[0, Math.PI / 4, 0]}
+        material-toneMapped={false}
+      >
+        {labels.research.toUpperCase()}
+      </Text>
+      <group position={[x + w / 2 + 0.03, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+        {research.map((p, i) => (
+          <group key={p.id} position={[-at(i), 1.6, 0]}>
+            <mesh {...handlers}>
+              <planeGeometry args={[plateW, 1.9]} />
+              <meshBasicMaterial color={hover ? "#1d1709" : "#120f08"} transparent opacity={0.95} />
+            </mesh>
+            <BoxEdges size={[plateW, 1.9, 0.02]} color={COLORS.amber} opacity={0.85} />
+            <Text font={FONTS.monoBold} fontSize={0.12} color={COLORS.amber} anchorX="left" anchorY="top" position={[-plateW / 2 + 0.12, 0.82, 0.01]} material-toneMapped={false}>
+              {[labels.kind[p.kind].toUpperCase(), p.publisher, p.year].filter(Boolean).join(" \u00b7 ")}
+            </Text>
+            <Text font={FONTS.sans} fontSize={0.12} color="#f4f4f5" anchorX="left" anchorY="top" position={[-plateW / 2 + 0.12, 0.56, 0.01]} maxWidth={plateW - 0.24} lineHeight={1.3}>
+              {p.title}
+            </Text>
+          </group>
+        ))}
+        {labels.metrics && (
+          <group position={[-at(research.length), 1.6, 0]}>
+            <mesh {...handlers}>
+              <planeGeometry args={[plateW, 1.9]} />
+              <meshBasicMaterial color={hover ? "#1d1709" : "#120f08"} transparent opacity={0.95} />
+            </mesh>
+            <BoxEdges size={[plateW, 1.9, 0.02]} color={COLORS.cyan} opacity={0.85} />
+            <Text font={FONTS.sansBold} fontSize={0.15} color={COLORS.cyan} anchorX="center" anchorY="middle" position={[0, 0, 0.01]} maxWidth={plateW - 0.3} textAlign="center" lineHeight={1.35} material-toneMapped={false}>
+              {labels.metrics}
+            </Text>
+          </group>
+        )}
+      </group>
     </group>
   );
 }

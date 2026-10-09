@@ -9,6 +9,7 @@ import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
+import { formatYearMonth } from "@/lib/format";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
@@ -205,6 +206,15 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
         onMedium: tLibrary("onMedium"),
         publications: tLibrary("publications"),
         talks: tLibrary("talks"),
+        research: tLibrary("research"),
+        metrics: data.library.researchMetrics
+          ? tLibrary("metrics", {
+              citations: data.library.researchMetrics.citations,
+              hIndex: data.library.researchMetrics.hIndex,
+              source: data.library.researchMetrics.source,
+              date: formatYearMonth(data.library.researchMetrics.asOf, data.locale),
+            })
+          : "",
         kind: { paper: tLibrary("kind.paper"), thesis: tLibrary("kind.thesis"), model: tLibrary("kind.model"), dataset: tLibrary("kind.dataset") },
         lectern: t("world.lectern"),
         read: t("world.read"),
@@ -218,7 +228,7 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
       },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon, tDrawer, tLibrary, tContact],
+    [t, tHome, tCommon, tDrawer, tLibrary, tContact, data.library.researchMetrics, data.locale],
   );
 
   return (

@@ -1,4 +1,5 @@
-import type { Pod, Tier, TimelineEntry } from "./schema";
+import { formatDate, formatYearMonth } from "@/lib/format";
+import type { Locale, Pod, Publication, Tier, TimelineEntry } from "./schema";
 
 const TIER_RANK: Record<Tier, number> = { hero: 0, featured: 1, listed: 2 };
 
@@ -39,4 +40,20 @@ export function groupEntriesByYear(entries: readonly TimelineEntry[]): YearGroup
 
 export function adjacent<T>(list: readonly T[], index: number): { prev?: T; next?: T } {
   return { prev: index > 0 ? list[index - 1] : undefined, next: index < list.length - 1 ? list[index + 1] : undefined };
+}
+
+/** Papers and the thesis go on the Research shelf; models and datasets stay on the models shelf. */
+export function isResearch(kind: string): boolean {
+  return kind === "paper" || kind === "thesis";
+}
+
+/** Localized date of a publication: full date, month or year. */
+export function publicationDate(p: Publication, locale: Locale): string {
+  if (!p.date) return String(p.year);
+  return p.date.length === 10 ? formatDate(p.date, locale) : formatYearMonth(p.date, locale);
+}
+
+/** Papers and the thesis, newest first. */
+export function researchPublications(publications: readonly Publication[]): Publication[] {
+  return publications.filter((p) => isResearch(p.kind)).sort((a, b) => (b.date ?? String(b.year)).localeCompare(a.date ?? String(a.year)));
 }

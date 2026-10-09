@@ -2,7 +2,7 @@
 
 import type { LibraryData } from "../types";
 import { BlogShelves, type ShelfLabels } from "./library/BlogShelves";
-import { Lectern, PublicationsShelf, TalksStage, type ShowcaseLabels } from "./library/Showcase";
+import { Lectern, PublicationsShelf, ResearchShelf, TalksStage, type ShowcaseLabels } from "./library/Showcase";
 
 export type LibraryLabels = ShelfLabels & ShowcaseLabels;
 
@@ -13,7 +13,8 @@ export function Library({ library, labels }: { library: LibraryData; labels: Lib
     <group name="library">
       <BlogShelves posts={library.posts} labels={labels} />
       <Lectern post={featured} labels={labels} />
-      <PublicationsShelf publications={library.publications} labels={labels} />
+      <ResearchShelf research={library.research} labels={labels} />
+      <PublicationsShelf publications={library.models} labels={labels} />
       <TalksStage talks={library.talks} labels={labels} />
     </group>
   );

@@ -10,6 +10,8 @@ export const LIBRARY = {
   publications: { x: -4, z: 8, w: 20, d: 1, h: 2.6 },
   /** Small stage with a screen at its back edge, facing +z. */
   stage: { x: 16, z: 10, w: 7, d: 5, h: 0.4 },
+  /** Research shelf east of the blog shelves, running along z; plates face +x. */
+  research: { x: 20, z: -7, w: 1, d: 11, h: 3 },
 } as const;
 
 /** How far in front of an element the rover stops. */
@@ -58,12 +60,13 @@ export function postStop(index: number, count: number): Vec2 {
   return { x: slot.x, z: slot.z + STOP_GAP };
 }
 
-const { publications, stage } = LIBRARY;
+const { publications, stage, research } = LIBRARY;
 
 /** Mission stops for the non-post rooms on L4. */
-export const LIBRARY_STOPS: Record<"publications" | "talks", Vec2> = {
+export const LIBRARY_STOPS: Record<"publications" | "talks" | "research", Vec2> = {
   publications: { x: publications.x, z: publications.z + publications.d / 2 + STOP_GAP },
   talks: { x: stage.x, z: stage.z + stage.d / 2 + STOP_GAP },
+  research: { x: research.x + research.w / 2 + 1.7, z: research.z },
 };
 
 /** Navgrid obstacles (before rover inflation). */
@@ -74,15 +77,17 @@ export function libraryObstacles(): Rect[] {
     rect(lectern.x, lectern.z, lectern.w, lectern.d),
     rect(publications.x, publications.z, publications.w, publications.d),
     rect(stage.x, stage.z, stage.w, stage.d),
+    rect(research.x, research.z, research.w, research.d),
   ];
 }
 
 /**
- * Door triggers for the publications shelf and the talks stage. Book spines have no trigger: a 1.8 u
+ * Door triggers for the research shelf, the models shelf and the talks stage. Book spines have no trigger: a 1.8 u
  * spine pitch along the lane would open a post every few steps, so posts open by click, the lectern,
  * the palette or a mission (their stops come from `postStop`).
  */
 export const LIBRARY_DOORS: DoorTrigger[] = [
+  { room: "L4:research", at: LIBRARY_STOPS.research },
   { room: "L4:publications", at: LIBRARY_STOPS.publications },
   { room: "L4:talks", at: LIBRARY_STOPS.talks },
 ];

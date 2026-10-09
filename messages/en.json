@@ -144,7 +144,7 @@
     "title": "Library",
     "intro": "Writing, publications, models and talks.",
     "posts": "Blog",
-    "publications": "Publications and models",
+    "publications": "Models and datasets",
     "talks": "Talks and workshops",
     "onMedium": "On Medium",
     "role": {
@@ -157,7 +157,16 @@
       "thesis": "Thesis",
       "model": "Model",
       "dataset": "Dataset"
-    }
+    },
+    "research": "Research",
+    "researchIntro": "Peer-reviewed papers and the BSc thesis publication.",
+    "authors": "Authors",
+    "doi": "DOI",
+    "pdf": "PDF",
+    "code": "Code",
+    "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
+    "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
+    "profiles": "Research profiles"
   },
   "blog": {
     "back": "Back to the Library",
@@ -243,10 +252,11 @@
       "skills": "Skills wall",
       "certifications": "Certifications wall",
       "workshop": "Workshop annex",
-      "publications": "Publications shelf",
+      "publications": "Models shelf",
       "talks": "Talks stage",
       "contact": "Comms terminals",
-      "cv": "CV kiosk"
+      "cv": "CV kiosk",
+      "research": "Research shelf"
     },
     "launcher": {
       "missions": "Missions",

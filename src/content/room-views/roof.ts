@@ -15,6 +15,8 @@ export function buildRoofViews(locale: Locale): RoomView[] {
     { title: "GitHub", href: contact.github, external: true },
     ...(contact.huggingface ? [{ title: "Hugging Face", href: contact.huggingface, external: true }] : []),
     ...(contact.medium ? [{ title: "Medium", href: contact.medium, external: true }] : []),
+    ...(contact.googleScholar ? [{ title: "Google Scholar", href: contact.googleScholar, external: true }] : []),
+    ...(contact.ieeeXplore ? [{ title: "IEEE Xplore", href: contact.ieeeXplore, external: true }] : []),
   ];
   return chain([
     single({

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { PostList, PublicationList, TalkList } from "@/components/LibraryBlocks";
+import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { Container, PageHeader, Section } from "@/components/Section";
-import { getLibrary, getPosts } from "@/content/load";
+import { getContact, getLibrary, getPosts, getProfile } from "@/content/load";
+import { isResearch } from "@/content/selectors";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
@@ -27,8 +28,11 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
       <Section id="posts" title={t("posts")}>
         <PostList posts={getPosts()} locale={locale} />
       </Section>
+      <Section id="research" title={t("research")} intro={t("researchIntro")}>
+        <ResearchList publications={library.publications} self={getProfile().name} contact={getContact()} metrics={library.researchMetrics} locale={locale} />
+      </Section>
       <Section id="publications" title={t("publications")}>
-        <PublicationList publications={library.publications} locale={locale} />
+        <PublicationList publications={library.publications.filter((p) => !isResearch(p.kind))} locale={locale} />
       </Section>
       <Section id="talks" title={t("talks")}>
         <TalkList talks={library.talks} locale={locale} />

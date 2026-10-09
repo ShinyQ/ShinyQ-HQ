@@ -144,7 +144,7 @@
     "title": "Perpustakaan",
     "intro": "Tulisan, publikasi, model, dan sesi berbagi.",
     "posts": "Blog",
-    "publications": "Publikasi dan model",
+    "publications": "Model dan dataset",
     "talks": "Talk dan workshop",
     "onMedium": "Di Medium",
     "role": {
@@ -157,7 +157,16 @@
       "thesis": "Skripsi",
       "model": "Model",
       "dataset": "Dataset"
-    }
+    },
+    "research": "Riset",
+    "researchIntro": "Makalah yang ditinjau sejawat dan publikasi skripsi S1.",
+    "authors": "Penulis",
+    "doi": "DOI",
+    "pdf": "PDF",
+    "code": "Kode",
+    "citations": "{count} sitasi di {source}, per {date}",
+    "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
+    "profiles": "Profil riset"
   },
   "blog": {
     "back": "Kembali ke Perpustakaan",
@@ -243,10 +252,11 @@
       "skills": "Dinding skill",
       "certifications": "Dinding sertifikasi",
       "workshop": "Ruang workshop",
-      "publications": "Rak publikasi",
+      "publications": "Rak model",
       "talks": "Panggung talks",
       "contact": "Terminal komunikasi",
-      "cv": "Kios CV"
+      "cv": "Kios CV",
+      "research": "Rak riset"
     },
     "launcher": {
       "missions": "Misi",
