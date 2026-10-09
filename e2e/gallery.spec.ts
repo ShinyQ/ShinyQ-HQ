@@ -1,9 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { asReturningVisitor, waitForHQ } from "./hq";
+import type { Pod } from "../src/content/schema";
 import { content } from "./routes";
 
-const pod = content.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-center")!;
+const pod = content.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-center") as unknown as Pod;
 
 test.describe("project galleries and tech logos (static pages)", () => {
   test.beforeEach(async ({ page }) => {
