@@ -22,6 +22,7 @@ import {
 } from "./load";
 import type { FloorId, Locale } from "./schema";
 import { FIRST_CORRIDOR_YEAR } from "./selectors";
+import { getTechLogo } from "./tech";
 
 /** L3 pods in wing order with only what the 3D floor draws (the drawer loads full content separately). */
 export function labPods(locale: Locale): LabPod[] {
@@ -90,7 +91,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
       location: profile.location[locale],
     },
     stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),
-    skills: getSkills().map((g) => ({ id: g.id, label: g.label[locale], items: [...g.items] })),
+    skills: getSkills().map((g) => ({ id: g.id, label: g.label[locale], items: [...g.items], logos: g.items.map((name) => getTechLogo(name)?.src ?? null) })),
     certifications: getCertifications().map((c) => ({
       id: c.id,
       code: c.code ?? null,

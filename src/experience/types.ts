@@ -90,7 +90,8 @@ export interface ExperienceData {
   locale: "en" | "id";
   profile: { name: string; monogram: string; headline: string; role: string; location: string };
   stats: { id: string; value: string; label: string }[];
-  skills: { id: string; label: string; items: string[] }[];
+  /** `logos[i]` is the tech logo path for `items[i]` (null renders text only). */
+  skills: { id: string; label: string; items: string[]; logos: (string | null)[] }[];
   certifications: { id: string; code: string | null; name: string; issuer: string; status: "earned" | "in-progress"; url: string | null }[];
   missions: { id: string; label: string }[];
   floors: Record<FloorId, { name: string; route: string }>;
