@@ -135,15 +135,15 @@ describe("3D mission host", () => {
     await expect(drive).resolves.toBeUndefined();
   });
 
-  it("opens rooms on built floors in the drawer and other rooms as pages", async () => {
+  it("opens rooms on every built floor in the drawer", async () => {
     const { store, deps, host } = setup();
     await host.openRoom("L1:skills", undefined, { signal: signal(), missionId: "m" });
     expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L1:skills" });
     await host.openRoom("L3:voice-ai", "architecture", { signal: signal(), missionId: "m" });
     expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L3:voice-ai", drawerTab: "architecture" });
-    expect(deps.navigate).not.toHaveBeenCalled();
     await host.openRoom("L2:jenius-2024", undefined, { signal: signal(), missionId: "m" });
-    expect(deps.navigate).toHaveBeenCalledWith("/en/journey/jenius-2024");
+    expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L2:jenius-2024" });
+    expect(deps.navigate).not.toHaveBeenCalled();
     expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai", "L2:jenius-2024"]);
   });
 

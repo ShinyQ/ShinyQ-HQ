@@ -12,7 +12,7 @@ import { Roof, type RoofLabels } from "../floors/Roof";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { FloorLevel } from "./FloorLevel";
-import { PlaceholderFloor, type PlaceholderLabels } from "./PlaceholderFloor";
+import type { PlaceholderLabels } from "./PlaceholderFloor";
 import { BoxEdges } from "./primitives";
 
 export interface TowerLabels {
@@ -68,10 +68,8 @@ export function Tower({
                   <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
                 ) : id === "L4" ? (
                   <Library library={data.library} labels={labels.library} />
-                ) : id === "RF" ? (
-                  <Roof roof={data.roof} labels={labels.roof} tier={tier} />
                 ) : (
-                  <PlaceholderFloor layout={layouts[id]} name={data.floors[id].name} labels={labels.placeholder} />
+                  <Roof roof={data.roof} labels={labels.roof} tier={tier} />
                 )}
               </Suspense>
             )}

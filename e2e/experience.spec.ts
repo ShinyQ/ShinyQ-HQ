@@ -98,14 +98,6 @@ test.describe("elevator", () => {
     await waitForFloor(page, "L1");
   });
 
-  test("placeholder floors link to their HTML page", async ({ page }) => {
-    await enterHQ(page);
-    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L4"]').click();
-    await waitForFloor(page, "L4");
-    await expect(page.getByRole("link", { name: "Read the Library page" })).toHaveAttribute("href", "/en/library");
-    expect(new URL(page.url()).pathname).toBe("/en");
-  });
-
   test("built floors sync their route", async ({ page }) => {
     await enterHQ(page);
     await page.keyboard.press("PageUp");
