@@ -6,7 +6,9 @@ import { PodCard } from "@/components/PodCard";
 import { Container, Section } from "@/components/Section";
 import { TimelineItem } from "@/components/TimelineItem";
 import { CertificationList, PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
+import { buildExperienceData } from "@/content/experience";
 import { getCertifications, getPods, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
+import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_TEXT, FLOOR_ACCENT, WING_ACCENT } from "@/lib/accent";
@@ -43,8 +45,17 @@ export default async function LobbyPage({ params }: PageProps<"/[locale]">) {
     .slice(-4)
     .reverse();
 
+  const experience = buildExperienceData(locale, {
+    L1: tf("L1"),
+    L2: tf("L2"),
+    L3: tf("L3"),
+    L4: tf("L4"),
+    RF: tf("RF"),
+  });
+
   return (
     <Container>
+      <ExperienceGate data={experience} />
       <section aria-labelledby="hero-title" className="grid gap-8 pt-10 pb-6 sm:pt-16 lg:grid-cols-[1fr_auto] lg:items-center">
         <div>
           <p className="label mb-4 text-green">{t("eyebrow")}</p>

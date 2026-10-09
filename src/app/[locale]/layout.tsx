@@ -46,13 +46,17 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   setRequestLocale(locale);
   return (
     <html lang={locale} className={`${fontClassName} antialiased`}>
-      <body className="flex min-h-screen flex-col">
+      <body>
         <NextIntlClientProvider>
-          <SiteHeader locale={locale} />
-          <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
-            {children}
-          </main>
-          <SiteFooter locale={locale} />
+          {/* The 3D overlay marks this shell inert while it is open (see ExperienceGate). */}
+          <div id="site-shell" className="flex min-h-screen flex-col">
+            <SiteHeader locale={locale} />
+            <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+              {children}
+            </main>
+            <SiteFooter locale={locale} />
+          </div>
+          {/* Outside the shell so the Rover Terminal and palette stay usable over the 3D tower. */}
           <MissionHud locale={locale} index={buildHudIndex(getContent())} />
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
