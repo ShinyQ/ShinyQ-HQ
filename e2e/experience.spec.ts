@@ -373,7 +373,7 @@ test.describe("free orbit camera", () => {
     await page.keyboard.up("e");
     expect(await cameraYaw(page)).toBeGreaterThan(beforeKey + 0.3);
 
-    await page.getByRole("button", { name: "Rotate view right (E)" }).click();
+    await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await page.getByRole("button", { name: "Reset view (0)" }).click();
     await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
 
@@ -389,7 +389,7 @@ test.describe("free orbit on touch", () => {
   test("one-finger drag rotates, a tap still moves", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
-    await expect(page.getByRole("group", { name: "View" })).toBeVisible();
+    await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
     const before = await snapshot(page);
     // A slow horizontal drag across empty floor (not a swipe).
     const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
@@ -408,7 +408,7 @@ test.describe("free orbit on touch", () => {
     await page.touchscreen.tap(150, 600);
     await waitForRoverMove(page, after.rover, 1.5);
 
-    await page.getByRole("button", { name: "Rotate view left (Q)" }).click();
+    await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
   });
 });

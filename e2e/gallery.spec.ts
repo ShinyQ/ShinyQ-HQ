@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { asReturningVisitor, waitForHQ } from "./hq";
 import type { Pod } from "../src/content/schema";
 import { content } from "./routes";
+import en from "../messages/en.json";
 
 const pod = content.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-center") as unknown as Pod;
 
@@ -55,7 +56,7 @@ test.describe("galleries in the Glass Drawer", () => {
     await waitForHQ(page);
     const drawer = page.getByTestId("room-drawer");
     await expect(drawer).toBeVisible({ timeout: 90_000 });
-    await drawer.getByRole("tab", { name: "Stack" }).click();
+    await drawer.getByRole("tab", { name: en.drawer.tabs.stack }).click();
     await expect(drawer.locator("img[src='/tech/azure-openai.svg']")).toBeVisible();
     await drawer.getByRole("tab", { name: "Overview" }).click();
     await drawer.getByTestId("gallery").getByRole("button").first().click();

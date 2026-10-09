@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForRoom } from "./hq";
+import enMessages from "../messages/en.json";
+import content from "../content/site-content.json";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -12,7 +14,8 @@ function collectErrors(page: Page) {
   return errors;
 }
 
-async function runMission(page: Page, label: RegExp) {
+async function runMission(page: Page, missionId: string) {
+  const label = content.missions.find((mission) => mission.id === missionId)!.label.en;
   await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
   await page.getByRole("dialog", { name: "Rover Terminal" }).getByRole("option", { name: label }).click();
 }
@@ -82,7 +85,7 @@ test.describe("missions to the Library and the Roof", () => {
   test("blog rides to L4, drives to the spine and opens the post", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
-    await runMission(page, /Read the blog/);
+    await runMission(page, "blog");
     await waitForRoom(page, `L4:${BLOG_POST}`);
     const s = await snapshot(page);
     expect(s.floor).toBe("L4");
@@ -94,7 +97,8 @@ test.describe("missions to the Library and the Roof", () => {
     await expectRoverNear(page, stop!);
     const panel = page.getByTestId("room-drawer");
     await expect(panel).toHaveAttribute("data-room", `L4:${BLOG_POST}`);
-    await expect(panel.getByRole("heading", { level: 2 })).toHaveText("The Sun, The Moon, and The Dark Sea");
+    const post = content.floors.library.posts.find((post) => post.slug === BLOG_POST)!;
+    await expect(panel.getByRole("heading", { level: 2 })).toHaveText(post.title.en);
     await expect(panel).toContainText("ID");
     // Opening a hosted post mirrors its page URL.
     await expect(page).toHaveURL(new RegExp(`/en/blog/${BLOG_POST}\\?tier=lite$`));
@@ -102,23 +106,23 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(read).toHaveAttribute("href", `/en/blog/${BLOG_POST}`);
     await read.click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
-    await expect(page.locator("h1").first()).toContainText("The Sun");
+    await expect(page.locator("h1").first()).toHaveText(post.title.en);
     expect(errors).toEqual([]);
   });
 
   test("hire rides to the Roof, parks at the comms terminals and copies the email", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await enterHQ(page);
-    await runMission(page, /Hire \/ contact/);
+    await runMission(page, "hire");
     await waitForRoom(page, "RF:contact");
     await expectRoverNear(page, { x: 0, z: 6.8 });
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     const panel = page.getByTestId("room-drawer");
-    await expect(panel).toContainText("Open to interesting software and AI engineering conversations");
+    await expect(panel).toContainText(content.floors.roof.availability.en);
     await expect(panel.getByRole("link", { name: "Email me" })).toHaveAttribute("href", /^mailto:/);
     await expect(panel.getByRole("link", { name: /LinkedIn/ })).toHaveAttribute("target", "_blank");
     await panel.getByRole("button", { name: "Copy email" }).click();
-    await expect(panel.getByRole("status")).toHaveText("Copied ^_^");
+    await expect(panel.getByRole("status")).toHaveText(enMessages.drawer.rooms.copied);
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied).toMatch(/^[^@\s]+@[^@\s]+$/);
     const results = await new AxeBuilder({ page }).include("[data-testid='room-drawer']").analyze();
@@ -131,7 +135,7 @@ test.describe("missions to the Library and the Roof", () => {
 
   test("cv drives to the kiosk and links the per-locale PDFs", async ({ page }) => {
     await enterFloorRoute(page, "/en/library");
-    await runMission(page, /Download CV/);
+    await runMission(page, "cv");
     await waitForRoom(page, "RF:cv");
     await expectRoverNear(page, { x: 10, z: 9.4 });
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
@@ -157,7 +161,7 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(palette.getByRole("option").first()).toContainText("CRUD");
     await page.keyboard.press("Enter");
     await waitForRoom(page, "L4:crud-nodejs-express-mysql");
-    const link = page.getByTestId("room-drawer").getByRole("link", { name: /Read the post/ });
+    const link = page.getByTestId("room-drawer").getByRole("link", { name: enMessages.drawer.external });
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("href", /^https:\/\/kurniadiahmadwijaya\.medium\.com\//);
     // Medium posts have no /blog page: the URL stays on the floor route.

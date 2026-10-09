@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -120,13 +121,13 @@ test.describe("Career Archive corridor (L2)", () => {
     await openJourney(page, "/en/journey/trophy-case-2022");
     await waitForPhase(page, "room");
     const drawer = page.getByTestId("room-drawer");
-    await expect(drawer.getByRole("heading", { name: "Placings" })).toBeVisible();
+    await expect(drawer.getByRole("heading", { name: en.drawer.rooms.placings })).toBeVisible();
   });
 
   test("See the case study on L3 rides up to the pod and opens its drawer", async ({ page }) => {
     await openJourney(page, "/en/journey/jenius-2024");
     await waitForPhase(page, "room");
-    await page.getByTestId("room-drawer").getByRole("button", { name: "See the case study on L3" }).click();
+    await page.getByTestId("room-drawer").getByRole("button", { name: en.drawer.seeOnL3 }).click();
     await waitForFloor(page, "L3", 90_000).catch(() => undefined);
     await page.waitForFunction(
       () => {
