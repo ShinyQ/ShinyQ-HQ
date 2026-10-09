@@ -108,7 +108,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {phase === "intro" ? <IntroSkip /> : <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
-          {phase !== "intro" && phase !== "room" && phase !== "hologram" && <ViewControls />}
+          {phase !== "intro" && phase !== "room" && <ViewControls />}
         </>
       )}
       <FloorAnnouncer data={data} />
