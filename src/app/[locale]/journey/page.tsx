@@ -4,6 +4,8 @@ import { Container, PageHeader, Section } from "@/components/Section";
 import { TimelineItem } from "@/components/TimelineItem";
 import { RepoWall, SideProjectGrid } from "@/components/WorkshopAnnex";
 import { getPublicRepos, getSideProjects, getYears } from "@/content/load";
+import { ExperienceGate } from "@/experience/ExperienceGate";
+import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/site";
 
@@ -22,6 +24,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
 
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" />
       <PageHeader eyebrow={`L2 · ${tf("L2")}`} title={t("title")} intro={t("intro")}>
         <nav aria-label={t("yearNav")} className="mt-6 -mx-4 overflow-x-auto px-4">
           <ul className="flex gap-2">

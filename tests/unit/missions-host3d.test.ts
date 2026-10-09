@@ -51,6 +51,15 @@ function setup() {
 }
 
 describe("roomTarget", () => {
+  it("drives to the door zone of an L2 corridor room", () => {
+    const career = { years: [{ year: 2024, entries: [{ slug: "jenius-2024", type: "job" as const }] }], benches: 2 };
+    const built = buildFloorLayouts(1, { career });
+    const door = built.L2.doors!.find((d) => d.room === "L2:jenius-2024")!;
+    expect(roomTarget(undefined, "L2:jenius-2024", built, [2024])).toEqual(door.at);
+    expect(roomTarget(undefined, "L2:workshop", built, [2024])).toEqual(built.L2.doors!.at(-1)!.at);
+    expect(built.L2.scrubStops).toHaveLength(2);
+  });
+
   it("stops in front of Lobby elements", () => {
     const p = roomTarget(ROOMS[0], "L1:skills", layouts, years);
     expect(p.x).toBe(0);

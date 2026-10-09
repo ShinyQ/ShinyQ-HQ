@@ -100,10 +100,18 @@ test.describe("elevator", () => {
 
   test("placeholder floors link to their HTML page", async ({ page }) => {
     await enterHQ(page);
+    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L4"]').click();
+    await waitForFloor(page, "L4");
+    await expect(page.getByRole("link", { name: "Read the Library page" })).toHaveAttribute("href", "/en/library");
+    expect(new URL(page.url()).pathname).toBe("/en");
+  });
+
+  test("built floors sync their route", async ({ page }) => {
+    await enterHQ(page);
     await page.keyboard.press("PageUp");
     await waitForFloor(page, "L2");
-    await expect(page.getByRole("link", { name: "Read the Career Archive page" })).toHaveAttribute("href", "/en/journey");
-    expect(new URL(page.url()).pathname).toBe("/en");
+    await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
+    await expect(page.getByRole("link", { name: "Read the Career Archive page" })).toHaveCount(0);
   });
 });
 
@@ -220,7 +228,7 @@ test.describe("tiers and views", () => {
     await page.keyboard.press("PageUp");
     await waitForFloor(page, "L2");
     await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "ID" }).click();
-    await expect(page).toHaveURL(/\/id\?tier=lite$/);
+    await expect(page).toHaveURL(/\/id\/journey\?tier=lite$/);
     await waitForHQ(page);
     await expect(page.locator("html")).toHaveAttribute("lang", "id");
     const s = await snapshot(page);

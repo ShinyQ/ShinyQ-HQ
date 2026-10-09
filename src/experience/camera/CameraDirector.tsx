@@ -24,6 +24,7 @@ import {
 } from "./rigs";
 
 const FOG_DENSITY = 0.012;
+const RAIL_FORWARD = { x: 0, z: -1 };
 const INTRO_FOG_DENSITY = 0.005;
 const YAW_RETURN_DELAY = 2;
 const FOLLOW_LOOK_AHEAD = { desktop: 4, tablet: 4, mobile: 5 } as const;
@@ -93,7 +94,7 @@ export function CameraDirector() {
         if (t >= INTRO_DURATION) s.finishIntro();
       }
     } else if (rig === "rail") {
-      desired = railPose(cls, roverRuntime.x, roverRuntime.y, l.zoom);
+      desired = railPose(cls, roverRuntime.x, roverRuntime.y, l.zoom, roverRuntime.z);
     } else {
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
@@ -132,7 +133,8 @@ export function CameraDirector() {
     if (Math.abs(l.shift.x) > 1e-3 || Math.abs(l.shift.y) > 1e-3) camera.setViewOffset(width, height, l.shift.x * width, l.shift.y * height, width, height);
     else if (camera.view?.enabled) camera.clearViewOffset();
 
-    if (!focus) roverRuntime.cameraForward = forwardOf(desired);
+    // The rail looks slightly ahead in x; steer along the corridor axes so D drives straight down it.
+    if (!focus) roverRuntime.cameraForward = rig === "rail" ? RAIL_FORWARD : forwardOf(desired);
     roverRuntime.cameraPosition = [l.pos.x, l.pos.y, l.pos.z];
     if (scene.fog instanceof FogExp2) scene.fog.density = rig === "intro" ? INTRO_FOG_DENSITY : FOG_DENSITY;
   });

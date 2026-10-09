@@ -14,6 +14,7 @@ import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore } from "@/store/useHQStore";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
+import { careerLayoutInput } from "./floors/career/layout";
 import { onMissionState, register3DHost } from "./missions/bridge";
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
@@ -93,7 +94,7 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
 
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods }), [data.years.length, data.labs.pods]);
+  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
   useLayoutEffect(() => startSession(data, tier, layouts, { startFloor, startRoom }), [data, tier, layouts, startFloor, startRoom]);
 
   // Cover the page: the HTML stays in the DOM for SEO but is inert while the tower is open.
@@ -185,6 +186,13 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
       labs: { directory: tDrawer("directory") },
+      career: {
+        prologue: t("career.prologue"),
+        workshop: t("career.workshop"),
+        repos: t("career.repos"),
+        models: t("career.models"),
+        window: t("career.window"),
+      },
       rover: { hello: t("statusHello") },
     }),
     [t, tHome, tCommon, tDrawer],

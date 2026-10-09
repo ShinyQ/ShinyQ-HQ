@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -14,6 +14,7 @@ type Viewport = (typeof VIEWPORTS)[number];
 const PAGES = [
   { name: "lobby", path: "/en" },
   { name: "quick", path: "/en/quick" },
+  { name: "journey", path: "/en/journey" },
   { name: `labs-${heroPod.slug}`, path: `/en/labs/${heroPod.slug}` },
 ];
 
@@ -71,15 +72,60 @@ for (const viewport of VIEWPORTS) {
     await context.close();
   });
 
-  test(`3D L2 rail @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
-    const { context, page } = await open3D(browser, viewport);
-    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L2"]').click();
-    await waitForFloor(page, "L2");
+}
+
+type HQState = { __hq: { store: { getState: () => { phase: string; rover: { x: number } } } } };
+
+/** Opens an L2 route in 3D (floor routes skip boot and intro) and waits for the corridor to draw. */
+async function openL2(browser: Browser, v: Viewport, path: string, phase: "explore" | "room") {
+  const context = await browser.newContext({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: 1, hasTouch: v.touch, isMobile: v.name === "mobile" });
+  const page = await context.newPage();
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=${v.tier}`);
+  await waitForHQ(page);
+  await waitForPhase(page, phase);
+  await page.evaluate(() => document.fonts.ready);
+  // In-world text (troika) builds its glyphs slowly on SwiftShader (draw call counts are not reliable with bloom).
+  await page.waitForTimeout(6000);
+  return { context, page };
+}
+
+const roverPast = (page: Page, x: number) =>
+  page.waitForFunction((min) => (window as unknown as HQState).__hq.store.getState().rover.x > min, x, { timeout: 150_000 });
+
+/** L2 Career Archive: corridor on the rail camera, a career room's drawer, and the Workshop annex. */
+for (const viewport of VIEWPORTS) {
+  test(`3D L2 corridor @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(240_000);
+    const { context, page } = await openL2(browser, viewport, "/en/journey", "explore");
     await page.keyboard.down("d");
-    await page.waitForTimeout(1200);
+    await roverPast(page, -8);
     await page.keyboard.up("d");
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: shot("hq-l2-rail", viewport) });
+    await page.waitForTimeout(4000);
+    await page.screenshot({ path: shot("hq-l2-corridor", viewport) });
+    await context.close();
+  });
+
+  test(`3D L2 room @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(240_000);
+    const { context, page } = await openL2(browser, viewport, "/en/journey/jenius-2024", "room");
+    await expect(page.getByTestId("room-drawer")).toBeVisible();
+    await page.waitForTimeout(6000);
+    await page.screenshot({ path: shot("hq-l2-room", viewport) });
+    await context.close();
+  });
+
+  test(`3D L2 annex @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(300_000);
+    // From the 2026 room on the north side, east along z = -5 into the annex (its door zone opens the Workshop).
+    const { context, page } = await openL2(browser, viewport, "/en/journey/metrodata-2026", "room");
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore");
+    await page.keyboard.down("d");
+    await roverPast(page, 100);
+    await page.keyboard.up("d");
+    await page.waitForTimeout(5000);
+    await page.screenshot({ path: shot("hq-l2-annex", viewport) });
     await context.close();
   });
 }

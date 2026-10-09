@@ -305,6 +305,14 @@
       "cancelled": "o_o misi dibatalkan",
       "copied": "Email tersalin ^_^",
       "copyFailed": "Gagal menyalin, emailnya {email}"
+    },
+    "career": {
+      "prologue": "Prolog",
+      "workshop": "Ruang Workshop",
+      "repos": "Repositori publik",
+      "models": "Model Hugging Face",
+      "window": "L3 Labs di atas",
+      "scrubHint": "Geser ke kiri atau kanan untuk menjelajah tahun"
     }
   },
   "drawer": {
@@ -364,7 +372,9 @@
       "availability": "Ketersediaan",
       "downloads": "Unduhan",
       "cvPage": "Buka halaman CV",
-      "cvPdf": "PDF CV ({locale})"
+      "cvPdf": "PDF CV ({locale})",
+      "placings": "Prestasi",
+      "models": "Model Hugging Face"
     },
     "directory": "Direktori sayap",
     "signSoftware": "Software Wing",

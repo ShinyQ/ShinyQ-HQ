@@ -27,6 +27,36 @@ export interface FloorLayout {
   accent: string;
   /** Door triggers checked by the Director every frame (generic for every floor). */
   doors?: DoorTrigger[];
+  /** Rail floors: x positions a horizontal swipe snaps to (L2 year segments and the annex). */
+  scrubStops?: number[];
+}
+
+export type CareerType = "job" | "freelance" | "education" | "award" | "milestone";
+
+/** What the L2 corridor layout needs: entries per year, oldest first (pre-2019 folded into 2019). */
+export interface CareerLayoutInput {
+  years: { year: number; entries: { slug: string; type: CareerType }[] }[];
+  /** Side projects shown on Workshop annex benches. */
+  benches: number;
+}
+
+/** One L2 room label (locale-resolved). */
+export interface CareerEntryView {
+  slug: string;
+  type: CareerType;
+  role: string;
+  org: string;
+  period: string;
+  /** Started before 2019 and folded into the 2019 gate. */
+  prologue: boolean;
+}
+
+/** Locale-resolved L2 payload for the 3D chunk (drawer content comes from `room-views/career.ts`). */
+export interface CareerData {
+  years: { year: number; entries: CareerEntryView[]; awards: number }[];
+  sideProjects: { id: string; title: string; year: number | null }[];
+  repos: string[];
+  models: string[];
 }
 
 export type HologramKind = "waveform" | "shield" | "documents" | "graph" | "chart" | "template" | "pipeline";
@@ -48,6 +78,7 @@ export interface LabPod {
 /** Optional per-floor inputs for `buildFloorLayouts` (each phase adds its own field). */
 export interface LayoutExtras {
   labs?: readonly LabPod[];
+  career?: CareerLayoutInput;
 }
 
 export type GpuTier = "full" | "lite" | "static";
@@ -67,4 +98,6 @@ export interface ExperienceData {
   roomCount: number;
   /** L3 Labs: pods in wing order (hero, featured, listed, then `order`) and wing labels. */
   labs: { pods: LabPod[]; wings: Record<Wing, string> };
+  /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
+  career: CareerData;
 }
