@@ -16,6 +16,7 @@ import { ProfileCard } from "./ProfileCard";
 
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
+  const rail = useHQStore((s) => s.floor === "L2");
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
     if (!mobile) return;
@@ -30,7 +31,7 @@ function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
       }`}
       data-testid="hint"
     >
-      {coarse ? t("hintCoarse") : t("hintFine")}
+      {coarse ? (rail ? t("career.scrubHint") : t("hintCoarse")) : t("hintFine")}
     </p>
   );
 }

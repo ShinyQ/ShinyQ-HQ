@@ -5,13 +5,14 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import type { FloorId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
+import { scrubTarget } from "../floors/career/layout";
 import { openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
-import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
+import { doorAlong, doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { faceFor } from "../rover/faces";
@@ -52,13 +53,15 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     now: 0,
     prevPhase: "",
     door: { room: null } as DoorLatch,
+    /** Rover position at the end of the previous frame (swept door checks). */
+    lastPos: null as Vec2 | null,
   });
 
   useEffect(() => {
     const missionRunning = () => store.getState().mission?.status === "running";
     return intents.on((intent: Intent) => {
       // Any manual world input cancels a running mission and returns control (appendix 02).
-      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel") && missionRunning()) cancelMission();
+      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel" || intent.type === "scrub") && missionRunning()) cancelMission();
       const s = store.getState();
       const local = state.current;
       const controller = local.controller;
@@ -66,6 +69,20 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         case "move":
           local.pendingMove = { x: intent.x, y: intent.y };
           break;
+        case "scrub": {
+          // Rail floors: a horizontal swipe travels to a year stop (appendix 03 section 3).
+          const stops = layouts[s.floor].scrubStops;
+          if (!controller || !stops?.length) break;
+          if (s.phase === "room") s.closeRoom();
+          if (store.getState().phase !== "explore") break;
+          const x = scrubTarget(controller.pose.x, intent.dx, window.innerWidth, stops);
+          const path = findPath(grids[s.floor], controller.pose, { x, z: 0 });
+          if (path?.length) {
+            controller.setPath(path, false);
+            roverRuntime.target = path[path.length - 1];
+          }
+          break;
+        }
         case "goto": {
           // Clicking the floor while a room is open closes the drawer and drives away (appendix 02).
           if (s.phase === "room") s.closeRoom();
@@ -111,7 +128,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           break;
       }
     });
-  }, [store, grids, onToggleLang]);
+  }, [store, grids, layouts, onToggleLang]);
 
   useFrame((three, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);
@@ -238,7 +255,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
 
     // Door triggers (every floor): fire once the rover stands in a zone or drives in manually.
-    const door = s.ride ? null : doorAt(layouts[s.floor].doors, controller.pose);
+    // A zone crossed entirely within one slow frame still counts as entered.
+    const doors = layouts[s.floor].doors;
+    const here = s.ride ? null : doorAt(doors, controller.pose);
+    const door = here ?? (s.ride || !local.lastPos ? null : doorAlong(doors, local.lastPos, controller.pose, local.door.room));
+    local.lastPos = s.ride ? null : { x: controller.pose.x, z: controller.pose.z };
     const open = stepDoorLatch(local.door, door?.room ?? null, { explore: s.phase === "explore", following: controller.following });
     if (open) intents.emit({ type: "open", room: open });
 

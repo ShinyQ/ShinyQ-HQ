@@ -8,6 +8,8 @@ import { Container } from "@/components/Section";
 import { getContent, getPod, getTimeline, getTimelineEntry } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { adjacent } from "@/content/selectors";
+import { ExperienceGate } from "@/experience/ExperienceGate";
+import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
@@ -42,6 +44,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
 
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" startRoom={`L2:${entry.slug}`} />
       <article className="max-w-3xl pt-10 sm:pt-16">
         <p className="mb-4">
           <Link href="/journey" className="link text-sm">
