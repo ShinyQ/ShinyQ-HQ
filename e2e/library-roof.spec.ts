@@ -199,7 +199,7 @@ test.describe("missions to the Library and the Roof", () => {
 test("the static Library page has a Research section", async ({ page }) => {
   await page.goto("/en/library?tier=static");
   const research = page.locator("#research");
-  await expect(research.getByRole("heading", { name: "Research" })).toBeVisible();
+  await expect(research.getByRole("heading", { name: "Research", exact: true })).toBeVisible();
   await expect(research.getByRole("link", { name: /DOI 10\.1109\/icicyta53712/ })).toHaveAttribute("href", "https://doi.org/10.1109/icicyta53712.2021.9689122");
   await expect(research.getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("href", "https://scholar.google.com/citations?user=u8OY1foAAAAJ");
   await expect(research).toContainText("as of Oct 2026");
