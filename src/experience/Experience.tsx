@@ -3,12 +3,14 @@
 import { Canvas } from "@react-three/fiber";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import type { FloorId } from "@/content/schema";
+import type { FloorId, RoomId } from "@/content/schema";
+import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
+import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
-import { serializeHQUrl } from "@/lib/url-sync";
+import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore } from "@/store/useHQStore";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
@@ -17,7 +19,8 @@ import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { Scene, type SceneLabels } from "./scene/Scene";
-import type { ExperienceData, GpuTier } from "./types";
+import { floorOf } from "./missions/rooms";
+import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -29,8 +32,15 @@ function readDevice() {
 
 let started = false;
 
+export interface ExperienceStart {
+  /** Floor of the route the tower mounts on (`/labs` is L3); skips boot and intro. */
+  startFloor?: FloorId;
+  /** Room of the route (`/labs/[slug]`): opens its drawer, or its hologram with `?view=architecture`. */
+  startRoom?: RoomId;
+}
+
 /** One-time session start: tier, locale, device, and the first phase (boot, intro or resume). */
-function startSession(data: ExperienceData, tier: GpuTier) {
+function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor, startRoom }: ExperienceStart) {
   const store = getHQStore();
   const s = store.getState();
   s.setTier(tier);
@@ -40,27 +50,40 @@ function startSession(data: ExperienceData, tier: GpuTier) {
   if (started) return;
   started = true;
   const resume = takeResume();
+  const place = (floor: FloorId, at: { x: number; z: number }) => {
+    s.resume(floor, at);
+    roverRuntime.x = at.x;
+    roverRuntime.z = at.z;
+  };
   if (resume) {
-    s.resume(resume.floor, { x: resume.x, z: resume.z });
-    roverRuntime.x = resume.x;
-    roverRuntime.z = resume.z;
+    place(resume.floor, { x: resume.x, z: resume.z });
+  } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
+    const door = startRoom ? layouts[startFloor].doors?.find((d) => d.room === startRoom) : undefined;
+    place(startFloor, door?.at ?? layouts[startFloor].spawn);
   } else {
     s.setPhase(s.firstVisit ? "boot" : "intro");
+  }
+  // Deep link (or a language switch on a room URL): open the room on the floor the rover is on.
+  if (startRoom && floorOf(startRoom) === getHQStore().getState().floor) {
+    getHQStore().getState().openRoom(startRoom);
+    if (parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture") getHQStore().getState().openHologram();
   }
   // Test and debugging handle (read-only use from Playwright).
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
 }
 
 /** The lazily loaded 3D chunk: canvas, scene and HUD, portalled over the HTML page. */
-export default function Experience({ data, tier, onExit }: { data: ExperienceData; tier: GpuTier; onExit: () => void }) {
+export default function Experience({ data, tier, onExit, startFloor, startRoom }: { data: ExperienceData; tier: GpuTier; onExit: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
+  const tDrawer = useTranslations("drawer");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
 
-  useLayoutEffect(() => startSession(data, tier), [data, tier]);
+  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods }), [data.years.length, data.labs.pods]);
+  useLayoutEffect(() => startSession(data, tier, layouts, { startFloor, startRoom }), [data, tier, layouts, startFloor, startRoom]);
 
   // Cover the page: the HTML stays in the DOM for SEO but is inert while the tower is open.
   useEffect(() => {
@@ -107,7 +130,6 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
   }, []);
 
   // Missions run against the 3D world while the tower is open (MissionHud proxies to this host).
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length), [data.years.length]);
   useEffect(() => {
     const store = getHQStore();
     const offHost = register3DHost(
@@ -123,18 +145,25 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
     };
   }, [layouts, data.years]);
 
-  // URL sync: floors with 3D content get their route; placeholders keep /{locale}.
+  // URL sync: floors with 3D content get their route; placeholders keep /{locale}. Rooms: see useRoomUrlSync.
   useEffect(() => {
     const store = getHQStore();
-    const sync = (floor: FloorId) => {
-      const url = serializeHQUrl({ locale: data.locale, floor: READY_FLOORS.includes(floor) ? floor : "L1", activeRoom: null, view: null });
-      if (window.location.pathname !== url) window.history.replaceState(window.history.state, "", `${url}${window.location.search}`);
+    const sync = () => {
+      const s = store.getState();
+      const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
+      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor ? s.activeRoom : null;
+      const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });
+      const url = withView(path, window.location.search, room && s.phase === "hologram" ? "architecture" : null);
+      if (`${window.location.pathname}${window.location.search}` !== url) window.history.replaceState(window.history.state, "", url);
     };
-    sync(store.getState().floor);
+    sync();
     return store.subscribe((s, prev) => {
-      if (s.floor !== prev.floor) sync(s.floor);
+      if (s.floor !== prev.floor) sync();
     });
   }, [data.locale]);
+
+  // Room URLs (drawer open, hologram view, back and forward).
+  useRoomUrlSync(data.locale);
 
   const labels: SceneLabels = useMemo(
     () => ({
@@ -144,14 +173,15 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
         certs: { title: tHome("certsTitle"), verify: tCommon("verify"), inProgress: tCommon("inProgress") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
+      labs: { directory: tDrawer("directory") },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon],
+    [t, tHome, tCommon, tDrawer],
   );
 
   return (
     <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
-      <div ref={world} className="absolute inset-0 touch-none select-none" data-testid="hq-world">
+      <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
         <Canvas
           dpr={tier === "full" ? [1, 2] : [1, 1.5]}
           flat

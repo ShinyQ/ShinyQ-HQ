@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { experienceDataFor } from "@/experience/gate-data";
+import { ExperienceGate } from "@/experience/ExperienceGate";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
 import { JsonLd } from "@/components/JsonLd";
@@ -53,6 +55,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
 
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
       <JsonLd data={podJsonLd(pod, locale)} />
       <article>
         <header className="pt-10 pb-2 sm:pt-16">

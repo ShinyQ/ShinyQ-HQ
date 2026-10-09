@@ -29,7 +29,7 @@ export function Scene({
   held: RefObject<Set<string>>;
   onToggleLang: () => void;
 }) {
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length), [data.years.length]);
+  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods }), [data.years.length, data.labs.pods]);
   return (
     <>
       <color attach="background" args={[COLORS.void]} />
