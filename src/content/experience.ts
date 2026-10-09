@@ -3,6 +3,7 @@ import id from "../../messages/id.json";
 import type { CareerData, ExperienceData, LabPod } from "@/experience/types";
 import { formatPeriod } from "@/lib/format";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
+import { buildLibraryData, buildRoofData } from "./experience-floors";
 import {
   getAwards,
   getCertifications,
@@ -106,5 +107,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     roomCount: countRooms(),
     labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing },
     career: buildCareerData(locale),
+    library: buildLibraryData(locale),
+    roof: buildRoofData(locale),
   };
 }

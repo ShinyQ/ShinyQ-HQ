@@ -100,4 +100,27 @@ export interface ExperienceData {
   labs: { pods: LabPod[]; wings: Record<Wing, string> };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
   career: CareerData;
+  library: LibraryData;
+  roof: RoofData;
+}
+
+/** L4 payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/library.ts`). Posts keep `getPosts()` order (newest first), like the room catalog. */
+export interface LibraryData {
+  posts: {
+    slug: string;
+    title: string;
+    date: string;
+    languages: ("en" | "id")[];
+    /** External (Medium) posts have no `/blog` page. */
+    url: string | null;
+  }[];
+  publications: { id: string; title: string; kind: "paper" | "thesis" | "model" | "dataset"; venue: string | null; year: number; url: string | null }[];
+  talks: { id: string; title: string; event: string; date: string; role: "speaker" | "author" | "trainer" }[];
+}
+
+/** RF payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/roof.ts`). */
+export interface RoofData {
+  availability: string;
+  email: string;
+  channels: { id: "linkedin" | "github" | "huggingface" | "medium"; label: string; href: string }[];
 }

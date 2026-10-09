@@ -3,6 +3,8 @@ import type { StateStorage } from "zustand/middleware";
 import { buildFloorLayouts } from "@/experience/config";
 import { isAutoOpenClaimed, claimAutoOpen, register3DHost, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
+import { LIBRARY_STOPS, postStop } from "@/experience/floors/library/layout";
+import { ROOF_STOPS } from "@/experience/floors/roof/layout";
 import { create3DHost, roomTarget, type RoverChannel } from "@/experience/missions/host3d";
 import type { RoomInfo } from "@/experience/missions/rooms";
 import { createHQStore } from "@/store/useHQStore";
@@ -27,8 +29,15 @@ const ROOMS: RoomInfo[] = [
   room({ id: "L2:jenius-2024", floor: "L2", kind: "career", year: 2024, path: "/journey/jenius-2024" }),
   room({ id: "L3:voice-ai", floor: "L3", kind: "pod", wing: "ai", path: "/labs/voice-ai" }),
   room({ id: "L3:listed", floor: "L3", kind: "pod", wing: "software", tier: "listed", path: "/labs/listed" }),
-  room({ id: "L4:post", floor: "L4", kind: "post", path: "/blog/post" }),
+  room({ id: "L4:newest", floor: "L4", kind: "post", path: "/blog/newest" }),
+  room({ id: "L4:medium-post", floor: "L4", kind: "post", path: "/library#posts", external: "https://medium.com/x" }),
+  room({ id: "L4:oldest", floor: "L4", kind: "post", path: "/blog/oldest" }),
+  room({ id: "L4:publications", floor: "L4", kind: "shelf", path: "/library#publications" }),
+  room({ id: "L4:talks", floor: "L4", kind: "shelf", path: "/library#talks" }),
+  room({ id: "RF:contact", floor: "RF", kind: "roof", path: "/contact" }),
+  room({ id: "RF:cv", floor: "RF", kind: "roof", path: "/cv" }),
 ];
+const byId = (id: string) => ROOMS.find((r) => r.id === id);
 const layouts = buildFloorLayouts(8, {
   labs: [{ id: "voice-ai", slug: "voice-ai", title: "Voice AI", tier: "hero", wing: "ai", accent: "violet", hologram: "waveform", order: 0, hasHologramView: true }],
 });
@@ -75,8 +84,21 @@ describe("roomTarget", () => {
   });
 
   it("falls back near the floor label", () => {
-    const p = roomTarget(undefined, "RF:contact", layouts, years);
-    expect(p.x).toBeGreaterThan(layouts.RF.approach.x);
+    const p = roomTarget(undefined, "L4:unknown", layouts, years);
+    expect(p).toEqual({ x: layouts.L4.approach.x + 7, z: layouts.L4.approach.z - 3 });
+  });
+
+  it("drives to the post's spine using the catalog's post order", () => {
+    expect(roomTarget(byId("L4:newest"), "L4:newest", layouts, years, ROOMS)).toEqual(postStop(0, 3));
+    expect(roomTarget(byId("L4:oldest"), "L4:oldest", layouts, years, ROOMS)).toEqual(postStop(2, 3));
+    expect(roomTarget(byId("L4:medium-post"), "L4:medium-post", layouts, years, ROOMS)).toEqual(postStop(1, 3));
+  });
+
+  it("stops at the publications shelf, the talks stage, the comms terminals and the CV kiosk (their doors)", () => {
+    expect(roomTarget(byId("L4:publications"), "L4:publications", layouts, years, ROOMS)).toEqual(LIBRARY_STOPS.publications);
+    expect(roomTarget(byId("L4:talks"), "L4:talks", layouts, years, ROOMS)).toEqual(LIBRARY_STOPS.talks);
+    expect(roomTarget(byId("RF:contact"), "RF:contact", layouts, years)).toEqual(ROOF_STOPS.contact);
+    expect(roomTarget(undefined, "RF:cv", layouts, years)).toEqual(ROOF_STOPS.cv);
   });
 });
 
@@ -120,9 +142,9 @@ describe("3D mission host", () => {
     await host.openRoom("L3:voice-ai", "architecture", { signal: signal(), missionId: "m" });
     expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L3:voice-ai", drawerTab: "architecture" });
     expect(deps.navigate).not.toHaveBeenCalled();
-    await host.openRoom("L4:post", undefined, { signal: signal(), missionId: "m" });
-    expect(deps.navigate).toHaveBeenCalledWith("/en/blog/post");
-    expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai", "L4:post"]);
+    await host.openRoom("L2:jenius-2024", undefined, { signal: signal(), missionId: "m" });
+    expect(deps.navigate).toHaveBeenCalledWith("/en/journey/jenius-2024");
+    expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai", "L2:jenius-2024"]);
   });
 
   it("closes the hologram before riding to another floor, and fails a blocked ride instead of hanging", async () => {
@@ -140,6 +162,24 @@ describe("3D mission host", () => {
     store.getState().openRoom("L1:skills");
     await host.driveTo("L1:profile", { signal: signal(), missionId: "m" });
     expect(store.getState()).toMatchObject({ phase: "explore", activeRoom: null });
+  });
+
+  it("opens Library and Roof rooms in 3D and leaves them before the next drive", async () => {
+    const { store, deps, host, rover } = setup();
+    await host.openRoom("L4:newest", undefined, { signal: signal(), missionId: "m" });
+    expect(store.getState()).toMatchObject({ activeRoom: "L4:newest", phase: "room" });
+    await host.openRoom("RF:cv", undefined, { signal: signal(), missionId: "m" });
+    expect(store.getState().activeRoom).toBe("RF:cv");
+    expect(deps.navigate).not.toHaveBeenCalled();
+    await host.driveTo("RF:contact", { signal: signal(), missionId: "m" });
+    expect(store.getState()).toMatchObject({ activeRoom: null, phase: "explore" });
+    expect(rover.autopilot?.point).toEqual(ROOF_STOPS.contact);
+  });
+
+  it("drives to a post's spine through the host", async () => {
+    const { rover, host } = setup();
+    await host.driveTo("L4:oldest", { signal: signal(), missionId: "m" });
+    expect(rover.autopilot?.point).toEqual(postStop(2, 3));
   });
 
   it("says text in the visitor's locale and opens the palette", async () => {
