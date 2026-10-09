@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PostList, PublicationList, TalkList } from "@/components/LibraryBlocks";
 import { Container, PageHeader, Section } from "@/components/Section";
 import { getLibrary, getPosts } from "@/content/load";
+import { experienceDataFor } from "@/experience/gate-data";
+import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/site";
 
@@ -20,6 +22,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   const library = getLibrary();
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L4" />
       <PageHeader eyebrow={`L4 · ${tf("L4")}`} title={t("title")} intro={t("intro")} />
       <Section id="posts" title={t("posts")}>
         <PostList posts={getPosts()} locale={locale} />

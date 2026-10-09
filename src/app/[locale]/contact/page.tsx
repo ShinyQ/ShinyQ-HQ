@@ -4,6 +4,8 @@ import { ExternalLink } from "@/components/ExternalLink";
 import { Container, PageHeader, Section } from "@/components/Section";
 import { getProfile, getRoof } from "@/content/load";
 import { LOCALES } from "@/content/schema";
+import { experienceDataFor } from "@/experience/gate-data";
+import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { cvPdfPath, pageMetadata } from "@/lib/site";
@@ -31,6 +33,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
 
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="RF" />
       <PageHeader eyebrow="RF" title={t("title")} intro={t("intro")} />
       <section aria-labelledby="beacon-title" className="glass mt-4 border-blue/40 p-6 shadow-[0_0_48px_-16px_var(--color-blue)] sm:p-8">
         <h2 id="beacon-title" className="label flex items-center gap-2 text-blue">
