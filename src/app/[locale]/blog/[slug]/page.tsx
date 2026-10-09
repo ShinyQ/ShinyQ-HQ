@@ -66,7 +66,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
           {post.title[found.locale]}
         </h1>
         <div className="mt-4">
-          <ChipList items={post.tags} />
+          <ChipList items={post.tags} logos />
         </div>
         {found.locale !== locale && (
           <p role="note" lang={locale} className="mt-6 rounded-lg border border-amber/40 bg-amber/5 px-4 py-3 text-sm text-amber">

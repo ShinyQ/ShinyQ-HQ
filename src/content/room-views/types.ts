@@ -17,6 +17,8 @@ export interface RoomMetric {
 
 export interface RoomLinkItem {
   title: string;
+  /** Logo path under public/ shown before the title (contact channels, model hubs). */
+  logo?: string;
   meta?: string;
   /** Locale-less internal route ("/labs/x") or an absolute https URL. */
   href?: string;

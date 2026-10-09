@@ -1,7 +1,7 @@
 import { getContact, getRoof } from "../load";
 import type { Locale } from "../schema";
 import { cvPdfPath } from "@/lib/site";
-import { chain, fill, messages, roomId, single } from "./shared";
+import { chain, fill, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** RF Roof (Phase 5a): comms terminals and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
@@ -11,12 +11,12 @@ export function buildRoofViews(locale: Locale): RoomView[] {
   const contact = getContact();
   const channels = [
     { title: m.common.email, meta: contact.email, href: `mailto:${contact.email}` },
-    { title: "LinkedIn", href: contact.linkedin, external: true },
-    { title: "GitHub", href: contact.github, external: true },
-    ...(contact.huggingface ? [{ title: "Hugging Face", href: contact.huggingface, external: true }] : []),
-    ...(contact.medium ? [{ title: "Medium", href: contact.medium, external: true }] : []),
-    ...(contact.googleScholar ? [{ title: "Google Scholar", href: contact.googleScholar, external: true }] : []),
-    ...(contact.ieeeXplore ? [{ title: "IEEE Xplore", href: contact.ieeeXplore, external: true }] : []),
+    { ...linkLogo("LinkedIn"), title: "LinkedIn", href: contact.linkedin, external: true },
+    { ...linkLogo("GitHub"), title: "GitHub", href: contact.github, external: true },
+    ...(contact.huggingface ? [{ ...linkLogo("Hugging Face"), title: "Hugging Face", href: contact.huggingface, external: true }] : []),
+    ...(contact.medium ? [{ ...linkLogo("Medium"), title: "Medium", href: contact.medium, external: true }] : []),
+    ...(contact.googleScholar ? [{ ...linkLogo("Google Scholar"), title: "Google Scholar", href: contact.googleScholar, external: true }] : []),
+    ...(contact.ieeeXplore ? [{ ...linkLogo("IEEE Xplore"), title: "IEEE Xplore", href: contact.ieeeXplore, external: true }] : []),
   ];
   return chain([
     single({

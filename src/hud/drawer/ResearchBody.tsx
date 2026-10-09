@@ -79,8 +79,12 @@ export function ResearchBody({ view }: RoomBodyProps) {
               <li key={p.href}>
                 <External
                   href={p.href!}
-                  className="glass inline-flex min-h-11 items-center px-3 text-sm font-semibold text-ink transition hover:border-amber/60"
+                  className="glass inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold text-ink transition hover:border-amber/60"
                 >
+                  {p.logo && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.logo} alt="" width={16} height={16} className="size-4 shrink-0 object-contain" />
+                  )}
                   {p.title}
                 </External>
               </li>

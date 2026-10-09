@@ -24,6 +24,12 @@ export function stackItems(names: readonly string[]): RoomStackItem[] {
   });
 }
 
+/** Logo for a link item title (e.g. "GitHub", "Hugging Face"), omitted when none exists. */
+export function linkLogo(title: string): { logo?: string } {
+  const logo = getTechLogo(title);
+  return logo ? { logo: logo.src } : {};
+}
+
 /** Logo per chip for `RoomSection.chipLogos`. */
 export function chipLogos(names: readonly string[]): (string | null)[] {
   return names.map((name) => getTechLogo(name)?.src ?? null);

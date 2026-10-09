@@ -65,7 +65,13 @@ function ItemLink({ item }: { item: RoomLinkItem }) {
   const t = useTranslations("common");
   const body = (
     <>
-      <span className="block text-sm font-semibold text-ink">{item.title}</span>
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+        {item.logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.logo} alt="" width={16} height={16} className="size-4 shrink-0 object-contain" />
+        )}
+        {item.title}
+      </span>
       {item.meta && <span className="block text-[13px] leading-5 text-ink-2">{item.meta}</span>}
     </>
   );

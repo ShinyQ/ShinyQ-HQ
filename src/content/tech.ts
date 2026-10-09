@@ -101,6 +101,9 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("leaflet", "Leaflet"),
   svg("sqlite", "SQLite"),
   svg("github", "GitHub", ["github apps", "github spec kit"]),
+  svg("medium", "Medium"),
+  svg("google-scholar", "Google Scholar"),
+  svg("ieee", "IEEE", ["ieee xplore"]),
   svg("git", "Git"),
   webp("django", "Django"),
   svg("google", "Google", ["google oauth"]),
@@ -197,9 +200,9 @@ function parts(name: string): string[] {
   return name.split(/\s+\/\s+/).map(normalizeTech);
 }
 
-/** Logo for a stack or skill name, or null when it should render as a text chip. */
+/** Logo for a stack or skill name (or a kebab-case tag such as "azure-openai"), or null for a text chip. */
 export function getTechLogo(name: string): TechLogo | null {
-  const whole = INDEX.get(normalizeTech(name));
+  const whole = INDEX.get(normalizeTech(name)) ?? INDEX.get(normalizeTech(name.replace(/-/g, " ")));
   if (whole) return whole;
   for (const part of parts(name)) {
     const hit = INDEX.get(part);

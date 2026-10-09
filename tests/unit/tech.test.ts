@@ -45,6 +45,8 @@ describe("tech logos", () => {
     expect(getTechLogo("Node.js / Express")?.src).toBe("/tech/nodejs.svg");
     expect(getTechLogo("Azure OpenAI (incl. Realtime)")?.src).toBe("/tech/azure-openai.svg");
     expect(getTechLogo("AWS Lambda")?.label).toBe("AWS");
+    expect(getTechLogo("azure-openai-realtime")?.src).toBe("/tech/azure-openai.svg");
+    expect(getTechLogo("nodejs")?.src).toBe("/tech/nodejs.svg");
   });
 
   it("returns null for unknown names so callers fall back to text chips", () => {

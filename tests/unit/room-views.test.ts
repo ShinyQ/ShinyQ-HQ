@@ -108,4 +108,17 @@ describe("room views (Glass Drawer content)", () => {
     expect(metrodata.gallery.length).toBeGreaterThan(3);
     expect(new Set(metrodata.gallery.map((g) => g.src.split("/")[2])).size).toBe(metrodata.gallery.length);
   });
+
+  it("adds logos to Library tags, model links and Roof channels", () => {
+    const views = buildRoomViews("en");
+    const posts = Object.values(views).filter((v) => v.kind === "post");
+    const tagged = posts.flatMap((v) => v.sections.flatMap((s) => s.chipLogos ?? [])).filter(Boolean);
+    expect(tagged).toContain("/tech/azure-openai.svg");
+    const channels = views["RF:contact"].sections[0].items!;
+    expect(channels.find((c) => c.title === "GitHub")?.logo).toBe("/tech/github.svg");
+    expect(channels.find((c) => c.title === "LinkedIn")?.logo).toBeUndefined();
+    const models = views["L4:publications"].sections[0].items!.filter((i) => i.logo);
+    expect(models.every((i) => i.logo === "/tech/huggingface.webp")).toBe(true);
+    expect(views["L4:research"].research!.profiles.every((p) => p.logo?.startsWith("/tech/"))).toBe(true);
+  });
 });
