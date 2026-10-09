@@ -3,7 +3,7 @@ import type { Vec2, ViewportClass } from "../types";
 import { easeInOutCubic } from "../tower/elevator";
 
 export type Vec3 = [number, number, number];
-export type RigKind = "intro" | "follow" | "rail";
+export type RigKind = "intro" | "follow" | "rail" | "focus";
 
 export interface CameraPose {
   position: Vec3;
@@ -110,3 +110,34 @@ export function forwardOf(pose: CameraPose): Vec2 {
 
 export const clampYaw = (yaw: number) => Math.max(-MAX_YAW, Math.min(MAX_YAW, yaw));
 export const clampZoom = (zoom: number) => Math.max(ZOOM_RANGE[0], Math.min(ZOOM_RANGE[1], zoom));
+
+/** Hologram fly-in (appendix 03 section 2): eye height 4 u, at least 9 u in front of the stage. */
+export const HOLOGRAM_RIG: Record<ViewportClass, { fov: number; distance: number; eye: number }> = {
+  desktop: { fov: 35, distance: 9, eye: 4 },
+  tablet: { fov: 42, distance: 9, eye: 4 },
+  mobile: { fov: 50, distance: 9, eye: 4 },
+};
+/** Share of the view width the diagram may use (the result cards take the rest). */
+export const HOLOGRAM_FILL = { landscape: 0.62, portrait: 0.9 } as const;
+
+/**
+ * Camera pose for the hologram view: in front of the board along `facing` (unit vector from the
+ * board toward the viewer), pulled back until a board of `boardWidth` fits the view.
+ */
+export function hologramPose(cls: ViewportClass, board: Vec3, facing: Vec2, aspect: number, boardWidth: number, floorY: number): CameraPose {
+  const { fov, distance, eye } = HOLOGRAM_RIG[cls];
+  const fill = aspect >= 1 ? HOLOGRAM_FILL.landscape : HOLOGRAM_FILL.portrait;
+  const halfH = Math.tan(((fov / 2) * Math.PI) / 180);
+  const fit = boardWidth / 2 / (halfH * Math.max(0.1, aspect) * fill);
+  const d = Math.max(distance, fit);
+  return {
+    position: [board[0] + facing.x * d, floorY + eye + (d - distance) * 0.12, board[2] + facing.z * d],
+    target: board,
+    fov,
+  };
+}
+
+/** Screen shift during the hologram view so the result cards do not cover the diagram. */
+export function hologramShift(aspect: number): { x: number; y: number } {
+  return aspect >= 1 ? { x: 0.1, y: 0 } : { x: 0, y: 0.14 };
+}

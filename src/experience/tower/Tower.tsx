@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorIndex, floorY } from "../config";
+import { Labs, type LabsLabels } from "../floors/Labs";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { ElevatorShaft } from "./ElevatorShaft";
@@ -14,6 +15,7 @@ import { BoxEdges } from "./primitives";
 export interface TowerLabels {
   placeholder: PlaceholderLabels;
   lobby: LobbyLabels;
+  labs: LabsLabels;
 }
 
 const FRAME_TOP = floorY("RF") + 10;
@@ -54,6 +56,8 @@ export function Tower({
               <Suspense fallback={null}>
                 {id === "L1" ? (
                   <Lobby data={data} labels={labels.lobby} tier={tier} />
+                ) : id === "L3" ? (
+                  <Labs data={data} labels={labels.labs} tier={tier} />
                 ) : (
                   <PlaceholderFloor
                     layout={layouts[id]}
