@@ -26,7 +26,8 @@ export function isTier(value: unknown): value is GpuTier {
 export function decideTier(i: TierInputs): GpuTier {
   if (isTier(i.override)) return i.override;
   if (!i.webgl2 || i.saveData) return "static";
-  if (i.renderer && SOFTWARE_RENDERER.test(i.renderer)) return "lite";
+  // Software rasterizers (no usable GPU) are detect-gpu tier 0, which appendix 08 maps to static.
+  if (i.renderer && SOFTWARE_RENDERER.test(i.renderer)) return "static";
   if (i.coarse) return "lite";
   if (i.deviceMemory !== undefined && i.deviceMemory < 4) return "lite";
   if (i.cores !== undefined && i.cores <= 2) return "lite";

@@ -24,9 +24,12 @@ describe("decideTier", () => {
     expect(decideTier({ ...desktop, saveData: true })).toBe("static");
   });
 
-  it("uses lite for software renderers, phones and weak devices", () => {
-    expect(decideTier({ ...desktop, renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device))" })).toBe("lite");
-    expect(decideTier({ ...desktop, renderer: "llvmpipe (LLVM 15.0.7, 256 bits)" })).toBe("lite");
+  it("uses static for software renderers (detect-gpu tier 0)", () => {
+    expect(decideTier({ ...desktop, renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device))" })).toBe("static");
+    expect(decideTier({ ...desktop, renderer: "llvmpipe (LLVM 15.0.7, 256 bits)" })).toBe("static");
+  });
+
+  it("uses lite for phones and weak devices", () => {
     expect(decideTier({ ...desktop, coarse: true })).toBe("lite");
     expect(decideTier({ ...desktop, deviceMemory: 2 })).toBe("lite");
     expect(decideTier({ ...desktop, cores: 2 })).toBe("lite");

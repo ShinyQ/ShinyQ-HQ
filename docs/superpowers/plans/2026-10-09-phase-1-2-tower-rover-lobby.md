@@ -25,7 +25,7 @@
 
 ## Decisions and deviations (documented here and in AGENTS.md)
 
-1. **GPU tier heuristic instead of `detect-gpu`.** `detect-gpu` downloads benchmark tables at runtime from a CDN. Phase 1 uses a local heuristic: WebGL2 availability, the unmasked renderer string (software renderers such as SwiftShader or llvmpipe map to `lite`), `saveData`, coarse pointer with `deviceMemory < 4`, and `hardwareConcurrency <= 2`. Phase 6 may revisit with self-hosted benchmarks.
+1. **GPU tier heuristic instead of `detect-gpu`.** `detect-gpu` downloads benchmark tables at runtime from a CDN. Phase 1 uses a local heuristic: WebGL2 availability, the unmasked renderer string (software renderers such as SwiftShader or llvmpipe map to `static`, like detect-gpu tier 0), `saveData`, coarse pointer with `deviceMemory < 4`, and `hardwareConcurrency <= 2`. Phase 6 may revisit with self-hosted benchmarks.
 2. **Ready floors.** L2 to RF are placeholders in this phase. URL sync is implemented and tested, but floor URLs are only written for floors listed in `READY_FLOORS` (currently `["L1"]`). Placeholder floors keep the URL at `/{locale}` and the HUD offers a link to that floor's HTML page. The experience mounts only on `/{locale}`; Phases 3 and 4 add their routes.
 3. **L3 elevator door.** Appendix 01 puts the L3 elevator door in the atrium at `(0, -7)` while the shaft runs at `x = -28`. The placeholder L3 uses `(-24, 0)` like the other floors and treats the shaft footprint as an obstacle. Phase 4 must resolve this (for example by offsetting the L3 group).
 4. **Boot and intro.** First visit: boot overlay, then intro. Return visit (`firstVisit === false`): no boot overlay, intro plays and is skippable. Language switch resumes on the same floor with no boot and no intro (`sessionStorage["hq:resume"]`).
@@ -90,7 +90,7 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 - `decideTier(i: TierInputs): Tier` where `TierInputs = { override?: string | null; webgl2: boolean; renderer?: string; saveData?: boolean; coarse: boolean; deviceMemory?: number; cores?: number }`.
 - `parseHQUrl(pathname, search): { locale, floor, activeRoom, view } | null`, `serializeHQUrl(state): string`, `floorRoute(floor)`.
 
-- [ ] Write tests: tier override wins for valid values, ignored for junk; no WebGL2 or `saveData` gives `static`; SwiftShader renderer gives `lite`; coarse + `deviceMemory 2` gives `lite`; desktop default `full`. URL: `/en` to L1, `/id/journey` to L2, `/en/journey/x` to `L2:x`, `/en/labs/y?view=architecture` to `L3:y` + hologram view, `/en/blog/z` to `L4:z`, `/en/contact` to RF; serialize round-trips; unknown paths return null. Viewport: 390x844 mobile, 844x390 mobile with tablet camera, 1024x1366 desktop width rule, 800x1000 tablet.
+- [ ] Write tests: tier override wins for valid values, ignored for junk; no WebGL2 or `saveData` gives `static`; SwiftShader renderer gives `static`; coarse + `deviceMemory 2` gives `lite`; desktop default `full`. URL: `/en` to L1, `/id/journey` to L2, `/en/journey/x` to `L2:x`, `/en/labs/y?view=architecture` to `L3:y` + hologram view, `/en/blog/z` to `L4:z`, `/en/contact` to RF; serialize round-trips; unknown paths return null. Viewport: 390x844 mobile, 844x390 mobile with tablet camera, 1024x1366 desktop width rule, 800x1000 tablet.
 - [ ] Run `bun run test` and see them fail, implement, see them pass.
 - [ ] Commit `feat: tower config, gpu tier gate and url sync helpers`.
 

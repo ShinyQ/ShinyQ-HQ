@@ -42,7 +42,7 @@ bun run dev                        # http://localhost:3000/en
 | `bun run typecheck` | Generate route types and run `tsc` |
 | `bun run lint` | ESLint |
 | `bun run test` | Vitest: content, safety lint, store, intents, navgrid A*, rover movement, camera rigs, URL sync, GPU tier |
-| `bun run e2e` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL |
+| `bun run e2e` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
 | `bun run screenshots` | HTML pages and 3D captures (boot, Lobby, L2 rail) at 1440x900, 1024x1366 and 390x844 into `screenshots/` |
 | `bun run validate:content` | Schema and safety check for `content/site-content.json` |
 

@@ -151,8 +151,7 @@ test.describe("rover on touch devices", () => {
 
   test("tap to move, joystick and vertical swipe", async ({ page }) => {
     const errors = collectErrors(page);
-    await enterHQ(page, { tier: "" });
-    expect((await snapshot(page)).tier).toBe("lite");
+    await enterHQ(page);
 
     await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
@@ -181,6 +180,14 @@ test.describe("tiers and views", () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("#site-shell")).not.toHaveAttribute("inert", "");
+  });
+
+  test("software WebGL (no GPU) is treated as static without an override", async ({ page }) => {
+    // Playwright renders WebGL on SwiftShader, a software rasterizer.
+    await page.goto("/en");
+    await expect(page.locator("h1")).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId("hq")).toHaveCount(0);
   });
 
   test("browsers without WebGL fall back to static", async ({ page }) => {
