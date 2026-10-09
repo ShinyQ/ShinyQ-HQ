@@ -78,4 +78,21 @@ describe("room views (Glass Drawer content)", () => {
     expect(buildRoomViews("en")[`L3:${pod.slug}`].title).toBe(pod.title.en);
     expect(buildRoomViews("id")[`L3:${pod.slug}`].title).toBe(pod.title.id);
   });
+
+  it("adds tech logos to stacks and skill chips", () => {
+    const views = buildRoomViews("en");
+    const pod = views["L3:voice-ai-contact-center"];
+    expect(pod.stack.find((s) => s.name === "Azure OpenAI Realtime")?.logo).toBe("/tech/azure-openai.svg");
+    expect(pod.stack.every((s) => s.logo === undefined || s.logo.startsWith("/tech/"))).toBe(true);
+    const skills = views["L1:skills"].sections;
+    for (const section of skills) expect(section.chipLogos).toHaveLength(section.chips!.length);
+    expect(skills.flatMap((s) => s.chipLogos).filter(Boolean).length).toBeGreaterThan(10);
+  });
+
+  it("ships pod galleries with localized alt text and thumbnails", () => {
+    const pod = getPods().find((p) => p.assets.length > 0)!;
+    const view = buildRoomViews("id")[`L3:${pod.slug}`];
+    expect(view.gallery).toHaveLength(pod.assets.length);
+    expect(view.gallery[0]).toMatchObject({ src: pod.assets[0].src, alt: pod.assets[0].alt.id, thumb: pod.assets[0].src.replace(/\.webp$/, ".thumb.webp") });
+  });
 });

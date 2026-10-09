@@ -30,6 +30,8 @@ export interface RoomSection {
   bullets?: string[];
   items?: RoomLinkItem[];
   chips?: string[];
+  /** Logo per chip (same order as `chips`), null when the chip is text-only. */
+  chipLogos?: (string | null)[];
 }
 
 export type ArchitectureNodeKind = "client" | "service" | "ai" | "data" | "human" | "external";
@@ -45,8 +47,11 @@ export interface RoomStackItem {
   logo?: string;
 }
 
+/** Same shape as `GalleryImage` (`@/content/media`) so the drawer can reuse `Gallery`. */
 export interface RoomImage {
   src: string;
+  /** 480 px thumbnail next to `src`. */
+  thumb: string;
   alt: string;
   width: number;
   height: number;

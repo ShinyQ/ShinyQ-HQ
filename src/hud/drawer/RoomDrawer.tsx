@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomLinkItem, RoomMetric, RoomSection, RoomView } from "@/content/room-views/types";
+import { Gallery as ImageGallery } from "@/components/Gallery";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
 import { renderReadme } from "./ascii";
@@ -116,14 +117,14 @@ export function Sections({ sections }: { sections: RoomSection[] }) {
               ))}
             </ul>
           )}
-          {section.chips && <Chips items={section.chips} />}
+          {section.chips && <Chips items={section.chips} logos={section.chipLogos} />}
         </section>
       ))}
     </>
   );
 }
 
-function Chips({ items, logos }: { items: string[]; logos?: (string | undefined)[] }) {
+function Chips({ items, logos }: { items: string[]; logos?: (string | null | undefined)[] }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {items.map((item, i) => (
@@ -145,16 +146,7 @@ function Gallery({ view }: { view: RoomView }) {
   return (
     <section className="space-y-2">
       <h3 className="label text-ink-2">{t("gallery")}</h3>
-      <ul className="grid grid-cols-2 gap-2">
-        {view.gallery.map((img) => (
-          <li key={img.src}>
-            <a href={img.src} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg border border-glass-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.src} alt={img.alt} width={img.width} height={img.height} loading="lazy" className="h-auto w-full" />
-            </a>
-          </li>
-        ))}
-      </ul>
+      <ImageGallery images={view.gallery} label={`${t("gallery")}: ${view.title}`} layout="strip" />
     </section>
   );
 }
