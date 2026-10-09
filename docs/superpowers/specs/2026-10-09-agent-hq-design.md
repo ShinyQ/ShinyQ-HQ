@@ -115,9 +115,11 @@ All content comes from the consolidated evidence dossier compiled from local sou
 
 ### 3.2 Public-safety rules (binding)
 
-- Never publish client names, internal product codenames, private repository names, cloud resource names, phone numbers, addresses, ID numbers, money amounts or private review text.
-- Former and current employers may be named. Freelance clients are anonymized unless the work is already public.
-- Metrics must be VERIFIED or STRONGLY INFERRED, phrased honestly ("in a controlled A/B test", "offline evaluation", "modeled").
+Owner decisions of 2026-10-09 (see appendix 07, section 7):
+
+- **Allowed:** client names (e.g. the bank, automotive, mining and food clients), freelance client names, former and current employer names, and pre-2026 metrics as stated in the newest CV (conservative values, labelled "self-reported" where no artifact exists).
+- **Never publish:** internal product codenames and private repository names (use descriptive public titles), cloud resource names, phone numbers, addresses, ID numbers, money amounts, salary or review text, and the Master's degree.
+- 2026 metrics must be VERIFIED or STRONGLY INFERRED and phrased honestly ("in a controlled A/B test", "offline evaluation", "modeled").
 - Work is framed as "designed, directed, reviewed and shipped" (agent-assisted delivery), never as hand-written line counts.
 - No em dashes in any copy.
 
@@ -144,7 +146,7 @@ Rooms, pods, year rooms, missions and ⌘K entries are all **generated from this
 
 ### 3.4 Open content decisions
 
-Nine owner decisions (hackathon outcomes, employer wording, client names in the CV, pre-2026 metrics, photo, Jenius dates, Master's status, naming freelance clients, JagaRupa classification) are listed with their defaults in [appendix 07, section 7](agent-hq/07-content-map.md#7-decisions-required-before-launch). Phase 0 proceeds with the defaults; launch requires confirmation.
+All nine owner decisions were resolved on 2026-10-09 and are recorded in [appendix 07, section 7](agent-hq/07-content-map.md#7-owner-decisions-resolved-2026-10-09).
 
 ## 4. Architecture
 

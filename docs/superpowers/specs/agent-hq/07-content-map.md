@@ -87,18 +87,18 @@ Hologram views: the 6 hero pods (3 per wing).
 | Beacon | "Open to interesting software and AI engineering conversations" (EN/ID) |
 | CV kiosk | CV generated from site data per locale (public-safe by construction, resolves C3 for the site) |
 
-## 7. Decisions required before launch
+## 7. Owner decisions (resolved 2026-10-09)
 
-From the dossier's `conflicts.md` (top items). Phase 0 can proceed with the recommended defaults; launch (Phase 6) requires the owner's confirmation.
+These override anything above that conflicts with them.
 
-| # | Decision | Default used until confirmed |
+| # | Topic | Decision |
 |---|---|---|
-| C1 | Hackathon outcomes | "Entry submitted" only |
-| C2 | Employer and title wording | "Technical Consultant, Software & AI", Metrodata Group (PT Mitra Integrasi Informatika) |
-| C3 | Client names in CV and LinkedIn | Site CV is generated from public data, so no client names |
-| C4 | Pre-2026 self-reported metrics | Qualitative highlights only |
-| C5 | Photo or avatar | Illustrated avatar in the world, real portrait on the Roof contact card |
-| C6 | Jenius start month and title | "Software Engineer, Jun 2024 to Dec 2025" |
-| C7 | Master's degree status | "2024 to present" |
-| C8 | Naming freelance clients | Anonymized, except the public e-commerce site |
-| C9 | JagaRupa classification | Personal side project (hackathon) |
+| C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). |
+| C2 | Current role wording | "Technical Consultant, Software & AI" at "Metrodata (PT Mitra Integrasi Informatika)", Feb 2026 to present |
+| C3 | Client names | **Allowed** in pods, career rooms and the generated CV (internal product codenames still not used) |
+| C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 6, 2026), labelled "self-reported" when there is no artifact. No money amounts. |
+| C5 | Photo | **No photo.** Use the "KAW" monogram hologram in the world and on the contact card. |
+| C6 | Jenius | "Software Engineer", Jun 2024 to Dec 2025 |
+| C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |
+| C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Jublia, BSSN, Shumi) |
+| C9 | JagaRupa | Personal side project, **shown** in the Workshop annex (not as an employer project; no hackathon result) |
