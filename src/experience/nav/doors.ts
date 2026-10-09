@@ -13,6 +13,22 @@ export function doorAt(doors: readonly DoorTrigger[] | undefined, p: Vec2): Door
   return null;
 }
 
+const SWEEP_STEP = 0.25;
+
+/**
+ * First door zone other than `skip` touched on the way from `a` to `b`. Slow frames (up to 0.25 s,
+ * about 2 u at full speed) can carry the rover across a 2 u zone between two checks.
+ */
+export function doorAlong(doors: readonly DoorTrigger[] | undefined, a: Vec2, b: Vec2, skip: RoomId | null): DoorTrigger | null {
+  const steps = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / SWEEP_STEP);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const door = doorAt(doors, { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+    if (door && door.room !== skip) return door;
+  }
+  return null;
+}
+
 /** Room whose zone the rover already used; it must leave the zone before that door fires again. */
 export interface DoorLatch {
   room: RoomId | null;
