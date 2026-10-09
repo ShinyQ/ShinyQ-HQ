@@ -94,21 +94,21 @@ describe("HQ store", () => {
     expect(store.getState()).toMatchObject({ tier: "static", phase: "static" });
   });
 
-  it("persists only visited, firstVisit, locale and sound", () => {
+  it("persists only visited, firstVisit and locale (the audio engine owns sound)", () => {
     store.getState().toggleSound();
     store.getState().setLocale("id");
     store.getState().finishIntro();
     store.getState().setRover({ x: 5 });
     const saved = JSON.parse(storage.data.get(STORE_KEY) ?? "{}");
-    expect(Object.keys(saved.state).sort()).toEqual(["firstVisit", "locale", "sound", "visited"]);
-    expect(saved.state).toMatchObject({ sound: true, locale: "id", firstVisit: false });
+    expect(Object.keys(saved.state).sort()).toEqual(["firstVisit", "locale", "visited"]);
+    expect(saved.state).toMatchObject({ locale: "id", firstVisit: false });
   });
 
   it("rehydrates persisted settings", () => {
-    store.getState().toggleSound();
+    store.getState().setLocale("id");
     store.getState().finishIntro();
     const again = createHQStore(storage).getState();
-    expect(again.sound).toBe(true);
+    expect(again.locale).toBe("id");
     expect(again.firstVisit).toBe(false);
   });
 

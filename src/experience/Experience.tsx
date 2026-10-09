@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
 import type { FloorId } from "@/content/schema";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
-import { setSoundEnabled } from "@/lib/audio";
+import { audio } from "@/lib/audio";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
@@ -95,6 +95,17 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
     };
   }, []);
 
+  // The audio engine owns the sound setting (localStorage "hq:sound"); the store mirrors it.
+  useEffect(() => {
+    const mirror = () => getHQStore().setState({ sound: !audio.isMuted() });
+    mirror();
+    const off = audio.subscribe(mirror);
+    return () => {
+      off();
+      audio.setRumble(0);
+    };
+  }, []);
+
   // Missions run against the 3D world while the tower is open (MissionHud proxies to this host).
   const layouts = useMemo(() => buildFloorLayouts(data.years.length), [data.years.length]);
   useEffect(() => {
@@ -122,7 +133,6 @@ export default function Experience({ data, tier, onExit }: { data: ExperienceDat
     sync(store.getState().floor);
     return store.subscribe((s, prev) => {
       if (s.floor !== prev.floor) sync(s.floor);
-      if (s.sound !== prev.sound) setSoundEnabled(s.sound);
     });
   }, [data.locale]);
 

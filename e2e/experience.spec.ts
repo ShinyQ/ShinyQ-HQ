@@ -228,8 +228,10 @@ test.describe("tiers and views", () => {
     await expect(sound).toHaveAttribute("aria-pressed", "false");
     await sound.click();
     await expect(sound).toHaveAttribute("aria-pressed", "true");
-    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hq:v1") ?? "{}").state.sound);
-    expect(saved).toBe(true);
+    expect(await page.evaluate(() => localStorage.getItem("hq:sound"))).toBe("on");
+    expect((await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { sound: boolean } } } }).__hq.store.getState().sound))).toBe(true);
+    await page.keyboard.press("m");
+    await expect(sound).toHaveAttribute("aria-pressed", "false");
   });
 });
 

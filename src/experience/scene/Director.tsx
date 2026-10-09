@@ -6,6 +6,7 @@ import type { FloorId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
 import { openTerminal } from "@/hud/events";
+import { audio } from "@/lib/audio";
 import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
@@ -89,12 +90,13 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           }
           break;
         case "toggle":
-          if (intent.what === "sound") s.toggleSound();
+          if (intent.what === "sound") audio.toggleMuted();
           else if (intent.what === "lang") onToggleLang();
           break;
         case "terminal":
           if (s.phase === "explore") {
             roverRuntime.hopUntil = local.now + 0.35;
+            audio.play("beep");
             openTerminal();
           }
           break;
@@ -192,6 +194,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         else {
           controller.teleport(to.approach, Math.PI / 2);
           s.arriveFloor(ride.to);
+          audio.play("ding");
           local.arrivedUntil = now + ARRIVED_FACE_S;
           y = floorY(ride.to);
         }
@@ -223,6 +226,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
 
     const pose = controller.pose;
+    audio.setRumble(pose.speed);
     const liveRide = store.getState().ride;
     roverRuntime.x = pose.x;
     roverRuntime.y = y;

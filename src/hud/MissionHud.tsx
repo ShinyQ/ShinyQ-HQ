@@ -9,6 +9,7 @@ import { roomFromPath } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionRunner } from "@/experience/missions/runner";
 import { isAutoOpenClaimed, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
+import { audio } from "@/lib/audio";
 import { CommandPalette } from "./CommandPalette";
 import { onHudCommand } from "./events";
 import type { HudIndex } from "./index-data";
@@ -198,6 +199,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
         router.push(`/${locale}/quick`);
         return;
       case "toggle-sound":
+        audio.toggleMuted();
         return;
     }
   };

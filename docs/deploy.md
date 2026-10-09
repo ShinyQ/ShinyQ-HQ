@@ -1,0 +1,167 @@
+# Deploying ShinyQ HQ
+
+The site is a Next.js static export (`out/`) hosted on Cloudflare Pages. GitHub Actions builds it and uploads it with `wrangler pages deploy` (Direct Upload). Nothing is deployed until the owner finishes the setup below; until then both deploy jobs log a notice and skip.
+
+## Overview
+
+| Trigger | Workflow | Cloudflare project | Result |
+| --- | --- | --- | --- |
+| Pull request from this repo | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
+| Push to `main`, or manual run | `deploy.yml` | `CF_PAGES_PROJECT` (for example `kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`) |
+| Every CI run | `ci.yml` job `lighthouse` | none | Lighthouse reports as an artifact (non-blocking) |
+
+```mermaid
+flowchart LR
+  PR[Pull request] --> CI[ci.yml: check, build, e2e]
+  CI --> LH[lighthouse job, non-blocking]
+  CI --> PV[preview job]
+  PV --> PP[(Preview project: shinyq-hq)]
+  M[Push to main] --> CI2[ci.yml: check, build, e2e]
+  M --> D[deploy.yml: build, e2e]
+  D --> G{Secrets and CF_PAGES_PROJECT set?}
+  G -- no --> S[Notice, skip]
+  G -- yes --> P[(Production project, branch main)]
+  P --> U[kurniadi.pages.dev, later kurniadi.dev]
+```
+
+`ci.yml` still runs typecheck, lint and unit tests on every push to `main`. `deploy.yml` runs its own build and Playwright smoke tests so a broken export never reaches production.
+
+## 1. Choose the Pages project
+
+The production URL `kurniadi.pages.dev` belongs to the Cloudflare Pages project named `kurniadi`, which currently serves the old site. A `*.pages.dev` subdomain is tied to the project name and cannot be moved to another project.
+
+### Option A: reuse `kurniadi` (keeps kurniadi.pages.dev)
+
+1. In the Cloudflare dashboard open Workers & Pages, then the `kurniadi` project, then Settings.
+2. Check how it is deployed:
+   - **Direct Upload project** (no Git repository shown under Settings > Builds): wrangler can deploy to it as is. Go to step 3.
+   - **Git-connected project** (connected to the old site repository): wrangler Direct Upload is not allowed into a Git-integrated project. Cloudflare does not let you convert it, so the clean path is:
+     1. Back up the old site first: download the latest deployment (or keep the old repository and its build command) so you can recreate it.
+     2. Delete the `kurniadi` project (Settings > Delete project). This frees the name and the `kurniadi.pages.dev` subdomain. The old site is offline from this point until the first deploy.
+     3. Recreate it immediately as a Direct Upload project with the same name:
+        ```sh
+        bunx wrangler@3 pages project create kurniadi --production-branch=main
+        ```
+     4. Run the first deploy (section 5) right away to keep the downtime short.
+3. Make sure the production branch is `main` (Settings > Builds and deployments > Production branch, or recreate with `--production-branch=main`). If it is anything else, deploys from `deploy.yml` are published as previews and the production URL does not change.
+
+Rollback note: if the new site has a problem after the cut-over, use the dashboard rollback (section 6). If you need the old site back entirely, redeploy the backup to the same project with `bunx wrangler@3 pages deploy <backup-dir> --project-name=kurniadi --branch=main`.
+
+### Option B: create a new project
+
+Use this to try production deploys without touching the old site, then switch later.
+
+```sh
+bunx wrangler@3 login
+bunx wrangler@3 pages project create <name> --production-branch=main
+```
+
+The site is then served at `https://<name>.pages.dev`. Set `SITE_URL` to that URL (section 4) so canonical links and the sitemap match.
+
+## 2. Create an API token and find the Account ID
+
+1. Cloudflare dashboard > My Profile > API Tokens > Create Token > Create Custom Token.
+2. Permissions: **Account**, **Cloudflare Pages**, **Edit**.
+3. Account Resources: Include, your account (account scope, no zone needed).
+4. Create the token and copy it once.
+5. Account ID: Workers & Pages overview page, right sidebar ("Account ID"), or the dashboard URL `dash.cloudflare.com/<account-id>/...`.
+
+## 3. GitHub repository secrets
+
+Settings > Secrets and variables > Actions > Secrets, or with `gh`:
+
+```sh
+gh secret set CLOUDFLARE_API_TOKEN      # paste the token from step 2
+gh secret set CLOUDFLARE_ACCOUNT_ID     # paste the account id
+gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optional, existing
+```
+
+| Secret | Required | Purpose |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler |
+| `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
+| `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms used by the content tests |
+
+## 4. GitHub repository variables
+
+Settings > Secrets and variables > Actions > Variables, or with `gh`:
+
+```sh
+gh variable set CF_PAGES_PROJECT --body kurniadi
+gh variable set CF_PREVIEW_PROJECT --body shinyq-hq            # optional
+gh variable set SITE_URL --body https://kurniadi.pages.dev     # optional
+gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # optional
+```
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `CF_PAGES_PROJECT` | Yes, to enable production deploys | Production Pages project name. While unset, `deploy.yml` builds and tests but skips the upload. |
+| `CF_PREVIEW_PROJECT` | Optional | Project for PR previews. Defaults to `shinyq-hq` (created automatically with a production branch that is never pushed, so every deploy stays a preview). |
+| `SITE_URL` | Optional | Public origin baked into canonical URLs, `hreflang`, sitemap, robots and OG URLs (`NEXT_PUBLIC_SITE_URL`). Defaults to `https://kurniadi.pages.dev`. Set to `https://kurniadi.dev` after the domain move. |
+| `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`). When empty, no beacon is rendered. |
+
+Web Analytics token: Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
+
+The Content-Security-Policy in `public/_headers` already allows `static.cloudflareinsights.com` (script) and `cloudflareinsights.com` (beacon reports).
+
+## 5. First deploy
+
+1. Merge the PR to `main`, or run the workflow manually: Actions > Deploy > Run workflow (or `gh workflow run deploy.yml --ref main`).
+2. Follow the run: `gh run watch`. The `deploy` job shows the deployment URL in its summary and the `production` environment links to `SITE_URL`.
+3. Verify (replace the host if you use another project):
+
+```sh
+HOST=https://kurniadi.pages.dev
+curl -sI "$HOST/" | head -n1                         # 200, static language redirect page
+curl -sI "$HOST/en" | head -n1                       # 200
+curl -sI "$HOST/id" | head -n1                       # 200
+curl -sI "$HOST/cv.pdf" | grep -iE '^(HTTP|location)' # 301 to /cv/kurniadi-ahmad-wijaya-cv-en.pdf
+curl -sI "$HOST/cv/kurniadi-ahmad-wijaya-cv-en.pdf" | head -n1
+curl -s "$HOST/sitemap.xml" | head -n5               # URLs use SITE_URL
+curl -s "$HOST/robots.txt"
+curl -sI "$HOST/og/en.png" | grep -i content-type    # image/png (share card)
+curl -sI "$HOST/en" | grep -iE 'content-security-policy|strict-transport|x-frame-options'
+```
+
+Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, and check the browser console for CSP violations.
+
+## 6. Rollback
+
+- Fastest: Cloudflare dashboard > Workers & Pages > project > Deployments, pick an earlier production deployment, then Rollback to this deployment. No rebuild needed.
+- From GitHub: open an earlier successful Deploy run and choose Re-run all jobs. It rebuilds that commit and deploys it. Or revert the commit on `main`, which triggers a normal deploy.
+
+## 7. Custom domain kurniadi.dev (later)
+
+1. Pages project > Custom domains > Set up a custom domain: add `kurniadi.dev`, and `www.kurniadi.dev` if wanted.
+2. DNS: if the zone is on Cloudflare, Pages creates the records for you. Otherwise add `CNAME kurniadi.dev -> <project>.pages.dev` (the apex works through CNAME flattening when the zone is on Cloudflare; other DNS hosts need ALIAS/ANAME support) and `CNAME www -> <project>.pages.dev`.
+3. `gh variable set SITE_URL --body https://kurniadi.dev`, then redeploy (`gh workflow run deploy.yml --ref main`) so canonical URLs, `hreflang`, the sitemap and OG URLs use the new origin.
+4. Optional: send `kurniadi.pages.dev` to the custom domain with a Cloudflare Bulk Redirect (Rules > Redirect Rules > Bulk Redirects, source `kurniadi.pages.dev`, target `https://kurniadi.dev`, preserve path and query). `_redirects` cannot do this because it cannot match on host names.
+5. Optional: redirect `www.kurniadi.dev` to the apex with a Redirect Rule in the zone.
+
+## 8. Lighthouse CI
+
+- Job `lighthouse` in `ci.yml` runs after `build` on every PR and push. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
+- Pages: `/en`, `/en/quick`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device).
+- Budgets (appendix 08): LCP under 2500 ms, CLS under 0.05, TBT under 300 ms (error level, median run); performance score at least 0.8, accessibility at least 0.9 and SEO at least 0.9 (warn level).
+- Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
+- Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
+- The job has `continue-on-error: true`, so failed budgets do not fail the workflow. To make them blocking, remove `continue-on-error` from the job (and optionally add it to required status checks).
+
+## 9. Headers and redirects
+
+Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages reads `out/_headers` and `out/_redirects`.
+
+`public/_headers`:
+
+- `/*`: security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`) and a Content-Security-Policy. `script-src` needs `'unsafe-inline'` because the static export inlines Next.js hydration data, the root language redirect script and JSON-LD. `blob:` is allowed for workers and media used by WebGL and audio.
+- `/_next/static/*`: one year, `immutable` (file names are content hashed; this also covers the self-hosted `next/font` files).
+- `/brand/*`: one week. `/cv/*`: one hour, so a rebuilt CV shows up quickly. `/og/*`: one day for Open Graph images emitted under `/og/`. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
+- HTML keeps the Cloudflare default (revalidated on every request), so a new deploy is visible at once.
+
+`public/_redirects`:
+
+- `/cv.pdf` to `/cv/kurniadi-ahmad-wijaya-cv-en.pdf` (301), the path used by the old site.
+- `/en/cv.pdf` and `/id/cv.pdf` to the matching language PDF (301).
+- `/` is intentionally not redirected: it is a static page that picks the language on the client.
+
+`scripts/serve-static.ts` honors simple static rules from `out/_redirects` so `e2e/deploy.spec.ts` can check the `/cv.pdf` redirect locally. Headers are only applied by Cloudflare; the e2e test checks that `out/_headers` is exported.

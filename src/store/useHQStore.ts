@@ -176,7 +176,8 @@ export function createHQStore(storage?: StateStorage) {
         name: STORE_KEY,
         version: 1,
         storage: createJSONStorage(() => storage ?? localStorage),
-        partialize: ({ visited, firstVisit, locale, sound }) => ({ visited, firstVisit, locale, sound }),
+        // `sound` is owned and persisted by the audio engine (localStorage "hq:sound"); the store mirrors it.
+        partialize: ({ visited, firstVisit, locale }) => ({ visited, firstVisit, locale }),
       },
     ),
   );

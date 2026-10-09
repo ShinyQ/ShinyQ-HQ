@@ -4,8 +4,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { LOCALES, type Locale } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
+import { useAudio } from "@/lib/audio";
 import { HudLaunchers } from "./HudLaunchers";
-import { useHQStore } from "@/store/useHQStore";
 
 function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
   const t = useTranslations("hud");
@@ -32,14 +32,14 @@ function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
 
 function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
   const t = useTranslations("hud");
-  const sound = useHQStore((s) => s.sound);
-  const toggle = useHQStore((s) => s.toggleSound);
+  const { muted, toggleMuted } = useAudio();
+  const sound = !muted;
   return (
     <button
       type="button"
       aria-pressed={sound}
       aria-label={withLabel ? undefined : t("sound")}
-      onClick={toggle}
+      onClick={toggleMuted}
       className="glass inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-ink-2 transition hover:text-ink"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
