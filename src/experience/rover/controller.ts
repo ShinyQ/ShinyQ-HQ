@@ -15,6 +15,10 @@ export interface UpdateResult {
 const ARRIVE = 0.35;
 const WAYPOINT = 0.9;
 const STALL_SECONDS = 1.2;
+/** Largest physics step; longer frames are split so the rover never tunnels through walls. */
+export const MAX_PHYSICS_STEP = 1 / 30;
+/** Longest frame the simulation accepts (slow devices still move in near real time). */
+export const MAX_FRAME_DT = 0.25;
 
 /** Owns the rover pose and an optional path. Pure TypeScript so it can be unit tested. */
 export class RoverController {
@@ -44,6 +48,20 @@ export class RoverController {
 
   teleport(p: Vec2, heading = this.pose.heading) {
     this.pose = { ...this.pose, x: p.x, z: p.z, heading, speed: 0, tilt: 0, blocked: false };
+  }
+
+  /** Advances one frame in fixed sub-steps of at most MAX_PHYSICS_STEP. */
+  step(frameDt: number, manual: Vec2 | null, ctx: UpdateContext): UpdateResult {
+    const dt = Math.min(frameDt, MAX_FRAME_DT);
+    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP));
+    const result: UpdateResult = { arrived: false, blocked: false };
+    for (let i = 0; i < steps; i++) {
+      const r = this.update(dt / steps, manual, ctx);
+      result.arrived ||= r.arrived;
+      result.blocked ||= r.blocked;
+      if (r.arrived) break;
+    }
+    return result;
   }
 
   update(dt: number, manual: Vec2 | null, ctx: UpdateContext): UpdateResult {

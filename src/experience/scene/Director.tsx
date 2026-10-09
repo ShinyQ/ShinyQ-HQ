@@ -8,7 +8,7 @@ import { CAR, floorY, ROVER } from "../config";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { joystick } from "../input/joystick";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
-import { RoverController } from "../rover/controller";
+import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { faceFor } from "../rover/faces";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
@@ -105,7 +105,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
   }, [store, grids, labels, onToggleLang]);
 
   useFrame((three, rawDt) => {
-    const dt = Math.min(rawDt, 0.1);
+    const dt = Math.min(rawDt, MAX_FRAME_DT);
     const local = state.current;
     // Shared clock with the rover mesh (flag, hop and blink timers).
     local.now = three.clock.elapsedTime;
@@ -164,7 +164,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
             if (path?.length) controller.setPath(path, true);
             else atDoor = true;
           }
-          const result = controller.update(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from });
+          const result = controller.step(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from });
           if (result.arrived) atDoor = true;
         }
       } else if (ride.stage === "boarding") {
@@ -188,7 +188,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       }
       roverRuntime.target = null;
     } else if (s.phase === "explore") {
-      const result = controller.update(dt, manual, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
+      const result = controller.step(dt, manual, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
       if (manual) roverRuntime.target = null;
       if (result.arrived) {
         local.arrivedUntil = now + ARRIVED_FACE_S;

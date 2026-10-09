@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { FogExp2, PerspectiveCamera, Vector3 } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { intents } from "../input/intents";
+import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import {
   clampYaw,
@@ -56,7 +57,7 @@ export function CameraDirector() {
   useFrame((three, rawDt) => {
     const camera = three.camera as PerspectiveCamera;
     const scene = three.scene;
-    const dt = Math.min(rawDt, 0.1);
+    const dt = Math.min(rawDt, MAX_FRAME_DT);
     const l = local.current;
     l.now += dt;
     const s = getHQStore().getState();
@@ -110,6 +111,7 @@ export function CameraDirector() {
       camera.updateProjectionMatrix();
     }
     roverRuntime.cameraForward = forwardOf(desired);
+    roverRuntime.cameraPosition = [l.pos.x, l.pos.y, l.pos.z];
     if (scene.fog instanceof FogExp2) scene.fog.density = rig === "intro" ? INTRO_FOG_DENSITY : FOG_DENSITY;
   });
 

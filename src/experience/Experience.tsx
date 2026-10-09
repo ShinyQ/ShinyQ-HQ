@@ -46,7 +46,7 @@ function startSession(data: ExperienceData, tier: GpuTier) {
     s.setPhase(s.firstVisit ? "boot" : "intro");
   }
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
 }
 
 /** The lazily loaded 3D chunk: canvas, scene and HUD, portalled over the HTML page. */

@@ -18,6 +18,7 @@ import { getHQStore } from "@/store/useHQStore";
 import { COLORS } from "../config";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
+import { MAX_FRAME_DT } from "./controller";
 import { faceFrame } from "./faces";
 import { drawBlob, drawFace, FACE_H, FACE_W } from "./faceTexture";
 import { roverRuntime } from "./runtime";
@@ -84,7 +85,7 @@ export function Rover({ tier }: { tier: GpuTier }) {
   }, []);
 
   useFrame((state, rawDt) => {
-    const dt = Math.min(rawDt, 0.1);
+    const dt = Math.min(rawDt, MAX_FRAME_DT);
     const t = state.clock.elapsedTime;
     const r = roverRuntime;
     const l = local.current;

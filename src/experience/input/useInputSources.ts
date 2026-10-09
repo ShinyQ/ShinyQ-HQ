@@ -70,7 +70,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
         intents.emit({ type: "zoom", factor: Math.exp(e.deltaY * 0.002) });
         return;
       }
-      const dir = gate(e.deltaY, performance.now());
+      const dir = gate(e.deltaY, e.timeStamp);
       if (dir) intents.emit({ type: "elevator", to: dir });
     };
 
@@ -80,7 +80,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     };
 
     const onDown = (e: PointerEvent) => {
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, start: performance.now(), type: e.pointerType });
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, start: e.timeStamp, type: e.pointerType });
       if (pointers.size === 2) pinch = twoFinger();
     };
 
@@ -105,7 +105,8 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pinch = null;
       if (!p || p.type === "mouse" || pointers.size > 0) return;
-      const swipe = classifySwipe({ dx: e.clientX - p.startX, dy: e.clientY - p.startY, ms: performance.now() - p.start });
+      // Event timestamps keep gesture timing correct even when frames are slow.
+      const swipe = classifySwipe({ dx: e.clientX - p.startX, dy: e.clientY - p.startY, ms: e.timeStamp - p.start });
       if (swipe?.kind === "elevator") intents.emit({ type: "elevator", to: swipe.dir });
       else if (swipe?.kind === "scrub") intents.emit({ type: "scrub", dx: swipe.dx });
     };

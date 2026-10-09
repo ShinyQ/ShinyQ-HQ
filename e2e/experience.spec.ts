@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
 
-test.describe.configure({ timeout: 90_000 });
+test.describe.configure({ timeout: 150_000 });
 
 function collectErrors(page: Page) {
   const errors: string[] = [];
@@ -9,13 +9,22 @@ function collectErrors(page: Page) {
   return errors;
 }
 
+/**
+ * Real touch input through CDP. Explicit timestamps (40 ms apart) keep the
+ * gesture fast even when SwiftShader frames delay the renderer's acks.
+ */
 async function touch(page: Page, points: { x: number; y: number }[], holdMs = 0) {
   const cdp = await page.context().newCDPSession(page);
   const [first, ...rest] = points;
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first] });
-  for (const p of rest) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p] });
-  if (holdMs) await page.waitForTimeout(holdMs);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  let timestamp = Date.now() / 1000;
+  const next = () => (timestamp += 0.04);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first], timestamp });
+  for (const p of rest) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: next() });
+  if (holdMs) {
+    await page.waitForTimeout(holdMs);
+    timestamp = Date.now() / 1000;
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: next() });
   await cdp.detach();
 }
 
@@ -116,8 +125,10 @@ test.describe("rover on desktop", () => {
 
   test("click to move drives to the clicked point", async ({ page }) => {
     await enterHQ(page);
+    await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
-    await page.mouse.click(420, 700);
+    // Below and left of the rover, which sits near the screen center.
+    await page.mouse.click(500, 580);
     await waitForRoverMove(page, start, 2);
     await page.waitForFunction(() => {
       const r = (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover;
@@ -142,8 +153,9 @@ test.describe("rover on touch devices", () => {
     await enterHQ(page, { tier: "" });
     expect((await snapshot(page)).tier).toBe("lite");
 
+    await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
-    await page.touchscreen.tap(150, 640);
+    await page.touchscreen.tap(140, 600);
     await waitForRoverMove(page, start, 2);
     await page.waitForTimeout(1500);
 

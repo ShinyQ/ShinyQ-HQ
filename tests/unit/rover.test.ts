@@ -91,6 +91,21 @@ describe("RoverController", () => {
     expect(rover.autopilot).toBe(false);
   });
 
+  it("sub-steps long frames so walls still stop the rover", () => {
+    const wall = { minX: -10, maxX: 10, minZ: 5, maxZ: 6 };
+    const world = { obstacles: [wall], bounds: open.bounds };
+    const rover = new RoverController({ x: 0, z: 0 }, 0);
+    rover.pose.speed = 12;
+    for (let i = 0; i < 20; i++) rover.step(0.25, { x: 0, z: 1 }, { tuning: { ...tuning, maxSpeed: 12 }, autopilotSpeed: 12, world });
+    expect(rover.pose.z).toBeLessThan(4.01);
+  });
+
+  it("caps very long frames", () => {
+    const rover = new RoverController({ x: 0, z: 0 }, 0);
+    rover.step(5, { x: 0, z: 1 }, { tuning, autopilotSpeed: 12, world: open });
+    expect(rover.pose.z).toBeLessThan(9 * 0.25 + 1e-6);
+  });
+
   it("uses the autopilot speed when on autopilot", () => {
     const rover = new RoverController({ x: 0, z: 0 }, 0);
     rover.setPath([{ x: 0, z: 80 }], true);

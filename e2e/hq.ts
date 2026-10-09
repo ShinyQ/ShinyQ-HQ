@@ -47,12 +47,12 @@ export async function waitForHQ(page: Page) {
   await page.waitForFunction(() => Boolean((window as unknown as Partial<HQWindow>).__hq));
 }
 
-export async function waitForPhase(page: Page, phase: string, timeout = 20_000) {
+export async function waitForPhase(page: Page, phase: string, timeout = 30_000) {
   await page.waitForFunction((p) => (window as unknown as HQWindow).__hq.store.getState().phase === p, phase, { timeout });
 }
 
 /** Waits until the elevator has delivered the rover to `floor`. */
-export async function waitForFloor(page: Page, floor: string, timeout = 30_000) {
+export async function waitForFloor(page: Page, floor: string, timeout = 45_000) {
   await page.waitForFunction(
     (f) => {
       const s = (window as unknown as HQWindow).__hq.store.getState();
@@ -73,7 +73,7 @@ export async function enterHQ(page: Page, { path = "/en", tier = "lite" }: { pat
 }
 
 /** Waits until the rover has moved at least `distance` from `from`. */
-export async function waitForRoverMove(page: Page, from: { x: number; z: number }, distance: number, timeout = 15_000) {
+export async function waitForRoverMove(page: Page, from: { x: number; z: number }, distance: number, timeout = 30_000) {
   await page.waitForFunction(
     ({ from, distance }) => {
       const r = (window as unknown as HQWindow).__hq.store.getState().rover;
@@ -81,5 +81,23 @@ export async function waitForRoverMove(page: Page, from: { x: number; z: number 
     },
     { from, distance },
     { timeout },
+  );
+}
+
+/** Waits until the follow camera has settled after the intro (the spring is slow on SwiftShader). */
+export async function waitForCameraSettle(page: Page) {
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const w = window as unknown as { __hq: { camera?: () => [number, number, number] } };
+        const read = () => w.__hq.camera?.() ?? [0, 0, 0];
+        const a = read();
+        setTimeout(() => {
+          const b = read();
+          resolve(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 0.05);
+        }, 300);
+      }),
+    null,
+    { timeout: 20_000, polling: 100 },
   );
 }

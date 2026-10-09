@@ -5,6 +5,8 @@ const PORT = Number(process.env.E2E_PORT ?? 4173);
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
+  // Each worker renders WebGL on the CPU (SwiftShader); more workers starve each other.
+  workers: process.env.CI ? undefined : 2,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",

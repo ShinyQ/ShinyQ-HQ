@@ -21,6 +21,8 @@ export const roverRuntime = {
   hopUntil: 0,
   /** Horizontal camera forward, used for camera-relative steering. */
   cameraForward: { x: -1, z: -1 } as Vec2,
+  /** Current camera position (debug and test probe). */
+  cameraPosition: [0, 0, 0] as [number, number, number],
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
 };
