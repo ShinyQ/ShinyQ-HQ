@@ -56,11 +56,21 @@ export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1):
   };
 }
 
-export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1): CameraPose {
+/** Half width of the L2 corridor: inside it the rail keeps the spec pose. */
+export const RAIL_DEADBAND = 4;
+
+/** How far the rail slides in z so a rover inside a side room (|z| > 4) stays in frame. */
+export function railShift(roverZ: number): number {
+  const out = Math.abs(roverZ) - RAIL_DEADBAND;
+  return out > 0 ? Math.sign(roverZ) * out : 0;
+}
+
+export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0): CameraPose {
   const { fov, y, z } = RAIL[cls];
+  const shift = railShift(roverZ);
   return {
-    position: [roverX, floorY + y * zoom, z * zoom],
-    target: [roverX + RAIL_LOOK_AHEAD, floorY, 0],
+    position: [roverX, floorY + y * zoom, z * zoom + shift],
+    target: [roverX + RAIL_LOOK_AHEAD, floorY, shift],
     fov,
   };
 }

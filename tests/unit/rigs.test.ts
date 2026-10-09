@@ -10,6 +10,7 @@ import {
   introPose,
   MAX_YAW,
   railPose,
+  railShift,
   selectRig,
   springFactor,
 } from "@/experience/camera/rigs";
@@ -39,6 +40,18 @@ describe("camera rigs", () => {
   it("places the rail camera beside the corridor", () => {
     expect(railPose("desktop", 10, 14)).toEqual({ position: [10, 27, 24], target: [14, 14, 0], fov: 40 });
     expect(railPose("mobile", 0, 0).position).toEqual([0, 18, 34]);
+  });
+
+  it("keeps the rail fixed inside the corridor and slides it into side rooms", () => {
+    expect(railShift(0)).toBe(0);
+    expect(railShift(3.9)).toBe(0);
+    expect(railShift(-4)).toBe(0);
+    expect(railShift(10)).toBe(6);
+    expect(railShift(-19)).toBe(-15);
+    expect(railPose("desktop", 10, 14, 1, 2)).toEqual(railPose("desktop", 10, 14));
+    const inRoom = railPose("desktop", 10, 14, 1, -14);
+    expect(inRoom.position[2]).toBe(24 - 10);
+    expect(inRoom.target[2]).toBe(-10);
   });
 
   it("orbits 120 degrees during the intro and lands on the follow pose", () => {
