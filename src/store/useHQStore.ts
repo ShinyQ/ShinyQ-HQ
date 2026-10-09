@@ -60,6 +60,8 @@ export interface HQState {
   device: DeviceState;
   reducedMotion: boolean;
   notice: string | null;
+  /** README easter egg: the drawer shows the terminal view of the room (Phase 4). */
+  readme: boolean;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -68,8 +70,14 @@ export interface HQState {
   setRide: (ride: Ride | null) => void;
   cancelRide: () => void;
   arriveFloor: (floor: FloorId) => void;
-  openRoom: (room: RoomId) => void;
+  /** Opens the Glass Drawer on a room (phase "room"), optionally on a tab. */
+  openRoom: (room: RoomId, tab?: DrawerTab) => void;
   closeRoom: () => void;
+  setDrawerTab: (tab: DrawerTab) => void;
+  toggleReadme: (on?: boolean) => void;
+  /** Hologram view of the active room (hero pods). Phase "hologram"; closing returns to "room". */
+  openHologram: () => void;
+  closeHologram: () => void;
   startMission: (id: string) => void;
   /** Mirrors the mission runner state without changing the phase (the rover keeps driving in explore). */
   setMission: (mission: MissionState | null) => void;
@@ -87,7 +95,7 @@ export interface HQState {
 }
 
 export const STORE_KEY = "hq:v1";
-const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal"];
+const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal", "hologram"];
 
 /** Spawn at the Lobby spawn point, turned toward the default follow camera so the face greets the visitor. */
 export const initialRover: RoverState = { x: 0, z: 6, heading: Math.PI / 4, speed: 0, face: "idle" };
@@ -117,6 +125,7 @@ export function createHQStore(storage?: StateStorage) {
         device: { viewport: "desktop", camera: "desktop", coarse: false },
         reducedMotion: false,
         notice: null,
+        readme: false,
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -141,11 +150,20 @@ export function createHQStore(storage?: StateStorage) {
           if (ride?.stage === "toDoor") set({ ride: null, phase: "explore" });
         },
         arriveFloor: (floor) => set({ floor, ride: null, phase: "explore" }),
-        openRoom: (room) => {
+        openRoom: (room, tab) => {
           get().markVisited(room);
-          set({ activeRoom: room, phase: "room", drawerTab: "overview" });
+          const same = get().activeRoom === room;
+          set({ activeRoom: room, phase: "room", drawerTab: tab ?? (same ? get().drawerTab : "overview"), readme: same && get().readme });
         },
-        closeRoom: () => set({ activeRoom: null, phase: "explore" }),
+        closeRoom: () => set({ activeRoom: null, phase: "explore", readme: false }),
+        setDrawerTab: (drawerTab) => set({ drawerTab }),
+        toggleReadme: (on) => set({ readme: on ?? !get().readme }),
+        openHologram: () => {
+          if (get().activeRoom) set({ phase: "hologram", readme: false });
+        },
+        closeHologram: () => {
+          if (get().phase === "hologram") set({ phase: get().activeRoom ? "room" : "explore" });
+        },
         startMission: (id) => set({ mission: { id, step: 0, status: "running" }, phase: "autopilot" }),
         setMission: (mission) => set({ mission }),
         cancelMission: () => {

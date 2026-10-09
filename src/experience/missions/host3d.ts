@@ -1,6 +1,7 @@
 import type { FloorId, RoomId } from "@/content/schema";
 import type { HQStore } from "@/store/useHQStore";
 import { LOBBY, READY_FLOORS } from "../config";
+import { directoryStop } from "../floors/labs/layout";
 import type { FloorLayout, Vec2 } from "../types";
 import type { HostDeps } from "./bridge";
 import type { MissionHost, StepContext } from "./host";
@@ -39,12 +40,15 @@ const LOBBY_STOPS: Record<string, Vec2> = {
 };
 
 /**
- * Where `drive` takes the rover. Lobby rooms have real stops; placeholder floors use the spot their
- * phase will build on (year segment on L2, wing side on L3), or a point near the floor label.
+ * Where `drive` takes the rover. Rooms with a door trigger stop in its zone (every floor); Lobby
+ * rooms have real stops; L3 listed items stop at their wing directory; placeholder floors use the
+ * spot their phase will build on, or a point near the floor label.
  */
 export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Record<FloorId, FloorLayout>, years: readonly number[]): Vec2 {
   const floor = floorOf(id);
   const layout = layouts[floor];
+  const door = layout.doors?.find((d) => d.room === id);
+  if (door) return door.at;
   const fallback = { x: layout.approach.x + 7, z: layout.approach.z - 3 };
   if (floor === "L1") return LOBBY_STOPS[id.slice(3)] ?? fallback;
   if (floor === "L2") {
@@ -52,7 +56,7 @@ export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Reco
     if (room?.kind === "workshop") return { x: layout.bounds.maxX - 6, z: 0 };
     return index >= 0 ? { x: -20 + 14 * index + 7, z: 0 } : fallback;
   }
-  if (floor === "L3" && room?.wing) return { x: room.wing === "software" ? -15 : 15, z: 0 };
+  if (floor === "L3" && room?.wing) return directoryStop(room.wing);
   return fallback;
 }
 
@@ -72,7 +76,7 @@ const nextFrame = () =>
     else setTimeout(resolve, 16);
   });
 
-/** MissionHost for the 3D tower: store-driven elevator, autopilot drives, room stubs until the Phase 4 drawer. */
+/** MissionHost for the 3D tower: store-driven elevator, autopilot drives and the Glass Drawer for rooms. */
 export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
   const { store, rover, layouts, years } = world;
   const tick = world.tick ?? nextFrame;
@@ -97,6 +101,9 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
     },
 
     async driveTo(target, ctx) {
+      // Driving to another spot leaves the open room (appendix 02: room to explore on drive away).
+      const phase = store.getState().phase;
+      if (phase === "room" || phase === "hologram") store.getState().closeRoom();
       const point = typeof target === "string" ? roomTarget(byId.get(target), target, layouts, years) : target;
       const request: AutopilotRequest = { point, state: "pending" };
       rover.autopilot = request;
@@ -104,11 +111,14 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
     },
 
     async openRoom(id, tab) {
-      store.getState().markVisited(id);
       const room = byId.get(id);
-      // Built floors keep the visitor in 3D; the drawer arrives in Phase 4. Elsewhere open the room page.
-      if (!room || READY_FLOORS.includes(room.floor)) return;
-      deps.navigate(localize(deps.locale, roomPath(room, tab)));
+      // Built floors open the Glass Drawer in 3D; floors without 3D content open the room page.
+      if (READY_FLOORS.includes(room?.floor ?? floorOf(id))) {
+        store.getState().openRoom(id, tab);
+        return;
+      }
+      store.getState().markVisited(id);
+      if (room) deps.navigate(localize(deps.locale, roomPath(room, tab)));
     },
 
     async say(text, ms, ctx) {

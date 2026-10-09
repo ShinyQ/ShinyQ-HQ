@@ -1,4 +1,4 @@
-import type { Locale, RoomId } from "@/content/schema";
+import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "./host";
 import type { RoomInfo } from "./rooms";
 import type { MissionRunner, MissionState } from "./runner";
@@ -57,6 +57,11 @@ export function registerRunner(next: MissionRunner): () => void {
     off();
     if (runner === next) runner = null;
   };
+}
+
+/** Elevator, drive and open for any room through the active runner ("See the case study" links). */
+export function goToRoom(room: RoomId, tab?: DrawerTab) {
+  void runner?.goTo(room, tab);
 }
 
 /** Manual input cancels a running mission (appendix 02 section 3). */
