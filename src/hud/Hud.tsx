@@ -7,6 +7,8 @@ import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { useHQStore } from "@/store/useHQStore";
 import { BootOverlay } from "./BootOverlay";
+import { DrawerHost } from "./drawer/DrawerHost";
+import { HologramOverlay } from "./HologramOverlay";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
 import { Joystick } from "./Joystick";
@@ -92,6 +94,9 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
       <CutFade />
       {phase === "boot" ? (
         <BootOverlay name={data.profile.name} />
+      ) : phase === "hologram" ? (
+        // The hologram view owns the screen: only its own controls show.
+        <HologramOverlay locale={data.locale} />
       ) : (
         <>
           <ProfileCard data={data} mobile={mobile} />
@@ -100,6 +105,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           <FloorNotice data={data} mobile={mobile} />
           {phase === "intro" ? <IntroSkip /> : <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
+          <DrawerHost locale={data.locale} />
         </>
       )}
       <FloorAnnouncer data={data} />
