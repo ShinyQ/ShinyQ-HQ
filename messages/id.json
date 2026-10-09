@@ -306,5 +306,68 @@
       "copied": "Email tersalin ^_^",
       "copyFailed": "Gagal menyalin, emailnya {email}"
     }
+  },
+  "drawer": {
+    "label": "Detail ruangan",
+    "close": "Tutup ruangan",
+    "loading": "Memuat ruangan",
+    "unavailable": "Ruangan ini tidak dapat dimuat. Buka halamannya saja.",
+    "tabs": {
+      "overview": "Ringkasan",
+      "architecture": "Arsitektur",
+      "results": "Hasil",
+      "stack": "Stack"
+    },
+    "tabsLabel": "Bagian ruangan",
+    "caseStudy": "Studi kasus lengkap",
+    "openPage": "Buka halaman",
+    "viewArchitecture": "Lihat arsitektur",
+    "previous": "Ruangan sebelumnya",
+    "next": "Ruangan berikutnya",
+    "more": "Aksi lainnya",
+    "readme": "README",
+    "readmeOn": "Tampilkan README",
+    "readmeOff": "Sembunyikan README",
+    "readmeHint": "Tekan t untuk membuka atau menutup README",
+    "keyResults": "Hasil utama",
+    "gallery": "Galeri",
+    "resize": "Ubah ukuran panel",
+    "expand": "Perbesar panel",
+    "collapse": "Perkecil panel",
+    "external": "Baca tulisannya",
+    "flow": "Alur data",
+    "noArchitecture": "Ruangan ini tidak memiliki diagram arsitektur.",
+    "onFloor": "Di {floor}",
+    "seeOnL3": "Lihat studi kasusnya di L3",
+    "seeOnL2": "Lihat di perjalanan karier (L2)",
+    "hologram": {
+      "title": "Hologram arsitektur",
+      "back": "Kembali ke ruangan",
+      "prev": "Hero pod sebelumnya",
+      "next": "Hero pod berikutnya",
+      "hint": "Kiri dan kanan untuk berpindah hero pod, Esc untuk kembali",
+      "results": "Hasil",
+      "label": "{title}, arsitektur"
+    },
+    "rooms": {
+      "bio": "Tentang",
+      "story": "Perjalanan sejauh ini",
+      "principles": "Cara saya bekerja",
+      "verify": "Verifikasi kredensial",
+      "earned": "Diraih",
+      "inProgress": "Sedang berjalan",
+      "sideProjects": "Proyek sampingan",
+      "repos": "Repositori publik",
+      "tags": "Tag",
+      "languages": "Bahasa",
+      "channels": "Kanal",
+      "availability": "Ketersediaan",
+      "downloads": "Unduhan",
+      "cvPage": "Buka halaman CV",
+      "cvPdf": "PDF CV ({locale})"
+    },
+    "directory": "Direktori sayap",
+    "signSoftware": "Software Wing",
+    "signAi": "AI Wing"
   }
 }

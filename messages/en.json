@@ -306,5 +306,68 @@
       "copied": "Email copied ^_^",
       "copyFailed": "Could not copy, email is {email}"
     }
+  },
+  "drawer": {
+    "label": "Room details",
+    "close": "Close room",
+    "loading": "Loading room",
+    "unavailable": "This room could not be loaded. Open its page instead.",
+    "tabs": {
+      "overview": "Overview",
+      "architecture": "Architecture",
+      "results": "Results",
+      "stack": "Stack"
+    },
+    "tabsLabel": "Room sections",
+    "caseStudy": "Full case study",
+    "openPage": "Open page",
+    "viewArchitecture": "View architecture",
+    "previous": "Previous room",
+    "next": "Next room",
+    "more": "More actions",
+    "readme": "README",
+    "readmeOn": "Show README",
+    "readmeOff": "Hide README",
+    "readmeHint": "Press t to toggle the README",
+    "keyResults": "Key results",
+    "gallery": "Gallery",
+    "resize": "Resize panel",
+    "expand": "Expand panel",
+    "collapse": "Collapse panel",
+    "external": "Read the post",
+    "flow": "Data flow",
+    "noArchitecture": "No architecture diagram for this room.",
+    "onFloor": "On {floor}",
+    "seeOnL3": "See the case study on L3",
+    "seeOnL2": "See it on the journey (L2)",
+    "hologram": {
+      "title": "Architecture hologram",
+      "back": "Back to room",
+      "prev": "Previous hero pod",
+      "next": "Next hero pod",
+      "hint": "Left and right to switch hero pods, Esc to go back",
+      "results": "Results",
+      "label": "{title}, architecture"
+    },
+    "rooms": {
+      "bio": "About",
+      "story": "The story so far",
+      "principles": "How I work",
+      "verify": "Verify credential",
+      "earned": "Earned",
+      "inProgress": "In progress",
+      "sideProjects": "Side projects",
+      "repos": "Public repositories",
+      "tags": "Tags",
+      "languages": "Languages",
+      "channels": "Channels",
+      "availability": "Availability",
+      "downloads": "Downloads",
+      "cvPage": "Open the CV page",
+      "cvPdf": "CV PDF ({locale})"
+    },
+    "directory": "Wing directory",
+    "signSoftware": "Software Wing",
+    "signAi": "AI Wing"
   }
 }

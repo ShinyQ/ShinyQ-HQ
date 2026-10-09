@@ -23,3 +23,7 @@
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*
   Cache-Control: public, max-age=86400
+
+# Glass Drawer content (src/app/data). Rebuilt with every deploy.
+/data/*
+  Cache-Control: public, max-age=3600
