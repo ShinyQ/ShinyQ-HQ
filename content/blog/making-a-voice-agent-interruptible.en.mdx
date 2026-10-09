@@ -1,34 +1,40 @@
 ---
 title: "How we made a voice agent interruptible"
 date: "2026-10-09"
-excerpt: "Barge-in on our speech-to-speech contact-center agent broke in two different ways. Here is how I fixed both, how a small controlled A/B measured roughly 2 s down to 0.2 s, and the experiments the data did not support."
+excerpt: "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested the old and new paths: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
 
-The most human thing a caller does is interrupt. On the realtime contact-center voice agent I lead at Metrodata, interrupting the agent while it was looking something up in the knowledge base used to take about two seconds to land. After two fixes, a controlled A/B put it at roughly 0.2 seconds.
+Our voice agent took about two seconds to react when a caller interrupted it during a knowledge search. Two seconds is a long time to keep talking after someone has asked you to stop.
 
-This post covers what broke, how I measured the fix (with a small sample, which I will be upfront about), and the experiments that did not pay off and were never switched on.
+I lead this realtime contact-center agent at Metrodata. I fixed two separate barge-in bugs, and a controlled A/B on the knowledge-search path measured roughly 0.2 seconds afterward. That test had just n=4 calls per arm. It showed a clear difference in that path, not that we had solved turn-taking.
+
+The later experiments make that distinction important: some changes failed their verdicts, and the live cut-off rate did not improve.
 
 ## What barge-in means for a speech-to-speech agent
 
-The agent runs on Azure OpenAI Realtime. Caller audio streams in, the model streams spoken audio back, and in the default mode there is no separate speech-to-text and text-to-speech stage. A Python FastAPI backend sits in the middle: it bridges the media channel to the model, runs tools such as knowledge search over Azure AI Search, and hands calls to a human operator when needed.
+The agent uses Azure OpenAI Realtime. Caller audio streams in and spoken audio streams back. In the default mode, there is no separate speech-to-text or text-to-speech stage.
 
-Barge-in is what happens when the caller starts talking while the agent is talking, or about to. A good agent does three things:
+A Python FastAPI backend bridges the media channel to the model. It also runs tools, including knowledge search over Azure AI Search, and hands calls to a human operator when needed.
+
+Barge-in means the caller starts talking while the agent is speaking, or about to speak. Handling it takes more than cancelling a response:
 
 1. Stops the audio the caller is hearing.
 2. Stops generating the rest of the answer.
 3. Makes its own memory of the conversation match what the caller actually heard.
 
-The third step is the one people skip. If the model believes it delivered a full paragraph but the caller only heard the first half, its next answer builds on words that never reached anyone.
+The third step is easy to miss. Suppose the model generated a whole paragraph, but the caller heard only half of it. Unless you correct the conversation history, the next answer assumes the caller heard the rest.
 
 ## Failure one: finished for the model, still playing for the caller
 
-The first bug was simple to describe: interruptions were ignored once the model had finished generating. Our cancel logic returned early as soon as the model reported the response as done. But at that point the media channel (Azure Communication Services at the time) could still have queued audio to play. From the caller's side the agent was still talking, and nothing would stop it.
+Our cancel logic returned early once the model reported a response as done. That sounds reasonable until you separate generation from playback.
 
-There was a second half to it. When we did truncate the conversation, we truncated at the number of audio bytes we had forwarded, not the amount the caller had heard. So the model's context still contained audio that was sitting in a buffer.
+The media channel, Azure Communication Services at the time, could still have audio queued. The model had finished, but the caller was still hearing the agent. An interruption at that point did nothing.
 
-The fix was playout-aware barge-in. A small playout tracker estimates how many milliseconds of the current response have actually been played to the caller. On barge-in the order matters. Here is a simplified sketch, not the production code:
+We were also truncating conversation history at the wrong position. We used the number of audio bytes forwarded to the channel, not the amount actually heard. Audio still sitting in a buffer counted as delivered.
+
+I made barge-in playout-aware. A small tracker estimates how many milliseconds of the current response have played to the caller. This is a simplified sketch, not the production code:
 
 ```
 on caller speech start:
@@ -38,15 +44,17 @@ on caller speech start:
     realtime.truncate(item_id, heard_ms)
 ```
 
-Silence comes first, because that is what the caller notices. Then the generation is cancelled, then the conversation item is truncated at the heard position, so the model's context ends where the caller's ears did.
+The order matters: stop playback first, cancel generation if it is still running, then truncate the conversation item at the heard position. The caller gets silence first, and the model's history stops at the same point the caller heard.
 
-An honest note: I did not record a separate before and after number for this fix on its own. It shipped as one of the top-priority items from an internal architecture review, and the measurement below covers a different code path.
+I do not have a separate before-and-after measurement for this fix. It shipped as one of the top-priority items from an internal architecture review. The A/B below measures a different code path.
 
 ## Failure two: the agent could not hear you while it searched
 
-The second problem was more visible. Whenever the agent was searching the knowledge base, interrupting it took about two seconds. The cause was that the knowledge search tool ran inline on the provider receive loop, the coroutine that reads every event coming back from the realtime model. While that loop was awaiting a search, it was not reading anything else, including the signal that the caller had started speaking.
+The two-second delay came from the knowledge search tool. It ran inline on the provider receive loop, the coroutine reading every event from the realtime model.
 
-The fix moved tool execution off the loop. Each tool call now runs in its own asyncio task that can be cancelled, under a single 2.5 s time budget. The same change added a single response gate, so only one response is in flight at a time, and made the hand-off to a human operator non-blocking. Again a simplified sketch:
+While that loop awaited search results, it could not read the event saying the caller had started speaking. We had made the part responsible for listening wait for I/O.
+
+I moved each tool call into its own cancellable asyncio task, under one 2.5 s time budget. The change also added a single response gate, allowing only one response in flight, and made hand-off to a human operator non-blocking. Again, this is a simplified sketch:
 
 ```
 task = asyncio.create_task(
@@ -55,13 +63,13 @@ task = asyncio.create_task(
 # on barge-in: task.cancel()
 ```
 
-Now a barge-in during a search cancels the task, and the loop never stopped listening. My reasoning for one budget instead of several nested timeouts: there is a single number to reason about, and when it runs out the agent moves on instead of stalling.
+Now the receive loop keeps listening during a search, and barge-in cancels the task. I chose one budget rather than nested timeouts so there is one limit to reason about. When it expires, the agent moves on instead of stalling.
 
 ## How I measured it
 
-I wanted a test where the only difference between the two arms was the code path. We already had a voice evaluation harness: a media emulator that plays recorded caller audio into the backend as if it were a real call, a golden question set, and a calibrated LLM judge for answer quality. I added an old versus new A/B to it, driving the old path through a legacy adapter.
+I wanted to compare code paths, not two different environments. Our existing voice evaluation harness had a media emulator that fed recorded caller audio into the backend as if it were a real call, a golden question set, and a calibrated LLM judge for answer quality. I added an old-versus-new A/B, using a legacy adapter to run the old path.
 
-Both arms used the same model deployment, the same search index and the same caller audio. I ran the primary A/B from a throwaway runner on Azure Container Instances rather than my laptop, so my local network was not part of the result; the laptop run is kept only as an appendix.
+Both arms used the same model deployment, search index and caller audio. I ran the primary test from a throwaway runner on Azure Container Instances to keep my laptop's network out of the result. The laptop run remains only as an appendix.
 
 The results on knowledge turns:
 
@@ -69,27 +77,32 @@ The results on knowledge turns:
 - Barge-in latency on the new path: 93 to 220 ms.
 - The new path answered the knowledge question in 4 of 4 calls. The old path escalated to a human in 4 of 4.
 
-Now the caveats. This was n=4 calls per arm. That is enough to see a roughly tenfold gap repeat, and not enough for percentiles or confidence intervals. These were harness-driven calls on an experiment runner, not customer traffic, and I do not have a production barge-in measurement to quote. The test covered barge-in during knowledge turns only, not ordinary conversational turns.
+With n=4 calls per arm, the roughly tenfold gap repeated, but the sample cannot support percentiles or confidence intervals.
+
+These were harness-driven calls on an experiment runner, not customer traffic. I have no production barge-in measurement to quote. And the test covered knowledge turns only, not ordinary conversation.
 
 ## What the data did not support
 
-Later we moved the voice channel to self-hosted LiveKit, and a different turn-taking problem appeared: the agent talking over callers. The live cut-off rate was 53.3%.
+Later, we moved the voice channel to self-hosted LiveKit. A different problem appeared: the agent was talking over callers. The live cut-off rate was 53.3%.
 
-My first hypothesis was that the stop signal was not reaching the media layer quickly enough. I built a local LiveKit reproduction with monotonic-clock traces, ran it with both a fake model and the real one, and wrote down the verdict rules before running anything. The hypothesis was mostly refuted: only about 80 ms of audio was heard after the clear. The real causes were the provider committing the caller's turn during natural pauses, and stale responses that were never cancelled.
+I first suspected that the stop signal reached the media layer too late. I built a local LiveKit reproduction with monotonic-clock traces and tested both a fake model and the real one. Before running it, I wrote down the verdict rules.
 
-I shipped a start-hold and a stale-response cancel, then re-measured live. The cut-off rate came out at 60.0%. It did not go down. My notes do not record how many turns sit behind those two percentages, so treat them as directional, but what they clearly do not show is an improvement. I wrote that up as a negative result instead of calling it fixed.
+The traces mostly refuted my hypothesis: only about 80 ms of audio was heard after the clear. The actual causes were the provider committing the caller's turn during natural pauses, and stale responses that were never cancelled.
 
-The same experiment series tested two latency ideas for knowledge turns: an acknowledgement clip played while searching, and a rule pushing the model to speak a short first sentence early. Both were rejected by the pre-registered verdicts, and serving prefetched results could not be tested cleanly, so it was reported as blocked. A few days earlier, a pre-registered check of two proposed changes to latency defaults rejected each change alone and both combined, so the defaults stayed as they were.
+I shipped a start-hold and a stale-response cancel, then measured live again. The cut-off rate was 60.0%. It had not gone down.
 
-None of these were switched on. The levers that the cut-off experiments rejected were later deleted from the codebase rather than left as dormant switches.
+My notes do not record the number of turns behind either percentage, so these are directional figures. They still do not show an improvement. I recorded a negative result rather than calling the problem fixed.
 
-## Lessons for realtime voice agents
+That experiment series also tested an acknowledgement clip during knowledge search and a rule asking the model to speak a short first sentence earlier. Both failed their pre-registered verdicts. Serving prefetched results could not be tested cleanly, so I reported it as blocked.
 
-- Track what the caller heard, not what the model generated or what you sent. Truncate at heard time.
-- Stop in the right order: silence first, then cancel, then fix the model's context.
-- Never await slow I/O on the realtime receive loop. Run tools as cancellable tasks under one time budget.
-- Measure with an A/B where only the code path differs, run it away from your laptop, and publish n.
-- Write verdict rules before the experiment, and accept the negative ones. The cut-off problem is not solved, and the record says so.
-- Delete what the data rejected.
+A few days earlier, a separate pre-registered check had rejected two proposed changes to latency defaults, each on its own and both together. The defaults stayed unchanged.
 
-A note on process: each of these fixes started as a written spec. I directed AI coding agents for much of the implementation, then reviewed and merged the result. The measurements are what made those changes trustworthy, to me as much as to anyone else.
+None of those rejected or blocked experiments was switched on. I later deleted the levers rejected by the cut-off experiments instead of leaving dormant switches in the codebase.
+
+## What I would check first
+
+If you are debugging barge-in, separate what the model generated, what your backend sent, and what the caller heard. Truncate at heard time, and stop playback before dealing with generation or context.
+
+Then check the receive loop. Slow I/O does not belong there. Put tools in cancellable tasks with one time budget, and measure the old and new paths in the same conditions, away from your laptop. Publish the sample size.
+
+Each of these fixes started with a written spec. I directed AI coding agents for much of the implementation, then reviewed and merged their work. But a spec and a merged PR are not proof that a fix helped. Set the verdict rules before testing, accept the negative results, and remove what the data rejected. Our cut-off problem is still not solved.
