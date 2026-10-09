@@ -1,7 +1,7 @@
 {
   "meta": {
     "siteName": "ShinyQ HQ",
-    "description": "Kurniadi Ahmad Wijaya: Software Engineer and AI Engineer (Azure). Case studies, career journey, writing and contact.",
+    "description": "Kurniadi Ahmad Wijaya, Software Engineer and AI Engineer. Software and Azure AI case studies, career history, writing and contact.",
     "quick": "Quick view",
     "journey": "Journey",
     "labs": "Labs",
@@ -10,7 +10,7 @@
     "cv": "CV"
   },
   "nav": {
-    "label": "Main",
+    "label": "Main navigation",
     "backToHq": "Back to HQ",
     "quick": "Quick view",
     "journey": "Journey",
@@ -31,9 +31,9 @@
   "common": {
     "present": "Present",
     "readMore": "Read more",
-    "caseStudy": "Full case study",
+    "caseStudy": "Read case study",
     "viewAll": "View all",
-    "stack": "Stack",
+    "stack": "Tech stack",
     "highlights": "Highlights",
     "previous": "Previous",
     "next": "Next",
@@ -49,7 +49,7 @@
       "self-reported": "Self-reported"
     },
     "tier": {
-      "hero": "Hero",
+      "hero": "Key project",
       "featured": "Featured",
       "listed": "Listed"
     },
@@ -58,7 +58,7 @@
       "ai": "AI Wing"
     },
     "type": {
-      "job": "Job",
+      "job": "Employment",
       "freelance": "Freelance",
       "education": "Education",
       "award": "Awards",
@@ -69,33 +69,33 @@
       "id": "ID"
     },
     "inProgress": "in progress",
-    "verify": "Verify"
+    "verify": "View credential"
   },
   "home": {
     "eyebrow": "Agent HQ · Lobby",
-    "currentRole": "Now",
+    "currentRole": "Current role",
     "ctaQuick": "Quick view",
     "ctaLabs": "Explore the Labs",
-    "statsTitle": "Headline stats",
-    "wingsTitle": "Two wings, one craft",
-    "wingsIntro": "Software engineering since 2019 and enterprise AI on Azure since 2026, presented side by side.",
-    "journeyTitle": "Latest on the journey",
+    "statsTitle": "At a glance",
+    "wingsTitle": "Software and AI engineering",
+    "wingsIntro": "My software engineering work since 2019, alongside enterprise AI work on Azure since 2026.",
+    "journeyTitle": "Recent work",
     "skillsTitle": "Skills wall",
     "certsTitle": "Certifications",
     "howTitle": "How I work",
     "directoryTitle": "Tower directory",
-    "directoryIntro": "The Lobby is open in 3D and the other floors are being built. Every floor is already open as a page.",
-    "storyTitle": "The story so far"
+    "directoryIntro": "Choose a floor to explore. Every floor also has a page view.",
+    "storyTitle": "My background"
   },
   "quick": {
     "title": "Quick view",
-    "intro": "Everything on one page: profile, highlights, timeline, projects, certifications, writing and contact.",
+    "intro": "My work and background on one page, with links to the full case studies.",
     "toc": "On this page",
     "profile": "Profile",
-    "stats": "Stats",
-    "software": "Software engineering highlights",
-    "ai": "AI engineering highlights",
-    "timeline": "Timeline",
+    "stats": "At a glance",
+    "software": "Selected software engineering work",
+    "ai": "Selected AI engineering work",
+    "timeline": "Career history",
     "projects": "Side projects",
     "certifications": "Certifications",
     "awards": "Awards",
@@ -104,22 +104,22 @@
     "skills": "Skills"
   },
   "journey": {
-    "title": "Journey 2019 to 2026",
-    "intro": "The Career Archive: jobs, freelance work, education, research and awards, in the order they happened.",
-    "yearNav": "Jump to year",
+    "title": "Career journey: 2019 to 2026",
+    "intro": "My employment, freelance work, education, research and awards, organized by year.",
+    "yearNav": "Choose a year",
     "prologue": "Prologue",
     "workshop": "Workshop annex",
     "workshopIntro": "Side projects and public repositories.",
     "repos": "Public repositories",
     "stars": "{count, plural, one {# star} other {# stars}}",
-    "seeCaseStudy": "See the case study on L3",
+    "seeCaseStudy": "Read the case study in Labs",
     "back": "Back to the journey"
   },
   "labs": {
     "title": "Labs",
-    "intro": "Case studies from both wings. The Software Wing covers backend and full-stack systems from 2019 onward; the AI Wing covers enterprise AI platforms on Azure from 2026.",
+    "intro": "Software and AI case studies covering my contribution and results: software systems since 2019, and enterprise AI on Azure since 2026.",
     "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",
-    "aiIntro": "Enterprise AI platforms on Azure, shipped with evaluation gates.",
+    "aiIntro": "Enterprise AI platforms on Azure, with evaluation gates before release.",
     "directory": "Wing directory",
     "problem": "Problem",
     "approach": "What I did",
@@ -130,7 +130,7 @@
     "role": "Role",
     "period": "Period",
     "back": "Back to the Labs",
-    "timeline": "On the journey",
+    "timeline": "Related career entry",
     "nodeKind": {
       "client": "Client",
       "service": "Service",
@@ -142,7 +142,7 @@
   },
   "library": {
     "title": "Library",
-    "intro": "Writing, publications, models and talks.",
+    "intro": "My writing, research publications, published models and teaching materials.",
     "posts": "Blog",
     "publications": "Models and datasets",
     "talks": "Talks and workshops",
@@ -170,7 +170,7 @@
   },
   "blog": {
     "back": "Back to the Library",
-    "translationMissing": "This post is only available in {language}. It is shown in its original language.",
+    "translationMissing": "Available in {language} only. You are reading the original version.",
     "languageName": {
       "en": "English",
       "id": "Indonesian"
@@ -178,33 +178,33 @@
   },
   "contact": {
     "title": "Roof · Comms",
-    "intro": "The fastest way to reach me.",
+    "intro": "Get in touch about software and AI engineering.",
     "beacon": "Beacon",
-    "channels": "Channels",
+    "channels": "Contact links",
     "cvTitle": "CV kiosk",
-    "cvIntro": "Generated from the same data as this site, in English and Indonesian.",
+    "cvIntro": "Download my CV in English or Indonesian. Both versions use the same data as this site.",
     "location": "Location"
   },
   "cv": {
-    "title": "Curriculum Vitae",
+    "title": "CV",
     "summary": "Summary",
-    "experience": "Experience",
+    "experience": "Professional experience",
     "projects": "Selected projects",
     "education": "Education",
     "certifications": "Certifications",
     "awards": "Awards",
     "skills": "Skills",
-    "print": "This page is the source of the PDF CV.",
+    "print": "The downloadable PDF is generated from this page.",
     "awardsSummary": "{count} competition placings from 2018 to 2022, including:"
   },
   "notFound": {
     "title": "Room not found",
-    "body": "The rover could not find that room.",
+    "body": "This page does not exist. Head back to the Lobby to find your way.",
     "home": "Return to the Lobby"
   },
   "footer": {
-    "built": "Content is generated from one validated data file.",
-    "source": "Source on GitHub"
+    "built": "The site and CV share one validated dataset.",
+    "source": "View source on GitHub"
   },
   "root": {
     "redirecting": "Opening ShinyQ HQ…",
@@ -212,12 +212,12 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "A neon tower with five floors. Drive the Screen Rover with the arrow keys or WASD, or click the floor to move. Rotate the view by dragging, with Q and E, or with the rotate buttons; press 0 to reset it. Change floors with the elevator panel, the mouse wheel or PageUp and PageDown. Every floor is also available as a normal page through Quick view.",
+    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive, or click a spot on the floor. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Quick view opens the portfolio as a page.",
     "floor": "Floor",
     "visited": "Rooms visited",
     "elevator": "Elevator",
     "goToFloor": "Go to {floor}, {name}",
-    "currentFloor": "Now on {floor}, {name}",
+    "currentFloor": "Current floor: {floor}, {name}",
     "quickView": "Quick view",
     "pageView": "Page view",
     "pageViewHint": "Show this page without the 3D tower",
@@ -228,29 +228,29 @@
     "sound": "Sound",
     "menu": "Menu",
     "profile": "Profile",
-    "hintFine": "WASD or arrows to drive · Click to move · Drag or Q/E to rotate · Wheel or PgUp/PgDn for floors",
-    "hintCoarse": "Tap to move · Drag to rotate · Swipe up or down for floors",
-    "underConstruction": "{name} is under construction in 3D.",
-    "openFloorPage": "Read the {name} page",
-    "joystick": "Drive joystick",
+    "hintFine": "Drive: WASD or arrows · Move: click floor · Rotate: drag or Q/E · Floors: scroll or PgUp/PgDn",
+    "hintCoarse": "Move: tap floor · Drive: joystick · Rotate: drag · Floors: swipe up or down",
+    "underConstruction": "{name} is not ready in 3D yet.",
+    "openFloorPage": "Open the {name} page",
+    "joystick": "Rover joystick",
     "bootTitle": "rover@hq:~$ ./boot",
-    "bootLine1": "[ ok ] power bus online",
-    "bootLine2": "[ ok ] mounting floors L1 to RF",
-    "bootLine3": "[ ok ] calibrating treads",
+    "bootLine1": "[ ok ] power on",
+    "bootLine2": "[ ok ] floor map loaded: L1 to RF",
+    "bootLine3": "[ ok ] treads calibrated",
     "bootLine4": "[ ok ] loading profile: {name}",
-    "bootLine5": "[ ok ] elevator shaft pressurized",
+    "bootLine5": "[ ok ] elevator ready",
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
     "skipIntro": "Skip intro",
-    "staticNotice": "Switched to lite view",
+    "staticNotice": "3D is unavailable. Showing page view.",
     "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskHint": "Click the kiosk or the rover for missions",
+    "kioskHint": "Select the kiosk or rover to pick a mission",
     "constructionLabel": "Under construction",
-    "constructionHint": "Read this floor as a page in Quick view",
+    "constructionHint": "Open this floor in page view",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",
-      "stats": "Headline stats",
+      "stats": "At a glance",
       "skills": "Skills wall",
       "certifications": "Certifications wall",
       "workshop": "Workshop annex",
@@ -274,16 +274,16 @@
         "evening": "good evening",
         "night": "hello, night owl"
       },
-      "question": "where should we go? ^_^",
+      "question": "where next? ^_^",
       "options": "Missions",
-      "driveMyself": "drive myself",
-      "hint": "1 to 8, arrows and Enter, or Esc",
+      "driveMyself": "explore on my own",
+      "hint": "Pick: 1 to 8 or arrows + Enter · Close: Esc",
       "close": "Close terminal"
     },
     "palette": {
       "title": "Command palette",
       "label": "Search missions, rooms, years and actions",
-      "placeholder": "Search missions, rooms, years, actions",
+      "placeholder": "Find a mission, room, year or action",
       "results": "Results",
       "empty": "No results for \"{query}\"",
       "groups": {
@@ -294,12 +294,12 @@
         "actions": "Actions"
       },
       "filter": {
-        "pods": "Pods only",
+        "pods": "Projects only",
         "rooms": "Rooms only",
         "posts": "Posts only"
       },
       "clearFilter": "Clear filter",
-      "hint": "Up and down to move, Enter to run, Tab to jump groups, Esc to close",
+      "hint": "Select: arrows · Open: Enter · Groups: Tab · Close: Esc",
       "year": "Year {year}",
       "entries": "{count, plural, one {# entry} other {# entries}}",
       "close": "Close search"
@@ -307,16 +307,16 @@
     "actions": {
       "downloadCv": "Download CV",
       "copyEmail": "Copy email",
-      "toggleLanguage": "Baca dalam Bahasa Indonesia",
-      "toggleSound": "Toggle sound",
+      "toggleLanguage": "Baca dalam bahasa Indonesia",
+      "toggleSound": "Turn sound on or off",
       "quickView": "Quick view"
     },
     "status": {
-      "running": "Mission running: {mission}",
+      "running": "On a mission: {mission}",
       "cancel": "Cancel mission",
-      "cancelled": "o_o mission cancelled",
+      "cancelled": "mission cancelled o_o",
       "copied": "Email copied ^_^",
-      "copyFailed": "Could not copy, email is {email}"
+      "copyFailed": "Could not copy email. Contact me at {email}."
     },
     "career": {
       "prologue": "Prologue",
