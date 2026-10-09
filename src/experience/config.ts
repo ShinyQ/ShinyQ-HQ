@@ -1,5 +1,6 @@
 import type { FloorId } from "@/content/schema";
-import type { FloorLayout, Rect, Vec2 } from "./types";
+import { buildLabsLayout } from "./floors/labs/layout";
+import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
 /** Tower constants from spec appendix 01 section 1. */
 export const FLOOR_GAP = 14;
@@ -7,7 +8,7 @@ export const FLOOR_IDS = ["L1", "L2", "L3", "L4", "RF"] as const satisfies reado
 export const SLAB_THICKNESS = 0.4;
 
 /** Floors whose 3D content is built. Others are placeholders and keep the URL at /{locale}. */
-export const READY_FLOORS: readonly FloorId[] = ["L1"];
+export const READY_FLOORS: readonly FloorId[] = ["L1", "L3"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -99,8 +100,8 @@ function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec
   };
 }
 
-/** Floor-local layouts. Only L1 has content in Phases 1 and 2; the rest are placeholder slabs. */
-export function buildFloorLayouts(yearCount: number): Record<FloorId, FloorLayout> {
+/** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
+export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, kiosk } = LOBBY;
   return {
     L1: standard(
@@ -115,8 +116,8 @@ export function buildFloorLayouts(yearCount: number): Record<FloorId, FloorLayou
       LOBBY.spawn,
     ),
     L2: standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 }),
-    // Placeholder: the shaft pierces the L3 footprint (see the plan, decision 3).
-    L3: standard("L3", { minX: -52, maxX: 52, minZ: -22, maxZ: 22 }, [rect(SHAFT.x, SHAFT.z, SHAFT.size, SHAFT.size)]),
+    // Atrium in front of the shaft door, wings as mirror halls running east (Phase 4 plan, decision 1).
+    L3: buildLabsLayout(extras.labs ?? []).floor,
     L4: standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }),
     RF: standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }),
   };

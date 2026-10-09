@@ -26,8 +26,12 @@ const ROOMS: RoomInfo[] = [
   room({ id: "L1:skills", floor: "L1", kind: "lobby", path: "/#skills" }),
   room({ id: "L2:jenius-2024", floor: "L2", kind: "career", year: 2024, path: "/journey/jenius-2024" }),
   room({ id: "L3:voice-ai", floor: "L3", kind: "pod", wing: "ai", path: "/labs/voice-ai" }),
+  room({ id: "L3:listed", floor: "L3", kind: "pod", wing: "software", tier: "listed", path: "/labs/listed" }),
+  room({ id: "L4:post", floor: "L4", kind: "post", path: "/blog/post" }),
 ];
-const layouts = buildFloorLayouts(8);
+const layouts = buildFloorLayouts(8, {
+  labs: [{ id: "voice-ai", slug: "voice-ai", title: "Voice AI", tier: "hero", wing: "ai", accent: "violet", hologram: "waveform", order: 0, hasHologramView: true }],
+});
 const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 const signal = () => new AbortController().signal;
 
@@ -53,9 +57,12 @@ describe("roomTarget", () => {
     expect(p.z).toBeGreaterThan(-15);
   });
 
-  it("uses the year segment on L2 and the wing side on L3", () => {
+  it("uses the year segment on L2, pod doors on L3 and the wing directory for listed items", () => {
     expect(roomTarget(ROOMS[1], "L2:jenius-2024", layouts, years)).toEqual({ x: -20 + 14 * 5 + 7, z: 0 });
-    expect(roomTarget(ROOMS[2], "L3:voice-ai", layouts, years).x).toBeGreaterThan(0);
+    expect(roomTarget(ROOMS[2], "L3:voice-ai", layouts, years)).toEqual(layouts.L3.doors![0].at);
+    const listed = roomTarget(ROOMS[3], "L3:listed", layouts, years);
+    expect(listed.z).toBeLessThan(0);
+    expect(listed.x).toBeLessThan(-10);
   });
 
   it("falls back near the floor label", () => {
@@ -97,13 +104,33 @@ describe("3D mission host", () => {
     await expect(drive).resolves.toBeUndefined();
   });
 
-  it("keeps Lobby rooms in 3D and opens other rooms as pages", async () => {
+  it("opens rooms on built floors in the drawer and other rooms as pages", async () => {
     const { store, deps, host } = setup();
     await host.openRoom("L1:skills", undefined, { signal: signal(), missionId: "m" });
-    expect(deps.navigate).not.toHaveBeenCalled();
+    expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L1:skills" });
     await host.openRoom("L3:voice-ai", "architecture", { signal: signal(), missionId: "m" });
-    expect(deps.navigate).toHaveBeenCalledWith("/en/labs/voice-ai#architecture");
-    expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai"]);
+    expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L3:voice-ai", drawerTab: "architecture" });
+    expect(deps.navigate).not.toHaveBeenCalled();
+    await host.openRoom("L4:post", undefined, { signal: signal(), missionId: "m" });
+    expect(deps.navigate).toHaveBeenCalledWith("/en/blog/post");
+    expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai", "L4:post"]);
+  });
+
+  it("closes the hologram before riding to another floor, and fails a blocked ride instead of hanging", async () => {
+    const { store, host } = setup();
+    store.getState().openRoom("L1:skills");
+    store.getState().openHologram();
+    await host.elevator("L3", { signal: signal(), missionId: "m" });
+    expect(store.getState()).toMatchObject({ floor: "L3", activeRoom: null });
+    store.getState().setPhase("palette");
+    await expect(host.elevator("L1", { signal: signal(), missionId: "m" })).rejects.toThrow(/unavailable/);
+  });
+
+  it("closes an open room before driving away", async () => {
+    const { store, host } = setup();
+    store.getState().openRoom("L1:skills");
+    await host.driveTo("L1:profile", { signal: signal(), missionId: "m" });
+    expect(store.getState()).toMatchObject({ phase: "explore", activeRoom: null });
   });
 
   it("says text in the visitor's locale and opens the palette", async () => {

@@ -89,6 +89,35 @@ describe("HQ store", () => {
     expect(store.getState().activeRoom).toBeNull();
   });
 
+  it("opens rooms on a tab, keeps the tab and README per room, and resets them on a new room", () => {
+    store.getState().openRoom("L3:voice-ai", "results");
+    expect(store.getState().drawerTab).toBe("results");
+    store.getState().toggleReadme();
+    store.getState().openRoom("L3:voice-ai");
+    expect(store.getState()).toMatchObject({ drawerTab: "results", readme: true });
+    store.getState().openRoom("L3:fraud");
+    expect(store.getState()).toMatchObject({ drawerTab: "overview", readme: false });
+    store.getState().setDrawerTab("stack");
+    expect(store.getState().drawerTab).toBe("stack");
+    store.getState().closeRoom();
+    expect(store.getState().readme).toBe(false);
+  });
+
+  it("enters and leaves the hologram view of the active room and blocks the elevator meanwhile", () => {
+    store.getState().openHologram();
+    expect(store.getState().phase).toBe("explore");
+    store.getState().openRoom("L3:voice-ai");
+    store.getState().openHologram();
+    expect(store.getState().phase).toBe("hologram");
+    store.getState().requestElevator("up");
+    expect(store.getState().ride).toBeNull();
+    store.getState().closeHologram();
+    expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L3:voice-ai" });
+    store.getState().openHologram();
+    store.getState().closeRoom();
+    expect(store.getState()).toMatchObject({ phase: "explore", activeRoom: null });
+  });
+
   it("switches to the static phase when the tier drops to static", () => {
     store.getState().setTier("static");
     expect(store.getState()).toMatchObject({ tier: "static", phase: "static" });

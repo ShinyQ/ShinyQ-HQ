@@ -27,7 +27,9 @@ export function switchLocale(target: Locale) {
   s.setLocale(target);
   const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
   // A full load re-initializes next-intl with the other locale's messages; the resume record skips boot and intro.
-  const path = `${serializeHQUrl({ locale: target, floor, activeRoom: null, view: null })}${window.location.search}`;
+  // The open room (if it has its own page on this floor) survives the switch; its route reopens it.
+  const room = s.activeRoom && s.activeRoom.startsWith(`${floor}:`) ? s.activeRoom : null;
+  const path = `${serializeHQUrl({ locale: target, floor, activeRoom: room, view: null })}${window.location.search}`;
   window.location.assign(new URL(path, window.location.origin).href);
 }
 

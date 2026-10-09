@@ -11,6 +11,7 @@ import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
+import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { faceFor } from "../rover/faces";
@@ -50,6 +51,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     lastSync: 0,
     now: 0,
     prevPhase: "",
+    door: { room: null } as DoorLatch,
   });
 
   useEffect(() => {
@@ -65,7 +67,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           local.pendingMove = { x: intent.x, y: intent.y };
           break;
         case "goto": {
-          if (!controller || (s.phase !== "explore" && s.phase !== "elevator")) break;
+          // Clicking the floor while a room is open closes the drawer and drives away (appendix 02).
+          if (s.phase === "room") s.closeRoom();
+          if (!controller || (store.getState().phase !== "explore" && s.phase !== "elevator")) break;
           if (s.ride && s.ride.stage !== "toDoor") break;
           if (s.ride) s.cancelRide();
           const path = findPath(grids[s.floor], controller.pose, intent.point);
@@ -88,6 +92,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
             controller.clearPath();
             roverRuntime.target = null;
           }
+          break;
+        case "open":
+          if (s.phase === "explore" || s.phase === "room") s.openRoom(intent.room);
           break;
         case "toggle":
           if (intent.what === "sound") audio.toggleMuted();
@@ -131,7 +138,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.target = null;
     }
 
-    local.controller ??= new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
+    if (!local.controller) {
+      local.controller = new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
+      // Starting inside a door zone (resume, re-entry) must not reopen a room the visitor closed.
+      local.door.room = doorAt(layouts[s.floor].doors, local.controller.pose)?.room ?? null;
+    }
     const controller = local.controller;
 
     // Held keys and the joystick emit `move` every frame (appendix 03 section 3).
@@ -200,7 +211,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         }
       }
       roverRuntime.target = null;
-    } else if (s.phase === "explore") {
+    } else if (s.phase === "explore" || s.phase === "room" || s.phase === "hologram") {
+      // With a room open the rover finishes its path but takes no manual input.
       const request = roverRuntime.autopilot;
       if (request?.state === "pending" && !manual) {
         const path = findPath(grids[s.floor], controller.pose, request.point);
@@ -224,6 +236,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         roverRuntime.target = null;
       }
     }
+
+    // Door triggers (every floor): fire once the rover stands in a zone or drives in manually.
+    const door = s.ride ? null : doorAt(layouts[s.floor].doors, controller.pose);
+    const open = stepDoorLatch(local.door, door?.room ?? null, { explore: s.phase === "explore", following: controller.following });
+    if (open) intents.emit({ type: "open", room: open });
 
     const pose = controller.pose;
     audio.setRumble(pose.speed);

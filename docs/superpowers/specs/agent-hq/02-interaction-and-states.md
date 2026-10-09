@@ -65,8 +65,8 @@ type MissionStep =
 
 | id | Label (EN) | Steps |
 |---|---|---|
-| `best-ai` | Show me your best AI work | elevator L3 → drive east to the top AI Wing hero pod → open overview |
-| `best-swe` | Show me your software engineering | elevator L3 → drive west to the top Software Wing hero pod → open overview |
+| `best-ai` | Show me your best AI work | elevator L3 → drive to the door of the top AI Wing hero pod → open overview |
+| `best-swe` | Show me your software engineering | elevator L3 → drive to the door of the top Software Wing hero pod → open overview |
 | `journey` | Walk me through your journey | elevator L2 → drive to 2019 → `say` "drive or swipe forward through time" |
 | `projects` | All projects | elevator L3 → stop in the atrium → open the palette filtered to pods |
 | `hire` | Hire / contact | elevator RF → drive to the comms terminals → open contact |

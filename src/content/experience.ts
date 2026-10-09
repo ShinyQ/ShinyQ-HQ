@@ -1,4 +1,6 @@
-import type { ExperienceData } from "@/experience/types";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
+import type { ExperienceData, LabPod } from "@/experience/types";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
 import {
   getCertifications,
@@ -13,6 +15,21 @@ import {
   getYears,
 } from "./load";
 import type { FloorId, Locale } from "./schema";
+
+/** L3 pods in wing order with only what the 3D floor draws (the drawer loads full content separately). */
+export function labPods(locale: Locale): LabPod[] {
+  return getPods().map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title[locale],
+    tier: p.tier,
+    wing: p.wing,
+    accent: p.accent,
+    hologram: p.hologram,
+    order: p.order,
+    hasHologramView: p.tier === "hero" && (p.architecture?.nodes.length ?? 0) >= 3,
+  }));
+}
 
 /** Rooms the tower will contain once every floor is built (used for the visited n/N counter). */
 export function countRooms(): number {
@@ -53,5 +70,6 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     ) as ExperienceData["floors"],
     years: getYears().map((y) => y.year),
     roomCount: countRooms(),
+    labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing },
   };
 }

@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { decideTier, readTierInputs } from "@/lib/gpu-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
+import type { FloorId, RoomId } from "@/content/schema";
 import type { ExperienceData, GpuTier } from "./types";
 
 const Experience = dynamic(() => import("./Experience"), { ssr: false });
@@ -36,7 +37,7 @@ function readView(): "3d" | "page" {
  * of the server-rendered page. Static tier, page view and server render all
  * leave the HTML page untouched.
  */
-export function ExperienceGate({ data }: { data: ExperienceData }) {
+export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
   const mounted = useMounted();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
@@ -85,6 +86,8 @@ export function ExperienceGate({ data }: { data: ExperienceData }) {
     <Experience
       data={data}
       tier={tier}
+      startFloor={startFloor}
+      startRoom={startRoom}
       onExit={() => {
         try {
           sessionStorage.setItem(VIEW_KEY, "page");

@@ -84,6 +84,33 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+/** L3 with the drawer open and the hologram view (deep links skip boot and intro). */
+for (const viewport of VIEWPORTS) {
+  for (const view of [
+    { name: "hq-l3-drawer", query: "", phase: "room" },
+    { name: "hq-l3-hologram", query: "&view=architecture", phase: "hologram" },
+  ]) {
+    test(`3D ${view.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: 1,
+        hasTouch: viewport.touch,
+        isMobile: viewport.name === "mobile",
+      });
+      const page = await context.newPage();
+      await asReturningVisitor(page);
+      await page.goto(`/en/labs/${heroPod.slug}?tier=${viewport.tier}${view.query}`);
+      await waitForHQ(page);
+      await waitForPhase(page, view.phase);
+      await page.evaluate(() => document.fonts.ready);
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(8000);
+      await page.screenshot({ path: shot(view.name, viewport) });
+      await context.close();
+    });
+  }
+}
+
 const OVERLAYS = [
   { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Missions" }).click() },
   {

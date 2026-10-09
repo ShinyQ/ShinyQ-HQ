@@ -93,6 +93,8 @@ export function Rover({ tier }: { tier: GpuTier }) {
     if (!root.current || !body.current) return;
 
     root.current.position.set(r.x, r.y, r.z);
+    // The hologram view frames a pod's diagram; the rover would stand between it and the camera.
+    root.current.visible = getHQStore().getState().phase !== "hologram";
     root.current.rotation.y = r.heading;
     body.current.rotation.z = r.tilt;
     body.current.position.y = t < r.hopUntil && !reduced ? Math.sin(((r.hopUntil - t) / 0.35) * Math.PI) * 0.3 : 0;

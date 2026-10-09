@@ -1,9 +1,18 @@
-import type { FloorId } from "@/content/schema";
+import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 
 export type Vec2 = { x: number; z: number };
 
 /** Axis-aligned rectangle on the floor plane (world units, floor-local). */
 export type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
+
+/** A room door: entering the square zone centered on `at` opens the room (appendix 03 section 1). */
+export interface DoorTrigger {
+  room: RoomId;
+  /** Center of the trigger zone, just outside the door. Missions drive here. */
+  at: Vec2;
+  /** Side of the square zone (default 2 u). */
+  size?: number;
+}
 
 export interface FloorLayout {
   id: FloorId;
@@ -16,6 +25,29 @@ export interface FloorLayout {
   obstacles: Rect[];
   spawn: Vec2;
   accent: string;
+  /** Door triggers checked by the Director every frame (generic for every floor). */
+  doors?: DoorTrigger[];
+}
+
+export type HologramKind = "waveform" | "shield" | "documents" | "graph" | "chart" | "template" | "pipeline";
+
+/** Pod summary for the L3 floor (locale-resolved, serializable). */
+export interface LabPod {
+  id: string;
+  slug: string;
+  title: string;
+  tier: Tier;
+  wing: Wing;
+  accent: Accent;
+  hologram: HologramKind;
+  order: number;
+  /** Hero pods with at least 3 architecture nodes open the hologram view. */
+  hasHologramView: boolean;
+}
+
+/** Optional per-floor inputs for `buildFloorLayouts` (each phase adds its own field). */
+export interface LayoutExtras {
+  labs?: readonly LabPod[];
 }
 
 export type GpuTier = "full" | "lite" | "static";
@@ -33,4 +65,6 @@ export interface ExperienceData {
   floors: Record<FloorId, { name: string; route: string }>;
   years: number[];
   roomCount: number;
+  /** L3 Labs: pods in wing order (hero, featured, listed, then `order`) and wing labels. */
+  labs: { pods: LabPod[]; wings: Record<Wing, string> };
 }

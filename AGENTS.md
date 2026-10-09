@@ -39,12 +39,14 @@ src/
   app/global-not-found.tsx      404.html
   app/sitemap.ts, robots.ts     static metadata routes (all locales, hreflang alternates)
   app/og/[...path]/route.tsx    build-time OG PNGs: /og/{locale}.png, /og/{locale}/{labs,blog}/{slug}.png
+  app/data/[...path]/route.ts   build-time Glass Drawer content: /data/rooms/{locale}.json
   components/                   static-page UI (server components unless noted)
   content/schema.ts             zod schemas, types via z.infer (appendix 06 + additions below)
   content/load.ts               getContent() and typed accessors
   content/selectors.ts          pure sorting and grouping helpers
   content/blog.ts               MDX discovery with translation fallback
-  content/experience.ts         buildExperienceData(locale, floorNames): small payload for the 3D chunk
+  content/experience.ts         buildExperienceData(locale, floorNames): small payload for the 3D chunk (labPods for L3)
+  content/room-views/           RoomView contract (types.ts) and one drawer-content builder per floor
   content/safety.ts             blocklist loading and forbidden patterns
   i18n/                         next-intl routing, request config, navigation, assertLocale
   lib/                          format (Intl dates), accent class maps, gpu-tier, url-sync, viewport
@@ -54,13 +56,15 @@ src/
   lib/og.tsx, og-cards.ts       Neon Grid OG card renderer and the list of cards
   lib/audio/                    procedural Web Audio engine + useAudio hook (see its README)
   experience/                   3D experience (see "3D experience" below)
+  experience/floors/labs/       L3: pure layout.ts, board.ts, hologramParts.ts plus R3F Atrium, Pods, PacketLanes, HologramStage
   experience/missions/          pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring)
-  hud/                          HUD over the canvas (profile card, elevator panel, controls, boot, joystick) plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events
+  hud/                          HUD over the canvas (profile card, elevator panel, controls, boot, joystick) plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events, HologramOverlay
+  hud/drawer/                   Glass Drawer: RoomDrawer (UI), DrawerHost (store, data, audio), bodies, layout, urlSync, data, ascii (README)
   store/useHQStore.ts           zustand store (appendix 06 section 2 plus documented additions)
-tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio
-tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud
+tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors, labs layout, room views, drawer layout and URL, ASCII, hologram
+tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, RoomDrawer
 tests/content/                  Vitest: dataset, public safety, assets
-e2e/                            Playwright: static routes, 3D experience (experience.spec.ts), missions + axe, opt-in screenshots
+e2e/                            Playwright: static routes, 3D experience (experience.spec.ts), Labs + drawer + hologram (labs.spec.ts), missions + axe, opt-in screenshots
 ```
 
 ## Content access
@@ -86,17 +90,30 @@ e2e/                            Playwright: static routes, 3D experience (experi
 - Metadata: `pageMetadata({ locale, path, title, description, type?, publishedTime?, tags?, image? })` from `src/lib/site.ts` adds canonical, `hreflang` alternates, Open Graph and Twitter cards. `image` defaults to `/og/{locale}.png`; use `ogImagePath(...)` for pod and post cards. A page that sets `openGraph` replaces the parent's, so always go through `pageMetadata`.
 - New page routes must be added to `src/lib/routes.ts` (sitemap). New pods and hosted posts get OG cards and sitemap entries automatically.
 
-## 3D experience (Phases 1 and 2)
+## 3D experience (Phases 1, 2 and 4)
 
-- `ExperienceGate` (client) runs on `/{locale}` only. It decides the tier (`src/lib/gpu-tier.ts`, `?tier=full|lite|static` override), then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page. While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
+- `ExperienceGate({ data, startFloor?, startRoom? })` (client) runs on `/{locale}`, `/{locale}/labs` (`startFloor="L3"`) and `/{locale}/labs/[slug]` (`startRoom="L3:slug"`); pages get `data` from `experienceDataFor(locale)` (`src/experience/gate-data.ts`). A start floor or room skips boot and intro, places the rover at the room's door (or the floor spawn) and opens the drawer; `?view=architecture` opens the hologram. It decides the tier (`src/lib/gpu-tier.ts`, `?tier=full|lite|static` override), then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page. While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The 3D chunk gets its content as a serializable `ExperienceData` prop from the server page, so it never bundles `site-content.json` or zod. Add Lobby data there, not by importing `@/content/load` in client code.
 - Data flow: input sources (`input/useInputSources.ts`, HUD buttons, joystick) emit intents on the `intents` bus. `scene/Director.tsx` consumes them each frame and drives the elevator ride machine (`tower/elevator.ts`), the `RoverController` (`rover/controller.ts`, `nav/navgrid.ts`, `nav/collision.ts`) and the store. Per-frame pose lives in `rover/runtime.ts` (mutated in `useFrame`, never read in render). HUD and scene talk only through the store and intents.
 - Pure modules (config, elevator, rigs, movement, faces, navgrid, collision, intents, url-sync, gpu-tier, viewport) must stay free of React and three side effects so Vitest can run them in node.
 - Floors above the rover render as ghosts each frame (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`. Only the current floor, the ride target and their neighbours mount content.
-- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content (Phase 2: `["L1"]`). URL sync writes floor routes only for ready floors; placeholders keep `/{locale}` and the HUD links to their HTML page. Add a floor there when its phase ships, and mount the gate on its route.
-- Store additions beyond appendix 06: `ride` (elevator ride state), `device` (`viewport`, `camera`, `coarse`), `reducedMotion`, `notice`. Persisted keys are `visited`, `firstVisit`, `locale` (key `hq:v1`); `sound` mirrors the audio engine (`@/lib/audio`, `localStorage["hq:sound"]`), which is the source of truth. The Director plays `ding` on elevator arrival, `beep` when the rover opens the terminal, and feeds `setRumble(speed)` every frame. `sessionStorage` keys: `hq:view` (page view), `hq:resume` (language switch resumes the floor without boot or intro).
-- Deviations from the spec (kept deliberately): the tier gate is a local heuristic instead of `detect-gpu` (no runtime CDN fetch; software renderers such as SwiftShader map to `static` like detect-gpu tier 0, so headless browsers and Lighthouse see the HTML page unless `?tier=` is set); the L3 elevator door stays at `(-24, 0)` until Phase 4 resolves the atrium door at `(0, -7)` against the shaft at `x = -28`; the rover spawns turned toward the camera so its face greets the visitor.
-- `window.__hq` exposes `{ store, rover }` for Playwright. E2E tests run WebGL on SwiftShader (`playwright.config.ts` launch args).
+- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content (Phase 4: `["L1", "L3"]`). URL sync writes floor routes only for ready floors; placeholders keep `/{locale}` and the HUD links to their HTML page. Add a floor there when its phase ships, and mount the gate on its route.
+- `buildFloorLayouts(yearCount, extras: LayoutExtras = {})`: each floor phase adds its own optional input field to `LayoutExtras` (`types.ts`; Phase 4 adds `labs`) instead of a new positional parameter.
+- Door triggers are generic: fill `FloorLayout.doors` (`{ room, at, size? }`, 2 x 2 zone centered on `at`). The Director (`nav/doors.ts`) fires `{ type: "open", room }` once the rover stands in a zone or drives in manually (not while following a path through it), latched until it leaves, and handles it with `openRoom`. `roomTarget` (host3d) drives to `door.at` for any room with a door.
+- Store additions beyond appendix 06: `ride` (elevator ride state), `device` (`viewport`, `camera`, `coarse`), `reducedMotion`, `notice`, `readme` (README view in the drawer); actions `openRoom(room, tab?)`, `setDrawerTab`, `toggleReadme(on?)`, `openHologram()` / `closeHologram()` (phase `hologram`, which also blocks the elevator). Persisted keys are `visited`, `firstVisit`, `locale` (key `hq:v1`); `sound` mirrors the audio engine (`@/lib/audio`, `localStorage["hq:sound"]`), which is the source of truth. The Director plays `ding` on elevator arrival, `beep` when the rover opens the terminal, and feeds `setRumble(speed)` every frame. `sessionStorage` keys: `hq:view` (page view), `hq:resume` (language switch resumes the floor without boot or intro).
+- Deviations from the spec (kept deliberately): the tier gate is a local heuristic instead of `detect-gpu` (no runtime CDN fetch; software renderers such as SwiftShader map to `static` like detect-gpu tier 0, so headless browsers and Lighthouse see the HTML page unless `?tier=` is set); L3 keeps the global shaft and puts the atrium in front of its door, with the wings as mirror halls running east (Software north, AI south; appendix 01 section 4 is updated); the rover spawns turned toward the camera so its face greets the visitor.
+- `window.__hq` exposes `{ store, rover }` for Playwright. The rover hides during the hologram view; pod labels too.
+
+## Glass Drawer (shared room panel, Phase 4)
+
+- Every room on every floor renders through one drawer. It shows `store.activeRoom` while the phase is `room` and closes with `closeRoom()`. Open rooms with `store.getState().openRoom(id, tab?)` (or the `open` intent, a door trigger, or a mission `open` step: `host3d.openRoom` opens the drawer on READY floors and navigates to the room page elsewhere).
+- Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/types.ts`): header (`code`, `title`, `subtitle`, `meta`, `badges`, `accent`), `variant` (`"tabs"` for pods with Overview/Architecture/Results/Stack, `"single"` for everything else), `sections` (body, bullets, link items, chips), `metrics` (value, label, context), `architecture`, `stack` (`{ name, logo? }`), `gallery`, `page` (Full case study / Open page), `external`, `link` (room on another floor, run with `goToRoom` from `missions/bridge.ts`), `hologram`, `prev`/`next`.
+- One builder per floor in `src/content/room-views/` (`lobby`, `career`, `labs`, `library`, `roof`), aggregated by `buildRoomViews(locale)` and exported at build time to `/data/rooms/{locale}.json`. The drawer fetches it once (`loadRoomViews`), so pages do not grow. A floor phase owns its builder file; a test checks that every catalog room has a view.
+- Custom single-pane bodies: register `({ view, locale }) => JSX` per room kind in `src/hud/drawer/bodies.tsx`. Rooms without one use the generic renderer (metrics, sections, stack, gallery).
+- Layout: side panel (420 px) on desktop and landscape tablets at least 900 px wide, else a bottom sheet with snap points at 45% and 92% (`hud/drawer/layout.ts`). The follow camera shifts the rover 15% left or 20% up with `setViewOffset` while it is open.
+- Keyboard: focus moves in and is trapped; Esc closes; `t` toggles the README terminal view (`hud/drawer/ascii.ts` renders the architecture with box-drawing characters). The drawer is `aria-modal`, so world keys pause while it is open; clicking the floor closes it and drives.
+- URL (`hud/drawer/urlSync.ts`, mounted by Experience): opening pushes the room URL, switching rooms and the hologram replace it (`?view=architecture`), closing replaces it with the floor URL, back/forward reopen or close rooms. Other query params (`?tier=`) are kept.
+- Hologram view (hero pods with at least 3 nodes): `HologramStage` draws the diagram on the pod's stage by `layer`/`row`, packets on edges at 2 u/s, async edges dashed, a veil dims the world, and `camera/focus.ts` flies the camera in (`hologramPose`). `HologramOverlay` shows the result cards, prev/next hero pods (arrows, buttons, horizontal swipe) and Esc back to the drawer. E2E tests run WebGL on SwiftShader (`playwright.config.ts` launch args).
 
 ## Styling
 

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { experienceDataFor } from "@/experience/gate-data";
+import { ExperienceGate } from "@/experience/ExperienceGate";
 import { PodCard } from "@/components/PodCard";
 import { Container, PageHeader, Section } from "@/components/Section";
 import { getPods } from "@/content/load";
@@ -24,6 +26,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
 
   return (
     <Container>
+      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" />
       <PageHeader eyebrow={`L3 · ${tf("L3")}`} title={t("title")} intro={t("intro")} />
       {(["software", "ai"] as const).map((wing) => {
         const pods = getPods(wing);

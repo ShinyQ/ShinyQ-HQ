@@ -3,15 +3,18 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { FogExp2, PerspectiveCamera, Vector3 } from "three";
+import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore } from "@/store/useHQStore";
 import { intents } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
+import { cameraFocus } from "./focus";
 import {
   clampYaw,
   clampZoom,
   followPose,
   forwardOf,
+  hologramShift,
   INTRO_DURATION,
   introPose,
   railPose,
@@ -38,6 +41,7 @@ export function CameraDirector() {
     target: new Vector3(),
     desiredPos: new Vector3(),
     desiredTarget: new Vector3(),
+    shift: { x: 0, y: 0 },
   });
 
   useEffect(
@@ -69,7 +73,11 @@ export function CameraDirector() {
 
     let desired: CameraPose;
     let snap = false;
-    if (rig === "intro") {
+    const focus = s.phase === "hologram" ? cameraFocus.pose : null;
+    if (focus) {
+      desired = focus;
+      snap = s.reducedMotion;
+    } else if (rig === "intro") {
       const end = followPose(cls, roverTarget);
       snap = true;
       if (s.phase === "boot") {
@@ -110,7 +118,21 @@ export function CameraDirector() {
       camera.fov = snap ? desired.fov : camera.fov + (desired.fov - camera.fov) * springFactor(dt);
       camera.updateProjectionMatrix();
     }
-    roverRuntime.cameraForward = forwardOf(desired);
+    // Keep the rover (or the hologram) clear of HUD panels by shifting the view window (appendix 04).
+    const { width, height } = three.size;
+    const want =
+      s.phase === "hologram" && focus
+        ? hologramShift(width / Math.max(1, height))
+        : s.phase === "room" && s.activeRoom
+          ? cameraShift(drawerLayout(width, height))
+          : { x: 0, y: 0 };
+    const ks = s.reducedMotion ? 1 : springFactor(dt);
+    l.shift.x += (want.x - l.shift.x) * ks;
+    l.shift.y += (want.y - l.shift.y) * ks;
+    if (Math.abs(l.shift.x) > 1e-3 || Math.abs(l.shift.y) > 1e-3) camera.setViewOffset(width, height, l.shift.x * width, l.shift.y * height, width, height);
+    else if (camera.view?.enabled) camera.clearViewOffset();
+
+    if (!focus) roverRuntime.cameraForward = forwardOf(desired);
     roverRuntime.cameraPosition = [l.pos.x, l.pos.y, l.pos.z];
     if (scene.fog instanceof FogExp2) scene.fog.density = rig === "intro" ? INTRO_FOG_DENSITY : FOG_DENSITY;
   });
