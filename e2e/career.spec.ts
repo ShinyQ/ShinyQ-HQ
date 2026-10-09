@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -8,12 +8,6 @@ test.describe.configure({ timeout: 180_000 });
 type HQWindow = Window & {
   __hq: { store: { getState: () => { activeRoom: string | null; phase: string; floor: string; rover: { x: number; z: number } } } };
 };
-
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
 
 /** Opens an L2 route in 3D as a returning visitor; floor routes skip boot and intro. */
 async function openJourney(page: Page, path = "/en/journey") {

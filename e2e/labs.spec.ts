@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, enterHQ, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, enterHQ, waitForFloor, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
@@ -12,12 +12,6 @@ type HQ = { __hq: { store: { getState: () => { phase: string; floor: string; act
 const heroes = (["software", "ai"] as const).flatMap((wing) =>
   content.floors.labs.pods.filter((p) => p.wing === wing && p.tier === "hero").map((p) => p.slug),
 );
-
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
 
 async function state(page: Page) {
   return page.evaluate(() => {
