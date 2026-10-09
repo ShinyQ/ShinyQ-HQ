@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorIndex, floorY } from "../config";
+import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import { Labs, type LabsLabels } from "../floors/Labs";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
@@ -16,6 +17,7 @@ export interface TowerLabels {
   placeholder: PlaceholderLabels;
   lobby: LobbyLabels;
   labs: LabsLabels;
+  career: CareerLabels;
 }
 
 const FRAME_TOP = floorY("RF") + 10;
@@ -58,13 +60,10 @@ export function Tower({
                   <Lobby data={data} labels={labels.lobby} tier={tier} />
                 ) : id === "L3" ? (
                   <Labs data={data} labels={labels.labs} tier={tier} />
+                ) : id === "L2" ? (
+                  <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
                 ) : (
-                  <PlaceholderFloor
-                    layout={layouts[id]}
-                    name={data.floors[id].name}
-                    labels={labels.placeholder}
-                    years={id === "L2" && (floor === "L2" || target === "L2") ? data.years : undefined}
-                  />
+                  <PlaceholderFloor layout={layouts[id]} name={data.floors[id].name} labels={labels.placeholder} />
                 )}
               </Suspense>
             )}

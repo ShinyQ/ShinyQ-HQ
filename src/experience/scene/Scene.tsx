@@ -4,6 +4,7 @@ import { lazy, Suspense, useMemo, type RefObject } from "react";
 import "../text-config";
 import { CameraDirector } from "../camera/CameraDirector";
 import { buildFloorLayouts, COLORS } from "../config";
+import { careerLayoutInput } from "../floors/career/layout";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
 import type { ExperienceData, GpuTier } from "../types";
@@ -29,7 +30,7 @@ export function Scene({
   held: RefObject<Set<string>>;
   onToggleLang: () => void;
 }) {
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods }), [data.years.length, data.labs.pods]);
+  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
   return (
     <>
       <color attach="background" args={[COLORS.void]} />
