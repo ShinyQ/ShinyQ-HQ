@@ -10,3 +10,12 @@ coverage/
 playwright-report/
 test-results/
 .wrangler/
+/build
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+.vercel
+# Private public-safety blocklist (never commit)
+content/.safety-blocklist.local.txt
+content/_fragments/
+/screenshots/
