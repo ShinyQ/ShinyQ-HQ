@@ -47,17 +47,20 @@ export function createRoomUrlSync({
   locale,
   env,
   isReady,
+  hasPage = () => true,
 }: {
   store: RoomUrlStore;
   locale: Locale;
   env: UrlEnv;
   isReady: (floor: FloorId) => boolean;
+  /** Rooms without their own route (L4 shelves, Medium posts) keep the floor URL while open. */
+  hasPage?: (room: RoomId) => boolean;
 }): () => void {
   let applying = false;
   let pendingBack = false;
   const viewOf = (phase: string): HQView => (phase === "hologram" ? "architecture" : null);
   const urlFor = (floor: FloorId, room: RoomId | null, view: HQView) =>
-    withView(serializeHQUrl({ locale, floor: isReady(floor) ? floor : "L1", activeRoom: room, view: null }), env.location.search, view);
+    withView(serializeHQUrl({ locale, floor: isReady(floor) ? floor : "L1", activeRoom: room && hasPage(room) ? room : null, view: null }), env.location.search, view);
   const entry = () => (env.history.state as RoomEntry | null) ?? null;
   const write = (mode: "push" | "replace", url: string, room: RoomId | null) => {
     const current = `${env.location.pathname}${env.location.search}`;
@@ -104,7 +107,10 @@ export function createRoomUrlSync({
     }
     applying = true;
     try {
-      const room = parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : null;
+      // Rooms without their own route are remembered in the history entry instead of the URL.
+      const remembered = entry()?.hqRoom ?? null;
+      const room =
+        parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : remembered && remembered.startsWith(`${s.floor}:`) && !hasPage(remembered) ? remembered : null;
       if (room && room !== s.activeRoom) s.openRoom(room);
       else if (!room && s.activeRoom) s.closeRoom();
       const now = store.getState();

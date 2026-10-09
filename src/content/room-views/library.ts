@@ -1,22 +1,26 @@
 import { getLibrary, getPosts } from "../load";
 import type { Locale } from "../schema";
 import { formatDate, formatYearMonth } from "@/lib/format";
-import { chain, messages, roomId, single } from "./shared";
+import { chain, fill, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
-/** L4 Library (baseline, owned by Phase 5a): posts, the publications shelf and the talks stage. */
+/** L4 Library (Phase 5a): posts (hosted ones link their /blog page, Medium ones open externally), the publications shelf and the talks stage. */
 export function buildLibraryViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const library = getLibrary();
+  const badge = (languages: readonly Locale[]) => languages.map((l) => m.common.langBadge[l]).join("/");
   const posts = getPosts().map((post) =>
     single({
       id: roomId("L4", post.slug),
       kind: "post",
       title: post.title[locale],
       subtitle: post.excerpt[locale],
-      meta: [formatDate(post.date, locale), post.languages.map((l) => m.common.langBadge[l]).join("/")],
+      meta: [formatDate(post.date, locale), badge(post.languages)],
       accent: "white",
-      sections: post.tags.length ? [{ title: m.drawer.rooms.tags, chips: [...post.tags] }] : [],
+      sections: [
+        ...(post.languages.includes(locale) ? [] : [{ body: fill(m.drawer.rooms.writtenIn, { languages: badge(post.languages) }) }]),
+        ...(post.tags.length ? [{ title: m.drawer.rooms.tags, chips: [...post.tags] }] : []),
+      ],
       page: post.url ? undefined : `/blog/${post.slug}`,
       external: post.url,
     }),

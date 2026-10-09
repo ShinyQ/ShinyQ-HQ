@@ -45,7 +45,7 @@ export function useRoomViews(locale: Locale): RoomViews | null | "error" {
 }
 
 /** Mirrors the open room in the URL while the tower is open (mounted by Experience, outside the HUD phases). */
-export function useRoomUrlSync(locale: Locale) {
+export function useRoomUrlSync(locale: Locale, hasPage?: (room: RoomId) => boolean) {
   useEffect(
     () =>
       createRoomUrlSync({
@@ -60,8 +60,9 @@ export function useRoomUrlSync(locale: Locale) {
           },
         },
         isReady: (floor) => READY_FLOORS.includes(floor),
+        hasPage,
       }),
-    [locale],
+    [locale, hasPage],
   );
 }
 

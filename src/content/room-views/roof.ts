@@ -4,7 +4,7 @@ import { cvPdfPath } from "@/lib/site";
 import { chain, fill, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
-/** RF Roof (baseline, owned by Phase 5a): comms terminals and the CV kiosk. */
+/** RF Roof (Phase 5a): comms terminals and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
 export function buildRoofViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const roof = getRoof();

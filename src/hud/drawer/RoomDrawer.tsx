@@ -556,7 +556,7 @@ export function RoomDrawer({
               onClick={onLeave}
               className="inline-flex min-h-11 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
             >
-              {view.kind === "pod" ? tc("caseStudy") : t("openPage")}
+              {view.kind === "pod" ? tc("caseStudy") : view.kind === "post" ? t("rooms.readPost") : t("openPage")}
             </Link>
           )}
           {view.external && (
