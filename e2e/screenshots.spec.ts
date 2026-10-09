@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -38,6 +38,57 @@ async function open3D(browser: Browser, v: Viewport) {
   await waitForPhase(page, "explore");
   await page.evaluate(() => document.fonts.ready);
   return { context, page };
+}
+
+/** Deep links a floor route (no intro). */
+async function open3DAt(browser: Browser, v: Viewport, path: string) {
+  const context = await browser.newContext({
+    viewport: { width: v.width, height: v.height },
+    deviceScaleFactor: 1,
+    hasTouch: v.touch,
+    isMobile: v.name === "mobile",
+  });
+  const page = await context.newPage();
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=${v.tier}`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await page.evaluate(() => document.fonts.ready);
+  return { context, page };
+}
+
+/** Opens a room through the command palette (drive and open), like a visitor would. */
+async function openRoomFromPalette(page: Page, query: string, room: string) {
+  await page.getByRole("button", { name: /Open search/ }).click();
+  await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
+  await page.keyboard.type(query);
+  await page.keyboard.press("Enter");
+  await waitForRoom(page, room, 90_000);
+}
+
+const FLOOR_SHOTS = [
+  { name: "hq-l4-library", path: "/en/library" },
+  { name: "hq-rf-roof", path: "/en/contact" },
+  { name: "hq-l4-post", path: "/en/library", query: "The Sun, The Moon", room: "L4:the-sun-the-moon-and-the-dark-sea" },
+  { name: "hq-rf-comms", path: "/en/contact", query: "Comms terminals", room: "RF:contact" },
+] as const;
+
+for (const viewport of VIEWPORTS) {
+  for (const floor of FLOOR_SHOTS) {
+    test(`3D ${floor.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      test.setTimeout(180_000);
+      const { context, page } = await open3DAt(browser, viewport, floor.path);
+      // Floor content mounts behind Suspense once its fonts are ready. On lite, wait until it draws; the full
+      // tier renders through the bloom composer, whose final pass is a single draw call, so give it time instead.
+      if (viewport.tier === "lite") {
+        await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 35, null, { timeout: 90_000 });
+      } else await page.waitForTimeout(8000);
+      if ("room" in floor) await openRoomFromPalette(page, floor.query, floor.room);
+      await page.waitForTimeout(3000);
+      await page.screenshot({ path: shot(floor.name, viewport) });
+      await context.close();
+    });
+  }
 }
 
 for (const viewport of VIEWPORTS) {

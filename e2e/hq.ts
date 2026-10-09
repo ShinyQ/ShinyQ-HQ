@@ -103,3 +103,23 @@ export async function waitForCameraSettle(page: Page) {
     { timeout: 20_000, polling: 100 },
   );
 }
+
+/** Opens a floor route (deep link) as a returning visitor and waits for explore: no boot, no intro. */
+export async function enterFloorRoute(page: Page, path: string, { tier = "lite" }: { tier?: string } = {}) {
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=${tier}`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+}
+
+/** Waits until the Glass Drawer shows `room`. */
+export async function waitForRoom(page: Page, room: string, timeout = 90_000) {
+  await page.waitForFunction(
+    (r) => {
+      const s = (window as unknown as { __hq: { store: { getState: () => { activeRoom: string | null; phase: string } } } }).__hq.store.getState();
+      return s.activeRoom === r && s.phase === "room";
+    },
+    room,
+    { timeout },
+  );
+}

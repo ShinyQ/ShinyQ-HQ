@@ -259,9 +259,10 @@ test.describe("missions in 3D", () => {
     await expect(terminal).toBeVisible();
     await page.keyboard.press("5");
     await expect(terminal).toBeHidden();
-    // The rover drives to the elevator and rides to the Roof before the contact page opens.
+    // The rover drives to the elevator, rides to the Roof and opens the comms terminals in the drawer.
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride !== null);
-    await expect(page).toHaveURL(/\/en\/contact$/, { timeout: 60_000 });
+    await expect(page.getByTestId("room-drawer")).toHaveAttribute("data-room", "RF:contact", { timeout: 60_000 });
+    await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     expect(errors).toEqual([]);
   });
 
