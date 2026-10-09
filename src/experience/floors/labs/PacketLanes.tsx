@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Object3D, type InstancedMesh } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
@@ -35,6 +35,7 @@ export function PacketLanes({ lanes, packets }: { lanes: P[][]; packets: number 
     for (const lane of lanes) batch.path(lane, 0.03, COLORS.lane);
     return batch.build();
   }, [lanes]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
   const measured = useMemo(() => lanes.map(measure), [lanes]);
   const seeds = useMemo(() => {
     // Longer lanes get more packets.

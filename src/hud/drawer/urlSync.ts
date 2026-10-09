@@ -16,13 +16,15 @@ export interface RoomUrlStore {
 }
 
 export interface UrlEnv {
-  history: Pick<History, "pushState" | "replaceState" | "state">;
+  history: Pick<History, "pushState" | "replaceState" | "back" | "state">;
   location: { pathname: string; search: string };
   onPopState: (listener: () => void) => () => void;
 }
 
 interface RoomEntry {
   hqRoom: RoomId | null;
+  /** The entry was pushed by opening a room, so closing it can go back instead of adding history. */
+  hqPushed?: boolean;
 }
 
 /** Keeps the query (e.g. `?tier=lite`) and sets or removes `view=architecture`. */
@@ -36,8 +38,9 @@ export function withView(path: string, search: string, view: HQView): string {
 
 /**
  * Mirrors the open room in the URL (appendix 06 section 3): opening pushes the room URL, switching
- * rooms and toggling the hologram replace it, closing replaces it with the floor URL. Back and
- * forward reopen or close rooms on the current floor. Returns a disposer.
+ * rooms and toggling the hologram replace it, closing goes back to the floor entry it came from (or
+ * replaces the URL when the room was the landing page). Back and forward reopen or close rooms on
+ * the current floor. Returns a disposer.
  */
 export function createRoomUrlSync({
   store,
@@ -51,30 +54,54 @@ export function createRoomUrlSync({
   isReady: (floor: FloorId) => boolean;
 }): () => void {
   let applying = false;
+  let pendingBack = false;
   const viewOf = (phase: string): HQView => (phase === "hologram" ? "architecture" : null);
   const urlFor = (floor: FloorId, room: RoomId | null, view: HQView) =>
     withView(serializeHQUrl({ locale, floor: isReady(floor) ? floor : "L1", activeRoom: room, view: null }), env.location.search, view);
+  const entry = () => (env.history.state as RoomEntry | null) ?? null;
   const write = (mode: "push" | "replace", url: string, room: RoomId | null) => {
     const current = `${env.location.pathname}${env.location.search}`;
-    if (mode === "replace" && current === url) return;
-    const state: RoomEntry = { ...((env.history.state as object | null) ?? {}), hqRoom: room };
-    if (mode === "push") env.history.pushState(state, "", url);
-    else env.history.replaceState(state, "", url);
+    if (mode === "replace" && current === url && entry()?.hqRoom === room) return;
+    const base = (env.history.state as object | null) ?? {};
+    if (mode === "push") env.history.pushState({ ...base, hqRoom: room, hqPushed: true } satisfies RoomEntry, "", url);
+    else env.history.replaceState({ ...base, hqRoom: room } satisfies RoomEntry, "", url);
+  };
+  const resync = () => {
+    const s = store.getState();
+    write("replace", urlFor(s.floor, s.activeRoom, viewOf(s.phase)), s.activeRoom);
   };
 
   const off = store.subscribe((s, prev) => {
     if (applying) return;
     const view = viewOf(s.phase);
     if (s.activeRoom === prev.activeRoom && view === viewOf(prev.phase)) return;
-    if (s.activeRoom && !prev.activeRoom) write("push", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
+    // While a back() is in flight, only replace; the popstate handler resyncs afterwards.
+    if (s.activeRoom && !prev.activeRoom && !pendingBack) write("push", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
     else if (s.activeRoom) write("replace", urlFor(s.floor, s.activeRoom, view), s.activeRoom);
-    else if (prev.activeRoom && s.floor === prev.floor) write("replace", urlFor(s.floor, null, null), null);
+    else if (prev.activeRoom && s.floor === prev.floor) {
+      const top = entry();
+      if (top?.hqPushed && top.hqRoom === prev.activeRoom && !pendingBack) {
+        pendingBack = true;
+        env.history.back();
+      } else write("replace", urlFor(s.floor, null, null), null);
+    }
   });
 
   const offPop = env.onPopState(() => {
+    if (pendingBack) {
+      // Our own back() after closing a room: the store is already right; fix the URL if it moved on.
+      pendingBack = false;
+      resync();
+      return;
+    }
     const parsed = parseHQUrl(env.location.pathname, env.location.search);
     const s = store.getState();
     if (!parsed) return;
+    if (parsed.floor !== (isReady(s.floor) ? s.floor : "L1")) {
+      // History from another floor: keep the URL on the floor the rover is on.
+      resync();
+      return;
+    }
     applying = true;
     try {
       const room = parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : null;

@@ -38,6 +38,7 @@ export function showHologram(room: RoomId) {
  */
 export function HologramOverlay({ locale }: { locale: Locale }) {
   const t = useTranslations("drawer.hologram");
+  const tDrawer = useTranslations("drawer");
   const phase = useHQStore((s) => s.phase);
   const activeRoom = useHQStore((s) => s.activeRoom);
   const views = useRoomViews(locale);
@@ -59,8 +60,13 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
   });
 
   const shown = Boolean(view);
+  // Only hero pods have a hologram (a hand-written ?view=architecture on another room falls back to the drawer).
+  const noHologram = open && Boolean(view) && !view?.hologram;
   useEffect(() => {
-    if (!open || !shown) return;
+    if (noHologram) getHQStore().getState().closeHologram();
+  }, [noHologram]);
+  useEffect(() => {
+    if (!open) return;
     panel.current?.focus({ preventScroll: true });
     const offScrub = intents.on((intent) => {
       if (intent.type === "scrub" && Math.abs(intent.dx) > SWIPE_PX) stepRef.current(intent.dx < 0 ? 1 : -1);
@@ -85,7 +91,20 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
     };
   }, [open, shown, activeRoom]);
 
-  if (!view) return null;
+  if (!open) return null;
+  if (!view || !view.hologram) {
+    // Room data still loading (or failed): keep a way back instead of an empty screen.
+    return (
+      <div ref={panel} role="dialog" aria-modal="true" aria-label={t("title")} tabIndex={-1} data-testid="hologram" className="pointer-events-none absolute inset-0 z-20 outline-none">
+        <div role="status" className="glass pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 px-4 py-2 text-sm text-ink-2">
+          {views === "error" ? tDrawer("unavailable") : tDrawer("loading")}
+          <button type="button" onClick={() => getHQStore().getState().closeHologram()} className="link min-h-11">
+            {t("back")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const nav = "glass pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
 

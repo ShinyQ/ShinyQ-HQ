@@ -2,7 +2,7 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { BufferGeometry, Float32BufferAttribute, Object3D, type Group, type InstancedMesh, type LineSegments } from "three";
 import type { Locale } from "@/content/schema";
 import type { RoomArchitecture, RoomViews } from "@/content/room-views/types";
@@ -46,6 +46,13 @@ function Diagram({ pod, arch, tier }: { pod: PlacedPod; arch: RoomArchitecture; 
   const dummy = useMemo(() => new Object3D(), []);
   const start = useRef<number | null>(null);
   const rotation = pod.facing > 0 ? 0 : Math.PI;
+  useEffect(
+    () => () => {
+      sync.dispose();
+      async.dispose();
+    },
+    [sync, async],
+  );
 
   useEffect(() => {
     start.current = null;
@@ -102,9 +109,12 @@ function Diagram({ pod, arch, tier }: { pod: PlacedPod; arch: RoomArchitecture; 
           renderOrder={6}
         >
           <GlassBox size={[w, h, 0.08]} color={KIND_COLOR[node.kind]} fillOpacity={tier === "full" ? 0.22 : 0.3} />
-          <Text font={FONTS.sansBold} fontSize={0.19 * laid.scale + 0.03} maxWidth={w - 0.15} textAlign="center" color="#f4f4f5" anchorX="center" anchorY="middle" position={[0, 0, 0.06]}>
-            {node.label}
-          </Text>
+          {/* Labels load fonts asynchronously; the board and the fly-in must not wait for them. */}
+          <Suspense fallback={null}>
+            <Text font={FONTS.sansBold} fontSize={0.19 * laid.scale + 0.03} maxWidth={w - 0.15} textAlign="center" color="#f4f4f5" anchorX="center" anchorY="middle" position={[0, 0, 0.06]}>
+              {node.label}
+            </Text>
+          </Suspense>
         </group>
       ))}
       <group ref={edgeGroup}>

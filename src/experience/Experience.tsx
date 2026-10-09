@@ -47,27 +47,38 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setLocale(data.locale);
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
-  if (started) return;
-  started = true;
-  const resume = takeResume();
   const place = (floor: FloorId, at: { x: number; z: number }) => {
     s.resume(floor, at);
     roverRuntime.x = at.x;
     roverRuntime.z = at.z;
   };
+  const doorOf = (floor: FloorId, room?: RoomId) => (room ? layouts[floor].doors?.find((d) => d.room === room)?.at : undefined);
+  const openStartRoom = () => {
+    if (!startRoom || floorOf(startRoom) !== getHQStore().getState().floor) return;
+    getHQStore().getState().openRoom(startRoom);
+    if (parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture") getHQStore().getState().openHologram();
+  };
+  if (started) {
+    // Re-entering 3D on another route (page view, then "Explore in 3D"): start where that route is.
+    const target = startFloor && READY_FLOORS.includes(startFloor) ? startFloor : "L1";
+    const now = getHQStore().getState();
+    if (!now.ride && (now.floor !== target || startRoom)) {
+      place(target, doorOf(target, startRoom) ?? layouts[target].spawn);
+      openStartRoom();
+    }
+    return;
+  }
+  started = true;
+  const resume = takeResume();
   if (resume) {
     place(resume.floor, { x: resume.x, z: resume.z });
   } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
-    const door = startRoom ? layouts[startFloor].doors?.find((d) => d.room === startRoom) : undefined;
-    place(startFloor, door?.at ?? layouts[startFloor].spawn);
+    place(startFloor, doorOf(startFloor, startRoom) ?? layouts[startFloor].spawn);
   } else {
     s.setPhase(s.firstVisit ? "boot" : "intro");
   }
   // Deep link (or a language switch on a room URL): open the room on the floor the rover is on.
-  if (startRoom && floorOf(startRoom) === getHQStore().getState().floor) {
-    getHQStore().getState().openRoom(startRoom);
-    if (parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture") getHQStore().getState().openHologram();
-  }
+  openStartRoom();
   // Test and debugging handle (read-only use from Playwright).
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
 }

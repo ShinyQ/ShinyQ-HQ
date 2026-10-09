@@ -138,7 +138,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.target = null;
     }
 
-    local.controller ??= new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
+    if (!local.controller) {
+      local.controller = new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
+      // Starting inside a door zone (resume, re-entry) must not reopen a room the visitor closed.
+      local.door.room = doorAt(layouts[s.floor].doors, local.controller.pose)?.room ?? null;
+    }
     const controller = local.controller;
 
     // Held keys and the joystick emit `move` every frame (appendix 03 section 3).

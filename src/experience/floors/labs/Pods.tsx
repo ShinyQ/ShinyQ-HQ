@@ -58,6 +58,8 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
     return batch.build();
   }, [placed]);
 
+  useEffect(() => () => edges.dispose(), [edges]);
+
   useEffect(() => {
     const m = fills.current;
     if (!m) return;

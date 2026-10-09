@@ -92,8 +92,12 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
     async elevator(floor, ctx: StepContext) {
       const s = store.getState();
       if (s.phase === "boot" || s.phase === "intro") s.finishIntro();
+      // Leaving for another floor closes the open room (the hologram view blocks the elevator).
+      if (s.phase === "room" || s.phase === "hologram") s.closeRoom();
       if (store.getState().floor === floor && !store.getState().ride) return;
       store.getState().requestElevator(floor);
+      // A blocked request (overlay phase) would never arrive: fail the step so the mission ends.
+      if (!store.getState().ride) throw new Error(`Elevator to ${floor} unavailable in phase ${store.getState().phase}`);
       await waitUntil(() => {
         const now = store.getState();
         return now.floor === floor && now.ride === null;

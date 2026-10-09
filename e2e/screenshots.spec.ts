@@ -103,7 +103,8 @@ for (const viewport of VIEWPORTS) {
       await waitForHQ(page);
       await waitForPhase(page, view.phase);
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(4000);
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(8000);
       await page.screenshot({ path: shot(view.name, viewport) });
       await context.close();
     });

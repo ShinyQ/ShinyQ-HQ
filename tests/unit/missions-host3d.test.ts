@@ -116,6 +116,16 @@ describe("3D mission host", () => {
     expect(store.getState().visited).toEqual(["L1:skills", "L3:voice-ai", "L4:post"]);
   });
 
+  it("closes the hologram before riding to another floor, and fails a blocked ride instead of hanging", async () => {
+    const { store, host } = setup();
+    store.getState().openRoom("L1:skills");
+    store.getState().openHologram();
+    await host.elevator("L3", { signal: signal(), missionId: "m" });
+    expect(store.getState()).toMatchObject({ floor: "L3", activeRoom: null });
+    store.getState().setPhase("palette");
+    await expect(host.elevator("L1", { signal: signal(), missionId: "m" })).rejects.toThrow(/unavailable/);
+  });
+
   it("closes an open room before driving away", async () => {
     const { store, host } = setup();
     store.getState().openRoom("L1:skills");

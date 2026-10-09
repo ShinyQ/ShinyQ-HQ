@@ -34,6 +34,9 @@ function fakeEnv(start: string) {
         entries[index] = { url: String(url), state };
         sync();
       },
+      back() {
+        go(-1);
+      },
     } as UrlEnv["history"],
     location,
     onPopState: (listener) => {
@@ -62,7 +65,7 @@ describe("room URL sync", () => {
     expect(withView("/en", "", null)).toBe("/en");
   });
 
-  it("pushes on open, replaces on room switch and hologram, replaces with the floor URL on close", () => {
+  it("pushes on open, replaces on room switch and hologram, goes back to the floor entry on close", () => {
     const h = fakeEnv("/en/labs?tier=lite");
     const off = createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true });
     store.getState().openRoom("L3:voice-ai");
@@ -77,7 +80,32 @@ describe("room URL sync", () => {
     expect(h.url()).toBe("/en/labs/fraud?tier=lite");
     store.getState().closeRoom();
     expect(h.url()).toBe("/en/labs?tier=lite");
+    expect(store.getState().activeRoom).toBeNull();
+    // Closing went back instead of adding an entry, so Back now leaves the floor page.
+    store.getState().openRoom("L3:voice-ai");
+    expect(h.entries).toHaveLength(2);
     off();
+  });
+
+  it("replaces the URL when the room was the landing page (deep link)", () => {
+    const h = fakeEnv("/en/labs/voice-ai");
+    store.getState().openRoom("L3:voice-ai");
+    createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true });
+    store.getState().closeRoom();
+    expect(h.url()).toBe("/en/labs");
+    expect(h.entries).toHaveLength(1);
+  });
+
+  it("keeps the URL on the rover's floor when history points at another floor", () => {
+    const h = fakeEnv("/en/labs");
+    createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true });
+    store.getState().openRoom("L3:voice-ai");
+    // The elevator closes the room and the ride lands on L1 (the floor sync then rewrites the URL).
+    store.setState({ activeRoom: null, floor: "L1", phase: "explore" });
+    h.env.history.replaceState(h.env.history.state, "", "/en");
+    h.go(-1);
+    expect(h.url()).toBe("/en");
+    expect(store.getState().floor).toBe("L1");
   });
 
   it("reopens and closes rooms on back and forward without writing history", () => {
