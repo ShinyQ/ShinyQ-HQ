@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -159,9 +159,9 @@ test.describe("Career Archive on touch", () => {
     const errors = collectErrors(page);
     await openJourney(page);
     await waitForPhase(page, "explore");
-    // The SSR boot cover is released on the first canvas frame, which can come just after "explore";
-    // a touch before that lands on the cover instead of the canvas.
-    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-hq-boot"));
+    // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot
+    // cover or is dropped before the Director runs.
+    await waitForSceneLive(page);
     // Left swipe of ~60% of the width: two year stops forward (2019, then 2020 at x = 1).
     await swipe(page, [{ x: 320, y: 480 }, { x: 220, y: 482 }, { x: 80, y: 484 }]);
     await roverWhere(page, "x", ">", 0);
