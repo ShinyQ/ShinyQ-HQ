@@ -4363,7 +4363,27 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/03-intelligence-layer.webp",
+              "src": "/media/voice-ai-contact-center/03-admin-dashboard.webp",
+              "alt": {
+                "en": "ARIA operations console home: live calls, operators available, AI containment and escalation reasons over 7 days",
+                "id": "Beranda operations console ARIA: panggilan live, operator tersedia, containment AI, dan alasan eskalasi selama 7 hari"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/04-call-detail.webp",
+              "alt": {
+                "en": "Call detail with the event timeline, caller turns, knowledge searches and an AI summary of intent and next steps",
+                "id": "Detail panggilan dengan timeline event, ucapan penelepon, pencarian knowledge, dan ringkasan AI tentang intent serta langkah berikutnya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/05-intelligence-layer.webp",
               "alt": {
                 "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
                 "id": "Diagram reasoning loop: intent, knowledge retrieval, multi-agent reasoning, dan confidence scoring sebelum resolve atau eskalasi"
@@ -4373,7 +4393,37 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/04-human-handoff.webp",
+              "src": "/media/voice-ai-contact-center/06-agents.webp",
+              "alt": {
+                "en": "AI agent list with status, realtime voice model, knowledge bases and escalation targets",
+                "id": "Daftar AI agent dengan status, model voice realtime, knowledge base, dan target eskalasi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/07-knowledge.webp",
+              "alt": {
+                "en": "Knowledge bases with indexing health, document counts and the agents that use them",
+                "id": "Knowledge base dengan status indexing, jumlah dokumen, dan agent yang menggunakannya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/08-analytics.webp",
+              "alt": {
+                "en": "Analytics for containment, resolution, escalation and abandonment with daily call volume; cost blurred",
+                "id": "Analitik containment, resolution, eskalasi, dan abandonment dengan volume panggilan harian; biaya diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/09-human-handoff.webp",
               "alt": {
                 "en": "Human handoff with the context packet the agent receives before joining the call",
                 "id": "Handoff ke manusia dengan context packet yang diterima agent sebelum bergabung ke panggilan"
@@ -4383,7 +4433,7 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/05-assistant-picker.webp",
+              "src": "/media/voice-ai-contact-center/10-assistant-picker.webp",
               "alt": {
                 "en": "Assistant picker for browser voice calls across claims, health, billing and product agents",
                 "id": "Pemilih asisten untuk panggilan suara di browser: klaim, kesehatan, billing, dan product agent"
@@ -4393,33 +4443,13 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/06-architecture.webp",
+              "src": "/media/voice-ai-contact-center/11-architecture.webp",
               "alt": {
                 "en": "Architecture layers: Next.js experience, LiveKit voice, OpenAI Realtime with Azure AI Search, Cosmos DB and Azure Monitor",
                 "id": "Layer arsitektur: experience Next.js, voice LiveKit, OpenAI Realtime dengan Azure AI Search, Cosmos DB, dan Azure Monitor"
               },
               "width": 1600,
               "height": 1000,
-              "redacted": true
-            },
-            {
-              "src": "/media/voice-ai-contact-center/07-agents-admin.webp",
-              "alt": {
-                "en": "Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier",
-                "id": "Daftar voice agent di operations console, dengan status, model realtime, knowledge base dan tier eskalasi"
-              },
-              "width": 1440,
-              "height": 900,
-              "redacted": true
-            },
-            {
-              "src": "/media/voice-ai-contact-center/08-knowledge-detail.webp",
-              "alt": {
-                "en": "Knowledge base detail showing indexed documents, ingestion status and semantic search settings",
-                "id": "Halaman detail knowledge base menampilkan dokumen terindeks, status ingestion dan pengaturan semantic search"
-              },
-              "width": 1440,
-              "height": 900,
               "redacted": true
             }
           ]
