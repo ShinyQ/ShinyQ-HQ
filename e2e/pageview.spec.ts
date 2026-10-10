@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { openPage } from "./hq";
 import { content, firstEntry, heroPod, hostedPost } from "./routes";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
@@ -33,14 +34,14 @@ test.beforeEach(async ({ page }) => {
 
 for (const path of TEMPLATES) {
   test(`axe: ${path}`, async ({ page }) => {
-    await page.goto(staticTier(path));
+    await openPage(page, staticTier(path));
     await expect(page.locator("h1").first()).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 }
 
 test("the main nav marks the current section on child routes", async ({ page }) => {
-  await page.goto(staticTier(`/en/labs/${heroPod.slug}`));
+  await openPage(page, staticTier(`/en/labs/${heroPod.slug}`));
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link", { name: /Work/ })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: /Journey/ })).not.toHaveAttribute("aria-current", "page");
@@ -48,7 +49,7 @@ test("the main nav marks the current section on child routes", async ({ page }) 
 
 test("phones get the section tabs instead of the desktop nav", async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  await page.goto(staticTier("/en/library"));
+  await openPage(page, staticTier("/en/library"));
   await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeHidden();
   await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Writing" })).toHaveAttribute("aria-current", "page");
   await page.close();
@@ -57,7 +58,7 @@ test("phones get the section tabs instead of the desktop nav", async ({ browser 
 test("Work filters by wing and stack, keeps ?tier and survives a reload", async ({ page }) => {
   const pods = content.floors.labs.pods;
   const ai = pods.filter((p) => p.wing === "ai").length;
-  await page.goto(staticTier("/en/labs"));
+  await openPage(page, staticTier("/en/labs"));
   const status = page.getByRole("search", { name: "Filter projects" }).getByRole("status");
   await expect(status).toHaveText(`Showing ${pods.length} of ${pods.length}`);
   await page.getByRole("button", { name: /^AI/ }).click();
@@ -72,7 +73,7 @@ test("Work filters by wing and stack, keeps ?tier and survives a reload", async 
 });
 
 test("Journey type filter hides other entries and empty years", async ({ page }) => {
-  await page.goto(staticTier("/en/journey"));
+  await openPage(page, staticTier("/en/journey"));
   await page.getByRole("button", { name: /^Awards/ }).click();
   await expect(page).toHaveURL(/type=award/);
   await expect(page.locator("[data-entry][data-type='job']").first()).toBeHidden();
@@ -81,15 +82,15 @@ test("Journey type filter hides other entries and empty years", async ({ page })
 });
 
 test("case study keeps its anchors and table of contents", async ({ page }) => {
-  await page.goto(staticTier(`/en/labs/${heroPod.slug}`));
+  await openPage(page, staticTier(`/en/labs/${heroPod.slug}`));
   for (const id of ["results", "problem", "approach", "architecture", "stack"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link", { name: "Problem" })).toHaveAttribute("href", "#problem");
 });
 
 test("Home keeps the deep-link anchors used by the room catalog", async ({ page }) => {
-  await page.goto(staticTier("/en"));
+  await openPage(page, staticTier("/en"));
   for (const id of ["stats", "skills", "certifications"]) await expect(page.locator(`#${id}`)).toBeAttached();
-  await page.goto(staticTier("/en/contact"));
+  await openPage(page, staticTier("/en/contact"));
   for (const id of ["cv", "channels"]) await expect(page.locator(`#${id}`)).toBeAttached();
 });
 
@@ -100,7 +101,7 @@ for (const [locale, label] of [
   ["id", "Unduh CV (PDF)"],
 ] as const) {
   test(`/${locale}/cv offers the one CV PDF as a download and an inline preview`, async ({ page }) => {
-    await page.goto(staticTier(`/${locale}/cv`));
+    await openPage(page, staticTier(`/${locale}/cv`));
     const download = page.getByRole("link", { name: label });
     await expect(download).toHaveAttribute("href", cvPdf);
     await expect(download).toHaveAttribute("download", cvPdf.split("/").pop()!);
@@ -111,7 +112,7 @@ for (const [locale, label] of [
 
 test("every CV link points to the one PDF, in both languages", async ({ page }) => {
   for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
-    await page.goto(staticTier(path));
+    await openPage(page, staticTier(path));
     const links = page.locator('main a[href$=".pdf"]');
     expect(await links.count(), path).toBeGreaterThan(0);
     for (const href of await links.evaluateAll((as) => as.map((a) => [a.getAttribute("href"), a.getAttribute("download")]))) {
@@ -123,7 +124,7 @@ test("every CV link points to the one PDF, in both languages", async ({ page }) 
 test("no horizontal overflow on a 390 px phone", async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   for (const path of TEMPLATES) {
-    await page.goto(staticTier(path));
+    await openPage(page, staticTier(path));
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, path).toBeLessThanOrEqual(0);
   }

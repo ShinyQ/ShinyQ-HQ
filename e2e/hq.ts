@@ -37,6 +37,22 @@ export async function asHumanBrowser(page: Page) {
 }
 
 /**
+ * The Next.js chunks are requested after the first contentful paint (scripts/defer-scripts.ts), so
+ * the `load` event can fire before React hydrates. Wait for this before interacting with client
+ * islands (filters, HUD buttons, gallery) right after a navigation.
+ */
+export async function waitForHydration(page: Page, timeout = 15_000) {
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached", timeout });
+}
+
+/** `page.goto` plus `waitForHydration`, for static pages that a test interacts with. */
+export async function openPage(page: Page, url: string, options?: Parameters<Page["goto"]>[1]) {
+  const response = await page.goto(url, options);
+  await waitForHydration(page);
+  return response;
+}
+
+/**
  * Collects page errors and any request to another origin. The local server does not apply the
  * production CSP from public/_headers, so a runtime CDN fetch only fails on Cloudflare.
  */
