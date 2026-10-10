@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { BOOT_ATTR, PROBE_KEY, releaseBootCover } from "@/lib/boot-first";
+import { BOOT_ATTR, isBotLike, PROBE_KEY, releaseBootCover } from "@/lib/boot-first";
 import { decideTier, readTierInputs } from "@/lib/gpu-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
@@ -36,6 +36,8 @@ function subscribeTier(listener: () => void) {
   if (detected === undefined && !scheduled) {
     scheduled = true;
     window.setTimeout(() => {
+      // Crawlers and automation stay on the page: no WebGL probe, no 3D chunk.
+      if (detected === undefined && isBotLike(navigator, window.location.search)) detected = "static";
       if (detected === undefined) {
         const inputs = readTierInputs(window.location.search);
         detected = decideTier(inputs);
