@@ -4343,73 +4343,113 @@
           "hologram": "waveform",
           "assets": [
             {
-              "src": "/media/voice-ai-contact-center/01-call-in-progress.webp",
+              "src": "/media/voice-ai-contact-center/01-landing.webp",
               "alt": {
-                "en": "Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim",
-                "id": "Panggilan aktif di browser: asisten berbicara, sementara transkrip live menampilkan pertanyaan penelepon tentang klaim"
+                "en": "ARIA landing page: realtime voice agents with grounded answers and human handoff",
+                "id": "Halaman landing ARIA: voice agent realtime dengan jawaban berbasis knowledge dan handoff ke manusia"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/02-assistant-picker.webp",
+              "src": "/media/voice-ai-contact-center/02-call-replay.webp",
               "alt": {
-                "en": "Assistant selection screen offering claims help in English or policy help in Indonesian",
-                "id": "Halaman pemilihan asisten untuk bantuan klaim dalam bahasa Inggris atau polis dalam bahasa Indonesia"
+                "en": "Call replay showing the live transcript, knowledge retrieval scores and a confidence below the handoff threshold",
+                "id": "Call replay yang menampilkan transkrip live, skor knowledge retrieval, dan confidence di bawah ambang handoff"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/03-architecture.webp",
+              "src": "/media/voice-ai-contact-center/03-admin-dashboard.webp",
               "alt": {
-                "en": "Azure and OpenAI architecture diagram arranged into experience, voice, intelligence and data layers",
-                "id": "Diagram arsitektur Azure dan OpenAI dengan layer experience, voice, intelligence dan data"
+                "en": "ARIA operations console home: live calls, operators available, AI containment and escalation reasons over 7 days",
+                "id": "Beranda operations console ARIA: panggilan live, operator tersedia, containment AI, dan alasan eskalasi selama 7 hari"
               },
-              "width": 1280,
-              "height": 994,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/04-intelligence-layer.webp",
+              "src": "/media/voice-ai-contact-center/04-call-detail.webp",
               "alt": {
-                "en": "Reasoning loop diagram showing intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolution or escalation",
-                "id": "Diagram reasoning loop menampilkan intent, knowledge retrieval, multi-agent reasoning dan confidence scoring sebelum penyelesaian atau eskalasi"
+                "en": "Call detail with the event timeline, caller turns, knowledge searches and an AI summary of intent and next steps",
+                "id": "Detail panggilan dengan timeline event, ucapan penelepon, pencarian knowledge, dan ringkasan AI tentang intent serta langkah berikutnya"
               },
-              "width": 1280,
-              "height": 1084,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/05-agents-admin.webp",
+              "src": "/media/voice-ai-contact-center/05-intelligence-layer.webp",
               "alt": {
-                "en": "Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier",
-                "id": "Daftar voice agent di operations console, dengan status, model realtime, knowledge base dan tier eskalasi"
+                "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
+                "id": "Diagram reasoning loop: intent, knowledge retrieval, multi-agent reasoning, dan confidence scoring sebelum resolve atau eskalasi"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/06-knowledge-detail.webp",
+              "src": "/media/voice-ai-contact-center/06-agents.webp",
               "alt": {
-                "en": "Knowledge base detail showing indexed documents, ingestion status and semantic search settings",
-                "id": "Halaman detail knowledge base menampilkan dokumen terindeks, status ingestion dan pengaturan semantic search"
+                "en": "AI agent list with status, realtime voice model, knowledge bases and escalation targets",
+                "id": "Daftar AI agent dengan status, model voice realtime, knowledge base, dan target eskalasi"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/07-analytics.webp",
+              "src": "/media/voice-ai-contact-center/07-knowledge.webp",
               "alt": {
-                "en": "Call analytics dashboard charting resolution rate, handoff rate and daily call volume",
-                "id": "Dashboard analitik panggilan menampilkan tingkat penyelesaian, tingkat handoff dan volume panggilan harian"
+                "en": "Knowledge bases with indexing health, document counts and the agents that use them",
+                "id": "Knowledge base dengan status indexing, jumlah dokumen, dan agent yang menggunakannya"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/08-analytics.webp",
+              "alt": {
+                "en": "Analytics for containment, resolution, escalation and abandonment with daily call volume; cost blurred",
+                "id": "Analitik containment, resolution, eskalasi, dan abandonment dengan volume panggilan harian; biaya diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/09-human-handoff.webp",
+              "alt": {
+                "en": "Human handoff with the context packet the agent receives before joining the call",
+                "id": "Handoff ke manusia dengan context packet yang diterima agent sebelum bergabung ke panggilan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/10-assistant-picker.webp",
+              "alt": {
+                "en": "Assistant picker for browser voice calls across claims, health, billing and product agents",
+                "id": "Pemilih asisten untuk panggilan suara di browser: klaim, kesehatan, billing, dan product agent"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/11-architecture.webp",
+              "alt": {
+                "en": "Architecture layers: Next.js experience, LiveKit voice, OpenAI Realtime with Azure AI Search, Cosmos DB and Azure Monitor",
+                "id": "Layer arsitektur: experience Next.js, voice LiveKit, OpenAI Realtime dengan Azure AI Search, Cosmos DB, dan Azure Monitor"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -4680,63 +4720,63 @@
           "hologram": "shield",
           "assets": [
             {
-              "src": "/media/ai-code-security-platform/01-scan-overview.webp",
+              "src": "/media/ai-code-security-platform/01-overview.webp",
               "alt": {
-                "en": "Demo repository scan with a failed security gate, findings by severity and scanner durations",
-                "id": "Hasil scan repository demo dengan security gate gagal, temuan menurut severity dan durasi scanner"
+                "en": "Pris.AI overview: open critical and high findings, repositories scanned, merge gate status and top risks ranked with KEV and EPSS signals; repository names blurred",
+                "id": "Overview Pris.AI: temuan critical dan high yang terbuka, repositori yang dipindai, status merge gate, dan risiko teratas dengan sinyal KEV dan EPSS; nama repositori diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/02-scan-findings.webp",
+              "src": "/media/ai-code-security-platform/02-repositories.webp",
               "alt": {
-                "en": "Risk-ranked findings from eight scanners, with KEV and EPSS signals",
-                "id": "Tabel temuan dari delapan scanner, diurutkan menurut risiko dengan sinyal KEV dan EPSS"
+                "en": "Repositories with severity posture, latest default-branch scan and scan history per repository",
+                "id": "Daftar repositori dengan postur severity, scan terakhir di default branch, dan riwayat scan per repositori"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/03-finding-drawer.webp",
+              "src": "/media/ai-code-security-platform/03-findings.webp",
               "alt": {
-                "en": "SQL injection detail panel showing the code excerpt, location and time-limited suppression request",
-                "id": "Panel detail SQL injection menampilkan potongan kode, lokasi dan permintaan suppression berbatas waktu"
+                "en": "Findings ranked by risk across repositories, filterable by severity and KEV, with the scanner that reported each one",
+                "id": "Temuan yang diurutkan berdasarkan risiko lintas repositori, dapat difilter berdasarkan severity dan KEV, beserta scanner yang melaporkannya"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/04-repositories.webp",
+              "src": "/media/ai-code-security-platform/04-security-policy.webp",
               "alt": {
-                "en": "Repository list showing default-branch security status and each repository's latest scan",
-                "id": "Daftar repository menampilkan status keamanan default branch dan hasil scan terbaru masing-masing repository"
+                "en": "Security policy for the merge gate: KEV and verified secret blocking, EPSS threshold and enforcement mode",
+                "id": "Security policy untuk merge gate: blokir KEV dan secret terverifikasi, ambang EPSS, dan mode enforcement"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/05-security-policy.webp",
+              "src": "/media/ai-code-security-platform/05-scans.webp",
               "alt": {
-                "en": "Security policy settings for pull request checks that block merges",
-                "id": "Pengaturan security policy untuk pemeriksaan pull request yang memblokir merge"
+                "en": "Scan history across repositories with commit, status, findings by severity and trigger",
+                "id": "Riwayat scan lintas repositori dengan commit, status, temuan per severity, dan pemicunya"
               },
-              "width": 1440,
-              "height": 1200,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/06-assistant-chat.webp",
+              "src": "/media/ai-code-security-platform/06-audit-log.webp",
               "alt": {
-                "en": "AI security agent response assessing a dependency CVE's exploitability and proposed fix",
-                "id": "Respons AI security agent menilai apakah CVE pada dependency dapat dieksploitasi dan mengusulkan perbaikan"
+                "en": "Audit log of scans, scanner runs and policy gate evaluations",
+                "id": "Audit log untuk scan, eksekusi scanner, dan evaluasi policy gate"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -4994,53 +5034,53 @@
           "hologram": "documents",
           "assets": [
             {
-              "src": "/media/fraud-review-platform/01-product-overview.webp",
+              "src": "/media/fraud-review-platform/01-home.webp",
               "alt": {
-                "en": "Procurement fraud review overview with a dashboard preview for document analysis and evidence review",
-                "id": "Ringkasan produk review fraud pengadaan, dengan pratinjau dashboard untuk analisis dokumen dan peninjauan bukti"
+                "en": "FREDDY home: cases that need review, verdict mix and a review queue with risk scores; vendor names blurred",
+                "id": "Beranda FREDDY: kasus yang perlu ditinjau, komposisi verdict, dan antrean review dengan skor risiko; nama vendor diburamkan"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/02-home.webp",
+              "src": "/media/fraud-review-platform/02-high-risk-result.webp",
               "alt": {
-                "en": "Reviewer dashboard showing cases needing attention, verdict distribution and this week's changes (synthetic data)",
-                "id": "Dashboard reviewer menampilkan kasus yang perlu ditinjau, distribusi verdict dan perubahan minggu ini (data sintetis)"
+                "en": "High-risk result with a score of 88 out of 100, top findings across 14 documents and an AI summary; identifiers blurred",
+                "id": "Hasil high risk dengan skor 88 dari 100, temuan utama dari 14 dokumen, dan ringkasan AI; identitas diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/03-high-risk-result.webp",
+              "src": "/media/fraud-review-platform/03-history.webp",
               "alt": {
-                "en": "High-risk analysis showing the score and supporting evidence for each finding",
-                "id": "Hasil analisis berisiko tinggi menampilkan skor dan bukti pendukung setiap temuan"
+                "en": "Analysis history with verdict filters, risk scores, document counts and report links",
+                "id": "Riwayat analisis dengan filter verdict, skor risiko, jumlah dokumen, dan tautan laporan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/04-history.webp",
+              "src": "/media/fraud-review-platform/04-new-analysis.webp",
               "alt": {
-                "en": "Analysis history with a verdict filter, scores and links to reports (synthetic data)",
-                "id": "Riwayat analisis dengan filter verdict, skor dan tautan ke laporan (data sintetis)"
+                "en": "New analysis form for case details and main or supporting documents, from upload or a blob folder",
+                "id": "Form analisis baru untuk detail kasus dan dokumen utama atau pendukung, dari upload atau folder blob"
               },
-              "width": 1440,
-              "height": 1116,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/05-statistics.webp",
+              "src": "/media/fraud-review-platform/05-about.webp",
               "alt": {
-                "en": "Admin dashboard showing daily analysis counts, verdict distribution and a transaction log",
-                "id": "Dashboard statistik admin menampilkan jumlah analisis harian, distribusi verdict dan log transaksi"
+                "en": "About page explaining the decision-support scope and the four-step document pipeline",
+                "id": "Halaman About yang menjelaskan cakupan decision support dan pipeline dokumen empat langkah"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -5246,43 +5286,63 @@
           "hologram": "documents",
           "assets": [
             {
-              "src": "/media/ai-cv-screening-platform/01-product-overview.webp",
+              "src": "/media/ai-cv-screening-platform/01-home.webp",
               "alt": {
-                "en": "CV screening overview with a recruitment dashboard preview, structured parsing, role matching and candidate ranking",
-                "id": "Ringkasan screening CV dengan pratinjau dashboard rekrutmen, parsing terstruktur, pencocokan requirement posisi dan peringkat kandidat"
+                "en": "Recruiter home: candidates waiting for a decision, pipeline by stage, weekly screening volume and fit band distribution",
+                "id": "Beranda recruiter: kandidat yang menunggu keputusan, pipeline per tahap, volume screening mingguan, dan distribusi fit band"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/02-jobs.webp",
+              "src": "/media/ai-cv-screening-platform/02-candidate-ranking.webp",
               "alt": {
-                "en": "Job openings list showing status and screened candidate counts for each position",
-                "id": "Daftar lowongan menampilkan status dan jumlah kandidat yang sudah melalui screening untuk setiap posisi"
+                "en": "Job pipeline ranked by AI fit band with must-haves met per candidate and a decision-support notice; candidate names blurred",
+                "id": "Pipeline lowongan yang diurutkan berdasarkan fit band AI dengan jumlah must-have yang terpenuhi per kandidat dan catatan decision support; nama kandidat diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/03-ai-input-redaction.webp",
+              "src": "/media/ai-cv-screening-platform/03-jobs.webp",
               "alt": {
-                "en": "AI input redaction setting to hide contact and identity details before the model reads a CV",
-                "id": "Pengaturan AI input redaction untuk menyamarkan detail kontak dan identitas sebelum model membaca CV"
+                "en": "Jobs list with status filters, candidates screened per job and quick status changes",
+                "id": "Daftar lowongan dengan filter status, jumlah kandidat yang di-screening per lowongan, dan perubahan status cepat"
               },
-              "width": 1440,
-              "height": 918,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/04-usage.webp",
+              "src": "/media/ai-cv-screening-platform/04-job-details.webp",
               "alt": {
-                "en": "AI usage report showing request counts, pages read, estimated spending and costs by activity",
-                "id": "Laporan penggunaan AI menampilkan jumlah request, halaman yang dibaca, estimasi pengeluaran dan biaya tiap aktivitas"
+                "en": "Job details with the description, status history and a warning that requirements are not confirmed yet",
+                "id": "Detail lowongan dengan deskripsi, riwayat status, dan peringatan bahwa requirement belum dikonfirmasi"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/05-ai-input-redaction.webp",
+              "alt": {
+                "en": "AI input redaction settings that hide contact, identity and personal details from the model before it reads a CV",
+                "id": "Pengaturan AI input redaction yang menyembunyikan kontak, identitas, dan data pribadi dari model sebelum membaca CV"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/06-usage.webp",
+              "alt": {
+                "en": "Usage page with plan features and monthly limits for members, storage and AI requests",
+                "id": "Halaman usage dengan fitur paket dan batas bulanan untuk anggota, storage, dan request AI"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -5461,7 +5521,48 @@
             "Bicep"
           ],
           "hologram": "documents",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/bank-statement-analyzer/01-operations-dashboard.webp",
+              "alt": {
+                "en": "ATLAS operations dashboard: exposure under analysis, statements processed, high-risk statements and a work queue; amounts and names blurred",
+                "id": "Operations dashboard ATLAS: exposure yang dianalisis, statement yang diproses, statement berisiko tinggi, dan antrean kerja; nominal dan nama diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/02-applications.webp",
+              "alt": {
+                "en": "Credit applications with status, analyst, document count and analysis state; borrower and analyst names blurred",
+                "id": "Daftar pengajuan kredit dengan status, analis, jumlah dokumen, dan status analisis; nama debitur dan analis diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/03-upload.webp",
+              "alt": {
+                "en": "Upload flow that opens a credit file and accepts bank statements, identity and trade documents",
+                "id": "Alur upload yang membuka berkas kredit dan menerima rekening koran, dokumen identitas, dan dokumen perdagangan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/04-usage-trends.webp",
+              "alt": {
+                "en": "Usage trends for the OCR, statement analysis and fraud services with daily calls, latency and errors",
+                "id": "Tren penggunaan layanan OCR, analisis rekening koran, dan fraud dengan jumlah panggilan harian, latensi, dan error"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "ai-app-accelerator",
@@ -5603,20 +5704,20 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/ai-app-accelerator/01-dashboard.webp",
+              "src": "/media/ai-app-accelerator/01-home.webp",
               "alt": {
-                "en": "Template dashboard showing conversations, active agents, costs and usage per model",
-                "id": "Dashboard template menampilkan percakapan, agent aktif, biaya dan penggunaan tiap model"
+                "en": "Template dashboard home: conversations, active agents, estimated cost and error rate with a usage trend",
+                "id": "Beranda template dashboard: percakapan, agent aktif, estimasi biaya, dan error rate dengan tren penggunaan"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-app-accelerator/02-agent-picker.webp",
+              "src": "/media/ai-app-accelerator/02-chat.webp",
               "alt": {
-                "en": "Chat start screen for choosing one of the built-in agents",
-                "id": "Layar awal chat untuk memilih salah satu agent bawaan"
+                "en": "Multi-agent chat with an agent picker, saved chats and suggested prompts",
+                "id": "Chat multi-agent dengan pemilih agent, riwayat chat, dan prompt yang disarankan"
               },
               "width": 1600,
               "height": 1000,
@@ -5625,21 +5726,41 @@
             {
               "src": "/media/ai-app-accelerator/03-agents.webp",
               "alt": {
-                "en": "Agent management table listing identifiers, descriptions and the number of tools",
-                "id": "Tabel pengelolaan agent menampilkan identifier, deskripsi dan jumlah tool"
+                "en": "Agent catalog with built-in and custom agents, their models and tool counts",
+                "id": "Katalog agent berisi agent bawaan dan kustom, beserta model dan jumlah tools-nya"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-app-accelerator/04-chat.webp",
+              "src": "/media/ai-app-accelerator/04-playground.webp",
               "alt": {
-                "en": "Chat conversation showing an agent rewrite a TypeScript fetch wrapper",
-                "id": "Percakapan chat menampilkan agent yang menulis ulang fetch wrapper TypeScript"
+                "en": "Prompt playground to test a live agent with a system message, presets and session token estimates",
+                "id": "Prompt playground untuk menguji agent live dengan system message, preset, dan estimasi token sesi"
               },
               "width": 1600,
-              "height": 869,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/05-models.webp",
+              "alt": {
+                "en": "Model deployments with state, requests, latency and a latency comparison chart",
+                "id": "Deployment model dengan status, jumlah request, latensi, dan grafik perbandingan latensi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/06-analytics.webp",
+              "alt": {
+                "en": "Analytics for API calls, latency, error rate and usage by model",
+                "id": "Analitik untuk API call, latensi, error rate, dan penggunaan per model"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -5850,8 +5971,8 @@
             "end": "2026-09"
           },
           "role": {
-            "en": "Owner and technical lead",
-            "id": "Owner dan technical lead"
+            "en": "Sole engineer",
+            "id": "Satu-satunya engineer"
           },
           "problem": {
             "en": "The bilingual company site needed cited answers from curated content, prompt-injection defenses and an enforceable daily budget.",
@@ -5974,7 +6095,98 @@
             "App Service"
           ],
           "hologram": "graph",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-solutions-assistant/01-assistant-answer.webp",
+              "alt": {
+                "en": "AI Solutions Consultant answering a CV screening question, grounded in a published project and linking to it",
+                "id": "AI Solutions Consultant menjawab pertanyaan tentang CV screening, berdasarkan proyek yang sudah dipublikasikan dan menautkannya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/02-indicative-architecture.webp",
+              "alt": {
+                "en": "Expanded indicative architecture in the answer, grouping Azure services into intelligence, data and experience",
+                "id": "Indicative architecture yang dibuka di jawaban, mengelompokkan layanan Azure ke intelligence, data, dan experience"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/03-project-matcher.webp",
+              "alt": {
+                "en": "Hero project matcher returning ranked projects for an IT support ticket challenge",
+                "id": "Project matcher di hero yang menampilkan proyek terurut untuk tantangan tiket IT support"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/04-studio-analytics.webp",
+              "alt": {
+                "en": "Studio dashboard overview: cookieless page views, unique visitors, project views and outbound clicks over 30 days",
+                "id": "Overview dashboard Studio: page view tanpa cookie, unique visitor, project view, dan outbound click selama 30 hari"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/05-studio-conversations.webp",
+              "alt": {
+                "en": "Assistant conversation analytics: answer success, response latency percentiles and average tokens",
+                "id": "Analitik percakapan asisten: answer success, persentil latensi respons, dan rata-rata token"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/06-studio-projects.webp",
+              "alt": {
+                "en": "Project catalogue manager with categories, tech tags, featured flags and search",
+                "id": "Pengelola katalog proyek dengan kategori, tech tag, penanda featured, dan pencarian"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/07-studio-project-editor.webp",
+              "alt": {
+                "en": "Project editor with basics, content, media and case study tabs and a publish control",
+                "id": "Editor proyek dengan tab basics, content, media, dan case study serta kontrol publish"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/08-project-page.webp",
+              "alt": {
+                "en": "Project page for the AI recruitment solution with a live demo link and product preview",
+                "id": "Halaman proyek solusi AI recruitment dengan tautan live demo dan pratinjau produk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/09-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home page with the project matcher, the portfolio and a project page",
+                "id": "Tampilan mobile untuk beranda dengan project matcher, portofolio, dan halaman proyek"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -6438,63 +6650,53 @@
           "hologram": "graph",
           "assets": [
             {
-              "src": "/media/ticketing-assistant-replatform/01-product-overview.webp",
+              "src": "/media/ticketing-assistant-replatform/01-home.webp",
               "alt": {
-                "en": "Ticketing product overview with a board preview and AI classification, prioritization and response drafts",
-                "id": "Ringkasan produk ticketing dengan pratinjau board serta klasifikasi, prioritas dan draf respons tiket dari AI"
+                "en": "Ticketing home: tickets assigned, in progress and overdue, with a list across boards",
+                "id": "Beranda ticketing: tiket yang ditugaskan, sedang dikerjakan, dan terlambat, dengan daftar lintas board"
               },
-              "width": 1280,
-              "height": 721,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/02-assistant-home.webp",
+              "src": "/media/ticketing-assistant-replatform/02-kanban-board.webp",
               "alt": {
-                "en": "Assistant start screen suggesting questions about tickets, documents and board analytics",
-                "id": "Layar awal asisten menampilkan saran pertanyaan tentang tiket, dokumen dan analitik board"
+                "en": "Kanban board with priority, SLA breach bars and assignees per ticket",
+                "id": "Kanban board dengan prioritas, bar pelanggaran SLA, dan assignee per tiket"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/03-at-risk-tickets.webp",
+              "src": "/media/ticketing-assistant-replatform/03-ticket-detail.webp",
               "alt": {
-                "en": "Assistant response listing tickets at risk of missing the sprint deadline",
-                "id": "Respons asisten menampilkan tiket yang berisiko melewati tenggat sprint"
+                "en": "Ticket detail panel with status, priority, SLA, description and activity, plus an AI Assist action",
+                "id": "Panel detail tiket dengan status, prioritas, SLA, deskripsi, dan aktivitas, serta aksi AI Assist"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/04-status-charts.webp",
+              "src": "/media/ticketing-assistant-replatform/04-ai-assistant.webp",
               "alt": {
-                "en": "Overdue ticket charts generated by the assistant, grouped by status and priority",
-                "id": "Grafik tiket terlambat dari asisten, dikelompokkan menurut status dan prioritas"
+                "en": "AI Assistant that answers questions about tickets, boards, workload and documents",
+                "id": "AI Assistant yang menjawab pertanyaan tentang tiket, board, beban kerja, dan dokumen"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/05-ai-triage.webp",
+              "src": "/media/ticketing-assistant-replatform/05-boards.webp",
               "alt": {
-                "en": "Ticket detail panel with AI triage suggestions for priority and category",
-                "id": "Panel detail tiket dengan saran prioritas dan kategori dari AI triage"
+                "en": "Boards overview for engineering, operations, data, security and AI teams",
+                "id": "Ringkasan board untuk tim engineering, operations, data, security, dan AI"
               },
               "width": 1600,
-              "height": 874,
-              "redacted": true
-            },
-            {
-              "src": "/media/ticketing-assistant-replatform/06-backlog.webp",
-              "alt": {
-                "en": "Ticket backlog showing status and overdue badges",
-                "id": "Backlog tiket menampilkan status dan penanda keterlambatan"
-              },
-              "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -6563,18 +6765,7 @@
             "Managed Identity"
           ],
           "hologram": "pipeline",
-          "assets": [
-            {
-              "src": "/media/mining-coa-assistant/01-multi-agent-flow.webp",
-              "alt": {
-                "en": "Multi-agent flow diagram matching Indonesian or English questions to accounts and policy documents before resolution or escalation",
-                "id": "Diagram alur multi-agent mencocokkan pertanyaan berbahasa Indonesia atau Inggris dengan akun dan dokumen kebijakan sebelum penyelesaian atau eskalasi"
-              },
-              "width": 1600,
-              "height": 900,
-              "redacted": true
-            }
-          ]
+          "assets": []
         },
         {
           "id": "credit-scoring-poc",
@@ -6641,33 +6832,53 @@
           "hologram": "chart",
           "assets": [
             {
-              "src": "/media/credit-scoring-poc/01-product-overview.webp",
+              "src": "/media/credit-scoring-poc/01-executive-dashboard.webp",
               "alt": {
-                "en": "Browser-based credit scoring and default prediction overview, with factor explanations and a dashboard preview",
-                "id": "Ringkasan credit scoring dan prediksi gagal bayar di browser, dengan penjelasan faktor dan pratinjau dashboard"
+                "en": "Executive dashboard: portfolio health, NPL ratio, average credit score, monthly NPL trend and risk segment mix",
+                "id": "Executive dashboard: kesehatan portofolio, rasio NPL, rata-rata skor kredit, tren NPL bulanan, dan komposisi segmen risiko"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/credit-scoring-poc/02-credit-analysis.webp",
+              "src": "/media/credit-scoring-poc/02-model-performance.webp",
               "alt": {
-                "en": "Credit analysis form showing a score gauge and factors that raise or lower the score",
-                "id": "Formulir analisis kredit menampilkan gauge skor dan faktor yang menaikkan atau menurunkan skor"
+                "en": "Model performance page comparing XGBoost, LightGBM and logistic regression by AUC, precision and recall",
+                "id": "Halaman performa model yang membandingkan XGBoost, LightGBM, dan logistic regression berdasarkan AUC, presisi, dan recall"
               },
               "width": 1600,
-              "height": 859,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/credit-scoring-poc/03-model-performance.webp",
+              "src": "/media/credit-scoring-poc/03-credit-analysis.webp",
               "alt": {
-                "en": "Model performance comparison for XGBoost, LightGBM, logistic regression and random forest",
-                "id": "Perbandingan performa model XGBoost, LightGBM, logistic regression dan random forest"
+                "en": "Credit analysis form for a new applicant covering personal, employment and financial details; amounts blurred",
+                "id": "Form analisis kredit untuk calon debitur, mencakup data pribadi, pekerjaan, dan keuangan; nominal diburamkan"
               },
               "width": 1600,
-              "height": 866,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/04-default-prediction.webp",
+              "alt": {
+                "en": "Default risk prediction form with loan, repayment and collateral inputs; amounts blurred",
+                "id": "Form prediksi risiko gagal bayar dengan input pinjaman, angsuran, dan agunan; nominal diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/05-debtor-data.webp",
+              "alt": {
+                "en": "Debtor list with province and occupation; names and income blurred",
+                "id": "Daftar debitur dengan provinsi dan pekerjaan; nama dan pendapatan diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -6750,8 +6961,8 @@
             "id": "Penyusunan dan hosting presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck, built as Deck Studio inside MII Cowork: AI agents create presentations in sandboxes, then publish through guarded deployments.",
-            "id": "MII Deck, dibangun sebagai Deck Studio di dalam MII Cowork: AI agent menyusun presentasi di sandbox, lalu mempublikasikannya melalui deployment dengan pengaman."
+            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. AI agents in MII Cowork draft decks in sandboxes, an owner approves each change, and private decks stay behind their own passwords.",
+            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan deck privat tetap terlindungi password masing-masing."
           },
           "period": {
             "start": "2026-07",
@@ -6795,7 +7006,128 @@
             "Next.js"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/agent-deck-platform/deck-aria-01.webp",
+              "alt": {
+                "en": "ARIA product deck cover in the dark MII theme, with a live call card showing grounded retrieval and a human handoff",
+                "id": "Sampul deck produk ARIA dengan tema gelap MII, berisi kartu panggilan live yang menampilkan retrieval berbasis dokumen dan handoff ke manusia"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-01.webp",
+              "alt": {
+                "en": "Workshop slide for a mining and metals client: a RAG pipeline diagram from documents to vector search, in the light MII theme",
+                "id": "Slide workshop untuk klien sektor pertambangan dan logam: diagram pipeline RAG dari dokumen hingga vector search, dengan tema terang MII"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-business-plan-01.webp",
+              "alt": {
+                "en": "Business plan for a national bakery brand: a nine-stage delivery timeline as a Gantt chart; client name and commercial figures masked",
+                "id": "Business plan untuk brand roti nasional: timeline delivery sembilan tahap dalam bentuk Gantt chart; nama klien dan angka komersial disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-aria-02.webp",
+              "alt": {
+                "en": "Azure architecture slide grouping realtime, knowledge and operations planes with cross-cutting security and governance",
+                "id": "Slide arsitektur Azure yang mengelompokkan realtime, knowledge, dan operations plane dengan keamanan dan tata kelola lintas komponen"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-02.webp",
+              "alt": {
+                "en": "Workshop slide showing a supervisor agent delegating to specialist agents, each with its own tools",
+                "id": "Slide workshop yang menampilkan supervisor agent mendelegasikan tugas ke specialist agent, masing-masing dengan tools sendiri"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-business-plan-02.webp",
+              "alt": {
+                "en": "Proposal slide reversing the weekly forecasting flow: forecast per outlet first, then aggregate; client name and targets masked",
+                "id": "Slide proposal yang membalik alur forecasting mingguan: forecast per outlet lebih dulu, lalu agregasi; nama klien dan target disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-aria-03.webp",
+              "alt": {
+                "en": "Decision flow slide: grounded retrieval, confidence scoring and escalation to a human when the answer is uncertain",
+                "id": "Slide alur keputusan: retrieval berbasis dokumen, confidence scoring, dan eskalasi ke manusia saat jawaban belum pasti"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-03.webp",
+              "alt": {
+                "en": "Workshop slide placing one AI backend behind Teams, WhatsApp, web and other front ends",
+                "id": "Slide workshop yang menempatkan satu backend AI di balik Teams, WhatsApp, web, dan front end lainnya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-04.webp",
+              "alt": {
+                "en": "Workshop slide scoring ideas on business value, experience and technology readiness with an impact matrix",
+                "id": "Slide workshop untuk menilai ide berdasarkan nilai bisnis, pengalaman, dan kesiapan teknologi dengan matriks dampak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-business-plan-03.webp",
+              "alt": {
+                "en": "Roadmap slide with next-phase options and open questions to validate with the client's forecasting team",
+                "id": "Slide roadmap dengan opsi fase berikutnya dan pertanyaan terbuka untuk divalidasi bersama tim forecasting klien"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-aria-04.webp",
+              "alt": {
+                "en": "Demo slide framing a product screenshot of an escalated call with the transcript and context handed to an operator",
+                "id": "Slide demo yang membingkai screenshot produk berisi panggilan yang dieskalasi, lengkap dengan transkrip dan konteks untuk operator"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-vendor-01.webp",
+              "alt": {
+                "en": "Vendor portal explainer deck: cover slide with page previews",
+                "id": "Deck penjelasan portal vendor: slide sampul dengan pratinjau halaman"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "solutions-marketing-site",
@@ -6858,13 +7190,73 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/solutions-marketing-site/01-landing.webp",
+              "src": "/media/solutions-marketing-site/01-home.webp",
               "alt": {
-                "en": "Enterprise AI on Azure landing page with English and Indonesian controls, project search and example use cases",
-                "id": "Landing page enterprise AI di Azure dengan pilihan bahasa Inggris dan Indonesia, pencarian proyek dan contoh use case"
+                "en": "Home hero of the Microsoft solutions site with the technology foundation panel grouped by practice",
+                "id": "Hero beranda situs solusi Microsoft dengan panel technology foundation yang dikelompokkan per practice"
               },
-              "width": 1280,
-              "height": 800,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/02-outcome-navigator.webp",
+              "alt": {
+                "en": "Outcome navigator that maps a business goal to the matching Microsoft practice and capabilities",
+                "id": "Outcome navigator yang memetakan tujuan bisnis ke practice dan capability Microsoft yang sesuai"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/03-engagements.webp",
+              "alt": {
+                "en": "Engagement catalogue with search, practice filters and cards listing work modules and deliverables",
+                "id": "Katalog engagement dengan pencarian, filter practice, dan kartu berisi work module serta deliverable"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/04-promotions.webp",
+              "alt": {
+                "en": "Promotions catalogue filtered by division, offer type and status, with programme cards",
+                "id": "Katalog promosi dengan filter divisi, jenis penawaran, dan status, beserta kartu program"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/05-practice.webp",
+              "alt": {
+                "en": "Practice page for Cloud Infra, Data and AI Platform with its capability diagram",
+                "id": "Halaman practice Cloud Infra, Data and AI Platform dengan diagram capability"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/06-about-indonesian.webp",
+              "alt": {
+                "en": "About page in Indonesian, showing the bilingual content model",
+                "id": "Halaman About dalam bahasa Indonesia, menunjukkan model konten bilingual"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/07-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home hero, outcome navigator and engagements catalogue",
+                "id": "Tampilan mobile untuk hero beranda, outcome navigator, dan katalog engagement"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
