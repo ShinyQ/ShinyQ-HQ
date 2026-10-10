@@ -1,5 +1,7 @@
 import raw from "../../content/site-content.json";
-import { SiteContentSchema, type Locale, type LocalizedText, type SiteContent } from "./schema";
+import factsRaw from "../../content/generated/dynamic-facts.json";
+import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
+import { SiteContentSchema, type Locale, type LocalizedText, type SiteContent, type Stat } from "./schema";
 import { groupEntriesByYear, sortPods, sortTimeline } from "./selectors";
 
 let cached: SiteContent | undefined;
@@ -15,8 +17,34 @@ export function tr(text: LocalizedText, locale: Locale): string {
   return text[locale];
 }
 
+let cachedFacts: DynamicFacts | undefined;
+
+/** Weekly live facts (`content/generated/dynamic-facts.json`, refreshed by refresh-facts.yml). */
+export function getDynamicFacts(): DynamicFacts {
+  cachedFacts ??= DynamicFactsSchema.parse(factsRaw);
+  return cachedFacts;
+}
+
+/** Stats whose value comes from the live facts, so the stats ring, Page View and Ask agree. */
+export const DYNAMIC_STATS: Record<string, (facts: DynamicFacts) => number | undefined> = {
+  "github-contributions-365": (facts) => facts.github?.contributionsLastYear,
+};
+
+/** Replaces mapped stat values with live facts (en-US grouping, e.g. "7,350"); other stats stay as written. */
+export function overlayStats(stats: readonly Stat[], facts: DynamicFacts): Stat[] {
+  return stats.map((stat) => {
+    const value = DYNAMIC_STATS[stat.id]?.(facts);
+    return value === undefined ? stat : { ...stat, value: value.toLocaleString("en-US") };
+  });
+}
+
+let cachedStats: Stat[] | undefined;
+
 export const getProfile = () => getContent().profile;
-export const getStats = () => getContent().stats;
+export function getStats(): Stat[] {
+  cachedStats ??= overlayStats(getContent().stats, getDynamicFacts());
+  return cachedStats;
+}
 export const getSkills = () => getContent().skills;
 export const getCertifications = () => getContent().certifications;
 export const getAwards = () => [...getContent().awards].sort((a, b) => b.date.localeCompare(a.date));

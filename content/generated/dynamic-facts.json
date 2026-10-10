@@ -1,0 +1,19 @@
+{
+  "asOf": "2026-10-10",
+  "github": {
+    "login": "ShinyQ",
+    "contributionsLastYear": 7350,
+    "publicRepos": 171
+  },
+  "huggingface": {
+    "user": "ShinyQ",
+    "models": 3,
+    "downloads": 37
+  },
+  "credentials": [
+    { "id": "ai-103", "reachable": true },
+    { "id": "ai-901", "reachable": true },
+    { "id": "az-900", "reachable": true },
+    { "id": "hackerrank-problem-solving-basic", "reachable": true }
+  ]
+}
