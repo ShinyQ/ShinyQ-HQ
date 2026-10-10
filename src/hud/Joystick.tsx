@@ -54,7 +54,7 @@ export function Joystick() {
       }}
       onPointerUp={release}
       onPointerCancel={release}
-      className="glass pointer-events-auto absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-5 size-[120px] touch-none rounded-full"
+      className="glass glass-solid pointer-events-auto absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-5 size-[120px] touch-none rounded-full"
     >
       <span
         aria-hidden="true"

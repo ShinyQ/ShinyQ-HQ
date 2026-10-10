@@ -112,6 +112,20 @@
     }
   }
 
+  /*
+   * Reading panels and pills over the 3D world (HUD, Glass Drawer, palette, hologram cards): the same
+   * glass edge and highlight, but near-opaque so in-world text and geometry never show through.
+   */
+  .glass-solid {
+    background: rgb(10 10 18 / 0.94);
+  }
+
+  @media (pointer: coarse) {
+    .glass-solid {
+      background: rgb(10 10 18);
+    }
+  }
+
   /* Small mono overline (prototype boot eyebrow); shared by the boot cover, the HUD and the Page View. */
   .eyebrow {
     font: 500 11px/1.4 var(--font-mono);

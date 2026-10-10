@@ -70,6 +70,6 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 - The Rover Terminal and ⌘K run every mission in the catalog end to end. Cancel works.
 
 ### Phase 6: polish and launch
-- Performance budgets and the accessibility check pass in CI. Sound works and is muted by default.
+- Performance budgets and the accessibility check pass in CI. Sound works and is on by default (owner decision, appendix 05 section 5), starting on the first gesture; a mute persists.
 - The README easter egg works. SEO metadata, `hreflang`, the sitemap and OG images exist.
 - Production deploys to `kurniadi.pages.dev`. The old site's `/cv.pdf` path redirects to the new CV.

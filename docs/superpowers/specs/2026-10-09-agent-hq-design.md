@@ -160,7 +160,7 @@ All nine owner decisions were resolved on 2026-10-09 and are recorded in [append
 | Styling | Tailwind CSS for the HUD and all HTML pages |
 | Content | JSON plus MDX, zod validation at build time |
 | i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
-| Audio | Web Audio API wrapper, lazy-loaded, muted by default |
+| Audio | Web Audio API wrapper, lazy-loaded, on by default (owner decision; starts on the first gesture) |
 | Analytics | Cloudflare Web Analytics (cookieless) |
 | CV PDF | Rendered from the `/cv` route with Playwright at build time, one per locale |
 | Testing | Vitest (unit), Playwright (e2e and visual at 3 viewports) |
@@ -269,7 +269,7 @@ Rules:
 |---|---|
 | Positioning | Software Engineer and AI Engineer (Azure), equal billing |
 | Language | Bilingual EN / ID with a HUD toggle; English default |
-| Sound | Ambient sound and UI blips, muted by default, toggle persists |
+| Sound | Ambient sound and UI blips, on by default from the first gesture, toggle persists |
 | Analytics | Cloudflare Web Analytics, cookieless, no consent banner |
 | Domain | Launch on `kurniadi.pages.dev`; repoint `kurniadi.dev` DNS later |
 | CV | Generated from site data at build time (EN and ID), so it is always in sync and public-safe |

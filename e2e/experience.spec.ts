@@ -264,16 +264,25 @@ test.describe("tiers and views", () => {
     await expect(page.getByRole("navigation", { name: "Lift" })).toBeVisible();
   });
 
-  test("sound toggle persists and is muted by default", async ({ page }) => {
+  test("sound is on by default, starts on the first gesture and a mute persists", async ({ page }) => {
     await enterHQ(page);
     const sound = page.getByRole("button", { name: "Sound" });
-    await expect(sound).toHaveAttribute("aria-pressed", "false");
-    await sound.click();
+    // Never chose: on, nothing stored yet.
     await expect(sound).toHaveAttribute("aria-pressed", "true");
-    expect(await page.evaluate(() => localStorage.getItem("hq:sound"))).toBe("on");
-    expect((await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { sound: boolean } } } }).__hq.store.getState().sound))).toBe(true);
-    await page.keyboard.press("m");
+    expect(await page.evaluate(() => localStorage.getItem("hq:sound"))).toBeNull();
+    await sound.click();
     await expect(sound).toHaveAttribute("aria-pressed", "false");
+    expect(await page.evaluate(() => localStorage.getItem("hq:sound"))).toBe("off");
+    expect((await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { sound: boolean } } } }).__hq.store.getState().sound))).toBe(false);
+    // A stored mute survives a reload.
+    await page.reload();
+    await waitForHQ(page);
+    await page.getByRole("button", { name: /Skip intro|Lewati intro/ }).click();
+    await waitForPhase(page, "explore");
+    await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
+    await page.keyboard.press("m");
+    await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "true");
+    expect(await page.evaluate(() => localStorage.getItem("hq:sound"))).toBe("on");
   });
 });
 

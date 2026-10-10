@@ -10,8 +10,10 @@ export interface DoorTrigger {
   room: RoomId;
   /** Center of the trigger zone, just outside the door. Missions drive here. */
   at: Vec2;
-  /** Side of the square zone (default 2 u). */
+  /** Side of the square zone (default DOOR_SIZE, 1.6 u). */
   size?: number;
+  /** Unit direction from the pad into the room: a rover moving this way opens it at once. */
+  facing?: Vec2;
 }
 
 export interface FloorLayout {

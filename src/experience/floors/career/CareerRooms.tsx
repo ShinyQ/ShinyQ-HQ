@@ -22,7 +22,7 @@ import { intents } from "../../input/intents";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType } from "../../types";
-import type { CareerRoomLayout } from "./layout";
+import { labelVisible, type CareerRoomLayout } from "./layout";
 
 export const TYPE_COLOR: Record<CareerType, string> = {
   job: COLORS.cyan,
@@ -270,7 +270,7 @@ export function CareerRooms({
   useFrame(() => {
     rooms.forEach((room, i) => {
       const label = labels.current[i];
-      if (label) label.visible = Math.abs(room.center.x - roverRuntime.x) < LABEL_RANGE;
+      if (label) label.visible = labelVisible(room, roverRuntime.z) && Math.abs(room.center.x - roverRuntime.x) < LABEL_RANGE;
     });
   });
 
@@ -293,12 +293,11 @@ export function CareerRooms({
       {rooms.map((room, i) => {
         const entry = entries.get(room.slug);
         if (!entry) return null;
-        // North rooms face the rail camera: an upright label above the hologram. South rooms sit between
-        // the camera and the corridor, so their label lies flat between the door and the pedestal.
+        // North rooms: a low upright sign at the door, below the hologram as the rail camera sees it. South rooms sit between the camera and the corridor: the label lies flat
+        // just inside the back wall, nearer the camera than the pedestal, so cups and holograms never cover it.
         const north = room.side < 0;
-        const position: [number, number, number] = north
-          ? [room.center.x, room.type === "milestone" ? 4.5 : 3.9, room.center.z]
-          : [room.center.x, 0.08, room.door.z + 0.3];
+        const back = Math.abs(room.center.z) + room.d / 2;
+        const position: [number, number, number] = north ? [room.center.x, 0.3, room.door.z - 0.1] : [room.center.x, 0.08, back - 0.35];
         return (
           <Text
             key={room.id}
@@ -306,13 +305,15 @@ export function CareerRooms({
               labels.current[i] = el;
             }}
             font={FONTS.sansBold}
-            fontSize={north ? 0.42 : 0.36}
+            fontSize={north ? 0.38 : 0.36}
             lineHeight={1.25}
-            maxWidth={room.w - 0.4}
+            maxWidth={room.w - 0.6}
+            outlineWidth={0.02}
+            outlineColor="#05050c"
             textAlign="center"
             color="#f4f4f5"
             anchorX="center"
-            anchorY={north ? "bottom" : "top"}
+            anchorY="bottom"
             position={position}
             rotation={north ? [-0.32, 0, 0] : [-Math.PI / 2, 0, 0]}
           >

@@ -106,7 +106,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
 
   if (!view) {
     return (
-      <div role="status" className="glass pointer-events-auto absolute right-4 bottom-4 z-20 flex items-center gap-3 px-4 py-3 text-sm text-ink-2" data-testid="room-drawer-status">
+      <div role="status" className="glass glass-solid pointer-events-auto absolute right-4 bottom-4 z-20 flex items-center gap-3 px-4 py-3 text-sm text-ink-2" data-testid="room-drawer-status">
         {views === "error" ? t("unavailable") : t("loading")}
         <button type="button" onClick={() => s.closeRoom()} className="link min-h-11">
           {t("close")}

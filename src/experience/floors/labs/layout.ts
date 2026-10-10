@@ -1,4 +1,5 @@
 import type { RoomId, Wing } from "@/content/schema";
+import { towardPad } from "../../nav/doors";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 
 /**
@@ -8,18 +9,22 @@ import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
  * Pure module (no React or three): Vitest runs it in node.
  */
 export const LABS = {
-  bounds: { minX: -24, maxX: 52, minZ: -24, maxZ: 24 } as Rect,
+  bounds: { minX: -24, maxX: 57, minZ: -28, maxZ: 28 } as Rect,
   atrium: { minX: -24, maxX: -10, minZ: -7, maxZ: 7 } as Rect,
   door: { x: -24, z: 0 } as Vec2,
   approach: { x: -21, z: 0 } as Vec2,
   accent: "#a78bfa",
-  hero: { w: 12, d: 9, z: 8, xs: [6, 21, 36] },
-  featured: { w: 9, d: 7, z: 19.5, xs: [-5.25, 5.25, 15.75, 26.25, 36.75, 47.25] },
-  /** |z| of the lane between the hero row and the featured row. */
-  backLane: 14.25,
-  /** |z| of the door trigger centers. */
-  heroDoor: 2.2,
-  featuredDoor: 14.8,
+  /** Hero pods 4 u apart, doors 4 u off the spine lane. */
+  hero: { w: 12, d: 9, z: 8.5, xs: [6, 22, 38] },
+  /** Featured pods 3 u apart, doors 3.5 u past the back lane. */
+  featured: { w: 8, d: 7, z: 22.5, xs: [-5, 6, 17, 28, 39, 50] },
+  /** |z| of the lane between the hero row and the featured row (2 u behind the hero pods). */
+  backLane: 15,
+  /** |z| of the door trigger centers, 1.1 u in front of each pod's front wall (the rover fits on the pad). */
+  heroDoor: 2.9,
+  featuredDoor: 17.9,
+  /** x of the lane that links the spine and the back lanes, east of the last hero pod. */
+  eastLink: 47,
   /** Wing directory boards: thin along x, facing east (+x) toward the follow camera. */
   pillar: { x: -12, z: 5.4, w: 0.6, d: 4.4, h: 6.4 },
   /** x of the stop in front of a directory board, where listed items are "visited". */
@@ -120,7 +125,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   };
   const pillars = { software: pillar("software"), ai: pillar("ai") };
 
-  const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door }));
+  const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));
   const obstacles: Rect[] = [...placed.map((p) => p.rect), pillars.software, pillars.ai].map(({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ }));
 
   const east = LABS.bounds.maxX - 2;
@@ -142,17 +147,15 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
         [-7, z],
       ],
       [
-        [46, 0],
-        [46, z],
+        [LABS.eastLink, 0],
+        [LABS.eastLink, z],
       ],
     );
   }
+  // Short spurs toward the hero doors stop before the pad, so no lane runs over a trigger.
   for (const p of placed) {
     if (Math.abs(p.door.z) < LABS.backLane)
-      lanes.push([
-        [p.door.x, 0],
-        [p.door.x, p.door.z],
-      ]);
+      lanes.push([[p.door.x, 0], towardPad([p.door.x, 0], p.door)]);
   }
 
   return {

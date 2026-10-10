@@ -7,13 +7,17 @@ export const CORRIDOR = {
   segment: 14,
   /** Corridor walkway is z from -4 to 4. */
   halfWidth: 4,
-  /** Row 0 room centers sit at z = +-10; each extra row stacks 9 u further out. */
-  roomZ: 10,
-  rowPitch: 9,
+  /** Row 0 doors sit at |z| = 6 (corridor edge plus the door pad). */
+  firstDoor: 6,
+  /**
+   * Gap between a room's back wall and the next row's door: the door pad plus a clear 3.4 u aisle,
+   * reached through the 5 u alleys between year columns, so no path crosses another room.
+   */
+  aisle: 5,
   annexLength: 20,
   annexDepth: 16,
-  /** Door zone edge length; its center sits half a zone in front of the door. */
-  doorSize: 2,
+  /** Door zone edge length (DOOR_SIZE); its center sits half a zone in front of the door. */
+  doorSize: 1.6,
   /** Hologram pedestal footprint (the only obstacle inside a room). */
   pedestal: 2,
   gatePost: 0.6,
@@ -99,12 +103,15 @@ export function buildCorridor(input: CareerLayoutInput): CorridorLayout {
   const segments: YearSegment[] = input.years.map(({ year, entries }, i) => {
     const startX = C.startX + C.segment * i;
     const centerX = startX + C.segment / 2;
+    // Next free door line per side: rooms stack outward, each row behind an aisle.
+    const nextDoor = { [-1]: C.firstDoor, [1]: C.firstDoor } as Record<-1 | 1, number>;
     const list = entries.map(({ slug, type }, index): CareerRoomLayout => {
       const side = index % 2 === 0 ? -1 : 1;
       const row = Math.floor(index / 2);
       const { w, d } = ROOM_SIZE[type];
-      const offset = C.roomZ + C.rowPitch * row;
-      const inner = offset - d / 2;
+      const inner = nextDoor[side];
+      const offset = inner + d / 2;
+      nextDoor[side] = inner + d + C.aisle;
       return {
         id: `L2:${slug}`,
         slug,
@@ -154,7 +161,10 @@ export function buildCorridor(input: CareerLayoutInput): CorridorLayout {
   const bounds: Rect = { minX: C.slabMinX, maxX: annex.maxX, minZ: -halfDepth, maxZ: halfDepth };
 
   const workshopAt: Vec2 = { x: annexX, z: wall.maxZ + 1.5 };
-  const doors: DoorTrigger[] = [...rooms.map((r) => ({ room: r.id, at: r.at })), { room: WORKSHOP_ROOM, at: workshopAt }];
+  const doors: DoorTrigger[] = [
+    ...rooms.map((r) => ({ room: r.id, at: r.at, facing: { x: 0, z: r.side } })),
+    { room: WORKSHOP_ROOM, at: workshopAt, facing: { x: 0, z: -1 } },
+  ];
 
   return {
     segments,
@@ -168,6 +178,20 @@ export function buildCorridor(input: CareerLayoutInput): CorridorLayout {
     doors,
     stops: [...segments.map((s) => s.centerX), annexX],
   };
+}
+
+/**
+ * Whether a room's label shows for a rover at `roverZ`. Rooms stack outward at the same x, so from
+ * the rail camera an outer room's sign would sit behind the inner room's hologram. Row 0 labels show
+ * while the rover is in the corridor or inside row 0; an outer room's label shows once the rover is
+ * in its aisle or inside it.
+ */
+export function labelVisible(room: Pick<CareerRoomLayout, "row" | "side" | "door" | "d">, roverZ: number): boolean {
+  const depth = Math.sign(roverZ) === room.side ? Math.abs(roverZ) : 0;
+  const door = Math.abs(room.door.z);
+  const back = door + room.d;
+  const from = room.row === 0 ? -Infinity : door - CORRIDOR.aisle;
+  return depth >= from && depth <= back + 1;
 }
 
 /** Fraction of the screen width one scrub step needs. */

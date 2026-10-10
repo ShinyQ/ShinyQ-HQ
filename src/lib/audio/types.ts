@@ -5,8 +5,11 @@ export interface AudioEngine {
   play(name: SoundName): void;
   /** Rover speed in units per second. At or below 1 the rumble is silent; values clamp at 12. */
   setRumble(speed: number): void;
-  /** Persists the setting. The first unmute lazily creates the AudioContext and starts the ambient hum. */
+  /** Persists the setting ("on" / "off"). The first unmute lazily creates the AudioContext and starts the ambient hum. */
   setMuted(muted: boolean): void;
+  /** Silences everything while the 3D view is closed (Page View) without changing the stored setting. */
+  setPaused(paused: boolean): void;
+  isPaused(): boolean;
   toggleMuted(): void;
   isMuted(): boolean;
   /** Notified whenever the muted state changes. Returns an unsubscribe function. */

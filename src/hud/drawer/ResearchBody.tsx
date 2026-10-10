@@ -79,7 +79,7 @@ export function ResearchBody({ view }: RoomBodyProps) {
               <li key={p.href}>
                 <External
                   href={p.href!}
-                  className="glass inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold text-ink transition hover:border-amber/60"
+                  className="glass glass-solid inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold text-ink transition hover:border-amber/60"
                 >
                   {p.logo && (
                     // eslint-disable-next-line @next/next/no-img-element

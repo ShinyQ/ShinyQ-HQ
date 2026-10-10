@@ -12,7 +12,7 @@ import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
-import { doorAlong, doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
+import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { faceFor } from "../rover/faces";
@@ -54,7 +54,6 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     prevPhase: "",
     door: { room: null } as DoorLatch,
     /** Rover position at the end of the previous frame (swept door checks). */
-    lastPos: null as Vec2 | null,
   });
 
   useEffect(() => {
@@ -254,13 +253,19 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       }
     }
 
-    // Door triggers (every floor): fire once the rover stands in a zone or drives in manually.
-    // A zone crossed entirely within one slow frame still counts as entered.
+    // Door triggers (every floor): fire once the rover stops or slows on a door pad, or stays on it
+    // for a moment. Driving past (or along a path through) a pad does not open the room.
     const doors = layouts[s.floor].doors;
-    const here = s.ride ? null : doorAt(doors, controller.pose);
-    const door = here ?? (s.ride || !local.lastPos ? null : doorAlong(doors, local.lastPos, controller.pose, local.door.room));
-    local.lastPos = s.ride ? null : { x: controller.pose.x, z: controller.pose.z };
-    const open = stepDoorLatch(local.door, door?.room ?? null, { explore: s.phase === "explore", following: controller.following });
+    const door = s.ride ? null : doorAt(doors, controller.pose);
+    const open = stepDoorLatch(local.door, door?.room ?? null, {
+      explore: s.phase === "explore",
+      // A running mission opens its rooms itself; a pad firing first would reopen after the visitor closes it.
+      following: controller.following || s.mission?.status === "running",
+      now,
+      speed: controller.pose.speed,
+      heading: controller.pose.heading,
+      facing: door?.facing,
+    });
     if (open) intents.emit({ type: "open", room: open });
 
     const pose = controller.pose;

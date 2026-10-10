@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
-import { boxesOverlap, lobbyElements, radialSpan, SKILLS_TEXT, skillsTextBottom, type Box } from "@/experience/floors/lobby/layout";
-import { getSkills } from "@/content/load";
+import { boxesOverlap, lobbyElements, radialSpan, SKILLS_PAD, SKILLS_TEXT, skillsWallLayout, wrapCount, type Box } from "@/experience/floors/lobby/layout";
+import { getSkills, tr } from "@/content/load";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { getStats } from "@/content/load";
 
@@ -74,11 +74,28 @@ describe("Lobby layout", () => {
     expect(isWalkable(grid, l1.approach)).toBe(true);
   });
 
-  it("raises the skills wall so the longest column clears its base", () => {
-    expect(LOBBY.skillsWall.h).toBeGreaterThanOrEqual(8.5);
-    const longest = Math.max(...getSkills().map((g) => g.items.length));
-    expect(skillsTextBottom(longest)).toBeGreaterThanOrEqual(0.6);
-    expect(SKILLS_TEXT.itemSize).toBeGreaterThanOrEqual(0.4);
+  it("measures the skills wall so every heading and column fits with margin (both locales)", () => {
+    for (const locale of ["en", "id"] as const) {
+      const groups = getSkills().map((g) => ({ label: tr(g.label, locale), items: g.items }));
+      const l = skillsWallLayout(groups);
+      expect(l.h).toBeGreaterThanOrEqual(LOBBY.skillsWall.h);
+      // The longest heading wraps; every column reserves its lines, so items start below it.
+      const headingBottom = SKILLS_PAD.top + l.labelLines * SKILLS_TEXT.labelSize * SKILLS_TEXT.labelLine;
+      expect(l.itemTop - headingBottom).toBeGreaterThanOrEqual(0.3);
+      for (const g of groups) {
+        const charW = SKILLS_TEXT.labelSize * (0.6 + SKILLS_TEXT.labelTracking);
+        expect(wrapCount(g.label.toUpperCase(), Math.floor(l.textWidth / charW))).toBeLessThanOrEqual(l.labelLines);
+        const bottom = l.h - l.itemTop - g.items.length * SKILLS_TEXT.itemSize * SKILLS_TEXT.itemLine;
+        expect(bottom, `${locale} ${g.label}`).toBeGreaterThanOrEqual(1.2);
+      }
+    }
+    expect(skillsWallLayout([{ label: "Cloud infrastructure and DevOps", items: [] }]).labelLines).toBe(1);
+    expect(skillsWallLayout([{ label: "a", items: [] }, { label: "b", items: [] }, { label: "c", items: [] }, { label: "Cloud infrastructure and DevOps", items: [] }]).labelLines).toBe(2);
+  });
+
+  it("wraps headings by words", () => {
+    expect(wrapCount("CLOUD INFRASTRUCTURE AND DEVOPS", 25)).toBe(2);
+    expect(wrapCount("SOFTWARE ENGINEERING", 25)).toBe(1);
   });
 
   it("gives each skill column room to breathe", () => {

@@ -25,7 +25,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
   return (
     <nav
       aria-label={t("elevator")}
-      className="glass pointer-events-auto absolute top-1/2 right-2 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-full p-1 md:right-4"
+      className="glass glass-solid pointer-events-auto absolute top-1/2 right-2 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-full p-1 md:right-4"
       data-testid="elevator-panel"
     >
       {TOP_DOWN.map((id) => {

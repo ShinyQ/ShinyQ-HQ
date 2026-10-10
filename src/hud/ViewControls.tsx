@@ -15,7 +15,7 @@ export function ViewControls() {
       role="group"
       aria-label={t("label")}
       data-testid="view-controls"
-      className="glass pointer-events-auto absolute right-2 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex items-center gap-0.5 rounded-full p-0.5 md:right-4"
+      className="glass glass-solid pointer-events-auto absolute right-2 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex items-center gap-0.5 rounded-full p-0.5 md:right-4"
     >
       <button type="button" className={button} aria-label={t("rotateLeft")} title={t("rotateLeft")} onClick={() => intents.emit({ type: "orbit", dyaw: -ROTATE_STEP, smooth: true, source: "button" })}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

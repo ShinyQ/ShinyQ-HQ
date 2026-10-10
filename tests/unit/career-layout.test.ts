@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getSideProjects, getYears } from "@/content/load";
-import { buildCorridor, CORRIDOR, scrubTarget, WORKSHOP_ROOM } from "@/experience/floors/career/layout";
+import { buildCorridor, CORRIDOR, labelVisible, scrubTarget, WORKSHOP_ROOM } from "@/experience/floors/career/layout";
 import { distanceToRect } from "@/experience/nav/collision";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import type { CareerLayoutInput, CareerType, Rect } from "@/experience/types";
@@ -35,11 +35,12 @@ describe("buildCorridor", () => {
     expect(c.endX).toBe(22);
   });
 
-  it("alternates sides and stacks extra rooms outward", () => {
+  it("alternates sides and stacks extra rooms outward behind an aisle", () => {
     const rooms = c.segments[0].rooms;
     expect(rooms.map((r) => r.side)).toEqual([-1, 1, -1, 1, -1]);
     expect(rooms.map((r) => r.row)).toEqual([0, 0, 1, 1, 2]);
-    expect(rooms.map((r) => r.center.z)).toEqual([-10, 10, -19, 19, -28]);
+    // Doors at 6, then back wall + 5 u aisle: 6 + 8 + 5 = 19 (north) and 6 + 6 + 5 = 17 (south, behind the award).
+    expect(rooms.map((r) => r.center.z)).toEqual([-10, 9, -23, 21, -36]);
     expect(new Set(rooms.map((r) => r.center.x))).toEqual(new Set([-13]));
   });
 
@@ -111,6 +112,57 @@ describe("the real Career Archive", () => {
       expect(Math.abs(end.z - door.at.z), door.room).toBeLessThanOrEqual(1);
     }
     expect(isWalkable(grid, { x: c.stops.at(-1)!, z: 0 })).toBe(true);
+  });
+});
+
+describe("walkable spacing on the real archive", () => {
+  const c = buildCorridor(real);
+  const zone = (at: { x: number; z: number }): Rect => ({
+    minX: at.x - CORRIDOR.doorSize / 2,
+    maxX: at.x + CORRIDOR.doorSize / 2,
+    minZ: at.z - CORRIDOR.doorSize / 2,
+    maxZ: at.z + CORRIDOR.doorSize / 2,
+  });
+  const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && a.maxX > b.minX && a.minZ < b.maxZ && a.maxZ > b.minZ;
+
+  it("keeps at least 3 u of clear floor between neighbouring rooms and door pads", () => {
+    for (const a of c.rooms) {
+      for (const b of c.rooms) {
+        if (a === b) continue;
+        const ra = roomRect(a);
+        const rb = roomRect(b);
+        const dx = Math.max(rb.minX - ra.maxX, ra.minX - rb.maxX);
+        const dz = Math.max(rb.minZ - ra.maxZ, ra.minZ - rb.maxZ);
+        expect(Math.max(dx, dz), `${a.slug} / ${b.slug}`).toBeGreaterThanOrEqual(3);
+        // The next row's door pad sits in the aisle behind a room, with 3 u clear in front of the back wall.
+        const gap = Math.max(zone(b.at).minX - ra.maxX, ra.minX - zone(b.at).maxX, zone(b.at).minZ - ra.maxZ, ra.minZ - zone(b.at).maxZ);
+        expect(gap, `${b.slug} pad vs ${a.slug}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it("never puts a door pad on the corridor walkway or inside another room", () => {
+    const walkway: Rect = { minX: -Infinity, maxX: Infinity, minZ: -CORRIDOR.halfWidth, maxZ: CORRIDOR.halfWidth };
+    for (const door of c.doors) {
+      expect(overlaps(zone(door.at), walkway), door.room).toBe(false);
+      for (const r of c.rooms) if (r.id !== door.room) expect(overlaps(zone(door.at), roomRect(r)), `${door.room} in ${r.id}`).toBe(false);
+    }
+  });
+});
+
+describe("labelVisible", () => {
+  const c = buildCorridor(SAMPLE);
+  const [north0, south0, north1] = c.segments[0].rooms;
+  it("shows only the first row from the corridor, so stacked signs never overlap", () => {
+    expect(labelVisible(north0, 0)).toBe(true);
+    expect(labelVisible(south0, 0)).toBe(true);
+    expect(labelVisible(north1, 0)).toBe(false);
+  });
+  it("shows an outer room once the rover is in its aisle, and hides the inner one behind it", () => {
+    const aisle = -(Math.abs(north0.door.z) + north0.d + 2);
+    expect(labelVisible(north1, aisle)).toBe(true);
+    expect(labelVisible(north0, aisle)).toBe(false);
+    expect(labelVisible(north1, 5)).toBe(false);
   });
 });
 

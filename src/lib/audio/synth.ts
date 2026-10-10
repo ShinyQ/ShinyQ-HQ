@@ -140,7 +140,7 @@ export interface LoopVoice {
 }
 
 /** Target gain of the ambient pad (roughly -24 LUFS against the other sounds). */
-export const AMBIENT_LEVEL = 0.06;
+export const AMBIENT_LEVEL = 0.04;
 
 /** Quiet low-passed pad: detuned saws plus a sine sub, with a slow LFO on the cutoff. */
 export function createAmbientPad(ctx: BaseAudioContext, destination: AudioNode): LoopVoice {

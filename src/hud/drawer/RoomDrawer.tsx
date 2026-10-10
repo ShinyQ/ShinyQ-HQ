@@ -221,7 +221,7 @@ function Overflow({ readme, onToggleReadme, page, onLeave }: { readme: boolean; 
         </svg>
       </button>
       {open && (
-        <ul id={id} className="glass absolute top-12 right-0 z-10 w-52 p-1.5">
+        <ul id={id} className="glass glass-solid absolute top-12 right-0 z-10 w-52 p-1.5">
           <li>
             <button
               type="button"
@@ -416,7 +416,7 @@ export function RoomDrawer({
 
   const placement =
     layout === "side"
-      ? "top-3 right-3 bottom-3 w-[min(420px,calc(100vw-1.5rem))] md:top-4 md:right-4 md:bottom-4"
+      ? "top-[68px] right-3 bottom-3 w-[min(420px,calc(100vw-1.5rem))] md:top-[76px] md:right-4 md:bottom-4"
       : "inset-x-0 bottom-0 rounded-b-none pb-[env(safe-area-inset-bottom)]";
 
   let body: ReactNode;
@@ -466,7 +466,7 @@ export function RoomDrawer({
       data-testid="room-drawer"
       data-layout={layout}
       data-room={view.id}
-      className={`glass pointer-events-auto absolute z-20 flex flex-col overflow-hidden shadow-[0_0_48px_-12px_rgb(0_0_0/0.8)] outline-none ${placement}`}
+      className={`glass glass-solid pointer-events-auto absolute z-20 flex flex-col overflow-hidden shadow-[0_0_48px_-12px_rgb(0_0_0/0.8)] outline-none ${placement}`}
       style={layout === "sheet" ? { height: `${Math.round(sheet.fraction * 100)}dvh` } : undefined}
     >
       {layout === "sheet" && (

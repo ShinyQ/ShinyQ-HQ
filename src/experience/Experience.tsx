@@ -153,14 +153,18 @@ export default function Experience({
     };
   }, []);
 
-  // The audio engine owns the sound setting (localStorage "hq:sound"); the store mirrors it.
+  // The audio engine owns the sound setting (localStorage "hq:sound", on unless the visitor muted);
+  // the store mirrors it. Sound only plays while the 3D view is open: the first gesture in the HQ starts
+  // it, and leaving for the Page View pauses it without changing the setting.
   useEffect(() => {
     const mirror = () => getHQStore().setState({ sound: !audio.isMuted() });
     mirror();
     const off = audio.subscribe(mirror);
+    audio.setPaused(false);
     return () => {
       off();
       audio.setRumble(0);
+      audio.setPaused(true);
     };
   }, []);
 
