@@ -11,7 +11,7 @@ function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
   const t = useTranslations("hud");
   const locale = useLocale() as Locale;
   return (
-    <div role="group" aria-label={t("language")} className="glass flex rounded-full p-0.5">
+    <div role="group" aria-label={t("language")} className="glass glass-solid flex rounded-full p-0.5">
       {LOCALES.map((l) => (
         <button
           key={l}
@@ -40,7 +40,7 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
       aria-pressed={sound}
       aria-label={withLabel ? undefined : t("sound")}
       onClick={toggleMuted}
-      className="glass inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-ink-2 transition hover:text-ink"
+      className="glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-ink-2 transition hover:text-ink"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <path d="M11 5 6 9H2v6h4l5 4V5z" />
@@ -51,8 +51,8 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
   );
 }
 
-const launcher = "glass inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
-const pill = "glass inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
+const launcher = "glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
+const pill = "glass glass-solid inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
 
 /** Desktop and tablet top-right controls (appendix 04 section 2). */
 export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
@@ -87,7 +87,7 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
         aria-controls={id}
         aria-label={t("menu")}
         onClick={() => setOpen((v) => !v)}
-        className="glass grid size-11 place-items-center rounded-full text-ink"
+        className="glass glass-solid grid size-11 place-items-center rounded-full text-ink"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
@@ -95,7 +95,7 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
         </button>
       </div>
       {open && (
-        <div id={id} className="glass flex w-56 flex-col gap-2 p-3">
+        <div id={id} className="glass glass-solid flex w-56 flex-col gap-2 p-3">
           <Link href="/quick" className={`${pill} justify-center`}>
             {t("quickView")}
           </Link>

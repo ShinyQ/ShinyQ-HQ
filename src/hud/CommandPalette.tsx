@@ -143,7 +143,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, onFilterChange,
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={onDialogKeyDown}
-        className="glass absolute inset-0 flex flex-col overflow-hidden bg-void pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-ink shadow-2xl max-sm:rounded-none max-sm:border-0 sm:inset-auto sm:top-[12vh] sm:left-1/2 sm:w-[90%] sm:max-w-[640px] sm:-translate-x-1/2 sm:bg-glass sm:pt-0 sm:pb-0"
+        className="glass glass-solid absolute inset-0 flex flex-col overflow-hidden max-sm:bg-void pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-ink shadow-2xl max-sm:rounded-none max-sm:border-0 sm:inset-auto sm:top-[12vh] sm:left-1/2 sm:w-[90%] sm:max-w-[640px] sm:-translate-x-1/2 sm:pt-0 sm:pb-0"
       >
         <h2 id={titleId} className="sr-only">
           {t("title")}

@@ -194,7 +194,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
         onClick={(event) => event.stopPropagation()}
         className={
           className ??
-          "w-full rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg/90 pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_12px_40px_rgb(0_0_0/0.45),0_0_32px_rgb(52_211_153/0.18),inset_0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-[18px] sm:w-[360px] sm:rounded-2xl sm:pb-0"
+          "w-full rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg/95 pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_12px_40px_rgb(0_0_0/0.45),0_0_32px_rgb(52_211_153/0.18),inset_0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-[18px] sm:w-[360px] sm:rounded-2xl sm:pb-0"
         }
       >
         <div className="flex items-center justify-between border-b border-terminal-fg/25 py-1 pr-1 pl-4">

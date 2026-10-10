@@ -96,7 +96,7 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
     // Room data still loading (or failed): keep a way back instead of an empty screen.
     return (
       <div ref={panel} role="dialog" aria-modal="true" aria-label={t("title")} tabIndex={-1} data-testid="hologram" className="pointer-events-none absolute inset-0 z-20 outline-none">
-        <div role="status" className="glass pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 px-4 py-2 text-sm text-ink-2">
+        <div role="status" className="glass glass-solid pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 px-4 py-2 text-sm text-ink-2">
           {views === "error" ? tDrawer("unavailable") : tDrawer("loading")}
           <button type="button" onClick={() => getHQStore().getState().closeHologram()} className="link min-h-11">
             {t("back")}
@@ -106,7 +106,7 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
     );
   }
 
-  const nav = "glass pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
+  const nav = "glass glass-solid pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
 
   return (
     <div
@@ -137,7 +137,7 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
         data-testid="hologram-results"
         tabIndex={0}
       >
-        <div className="glass p-3">
+        <div className="glass glass-solid p-3">
           <MetricTiles metrics={view.metrics} single={!portrait} />
         </div>
       </section>

@@ -27,7 +27,7 @@ function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   if (hidden) return null;
   return (
     <p
-      className={`glass pointer-events-none absolute left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 px-4 py-2 text-center text-[13px] leading-5 text-ink-2 ${
+      className={`glass glass-solid pointer-events-none absolute left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 px-4 py-2 text-center text-[13px] leading-5 text-ink-2 ${
         coarse ? "bottom-[156px]" : "bottom-4"
       }`}
       data-testid="hint"
@@ -44,7 +44,7 @@ function FloorNotice({ data, mobile }: { data: ExperienceData; mobile: boolean }
   if (!exploring || READY_FLOORS.includes(floor)) return null;
   const { name, route } = data.floors[floor];
   return (
-    <div className={`glass pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[68px]" : "top-[168px]"}`}>
+    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[68px]" : "top-[168px]"}`}>
       <p className="text-ink-2">{t("underConstruction", { name })}</p>
       <Link href={route} className="link mt-1 inline-flex min-h-11 items-center">
         {t("openFloorPage", { name })}
@@ -60,7 +60,7 @@ function IntroSkip() {
     <button
       type="button"
       onClick={finishIntro}
-      className="glass pointer-events-auto absolute bottom-20 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink"
+      className="glass glass-solid pointer-events-auto absolute bottom-20 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink"
     >
       {t("skipIntro")}
       <kbd className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">Esc</kbd>
@@ -105,7 +105,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {mobile ? <MobileMenu onExit={onExit} onToggleLang={onToggleLang} /> : <TopBar onExit={onExit} onToggleLang={onToggleLang} />}
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
-          {phase === "intro" ? <IntroSkip /> : <HintBar coarse={coarse} mobile={mobile} />}
+          {phase === "intro" ? <IntroSkip /> : phase !== "room" && <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
           {phase !== "intro" && phase !== "room" && <ViewControls />}

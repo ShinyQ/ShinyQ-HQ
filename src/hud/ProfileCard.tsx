@@ -22,7 +22,7 @@ export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: bo
         onClick={() => setOpen(true)}
         aria-expanded={false}
         aria-label={`${t("profile")}: ${data.profile.name}, ${floor} ${data.floors[floor].name}`}
-        className="glass pointer-events-auto absolute top-3 left-3 flex min-h-11 items-center gap-2 rounded-full py-1 pr-4 pl-1"
+        className="glass glass-solid pointer-events-auto absolute top-3 left-3 flex min-h-11 items-center gap-2 rounded-full py-1 pr-4 pl-1"
       >
         <Monogram text={data.profile.monogram} size={36} />
         <span className={`label ${accent}`}>{floor}</span>
@@ -33,7 +33,7 @@ export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: bo
   return (
     <section
       aria-label={t("profile")}
-      className="glass pointer-events-auto absolute top-3 left-3 w-[min(280px,calc(100vw-5.5rem))] p-4 md:top-4 md:left-4 lg:w-[280px] md:w-60"
+      className="glass glass-solid pointer-events-auto absolute top-3 left-3 w-[min(280px,calc(100vw-5.5rem))] p-4 md:top-4 md:left-4 lg:w-[280px] md:w-60"
     >
       <div className="flex items-center gap-3">
         <Monogram text={data.profile.monogram} size={44} />

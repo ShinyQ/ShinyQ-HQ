@@ -66,7 +66,7 @@ function ContactBody({ view }: { view: RoomView }) {
                 href={c.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="glass flex min-h-11 items-center justify-between gap-2 px-3 py-2 text-sm font-semibold text-ink transition hover:border-blue/60"
+                className="glass glass-solid flex min-h-11 items-center justify-between gap-2 px-3 py-2 text-sm font-semibold text-ink transition hover:border-blue/60"
               >
                 {c.title}
                 <span aria-hidden="true">&#8599;</span>
