@@ -27,6 +27,6 @@ export function sceneSettings(tier: GpuTier, rig: RigKind = "follow"): SceneSett
     exposure: 1.05,
     hemisphere: ["#8b8cff", FOG_COLOR, 0.7],
     directional: { color: "#dfe3ff", intensity: 1.4, position: [10, 22, 12] },
-    bloom: tier === "full" ? { intensity: 1.0, threshold: 0.32, radius: 0.4 } : null,
+    bloom: tier === "full" ? { intensity: 0.9, threshold: 0.6, radius: 0.45 } : null,
   };
 }

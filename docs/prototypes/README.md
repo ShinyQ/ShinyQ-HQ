@@ -10,7 +10,7 @@ Open it with any static server from this folder, for example `bunx serve docs/pr
 | --- | --- | --- |
 | Tone mapping | ACES filmic, exposure 1.05 | `scene/settings.ts`, `Experience.tsx` |
 | Fog | linear `#0a0a0f`, 38 to 80 | `scene/settings.ts` |
-| Bloom (Unreal) | strength 0.5, radius 0.4, threshold 0.32 | `scene/Effects.tsx` (postprocessing `Bloom`, intensity tuned for its mipmap blur) |
+| Bloom (Unreal) | strength 0.5, radius 0.4, threshold 0.32 | `scene/Effects.tsx`: postprocessing mipmap `Bloom` at intensity 0.9, radius 0.45, threshold 0.6, so only `neonColor`-boosted neon blooms and body text stays crisp |
 | Hemisphere light | `#8b8cff` / `#0a0a0f`, 0.7 | `scene/settings.ts` |
 | Directional light | `#dfe3ff`, 1.4 at (10, 22, 12) | `scene/settings.ts` |
 | Glass shader | fresnel `pow(1-abs(N.V), 2.2)`, top band, base band, moving scanline | `fx/materials.ts` `createGlassMaterial` |

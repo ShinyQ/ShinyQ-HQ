@@ -27,6 +27,21 @@ export function createGlassMaterial(color: string, opacity: number): ShaderMater
   });
 }
 
+const GLASS_INSTANCED_VS =
+  "varying vec3 vN; varying vec3 vV; varying vec2 vUv; varying vec3 vTint; void main(){ vUv = uv; vTint = vec3(1.); mat4 inst = mat4(1.); \n#ifdef USE_INSTANCING\n inst = instanceMatrix; \n#endif\n#ifdef USE_INSTANCING_COLOR\n vTint = instanceColor; \n#endif\n vec4 mv = modelViewMatrix*inst*vec4(position,1.); vN = normalize(normalMatrix*mat3(inst)*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }";
+
+/** The glass shader for instanced meshes: each instance is tinted by its instance color. */
+export function createInstancedGlassMaterial(opacity: number): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: { uColor: { value: new Color("#ffffff") }, uTime: { value: 0 }, uOp: { value: opacity } },
+    vertexShader: GLASS_INSTANCED_VS,
+    fragmentShader: "varying vec3 vTint;\n" + GLASS_FS.replace("gl_FragColor = vec4(uColor*", "gl_FragColor = vec4(uColor*vTint*"),
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+}
+
 /** Anti-aliased 1 u and 5 u grid in world space with a radial fade around `center`. */
 export function createGridFloorMaterial({ line, bg, radius, center = [0, 0] }: { line: string; bg: string; radius: number; center?: [number, number] }): ShaderMaterial {
   return new ShaderMaterial({

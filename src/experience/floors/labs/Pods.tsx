@@ -6,8 +6,12 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Object3D, Quaternion, Vector3, type InstancedMesh } from "three";
 import type { Accent } from "@/content/schema";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { floorY } from "../../config";
+import { createInstancedGlassMaterial, neonColor } from "../../fx/materials";
+import { useUniformTime } from "../../fx/useUniformTime";
 import { intents } from "../../input/intents";
-import { FONTS } from "../../tower/primitives";
+import { roverRuntime } from "../../rover/runtime";
+import { FONTS, tierFill } from "../../tower/primitives";
 import { hologramParts } from "./hologramParts";
 import { LABS, type PlacedPod } from "./layout";
 import { LineBatch } from "./lines";
@@ -33,6 +37,12 @@ function setCursor(value: string) {
 /** Pod rooms: glass walls (one instanced mesh), neon edges, door markers and hero stages (one line batch). */
 function PodShells({ placed }: { placed: PlacedPod[] }) {
   const fills = useRef<InstancedMesh>(null);
+  const tier = useHQStore((s) => s.tier);
+  const glass = useMemo(() => createInstancedGlassMaterial(tierFill(0.05, tier)), [tier]);
+  const glassList = useMemo(() => [glass], [glass]);
+  useUniformTime(glassList);
+  useEffect(() => () => glass.dispose(), [glass]);
+  const edgeBoost = useMemo(() => neonColor("#ffffff", 1.6, tier), [tier]);
   const edges = useMemo(() => {
     const batch = new LineBatch();
     for (const p of placed) {
@@ -80,12 +90,13 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
         onClick={onClick}
         onPointerOver={() => setCursor("pointer")}
         onPointerOut={() => setCursor("")}
+        material={glass}
+        renderOrder={2}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial transparent opacity={0.07} depthWrite={false} toneMapped={false} />
       </instancedMesh>
       <lineSegments geometry={edges}>
-        <lineBasicMaterial vertexColors transparent opacity={0.95} toneMapped={false} />
+        <lineBasicMaterial color={edgeBoost} vertexColors transparent opacity={0.95} toneMapped={false} />
       </lineSegments>
     </group>
   );
@@ -106,27 +117,47 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     [placed],
   );
   const dummy = useMemo(() => new Object3D(), []);
+  const boost = tier === "full" ? 1.6 : 1;
+  const local = useRef({ angles: placed.map((_, i) => i * 0.7), levels: placed.map(() => -1), color: new Color() });
 
   useEffect(() => {
     const m = mesh.current;
     if (!m) return;
     const color = new Color();
-    parts.forEach((p, i) => m.setColorAt(i, color.set(p.color)));
+    parts.forEach((p, i) => m.setColorAt(i, color.set(p.color).multiplyScalar(0.6 * boost)));
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
-  }, [parts]);
+  }, [parts, boost]);
 
-  useFrame((state) => {
+  useFrame((state, rawDt) => {
     const m = mesh.current;
     if (!m) return;
     const t = state.clock.elapsedTime;
-    const spin = reduced ? 0 : t * IDLE_SPIN;
+    const dt = Math.min(rawDt, 0.1);
+    const l = local.current;
+    // Holograms near the rover wake up: brighter (0.6 to 1) and faster (0.4 to 0.9 rad/s).
+    const onFloor = Math.abs(roverRuntime.y - floorY("L3")) < 0.5;
+    let recolor = false;
+    placed.forEach((p, i) => {
+      const d = onFloor ? Math.hypot(roverRuntime.x - p.center.x, roverRuntime.z - p.center.z) - Math.max(p.width, p.depth) / 2 : Infinity;
+      const near = Math.min(1, Math.max(0, (6 - d) / 4.5));
+      if (!reduced) l.angles[i] += dt * (IDLE_SPIN + 0.5 * near);
+      const level = Math.round((0.6 + 0.4 * near) * 50) / 50;
+      if (level !== l.levels[i]) {
+        l.levels[i] = level;
+        recolor = true;
+      }
+    });
+    if (recolor) {
+      parts.forEach((p, i) => m.setColorAt(i, l.color.set(p.color).multiplyScalar(l.levels[p.podIndex] * boost)));
+      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    }
     // The pod whose hologram view is open shows the diagram instead.
     const hs = getHQStore().getState();
     const hidden = hs.phase === "hologram" ? hs.activeRoom : null;
     parts.forEach(({ part, podIndex, scale, lift }, i) => {
       const pod = placed[podIndex];
       const off = pod.room === hidden ? 0 : 1;
-      const angle = spin + podIndex * 0.7;
+      const angle = l.angles[podIndex];
       const c = Math.cos(angle);
       const s = Math.sin(angle);
       const pulse = part.pulse !== undefined && !reduced ? 0.65 + 0.35 * Math.sin(t * 3 + part.pulse) : 1;
