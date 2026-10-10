@@ -5521,7 +5521,48 @@
             "Bicep"
           ],
           "hologram": "documents",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/bank-statement-analyzer/01-operations-dashboard.webp",
+              "alt": {
+                "en": "ATLAS operations dashboard: exposure under analysis, statements processed, high-risk statements and a work queue; amounts and names blurred",
+                "id": "Operations dashboard ATLAS: exposure yang dianalisis, statement yang diproses, statement berisiko tinggi, dan antrean kerja; nominal dan nama diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/02-applications.webp",
+              "alt": {
+                "en": "Credit applications with status, analyst, document count and analysis state; borrower and analyst names blurred",
+                "id": "Daftar pengajuan kredit dengan status, analis, jumlah dokumen, dan status analisis; nama debitur dan analis diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/03-upload.webp",
+              "alt": {
+                "en": "Upload flow that opens a credit file and accepts bank statements, identity and trade documents",
+                "id": "Alur upload yang membuka berkas kredit dan menerima rekening koran, dokumen identitas, dan dokumen perdagangan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/bank-statement-analyzer/04-usage-trends.webp",
+              "alt": {
+                "en": "Usage trends for the OCR, statement analysis and fraud services with daily calls, latency and errors",
+                "id": "Tren penggunaan layanan OCR, analisis rekening koran, dan fraud dengan jumlah panggilan harian, latensi, dan error"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "ai-app-accelerator",
