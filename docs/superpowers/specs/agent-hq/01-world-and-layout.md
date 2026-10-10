@@ -54,7 +54,7 @@ The corridor's end opens onto a glass window that looks up at the Labs (L3 silho
 
 ## Door triggers (every floor)
 
-A door trigger is the 1.6 × 1.6 u pad in front of a door (`DOOR_SIZE`, drawn by `ProximityGlow`). A room opens only on intent: the rover stops or slows below 2 u/s on the pad, or stays on it for 250 ms (`stepDoorLatch`). Driving past a pad, or a click or mission path crossing it, does not open the room; a click on a room or a mission still opens it on arrival. Floor lanes stop 0.5 u before every pad, and neighbouring rooms and pods keep at least 3 u of clear floor between them (layout tests).
+A door trigger is the pad in front of a door: 1.6 u deep along the approach (`DOOR_SIZE`) and 2.4 u wide across the door opening (`DOOR_WIDTH`), drawn by `ProximityGlow`. A room opens only on intent: the rover drives into the door (within 45 degrees of its inward direction), stops or slows below 2 u/s on the pad, or stays on it for 250 ms (`stepDoorLatch`). Driving past a pad, or a click or mission path crossing it, does not open the room; a click on a room or a mission still opens it on arrival. Floor lanes stop 0.5 u before every pad, and neighbouring rooms and pods keep at least 3 u of clear floor between them (layout tests).
 
 ## 4. Floor L3: Labs (Software Wing + AI Wing)
 
@@ -71,7 +71,7 @@ Footprint: 81 × 56 u, from x = -24 to 57 and z = -28 to 28. Accent: violet `#a7
 | Featured row (per wing) | Up to 6 featured pods of 8 × 7 u, centers at \|z\| = 22.5 and x = -5 + 11 i (3 u apart), west to east |
 | Back lane (per wing) | \|z\| = 15, between the hero row and the featured row, joined to the spine at x = -7 and x = 47 |
 | Listed items | Not pods. They appear on the wing directory board and in ⌘K, and open in the drawer directly (missions stop in front of the board). |
-| Pod door | Front-center of each pod: hero doors face the spine (door trigger centered at \|z\| = 2.9), featured doors face the back lane (\|z\| = 17.9). Each trigger is the 1.6 × 1.6 u glowing pad in front of the door; no lane runs over a pad. |
+| Pod door | Front-center of each pod: hero doors face the spine (door trigger centered at \|z\| = 2.9), featured doors face the back lane (\|z\| = 17.9). Each trigger is the glowing pad in front of the door (1.6 u deep, 2.4 u wide); no lane runs over a pad. |
 | Hologram stage | Inside each hero pod: a 6 u diameter disc at the pod center used by the Hologram view. The diagram board stands on it, facing the spine. |
 | Pod holograms | One procedural hologram per pod by `hologram` kind (waveform, shield, documents, graph, chart, template, pipeline), floating and slowly rotating above the pod |
 
