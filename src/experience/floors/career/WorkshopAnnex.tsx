@@ -35,7 +35,7 @@ function Benches({ spots }: { spots: CorridorLayout["workshop"]["benches"] }) {
   if (spots.length === 0) return null;
   return (
     <instancedMesh ref={ref} args={[geometry, undefined, spots.length]} frustumCulled={false}>
-      <meshStandardMaterial color="#141428" emissive={COLORS.amber} emissiveIntensity={0.12} roughness={0.7} />
+      <meshStandardMaterial color="#141428" emissive={COLORS.amber} emissiveIntensity={0.35} roughness={0.7} />
     </instancedMesh>
   );
 }
