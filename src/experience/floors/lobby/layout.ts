@@ -2,6 +2,14 @@ import { LOBBY } from "../../config";
 
 /** Certification badges stand in front of the wall, louvered 45 degrees toward the plaza. */
 export const CERT_BADGE = { w: 1.75, h: 2.3, offset: 1.05, y: 2.75 } as const;
+/** Skills wall text block (wall-local units): item font size, line height factor, top inset, logo size. */
+export const SKILLS_TEXT = { itemSize: 0.4, itemLine: 1.3, itemTop: 1.25, icon: 0.4, iconGap: 0.55, labelSize: 0.46 } as const;
+
+/** Height left under the last item of a column with `items` lines (must stay above the wall base). */
+export function skillsTextBottom(items: number): number {
+  return LOBBY.skillsWall.h - SKILLS_TEXT.itemTop - items * SKILLS_TEXT.itemSize * SKILLS_TEXT.itemLine;
+}
+
 /** Monogram hexagon radius and height on the hologram pedestal. */
 export const HOLOGRAM = { hexRadius: 2.3, y: 3.4 } as const;
 /** Half of the name/headline text block width (Text maxWidth 14). */

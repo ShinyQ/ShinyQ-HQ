@@ -1,9 +1,13 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import { useMemo } from "react";
-import { BufferGeometry, Float32BufferAttribute } from "three";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { BufferGeometry, Float32BufferAttribute, type Mesh } from "three";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
+import { neonColor } from "../../fx/materials";
+import { roverRuntime } from "../../rover/runtime";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import { CORRIDOR, type CorridorLayout } from "./layout";
 
@@ -46,15 +50,37 @@ export function YearGates({ corridor, prologue }: { corridor: CorridorLayout; pr
     return g;
   }, [segments, endX, z]);
 
+  const tier = useHQStore((st) => st.tier);
+  const neon = useMemo(() => neonColor(accent, 2, tier), [accent, tier]);
+  const years = useRef<(Mesh | null)[]>([]);
+  const pulse = useRef({ lastX: Number.NaN, start: segments.map(() => -1) });
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const p = pulse.current;
+    const x = roverRuntime.x;
+    const reduced = getHQStore().getState().reducedMotion;
+    const onFloor = getHQStore().getState().floor === "L2";
+    segments.forEach((s, i) => {
+      // Crossing a gate (either way) pulses its year once: scale 1 to 1.04 and back in 400 ms.
+      if (onFloor && !reduced && !Number.isNaN(p.lastX) && (p.lastX - s.startX) * (x - s.startX) < 0) p.start[i] = t;
+      const k = p.start[i] >= 0 ? (t - p.start[i]) / 0.4 : 1;
+      years.current[i]?.scale.setScalar(k < 1 ? 1 + 0.04 * Math.sin(Math.PI * k) : 1);
+    });
+    p.lastX = x;
+  });
+
   return (
     <group name="year-gates">
       <GlassBox size={[length, 0.04, CORRIDOR.halfWidth * 2]} position={[CORRIDOR.startX + length / 2, 0.02, 0]} color={accent} fillOpacity={0.08} edgeOpacity={0.7} />
       <lineSegments geometry={arches}>
-        <lineBasicMaterial color={accent} transparent opacity={0.9} toneMapped={false} />
+        <lineBasicMaterial color={neon} transparent opacity={0.9} toneMapped={false} />
       </lineSegments>
-      {segments.map((s) => (
+      {segments.map((s, i) => (
         <Text
           key={s.year}
+          ref={(node: Mesh | null) => {
+            years.current[i] = node;
+          }}
           font={FONTS.monoBold}
           fontSize={2.2}
           letterSpacing={0.04}

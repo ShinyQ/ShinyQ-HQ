@@ -53,6 +53,17 @@ export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: bo
           {visited}/{data.roomCount}
         </dd>
       </dl>
+      {/* Exploration progress (decorative; the count above carries the information). */}
+      <div aria-hidden="true" className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
+          style={{
+            width: `${Math.min(100, (visited / Math.max(1, data.roomCount)) * 100)}%`,
+            background: "linear-gradient(90deg, #818cf8, #22d3ee)",
+            boxShadow: "0 0 10px rgb(129 140 248 / 0.6)",
+          }}
+        />
+      </div>
       {mobile && (
         <button
           type="button"

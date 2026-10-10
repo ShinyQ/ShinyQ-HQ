@@ -64,3 +64,18 @@ export const ROOF_DOORS: DoorTrigger[] = [
   { room: "RF:contact", at: ROOF_STOPS.contact },
   { room: "RF:cv", at: ROOF_STOPS.cv },
 ];
+
+const LANE_Z = ROOF_STOPS.cv.z;
+
+/** Prototype data lanes on RF: from the elevator around the comms arc to the CV kiosk, with a spur to the email terminal. */
+export const ROOF_LANES: [number, number][][] = [
+  [
+    [-17, 0],
+    [-17, LANE_Z],
+    [ROOF_STOPS.cv.x, LANE_Z],
+  ],
+  [
+    [ROOF_STOPS.contact.x, LANE_Z],
+    [ROOF_STOPS.contact.x, ROOF_STOPS.contact.z],
+  ],
+];

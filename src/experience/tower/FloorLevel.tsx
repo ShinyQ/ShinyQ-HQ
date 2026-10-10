@@ -5,11 +5,12 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
-import { COLORS, floorY, SLAB_THICKNESS } from "../config";
+import { floorY, SLAB_THICKNESS } from "../config";
 import { DRAG_THRESHOLD, intents } from "../input/intents";
 import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
-import { GridLines } from "./primitives";
+import { GridFloor } from "../fx/GridFloor";
+import { ProximityGlow } from "../fx/ProximityGlow";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -48,6 +49,7 @@ export function FloorLevel({
   const fill = useRef<MeshBasicMaterial>(null);
   const edge = useRef<LineBasicMaterial>(null);
   const content = useRef<Group>(null);
+  const center = useMemo<[number, number]>(() => [cx, cz], [cx, cz]);
   const edges = useMemo(() => new EdgesGeometry(new BoxGeometry(w, SLAB_THICKNESS, d)), [w, d]);
 
   useFrame(() => {
@@ -74,7 +76,8 @@ export function FloorLevel({
         <lineBasicMaterial ref={edge} color={accent} transparent opacity={0.95} toneMapped={false} />
       </lineSegments>
       <group ref={content}>
-        {near && <GridLines width={w} depth={d} step={2} color={COLORS.grid} opacity={0.28} position={[cx, 0.01, cz]} />}
+        {near && <GridFloor width={w} depth={d} center={center} />}
+        {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}
         {children}
       </group>
     </group>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
+import { ACESFilmicToneMapping } from "three";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
@@ -21,6 +22,7 @@ import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { Scene, type SceneLabels } from "./scene/Scene";
+import { sceneSettings } from "./scene/settings";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 
@@ -82,7 +84,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   // Deep link (or a language switch on a room URL): open the room on the floor the rover is on.
   openStartRoom();
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition] };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
@@ -254,10 +256,11 @@ export default function Experience({
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
         <Canvas
           dpr={tier === "full" ? [1, 2] : [1, 1.5]}
-          flat
           gl={{ antialias: tier === "full", powerPreference: "high-performance" }}
           camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
           onCreated={({ gl }) => {
+            gl.toneMapping = ACESFilmicToneMapping;
+            gl.toneMappingExposure = sceneSettings(tier).exposure;
             const canvas = gl.domElement;
             canvas.addEventListener("webglcontextlost", (event) => {
               event.preventDefault();

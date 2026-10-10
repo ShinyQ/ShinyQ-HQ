@@ -33,6 +33,8 @@ export const roverRuntime = {
   autopilot: null as AutopilotRequest | null,
   /** A mission was cancelled: show o_o for 600 ms. */
   cancelFlash: false,
+  /** Click-to-move marker: a ring that expands and fades where the floor was clicked (also a test probe). */
+  marker: { visible: false, opacity: 0, scale: 1, x: 0, z: 0 },
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
 };

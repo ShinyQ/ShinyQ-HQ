@@ -4,9 +4,11 @@ import { Text } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
+  AdditiveBlending,
   BoxGeometry,
   BufferGeometry,
   CylinderGeometry,
+  DoubleSide,
   Float32BufferAttribute,
   type InstancedMesh,
   type Mesh,
@@ -18,7 +20,7 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { intents } from "../../input/intents";
 import { roverRuntime } from "../../rover/runtime";
-import { FONTS } from "../../tower/primitives";
+import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType } from "../../types";
 import type { CareerRoomLayout } from "./layout";
 
@@ -106,29 +108,61 @@ function Trophies({ rooms, counts }: { rooms: CareerRoomLayout[]; counts: Map<st
   );
   const geometry = useMemo(() => new CylinderGeometry(0.2, 0.08, 0.5, 8), []);
 
-  useLayoutEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
+  const glints = useRef<InstancedMesh>(null);
+  const place = (mesh: InstancedMesh, spin: number) => {
     spots.forEach((p, i) => {
       dummy.position.set(p.x, 0.55 + p.h, p.z);
-      dummy.rotation.set(0, 0, 0);
+      dummy.rotation.set(0, spin + i, 0);
       dummy.scale.set(1, p.h / 0.55, 1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     });
     mesh.instanceMatrix.needsUpdate = true;
-  }, [spots]);
+  };
+  // A light glint sweeps across each award plinth every few seconds.
+  const sweep = (mesh: InstancedMesh, t: number) => {
+    rooms.forEach((room, i) => {
+      const phase = (t * 0.45 + i * 0.37) % 2.4;
+      dummy.position.set(room.center.x - 1.1 + phase, 1.25, room.center.z);
+      dummy.rotation.set(0, 0, 0.35);
+      dummy.scale.setScalar(phase < 2.2 ? 1 : 0.001);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+
+  useLayoutEffect(() => {
+    if (ref.current) place(ref.current, 0);
+    if (glints.current) sweep(glints.current, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spots, rooms]);
+
+  useFrame((state) => {
+    const s = getHQStore().getState();
+    if (s.floor !== "L2" || s.reducedMotion) return;
+    const t = state.clock.elapsedTime;
+    if (ref.current) place(ref.current, t * 0.3);
+    if (glints.current) sweep(glints.current, t);
+  });
 
   if (spots.length === 0) return null;
   return (
-    <instancedMesh ref={ref} args={[geometry, undefined, spots.length]} frustumCulled={false}>
-      <meshStandardMaterial color={COLORS.amber} emissive={COLORS.amber} emissiveIntensity={0.6} metalness={0.6} roughness={0.35} />
-    </instancedMesh>
+    <>
+      <instancedMesh ref={ref} args={[geometry, undefined, spots.length]} frustumCulled={false}>
+        <meshStandardMaterial color={COLORS.amber} emissive={COLORS.amber} emissiveIntensity={0.9} metalness={0.6} roughness={0.35} />
+      </instancedMesh>
+      <instancedMesh ref={glints} args={[undefined, undefined, rooms.length]} frustumCulled={false} raycast={() => null}>
+        <planeGeometry args={[0.16, 1.5]} />
+        <meshBasicMaterial color="#fff7d6" transparent opacity={0.35} blending={AdditiveBlending} depthWrite={false} side={DoubleSide} toneMapped={false} />
+      </instancedMesh>
+    </>
   );
 }
 
 /** Room floor pads (clickable: drive to the door) and pedestals, both instanced. */
 function Pads({ rooms }: { rooms: CareerRoomLayout[] }) {
+  const tier = useHQStore((st) => st.tier);
   const pads = useRef<InstancedMesh>(null);
   const pedestals = useRef<InstancedMesh>(null);
   const plane = useMemo(() => new BoxGeometry(1, 0.04, 1), []);
@@ -167,7 +201,7 @@ function Pads({ rooms }: { rooms: CareerRoomLayout[] }) {
         onPointerOut={() => (document.body.style.cursor = "")}
         frustumCulled={false}
       >
-        <meshBasicMaterial color={COLORS.amber} transparent opacity={0.07} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial color={COLORS.amber} transparent opacity={tierFill(0.07, tier)} depthWrite={false} toneMapped={false} />
       </instancedMesh>
       <instancedMesh ref={pedestals} args={[pedestal, undefined, rooms.length]} frustumCulled={false}>
         <meshStandardMaterial color="#0b0b18" roughness={0.8} metalness={0.2} />

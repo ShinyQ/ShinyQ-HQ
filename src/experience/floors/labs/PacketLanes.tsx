@@ -1,11 +1,12 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Object3D, type InstancedMesh } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
-import { LineBatch } from "./lines";
+import { LaneStrip } from "../../fx/LaneStrip";
+import { neonColor } from "../../fx/materials";
 
 type P = [number, number];
 const PACKET_SPEED = 2;
@@ -27,15 +28,11 @@ function sample({ path, lengths, total }: ReturnType<typeof measure>, s: number)
   return path[path.length - 1];
 }
 
-/** Floor lanes (one draw call) with data packets at 2 u/s (no packets under reduced motion). */
+/** Floor lanes (prototype lane ribbons) with data packets at 2 u/s (no packets under reduced motion). */
 export function PacketLanes({ lanes, packets }: { lanes: P[][]; packets: number }) {
   const reduced = useHQStore((s) => s.reducedMotion);
-  const geometry = useMemo(() => {
-    const batch = new LineBatch();
-    for (const lane of lanes) batch.path(lane, 0.03, COLORS.lane);
-    return batch.build();
-  }, [lanes]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
+  const tier = useHQStore((s) => s.tier);
+  const packetColor = useMemo(() => neonColor(COLORS.packet, 2.2, tier), [tier]);
   const measured = useMemo(() => lanes.map(measure), [lanes]);
   const seeds = useMemo(() => {
     // Longer lanes get more packets.
@@ -66,13 +63,11 @@ export function PacketLanes({ lanes, packets }: { lanes: P[][]; packets: number 
 
   return (
     <group>
-      <lineSegments geometry={geometry}>
-        <lineBasicMaterial vertexColors transparent opacity={0.55} toneMapped={false} />
-      </lineSegments>
+      <LaneStrip paths={lanes} />
       {!reduced && seeds.length > 0 && (
         <instancedMesh ref={mesh} args={[undefined, undefined, seeds.length]} frustumCulled={false}>
           <boxGeometry args={[0.22, 0.22, 0.22]} />
-          <meshBasicMaterial color={COLORS.packet} toneMapped={false} />
+          <meshBasicMaterial color={packetColor} toneMapped={false} />
         </instancedMesh>
       )}
     </group>

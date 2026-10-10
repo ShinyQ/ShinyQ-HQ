@@ -44,7 +44,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
             <span
               className={`label grid place-items-center rounded-full border transition ${compact ? "size-9" : "size-10"} ${
                 current
-                  ? ACTIVE[id]
+                  ? `${ACTIVE[id]} shadow-[0_0_14px_currentColor]`
                   : pending
                     ? "animate-pulse border-cyan text-cyan motion-reduce:animate-none"
                     : "border-glass-border text-ink-2 group-hover:border-ink-3 group-hover:text-ink"

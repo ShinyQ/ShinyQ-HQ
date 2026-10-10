@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>E. Agent HQ</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#0a0a0f;--glass:rgba(14,14,24,.64);--line:rgba(255,255,255,.09);--txt:#e7e9f3;--mut:#8b90a8;--ind:#818cf8;--ok:#4ade80;--rc:#818cf8;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+a{color:#a5b4fc}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+.coarse .glass{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(14,14,24,.9)}
+.hidden{display:none!important}
+#hud{position:fixed;top:16px;left:16px;padding:12px 16px;z-index:5;pointer-events:none}
+#hud .name{font-weight:600;letter-spacing:.2px}
+#hud .title{color:var(--mut);font-size:12px}
+#hud .visited{margin-top:8px;font:11px var(--mono);color:var(--mut);display:flex;align-items:center;gap:8px}
+#hud .dots{display:flex;gap:4px}
+#hud .dots i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.12)}
+#qvBtn{position:fixed;top:16px;right:16px;z-index:5;padding:10px 14px;border-radius:12px;font-size:13px}
+#qvBtn:hover,.chip:hover{border-color:rgba(165,180,252,.5)}
+#hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font:11px var(--mono);color:var(--mut);z-index:4;padding:7px 14px;border-radius:999px;white-space:nowrap;pointer-events:none}
+#chat{position:fixed;left:16px;bottom:16px;width:380px;z-index:6;display:flex;flex-direction:column;max-height:min(560px,calc(100vh - 140px))}
+#chatHead{display:flex;align-items:center;gap:10px;padding:12px 14px;width:100%;text-align:left}
+#chatHead b{font-weight:600}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);flex:none}
+.badge{margin-left:auto;font:10px var(--mono);color:var(--mut)}
+#chatHead .chev{font-size:11px;color:var(--mut);transition:transform .2s}
+#chat.collapsed .chev{transform:rotate(180deg)}
+#chatBody{display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--line)}
+#chat.collapsed #chatBody{display:none}
+#log{overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:40px;scrollbar-width:thin}
+#log .empty{color:var(--mut);font-size:12.5px}
+.msg.user{align-self:flex-end;background:rgba(129,140,248,.16);border:1px solid rgba(129,140,248,.3);padding:7px 12px;border-radius:12px 12px 4px 12px;max-width:85%}
+.msg.bot{display:flex;flex-direction:column;gap:8px}
+.trace{font:11px/1.65 var(--mono);color:#a5b4fc;background:rgba(0,0,0,.38);border:1px solid var(--line);border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+.trace .k{color:var(--mut)}
+.trace .ok{color:var(--ok)}
+.answer{font-size:13.5px}
+.answer.typing::after{content:"";display:inline-block;width:7px;height:13px;margin-left:2px;background:#a5b4fc;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.cites{display:flex;gap:6px;flex-wrap:wrap}
+.cite{font:10px var(--mono);padding:2px 7px;border-radius:6px;border:1px solid rgba(74,222,128,.25);color:#86efac;background:rgba(74,222,128,.06)}
+#chips{display:flex;gap:6px;overflow-x:auto;padding:10px 14px 0;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px}
+#askForm{display:flex;gap:8px;padding:10px 14px 14px}
+#askForm input{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--txt);font:inherit;font-size:16px;outline:none}
+#askForm input:focus{border-color:rgba(129,140,248,.6)}
+#askForm button{padding:0 14px;border-radius:10px;background:#6366f1;color:#fff;font-weight:600}
+#askFab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:6;display:none;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;font-weight:600}
+#joy{position:fixed;left:22px;bottom:calc(22px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;z-index:5;display:none;touch-action:none;border:1px solid var(--line);background:rgba(20,20,34,.55)}
+#joy i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(129,140,248,.35);border:1px solid rgba(165,180,252,.6);box-shadow:0 0 16px rgba(129,140,248,.5)}
+.coarse #joy{display:block}
+#panel{position:fixed;z-index:7;right:16px;top:72px;bottom:16px;width:420px;display:flex;flex-direction:column;transform:translateX(calc(100% + 40px));transition:transform .38s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+#panel.open{transform:none;visibility:visible}
+#panel header{padding:16px 18px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line)}
+#panel .dot{width:10px;height:10px;border-radius:3px;background:var(--rc);box-shadow:0 0 12px var(--rc);flex:none}
+#panel h2{margin:0;font-size:16px;font-weight:600}
+#panel .sub{font:11px var(--mono);color:var(--mut)}
+#panelClose{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);font-size:16px;flex:none}
+#panelBody{overflow-y:auto;padding:16px 18px 22px;scrollbar-width:thin}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;background:rgba(255,255,255,.025)}
+.card h3{margin:2px 0 6px;font-size:14.5px}
+.card p{margin:0 0 8px;color:#c9cce0}
+.meta{font:10.5px var(--mono);color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.hl{border-left:2px solid var(--rc);padding-left:10px;color:var(--txt)!important}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tags span{font:10.5px var(--mono);padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:#c7cbe0}
+.lead{color:var(--mut);margin:0 0 12px}
+.sect{font:11px var(--mono);color:var(--rc);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+ul.pts{margin:4px 0 0;padding-left:18px;color:#c9cce0}
+#qv{position:fixed;inset:0;z-index:30;background:rgba(6,6,12,.9);overflow-y:auto}
+.coarse #qv{background:#0a0a0f}
+#qv article{max-width:820px;margin:0 auto;padding:40px 22px 80px}
+#qv h1{margin:0 0 4px;font-size:28px}
+#qv h2{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--ind);margin:34px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+#qv .card h3{font-size:15px}
+#qvClose{position:sticky;top:12px;float:right;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:#14141f}
+#intro{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,rgba(10,10,15,.55),rgba(10,10,15,.96) 70%);transition:opacity .6s}
+#intro.out{opacity:0;pointer-events:none}
+#intro .box{text-align:center;padding:24px;max-width:520px}
+#intro .eyebrow{font:11px var(--mono);letter-spacing:.3em;color:var(--mut);text-transform:uppercase}
+#intro h1{margin:10px 0 6px;font-size:clamp(40px,9vw,72px);letter-spacing:-.03em;line-height:1;color:#f4f5fb}
+#intro p{color:var(--mut);margin:0 0 26px}
+#bootBtn{padding:13px 26px;border-radius:12px;background:#6366f1;color:#fff;font-weight:600;box-shadow:0 0 30px rgba(99,102,241,.55)}
+#bootLog{font:12px/1.8 var(--mono);color:#a5b4fc;text-align:left;margin:22px auto 0;min-height:88px;width:min(360px,90vw)}
+#bootLog .ok{color:var(--ok)}
+@media (max-width:899px){
+  #chat{left:0;right:0;bottom:0;width:auto;border-radius:18px 18px 0 0;max-height:78vh;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);visibility:hidden;padding-bottom:env(safe-area-inset-bottom)}
+  #chat.open{transform:none;visibility:visible}
+  #chat.collapsed #chatBody{display:flex}
+  #chatHead .chev{transform:none!important}
+  #askFab{display:flex}
+  #hint{display:none}
+  #hud{top:12px;left:12px;padding:9px 12px}
+  #hud .name{font-size:13px}
+  #qvBtn{top:12px;right:12px;padding:9px 12px}
+  #panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:56vh;border-radius:18px 18px 0 0;transform:translateY(105%);padding-bottom:env(safe-area-inset-bottom)}
+  body.sheet #askFab,body.sheet #joy,body.drawer #askFab,body.drawer #joy{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<script src="content.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="Agent HQ 3D floor. Use Quick view for a text version."></canvas>
+
+<div id="hud" class="glass"><div class="name"></div><div class="title"></div><div class="visited"><span id="visitedTxt">Rooms visited 0/7</span><span class="dots" id="dots"></span></div></div>
+<button id="qvBtn" class="glass" aria-haspopup="dialog">Quick view</button>
+<div id="hint" class="glass">WASD / arrows to drive · click the floor to move · enter a room to inspect</div>
+
+<section id="chat" class="glass" aria-label="Ask the guide">
+  <button id="chatHead" aria-expanded="true"><span class="pulse"></span><b>Ask the guide</b><span class="badge">demo guide (offline)</span><span class="chev">▾</span></button>
+  <div id="chatBody">
+    <div id="log" aria-live="polite"><div class="empty">Ask about projects, career, skills or contact. The guide retrieves from portfolio data, cites sources and drives the agent to the room.</div></div>
+    <div id="chips"></div>
+    <form id="askForm" autocomplete="off"><input id="askInput" placeholder="Ask anything about my work..." aria-label="Question"><button type="submit">Ask</button></form>
+  </div>
+</section>
+<button id="askFab" class="glass" aria-controls="chat"><span class="pulse"></span>Ask</button>
+<div id="joy" aria-hidden="true"><i></i></div>
+
+<aside id="panel" class="glass" role="dialog" aria-labelledby="panelTitle" aria-hidden="true">
+  <header><span class="dot"></span><div><h2 id="panelTitle">Room</h2><div class="sub" id="panelSub"></div></div><button id="panelClose" aria-label="Close panel">✕</button></header>
+  <div id="panelBody"></div>
+</aside>
+
+<div id="qv" class="hidden" role="dialog" aria-modal="true" aria-labelledby="qvTitle"><article><button id="qvClose">Close</button><div id="qvContent"></div></article></div>
+
+<div id="intro"><div class="box">
+  <div class="eyebrow">E. Agent HQ</div>
+  <h1>Agent HQ</h1>
+  <p>An AI operations floor. Drive the agent between systems, or ask the guide.</p>
+  <button id="bootBtn">Boot agent</button>
+  <div id="bootLog" aria-live="polite"></div>
+</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const P = window.PORTFOLIO;
+const $ = s => document.querySelector(s);
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const BLOOM = !COARSE;
+document.body.classList.toggle('coarse', COARSE);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const proj = id => P.aiProjects.find(p => p.id === id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const hex = n => '#' + n.toString(16).padStart(6, '0');
+
+// ---------- World layout ----------
+const H = 4.5, WALL_H = 2.1, GAP = 3.2, BOUND = 23.5;
+const ROOMS = [
+  { id: 'voice', name: 'Voice Agent', sub: 'realtime · barge-in', color: 0xa78bfa, pos: [-15, -15], n: [0, 1], holo: 'wave' },
+  { id: 'security', name: 'Security Agent', sub: 'scan · triage · fix', color: 0xf472b6, pos: [0, -15], n: [0, 1], holo: 'shield' },
+  { id: 'fraud', name: 'Fraud Lab', sub: 'document review', color: 0x4ade80, pos: [15, -15], n: [0, 1], holo: 'docs' },
+  { id: 'docai', name: 'Doc-AI + Accelerator', sub: 'pipelines · template', color: 0x22d3ee, pos: [15, 0], n: [-1, 0], holo: 'agents' },
+  { id: 'career', name: 'Career Archive', sub: '2019 to now', color: 0xfbbf24, pos: [-15, 0], n: [1, 0], holo: 'rack' },
+  { id: 'library', name: 'Library', sub: 'writing', color: 0xf1f5f9, pos: [-15, 15], n: [0, -1], holo: 'books' },
+  { id: 'comms', name: 'Comms', sub: 'contact · skills', color: 0x60a5fa, pos: [15, 15], n: [0, -1], holo: 'dish' },
+];
+ROOMS.forEach(r => {
+  r.door = [r.pos[0] + r.n[0] * H, r.pos[1] + r.n[1] * H];
+  r.approach = [r.pos[0] + r.n[0] * (H + 1.6), r.pos[1] + r.n[1] * (H + 1.6)];
+  r.armed = true;
+});
+const ROOM = Object.fromEntries(ROOMS.map(r => [r.id, r]));
+const NODES = { C: [0, 0], N: [0, -7], S: [0, 7], W: [-7, 0], E: [7, 0], NW: [-15, -7], NE: [15, -7], SW: [-15, 7], SE: [15, 7], core: [0, 11] };
+ROOMS.forEach(r => NODES['r_' + r.id] = r.approach);
+const EDGES = [['C', 'N'], ['C', 'S'], ['C', 'W'], ['C', 'E'], ['N', 'NW'], ['N', 'NE'], ['S', 'SW'], ['S', 'SE'], ['S', 'core'],
+  ['NW', 'r_voice'], ['N', 'r_security'], ['NE', 'r_fraud'], ['W', 'r_career'], ['E', 'r_docai'], ['SW', 'r_library'], ['SE', 'r_comms']];
+const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+function route(from, to) {
+  const dist = { [from]: 0 }, prev = {}, open = new Set(Object.keys(NODES));
+  while (open.size) {
+    let u = null;
+    for (const k of open) if (dist[k] !== undefined && (u === null || dist[k] < dist[u])) u = k;
+    if (u === null || u === to) break;
+    open.delete(u);
+    for (const [a, b] of EDGES) {
+      const v = a === u ? b : b === u ? a : null;
+      if (!v || !open.has(v)) continue;
+      const nd = dist[u] + d2(NODES[u], NODES[v]);
+      if (dist[v] === undefined || nd < dist[v]) { dist[v] = nd; prev[v] = u; }
+    }
+  }
+  const out = [to];
+  while (out[0] !== from && prev[out[0]]) out.unshift(prev[out[0]]);
+  return out;
+}
+const roomAt = (x, z, pad = 0) => ROOMS.find(r => Math.abs(x - r.pos[0]) < H - pad && Math.abs(z - r.pos[1]) < H - pad);
+
+// ---------- Renderer / scene ----------
+const canvas = $('#c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !BLOOM, powerPreference: 'high-performance' });
+const DPR = Math.min(devicePixelRatio || 1, COARSE ? 1.5 : 2);
+renderer.setPixelRatio(DPR);
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0f);
+scene.fog = new THREE.Fog(0x0a0a0f, 38, 80);
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200);
+scene.add(new THREE.HemisphereLight(0x8b8cff, 0x0a0a0f, 0.7));
+const sun = new THREE.DirectionalLight(0xdfe3ff, 1.4); sun.position.set(10, 22, 12); scene.add(sun);
+
+let composer = null, bloom = null;
+if (BLOOM) {
+  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+  composer = new EffectComposer(renderer, rt);
+  composer.setPixelRatio(DPR);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.4, 0.32);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+}
+
+const U = { uTime: { value: 0 } };
+const FRAG_END = '\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
+
+// Floor with procedural grid and radial fade
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.ShaderMaterial({
+  uniforms: { uBg: { value: new THREE.Color(0x0a0a0f) }, uLine: { value: new THREE.Color(0x4f46e5) } },
+  vertexShader: 'varying vec2 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.); vW = w.xz; gl_Position = projectionMatrix*viewMatrix*w; }',
+  fragmentShader: `uniform vec3 uBg; uniform vec3 uLine; varying vec2 vW;
+    float grid(vec2 p){ vec2 g = abs(fract(p-.5)-.5)/fwidth(p); return 1.-min(min(g.x,g.y),1.); }
+    void main(){ float l1 = grid(vW), l5 = grid(vW/5.);
+      float d = length(vW)/32.; float fade = 1.-smoothstep(.45,1.,d);
+      vec3 c = uBg + uLine*(l1*.07 + l5*.2)*fade + vec3(.012,.012,.03)*(1.-d);
+      gl_FragColor = vec4(c,1.);` + FRAG_END,
+}));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// ---------- Helpers ----------
+const add = THREE.AdditiveBlending;
+const holoMat = (c, o = 0.6) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: add, depthWrite: false });
+const wireMat = (c, o = 0.35) => new THREE.MeshBasicMaterial({ color: c, wireframe: true, transparent: true, opacity: o, blending: add, depthWrite: false });
+const neon = (c, k = 2.2) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(BLOOM ? k : 1), toneMapped: !BLOOM });
+
+function makeLabel(text, sub, color, scale = 1) {
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 256;
+  const g = cv.getContext('2d'); const c = hex(color);
+  g.font = '600 92px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = c; g.shadowBlur = 28; g.fillStyle = c; g.fillText(text, 512, sub ? 100 : 128);
+  g.shadowBlur = 0; g.fillStyle = '#ffffff'; g.globalAlpha = .92; g.fillText(text, 512, sub ? 100 : 128);
+  if (sub) { g.globalAlpha = .7; g.font = '500 44px ui-monospace, Menlo, monospace'; g.fillStyle = c; g.fillText(sub.toUpperCase(), 512, 196); }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, toneMapped: false }));
+  s.scale.set(6.4 * scale, 1.6 * scale, 1); s.renderOrder = 10;
+  return s;
+}
+
+// ---------- Glass rooms ----------
+const glassVS = 'varying vec3 vN; varying vec3 vV; varying vec2 vUv; void main(){ vUv = uv; vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }';
+const glassFS = `uniform vec3 uColor; uniform float uTime; uniform float uOp; varying vec3 vN; varying vec3 vV; varying vec2 vUv;
+  void main(){ float f = pow(1.-abs(dot(normalize(vN),normalize(vV))), 2.2);
+    float top = smoothstep(.86,1.,vUv.y), base = 1.-smoothstep(0.,.12,vUv.y);
+    float scan = 1.-smoothstep(0.,.03,abs(fract(vUv.y*.7 - uTime*.12)-.5));
+    float a = uOp + f*.16 + top*.16 + base*.08 + scan*.04;
+    gl_FragColor = vec4(uColor*(.22 + f*.8 + top*1.1 + base*.5), a);` + FRAG_END;
+const WALLS = [], OBST = [];
+function addWall(r, x1, z1, x2, z2, mat, rim) {
+  const len = Math.hypot(x2 - x1, z2 - z1); if (len < 0.05) return;
+  const t = 0.12;
+  WALLS.push({ minX: Math.min(x1, x2) - t, maxX: Math.max(x1, x2) + t, minZ: Math.min(z1, z2) - t, maxZ: Math.max(z1, z2) + t });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(len, WALL_H), mat);
+  m.position.set((x1 + x2) / 2, WALL_H / 2, (z1 + z2) / 2);
+  m.rotation.y = Math.abs(x2 - x1) > 0.01 ? 0 : Math.PI / 2;
+  m.renderOrder = 2; scene.add(m);
+  for (const y of [WALL_H, 0.02]) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(len, COARSE ? 0.08 : 0.045, COARSE ? 0.08 : 0.045), rim);
+    b.position.set(m.position.x, y, m.position.z); b.rotation.y = m.rotation.y; scene.add(b);
+  }
+  for (const [x, z] of [[x1, z1], [x2, z2]]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, WALL_H, 0.07), rim);
+    post.position.set(x, WALL_H / 2, z); scene.add(post);
+  }
+}
+function buildRoom(r) {
+  const [cx, cz] = r.pos;
+  const mat = new THREE.ShaderMaterial({ uniforms: { uColor: { value: new THREE.Color(r.color) }, uTime: U.uTime, uOp: { value: COARSE ? 0.05 : 0.035 } },
+    vertexShader: glassVS, fragmentShader: glassFS, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const rim = neon(r.color, 1.4);
+  const sides = [
+    { n: [0, -1], a: [cx - H, cz - H], b: [cx + H, cz - H] }, { n: [0, 1], a: [cx - H, cz + H], b: [cx + H, cz + H] },
+    { n: [-1, 0], a: [cx - H, cz - H], b: [cx - H, cz + H] }, { n: [1, 0], a: [cx + H, cz - H], b: [cx + H, cz + H] }];
+  for (const s of sides) {
+    if (s.n[0] === r.n[0] && s.n[1] === r.n[1]) {
+      const ax = s.a[0] !== s.b[0] ? 0 : 1, mid = r.door[ax], g = GAP / 2;
+      const p1 = [...s.a], p2 = [...s.b]; p1[ax] = mid - g; p2[ax] = mid + g;
+      addWall(r, s.a[0], s.a[1], p1[0], p1[1], mat, rim);
+      addWall(r, p2[0], p2[1], s.b[0], s.b[1], mat, rim);
+    } else addWall(r, s.a[0], s.a[1], s.b[0], s.b[1], mat, rim);
+  }
+  if (!COARSE) {
+    const tint = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, H * 2), holoMat(r.color, 0.045));
+    tint.rotation.x = -Math.PI / 2; tint.position.set(cx, 0.01, cz); scene.add(tint);
+  }
+  const th = new THREE.Mesh(new THREE.PlaneGeometry(r.n[0] ? 0.5 : GAP, r.n[0] ? GAP : 0.5), holoMat(r.color, 0.5));
+  th.rotation.x = -Math.PI / 2; th.position.set(r.door[0], 0.02, r.door[1]); scene.add(th);
+  // pedestal
+  const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.25, 0.35, 40), new THREE.MeshStandardMaterial({ color: 0x15151f, roughness: 0.4, metalness: 0.6 }));
+  ped.position.set(cx, 0.175, cz); scene.add(ped);
+  const pr = new THREE.Mesh(new THREE.TorusGeometry(1.06, 0.025, 8, 64), neon(r.color, 2.5));
+  pr.rotation.x = Math.PI / 2; pr.position.set(cx, 0.36, cz); scene.add(pr);
+  OBST.push({ x: cx, z: cz, r: 1.3 });
+  const holo = HOLOS[r.holo](r.color, r);
+  holo.group.position.set(cx, 1.75, cz); scene.add(holo.group); r.holoObj = holo;
+  const lab = makeLabel(r.name, r.sub, r.color); lab.position.set(cx, 3.7, cz); scene.add(lab); r.label = lab;
+}
+
+// ---------- Holograms ----------
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const HOLOS = {
+  wave(c) {
+    const g = new THREE.Group(), bars = [], m = holoMat(c, 0.75);
+    for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, b = new THREE.Mesh(box(0.11, 1, 0.11), m); b.position.set(Math.cos(a) * 0.85, 0, Math.sin(a) * 0.85); bars.push(b); g.add(b); }
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.28, 24, 16), holoMat(c, 0.5)); g.add(core);
+    return { group: g, update(t) { bars.forEach((b, i) => b.scale.y = 0.2 + Math.abs(Math.sin(t * 3.1 + i * 0.7)) * (0.8 + 0.5 * Math.sin(t * 1.3 + i))); g.rotation.y = t * 0.35; core.scale.setScalar(1 + Math.sin(t * 4) * 0.12); } };
+  },
+  shield(c) {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0.95); s.quadraticCurveTo(0.45, 0.85, 0.8, 0.7); s.lineTo(0.75, 0); s.quadraticCurveTo(0.6, -0.6, 0, -1.0);
+    s.quadraticCurveTo(-0.6, -0.6, -0.75, 0); s.lineTo(-0.8, 0.7); s.quadraticCurveTo(-0.45, 0.85, 0, 0.95);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.16, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04, bevelSegments: 2 }); geo.center();
+    const g = new THREE.Group(); g.add(new THREE.Mesh(geo, holoMat(c, 0.45)), new THREE.Mesh(geo, wireMat(c, 0.4)));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.02, 6, 64), holoMat(c, 0.7)); ring.rotation.x = Math.PI / 2; g.add(ring);
+    return { group: g, update(t) { g.rotation.y = t * 0.6; ring.rotation.z = -t; ring.position.y = Math.sin(t * 1.5) * 0.5; } };
+  },
+  docs(c) {
+    const g = new THREE.Group(), docs = [];
+    for (let i = 0; i < 4; i++) { const d = new THREE.Mesh(box(0.9, 0.035, 1.2), holoMat(c, 0.35)); d.position.y = i * 0.2 - 0.3; d.rotation.y = (i % 2 ? 1 : -1) * 0.12 * i; docs.push(d); g.add(d); d.add(new THREE.LineSegments(new THREE.EdgesGeometry(d.geometry), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.9 }))); }
+    const scan = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), holoMat(c, 0.25)); scan.rotation.x = -Math.PI / 2; g.add(scan);
+    return { group: g, update(t) { g.rotation.y = t * 0.3; scan.position.y = Math.sin(t * 1.6) * 0.6; docs.forEach((d, i) => d.position.y = i * 0.2 - 0.3 + Math.sin(t * 1.2 + i) * 0.04); } };
+  },
+  agents(c) {
+    const g = new THREE.Group();
+    const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1), wireMat(c, 0.6)); g.add(ico);
+    const inner = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 0), holoMat(c, 0.6)); g.add(inner);
+    const nodes = []; for (let i = 0; i < 5; i++) { const n = new THREE.Mesh(box(0.16, 0.16, 0.16), holoMat(c, 0.9)); nodes.push(n); g.add(n); }
+    return { group: g, update(t) { ico.rotation.set(t * 0.3, t * 0.45, 0); inner.rotation.y = -t; nodes.forEach((n, i) => { const a = t * (0.8 + i * 0.12) + i * 1.26; n.position.set(Math.cos(a) * 1.15, Math.sin(t * 1.4 + i) * 0.45, Math.sin(a) * 1.15); n.rotation.y = t * 2; }); } };
+  },
+  rack(c, r) {
+    const g = new THREE.Group();
+    const frame = new THREE.Mesh(box(0.7, 1.5, 0.5), wireMat(c, 0.5)); g.add(frame);
+    const leds = []; for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(box(0.56, 0.06, 0.52), holoMat(c, 0.6)); l.position.y = -0.6 + i * 0.24; leds.push(l); g.add(l); }
+    // server racks with timeline years along the back wall
+    const years = [...new Set(P.career.map(x => +x.period.slice(0, 4)))].sort();
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x14141c, roughness: 0.5, metalness: 0.5 });
+    const ledMat = neon(c, 2), backX = r.pos[0] - H + 0.75, rackLeds = [];
+    years.forEach((y, i) => {
+      const z = r.pos[1] + (i - (years.length - 1) / 2) * 1.65;
+      const rk = new THREE.Mesh(box(0.8, 2.1, 1.1), rackMat); rk.position.set(backX, 1.05, z); scene.add(rk);
+      for (let k = 0; k < 7; k++) { const l = new THREE.Mesh(box(0.02, 0.04, 0.5 + (k % 3) * 0.12), ledMat); l.position.set(backX + 0.41, 0.35 + k * 0.24, z); scene.add(l); rackLeds.push(l); }
+      const lab = makeLabel(String(y), null, c, 0.42); lab.position.set(backX + 0.2, 2.55, z); scene.add(lab);
+    });
+    WALLS.push({ minX: backX - 0.5, maxX: backX + 0.5, minZ: r.pos[1] - 4.2, maxZ: r.pos[1] + 4.2 });
+    let acc = 0;
+    return { group: g, update(t, dt) { g.rotation.y = t * 0.4; leds.forEach((l, i) => l.material.opacity = 0.25 + 0.5 * (0.5 + 0.5 * Math.sin(t * 3 + i))); acc += dt; if (acc > 0.18) { acc = 0; const l = rackLeds[(Math.random() * rackLeds.length) | 0]; l.visible = !l.visible; } } };
+  },
+  books(c) {
+    const g = new THREE.Group(), m = holoMat(c, 0.28), e = new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.8 });
+    for (let i = 0; i < 6; i++) { const w = 0.75 + (i % 3) * 0.12, b = new THREE.Mesh(box(w, 0.14, 0.55), m); b.position.y = -0.45 + i * 0.16; b.rotation.y = Math.sin(i * 2.3) * 0.4; b.add(new THREE.LineSegments(new THREE.EdgesGeometry(b.geometry), e)); g.add(b); }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.015, 6, 64), holoMat(c, 0.6)); ring.rotation.x = Math.PI / 2.4; g.add(ring);
+    return { group: g, update(t) { g.rotation.y = t * 0.25; ring.rotation.z = t * 0.8; } };
+  },
+  dish(c) {
+    const g = new THREE.Group();
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 16), holoMat(c, 0.9)); g.add(core);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8), holoMat(c, 0.6)); mast.position.y = -0.6; g.add(mast);
+    const rings = []; for (let i = 0; i < 3; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.018, 6, 64), holoMat(c, 0.8)); r.rotation.x = Math.PI / 2; rings.push(r); g.add(r); }
+    return { group: g, update(t) { rings.forEach((r, i) => { const k = (t * 0.45 + i / 3) % 1; r.scale.setScalar(0.5 + k * 2.4); r.material.opacity = 0.9 * (1 - k); r.position.y = 0.2 - k * 0.3; }); core.scale.setScalar(1 + Math.sin(t * 5) * 0.1); } };
+  },
+};
+ROOMS.forEach(buildRoom);
+
+// HQ core (decorative)
+const coreG = new THREE.Group(); coreG.position.set(0, 0, 14.5); scene.add(coreG);
+const coreGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), wireMat(0x818cf8, 0.8)); coreGem.position.y = 2; coreG.add(coreGem);
+const coreBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 8), holoMat(0x818cf8, 0.4)); coreBeam.position.y = 2; coreG.add(coreBeam);
+const corePad = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.4, 48), holoMat(0x818cf8, 0.5)); corePad.rotation.x = -Math.PI / 2; corePad.position.y = 0.02; coreG.add(corePad);
+const coreLab = makeLabel('HQ core', 'guide uplink', 0x818cf8, 0.7); coreLab.position.y = 3.6; coreG.add(coreLab);
+OBST.push({ x: 0, z: 14.5, r: 1.4 });
+
+// ---------- Lanes and packets ----------
+const laneMat = len => new THREE.ShaderMaterial({ uniforms: { uTime: U.uTime, uLen: { value: len }, uColor: { value: new THREE.Color(0x6366f1) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader: `uniform vec3 uColor; uniform float uTime; uniform float uLen; varying vec2 vUv;
+    void main(){ float y = abs(vUv.y-.5); float edge = smoothstep(.28,.44,y)*(1.-smoothstep(.44,.5,y));
+      float dash = step(.55, fract(vUv.x*uLen*.5 - uTime*.9)) * (1.-smoothstep(.06,.14,y));
+      float a = edge*.7 + dash*.45 + .05; gl_FragColor = vec4(uColor*a*1.8, a);` + FRAG_END,
+  transparent: true, depthWrite: false, blending: add });
+for (const [a, b] of EDGES) {
+  const A = NODES[a], B = NODES[b], len = d2(A, B);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.75), laneMat(len));
+  m.rotation.x = -Math.PI / 2; m.rotation.z = -Math.atan2(B[1] - A[1], B[0] - A[0]);
+  m.position.set((A[0] + B[0]) / 2, 0.015, (A[1] + B[1]) / 2); scene.add(m);
+}
+for (const k of ['C', 'N', 'S', 'W', 'E', 'NW', 'NE', 'SW', 'SE']) {
+  const j = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.55, 32), holoMat(0x818cf8, 0.6));
+  j.rotation.x = -Math.PI / 2; j.position.set(NODES[k][0], 0.02, NODES[k][1]); scene.add(j);
+}
+const polyLen = pts => pts.slice(1).reduce((s, p, i) => s + d2(pts[i], p), 0);
+function samplePoly(pts, s) {
+  for (let i = 1; i < pts.length; i++) { const l = d2(pts[i - 1], pts[i]); if (s <= l) { const k = s / l; return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k]; } s -= l; }
+  return pts[pts.length - 1];
+}
+const packets = [], pGeo = box(0.2, 0.2, 0.2);
+ROOMS.forEach(r => {
+  const pts = route('C', 'r_' + r.id).map(k => NODES[k]).concat([r.door]), len = polyLen(pts);
+  for (let i = 0; i < (COARSE ? 1 : 2); i++) {
+    const m = new THREE.Mesh(pGeo, neon(r.color, 2.2)); scene.add(m);
+    packets.push({ m, pts, len, off: i * 0.5 + Math.random() * 0.2, spd: 0.09 + Math.random() * 0.04 });
+  }
+});
+
+// Ambient motes
+let motes = null;
+if (!COARSE && !RM) {
+  const n = 260, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = (Math.random() - .5) * 50; pos[i * 3 + 1] = Math.random() * 6; pos[i * 3 + 2] = (Math.random() - .5) * 50; }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  motes = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x818cf8, size: 0.06, transparent: true, opacity: 0.6, blending: add, depthWrite: false }));
+  scene.add(motes);
+}
+
+// ---------- Robot ----------
+const robot = new THREE.Group(); scene.add(robot);
+const body = new THREE.Group(); body.position.y = 1; robot.add(body);
+const shell = new THREE.Mesh(new RoundedBoxGeometry(1.1, 0.9, 0.95, 5, 0.34), new THREE.MeshStandardMaterial({ color: 0xe8eaf3, roughness: 0.32, metalness: 0.15 }));
+body.add(shell);
+const visor = new THREE.Mesh(new RoundedBoxGeometry(0.88, 0.38, 0.12, 3, 0.09), new THREE.MeshStandardMaterial({ color: 0x07070c, roughness: 0.15, metalness: 0.8 }));
+visor.position.set(0, 0.08, 0.45); body.add(visor);
+const eyeMat = neon(0x67e8f9, 3), eyes = [];
+for (const x of [-0.18, 0.18]) { const e = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.13, 0.04, 2, 0.03), eyeMat); e.position.set(x, 0.09, 0.52); body.add(e); eyes.push(e); }
+const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6), shell.material); ant.position.y = 0.58; body.add(ant);
+const antTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), neon(0x818cf8, 3)); antTip.position.y = 0.75; body.add(antTip);
+for (const x of [-0.6, 0.6]) { const f = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.36, 0.5, 2, 0.04), visor.material); f.position.set(x, -0.02, 0); body.add(f); }
+const thr = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.12, 0.1, 24), neon(0x67e8f9, 2.5)); thr.position.y = -0.48; body.add(thr);
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.82, 48), holoMat(0x67e8f9, 0.55)); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; robot.add(ring);
+const glowTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(103,232,249,.55)'); gr.addColorStop(1, 'rgba(103,232,249,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(cv); })();
+const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, blending: add, depthWrite: false }));
+glow.rotation.x = -Math.PI / 2; glow.position.y = 0.025; robot.add(glow);
+const rLight = new THREE.PointLight(0x67e8f9, 8, 7, 2); rLight.position.y = 0.6; robot.add(rLight);
+robot.position.set(0, 0, 3);
+const marker = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.42, 32), holoMat(0x67e8f9, 0)); marker.rotation.x = -Math.PI / 2; marker.position.y = 0.03; scene.add(marker);
+
+// ---------- State ----------
+const S = { booted: false, panel: null, qv: false, nav: null, click: null, keys: new Set(), joy: { x: 0, y: 0 }, vel: new THREE.Vector2(), yaw: 0, visited: new Set(), stuck: 0, busy: false };
+window.__hq = S;
+const canControl = () => S.booted && !S.panel && !S.qv;
+
+function collide(p) {
+  const R = 0.55;
+  for (const w of WALLS) {
+    const cx = Math.max(w.minX, Math.min(p.x, w.maxX)), cz = Math.max(w.minZ, Math.min(p.z, w.maxZ));
+    const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz);
+    if (d < R) {
+      if (d > 1e-4) { p.x = cx + dx / d * R; p.z = cz + dz / d * R; }
+      else { const opts = [[w.minX - R - p.x, 0], [w.maxX + R - p.x, 0], [0, w.minZ - R - p.z], [0, w.maxZ + R - p.z]].sort((a, b) => Math.abs(a[0] + a[1]) - Math.abs(b[0] + b[1])); p.x += opts[0][0]; p.z += opts[0][1]; }
+    }
+  }
+  for (const o of OBST) { const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz), R2 = o.r + R; if (d < R2 && d > 1e-4) { p.x = o.x + dx / d * R2; p.z = o.z + dz / d * R2; } }
+  p.x = Math.max(-BOUND, Math.min(BOUND, p.x)); p.z = Math.max(-BOUND, Math.min(BOUND, p.z));
+}
+
+function navTo(roomId, onArrive) {
+  const r = ROOM[roomId], p = [robot.position.x, robot.position.z], pts = [];
+  const inside = roomAt(p[0], p[1]);
+  let start;
+  if (inside) { pts.push(inside.door, inside.approach); start = 'r_' + inside.id; }
+  else start = Object.keys(NODES).reduce((a, k) => d2(NODES[k], p) < d2(NODES[a], p) ? k : a, 'C');
+  let keys = route(start, 'r_' + roomId);
+  if (!inside && keys.length > 1 && d2(p, NODES[keys[1]]) < d2(NODES[keys[0]], NODES[keys[1]])) keys = keys.slice(1);
+  keys.forEach(k => pts.push(NODES[k]));
+  S.click = null; S.nav = { pts, i: 0, room: r, onArrive };
+}
+
+// ---------- Input ----------
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (S.qv) closeQV(); else if (S.panel) closePanel(); else closeDrawer(); return; }
+  if (e.target.closest && e.target.closest('input,textarea')) return;
+  const k = e.key.toLowerCase();
+  if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) { S.keys.add(k); if (k.startsWith('arrow')) e.preventDefault(); }
+});
+addEventListener('keyup', e => S.keys.delete(e.key.toLowerCase()));
+addEventListener('blur', () => S.keys.clear());
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down || !canControl()) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
+  if (moved > 10) return;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  if (!ray.ray.intersectPlane(plane, hit)) return;
+  const r = roomAt(hit.x, hit.z, -0.3);
+  if (r && !roomAt(robot.position.x, robot.position.z)) navTo(r.id, () => openRoom(r));
+  else { S.nav = null; S.click = new THREE.Vector2(hit.x, hit.z); }
+  marker.position.set(hit.x, 0.03, hit.z); marker.material.opacity = 0.9; marker.scale.setScalar(0.6);
+});
+
+const joy = $('#joy'), knob = joy.querySelector('i');
+let joyId = null;
+const joyMove = e => {
+  const b = joy.getBoundingClientRect(), dx = e.clientX - (b.left + b.width / 2), dy = e.clientY - (b.top + b.height / 2);
+  const d = Math.min(1, Math.hypot(dx, dy) / 44), a = Math.atan2(dy, dx);
+  S.joy.x = Math.cos(a) * d; S.joy.y = Math.sin(a) * d;
+  knob.style.transform = `translate(${S.joy.x * 34}px,${S.joy.y * 34}px)`;
+};
+joy.addEventListener('pointerdown', e => { joyId = e.pointerId; joy.setPointerCapture(joyId); joyMove(e); e.stopPropagation(); });
+joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = () => { joyId = null; S.joy.x = S.joy.y = 0; knob.style.transform = ''; };
+joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+
+// ---------- Panels ----------
+const tags = a => `<div class="tags">${a.map(s => `<span>${esc(s)}</span>`).join('')}</div>`;
+const projCard = p => `<div class="card"><div class="meta">${esc(p.year)} · AI project</div><h3>${esc(p.title)}</h3><p>${esc(p.summary)}</p><p class="hl">${esc(p.highlight)}</p>${tags(p.stack)}</div>`;
+const careerHTML = () => P.career.map(c => `<div class="card"><div class="meta">${esc(c.period)}</div><h3>${esc(c.role)}</h3><p>${esc(c.org)}</p><ul class="pts">${c.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('');
+const eduHTML = () => P.education.map(e => `<div class="card"><div class="meta">${esc(e.period)}</div><h3>${esc(e.degree)}</h3><p>${esc(e.school)}</p><p class="hl">${esc(e.note)}</p></div>`).join('');
+const trophyHTML = () => `<div class="card"><ul class="pts">${P.trophies.map(t => `<li><b>${esc(t.place)}</b> · ${esc(t.title)}</li>`).join('')}</ul></div>`;
+const blogHTML = () => P.blog.map(b => `<div class="card"><div class="meta">${esc(b.date)} · ${esc(b.tag)}</div><h3>${esc(b.title)}</h3><p>${esc(b.excerpt)}</p></div>`).join('');
+const contactHTML = () => { const c = P.contact; return `<div class="card"><p>Email: <a href="mailto:${esc(c.email)}">${esc(c.email)}</a></p><p>GitHub: <a href="${esc(c.github)}" target="_blank" rel="noopener">${esc(c.github.replace('https://', ''))}</a></p><p style="margin:0">Site: <a href="${esc(c.site)}" target="_blank" rel="noopener">${esc(c.site.replace('https://', ''))}</a></p></div>`; };
+const skillsHTML = () => Object.entries(P.skills).map(([k, v]) => `<div class="card"><div class="meta">${esc(k)}</div>${tags(v)}</div>`).join('') + `<div class="card"><div class="meta">Certifications</div>${tags(P.certifications)}</div>`;
+const sideHTML = () => P.sideProjects.map(s => `<div class="card"><h3>${esc(s.title)}</h3><p style="margin:0">${esc(s.summary)}</p></div>`).join('');
+const ROOM_HTML = {
+  voice: () => projCard(proj('voice')), security: () => projCard(proj('security')), fraud: () => projCard(proj('fraud')),
+  docai: () => `<p class="lead">Document AI pipelines, LLM screening and the accelerator template they share.</p>` + ['hiring', 'bank', 'template', 'forecast'].map(id => projCard(proj(id))).join(''),
+  career: () => `<div class="sect">Experience</div>${careerHTML()}<div class="sect">Education</div>${eduHTML()}<div class="sect">Trophies</div>${trophyHTML()}`,
+  library: () => `<p class="lead">Writing, mostly off the clock.</p>${blogHTML()}`,
+  comms: () => `<p class="lead">${esc(P.profile.tagline)}</p><div class="sect">How I work</div><div class="card"><p style="margin:0">${esc(P.profile.howIWork)}</p></div><div class="sect">Contact</div>${contactHTML()}<div class="sect">Skills</div>${skillsHTML()}<div class="sect">Side projects</div>${sideHTML()}`,
+};
+const panel = $('#panel');
+function openRoom(r) {
+  S.nav = null; S.click = null; S.vel.set(0, 0); r.armed = false;
+  S.panel = r; S.visited.add(r.id); updateHUD();
+  panel.style.setProperty('--rc', hex(r.color));
+  $('#panelTitle').textContent = r.name; $('#panelSub').textContent = r.sub;
+  $('#panelBody').innerHTML = ROOM_HTML[r.id](); $('#panelBody').scrollTop = 0;
+  panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); document.body.classList.add('sheet');
+  if (innerWidth < 900) closeDrawer();
+}
+function closePanel() {
+  if (!S.panel) return;
+  S.panel = null; panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); document.body.classList.remove('sheet'); canvas.focus({ preventScroll: true });
+}
+$('#panelClose').onclick = closePanel;
+function updateHUD() {
+  $('#visitedTxt').textContent = `Rooms visited ${S.visited.size}/${ROOMS.length}`;
+  $('#dots').innerHTML = ROOMS.map(r => `<i style="${S.visited.has(r.id) ? `background:${hex(r.color)};box-shadow:0 0 6px ${hex(r.color)}` : ''}"></i>`).join('');
+}
+$('#hud .name').textContent = P.profile.name; $('#hud .title').textContent = P.profile.title + ' · ' + P.profile.location;
+updateHUD();
+
+// Quick view
+function buildQV() {
+  const pr = P.profile;
+  $('#qvContent').innerHTML = `<h1 id="qvTitle">${esc(pr.name)}</h1><p style="color:var(--mut);margin:0 0 12px">${esc(pr.title)} · ${esc(pr.role)} · ${esc(pr.location)}</p>
+    <p>${esc(pr.tagline)}</p><p>${esc(pr.howIWork)}</p>
+    <h2>AI projects</h2>${P.aiProjects.map(projCard).join('')}<h2>Career</h2>${careerHTML()}<h2>Education</h2>${eduHTML()}
+    <h2>Trophies</h2>${trophyHTML()}<h2>Skills</h2>${skillsHTML()}<h2>Side projects</h2>${sideHTML()}<h2>Blog</h2>${blogHTML()}<h2>Contact</h2>${contactHTML()}`;
+}
+let qvReturn = null;
+function openQV() { buildQV(); S.qv = true; S.keys.clear(); qvReturn = document.activeElement; $('#qv').classList.remove('hidden'); $('#qvClose').focus(); }
+function closeQV() { S.qv = false; $('#qv').classList.add('hidden'); (qvReturn || canvas).focus?.(); }
+$('#qvBtn').onclick = openQV; $('#qvClose').onclick = closeQV;
+$('#qv').addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const f = [...$('#qv').querySelectorAll('button,a[href]')]; if (!f.length) return;
+  if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+});
+
+// ---------- Guide (offline deterministic mock) ----------
+const STOP = new Set('a an the is are was were of to in on for and or with your you my me i what whats how do does can could show tell about it its that this from at by be have has any some please who which where'.split(' '));
+const stem = w => w.length > 4 && w.endsWith('ing') ? w.slice(0, -3) : w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w;
+const tok = s => s.toLowerCase().replace(/[^a-z0-9+#\s]/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w)).map(stem);
+const CHUNKS = [];
+const addChunk = (room, label, text, pid) => CHUNKS.push({ room, label, text, pid, toks: tok(text) });
+const projRoom = id => ['voice', 'security', 'fraud'].includes(id) ? id : 'docai';
+P.aiProjects.forEach(p => { addChunk(projRoom(p.id), `aiProjects.${p.id}`, `${p.title} ${p.summary} ${p.stack.join(' ')}`, p.id); addChunk(projRoom(p.id), `aiProjects.${p.id}.highlight`, `${p.title} ${p.highlight}`, p.id); });
+P.career.forEach((c, i) => addChunk('career', `career[${i}]`, `${c.org} ${c.role} ${c.period} ${c.points.join(' ')} career experience job work history`));
+P.education.forEach((e, i) => addChunk('career', `education[${i}]`, `${e.school} ${e.degree} ${e.period} ${e.note} education`));
+addChunk('career', 'trophies', P.trophies.map(t => `${t.title} ${t.place}`).join(' ') + ' trophy award competition');
+P.blog.forEach((b, i) => addChunk('library', `blog[${i}]`, `${b.title} ${b.tag} ${b.excerpt} blog writing post`));
+addChunk('comms', 'profile.tagline', `${P.profile.tagline} ${P.profile.role}`);
+addChunk('comms', 'profile.howIWork', `${P.profile.howIWork} process workflow`);
+addChunk('comms', 'contact', `contact email ${P.contact.email} github ${P.contact.github} site ${P.contact.site} ${P.profile.location}`);
+Object.entries(P.skills).forEach(([k, v]) => addChunk('comms', `skills.${k}`, `${k} skills ${v.join(' ')}`));
+addChunk('comms', 'certifications', P.certifications.join(' ') + ' certification');
+P.sideProjects.forEach((s, i) => addChunk('comms', `sideProjects[${i}]`, `${s.title} ${s.summary} side project`));
+const DF = {}; CHUNKS.forEach(c => new Set(c.toks).forEach(t => DF[t] = (DF[t] || 0) + 1));
+const AVGDL = CHUNKS.reduce((s, c) => s + c.toks.length, 0) / CHUNKS.length;
+function bm25(q, c) {
+  let s = 0; const k1 = 1.2, b = 0.75;
+  for (const t of q) { const tf = c.toks.filter(x => x === t).length; if (!tf) continue; const idf = Math.log(1 + (CHUNKS.length - DF[t] + 0.5) / (DF[t] + 0.5)); s += idf * tf * (k1 + 1) / (tf + k1 * (1 - b + b * c.toks.length / AVGDL)); }
+  return s;
+}
+const INTENTS = [
+  { id: 'strongest', re: /\b(strong|best|proud|impressive|flagship|favou?rite|top|biggest)/, room: 'voice', boost: 5 },
+  { id: 'career', re: /\b(career|experience|jobs?|history|resume|employ|worked|compan|background|timeline)/, room: 'career', boost: 5 },
+  { id: 'education', re: /\b(educat|degree|universit|master|thesis|stud|school|awards?|troph|competition|won|win)/, room: 'career', boost: 5 },
+  { id: 'contact', re: /\b(contact|e-?mail|reach|hire|hiring you|github|connect|talk|message|website)/, room: 'comms', boost: 6 },
+  { id: 'process', re: /(how (do|does) (you|he|they) work|process|workflow|approach|methodology|day to day)/, room: 'comms', boost: 6 },
+  { id: 'skills', re: /\b(skills?|stack|tech|tools?|languages?|certif)/, room: 'comms', boost: 3 },
+  { id: 'blog', re: /\b(blog|writ|articles?|posts?|essay)/, room: 'library', boost: 5 },
+  { id: 'voice', re: /\b(voice|call|phone|speech|realtime|barge)/, room: 'voice', boost: 3 },
+  { id: 'security', re: /\b(secur|vulnerab|scan|cve)/, room: 'security', boost: 3 },
+  { id: 'fraud', re: /\b(fraud|claims?|insurance doc)/, room: 'fraud', boost: 3 },
+  { id: 'docai', re: /\b(template|accelerator|forecast|bank statement|cv screen|screening|fabric)/, room: 'docai', boost: 3 },
+];
+const hash = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const list = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+function compose(room, intents, hits) {
+  const has = id => intents.includes(id);
+  if (['voice', 'security', 'fraud'].includes(room)) {
+    const p = proj(room);
+    return `${has('strongest') ? `My strongest AI work is the ${p.title}.` : `${p.title} (${p.year}).`} ${p.summary} ${p.highlight} Built with ${list(p.stack.slice(0, 4))}.`;
+  }
+  if (room === 'docai') {
+    const id = hits.find(h => h.room === 'docai' && h.pid)?.pid || 'template', p = proj(id);
+    return `${p.title}: ${p.summary} ${p.highlight} This room also holds ${list(['hiring', 'bank', 'template', 'forecast'].filter(x => x !== id).map(x => proj(x).title))}.`;
+  }
+  if (room === 'career') {
+    if (has('education')) { const [a, b] = P.education, wins = P.trophies.filter(t => t.place === '1st').length; return `${a.degree} at ${a.school} (${a.period}); ${a.note}. Before that, ${b.degree} at ${b.school}: ${b.note}. Plus ${wins} first-place competition wins.`; }
+    const [c0, c1, c2] = P.career, org = o => o.replace(/\s*\(.*\)/, '');
+    return `Now ${c0.role} at ${org(c0.org)} (${c0.period}): ${c0.points[1]}. Before that, ${c1.role} at ${org(c1.org)}: ${c1.points[1]}. ${P.career.length} roles since 2019 across fintech, SaaS and government.`;
+  }
+  if (room === 'library') { const b = P.blog[0]; return `Latest post: "${b.title}" (${b.date}, ${b.tag}). ${b.excerpt}`; }
+  if (has('process')) return `${P.profile.howIWork} Core AI toolkit: ${list(P.skills.AI.slice(0, 5))}.`;
+  if (has('skills') && !has('contact')) return `AI: ${list(P.skills.AI.slice(0, 5))}. Backend: ${list(P.skills.Backend)}. Cloud: ${list(P.skills.Cloud.slice(0, 5))}.`;
+  const c = P.contact; return `Email ${c.email}, GitHub ${c.github.replace('https://', '')}, or ${c.site.replace('https://', '')}. Based in ${P.profile.location}; the Comms room has skills and side projects too.`;
+}
+function guide(q) {
+  const qt = tok(q), ql = q.toLowerCase();
+  const intents = INTENTS.filter(i => i.re.test(ql));
+  const hits = CHUNKS.map(c => ({ ...c, s: bm25(qt, c) })).filter(c => c.s > 0).sort((a, b) => b.s - a.s);
+  const score = {}; ROOMS.forEach(r => score[r.id] = 0);
+  ROOMS.forEach(r => { const rs = hits.filter(h => h.room === r.id).map(h => h.s); score[r.id] += (rs[0] || 0) + 0.5 * (rs[1] || 0) + 0.25 * (rs[2] || 0); });
+  intents.forEach(i => score[i.room] += i.boost);
+  const ranked = Object.entries(score).sort((a, b) => b[1] - a[1]);
+  const fallback = ranked[0][1] <= 0.01, room = fallback ? 'comms' : ranked[0][0];
+  let cites = hits.filter(h => h.room === room).slice(0, 3).map(h => h.label);
+  if (!cites.length) cites = room === 'voice' || room === 'security' || room === 'fraud' ? [`aiProjects.${room}`, `aiProjects.${room}.highlight`] : room === 'comms' ? ['profile.tagline', 'contact'] : [`${room}[0]`];
+  const h = hash(ql), ms = 22 + h % 41, top = Math.min(4, Math.max(hits.length, cites.length));
+  const iid = intents[0]?.id || (fallback ? 'none' : 'lookup');
+  const trace = [
+    `<span class="k">plan    </span> intent=${iid}`,
+    `<span class="k">retrieve</span> bm25 over ${CHUNKS.length} chunks · ${ms}ms · top ${top}`,
+    `<span class="k">rank    </span> ${ranked.slice(0, 3).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(' · ')}`,
+    `<span class="k">tool    </span> navigate(room='${room}')`,
+    `<span class="ok">✓ grounded</span> ${cites.length} citation${cites.length > 1 ? 's' : ''}${fallback ? ' (fallback)' : ''}`,
+  ];
+  const answer = (fallback ? 'I could not find a close match, so here is the overview. ' : '') + compose(room, intents.map(i => i.id), hits);
+  return { room, answer, trace, cites };
+}
+
+// ---------- Chat UI ----------
+const chat = $('#chat'), log = $('#log');
+const CHIPS = ["What's your strongest AI work?", 'Show me your career', 'How do you work?', 'How can I contact you?'];
+$('#chips').innerHTML = CHIPS.map(c => `<button class="chip" type="button">${esc(c)}</button>`).join('');
+$('#chips').querySelectorAll('.chip').forEach((b, i) => b.onclick = () => ask(CHIPS[i]));
+$('#askForm').onsubmit = e => { e.preventDefault(); const v = $('#askInput').value.trim(); if (v) { $('#askInput').value = ''; ask(v); } };
+$('#chatHead').onclick = () => { if (innerWidth < 900) { closeDrawer(); return; } chat.classList.toggle('collapsed'); $('#chatHead').setAttribute('aria-expanded', String(!chat.classList.contains('collapsed'))); };
+$('#askFab').onclick = () => { chat.classList.add('open'); document.body.classList.add('drawer'); if (S.panel) closePanel(); };
+function closeDrawer() { chat.classList.remove('open'); document.body.classList.remove('drawer'); }
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const scrollLog = () => log.scrollTop = log.scrollHeight;
+async function ask(q) {
+  if (S.busy) return; S.busy = true;
+  log.querySelector('.empty')?.remove();
+  log.append(el('div', 'msg user', esc(q))); scrollLog();
+  const res = guide(q), bot = el('div', 'msg bot'), tr = el('div', 'trace'), ans = el('div', 'answer typing');
+  bot.append(tr); log.append(bot);
+  for (const line of res.trace) { if (!RM) await sleep(240); tr.innerHTML += (tr.innerHTML ? '\n' : '') + line; scrollLog(); }
+  bot.append(ans);
+  if (RM) ans.textContent = res.answer;
+  else { const t0 = performance.now(); let n = 0; while (n < res.answer.length) { n = Math.ceil((performance.now() - t0) / 1000 * 140); ans.textContent = res.answer.slice(0, n); scrollLog(); await sleep(16); } }
+  ans.classList.remove('typing');
+  bot.append(el('div', 'cites', res.cites.map((c, i) => `<span class="cite">[${i + 1}] ${esc(c)}</span>`).join(''))); scrollLog();
+  S.busy = false;
+  if (S.panel) closePanel();
+  if (innerWidth < 900) setTimeout(closeDrawer, 700);
+  const r = ROOM[res.room];
+  if (d2([robot.position.x, robot.position.z], r.approach) < 1.8 || roomAt(robot.position.x, robot.position.z) === r) openRoom(r);
+  else navTo(res.room, () => openRoom(r));
+}
+
+// ---------- Intro / boot ----------
+$('#bootBtn').onclick = async () => {
+  $('#bootBtn').disabled = true; $('#bootBtn').style.opacity = .5;
+  const lines = [`mounting portfolio index (${CHUNKS.length} chunks)`, `spinning up ${ROOMS.length} rooms`, 'guide online (offline demo mode)', 'agent ready'];
+  for (const l of lines) { $('#bootLog').innerHTML += `<div><span class="ok">[ok]</span> ${esc(l)}</div>`; await sleep(RM ? 40 : 300); }
+  await sleep(RM ? 0 : 250);
+  $('#intro').classList.add('out'); S.booted = true; canvas.focus({ preventScroll: true });
+  setTimeout(() => $('#intro').remove(), 700);
+};
+
+// ---------- Camera / resize ----------
+const camOff = new THREE.Vector3(), camLook = new THREE.Vector3(0, 0.8, 3);
+function setCamOff() { const a = innerWidth / innerHeight, k = a < 0.8 ? 1.75 : a < 1.2 ? 1.35 : 1; camOff.set(10, 19, 18).multiplyScalar(k); }
+setCamOff();
+camera.position.copy(camLook).add(camOff); camera.lookAt(camLook);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight); bloom?.setSize(innerWidth, innerHeight);
+  setCamOff();
+});
+
+// ---------- Loop ----------
+const clock = new THREE.Clock(), fwd = new THREE.Vector2(), right = new THREE.Vector2(), want = new THREE.Vector2();
+let t = 0, blinkT = 2;
+function update(dt) {
+  t += dt; const ht = RM ? t * 0.2 : t;
+  U.uTime.value = RM ? 0 : t;
+  fwd.set(robot.position.x - camera.position.x, robot.position.z - camera.position.z).normalize(); right.set(-fwd.y, fwd.x);
+  let ix = 0, iz = 0;
+  if (canControl()) {
+    const k = S.keys;
+    if (k.has('w') || k.has('arrowup')) iz -= 1; if (k.has('s') || k.has('arrowdown')) iz += 1;
+    if (k.has('a') || k.has('arrowleft')) ix -= 1; if (k.has('d') || k.has('arrowright')) ix += 1;
+    ix += S.joy.x; iz += S.joy.y;
+  }
+  const p = robot.position, SPEED = 7.5;
+  want.set(0, 0);
+  if (Math.hypot(ix, iz) > 0.08) {
+    S.nav = null; S.click = null;
+    want.copy(fwd).multiplyScalar(-iz).addScaledVector(right, ix);
+    if (want.length() > 1) want.normalize(); want.multiplyScalar(SPEED);
+  } else if (S.nav) {
+    const tgt = S.nav.pts[S.nav.i], dx = tgt[0] - p.x, dz = tgt[1] - p.z, d = Math.hypot(dx, dz);
+    const last = S.nav.i === S.nav.pts.length - 1;
+    if (d < (last ? 0.25 : 0.6)) { if (last) { const n = S.nav; S.nav = null; n.onArrive?.(); } else S.nav.i++; }
+    else want.set(dx / d, dz / d).multiplyScalar(Math.min(9, last ? Math.max(2.5, d * 3) : 9));
+  } else if (S.click) {
+    const dx = S.click.x - p.x, dz = S.click.y - p.z, d = Math.hypot(dx, dz);
+    if (d < 0.25) S.click = null; else want.set(dx / d, dz / d).multiplyScalar(Math.min(SPEED, Math.max(2, d * 3)));
+  }
+  S.vel.lerp(want, 1 - Math.exp(-dt * 9));
+  const ox = p.x, oz = p.z;
+  p.x += S.vel.x * dt; p.z += S.vel.y * dt; collide(p);
+  const moved = Math.hypot(p.x - ox, p.z - oz);
+  if ((S.nav || S.click) && want.length() > 1 && moved < 0.3 * dt) {
+    if ((S.stuck += dt) > 0.8) { S.stuck = 0; if (S.nav) { const n = S.nav.pts[S.nav.i]; p.x = n[0]; p.z = n[1]; } else S.click = null; }
+  } else S.stuck = 0;
+  const sp = S.vel.length();
+  if (sp > 0.3) { const ty = Math.atan2(S.vel.x, S.vel.y); let dy = ty - S.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); S.yaw += dy * (1 - Math.exp(-dt * 10)); }
+  robot.rotation.y = S.yaw;
+  const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw), vf = S.vel.x * sy + S.vel.y * cy, vs = S.vel.x * cy - S.vel.y * sy;
+  body.rotation.x += (vf * 0.035 - body.rotation.x) * Math.min(1, dt * 8);
+  body.rotation.z += (-vs * 0.035 - body.rotation.z) * Math.min(1, dt * 8);
+  body.position.y = 1 + (RM ? 0 : Math.sin(t * 2.2) * 0.08);
+  ring.scale.setScalar(1 + (RM ? 0 : Math.sin(t * 2.2) * 0.06)); ring.rotation.z = t * 0.6;
+  glow.material.opacity = 0.75 + (RM ? 0 : Math.sin(t * 2.2) * 0.2);
+  if ((blinkT -= dt) < 0) { blinkT = 2.5 + Math.random() * 3; }
+  eyes.forEach(e => e.scale.y = blinkT < 0.12 ? 0.15 : 1);
+  // room triggers
+  if (canControl()) for (const r of ROOMS) {
+    const da = d2([p.x, p.z], r.approach), inside = roomAt(p.x, p.z, 0.2) === r;
+    if ((da < 1.6 || inside) && r.armed && !S.nav) { openRoom(r); break; }
+    if (!r.armed && da > 2.8 && !inside) r.armed = true;
+  }
+  // world animation
+  ROOMS.forEach((r, i) => { r.holoObj.group.position.y = 1.75 + (RM ? 0 : Math.sin(t * 1.4 + i) * 0.12); r.holoObj.update(ht, dt); r.label.position.y = 3.7 + (RM ? 0 : Math.sin(t + i) * 0.06); });
+  coreGem.rotation.y = ht * 0.8; coreGem.position.y = 2 + Math.sin(ht * 1.3) * 0.15;
+  packets.forEach(pk => { const k = (ht * pk.spd + pk.off) % 2, s = (k < 1 ? k : 2 - k) * pk.len, q = samplePoly(pk.pts, s); pk.m.position.set(q[0], 0.28, q[1]); pk.m.rotation.y = ht * 2; });
+  if (motes) motes.rotation.y = t * 0.01;
+  if (marker.material.opacity > 0) { marker.material.opacity = Math.max(0, marker.material.opacity - dt * 1.2); marker.scale.multiplyScalar(1 + dt * 1.5); }
+  // camera
+  const tgt = new THREE.Vector3(p.x, 0.8, p.z);
+  if (S.panel) { if (innerWidth >= 900) tgt.addScaledVector(new THREE.Vector3(right.x, 0, right.y), 3.2); else tgt.addScaledVector(new THREE.Vector3(fwd.x, 0, fwd.y), -11); }
+  camLook.lerp(tgt, 1 - Math.exp(-dt * (RM ? 8 : 4)));
+  camera.position.lerp(new THREE.Vector3().copy(camLook).add(camOff), 1 - Math.exp(-dt * (RM ? 8 : 4)));
+  camera.lookAt(camLook);
+}
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  update(dt);
+  composer ? composer.render() : renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>

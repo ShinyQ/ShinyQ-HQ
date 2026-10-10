@@ -5,7 +5,8 @@ import { useMemo, useRef } from "react";
 import { Object3D, type InstancedMesh } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, LOBBY } from "../../config";
-import { FloorLine } from "../../tower/primitives";
+import { neonColor } from "../../fx/materials";
+import { LaneStrip } from "../../fx/LaneStrip";
 
 type P = [number, number];
 
@@ -51,6 +52,8 @@ function sample(path: P[], lengths: number[], total: number, s: number): P {
 /** Floor lanes with data packets moving at 2 u/s (no packets under reduced motion). */
 export function Lanes({ packets }: { packets: number }) {
   const reduced = useHQStore((s) => s.reducedMotion);
+  const tier = useHQStore((s) => s.tier);
+  const packetColor = useMemo(() => neonColor(COLORS.packet, 2.2, tier), [tier]);
   const lanes = useMemo(() => buildLanes(), []);
   const measured = useMemo(
     () =>
@@ -84,13 +87,11 @@ export function Lanes({ packets }: { packets: number }) {
 
   return (
     <group>
-      {lanes.map((path, i) => (
-        <FloorLine key={i} points={path} color={COLORS.lane} opacity={0.55} />
-      ))}
+      <LaneStrip paths={lanes} />
       {!reduced && packets > 0 && (
         <instancedMesh ref={mesh} args={[undefined, undefined, packets]} frustumCulled={false}>
           <boxGeometry args={[0.22, 0.22, 0.22]} />
-          <meshBasicMaterial color={COLORS.packet} toneMapped={false} />
+          <meshBasicMaterial color={packetColor} toneMapped={false} />
         </instancedMesh>
       )}
     </group>

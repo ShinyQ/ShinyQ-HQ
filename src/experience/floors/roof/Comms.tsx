@@ -2,8 +2,8 @@
 
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
-import type { Group, Mesh, MeshBasicMaterial } from "three";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AdditiveBlending, CanvasTexture, DoubleSide, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
 import { BoxEdges, FloorLine, FONTS, GlassBox } from "../../tower/primitives";
@@ -29,6 +29,23 @@ const ring = (r: number, n = 40): [number, number][] =>
 export function Beacon({ availability, label, tier }: { availability: string; label: string; tier: GpuTier }) {
   const halo = useRef<Mesh>(null);
   const ribbon = useRef<Group>(null);
+  const pulses = useRef<(Mesh | null)[]>([]);
+  const coneAlpha = useMemo(() => {
+    // Vertical alpha ramp: bright at the lamp, fading toward the roof.
+    const c = document.createElement("canvas");
+    c.width = 1;
+    c.height = 64;
+    const g = c.getContext("2d");
+    if (g) {
+      const grad = g.createLinearGradient(0, 0, 0, 64);
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(1, "#000000");
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 1, 64);
+    }
+    return new CanvasTexture(c);
+  }, []);
+  useEffect(() => () => coneAlpha.dispose(), [coneAlpha]);
   const { x, z, r } = ROOF.beacon;
 
   useFrame((state) => {
@@ -40,6 +57,13 @@ export function Beacon({ availability, label, tier }: { availability: string; la
       (halo.current.material as MeshBasicMaterial).opacity = 0.12 + (1 - pulse) * 0.22;
     }
     if (ribbon.current) ribbon.current.position.y = MAST_H - 1.6 + (reduced ? 0 : Math.sin(t * 0.8) * 0.12);
+    // Two rings expand from the base every 2 s, half a cycle apart.
+    pulses.current.forEach((m, i) => {
+      if (!m) return;
+      const k = reduced ? 0.4 : ((t + i) % 2) / 2;
+      m.scale.setScalar(1 + k * 4);
+      (m.material as MeshBasicMaterial).opacity = 0.6 * (1 - k);
+    });
   });
 
   return (
@@ -63,6 +87,25 @@ export function Beacon({ availability, label, tier }: { availability: string; la
         <sphereGeometry args={[0.9, 16, 12]} />
         <meshBasicMaterial color={BLUE} transparent opacity={0.25} depthWrite={false} toneMapped={false} />
       </mesh>
+      {/* Light cone from the lamp down to the roof. */}
+      <mesh position={[0, (MAST_H + 0.3) / 2, 0]} raycast={() => null}>
+        <cylinderGeometry args={[0.35, 2.6, MAST_H + 0.3, 24, 1, true]} />
+        <meshBasicMaterial color={BLUE} alphaMap={coneAlpha} transparent opacity={0.35} blending={AdditiveBlending} depthWrite={false} side={DoubleSide} toneMapped={false} />
+      </mesh>
+      {[0, 1].map((i) => (
+        <mesh
+          key={i}
+          ref={(m) => {
+            pulses.current[i] = m;
+          }}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.04, 0]}
+          raycast={() => null}
+        >
+          <ringGeometry args={[r + 0.3, r + 0.45, 48]} />
+          <meshBasicMaterial color={BLUE} transparent opacity={0.5} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ))}
       {tier === "full" && <pointLight position={[0, MAST_H + 0.3, 0]} color={BLUE} intensity={6} distance={18} />}
       <group ref={ribbon} position={[0, MAST_H - 1.6, 0]}>
         <Billboard>
@@ -91,6 +134,14 @@ interface TerminalItem {
 
 function Terminal({ item, slot, hover, handlers }: { item: TerminalItem; slot: ReturnType<typeof terminalSlots>[number]; hover: boolean; handlers: ReturnType<typeof roomHandlers> }) {
   const { w, d, h } = ROOF.terminal;
+  const led = useRef<Mesh>(null);
+  // Status LED: a short double blink every couple of seconds, out of phase per terminal.
+  useFrame((state) => {
+    if (!led.current) return;
+    const reduced = getHQStore().getState().reducedMotion;
+    const k = (state.clock.elapsedTime * 0.55 + slot.index * 0.31) % 1;
+    led.current.visible = reduced || k < 0.06 || (k > 0.12 && k < 0.18) || k > 0.5;
+  });
   return (
     <group position={[slot.x, 0, slot.z]} rotation={[0, slot.angle, 0]} name={`terminal-${item.key}`}>
       <GlassBox size={[0.5, h, 0.5]} position={[0, h / 2, 0]} color={BLUE} fillOpacity={0.15} edgeOpacity={0.7} />
@@ -100,6 +151,10 @@ function Terminal({ item, slot, hover, handlers }: { item: TerminalItem; slot: R
           <meshBasicMaterial color={hover ? "#0f1d33" : "#08101f"} transparent opacity={0.95} />
         </mesh>
         <BoxEdges size={[w, 1.1, 0.02]} color={BLUE} opacity={hover ? 1 : 0.8} />
+        <mesh ref={led} position={[w / 2 - 0.14, 0.4, 0.015]}>
+          <circleGeometry args={[0.045, 12]} />
+          <meshBasicMaterial color={COLORS.green} toneMapped={false} />
+        </mesh>
         <Text font={FONTS.monoBold} fontSize={0.17} color={BLUE} anchorX="left" anchorY="top" position={[-w / 2 + 0.12, 0.45, 0.01]} material-toneMapped={false}>
           {item.label.toUpperCase()}
         </Text>

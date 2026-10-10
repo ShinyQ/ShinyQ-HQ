@@ -1,12 +1,20 @@
 "use client";
 
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
+import { ToneMappingMode } from "postprocessing";
+import { sceneSettings } from "./settings";
 
-/** Bloom for the full tier only (appendix 05: threshold 0.2, strength 0.9, radius 0.6, mipmap blur). */
+const BLOOM = sceneSettings("full").bloom!;
+
+/**
+ * Full tier only: prototype bloom (threshold 0.32, radius 0.4) on HDR neon, then ACES. The composer
+ * turns off renderer tone mapping, so ACES runs as the last effect here.
+ */
 export default function Effects() {
   return (
-    <EffectComposer multisampling={0}>
-      <Bloom mipmapBlur luminanceThreshold={0.2} intensity={0.9} radius={0.6} />
+    <EffectComposer multisampling={4}>
+      <Bloom mipmapBlur luminanceThreshold={BLOOM.threshold} intensity={BLOOM.intensity} radius={BLOOM.radius} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
 }

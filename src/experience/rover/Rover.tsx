@@ -4,7 +4,9 @@ import { RoundedBox } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AdditiveBlending,
   BufferGeometry,
+  CanvasTexture as GlowTexture,
   type CanvasTexture,
   DoubleSide,
   Float32BufferAttribute,
@@ -13,9 +15,11 @@ import {
   type Group,
   type InstancedMesh,
   type Mesh,
+  type MeshBasicMaterial,
 } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS } from "../config";
+import { neonColor } from "../fx/materials";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
 import { MAX_FRAME_DT } from "./controller";
@@ -34,6 +38,26 @@ function makeCanvas(w: number, h: number) {
   return canvas;
 }
 
+/** Prototype glow pad: a cyan radial gradient drawn once into a 128 px texture. */
+function makeGlowTexture() {
+  const canvas = makeCanvas(128, 128);
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, "rgba(103,232,249,.55)");
+    g.addColorStop(1, "rgba(103,232,249,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  const texture = new GlowTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+const GLOW_CYAN = "#67e8f9";
+const MARKER_FADE = 1.2;
+const MARKER_GROW = 1.5;
+
 function readMonoFont() {
   const value = getComputedStyle(document.documentElement).getPropertyValue("--font-jetbrains").trim();
   return value ? `${value}, monospace` : "monospace";
@@ -48,6 +72,20 @@ export function Rover({ tier }: { tier: GpuTier }) {
   const flag = useRef<Group>(null);
   const target = useRef<Mesh>(null);
   const dust = useRef<InstancedMesh>(null);
+  const glow = useRef<Mesh>(null);
+  const ring = useRef<Mesh>(null);
+  const marker = useRef<Mesh>(null);
+  const [glowTexture] = useState(makeGlowTexture);
+  const neon = useMemo(
+    () => ({
+      face: neonColor("#ffffff", 1.6, tier),
+      tip: neonColor(COLORS.pink, 3, tier),
+      strip: neonColor(COLORS.cyan, 2.5, tier),
+      belt: neonColor(COLORS.pink, 2, tier),
+      thruster: neonColor(GLOW_CYAN, 2.5, tier),
+    }),
+    [tier],
+  );
 
   const screenTexture = useRef<CanvasTexture>(null);
   const [screenCanvas] = useState(() => makeCanvas(FACE_W, FACE_H));
@@ -75,6 +113,20 @@ export function Rover({ tier }: { tier: GpuTier }) {
     dummy: new Object3D(),
   });
 
+  useEffect(
+    () =>
+      intents.on((intent) => {
+        if (intent.type !== "goto") return;
+        const m = roverRuntime.marker;
+        m.x = intent.point.x;
+        m.z = intent.point.z;
+        m.opacity = 1;
+        m.scale = 1;
+        m.visible = true;
+      }),
+    [],
+  );
+
   useEffect(() => {
     const l = local.current;
     l.font = readMonoFont();
@@ -97,7 +149,29 @@ export function Rover({ tier }: { tier: GpuTier }) {
     root.current.visible = getHQStore().getState().phase !== "hologram";
     root.current.rotation.y = r.heading;
     body.current.rotation.z = r.tilt;
-    body.current.position.y = t < r.hopUntil && !reduced ? Math.sin(((r.hopUntil - t) / 0.35) * Math.PI) * 0.3 : 0;
+    const hop = t < r.hopUntil && !reduced ? Math.sin(((r.hopUntil - t) / 0.35) * Math.PI) * 0.3 : 0;
+    body.current.position.y = hop + (reduced ? 0 : Math.sin(t * 2.2) * 0.04);
+
+    // Prototype glow: the pad breathes, the ring brightens with speed.
+    const breath = reduced ? 0 : Math.sin(t * 2.2);
+    if (glow.current) (glow.current.material as MeshBasicMaterial).opacity = 0.75 + breath * 0.2;
+    if (ring.current) {
+      ring.current.scale.setScalar(1 + breath * 0.06);
+      (ring.current.material as MeshBasicMaterial).opacity = 0.4 + 0.3 * Math.min(1, r.speed / 12);
+    }
+
+    const mk = r.marker;
+    if (mk.visible) {
+      mk.opacity = Math.max(0, mk.opacity - dt * MARKER_FADE);
+      if (!reduced) mk.scale *= 1 + dt * MARKER_GROW;
+      if (mk.opacity <= 0) mk.visible = false;
+    }
+    if (marker.current) {
+      marker.current.visible = mk.visible;
+      marker.current.position.set(mk.x, r.y + 0.03, mk.z);
+      marker.current.scale.setScalar(mk.scale);
+      (marker.current.material as MeshBasicMaterial).opacity = mk.opacity;
+    }
 
     if (t > l.nextBlink) {
       l.blinkUntil = t + 0.15;
@@ -193,7 +267,20 @@ export function Rover({ tier }: { tier: GpuTier }) {
             <canvasTexture attach="map" args={[blobCanvas]} />
           </meshBasicMaterial>
         </mesh>
+        <mesh ref={glow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]} raycast={() => null}>
+          <planeGeometry args={[2.6, 2.6]} />
+          <meshBasicMaterial map={glowTexture} transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+        <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} raycast={() => null}>
+          <ringGeometry args={[0.55, 0.82, 48]} />
+          <meshBasicMaterial color={GLOW_CYAN} transparent opacity={0.55} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+        {tier === "full" && <pointLight color={GLOW_CYAN} intensity={8} distance={7} decay={2} position={[0, 0.6, 0]} />}
         <group ref={body}>
+          <mesh position={[0, 0.12, 0]}>
+            <cylinderGeometry args={[0.22, 0.12, 0.1, 24]} />
+            <meshBasicMaterial color={neon.thruster} toneMapped={false} />
+          </mesh>
           {[-0.7, 0.7].map((x) => (
             <RoundedBox key={x} args={[0.32, 0.45, 1.1]} radius={0.1} smoothness={2} position={[x, 0.25, 0]}>
               <meshStandardMaterial color="#27272a" roughness={0.9} />
@@ -211,17 +298,17 @@ export function Rover({ tier }: { tier: GpuTier }) {
           </RoundedBox>
           <mesh position={[0, 1.52, 0.452]}>
             <planeGeometry args={[0.9, 0.7]} />
-            <meshBasicMaterial toneMapped={false}>
+            <meshBasicMaterial color={neon.face} toneMapped={false}>
               <canvasTexture ref={screenTexture} attach="map" args={[screenCanvas]} colorSpace={SRGBColorSpace} />
             </meshBasicMaterial>
           </mesh>
           <mesh position={[0, 1.62, -0.455]}>
             <boxGeometry args={[0.8, 0.09, 0.02]} />
-            <meshBasicMaterial color={COLORS.cyan} toneMapped={false} />
+            <meshBasicMaterial color={neon.strip} toneMapped={false} />
           </mesh>
           <mesh position={[0, 0.72, -0.505]}>
             <boxGeometry args={[0.9, 0.12, 0.02]} />
-            <meshBasicMaterial color={COLORS.pink} toneMapped={false} />
+            <meshBasicMaterial color={neon.belt} toneMapped={false} />
           </mesh>
           <mesh position={[0.35, 2.35, -0.1]}>
             <cylinderGeometry args={[0.025, 0.025, 0.6, 6]} />
@@ -229,7 +316,7 @@ export function Rover({ tier }: { tier: GpuTier }) {
           </mesh>
           <mesh ref={tip} position={[0.35, 2.68, -0.1]}>
             <sphereGeometry args={[0.08, 12, 12]} />
-            <meshBasicMaterial color={COLORS.pink} toneMapped={false} />
+            <meshBasicMaterial color={neon.tip} toneMapped={false} />
           </mesh>
         </group>
       </group>
@@ -245,6 +332,10 @@ export function Rover({ tier }: { tier: GpuTier }) {
       <mesh ref={target} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
         <ringGeometry args={[0.5, 0.68, 32]} />
         <meshBasicMaterial color={COLORS.cyan} transparent opacity={0.85} toneMapped={false} />
+      </mesh>
+      <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} visible={false} raycast={() => null}>
+        <ringGeometry args={[0.3, 0.42, 32]} />
+        <meshBasicMaterial color={GLOW_CYAN} transparent opacity={0} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </mesh>
       <instancedMesh ref={dust} args={[undefined, undefined, DUST]} frustumCulled={false}>
         <boxGeometry args={[0.14, 0.14, 0.14]} />

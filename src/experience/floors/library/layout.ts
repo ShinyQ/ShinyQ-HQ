@@ -91,3 +91,29 @@ export const LIBRARY_DOORS: DoorTrigger[] = [
   { room: "L4:publications", at: LIBRARY_STOPS.publications },
   { room: "L4:talks", at: LIBRARY_STOPS.talks },
 ];
+
+/** Main walkway z, between the blog shelves and the models shelf. */
+const LANE_Z = 3;
+const SPUR_X = 8;
+
+/** Prototype data lanes on L4: the walkway from the elevator, with spurs to every reading stop. */
+export const LIBRARY_LANES: [number, number][][] = [
+  [
+    [-21, LANE_Z],
+    [LIBRARY_STOPS.research.x, LANE_Z],
+    [LIBRARY_STOPS.research.x, LIBRARY_STOPS.research.z],
+  ],
+  [
+    [LIBRARY.lectern.x, LANE_Z],
+    [LIBRARY.lectern.x, LIBRARY.lectern.z + LIBRARY.lectern.d / 2 + 1.6],
+  ],
+  [
+    [SPUR_X, LANE_Z],
+    [SPUR_X, LIBRARY_STOPS.talks.z],
+    [LIBRARY_STOPS.talks.x, LIBRARY_STOPS.talks.z],
+  ],
+  [
+    [SPUR_X, LIBRARY_STOPS.publications.z],
+    [LIBRARY_STOPS.publications.x, LIBRARY_STOPS.publications.z],
+  ],
+];

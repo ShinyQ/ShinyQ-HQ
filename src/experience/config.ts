@@ -87,7 +87,8 @@ export const LOBBY = {
   statsRadius: 10,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
-  skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 6.5 },
+  /** Raised on a 0.35 u glowing plinth; 8.5 u tall so the longest column (12 items) reads at a larger size. */
+  skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
   certWall: { x: 25.5, z: -4, w: 1, d: 16, h: 5 },
   kiosk: { x: 2, z: 15, w: 3, d: 2 },
   laneRadius: 12,
