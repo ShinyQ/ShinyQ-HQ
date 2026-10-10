@@ -1,0 +1,424 @@
+/*
+  Page View layer: editorial Neon Grid (docs/superpowers/specs/2026-10-10-pageview-revamp-design.md).
+  Type, rows and composite pieces live here; grid spans use Tailwind utilities in the components.
+  Floor and wing colors are wayfinding only (markers, active rules); body copy stays neutral.
+*/
+@layer components {
+  .pv-wrap {
+    width: 100%;
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: clamp(20px, 4vw, 48px);
+  }
+
+  .pv-sec {
+    padding-top: clamp(80px, 10vw, 136px);
+  }
+
+  .pv-sidehead > p {
+    margin-top: 12px;
+    color: var(--color-ink-2);
+    max-width: 36ch;
+  }
+
+  @media (min-width: 64rem) {
+    .pv-sidehead {
+      position: sticky;
+      top: 96px;
+      align-self: start;
+    }
+  }
+
+  /* Type scale */
+  .pv-d-xl,
+  .pv-d-l,
+  .pv-h2,
+  .pv-h3,
+  .pv-num {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+
+  .pv-d-xl {
+    font-weight: 800;
+    font-stretch: 78%;
+    font-size: clamp(52px, 8vw, 96px);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+  }
+
+  .pv-d-l {
+    font-weight: 800;
+    font-stretch: 82%;
+    font-size: clamp(42px, 5.6vw, 76px);
+    line-height: 0.96;
+    letter-spacing: -0.03em;
+  }
+
+  .pv-h2 {
+    font-weight: 750;
+    font-stretch: 88%;
+    font-size: clamp(28px, 2.8vw, 40px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .pv-h3 {
+    font-weight: 700;
+    font-stretch: 92%;
+    font-size: 21px;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+  }
+
+  .pv-h3-l {
+    font-size: clamp(26px, 2.4vw, 34px);
+    line-height: 1.08;
+  }
+
+  .pv-num {
+    font-weight: 700;
+    font-stretch: 72%;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
+  .pv-lead {
+    font-size: clamp(18px, 1.45vw, 21px);
+    line-height: 1.55;
+    color: var(--color-ink);
+    max-width: 62ch;
+  }
+
+  .pv-body {
+    color: var(--color-ink-2);
+    max-width: 68ch;
+  }
+
+  .pv-small {
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--color-ink-2);
+  }
+
+  .pv-data {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Wayfinding marker: a 7 px square in the text color, set with an accent text class. */
+  .pv-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pv-mark::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: currentColor;
+    flex: none;
+  }
+
+  /* Actions */
+  .pv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    transition:
+      background 150ms var(--ease-standard),
+      border-color 150ms var(--ease-standard);
+  }
+
+  .pv-btn-primary {
+    background: var(--color-ink);
+    color: var(--color-void);
+  }
+
+  .pv-btn-primary:hover {
+    background: #fff;
+  }
+
+  .pv-btn-ghost {
+    border: 1px solid var(--color-line-2);
+    color: var(--color-ink);
+  }
+
+  .pv-btn-ghost:hover {
+    border-color: var(--color-ink-2);
+    background: var(--color-surface-2);
+  }
+
+  .pv-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .pv-go::after {
+    content: "\2192";
+    transition: transform 150ms var(--ease-standard);
+  }
+
+  .pv-go:hover {
+    color: var(--color-cyan);
+  }
+
+  .pv-go:hover::after {
+    transform: translateX(3px);
+  }
+
+  .pv-uline {
+    text-decoration: underline;
+    text-decoration-color: var(--color-line-2);
+    text-underline-offset: 4px;
+  }
+
+  .pv-uline:hover {
+    text-decoration-color: var(--color-cyan);
+  }
+
+  /* Ruled rows: ledgers, indexes and lists share one rhythm. */
+  .pv-rows > li {
+    position: relative;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .pv-rows-closed > li:last-child {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .pv-row-title {
+    transition: color 150ms var(--ease-standard);
+  }
+
+  .pv-rows > li:hover .pv-row-title {
+    color: var(--pv-hover, var(--color-cyan));
+  }
+
+  /* A row or card whose title link covers it; the focus ring stays on the title. */
+  .pv-stretch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .pv-stretch:focus-visible {
+    outline: none;
+  }
+
+  .pv-stretch:focus-visible::after {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
+  /* Work features */
+  .pv-shot {
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--color-line);
+    background: #0b0b14;
+  }
+
+  .pv-shot img {
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+    transition: transform 400ms var(--ease-standard);
+  }
+
+  .pv-feature:hover .pv-shot img {
+    transform: scale(1.015);
+  }
+
+  .pv-feature:hover .pv-feature-title {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+
+  /* Header */
+  .pv-nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    color: var(--color-ink-2);
+    transition:
+      color 150ms var(--ease-standard),
+      background 150ms var(--ease-standard);
+  }
+
+  .pv-nav-link:hover {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+  }
+
+  .pv-nav-link[aria-current="page"] {
+    color: var(--color-ink);
+  }
+
+  .pv-nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -12px;
+    height: 2px;
+    background: var(--pv-accent, var(--color-ink));
+  }
+
+  .pv-tab {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    font-size: 14px;
+    color: var(--color-ink-2);
+  }
+
+  .pv-tab[aria-current="page"] {
+    color: var(--color-ink);
+  }
+
+  .pv-tab[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: 0;
+    height: 2px;
+    background: var(--pv-accent, var(--color-ink));
+  }
+
+  .pv-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
+    font-size: 13px;
+    color: var(--color-ink-2);
+    transition:
+      color 150ms var(--ease-standard),
+      border-color 150ms var(--ease-standard);
+  }
+
+  .pv-tool:hover {
+    color: var(--color-ink);
+    border-color: var(--color-line-2);
+  }
+
+  /* Sticky filter bar under the header (header is 68 px tall, 117 px with the phone tabs). */
+  .pv-filters {
+    position: sticky;
+    top: 125px;
+    z-index: 20;
+    border-radius: 14px;
+  }
+
+  @media (min-width: 48rem) {
+    .pv-filters {
+      top: 80px;
+    }
+  }
+
+  .pv-select {
+    min-height: 36px;
+    padding: 0 34px 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background-color: rgb(255 255 255 / 0.04);
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--color-ink-2) 50%),
+      linear-gradient(135deg, var(--color-ink-2) 50%, transparent 50%);
+    background-position:
+      calc(100% - 17px) 15px,
+      calc(100% - 12px) 15px;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    color: var(--color-ink);
+    font-size: 13px;
+    appearance: none;
+    max-width: 100%;
+  }
+
+  .pv-select option {
+    background: var(--color-void);
+  }
+
+  /* Case study table of contents */
+  .pv-toc a {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding-left: 14px;
+    border-left: 1px solid var(--color-line);
+    font-size: 14px;
+    color: var(--color-ink-3);
+    transition:
+      color 150ms var(--ease-standard),
+      border-color 150ms var(--ease-standard);
+  }
+
+  .pv-toc a:hover {
+    color: var(--color-ink);
+  }
+
+  .pv-toc a[aria-current="true"] {
+    color: var(--color-ink);
+    border-left-color: var(--color-violet);
+  }
+
+  .pv-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pv-tags > li {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pv-shot img,
+    .pv-feature:hover .pv-shot img {
+      transform: none;
+      transition: none;
+    }
+  }
+}
