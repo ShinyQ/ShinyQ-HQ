@@ -165,7 +165,11 @@ export const PodSchema = z
     tier: TierSchema,
     accent: AccentSchema,
     wing: WingSchema,
-    client: nonEmpty.optional(),
+    /**
+     * A proper name (employer, or a freelance client the owner allowed, C8) or a
+     * localized sector label for a client of an employer, whose name never ships (C3).
+     */
+    client: z.union([nonEmpty, LocalizedTextSchema]).optional(),
     timelineRef: SlugSchema.optional(),
     title: LocalizedTextSchema,
     tagline: LocalizedTextSchema,

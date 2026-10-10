@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile } from "@/content/load";
 import { LOCALES } from "@/content/schema";
+import { clientLabel } from "@/content/selectors";
 import { formatDate } from "@/lib/format";
 import type { OgCard } from "@/lib/og";
 import { type OgTarget, ogImagePath } from "@/lib/site";
@@ -52,7 +53,7 @@ export async function ogCard(target: OgTarget): Promise<OgCard> {
     if (!pod) throw new Error(`Unknown pod for OG image: ${target.slug}`);
     const tc = await getTranslations({ locale, namespace: "common" });
     return {
-      eyebrow: `L3 · ${tc(`wing.${pod.wing}`)}${pod.client ? ` · ${pod.client}` : ""}`,
+      eyebrow: `L3 · ${tc(`wing.${pod.wing}`)}${pod.client ? ` · ${clientLabel(pod.client, locale)}` : ""}`,
       title: pod.title[locale],
       subtitle: pod.tagline[locale],
       accent: pod.accent,

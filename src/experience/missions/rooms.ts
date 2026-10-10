@@ -1,4 +1,4 @@
-import { groupEntriesByYear, isResearch, sortPods } from "@/content/selectors";
+import { clientKeywords, groupEntriesByYear, isResearch, sortPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
 
 export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
@@ -105,7 +105,7 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
       kind: "pod",
       title: pod.title,
       subtitle: pod.tagline,
-      keywords: [...pod.stack, pod.client ?? "", pod.wing, ...yearsOf(pod.period.start, pod.period.end)].filter(Boolean),
+      keywords: [...pod.stack, ...clientKeywords(pod.client), pod.wing, ...yearsOf(pod.period.start, pod.period.end)].filter(Boolean),
       path: `/labs/${pod.slug}`,
       floorPath: "/labs",
       tier: pod.tier,
