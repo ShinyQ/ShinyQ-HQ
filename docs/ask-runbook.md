@@ -157,6 +157,12 @@ rm /tmp/p.json
 
 The weekly facts PR needs no personal access token and no repository auto-merge setting: `refresh-facts.yml` runs CI itself and merges with `GITHUB_TOKEN` (section 9).
 
+Prerequisite for that workflow: Settings > Actions > General > Workflow permissions > "Allow GitHub Actions to create and approve pull requests" must be on (API: `can_approve_pull_request_reviews=true`; turned on 2026-10-11). Without it `gh pr create` fails with "GitHub Actions is not permitted to create or approve pull requests". The default workflow permissions stay read-only; the workflow asks for `contents`, `pull-requests` and `actions: write` itself.
+
+The `pull_request` CI run on a facts PR shows `action_required` (GitHub asks for approval before running workflows for the `github-actions` bot as a first-time contributor). That is expected and harmless: the merge gate is the `workflow_dispatch` run that `refresh-facts.yml` starts and watches on the exact pushed commit, not the `pull_request` run.
+
+Golden and red-team items never hard-code a live fact: write `{{facts.<path>}}` (for example `{{facts.github.contributionsLastYear}}`), which `src/ask/golden-facts.ts` resolves from `content/generated/dynamic-facts.json` in the unit tests and the nightly eval. A test fails if a current live value appears as a literal in `tests/ask/golden.json` or `tests/ask/redteam.json`, so a weekly refresh cannot break CI.
+
 ## 9. Scheduled workflows
 
 | Workflow | When (WIB) | What | Needs |

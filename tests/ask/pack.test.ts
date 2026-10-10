@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildRepoPack } from "@/ask/repo-pack";
+import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
+import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { buildKnowledgePack, leadParagraphs, sanitizePackText, validatePack } from "@/ask/pack";
 import { getContent } from "@/content/load";
 import { findBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
@@ -96,7 +99,9 @@ describe("retrieval", () => {
     const text = fold(pack.chunks.map((c) => `${c.text_en} ${c.text_id}`).join(" "));
     const missingInPack: string[] = [];
     const missingInContext: string[] = [];
-    for (const item of golden.items) {
+    const facts = loadDynamicFacts();
+    for (const raw of golden.items) {
+      const item = resolveGoldenItem(raw, facts);
       const context = fold(retrieve(pack, item.q, item.lang as "en" | "id").context);
       for (const fact of item.facts) {
         if (!text.includes(fold(fact))) missingInPack.push(`${item.id}: ${fact}`);
@@ -105,6 +110,14 @@ describe("retrieval", () => {
     }
     expect(missingInPack, "golden facts missing from the pack: update tests/ask/golden.json with the content change").toEqual([]);
     expect(missingInContext, "retrieval no longer finds these golden facts").toEqual([]);
+  });
+
+  it("writes live facts as placeholders, never as literals, so the weekly refresh cannot break the sets", () => {
+    const facts = loadDynamicFacts();
+    for (const file of ["golden.json", "redteam.json"]) {
+      const text = readFileSync(path.join(__dirname, file), "utf8");
+      expect(hardCodedFacts(text, facts), file).toEqual([]);
+    }
   });
 
   it("indexes once per pack", () => {

@@ -15,7 +15,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { buildRepoPack } from "@/ask/repo-pack";
+import { resolveFactVariants, resolveGoldenItem } from "@/ask/golden-facts";
+import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { findBlocked, leaksPrompt } from "../functions/_lib/checks";
 import { extractText, type ModelClient } from "../functions/_lib/model";
 import { scrubPII } from "../functions/_lib/pii";
@@ -182,7 +183,12 @@ async function main() {
   const data = JSON.parse(readFileSync(file, "utf8")) as { passThreshold?: number; items: (GoldenItem | RedTeamItem)[] };
   const only = flag("--only")?.split(",");
   const limit = Number(flag("--limit")) || data.items.length;
-  const items = data.items.filter((i) => !only || only.includes(i.id)).slice(0, limit);
+  // Live-fact placeholders ({{facts.github.contributionsLastYear}}) resolve against the current file.
+  const facts = loadDynamicFacts();
+  const resolved = data.items.map((i) =>
+    set === "golden" ? resolveGoldenItem(i as GoldenItem, facts) : { ...(i as RedTeamItem), mustNot: (i as RedTeamItem).mustNot.flatMap((m) => resolveFactVariants(m, facts)) },
+  );
+  const items = resolved.filter((i) => !only || only.includes(i.id)).slice(0, limit);
 
   const rows = await pool(items, 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
