@@ -1,9 +1,12 @@
 "use client";
 
 import { Billboard, Text } from "@react-three/drei";
-import { useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useRef, useState } from "react";
+import type { Group, MeshBasicMaterial } from "three";
 import type { RoomId } from "@/content/schema";
-import { COLORS, FLOOR_COLOR } from "../../config";
+import { COLORS, FLOOR_COLOR, floorY } from "../../config";
+import { roverRuntime } from "../../rover/runtime";
 import { BoxEdges, FONTS, GlassBox } from "../../tower/primitives";
 import type { LibraryData } from "../../types";
 import { languageBadge, roomHandlers } from "../interact";
@@ -28,13 +31,26 @@ function Spine({ post, slot, labels }: { post: Post; slot: SpineSlot; labels: Sh
   const color = spineColor(post);
   const y = 0.3 + spine.h / 2;
   const badge = languageBadge(post.languages);
+  const book = useRef<Group>(null);
+  const fill = useRef<MeshBasicMaterial>(null);
+  // A spine slides out 0.1 u and glows when hovered or when the rover reads in front of it.
+  useFrame((_, dt) => {
+    if (!book.current || !fill.current) return;
+    const near = Math.abs(roverRuntime.y - floorY("L4")) < 0.5 && Math.abs(roverRuntime.x - slot.x) < 0.9 && Math.abs(roverRuntime.z - slot.z) < 3;
+    const on = hover || near;
+    const k = Math.min(1, dt * 10);
+    book.current.position.y += ((on ? 0.1 : 0) - book.current.position.y) * k;
+    book.current.position.z += ((on ? 0.12 : 0) - book.current.position.z) * k;
+    fill.current.opacity += ((on ? 0.95 : 0.55) - fill.current.opacity) * k;
+  });
   return (
     <group position={[slot.x, 0, slot.z - spine.d / 2 - 0.02]} name={`spine-${post.slug}`}>
+      <group ref={book}>
       <mesh position={[0, y, 0]} {...roomHandlers(`L4:${post.slug}` as RoomId, setHover)}>
         <boxGeometry args={[spine.w, spine.h, spine.d]} />
-        <meshBasicMaterial color={color} transparent opacity={hover ? 0.95 : 0.55} toneMapped={false} />
+        <meshBasicMaterial ref={fill} color={color} transparent opacity={0.55} toneMapped={false} />
       </mesh>
-      <BoxEdges size={[spine.w, spine.h, spine.d]} position={[0, y, 0]} color={color} opacity={hover ? 1 : 0.8} />
+      <BoxEdges size={[spine.w, spine.h, spine.d]} position={[0, y, 0]} color={color} opacity={hover ? 1 : 0.8} boost={2} />
       <Text
         font={FONTS.monoBold}
         fontSize={0.21}
@@ -46,6 +62,7 @@ function Spine({ post, slot, labels }: { post: Post; slot: SpineSlot; labels: Sh
       >
         {post.date.slice(0, 4)}
       </Text>
+      </group>
       <Text font={FONTS.monoBold} fontSize={0.19} color={color} anchorX="center" anchorY="top" position={[0, 0.27, spine.d / 2 + 0.05]} material-toneMapped={false}>
         {badge}
       </Text>
