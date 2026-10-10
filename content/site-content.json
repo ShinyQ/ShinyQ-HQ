@@ -6634,18 +6634,7 @@
             "Managed Identity"
           ],
           "hologram": "pipeline",
-          "assets": [
-            {
-              "src": "/media/mining-coa-assistant/01-multi-agent-flow.webp",
-              "alt": {
-                "en": "Multi-agent flow diagram matching Indonesian or English questions to accounts and policy documents before resolution or escalation",
-                "id": "Diagram alur multi-agent mencocokkan pertanyaan berbahasa Indonesia atau Inggris dengan akun dan dokumen kebijakan sebelum penyelesaian atau eskalasi"
-              },
-              "width": 1600,
-              "height": 900,
-              "redacted": true
-            }
-          ]
+          "assets": []
         },
         {
           "id": "credit-scoring-poc",
