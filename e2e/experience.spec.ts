@@ -276,6 +276,9 @@ test.describe("tiers and views", () => {
     expect((await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { sound: boolean } } } }).__hq.store.getState().sound))).toBe(false);
     // A stored mute survives a reload.
     await page.reload();
+    await waitForHQ(page);
+    await page.getByRole("button", { name: /Skip intro|Lewati intro/ }).click();
+    await waitForPhase(page, "explore");
     await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
     await page.keyboard.press("m");
     await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "true");
