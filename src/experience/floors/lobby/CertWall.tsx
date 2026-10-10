@@ -1,11 +1,13 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import type { ThreeEvent } from "@react-three/fiber";
-import { useState } from "react";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useRef, useState } from "react";
+import { AdditiveBlending, type MeshBasicMaterial } from "three";
 import { COLORS, LOBBY } from "../../config";
 import type { ExperienceData } from "../../types";
 import { BoxEdges, FONTS, GlassBox } from "../../tower/primitives";
+import { roverRuntime } from "../../rover/runtime";
 import { CERT_BADGE } from "./layout";
 
 const { w: BADGE_W, h: BADGE_H } = CERT_BADGE;
@@ -18,6 +20,13 @@ export interface CertLabels {
 
 function Badge({ cert, labels, z }: { cert: ExperienceData["certifications"][number]; labels: CertLabels; z: number }) {
   const [hover, setHover] = useState(false);
+  const plate = useRef<MeshBasicMaterial>(null);
+  useFrame((_, dt) => {
+    if (!plate.current) return;
+    const near = Math.hypot(roverRuntime.x - (LOBBY.certWall.x - CERT_BADGE.offset), roverRuntime.z - z) < 5 && Math.abs(roverRuntime.y) < 0.5;
+    const want = hover ? 0.5 : near ? 0.35 : 0.08;
+    plate.current.opacity += (want - plate.current.opacity) * Math.min(1, dt * 6);
+  });
   const accent = cert.status === "in-progress" ? COLORS.amber : COLORS.cyan;
   const headline = cert.code ?? cert.issuer;
   const footer = cert.url ? `${labels.verify.toUpperCase()} \u203A` : cert.status === "in-progress" ? labels.inProgress.toUpperCase() : "";
@@ -42,6 +51,11 @@ function Badge({ cert, labels, z }: { cert: ExperienceData["certifications"][num
         document.body.style.cursor = "";
       }}
     >
+      {/* Backlight that brightens as the rover approaches. */}
+      <mesh position={[0, 0, -0.03]}>
+        <planeGeometry args={[BADGE_W + 0.35, BADGE_H + 0.35]} />
+        <meshBasicMaterial ref={plate} color={accent} transparent opacity={0.08} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
       <mesh>
         <planeGeometry args={[BADGE_W, BADGE_H]} />
         <meshBasicMaterial color={hover ? "#132433" : "#0f0f19"} transparent opacity={0.9} />

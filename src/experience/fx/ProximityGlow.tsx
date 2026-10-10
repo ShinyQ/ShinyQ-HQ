@@ -31,7 +31,7 @@ function padGeometry() {
 export function ProximityGlow({ doors, color, floorY }: { doors: DoorTrigger[]; color: string; floorY: number }) {
   const mesh = useRef<InstancedMesh>(null);
   const tier = useHQStore((s) => s.tier);
-  const geometry = useMemo(padGeometry, []);
+  const geometry = useMemo(() => padGeometry(), []);
   const base = useMemo(() => neonColor(color, 1.6, tier), [color, tier]);
   const levels = useRef<number[]>([]);
   const tmp = useMemo(() => new Color(), []);

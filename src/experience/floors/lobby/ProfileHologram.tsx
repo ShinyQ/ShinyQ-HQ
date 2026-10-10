@@ -4,7 +4,9 @@ import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
-import { getHQStore } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { getGlassMaterial } from "../../fx/geometry";
+import { neonColor } from "../../fx/materials";
 import { COLORS, LOBBY } from "../../config";
 import { FONTS, FloorLine } from "../../tower/primitives";
 import { HOLOGRAM } from "./layout";
@@ -26,6 +28,10 @@ const circle = (r: number, n = 48): [number, number][] =>
 /** Rotating wireframe KAW monogram on a pedestal, with the name and headline floating above (C5: no photo). */
 export function ProfileHologram({ name, monogram, headline }: { name: string; monogram: string; headline: string }) {
   const spin = useRef<Group>(null);
+  const halos = useRef<(Group | null)[]>([]);
+  const flicker = useRef({ until: 0, wasHere: false });
+  const tier = useHQStore((st) => st.tier);
+  const haloColors = useMemo(() => [neonColor(COLORS.green, 2, tier), neonColor(COLORS.cyan, 2, tier)], [tier]);
   const outer = useMemo(() => hexGeometry(HOLOGRAM.hexRadius), []);
   const inner = useMemo(() => hexGeometry(1.8), []);
   const ring = useMemo(() => circle(3.05), []);
@@ -36,6 +42,18 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
     const reduced = getHQStore().getState().reducedMotion;
     spin.current.rotation.y += Math.min(dt, 0.1) * (reduced ? 0.15 : 0.4);
     spin.current.position.y = HOLOGRAM.y + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.2) * 0.12);
+    // Counter-rotating halo rings.
+    const d = Math.min(dt, 0.1) * (reduced ? 0.25 : 1);
+    if (halos.current[0]) halos.current[0].rotation.y += d * 0.4;
+    if (halos.current[1]) halos.current[1].rotation.y -= d * 0.25;
+    // Flicker in for 400 ms whenever the rover arrives on the Lobby.
+    const t = state.clock.elapsedTime;
+    const s = getHQStore().getState();
+    const here = s.floor === "L1" && !s.ride && s.phase === "explore";
+    const f = flicker.current;
+    if (here && !f.wasHere && !reduced) f.until = t + 0.4;
+    f.wasHere = here;
+    spin.current.visible = t >= f.until || Math.sin(t * 97) + Math.sin(t * 61) > -0.3;
   });
 
   return (
@@ -47,10 +65,27 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
       <group position={[0, 0.62, 0]}>
         <FloorLine points={ring} color={COLORS.green} closed opacity={0.9} />
       </group>
-      <mesh position={[0, 2.1, 0]}>
+      {/* Projection cone with the glass scanline shimmer. */}
+      <mesh position={[0, 2.1, 0]} material={getGlassMaterial(COLORS.green, 0.02)}>
         <cylinderGeometry args={[1.2, 2.6, 3, 6, 1, true]} />
-        <meshBasicMaterial color={COLORS.green} transparent opacity={0.06} depthWrite={false} toneMapped={false} />
       </mesh>
+      {[
+        { r: 2.9, tilt: 0.28, y: HOLOGRAM.y - 0.2 },
+        { r: 3.3, tilt: -0.2, y: HOLOGRAM.y + 0.3 },
+      ].map((h, i) => (
+        <group key={i} position={[0, h.y, 0]} rotation={[h.tilt, 0, 0]}>
+          <group
+            ref={(node) => {
+              halos.current[i] = node;
+            }}
+          >
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[h.r, 0.018, 6, 96, Math.PI * 1.6]} />
+              <meshBasicMaterial color={haloColors[i]} transparent opacity={0.85} toneMapped={false} />
+            </mesh>
+          </group>
+        </group>
+      ))}
       <group ref={spin} position={[0, HOLOGRAM.y, 0]}>
         <lineLoop geometry={outer}>
           <lineBasicMaterial color={COLORS.cyan} toneMapped={false} />
