@@ -5256,43 +5256,63 @@
           "hologram": "documents",
           "assets": [
             {
-              "src": "/media/ai-cv-screening-platform/01-product-overview.webp",
+              "src": "/media/ai-cv-screening-platform/01-home.webp",
               "alt": {
-                "en": "CV screening overview with a recruitment dashboard preview, structured parsing, role matching and candidate ranking",
-                "id": "Ringkasan screening CV dengan pratinjau dashboard rekrutmen, parsing terstruktur, pencocokan requirement posisi dan peringkat kandidat"
+                "en": "Recruiter home: candidates waiting for a decision, pipeline by stage, weekly screening volume and fit band distribution",
+                "id": "Beranda recruiter: kandidat yang menunggu keputusan, pipeline per tahap, volume screening mingguan, dan distribusi fit band"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/02-jobs.webp",
+              "src": "/media/ai-cv-screening-platform/02-candidate-ranking.webp",
               "alt": {
-                "en": "Job openings list showing status and screened candidate counts for each position",
-                "id": "Daftar lowongan menampilkan status dan jumlah kandidat yang sudah melalui screening untuk setiap posisi"
+                "en": "Job pipeline ranked by AI fit band with must-haves met per candidate and a decision-support notice; candidate names blurred",
+                "id": "Pipeline lowongan yang diurutkan berdasarkan fit band AI dengan jumlah must-have yang terpenuhi per kandidat dan catatan decision support; nama kandidat diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/03-ai-input-redaction.webp",
+              "src": "/media/ai-cv-screening-platform/03-jobs.webp",
               "alt": {
-                "en": "AI input redaction setting to hide contact and identity details before the model reads a CV",
-                "id": "Pengaturan AI input redaction untuk menyamarkan detail kontak dan identitas sebelum model membaca CV"
+                "en": "Jobs list with status filters, candidates screened per job and quick status changes",
+                "id": "Daftar lowongan dengan filter status, jumlah kandidat yang di-screening per lowongan, dan perubahan status cepat"
               },
-              "width": 1440,
-              "height": 918,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/04-usage.webp",
+              "src": "/media/ai-cv-screening-platform/04-job-details.webp",
               "alt": {
-                "en": "AI usage report showing request counts, pages read, estimated spending and costs by activity",
-                "id": "Laporan penggunaan AI menampilkan jumlah request, halaman yang dibaca, estimasi pengeluaran dan biaya tiap aktivitas"
+                "en": "Job details with the description, status history and a warning that requirements are not confirmed yet",
+                "id": "Detail lowongan dengan deskripsi, riwayat status, dan peringatan bahwa requirement belum dikonfirmasi"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/05-ai-input-redaction.webp",
+              "alt": {
+                "en": "AI input redaction settings that hide contact, identity and personal details from the model before it reads a CV",
+                "id": "Pengaturan AI input redaction yang menyembunyikan kontak, identitas, dan data pribadi dari model sebelum membaca CV"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-cv-screening-platform/06-usage.webp",
+              "alt": {
+                "en": "Usage page with plan features and monthly limits for members, storage and AI requests",
+                "id": "Halaman usage dengan fitur paket dan batas bulanan untuk anggota, storage, dan request AI"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
