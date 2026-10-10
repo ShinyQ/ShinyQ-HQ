@@ -4343,47 +4343,67 @@
           "hologram": "waveform",
           "assets": [
             {
-              "src": "/media/voice-ai-contact-center/01-call-in-progress.webp",
+              "src": "/media/voice-ai-contact-center/01-landing.webp",
               "alt": {
-                "en": "Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim",
-                "id": "Panggilan aktif di browser: asisten berbicara, sementara transkrip live menampilkan pertanyaan penelepon tentang klaim"
+                "en": "ARIA landing page: realtime voice agents with grounded answers and human handoff",
+                "id": "Halaman landing ARIA: voice agent realtime dengan jawaban berbasis knowledge dan handoff ke manusia"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/02-assistant-picker.webp",
+              "src": "/media/voice-ai-contact-center/02-call-replay.webp",
               "alt": {
-                "en": "Assistant selection screen offering claims help in English or policy help in Indonesian",
-                "id": "Halaman pemilihan asisten untuk bantuan klaim dalam bahasa Inggris atau polis dalam bahasa Indonesia"
+                "en": "Call replay showing the live transcript, knowledge retrieval scores and a confidence below the handoff threshold",
+                "id": "Call replay yang menampilkan transkrip live, skor knowledge retrieval, dan confidence di bawah ambang handoff"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/03-architecture.webp",
+              "src": "/media/voice-ai-contact-center/03-intelligence-layer.webp",
               "alt": {
-                "en": "Azure and OpenAI architecture diagram arranged into experience, voice, intelligence and data layers",
-                "id": "Diagram arsitektur Azure dan OpenAI dengan layer experience, voice, intelligence dan data"
+                "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
+                "id": "Diagram reasoning loop: intent, knowledge retrieval, multi-agent reasoning, dan confidence scoring sebelum resolve atau eskalasi"
               },
-              "width": 1280,
-              "height": 994,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/04-intelligence-layer.webp",
+              "src": "/media/voice-ai-contact-center/04-human-handoff.webp",
               "alt": {
-                "en": "Reasoning loop diagram showing intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolution or escalation",
-                "id": "Diagram reasoning loop menampilkan intent, knowledge retrieval, multi-agent reasoning dan confidence scoring sebelum penyelesaian atau eskalasi"
+                "en": "Human handoff with the context packet the agent receives before joining the call",
+                "id": "Handoff ke manusia dengan context packet yang diterima agent sebelum bergabung ke panggilan"
               },
-              "width": 1280,
-              "height": 1084,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/05-agents-admin.webp",
+              "src": "/media/voice-ai-contact-center/05-assistant-picker.webp",
+              "alt": {
+                "en": "Assistant picker for browser voice calls across claims, health, billing and product agents",
+                "id": "Pemilih asisten untuk panggilan suara di browser: klaim, kesehatan, billing, dan product agent"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/06-architecture.webp",
+              "alt": {
+                "en": "Architecture layers: Next.js experience, LiveKit voice, OpenAI Realtime with Azure AI Search, Cosmos DB and Azure Monitor",
+                "id": "Layer arsitektur: experience Next.js, voice LiveKit, OpenAI Realtime dengan Azure AI Search, Cosmos DB, dan Azure Monitor"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/07-agents-admin.webp",
               "alt": {
                 "en": "Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier",
                 "id": "Daftar voice agent di operations console, dengan status, model realtime, knowledge base dan tier eskalasi"
@@ -4393,20 +4413,10 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/06-knowledge-detail.webp",
+              "src": "/media/voice-ai-contact-center/08-knowledge-detail.webp",
               "alt": {
                 "en": "Knowledge base detail showing indexed documents, ingestion status and semantic search settings",
                 "id": "Halaman detail knowledge base menampilkan dokumen terindeks, status ingestion dan pengaturan semantic search"
-              },
-              "width": 1440,
-              "height": 900,
-              "redacted": true
-            },
-            {
-              "src": "/media/voice-ai-contact-center/07-analytics.webp",
-              "alt": {
-                "en": "Call analytics dashboard charting resolution rate, handoff rate and daily call volume",
-                "id": "Dashboard analitik panggilan menampilkan tingkat penyelesaian, tingkat handoff dan volume panggilan harian"
               },
               "width": 1440,
               "height": 900,
