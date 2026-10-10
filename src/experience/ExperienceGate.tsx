@@ -4,15 +4,23 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { decideTier, readTierInputs } from "@/lib/gpu-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import type { FloorId, RoomId } from "@/content/schema";
 import type { ExperienceData, GpuTier } from "./types";
 
-const Experience = dynamic(() => import("./Experience"), { ssr: false });
+const loadExperience = () => import("./Experience");
+const Experience = dynamic(loadExperience, { ssr: false });
+
+// Boot-first visits (html[data-hq-boot], set by the inline head script) start the 3D chunk download
+// during hydration instead of after the tier probe.
+if (typeof document !== "undefined" && document.documentElement.hasAttribute(BOOT_ATTR)) void loadExperience();
 
 export const VIEW_KEY = "hq:view";
+
+const onFirstFrame = () => releaseBootCover("ready");
 
 let detected: GpuTier | undefined;
 let scheduled = false;
@@ -68,6 +76,12 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   };
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
+  // The boot cover hides the page until 3D draws its first frame; reveal the page when 3D is off.
+  useEffect(() => {
+    if (tier === "static") releaseBootCover("static");
+    else if (tier && view === "page") releaseBootCover("page");
+  }, [tier, view]);
+
   // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
   useEffect(() => {
     claimAutoOpen(immersive);
@@ -93,6 +107,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
       tier={tier}
       startFloor={startFloor}
       startRoom={startRoom}
+      onFirstFrame={onFirstFrame}
       onExit={() => {
         try {
           sessionStorage.setItem(VIEW_KEY, "page");

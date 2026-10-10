@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
@@ -85,8 +85,26 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
 }
 
+/** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
+function FirstFrame({ onFrame }: { onFrame?: () => void }) {
+  const ticks = useRef(0);
+  useFrame(() => {
+    if (!onFrame || ticks.current > 1) return;
+    ticks.current += 1;
+    if (ticks.current === 2) onFrame();
+  });
+  return null;
+}
+
 /** The lazily loaded 3D chunk: canvas, scene and HUD, portalled over the HTML page. */
-export default function Experience({ data, tier, onExit, startFloor, startRoom }: { data: ExperienceData; tier: GpuTier; onExit: () => void } & ExperienceStart) {
+export default function Experience({
+  data,
+  tier,
+  onExit,
+  onFirstFrame,
+  startFloor,
+  startRoom,
+}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
@@ -255,6 +273,7 @@ export default function Experience({ data, tier, onExit, startFloor, startRoom }
           aria-describedby="hq-desc"
         >
           <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} />
+          <FirstFrame onFrame={onFirstFrame} />
         </Canvas>
       </div>
       <p id="hq-desc" className="sr-only">
