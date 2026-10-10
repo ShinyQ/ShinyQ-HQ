@@ -291,7 +291,10 @@
     padding: 1rem;
     background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
   }
-  html[data-hq-boot] #site-shell {
+  /* Also while the HQ is open (Experience sets html[data-hq]): the page never paints under the
+     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. */
+  html[data-hq-boot] #site-shell,
+  html[data-hq] #site-shell {
     visibility: hidden;
   }
   .hq-boot-backdrop {
