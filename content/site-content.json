@@ -4343,47 +4343,67 @@
           "hologram": "waveform",
           "assets": [
             {
-              "src": "/media/voice-ai-contact-center/01-call-in-progress.webp",
+              "src": "/media/voice-ai-contact-center/01-landing.webp",
               "alt": {
-                "en": "Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim",
-                "id": "Panggilan aktif di browser: asisten berbicara, sementara transkrip live menampilkan pertanyaan penelepon tentang klaim"
+                "en": "ARIA landing page: realtime voice agents with grounded answers and human handoff",
+                "id": "Halaman landing ARIA: voice agent realtime dengan jawaban berbasis knowledge dan handoff ke manusia"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/02-assistant-picker.webp",
+              "src": "/media/voice-ai-contact-center/02-call-replay.webp",
               "alt": {
-                "en": "Assistant selection screen offering claims help in English or policy help in Indonesian",
-                "id": "Halaman pemilihan asisten untuk bantuan klaim dalam bahasa Inggris atau polis dalam bahasa Indonesia"
+                "en": "Call replay showing the live transcript, knowledge retrieval scores and a confidence below the handoff threshold",
+                "id": "Call replay yang menampilkan transkrip live, skor knowledge retrieval, dan confidence di bawah ambang handoff"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/03-architecture.webp",
+              "src": "/media/voice-ai-contact-center/03-intelligence-layer.webp",
               "alt": {
-                "en": "Azure and OpenAI architecture diagram arranged into experience, voice, intelligence and data layers",
-                "id": "Diagram arsitektur Azure dan OpenAI dengan layer experience, voice, intelligence dan data"
+                "en": "Reasoning loop diagram: intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolve or escalate",
+                "id": "Diagram reasoning loop: intent, knowledge retrieval, multi-agent reasoning, dan confidence scoring sebelum resolve atau eskalasi"
               },
-              "width": 1280,
-              "height": 994,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/04-intelligence-layer.webp",
+              "src": "/media/voice-ai-contact-center/04-human-handoff.webp",
               "alt": {
-                "en": "Reasoning loop diagram showing intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolution or escalation",
-                "id": "Diagram reasoning loop menampilkan intent, knowledge retrieval, multi-agent reasoning dan confidence scoring sebelum penyelesaian atau eskalasi"
+                "en": "Human handoff with the context packet the agent receives before joining the call",
+                "id": "Handoff ke manusia dengan context packet yang diterima agent sebelum bergabung ke panggilan"
               },
-              "width": 1280,
-              "height": 1084,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/05-agents-admin.webp",
+              "src": "/media/voice-ai-contact-center/05-assistant-picker.webp",
+              "alt": {
+                "en": "Assistant picker for browser voice calls across claims, health, billing and product agents",
+                "id": "Pemilih asisten untuk panggilan suara di browser: klaim, kesehatan, billing, dan product agent"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/06-architecture.webp",
+              "alt": {
+                "en": "Architecture layers: Next.js experience, LiveKit voice, OpenAI Realtime with Azure AI Search, Cosmos DB and Azure Monitor",
+                "id": "Layer arsitektur: experience Next.js, voice LiveKit, OpenAI Realtime dengan Azure AI Search, Cosmos DB, dan Azure Monitor"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/voice-ai-contact-center/07-agents-admin.webp",
               "alt": {
                 "en": "Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier",
                 "id": "Daftar voice agent di operations console, dengan status, model realtime, knowledge base dan tier eskalasi"
@@ -4393,20 +4413,10 @@
               "redacted": true
             },
             {
-              "src": "/media/voice-ai-contact-center/06-knowledge-detail.webp",
+              "src": "/media/voice-ai-contact-center/08-knowledge-detail.webp",
               "alt": {
                 "en": "Knowledge base detail showing indexed documents, ingestion status and semantic search settings",
                 "id": "Halaman detail knowledge base menampilkan dokumen terindeks, status ingestion dan pengaturan semantic search"
-              },
-              "width": 1440,
-              "height": 900,
-              "redacted": true
-            },
-            {
-              "src": "/media/voice-ai-contact-center/07-analytics.webp",
-              "alt": {
-                "en": "Call analytics dashboard charting resolution rate, handoff rate and daily call volume",
-                "id": "Dashboard analitik panggilan menampilkan tingkat penyelesaian, tingkat handoff dan volume panggilan harian"
               },
               "width": 1440,
               "height": 900,
@@ -5974,7 +5984,48 @@
             "App Service"
           ],
           "hologram": "graph",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-solutions-assistant/01-assistant-answer.webp",
+              "alt": {
+                "en": "AI Solutions Consultant answering a CV screening question, grounded in a published project and linking to it",
+                "id": "AI Solutions Consultant menjawab pertanyaan tentang CV screening, berdasarkan proyek yang sudah dipublikasikan dan menautkannya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/02-indicative-architecture.webp",
+              "alt": {
+                "en": "Expanded indicative architecture in the answer, grouping Azure services into intelligence, data and experience",
+                "id": "Indicative architecture yang dibuka di jawaban, mengelompokkan layanan Azure ke intelligence, data, dan experience"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/03-project-matcher.webp",
+              "alt": {
+                "en": "Hero project matcher returning ranked projects for an IT support ticket challenge",
+                "id": "Project matcher di hero yang menampilkan proyek terurut untuk tantangan tiket IT support"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/04-project-page.webp",
+              "alt": {
+                "en": "Project page for the AI recruitment solution with a live demo link and product preview",
+                "id": "Halaman proyek solusi AI recruitment dengan tautan live demo dan pratinjau produk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -6795,7 +6846,58 @@
             "Next.js"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/agent-deck-platform/01-published-deck.webp",
+              "alt": {
+                "en": "Published deck on the hosting site: cover slide of a vendor portal explainer with page previews",
+                "id": "Deck yang dipublikasikan di situs hosting: slide sampul penjelasan portal vendor dengan pratinjau halaman"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/02-flow-slide.webp",
+              "alt": {
+                "en": "Agent-authored slide showing the purchase order to payment flow as a diagram",
+                "id": "Slide buatan agent yang menampilkan alur purchase order hingga pembayaran sebagai diagram"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/03-screenshot-slide.webp",
+              "alt": {
+                "en": "Slide that frames a product screenshot with annotated callouts",
+                "id": "Slide yang membingkai screenshot produk dengan callout beranotasi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/04-login-slide.webp",
+              "alt": {
+                "en": "Slide walking through the sign-in page with a browser frame and notes",
+                "id": "Slide yang menjelaskan halaman sign-in dengan bingkai browser dan catatan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/05-summary-slide.webp",
+              "alt": {
+                "en": "Summary slide comparing three pages side by side",
+                "id": "Slide ringkasan yang membandingkan tiga halaman berdampingan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "solutions-marketing-site",
@@ -6858,13 +6960,63 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/solutions-marketing-site/01-landing.webp",
+              "src": "/media/solutions-marketing-site/01-home.webp",
               "alt": {
-                "en": "Enterprise AI on Azure landing page with English and Indonesian controls, project search and example use cases",
-                "id": "Landing page enterprise AI di Azure dengan pilihan bahasa Inggris dan Indonesia, pencarian proyek dan contoh use case"
+                "en": "Home hero of the Microsoft solutions site with the technology foundation panel grouped by practice",
+                "id": "Hero beranda situs solusi Microsoft dengan panel technology foundation yang dikelompokkan per practice"
               },
-              "width": 1280,
-              "height": 800,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/02-outcome-navigator.webp",
+              "alt": {
+                "en": "Outcome navigator that maps a business goal to the matching Microsoft practice and capabilities",
+                "id": "Outcome navigator yang memetakan tujuan bisnis ke practice dan capability Microsoft yang sesuai"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/03-engagements.webp",
+              "alt": {
+                "en": "Engagement catalogue with search, practice filters and cards listing work modules and deliverables",
+                "id": "Katalog engagement dengan pencarian, filter practice, dan kartu berisi work module serta deliverable"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/04-promotions.webp",
+              "alt": {
+                "en": "Promotions catalogue filtered by division, offer type and status, with programme cards",
+                "id": "Katalog promosi dengan filter divisi, jenis penawaran, dan status, beserta kartu program"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/05-practice.webp",
+              "alt": {
+                "en": "Practice page for Cloud Infra, Data and AI Platform with its capability diagram",
+                "id": "Halaman practice Cloud Infra, Data and AI Platform dengan diagram capability"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/06-about-indonesian.webp",
+              "alt": {
+                "en": "About page in Indonesian, showing the bilingual content model",
+                "id": "Halaman About dalam bahasa Indonesia, menunjukkan model konten bilingual"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
