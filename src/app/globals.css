@@ -112,11 +112,10 @@
     }
   }
 
+  /* Small mono overline (prototype boot eyebrow); shared by the boot cover, the HUD and the Page View. */
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 14px;
-    letter-spacing: 0.08em;
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.3em;
     text-transform: uppercase;
     color: var(--color-ink-3);
   }
@@ -272,13 +271,6 @@
  * canvas draws its first frame. The 3D boot overlay reuses the same card, so the handoff is seamless.
  */
 @layer components {
-  .eyebrow {
-    font: 500 11px/1.4 var(--font-mono);
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-ink-3);
-  }
-
   .hq-boot-cover {
     display: none;
   }
