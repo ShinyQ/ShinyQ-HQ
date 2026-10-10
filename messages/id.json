@@ -233,6 +233,7 @@
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "joystick": "Joystick rover",
+    "bootEyebrow": "Agent HQ · memulai",
     "bootTitle": "rover@hq:~$ ./boot",
     "bootLine1": "[ ok ] daya aktif",
     "bootLine2": "[ ok ] peta lantai: L1 hingga RF",

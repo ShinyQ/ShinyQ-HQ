@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Analytics } from "@/components/Analytics";
+import { BootCover } from "@/components/BootCover";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,6 +10,7 @@ import { getContent, getProfile } from "@/content/load";
 import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { assertLocale } from "@/i18n/locale";
+import { bootFirstScript } from "@/lib/boot-first";
 import { routing } from "@/i18n/routing";
 import { personJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import { SITE_NAME, SITE_URL, pageMetadata } from "@/lib/site";
@@ -44,9 +46,16 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 export default async function LocaleLayout({ children, params }: LayoutProps<"/[locale]">) {
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
+  const profile = getProfile();
   return (
-    <html lang={locale} className={`${fontClassName} antialiased`}>
+    // The inline script sets data-hq-boot on <html> before hydration, hence suppressHydrationWarning.
+    <html lang={locale} className={`${fontClassName} antialiased`} suppressHydrationWarning>
+      <head>
+        {/* Runs before first paint: on 3D-capable visits the boot cover hides the Page View. */}
+        <script dangerouslySetInnerHTML={{ __html: bootFirstScript() }} />
+      </head>
       <body>
+        <BootCover locale={locale} name={profile.name} monogram={profile.monogram} />
         <NextIntlClientProvider>
           {/* The 3D overlay marks this shell inert while it is open (see ExperienceGate). */}
           <div id="site-shell" className="flex min-h-screen flex-col">
