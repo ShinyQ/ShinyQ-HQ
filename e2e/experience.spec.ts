@@ -322,6 +322,25 @@ test.describe("missions in 3D", () => {
 const cameraYaw = (page: Page) =>
   page.evaluate(() => (window as unknown as { __hq: { rover: { cameraYaw: number } } }).__hq.rover.cameraYaw);
 
+/**
+ * The camera publishes its yaw once per frame. Under SwiftShader a frame can take longer than the
+ * input that changed the view, so wait for two frames before reading an "instant" value.
+ */
+const currentYaw = async (page: Page) => {
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  return cameraYaw(page);
+};
+
+/** Holds a rotation key until `check` passes on the published yaw (frame-rate independent), then releases it. */
+async function holdUntil(page: Page, key: string, check: (yaw: number) => boolean) {
+  await page.keyboard.down(key);
+  try {
+    await expect.poll(async () => check(await cameraYaw(page)), { timeout: 30_000 }).toBe(true);
+  } finally {
+    await page.keyboard.up(key);
+  }
+}
+
 test.describe("free orbit camera", () => {
   test("mouse drag rotates the view; a click without drag still moves the rover", async ({ page }) => {
     await enterHQ(page);
@@ -332,7 +351,7 @@ test.describe("free orbit camera", () => {
     await page.mouse.down();
     for (let i = 1; i <= 10; i++) await page.mouse.move(300 + i * 30, 600);
     await page.mouse.up();
-    const yaw = await cameraYaw(page);
+    const yaw = await currentYaw(page);
     expect(yaw).toBeLessThan(-1);
     // Dragging rotated only: the rover did not drive off.
     const after = await snapshot(page);
@@ -343,11 +362,11 @@ test.describe("free orbit camera", () => {
     await page.mouse.down({ button: "right" });
     for (let i = 1; i <= 5; i++) await page.mouse.move(400 - i * 30, 600);
     await page.mouse.up({ button: "right" });
-    expect(await cameraYaw(page)).toBeGreaterThan(yaw + 0.5);
+    expect(await currentYaw(page)).toBeGreaterThan(yaw + 0.5);
 
     // The view persists (no spring-back) and a plain click still drives.
     await page.waitForTimeout(2500);
-    expect(Math.abs((await cameraYaw(page)) - yaw)).toBeGreaterThan(0.5);
+    expect(Math.abs((await currentYaw(page)) - yaw)).toBeGreaterThan(0.5);
     await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
     await page.mouse.click(560, 520);
@@ -361,11 +380,17 @@ test.describe("free orbit camera", () => {
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-0.5);
     expect((await snapshot(page)).floor).toBe("L1");
 
-    const beforeKey = await cameraYaw(page);
-    await page.keyboard.down("e");
-    await page.waitForTimeout(800);
-    await page.keyboard.up("e");
-    expect(await cameraYaw(page)).toBeGreaterThan(beforeKey + 0.3);
+    // Holding E turns right; holding Q turns left. Each key is held until the camera has turned,
+    // so a slow frame cannot swallow a fixed-length press.
+    const beforeKey = await currentYaw(page);
+    await holdUntil(page, "e", (yaw) => yaw > beforeKey + 0.3);
+    const afterE = await currentYaw(page);
+    expect(afterE).toBeGreaterThan(beforeKey + 0.3);
+    // Released: the view stays where it is (no drift, no spring-back).
+    await page.waitForTimeout(1000);
+    expect(Math.abs((await currentYaw(page)) - afterE)).toBeLessThan(1e-3);
+    await holdUntil(page, "q", (yaw) => yaw < afterE - 0.3);
+    expect(await currentYaw(page)).toBeLessThan(afterE - 0.3);
 
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await page.getByRole("button", { name: "Reset view (0)" }).click();
@@ -393,7 +418,7 @@ test.describe("free orbit on touch", () => {
     for (const p of points.slice(1)) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: (timestamp += 0.05) });
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: (timestamp += 0.05) });
     await cdp.detach();
-    expect(await cameraYaw(page)).toBeLessThan(-0.8);
+    expect(await currentYaw(page)).toBeLessThan(-0.8);
     const after = await snapshot(page);
     expect(after.floor).toBe("L1");
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
