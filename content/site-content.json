@@ -6701,33 +6701,53 @@
           "hologram": "chart",
           "assets": [
             {
-              "src": "/media/credit-scoring-poc/01-product-overview.webp",
+              "src": "/media/credit-scoring-poc/01-executive-dashboard.webp",
               "alt": {
-                "en": "Browser-based credit scoring and default prediction overview, with factor explanations and a dashboard preview",
-                "id": "Ringkasan credit scoring dan prediksi gagal bayar di browser, dengan penjelasan faktor dan pratinjau dashboard"
+                "en": "Executive dashboard: portfolio health, NPL ratio, average credit score, monthly NPL trend and risk segment mix",
+                "id": "Executive dashboard: kesehatan portofolio, rasio NPL, rata-rata skor kredit, tren NPL bulanan, dan komposisi segmen risiko"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/credit-scoring-poc/02-credit-analysis.webp",
+              "src": "/media/credit-scoring-poc/02-model-performance.webp",
               "alt": {
-                "en": "Credit analysis form showing a score gauge and factors that raise or lower the score",
-                "id": "Formulir analisis kredit menampilkan gauge skor dan faktor yang menaikkan atau menurunkan skor"
+                "en": "Model performance page comparing XGBoost, LightGBM and logistic regression by AUC, precision and recall",
+                "id": "Halaman performa model yang membandingkan XGBoost, LightGBM, dan logistic regression berdasarkan AUC, presisi, dan recall"
               },
               "width": 1600,
-              "height": 859,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/credit-scoring-poc/03-model-performance.webp",
+              "src": "/media/credit-scoring-poc/03-credit-analysis.webp",
               "alt": {
-                "en": "Model performance comparison for XGBoost, LightGBM, logistic regression and random forest",
-                "id": "Perbandingan performa model XGBoost, LightGBM, logistic regression dan random forest"
+                "en": "Credit analysis form for a new applicant covering personal, employment and financial details; amounts blurred",
+                "id": "Form analisis kredit untuk calon debitur, mencakup data pribadi, pekerjaan, dan keuangan; nominal diburamkan"
               },
               "width": 1600,
-              "height": 866,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/04-default-prediction.webp",
+              "alt": {
+                "en": "Default risk prediction form with loan, repayment and collateral inputs; amounts blurred",
+                "id": "Form prediksi risiko gagal bayar dengan input pinjaman, angsuran, dan agunan; nominal diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/credit-scoring-poc/05-debtor-data.webp",
+              "alt": {
+                "en": "Debtor list with province and occupation; names and income blurred",
+                "id": "Daftar debitur dengan provinsi dan pekerjaan; nama dan pendapatan diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
