@@ -1,0 +1,17 @@
+# Product names the owner allowed on the site (C3, revised 2026-10-10): products
+# of the owner's employer (MII / Metrodata) and their own names. They are removed
+# from the merged blocklist (default + local file + SAFETY_BLOCKLIST secret), so
+# an older private list that still names them never fails the lint.
+# Matching: a plain blocklist term equal to an entry (case-insensitive), or a
+# /regex/ term that names the entry and matches it, is dropped. Client company
+# names must never be added here.
+ARIA
+Pris.AI
+Sentinel
+FREDDY
+ATLAS
+Cowork
+MII Cowork
+MII Deck
+eVendor
+MII E-Recruitment

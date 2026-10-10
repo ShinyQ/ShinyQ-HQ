@@ -1,9 +1,29 @@
 # Committed default public-safety blocklist.
-# The real list of internal codenames and private repository names is NOT kept
-# in this public repo. Put it in content/.safety-blocklist.local.txt (gitignored)
+# Private terms (private repository names, cloud resource names) are NOT kept in
+# this public repo. Put them in content/.safety-blocklist.local.txt (gitignored)
 # or the SAFETY_BLOCKLIST env var / CI secret (comma or newline separated).
 # Plain terms match case-insensitively on word boundaries; /regex/ terms are
-# case-sensitive regular expressions.
+# case-sensitive regular expressions. Terms listed in content/safety-allowlist.txt
+# (product names, allowed since 2026-10-10) are removed from the merged list.
+
+# Client companies of the owner's employers (C3, revised 2026-10-10): never
+# named on the site, use a sector label instead. Employers and the freelance
+# clients in C8 stay named. These names are public companies, not secrets.
+# SMBC Indonesia was also an employer: only the employer label
+# "Jenius (SMBC Indonesia)" may appear, so the term is a regex with that exception.
+/(?<!Jenius \()\b[Ss][Mm][Bb][Cc]/
+MMKSI
+Mitsubishi
+Sari Roti
+Nippon Indosari
+Turangga
+/\bTTA\b/
+Hasamitra
+Unifam
+/\bGYS\b/
+Inalum
+Zurich
+Garudafood
 
 # Azure resource name prefixes followed by an environment-like suffix
 /\b(?:rg|kv|st|cosmos|srch|aoai|func|app|ca|cae|acr|sb|appi|log)-[a-z0-9]+-(?:dev|stg|staging|prod|prd|uat|test)\b/
