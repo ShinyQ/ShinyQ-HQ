@@ -1,0 +1,62 @@
+# Cloudflare Pages configuration for the "Ask the HQ" Function (functions/api/ask.ts).
+#
+# `wrangler pages deploy out` (run from the repo root) reads this file because it sets
+# `pages_build_output_dir`. It then becomes the source of truth for the project's bindings and
+# variables: the same fields can no longer be edited in the dashboard, and a deploy overwrites them.
+# Runbook (provisioning, deploy, kill switch, rotation): docs/ask-runbook.md.
+#
+# Secrets never live here. Set them with `bunx wrangler@4 pages secret put <NAME> --project-name=kurniadi`:
+#   TURNSTILE_SECRET  Turnstile widget secret (siteverify)
+#   ASK_IP_SALT_SEED  seed of the daily-rotating salt for visitor IP hashes (rate limits)
+#   ASK_COOKIE_KEY    HMAC key of the 30-minute signed Turnstile session cookie
+
+name = "kurniadi"
+pages_build_output_dir = "out"
+compatibility_date = "2026-10-01"
+
+# Workers AI. The Function routes every model call through the AI Gateway named in ASK_GATEWAY_ID
+# (cache, logs and the global rate limit live there).
+[ai]
+binding = "AI"
+
+# KV namespace "shinyq-hq-ask": answer cache (`ans:` keys, 7-day TTL), rate-limit counters and the
+# circuit-breaker flag. KV namespace IDs are not secret; `bun scripts/provision-ask.ts --apply`
+# writes this one (it fails a deploy if it ever points at a missing namespace).
+[[kv_namespaces]]
+binding = "ASK_KV"
+id = "52fa119d49f641078dbecbb12aad4ccb"
+
+# Workers Analytics Engine dataset for anonymized ask events (no IP, no raw text):
+# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason], doubles [latencyMs, 1].
+# The dataset is created on the first write; scripts/content-gap.ts reads it through the SQL API.
+[[analytics_engine_datasets]]
+binding = "ASK_EVENTS"
+dataset = "ask_events"
+
+# Optional Workers rate limiting binding (8 requests per 60 s per visitor hash). Pages support is
+# still rolling out, so it stays off; the Function falls back to its in-memory and KV limiters.
+# Uncomment once `wrangler pages deploy` accepts it.
+# [[ratelimits]]
+# name = "ASK_RL"
+# namespace_id = "1001"
+# simple = { limit = 8, period = 60 }
+
+[vars]
+# Kill switch. Anything but "true" hides the UI and makes /api/ask return 503. Stays "false" until
+# the first production deploy has passed the smoke test (docs/ask-runbook.md).
+ASK_ENABLED = "false"
+# Primary and fallback Workers AI models (one fallback attempt per question).
+ASK_PRIMARY = "@cf/google/gemma-4-26b-a4b-it"
+ASK_FALLBACK = "@cf/mistralai/mistral-small-3.1-24b-instruct"
+# AI Gateway ID (cache TTL 7 days, logs on, 600 requests per day). Its Workers AI billing mode is
+# "postpaid": calls count against the account's own Workers AI quota (10k free neurons per day).
+ASK_GATEWAY_ID = "shinyq-hq"
+# Public Turnstile site key of the invisible widget "shinyq-hq-ask" (kurniadi.pages.dev,
+# kurniadi.dev), written by scripts/provision-ask.ts. Empty means Turnstile is off.
+TURNSTILE_SITE_KEY = "0x4AAAAAAFTVgnlNQl3EZH4k"
+# Allowed Origin values, comma separated; `https://*.example.dev` matches one subdomain label.
+# Previews are not listed: they get no production secrets, so the Function stays off there
+# (a Turnstile site key without its secret fails closed).
+ASK_ALLOWED_ORIGINS = "https://kurniadi.pages.dev,https://kurniadi.dev"
+# Global model calls per day (second layer under the AI Gateway rate limit).
+ASK_DAILY_CAP = "600"
