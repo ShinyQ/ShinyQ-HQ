@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
 import { coverImage } from "@/content/media";
 import { podAttrs } from "@/content/pageview";
+import { clientLabel } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod, formatYearMonth } from "@/lib/format";
@@ -42,7 +43,7 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
       <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
         <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
         <span>{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
-        {pod.client && <span>{pod.client}</span>}
+        {pod.client && <span>{clientLabel(pod.client, locale)}</span>}
       </p>
       <h3 className={`pv-h3 pv-feature-title ${size === "pair" ? "" : "pv-h3-l"}`}>
         <Link href={`/labs/${pod.slug}`} className="pv-stretch">
@@ -83,7 +84,7 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
       <div className="min-w-0">
         <p className="pv-data mb-2 flex flex-wrap gap-x-4">
           <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-          <span className="md:hidden">{[pod.client, start].filter(Boolean).join(" · ")}</span>
+          <span className="md:hidden">{[clientLabel(pod.client, locale), start].filter(Boolean).join(" · ")}</span>
         </p>
         <h3 className="pv-h3 pv-row-title text-[20px]">
           <Link href={`/labs/${pod.slug}`} className="pv-stretch">
@@ -95,7 +96,7 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
           <TechLogoRow items={pod.stack} max={8} />
         </div>
       </div>
-      <p className="pv-small hidden md:block md:pt-6">{pod.client}</p>
+      <p className="pv-small hidden md:block md:pt-6">{clientLabel(pod.client, locale)}</p>
       <p className="pv-data hidden md:block md:pt-7">{start}</p>
       {result && (
         <div className="md:pt-6">

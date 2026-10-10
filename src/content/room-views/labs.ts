@@ -1,5 +1,6 @@
 import { getPods, getTimelineEntryById } from "../load";
 import type { Locale, Pod, Wing } from "../schema";
+import { clientLabel } from "../selectors";
 import { formatPeriod } from "@/lib/format";
 import { chain, galleryOf, messages, roomId, stackItems } from "./shared";
 import type { RoomArchitecture, RoomView } from "./types";
@@ -25,7 +26,7 @@ export function podView(pod: Pod, locale: Locale): RoomView {
     code: `L3:${pod.slug}`,
     title: pod.title[locale],
     subtitle: pod.tagline[locale],
-    meta: [pod.role[locale], formatPeriod(pod.period.start, pod.period.end, locale), ...(pod.client ? [pod.client] : [])],
+    meta: [pod.role[locale], formatPeriod(pod.period.start, pod.period.end, locale), ...(pod.client ? [clientLabel(pod.client, locale)!] : [])],
     badges: [
       { label: m.common.wing[pod.wing], accent: WING_ACCENT[pod.wing] },
       { label: m.common.tier[pod.tier], accent: pod.accent },

@@ -120,7 +120,7 @@ gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optiona
 | --- | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
-| `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms used by the content tests |
+| `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it |
 
 ## 4. GitHub repository variables
 

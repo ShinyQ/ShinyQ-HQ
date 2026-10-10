@@ -1,6 +1,18 @@
 import { formatDate, formatYearMonth } from "@/lib/format";
 import type { Locale, Pod, Publication, Tier, TimelineEntry } from "./schema";
 
+/** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */
+export function clientLabel(client: Pod["client"], locale: Locale): string | undefined {
+  if (!client) return undefined;
+  return typeof client === "string" ? client : client[locale];
+}
+
+/** Search terms for a pod's client: the name, or the sector label in every locale. */
+export function clientKeywords(client: Pod["client"]): string[] {
+  if (!client) return [];
+  return typeof client === "string" ? [client] : [client.en, client.id];
+}
+
 const TIER_RANK: Record<Tier, number> = { hero: 0, featured: 1, listed: 2 };
 
 /** Spec appendix 01 section 4: hero first, then by `order`. */

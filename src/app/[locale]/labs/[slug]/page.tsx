@@ -13,7 +13,7 @@ import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
-import { adjacent } from "@/content/selectors";
+import { adjacent, clientLabel } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
@@ -88,7 +88,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             items={[
               { label: t("role"), value: pod.role[locale] },
               { label: t("period"), value: formatPeriod(pod.period.start, pod.period.end, locale) },
-              { label: t("client"), value: pod.client },
+              { label: t("client"), value: clientLabel(pod.client, locale) },
             ]}
           />
           <section id="results" aria-labelledby="results-title">

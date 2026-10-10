@@ -67,7 +67,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 - `content/site-content.json` is the single public dataset. It is validated by the zod schemas in `src/content/schema.ts` at build time and by the tests. All text is `{ en, id }`.
 - Blog posts are MDX files in `content/blog/<slug>.<locale>.mdx`. A missing translation falls back to the original with a note.
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. To update it, replace that file (same name); nothing is generated from the site.
-- Private evidence never enters the repo. The public-safety lint blocks internal codenames and private repository names using `content/.safety-blocklist.local.txt` (gitignored) and the `SAFETY_BLOCKLIST` env var / CI secret, on top of the committed default list.
+- Private evidence never enters the repo. The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret). Product names in `content/safety-allowlist.txt` are never flagged. An e2e check scans the built `out/` for the same terms.
 
 ## Structure
 

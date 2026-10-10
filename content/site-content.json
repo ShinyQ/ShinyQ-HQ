@@ -1822,8 +1822,8 @@
               "id": "Membangun platform keamanan kode berbasis AI dengan 8 engine pemindai dan agent fix-PR dengan guardrail"
             },
             {
-              "en": "Primary engineer on 10 repositories and significant contributor on 10 more, for clients including SMBC Indonesia and Mitsubishi Motors (MMKSI)",
-              "id": "Engineer utama di 10 repositori dan kontributor signifikan di 10 lainnya, untuk klien termasuk SMBC Indonesia dan Mitsubishi Motors (MMKSI)"
+              "en": "Primary engineer on 10 repositories and significant contributor on 10 more, for banking and automotive clients",
+              "id": "Engineer utama di 10 repositori dan kontributor signifikan di 10 lainnya, untuk klien perbankan dan otomotif"
             },
             {
               "en": "800+ merged pull requests in 2026, agent-assisted and human-reviewed",
@@ -2404,8 +2404,8 @@
             "id": "Portal manajemen vendor"
           },
           "tagline": {
-            "en": "A vendor portal for purchase orders, invoices, tax checks and approvals, delivered by one engineer in about six weeks.",
-            "id": "Portal vendor untuk purchase order, invoice, verifikasi pajak, dan approval, saya kerjakan sendiri dalam sekitar enam minggu."
+            "en": "eVendor, MII's internal vendor portal for purchase orders, invoices, tax checks and approvals, delivered by one engineer in about six weeks.",
+            "id": "eVendor, portal vendor internal MII untuk purchase order, invoice, verifikasi pajak, dan approval, saya kerjakan sendiri dalam sekitar enam minggu."
           },
           "period": {
             "start": "2026-08",
@@ -4104,8 +4104,8 @@
             "id": "Contact center voice AI realtime"
           },
           "tagline": {
-            "en": "Natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.",
-            "id": "Interupsi alami (~2 detik menjadi ~0,2 detik), jawaban dari knowledge base, dan pengalihan ke petugas di tengah panggilan."
+            "en": "ARIA, MII's voice AI contact center: natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.",
+            "id": "ARIA, contact center voice AI milik MII: interupsi alami (~2 detik menjadi ~0,2 detik), jawaban dari knowledge base, dan pengalihan ke petugas di tengah panggilan."
           },
           "period": {
             "start": "2026-05",
@@ -4427,8 +4427,8 @@
             "id": "Platform keamanan kode berbasis AI"
           },
           "tagline": {
-            "en": "Eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
-            "id": "Delapan scanner per pull request, triage AI yang mudah dibaca, dan fix agent yang membuka PR dengan validasi serta guardrail."
+            "en": "Pris.AI, MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
+            "id": "Pris.AI, platform keamanan kode AI milik MII: delapan scanner per pull request, triage AI yang mudah dibaca, dan fix agent yang membuka PR dengan validasi serta guardrail."
           },
           "period": {
             "start": "2026-06",
@@ -4754,8 +4754,8 @@
             "id": "Review dokumen fraud berbasis AI"
           },
           "tagline": {
-            "en": "OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.",
-            "id": "OCR dan review LLM dua tahap untuk paket dokumen pengadaan, dengan rilis risk engine ditentukan oleh gate evaluasi."
+            "en": "MII Fraud Detection, MII's internal platform: OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.",
+            "id": "MII Fraud Detection, platform internal MII: OCR dan review LLM dua tahap untuk paket dokumen pengadaan, dengan rilis risk engine ditentukan oleh gate evaluasi."
           },
           "period": {
             "start": "2026-05",
@@ -5058,8 +5058,8 @@
             "id": "AI CV screening dan evaluasi"
           },
           "tagline": {
-            "en": "A failing prototype rebuilt into a tested, evaluated screening platform: AI provides evidence, and the recruiter decides.",
-            "id": "Prototipe yang sering gagal ditata ulang menjadi platform screening teruji dan terevaluasi: AI memberikan bukti, recruiter memutuskan."
+            "en": "MII E-Recruitment, a failing prototype rebuilt into MII's tested, evaluated screening platform: AI provides evidence, and the recruiter decides.",
+            "id": "MII E-Recruitment, prototipe yang sering gagal ditata ulang menjadi platform screening MII yang teruji dan terevaluasi: AI memberikan bukti, recruiter memutuskan."
           },
           "period": {
             "start": "2026-06",
@@ -5294,15 +5294,18 @@
           "tier": "featured",
           "accent": "violet",
           "wing": "ai",
-          "client": "SMBC Indonesia",
+          "client": {
+            "en": "National digital bank",
+            "id": "Bank digital nasional"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Bank statement analysis PoC",
             "id": "PoC analisis rekening koran"
           },
           "tagline": {
-            "en": "Document AI for bank evaluators, with strict access control, Indonesian data residency and faster document processing.",
-            "id": "Document AI untuk evaluator bank, dengan kontrol akses ketat, penyimpanan data di Indonesia, dan pemrosesan dokumen lebih cepat."
+            "en": "ATLAS, document AI for a national digital bank's evaluators, with strict access control, Indonesian data residency and faster document processing.",
+            "id": "ATLAS, Document AI untuk evaluator sebuah bank digital nasional, dengan kontrol akses ketat, penyimpanan data di Indonesia, dan pemrosesan dokumen lebih cepat."
           },
           "period": {
             "start": "2026-06",
@@ -5313,8 +5316,8 @@
             "id": "Lead engineer, bertanggung jawab atas pemeliharaan"
           },
           "problem": {
-            "en": "SMBC Indonesia's evaluators needed auditable bank-statement analysis within a fixed PoC window. Uploads and results required strict access control, with data kept in Indonesia.",
-            "id": "Evaluator SMBC Indonesia membutuhkan analisis rekening koran yang bisa diaudit dalam periode PoC yang ditetapkan. Upload dan hasil analisis memerlukan kontrol akses ketat, dengan data tetap tersimpan di Indonesia."
+            "en": "A national digital bank's evaluators needed auditable bank-statement analysis within a fixed PoC window. Uploads and results required strict access control, with data kept in Indonesia.",
+            "id": "Evaluator dari sebuah bank digital nasional membutuhkan analisis rekening koran yang bisa diaudit dalam periode PoC yang ditetapkan. Upload dan hasil analisis memerlukan kontrol akses ketat, dengan data tetap tersimpan di Indonesia."
           },
           "approach": [
             {
@@ -5473,8 +5476,8 @@
             "id": "Template aplikasi AI full-stack"
           },
           "tagline": {
-            "en": "A shared starting point for client AI apps, combining the web tier, agents, persistence, sign-in and infrastructure.",
-            "id": "Template bersama untuk aplikasi AI klien, mencakup web tier, agent, persistence, sign-in, dan infrastruktur."
+            "en": "The MII AI Dashboard Template, a shared starting point for client AI apps, combining the web tier, agents, persistence, sign-in and infrastructure.",
+            "id": "MII AI Dashboard Template, template bersama untuk aplikasi AI klien, mencakup web tier, agent, persistence, sign-in, dan infrastruktur."
           },
           "period": {
             "start": "2026-03",
@@ -5648,7 +5651,10 @@
           "tier": "featured",
           "accent": "amber",
           "wing": "ai",
-          "client": "Sari Roti",
+          "client": {
+            "en": "National bakery brand",
+            "id": "Merek roti nasional"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Demand forecasting on Microsoft Fabric",
@@ -5836,8 +5842,8 @@
             "id": "Asisten RAG dwibahasa dengan sitasi"
           },
           "tagline": {
-            "en": "A multi-agent assistant for a company AI solutions site, answering only from curated content with citations.",
-            "id": "Asisten multi-agent untuk situs solusi AI perusahaan, yang hanya menjawab dari konten terkurasi dengan sitasi."
+            "en": "A multi-agent assistant for MII's Microsoft AI portfolio site, answering only from curated content with citations.",
+            "id": "Asisten multi-agent untuk situs portofolio Microsoft AI milik MII, yang hanya menjawab dari konten terkurasi dengan sitasi."
           },
           "period": {
             "start": "2026-07",
@@ -6282,15 +6288,18 @@
           "tier": "listed",
           "accent": "violet",
           "wing": "ai",
-          "client": "Mitsubishi Motors (MMKSI)",
+          "client": {
+            "en": "Automotive manufacturer",
+            "id": "Produsen otomotif"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Fraud review dashboard and security remediation",
             "id": "Dashboard review fraud dan remediasi keamanan"
           },
           "tagline": {
-            "en": "A client dashboard delivered in two days, followed by remediation against the client's full security assessment.",
-            "id": "Dashboard klien selesai dalam dua hari, dilanjutkan remediasi berdasarkan security assessment menyeluruh dari klien."
+            "en": "FREDDY, an automotive manufacturer's fraud review dashboard, delivered in two days, followed by remediation against the client's full security assessment.",
+            "id": "FREDDY, dashboard review fraud untuk sebuah produsen otomotif, selesai dalam dua hari, dilanjutkan remediasi berdasarkan security assessment menyeluruh dari klien."
           },
           "period": {
             "start": "2026-03",
@@ -6301,8 +6310,8 @@
             "id": "Engineer utama pengembangan dashboard"
           },
           "problem": {
-            "en": "Mitsubishi Motors (MMKSI) needed a working fraud review dashboard quickly, starting from a team prototype. The next requirement was remediation against the client's security checklist.",
-            "id": "Mitsubishi Motors (MMKSI) membutuhkan dashboard review fraud yang berfungsi dalam waktu singkat, berawal dari prototipe tim. Tahap berikutnya adalah remediasi berdasarkan checklist keamanan klien."
+            "en": "An automotive manufacturer needed a working fraud review dashboard quickly, starting from a team prototype. The next requirement was remediation against the client's security checklist.",
+            "id": "Sebuah produsen otomotif membutuhkan dashboard review fraud yang berfungsi dalam waktu singkat, berawal dari prototipe tim. Tahap berikutnya adalah remediasi berdasarkan checklist keamanan klien."
           },
           "approach": [
             {
@@ -6378,8 +6387,8 @@
             "id": "Migrasi asisten ticketing AI"
           },
           "tagline": {
-            "en": "A LangGraph-to-Microsoft Agent Framework migration that preserves the public API.",
-            "id": "Migrasi dari LangGraph ke Microsoft Agent Framework dengan API publik tetap sama."
+            "en": "MII AI Ticketing, moved from LangGraph to Microsoft Agent Framework while preserving the public API.",
+            "id": "MII AI Ticketing, dimigrasikan dari LangGraph ke Microsoft Agent Framework dengan API publik tetap sama."
           },
           "period": {
             "start": "2026-02",
@@ -6497,7 +6506,10 @@
           "tier": "listed",
           "accent": "amber",
           "wing": "ai",
-          "client": "Turangga Resources",
+          "client": {
+            "en": "Coal mining group",
+            "id": "Grup pertambangan batu bara"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Chart-of-accounts AI assistant",
@@ -6571,6 +6583,10 @@
           "tier": "listed",
           "accent": "pink",
           "wing": "ai",
+          "client": {
+            "en": "Regional lender",
+            "id": "Lembaga pembiayaan regional"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Explainable credit scoring in the browser",
@@ -6663,7 +6679,10 @@
           "tier": "listed",
           "accent": "violet",
           "wing": "ai",
-          "client": "SMBC Indonesia",
+          "client": {
+            "en": "National digital bank",
+            "id": "Bank digital nasional"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Bank GenAI portal governance",
@@ -6682,8 +6701,8 @@
             "id": "Engineer pengembang fitur; proyek dipimpin rekan tim"
           },
           "problem": {
-            "en": "SMBC Indonesia needed dual control and auditable changes in its GenAI administration portal.",
-            "id": "SMBC Indonesia membutuhkan dual control dan perubahan yang dapat diaudit di portal administrasi GenAI."
+            "en": "A national digital bank needed dual control and auditable changes in its GenAI administration portal.",
+            "id": "Sebuah bank digital nasional membutuhkan dual control dan perubahan yang dapat diaudit di portal administrasi GenAI."
           },
           "approach": [
             {
@@ -6731,16 +6750,16 @@
             "id": "Penyusunan dan hosting presentasi AI"
           },
           "tagline": {
-            "en": "AI agents create presentations in sandboxes, then publish through guarded deployments.",
-            "id": "AI agent menyusun presentasi di sandbox, lalu mempublikasikannya melalui deployment dengan pengaman."
+            "en": "MII Deck, built as Deck Studio inside MII Cowork: AI agents create presentations in sandboxes, then publish through guarded deployments.",
+            "id": "MII Deck, dibangun sebagai Deck Studio di dalam MII Cowork: AI agent menyusun presentasi di sandbox, lalu mempublikasikannya melalui deployment dengan pengaman."
           },
           "period": {
             "start": "2026-07",
             "end": "2026-10"
           },
           "role": {
-            "en": "Subsystem owner, with sole engineering responsibility for hosting",
-            "id": "Owner subsistem, dengan tanggung jawab engineering tunggal untuk hosting"
+            "en": "Owner of the Deck Studio subsystem inside MII Cowork (platform led by a colleague), with sole engineering responsibility for hosting",
+            "id": "Owner subsistem Deck Studio di dalam MII Cowork (platform dipimpin rekan), dengan tanggung jawab engineering tunggal untuk hosting"
           },
           "problem": {
             "en": "Teams needed AI-authored client presentations with safe execution and automated publication.",
@@ -6791,8 +6810,8 @@
             "id": "Situs solusi AI dwibahasa"
           },
           "tagline": {
-            "en": "A bilingual solutions site delivered through written specs, with a dedicated media pipeline.",
-            "id": "Situs solusi dwibahasa yang dikerjakan berdasarkan spec tertulis, dengan media pipeline khusus."
+            "en": "MII's bilingual Microsoft Solutions site, delivered through written specs, with a dedicated media pipeline.",
+            "id": "Situs Microsoft Solutions dwibahasa milik MII, dikerjakan berdasarkan spec tertulis, dengan media pipeline khusus."
           },
           "period": {
             "start": "2026-08",
@@ -6857,6 +6876,10 @@
           "tier": "listed",
           "accent": "amber",
           "wing": "ai",
+          "client": {
+            "en": "Insurer",
+            "id": "Perusahaan asuransi"
+          },
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Enterprise AI contact center architecture",
