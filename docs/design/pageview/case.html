@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Realtime voice AI contact center · Page View mockup</title>
+<link rel="stylesheet" href="pageview.css">
+</head>
+<body>
+<!-- Mockup generated from content/site-content.json (real content, EN). Not shipped. -->
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="home.html"><span class="brand-mark" aria-hidden="true">KAW</span><span class="brand-name">Kurniadi Ahmad Wijaya<small>ShinyQ HQ · Page view</small></span></a>
+    <nav aria-label="Main navigation"><ul class="nav"><li><a href="work.html" style="--fc:var(--violet)" aria-current="page"><span class="fl">L3</span>Work</a></li><li><a href="journey.html" style="--fc:var(--amber)"><span class="fl">L2</span>Journey</a></li><li><a href="writing.html" style="--fc:var(--white)"><span class="fl">L4</span>Writing</a></li><li><a href="about.html" style="--fc:var(--blue)"><span class="fl">RF</span>About</a></li></ul></nav>
+    <div class="tools">
+      <button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>Missions</button>
+      <button class="icon-btn" type="button" aria-label="Search (⌘K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><kbd class="hide-sm">⌘K</kbd></button>
+      <nav aria-label="Language" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav>
+    </div>
+  </div>
+  <nav aria-label="Main navigation (mobile)" class="mobile-nav"><a href="work.html" style="--fc:var(--violet)" aria-current="page">Work</a><a href="journey.html" style="--fc:var(--amber)">Journey</a><a href="writing.html" style="--fc:var(--white)">Writing</a><a href="about.html" style="--fc:var(--blue)">About</a></nav>
+</header>
+<main id="main">
+
+<article>
+<header class="wrap case-head">
+  <a class="crumb" href="work.html">← Work</a>
+  <div class="grid" style="margin-top:20px">
+    <div class="c-1-9">
+      <p class="data row-flex"><span class="mark violet">AI</span><span>Key project</span><span>L3:voice-ai-contact-center</span></p>
+      <h1 class="d-l" style="margin-top:20px">Realtime voice AI contact center</h1>
+      <p class="lead" style="margin-top:24px">Natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.</p>
+    </div>
+  </div>
+  <dl class="facts">
+    <div><dt class="data">Role</dt><dd>Owner and lead engineer, responsible for design, AI coding agent direction, review and release</dd></div>
+    <div><dt class="data">Period</dt><dd>May 2026 to Oct 2026</dd></div>
+    
+  </dl>
+  <section id="results" aria-label="Results"><ul class="results-ledger"><li><p class="num">~2 s to ~0.2 s</p><p>Caller interruption latency during knowledge lookups</p><p class="ctx">Controlled A/B on the same deployment, index and audio, n=4 calls per arm: 1,875 to 2,140 ms vs 93 to 220 ms.</p><span class="badge ok">Verified</span></li><li><p class="num">2 of 2</p><p>Node-loss drills passed; live calls survived</p><p class="ctx">Hard VM-stop failover and caller-reconnect drills after diagnosing and fixing four root causes.</p><span class="badge ok">Verified</span></li><li><p class="num">6 vs 18</p><p>Hallucinated answers in model comparison; the quality gate retained the stronger realtime model</p><p class="ctx">Evaluated offline with a calibrated LLM judge; mean score 4.71 vs 4.28.</p><span class="badge ok">Verified</span></li><li><p class="num">Migrated</p><p>Voice channel migrated from a retiring service; old path removed</p><p class="ctx">Live cut-over completed well before the announced 2028 retirement, removing about 20.5k lines from the old path.</p><span class="badge ok">Verified</span></li></ul></section>
+</header>
+
+<div class="wrap grid case-body">
+  <div class="c-1-9">
+    <section class="chapter" id="problem" aria-labelledby="problem-t"><h2 id="problem-t" class="h2">Problem</h2><p class="lead" style="color:var(--ink-2)">Callers needed an alternative to rigid phone menus: a voice agent with company knowledge-base answers, interruption during speech or search, and transfer to a human and back within the same call. Supervisors needed a live console.</p></section>
+    <section class="chapter" id="approach" aria-labelledby="approach-t"><h2 id="approach-t" class="h2">What I did</h2><ol class="steps"><li><span>01</span><span>I combined two prototypes into one product and ported the realtime backend to Python and FastAPI.</span></li><li><span>02</span><span>I made barge-in account for audio playout and moved knowledge-base tool calls out of the realtime loop into cancellable tasks sharing one time budget.</span></li><li><span>03</span><span>I prepared the system for production with atomic writes, crash recovery, a replayable dead-letter queue, drain-gated releases, managed identity and infrastructure as code for each environment.</span></li><li><span>04</span><span>I documented the decision to replace a retiring voice service with self-hosted WebRTC media on zonal VMs, then verified failover through hard VM-stop drills.</span></li><li><span>05</span><span>I built a voice evaluation harness with a media emulator, golden questions and a calibrated LLM judge. Changes without supporting evidence stayed disabled.</span></li></ol></section>
+    <section class="chapter" id="architecture" aria-labelledby="arch-t"><h2 id="arch-t" class="h2">Architecture</h2><div class="card arch"><div class="arch-layers"><div class="arch-layer"><p class="data">Layer 1</p><div class="arch-nodes"><span class="node client"><b style="font-weight:600;color:var(--ink)">Caller</b><br><span style="color:var(--ink-3)">Browser calls over WebRTC</span></span><span class="node human"><b style="font-weight:600;color:var(--ink)">Supervisor</b><br><span style="color:var(--ink-3)">Next.js operator console</span></span></div></div><div class="arch-layer"><p class="data">Layer 2</p><div class="arch-nodes"><span class="node service"><b style="font-weight:600;color:var(--ink)">LiveKit media</b><br><span style="color:var(--ink-3)">Self-hosted on zonal VMs</span></span></div></div><div class="arch-layer"><p class="data">Layer 3</p><div class="arch-nodes"><span class="node service"><b style="font-weight:600;color:var(--ink)">FastAPI realtime backend</b><br><span style="color:var(--ink-3)">Cancellable tools with a 2.5 s budget</span></span></div></div><div class="arch-layer"><p class="data">Layer 4</p><div class="arch-nodes"><span class="node ai"><b style="font-weight:600;color:var(--ink)">Azure OpenAI Realtime</b><br><span style="color:var(--ink-3)">Speech to speech, barge-in</span></span><span class="node data"><b style="font-weight:600;color:var(--ink)">Azure AI Search</b><br><span style="color:var(--ink-3)">Hybrid and semantic search</span></span><span class="node data"><b style="font-weight:600;color:var(--ink)">Cosmos DB</b><br><span style="color:var(--ink-3)">Atomic writes and dead-letter replay</span></span></div></div><div class="arch-layer"><p class="data">Layer 5</p><div class="arch-nodes"><span class="node service"><b style="font-weight:600;color:var(--ink)">Knowledge ingestion</b><br><span style="color:var(--ink-3)">Durable Functions, Document Intelligence</span></span></div></div></div></div></section>
+    <section class="chapter" id="gallery" aria-labelledby="gal-t"><h2 id="gal-t" class="h2">Gallery</h2><ul class="gallery"><figure><img src="../../../public/media/voice-ai-contact-center/01-call-in-progress.webp" alt="Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim"></figure><figure><img src="../../../public/media/voice-ai-contact-center/02-assistant-picker.thumb.webp" alt="Assistant selection screen offering claims help in English or policy help in Indonesian"></figure><figure><img src="../../../public/media/voice-ai-contact-center/03-architecture.thumb.webp" alt="Azure and OpenAI architecture diagram arranged into experience, voice, intelligence and data layers"></figure><figure><img src="../../../public/media/voice-ai-contact-center/04-intelligence-layer.thumb.webp" alt="Reasoning loop diagram showing intent, knowledge retrieval, multi-agent reasoning and confidence scoring before resolution or escalation"></figure><figure><img src="../../../public/media/voice-ai-contact-center/05-agents-admin.thumb.webp" alt="Voice agent list in the operations console, with status, realtime model, knowledge base and escalation tier"></figure></ul><p class="data" style="margin-top:12px">7 images · click to open the viewer</p></section>
+    <section class="chapter" id="stack" aria-labelledby="stack-t"><h2 id="stack-t" class="h2">Tech stack</h2><ul class="row-flex" style="gap:8px"><li class="chip"><img src="../../../public/tech/azure-openai.svg" alt="" width="16" height="16">Azure OpenAI Realtime</li><li class="chip"><img src="../../../public/tech/azure-ai-search.svg" alt="" width="16" height="16">Azure AI Search</li><li class="chip"><img src="../../../public/tech/azure-speech.svg" alt="" width="16" height="16">Azure Speech</li><li class="chip"><img src="../../../public/tech/document-intelligence.svg" alt="" width="16" height="16">Document Intelligence</li><li class="chip"><img src="../../../public/tech/azure-functions.svg" alt="" width="16" height="16">Durable Functions</li><li class="chip"><img src="../../../public/tech/cosmos-db.svg" alt="" width="16" height="16">Cosmos DB</li><li class="chip"><img src="../../../public/tech/app-service.svg" alt="" width="16" height="16">App Service</li><li class="chip"><img src="../../../public/tech/livekit.svg" alt="" width="16" height="16">LiveKit</li><li class="chip"><img src="../../../public/tech/azure-vms.svg" alt="" width="16" height="16">Azure VMs</li><li class="chip"><img src="../../../public/tech/python.svg" alt="" width="16" height="16">Python</li><li class="chip"><img src="../../../public/tech/fastapi.webp" alt="" width="16" height="16">FastAPI</li><li class="chip"><img src="../../../public/tech/nextjs.svg" alt="" width="16" height="16">Next.js</li><li class="chip">Entra ID</li><li class="chip"><img src="../../../public/tech/opentelemetry.svg" alt="" width="16" height="16">OpenTelemetry</li><li class="chip"><img src="../../../public/tech/application-insights.svg" alt="" width="16" height="16">Application Insights</li><li class="chip"><img src="../../../public/tech/azure.svg" alt="" width="16" height="16">Bicep</li><li class="chip"><img src="../../../public/tech/github-actions.svg" alt="" width="16" height="16">GitHub Actions</li></ul></section>
+  </div>
+  <aside class="c-9-13">
+    <nav class="toc" aria-label="On this page">
+      <p class="data" style="margin-bottom:12px">On this page</p>
+      <a href="#results">Results</a><a href="#problem" aria-current="true">Problem</a><a href="#approach">What I did</a><a href="#architecture">Architecture</a><a href="#gallery">Gallery</a><a href="#stack">Tech stack</a>
+      <div class="aside-block"><p class="data"><span class="mark amber">L2 · Related career entry</span></p><a class="uline" style="border:0;padding:0;margin-top:10px;color:var(--ink)" href="#">Technical Consultant, Software &amp; AI · Metrodata (PT Mitra Integrasi Informatika)</a></div>
+    </nav>
+  </aside>
+</div>
+
+<section class="wrap sec" aria-labelledby="rel-t">
+  <h2 id="rel-t" class="h2" style="margin-bottom:24px">More AI work</h2>
+  <nav class="related" aria-label="More AI work">
+    <span></span>
+    <a class="card" href="#" style="text-align:right"><p class="data">Next →</p><p class="h3" style="margin-top:8px">AI code security platform</p></a>
+  </nav>
+</section>
+</article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="grid cols">
+      <div class="c-1-5"><p class="ink" style="font-weight:600">Kurniadi Ahmad Wijaya</p><p class="small">I am open to conversations about software and AI engineering.</p><a class="uline" href="mailto:kurniadiahmadwijaya@gmail.com">kurniadiahmadwijaya@gmail.com</a></div>
+      <div style="grid-column:6 / span 3"><p class="data">Pages</p><ul class="stack-2"><li><a href="work.html">Work</a></li><li><a href="journey.html">Journey</a></li><li><a href="writing.html">Writing</a></li><li><a href="about.html">About</a></li><li><a href="#">Quick view</a></li><li><a href="#">CV</a></li></ul></div>
+      <div style="grid-column:9 / span 4"><p class="data">Elsewhere</p><ul class="stack-2"><li><a href="#">LinkedIn ↗</a></li><li><a href="#">GitHub ↗</a></li><li><a href="#">Medium ↗</a></li><li><a href="#">Google Scholar ↗</a></li></ul></div>
+    </div>
+    <div class="base"><p class="small">The site and CV share one validated dataset.</p><a class="small uline" href="#">View source on GitHub</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · Page View mockup</title>
+<link rel="stylesheet" href="pageview.css">
+</head>
+<body>
+<!-- Mockup generated from content/site-content.json (real content, EN). Not shipped. -->
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="home.html"><span class="brand-mark" aria-hidden="true">KAW</span><span class="brand-name">Kurniadi Ahmad Wijaya<small>ShinyQ HQ · Page view</small></span></a>
+    <nav aria-label="Main navigation"><ul class="nav"><li><a href="work.html" style="--fc:var(--violet)"><span class="fl">L3</span>Work</a></li><li><a href="journey.html" style="--fc:var(--amber)"><span class="fl">L2</span>Journey</a></li><li><a href="writing.html" style="--fc:var(--white)"><span class="fl">L4</span>Writing</a></li><li><a href="about.html" style="--fc:var(--blue)"><span class="fl">RF</span>About</a></li></ul></nav>
+    <div class="tools">
+      <button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>Missions</button>
+      <button class="icon-btn" type="button" aria-label="Search (⌘K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><kbd class="hide-sm">⌘K</kbd></button>
+      <nav aria-label="Language" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav>
+    </div>
+  </div>
+  <nav aria-label="Main navigation (mobile)" class="mobile-nav"><a href="work.html" style="--fc:var(--violet)">Work</a><a href="journey.html" style="--fc:var(--amber)">Journey</a><a href="writing.html" style="--fc:var(--white)">Writing</a><a href="about.html" style="--fc:var(--blue)">About</a></nav>
+</header>
+<main id="main">
+
+<section class="wrap hero grid" aria-labelledby="hero-title">
+  <div class="c-1-9">
+    <h1 id="hero-title" class="d-xl">Kurniadi Ahmad Wijaya</h1>
+    <div class="who stack-4">
+      <p class="lead" style="font-weight:600">Software Engineer and AI Engineer (Azure). I build and operate software and AI applications on Azure.</p>
+      <p class="body">I am a Software Engineer and AI Engineer based in Jakarta. At Metrodata, I have designed, built and operated Azure AI applications since February 2026 for banking, automotive, mining and food manufacturing clients. My work includes realtime voice agents, document AI, AI security tooling and grounded RAG assistants. Before that, I spent four years building backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius.</p>
+    </div>
+  </div>
+  <aside class="c-9-13 now card status" aria-label="Current status">
+    <dl>
+      <div><dt class="data">Current role</dt><dd>Technical Consultant, Software &amp; AI<span>Metrodata (PT Mitra Integrasi Informatika) · since Feb 2026</span></dd></div>
+      <div><dt class="data">Location</dt><dd>Jakarta, Indonesia<span>GMT+7</span></dd></div>
+      <div><dt class="data">Open to</dt><dd>I am open to conversations about software and AI engineering.</dd></div>
+    </dl>
+    <div class="actions"><a class="btn btn-primary" href="work.html">See the work</a><a class="btn btn-ghost" href="#">Download CV</a></div>
+  </aside>
+</section>
+
+<section class="wrap sec grid" id="stats" aria-labelledby="stats-title">
+  <div class="c-1-5 sidehead"><h2 id="stats-title" class="h2">At a glance</h2><p>Numbers from the dataset behind this site and the CV, with the context each one needs.</p></div>
+  <ul class="c-5-13 ledger"><li><p class="num">2019</p><p>Building software since 2019; full-time engineering since 2022</p></li><li><p class="num">800+</p><p>Merged pull requests in 2026</p></li><li><p class="num">7,350</p><p>GitHub contributions over the last 365 days (agent-assisted, human-reviewed)</p></li><li><p class="num">3</p><p>Microsoft certifications: AI-103, AI-901, AZ-900</p></li><li><p class="num">20</p><p>Competition placings, including 7 first places (2018 to 2022)</p></li><li><p class="num">10x</p><p>Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B)</p></li></ul>
+</section>
+
+<section class="wrap sec" id="work" aria-labelledby="work-title">
+  <div class="grid" style="margin-bottom:40px;align-items:end"><h2 id="work-title" class="h2 c-1-8">Selected work</h2><p class="c-9-13" style="text-align:right"><a class="go" href="work.html">All 30 projects</a></p></div>
+  <div class="work-lead">
+    <article class="feature c-1-8">
+  <div class="shot"><img src="../../../public/media/voice-ai-contact-center/01-call-in-progress.webp" alt="Active browser call: the assistant speaks as the live transcript shows the caller's question about a claim" loading="lazy"></div>
+  <p class="data row-flex"><span class="mark violet">AI</span><span>May 2026 to Oct 2026</span></p>
+  <h3 class="h3 h3-l"><a class="stretched" href="case.html">Realtime voice AI contact center</a></h3>
+  <p class="tagline">Natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.</p>
+  <div class="outcomes"><div><p class="num">~2 s to ~0.2 s</p><p>Caller interruption latency during knowledge lookups</p></div><div><p class="num">2 of 2</p><p>Node-loss drills passed; live calls survived</p></div></div>
+</article>
+    <div class="c-8-13 pair"><article class="feature ">
+  <div class="shot"><img src="../../../public/media/ai-code-security-platform/01-scan-overview.thumb.webp" alt="Demo repository scan with a failed security gate, findings by severity and scanner durations" loading="lazy"></div>
+  <p class="data row-flex"><span class="mark violet">AI</span><span>Jun 2026 to Oct 2026</span></p>
+  <h3 class="h3 "><a class="stretched" href="case.html">AI code security platform</a></h3>
+  <p class="tagline">Eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.</p>
+  <p class="small"><span class="num ink" style="font-size:20px">8 engines</span> Scanning engines per pull request in a 100+ repository organization</p>
+</article><article class="feature ">
+  <div class="shot"><img src="../../../public/media/fraud-review-platform/01-product-overview.thumb.webp" alt="Procurement fraud review overview with a dashboard preview for document analysis and evidence review" loading="lazy"></div>
+  <p class="data row-flex"><span class="mark violet">AI</span><span>May 2026 to Oct 2026</span></p>
+  <h3 class="h3 "><a class="stretched" href="case.html">AI fraud document review</a></h3>
+  <p class="tagline">OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.</p>
+  <p class="small"><span class="num ink" style="font-size:20px">90.9% to 36.4%</span> False-positive rate reduction on noisy clean packets</p>
+</article></div>
+  </div>
+  <ul class="index" style="margin-top:56px"><li class="index-row">
+  <div><p class="data row-flex" style="margin-bottom:8px"><span class="mark cyan">Software</span></p><h3 class="h3"><a href="case.html">Digital banking integrations</a></h3><p class="tagline">Insurance partner integrations and in-house SFTP file exchange for a digital bank.</p><div class="logos"><img src="../../../public/tech/nodejs.svg" alt="Node.js" title="Node.js" width="18" height="18"><img src="../../../public/tech/express.svg" alt="Express" title="Express" width="18" height="18"><img src="../../../public/tech/spring-boot.webp" alt="Spring Boot" title="Spring Boot" width="18" height="18"><img src="../../../public/tech/kafka.svg" alt="Apache Kafka" title="Apache Kafka" width="18" height="18"><img src="../../../public/tech/redis.webp" alt="Redis" title="Redis" width="18" height="18"><img src="../../../public/tech/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="18" height="18"><img src="../../../public/tech/react.webp" alt="React" title="React" width="18" height="18"></div></div>
+  <p class="small">Jenius (SMBC Indonesia)</p>
+  <p class="data" style="padding-top:4px">Jun 2024</p>
+  <div class="metric"><p class="num">5 partners</p><p>Insurance partners integrated; operational errors reduced by about 30%</p></div>
+</li><li class="index-row">
+  <div><p class="data row-flex" style="margin-bottom:8px"><span class="mark cyan">Software</span></p><h3 class="h3"><a href="case.html">Event ticket marketplace backend</a></h3><p class="tagline">A live ticket marketplace backend for auctions, resale, wallet accounting and partner settlement.</p><div class="logos"><img src="../../../public/tech/bun.svg" alt="Bun" title="Bun" width="18" height="18"><img src="../../../public/tech/nodejs.svg" alt="Node.js" title="Node.js" width="18" height="18"><img src="../../../public/tech/express.svg" alt="Express" title="Express" width="18" height="18"><img src="../../../public/tech/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="18" height="18"><img src="../../../public/tech/sequelize.svg" alt="Sequelize" title="Sequelize" width="18" height="18"><img src="../../../public/tech/redis.webp" alt="Redis" title="Redis" width="18" height="18"><img src="../../../public/tech/socketio.svg" alt="Socket.IO" title="Socket.IO" width="18" height="18"></div></div>
+  <p class="small">TEMMPAT</p>
+  <p class="data" style="padding-top:4px">Nov 2025</p>
+  <div class="metric"><p class="num">61%</p><p>Share of repository commits I authored (162 of 267)</p></div>
+</li><li class="index-row">
+  <div><p class="data row-flex" style="margin-bottom:8px"><span class="mark cyan">Software</span></p><h3 class="h3"><a href="case.html">Vendor management portal</a></h3><p class="tagline">A vendor portal for purchase orders, invoices, tax checks and approvals, delivered by one engineer in about six weeks.</p><div class="logos"><img src="../../../public/tech/python.svg" alt="Python" title="Python" width="18" height="18"><img src="../../../public/tech/fastapi.webp" alt="FastAPI" title="FastAPI" width="18" height="18"><img src="../../../public/tech/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="18" height="18"><img src="../../../public/tech/nextjs.svg" alt="Next.js" title="Next.js" width="18" height="18"><img src="../../../public/tech/typescript.svg" alt="TypeScript" title="TypeScript" width="18" height="18"><img src="../../../public/tech/app-service.svg" alt="Azure App Service" title="Azure App Service" width="18" height="18"><img src="../../../public/tech/key-vault.svg" alt="Azure Key Vault" title="Azure Key Vault" width="18" height="18"></div></div>
+  <p class="small"><span style="color:var(--ink-3)">Internal / product</span></p>
+  <p class="data" style="padding-top:4px">Aug 2026</p>
+  <div class="metric"><p class="num">~6 weeks</p><p>First commit to deployed portal, delivered as the sole engineer</p></div>
+</li></ul>
+</section>
+
+<section class="wrap sec grid" id="journey" aria-labelledby="journey-title">
+  <div class="c-1-5 sidehead"><h2 id="journey-title" class="h2">Recent work</h2><p>My employment, freelance work, education, research and awards, organized by year.</p><p class="more"><a class="go" href="journey.html">Full journey</a></p></div>
+  <ul class="c-5-13"><li class="tl-row">
+  <p class="data" style="padding-top:5px">Feb 2026 to Present</p>
+  <div><h3 class="h3"><a href="#">Technical Consultant, Software &amp; AI</a></h3><p class="org">Metrodata (PT Mitra Integrasi Informatika)</p><p class="sum">I design and deliver Azure AI applications in the Microsoft AI practice for banking, automotive, mining and food manufacturing clients, alongside the practice's own products. I write the specs, direct AI coding agents and review their work before release.</p></div>
+  <p class="data type" style="padding-top:5px"><span class="mark amber">Employment</span></p>
+</li><li class="tl-row">
+  <p class="data" style="padding-top:5px">Nov 2025 to Apr 2026</p>
+  <div><h3 class="h3"><a href="#">Backend Engineer (agency team)</a></h3><p class="org">Naremax</p><p class="sum">I developed backend modules for a digital products and training e-commerce platform with a 5+ person agency team, working in a TypeScript monorepo.</p></div>
+  <p class="data type" style="padding-top:5px"><span class="mark cyan">Freelance</span></p>
+</li><li class="tl-row">
+  <p class="data" style="padding-top:5px">Nov 2025 to Feb 2026</p>
+  <div><h3 class="h3"><a href="#">Lead Backend Engineer (freelance)</a></h3><p class="org">TEMMPAT</p><p class="sum">I led the v2 backend refactor for a premium event ticket marketplace, separating auction and resale workflows into a modular engine.</p></div>
+  <p class="data type" style="padding-top:5px"><span class="mark cyan">Freelance</span></p>
+</li><li class="tl-row">
+  <p class="data" style="padding-top:5px">Jun 2025 to Nov 2025</p>
+  <div><h3 class="h3"><a href="#">Software Engineer (contract)</a></h3><p class="org">370 Agency</p><p class="sum">I delivered projects across the full development lifecycle for agency clients using Next.js, Prisma, Express and PostgreSQL.</p></div>
+  <p class="data type" style="padding-top:5px"><span class="mark amber">Employment</span></p>
+</li></ul>
+</section>
+
+<section class="wrap sec grid" id="writing" aria-labelledby="writing-title">
+  <div class="c-1-5 sidehead"><h2 id="writing-title" class="h2">Writing</h2><p>My writing, research publications, published models and teaching materials.</p><p class="more"><a class="go" href="writing.html">All writing</a></p></div>
+  <ul class="c-5-13"><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">How we made a voice agent interruptible</a></h3><p class="small" style="margin-top:8px;max-width:62ch">Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested the old and new paths: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.</p><p class="tags"><span>voice-ai</span><span>azure-openai-realtime</span><span>latency</span><span>evaluation</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">Why the better fraud engine shipped in shadow mode</a></h3><p class="small" style="margin-top:8px;max-width:62ch">I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker.</p><p class="tags"><span>llm-evaluation</span><span>shadow-mode</span><span>fraud-detection</span><span>azure-openai</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">45% of our LLM calls failed: what the error strings told us</a></h3><p class="small" style="margin-top:8px;max-width:62ch">About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch.</p><p class="tags"><span>llm-reliability</span><span>structured-output</span><span>azure-openai</span><span>testing</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li></ul>
+</section>
+
+<section class="wrap closing" aria-labelledby="closing-title">
+  <h2 id="closing-title" class="statement">I am open to conversations about software and AI engineering.</h2>
+  <a class="mail" href="#">kurniadiahmadwijaya@gmail.com</a>
+  <div class="row-flex" style="margin-top:28px"><a class="btn btn-ghost" href="about.html">About and contact</a><a class="btn btn-ghost" href="#">Download CV (PDF)</a></div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="grid cols">
+      <div class="c-1-5"><p class="ink" style="font-weight:600">Kurniadi Ahmad Wijaya</p><p class="small">I am open to conversations about software and AI engineering.</p><a class="uline" href="mailto:kurniadiahmadwijaya@gmail.com">kurniadiahmadwijaya@gmail.com</a></div>
+      <div style="grid-column:6 / span 3"><p class="data">Pages</p><ul class="stack-2"><li><a href="work.html">Work</a></li><li><a href="journey.html">Journey</a></li><li><a href="writing.html">Writing</a></li><li><a href="about.html">About</a></li><li><a href="#">Quick view</a></li><li><a href="#">CV</a></li></ul></div>
+      <div style="grid-column:9 / span 4"><p class="data">Elsewhere</p><ul class="stack-2"><li><a href="#">LinkedIn ↗</a></li><li><a href="#">GitHub ↗</a></li><li><a href="#">Medium ↗</a></li><li><a href="#">Google Scholar ↗</a></li></ul></div>
+    </div>
+    <div class="base"><p class="small">The site and CV share one validated dataset.</p><a class="small uline" href="#">View source on GitHub</a></div>
+  </div>
+</footer>
+<button class="back3d" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg>Back to 3D<kbd>3</kbd></button>
+</body>
+</html>

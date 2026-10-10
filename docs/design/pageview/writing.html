@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing · Page View mockup</title>
+<link rel="stylesheet" href="pageview.css">
+</head>
+<body>
+<!-- Mockup generated from content/site-content.json (real content, EN). Not shipped. -->
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="home.html"><span class="brand-mark" aria-hidden="true">KAW</span><span class="brand-name">Kurniadi Ahmad Wijaya<small>ShinyQ HQ · Page view</small></span></a>
+    <nav aria-label="Main navigation"><ul class="nav"><li><a href="work.html" style="--fc:var(--violet)"><span class="fl">L3</span>Work</a></li><li><a href="journey.html" style="--fc:var(--amber)"><span class="fl">L2</span>Journey</a></li><li><a href="writing.html" style="--fc:var(--white)" aria-current="page"><span class="fl">L4</span>Writing</a></li><li><a href="about.html" style="--fc:var(--blue)"><span class="fl">RF</span>About</a></li></ul></nav>
+    <div class="tools">
+      <button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>Missions</button>
+      <button class="icon-btn" type="button" aria-label="Search (⌘K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><kbd class="hide-sm">⌘K</kbd></button>
+      <nav aria-label="Language" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav>
+    </div>
+  </div>
+  <nav aria-label="Main navigation (mobile)" class="mobile-nav"><a href="work.html" style="--fc:var(--violet)">Work</a><a href="journey.html" style="--fc:var(--amber)">Journey</a><a href="writing.html" style="--fc:var(--white)" aria-current="page">Writing</a><a href="about.html" style="--fc:var(--blue)">About</a></nav>
+</header>
+<main id="main">
+
+<section class="wrap case-head grid" aria-labelledby="w-title">
+  <div class="c-1-9"><p class="data"><span class="mark white">L4 · Library</span></p><h1 id="w-title" class="d-l" style="margin-top:20px">Writing</h1><p class="lead" style="margin-top:24px">My writing, research publications, published models and teaching materials.</p></div>
+  <nav class="c-9-13" aria-label="Sections" style="align-self:end"><ul class="row-flex" style="gap:6px"><li><a class="chip" href="#posts">Blog <span class="count">7</span></a></li><li><a class="chip" href="#research">Research <span class="count">4</span></a></li><li><a class="chip" href="#publications">Models <span class="count">3</span></a></li><li><a class="chip" href="#talks">Talks <span class="count">6</span></a></li></ul></nav>
+</section>
+
+<section class="wrap sec grid" id="posts" aria-labelledby="posts-t" style="padding-top:72px">
+  <div class="c-1-5 sidehead"><h2 id="posts-t" class="h2">Blog</h2><p>Hosted posts are bilingual; Medium posts open in a new tab.</p></div>
+  <div class="c-5-13">
+    <a class="card post-lead" href="#"><p class="data row-flex"><span>Oct 9, 2026</span><span>EN · ID</span></p><h3 class="h3 h3-l" style="margin-top:14px">How we made a voice agent interruptible</h3><p class="body" style="margin-top:12px">Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested the old and new paths: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.</p><p class="tags"><span>voice-ai</span><span>azure-openai-realtime</span><span>latency</span><span>evaluation</span><span>case-study</span></p><p class="go" style="margin-top:12px">Read the post</p></a>
+    <ul style="margin-top:24px"><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">Why the better fraud engine shipped in shadow mode</a></h3><p class="small" style="margin-top:8px;max-width:62ch">I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker.</p><p class="tags"><span>llm-evaluation</span><span>shadow-mode</span><span>fraud-detection</span><span>azure-openai</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">45% of our LLM calls failed: what the error strings told us</a></h3><p class="small" style="margin-top:8px;max-width:62ch">About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch.</p><p class="tags"><span>llm-reliability</span><span>structured-output</span><span>azure-openai</span><span>testing</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Oct 9, 2026</p>
+  <div><h3 class="h3"><a href="#">Spec-driven development with AI coding agents</a></h3><p class="small" style="margin-top:8px;max-width:62ch">I built a vendor portal as the only engineer in about six weeks, with AI agents writing most of the code. Numbered specs and CI gates kept the work reviewable, but a skipped integration tier and two sign-in bugs still got through. I owned every merge.</p><p class="tags"><span>spec-driven-development</span><span>ai-coding-agents</span><span>github-spec-kit</span><span>code-review</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">EN · ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Jun 6, 2025</p>
+  <div><h3 class="h3"><a href="#">The Sun, The Moon, and The Dark Sea</a></h3><p class="small" style="margin-top:8px;max-width:62ch">A personal essay on growing up, finding direction and staying steady, written in Bahasa Indonesia.</p><p class="tags"><span>personal</span><span>growth</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">ID</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Feb 28, 2022</p>
+  <div><h3 class="h3"><a href="#">CRUD in Node.js with the Express Framework and MySQL</a></h3><p class="small" style="margin-top:8px;max-width:62ch">A beginner-friendly tutorial for building a CRUD REST API with Express and MySQL (in Bahasa Indonesia).</p><p class="tags"><span>nodejs</span><span>express</span><span>mysql</span><span>tutorial</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">Medium ↗</p>
+</li><li class="post-row">
+  <p class="data" style="padding-top:5px">Dec 31, 2020</p>
+  <div><h3 class="h3"><a href="#">UI/UX Design Case Study: A Baby Development Tracking App</a></h3><p class="small" style="margin-top:8px;max-width:62ch">How we designed Helby, an app that helps parents track their baby's development, from research to prototype (in Bahasa Indonesia).</p><p class="tags"><span>ui-ux</span><span>case-study</span><span>design</span></p></div>
+  <p class="data" style="padding-top:5px;text-align:right">Medium ↗</p>
+</li></ul>
+  </div>
+</section>
+
+<section class="wrap sec grid" id="research" aria-labelledby="r-t">
+  <div class="c-1-5 sidehead"><h2 id="r-t" class="h2">Research</h2><p>My peer-reviewed papers and BSc thesis publication.</p></div>
+  <div class="c-5-13">
+    <div class="metric-line"><div><p class="num">13</p><p class="data" style="margin-top:6px">Citations</p></div><div><p class="num">2</p><p class="data" style="margin-top:6px">h-index</p></div><p class="small" style="align-self:end">Google Scholar, as of Oct 2026</p></div>
+    <ul><li class="paper"><p class="data" style="padding-top:5px">2021</p><div><h3 class="h3" style="font-size:19px">Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method</h3><p class="authors">Ananda Affan Fattahila, Fendi Irfan Amorokhman, Kaenova Mahendra Auditama, <b>Kurniadi Ahmad Wijaya</b>, Ade Romadhony</p><p class="small" style="margin-top:6px">2021 International Conference on Artificial Intelligence and Big Data Analytics (ICAIBDA)</p></div><p class="data" style="padding-top:5px;text-align:right">10 cit.<br>DOI ↗</p></li><li class="paper"><p class="data" style="padding-top:5px">2021</p><div><h3 class="h3" style="font-size:19px">Study on the Dynamics of COVID-19 Cases in Achieving Herd Immunity in Indonesia</h3><p class="authors">Pratama Azmi Atmajaya, <b>Kurniadi Ahmad Wijaya</b>, Alif Adwitiya Pratama, Aditya Firman Ihsan</p><p class="small" style="margin-top:6px">2021 International Conference on Intelligent Cybernetics Technology &amp; Applications (ICICyTA)</p></div><p class="data" style="padding-top:5px;text-align:right"><br>DOI ↗</p></li><li class="paper"><p class="data" style="padding-top:5px">2023</p><div><h3 class="h3" style="font-size:19px">Implementasi Model IndoBERT pada Dashboard Sentimen Media Sosial (Studi Kasus Universitas XYZ)</h3><p class="authors"><b>Kurniadi Ahmad Wijaya</b></p><p class="small" style="margin-top:6px">eProceedings of Engineering, Vol. 10 No. 4</p></div><p class="data" style="padding-top:5px;text-align:right">3 cit.</p></li><li class="paper"><p class="data" style="padding-top:5px">2023</p><div><h3 class="h3" style="font-size:19px">Sentiboard: University Sentiment Dashboard Using IndoBERT</h3><p class="authors"><b>Kurniadi Ahmad Wijaya</b></p><p class="small" style="margin-top:6px">Telkom University</p></div><p class="data" style="padding-top:5px;text-align:right"></p></li></ul>
+  </div>
+</section>
+
+<section class="wrap sec grid" id="publications" aria-labelledby="m-t">
+  <div class="c-1-5 sidehead"><h2 id="m-t" class="h2">Models and datasets</h2></div>
+  <ul class="c-5-13"><li class="paper"><p class="data" style="padding-top:5px">2022</p><div><h3 class="h3" style="font-size:19px">IndoBERT sentiment model for Indonesian university reviews</h3><p class="small" style="margin-top:4px">Model · Hugging Face</p></div><p class="data" style="padding-top:5px;text-align:right">Open ↗</p></li><li class="paper"><p class="data" style="padding-top:5px">2024</p><div><h3 class="h3" style="font-size:19px">IndoBERTweet app-review sentiment model</h3><p class="small" style="margin-top:4px">Model · Hugging Face</p></div><p class="data" style="padding-top:5px;text-align:right">Open ↗</p></li><li class="paper"><p class="data" style="padding-top:5px">2024</p><div><h3 class="h3" style="font-size:19px">IndoBERT app-review sentiment model</h3><p class="small" style="margin-top:4px">Model · Hugging Face</p></div><p class="data" style="padding-top:5px;text-align:right">Open ↗</p></li></ul>
+</section>
+
+<section class="wrap sec grid" id="talks" aria-labelledby="t-t">
+  <div class="c-1-5 sidehead"><h2 id="t-t" class="h2">Talks and workshops</h2></div>
+  <ul class="c-5-13"><li class="paper"><p class="data" style="padding-top:5px">Sep 2026</p><div><h3 class="h3" style="font-size:19px">Microsoft AI for business workflows</h3><p class="small" style="margin-top:4px">AI workshop for an industrial enterprise client (presentation author)</p></div><p class="data" style="padding-top:5px;text-align:right">Author</p></li><li class="paper"><p class="data" style="padding-top:5px">Oct 2026</p><div><h3 class="h3" style="font-size:19px">From a request to a tool-using agent with tracing in Microsoft Agent Framework</h3><p class="small" style="margin-top:4px">Developer workshop presentation: Microsoft Agent Framework in Python</p></div><p class="data" style="padding-top:5px;text-align:right">Author</p></li><li class="paper"><p class="data" style="padding-top:5px">Mar 2022</p><div><h3 class="h3" style="font-size:19px">Study groups for Basic Artificial Intelligence</h3><p class="small" style="margin-top:4px">Telkom University (Lecturer Assistant)</p></div><p class="data" style="padding-top:5px;text-align:right">Trainer</p></li><li class="paper"><p class="data" style="padding-top:5px">Sep 2020</p><div><h3 class="h3" style="font-size:19px">Go programming fundamentals practicum</h3><p class="small" style="margin-top:4px">Telkom University (Practicum Assistant)</p></div><p class="data" style="padding-top:5px;text-align:right">Trainer</p></li><li class="paper"><p class="data" style="padding-top:5px">Jan 2020</p><div><h3 class="h3" style="font-size:19px">Workshops and competitions for the programming club</h3><p class="small" style="margin-top:4px">Proclub Telkom University</p></div><p class="data" style="padding-top:5px;text-align:right">Trainer</p></li><li class="paper"><p class="data" style="padding-top:5px">Jan 2022</p><div><h3 class="h3" style="font-size:19px">Hackathon judging and team mentoring</h3><p class="small" style="margin-top:4px">Motion Laboratory hackathon, Telkom University</p></div><p class="data" style="padding-top:5px;text-align:right">Trainer</p></li></ul>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="grid cols">
+      <div class="c-1-5"><p class="ink" style="font-weight:600">Kurniadi Ahmad Wijaya</p><p class="small">I am open to conversations about software and AI engineering.</p><a class="uline" href="mailto:kurniadiahmadwijaya@gmail.com">kurniadiahmadwijaya@gmail.com</a></div>
+      <div style="grid-column:6 / span 3"><p class="data">Pages</p><ul class="stack-2"><li><a href="work.html">Work</a></li><li><a href="journey.html">Journey</a></li><li><a href="writing.html">Writing</a></li><li><a href="about.html">About</a></li><li><a href="#">Quick view</a></li><li><a href="#">CV</a></li></ul></div>
+      <div style="grid-column:9 / span 4"><p class="data">Elsewhere</p><ul class="stack-2"><li><a href="#">LinkedIn ↗</a></li><li><a href="#">GitHub ↗</a></li><li><a href="#">Medium ↗</a></li><li><a href="#">Google Scholar ↗</a></li></ul></div>
+    </div>
+    <div class="base"><p class="small">The site and CV share one validated dataset.</p><a class="small uline" href="#">View source on GitHub</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
