@@ -75,3 +75,19 @@ const ALIASES: Record<string, readonly string[]> = { "/library": ["/blog"] };
 export function navMatch(pathname: string, href: string): boolean {
   return [href, ...(ALIASES[href] ?? [])].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
+
+/** Replaces the given keys in a query string, keeping every other param (for example `?tier=`). */
+export function withParams(search: string, values: Record<string, string | null>): string {
+  const params = new URLSearchParams(search);
+  for (const [key, value] of Object.entries(values)) {
+    if (value) params.set(key, value);
+    else params.delete(key);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+/** Data attributes the filter islands read from server-rendered rows. */
+export function podAttrs(pod: Pick<Pod, "wing" | "stack">) {
+  return { "data-pod": "", "data-wing": pod.wing, "data-stack": pod.stack.join("|") };
+}

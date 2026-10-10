@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesPod, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
+import { matchesPod, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
 
 const pods = [
   { wing: "ai" as const, stack: ["FastAPI", "Azure OpenAI"] },
@@ -46,5 +46,16 @@ describe("navMatch", () => {
     expect(navMatch("/blog/x", "/library")).toBe(true);
     expect(navMatch("/labsx", "/labs")).toBe(false);
     expect(navMatch("/", "/labs")).toBe(false);
+  });
+});
+
+describe("withParams", () => {
+  it("replaces filter keys and keeps the rest", () => {
+    expect(withParams("?tier=static&wing=ai", { wing: "software", stack: null })).toBe("?tier=static&wing=software");
+    expect(withParams("?wing=ai", { wing: null })).toBe("");
+  });
+
+  it("serializes pod attributes for the filter islands", () => {
+    expect(podAttrs({ wing: "ai", stack: ["A", "B"] })).toEqual({ "data-pod": "", "data-wing": "ai", "data-stack": "A|B" });
   });
 });

@@ -338,10 +338,16 @@
 
   /* Sticky filter bar under the header (68 px on desktop, 60 px plus the 49 px tab row below lg). */
   .pv-filters {
-    position: sticky;
-    top: 117px;
     z-index: 20;
     border-radius: 14px;
+  }
+
+  /* Phones keep the bar in flow: sticky, it would cover a sixth of the screen. */
+  @media (min-width: 48rem) {
+    .pv-filters {
+      position: sticky;
+      top: 117px;
+    }
   }
 
   @media (min-width: 64rem) {
