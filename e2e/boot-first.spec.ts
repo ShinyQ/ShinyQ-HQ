@@ -60,6 +60,19 @@ test("a software renderer falls back to the page once the tier is known", async 
   await expect(page.locator("#site-shell")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator("html")).toHaveAttribute("data-hq-boot-released", "static");
   await expect(page.getByTestId("hq")).toHaveCount(0);
+  // The verdict is remembered for the session: the next page shows at once, without the cover.
+  await page.goto("/en/labs", { waitUntil: "domcontentloaded" });
+  expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
+  await expect(page.locator("#site-shell")).toBeVisible();
+});
+
+test("crawlers and Lighthouse get the page without the cover", async ({ browser }) => {
+  const context = await browser.newContext({ userAgent: "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 Chrome-Lighthouse" });
+  const page = await context.newPage();
+  await page.goto("/en?tier=lite", { waitUntil: "domcontentloaded" });
+  expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
+  await expect(page.locator("#site-shell")).toBeVisible();
+  await context.close();
 });
 
 test("non-gated pages are unaffected", async ({ page }) => {

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
+import { BOOT_ATTR, PROBE_KEY, releaseBootCover } from "@/lib/boot-first";
 import { decideTier, readTierInputs } from "@/lib/gpu-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
@@ -36,7 +36,18 @@ function subscribeTier(listener: () => void) {
   if (detected === undefined && !scheduled) {
     scheduled = true;
     window.setTimeout(() => {
-      detected ??= decideTier(readTierInputs(window.location.search));
+      if (detected === undefined) {
+        const inputs = readTierInputs(window.location.search);
+        detected = decideTier(inputs);
+        // Remember an auto-detected static device, so the next page skips the boot cover.
+        if (detected === "static" && !inputs.override) {
+          try {
+            sessionStorage.setItem(PROBE_KEY, "static");
+          } catch {
+            // Storage can be unavailable; the cover then shows until the probe, as on this page.
+          }
+        }
+      }
       tierListeners.forEach((l) => l());
     }, 0);
   }
