@@ -69,7 +69,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               </div>
             ))}
           </dl>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <Link href="/labs" className="pv-btn pv-btn-primary">
               {t("seeWork")}
             </Link>
