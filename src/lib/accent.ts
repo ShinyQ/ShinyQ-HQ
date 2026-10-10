@@ -1,4 +1,4 @@
-import type { Accent, FloorId } from "@/content/schema";
+import type { Accent, FloorId, TimelineEntry } from "@/content/schema";
 
 /** Static class maps so Tailwind can see every class at build time. */
 export const ACCENT_TEXT: Record<Accent, string> = {
@@ -52,3 +52,12 @@ export const FLOOR_ACCENT: Record<FloorId, Accent> = {
 
 /** Software Wing tint cyan, AI Wing tint violet (appendix 05). */
 export const WING_ACCENT = { software: "cyan", ai: "violet" } as const satisfies Record<string, Accent>;
+
+/** Timeline entry types: employment amber, freelance cyan, education green, awards pink, milestones violet. */
+export const TYPE_ACCENT: Record<TimelineEntry["type"], Accent> = {
+  job: "amber",
+  freelance: "cyan",
+  education: "green",
+  award: "pink",
+  milestone: "violet",
+};

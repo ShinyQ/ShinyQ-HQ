@@ -39,13 +39,13 @@ test.describe("command palette", () => {
     await page.goto("/en/labs");
     const button = page.getByRole("button", { name: /Open search/ });
     await button.click();
-    await expect(page.getByRole("combobox")).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(button).toBeFocused();
     await page.locator("main").click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("/");
-    await expect(page.getByRole("combobox")).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
   });
 
   test("searches in Indonesian", async ({ page }) => {

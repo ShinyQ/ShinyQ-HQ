@@ -13,19 +13,19 @@ export const metadata: Metadata = {
 export default function GlobalNotFound() {
   return (
     <html lang="en" className={`${fontClassName} antialiased`}>
-      <body className="flex min-h-screen items-center justify-center p-4">
-        <main className="glass max-w-md p-8 text-center">
-          <p className="font-mono text-4xl text-cyan" aria-hidden="true">
-            o_o
+      <body className="flex min-h-screen items-center">
+        <main className="pv-wrap py-16">
+          <p className="pv-data">404</p>
+          <h1 className="pv-d-l mt-5">{en.notFound.title}</h1>
+          <p className="pv-lead mt-6">{en.notFound.body}</p>
+          <p lang="id" className="pv-body mt-2">
+            {id.notFound.body}
           </p>
-          <h1 className="mt-4 text-2xl font-extrabold text-ink">{en.notFound.title}</h1>
-          <p className="mt-2 text-ink-2">{en.notFound.body}</p>
-          <p lang="id" className="mt-2 text-ink-2">{id.notFound.body}</p>
-          <p className="mt-6 flex justify-center gap-4">
-            <Link className="link" href="/en">
+          <p className="mt-8 flex flex-wrap gap-3">
+            <Link className="pv-btn pv-btn-primary" href="/en">
               {en.notFound.home} (EN)
             </Link>
-            <Link className="link" href="/id" lang="id">
+            <Link className="pv-btn pv-btn-ghost" href="/id" lang="id">
               {id.notFound.home} (ID)
             </Link>
           </p>

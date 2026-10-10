@@ -19,7 +19,11 @@
     "contact": "Kontak",
     "cv": "CV",
     "language": "Bahasa",
-    "skip": "Langsung ke konten"
+    "skip": "Langsung ke konten",
+    "work": "Karya",
+    "writing": "Tulisan",
+    "about": "Tentang",
+    "mobile": "Bagian"
   },
   "floors": {
     "L1": "Lobi",
@@ -85,7 +89,18 @@
     "howTitle": "Cara saya bekerja",
     "directoryTitle": "Direktori gedung",
     "directoryIntro": "Pilih lantai yang ingin dijelajahi. Setiap lantai juga tersedia dalam tampilan halaman.",
-    "storyTitle": "Latar belakang saya"
+    "storyTitle": "Latar belakang saya",
+    "seeWork": "Lihat karya",
+    "selectedWork": "Karya pilihan",
+    "allProjects": "Semua {count} proyek",
+    "fullJourney": "Perjalanan lengkap",
+    "writingTitle": "Tulisan",
+    "allWriting": "Semua tulisan",
+    "aboutContact": "Tentang dan kontak",
+    "openTo": "Terbuka untuk",
+    "since": "sejak {date}",
+    "location": "Lokasi",
+    "statusLabel": "Status saat ini"
   },
   "quick": {
     "title": "Ringkasan",
@@ -113,7 +128,13 @@
     "repos": "Repositori publik",
     "stars": "{count} bintang",
     "seeCaseStudy": "Baca studi kasus di Labs",
-    "back": "Kembali ke perjalanan"
+    "back": "Kembali ke perjalanan",
+    "show": "Tampilkan",
+    "jumpTo": "Lompat ke",
+    "filters": "Filter entri",
+    "entries": "{count, plural, other {# entri}}",
+    "all": "Semua",
+    "navTitle": "Perjalanan"
   },
   "labs": {
     "title": "Labs",
@@ -204,7 +225,9 @@
   },
   "footer": {
     "built": "Situs dan CV memakai satu dataset yang tervalidasi.",
-    "source": "Lihat kode sumber di GitHub"
+    "source": "Lihat kode sumber di GitHub",
+    "pages": "Halaman",
+    "elsewhere": "Tautan lain"
   },
   "root": {
     "redirecting": "Membuka ShinyQ HQ…",
@@ -419,5 +442,37 @@
     "next": "Gambar berikutnya",
     "counter": "Gambar {index} dari {total}",
     "hint": "Gambar: panah kiri/kanan atau geser · Tutup: Esc"
+  },
+  "work": {
+    "title": "Karya",
+    "keyProjects": "Proyek utama",
+    "allProjects": "Semua proyek",
+    "filters": "Filter proyek",
+    "wing": "Wing",
+    "all": "Semua",
+    "stack": "Stack",
+    "anyStack": "Semua stack",
+    "showing": "Menampilkan {shown} dari {total}",
+    "empty": "Tidak ada proyek yang cocok dengan filter ini.",
+    "clear": "Hapus filter",
+    "wingShort": {
+      "software": "Software",
+      "ai": "AI"
+    }
+  },
+  "case": {
+    "onThisPage": "Di halaman ini",
+    "more": "Lainnya dari {wing}",
+    "images": "{count, plural, other {# gambar}}"
+  },
+  "writing": {
+    "title": "Tulisan",
+    "sections": "Bagian",
+    "readPost": "Baca tulisan",
+    "citationsLabel": "Sitasi",
+    "hIndexLabel": "h-index"
+  },
+  "about": {
+    "title": "Tentang dan kontak"
   }
 }

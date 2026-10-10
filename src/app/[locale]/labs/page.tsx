@@ -2,76 +2,78 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
-import { PodCard } from "@/components/PodCard";
-import { Container, PageHeader, Section } from "@/components/Section";
+import { Marker, PageIntro, SectionWide } from "@/components/page/Layout";
+import { WorkFeature, WorkRow } from "@/components/page/Work";
+import { WorkIndex } from "@/components/page/WorkIndex";
 import { getPods } from "@/content/load";
+import { podAttrs } from "@/content/pageview";
 import { assertLocale } from "@/i18n/locale";
-import { Link } from "@/i18n/navigation";
-import { ACCENT_TEXT, WING_ACCENT } from "@/lib/accent";
-import { formatPeriod } from "@/lib/format";
+import { WING_ACCENT } from "@/lib/accent";
 import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/labs">): Promise<Metadata> {
   const locale = assertLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: "labs" });
-  return pageMetadata({ locale, path: "/labs", title: t("title"), description: t("intro") });
+  const tw = await getTranslations({ locale, namespace: "work" });
+  return pageMetadata({ locale, path: "/labs", title: tw("title"), description: t("intro") });
 }
+
+/** Alternating 7/5 and 5/7 column spans for the key projects grid. */
+const SPANS = ["lg:col-span-7", "lg:col-span-5", "lg:col-span-5", "lg:col-span-7"];
 
 export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) {
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "labs" });
-  const tc = await getTranslations({ locale, namespace: "common" });
+  const tw = await getTranslations({ locale, namespace: "work" });
   const tf = await getTranslations({ locale, namespace: "floors" });
+  const all = getPods();
+  const heroes = [...getPods("ai"), ...getPods("software")].filter((p) => p.tier === "hero");
+  const rest = all.filter((p) => p.tier !== "hero");
 
   return (
-    <Container>
+    <>
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" />
-      <PageHeader eyebrow={`L3 · ${tf("L3")}`} title={t("title")} intro={t("intro")} />
-      {(["software", "ai"] as const).map((wing) => {
-        const pods = getPods(wing);
-        const hero = pods.filter((p) => p.tier === "hero");
-        const featured = pods.filter((p) => p.tier === "featured");
-        const listed = pods.filter((p) => p.tier === "listed");
-        return (
-          <Section key={wing} id={`${wing}-wing`} eyebrow={tc(`wing.${wing}`)} title={tc(`wing.${wing}`)} intro={t(`${wing}Intro`)}>
-            <ul className="grid gap-4 md:grid-cols-3">
-              {hero.map((pod) => (
-                <li key={pod.id}>
-                  <PodCard pod={pod} locale={locale} />
+      <PageIntro
+        marker={<Marker accent="violet">L3 · {tf("L3")}</Marker>}
+        title={tw("title")}
+        lead={t("intro")}
+        aside={
+          <dl className="grid grid-cols-2 gap-3">
+            {(["ai", "software"] as const).map((wing) => (
+              <div key={wing} className="card p-4">
+                <dt className="pv-data">
+                  <Marker accent={WING_ACCENT[wing]}>{tw(`wingShort.${wing}`)}</Marker>
+                </dt>
+                <dd className="pv-num mt-3 text-[36px]">{all.filter((p) => p.wing === wing).length}</dd>
+                <dd className="pv-small mt-1 hidden sm:block">{t(`${wing}Intro`)}</dd>
+              </div>
+            ))}
+          </dl>
+        }
+      />
+      <WorkIndex pods={all.map(({ wing, stack }) => ({ wing, stack }))}>
+        <div data-pod-block>
+          <SectionWide id="key-projects" title={tw("keyProjects")} className="!pt-14">
+            <ul className="grid gap-x-6 gap-y-14 lg:grid-cols-12">
+              {heroes.map((pod, i) => (
+                <li key={pod.id} {...podAttrs(pod)} className={SPANS[i % SPANS.length]}>
+                  <WorkFeature pod={pod} locale={locale} size="grid" />
                 </li>
               ))}
             </ul>
-            {featured.length > 0 && (
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featured.map((pod) => (
-                  <li key={pod.id}>
-                    <PodCard pod={pod} locale={locale} compact />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {listed.length > 0 && (
-              <div className="glass mt-6 p-5">
-                <h3 className={`label mb-3 ${ACCENT_TEXT[WING_ACCENT[wing]]}`}>{t("directory")}</h3>
-                <ul className="grid gap-x-6 gap-y-1 md:grid-cols-2">
-                  {listed.map((pod) => (
-                    <li key={pod.id}>
-                      <Link href={`/labs/${pod.slug}`} className="group flex min-h-11 flex-col justify-center rounded-md px-2 py-1.5 transition hover:bg-white/5">
-                        <span className="text-sm font-semibold text-ink group-hover:text-cyan">{pod.title[locale]}</span>
-                        <span className="text-[13px] text-ink-3">
-                          {pod.client ? `${pod.client} · ` : ""}
-                          {formatPeriod(pod.period.start, pod.period.end, locale)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Section>
-        );
-      })}
-    </Container>
+          </SectionWide>
+        </div>
+        <div data-pod-block>
+          <SectionWide id="all-projects" title={tw("allProjects")}>
+            <ul className="pv-rows pv-rows-closed">
+              {rest.map((pod) => (
+                <WorkRow key={pod.id} pod={pod} locale={locale} />
+              ))}
+            </ul>
+          </SectionWide>
+        </div>
+      </WorkIndex>
+    </>
   );
 }

@@ -7,15 +7,16 @@ import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
 import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
-import { MetricTile } from "@/components/MetricTile";
-import { Container, Section } from "@/components/Section";
+import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
+import { CaseToc } from "@/components/page/CaseToc";
+import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
 import { adjacent } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
+import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { podJsonLd } from "@/lib/jsonld";
 import { ogImagePath, pageMetadata } from "@/lib/site";
@@ -50,118 +51,117 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   if (!pod) notFound();
 
   const t = await getTranslations({ locale, namespace: "labs" });
+  const tw = await getTranslations({ locale, namespace: "work" });
+  const tcase = await getTranslations({ locale, namespace: "case" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const tg = await getTranslations({ locale, namespace: "gallery" });
   const siblings = getPods(pod.wing);
   const { prev, next } = adjacent(siblings, siblings.findIndex((p) => p.id === pod.id));
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
+  const images = toGalleryImages(pod.assets, locale);
+  const toc = [
+    { id: "results", label: t("results") },
+    { id: "problem", label: t("problem") },
+    { id: "approach", label: t("approach") },
+    ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
+    ...(images.length > 0 ? [{ id: "gallery", label: tg("title") }] : []),
+    { id: "stack", label: tc("stack") },
+  ];
 
   return (
-    <Container>
+    <>
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
       <JsonLd data={podJsonLd(pod, locale)} />
       <article>
-        <header className="pt-10 pb-2 sm:pt-16">
-          <p className="mb-4">
-            <Link href="/labs" className="link text-sm">
-              ← {t("back")}
-            </Link>
-          </p>
-          <p className={`label flex items-center gap-2 ${ACCENT_TEXT[pod.accent]}`}>
-            <span className={`h-2 w-2 rounded-full ${ACCENT_DOT[pod.accent]}`} aria-hidden="true" />
-            L3:{pod.slug} · {tc(`wing.${pod.wing}`)} · {tc(`tier.${pod.tier}`)}
-          </p>
-          <h1 className="mt-3 text-[26px] leading-[32px] font-extrabold tracking-tight text-ink sm:text-[32px] sm:leading-[38px]">
-            {pod.title[locale]}
-          </h1>
-          <p className="mt-3 max-w-3xl text-lg text-ink-2">{pod.tagline[locale]}</p>
-          <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
-            {pod.client && (
-              <div className="glass px-4 py-3">
-                <dt className="label text-ink-3">{t("client")}</dt>
-                <dd className="mt-1 text-ink">{pod.client}</dd>
-              </div>
-            )}
-            <div className="glass px-4 py-3">
-              <dt className="label text-ink-3">{t("role")}</dt>
-              <dd className="mt-1 text-ink">{pod.role[locale]}</dd>
-            </div>
-            <div className="glass px-4 py-3">
-              <dt className="label text-ink-3">{t("period")}</dt>
-              <dd className="mt-1 text-ink">{formatPeriod(pod.period.start, pod.period.end, locale)}</dd>
-            </div>
-          </dl>
+        <header className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
+          <CrumbLink crumb={{ href: "/labs", label: tw("title") }} />
+          <div className="mt-5 lg:w-3/4">
+            <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Marker accent={WING_ACCENT[pod.wing]}>{tw(`wingShort.${pod.wing}`)}</Marker>
+              <span>{tc(`tier.${pod.tier}`)}</span>
+              <span className="hidden sm:inline">L3:{pod.slug}</span>
+            </p>
+            <h1 className="pv-d-l mt-5">{pod.title[locale]}</h1>
+            <p className="pv-lead mt-6">{pod.tagline[locale]}</p>
+          </div>
+          <FactRow
+            items={[
+              { label: t("role"), value: pod.role[locale] },
+              { label: t("period"), value: formatPeriod(pod.period.start, pod.period.end, locale) },
+              { label: t("client"), value: pod.client },
+            ]}
+          />
+          <section id="results" aria-labelledby="results-title">
+            <h2 id="results-title" className="sr-only">
+              {t("results")}
+            </h2>
+            <MetricLedger results={pod.results} locale={locale} />
+          </section>
         </header>
 
-        <Section id="results" title={t("results")}>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {pod.results.map((r, i) => (
-              <li key={i}>
-                <MetricTile value={r.value} label={r.label} context={r.context} confidence={r.confidence} locale={locale} />
-              </li>
-            ))}
-          </ul>
-        </Section>
+        <div className="pv-wrap grid gap-6 lg:grid-cols-12">
+          <div className="min-w-0 lg:col-span-8">
+            <Chapter id="problem" title={t("problem")}>
+              <p className="pv-lead text-ink-2">{pod.problem[locale]}</p>
+            </Chapter>
+            <Chapter id="approach" title={t("approach")}>
+              <StepList steps={pod.approach} locale={locale} />
+            </Chapter>
+            {pod.architecture && (
+              <Chapter id="architecture" title={t("architecture")}>
+                <ArchitectureDiagram architecture={pod.architecture} locale={locale} />
+              </Chapter>
+            )}
+            {images.length > 0 && (
+              <Chapter id="gallery" title={tg("title")}>
+                <Gallery images={images} layout="mosaic" label={`${tg("title")}: ${pod.title[locale]}`} />
+              </Chapter>
+            )}
+            <Chapter id="stack" title={tc("stack")}>
+              <ChipList items={pod.stack} label={tc("stack")} logos />
+            </Chapter>
+          </div>
+          <aside className="hidden lg:col-span-3 lg:col-start-10 lg:block">
+            <div className="sticky top-24 pt-16 lg:pt-20">
+              <CaseToc items={toc} label={tcase("onThisPage")} />
+            </div>
+          </aside>
+        </div>
 
-        {pod.assets.length > 0 && (
-          <Section id="gallery" title={tg("title")}>
-            <Gallery images={toGalleryImages(pod.assets, locale)} label={`${tg("title")}: ${pod.title[locale]}`} />
-          </Section>
-        )}
-
-        <Section id="problem" title={t("problem")}>
-          <p className="max-w-3xl text-base leading-7 text-ink-2">{pod.problem[locale]}</p>
-        </Section>
-
-        <Section id="approach" title={t("approach")}>
-          <ul className="max-w-3xl space-y-3">
-            {pod.approach.map((step, i) => (
-              <li key={i} className="flex gap-3 text-base leading-7 text-ink-2">
-                <span className="label pt-1.5 text-cyan" aria-hidden="true">
-                  {String(i + 1).padStart(2, "0")}
+        <section aria-labelledby="related-title" className="pv-wrap pv-sec">
+          <h2 id="related-title" className="pv-h2 mb-8">
+            {tcase("more", { wing: tc(`wing.${pod.wing}`) })}
+          </h2>
+          <nav aria-labelledby="related-title" className="grid gap-4 md:grid-cols-2 md:gap-6">
+            {prev ? (
+              <Link href={`/labs/${prev.slug}`} className="card block p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6">
+                <span className="pv-data">← {tc("previous")}</span>
+                <span className="pv-h3 mt-2 block">{prev.title[locale]}</span>
+              </Link>
+            ) : (
+              <span className="hidden md:block" />
+            )}
+            {next && (
+              <Link href={`/labs/${next.slug}`} className="card block p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6 md:text-right">
+                <span className="pv-data">{tc("next")} →</span>
+                <span className="pv-h3 mt-2 block">{next.title[locale]}</span>
+              </Link>
+            )}
+          </nav>
+          {entry && (
+            <p className="mt-4 md:mt-6">
+              <Link href={`/journey/${entry.slug}`} className="card flex flex-wrap items-center gap-x-4 gap-y-1 p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6">
+                <span className="pv-data">
+                  <Marker accent="amber">L2 · {t("timeline")}</Marker>
                 </span>
-                <span>{step[locale]}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {pod.architecture && (
-          <Section id="architecture" title={t("architecture")}>
-            <ArchitectureDiagram architecture={pod.architecture} locale={locale} />
-          </Section>
-        )}
-
-        <Section id="stack" title={tc("stack")}>
-          <ChipList items={pod.stack} label={tc("stack")} logos />
-        </Section>
-
-        {entry && (
-          <p className="glass inline-flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
-            <span className="label text-amber">L2 · {t("timeline")}</span>
-            <Link href={`/journey/${entry.slug}`} className="link">
-              {entry.role[locale]} · {entry.org}
-            </Link>
-          </p>
-        )}
-
-        <nav aria-label={tc("next")} className="mt-10 grid gap-3 border-t border-glass-border pt-6 sm:grid-cols-2">
-          {prev ? (
-            <Link href={`/labs/${prev.slug}`} className="glass block p-4 transition hover:border-cyan/60">
-              <span className="label text-ink-3">← {tc("previous")}</span>
-              <span className="mt-1 block font-semibold text-ink">{prev.title[locale]}</span>
-            </Link>
-          ) : (
-            <span />
+                <span className="font-semibold text-ink">
+                  {entry.role[locale]} · {entry.org}
+                </span>
+              </Link>
+            </p>
           )}
-          {next && (
-            <Link href={`/labs/${next.slug}`} className="glass block p-4 text-right transition hover:border-cyan/60">
-              <span className="label text-ink-3">{tc("next")} →</span>
-              <span className="mt-1 block font-semibold text-ink">{next.title[locale]}</span>
-            </Link>
-          )}
-        </nav>
+        </section>
       </article>
-    </Container>
+    </>
   );
 }

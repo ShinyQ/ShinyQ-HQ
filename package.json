@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts --workers=1",
+    "screenshots:pages": "SCREENSHOTS=1 playwright test e2e/pageview-visual.spec.ts --workers=1",
     "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json"
   },
   "dependencies": {
