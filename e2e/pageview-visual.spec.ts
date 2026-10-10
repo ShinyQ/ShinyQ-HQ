@@ -28,7 +28,11 @@ for (const v of VIEWPORTS) {
     for (const p of PAGES) {
       await page.goto(`${p.path}?tier=static`, { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({ path: `screenshots/pageview/${p.name}-${v.width}x${v.height}.png`, fullPage: true });
+      // SwiftShader cannot capture very tall pages (the Journey), so full captures stop at 8000 px.
+      const height = Math.min(await page.evaluate(() => document.documentElement.scrollHeight), 8_000);
+      const file = `screenshots/pageview/${p.name}-${v.width}x${v.height}`;
+      await page.screenshot({ path: `${file}.png`, fullPage: true, clip: { x: 0, y: 0, width: v.width, height } });
+      await page.screenshot({ path: `${file}-fold.png` });
     }
     await context.close();
   });
