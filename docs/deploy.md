@@ -48,12 +48,12 @@ bunx wrangler@3 pages deploy out --project-name=kurniadi --branch=main \
 | --- | --- | --- | --- |
 | Pull request from this repo | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
 | Push to `main`, or manual run | `deploy.yml` | `CF_PAGES_PROJECT` (for example `kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`) |
-| Every CI run | `ci.yml` job `lighthouse` | none | Lighthouse reports as an artifact (non-blocking) |
+| Every CI run | `ci.yml` job `lighthouse` (`Lighthouse CI`) | none | Lighthouse budgets (blocking) and reports as an artifact |
 
 ```mermaid
 flowchart LR
   PR[Pull request] --> CI[ci.yml: check, build, e2e]
-  CI --> LH[lighthouse job, non-blocking]
+  CI --> LH[lighthouse job, blocking]
   CI --> PV[preview job]
   PV --> PP[(Preview project: shinyq-hq)]
   M[Push to main] --> CI2[ci.yml: check, build, e2e]
@@ -180,12 +180,13 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 
 ## 8. Lighthouse CI
 
-- Job `lighthouse` in `ci.yml` runs after `build` on every PR and push. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
+- Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every PR and push. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
 - Pages: `/en`, `/en/quick`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device).
 - Budgets (appendix 08): LCP under 2500 ms, CLS under 0.05, TBT under 300 ms (error level, median run); performance score at least 0.8, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
-- The job has `continue-on-error: true`, so failed budgets do not fail the workflow. To make them blocking, remove `continue-on-error` from the job (and optionally add it to required status checks).
+- Blocking: a failed error-level budget fails `Lighthouse CI`, and the aggregate `Build, CV and e2e` job (the required check) needs it, so a PR cannot merge over budget. Branch rules may also list `Lighthouse CI` directly.
+- LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint. Two build-time measures keep the hero inside the budget, so keep them when changing fonts or the build: the preloaded fonts are self-hosted cuts narrowed to the axes the site uses (`src/assets/fonts/README.md`, about 110 KB for all three), and `scripts/defer-scripts.ts` (run by `bun run build`) requests the Next.js chunks only after the first contentful paint. Medians at the time of writing: about 2.1 s on `/en` and the pod page, 2.25 s on `/en/quick`.
 
 ## 9. Headers and redirects
 

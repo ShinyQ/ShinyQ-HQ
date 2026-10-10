@@ -27,6 +27,7 @@ content/
   .safety-blocklist.local.txt   PRIVATE, gitignored; real codenames and repo names
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
+src/assets/fonts/               self-hosted page fonts for next/font/local (src/app/fonts.ts): latin cuts narrowed to the used axes, see its README
 public/fonts/                   Inter + JetBrains Mono woff for in-world troika Text (OFL); jetbrains-mono-symbols-700 is the troika fallback (arrows, shapes) so nothing loads from a CDN
 public/tech/                    tech logos (svg/webp, see its README for sources), resolved by src/content/tech.ts
 public/logos/                   company and school logos (TimelineEntry.logo), 128 px webp
@@ -35,6 +36,7 @@ public/cv/                      the owner's CV PDF, committed as-is (one file fo
 public/_headers, _redirects     Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*) and redirects (old CV paths)
 scripts/
   serve-static.ts               serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, Lighthouse)
+  defer-scripts.ts              post-build (part of `build`): swaps the Next.js chunk tags in out/**/*.html for one loader that requests them after first contentful paint (LCP)
   validate-fragment.ts          schema + safety check for content files
   e2e-plan.ts                   pure path-to-spec map and shard split (unit tested)
   e2e-changed.ts                `e2e:changed`: runs the specs that cover your changed paths
@@ -152,7 +154,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - HUD tokens shared with the 3D overlay (prototype values): `.glass` (blur 18 px, drops the blur on coarse pointers), `.eyebrow`, `.chip` (+ `.chip-count`, `aria-pressed` inverts), `.card`; colors `line`, `line-2`, `surface`, `surface-2`.
 - `.glass-solid` (add next to `.glass`) makes a panel near-opaque (`rgb(10 10 18 / .94)`, solid on coarse pointers) while keeping the glass edge. Every HUD panel and pill over the 3D world uses it (top bar, profile card, Glass Drawer, palette, hologram cards, terminal), so in-world text never shows through. The side drawer starts below the HUD top bar (`top-[68px]`, `md:top-[76px]`); hints hide while a room is open.
 - Page View layer: `src/app/pageview.css` (`pv-` classes: type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-lead pv-body pv-small pv-data pv-num`, `pv-mark`, `pv-btn`, `pv-go`, `pv-rows`, `pv-stretch`, header, filter bar, ToC). Grid spans use Tailwind utilities with the default `md`/`lg` breakpoints.
-- Fonts: Inter (body), JetBrains Mono (data only) and Archivo (`--font-display`, variable `wdth` axis for condensed titles and numerals) via `next/font/google` (`src/app/fonts.ts`). Touch targets at least 44 px (`min-h-11`).
+- Fonts: Inter (body, wght 400 to 800), JetBrains Mono (data only, 400 to 700) and Archivo (`--font-display`, wght 600 to 800, `font-stretch` 72% to 92% for condensed titles and numerals), self-hosted with `next/font/local` (`src/app/fonts.ts`) as latin cuts narrowed to those ranges, because all three are preloaded and count toward LCP. A weight or width outside a range is clamped: regenerate the cut (`src/assets/fonts/README.md`) instead. Touch targets at least 44 px (`min-h-11`).
 
 ## Public-safety lint
 
@@ -165,7 +167,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Package manager: Bun. Scripts: `dev`, `build` (static export; `build:web` is an alias), `typecheck` (`next typegen && tsc`), `lint`, `test`, `verify:quick`, `e2e` (plain `playwright test`), `e2e:full`, `e2e:changed`, `e2e:smoke`, `e2e:shard`, `screenshots`, `screenshots:pages`, `serve`, `validate:content`.
 - Before pushing: see "Fast verification" below (`verify:quick` plus `e2e:changed`); CI runs the full sharded suite.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`). Prefer the `rtk` git wrapper. One PR per phase; do not merge without the owner.
-- CI (`.github/workflows/ci.yml`) runs check and the build in parallel, e2e in 4 shards against that one build, the aggregate required check `Build, CV and e2e` (merged HTML report), a non-blocking Lighthouse CI job (`lighthouserc.json`, appendix 08 budgets), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
+- CI (`.github/workflows/ci.yml`) runs check and the build in parallel, e2e in 4 shards against that one build, the aggregate required check `Build, CV and e2e` (merged HTML report), a blocking `Lighthouse CI` job (`lighthouserc.json`, appendix 08 budgets: LCP, CLS and TBT fail the aggregate check; see `docs/deploy.md` section 8), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
 - Production (`.github/workflows/deploy.yml`) deploys `out/` on push to `main` only when both secrets and the `CF_PAGES_PROJECT` variable are set. Owner setup: `docs/deploy.md`.
 - Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset, from `vars.CF_BEACON_TOKEN`).
 - Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add. Sound is on by default (owner decision): a missing `hq:sound` means on, a stored `"off"` stays muted, and the context starts on the first user gesture. `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent without changing the stored choice.
