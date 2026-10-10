@@ -24,15 +24,14 @@ env:
   NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
 
 jobs:
-  build:
-    name: Build, CV and e2e
+  site:
+    name: Build static export and CV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - uses: ./.github/actions/setup
         with:
-          bun-version-file: package.json
-      - run: bun install --frozen-lockfile
+          playwright: "true"
       - name: Set site URL
         # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
         # default in src/lib/site.ts applies otherwise.
@@ -42,28 +41,50 @@ jobs:
           if [ -n "$SITE_URL" ]; then
             echo "NEXT_PUBLIC_SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
           fi
-      - name: Install Playwright Chromium
-        run: bunx playwright install --with-deps chromium
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build static export and CV PDFs
         run: bun run build
-      - name: Playwright smoke tests
-        run: bun run e2e
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report-deploy
-          path: playwright-report/
-          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: site-production
           path: out/
           retention-days: 30
 
+  e2e:
+    # The same sharded suite as CI, against the exact files that get deployed.
+    name: E2E shard ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    needs: site
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          playwright: "true"
+      - uses: actions/download-artifact@v8
+        with:
+          name: site-production
+          path: out
+      - name: Playwright e2e (shard ${{ matrix.shard }}/4)
+        run: bun run e2e:shard ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: blob-report-deploy-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7
+
   deploy:
     name: Cloudflare Pages production
     runs-on: ubuntu-latest
-    needs: build
+    needs: [site, e2e]
     permissions:
       contents: read
       deployments: write

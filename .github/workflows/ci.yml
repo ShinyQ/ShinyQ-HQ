@@ -1,5 +1,9 @@
 name: CI
 
+# PR pipeline: build once, run e2e in 4 parallel shards against the same `out/`, then merge the
+# reports. "Build, CV and e2e" is the aggregate job: it fails if any job before it failed, so it
+# stays the single required check. Screenshots run in screenshots.yml (nightly, label, manual).
+
 on:
   pull_request:
   push:
@@ -27,24 +31,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - run: bun install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run test
 
-  build:
-    name: Build, CV and e2e
+  site:
+    name: Build static export and CV
     runs-on: ubuntu-latest
-    needs: check
+    # Runs next to `check`, not after it: the e2e shards only need the build.
     steps:
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - uses: ./.github/actions/setup
         with:
-          bun-version-file: package.json
-      - run: bun install --frozen-lockfile
+          # The CV PDFs are printed with Chromium.
+          playwright: "true"
       - name: Set site URL
         # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
         # default in src/lib/site.ts applies otherwise.
@@ -54,32 +55,89 @@ jobs:
           if [ -n "$SITE_URL" ]; then
             echo "NEXT_PUBLIC_SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
           fi
-      - name: Install Playwright Chromium
-        run: bunx playwright install --with-deps chromium
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build static export and CV PDFs
         run: bun run build
-      - name: Playwright smoke tests
-        run: bun run e2e
-      - name: Screenshots
-        run: bun run screenshots
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            screenshots/
-          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: site
           path: out/
           retention-days: 7
 
+  e2e:
+    name: E2E shard ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    needs: site
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          playwright: "true"
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+          path: out
+      - name: Playwright e2e (shard ${{ matrix.shard }}/4)
+        # Round-robin test list (scripts/e2e-shard.ts); keep the total in sync with the matrix.
+        run: bun run e2e:shard ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 3
+
+  build:
+    # Keeps the historical name so branch rules and status checks keep working.
+    name: Build, CV and e2e
+    runs-on: ubuntu-latest
+    needs: [check, site, e2e]
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+      - name: Merge e2e reports
+        run: |
+          if compgen -G "all-blob-reports/*.zip" > /dev/null; then
+            bunx playwright merge-reports --reporter html ./all-blob-reports
+          else
+            echo "::warning::No e2e blob reports to merge."
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Require every job
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "check, site, e2e: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::A required job did not succeed ($RESULTS)."
+              exit 1
+            fi
+          done
+
   lighthouse:
     name: Lighthouse CI (non-blocking)
     runs-on: ubuntu-latest
-    needs: build
+    needs: site
     # Reports only for now. Remove continue-on-error to make the budgets blocking.
     continue-on-error: true
     steps:
@@ -105,7 +163,7 @@ jobs:
   preview:
     name: Cloudflare Pages preview
     runs-on: ubuntu-latest
-    needs: build
+    needs: site
     # Preview only. Production deploys run from .github/workflows/deploy.yml.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:

@@ -1,0 +1,42 @@
+name: Setup
+description: Bun with a cached install, optionally Playwright Chromium with a cached browser.
+
+inputs:
+  playwright:
+    description: Install Playwright Chromium (browser cached per Playwright version, OS deps installed every run).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: package.json
+    - uses: actions/cache@v6
+      with:
+        path: ~/.bun/install/cache
+        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        restore-keys: bun-${{ runner.os }}-
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile
+    - name: Playwright version
+      id: pw
+      if: inputs.playwright == 'true'
+      shell: bash
+      run: echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v6
+      id: pw-cache
+      if: inputs.playwright == 'true'
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
+    - name: Install Playwright Chromium
+      if: inputs.playwright == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: bunx playwright install --with-deps chromium
+    - name: Install Playwright system dependencies
+      if: inputs.playwright == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: bunx playwright install-deps chromium
