@@ -467,7 +467,9 @@
   "writing": {
     "title": "Writing",
     "sections": "Sections",
-    "readPost": "Read the post"
+    "readPost": "Read the post",
+    "citationsLabel": "Citations",
+    "hIndexLabel": "h-index"
   },
   "about": {
     "title": "About and contact"

@@ -241,6 +241,11 @@
     font-family: var(--font-mono);
     font-size: 0.9em;
     color: var(--color-ink);
+    overflow-wrap: anywhere;
+  }
+
+  .prose-hq pre {
+    overflow-x: auto;
   }
 }
 

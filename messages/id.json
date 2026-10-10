@@ -467,7 +467,9 @@
   "writing": {
     "title": "Tulisan",
     "sections": "Bagian",
-    "readPost": "Baca tulisan"
+    "readPost": "Baca tulisan",
+    "citationsLabel": "Sitasi",
+    "hIndexLabel": "h-index"
   },
   "about": {
     "title": "Tentang dan kontak"

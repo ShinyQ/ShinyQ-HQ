@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ChipList } from "@/components/Chip";
 import { JsonLd } from "@/components/JsonLd";
-import { Container } from "@/components/Section";
+import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { assertLocale } from "@/i18n/locale";
-import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/format";
 import { postJsonLd } from "@/lib/jsonld";
 import { ogImagePath, pageMetadata } from "@/lib/site";
@@ -48,33 +46,37 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   if (!post || !found) notFound();
 
   const t = await getTranslations({ locale, namespace: "blog" });
+  const tw = await getTranslations({ locale, namespace: "writing" });
+  const tc = await getTranslations({ locale, namespace: "common" });
   const { content } = await compileMDX({ source: found.source, options: { parseFrontmatter: true } });
 
   return (
-    <Container>
+    <>
       <JsonLd data={postJsonLd(post, locale, found.locale)} />
-      <article className="mx-auto max-w-2xl pt-10 sm:pt-16" lang={found.locale}>
-        <p className="mb-4" lang={locale}>
-          <Link href="/library" className="link text-sm">
-            ← {t("back")}
-          </Link>
-        </p>
-        <p className="label text-ink-3" lang={locale}>
-          L4 · {formatDate(post.date, locale)}
-        </p>
-        <h1 className="mt-3 text-[26px] leading-[32px] font-extrabold tracking-tight text-ink sm:text-[32px] sm:leading-[38px]">
-          {post.title[found.locale]}
-        </h1>
-        <div className="mt-4">
-          <ChipList items={post.tags} logos />
-        </div>
-        {found.locale !== locale && (
-          <p role="note" lang={locale} className="mt-6 rounded-lg border border-amber/40 bg-amber/5 px-4 py-3 text-sm text-amber">
-            {t("translationMissing", { language: t(`languageName.${found.locale}`) })}
+      <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14" lang={found.locale}>
+        <div className="mx-auto max-w-[720px]">
+          <p lang={locale}>
+            <CrumbLink crumb={{ href: "/library", label: tw("title") }} />
           </p>
-        )}
-        <div className="prose-hq mt-8">{content}</div>
+          <p className="pv-data mt-5 flex flex-wrap gap-x-4" lang={locale}>
+            <Marker accent="white">L4</Marker>
+            <span>{formatDate(post.date, locale)}</span>
+            <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(" · ")}</span>
+          </p>
+          <h1 className="pv-d-l mt-5 text-[clamp(36px,4.6vw,60px)]">{post.title[found.locale]}</h1>
+          <ul className="pv-tags mt-6">
+            {post.tags.map((tag) => (
+              <li key={tag}>{tag}</li>
+            ))}
+          </ul>
+          {found.locale !== locale && (
+            <p role="note" lang={locale} className="card mt-8 border-amber/40 px-4 py-3 text-sm text-amber">
+              {t("translationMissing", { language: t(`languageName.${found.locale}`) })}
+            </p>
+          )}
+          <div className="prose-hq mt-10 border-t border-line pt-10">{content}</div>
+        </div>
       </article>
-    </Container>
+    </>
   );
 }
