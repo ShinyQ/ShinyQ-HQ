@@ -12,14 +12,14 @@ export function Chip({
   logo?: string;
 }) {
   const tones = {
-    default: "border-glass-border text-ink-2",
+    default: "",
     cyan: "border-cyan/40 text-cyan",
     violet: "border-violet/40 text-violet",
     amber: "border-amber/40 text-amber",
     green: "border-green/40 text-green",
   } as const;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-xs leading-5 ${tones[tone]}`}>
+    <span className={`chip ${tones[tone]}`}>
       {logo && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={logo} alt="" width={16} height={16} loading="lazy" decoding="async" className="size-4 shrink-0 object-contain" />
@@ -33,7 +33,7 @@ export function Chip({
 export function ChipList({ items, label, logos = false }: { items: readonly string[]; label?: string; logos?: boolean }) {
   if (items.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label={label}>
+    <ul className="flex flex-wrap gap-2" aria-label={label}>
       {items.map((item) => (
         <li key={item}>
           <Chip logo={logos ? getTechLogo(item)?.src : undefined}>{item}</Chip>
@@ -62,7 +62,7 @@ export function TechLogoRow({ items, max = 6 }: { items: readonly string[]; max?
           <img src={logo.src} alt={logo.label} width={20} height={20} loading="lazy" decoding="async" className="size-5 object-contain opacity-90" />
         </li>
       ))}
-      {logos.length > max && <li className="label text-ink-3">+{logos.length - max}</li>}
+      {logos.length > max && <li className="pv-data">+{logos.length - max}</li>}
     </ul>
   );
 }

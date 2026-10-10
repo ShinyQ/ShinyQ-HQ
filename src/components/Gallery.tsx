@@ -9,8 +9,8 @@ export interface GalleryProps {
   images: readonly GalleryImage[];
   /** Accessible name of the thumbnail list, e.g. the pod title. */
   label?: string;
-  /** "grid" (pod pages) or "strip" (narrow surfaces such as the Glass Drawer). */
-  layout?: "grid" | "strip";
+  /** "mosaic" (case studies: a large first image), "grid", or "strip" (narrow surfaces such as the Glass Drawer). */
+  layout?: "mosaic" | "grid" | "strip";
 }
 
 /** Thumbnail grid that opens a keyboard and swipe friendly Lightbox. Returns null when empty. */
@@ -29,31 +29,44 @@ export function Gallery({ images, label, layout = "grid" }: GalleryProps) {
   const list =
     layout === "strip"
       ? "flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 [&>li]:w-56 [&>li]:shrink-0 [&>li]:snap-start"
-      : "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3";
+      : layout === "mosaic"
+        ? "grid grid-cols-2 gap-3 sm:grid-cols-6"
+        : "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3";
+  const mosaic = layout === "mosaic";
+  // The first mosaic tile spans two rows beside a stacked pair; a lone image takes the full width.
+  const tile = (i: number) => {
+    if (!mosaic) return undefined;
+    if (images.length === 1) return "col-span-2 sm:col-span-6";
+    return i === 0 ? "col-span-2 sm:col-span-4 sm:row-span-2" : "sm:col-span-2";
+  };
 
   return (
     <>
       <ul className={list} aria-label={label ?? t("title")} data-testid="gallery">
         {images.map((image, i) => (
-          <li key={image.src}>
+          <li key={image.src} className={tile(i)}>
             <button
               type="button"
               onClick={(e) => {
                 opener.current = e.currentTarget;
                 setOpen(i);
               }}
-              className="group glass block w-full overflow-hidden rounded-lg border p-0 transition hover:border-cyan/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+              className={`group block w-full overflow-hidden border p-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan ${
+                mosaic ? "h-full rounded-[10px] border-line bg-[#0b0b14] hover:border-line-2" : "glass rounded-lg hover:border-cyan/60"
+              }`}
               aria-label={t("open", { index: i + 1, total: images.length, alt: image.alt })}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={image.thumb}
+                src={mosaic && i === 0 ? image.src : image.thumb}
                 alt=""
                 width={480}
                 height={Math.round((480 * image.height) / image.width)}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[16/10] w-full object-cover object-top transition duration-200 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                className={`aspect-[16/10] w-full object-cover object-top transition duration-200 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${
+                  mosaic && i === 0 && images.length > 2 ? "sm:aspect-auto sm:h-full" : ""
+                }`}
               />
             </button>
           </li>

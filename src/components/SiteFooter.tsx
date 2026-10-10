@@ -6,7 +6,7 @@ import { REPO_URL } from "@/lib/site";
 import { ExternalLink } from "./ExternalLink";
 import { PRIMARY_NAV } from "./SiteHeader";
 
-const linkClass = "inline-flex min-h-10 items-center text-sm text-ink-2 transition hover:text-ink";
+const linkClass = "inline-flex min-h-10 items-center gap-1 text-sm text-ink-2 transition hover:text-ink";
 
 export async function SiteFooter({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "footer" });

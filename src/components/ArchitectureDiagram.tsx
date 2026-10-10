@@ -1,13 +1,14 @@
 import { getTranslations } from "next-intl/server";
 import type { Architecture, Locale } from "@/content/schema";
 
+/** Node kinds tint the border and the kind label only; names stay neutral. */
 const KIND_STYLE: Record<Architecture["nodes"][number]["kind"], string> = {
-  client: "border-cyan/60 text-cyan",
-  service: "border-blue/60 text-blue",
-  ai: "border-violet/60 text-violet",
-  data: "border-green/60 text-green",
-  human: "border-amber/60 text-amber",
-  external: "border-white/50 text-white",
+  client: "border-cyan/50 text-cyan",
+  service: "border-line-2 text-blue",
+  ai: "border-violet/50 text-violet",
+  data: "border-green/45 text-green",
+  human: "border-amber/45 text-amber",
+  external: "border-line-2 text-white",
 };
 
 /**
@@ -19,20 +20,20 @@ export async function ArchitectureDiagram({ architecture, locale }: { architectu
   const layers = Math.max(...architecture.nodes.map((n) => n.layer)) + 1;
   const byId = new Map(architecture.nodes.map((n) => [n.id, n]));
   return (
-    <div className="space-y-6">
+    <div className="card space-y-6 p-4 sm:p-6">
       <div className="overflow-x-auto pb-2">
         <ol
-          className="grid min-w-[560px] gap-3"
+          className="grid min-w-[560px] gap-2.5"
           style={{ gridTemplateColumns: `repeat(${layers}, minmax(0, 1fr))` }}
           aria-label={t("architecture")}
         >
           {architecture.nodes.map((node) => (
             <li
               key={node.id}
-              className={`glass flex flex-col gap-1 border p-3 ${KIND_STYLE[node.kind]}`}
+              className={`flex flex-col gap-1 rounded-lg border bg-surface-2 p-3 ${KIND_STYLE[node.kind]}`}
               style={{ gridColumn: node.layer + 1, gridRow: node.row + 1 }}
             >
-              <span className="label opacity-80">{t(`nodeKind.${node.kind}`)}</span>
+              <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase">{t(`nodeKind.${node.kind}`)}</span>
               <span className="text-sm leading-5 font-semibold text-ink">{node.label}</span>
               {node.sublabel && <span className="text-xs leading-4 text-ink-2">{node.sublabel[locale]}</span>}
             </li>
@@ -41,12 +42,12 @@ export async function ArchitectureDiagram({ architecture, locale }: { architectu
       </div>
       {architecture.edges.length > 0 && (
         <div>
-          <h3 className="label mb-2 text-ink-2">{t("architectureFlow")}</h3>
+          <h3 className="pv-data mb-3">{t("architectureFlow")}</h3>
           <ul className="grid gap-1.5 font-mono text-[13px] leading-5 text-ink-2 sm:grid-cols-2">
             {architecture.edges.map((edge, i) => (
               <li key={`${edge.from}-${edge.to}-${i}`}>
                 <span className="text-ink">{byId.get(edge.from)?.label}</span>{" "}
-                <span aria-hidden="true" className="text-cyan">
+                <span aria-hidden="true" className="text-violet">
                   {edge.async ? "⇢" : "→"}
                 </span>
                 <span className="sr-only">{edge.async ? " sends asynchronously to " : " to "}</span>{" "}
