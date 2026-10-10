@@ -194,7 +194,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
         onClick={(event) => event.stopPropagation()}
         className={
           className ??
-          "w-full rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_0_32px_rgb(52_211_153/0.18)] sm:w-[360px] sm:rounded-xl sm:pb-0"
+          "w-full rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg/90 pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_12px_40px_rgb(0_0_0/0.45),0_0_32px_rgb(52_211_153/0.18),inset_0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-[18px] sm:w-[360px] sm:rounded-2xl sm:pb-0"
         }
       >
         <div className="flex items-center justify-between border-b border-terminal-fg/25 py-1 pr-1 pl-4">
@@ -229,7 +229,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
           tabIndex={0}
           aria-label={t("options")}
           aria-activedescendant={`${id}-opt-${active}`}
-          className="max-h-[50vh] overflow-y-auto px-2 pb-2 outline-none focus-visible:ring-1 focus-visible:ring-terminal-fg/60 sm:max-h-none"
+          className="mx-3 mb-3 max-h-[50vh] overflow-y-auto rounded-[10px] border border-terminal-fg/25 bg-black/40 p-1 outline-none focus-visible:ring-1 focus-visible:ring-terminal-fg/60 sm:max-h-none"
         >
           {[...missions.map((m) => m.label[locale]), t("driveMyself")].map((label, index) => {
             const selected = index === active;
