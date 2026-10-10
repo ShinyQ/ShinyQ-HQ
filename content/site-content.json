@@ -5971,8 +5971,8 @@
             "end": "2026-09"
           },
           "role": {
-            "en": "Owner and technical lead",
-            "id": "Owner dan technical lead"
+            "en": "Sole engineer",
+            "id": "Satu-satunya engineer"
           },
           "problem": {
             "en": "The bilingual company site needed cited answers from curated content, prompt-injection defenses and an enforceable daily budget.",
