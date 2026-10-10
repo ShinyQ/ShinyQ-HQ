@@ -53,6 +53,10 @@ test.describe("command palette", () => {
     await page.keyboard.press("Control+k");
     await page.keyboard.type("unduh");
     await expect(page.getByRole("dialog", { name: "Palet perintah" }).getByRole("option").first()).toContainText("Unduh CV");
+    // Same file in every language.
+    const download = page.waitForEvent("download");
+    await page.keyboard.press("Enter");
+    expect((await download).suggestedFilename()).toBe(`${data.floors.roof.cv.fileName}.pdf`);
   });
 
   test("is a full-screen sheet on mobile", async ({ page }) => {

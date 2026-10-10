@@ -7,11 +7,11 @@ import { WorkRow } from "@/components/page/Work";
 import { AwardList, CertificationList, SkillsWall } from "@/components/ProfileBlocks";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
 import { getAwards, getCertifications, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
-import { LOCALES } from "@/content/schema";
 import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
-import { cvPdfPath, pageMetadata } from "@/lib/site";
+import { cvDownloadName, cvPdfPath } from "@/lib/cv";
+import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/quick">): Promise<Metadata> {
   const locale = assertLocale((await params).locale);
@@ -122,13 +122,11 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
               {roof.contact.email}
             </a>
           </li>
-          {LOCALES.map((l) => (
-            <li key={l}>
-              <a href={cvPdfPath(roof.cv.fileName, l)} hrefLang={l} className="pv-btn pv-btn-ghost">
-                {tc("downloadCvLocale", { locale: l.toUpperCase() })}
-              </a>
-            </li>
-          ))}
+          <li>
+            <a href={cvPdfPath(roof.cv.fileName)} download={cvDownloadName(roof.cv.fileName)} type="application/pdf" className="pv-btn pv-btn-ghost">
+              {tc("downloadCv")} (PDF)
+            </a>
+          </li>
         </ul>
       </SectionSplit>
     </>

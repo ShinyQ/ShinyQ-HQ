@@ -7261,16 +7261,7 @@
         "id": "Saya terbuka untuk diskusi seputar software dan AI engineering."
       },
       "cv": {
-        "fileName": "kurniadi-ahmad-wijaya-cv",
-        "sections": [
-          "summary",
-          "experience",
-          "projects",
-          "education",
-          "certifications",
-          "awards",
-          "skills"
-        ]
+        "fileName": "kurniadi-ahmad-wijaya-cv"
       }
     }
   },

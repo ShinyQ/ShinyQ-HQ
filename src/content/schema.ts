@@ -244,19 +244,9 @@ export const ContactSchema = z.strictObject({
   ieeeXplore: httpsUrl.optional(),
 });
 
-export const CvSectionSchema = z.enum([
-  "summary",
-  "experience",
-  "projects",
-  "education",
-  "certifications",
-  "awards",
-  "skills",
-]);
-
+/** The owner's CV, committed as-is at `public/cv/{fileName}.pdf` (one file for both locales). */
 export const CvConfigSchema = z.strictObject({
   fileName: SlugSchema,
-  sections: z.array(CvSectionSchema).min(1),
 });
 
 export const SideProjectSchema = z.strictObject({
@@ -354,7 +344,6 @@ export type Publication = z.infer<typeof PublicationSchema>;
 export type ResearchMetrics = z.infer<typeof ResearchMetricsSchema>;
 export type Talk = z.infer<typeof TalkSchema>;
 export type Contact = z.infer<typeof ContactSchema>;
-export type CvSection = z.infer<typeof CvSectionSchema>;
 export type CvConfig = z.infer<typeof CvConfigSchema>;
 export type SideProject = z.infer<typeof SideProjectSchema>;
 export type RepoRef = z.infer<typeof RepoRefSchema>;

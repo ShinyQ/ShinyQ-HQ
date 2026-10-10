@@ -5,12 +5,21 @@ import { content } from "./routes";
 
 const outDir = path.join(process.cwd(), "out");
 const cvFile = content.floors.roof.cv.fileName;
+const cvPdf = `/cv/${cvFile}.pdf`;
 
-test("old /cv.pdf path redirects to the English CV", async ({ page }) => {
-  const response = await page.request.get("/cv.pdf", { maxRedirects: 0 });
-  expect(response.status()).toBe(301);
-  expect(response.headers()["location"]).toBe(`/cv/${cvFile}-en.pdf`);
+test("the CV PDF is served as a PDF", async ({ page }) => {
+  const response = await page.request.get(cvPdf);
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("pdf");
 });
+
+for (const old of ["/cv.pdf", "/en/cv.pdf", "/id/cv.pdf", `/cv/${cvFile}-en.pdf`, `/cv/${cvFile}-id.pdf`]) {
+  test(`old CV path ${old} redirects to the one CV PDF`, async ({ page }) => {
+    const response = await page.request.get(old, { maxRedirects: 0 });
+    expect(response.status()).toBe(301);
+    expect(response.headers()["location"]).toBe(cvPdf);
+  });
+}
 
 test("Cloudflare Pages _headers and _redirects are exported", () => {
   const headersFile = path.join(outDir, "_headers");

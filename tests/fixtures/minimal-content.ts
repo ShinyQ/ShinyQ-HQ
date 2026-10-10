@@ -68,7 +68,7 @@ export function makeContent(): SiteContent {
       roof: {
         contact: { email: "a@example.com", linkedin: "https://linkedin.com/in/x", github: "https://github.com/x" },
         availability: lt("Open"),
-        cv: { fileName: "test-cv", sections: ["summary"] },
+        cv: { fileName: "test-cv" },
       },
     },
     sideProjects: [],

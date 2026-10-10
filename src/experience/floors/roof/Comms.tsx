@@ -199,7 +199,7 @@ export function CommsTerminals({ roof, labels }: { roof: RoofData; labels: RoofL
   );
 }
 
-/** CV kiosk at (10, 6): download the per-locale PDF or open /cv. */
+/** CV kiosk at (10, 6): download the CV PDF or open /cv. */
 export function CvKiosk({ labels }: { labels: RoofLabels }) {
   const [hover, setHover] = useState(false);
   const { x, z, w, d } = ROOF.kiosk;
@@ -216,7 +216,7 @@ export function CvKiosk({ labels }: { labels: RoofLabels }) {
           {labels.cvTitle.toUpperCase()}
         </Text>
         <Text font={FONTS.mono} fontSize={0.13} color="#cffafe" anchorX="left" anchorY="top" position={[-1.25, 0.26, 0.01]} maxWidth={2.5} lineHeight={1.5}>
-          {`PDF \u00b7 EN / ID\n> /cv\n\n${labels.cvHint}`}
+          {`PDF\n> /cv\n\n${labels.cvHint}`}
         </Text>
       </group>
     </group>

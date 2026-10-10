@@ -30,10 +30,6 @@ export function resolveBeaconToken(value: string | undefined): string | undefine
 
 export const CF_BEACON_TOKEN = resolveBeaconToken(process.env.NEXT_PUBLIC_CF_BEACON_TOKEN);
 
-export function cvPdfPath(fileName: string, locale: Locale): string {
-  return `/cv/${fileName}-${locale}.pdf`;
-}
-
 /** Locale-prefixed path: ("/", "en") -> "/en", ("/labs", "id") -> "/id/labs". */
 export function localePath(locale: Locale, path: string): string {
   return `/${locale}${path === "/" ? "" : path}`;
