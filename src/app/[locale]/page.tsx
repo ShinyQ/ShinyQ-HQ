@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PostList } from "@/components/LibraryBlocks";
+import { AskPanel } from "@/components/page/AskPanel";
 import { SectionSplit, SectionWide, StatLedger } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
 import { WorkFeature, WorkRow } from "@/components/page/Work";
@@ -125,6 +126,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       <SectionSplit id="certifications" title={t("certsTitle")}>
         <CertificationList certifications={getCertifications()} locale={locale} />
       </SectionSplit>
+
+      <AskPanel locale={locale} />
 
       <section aria-labelledby="closing-title" className="pv-wrap pv-sec">
         <h2 id="closing-title" className="pv-d-l max-w-[18ch] text-[clamp(34px,4.6vw,64px)]">

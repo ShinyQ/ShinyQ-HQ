@@ -11,6 +11,12 @@ const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
 };
 
 const RESULT_GROUPS = ["missions", "rooms", "years", "actions"] as const;
+/** Same cap as the server (`ASK_MAX_QUESTION` in src/ask/protocol.ts). */
+const ASK_MAX = 300;
+const QUESTION_WORDS = new Set([
+  "what", "who", "whom", "whose", "which", "where", "when", "why", "how", "can", "could", "does", "do", "did", "is", "are", "was", "has", "have",
+  "apa", "apakah", "siapa", "mana", "dimana", "kapan", "mengapa", "kenapa", "bagaimana", "berapa", "bisakah",
+]);
 const DEFAULT_LIMIT = 8;
 const MAX_RECENT = 3;
 
@@ -169,6 +175,29 @@ export function scoreEntry(entry: PaletteEntry, tokens: string[]): number {
   return total > 0 ? total + (entry.roomKind ? (KIND_BONUS[entry.roomKind] ?? 0) : 0) : 0;
 }
 
+/**
+ * True when the query reads like a question for Ask the HQ: it ends with "?", starts with a question
+ * word and has at least two words, or has at least three words.
+ */
+export function looksLikeQuestion(query: string): boolean {
+  const words = normalize(query).replace(/[?!.,]+/g, " ").split(" ").filter(Boolean);
+  if (words.length === 0) return false;
+  if (/\?\s*$/.test(query) && normalize(query).length >= 4) return true;
+  if (words.length >= 2 && QUESTION_WORDS.has(words[0])) return true;
+  return words.length >= 3;
+}
+
+/** A clear question: ends with "?" or starts with a question word. Its Ask row goes first. */
+function isClearQuestion(query: string): boolean {
+  const words = normalize(query).replace(/[?!.,]+/g, " ").split(" ").filter(Boolean);
+  return /\?\s*$/.test(query) || (words.length >= 2 && QUESTION_WORDS.has(words[0]));
+}
+
+export function askEntry(query: string): PaletteEntry {
+  const q = query.replace(/\s+/g, " ").trim().slice(0, ASK_MAX);
+  return { key: "ask", group: "ask", title: { en: q, id: q }, keywords: [], target: { type: "ask", q } };
+}
+
 function applyFilter(entries: readonly PaletteEntry[], filter: PaletteSearchOptions["filter"]): readonly PaletteEntry[] {
   if (!filter) return entries;
   return entries.filter((entry) => {
@@ -212,11 +241,17 @@ export function searchPalette(entries: readonly PaletteEntry[], query: string, o
 
   // Groups keep their fixed order unless another group holds a clearly better match, so Enter
   // on the first row always runs the best result (e.g. "copy email" runs the action, not a room).
-  return RESULT_GROUPS.map((id, rank) => {
+  const groups: PaletteGroup[] = RESULT_GROUPS.map((id, rank) => {
     const items = scored.filter((item) => item.entry.group === id).slice(0, limitPerGroup);
     return { id, rank, best: items[0]?.score ?? 0, entries: items.map((item) => item.entry) };
   })
     .filter((group) => group.entries.length > 0)
     .sort((a, b) => b.best - a.best || a.rank - b.rank)
     .map(({ id, entries: groupEntries }) => ({ id, entries: groupEntries }));
+
+  // Ask row: first for a clear question or when nothing else matches; otherwise last, so a
+  // three-word room search ("voice ai contact") still opens the room on Enter.
+  if (!options.ask || filter || !looksLikeQuestion(query)) return groups;
+  const ask: PaletteGroup = { id: "ask", entries: [askEntry(query)] };
+  return groups.length === 0 || isClearQuestion(query) ? [ask, ...groups] : [...groups, ask];
 }

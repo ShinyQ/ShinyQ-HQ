@@ -53,6 +53,13 @@ export async function openPage(page: Page, url: string, options?: Parameters<Pag
 }
 
 /**
+ * The only other origin the site may contact: Cloudflare Turnstile for Ask the HQ, loaded lazily
+ * when the ask UI opens. Exact hostname over https, nothing else (threat T13 in
+ * docs/superpowers/specs/2026-10-11-ask-hq-design.md; the CSP in public/_headers matches).
+ */
+const ALLOWED_CROSS_ORIGIN_HOSTS: ReadonlySet<string> = new Set(["challenges.cloudflare.com"]);
+
+/**
  * Collects page errors and any request to another origin. The local server does not apply the
  * production CSP from public/_headers, so a runtime CDN fetch only fails on Cloudflare.
  */
@@ -61,7 +68,9 @@ export function collectErrors(page: Page) {
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.protocol.startsWith("http") && url.hostname !== "127.0.0.1" && url.hostname !== "localhost") errors.push(`cross-origin request: ${url.href}`);
+    if (!url.protocol.startsWith("http") || url.hostname === "127.0.0.1" || url.hostname === "localhost") return;
+    if (url.protocol === "https:" && ALLOWED_CROSS_ORIGIN_HOSTS.has(url.hostname)) return;
+    errors.push(`cross-origin request: ${url.href}`);
   });
   return errors;
 }

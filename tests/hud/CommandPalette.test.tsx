@@ -10,7 +10,7 @@ import type { Mission, RoomId } from "@/content/schema";
 import type { RoomInfo, YearInfo } from "@/experience/missions/rooms";
 import { CommandPalette, type CommandPaletteProps } from "@/hud/CommandPalette";
 import type { PaletteActionId } from "@/hud/palette-types";
-import { buildPaletteEntries } from "@/hud/search";
+import { buildPaletteEntries, looksLikeQuestion, searchPalette } from "@/hud/search";
 
 const missions: Mission[] = [
   { id: "best-ai", order: 0, label: { en: "Show me your best AI work", id: "Lihat karya AI terbaiknya" }, steps: [{ kind: "elevator", floor: "L3" }] },
@@ -214,5 +214,47 @@ describe("CommandPalette", () => {
     setup({}, id as typeof en, "id");
     expect(input()).toHaveAttribute("placeholder", id.hud.palette.placeholder);
     expect(screen.getByRole("option", { name: /Lihat karya AI terbaiknya/ })).toBeInTheDocument();
+  });
+});
+
+describe("CommandPalette ask row", () => {
+  it("puts an Ask row first for a question and selects it on Enter", async () => {
+    const onSelect = vi.fn();
+    const { user } = setup({ ask: true, onSelect });
+    await user.type(input(), "What is he building now?");
+    const groups = screen.getAllByRole("group");
+    expect(groups[0]).toHaveAccessibleName(en.hud.palette.groups.ask);
+    expect(activeOption()).toHaveTextContent('Ask: "What is he building now?"');
+    expect(activeOption()).toHaveTextContent(en.ask.palette.subtitle);
+    await user.keyboard("{Enter}");
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ target: { type: "ask", q: "What is he building now?" } }));
+  });
+
+  it("shows no Ask row while the feature is off or for short searches", async () => {
+    const { user, rerender } = setup();
+    await user.type(input(), "What is he building now?");
+    expect(screen.queryByText(/^Ask:/)).toBeNull();
+    rerender({ ask: true });
+    await user.clear(input());
+    await user.type(input(), "voice");
+    expect(screen.queryByText(/^Ask:/)).toBeNull();
+  });
+
+  it("keeps a matching room first for a three-word search and adds Ask last", () => {
+    const groups = searchPalette(entries, "voice ai contact", { ask: true });
+    expect(groups[0].entries[0].key).toBe("room:L3:voice-ai-contact-center");
+    expect(groups.at(-1)?.id).toBe("ask");
+    expect(searchPalette(entries, "voice ai contact", { ask: true, filter: "pods" }).some((g) => g.id === "ask")).toBe(false);
+  });
+
+  it("renders the Ask row in Indonesian", async () => {
+    const { user } = setup({ ask: true }, id as typeof en, "id");
+    await user.type(input(), "apa proyek terbarunya?");
+    expect(activeOption()).toHaveTextContent('Tanya: "apa proyek terbarunya?"');
+  });
+
+  it("decides which queries read like questions", () => {
+    for (const q of ["what now?", "who is he", "apa kabar", "show your AI results", "how can I contact him?", "siapa dia"]) expect(looksLikeQuestion(q), q).toBe(true);
+    for (const q of ["", "voice", "copy email", "?", "AI?"]) expect(looksLikeQuestion(q), q).toBe(false);
   });
 });

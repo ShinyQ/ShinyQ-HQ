@@ -309,7 +309,8 @@
         "recent": "Recent",
         "rooms": "Rooms",
         "years": "Years",
-        "actions": "Actions"
+        "actions": "Actions",
+        "ask": "Ask AI"
       },
       "filter": {
         "pods": "Projects only",
@@ -468,5 +469,45 @@
   },
   "about": {
     "title": "About and contact"
+  },
+  "ask": {
+    "title": "Ask about Kurniadi",
+    "intro": "Questions about his work, projects, career and how to reach him, answered by AI from this site.",
+    "label": "Your question",
+    "placeholder": "Ask about his work, projects or career",
+    "submit": "Ask",
+    "clear": "Clear",
+    "asked": "You asked",
+    "thinking": "Thinking…",
+    "suggestionsLabel": "Suggested questions",
+    "suggestions": {
+      "now": "What is he building now?",
+      "ai": "Show his AI results",
+      "contact": "How can I contact him?"
+    },
+    "asOf": "Answered by AI from this site, as of {date}",
+    "privacyTitle": "Privacy",
+    "privacy": "Questions and answers are processed by Cloudflare Workers AI at the nearest edge and logged for up to 7 days, with emails, phone numbers and ID numbers removed. They are never used for training. No account is needed, and the only cookie is a short-lived anti-bot check. Please don't share personal information.",
+    "error": {
+      "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+      "offline": "Ask the HQ is resting right now. Try ⌘K search or browse the pages.",
+      "fallback": "I couldn't answer that right now. Try ⌘K search or the Work and Journey pages."
+    },
+    "terminal": {
+      "option": "ask me anything ^_^",
+      "prompt": "rover@hq:~$ ask",
+      "label": "Ask the rover a question",
+      "placeholder": "type a question",
+      "hint": "Ask: Enter · Back: Esc",
+      "hintMenu": "Pick: a, 1 to 8 or arrows + Enter · Close: Esc",
+      "suggestions": {
+        "now": "What are you building now?",
+        "ai": "Show your AI results"
+      }
+    },
+    "palette": {
+      "row": "Ask: \"{q}\"",
+      "subtitle": "Answered by AI from this site"
+    }
   }
 }

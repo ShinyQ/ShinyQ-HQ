@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchAskStatus, isAskEnabled } from "@/ask/client";
+import type { AskStatus } from "@/ask/protocol";
 import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "@/experience/missions/host";
 import { roomFromPath } from "@/experience/missions/rooms";
@@ -12,7 +14,7 @@ import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
 import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { CommandPalette } from "./CommandPalette";
-import { onHudCommand } from "./events";
+import { askPanelHandler, onHudCommand } from "./events";
 import type { HudIndex } from "./index-data";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
@@ -65,6 +67,14 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
   const [recent, setRecent] = useState<RoomId[]>([]);
   const [visit, setVisit] = useState(0);
   const [toast, setToast] = useState<{ text: string; ms: number; id: number } | null>(null);
+  // Ask the HQ: fetched only when the terminal or the palette opens (never on first paint).
+  const [askStatus, setAskStatus] = useState<AskStatus | null | undefined>(undefined);
+  const [askRequest, setAskRequest] = useState<{ id: number; q?: string } | null>(null);
+  const askEnabled = isAskEnabled(askStatus);
+
+  const loadAskStatus = useCallback(() => {
+    void fetchAskStatus().then(setAskStatus);
+  }, []);
 
   const say = useCallback((text: string, ms = MIN_TOAST_MS) => {
     setToast({ text, ms: Math.max(ms, MIN_TOAST_MS), id: Date.now() });
@@ -78,16 +88,40 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
 
   const showTerminal = useCallback(() => {
     markTerminalSeen();
+    loadAskStatus();
+    setAskRequest(null);
     setPaletteOpen(false);
     setTerminalOpen(true);
-  }, []);
+  }, [loadAskStatus]);
 
-  const showPalette = useCallback((next: PaletteFilter | null = null) => {
-    setRecent(readRecent());
-    setFilter(next);
-    setTerminalOpen(false);
-    setPaletteOpen(true);
-  }, []);
+  const showPalette = useCallback(
+    (next: PaletteFilter | null = null) => {
+      loadAskStatus();
+      setRecent(readRecent());
+      setFilter(next);
+      setTerminalOpen(false);
+      setPaletteOpen(true);
+    },
+    [loadAskStatus],
+  );
+
+  /** Static Home and About: the Page View panel takes the question; elsewhere (and in 3D) the terminal's ask mode. */
+  const startAsk = useCallback(
+    (q?: string) => {
+      setPaletteOpen(false);
+      const towerOpen = document.documentElement.hasAttribute("data-hq");
+      const panel = towerOpen ? null : askPanelHandler();
+      if (panel?.(q)) {
+        setTerminalOpen(false);
+        return;
+      }
+      markTerminalSeen();
+      loadAskStatus();
+      setAskRequest({ id: Date.now(), q });
+      setTerminalOpen(true);
+    },
+    [loadAskStatus],
+  );
 
   const runner: MissionRunner = useMemo(() => {
     const deps: HostDeps = {
@@ -136,12 +170,17 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
             if (!isAutoOpenClaimed()) showTerminal();
           }, AUTO_OPEN_DELAY_MS)
         : undefined;
-    const offCommand = onHudCommand((command) => (command.type === "terminal" ? showTerminal() : showPalette(command.filter ?? null)));
+    const offCommand = onHudCommand((command) => {
+      if (command.type === "terminal") showTerminal();
+      else if (command.type === "ask") startAsk(command.q);
+      else showPalette(command.filter ?? null);
+    });
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPaletteOpen((open) => {
           if (!open) {
+            loadAskStatus();
             setRecent(readRecent());
             setFilter(null);
             setTerminalOpen(false);
@@ -164,7 +203,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     };
     // The auto-open check runs once per mount (first page view), not on every navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTerminal, showPalette]);
+  }, [showTerminal, showPalette, startAsk, loadAskStatus]);
 
   // Remember rooms whose page was opened (palette "Recent", surprise skips them).
   useEffect(() => {
@@ -230,6 +269,9 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
       case "action":
         void runAction(target.id);
         return;
+      case "ask":
+        startAsk(target.q);
+        return;
     }
   };
 
@@ -239,11 +281,17 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
         open={terminalOpen}
         locale={locale}
         missions={terminalMissions}
+        ask={askEnabled}
+        askRequest={askRequest}
         onRun={(id) => {
           setTerminalOpen(false);
+          setAskRequest(null);
           void runner.start(id);
         }}
-        onClose={() => setTerminalOpen(false)}
+        onClose={() => {
+          setTerminalOpen(false);
+          setAskRequest(null);
+        }}
       />
       <CommandPalette
         open={paletteOpen}
@@ -251,6 +299,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
         entries={entries}
         recent={recent}
         filter={filter}
+        ask={askEnabled}
         onFilterChange={setFilter}
         onSelect={onSelect}
         onClose={() => setPaletteOpen(false)}

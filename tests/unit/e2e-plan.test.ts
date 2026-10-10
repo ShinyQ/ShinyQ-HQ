@@ -14,6 +14,13 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["content/site-content.json"]).specs).toEqual(["pageview", "seo", "static-routes"]);
   });
 
+  it("maps Ask the HQ code, the Function and the panel to the ask spec", () => {
+    expect(specsForChanges(["functions/api/ask.ts"]).specs).toEqual(["ask"]);
+    expect(specsForChanges(["functions/_lib/rate-limit.ts", "src/ask/client.ts"]).specs).toEqual(["ask"]);
+    expect(specsForChanges(["src/components/page/AskPanel.tsx"]).specs).toEqual(["ask", "pageview"]);
+    expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "missions"]);
+  });
+
   it("runs a changed spec itself and skips docs and unit tests", () => {
     expect(specsForChanges(["e2e/career.spec.ts", "docs/deploy.md", "tests/unit/rover.test.ts"]).specs).toEqual(["career"]);
     expect(specsForChanges(["AGENTS.md"]).specs).toEqual([]);

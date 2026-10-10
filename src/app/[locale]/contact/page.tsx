@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContactPanel } from "@/components/page/About";
+import { AskPanel } from "@/components/page/AskPanel";
 import { Marker, SectionSplit } from "@/components/page/Layout";
 import { CertificationList, PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { getCertifications, getProfile, getRoof, getSkills } from "@/content/load";
@@ -64,6 +65,8 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       <SectionSplit id="certifications" title={th("certsTitle")}>
         <CertificationList certifications={getCertifications()} locale={locale} />
       </SectionSplit>
+
+      <AskPanel locale={locale} />
 
       <SectionSplit id="cv" title={t("cvTitle")} intro={t("cvIntro")}>
         <ul className="flex flex-wrap items-center gap-3">

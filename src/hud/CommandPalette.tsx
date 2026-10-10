@@ -14,6 +14,8 @@ export interface CommandPaletteProps {
   recent: readonly RoomId[];
   filter?: PaletteFilter | null;
   onFilterChange?: (filter: PaletteFilter | null) => void;
+  /** Ask the HQ is enabled: question-like queries get an "Ask" row. */
+  ask?: boolean;
   /** Runs the entry. The palette calls `onClose` first. */
   onSelect: (entry: PaletteEntry) => void;
   onClose: () => void;
@@ -38,15 +40,16 @@ export function CommandPalette(props: CommandPaletteProps) {
   return props.open ? <PaletteDialog {...props} /> : null;
 }
 
-function PaletteDialog({ locale, entries, recent, filter = null, onFilterChange, onSelect, onClose }: CommandPaletteProps) {
+function PaletteDialog({ locale, entries, recent, filter = null, ask = false, onFilterChange, onSelect, onClose }: CommandPaletteProps) {
   const t = useTranslations("hud.palette");
+  const tAsk = useTranslations("ask.palette");
   const tFloors = useTranslations("floors");
   const baseId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const groups = useMemo<PaletteGroup[]>(() => searchPalette(entries, query, { filter, recent }), [entries, query, filter, recent]);
+  const groups = useMemo<PaletteGroup[]>(() => searchPalette(entries, query, { filter, recent, ask }), [entries, query, filter, recent, ask]);
   const rows = useMemo<Row[]>(() => groups.flatMap((g, group) => g.entries.map((entry) => ({ entry, group }))), [groups]);
   const active = rows.length ? Math.min(activeIndex, rows.length - 1) : -1;
 
@@ -131,7 +134,10 @@ function PaletteDialog({ locale, entries, recent, filter = null, onFilterChange,
   };
 
   const subtitleOf = (entry: PaletteEntry) =>
-    entry.subtitle?.[locale] ?? (entry.target.type === "year" && entry.keywords.length ? entry.keywords.join(", ") : undefined);
+    entry.target.type === "ask"
+      ? tAsk("subtitle")
+      : (entry.subtitle?.[locale] ?? (entry.target.type === "year" && entry.keywords.length ? entry.keywords.join(", ") : undefined));
+  const titleOf = (entry: PaletteEntry) => (entry.target.type === "ask" ? tAsk("row", { q: entry.target.q }) : entry.title[locale]);
 
   const offsets = groups.map((_, group) => firstOfGroup(group));
 
@@ -241,7 +247,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, onFilterChange,
                       }`}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className={`block truncate ${selected ? "text-ink" : "text-ink-2"}`}>{entry.title[locale]}</span>
+                        <span className={`block truncate ${selected ? "text-ink" : "text-ink-2"}`}>{titleOf(entry)}</span>
                         {subtitle ? <span className="block truncate text-sm text-ink-3">{subtitle}</span> : null}
                       </span>
                       {entry.floor ? (

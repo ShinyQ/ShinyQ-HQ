@@ -11,6 +11,16 @@ import { getContent } from "@/content/load";
 import type { Locale } from "@/content/schema";
 import { RoverTerminal, markTerminalSeen, shouldAutoOpenTerminal, type RoverTerminalProps } from "@/hud/RoverTerminal";
 import { greetingKey, orderTerminalMissions } from "@/hud/terminal";
+import type { AskOptions, AskResult } from "@/ask/client";
+
+const askMock = vi.hoisted(() => ({
+  ask: vi.fn<(options: AskOptions) => Promise<AskResult>>(),
+}));
+vi.mock("@/ask/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ask/client")>()),
+  askQuestion: (options: AskOptions) => askMock.ask(options),
+  fetchAskStatus: async () => ({ enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 }),
+}));
 
 const missions = orderTerminalMissions(getContent().missions, 0);
 const morning = new Date(2026, 9, 9, 8, 0);
@@ -43,6 +53,7 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   localStorage.clear();
+  askMock.ask.mockReset();
 });
 
 describe("RoverTerminal", () => {
@@ -160,6 +171,92 @@ describe("RoverTerminal", () => {
     expect(dialog).toHaveTextContent("selamat malam.");
     expect(dialog).toHaveTextContent(id.hud.terminal.question);
     expect(screen.getAllByRole("option").at(-1)).toHaveTextContent(id.hud.terminal.driveMyself);
+  });
+});
+
+describe("RoverTerminal ask mode", () => {
+  const answer = (text: string, outcome: "answer" | "decline" = "answer") =>
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta(text);
+      return { outcome, source: "primary", asOf: "2026-10-01" };
+    });
+
+  it("adds ask as the first option on key a, keeping missions on 1 to 8", async () => {
+    const { onRun } = renderTerminal({ ask: true });
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(missions.length + 2);
+    expect(options[0]).toHaveTextContent(`[a]${en.ask.terminal.option}`);
+    expect(options[0]).toHaveAttribute("aria-selected", "true");
+    expect(options[1]).toHaveTextContent(`[1]${missions[0].label.en}`);
+    expect(screen.getByRole("dialog")).toHaveTextContent(en.ask.terminal.hintMenu);
+    await userEvent.keyboard("5");
+    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[4].id);
+  });
+
+  it("hides the ask option when the feature is off", () => {
+    renderTerminal();
+    expect(screen.queryByText(en.ask.terminal.option)).toBeNull();
+  });
+
+  it("asks a typed question and shows the answer as plain text", async () => {
+    answer("Hello <img src=x onerror=alert(1)>");
+    renderTerminal({ ask: true });
+    await userEvent.keyboard("a");
+    const input = screen.getByRole("textbox", { name: en.ask.terminal.label });
+    expect(input).toHaveFocus();
+    expect(input).toHaveAttribute("maxLength", "300");
+    await userEvent.keyboard("What now?{Enter}");
+    expect(askMock.ask).toHaveBeenCalledWith(expect.objectContaining({ q: "What now?", locale: "en" }));
+    const region = screen.getByTestId("ask-terminal-answer");
+    await vi.waitFor(() => expect(region).toHaveTextContent("Hello <img src=x onerror=alert(1)>"));
+    expect(region.querySelector("img")).toBeNull();
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByTestId("ask-face")).toHaveTextContent("[^_^]");
+    expect(region).toHaveTextContent("Answered by AI from this site, as of Oct 1, 2026");
+    expect(screen.getByRole("dialog")).toHaveTextContent(en.ask.privacy);
+  });
+
+  it("asks a suggestion and shows o_o on a decline", async () => {
+    answer("I can only talk about Kurniadi.", "decline");
+    renderTerminal({ ask: true });
+    await userEvent.click(screen.getByRole("option", { name: en.ask.terminal.option }));
+    await userEvent.click(screen.getByRole("button", { name: en.ask.terminal.suggestions.ai }));
+    expect(askMock.ask).toHaveBeenCalledWith(expect.objectContaining({ q: en.ask.terminal.suggestions.ai }));
+    await vi.waitFor(() => expect(screen.getByTestId("ask-face")).toHaveTextContent("[o_o]"));
+    expect(screen.getByTestId("ask-terminal-answer")).toHaveTextContent("I can only talk about Kurniadi.");
+  });
+
+  it("shows ... while thinking and a friendly message on errors", async () => {
+    let finish: (result: AskResult) => void = () => {};
+    askMock.ask.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    renderTerminal({ ask: true });
+    await userEvent.keyboard("a");
+    await userEvent.keyboard("hi there{Enter}");
+    expect(screen.getByTestId("ask-face")).toHaveTextContent("[...]");
+    await act(async () => finish({ error: "rate_limited", retryAfter: 90 }));
+    expect(screen.getByTestId("ask-terminal-answer")).toHaveTextContent("Try again in 2 minutes.");
+    expect(screen.getByTestId("ask-face")).toHaveTextContent("[o_o]");
+  });
+
+  it("goes back to the missions on Esc, then closes", async () => {
+    const { onClose } = renderTerminal({ ask: true });
+    await userEvent.keyboard("a");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("listbox")).toHaveFocus();
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("opens straight into ask mode with a prefilled question, and Esc closes", async () => {
+    answer("Building an AI HQ.");
+    const { onClose } = renderTerminal({ ask: true, askRequest: { id: 1, q: "What are you building?" } });
+    expect(screen.getByRole("textbox")).toHaveValue("What are you building?");
+    await vi.waitFor(() => expect(screen.getByTestId("ask-terminal-answer")).toHaveTextContent("Building an AI HQ."));
+    expect(askMock.ask).toHaveBeenCalledOnce();
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });
 
