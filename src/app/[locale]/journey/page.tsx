@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Container, PageHeader, Section } from "@/components/Section";
-import { TimelineItem } from "@/components/TimelineItem";
+import { JourneyFilter } from "@/components/page/JourneyFilter";
+import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
+import { TimelineRow } from "@/components/page/Timeline";
 import { RepoWall, SideProjectGrid } from "@/components/WorkshopAnnex";
-import { getPublicRepos, getSideProjects, getYears } from "@/content/load";
+import { getPublicRepos, getSideProjects, getTimeline, getYears } from "@/content/load";
+import { typeCounts } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
@@ -20,54 +22,57 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "journey" });
   const tf = await getTranslations({ locale, namespace: "floors" });
-  const years = getYears();
+  const years = [...getYears()].reverse();
 
   return (
-    <Container>
+    <>
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" />
-      <PageHeader eyebrow={`L2 · ${tf("L2")}`} title={t("title")} intro={t("intro")}>
-        <nav aria-label={t("yearNav")} className="mt-6 -mx-4 overflow-x-auto px-4">
-          <ul className="flex gap-2">
-            {years.map(({ year }) => (
-              <li key={year}>
-                <a href={`#y${year}`} className="label inline-flex min-h-11 items-center rounded-full border border-amber/40 px-4 text-amber transition hover:bg-amber/10">
-                  {year}
-                </a>
-              </li>
-            ))}
-            <li>
-              <a href="#workshop" className="label inline-flex min-h-11 items-center rounded-full border border-glass-border px-4 text-ink-2 transition hover:text-ink">
-                {t("workshop")}
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </PageHeader>
-
-      <ol className="relative mt-4 border-l border-amber/30 pl-5 sm:pl-8">
-        {years.map(({ year, entries }) => (
-          <li key={year} id={`y${year}`} className="scroll-mt-24 pb-10">
-            <h2 className="relative mb-4 font-mono text-3xl font-bold text-amber">
-              <span className="absolute top-1/2 -left-[27px] h-3 w-3 -translate-y-1/2 rounded-full bg-amber shadow-[0_0_12px_var(--color-amber)] sm:-left-[39px]" aria-hidden="true" />
-              {year}
-            </h2>
-            <ul className="grid gap-3 md:grid-cols-2">
-              {entries.map((entry) => (
-                <li key={entry.id}>
-                  {Number(entry.start.slice(0, 4)) < year && <p className="label mb-1 text-ink-3">{t("prologue")}</p>}
-                  <TimelineItem entry={entry} locale={locale} />
+      <PageIntro
+        marker={<Marker accent="amber">L2 · {tf("L2")}</Marker>}
+        title={t("navTitle")}
+        lead={t("intro")}
+        aside={
+          <nav aria-label={t("yearNav")}>
+            <p className="pv-data mb-3">{t("jumpTo")}</p>
+            <ul className="flex flex-wrap gap-1.5">
+              {years.map(({ year }) => (
+                <li key={year}>
+                  <a href={`#y${year}`} className="chip min-h-11">
+                    {year}
+                  </a>
                 </li>
               ))}
+              <li>
+                <a href="#workshop" className="chip min-h-11">
+                  {t("workshop")}
+                </a>
+              </li>
             </ul>
-          </li>
-        ))}
-      </ol>
-
-      <Section id="workshop" eyebrow="L2" title={t("workshop")} intro={t("workshopIntro")}>
+          </nav>
+        }
+      />
+      <JourneyFilter counts={typeCounts(getTimeline())}>
+        <ol className="pv-wrap">
+          {years.map(({ year, entries }) => (
+            <li key={year} id={`y${year}`} data-year="" className="grid gap-x-6 pt-14 lg:grid-cols-12 lg:pt-16">
+              <h2 className="pv-num text-[48px] leading-[0.9] lg:sticky lg:top-[160px] lg:col-span-2 lg:self-start lg:text-[64px]">
+                {year}
+                <span className="pv-data mt-2.5 block">{t("entries", { count: entries.length })}</span>
+              </h2>
+              <ul className="pv-rows mt-4 lg:col-span-10 lg:mt-0 [&>li:first-child]:border-line-2">
+                {[...entries].reverse().map((entry) => (
+                  <TimelineRow key={entry.id} entry={entry} locale={locale} note={Number(entry.start.slice(0, 4)) < year ? t("prologue") : undefined} />
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </JourneyFilter>
+      <SectionSplit id="workshop" title={t("workshop")} intro={t("workshopIntro")}>
         <SideProjectGrid projects={getSideProjects()} locale={locale} />
-        <h3 className="mt-10 mb-4 text-lg font-bold text-ink">{t("repos")}</h3>
+        <h3 className="pv-h3 mt-14 mb-4">{t("repos")}</h3>
         <RepoWall repos={getPublicRepos()} locale={locale} />
-      </Section>
-    </Container>
+      </SectionSplit>
+    </>
   );
 }

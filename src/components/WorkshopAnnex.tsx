@@ -1,34 +1,32 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, RepoRef, SideProject } from "@/content/schema";
-import { ChipList } from "./Chip";
+import { TechLogoRow } from "./Chip";
 import { ExternalLink } from "./ExternalLink";
 
 export async function SideProjectGrid({ projects, locale }: { projects: readonly SideProject[]; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "common" });
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="pv-rows pv-rows-closed">
       {projects.map((p) => (
-        <li key={p.id} className="glass flex flex-col gap-2 p-4">
-          <h3 className="font-bold text-ink">
-            {p.title}
-            {p.year && <span className="label ml-2 text-ink-3">{p.year}</span>}
-          </h3>
-          <p className="text-sm leading-6 text-ink-2">{p.summary[locale]}</p>
-          <ChipList items={p.stack} logos />
-          {(p.url || p.repo) && (
-            <p className="mt-auto flex gap-4 pt-1 text-[13px]">
+        <li key={p.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[90px_minmax(0,1fr)] md:py-6">
+          <p className="pv-data md:pt-1.5">{p.year}</p>
+          <div className="min-w-0">
+            <h3 className="pv-h3">{p.title}</h3>
+            <p className="mt-2 max-w-[64ch] text-[15px] leading-6 text-ink-2">{p.summary[locale]}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <TechLogoRow items={p.stack} max={10} />
               {p.url && (
-                <ExternalLink href={p.url} srHint={t("external")}>
+                <ExternalLink href={p.url} srHint={t("external")} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink">
                   Live
                 </ExternalLink>
               )}
               {p.repo && (
-                <ExternalLink href={p.repo} srHint={t("external")}>
+                <ExternalLink href={p.repo} srHint={t("external")} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink">
                   GitHub
                 </ExternalLink>
               )}
-            </p>
-          )}
+            </div>
+          </div>
         </li>
       ))}
     </ul>
@@ -39,14 +37,16 @@ export async function RepoWall({ repos, locale }: { repos: readonly RepoRef[]; l
   const t = await getTranslations({ locale, namespace: "journey" });
   const tc = await getTranslations({ locale, namespace: "common" });
   return (
-    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="pv-rows pv-rows-closed">
       {repos.map((repo) => (
-        <li key={repo.url} className="rounded-lg border border-glass-border p-3">
-          <ExternalLink href={repo.url} className="font-mono text-sm font-semibold text-cyan hover:underline" srHint={tc("external")}>
-            {repo.name}
-          </ExternalLink>
-          <p className="mt-1 text-[13px] leading-5 text-ink-2">{repo.description[locale]}</p>
-          <p className="label mt-2 text-ink-3">
+        <li key={repo.url} className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+          <div className="min-w-0">
+            <ExternalLink href={repo.url} className="pv-stretch pv-row-title font-mono text-sm font-medium break-all text-ink" srHint={tc("external")}>
+              {repo.name}
+            </ExternalLink>
+            <p className="pv-small mt-1">{repo.description[locale]}</p>
+          </div>
+          <p className="pv-data shrink-0">
             {repo.language} · {t("stars", { count: repo.stars })}
           </p>
         </li>
