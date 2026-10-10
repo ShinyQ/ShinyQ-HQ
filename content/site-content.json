@@ -5974,7 +5974,48 @@
             "App Service"
           ],
           "hologram": "graph",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/ai-solutions-assistant/01-assistant-answer.webp",
+              "alt": {
+                "en": "AI Solutions Consultant answering a CV screening question, grounded in a published project and linking to it",
+                "id": "AI Solutions Consultant menjawab pertanyaan tentang CV screening, berdasarkan proyek yang sudah dipublikasikan dan menautkannya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/02-indicative-architecture.webp",
+              "alt": {
+                "en": "Expanded indicative architecture in the answer, grouping Azure services into intelligence, data and experience",
+                "id": "Indicative architecture yang dibuka di jawaban, mengelompokkan layanan Azure ke intelligence, data, dan experience"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/03-project-matcher.webp",
+              "alt": {
+                "en": "Hero project matcher returning ranked projects for an IT support ticket challenge",
+                "id": "Project matcher di hero yang menampilkan proyek terurut untuk tantangan tiket IT support"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/04-project-page.webp",
+              "alt": {
+                "en": "Project page for the AI recruitment solution with a live demo link and product preview",
+                "id": "Halaman proyek solusi AI recruitment dengan tautan live demo dan pratinjau produk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -6795,7 +6836,58 @@
             "Next.js"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/agent-deck-platform/01-published-deck.webp",
+              "alt": {
+                "en": "Published deck on the hosting site: cover slide of a vendor portal explainer with page previews",
+                "id": "Deck yang dipublikasikan di situs hosting: slide sampul penjelasan portal vendor dengan pratinjau halaman"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/02-flow-slide.webp",
+              "alt": {
+                "en": "Agent-authored slide showing the purchase order to payment flow as a diagram",
+                "id": "Slide buatan agent yang menampilkan alur purchase order hingga pembayaran sebagai diagram"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/03-screenshot-slide.webp",
+              "alt": {
+                "en": "Slide that frames a product screenshot with annotated callouts",
+                "id": "Slide yang membingkai screenshot produk dengan callout beranotasi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/04-login-slide.webp",
+              "alt": {
+                "en": "Slide walking through the sign-in page with a browser frame and notes",
+                "id": "Slide yang menjelaskan halaman sign-in dengan bingkai browser dan catatan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/05-summary-slide.webp",
+              "alt": {
+                "en": "Summary slide comparing three pages side by side",
+                "id": "Slide ringkasan yang membandingkan tiga halaman berdampingan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "solutions-marketing-site",
@@ -6858,13 +6950,63 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/solutions-marketing-site/01-landing.webp",
+              "src": "/media/solutions-marketing-site/01-home.webp",
               "alt": {
-                "en": "Enterprise AI on Azure landing page with English and Indonesian controls, project search and example use cases",
-                "id": "Landing page enterprise AI di Azure dengan pilihan bahasa Inggris dan Indonesia, pencarian proyek dan contoh use case"
+                "en": "Home hero of the Microsoft solutions site with the technology foundation panel grouped by practice",
+                "id": "Hero beranda situs solusi Microsoft dengan panel technology foundation yang dikelompokkan per practice"
               },
-              "width": 1280,
-              "height": 800,
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/02-outcome-navigator.webp",
+              "alt": {
+                "en": "Outcome navigator that maps a business goal to the matching Microsoft practice and capabilities",
+                "id": "Outcome navigator yang memetakan tujuan bisnis ke practice dan capability Microsoft yang sesuai"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/03-engagements.webp",
+              "alt": {
+                "en": "Engagement catalogue with search, practice filters and cards listing work modules and deliverables",
+                "id": "Katalog engagement dengan pencarian, filter practice, dan kartu berisi work module serta deliverable"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/04-promotions.webp",
+              "alt": {
+                "en": "Promotions catalogue filtered by division, offer type and status, with programme cards",
+                "id": "Katalog promosi dengan filter divisi, jenis penawaran, dan status, beserta kartu program"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/05-practice.webp",
+              "alt": {
+                "en": "Practice page for Cloud Infra, Data and AI Platform with its capability diagram",
+                "id": "Halaman practice Cloud Infra, Data and AI Platform dengan diagram capability"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/06-about-indonesian.webp",
+              "alt": {
+                "en": "About page in Indonesian, showing the bilingual content model",
+                "id": "Halaman About dalam bahasa Indonesia, menunjukkan model konten bilingual"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
