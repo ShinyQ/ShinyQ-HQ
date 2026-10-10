@@ -116,6 +116,13 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
 
   useEffect(() => registerRunner(runner), [runner]);
 
+  // The HUD is in the locale layout, so its first effect marks the page as hydrated. The Next.js
+  // chunks load after the first paint (scripts/defer-scripts.ts), so `load` no longer implies it;
+  // e2e tests wait for this attribute (`openPage` in e2e/hq.ts).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-hydrated", "");
+  }, []);
+
   const entries = useMemo(() => buildPaletteEntries(index, STATIC_ACTIONS), [index]);
   const terminalMissions = useMemo(() => orderTerminalMissions(index.missions, visit), [index.missions, visit]);
 

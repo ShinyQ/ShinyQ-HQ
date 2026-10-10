@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { openPage } from "./hq";
 import { heroPod } from "./routes";
 import rawData from "../content/site-content.json";
 import { SiteContentSchema } from "../src/content/schema";
@@ -22,8 +23,8 @@ test.describe("command palette", () => {
   test.beforeEach(async ({ page }) => seenTerminal(page));
 
   test("Ctrl+K to a pod", async ({ page }) => {
-    // Wait for hydration so the shortcut listener is attached.
-    await page.goto("/en/library", { waitUntil: "networkidle" });
+    // Waits for hydration, so the shortcut listener is attached.
+    await openPage(page, "/en/library");
     await page.keyboard.press("Control+k");
     const palette = page.getByRole("dialog", { name: "Command palette" });
     await expect(palette).toBeVisible();
@@ -36,7 +37,7 @@ test.describe("command palette", () => {
   });
 
   test("search button and / open it; Esc returns focus", async ({ page }) => {
-    await page.goto("/en/labs");
+    await openPage(page, "/en/labs");
     const button = page.getByRole("button", { name: /Open search/ });
     await button.click();
     await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
@@ -49,7 +50,7 @@ test.describe("command palette", () => {
   });
 
   test("searches in Indonesian", async ({ page }) => {
-    await page.goto("/id/labs", { waitUntil: "networkidle" });
+    await openPage(page, "/id/labs", { waitUntil: "networkidle" });
     await page.keyboard.press("Control+k");
     await page.keyboard.type("unduh");
     await expect(page.getByRole("dialog", { name: "Palet perintah" }).getByRole("option").first()).toContainText("Unduh CV");
@@ -61,7 +62,7 @@ test.describe("command palette", () => {
 
   test("is a full-screen sheet on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/en?tier=static");
+    await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: /Open search/ }).click();
     const box = await page.getByRole("dialog", { name: "Command palette" }).boundingBox();
     expect(box?.width).toBe(390);
@@ -73,7 +74,7 @@ test.describe("missions on static pages", () => {
   test.beforeEach(async ({ page }) => seenTerminal(page));
 
   test("terminal runs hire with its number key", async ({ page }) => {
-    await page.goto(`/en/labs/${heroPod.slug}`);
+    await openPage(page, `/en/labs/${heroPod.slug}`);
     await page.getByRole("button", { name: "Missions" }).click();
     const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
     await expect(terminal).toContainText("rover@hq:~$ ./missions");
@@ -84,7 +85,7 @@ test.describe("missions on static pages", () => {
   });
 
   test("journey drives to 2019 and the rover speaks", async ({ page }) => {
-    await page.goto("/en?tier=static");
+    await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();
     await expect(page).toHaveURL(/\/en\/journey#y2019$/);
@@ -92,7 +93,7 @@ test.describe("missions on static pages", () => {
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {
-    await page.goto("/en?tier=static");
+    await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
     await page.getByRole("option", { name: mission("projects").label.en }).click();
     await expect(page).toHaveURL(/\/en\/labs$/);
@@ -103,7 +104,7 @@ test.describe("missions on static pages", () => {
   });
 
   test("Esc means drive myself", async ({ page }) => {
-    await page.goto("/en/journey");
+    await openPage(page, "/en/journey");
     await page.getByRole("button", { name: "Missions" }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
@@ -112,7 +113,7 @@ test.describe("missions on static pages", () => {
 });
 
 test("Rover Terminal auto-opens once on the first Lobby visit", async ({ page }) => {
-  await page.goto("/en?tier=static");
+  await openPage(page, "/en?tier=static");
   await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible();
   await page.keyboard.press("Escape");
   await page.reload();
@@ -125,14 +126,14 @@ test.describe("accessibility (axe)", () => {
 
   test("Lobby with the terminal open", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/en?tier=static");
+    await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
     await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 
   test("pod page with the palette open and a query", async ({ page }) => {
-    await page.goto(`/en/labs/${heroPod.slug}`, { waitUntil: "networkidle" });
+    await openPage(page, `/en/labs/${heroPod.slug}`, { waitUntil: "networkidle" });
     await page.keyboard.press("Control+k");
     await page.keyboard.type("fastapi");
     await expect(page.getByRole("option").first()).toBeVisible();
@@ -140,7 +141,7 @@ test.describe("accessibility (axe)", () => {
   });
 
   test("Indonesian Lobby without overlays", async ({ page }) => {
-    await page.goto("/id");
+    await openPage(page, "/id");
     await expectNoSeriousViolations(page);
   });
 });

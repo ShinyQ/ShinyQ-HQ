@@ -1,8 +1,8 @@
 name: CI
 
 # PR pipeline: build once, run e2e in 4 parallel shards against the same `out/`, then merge the
-# reports. "Build, CV and e2e" is the aggregate job: it fails if any job before it failed, so it
-# stays the single required check. Screenshots run in screenshots.yml (nightly, label, manual).
+# reports. "Build, CV and e2e" is the aggregate job: it fails if any job before it failed
+# (Lighthouse budgets included), so it stays the single required check. Screenshots run in screenshots.yml (nightly, label, manual).
 
 on:
   pull_request:
@@ -98,7 +98,7 @@ jobs:
     # checks keep working.
     name: Build, CV and e2e
     runs-on: ubuntu-latest
-    needs: [check, site, e2e]
+    needs: [check, site, e2e, lighthouse]
     if: ${{ !cancelled() }}
     steps:
       - uses: actions/checkout@v7
@@ -125,7 +125,7 @@ jobs:
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "check, site, e2e: $RESULTS"
+          echo "check, site, e2e, lighthouse: $RESULTS"
           for r in $RESULTS; do
             if [ "$r" != "success" ]; then
               echo "::error::A required job did not succeed ($RESULTS)."
@@ -134,11 +134,11 @@ jobs:
           done
 
   lighthouse:
-    name: Lighthouse CI (non-blocking)
+    # Blocking: the error-level budgets in lighthouserc.json (LCP, CLS, TBT; median of 3 runs) fail
+    # this job and, through the aggregate job, the required check.
+    name: Lighthouse CI
     runs-on: ubuntu-latest
     needs: site
-    # Reports only for now. Remove continue-on-error to make the budgets blocking.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { asReturningVisitor, waitForHQ } from "./hq";
+import { asReturningVisitor, openPage, waitForHQ } from "./hq";
 import type { Pod } from "../src/content/schema";
 import { content } from "./routes";
 import en from "../messages/en.json";
@@ -13,7 +13,7 @@ test.describe("project galleries and tech logos (static pages)", () => {
   });
 
   test("pod page gallery opens a lightbox with keyboard navigation and focus restore", async ({ page }) => {
-    await page.goto(`/en/labs/${pod.slug}?tier=static`);
+    await openPage(page, `/en/labs/${pod.slug}?tier=static`);
     const gallery = page.getByTestId("gallery");
     await expect(gallery.getByRole("button")).toHaveCount(pod.assets.length);
     const second = gallery.getByRole("button").nth(1);
@@ -37,12 +37,12 @@ test.describe("project galleries and tech logos (static pages)", () => {
   });
 
   test("stack chips, pod cards and journey entries show logos", async ({ page }) => {
-    await page.goto(`/en/labs/${pod.slug}?tier=static`);
+    await openPage(page, `/en/labs/${pod.slug}?tier=static`);
     await expect(page.locator("#stack img[src^='/tech/']").first()).toBeVisible();
-    await page.goto("/en/labs?tier=static");
+    await openPage(page, "/en/labs?tier=static");
     const card = page.locator("article", { has: page.getByRole("link", { name: pod.title.en, exact: true }) });
     await expect(card.locator(`img[src='${pod.assets[0].src.replace(".webp", ".thumb.webp")}']`)).toBeVisible();
-    await page.goto("/en/journey/jenius-2024?tier=static");
+    await openPage(page, "/en/journey/jenius-2024?tier=static");
     await expect(page.getByRole("img", { name: "Jenius logo" })).toBeVisible();
   });
 });
