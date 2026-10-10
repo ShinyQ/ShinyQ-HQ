@@ -95,10 +95,10 @@ These override anything above that conflicts with them.
 |---|---|---|
 | C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). |
 | C2 | Current role wording | "Technical Consultant, Software & AI" at "Metrodata (PT Mitra Integrasi Informatika)", Feb 2026 to present |
-| C3 | Client names | **Allowed** in pods, career rooms and the generated CV (internal product codenames still not used) |
+| C3 | Client names | **Revised 2026-10-10:** client companies of the owner's employers are **never named** on the site (text, alt text, slugs, metadata, OG cards, JSON-LD, search, room views, 3D labels); use sector labels ("a national digital bank", "an automotive manufacturer", "a national bakery brand", "a coal mining group", "a regional lender", "an insurer"). Employers stay named (Jenius (SMBC Indonesia) only for the 2024 to 2025 job). **Product names are allowed**, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck as Deck Studio inside MII Cowork, MII AI Ticketing, MII AI Dashboard Template); client products (ATLAS, FREDDY) keep a sector label. The owner's CV PDF is used as-is. Supersedes the earlier "Allowed" decision. |
 | C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 6, 2026), labelled "self-reported" when there is no artifact. No money amounts. |
 | C5 | Photo | **No photo.** Use the "KAW" monogram hologram in the world and on the contact card. |
 | C6 | Jenius | "Software Engineer", Jun 2024 to Dec 2025 |
 | C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |
-| C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Jublia, BSSN, Shumi) |
+| C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Jublia, BSSN, Shumi), unless they are also clients of an employer (then C3 applies) |
 | C9 | JagaRupa | Personal side project, **shown** in the Workshop annex (not as an employer project; no hackathon result) |
