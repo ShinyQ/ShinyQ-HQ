@@ -6,7 +6,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import { getContent } from "@/content/load";
-import { openPalette, openTerminal } from "@/hud/events";
+import type { AskOptions, AskResult } from "@/ask/client";
+import type { AskStatus } from "@/ask/protocol";
+import { openAsk, openPalette, openTerminal, registerAskPanel } from "@/hud/events";
 import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { RECENT_KEY } from "@/hud/recent";
@@ -16,6 +18,16 @@ const nav = vi.hoisted(() => ({ push: vi.fn(), pathname: "/en" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: nav.push }),
   usePathname: () => nav.pathname,
+}));
+
+const askMock = vi.hoisted(() => ({
+  status: null as AskStatus | null,
+  ask: vi.fn<(options: AskOptions) => Promise<AskResult>>(),
+}));
+vi.mock("@/ask/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ask/client")>()),
+  fetchAskStatus: async () => askMock.status,
+  askQuestion: (options: AskOptions) => askMock.ask(options),
 }));
 
 const index = buildHudIndex(getContent());
@@ -29,6 +41,8 @@ function renderHud() {
 }
 
 beforeEach(() => {
+  askMock.status = null;
+  askMock.ask.mockReset();
   nav.push.mockReset();
   nav.pathname = "/en/labs";
   localStorage.setItem(TERMINAL_SEEN_KEY, "1");
@@ -125,5 +139,54 @@ describe("MissionHud on static pages", () => {
     await userEvent.keyboard("copy email{Enter}");
     await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(index.email));
     await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Email copied"));
+  });
+});
+
+describe("MissionHud with Ask the HQ", () => {
+  const enabled: AskStatus = { enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 };
+
+  it("offers ask in the terminal only when the status says enabled", async () => {
+    renderHud();
+    act(() => openTerminal());
+    await act(async () => {});
+    expect(screen.queryByRole("option", { name: en.ask.terminal.option })).toBeNull();
+    cleanup();
+    askMock.status = enabled;
+    renderHud();
+    act(() => openTerminal());
+    expect(await screen.findByRole("option", { name: en.ask.terminal.option })).toBeInTheDocument();
+  });
+
+  it("runs the palette Ask row in the terminal's ask mode", async () => {
+    askMock.status = enabled;
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta("Mostly AI agents.");
+      return { outcome: "answer", source: "cache", asOf: "2026-10-01" };
+    });
+    renderHud();
+    act(() => openPalette());
+    await act(async () => {});
+    await userEvent.keyboard("What are you building now?");
+    expect(screen.getAllByRole("option")[0]).toHaveTextContent('Ask: "What are you building now?"');
+    await userEvent.keyboard("{Enter}");
+    const terminal = await screen.findByRole("dialog", { name: "Rover Terminal" });
+    expect(screen.getByRole("textbox", { name: en.ask.terminal.label })).toHaveValue("What are you building now?");
+    await vi.waitFor(() => expect(terminal).toHaveTextContent("Mostly AI agents."));
+    expect(askMock.ask).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ q: "What are you building now?", locale: "en" }));
+  });
+
+  it("hands openAsk to the Page View panel when one is mounted", async () => {
+    askMock.status = enabled;
+    askMock.ask.mockResolvedValue({ outcome: "answer", source: "cache", asOf: "2026-10-01" });
+    const panel = vi.fn(() => true);
+    const off = registerAskPanel(panel);
+    renderHud();
+    act(() => openAsk("How can I contact him?"));
+    expect(panel).toHaveBeenCalledWith("How can I contact him?");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    off();
+    act(() => openAsk("How can I contact him?"));
+    expect(await screen.findByRole("dialog", { name: "Rover Terminal" })).toBeInTheDocument();
+    await vi.waitFor(() => expect(askMock.ask).toHaveBeenCalledOnce());
   });
 });

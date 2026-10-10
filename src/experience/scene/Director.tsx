@@ -15,6 +15,7 @@ import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
+import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
@@ -298,14 +299,15 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     roverRuntime.heading = pose.heading;
     roverRuntime.speed = pose.speed;
     roverRuntime.tilt = pose.tilt;
-    roverRuntime.face = faceFor({
+    const rideFace = liveRide && liveRide.stage !== "toDoor" ? rideDirection(liveRide) : null;
+    roverRuntime.face = (!rideFace && askFace()) || faceFor({
       phase: s.phase,
       speed: pose.speed,
       autopilot: controller.autopilot,
       now,
       blockedUntil: local.blockedUntil,
       arrivedUntil: local.arrivedUntil,
-      ride: liveRide && liveRide.stage !== "toDoor" ? rideDirection(liveRide) : null,
+      ride: rideFace,
     });
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;

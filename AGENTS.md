@@ -27,6 +27,12 @@ content/
   safety-blocklist.default.txt  committed blocklist: client company names (C3), personal data, Azure resource names
   safety-allowlist.txt          product names the lint must never flag (removed from the merged blocklist)
   .safety-blocklist.local.txt   PRIVATE, gitignored; private repo and cloud resource names
+  generated/dynamic-facts.json  weekly live facts (numbers, dates, booleans, IDs only), written by scripts/refresh-facts.ts
+functions/
+  api/ask.ts                    Ask the HQ Pages Function (POST /api/ask)
+  _lib/                         its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval
+  _generated/                   gitignored: knowledge pack + safety lists from scripts/build-knowledge.ts
+wrangler.toml                   Pages bindings and vars for /api/ask (source of truth once deployed; no secrets)
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
 src/assets/fonts/               self-hosted page fonts for next/font/local (src/app/fonts.ts): latin cuts narrowed to the used axes, see its README
@@ -43,6 +49,10 @@ scripts/
   e2e-plan.ts                   pure path-to-spec map and shard split (unit tested)
   e2e-changed.ts                `e2e:changed`: runs the specs that cover your changed paths
   e2e-shard.ts                  `e2e:shard i/N`: balanced (round-robin) CI shard with a blob report
+  build-knowledge.ts            Ask the HQ knowledge pack (part of `build`)
+  ask-eval.ts                   real-model golden and red-team runs (ask-eval.yml)
+  provision-ask.ts              idempotent Cloudflare provisioning (dry run unless --apply)
+  refresh-facts.ts, ask-staleness.ts, content-gap.ts, purge-ask-logs.ts   live facts, freshness warning, unanswered-question report, gateway log purge
 src/
   app/(root)/                   "/" language redirect (own root layout)
   app/[locale]/                 all localized routes (root layout with <html lang>)
@@ -53,7 +63,9 @@ src/
   components/                   static-page UI (server components unless noted)
   components/page/              Page View building blocks: Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About; client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state)
   content/schema.ts             zod schemas, types via z.infer (appendix 06 + additions below)
-  content/load.ts               getContent() and typed accessors
+  content/load.ts               getContent() and typed accessors (getStats() overlays live facts)
+  content/dynamic-facts.ts      DynamicFactsSchema for content/generated/dynamic-facts.json
+  ask/                          Ask the HQ client, wire protocol and pack builder (shared with functions/)
   content/selectors.ts          pure sorting and grouping helpers
   content/pageview.ts           pure Page View helpers (pod and timeline filters, URL params, nav matching), client-safe
   content/blog.ts               MDX discovery with translation fallback
@@ -80,6 +92,7 @@ src/
 tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors, career layout, labs layout, room views, drawer layout and URL, ASCII, hologram
 tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, RoomDrawer, L4/RF rooms
 tests/content/                  Vitest: dataset, public safety, assets
+tests/ask/                      Vitest: Ask pipeline, checks, handler, pack; golden.json (30) and redteam.json sets
 e2e/                            Playwright: static routes, Page View (pageview.spec.ts: axe per template, filters, anchors, phone overflow), 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), missions + axe, opt-in screenshots (screenshots.spec.ts, pageview-visual.spec.ts)
 ```
 
@@ -166,6 +179,19 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - `e2e/deploy.spec.ts` runs `scanBuildOutput(out, loadBlocklist())` over every `.html`, `.txt`, `.json`, `.xml` and `.webmanifest` file of the export, so a client name cannot reach a page, RSC payload, sitemap or room data file.
 - Blocklist format: one term per line or comma separated, `#` comments. Plain terms match case-insensitively on word boundaries; `/regex/` terms are case-sensitive.
 - Validate content edits quickly with `bun run validate:content`.
+
+## Ask the HQ
+
+- Design: `docs/superpowers/specs/2026-10-11-ask-hq-design.md`. Operations (provisioning, deploy, kill switch, rotation, incidents): `docs/ask-runbook.md`.
+- Code: `functions/api/ask.ts` and `functions/_lib/` (no new runtime dependencies, T12), client and protocol in `src/ask/`, pack builder `scripts/build-knowledge.ts` (runs in `build` and `typecheck`) writing `functions/_generated/` (gitignored, never served). Answers are plain text rendered with `textContent`.
+- Bindings and vars live in `wrangler.toml`: `AI`, `ASK_KV` (KV `shinyq-hq-ask`), `ASK_EVENTS` (Analytics Engine `ask_events`), optional `ASK_RL`; `ASK_ENABLED` (kill switch, anything but `"true"` is off), `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_GATEWAY_ID` (`shinyq-hq`), `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP`. Secrets (`TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`) only via `wrangler pages secret put`, never in the repo.
+- Deploy from the repo root (`bun run build`, then `bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main`) so `functions/` is bundled.
+- Content release checklist: when the owner changes jobs, earns a cert, ships a project or publishes a post, update `content/site-content.json` and `tests/ask/golden.json` in the same PR (the drift check fails otherwise). A new client of an employer goes into the blocklist first.
+- Live facts: `content/generated/dynamic-facts.json` is written only by `scripts/refresh-facts.ts` (weekly PR, auto-merge). Numbers, dates, booleans and IDs only, never third-party text (T2); validate with `DynamicFactsSchema`. Stats listed in `DYNAMIC_STATS` (`src/content/load.ts`) take their value from it, so the stats ring, Page View and Ask agree; read stats through `getStats()`, never `getContent().stats`.
+- UI: Rover Terminal option `[a]` (ask mode, `src/hud/AskTerminal.tsx`; the 3D rover face comes from `src/experience/rover/askFace.ts`), the Page View `AskPanel` on Home and About, and an "Ask:" row in Cmd-K. Open it from anywhere with `openAsk(q?)` (`hq:hud` command `{ type: "ask", q? }`). Nothing loads before interaction: `GET /api/ask` runs when an entry point opens or the panel nears the viewport, and Turnstile loads only when the ask UI is used with a site key. A 503 or 404 status hides every entry point.
+- Answer pipeline (security order, spec 7.4): kill switch and breaker, Origin + JSON + 2 KB body, Turnstile or the signed 30-minute `hq_ask` cookie, rate limits (8/min, 40/day per salted visitor hash), NFKC + PII scrub, KV cache, global cap, retrieval + Gemma 4 with one Mistral fallback, output checks (blocklist, forbidden patterns, secrets, prompt leak, defamation, numeric grounding, employer and name checks), then cache, event, SSE. Bump `PROMPT_VERSION` in `functions/_lib/prompt.ts` with any prompt change.
+- CSP: only `script-src` and `frame-src` add `https://challenges.cloudflare.com`; `tests/unit/csp.test.ts` pins the exact policy. `collectErrors` in `e2e/hq.ts` allows that one host and nothing else. `e2e/ask.spec.ts` mocks `/api/ask`.
+- CI around it: staleness warning (45 days) in the check job, gitleaks ("Secret scan", allowlist `.github/gitleaks.toml`), `bun audit` (non-blocking), Dependabot, CODEOWNERS; nightly `ask-eval.yml`, weekly `refresh-facts.yml` and `content-gap.yml`. New workflows pin third-party actions by commit SHA and request only the permissions they use.
 
 ## Workflow
 

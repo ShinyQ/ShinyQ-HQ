@@ -1,0 +1,71 @@
+name: Refresh live facts
+
+# Weekly live facts for the stats ring, the Page View and Ask the HQ (spec section 6.2):
+# GitHub contributions and public repos, Hugging Face models and downloads, credential URL checks.
+# Opens (or refreshes) one PR only when a value changed, then enables auto-merge (owner decision 3).
+# PRs pushed with the default GITHUB_TOKEN do not trigger CI, so required checks never report and
+# auto-merge waits forever. Add the optional FACTS_PR_TOKEN secret (fine-grained PAT, this repo
+# only, Contents and Pull requests read and write) to fix that; see docs/ask-runbook.md.
+
+on:
+  schedule:
+    # Mondays 02:00 WIB (Sunday 19:00 UTC).
+    - cron: "0 19 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-facts
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Refresh live facts
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: chore/refresh-live-facts
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.FACTS_PR_TOKEN || github.token }}
+      - uses: ./.github/actions/setup
+      - name: Fetch live facts
+        id: facts
+        env:
+          # Public data only; GraphQL needs a token even for public contribution counts.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/refresh-facts.ts
+      - name: Open or refresh the PR
+        if: steps.facts.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FACTS_PR_TOKEN || github.token }}
+          HAS_PAT: ${{ secrets.FACTS_PR_TOKEN != '' }}
+          AS_OF: ${{ steps.facts.outputs.as_of }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add content/generated/dynamic-facts.json
+          git commit -m "chore: refresh live facts (asOf $AS_OF)"
+          git push --force origin "$BRANCH"
+          title="Refresh live facts (asOf $AS_OF)"
+          body="Weekly refresh of \`content/generated/dynamic-facts.json\` by \`scripts/refresh-facts.ts\` (numbers, dates, booleans and IDs only). Auto-merges when CI is green."
+          number=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh pr edit "$number" --title "$title" --body "$body"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body "$body"
+          fi
+          gh pr merge "$BRANCH" --auto --squash || echo "::warning::Could not enable auto-merge; enable \"Allow auto-merge\" in the repository settings."
+          if [ "$HAS_PAT" != "true" ]; then
+            echo "::warning::FACTS_PR_TOKEN is not set: this PR was pushed with GITHUB_TOKEN, so CI does not run on it and auto-merge cannot complete. Close and reopen the PR, or add FACTS_PR_TOKEN (docs/ask-runbook.md)."
+          fi
+      - name: Summary
+        env:
+          CHANGED: ${{ steps.facts.outputs.changed }}
+          AS_OF: ${{ steps.facts.outputs.as_of }}
+        run: |
+          echo "Live facts changed: ${CHANGED:-false} (asOf ${AS_OF:-unknown})." >> "$GITHUB_STEP_SUMMARY"

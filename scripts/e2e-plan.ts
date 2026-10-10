@@ -9,6 +9,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 
 /** Every spec in the default (non-screenshot) suite. */
 export const ALL_SPECS = [
+  "ask",
   "boot-first",
   "career",
   "deploy",
@@ -44,6 +45,12 @@ export const RULES: Rule[] = [
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
+  // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
+  { test: /^functions\//, specs: ["ask"] },
+  { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
+  { test: /^src\/components\/page\/AskPanel/, specs: ["ask", "pageview"] },
+  { test: /^src\/hud\/(AskTerminal|ask-ui)\.tsx$/, specs: ["ask", "missions"] },
+
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career"] },
@@ -58,6 +65,7 @@ export const RULES: Rule[] = [
 
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid"] },
+  { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.
   { test: /^src\/app\/globals\.css$/, specs: ["drawer-solid", "pageview", "static-routes"] },

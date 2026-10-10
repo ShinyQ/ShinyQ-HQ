@@ -21,3 +21,8 @@ content/_fragments/
 /screenshots/
 # Lighthouse CI reports
 .lighthouseci/
+# Ask the HQ knowledge pack and safety lists (bun scripts/build-knowledge.ts); the safety list can hold private terms
+functions/_generated/
+.dev.vars
+ask-eval-report*.md
+.cloudflare/

@@ -309,7 +309,8 @@
         "recent": "Baru dikunjungi",
         "rooms": "Ruang",
         "years": "Tahun",
-        "actions": "Perintah"
+        "actions": "Perintah",
+        "ask": "Tanya AI"
       },
       "filter": {
         "pods": "Hanya proyek",
@@ -468,5 +469,45 @@
   },
   "about": {
     "title": "Tentang dan kontak"
+  },
+  "ask": {
+    "title": "Tanya tentang Kurniadi",
+    "intro": "Pertanyaan seputar karya, proyek, karier, dan cara menghubunginya, dijawab oleh AI dari isi situs ini.",
+    "label": "Pertanyaan Anda",
+    "placeholder": "Tanyakan karya, proyek, atau kariernya",
+    "submit": "Tanya",
+    "clear": "Hapus",
+    "asked": "Pertanyaan Anda",
+    "thinking": "Sedang berpikir…",
+    "suggestionsLabel": "Contoh pertanyaan",
+    "suggestions": {
+      "now": "Apa yang sedang ia bangun sekarang?",
+      "ai": "Tunjukkan hasil kerja AI-nya",
+      "contact": "Bagaimana cara menghubunginya?"
+    },
+    "asOf": "Dijawab oleh AI dari isi situs ini, per {date}",
+    "privacyTitle": "Privasi",
+    "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI di edge terdekat dan disimpan dalam log paling lama 7 hari, dengan email, nomor telepon, dan nomor identitas dihapus. Data ini tidak pernah dipakai untuk training. Tidak perlu akun, dan satu-satunya cookie adalah pemeriksaan anti-bot yang berumur pendek. Mohon jangan bagikan informasi pribadi.",
+    "error": {
+      "rateLimited": "Terlalu banyak pertanyaan untuk saat ini. Coba lagi dalam {minutes} menit.",
+      "offline": "Ask the HQ sedang istirahat. Coba pencarian ⌘K atau jelajahi halamannya.",
+      "fallback": "Saya belum bisa menjawabnya sekarang. Coba pencarian ⌘K atau halaman Karya dan Perjalanan."
+    },
+    "terminal": {
+      "option": "tanya apa saja ^_^",
+      "prompt": "rover@hq:~$ ask",
+      "label": "Ajukan pertanyaan ke rover",
+      "placeholder": "ketik pertanyaan",
+      "hint": "Tanya: Enter · Kembali: Esc",
+      "hintMenu": "Pilih: a, 1 hingga 8 atau panah + Enter · Tutup: Esc",
+      "suggestions": {
+        "now": "Apa yang sedang Anda bangun sekarang?",
+        "ai": "Tunjukkan hasil AI Anda"
+      }
+    },
+    "palette": {
+      "row": "Tanya: \"{q}\"",
+      "subtitle": "Dijawab oleh AI dari isi situs ini"
+    }
   }
 }

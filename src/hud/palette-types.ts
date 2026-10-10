@@ -2,7 +2,7 @@ import type { FloorId, LocalizedText, RoomId } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
 import type { RoomKind } from "@/experience/missions/rooms";
 
-export type PaletteGroupId = "missions" | "recent" | "rooms" | "years" | "actions";
+export type PaletteGroupId = "ask" | "missions" | "recent" | "rooms" | "years" | "actions";
 
 export type PaletteActionId = "download-cv" | "copy-email" | "toggle-language" | "toggle-sound" | "quick-view";
 
@@ -10,7 +10,9 @@ export type PaletteTarget =
   | { type: "mission"; id: string }
   | { type: "room"; id: RoomId }
   | { type: "year"; year: number; room: RoomId; path: string }
-  | { type: "action"; id: PaletteActionId };
+  | { type: "action"; id: PaletteActionId }
+  /** Ask the HQ with the typed question (the row exists only while the feature is enabled). */
+  | { type: "ask"; q: string };
 
 /** One searchable palette row. Text is bilingual so search matches EN and ID terms in either locale. */
 export interface PaletteEntry {
@@ -36,4 +38,6 @@ export interface PaletteSearchOptions {
   recent?: readonly RoomId[];
   /** Max rows per group for a non-empty query. Default 8. */
   limitPerGroup?: number;
+  /** Ask the HQ is enabled: a question-like query gets an "Ask" row (see `looksLikeQuestion`). */
+  ask?: boolean;
 }

@@ -103,18 +103,25 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID or the CF_PAGES_PROJECT variable is not set; skipping the production deploy."
           fi
+      # Deploy from a checkout: `wrangler pages deploy` bundles functions/ (Ask the HQ) and reads
+      # the bindings in wrangler.toml from the working directory (docs/ask-runbook.md).
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
       - uses: actions/download-artifact@v8
         if: steps.gate.outputs.enabled == 'true'
         with:
           name: site-production
           path: out
-      - uses: oven-sh/setup-bun@v2
+      - name: Build the Ask the HQ knowledge pack
         if: steps.gate.outputs.enabled == 'true'
+        run: bun scripts/build-knowledge.ts
       - name: Deploy to Cloudflare Pages
         id: deploy
         if: steps.gate.outputs.enabled == 'true'
         run: |
-          bunx wrangler@3 pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true | tee deploy.log
+          bunx wrangler@4 pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true | tee deploy.log
           URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
       - name: Summary

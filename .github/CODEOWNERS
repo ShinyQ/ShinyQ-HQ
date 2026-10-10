@@ -1,0 +1,11 @@
+# Every change needs the owner's review. The explicit lines guard what reaches visitors and the
+# Ask the HQ model (T2, T11, T12): content, the Function, the knowledge pack builder, bindings,
+# security headers and CI.
+* @ShinyQ
+
+/content/** @ShinyQ
+/functions/** @ShinyQ
+/scripts/build-knowledge.ts @ShinyQ
+/wrangler.toml @ShinyQ
+/public/_headers @ShinyQ
+/.github/** @ShinyQ

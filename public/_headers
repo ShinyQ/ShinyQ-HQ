@@ -1,5 +1,7 @@
 # Cloudflare Pages response headers. Copied to out/_headers by next build.
 # See docs/deploy.md. HTML keeps the Cloudflare default (always revalidate).
+# CSP: Turnstile (Ask the HQ) adds https://challenges.cloudflare.com to script-src and frame-src only;
+# connect-src stays same-origin plus analytics (threat T13, tests/unit/csp.test.ts asserts the exact value).
 
 /*
   X-Content-Type-Options: nosniff
@@ -8,7 +10,7 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
 
 # Hashed build assets (JS, CSS, self-hosted next/font files) never change.
 /_next/static/*

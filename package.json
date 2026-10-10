@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && bun scripts/defer-scripts.ts",
-    "build:web": "next build && bun scripts/defer-scripts.ts",
+    "build": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts",
+    "build:web": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts",
     "serve": "bun scripts/serve-static.ts",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "bun scripts/build-knowledge.ts && next typegen && tsc --noEmit",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -19,7 +19,9 @@
     "e2e:shard": "bun scripts/e2e-shard.ts",
     "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts --workers=1",
     "screenshots:pages": "SCREENSHOTS=1 playwright test e2e/pageview-visual.spec.ts --workers=1",
-    "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json"
+    "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json",
+    "build:knowledge": "bun scripts/build-knowledge.ts",
+    "ask:eval": "bun scripts/ask-eval.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
