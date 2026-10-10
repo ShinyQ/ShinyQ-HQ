@@ -125,15 +125,16 @@ describe("Roof rooms in the drawer", () => {
     expect(await within(drawer).findByRole("status")).toHaveTextContent(roof.contact.email);
   });
 
-  it("CV kiosk: downloads the visitor's language first, the other language, and links /cv", () => {
+  it.each(["en", "id"] as const)("CV kiosk (%s): downloads the one CV PDF and links /cv", (locale) => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-    const drawer = open("RF:cv", "id");
+    const drawer = open("RF:cv", locale);
     const pdfs = within(drawer).getAllByRole("link").filter((a) => a.getAttribute("href")?.endsWith(".pdf"));
-    expect(pdfs.map((a) => a.getAttribute("href"))).toEqual([`/cv/${roof.cv.fileName}-id.pdf`, `/cv/${roof.cv.fileName}-en.pdf`]);
-    expect(pdfs[0]).toHaveAttribute("download", `${roof.cv.fileName}-id.pdf`);
+    expect(pdfs.map((a) => a.getAttribute("href"))).toEqual([`/cv/${roof.cv.fileName}.pdf`]);
+    expect(pdfs[0]).toHaveAttribute("download", `${roof.cv.fileName}.pdf`);
+    expect(pdfs[0]).toHaveTextContent(locale === "id" ? "Unduh CV (PDF)" : "Download CV (PDF)");
     pdfs[0].addEventListener("click", (e) => e.preventDefault());
     pdfs[0].click();
     expect(play).toHaveBeenCalledWith("click");
-    expect(within(drawer).getByRole("link", { name: "Buka halaman CV" })).toHaveAttribute("href", "/id/cv");
+    expect(within(drawer).getByRole("link", { name: locale === "id" ? "Buka halaman CV" : "Open the CV page" })).toHaveAttribute("href", `/${locale}/cv`);
   });
 });

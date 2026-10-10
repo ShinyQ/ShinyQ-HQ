@@ -66,7 +66,7 @@ async function serveFile(file: string, request: Request): Promise<Response> {
 
 export function startStaticServer({ dir = "out", port = 0 }: { dir?: string; port?: number } = {}): StaticServer {
   const root = path.resolve(dir);
-  if (!existsSync(root)) throw new Error(`Static directory not found: ${root}. Run "bun run build:web" first.`);
+  if (!existsSync(root)) throw new Error(`Static directory not found: ${root}. Run "bun run build" first.`);
   const redirects = loadRedirects(root);
   const server = Bun.serve({
     port,

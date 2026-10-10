@@ -162,7 +162,7 @@ All nine owner decisions were resolved on 2026-10-09 and are recorded in [append
 | i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
 | Audio | Web Audio API wrapper, lazy-loaded, on by default (owner decision; starts on the first gesture) |
 | Analytics | Cloudflare Web Analytics (cookieless) |
-| CV PDF | Rendered from the `/cv` route with Playwright at build time, one per locale |
+| CV PDF | The owner's own PDF, committed as-is at `public/cv/` (one English file for both locales; owner decision, Oct 10, 2026) |
 | Testing | Vitest (unit), Playwright (e2e and visual at 3 viewports) |
 | Package manager | Bun |
 | Hosting | Cloudflare Pages (`kurniadi.pages.dev`), deployed by GitHub Actions |
@@ -178,7 +178,7 @@ All routes are prefixed with the locale (`/en/...`, `/id/...`); `/` redirects by
 | `/journey` and `/journey/[slug]` | Career timeline and entries (L2) |
 | `/library` and `/blog/[slug]` | Blog and publications (L4) |
 | `/contact` | Roof content |
-| `/cv` | Printable CV page plus PDF download |
+| `/cv` | CV PDF download plus inline preview |
 | `/quick` | Quick view: all content on one page |
 
 ### 4.3 Module boundaries
@@ -272,7 +272,7 @@ Rules:
 | Sound | Ambient sound and UI blips, on by default from the first gesture, toggle persists |
 | Analytics | Cloudflare Web Analytics, cookieless, no consent banner |
 | Domain | Launch on `kurniadi.pages.dev`; repoint `kurniadi.dev` DNS later |
-| CV | Generated from site data at build time (EN and ID), so it is always in sync and public-safe |
+| CV | The owner's PDF served as-is (one file, English), replacing the earlier build-time export from site data |
 | Availability | Roof beacon: "Open to interesting software and AI engineering conversations" |
 | Guide | Deterministic missions only, no AI backend |
 

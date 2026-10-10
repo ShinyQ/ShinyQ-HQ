@@ -37,15 +37,13 @@ jobs:
       - run: bun run test
 
   site:
-    name: Build static export and CV
+    name: Build static export
     runs-on: ubuntu-latest
-    # Runs next to `check`, not after it: the e2e shards only need the build.
+    # Runs next to `check`, not after it: the e2e shards only need the build. No browser here:
+    # the CV is a committed PDF (public/cv/), not printed from the site.
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-        with:
-          # The CV PDFs are printed with Chromium.
-          playwright: "true"
       - name: Set site URL
         # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
         # default in src/lib/site.ts applies otherwise.
@@ -60,7 +58,7 @@ jobs:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - name: Build static export and CV PDFs
+      - name: Build static export
         run: bun run build
       - uses: actions/upload-artifact@v7
         with:
@@ -96,7 +94,8 @@ jobs:
           retention-days: 3
 
   build:
-    # Keeps the historical name so branch rules and status checks keep working.
+    # Keeps the historical name (from when the build printed the CV) so branch rules and status
+    # checks keep working.
     name: Build, CV and e2e
     runs-on: ubuntu-latest
     needs: [check, site, e2e]

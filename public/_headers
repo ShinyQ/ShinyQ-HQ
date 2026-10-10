@@ -8,7 +8,7 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
 
 # Hashed build assets (JS, CSS, self-hosted next/font files) never change.
 /_next/static/*
@@ -17,7 +17,14 @@
 /brand/*
   Cache-Control: public, max-age=604800
 
+# The CV PDF is previewed in an iframe on /{locale}/cv: allow same-origin framing for it only.
+# "!" detaches the headers set by /* above (Cloudflare Pages would otherwise join both values).
+# No default-src here: a restrictive CSP on the PDF response can block the browser PDF viewer.
 /cv/*
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors 'self'
+  X-Frame-Options: SAMEORIGIN
   Cache-Control: public, max-age=3600
 
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.

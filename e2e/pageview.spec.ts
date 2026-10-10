@@ -93,6 +93,33 @@ test("Home keeps the deep-link anchors used by the room catalog", async ({ page 
   for (const id of ["cv", "channels"]) await expect(page.locator(`#${id}`)).toBeAttached();
 });
 
+const cvPdf = `/cv/${content.floors.roof.cv.fileName}.pdf`;
+
+for (const [locale, label] of [
+  ["en", "Download CV (PDF)"],
+  ["id", "Unduh CV (PDF)"],
+] as const) {
+  test(`/${locale}/cv offers the one CV PDF as a download and an inline preview`, async ({ page }) => {
+    await page.goto(staticTier(`/${locale}/cv`));
+    const download = page.getByRole("link", { name: label });
+    await expect(download).toHaveAttribute("href", cvPdf);
+    await expect(download).toHaveAttribute("download", cvPdf.split("/").pop()!);
+    await expect(page.getByTestId("cv-preview")).toHaveAttribute("src", cvPdf);
+    await expect(page.locator(`main a[href="${cvPdf}"][target="_blank"]`)).toHaveCount(1);
+  });
+}
+
+test("every CV link points to the one PDF, in both languages", async ({ page }) => {
+  for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
+    await page.goto(staticTier(path));
+    const links = page.locator('main a[href$=".pdf"]');
+    expect(await links.count(), path).toBeGreaterThan(0);
+    for (const href of await links.evaluateAll((as) => as.map((a) => [a.getAttribute("href"), a.getAttribute("download")]))) {
+      expect(href, path).toEqual([cvPdf, cvPdf.split("/").pop()]);
+    }
+  }
+});
+
 test("no horizontal overflow on a 390 px phone", async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   for (const path of TEMPLATES) {

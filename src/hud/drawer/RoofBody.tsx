@@ -80,13 +80,11 @@ function ContactBody({ view }: { view: RoomView }) {
   );
 }
 
-/** CV kiosk: per-locale PDF downloads (visitor's language first) and the /cv page. */
-function CvBody({ view, locale }: RoomBodyProps) {
+/** CV kiosk: the owner's PDF (one file for every locale) and the /cv page. */
+function CvBody({ view }: { view: RoomView }) {
   const t = useTranslations("drawer.rooms");
   const items = itemsOf(view);
-  const pdfs = items
-    .filter((i) => i.href?.endsWith(".pdf"))
-    .sort((a, b) => Number(b.href!.endsWith(`-${locale}.pdf`)) - Number(a.href!.endsWith(`-${locale}.pdf`)));
+  const pdfs = items.filter((i) => i.href?.endsWith(".pdf"));
   const pages = items.filter((i) => i.href && !i.href.endsWith(".pdf") && i.href.startsWith("/"));
   return (
     <section className="space-y-3">
@@ -97,9 +95,10 @@ function CvBody({ view, locale }: RoomBodyProps) {
             <a
               href={pdf.href}
               download={pdf.href!.split("/").pop()}
+              type="application/pdf"
               onClick={() => audio.play("click")}
               className={i === 0 ? ACTION : SECONDARY}
-              data-testid={`cv-pdf-${pdf.href!.slice(-6, -4)}`}
+              data-testid="cv-pdf"
             >
               {pdf.title}
             </a>
@@ -118,6 +117,6 @@ function CvBody({ view, locale }: RoomBodyProps) {
 }
 
 /** Single-pane body for Roof rooms (registered for kind "roof" in `bodies.tsx`). */
-export function RoofBody({ view, locale }: RoomBodyProps) {
-  return view.id === "RF:cv" ? <CvBody view={view} locale={locale} /> : <ContactBody view={view} />;
+export function RoofBody({ view }: RoomBodyProps) {
+  return view.id === "RF:cv" ? <CvBody view={view} /> : <ContactBody view={view} />;
 }

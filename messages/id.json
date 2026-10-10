@@ -43,7 +43,6 @@
     "next": "Berikutnya",
     "external": "terbuka di tab baru",
     "downloadCv": "Unduh CV",
-    "downloadCvLocale": "Unduh CV ({locale})",
     "email": "Email",
     "copyEmail": "Salin email",
     "copied": "Tersalin",
@@ -203,20 +202,15 @@
     "beacon": "Beacon",
     "channels": "Tautan kontak",
     "cvTitle": "Kios CV",
-    "cvIntro": "Unduh CV saya dalam bahasa Inggris atau Indonesia. Keduanya memakai data yang sama dengan situs ini.",
+    "cvIntro": "Unduh CV saya dalam format PDF.",
     "location": "Lokasi"
   },
   "cv": {
     "title": "CV",
-    "summary": "Ringkasan",
-    "experience": "Pengalaman profesional",
-    "projects": "Proyek pilihan",
-    "education": "Pendidikan",
-    "certifications": "Sertifikasi",
-    "awards": "Penghargaan",
-    "skills": "Keahlian",
-    "print": "PDF yang dapat diunduh dibuat dari halaman ini.",
-    "awardsSummary": "{count} raihan peringkat kompetisi dari 2018 hingga 2022, di antaranya:"
+    "intro": "CV saya dalam format PDF, siap diunduh atau dibaca di bawah.",
+    "download": "Unduh CV (PDF)",
+    "preview": "Pratinjau CV (PDF)",
+    "fallback": "Pratinjau tidak tampil di browser ini? Buka PDF-nya."
   },
   "notFound": {
     "title": "Ruang tidak ditemukan",
@@ -224,7 +218,7 @@
     "home": "Kembali ke Lobi"
   },
   "footer": {
-    "built": "Situs dan CV memakai satu dataset yang tervalidasi.",
+    "built": "Situs ini berjalan di atas satu dataset yang tervalidasi.",
     "source": "Lihat kode sumber di GitHub",
     "pages": "Halaman",
     "elsewhere": "Tautan lain"
@@ -354,7 +348,7 @@
       "lectern": "Meja baca",
       "read": "Baca",
       "comms": "Tautan kontak",
-      "cvHint": "Buka pilihan unduhan CV"
+      "cvHint": "Buka unduhan CV"
     },
     "view": {
       "label": "Kontrol tampilan",
@@ -420,7 +414,7 @@
       "availability": "Ketersediaan",
       "downloads": "Unduhan",
       "cvPage": "Buka halaman CV",
-      "cvPdf": "PDF CV ({locale})",
+      "cvPdf": "Unduh CV (PDF)",
       "placings": "Hasil kompetisi",
       "models": "Model Hugging Face",
       "readPost": "Baca tulisan",

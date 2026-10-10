@@ -10,6 +10,7 @@ import { createMissionRunner, type MissionRunner } from "@/experience/missions/r
 import { isAutoOpenClaimed, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
+import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { CommandPalette } from "./CommandPalette";
 import { onHudCommand } from "./events";
 import type { HudIndex } from "./index-data";
@@ -169,8 +170,8 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     switch (action) {
       case "download-cv": {
         const link = document.createElement("a");
-        link.href = `/cv/${index.cvFileName}-${locale}.pdf`;
-        link.download = `${index.cvFileName}-${locale}.pdf`;
+        link.href = cvPdfPath(index.cvFileName);
+        link.download = cvDownloadName(index.cvFileName);
         document.body.append(link);
         link.click();
         link.remove();

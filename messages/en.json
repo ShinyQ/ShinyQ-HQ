@@ -43,7 +43,6 @@
     "next": "Next",
     "external": "opens in a new tab",
     "downloadCv": "Download CV",
-    "downloadCvLocale": "Download CV ({locale})",
     "email": "Email",
     "copyEmail": "Copy email",
     "copied": "Copied",
@@ -203,20 +202,15 @@
     "beacon": "Beacon",
     "channels": "Contact links",
     "cvTitle": "CV kiosk",
-    "cvIntro": "Download my CV in English or Indonesian. Both versions use the same data as this site.",
+    "cvIntro": "Download my CV as a PDF.",
     "location": "Location"
   },
   "cv": {
     "title": "CV",
-    "summary": "Summary",
-    "experience": "Professional experience",
-    "projects": "Selected projects",
-    "education": "Education",
-    "certifications": "Certifications",
-    "awards": "Awards",
-    "skills": "Skills",
-    "print": "The downloadable PDF is generated from this page.",
-    "awardsSummary": "{count} competition placings from 2018 to 2022, including:"
+    "intro": "My CV as a PDF, ready to download or read below.",
+    "download": "Download CV (PDF)",
+    "preview": "CV preview (PDF)",
+    "fallback": "No preview in this browser? Open the PDF."
   },
   "notFound": {
     "title": "Room not found",
@@ -224,7 +218,7 @@
     "home": "Return to the Lobby"
   },
   "footer": {
-    "built": "The site and CV share one validated dataset.",
+    "built": "The site runs on one validated dataset.",
     "source": "View source on GitHub",
     "pages": "Pages",
     "elsewhere": "Elsewhere"
@@ -354,7 +348,7 @@
       "lectern": "Reading desk",
       "read": "Read",
       "comms": "Contact links",
-      "cvHint": "Open CV downloads"
+      "cvHint": "Open the CV download"
     },
     "view": {
       "label": "View controls",
@@ -420,7 +414,7 @@
       "availability": "Availability",
       "downloads": "Downloads",
       "cvPage": "Open the CV page",
-      "cvPdf": "CV PDF ({locale})",
+      "cvPdf": "Download CV (PDF)",
       "placings": "Competition results",
       "models": "Hugging Face models",
       "readPost": "Read post",

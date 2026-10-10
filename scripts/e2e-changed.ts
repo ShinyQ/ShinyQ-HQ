@@ -3,7 +3,7 @@
  * Usage: bun scripts/e2e-changed.ts [--base origin/main] [--smoke | --all] [--dry] [extra playwright args]
  *
  * Changed paths = commits since the merge base with --base, plus staged, unstaged and untracked
- * files. Needs a current `out/` (`bun run build:web`); prints the CV PDFs (2 s) when they are missing.
+ * files. Needs a current `out/` (`bun run build`, which `verify:quick` runs).
  */
 import { existsSync } from "node:fs";
 import { SMOKE_SPECS, specsForChanges } from "./e2e-plan";
@@ -62,13 +62,8 @@ function main() {
   if (dry || (specs !== "all" && specs.length === 0)) return;
 
   if (!existsSync("out/en.html") && !existsSync("out/en/index.html")) {
-    console.error("out/ is missing or stale. Run `bun run build:web` (or `bun run verify:quick`) first.");
+    console.error("out/ is missing or stale. Run `bun run build` (or `bun run verify:quick`) first.");
     process.exit(1);
-  }
-  if (!existsSync("out/cv")) {
-    // `build:web` (verify:quick) skips the CV PDFs; the CV specs need them and printing takes seconds.
-    const cv = Bun.spawnSync(["bun", "scripts/build-cv.ts"], { stdout: "inherit", stderr: "inherit" });
-    if (cv.exitCode !== 0) process.exit(cv.exitCode ?? 1);
   }
   const files = specs === "all" ? [] : specs.map((s) => `e2e/${s}.spec.ts`);
   const run = Bun.spawnSync(["bunx", "playwright", "test", ...files, ...args], { stdout: "inherit", stderr: "inherit" });

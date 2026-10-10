@@ -4,12 +4,12 @@ import { ContactPanel } from "@/components/page/About";
 import { Marker, SectionSplit } from "@/components/page/Layout";
 import { CertificationList, PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { getCertifications, getProfile, getRoof, getSkills } from "@/content/load";
-import { LOCALES } from "@/content/schema";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { cvPdfPath, pageMetadata } from "@/lib/site";
+import { cvDownloadName, cvPdfPath } from "@/lib/cv";
+import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/contact">): Promise<Metadata> {
   const locale = assertLocale((await params).locale);
@@ -67,13 +67,11 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
 
       <SectionSplit id="cv" title={t("cvTitle")} intro={t("cvIntro")}>
         <ul className="flex flex-wrap items-center gap-3">
-          {LOCALES.map((l, i) => (
-            <li key={l}>
-              <a href={cvPdfPath(roof.cv.fileName, l)} hrefLang={l} className={`pv-btn ${i === 0 ? "pv-btn-primary" : "pv-btn-ghost"}`}>
-                {tc("downloadCvLocale", { locale: l.toUpperCase() })} (PDF)
-              </a>
-            </li>
-          ))}
+          <li>
+            <a href={cvPdfPath(roof.cv.fileName)} download={cvDownloadName(roof.cv.fileName)} type="application/pdf" className="pv-btn pv-btn-primary">
+              {tc("downloadCv")} (PDF)
+            </a>
+          </li>
           <li>
             <Link href="/cv" className="pv-go ml-2">
               /{locale}/cv

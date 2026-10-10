@@ -1,7 +1,7 @@
 import { getContact, getRoof } from "../load";
 import type { Locale } from "../schema";
-import { cvPdfPath } from "@/lib/site";
-import { chain, fill, linkLogo, messages, roomId, single } from "./shared";
+import { cvPdfPath } from "@/lib/cv";
+import { chain, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** RF Roof (Phase 5a): comms terminals and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
@@ -38,7 +38,7 @@ export function buildRoofViews(locale: Locale): RoomView[] {
         {
           title: m.drawer.rooms.downloads,
           items: [
-            ...(["en", "id"] as const).map((l) => ({ title: fill(m.drawer.rooms.cvPdf, { locale: l.toUpperCase() }), href: cvPdfPath(roof.cv.fileName, l), external: true })),
+            { title: m.drawer.rooms.cvPdf, href: cvPdfPath(roof.cv.fileName), external: true },
             { title: m.drawer.rooms.cvPage, href: "/cv" },
           ],
         },

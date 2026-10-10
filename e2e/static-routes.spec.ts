@@ -1,4 +1,4 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { LOCALES, content, heroPod, staticRoutes } from "./routes";
@@ -12,7 +12,8 @@ for (const locale of LOCALES) {
       expect(response?.status()).toBe(200);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       await expect(page.locator("h1").first()).toBeVisible();
-      expect((await page.locator("main").innerText()).length).toBeGreaterThan(200);
+      // /cv is a download button and a PDF preview; every other page carries real text.
+      expect((await page.locator("main").innerText()).length).toBeGreaterThan(route.endsWith("/cv") ? 40 : 200);
       expect(errors).toEqual([]);
     });
   }
@@ -50,11 +51,10 @@ test("unknown routes return the 404 page", async ({ page }) => {
   expect(response?.status()).toBe(404);
 });
 
-test("CV PDFs exist for every locale", () => {
-  test.skip(process.env.SKIP_CV === "1", "CV generation skipped");
-  for (const locale of LOCALES) {
-    const file = path.join("out", "cv", `${content.floors.roof.cv.fileName}-${locale}.pdf`);
-    expect(existsSync(file), file).toBe(true);
-    expect(statSync(file).size).toBeGreaterThan(10_000);
-  }
+test("the owner's CV PDF is exported byte for byte, once for every locale", () => {
+  const name = `${content.floors.roof.cv.fileName}.pdf`;
+  const file = path.join("out", "cv", name);
+  expect(existsSync(file), file).toBe(true);
+  expect(readFileSync(file).equals(readFileSync(path.join("public", "cv", name)))).toBe(true);
+  expect(readdirSync(path.join("out", "cv"))).toEqual([name]);
 });

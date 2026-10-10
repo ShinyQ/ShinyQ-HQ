@@ -85,7 +85,7 @@ Hologram views: the 6 hero pods (3 per wing).
 |---|---|
 | Comms | Email, LinkedIn (`/in/kurniadiwijaya`), GitHub (`ShinyQ`), Hugging Face (`ShinyQ`), Medium |
 | Beacon | "Open to interesting software and AI engineering conversations" (EN/ID) |
-| CV kiosk | CV generated from site data per locale (public-safe by construction, resolves C3 for the site) |
+| CV kiosk | The owner's CV PDF, served as-is for both locales (owner decision, Oct 10, 2026; replaces the per-locale export from site data) |
 
 ## 7. Owner decisions (resolved 2026-10-09)
 

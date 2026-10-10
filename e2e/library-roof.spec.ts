@@ -127,22 +127,22 @@ test.describe("missions to the Library and the Roof", () => {
     expect((await snapshot(page)).phase).toBe("explore");
   });
 
-  test("cv drives to the kiosk and links the per-locale PDFs", async ({ page }) => {
+  test("cv drives to the kiosk and links the one CV PDF", async ({ page }) => {
     await enterFloorRoute(page, "/en/library");
     await runMission(page, "cv");
     await waitForRoom(page, "RF:cv");
     await expectRoverNear(page, { x: 10, z: 9.4 });
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     const panel = page.getByTestId("room-drawer");
-    const en = panel.getByTestId("cv-pdf-en");
-    await expect(en).toHaveAttribute("href", "/cv/kurniadi-ahmad-wijaya-cv-en.pdf");
-    await expect(panel.getByTestId("cv-pdf-id")).toHaveAttribute("href", "/cv/kurniadi-ahmad-wijaya-cv-id.pdf");
-    const response = await page.request.get("/cv/kurniadi-ahmad-wijaya-cv-en.pdf");
+    const pdf = panel.getByTestId("cv-pdf");
+    await expect(pdf).toHaveCount(1);
+    await expect(pdf).toHaveAttribute("href", "/cv/kurniadi-ahmad-wijaya-cv.pdf");
+    const response = await page.request.get("/cv/kurniadi-ahmad-wijaya-cv.pdf");
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toContain("pdf");
     const download = page.waitForEvent("download");
-    await en.click();
-    expect((await download).suggestedFilename()).toBe("kurniadi-ahmad-wijaya-cv-en.pdf");
+    await pdf.click();
+    expect((await download).suggestedFilename()).toBe("kurniadi-ahmad-wijaya-cv.pdf");
     await expect(panel.getByRole("link", { name: "Open the CV page" })).toHaveAttribute("href", "/en/cv");
   });
 
