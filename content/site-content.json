@@ -6036,10 +6036,60 @@
               "redacted": true
             },
             {
-              "src": "/media/ai-solutions-assistant/04-project-page.webp",
+              "src": "/media/ai-solutions-assistant/04-studio-analytics.webp",
+              "alt": {
+                "en": "Studio dashboard overview: cookieless page views, unique visitors, project views and outbound clicks over 30 days",
+                "id": "Overview dashboard Studio: page view tanpa cookie, unique visitor, project view, dan outbound click selama 30 hari"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/05-studio-conversations.webp",
+              "alt": {
+                "en": "Assistant conversation analytics: answer success, response latency percentiles and average tokens",
+                "id": "Analitik percakapan asisten: answer success, persentil latensi respons, dan rata-rata token"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/06-studio-projects.webp",
+              "alt": {
+                "en": "Project catalogue manager with categories, tech tags, featured flags and search",
+                "id": "Pengelola katalog proyek dengan kategori, tech tag, penanda featured, dan pencarian"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/07-studio-project-editor.webp",
+              "alt": {
+                "en": "Project editor with basics, content, media and case study tabs and a publish control",
+                "id": "Editor proyek dengan tab basics, content, media, dan case study serta kontrol publish"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/08-project-page.webp",
               "alt": {
                 "en": "Project page for the AI recruitment solution with a live demo link and product preview",
                 "id": "Halaman proyek solusi AI recruitment dengan tautan live demo dan pratinjau produk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-solutions-assistant/09-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home page with the project matcher, the portfolio and a project page",
+                "id": "Tampilan mobile untuk beranda dengan project matcher, portofolio, dan halaman proyek"
               },
               "width": 1600,
               "height": 1000,
@@ -7043,6 +7093,16 @@
               "alt": {
                 "en": "About page in Indonesian, showing the bilingual content model",
                 "id": "Halaman About dalam bahasa Indonesia, menunjukkan model konten bilingual"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/solutions-marketing-site/07-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home hero, outcome navigator and engagements catalogue",
+                "id": "Tampilan mobile untuk hero beranda, outcome navigator, dan katalog engagement"
               },
               "width": 1600,
               "height": 1000,
