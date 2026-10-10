@@ -67,6 +67,13 @@ export interface DoorLatch {
   /** Zone the rover is in and when it entered it (for the dwell). */
   zone?: RoomId | null;
   since?: number;
+  /**
+   * Room opened by a mission, a click or the palette, whose pad must not fire again until the rover
+   * has been on it and left (or has stopped elsewhere): a drawer can open while the rover is still
+   * driving toward the pad, and closing it must not reopen the room when the rover gets there.
+   */
+  consumed?: RoomId | null;
+  consumedSeen?: boolean;
 }
 
 export interface DoorStep {
@@ -80,7 +87,12 @@ export interface DoorStep {
   /** Rover heading (radians, forward is (sin, cos)) and the door's inward direction. */
   heading?: number;
   facing?: Vec2;
+  /** The room whose drawer is open right now (store `activeRoom` while the phase is "room"). */
+  openRoom?: RoomId | null;
 }
+
+/** Below this speed (u/s) the rover counts as stopped for releasing a consumed pad it never reached. */
+const STOPPED = 0.1;
 
 /** Driving within about 45 degrees of a door's inward direction counts as heading into it. */
 export const DOOR_HEADING = Math.SQRT1_2;
@@ -91,7 +103,16 @@ export const DOOR_HEADING = Math.SQRT1_2;
  * on the pad, or stays on it for DOOR_DWELL. A path or a fast manual drive passing over a pad does not open it, and a mission
  * drive resolves before the drawer opens.
  */
-export function stepDoorLatch(latch: DoorLatch, current: RoomId | null, { explore, following, now = 0, speed = 0, heading, facing }: DoorStep): RoomId | null {
+export function stepDoorLatch(latch: DoorLatch, current: RoomId | null, { explore, following, now = 0, speed = 0, heading, facing, openRoom = null }: DoorStep): RoomId | null {
+  if (openRoom && openRoom !== latch.consumed) {
+    latch.consumed = openRoom;
+    latch.consumedSeen = false;
+  }
+  if (latch.consumed) {
+    if (current === latch.consumed) latch.consumedSeen = true;
+    // Released once the rover has left the pad, or has come to rest without ever reaching it.
+    else if (latch.consumedSeen || (!openRoom && !following && speed < STOPPED)) latch.consumed = null;
+  }
   if (!current) {
     latch.room = null;
     latch.zone = null;
@@ -106,7 +127,7 @@ export function stepDoorLatch(latch: DoorLatch, current: RoomId | null, { explor
     latch.room = current;
     return null;
   }
-  if (current === latch.room || following) return null;
+  if (current === latch.room || current === latch.consumed || following) return null;
   const into = heading !== undefined && facing !== undefined && Math.sin(heading) * facing.x + Math.cos(heading) * facing.z >= DOOR_HEADING;
   if (speed >= DOOR_SLOW && !into && now - (latch.since ?? now) < DOOR_DWELL) return null;
   latch.room = current;

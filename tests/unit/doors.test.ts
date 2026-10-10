@@ -111,3 +111,41 @@ describe("door facings", () => {
       }
   });
 });
+
+describe("a closed room never reopens when the rover reaches its pad", () => {
+  const step = (o: Partial<{ explore: boolean; following: boolean; speed: number; openRoom: "L3:a" | null; now: number }>) => ({
+    explore: true,
+    following: false,
+    speed: 0,
+    now: 0,
+    openRoom: null,
+    ...o,
+  });
+
+  it("consumes the pad of a room opened before the rover got there", () => {
+    const latch: DoorLatch = { room: null };
+    // A mission opens the drawer while the rover is still driving toward the pad.
+    expect(stepDoorLatch(latch, null, step({ explore: false, following: true, speed: 4, openRoom: "L3:a" }))).toBeNull();
+    // Esc: back to explore, the rover finishes its path onto the pad and stops there.
+    expect(stepDoorLatch(latch, null, step({ following: true, speed: 4 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ following: true, speed: 2 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0 }))).toBeNull();
+    // Leaving the pad releases it; coming back on purpose opens the room again.
+    expect(stepDoorLatch(latch, null, step({ speed: 3 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0 }))).toBe("L3:a");
+  });
+
+  it("keeps the pad consumed while the rover is still sliding toward it", () => {
+    const latch: DoorLatch = { room: null };
+    stepDoorLatch(latch, null, step({ explore: false, openRoom: "L3:a", speed: 3 }));
+    expect(stepDoorLatch(latch, null, step({ speed: 3 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 1 }))).toBeNull();
+  });
+
+  it("releases an unreached pad once the rover stops elsewhere", () => {
+    const latch: DoorLatch = { room: null };
+    stepDoorLatch(latch, null, step({ explore: false, openRoom: "L3:a" }));
+    expect(stepDoorLatch(latch, null, step({ speed: 0 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0 }))).toBe("L3:a");
+  });
+});
