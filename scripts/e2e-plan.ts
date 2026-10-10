@@ -65,7 +65,7 @@ export const RULES: Rule[] = [
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|routes)\.tsx?$/, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
-  { test: /^public\/_(headers|redirects)$|^scripts\/(serve-static|build-cv)\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^public\/_(headers|redirects)$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
   { test: /^src\/(app|components)\/|^src\/content\/pageview\.ts$/, specs: ["pageview", "static-routes", "gallery"] },
   { test: /^src\/i18n\//, specs: ["static-routes", "experience"] },

@@ -25,13 +25,11 @@ env:
 
 jobs:
   site:
-    name: Build static export and CV
+    name: Build static export
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-        with:
-          playwright: "true"
       - name: Set site URL
         # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
         # default in src/lib/site.ts applies otherwise.
@@ -46,7 +44,7 @@ jobs:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - name: Build static export and CV PDFs
+      - name: Build static export
         run: bun run build
       - uses: actions/upload-artifact@v7
         with:
