@@ -483,10 +483,15 @@ test.describe("orbit on every floor", () => {
 
 test("the click marker appears where the floor is clicked and fades", async ({ page }) => {
   await enterHQ(page);
+  // Input sent before the scene loop and camera are live is dropped (AGENTS.md, Fast verification).
+  await waitForCameraSettle(page);
+  type M = { __hq: { marker: { visible: boolean; opacity: number; x: number; z: number }; rover: { x: number; z: number } } };
+  const before = await page.evaluate(() => ({ ...(window as unknown as M).__hq.marker }));
   const viewport = page.viewportSize()!;
   // Lower middle of the view is open floor in front of the rover at the Lobby spawn.
   await page.getByTestId("hq-world").click({ position: { x: viewport.width / 2 + 160, y: viewport.height - 140 } });
-  type M = { __hq: { marker: { visible: boolean; opacity: number } } };
-  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.visible)).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.opacity), { timeout: 5_000 }).toBeLessThan(0.05);
+  // The ring lands where the floor was clicked (its position persists after the fade, so a slow frame cannot miss it)...
+  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker).then((m) => m.x !== before.x || m.z !== before.z)).toBe(true);
+  // ...and fades out.
+  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.opacity), { timeout: 10_000 }).toBeLessThan(0.05);
 });

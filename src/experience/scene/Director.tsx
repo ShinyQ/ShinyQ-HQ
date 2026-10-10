@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
-import type { FloorId } from "@/content/schema";
+import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
 import { scrubTarget } from "../floors/career/layout";
@@ -53,8 +53,20 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     now: 0,
     prevPhase: "",
     door: { room: null } as DoorLatch,
-    /** Rover position at the end of the previous frame (swept door checks). */
+    /**
+     * Room opened since the last frame. A drawer can open and close again between two frames (a
+     * quick Esc on a slow device), so the door latch learns about opens from the store, not the phase.
+     */
+    opened: null as RoomId | null,
   });
+
+  useEffect(
+    () =>
+      store.subscribe((s, prev) => {
+        if (s.activeRoom && s.activeRoom !== prev.activeRoom) state.current.opened = s.activeRoom;
+      }),
+    [store],
+  );
 
   useEffect(() => {
     const missionRunning = () => store.getState().mission?.status === "running";
@@ -257,7 +269,16 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     // for a moment. Driving past (or along a path through) a pad does not open the room.
     const doors = layouts[s.floor].doors;
     const door = s.ride ? null : doorAt(doors, controller.pose);
+    // Opening a room ends any drive toward it, so the rover does not keep rolling onto the pad behind
+    // (or after) the drawer. Every drive and ride closes the room first, so no other path is cut.
+    const opened = s.phase === "room" ? s.activeRoom : local.opened;
+    local.opened = null;
+    if (opened && controller.following) {
+      controller.clearPath();
+      roverRuntime.target = null;
+    }
     const open = stepDoorLatch(local.door, door?.room ?? null, {
+      openRoom: opened,
       explore: s.phase === "explore",
       // A running mission opens its rooms itself; a pad firing first would reopen after the visitor closes it.
       following: controller.following || s.mission?.status === "running",
