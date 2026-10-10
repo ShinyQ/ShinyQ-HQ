@@ -20,7 +20,7 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 | Quick view | Top-right button | Top-right button | Inside the menu (≡) |
 | Search (⌘K) | Top-right icon button with a `⌘K` hint | Icon button | Icon button next to the menu |
 | Language toggle | Top-right `EN / ID` segmented control | Same | Inside the menu |
-| Sound toggle | Top-right speaker icon (muted by default) | Same | Inside the menu |
+| Sound toggle | Top-right speaker icon (on by default, starts on the first gesture; appendix 05 section 5) | Same | Inside the menu |
 | Elevator panel | Right edge, vertical, 5 round buttons | Right edge | Right edge, compact (36 px buttons) |
 | Room drawer | Right side panel, 420 px, full height minus margins | Portrait: bottom sheet. Landscape: side panel. | Bottom sheet with snap points at 45% and 92% height |
 | Rover Terminal | Anchored next to the rover, 360 px | Same | Bottom sheet |

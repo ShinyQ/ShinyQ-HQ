@@ -208,19 +208,29 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("audio engine: muted default and lazy init", () => {
-  it("is muted by default and creates no context on import, creation or play", () => {
-    const { engine, createContext } = setup();
+describe("audio engine: on by default and lazy init", () => {
+  it("is on for a visitor who never chose, but creates no context on import or creation", () => {
+    const { engine, createContext, storage } = setup();
+    expect(engine.isMuted()).toBe(false);
+    expect(createContext).not.toHaveBeenCalled();
+    // The default is not written: only an explicit choice is stored.
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it("keeps a stored muted choice: no context, no sound, even after a gesture", () => {
+    const { engine, createContext, doc } = setup("off");
     expect(engine.isMuted()).toBe(true);
     engine.play("beep");
-    engine.play("click");
     engine.setRumble(9);
+    doc.fire("pointerdown");
+    doc.fire("click");
     expect(createContext).not.toHaveBeenCalled();
     expect(FakeAudioContext.instances).toHaveLength(0);
   });
 
-  it("treats invalid stored values as muted", () => {
-    expect(setup("yes").engine.isMuted()).toBe(true);
+  it("treats invalid stored values as the default (on)", () => {
+    expect(setup("yes").engine.isMuted()).toBe(false);
+    expect(setup("on").engine.isMuted()).toBe(false);
     expect(setup("off").engine.isMuted()).toBe(true);
   });
 
@@ -259,7 +269,7 @@ describe("audio engine: muted default and lazy init", () => {
   });
 
   it("toggleMuted flips the state", () => {
-    const { engine } = setup();
+    const { engine } = setup("off");
     engine.toggleMuted();
     expect(engine.isMuted()).toBe(false);
     engine.toggleMuted();
@@ -277,19 +287,60 @@ describe("audio engine: persisted on", () => {
     expect(ctx().resume).toHaveBeenCalled();
   });
 
-  it("creates and resumes the context on the first user gesture", () => {
-    const { doc, createContext, ctx } = setup("on");
+  it("creates and resumes the context (and the ambient hum) on the first user gesture", async () => {
+    const { doc, createContext, ctx } = setup();
     expect(doc.count("pointerdown")).toBe(1);
     doc.fire("pointerdown");
     expect(createContext).toHaveBeenCalledTimes(1);
     expect(ctx().resume).toHaveBeenCalled();
+    expect(ctx().oscillators.length).toBeGreaterThan(0);
+    await Promise.resolve();
+    await Promise.resolve();
     expect(doc.count("pointerdown")).toBe(0);
     expect(doc.count("keydown")).toBe(0);
   });
 
+  it("starts on the end of a tap on touch screens", async () => {
+    const { doc, createContext } = setup();
+    expect(doc.count("touchend")).toBe(1);
+    doc.fire("touchend");
+    expect(createContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps listening when the browser refuses to start the context", async () => {
+    const { doc, ctx } = setup();
+    doc.fire("keydown");
+    ctx().resume.mockImplementationOnce(() => Promise.resolve());
+    ctx().state = "suspended";
+    doc.fire("click");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(doc.count("click")).toBe(1);
+  });
+
   it("does not register gesture listeners when muted", () => {
-    const { doc } = setup();
+    const { doc } = setup("off");
     expect(doc.count("pointerdown")).toBe(0);
+  });
+});
+
+describe("audio engine: paused outside the 3D view", () => {
+  it("silences play and rumble while paused and resumes on unpause, keeping the setting", () => {
+    const { engine, ctx, storage } = setup();
+    engine.play("beep");
+    const master = masterOf(ctx());
+    const before = ctx().sources.length;
+    engine.setPaused(true);
+    expect(engine.isPaused()).toBe(true);
+    expect(engine.isMuted()).toBe(false);
+    expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, expect.any(Number), expect.any(Number));
+    vi.runAllTimers();
+    expect(ctx().suspend).toHaveBeenCalled();
+    engine.play("ding");
+    expect(ctx().sources.length).toBe(before);
+    engine.setPaused(false);
+    expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, expect.any(Number), expect.any(Number));
+    expect(storage.setItem).not.toHaveBeenCalled();
   });
 });
 
@@ -412,7 +463,7 @@ describe("audio engine: visibility, subscribe, dispose", () => {
   });
 
   it("notifies subscribers on mute changes and supports unsubscribe", () => {
-    const { engine } = setup();
+    const { engine } = setup("off");
     const listener = vi.fn();
     const unsubscribe = engine.subscribe(listener);
     engine.setMuted(false);
@@ -444,7 +495,7 @@ describe("audio engine: SSR and missing Web Audio", () => {
   it("works without storage, document or AudioContext", () => {
     expect(typeof window).toBe("undefined");
     const engine = createAudioEngine({ storage: null, doc: null });
-    expect(engine.isMuted()).toBe(true);
+    expect(engine.isMuted()).toBe(false);
     expect(() => {
       engine.play("beep");
       engine.setMuted(false);

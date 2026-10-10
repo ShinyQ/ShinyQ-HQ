@@ -8,7 +8,11 @@ const CLICK_WINDOW_MS = 1000;
 const FADE_TIME_CONSTANT = 0.03;
 /** Delay before suspending the context after a mute, so the fade can finish (ms). */
 const SUSPEND_DELAY_MS = 150;
-const GESTURE_EVENTS = ["pointerdown", "keydown", "touchstart"] as const;
+/**
+ * User-activation events. Browsers only let an AudioContext start inside one of these; on touch screens
+ * that is the end of a tap (pointerup, touchend, click), not touchstart, so all of them are listened to.
+ */
+const GESTURE_EVENTS = ["pointerdown", "pointerup", "keydown", "touchend", "click"] as const;
 
 type AudioContextCtor = new () => AudioContext;
 
@@ -48,6 +52,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const listeners = new Set<() => void>();
   let muted = readMuted();
+  /** Paused while the 3D view is closed (Page View): silent without touching the stored preference. */
+  let paused = false;
   let disposed = false;
   let unavailable = false;
   let ctx: AudioContext | null = null;
@@ -58,13 +64,16 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let suspendTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimes: number[] = [];
 
+  /** Sound is on by default; only a stored "off" (the visitor muted) keeps it muted. */
   function readMuted(): boolean {
     try {
-      return storage?.getItem(SOUND_STORAGE_KEY) !== "on";
+      return storage?.getItem(SOUND_STORAGE_KEY) === "off";
     } catch {
-      return true;
+      return false;
     }
   }
+
+  const silent = () => muted || paused || disposed;
 
   function persist(): void {
     try {
@@ -123,17 +132,37 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     if (isHidden()) {
       clearSuspendTimer();
       ignore(ctx.suspend());
-    } else if (!muted) {
+    } else if (!muted && !paused) {
       resume();
     }
   }
 
-  /** Persisted "on" still needs a user gesture before browsers let the context run. */
+  /**
+   * Browsers keep a context suspended until a user gesture, so the first click, tap or key press in
+   * the HQ starts it (and the ambient hum). Listeners stay until the context really runs.
+   */
   function onGesture(): void {
-    removeGestureListeners();
-    if (muted || disposed) return;
-    ensureContext();
-    resume();
+    if (muted || disposed) {
+      removeGestureListeners();
+      return;
+    }
+    if (paused) return;
+    const context = ensureContext();
+    if (!context) {
+      removeGestureListeners();
+      return;
+    }
+    if (context.state === "running") {
+      removeGestureListeners();
+      return;
+    }
+    if (isHidden() || context.state === "closed") return;
+    context
+      .resume()
+      ?.then(() => {
+        if (context.state === "running") removeGestureListeners();
+      })
+      .catch(() => {});
   }
 
   function removeGestureListeners(): void {
@@ -143,6 +172,20 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   doc?.addEventListener("visibilitychange", onVisibilityChange);
   if (!muted) {
     for (const type of GESTURE_EVENTS) doc?.addEventListener(type, onGesture, true);
+  }
+
+  /** Fades the master bus out, then suspends the context (muted or paused). */
+  function fadeOut(): void {
+    if (!ctx || !master) return;
+    const context = ctx;
+    master.gain.cancelScheduledValues(context.currentTime);
+    master.gain.setTargetAtTime(0, context.currentTime, FADE_TIME_CONSTANT);
+    rumble?.setSpeed(0);
+    clearSuspendTimer();
+    suspendTimer = setTimeout(() => {
+      suspendTimer = null;
+      if ((muted || paused) && !disposed) ignore(context.suspend());
+    }, SUSPEND_DELAY_MS);
   }
 
   function allowClick(): boolean {
@@ -155,7 +198,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const engine: AudioEngine = {
     play(name: SoundName) {
-      if (muted || disposed) return;
+      if (silent()) return;
       if (name === "click" && !allowClick()) return;
       const context = ensureContext();
       if (!context || !master) return;
@@ -165,7 +208,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
     setRumble(speed: number) {
       rumbleSpeed = speed;
-      if (muted || disposed) return;
+      if (silent()) return;
       if (!rumble && !(speed > 1)) return;
       if (!ensureContext()) return;
       ensureRumble()?.setSpeed(rumbleSpeed);
@@ -177,7 +220,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       muted = next;
       persist();
       removeGestureListeners();
-      if (!muted) {
+      if (!muted && !paused) {
         clearSuspendTimer();
         const context = ensureContext();
         if (context && master) {
@@ -186,18 +229,29 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
           if (context.state !== "closed") ignore(context.resume());
           if (rumble) rumble.setSpeed(rumbleSpeed);
         }
-      } else if (ctx && master) {
-        const context = ctx;
-        master.gain.cancelScheduledValues(context.currentTime);
-        master.gain.setTargetAtTime(0, context.currentTime, FADE_TIME_CONSTANT);
-        rumble?.setSpeed(0);
-        clearSuspendTimer();
-        suspendTimer = setTimeout(() => {
-          suspendTimer = null;
-          if (muted && !disposed) ignore(context.suspend());
-        }, SUSPEND_DELAY_MS);
+      } else {
+        fadeOut();
       }
       if (changed) notify();
+    },
+
+    setPaused(next: boolean) {
+      if (disposed || next === paused) return;
+      paused = next;
+      if (paused) {
+        fadeOut();
+        return;
+      }
+      if (muted || !ctx || !master) return;
+      clearSuspendTimer();
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
+      resume();
+      rumble?.setSpeed(rumbleSpeed);
+    },
+
+    isPaused() {
+      return paused;
     },
 
     toggleMuted() {

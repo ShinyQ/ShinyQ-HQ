@@ -146,6 +146,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Neon Grid tokens from appendix 05 live in `src/app/globals.css` (`@theme`): `void`, `glass`, `glass-border`, `ink`, `ink-2`, `ink-3`, accents `cyan violet pink green amber blue white`. `ink-3` is `#8b8b94` (not `#71717a`) to keep AA contrast on the void.
 - Utility classes: `.glass`, `.label` (mono uppercase metadata), `.link`, `.prose-hq` (MDX). Accent classes must come from the static maps in `src/lib/accent.ts` so Tailwind can see them.
 - HUD tokens shared with the 3D overlay (prototype values): `.glass` (blur 18 px, drops the blur on coarse pointers), `.eyebrow`, `.chip` (+ `.chip-count`, `aria-pressed` inverts), `.card`; colors `line`, `line-2`, `surface`, `surface-2`.
+- `.glass-solid` (add next to `.glass`) makes a panel near-opaque (`rgb(10 10 18 / .94)`, solid on coarse pointers) while keeping the glass edge. Every HUD panel and pill over the 3D world uses it (top bar, profile card, Glass Drawer, palette, hologram cards, terminal), so in-world text never shows through. The side drawer starts below the HUD top bar (`top-[68px]`, `md:top-[76px]`); hints hide while a room is open.
 - Page View layer: `src/app/pageview.css` (`pv-` classes: type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-lead pv-body pv-small pv-data pv-num`, `pv-mark`, `pv-btn`, `pv-go`, `pv-rows`, `pv-stretch`, header, filter bar, ToC). Grid spans use Tailwind utilities with the default `md`/`lg` breakpoints.
 - Fonts: Inter (body), JetBrains Mono (data only) and Archivo (`--font-display`, variable `wdth` axis for condensed titles and numerals) via `next/font/google` (`src/app/fonts.ts`). Touch targets at least 44 px (`min-h-11`).
 
@@ -163,7 +164,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - CI (`.github/workflows/ci.yml`) runs check, build + e2e, a non-blocking Lighthouse CI job (`lighthouserc.json`, appendix 08 budgets), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
 - Production (`.github/workflows/deploy.yml`) deploys `out/` on push to `main` only when both secrets and the `CF_PAGES_PROJECT` variable are set. Owner setup: `docs/deploy.md`.
 - Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset, from `vars.CF_BEACON_TOKEN`).
-- Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add.
+- Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add. Sound is on by default (owner decision): a missing `hq:sound` means on, a stored `"off"` stays muted, and the context starts on the first user gesture. `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent without changing the stored choice.
 
 ## Next.js version notes
 
