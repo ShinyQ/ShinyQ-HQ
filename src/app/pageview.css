@@ -336,15 +336,15 @@
     border-color: var(--color-line-2);
   }
 
-  /* Sticky filter bar under the header (header is 68 px tall, 117 px with the phone tabs). */
+  /* Sticky filter bar under the header (68 px on desktop, 60 px plus the 49 px tab row below lg). */
   .pv-filters {
     position: sticky;
-    top: 125px;
+    top: 117px;
     z-index: 20;
     border-radius: 14px;
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .pv-filters {
       top: 80px;
     }
@@ -419,6 +419,19 @@
     .pv-feature:hover .pv-shot img {
       transform: none;
       transition: none;
+    }
+  }
+}
+
+/* Anchors land below the sticky header (and the phone tab row). */
+@layer base {
+  html {
+    scroll-padding-top: 124px;
+  }
+
+  @media (min-width: 64rem) {
+    html {
+      scroll-padding-top: 92px;
     }
   }
 }

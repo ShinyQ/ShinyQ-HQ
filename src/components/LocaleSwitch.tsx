@@ -11,7 +11,7 @@ export function LocaleSwitch({ label }: { label: string }) {
   const locale = useLocale();
   const pathname = usePathname();
   return (
-    <nav aria-label={label} className="flex rounded-full border border-glass-border p-0.5">
+    <nav aria-label={label} className="flex overflow-hidden rounded-lg border border-line">
       {LOCALES.map((l) => {
         const active = l === locale;
         const href = `/${l}${pathname === "/" ? "" : pathname}`;
@@ -29,8 +29,8 @@ export function LocaleSwitch({ label }: { label: string }) {
                 // Storage can be unavailable (private mode); the link still works.
               }
             }}
-            className={`label inline-flex min-h-8 min-w-10 items-center justify-center rounded-full px-2.5 transition ${
-              active ? "bg-cyan/15 text-cyan" : "text-ink-2 hover:text-ink"
+            className={`inline-flex min-h-[42px] min-w-10 items-center justify-center font-mono text-xs transition ${
+              active ? "bg-ink text-void" : "text-ink-2 hover:text-ink"
             }`}
           >
             {l.toUpperCase()}

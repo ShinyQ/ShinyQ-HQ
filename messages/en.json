@@ -19,7 +19,11 @@
     "contact": "Contact",
     "cv": "CV",
     "language": "Language",
-    "skip": "Skip to content"
+    "skip": "Skip to content",
+    "work": "Work",
+    "writing": "Writing",
+    "about": "About",
+    "mobile": "Sections"
   },
   "floors": {
     "L1": "Lobby",
@@ -85,7 +89,18 @@
     "howTitle": "How I work",
     "directoryTitle": "Tower directory",
     "directoryIntro": "Choose a floor to explore. Every floor also has a page view.",
-    "storyTitle": "My background"
+    "storyTitle": "My background",
+    "seeWork": "See the work",
+    "selectedWork": "Selected work",
+    "allProjects": "All {count} projects",
+    "fullJourney": "Full journey",
+    "writingTitle": "Writing",
+    "allWriting": "All writing",
+    "aboutContact": "About and contact",
+    "openTo": "Open to",
+    "since": "since {date}",
+    "location": "Location",
+    "statusLabel": "Current status"
   },
   "quick": {
     "title": "Quick view",
@@ -113,7 +128,13 @@
     "repos": "Public repositories",
     "stars": "{count, plural, one {# star} other {# stars}}",
     "seeCaseStudy": "Read the case study in Labs",
-    "back": "Back to the journey"
+    "back": "Back to the journey",
+    "show": "Show",
+    "jumpTo": "Jump to",
+    "filters": "Filter entries",
+    "entries": "{count, plural, one {# entry} other {# entries}}",
+    "all": "All",
+    "navTitle": "Journey"
   },
   "labs": {
     "title": "Labs",
@@ -204,7 +225,9 @@
   },
   "footer": {
     "built": "The site and CV share one validated dataset.",
-    "source": "View source on GitHub"
+    "source": "View source on GitHub",
+    "pages": "Pages",
+    "elsewhere": "Elsewhere"
   },
   "root": {
     "redirecting": "Opening ShinyQ HQ…",
@@ -418,5 +441,35 @@
     "next": "Next image",
     "counter": "Image {index} of {total}",
     "hint": "Images: left/right arrows or swipe · Close: Esc"
+  },
+  "work": {
+    "title": "Work",
+    "keyProjects": "Key projects",
+    "allProjects": "All projects",
+    "filters": "Filter projects",
+    "wing": "Wing",
+    "all": "All",
+    "stack": "Stack",
+    "anyStack": "Any stack",
+    "showing": "Showing {shown} of {total}",
+    "empty": "No projects match these filters.",
+    "clear": "Clear filters",
+    "wingShort": {
+      "software": "Software",
+      "ai": "AI"
+    }
+  },
+  "case": {
+    "onThisPage": "On this page",
+    "more": "More from the {wing}",
+    "images": "{count, plural, one {# image} other {# images}}"
+  },
+  "writing": {
+    "title": "Writing",
+    "sections": "Sections",
+    "readPost": "Read the post"
+  },
+  "about": {
+    "title": "About and contact"
   }
 }
