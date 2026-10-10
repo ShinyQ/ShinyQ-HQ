@@ -12,6 +12,7 @@ export const ALL_SPECS = [
   "boot-first",
   "career",
   "deploy",
+  "drawer-solid",
   "experience",
   "gallery",
   "labs",
@@ -56,8 +57,10 @@ export const RULES: Rule[] = [
   { test: /^src\/store\//, specs: ["experience"] },
 
   // HUD over the canvas.
-  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof"] },
-  { test: /^src\/hud\//, specs: ["experience", "missions"] },
+  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid"] },
+  { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid"] },
+  // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.
+  { test: /^src\/app\/globals\.css$/, specs: ["drawer-solid", "pageview", "static-routes"] },
 
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|routes)\.tsx?$/, specs: ["seo", "static-routes"] },
