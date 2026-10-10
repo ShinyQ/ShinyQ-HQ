@@ -44,9 +44,11 @@ src/
   app/og/[...path]/route.tsx    build-time OG PNGs: /og/{locale}.png, /og/{locale}/{labs,blog}/{slug}.png
   app/data/[...path]/route.ts   build-time Glass Drawer content: /data/rooms/{locale}.json
   components/                   static-page UI (server components unless noted)
+  components/page/              Page View building blocks: Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About; client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state)
   content/schema.ts             zod schemas, types via z.infer (appendix 06 + additions below)
   content/load.ts               getContent() and typed accessors
   content/selectors.ts          pure sorting and grouping helpers
+  content/pageview.ts           pure Page View helpers (pod and timeline filters, URL params, nav matching), client-safe
   content/blog.ts               MDX discovery with translation fallback
   content/experience.ts         buildExperienceData(locale, floorNames): small payload for the 3D chunk (labPods for L3)
   content/tech.ts               getTechLogo(name) registry (aliases, text-only allowlist), client-safe
@@ -70,7 +72,7 @@ src/
 tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors, career layout, labs layout, room views, drawer layout and URL, ASCII, hologram
 tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, RoomDrawer, L4/RF rooms
 tests/content/                  Vitest: dataset, public safety, assets
-e2e/                            Playwright: static routes, 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), missions + axe, opt-in screenshots
+e2e/                            Playwright: static routes, Page View (pageview.spec.ts: axe per template, filters, anchors, phone overflow), 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), missions + axe, opt-in screenshots (screenshots.spec.ts, pageview-visual.spec.ts)
 ```
 
 ## Content access
@@ -128,11 +130,21 @@ e2e/                            Playwright: static routes, 3D experience (experi
 - URL (`hud/drawer/urlSync.ts`, mounted by Experience): opening pushes the room URL, switching rooms and the hologram replace it (`?view=architecture`), closing replaces it with the floor URL, back/forward reopen or close rooms. Other query params (`?tier=`) are kept. Rooms without their own route (`hasPage`, from Experience: L4 shelves and Medium posts) keep the floor URL and are remembered in the history entry.
 - Hologram view (hero pods with at least 3 nodes): `HologramStage` draws the diagram on the pod's stage by `layer`/`row`, packets on edges at 2 u/s, async edges dashed, a veil dims the world, and `camera/focus.ts` flies the camera in (`hologramPose`). `HologramOverlay` shows the result cards, prev/next hero pods (arrows, buttons, horizontal swipe) and Esc back to the drawer. E2E tests run WebGL on SwiftShader (`playwright.config.ts` launch args).
 
+## Page View (static pages)
+
+- Design: `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md` (editorial Neon Grid); mockups in `docs/design/pageview/`.
+- Nav labels: Work (`/labs`, L3), Journey (`/journey`, L2), Writing (`/library`, L4), About (`/contact`, RF); Quick view and CV live in the footer, the Home hero and About. URLs and anchors never change (the room catalog and missions link to them).
+- Layout: `pv-wrap` container (1240 px), 12 columns from `lg`, a 4-column sticky sidehead plus 8 columns of content (`SectionSplit`), ruled rows (`pv-rows`) instead of card grids. Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
+- Filters (`WorkIndex`, `JourneyFilter`) are client islands over server-rendered rows: rows carry `data-pod`/`data-wing`/`data-stack` (`podAttrs`) or `data-entry`/`data-type`/`data-year`, the islands only toggle `hidden`, and the query string (`?wing=`, `?stack=`, `?type=`) is the state, so links and reloads keep the view and `?tier=` survives. Without JS everything stays visible.
+- Back to 3D stays owned by `ExperienceGate`; the footer keeps 112 px of bottom padding for it.
+
 ## Styling
 
 - Neon Grid tokens from appendix 05 live in `src/app/globals.css` (`@theme`): `void`, `glass`, `glass-border`, `ink`, `ink-2`, `ink-3`, accents `cyan violet pink green amber blue white`. `ink-3` is `#8b8b94` (not `#71717a`) to keep AA contrast on the void.
 - Utility classes: `.glass`, `.label` (mono uppercase metadata), `.link`, `.prose-hq` (MDX). Accent classes must come from the static maps in `src/lib/accent.ts` so Tailwind can see them.
-- Fonts: Inter and JetBrains Mono via `next/font/google` (`src/app/fonts.ts`). Touch targets at least 44 px (`min-h-11`).
+- HUD tokens shared with the 3D overlay (prototype values): `.glass` (blur 18 px, drops the blur on coarse pointers), `.eyebrow`, `.chip` (+ `.chip-count`, `aria-pressed` inverts), `.card`; colors `line`, `line-2`, `surface`, `surface-2`.
+- Page View layer: `src/app/pageview.css` (`pv-` classes: type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-lead pv-body pv-small pv-data pv-num`, `pv-mark`, `pv-btn`, `pv-go`, `pv-rows`, `pv-stretch`, header, filter bar, ToC). Grid spans use Tailwind utilities with the default `md`/`lg` breakpoints.
+- Fonts: Inter (body), JetBrains Mono (data only) and Archivo (`--font-display`, variable `wdth` axis for condensed titles and numerals) via `next/font/google` (`src/app/fonts.ts`). Touch targets at least 44 px (`min-h-11`).
 
 ## Public-safety lint
 

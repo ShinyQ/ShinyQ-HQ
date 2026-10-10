@@ -35,14 +35,14 @@ URLs and in-page anchors stay stable: `#stats`, `#skills`, `#certifications` (Ho
 
 **Header** (`SiteHeader`, sticky, glass): brand (KAW monogram square, name, mono subline "ShinyQ HQ"), primary nav (4 items with floor id prefix on desktop), tools (Missions `>_`, Search with shortcut, EN/ID switch). Active item: `aria-current="page"` plus a 2 px floor-colored rule at the header's bottom edge. Child routes (`/labs/x`) mark their parent.
 
-**Mobile** (< 760 px): header row with brand, Missions (icon only), Search (icon only), language; a second row with the 4 nav items as equal tabs (no hamburger, no hidden menu). The floor id prefix is hidden below 1080 px.
+**Below 1024 px** (`lg`): header row with brand, Missions (icon only), Search (icon only), language; a second row with the 4 nav items as equal tabs (no hamburger, no hidden menu). The desktop nav (with floor id prefixes) starts at 1024 px.
 
 **Footer**: name, availability, email; Pages column (Work, Journey, Writing, About, Quick view, CV); Elsewhere column (LinkedIn, GitHub, Medium, Google Scholar); base row with "built" note and source link. Bottom padding leaves room for the Back to 3D button.
 
 ## 3. Grid, type, spacing
 
 - Container: max 1240 px, side padding `clamp(20px, 4vw, 48px)`, 12 columns, 24 px gutter.
-- Breakpoints: `lg` 1080 (sideheads fold above content, ToC hidden), `md` 760 (single column, tabs nav).
+- Breakpoints (Tailwind defaults): `lg` 1024 (12-column grid, sticky sideheads, ToC, desktop nav), `md` 768 (row columns, sticky filter bar); below that one column and tab nav.
 - Section rhythm: `padding-top: clamp(80px, 10vw, 136px)`; more space above a heading than below.
 
 | Token | Face | Size / line | Use |
@@ -84,12 +84,12 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 | `Ledger` | value column + sentence rows (Home stats). |
 | `WorkFeature` | cover image, wing marker, period, client, title link (stretched), tagline, outcomes (2 results) or one result. Sizes `lead` and `pair`. |
 | `WorkRow` | index row: wing marker, title, tagline, tech logos; client; start date; headline result. |
-| `WorkIndex` (client) | filter bar (wing chips with counts, stack select, live result count) over `WorkRow`s; reads/writes `?wing=` and `?stack=` with `history.replaceState`. Server renders all rows so it works without JS. |
+| `WorkIndex` (client) | filter bar (wing chips with counts, stack select, live result count) over `WorkFeature`s and `WorkRow`s; reads/writes `?wing=` and `?stack=` with `history.replaceState`, keeping other params. Server renders all rows so it works without JS. Sticky from 768 px; in flow on phones. |
 | `TimelineRow` | period, role (link), org with logo, summary, type marker. |
 | `JourneyFilter` (client) | type chips with counts; hides rows and empty years; `?type=`. |
 | `MetricLedger` | case-study results row with context and confidence badge. |
 | `FactRow` | role, period, client (only when present). |
-| `CaseToc` (client) | sticky "On this page" with scroll-spy (`IntersectionObserver`), hidden below 1080 px. |
+| `CaseToc` (client) | sticky "On this page" with scroll-spy (`IntersectionObserver`), hidden below 1024 px. |
 | `ArchitectureDiagram` | restyled: rows by `layer`, nodes with label and sublabel, kind tint on the border only. |
 | `Gallery` | layout `mosaic` added (first image 4 of 6 columns, two rows); `Lightbox` unchanged. |
 | `PostRow`, `PostLead` | writing list; lead post in a `.card`. |
@@ -107,7 +107,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 
 **Work (`/labs`).** Page intro with wing counts (AI, Software with their existing intros). Sticky filter bar. "Key projects": the 6 hero pods in an alternating 7/5 then 5/7 grid; pods without images lead with their first result as a number block. "All projects": featured then listed pods as `WorkRow`s. Filtering applies to both blocks; when nothing matches, an empty state with "Clear filters".
 
-**Case study (`/labs/[slug]`).** Crumb "Work". Wing marker, tier, room id; title (`display-l`); tagline (lead). Fact row. Results ledger (`#results`, 4 columns, 2 on mobile). Body 8 columns + ToC 4 columns: Problem (lead size), What I did (numbered steps; the numbers are real sequence), Architecture (`#architecture`), Gallery (`#gallery`, mosaic), Tech stack (`#stack`, logo chips). ToC block also shows the related career entry. Then "More {wing} work": previous and next pods. JSON-LD unchanged.
+**Case study (`/labs/[slug]`).** Crumb "Work". Wing marker, tier, room id; title (`display-l`); tagline (lead). Fact row. Results ledger (`#results`, 4 columns, 2 on mobile). Body 8 columns + ToC 4 columns: Problem (lead size), What I did (numbered steps; the numbers are real sequence), Architecture (`#architecture`), Gallery (`#gallery`, mosaic), Tech stack (`#stack`, logo chips). Then "More from the {wing}": previous and next pods, plus the related career entry. JSON-LD unchanged.
 
 **Journey.** Intro with year jump links. Sticky type filter. Years newest first: the year as a sticky `num` in 2 columns, rows in 10. Prologue entries keep the "Prologue" note. Workshop annex (`#workshop`): side projects as rows, public repos as rows with stars and language.
 
