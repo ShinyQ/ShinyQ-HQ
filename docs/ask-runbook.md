@@ -128,7 +128,7 @@ rm keys.json names.json
 | `ASK_COOKIE_KEY` | `openssl rand -hex 32 \| tr -d '\n' \| bunx wrangler@4 pages secret put ASK_COOKIE_KEY --project-name=kurniadi`, redeploy | Every visitor redoes Turnstile once; harmless |
 | `ASK_IP_SALT_SEED` | same command with `ASK_IP_SALT_SEED`, redeploy | Daily counters restart for everyone |
 | `CF_EVAL_TOKEN` | every 90 days, section 8 | Nightly eval and content-gap jobs skip with a notice when it is missing or expired |
-| `CF_LOGS_TOKEN`, `FACTS_PR_TOKEN` | every 90 days, section 8 | Optional jobs skip or warn |
+| `CF_LOGS_TOKEN` | every 90 days, section 8 (expires 2027-01-09) | The nightly log purge skips with a notice when it is missing |
 
 Secrets take effect on the next deployment.
 
@@ -146,15 +146,22 @@ gh variable set CF_ACCOUNT_ID --repo ShinyQ/ShinyQ-HQ --body <account id>
 
 Optional:
 
-- `CF_LOGS_TOKEN` (owner decision, see section 11): Account / AI Gateway / Edit only, 90 days. Deleting logs needs AI Gateway Write. Enables the nightly purge job in `ask-eval.yml`.
-- `FACTS_PR_TOKEN`: fine-grained PAT, repository `ShinyQ/ShinyQ-HQ` only, permissions Contents read and write, Pull requests read and write, 90 days. PRs pushed with the default `GITHUB_TOKEN` do not trigger other workflows, so CI never reports on the weekly facts PR and auto-merge waits forever. With the PAT, CI runs normally. Without it the workflow warns; close and reopen the PR to trigger CI by hand.
-- Repository settings > General > Pull Requests > "Allow auto-merge" must be on for the weekly facts PR to merge itself (it is off as of 2026-10-11). With branch protection, the PR merges once "Typecheck, lint, unit tests" and "Build, CV and e2e" pass.
+`CF_LOGS_TOKEN` (created on 2026-10-11 as the account-owned token "shinyq-hq AI Gateway log purge (CF_LOGS_TOKEN)", expires 2027-01-09): Account / AI Gateway / Edit (API name "AI Gateway Write") only, the owner's account, 90 days. Deleting logs needs AI Gateway Write. It powers the nightly purge job in `ask-eval.yml` (section 11). To recreate it with the `cf` CLI and store it without printing it:
+
+```sh
+echo '[{"effect":"allow","resources":{"com.cloudflare.api.account.<account id>":"*"},"permission_groups":[{"id":"6c8a3737f07f46369c1ea1f22138daaf"}]}]' > /tmp/p.json
+cf accounts tokens create --name "shinyq-hq AI Gateway log purge (CF_LOGS_TOKEN)" --policies @/tmp/p.json --expires-on <YYYY-MM-DD>T00:00:00Z \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"], end="")' | gh secret set CF_LOGS_TOKEN --repo ShinyQ/ShinyQ-HQ
+rm /tmp/p.json
+```
+
+The weekly facts PR needs no personal access token and no repository auto-merge setting: `refresh-facts.yml` runs CI itself and merges with `GITHUB_TOKEN` (section 9).
 
 ## 9. Scheduled workflows
 
 | Workflow | When (WIB) | What | Needs |
 | --- | --- | --- | --- |
-| `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" and enables auto-merge, only when a value changed | `GITHUB_TOKEN`; `FACTS_PR_TOKEN` recommended |
+| `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" only when a value changed, dispatches `ci.yml` on that branch (a PR pushed with `GITHUB_TOKEN` gets no `pull_request` run), waits up to 45 minutes for the run on the pushed commit, and squash-merges only when "Typecheck, lint, unit tests" and "Build, CV and e2e" succeeded (`--match-head-commit`). On a failure or timeout the PR stays open and the job fails. `main` has no branch protection, which is why the workflow checks CI itself instead of using auto-merge. A merge by `GITHUB_TOKEN` does not trigger `deploy.yml`; production still updates with the manual deploy (section 3) | `GITHUB_TOKEN` (`contents`, `pull-requests` and `actions: write`) |
 | `ask-eval.yml` | daily 03:30 | golden set (fails below 28/30), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
 | `content-gap.yml` | Mondays 03:00 | `scripts/content-gap.ts` lists the top 20 unanswered questions of the last 7 days and opens "Ask the HQ content gaps, week of YYYY-MM-DD" (`ask-content-gap`) when there is at least one | `CF_EVAL_TOKEN` |
 | `ci.yml` (check job) | every PR | `scripts/ask-staleness.ts` warns when the live facts or `content/site-content.json` are older than 45 days and keeps one PR comment up to date; `bun audit` (non-blocking); gitleaks in the "Secret scan" job (blocking) | none |
@@ -184,7 +191,7 @@ The owner asked for 7-day retention of the full AI Gateway logs. What the platfo
 - Accounts whose first AI Gateway was created on or after 2026-09-24 store gateway logs in Workers Logs, which expire by age: 3 days on Workers Free, 7 days on Workers Paid. `shinyq-hq` is this account's first gateway (2026-10-11), so this is the expected model, and on the Free plan the logs are kept for 3 days, shorter than promised, which is acceptable for privacy (the privacy note says "up to 7 days").
 - If the dashboard shows the gateway on Legacy Logs instead, logs are capped by count, not age. The API minimum is 10,000 logs (about 16 days at the 600/day cap), so `log_management` is 10,000 with `DELETE_OLDEST`, and the optional nightly purge (`scripts/purge-ask-logs.ts`, `DELETE /accounts/{id}/ai-gateway/gateways/shinyq-hq/logs` with a `created_at < now - 7 days` filter) enforces 7 days when `CF_LOGS_TOKEN` exists. The call succeeds and is a no-op when there are no Legacy Logs.
 
-Decision for the owner: check after the first real traffic which storage the gateway uses (`cf ai-gateway logs list --gateway-id shinyq-hq` returns entries only on Legacy Logs). On Legacy Logs, add `CF_LOGS_TOKEN`; otherwise nothing to do.
+Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs list --gateway-id shinyq-hq` returned entries, so the gateway uses Legacy Logs. The owner approved `CF_LOGS_TOKEN` (section 8); it is set, and the nightly purge in `ask-eval.yml` now deletes logs older than 7 days. A first purge with the new token ran cleanly on 2026-10-11 and kept the recent logs.
 
 ## 12. Incident playbook (spec 7.6)
 
@@ -198,7 +205,7 @@ Decision for the owner: check after the first real traffic which storage the gat
 
 - 2FA on Cloudflare and GitHub: confirmed on 2026-10-11.
 - Monthly: Cloudflare audit log review (Manage Account > Audit Log) and the list of API tokens (`cf accounts tokens list`); delete anything unused.
-- Token expiry calendar: `CF_EVAL_TOKEN` expires 2027-01-09; add `CF_LOGS_TOKEN`, `FACTS_PR_TOKEN` and the deploy token when created. Renew a week before.
+- Token expiry calendar: `CF_EVAL_TOKEN` expires 2027-01-09; `CF_LOGS_TOKEN` expires 2027-01-09; add the deploy token when created. Renew a week before.
 - Never paste secrets into issues, PRs, chats or commits; gitleaks runs on every PR.
 
 ## 14. Free-tier limits and how the design respects them
