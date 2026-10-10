@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
@@ -53,10 +53,16 @@ test.describe("L3 Labs in 3D", () => {
     await expect(drawer).toBeVisible();
     await expect(drawer.getByRole("heading", { level: 2 })).toHaveText(data.floors.labs.pods.find((pod) => pod.slug === "voice-ai-contact-center")!.title.en);
     await expect(page).toHaveURL(/\/en\/labs\/voice-ai-contact-center\?tier=lite$/);
+    // The mission opens the drawer while the rover may still be rolling toward the door pad. Closing it
+    // right away must stop the drive, and the pad must not reopen the room when the rover comes to rest.
     await page.keyboard.press("Escape");
     await expect(drawer).toBeHidden();
     await expect(page).toHaveURL(/\/en\/labs\?tier=lite$/);
-    expect((await state(page)).phase).toBe("explore");
+    await expect.poll(() => snapshot(page).then((s) => s.rover.speed)).toBe(0);
+    await waitForFrames(page, 30);
+    expect(await state(page)).toMatchObject({ phase: "explore", activeRoom: null });
+    await expect(drawer).toBeHidden();
+    await expect(page).toHaveURL(/\/en\/labs\?tier=lite$/);
     expect(errors).toEqual([]);
   });
 
