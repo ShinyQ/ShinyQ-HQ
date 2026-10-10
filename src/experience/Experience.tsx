@@ -84,7 +84,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   // Deep link (or a language switch on a room URL): open the room on the floor the rover is on.
   openStartRoom();
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition] };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition] };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */

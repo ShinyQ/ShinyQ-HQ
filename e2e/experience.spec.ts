@@ -469,3 +469,13 @@ test.describe("orbit on every floor", () => {
     expect(yaw).toBe(0);
   });
 });
+
+test("the click marker appears where the floor is clicked and fades", async ({ page }) => {
+  await enterHQ(page);
+  const viewport = page.viewportSize()!;
+  // Lower middle of the view is open floor in front of the rover at the Lobby spawn.
+  await page.getByTestId("hq-world").click({ position: { x: viewport.width / 2 + 160, y: viewport.height - 140 } });
+  type M = { __hq: { marker: { visible: boolean; opacity: number } } };
+  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.visible)).toBe(true);
+  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.opacity), { timeout: 5_000 }).toBeLessThan(0.05);
+});

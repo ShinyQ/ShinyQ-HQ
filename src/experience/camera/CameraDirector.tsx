@@ -10,6 +10,7 @@ import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import { cameraFocus } from "./focus";
+import { followEase, followOffsetScale } from "./offset";
 import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
 import {
   followPose,
@@ -112,7 +113,8 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const f = roverRuntime.cameraForward;
-      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom, orbit.pitch);
+      const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
+      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
     }
 
     l.desiredPos.set(...desired.position);
@@ -122,7 +124,7 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
       l.target.copy(l.desiredTarget);
       l.ready = true;
     } else {
-      const k = springFactor(dt);
+      const k = followEase(dt, s.reducedMotion);
       l.pos.lerp(l.desiredPos, k);
       l.target.lerp(l.desiredTarget, k);
     }
