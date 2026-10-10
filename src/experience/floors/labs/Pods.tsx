@@ -38,21 +38,10 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
     for (const p of placed) {
       const color = ACCENT_HEX[p.pod.accent];
       batch.box(p.center.x, H / 2, p.center.z, p.width, H, p.depth, color);
-      // Door opening on the front wall and the trigger square on the floor.
+      // Door opening on the front wall (the trigger pad is a ProximityGlow in FloorLevel).
       const frontZ = p.center.z + (p.facing * p.depth) / 2;
       batch.segment([p.door.x - 1, 0.04, frontZ, p.door.x + 1, 0.04, frontZ], "#f4f4f5");
       batch.segment([p.door.x - 1, 1.9, frontZ, p.door.x + 1, 1.9, frontZ], color);
-      batch.path(
-        [
-          [p.door.x - 1, p.door.z - 1],
-          [p.door.x + 1, p.door.z - 1],
-          [p.door.x + 1, p.door.z + 1],
-          [p.door.x - 1, p.door.z + 1],
-          [p.door.x - 1, p.door.z - 1],
-        ],
-        0.035,
-        color,
-      );
       if (p.pod.tier === "hero") batch.circle(p.center.x, p.center.z, LABS.stageRadius, 0.04, color);
     }
     return batch.build();

@@ -10,6 +10,7 @@ import { DRAG_THRESHOLD, intents } from "../input/intents";
 import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
+import { ProximityGlow } from "../fx/ProximityGlow";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -76,6 +77,7 @@ export function FloorLevel({
       </lineSegments>
       <group ref={content}>
         {near && <GridFloor width={w} depth={d} center={center} />}
+        {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}
         {children}
       </group>
     </group>
