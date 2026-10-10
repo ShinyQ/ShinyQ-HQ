@@ -233,6 +233,7 @@
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "joystick": "Rover joystick",
+    "bootEyebrow": "Agent HQ · booting",
     "bootTitle": "rover@hq:~$ ./boot",
     "bootLine1": "[ ok ] power on",
     "bootLine2": "[ ok ] floor map loaded: L1 to RF",

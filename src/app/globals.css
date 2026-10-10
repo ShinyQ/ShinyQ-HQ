@@ -176,3 +176,96 @@
     display: none !important;
   }
 }
+
+/*
+ * Game-first load (src/lib/boot-first.ts). The inline head script sets html[data-hq-boot] before
+ * first paint on 3D-capable visits: the Page View stays hidden behind the SSR boot cover until the
+ * canvas draws its first frame. The 3D boot overlay reuses the same card, so the handoff is seamless.
+ */
+@layer components {
+  .eyebrow {
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  .hq-boot-cover {
+    display: none;
+  }
+  html[data-hq-boot] .hq-boot-cover {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    padding: 1rem;
+    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
+  }
+  html[data-hq-boot] #site-shell {
+    visibility: hidden;
+  }
+  .hq-boot-backdrop {
+    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.35), rgb(5 5 12 / 0.8) 70%);
+  }
+
+  .hq-boot-card {
+    width: min(440px, 100%);
+    text-align: left;
+    padding: 24px;
+    border: 1px solid rgb(99 102 241 / 0.28);
+    border-radius: 16px;
+    background: rgb(5 5 12 / 0.6);
+    box-shadow: 0 0 60px -20px rgb(99 102 241 / 0.6);
+  }
+  .hq-boot-log {
+    font: 12px/1.8 var(--font-mono);
+    color: #a5b4fc;
+    min-height: 130px;
+  }
+  .hq-boot-log li {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .hq-boot-log li[data-shown] {
+    opacity: 1;
+  }
+  .hq-boot-log li.hq-boot-line-in {
+    opacity: 0;
+    animation: hq-boot-line 0.25s ease-out forwards;
+  }
+  .hq-boot-bar {
+    margin-top: 18px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+    background-size: 200% 100%;
+    animation: hq-boot-scan 1.4s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hq-boot-log li.hq-boot-line-in {
+      animation: none;
+      opacity: 1;
+    }
+    .hq-boot-log li {
+      transition: none;
+    }
+    .hq-boot-bar {
+      animation: none;
+    }
+  }
+}
+
+@keyframes hq-boot-line {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes hq-boot-scan {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

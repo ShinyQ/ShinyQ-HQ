@@ -118,7 +118,8 @@ for (const viewport of VIEWPORTS) {
     const page = await context.newPage();
     await page.goto(`/en?tier=${viewport.tier}`);
     await waitForHQ(page);
-    await expect(page.getByText("rover ready ^_^")).toBeVisible({ timeout: 30_000 });
+    // Scoped to the overlay: the released SSR boot cover keeps the same log lines in the DOM.
+    await expect(page.getByTestId("boot").getByText("rover ready ^_^")).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(800);
     await page.screenshot({ path: shot("hq-boot", viewport) });
     await context.close();
