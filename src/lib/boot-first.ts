@@ -19,10 +19,27 @@ export interface BootFirstInput {
   storedView: string | null;
   hasWebGL2: boolean;
   saveData: boolean;
-  /** navigator.userAgent: crawlers and Lighthouse measure the HTML page, never the 3D chunk. */
-  userAgent?: string;
+  /** isBotLike(navigator, search): crawlers and automation measure the HTML page, never the 3D chunk. */
+  bot?: boolean;
   /** sessionStorage[PROBE_KEY]: the gate already found this device static in this session. */
   probe?: string | null;
+}
+
+export interface BotLikeNavigator {
+  userAgent?: string;
+  webdriver?: boolean;
+}
+
+/**
+ * Crawlers, link previews and audits (Googlebot, bingbot, PageSpeed, Lighthouse) get the HTML page
+ * and never download the 3D chunk. So does browser automation (`navigator.webdriver`, which covers
+ * Lighthouse 12, whose emulated user agent no longer says "Lighthouse"), unless the URL forces a 3D
+ * tier with `?tier=lite|full` (Playwright tests). Self-contained, like shouldBootFirst, so the head
+ * script inlines it via toString().
+ */
+export function isBotLike(n: BotLikeNavigator, search: string): boolean {
+  if (/bot\/|bot;|\bbot\b|crawl|spider|slurp|lighthouse|pagespeed|google-inspectiontool|facebookexternalhit|bingpreview|gtmetrix/i.test(n.userAgent || "")) return true;
+  return n.webdriver === true && !/[?&]tier=(lite|full)(&|$)/.test(search);
 }
 
 /**
@@ -33,7 +50,7 @@ export function shouldBootFirst(i: BootFirstInput): boolean {
   if (!/^\/(en|id)(\/(journey|labs)(\/[^/]+)?|\/(library|contact))?\/?$/.test(i.path)) return false;
   if (/[?&]tier=static(&|$)/.test(i.search)) return false;
   if (i.storedView === "page") return false;
-  if (/bot|crawl|spider|slurp|lighthouse|pagespeed/i.test(i.userAgent || "")) return false;
+  if (i.bot) return false;
   if (i.probe === "static" && !/[?&]tier=(lite|full)(&|$)/.test(i.search)) return false;
   return i.hasWebGL2 && !i.saveData;
 }
@@ -46,7 +63,7 @@ export function shouldBootFirst(i: BootFirstInput): boolean {
  */
 export function bootFirstScript(): string {
   return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
-var c=navigator.connection;var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:typeof WebGL2RenderingContext!=="undefined",saveData:!!(c&&c.saveData),userAgent:navigator.userAgent,probe:p});
+var c=navigator.connection;var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:typeof WebGL2RenderingContext!=="undefined",saveData:!!(c&&c.saveData),bot:(${isBotLike.toString()})(navigator,location.search),probe:p});
 if(!on)return;var d=document.documentElement;d.setAttribute("${BOOT_ATTR}","1");
 var off=function(r){if(d.hasAttribute("${BOOT_ATTR}")){d.removeAttribute("${BOOT_ATTR}");d.setAttribute("${BOOT_RELEASED_ATTR}",r)}};
 setTimeout(function(){off("timeout")},${BOOT_TIMEOUT_MS});
