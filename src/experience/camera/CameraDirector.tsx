@@ -2,12 +2,13 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, type RefObject } from "react";
-import { FogExp2, PerspectiveCamera, Vector3 } from "three";
+import { Fog, PerspectiveCamera, Vector3 } from "three";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore } from "@/store/useHQStore";
 import { intents, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
+import { sceneSettings } from "../scene/settings";
 import { cameraFocus } from "./focus";
 import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
 import {
@@ -22,9 +23,7 @@ import {
   type CameraPose,
 } from "./rigs";
 
-const FOG_DENSITY = 0.012;
 const RAIL_FORWARD = { x: 0, z: -1 };
-const INTRO_FOG_DENSITY = 0.005;
 /** The follow camera aims this far ahead of the rover, so the floor in front fills the frame. */
 const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
 
@@ -150,7 +149,13 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
     // The rail looks slightly ahead in x; steer along the corridor axes so D drives straight down it.
     if (!focus) roverRuntime.cameraForward = rig === "rail" ? RAIL_FORWARD : forwardOf(desired);
     roverRuntime.cameraPosition = [l.pos.x, l.pos.y, l.pos.z];
-    if (scene.fog instanceof FogExp2) scene.fog.density = rig === "intro" ? INTRO_FOG_DENSITY : FOG_DENSITY;
+    if (scene.fog instanceof Fog) {
+      // Ease the linear fog range between rigs so the intro fly-in does not pop.
+      const { near, far } = sceneSettings(s.tier, focus ? "focus" : rig).fog;
+      const kf = snap ? 1 : springFactor(dt);
+      scene.fog.near += (near - scene.fog.near) * kf;
+      scene.fog.far += (far - scene.fog.far) * kf;
+    }
   });
 
   return null;
