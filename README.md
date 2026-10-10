@@ -42,7 +42,10 @@ bun run dev                        # http://localhost:3000/en
 | `bun run typecheck` | Generate route types and run `tsc` |
 | `bun run lint` | ESLint |
 | `bun run test` | Vitest: content, safety lint, store, intents, navgrid A*, rover movement, camera rigs, URL sync, GPU tier |
-| `bun run e2e` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
+| `bun run verify:quick` | Typecheck, lint, unit tests and `next build` (no CV): the pre-push check |
+| `bun run e2e:changed` | Playwright specs that cover your changed paths (`scripts/e2e-plan.ts`); `--dry` prints the plan |
+| `bun run e2e` / `e2e:full` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
+| `bun run e2e:smoke` | Fast subset: static routes, SEO, deploy rules, game-first load, Page View |
 | `bun run screenshots` | HTML pages and 3D captures (boot, Lobby, L2 rail) at 1440x900, 1024x1366 and 390x844 into `screenshots/` |
 | `bun run validate:content` | Schema and safety check for `content/site-content.json` |
 
@@ -86,4 +89,4 @@ e2e/          Playwright tests
 
 ## CI and deploys
 
-GitHub Actions runs typecheck, lint, unit tests, the full build (including the CV PDFs), Playwright smoke tests and screenshots on every PR. If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.
+GitHub Actions runs typecheck, lint and unit tests next to the full build (including the CV PDFs), then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check. Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`). If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.
