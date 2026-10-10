@@ -5663,20 +5663,20 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/ai-app-accelerator/01-dashboard.webp",
+              "src": "/media/ai-app-accelerator/01-home.webp",
               "alt": {
-                "en": "Template dashboard showing conversations, active agents, costs and usage per model",
-                "id": "Dashboard template menampilkan percakapan, agent aktif, biaya dan penggunaan tiap model"
+                "en": "Template dashboard home: conversations, active agents, estimated cost and error rate with a usage trend",
+                "id": "Beranda template dashboard: percakapan, agent aktif, estimasi biaya, dan error rate dengan tren penggunaan"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-app-accelerator/02-agent-picker.webp",
+              "src": "/media/ai-app-accelerator/02-chat.webp",
               "alt": {
-                "en": "Chat start screen for choosing one of the built-in agents",
-                "id": "Layar awal chat untuk memilih salah satu agent bawaan"
+                "en": "Multi-agent chat with an agent picker, saved chats and suggested prompts",
+                "id": "Chat multi-agent dengan pemilih agent, riwayat chat, dan prompt yang disarankan"
               },
               "width": 1600,
               "height": 1000,
@@ -5685,21 +5685,41 @@
             {
               "src": "/media/ai-app-accelerator/03-agents.webp",
               "alt": {
-                "en": "Agent management table listing identifiers, descriptions and the number of tools",
-                "id": "Tabel pengelolaan agent menampilkan identifier, deskripsi dan jumlah tool"
+                "en": "Agent catalog with built-in and custom agents, their models and tool counts",
+                "id": "Katalog agent berisi agent bawaan dan kustom, beserta model dan jumlah tools-nya"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-app-accelerator/04-chat.webp",
+              "src": "/media/ai-app-accelerator/04-playground.webp",
               "alt": {
-                "en": "Chat conversation showing an agent rewrite a TypeScript fetch wrapper",
-                "id": "Percakapan chat menampilkan agent yang menulis ulang fetch wrapper TypeScript"
+                "en": "Prompt playground to test a live agent with a system message, presets and session token estimates",
+                "id": "Prompt playground untuk menguji agent live dengan system message, preset, dan estimasi token sesi"
               },
               "width": 1600,
-              "height": 869,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/05-models.webp",
+              "alt": {
+                "en": "Model deployments with state, requests, latency and a latency comparison chart",
+                "id": "Deployment model dengan status, jumlah request, latensi, dan grafik perbandingan latensi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ai-app-accelerator/06-analytics.webp",
+              "alt": {
+                "en": "Analytics for API calls, latency, error rate and usage by model",
+                "id": "Analitik untuk API call, latensi, error rate, dan penggunaan per model"
+              },
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
@@ -6589,63 +6609,53 @@
           "hologram": "graph",
           "assets": [
             {
-              "src": "/media/ticketing-assistant-replatform/01-product-overview.webp",
+              "src": "/media/ticketing-assistant-replatform/01-home.webp",
               "alt": {
-                "en": "Ticketing product overview with a board preview and AI classification, prioritization and response drafts",
-                "id": "Ringkasan produk ticketing dengan pratinjau board serta klasifikasi, prioritas dan draf respons tiket dari AI"
+                "en": "Ticketing home: tickets assigned, in progress and overdue, with a list across boards",
+                "id": "Beranda ticketing: tiket yang ditugaskan, sedang dikerjakan, dan terlambat, dengan daftar lintas board"
               },
-              "width": 1280,
-              "height": 721,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/02-assistant-home.webp",
+              "src": "/media/ticketing-assistant-replatform/02-kanban-board.webp",
               "alt": {
-                "en": "Assistant start screen suggesting questions about tickets, documents and board analytics",
-                "id": "Layar awal asisten menampilkan saran pertanyaan tentang tiket, dokumen dan analitik board"
+                "en": "Kanban board with priority, SLA breach bars and assignees per ticket",
+                "id": "Kanban board dengan prioritas, bar pelanggaran SLA, dan assignee per tiket"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/03-at-risk-tickets.webp",
+              "src": "/media/ticketing-assistant-replatform/03-ticket-detail.webp",
               "alt": {
-                "en": "Assistant response listing tickets at risk of missing the sprint deadline",
-                "id": "Respons asisten menampilkan tiket yang berisiko melewati tenggat sprint"
+                "en": "Ticket detail panel with status, priority, SLA, description and activity, plus an AI Assist action",
+                "id": "Panel detail tiket dengan status, prioritas, SLA, deskripsi, dan aktivitas, serta aksi AI Assist"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/04-status-charts.webp",
+              "src": "/media/ticketing-assistant-replatform/04-ai-assistant.webp",
               "alt": {
-                "en": "Overdue ticket charts generated by the assistant, grouped by status and priority",
-                "id": "Grafik tiket terlambat dari asisten, dikelompokkan menurut status dan prioritas"
+                "en": "AI Assistant that answers questions about tickets, boards, workload and documents",
+                "id": "AI Assistant yang menjawab pertanyaan tentang tiket, board, beban kerja, dan dokumen"
               },
               "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ticketing-assistant-replatform/05-ai-triage.webp",
+              "src": "/media/ticketing-assistant-replatform/05-boards.webp",
               "alt": {
-                "en": "Ticket detail panel with AI triage suggestions for priority and category",
-                "id": "Panel detail tiket dengan saran prioritas dan kategori dari AI triage"
+                "en": "Boards overview for engineering, operations, data, security and AI teams",
+                "id": "Ringkasan board untuk tim engineering, operations, data, security, dan AI"
               },
               "width": 1600,
-              "height": 874,
-              "redacted": true
-            },
-            {
-              "src": "/media/ticketing-assistant-replatform/06-backlog.webp",
-              "alt": {
-                "en": "Ticket backlog showing status and overdue badges",
-                "id": "Backlog tiket menampilkan status dan penanda keterlambatan"
-              },
-              "width": 1600,
-              "height": 874,
+              "height": 1000,
               "redacted": true
             }
           ]
