@@ -27,7 +27,7 @@ Next.js 16 (App Router, static export) · React 19 · TypeScript strict · three
 
 ```bash
 bun install
-bunx playwright install chromium   # needed for the CV PDF and e2e tests
+bunx playwright install chromium   # needed for the e2e tests
 bun run dev                        # http://localhost:3000/en
 ```
 
@@ -36,13 +36,12 @@ bun run dev                        # http://localhost:3000/en
 | Script | What it does |
 |---|---|
 | `bun run dev` | Next.js dev server |
-| `bun run build` | Static export to `out/` plus CV PDFs (`out/cv/kurniadi-ahmad-wijaya-cv-{en,id}.pdf`) |
-| `bun run build:web` | Static export only (set `SKIP_CV=1` on `build` for the same effect) |
+| `bun run build` | Static export to `out/` (`build:web` is the same, kept as an alias) |
 | `bun run serve` | Serve `out/` on http://127.0.0.1:4173 with Cloudflare Pages style resolution |
 | `bun run typecheck` | Generate route types and run `tsc` |
 | `bun run lint` | ESLint |
 | `bun run test` | Vitest: content, safety lint, store, intents, navgrid A*, rover movement, camera rigs, URL sync, GPU tier |
-| `bun run verify:quick` | Typecheck, lint, unit tests and `next build` (no CV): the pre-push check |
+| `bun run verify:quick` | Typecheck, lint, unit tests and `next build`: the pre-push check |
 | `bun run e2e:changed` | Playwright specs that cover your changed paths (`scripts/e2e-plan.ts`); `--dry` prints the plan |
 | `bun run e2e` / `e2e:full` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
 | `bun run e2e:smoke` | Fast subset: static routes, SEO, deploy rules, game-first load, Page View |
@@ -61,12 +60,13 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Software Wing and AI Wing case studies |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks |
 | `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
-| `/{locale}/cv` | Printable CV (source of the PDFs) |
+| `/{locale}/cv` | CV download and inline preview of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) |
 
 ## Content
 
 - `content/site-content.json` is the single public dataset. It is validated by the zod schemas in `src/content/schema.ts` at build time and by the tests. All text is `{ en, id }`.
 - Blog posts are MDX files in `content/blog/<slug>.<locale>.mdx`. A missing translation falls back to the original with a note.
+- The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. To update it, replace that file (same name); nothing is generated from the site.
 - Private evidence never enters the repo. The public-safety lint blocks internal codenames and private repository names using `content/.safety-blocklist.local.txt` (gitignored) and the `SAFETY_BLOCKLIST` env var / CI secret, on top of the committed default list.
 
 ## Structure
@@ -74,7 +74,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      CV PDF builder, static server, content validator
+scripts/      static server, e2e planning, content validator
 src/app/      routes ([locale] pages, "/" redirect, 404)
 src/components/  static-page UI
 src/content/  schema, accessors, selectors, blog loader, safety lint
@@ -89,4 +89,4 @@ e2e/          Playwright tests
 
 ## CI and deploys
 
-GitHub Actions runs typecheck, lint and unit tests next to the full build (including the CV PDFs), then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check. Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`). If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.
+GitHub Actions runs typecheck, lint and unit tests next to the static build, then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`). If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.

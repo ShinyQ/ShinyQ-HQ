@@ -117,9 +117,9 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 
 **Blog post.** Crumb "Writing", date and languages, `display-l` title, `.prose-hq` at 68ch.
 
-**About (`/contact`).** Title "About and contact"; story (first sentences as lead, rest as body) in 7 columns; `ContactPanel` in 4 (`#channels` inside). How I work (principles as ruled rows), Skills (groups with logo chips), Certifications (code, name, issuer, date, credential link), CV (`#cv`: EN and ID PDFs, CV page link).
+**About (`/contact`).** Title "About and contact"; story (first sentences as lead, rest as body) in 7 columns; `ContactPanel` in 4 (`#channels` inside). How I work (principles as ruled rows), Skills (groups with logo chips), Certifications (code, name, issuer, date, credential link), CV (`#cv`: the CV PDF download, CV page link).
 
-**Quick view.** Same tokens: page intro, sticky glass ToC (existing ids), sections use `SectionSplit` and the new rows instead of card grids. **CV**: screen chrome restyled only; the print sheet stays as is (the PDF is generated from it).
+**Quick view.** Same tokens: page intro, sticky glass ToC (existing ids), sections use `SectionSplit` and the new rows instead of card grids. **CV**: a download button and an inline preview of the owner's PDF (no print sheet; the PDF is not generated from the site).
 
 **404.** `display-l` "Room not found", body, link home.
 

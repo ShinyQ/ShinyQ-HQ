@@ -155,8 +155,8 @@ HOST=https://kurniadi.pages.dev
 curl -sI "$HOST/" | head -n1                         # 200, static language redirect page
 curl -sI "$HOST/en" | head -n1                       # 200
 curl -sI "$HOST/id" | head -n1                       # 200
-curl -sI "$HOST/cv.pdf" | grep -iE '^(HTTP|location)' # 301 to /cv/kurniadi-ahmad-wijaya-cv-en.pdf
-curl -sI "$HOST/cv/kurniadi-ahmad-wijaya-cv-en.pdf" | head -n1
+curl -sI "$HOST/cv.pdf" | grep -iE '^(HTTP|location)' # 301 to /cv/kurniadi-ahmad-wijaya-cv.pdf
+curl -sI "$HOST/cv/kurniadi-ahmad-wijaya-cv.pdf" | grep -iE '^(HTTP|content-type|x-frame-options)' # 200, application/pdf, SAMEORIGIN
 curl -s "$HOST/sitemap.xml" | head -n5               # URLs use SITE_URL
 curl -s "$HOST/robots.txt"
 curl -sI "$HOST/og/en.png" | grep -i content-type    # image/png (share card)
@@ -195,13 +195,13 @@ Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages re
 
 - `/*`: security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`) and a Content-Security-Policy. `script-src` needs `'unsafe-inline'` because the static export inlines Next.js hydration data, the root language redirect script and JSON-LD. `blob:` is allowed for workers and media used by WebGL and audio.
 - `/_next/static/*`: one year, `immutable` (file names are content hashed; this also covers the self-hosted `next/font` files).
-- `/brand/*`: one week. `/cv/*`: one hour, so a rebuilt CV shows up quickly. `/og/*`: one day for Open Graph images emitted under `/og/`. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
+- `/cv/*`: the CV PDF is previewed in an iframe on `/{locale}/cv`, so this rule detaches the site-wide `Content-Security-Policy` and `X-Frame-Options` (`! Header`) and sets `frame-ancestors 'self'` and `SAMEORIGIN` instead: same-origin framing only. The site CSP allows it with `frame-src 'self'` and keeps `object-src 'none'`.
+- `/brand/*`: one week. `/cv/*`: one hour, so a replaced CV shows up quickly. `/og/*`: one day for Open Graph images emitted under `/og/`. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
 - HTML keeps the Cloudflare default (revalidated on every request), so a new deploy is visible at once.
 
 `public/_redirects`:
 
-- `/cv.pdf` to `/cv/kurniadi-ahmad-wijaya-cv-en.pdf` (301), the path used by the old site.
-- `/en/cv.pdf` and `/id/cv.pdf` to the matching language PDF (301).
+- `/cv.pdf` (the old site's path), `/en/cv.pdf`, `/id/cv.pdf` and the former per-locale PDFs `/cv/kurniadi-ahmad-wijaya-cv-{en,id}.pdf` to `/cv/kurniadi-ahmad-wijaya-cv.pdf` (301).
 - `/` is intentionally not redirected: it is a static page that picks the language on the client.
 
-`scripts/serve-static.ts` honors simple static rules from `out/_redirects` so `e2e/deploy.spec.ts` can check the `/cv.pdf` redirect locally. Headers are only applied by Cloudflare; the e2e test checks that `out/_headers` is exported.
+`scripts/serve-static.ts` honors simple static rules from `out/_redirects` so `e2e/deploy.spec.ts` can check the CV redirects locally. Headers are only applied by Cloudflare; the e2e test checks that `out/_headers` is exported.

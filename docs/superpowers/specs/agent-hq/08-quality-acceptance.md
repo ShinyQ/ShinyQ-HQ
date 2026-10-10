@@ -43,7 +43,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 - The repo builds a static export with `bun run build`, and CI runs typecheck, lint, unit tests and the build.
 - `site-content.json` validates. The public-safety lint passes.
 - `/en`, `/id`, `/en/quick`, `/en/journey`, `/en/labs/{slug}`, `/en/library`, `/en/contact` and `/en/cv` render real content as HTML.
-- A CV PDF per locale is generated at build time.
+- The owner's CV PDF is exported unchanged at `/cv/kurniadi-ahmad-wijaya-cv.pdf` and linked from every CV entry point in both locales.
 - A Cloudflare Pages preview deploys from CI.
 
 ### Phase 1: tower shell

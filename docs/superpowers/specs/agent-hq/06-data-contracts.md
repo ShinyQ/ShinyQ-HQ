@@ -93,7 +93,7 @@ interface PostRef { slug: string; title: LocalizedText; date: string; tags: stri
 interface Publication { id: string; title: string; venue?: string; year: number; url?: string; kind: "paper" | "thesis" | "model" | "dataset"; }
 interface Talk { id: string; title: LocalizedText; event: string; date: YearMonth; role: "speaker" | "author" | "trainer"; }
 interface Contact { email: string; linkedin: string; github: string; huggingface?: string; }
-interface CvConfig { fileName: string; sections: ("summary" | "experience" | "projects" | "education" | "certifications" | "awards" | "skills")[]; }
+interface CvConfig { fileName: string; } // the owner's PDF, committed as-is at public/cv/{fileName}.pdf (one file for both locales)
 interface SideProject { id: string; title: string; summary: LocalizedText; stack: string[]; url?: string; repo?: string; }
 interface RepoRef { name: string; url: string; description: LocalizedText; language: string; stars: number; }
 
@@ -138,7 +138,7 @@ Actions: `setPhase`, `goToFloor`, `openRoom`, `closeRoom`, `startMission`, `canc
 | Hologram | `/{locale}/labs/{slug}?view=architecture` |
 | Post | `/{locale}/blog/{slug}` |
 | Quick view | `/{locale}/quick` |
-| CV | `/{locale}/cv`, PDF at `/cv/kurniadi-ahmad-wijaya-cv-{locale}.pdf` |
+| CV | `/{locale}/cv` (download plus inline preview), PDF at `/cv/kurniadi-ahmad-wijaya-cv.pdf` for both locales; `/cv.pdf`, `/{locale}/cv.pdf` and `/cv/kurniadi-ahmad-wijaya-cv-{locale}.pdf` 301 to it |
 
 The store updates the URL with `history.pushState` (room open/close) or `replaceState` (floor changes during autopilot). On load, the URL is parsed into `{ floor, activeRoom, view }` and the experience starts at that state, skipping the intro.
 
