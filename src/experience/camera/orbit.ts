@@ -137,8 +137,8 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
         maxZ: LOBBY.skillsWall.z + 6,
       },
       yaw: -Math.PI / 4,
-      // The 40 u wall needs a wider view than the default follow distance.
-      zoom: 1.45,
+      // The 40 u by 8.5 u wall needs a wider view than the default follow distance.
+      zoom: 1.7,
     },
   ],
 };

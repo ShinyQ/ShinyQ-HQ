@@ -26,7 +26,7 @@ Footprint: 52 × 42 u, x from -24 to 28 and z from -24 to 18. The west edge stay
 | Name and headline | Above the hologram, height 7.6 | Text block up to 14 wide | Billboarded, always above the stats tiles |
 | Stats ring | Around the hologram, radius 10 | 4 to 6 tiles, 3.4 × 1.9, center height 4.25 (staggered +0.5) | Headline stats (see appendix 07). Tiles billboard toward the camera and float above the rover (bottom above 2.8 u), so they read from any orbit angle and never block the walkway. |
 | Lane ring (walkable) | Around the hologram, radius 12 | Rover footprint 10.5 to 13.5 | Clear of every element at rover height |
-| Skills wall | (6, -22.5) | 40 × 1, height 6.5 | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column) |
+| Skills wall | (6, -22.5) | 40 × 1, height 8.5 on a 0.35 u glowing plinth | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u) |
 | Certifications wall | (25.5, -4) | 1 × 16, height 5 | Certification badges with "verify" links, louvered 45° toward the plaza |
 | Mission kiosk | (2, 15) | 3 × 2 | Diegetic mirror of the Rover Terminal missions |
 | Elevator door | (-24, 0) | | |

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
-import { boxesOverlap, lobbyElements, radialSpan, type Box } from "@/experience/floors/lobby/layout";
+import { boxesOverlap, lobbyElements, radialSpan, SKILLS_TEXT, skillsTextBottom, type Box } from "@/experience/floors/lobby/layout";
+import { getSkills } from "@/content/load";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { getStats } from "@/content/load";
 
@@ -71,6 +72,13 @@ describe("Lobby layout", () => {
     }
     expect(isWalkable(grid, l1.spawn)).toBe(true);
     expect(isWalkable(grid, l1.approach)).toBe(true);
+  });
+
+  it("raises the skills wall so the longest column clears its base", () => {
+    expect(LOBBY.skillsWall.h).toBeGreaterThanOrEqual(8.5);
+    const longest = Math.max(...getSkills().map((g) => g.items.length));
+    expect(skillsTextBottom(longest)).toBeGreaterThanOrEqual(0.6);
+    expect(SKILLS_TEXT.itemSize).toBeGreaterThanOrEqual(0.4);
   });
 
   it("gives each skill column room to breathe", () => {
