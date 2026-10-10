@@ -29,12 +29,58 @@ jobs:
   check:
     name: Typecheck, lint, unit tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Only for the Ask the HQ staleness comment below.
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history so the staleness check can date content/site-content.json.
+          fetch-depth: 0
       - uses: ./.github/actions/setup
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run test
+      - name: Dependency audit (non-blocking)
+        continue-on-error: true
+        run: bun audit --audit-level=high
+      - name: Ask the HQ staleness (non-blocking)
+        id: staleness
+        continue-on-error: true
+        run: bun scripts/ask-staleness.ts --report ask-staleness.md
+      - name: Comment stale Ask data on the PR
+        # Skipped on forks (read-only token). One comment per PR, refreshed in place.
+        if: github.event_name == 'pull_request' && steps.staleness.outputs.stale == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- ask-staleness -->")) | .id' | head -n1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@ask-staleness.md > /dev/null
+          else
+            gh api "repos/$REPO/issues/$PR/comments" -F body=@ask-staleness.md > /dev/null
+          fi
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        # gitleaks-action v3.0.0. Free for personal accounts; false positives are allowlisted in .github/gitleaks.toml.
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_CONFIG: .github/gitleaks.toml
+          GITLEAKS_VERSION: 8.30.1
+          # No PR comments, so the job needs no write permission.
+          GITLEAKS_ENABLE_COMMENTS: "false"
 
   site:
     name: Build static export
@@ -98,7 +144,7 @@ jobs:
     # checks keep working.
     name: Build, CV and e2e
     runs-on: ubuntu-latest
-    needs: [check, site, e2e, lighthouse]
+    needs: [check, secrets, site, e2e, lighthouse]
     if: ${{ !cancelled() }}
     steps:
       - uses: actions/checkout@v7
@@ -125,7 +171,7 @@ jobs:
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "check, site, e2e, lighthouse: $RESULTS"
+          echo "check, secrets, site, e2e, lighthouse: $RESULTS"
           for r in $RESULTS; do
             if [ "$r" != "success" ]; then
               echo "::error::A required job did not succeed ($RESULTS)."

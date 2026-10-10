@@ -1,0 +1,24 @@
+# Weekly dependency updates (T12). Grouped to keep the PR count low; majors stay separate.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Jakarta
+    groups:
+      actions:
+        patterns: ["*"]

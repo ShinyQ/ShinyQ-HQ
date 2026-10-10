@@ -1,0 +1,138 @@
+name: Ask the HQ eval
+
+# Nightly real-model checks of Ask the HQ (spec section 9): the golden set must score at least
+# 28/30 and every red-team attack must end safely. A red-team failure opens or updates one issue
+# labelled ask-redteam. Skips (green, with a notice) until the CF_EVAL_TOKEN secret exists
+# (Workers AI Read, AI Gateway Read, Account Analytics Read; docs/ask-runbook.md).
+# The optional purge job deletes AI Gateway logs older than 7 days when CF_LOGS_TOKEN is set.
+
+on:
+  schedule:
+    # 03:30 WIB (20:30 UTC).
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ask-eval
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+  CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+  ASK_GATEWAY_ID: shinyq-hq
+  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+
+jobs:
+  golden:
+    name: Golden set (real model)
+    runs-on: ubuntu-latest
+    env:
+      ASK_EVAL_REPORT: ask-eval-golden.md
+    steps:
+      - name: Check token
+        id: gate
+        run: |
+          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the golden eval."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Golden set
+        if: steps.gate.outputs.enabled == 'true'
+        run: bun scripts/ask-eval.ts golden
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
+        with:
+          name: ask-eval-golden
+          path: ask-eval-golden.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  redteam:
+    name: Red-team set (real model)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ASK_EVAL_REPORT: ask-eval-redteam.md
+    steps:
+      - name: Check token
+        id: gate
+        run: |
+          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the red-team eval."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Red-team set
+        id: redteam
+        if: steps.gate.outputs.enabled == 'true'
+        run: bun scripts/ask-eval.ts redteam
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
+        with:
+          name: ask-eval-redteam
+          path: ask-eval-redteam.md
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Open or update the red-team issue
+        # The issue is public: blocklisted terms (client names) are redacted from the report first.
+        if: failure() && steps.redteam.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create ask-redteam --repo "$REPO" --color B60205 --description "Ask the HQ nightly red-team failure" 2>/dev/null || true
+          {
+            echo "The nightly red-team run failed: $RUN_URL"
+            echo ""
+            echo "Playbook: docs/ask-runbook.md, section \"Incident playbook\". Full report: run artifact \`ask-eval-redteam\`."
+            echo ""
+            if [ -f ask-eval-redteam.md ]; then
+              bun scripts/content-gap.ts --redact ask-eval-redteam.md | head -c 60000
+            fi
+          } > redteam-issue.md
+          number=$(gh issue list --repo "$REPO" --label ask-redteam --state open --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$REPO" --body-file redteam-issue.md
+          else
+            gh issue create --repo "$REPO" --title "Ask the HQ red-team failure" --label ask-redteam --body-file redteam-issue.md
+          fi
+
+  purge-logs:
+    name: Purge AI Gateway logs older than 7 days
+    runs-on: ubuntu-latest
+    env:
+      CF_LOGS_TOKEN: ${{ secrets.CF_LOGS_TOKEN }}
+    steps:
+      - name: Check token
+        id: gate
+        run: |
+          if [ -n "$CF_LOGS_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CF_LOGS_TOKEN is not set; skipping the AI Gateway log purge (optional, docs/ask-runbook.md)."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Purge
+        if: steps.gate.outputs.enabled == 'true'
+        run: bun scripts/purge-ask-logs.ts

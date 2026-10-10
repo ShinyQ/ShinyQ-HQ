@@ -1,0 +1,14 @@
+# gitleaks configuration for CI (ci.yml, job "Secret scan"): the default rules plus reviewed
+# false positives. Add an entry only after checking the match is not a real secret.
+title = "shinyq-hq"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Dummy Cloudflare Web Analytics token in tests/unit/seo.test.ts"
+regexes = ['''^0123456789abcdef0123456789abcdef$''']
+
+[[allowlists]]
+description = "Design spec prose matched by the linkedin-client-id rule (no credential)"
+commits = ["b97bee0a39e55e811a8c2f6d419ec2312a58354f"]

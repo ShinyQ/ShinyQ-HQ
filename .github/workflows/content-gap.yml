@@ -1,0 +1,60 @@
+name: Ask the HQ content gaps
+
+# Weekly list of the questions Ask the HQ could not answer (spec section 6.3), from the Analytics
+# Engine dataset ask_events. Opens one issue labelled ask-content-gap when there was at least one
+# unanswered question. Questions are visitor input: scripts/content-gap.ts scrubs them again and
+# redacts blocklisted names before they reach the public issue. Skips until CF_EVAL_TOKEN exists.
+
+on:
+  schedule:
+    # Mondays 03:00 WIB (Sunday 20:00 UTC).
+    - cron: "0 20 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: content-gap
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Content-gap report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+      CONTENT_GAP_REPORT: content-gap-report.md
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Query Analytics Engine
+        id: gap
+        run: bun scripts/content-gap.ts
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: content-gap-report
+          path: content-gap-report.md
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: Open the weekly issue
+        if: steps.gap.outputs.unknown_total != '' && steps.gap.outputs.unknown_total != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WEEK: ${{ steps.gap.outputs.week_of }}
+        run: |
+          gh label create ask-content-gap --repo "$REPO" --color 0E8A16 --description "Ask the HQ weekly unanswered questions" 2>/dev/null || true
+          title="Ask the HQ content gaps, week of $WEEK"
+          number=$(gh issue list --repo "$REPO" --label ask-content-gap --state all --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --repo "$REPO" --body-file content-gap-report.md
+          else
+            gh issue create --repo "$REPO" --title "$title" --label ask-content-gap --body-file content-gap-report.md
+          fi
