@@ -5004,53 +5004,53 @@
           "hologram": "documents",
           "assets": [
             {
-              "src": "/media/fraud-review-platform/01-product-overview.webp",
+              "src": "/media/fraud-review-platform/01-home.webp",
               "alt": {
-                "en": "Procurement fraud review overview with a dashboard preview for document analysis and evidence review",
-                "id": "Ringkasan produk review fraud pengadaan, dengan pratinjau dashboard untuk analisis dokumen dan peninjauan bukti"
+                "en": "FREDDY home: cases that need review, verdict mix and a review queue with risk scores; vendor names blurred",
+                "id": "Beranda FREDDY: kasus yang perlu ditinjau, komposisi verdict, dan antrean review dengan skor risiko; nama vendor diburamkan"
               },
-              "width": 1280,
-              "height": 720,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/02-home.webp",
+              "src": "/media/fraud-review-platform/02-high-risk-result.webp",
               "alt": {
-                "en": "Reviewer dashboard showing cases needing attention, verdict distribution and this week's changes (synthetic data)",
-                "id": "Dashboard reviewer menampilkan kasus yang perlu ditinjau, distribusi verdict dan perubahan minggu ini (data sintetis)"
+                "en": "High-risk result with a score of 88 out of 100, top findings across 14 documents and an AI summary; identifiers blurred",
+                "id": "Hasil high risk dengan skor 88 dari 100, temuan utama dari 14 dokumen, dan ringkasan AI; identitas diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/03-high-risk-result.webp",
+              "src": "/media/fraud-review-platform/03-history.webp",
               "alt": {
-                "en": "High-risk analysis showing the score and supporting evidence for each finding",
-                "id": "Hasil analisis berisiko tinggi menampilkan skor dan bukti pendukung setiap temuan"
+                "en": "Analysis history with verdict filters, risk scores, document counts and report links",
+                "id": "Riwayat analisis dengan filter verdict, skor risiko, jumlah dokumen, dan tautan laporan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/04-history.webp",
+              "src": "/media/fraud-review-platform/04-new-analysis.webp",
               "alt": {
-                "en": "Analysis history with a verdict filter, scores and links to reports (synthetic data)",
-                "id": "Riwayat analisis dengan filter verdict, skor dan tautan ke laporan (data sintetis)"
+                "en": "New analysis form for case details and main or supporting documents, from upload or a blob folder",
+                "id": "Form analisis baru untuk detail kasus dan dokumen utama atau pendukung, dari upload atau folder blob"
               },
-              "width": 1440,
-              "height": 1116,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/05-statistics.webp",
+              "src": "/media/fraud-review-platform/05-about.webp",
               "alt": {
-                "en": "Admin dashboard showing daily analysis counts, verdict distribution and a transaction log",
-                "id": "Dashboard statistik admin menampilkan jumlah analisis harian, distribusi verdict dan log transaksi"
+                "en": "About page explaining the decision-support scope and the four-step document pipeline",
+                "id": "Halaman About yang menjelaskan cakupan decision support dan pipeline dokumen empat langkah"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
