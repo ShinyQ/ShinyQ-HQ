@@ -36,6 +36,9 @@ scripts/
   build-cv.ts                   prints /{locale}/cv to out/cv/*.pdf after next build
   serve-static.ts               serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, CV, Lighthouse)
   validate-fragment.ts          schema + safety check for content files
+  e2e-plan.ts                   pure path-to-spec map and shard split (unit tested)
+  e2e-changed.ts                `e2e:changed`: runs the specs that cover your changed paths
+  e2e-shard.ts                  `e2e:shard i/N`: balanced (round-robin) CI shard with a blob report
 src/
   app/(root)/                   "/" language redirect (own root layout)
   app/[locale]/                 all localized routes (root layout with <html lang>)
@@ -158,13 +161,26 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 
 ## Workflow
 
-- Package manager: Bun. Scripts: `dev`, `build` (export + CV PDFs), `build:web`, `typecheck` (`next typegen && tsc`), `lint`, `test`, `e2e`, `screenshots`, `serve`, `validate:content`.
-- Before pushing: `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`.
+- Package manager: Bun. Scripts: `dev`, `build` (export + CV PDFs), `build:web`, `typecheck` (`next typegen && tsc`), `lint`, `test`, `verify:quick`, `e2e` (plain `playwright test`), `e2e:full`, `e2e:changed`, `e2e:smoke`, `e2e:shard`, `screenshots`, `screenshots:pages`, `serve`, `validate:content`.
+- Before pushing: see "Fast verification" below (`verify:quick` plus `e2e:changed`); CI runs the full sharded suite.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`). Prefer the `rtk` git wrapper. One PR per phase; do not merge without the owner.
-- CI (`.github/workflows/ci.yml`) runs check, build + e2e, a non-blocking Lighthouse CI job (`lighthouserc.json`, appendix 08 budgets), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
+- CI (`.github/workflows/ci.yml`) runs check and the build in parallel, e2e in 4 shards against that one build, the aggregate required check `Build, CV and e2e` (merged HTML report), a non-blocking Lighthouse CI job (`lighthouserc.json`, appendix 08 budgets), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
 - Production (`.github/workflows/deploy.yml`) deploys `out/` on push to `main` only when both secrets and the `CF_PAGES_PROJECT` variable are set. Owner setup: `docs/deploy.md`.
 - Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset, from `vars.CF_BEACON_TOKEN`).
 - Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add. Sound is on by default (owner decision): a missing `hq:sound` means on, a stored `"off"` stays muted, and the context starts on the first user gesture. `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent without changing the stored choice.
+
+## Fast verification
+
+The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally and let CI run everything.
+
+- Before every push: `bun run verify:quick` (typecheck, lint, unit tests, `next build` without CV PDFs, about 1 to 2 minutes), then `bun run e2e:changed` (only the specs that cover your changed paths, usually 1 to 4 minutes). Together about 5 minutes.
+- `e2e:changed` diffs against the merge base with `origin/main` plus staged, unstaged and untracked files and maps paths to specs in `scripts/e2e-plan.ts` (for example `src/experience/floors/labs/**` to `labs` and `gallery`, `src/app/**` and `src/components/**` to `pageview`, `static-routes` and `gallery`, `src/hud/drawer/**` to the drawer specs, `drawer-solid` included). Changes to `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` run the full suite; unmapped paths add the smoke specs; docs and unit tests run nothing. `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`). When you add a spec or a folder, add its rule (a unit test checks every spec is known).
+- `bun run e2e:smoke` (static routes, SEO, deploy rules, game-first load, Page View, about 1 to 2 minutes) is the fallback when unsure. `bun run e2e:full` (whole suite, about 6 to 10 minutes locally) only when you change shared test infrastructure, before a phase PR, or to reproduce a CI failure locally (`bun run e2e:full e2e/career.spec.ts -g "swipe"`).
+- Screenshots (`bun run screenshots`, `screenshots:pages`, 15 minutes or more) run only when visuals change and the owner asks for captures, or in CI: nightly on `main`, on demand (Actions > Screenshots > Run workflow) or on a PR labelled `screenshots` (also automatic for changes under `docs/design/**`). Artifacts: `screenshots`.
+- Workers: Playwright uses 2 workers locally and on each CI shard (4 vCPU runners). Every worker renders WebGL on the CPU, so more workers starve each other and make 3D tests time out; do not raise it. Do not run two e2e suites at once on one machine.
+- Turbopack can serve stale CSS after large style or dependency changes: `rm -rf .next` before `verify:quick` if the export looks wrong. `e2e:*` serves `out/` from the last build, so rebuild after code changes (`verify:quick` does); `e2e:changed` and `e2e:full` print the CV PDFs first when `out/cv` is missing (about 2 seconds).
+- Writing 3D tests: wait on state, never on time. Use the helpers in `e2e/hq.ts`: `enterHQ`, `enterFloorRoute` (deep link, waits for the scene loop), `waitForSceneLive` (the phase is `explore` before the first frame on deep links, and input sent earlier is dropped), `waitForCameraSettle` (counts rendered frames, so a stalled main thread does not look settled), `waitForFrames`, `waitForFloor`, `waitForRoom`, `waitForRoverMove`, and `expect.poll` for values. `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas). Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier. No blanket retries: CI retries once; fix a flaky test instead of adding retries.
+- CI shards with `scripts/e2e-shard.ts` (round-robin over `playwright test --list`, so every shard gets part of every slow 3D spec; Playwright's own `--shard` cuts contiguous blocks). Shards upload blob reports that `Build, CV and e2e` merges into the `playwright-report` artifact. To reproduce a shard locally: `bun run e2e:shard 2/4`.
 
 ## Next.js version notes
 

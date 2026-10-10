@@ -108,22 +108,62 @@ export async function waitForRoverMove(page: Page, from: { x: number; z: number 
   );
 }
 
-/** Waits until the follow camera has settled after the intro (the spring is slow on SwiftShader). */
-export async function waitForCameraSettle(page: Page) {
+/**
+ * Waits until the follow camera has settled after the intro (the spring is slow on SwiftShader).
+ * Counts animation frames, not wall time: under load the main thread can stall for seconds (shader
+ * compiles), and a camera that did not move because no frame ran is not a settled camera.
+ */
+export async function waitForCameraSettle(page: Page, { frames = 12, minMs = 300, timeout = 60_000 } = {}) {
   await page.waitForFunction(
-    () =>
+    ({ frames, minMs }) =>
       new Promise<boolean>((resolve) => {
         const w = window as unknown as { __hq: { camera?: () => [number, number, number] } };
         const read = () => w.__hq.camera?.() ?? [0, 0, 0];
         const a = read();
-        setTimeout(() => {
+        const start = performance.now();
+        let seen = 0;
+        const tick = () => {
+          seen += 1;
+          if (seen < frames || performance.now() - start < minMs) {
+            requestAnimationFrame(tick);
+            return;
+          }
           const b = read();
           resolve(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 0.05);
-        }, 300);
+        };
+        requestAnimationFrame(tick);
       }),
-    null,
-    { timeout: 20_000, polling: 100 },
+    { frames, minMs },
+    { timeout, polling: 100 },
   );
+}
+
+/** Resolves after `count` rendered animation frames (state that updates per frame, not per millisecond). */
+export async function waitForFrames(page: Page, count = 10) {
+  await page.evaluate(
+    (count) =>
+      new Promise<void>((resolve) => {
+        let seen = 0;
+        const tick = () => (++seen >= count ? resolve() : requestAnimationFrame(tick));
+        requestAnimationFrame(tick);
+      }),
+    count,
+  );
+}
+
+/**
+ * Waits until the scene loop runs: the Director has created the rover controller and rendered, and
+ * the SSR boot cover is gone. Deep links set the phase to `explore` before the first frame, so
+ * `explore` alone does not mean input is handled yet (an intent emitted before the first Director
+ * frame is dropped, and a touch before the cover is released lands on the cover).
+ */
+export async function waitForSceneLive(page: Page, timeout = 60_000) {
+  await page.waitForFunction(
+    () => ((window as unknown as Partial<HQWindow>).__hq?.rover.drawCalls ?? 0) > 0 && !document.documentElement.hasAttribute("data-hq-boot"),
+    null,
+    { timeout },
+  );
+  await waitForFrames(page, 2);
 }
 
 /** Opens a floor route (deep link) as a returning visitor and waits for explore: no boot, no intro. */
@@ -132,6 +172,7 @@ export async function enterFloorRoute(page: Page, path: string, { tier = "lite" 
   await page.goto(`${path}?tier=${tier}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
 }
 
 /** Waits until the Glass Drawer shows `room`. */
