@@ -45,8 +45,8 @@ describe("parseArgs", () => {
 });
 
 describe("wrangler.toml", () => {
-  it("is free of secrets and keeps Ask off by default", () => {
-    expect(toml).toMatch(/^ASK_ENABLED = "false"$/m);
+  it("is free of secrets and sets the kill switch explicitly", () => {
+    expect(toml).toMatch(/^ASK_ENABLED = "(true|false)"$/m);
     expect(toml).not.toMatch(/^\s*(TURNSTILE_SECRET|ASK_IP_SALT_SEED|ASK_COOKIE_KEY)\s*=/m);
     expect(toml).toMatch(/^pages_build_output_dir = "out"$/m);
   });

@@ -42,9 +42,9 @@ dataset = "ask_events"
 # simple = { limit = 8, period = 60 }
 
 [vars]
-# Kill switch. Anything but "true" hides the UI and makes /api/ask return 503. Stays "false" until
-# the first production deploy has passed the smoke test (docs/ask-runbook.md).
-ASK_ENABLED = "false"
+# Kill switch. Anything but "true" hides the UI and makes /api/ask return 503 (docs/ask-runbook.md).
+# Turned on for the first production deploy on 2026-10-11 (owner approval).
+ASK_ENABLED = "true"
 # Primary and fallback Workers AI models (one fallback attempt per question).
 ASK_PRIMARY = "@cf/google/gemma-4-26b-a4b-it"
 ASK_FALLBACK = "@cf/mistralai/mistral-small-3.1-24b-instruct"
