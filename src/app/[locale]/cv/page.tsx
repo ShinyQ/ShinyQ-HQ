@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Container } from "@/components/Section";
 import { getAwards, getCertifications, getPods, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
 import { LOCALES, type CvSection } from "@/content/schema";
 import { assertLocale } from "@/i18n/locale";
@@ -153,16 +152,19 @@ export default async function CvPage({ params }: PageProps<"/[locale]/cv">) {
   };
 
   return (
-    <Container className="py-8 print:max-w-none print:p-0">
-      <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-2">{t("print")}</p>
+    <div className="pv-wrap pt-8 pb-8 sm:pt-12 print:max-w-none print:p-0">
+      <div className="no-print mx-auto mb-8 flex max-w-[210mm] flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="pv-h2">{t("title")}</p>
+          <p className="pv-small mt-2">{t("print")}</p>
+        </div>
         <ul className="flex flex-wrap gap-2">
           {LOCALES.map((l) => (
             <li key={l}>
               <a
                 href={cvPdfPath(roof.cv.fileName, l)}
                 hrefLang={l}
-                className="inline-flex min-h-11 items-center rounded-lg border border-cyan/50 px-4 text-sm font-semibold text-ink transition hover:bg-cyan/10"
+                className={`pv-btn ${l === locale ? "pv-btn-primary" : "pv-btn-ghost"}`}
               >
                 {tc("downloadCvLocale", { locale: l.toUpperCase() })}
               </a>
@@ -194,6 +196,6 @@ export default async function CvPage({ params }: PageProps<"/[locale]/cv">) {
           <div key={s}>{sections[s]}</div>
         ))}
       </article>
-    </Container>
+    </div>
   );
 }
