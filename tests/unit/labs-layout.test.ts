@@ -3,7 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, ROVER, SHAFT } from "@/experience/config";
 import { buildLabsLayout, directoryStop, LABS, WING_SIDE } from "@/experience/floors/labs/layout";
 import { distanceToRect } from "@/experience/nav/collision";
-import { DOOR_SIZE } from "@/experience/nav/doors";
+import { DOOR_WIDTH } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import type { LabPod } from "@/experience/types";
 
@@ -104,7 +104,7 @@ describe("L3 Labs layout", () => {
   });
 
   it("keeps every lane ribbon off every door pad", () => {
-    const half = DOOR_SIZE / 2 + 0.375 + 0.1;
+    const half = DOOR_WIDTH / 2 + 0.375 + 0.1;
     for (const lane of layout.lanes)
       for (let i = 0; i < lane.length - 1; i++)
         for (let k = 0; k <= 40; k++) {

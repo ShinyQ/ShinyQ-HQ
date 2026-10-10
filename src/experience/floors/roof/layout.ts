@@ -62,8 +62,8 @@ export function roofObstacles(count = TERMINAL_COUNT): Rect[] {
 
 /** Door triggers: in front of the middle comms terminal and the CV kiosk. */
 export const ROOF_DOORS: DoorTrigger[] = [
-  { room: "RF:contact", at: ROOF_STOPS.contact },
-  { room: "RF:cv", at: ROOF_STOPS.cv },
+  { room: "RF:contact", at: ROOF_STOPS.contact, facing: { x: 0, z: -1 } },
+  { room: "RF:cv", at: ROOF_STOPS.cv, facing: { x: 0, z: -1 } },
 ];
 
 const LANE_Z = ROOF_STOPS.cv.z;

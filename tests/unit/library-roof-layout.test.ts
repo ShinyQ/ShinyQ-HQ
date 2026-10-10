@@ -3,7 +3,7 @@ import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
 import { LIBRARY, LIBRARY_DOORS, LIBRARY_LANES, LIBRARY_STOPS, libraryObstacles, postStop, spineSlots } from "@/experience/floors/library/layout";
 import { ROOF, ROOF_DOORS, ROOF_LANES, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
 import { distanceToRect } from "@/experience/nav/collision";
-import { DOOR_SIZE, doorAt } from "@/experience/nav/doors";
+import { DOOR_WIDTH, doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import type { Rect, Vec2 } from "@/experience/types";
 
@@ -115,13 +115,13 @@ describe("deep link spawns", () => {
 describe("door triggers", () => {
   it("open the research shelf, the models shelf, the talks stage, the comms terminals and the CV kiosk at their stops", () => {
     expect(layouts.L4.doors).toEqual([
-      { room: "L4:research", at: LIBRARY_STOPS.research },
-      { room: "L4:publications", at: LIBRARY_STOPS.publications },
-      { room: "L4:talks", at: LIBRARY_STOPS.talks },
+      { room: "L4:research", at: LIBRARY_STOPS.research, facing: { x: -1, z: 0 } },
+      { room: "L4:publications", at: LIBRARY_STOPS.publications, facing: { x: 0, z: -1 } },
+      { room: "L4:talks", at: LIBRARY_STOPS.talks, facing: { x: 0, z: -1 } },
     ]);
     expect(layouts.RF.doors).toEqual([
-      { room: "RF:contact", at: ROOF_STOPS.contact },
-      { room: "RF:cv", at: ROOF_STOPS.cv },
+      { room: "RF:contact", at: ROOF_STOPS.contact, facing: { x: 0, z: -1 } },
+      { room: "RF:cv", at: ROOF_STOPS.cv, facing: { x: 0, z: -1 } },
     ]);
   });
 
@@ -149,7 +149,7 @@ describe("L4 and RF lanes", () => {
       }),
     );
   it("lane ribbons stop before every door pad", () => {
-    const half = DOOR_SIZE / 2 + 0.375 + 0.1;
+    const half = DOOR_WIDTH / 2 + 0.375 + 0.1;
     for (const [lanes, doors] of [
       [LIBRARY_LANES, LIBRARY_DOORS],
       [ROOF_LANES, ROOF_DOORS],

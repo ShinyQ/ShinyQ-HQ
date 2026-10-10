@@ -88,9 +88,9 @@ export function libraryObstacles(): Rect[] {
  * the palette or a mission (their stops come from `postStop`).
  */
 export const LIBRARY_DOORS: DoorTrigger[] = [
-  { room: "L4:research", at: LIBRARY_STOPS.research },
-  { room: "L4:publications", at: LIBRARY_STOPS.publications },
-  { room: "L4:talks", at: LIBRARY_STOPS.talks },
+  { room: "L4:research", at: LIBRARY_STOPS.research, facing: { x: -1, z: 0 } },
+  { room: "L4:publications", at: LIBRARY_STOPS.publications, facing: { x: 0, z: -1 } },
+  { room: "L4:talks", at: LIBRARY_STOPS.talks, facing: { x: 0, z: -1 } },
 ];
 
 /** Main walkway z, between the blog shelves and the models shelf. */

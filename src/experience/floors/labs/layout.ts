@@ -125,7 +125,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   };
   const pillars = { software: pillar("software"), ai: pillar("ai") };
 
-  const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door }));
+  const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));
   const obstacles: Rect[] = [...placed.map((p) => p.rect), pillars.software, pillars.ai].map(({ minX, maxX, minZ, maxZ }) => ({ minX, maxX, minZ, maxZ }));
 
   const east = LABS.bounds.maxX - 2;

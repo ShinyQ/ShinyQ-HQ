@@ -262,6 +262,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       following: controller.following,
       now,
       speed: controller.pose.speed,
+      heading: controller.pose.heading,
+      facing: door?.facing,
     });
     if (open) intents.emit({ type: "open", room: open });
 

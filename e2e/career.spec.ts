@@ -159,6 +159,9 @@ test.describe("Career Archive on touch", () => {
     const errors = collectErrors(page);
     await openJourney(page);
     await waitForPhase(page, "explore");
+    // The SSR boot cover is released on the first canvas frame, which can come just after "explore";
+    // a touch before that lands on the cover instead of the canvas.
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-hq-boot"));
     // Left swipe of ~60% of the width: two year stops forward (2019, then 2020 at x = 1).
     await swipe(page, [{ x: 320, y: 480 }, { x: 220, y: 482 }, { x: 80, y: 484 }]);
     await roverWhere(page, "x", ">", 0);

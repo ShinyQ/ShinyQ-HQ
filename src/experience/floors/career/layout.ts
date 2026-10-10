@@ -161,7 +161,10 @@ export function buildCorridor(input: CareerLayoutInput): CorridorLayout {
   const bounds: Rect = { minX: C.slabMinX, maxX: annex.maxX, minZ: -halfDepth, maxZ: halfDepth };
 
   const workshopAt: Vec2 = { x: annexX, z: wall.maxZ + 1.5 };
-  const doors: DoorTrigger[] = [...rooms.map((r) => ({ room: r.id, at: r.at })), { room: WORKSHOP_ROOM, at: workshopAt }];
+  const doors: DoorTrigger[] = [
+    ...rooms.map((r) => ({ room: r.id, at: r.at, facing: { x: 0, z: r.side } })),
+    { room: WORKSHOP_ROOM, at: workshopAt, facing: { x: 0, z: -1 } },
+  ];
 
   return {
     segments,

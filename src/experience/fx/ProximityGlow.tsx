@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { AdditiveBlending, CircleGeometry, Color, Float32BufferAttribute, Object3D, RingGeometry, type InstancedMesh } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useHQStore } from "@/store/useHQStore";
-import { DOOR_SIZE } from "../nav/doors";
+import { DOOR_SIZE, padHalf } from "../nav/doors";
 import { roverRuntime } from "../rover/runtime";
 import type { DoorTrigger } from "../types";
 import { neonColor } from "./materials";
@@ -45,7 +45,11 @@ export function ProximityGlow({ doors, color, floorY }: { doors: DoorTrigger[]; 
     if (!m) return;
     const d = new Object3D();
     doors.forEach((door, i) => {
+      // Same footprint as the trigger: DOOR_SIZE deep along the door's facing, its width across.
+      const { along, across } = padHalf(door);
       d.position.set(door.at.x, 0.025, door.at.z);
+      d.rotation.set(0, door.facing ? Math.atan2(door.facing.x, door.facing.z) : 0, 0);
+      d.scale.set(across / along, 1, 1);
       d.updateMatrix();
       m.setMatrixAt(i, d.matrix);
       m.setColorAt(i, tmp.copy(base).multiplyScalar(0.15));
