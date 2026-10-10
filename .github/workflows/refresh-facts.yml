@@ -2,10 +2,12 @@ name: Refresh live facts
 
 # Weekly live facts for the stats ring, the Page View and Ask the HQ (spec section 6.2):
 # GitHub contributions and public repos, Hugging Face models and downloads, credential URL checks.
-# Opens (or refreshes) one PR only when a value changed, then enables auto-merge (owner decision 3).
-# PRs pushed with the default GITHUB_TOKEN do not trigger CI, so required checks never report and
-# auto-merge waits forever. Add the optional FACTS_PR_TOKEN secret (fine-grained PAT, this repo
-# only, Contents and Pull requests read and write) to fix that; see docs/ask-runbook.md.
+# Opens (or refreshes) one PR only when a value changed, then merges it itself once CI is green
+# (owner decision 3). PRs pushed with GITHUB_TOKEN do not trigger the pull_request CI run, and main
+# has no branch protection, so `gh pr merge --auto` would merge without checks. Instead this job
+# dispatches ci.yml on the PR branch (GITHUB_TOKEN may trigger workflow_dispatch), waits for that run
+# on the exact pushed commit, and merges only when the required jobs succeeded. Otherwise the PR
+# stays open and this job fails. No personal access token is needed (docs/ask-runbook.md).
 
 on:
   schedule:
@@ -20,17 +22,21 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  # Dispatch and read the CI run on the facts branch.
+  actions: write
 
 jobs:
   refresh:
     name: Refresh live facts
     runs-on: ubuntu-latest
+    # CI takes about 10 minutes (build, 4 e2e shards, Lighthouse); the wait below gives up after 45.
+    timeout-minutes: 60
     env:
       BRANCH: chore/refresh-live-facts
+      CI_WORKFLOW: ci.yml
+      REQUIRED_JOBS: "Typecheck, lint, unit tests|Build, CV and e2e"
     steps:
       - uses: actions/checkout@v7
-        with:
-          token: ${{ secrets.FACTS_PR_TOKEN || github.token }}
       - uses: ./.github/actions/setup
       - name: Fetch live facts
         id: facts
@@ -39,10 +45,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: bun scripts/refresh-facts.ts
       - name: Open or refresh the PR
+        id: pr
         if: steps.facts.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.FACTS_PR_TOKEN || github.token }}
-          HAS_PAT: ${{ secrets.FACTS_PR_TOKEN != '' }}
+          GH_TOKEN: ${{ github.token }}
           AS_OF: ${{ steps.facts.outputs.as_of }}
         run: |
           git config user.name "github-actions[bot]"
@@ -52,17 +58,58 @@ jobs:
           git commit -m "chore: refresh live facts (asOf $AS_OF)"
           git push --force origin "$BRANCH"
           title="Refresh live facts (asOf $AS_OF)"
-          body="Weekly refresh of \`content/generated/dynamic-facts.json\` by \`scripts/refresh-facts.ts\` (numbers, dates, booleans and IDs only). Auto-merges when CI is green."
+          body="Weekly refresh of \`content/generated/dynamic-facts.json\` by \`scripts/refresh-facts.ts\` (numbers, dates, booleans and IDs only). The refresh-facts workflow runs CI on this branch and merges it when the required jobs pass."
           number=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
           if [ -n "$number" ]; then
             gh pr edit "$number" --title "$title" --body "$body"
           else
             gh pr create --base main --head "$BRANCH" --title "$title" --body "$body"
+            number=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
           fi
-          gh pr merge "$BRANCH" --auto --squash || echo "::warning::Could not enable auto-merge; enable \"Allow auto-merge\" in the repository settings."
-          if [ "$HAS_PAT" != "true" ]; then
-            echo "::warning::FACTS_PR_TOKEN is not set: this PR was pushed with GITHUB_TOKEN, so CI does not run on it and auto-merge cannot complete. Close and reopen the PR, or add FACTS_PR_TOKEN (docs/ask-runbook.md)."
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Run CI on the facts branch
+        id: ci
+        if: steps.facts.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          gh workflow run "$CI_WORKFLOW" --ref "$BRANCH"
+          # The dispatch API returns no run id: poll for the run on the pushed commit.
+          run_id=""
+          for _ in $(seq 1 30); do
+            sleep 10
+            run_id=$(gh run list --workflow "$CI_WORKFLOW" --branch "$BRANCH" --event workflow_dispatch --limit 10 \
+              --json databaseId,headSha --jq "map(select(.headSha == \"$SHA\"))[0].databaseId // empty")
+            [ -n "$run_id" ] && break
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::No CI run started for $SHA on $BRANCH."
+            exit 1
           fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id" >> "$GITHUB_STEP_SUMMARY"
+          # `gh run watch` exits non-zero on failure; the job check below decides either way.
+          timeout 45m gh run watch "$run_id" --interval 30 --exit-status > /dev/null || true
+          status=$(gh run view "$run_id" --json status --jq .status)
+          if [ "$status" != "completed" ]; then
+            echo "::error::CI run $run_id did not finish within 45 minutes ($status). The PR stays open."
+            exit 1
+          fi
+          passed=$(gh run view "$run_id" --json jobs --jq "[.jobs[] | select(.name | test(\"^($REQUIRED_JOBS)\$\")) | select(.conclusion == \"success\")] | length")
+          if [ "$passed" != "2" ]; then
+            echo "::error::Required CI jobs did not all succeed on $SHA (run $run_id). The PR stays open for review."
+            exit 1
+          fi
+      - name: Merge the PR
+        if: steps.facts.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+          SHA: ${{ steps.pr.outputs.sha }}
+        # --match-head-commit refuses to merge if the branch moved after CI ran.
+        run: gh pr merge "$NUMBER" --squash --delete-branch --match-head-commit "$SHA"
       - name: Summary
         env:
           CHANGED: ${{ steps.facts.outputs.changed }}
