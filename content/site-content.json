@@ -6910,8 +6910,8 @@
             "id": "Penyusunan dan hosting presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck, built as Deck Studio inside MII Cowork: AI agents create presentations in sandboxes, then publish through guarded deployments.",
-            "id": "MII Deck, dibangun sebagai Deck Studio di dalam MII Cowork: AI agent menyusun presentasi di sandbox, lalu mempublikasikannya melalui deployment dengan pengaman."
+            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. AI agents in MII Cowork draft decks in sandboxes, an owner approves each change, and private decks stay behind their own passwords.",
+            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan deck privat tetap terlindungi password masing-masing."
           },
           "period": {
             "start": "2026-07",
@@ -6957,50 +6957,120 @@
           "hologram": "template",
           "assets": [
             {
-              "src": "/media/agent-deck-platform/01-published-deck.webp",
+              "src": "/media/agent-deck-platform/deck-aria-01.webp",
               "alt": {
-                "en": "Published deck on the hosting site: cover slide of a vendor portal explainer with page previews",
-                "id": "Deck yang dipublikasikan di situs hosting: slide sampul penjelasan portal vendor dengan pratinjau halaman"
+                "en": "ARIA product deck cover in the dark MII theme, with a live call card showing grounded retrieval and a human handoff",
+                "id": "Sampul deck produk ARIA dengan tema gelap MII, berisi kartu panggilan live yang menampilkan retrieval berbasis dokumen dan handoff ke manusia"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/agent-deck-platform/02-flow-slide.webp",
+              "src": "/media/agent-deck-platform/deck-workshop-01.webp",
               "alt": {
-                "en": "Agent-authored slide showing the purchase order to payment flow as a diagram",
-                "id": "Slide buatan agent yang menampilkan alur purchase order hingga pembayaran sebagai diagram"
+                "en": "Workshop slide for a mining and metals client: a RAG pipeline diagram from documents to vector search, in the light MII theme",
+                "id": "Slide workshop untuk klien sektor pertambangan dan logam: diagram pipeline RAG dari dokumen hingga vector search, dengan tema terang MII"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/agent-deck-platform/03-screenshot-slide.webp",
+              "src": "/media/agent-deck-platform/deck-business-plan-01.webp",
               "alt": {
-                "en": "Slide that frames a product screenshot with annotated callouts",
-                "id": "Slide yang membingkai screenshot produk dengan callout beranotasi"
+                "en": "Business plan for a national bakery brand: a nine-stage delivery timeline as a Gantt chart; client name and commercial figures masked",
+                "id": "Business plan untuk brand roti nasional: timeline delivery sembilan tahap dalam bentuk Gantt chart; nama klien dan angka komersial disamarkan"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/agent-deck-platform/04-login-slide.webp",
+              "src": "/media/agent-deck-platform/deck-aria-02.webp",
               "alt": {
-                "en": "Slide walking through the sign-in page with a browser frame and notes",
-                "id": "Slide yang menjelaskan halaman sign-in dengan bingkai browser dan catatan"
+                "en": "Azure architecture slide grouping realtime, knowledge and operations planes with cross-cutting security and governance",
+                "id": "Slide arsitektur Azure yang mengelompokkan realtime, knowledge, dan operations plane dengan keamanan dan tata kelola lintas komponen"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/agent-deck-platform/05-summary-slide.webp",
+              "src": "/media/agent-deck-platform/deck-workshop-02.webp",
               "alt": {
-                "en": "Summary slide comparing three pages side by side",
-                "id": "Slide ringkasan yang membandingkan tiga halaman berdampingan"
+                "en": "Workshop slide showing a supervisor agent delegating to specialist agents, each with its own tools",
+                "id": "Slide workshop yang menampilkan supervisor agent mendelegasikan tugas ke specialist agent, masing-masing dengan tools sendiri"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-business-plan-02.webp",
+              "alt": {
+                "en": "Proposal slide reversing the weekly forecasting flow: forecast per outlet first, then aggregate; client name and targets masked",
+                "id": "Slide proposal yang membalik alur forecasting mingguan: forecast per outlet lebih dulu, lalu agregasi; nama klien dan target disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-aria-03.webp",
+              "alt": {
+                "en": "Decision flow slide: grounded retrieval, confidence scoring and escalation to a human when the answer is uncertain",
+                "id": "Slide alur keputusan: retrieval berbasis dokumen, confidence scoring, dan eskalasi ke manusia saat jawaban belum pasti"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-03.webp",
+              "alt": {
+                "en": "Workshop slide placing one AI backend behind Teams, WhatsApp, web and other front ends",
+                "id": "Slide workshop yang menempatkan satu backend AI di balik Teams, WhatsApp, web, dan front end lainnya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-workshop-04.webp",
+              "alt": {
+                "en": "Workshop slide scoring ideas on business value, experience and technology readiness with an impact matrix",
+                "id": "Slide workshop untuk menilai ide berdasarkan nilai bisnis, pengalaman, dan kesiapan teknologi dengan matriks dampak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-business-plan-03.webp",
+              "alt": {
+                "en": "Roadmap slide with next-phase options and open questions to validate with the client's forecasting team",
+                "id": "Slide roadmap dengan opsi fase berikutnya dan pertanyaan terbuka untuk divalidasi bersama tim forecasting klien"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-aria-04.webp",
+              "alt": {
+                "en": "Demo slide framing a product screenshot of an escalated call with the transcript and context handed to an operator",
+                "id": "Slide demo yang membingkai screenshot produk berisi panggilan yang dieskalasi, lengkap dengan transkrip dan konteks untuk operator"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/agent-deck-platform/deck-vendor-01.webp",
+              "alt": {
+                "en": "Vendor portal explainer deck: cover slide with page previews",
+                "id": "Deck penjelasan portal vendor: slide sampul dengan pratinjau halaman"
               },
               "width": 1600,
               "height": 1000,
