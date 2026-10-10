@@ -4690,63 +4690,63 @@
           "hologram": "shield",
           "assets": [
             {
-              "src": "/media/ai-code-security-platform/01-scan-overview.webp",
+              "src": "/media/ai-code-security-platform/01-overview.webp",
               "alt": {
-                "en": "Demo repository scan with a failed security gate, findings by severity and scanner durations",
-                "id": "Hasil scan repository demo dengan security gate gagal, temuan menurut severity dan durasi scanner"
+                "en": "Pris.AI overview: open critical and high findings, repositories scanned, merge gate status and top risks ranked with KEV and EPSS signals; repository names blurred",
+                "id": "Overview Pris.AI: temuan critical dan high yang terbuka, repositori yang dipindai, status merge gate, dan risiko teratas dengan sinyal KEV dan EPSS; nama repositori diburamkan"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/02-scan-findings.webp",
+              "src": "/media/ai-code-security-platform/02-repositories.webp",
               "alt": {
-                "en": "Risk-ranked findings from eight scanners, with KEV and EPSS signals",
-                "id": "Tabel temuan dari delapan scanner, diurutkan menurut risiko dengan sinyal KEV dan EPSS"
+                "en": "Repositories with severity posture, latest default-branch scan and scan history per repository",
+                "id": "Daftar repositori dengan postur severity, scan terakhir di default branch, dan riwayat scan per repositori"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/03-finding-drawer.webp",
+              "src": "/media/ai-code-security-platform/03-findings.webp",
               "alt": {
-                "en": "SQL injection detail panel showing the code excerpt, location and time-limited suppression request",
-                "id": "Panel detail SQL injection menampilkan potongan kode, lokasi dan permintaan suppression berbatas waktu"
+                "en": "Findings ranked by risk across repositories, filterable by severity and KEV, with the scanner that reported each one",
+                "id": "Temuan yang diurutkan berdasarkan risiko lintas repositori, dapat difilter berdasarkan severity dan KEV, beserta scanner yang melaporkannya"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/04-repositories.webp",
+              "src": "/media/ai-code-security-platform/04-security-policy.webp",
               "alt": {
-                "en": "Repository list showing default-branch security status and each repository's latest scan",
-                "id": "Daftar repository menampilkan status keamanan default branch dan hasil scan terbaru masing-masing repository"
+                "en": "Security policy for the merge gate: KEV and verified secret blocking, EPSS threshold and enforcement mode",
+                "id": "Security policy untuk merge gate: blokir KEV dan secret terverifikasi, ambang EPSS, dan mode enforcement"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/05-security-policy.webp",
+              "src": "/media/ai-code-security-platform/05-scans.webp",
               "alt": {
-                "en": "Security policy settings for pull request checks that block merges",
-                "id": "Pengaturan security policy untuk pemeriksaan pull request yang memblokir merge"
+                "en": "Scan history across repositories with commit, status, findings by severity and trigger",
+                "id": "Riwayat scan lintas repositori dengan commit, status, temuan per severity, dan pemicunya"
               },
-              "width": 1440,
-              "height": 1200,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-code-security-platform/06-assistant-chat.webp",
+              "src": "/media/ai-code-security-platform/06-audit-log.webp",
               "alt": {
-                "en": "AI security agent response assessing a dependency CVE's exploitability and proposed fix",
-                "id": "Respons AI security agent menilai apakah CVE pada dependency dapat dieksploitasi dan mengusulkan perbaikan"
+                "en": "Audit log of scans, scanner runs and policy gate evaluations",
+                "id": "Audit log untuk scan, eksekusi scanner, dan evaluasi policy gate"
               },
-              "width": 1440,
-              "height": 900,
+              "width": 1600,
+              "height": 1000,
               "redacted": true
             }
           ]
