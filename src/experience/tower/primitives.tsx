@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { BoxGeometry, BufferGeometry, EdgesGeometry, Float32BufferAttribute } from "three";
+import { useHQStore } from "@/store/useHQStore";
+import { getGlassMaterial, glassSidesGeometry, rimGeometry, rimThickness } from "../fx/geometry";
+import { neonColor } from "../fx/materials";
 
 export const FONTS = {
   sans: "/fonts/inter-latin-400-normal.woff",
@@ -12,24 +15,43 @@ export const FONTS = {
 
 type V3 = [number, number, number];
 
-/** Neon edge lines of a box (one draw call). */
-export function BoxEdges({ size, position, color, opacity = 0.95 }: { size: V3; position?: V3; color: string; opacity?: number }) {
+/** Neon edge lines of a box (one draw call). Boosted above 1.0 on the full tier so they bloom. */
+export function BoxEdges({ size, position, color, opacity = 0.95, boost = 1.4 }: { size: V3; position?: V3; color: string; opacity?: number; boost?: number }) {
   const [w, h, d] = size;
+  const tier = useHQStore((s) => s.tier);
   const geometry = useMemo(() => new EdgesGeometry(new BoxGeometry(w, h, d)), [w, h, d]);
+  const neon = useMemo(() => neonColor(color, boost, tier), [color, boost, tier]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
   return (
     <lineSegments geometry={geometry} position={position}>
-      <lineBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} />
+      <lineBasicMaterial color={neon} transparent opacity={opacity} toneMapped={false} />
     </lineSegments>
   );
 }
 
-/** Wireframe glass box: a faint fill plus neon edges (appendix 05 room material). */
+/**
+ * The full tier blends in the composer's linear buffer, which lifts dark translucent tints about 2 to 3
+ * times compared with blending on the sRGB canvas (lite). Fills are scaled down there so both tiers match.
+ */
+export function tierFill(opacity: number, tier: string): number {
+  return tier === "full" ? Math.round(opacity * 0.4 * 1000) / 1000 : opacity;
+}
+
+/** Below this height a box is a slab or strip: its top face carries the tint, so it keeps a flat fill. */
+const FLAT_H = 0.5;
+
+/**
+ * Glass room box from the prototype: four side walls with the fresnel and scanline glass shader
+ * (one shared material per color and opacity) plus thin neon rim bars on every edge. Two draw calls.
+ * Flat boxes keep a plain tinted fill. `rim={false}` falls back to hairline edges.
+ */
 export function GlassBox({
   size,
   position,
   color,
   fillOpacity = 0.05,
   edgeOpacity = 0.95,
+  rim = true,
   children,
 }: {
   size: V3;
@@ -37,52 +59,46 @@ export function GlassBox({
   color: string;
   fillOpacity?: number;
   edgeOpacity?: number;
+  rim?: boolean;
   children?: ReactNode;
 }) {
+  const [w, h, d] = size;
+  const tier = useHQStore((s) => s.tier);
+  const coarse = useHQStore((s) => s.device.coarse);
+  const flat = h < FLAT_H;
+  const sides = useMemo(() => (flat ? null : glassSidesGeometry(w, h, d)), [flat, w, h, d]);
+  const rims = useMemo(() => (rim ? rimGeometry(w, h, d, rimThickness(w, h, d, coarse)) : null), [rim, w, h, d, coarse]);
+  const neon = useMemo(() => neonColor(color, 1.4, tier), [color, tier]);
+  useEffect(
+    () => () => {
+      sides?.dispose();
+      rims?.dispose();
+    },
+    [sides, rims],
+  );
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={size} />
-        <meshBasicMaterial color={color} transparent opacity={fillOpacity} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <BoxEdges size={size} color={color} opacity={edgeOpacity} />
+      {sides ? (
+        <mesh geometry={sides} material={getGlassMaterial(color, tierFill(fillOpacity, tier))} renderOrder={2} />
+      ) : (
+        <mesh>
+          <boxGeometry args={size} />
+          <meshBasicMaterial color={color} transparent opacity={tierFill(fillOpacity, tier)} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+      {rims ? (
+        <mesh geometry={rims}>
+          <meshBasicMaterial color={neon} transparent opacity={edgeOpacity} toneMapped={false} />
+        </mesh>
+      ) : (
+        <BoxEdges size={size} color={color} opacity={edgeOpacity} />
+      )}
       {children}
     </group>
   );
 }
 
-/** Flat grid of lines on the floor plane (one draw call). */
-export function GridLines({
-  width,
-  depth,
-  step = 2,
-  color,
-  opacity = 0.3,
-  position,
-}: {
-  width: number;
-  depth: number;
-  step?: number;
-  color: string;
-  opacity?: number;
-  position?: V3;
-}) {
-  const geometry = useMemo(() => {
-    const pts: number[] = [];
-    const hw = width / 2;
-    const hd = depth / 2;
-    for (let x = -hw; x <= hw + 1e-6; x += step) pts.push(x, 0, -hd, x, 0, hd);
-    for (let z = -hd; z <= hd + 1e-6; z += step) pts.push(-hw, 0, z, hw, 0, z);
-    const g = new BufferGeometry();
-    g.setAttribute("position", new Float32BufferAttribute(pts, 3));
-    return g;
-  }, [width, depth, step]);
-  return (
-    <lineSegments geometry={geometry} position={position}>
-      <lineBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} />
-    </lineSegments>
-  );
-}
+export { getGlassMaterial };
 
 /** Polyline helper (closed loops or open paths) on the floor. */
 export function FloorLine({ points, color, opacity = 0.7, closed = false }: { points: [number, number][]; color: string; opacity?: number; closed?: boolean }) {

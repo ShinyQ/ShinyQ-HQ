@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
-import { LIBRARY, LIBRARY_STOPS, libraryObstacles, postStop, spineSlots } from "@/experience/floors/library/layout";
-import { ROOF, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
+import { LIBRARY, LIBRARY_LANES, LIBRARY_STOPS, libraryObstacles, postStop, spineSlots } from "@/experience/floors/library/layout";
+import { ROOF, ROOF_LANES, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
 import { distanceToRect } from "@/experience/nav/collision";
 import { doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
@@ -135,5 +135,21 @@ describe("door triggers", () => {
 
   it("leave the book spines without triggers so driving along the shelves opens nothing", () => {
     for (let i = 0; i < 7; i++) expect(doorAt(layouts.L4.doors, postStop(i, 7))).toBeNull();
+  });
+});
+
+describe("L4 and RF lanes", () => {
+  const inside = (r: { minX: number; maxX: number; minZ: number; maxZ: number }, x: number, z: number, pad: number) =>
+    x > r.minX - pad && x < r.maxX + pad && z > r.minZ - pad && z < r.maxZ + pad;
+  const samples = (paths: [number, number][][]) =>
+    paths.flatMap((p) =>
+      p.slice(1).flatMap((b, i) => {
+        const a = p[i];
+        return Array.from({ length: 21 }, (_, k) => [a[0] + ((b[0] - a[0]) * k) / 20, a[1] + ((b[1] - a[1]) * k) / 20] as const);
+      }),
+    );
+  it("lane ribbons never run under shelves, the stage or terminals", () => {
+    for (const [x, z] of samples(LIBRARY_LANES)) for (const r of libraryObstacles()) expect(inside(r, x, z, 0.3), `L4 ${x},${z}`).toBe(false);
+    for (const [x, z] of samples(ROOF_LANES)) for (const r of roofObstacles()) expect(inside(r, x, z, 0.3), `RF ${x},${z}`).toBe(false);
   });
 });

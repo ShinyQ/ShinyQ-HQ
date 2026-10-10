@@ -1,9 +1,13 @@
 "use client";
 
 import { lazy, Suspense, useMemo, type RefObject } from "react";
+import { useHQStore } from "@/store/useHQStore";
 import "../text-config";
 import { CameraDirector } from "../camera/CameraDirector";
-import { buildFloorLayouts } from "../config";
+import { buildFloorLayouts, floorY } from "../config";
+import { allGlassMaterials } from "../fx/geometry";
+import { Motes } from "../fx/Motes";
+import { useUniformTime } from "../fx/useUniformTime";
 import { careerLayoutInput } from "../floors/career/layout";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
@@ -13,6 +17,20 @@ import { sceneSettings } from "./settings";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
+
+/** Advances the shared glass shader clock once per frame. */
+function GlassClock() {
+  useUniformTime(allGlassMaterials);
+  return null;
+}
+
+/** Ambient motes over the current floor (full tier, not under reduced motion). */
+function FloorMotes() {
+  const floor = useHQStore((s) => s.floor);
+  const reduced = useHQStore((s) => s.reducedMotion);
+  if (reduced) return null;
+  return <Motes center={[0, floorY(floor), 0]} />;
+}
 
 export interface SceneLabels extends TowerLabels {
   rover: { hello: string };
@@ -43,6 +61,8 @@ export function Scene({
       <Rover tier={tier} />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
       <CameraDirector held={held} />
+      <GlassClock />
+      {tier === "full" && <FloorMotes />}
       {tier === "full" && (
         <Suspense fallback={null}>
           <Effects />

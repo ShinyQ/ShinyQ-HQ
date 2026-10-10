@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterHQ, waitForFloor, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
@@ -155,4 +155,11 @@ test("mobile: the drawer is a bottom sheet with snap points", async ({ browser }
   await page.getByRole("button", { name: "Close room" }).click();
   await expect(drawer).toBeHidden();
   await context.close();
+});
+
+test("the Labs floor stays under the draw call budget", async ({ page }) => {
+  await enterFloorRoute(page, "/en/labs");
+  await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
+  await page.waitForTimeout(1500);
+  expect((await snapshot(page)).drawCalls).toBeLessThan(150);
 });

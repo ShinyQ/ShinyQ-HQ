@@ -1,6 +1,8 @@
 "use client";
 
+import { LaneStrip } from "../fx/LaneStrip";
 import type { LibraryData } from "../types";
+import { LIBRARY_LANES } from "./library/layout";
 import { BlogShelves, type ShelfLabels } from "./library/BlogShelves";
 import { Lectern, PublicationsShelf, ResearchShelf, TalksStage, type ShowcaseLabels } from "./library/Showcase";
 
@@ -11,6 +13,7 @@ export function Library({ library, labels }: { library: LibraryData; labels: Lib
   const featured = library.posts.find((p) => !p.url);
   return (
     <group name="library">
+      <LaneStrip paths={LIBRARY_LANES} />
       <BlogShelves posts={library.posts} labels={labels} />
       <Lectern post={featured} labels={labels} />
       <ResearchShelf research={library.research} labels={labels} />
