@@ -13,7 +13,7 @@ export interface TierInputs {
 }
 
 const TIERS: readonly GpuTier[] = ["full", "lite", "static"];
-const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i;
+export const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i;
 
 export function isTier(value: unknown): value is GpuTier {
   return typeof value === "string" && (TIERS as readonly string[]).includes(value);
@@ -42,7 +42,12 @@ export function readTierInputs(search: string): TierInputs {
   };
   let webgl2 = false;
   let renderer: string | undefined;
-  try {
+  // The boot-first head script already probed right after first paint; never create a second context.
+  const early = (window as { __hqProbe?: { webgl2: boolean; renderer?: string } }).__hqProbe;
+  if (early) {
+    webgl2 = early.webgl2;
+    renderer = early.renderer || undefined;
+  } else try {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2");
     if (gl) {
