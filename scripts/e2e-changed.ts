@@ -1,9 +1,9 @@
 /**
  * Runs the e2e specs that cover your changes (scripts/e2e-plan.ts maps paths to specs).
- * Usage: bun scripts/e2e-changed.ts [--base origin/main] [--smoke] [--dry] [extra playwright args]
+ * Usage: bun scripts/e2e-changed.ts [--base origin/main] [--smoke | --all] [--dry] [extra playwright args]
  *
  * Changed paths = commits since the merge base with --base, plus staged, unstaged and untracked
- * files. Needs a current `out/` (`bun run build:web`); without CV PDFs the CV check is skipped.
+ * files. Needs a current `out/` (`bun run build:web`); prints the CV PDFs (2 s) when they are missing.
  */
 import { existsSync } from "node:fs";
 import { SMOKE_SPECS, specsForChanges } from "./e2e-plan";
@@ -34,6 +34,7 @@ function main() {
   };
   const dry = take("--dry");
   const smoke = take("--smoke");
+  const all = take("--all");
   let base = "origin/main";
   const b = args.indexOf("--base");
   if (b >= 0) {
@@ -42,7 +43,10 @@ function main() {
   }
 
   let specs: readonly string[] | "all";
-  if (smoke) {
+  if (all) {
+    specs = "all";
+    console.log("e2e: full suite");
+  } else if (smoke) {
     specs = SMOKE_SPECS;
     console.log(`e2e smoke: ${specs.join(", ")}`);
   } else {
@@ -61,10 +65,13 @@ function main() {
     console.error("out/ is missing or stale. Run `bun run build:web` (or `bun run verify:quick`) first.");
     process.exit(1);
   }
-  const env = { ...process.env };
-  if (!existsSync("out/cv")) env.SKIP_CV = "1";
+  if (!existsSync("out/cv")) {
+    // `build:web` (verify:quick) skips the CV PDFs; the CV specs need them and printing takes seconds.
+    const cv = Bun.spawnSync(["bun", "scripts/build-cv.ts"], { stdout: "inherit", stderr: "inherit" });
+    if (cv.exitCode !== 0) process.exit(cv.exitCode ?? 1);
+  }
   const files = specs === "all" ? [] : specs.map((s) => `e2e/${s}.spec.ts`);
-  const run = Bun.spawnSync(["bunx", "playwright", "test", ...files, ...args], { env, stdout: "inherit", stderr: "inherit" });
+  const run = Bun.spawnSync(["bunx", "playwright", "test", ...files, ...args], { stdout: "inherit", stderr: "inherit" });
   process.exit(run.exitCode ?? 1);
 }
 
