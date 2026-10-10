@@ -259,7 +259,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const door = s.ride ? null : doorAt(doors, controller.pose);
     const open = stepDoorLatch(local.door, door?.room ?? null, {
       explore: s.phase === "explore",
-      following: controller.following,
+      // A running mission opens its rooms itself; a pad firing first would reopen after the visitor closes it.
+      following: controller.following || s.mission?.status === "running",
       now,
       speed: controller.pose.speed,
       heading: controller.pose.heading,
