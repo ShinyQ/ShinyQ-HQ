@@ -29,6 +29,14 @@ export async function asReturningVisitor(page: Page) {
 }
 
 /**
+ * Playwright sets navigator.webdriver, which the gate treats as bot-like (page view, no 3D) unless the
+ * URL forces `?tier=lite|full`. Tests of real auto-detection (software renderer, no WebGL) hide it.
+ */
+export async function asHumanBrowser(page: Page) {
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false, configurable: true }));
+}
+
+/**
  * Collects page errors and any request to another origin. The local server does not apply the
  * production CSP from public/_headers, so a runtime CDN fetch only fails on Cloudflare.
  */

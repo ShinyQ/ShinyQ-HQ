@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors } from "./hq";
+import { asHumanBrowser, collectErrors } from "./hq";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -55,8 +55,10 @@ test("static tier and stored page view show the page immediately", async ({ page
 });
 
 test("a software renderer falls back to the page once the tier is known", async ({ page }) => {
-  // No ?tier= override: SwiftShader maps to the static tier, so the gate releases the cover.
+  // No ?tier= override: SwiftShader maps to the static tier, so the probe releases the cover.
+  await asHumanBrowser(page);
   await page.goto("/en", { waitUntil: "commit" });
+  await page.waitForSelector("#hq-boot-cover", { state: "attached" });
   await expect(page.locator("#site-shell")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator("html")).toHaveAttribute("data-hq-boot-released", "static");
   await expect(page.getByTestId("hq")).toHaveCount(0);
@@ -73,6 +75,29 @@ test("crawlers and Lighthouse get the page without the cover", async ({ browser 
   expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
   await expect(page.locator("#site-shell")).toBeVisible();
   await context.close();
+});
+
+test("a crawler never gets the 3D HQ, even with a tier override", async ({ browser }) => {
+  const context = await browser.newContext({ userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" });
+  const page = await context.newPage();
+  await page.goto("/en?tier=lite", { waitUntil: "domcontentloaded" });
+  expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
+  await expect(page.locator("#site-shell")).toBeVisible();
+  await page.waitForTimeout(3000);
+  await expect(page.getByTestId("hq")).toHaveCount(0);
+  expect(await page.evaluate(() => "__hq" in window)).toBe(false);
+  await context.close();
+});
+
+test("automation without a tier override stays on the page; with one it gets 3D", async ({ page }) => {
+  // navigator.webdriver is true under Playwright, as under Lighthouse 12.
+  await page.goto("/en", { waitUntil: "domcontentloaded" });
+  expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
+  await expect(page.locator("#site-shell")).toBeVisible();
+  await page.waitForTimeout(2000);
+  await expect(page.getByTestId("hq")).toHaveCount(0);
+  await page.goto("/en?tier=lite", { waitUntil: "commit" });
+  await expect(page.getByTestId("hq")).toBeVisible({ timeout: 30_000 });
 });
 
 test("non-gated pages are unaffected", async ({ page }) => {

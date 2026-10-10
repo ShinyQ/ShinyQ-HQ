@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -181,6 +181,7 @@ test.describe("tiers and views", () => {
 
   test("software WebGL (no GPU) is treated as static without an override", async ({ page }) => {
     // Playwright renders WebGL on SwiftShader, a software rasterizer.
+    await asHumanBrowser(page);
     await page.goto("/en");
     await expect(page.locator("h1")).toBeVisible();
     await page.waitForTimeout(500);
@@ -188,6 +189,7 @@ test.describe("tiers and views", () => {
   });
 
   test("browsers without WebGL fall back to static", async ({ page }) => {
+    await asHumanBrowser(page);
     await page.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext;
       HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
