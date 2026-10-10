@@ -1,3 +1,4 @@
+import { towardPad } from "../../nav/doors";
 import type { DoorTrigger, Rect, Vec2 } from "../../types";
 
 /** RF Roof element positions (appendix 01 section 6). Floor-local, pure. */
@@ -67,15 +68,8 @@ export const ROOF_DOORS: DoorTrigger[] = [
 
 const LANE_Z = ROOF_STOPS.cv.z;
 
-/** Prototype data lanes on RF: from the elevator around the comms arc to the CV kiosk, with a spur to the email terminal. */
+/** Prototype data lanes on RF: from the elevator around the comms arc toward the CV kiosk, with a spur to the email terminal. Lanes stop before door pads. */
 export const ROOF_LANES: [number, number][][] = [
-  [
-    [-17, 0],
-    [-17, LANE_Z],
-    [ROOF_STOPS.cv.x, LANE_Z],
-  ],
-  [
-    [ROOF_STOPS.contact.x, LANE_Z],
-    [ROOF_STOPS.contact.x, ROOF_STOPS.contact.z],
-  ],
+  [[-17, 0], [-17, LANE_Z], towardPad([-17, LANE_Z], ROOF_STOPS.cv)],
+  [[ROOF_STOPS.contact.x, LANE_Z], towardPad([ROOF_STOPS.contact.x, LANE_Z], ROOF_STOPS.contact)],
 ];

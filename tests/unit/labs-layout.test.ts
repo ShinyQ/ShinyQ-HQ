@@ -3,6 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, ROVER, SHAFT } from "@/experience/config";
 import { buildLabsLayout, directoryStop, LABS, WING_SIDE } from "@/experience/floors/labs/layout";
 import { distanceToRect } from "@/experience/nav/collision";
+import { DOOR_SIZE } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import type { LabPod } from "@/experience/types";
 
@@ -91,6 +92,26 @@ describe("L3 Labs layout", () => {
       const end = path![path!.length - 1];
       expect(Math.hypot(end.x - p.door.x, end.z - p.door.z)).toBeLessThan(1);
     }
+  });
+
+  it("leaves at least 3 u of walkway between neighbouring pods", () => {
+    for (const a of layout.placed)
+      for (const b of layout.placed) {
+        if (a === b) continue;
+        const gap = Math.max(b.rect.minX - a.rect.maxX, a.rect.minX - b.rect.maxX, b.rect.minZ - a.rect.maxZ, a.rect.minZ - b.rect.maxZ);
+        expect(gap, `${a.room} / ${b.room}`).toBeGreaterThanOrEqual(3);
+      }
+  });
+
+  it("keeps every lane ribbon off every door pad", () => {
+    const half = DOOR_SIZE / 2 + 0.375 + 0.1;
+    for (const lane of layout.lanes)
+      for (let i = 0; i < lane.length - 1; i++)
+        for (let k = 0; k <= 40; k++) {
+          const x = lane[i][0] + ((lane[i + 1][0] - lane[i][0]) * k) / 40;
+          const z = lane[i][1] + ((lane[i + 1][1] - lane[i][1]) * k) / 40;
+          for (const d of layout.floor.doors!) expect(Math.abs(x - d.at.x) < half && Math.abs(z - d.at.z) < half, `${d.room} at ${x},${z}`).toBe(false);
+        }
   });
 
   it("stops listed items in front of their wing's directory pillar", () => {

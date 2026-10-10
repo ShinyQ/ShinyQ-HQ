@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_IDS, floorIndex, floorY } from "../config";
+import { COLORS, FLOOR_IDS, floorIndex, floorY, SHAFT } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import { Labs, type LabsLabels } from "../floors/Labs";
 import { Library, type LibraryLabels } from "../floors/Library";
@@ -36,6 +36,16 @@ function nearFloors(floor: FloorId, target: FloorId | null, exterior: boolean): 
   });
 }
 
+/** Outline around the shaft and every floor except the long L2 corridor, which runs out of the tower on purpose. */
+function towerFrame(layouts: Record<FloorId, FloorLayout>) {
+  const ids: FloorId[] = ["L1", "L3", "L4", "RF"];
+  const minX = Math.min(SHAFT.x - SHAFT.size / 2, ...ids.map((id) => layouts[id].bounds.minX)) - 2;
+  const maxX = Math.max(...ids.map((id) => layouts[id].bounds.maxX)) + 2;
+  const minZ = Math.min(...ids.map((id) => layouts[id].bounds.minZ)) - 2;
+  const maxZ = Math.max(...ids.map((id) => layouts[id].bounds.maxZ)) + 2;
+  return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
+}
+
 export function Tower({
   layouts,
   data,
@@ -51,6 +61,7 @@ export function Tower({
   const target = useHQStore((s) => s.ride?.to ?? null);
   const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
   const near = nearFloors(floor, target, exterior);
+  const frame = useMemo(() => towerFrame(layouts), [layouts]);
 
   return (
     <group name="tower">
@@ -77,7 +88,7 @@ export function Tower({
         );
       })}
       <ElevatorShaft layouts={layouts} near={near} />
-      <BoxEdges size={[108, FRAME_TOP + 1, 48]} position={[0, FRAME_TOP / 2 - 0.5, 0]} color={COLORS.grid} opacity={0.22} />
+      <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />
     </group>
   );
 }

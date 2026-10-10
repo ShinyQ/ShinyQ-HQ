@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { AdditiveBlending, CircleGeometry, Color, Float32BufferAttribute, Object3D, RingGeometry, type InstancedMesh } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useHQStore } from "@/store/useHQStore";
+import { DOOR_SIZE } from "../nav/doors";
 import { roverRuntime } from "../rover/runtime";
 import type { DoorTrigger } from "../types";
 import { neonColor } from "./materials";
@@ -12,8 +13,10 @@ import { proximityLevel } from "./proximity";
 
 /** Pad geometry: a dim fill disc plus a bright rim ring, merged with per-vertex brightness. */
 function padGeometry() {
-  const fill = new CircleGeometry(0.85, 40);
-  const ring = new RingGeometry(0.85, 1, 40);
+  // Same footprint as the trigger (DOOR_SIZE), so the glowing pad is exactly where a room opens.
+  const r = DOOR_SIZE / 2;
+  const fill = new CircleGeometry(r * 0.85, 40);
+  const ring = new RingGeometry(r * 0.85, r, 40);
   const shade = (g: CircleGeometry | RingGeometry, k: number) => g.setAttribute("color", new Float32BufferAttribute(new Array(g.getAttribute("position").count * 3).fill(k), 3));
   shade(fill, 0.3);
   shade(ring, 1);

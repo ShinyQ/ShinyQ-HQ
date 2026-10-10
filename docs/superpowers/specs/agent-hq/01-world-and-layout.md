@@ -26,7 +26,7 @@ Footprint: 52 × 42 u, x from -24 to 28 and z from -24 to 18. The west edge stay
 | Name and headline | Above the hologram, height 7.6 | Text block up to 14 wide | Billboarded, always above the stats tiles |
 | Stats ring | Around the hologram, radius 10 | 4 to 6 tiles, 3.4 × 1.9, center height 4.25 (staggered +0.5) | Headline stats (see appendix 07). Tiles billboard toward the camera and float above the rover (bottom above 2.8 u), so they read from any orbit angle and never block the walkway. |
 | Lane ring (walkable) | Around the hologram, radius 12 | Rover footprint 10.5 to 13.5 | Clear of every element at rover height |
-| Skills wall | (6, -22.5) | 40 × 1, height 8.5 on a 0.35 u glowing plinth | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u) |
+| Skills wall | (6, -22.5) | 40 × 1, at least 8.5 u tall on a 0.35 u glowing plinth; `skillsWallLayout` measures headings (they may wrap; every column reserves the same heading lines) and grows the wall so the longest column ends 1.8 u above its base | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u) |
 | Certifications wall | (25.5, -4) | 1 × 16, height 5 | Certification badges with "verify" links, louvered 45° toward the plaza |
 | Mission kiosk | (2, 15) | 3 × 2 | Diegetic mirror of the Rover Terminal missions |
 | Elevator door | (-24, 0) | | |
@@ -43,7 +43,8 @@ Footprint: a corridor along +x. Accent: amber `#fbbf24`.
 |---|---|
 | Corridor | From x = -20 to x = `-20 + 14 * yearCount + 20`, width 8 u (z from -4 to 4), glowing floor strip with year markers every 14 u |
 | Year segments | One segment per year that has entries, in ascending order (2019 first). Segment length 14 u. |
-| Year rooms | Each entry in a year becomes a room 9 × 8 u. Rooms alternate sides (`z = -10` for even index, `z = +10` for odd) within the segment. If a year has more than 2 entries, extra rooms stack outward (`z = ±19`). |
+| Year rooms | Each entry in a year becomes a room 9 × 8 u. Rooms alternate sides (north for even index, south for odd) within the segment; the first row's doors sit at \|z\| = 6. If a year has more than 2 entries, extra rooms stack outward behind a 5 u aisle (the 1.6 u door pad plus 3.4 u of clear floor), reached through the 5 u alleys between year columns, so no path crosses another room (`buildCorridor`). |
+| Room labels | North rooms: a low sign at the door; south rooms: flat inside the back wall, nearer the rail camera than the pedestal. Outer rows show their label only once the rover is in their aisle (`labelVisible`), so stacked labels never overlap. |
 | Room types | `job`, `freelance`, `education`, `award` (smaller 6 × 6 trophy plinth), `milestone` (tall pillar). Each type has its own hologram. |
 | Year gate | An arch at the start of each segment showing the year in large mono digits |
 | Workshop annex | At the corridor end: a 20 × 16 u hall with side-project benches and a public-repo wall |
@@ -51,9 +52,13 @@ Footprint: a corridor along +x. Accent: amber `#fbbf24`.
 
 The corridor's end opens onto a glass window that looks up at the Labs (L3 silhouette). Career rooms linked to a Labs pod show a "See the case study on L3" action that runs an elevator-and-drive mission.
 
+## Door triggers (every floor)
+
+A door trigger is the 1.6 × 1.6 u pad in front of a door (`DOOR_SIZE`, drawn by `ProximityGlow`). A room opens only on intent: the rover stops or slows below 2 u/s on the pad, or stays on it for 250 ms (`stepDoorLatch`). Driving past a pad, or a click or mission path crossing it, does not open the room; a click on a room or a mission still opens it on arrival. Floor lanes stop 0.5 u before every pad, and neighbouring rooms and pods keep at least 3 u of clear floor between them (layout tests).
+
 ## 4. Floor L3: Labs (Software Wing + AI Wing)
 
-Footprint: 76 × 48 u, from x = -24 to 52 and z = -24 to 24. Accent: violet `#a78bfa` for the floor, with each pod using its own accent. The global elevator shaft stays at x = -28 (as on every floor), so the elevator lands in an **atrium** right in front of its door. Both wings start at the atrium and run east as mirror-image halls on either side of a spine lane, so software engineering and AI engineering are the same distance from the elevator and get equal billing. (Phase 4 resolved the earlier conflict between an atrium door at (0, -7) and the shaft at x = -28 this way; the code lives in `src/experience/floors/labs/layout.ts`.)
+Footprint: 81 × 56 u, from x = -24 to 57 and z = -28 to 28. Accent: violet `#a78bfa` for the floor, with each pod using its own accent. The global elevator shaft stays at x = -28 (as on every floor), so the elevator lands in an **atrium** right in front of its door. Both wings start at the atrium and run east as mirror-image halls on either side of a spine lane, so software engineering and AI engineering are the same distance from the elevator and get equal billing. (Phase 4 resolved the earlier conflict between an atrium door at (0, -7) and the shaft at x = -28 this way; the code lives in `src/experience/floors/labs/layout.ts`.)
 
 | Element | Spec |
 |---|---|
@@ -62,11 +67,11 @@ Footprint: 76 × 48 u, from x = -24 to 52 and z = -24 to 24. Accent: violet `#a7
 | Spine lane | z = 0 from the atrium to the east end. Data packets animate along every lane at 2 u/s. |
 | Software Wing | The hall north of the spine (z < 0). Floor tint cyan `#22d3ee`. Pods with `wing: "software"`. |
 | AI Wing | The hall south of the spine (z > 0), the mirror image of the Software Wing. Floor tint violet `#a78bfa`. Pods with `wing: "ai"`. |
-| Hero row (per wing) | Up to 3 hero pods of 12 × 9 u next to the spine, centers at \|z\| = 8 and x = 6, 21 and 36 (nearest the atrium first) |
-| Featured row (per wing) | Up to 6 featured pods of 9 × 7 u, centers at \|z\| = 19.5 and x = -5.25 + 10.5 i, west to east |
-| Back lane (per wing) | \|z\| = 14.25, between the hero row and the featured row, joined to the spine at x = -7 and x = 46 |
+| Hero row (per wing) | Up to 3 hero pods of 12 × 9 u next to the spine, centers at \|z\| = 8.5 and x = 6, 22 and 38 (4 u apart, nearest the atrium first) |
+| Featured row (per wing) | Up to 6 featured pods of 8 × 7 u, centers at \|z\| = 22.5 and x = -5 + 11 i (3 u apart), west to east |
+| Back lane (per wing) | \|z\| = 15, between the hero row and the featured row, joined to the spine at x = -7 and x = 47 |
 | Listed items | Not pods. They appear on the wing directory board and in ⌘K, and open in the drawer directly (missions stop in front of the board). |
-| Pod door | Front-center of each pod: hero doors face the spine (door trigger centered at \|z\| = 2.2), featured doors face the back lane (\|z\| = 14.8). Each trigger is a 2 × 2 u zone. |
+| Pod door | Front-center of each pod: hero doors face the spine (door trigger centered at \|z\| = 2.9), featured doors face the back lane (\|z\| = 17.9). Each trigger is the 1.6 × 1.6 u glowing pad in front of the door; no lane runs over a pad. |
 | Hologram stage | Inside each hero pod: a 6 u diameter disc at the pod center used by the Hologram view. The diagram board stands on it, facing the spine. |
 | Pod holograms | One procedural hologram per pod by `hologram` kind (waveform, shield, documents, graph, chart, template, pipeline), floating and slowly rotating above the pod |
 

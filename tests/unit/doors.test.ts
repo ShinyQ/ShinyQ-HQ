@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doorAlong, doorAt, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
+import { DOOR_DWELL, DOOR_SLOW, DOOR_SIZE, doorAlong, doorAt, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
 import type { DoorTrigger } from "@/experience/types";
 
 const doors: DoorTrigger[] = [
@@ -8,9 +8,10 @@ const doors: DoorTrigger[] = [
 ];
 
 describe("door triggers", () => {
-  it("finds the zone that contains a point (2 x 2 by default)", () => {
-    expect(doorAt(doors, { x: 0.9, z: 2.9 })?.room).toBe("L3:a");
-    expect(doorAt(doors, { x: 1.2, z: 2 })).toBeNull();
+  it("finds the zone that contains a point (the 1.6 u pad by default)", () => {
+    expect(DOOR_SIZE).toBe(1.6);
+    expect(doorAt(doors, { x: 0.7, z: 2.7 })?.room).toBe("L3:a");
+    expect(doorAt(doors, { x: 0.9, z: 2 })).toBeNull();
     expect(doorAt(doors, { x: 11.8, z: 0.2 })?.room).toBe("L3:b");
     expect(doorAt(undefined, { x: 0, z: 2 })).toBeNull();
   });
@@ -35,6 +36,31 @@ describe("door triggers", () => {
     expect(stepDoorLatch(latch, "L3:a", { explore: false, following: false })).toBeNull();
     expect(stepDoorLatch(latch, "L3:a", { explore: true, following: false })).toBeNull();
     expect(stepDoorLatch(latch, "L3:b", { explore: true, following: false })).toBe("L3:b");
+  });
+});
+
+describe("intentional door triggers", () => {
+  it("does not open while the rover just drives through a zone at speed", () => {
+    const latch: DoorLatch = { room: null };
+    const fast = (now: number) => ({ explore: true, following: false, now, speed: 9 });
+    expect(stepDoorLatch(latch, "L3:a", fast(0))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", fast(0.1))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", fast(0.18))).toBeNull();
+    expect(stepDoorLatch(latch, null, fast(0.2))).toBeNull();
+  });
+
+  it("opens after a short dwell, or at once when the rover slows down in the zone", () => {
+    const dwell: DoorLatch = { room: null };
+    expect(stepDoorLatch(dwell, "L3:a", { explore: true, following: false, now: 1, speed: 6 })).toBeNull();
+    expect(stepDoorLatch(dwell, "L3:a", { explore: true, following: false, now: 1 + DOOR_DWELL, speed: 6 })).toBe("L3:a");
+    const slow: DoorLatch = { room: null };
+    expect(stepDoorLatch(slow, "L3:a", { explore: true, following: false, now: 5, speed: DOOR_SLOW - 0.1 })).toBe("L3:a");
+  });
+
+  it("still opens when a click or mission path ends on the pad", () => {
+    const latch: DoorLatch = { room: null };
+    expect(stepDoorLatch(latch, "L3:a", { explore: true, following: true, now: 0, speed: 8 })).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", { explore: true, following: false, now: 0.05, speed: 0 })).toBe("L3:a");
   });
 });
 

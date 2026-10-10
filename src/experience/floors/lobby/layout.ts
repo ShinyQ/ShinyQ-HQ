@@ -2,12 +2,50 @@ import { LOBBY } from "../../config";
 
 /** Certification badges stand in front of the wall, louvered 45 degrees toward the plaza. */
 export const CERT_BADGE = { w: 1.75, h: 2.3, offset: 1.05, y: 2.75 } as const;
-/** Skills wall text block (wall-local units): item font size, line height factor, top inset, logo size. */
-export const SKILLS_TEXT = { itemSize: 0.4, itemLine: 1.3, itemTop: 1.25, icon: 0.4, iconGap: 0.55, labelSize: 0.46 } as const;
+/** Skills wall text block (wall-local units): item font size, line height factor, logo size, heading size and line height. */
+export const SKILLS_TEXT = { itemSize: 0.4, itemLine: 1.3, icon: 0.4, iconGap: 0.55, labelSize: 0.46, labelLine: 1.15, labelTracking: 0.08 } as const;
+/** Horizontal padding inside each column, gap above the headings, below them, and under the last item. */
+export const SKILLS_PAD = { column: 0.9, top: 0.35, belowLabel: 0.4, bottom: 1.8 } as const;
+/** JetBrains Mono advances 0.6 em per glyph; tracking adds to it. */
+const MONO_ADVANCE = 0.6;
 
-/** Height left under the last item of a column with `items` lines (must stay above the wall base). */
-export function skillsTextBottom(items: number): number {
-  return LOBBY.skillsWall.h - SKILLS_TEXT.itemTop - items * SKILLS_TEXT.itemSize * SKILLS_TEXT.itemLine;
+/** Line count of `text` word-wrapped at `maxChars` characters per line. */
+export function wrapCount(text: string, maxChars: number): number {
+  let lines = 1;
+  let used = 0;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const need = used === 0 ? word.length : used + 1 + word.length;
+    if (need <= maxChars || used === 0) used = need;
+    else {
+      lines += 1;
+      used = word.length;
+    }
+  }
+  return lines;
+}
+
+export interface SkillsWallLayout {
+  /** Wall height: at least LOBBY.skillsWall.h, taller when the longest column needs it. */
+  h: number;
+  column: number;
+  textWidth: number;
+  /** Heading lines reserved in every column (the longest heading wraps, all items start level). */
+  labelLines: number;
+  /** Distance from the wall top to the first item line. */
+  itemTop: number;
+}
+
+/** Measured skills wall: headings may wrap, and the wall grows so every column ends above its base. */
+export function skillsWallLayout(groups: readonly { label: string; items: readonly string[] }[]): SkillsWallLayout {
+  const T = SKILLS_TEXT;
+  const column = LOBBY.skillsWall.w / Math.max(1, groups.length);
+  const textWidth = column - 2 * SKILLS_PAD.column;
+  const maxChars = Math.floor(textWidth / (T.labelSize * (MONO_ADVANCE + T.labelTracking)));
+  const labelLines = Math.max(1, ...groups.map((g) => wrapCount(g.label.toUpperCase(), maxChars)));
+  const itemTop = SKILLS_PAD.top + labelLines * T.labelSize * T.labelLine + SKILLS_PAD.belowLabel;
+  const longest = Math.max(0, ...groups.map((g) => g.items.length));
+  const h = Math.max(LOBBY.skillsWall.h, itemTop + longest * T.itemSize * T.itemLine + SKILLS_PAD.bottom);
+  return { h: Math.round(h * 100) / 100, column, textWidth, labelLines, itemTop };
 }
 
 /** Monogram hexagon radius and height on the hologram pedestal. */

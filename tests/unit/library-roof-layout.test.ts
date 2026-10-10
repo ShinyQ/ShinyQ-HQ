@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
-import { LIBRARY, LIBRARY_LANES, LIBRARY_STOPS, libraryObstacles, postStop, spineSlots } from "@/experience/floors/library/layout";
-import { ROOF, ROOF_LANES, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
+import { LIBRARY, LIBRARY_DOORS, LIBRARY_LANES, LIBRARY_STOPS, libraryObstacles, postStop, spineSlots } from "@/experience/floors/library/layout";
+import { ROOF, ROOF_DOORS, ROOF_LANES, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
 import { distanceToRect } from "@/experience/nav/collision";
-import { doorAt } from "@/experience/nav/doors";
+import { DOOR_SIZE, doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import type { Rect, Vec2 } from "@/experience/types";
 
@@ -148,6 +148,16 @@ describe("L4 and RF lanes", () => {
         return Array.from({ length: 21 }, (_, k) => [a[0] + ((b[0] - a[0]) * k) / 20, a[1] + ((b[1] - a[1]) * k) / 20] as const);
       }),
     );
+  it("lane ribbons stop before every door pad", () => {
+    const half = DOOR_SIZE / 2 + 0.375 + 0.1;
+    for (const [lanes, doors] of [
+      [LIBRARY_LANES, LIBRARY_DOORS],
+      [ROOF_LANES, ROOF_DOORS],
+    ] as const)
+      for (const [x, z] of samples(lanes as [number, number][][]))
+        for (const d of doors) expect(Math.abs(x - d.at.x) < half && Math.abs(z - d.at.z) < half, `${d.room} at ${x},${z}`).toBe(false);
+  });
+
   it("lane ribbons never run under shelves, the stage or terminals", () => {
     for (const [x, z] of samples(LIBRARY_LANES)) for (const r of libraryObstacles()) expect(inside(r, x, z, 0.3), `L4 ${x},${z}`).toBe(false);
     for (const [x, z] of samples(ROOF_LANES)) for (const r of roofObstacles()) expect(inside(r, x, z, 0.3), `RF ${x},${z}`).toBe(false);

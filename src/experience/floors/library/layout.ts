@@ -1,3 +1,4 @@
+import { towardPad } from "../../nav/doors";
 import type { DoorTrigger, Rect, Vec2 } from "../../types";
 
 /** L4 Library element positions (appendix 01 section 5). Floor-local, pure. */
@@ -96,24 +97,16 @@ export const LIBRARY_DOORS: DoorTrigger[] = [
 const LANE_Z = 3;
 const SPUR_X = 8;
 
-/** Prototype data lanes on L4: the walkway from the elevator, with spurs to every reading stop. */
+/**
+ * Prototype data lanes on L4: the walkway from the elevator, with spurs toward every reading stop.
+ * Lanes stop before the door pads, so walking a lane never opens a room.
+ */
 export const LIBRARY_LANES: [number, number][][] = [
-  [
-    [-21, LANE_Z],
-    [LIBRARY_STOPS.research.x, LANE_Z],
-    [LIBRARY_STOPS.research.x, LIBRARY_STOPS.research.z],
-  ],
+  [[-21, LANE_Z], [LIBRARY_STOPS.research.x, LANE_Z], towardPad([LIBRARY_STOPS.research.x, LANE_Z], LIBRARY_STOPS.research)],
   [
     [LIBRARY.lectern.x, LANE_Z],
     [LIBRARY.lectern.x, LIBRARY.lectern.z + LIBRARY.lectern.d / 2 + 1.6],
   ],
-  [
-    [SPUR_X, LANE_Z],
-    [SPUR_X, LIBRARY_STOPS.talks.z],
-    [LIBRARY_STOPS.talks.x, LIBRARY_STOPS.talks.z],
-  ],
-  [
-    [SPUR_X, LIBRARY_STOPS.publications.z],
-    [LIBRARY_STOPS.publications.x, LIBRARY_STOPS.publications.z],
-  ],
+  [[SPUR_X, LANE_Z], [SPUR_X, LIBRARY_STOPS.talks.z], towardPad([SPUR_X, LIBRARY_STOPS.talks.z], LIBRARY_STOPS.talks)],
+  [[SPUR_X, LIBRARY_STOPS.publications.z], towardPad([SPUR_X, LIBRARY_STOPS.publications.z], LIBRARY_STOPS.publications)],
 ];
