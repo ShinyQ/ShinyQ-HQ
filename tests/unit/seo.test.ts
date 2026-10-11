@@ -127,7 +127,8 @@ describe("OG images", () => {
 
 describe("Analytics beacon", () => {
   it("renders nothing without a token", () => {
-    expect(Analytics({ token: undefined })).toBeNull();
+    // An empty token, not undefined: undefined falls back to NEXT_PUBLIC_CF_BEACON_TOKEN, which CI sets.
+    expect(Analytics({ token: "" })).toBeNull();
   });
 
   it("renders the cookieless Cloudflare beacon with SPA tracking", () => {
