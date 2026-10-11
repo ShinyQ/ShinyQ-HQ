@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { openPage } from "./hq";
+import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost } from "./routes";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
@@ -95,30 +96,56 @@ test("Home keeps the deep-link anchors used by the room catalog", async ({ page 
 });
 
 const cvPdf = `/cv/${content.floors.roof.cv.fileName}.pdf`;
+const cvPages = (cvManifest as { pages: { src: string }[] }).pages;
 
 for (const [locale, label] of [
-  ["en", "Download CV (PDF)"],
-  ["id", "Unduh CV (PDF)"],
+  ["en", "Download PDF"],
+  ["id", "Unduh PDF"],
 ] as const) {
-  test(`/${locale}/cv offers the one CV PDF as a download and an inline preview`, async ({ page }) => {
+  test(`/${locale}/cv shows the CV as page images with a PDF download and an open-in-new-tab link`, async ({ page }) => {
     await openPage(page, staticTier(`/${locale}/cv`));
-    const download = page.getByRole("link", { name: label });
+    const viewer = page.getByTestId("cv-viewer-page");
+    const download = viewer.getByRole("link", { name: label });
     await expect(download).toHaveAttribute("href", cvPdf);
     await expect(download).toHaveAttribute("download", cvPdf.split("/").pop()!);
-    await expect(page.getByTestId("cv-preview")).toHaveAttribute("src", cvPdf);
-    await expect(page.locator(`main a[href="${cvPdf}"][target="_blank"]`)).toHaveCount(1);
+    await expect(viewer.getByRole("img")).toHaveCount(cvPages.length);
+    const first = viewer.getByRole("img").first();
+    await expect(first).toHaveAttribute("src", cvPages[0].src);
+    await expect.poll(() => first.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(page.locator(`main a[href="${cvPdf}"][target="_blank"]`)).toHaveCount(2);
+    await expect(page.locator("main iframe")).toHaveCount(0);
   });
 }
 
-test("every CV link points to the one PDF, in both languages", async ({ page }) => {
+test("every CV entry point opens the CV viewer modal instead of downloading, in both languages", async ({ page }) => {
   for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
     await openPage(page, staticTier(path));
-    const links = page.locator('main a[href$=".pdf"]');
-    expect(await links.count(), path).toBeGreaterThan(0);
-    for (const href of await links.evaluateAll((as) => as.map((a) => [a.getAttribute("href"), a.getAttribute("download")]))) {
-      expect(href, path).toEqual([cvPdf, cvPdf.split("/").pop()]);
+    await expect(page.locator('main a[href$=".pdf"]'), path).toHaveCount(0);
+    const entries = page.locator("#site-shell [data-testid^='cv-open']");
+    expect(await entries.count(), path).toBeGreaterThan(1);
+    for (const entry of await entries.all()) {
+      if (!(await entry.isVisible())) continue;
+      await entry.click();
+      const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+      await expect(dialog, path).toBeVisible();
+      await expect(dialog.getByRole("img")).toHaveCount(cvPages.length);
+      await expect(page).toHaveURL(new RegExp(`${path}\\?tier=static`));
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(entry).toBeFocused();
     }
   }
+});
+
+test("the CV modal passes axe and zooms with the keyboard", async ({ page }) => {
+  await openPage(page, staticTier("/en/contact"));
+  await page.locator("main [data-testid='cv-open']").click();
+  const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+  await expect(dialog.getByRole("button", { name: "Close CV" })).toBeFocused();
+  await page.keyboard.press("+");
+  await expect(dialog.getByTestId("cv-zoom")).toHaveText(/125%/);
+  const results = await new AxeBuilder({ page }).include("[data-testid='cv-dialog']").analyze();
+  expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
 });
 
 test("no horizontal overflow on a 390 px phone", async ({ browser }) => {

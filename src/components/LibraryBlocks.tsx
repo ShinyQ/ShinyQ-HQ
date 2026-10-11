@@ -1,10 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { Fragment } from "react";
 import type { Contact, Locale, PostRef, Publication, ResearchMetrics, Talk } from "@/content/schema";
+import { buildPaperPreview } from "@/content/papers";
 import { publicationDate, researchPublications } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { ExternalLink } from "./ExternalLink";
+import { PaperTrigger } from "./paper/PaperTrigger";
 
 /** Post title link: hosted posts open their page, Medium posts open in a new tab. */
 async function PostTitle({ post, locale, className }: { post: PostRef; locale: Locale; className: string }) {
@@ -171,21 +173,17 @@ export async function ResearchList({
         </div>
       )}
       <ul className="pv-rows pv-rows-closed">
-        {researchPublications(publications).map((pub) => (
-          <li key={pub.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[110px_minmax(0,1fr)] md:py-6">
+        {researchPublications(publications).map((pub) => ({ pub, preview: buildPaperPreview(pub, locale) })).map(({ pub, preview }) => (
+          <li key={pub.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[110px_minmax(0,1fr)] md:py-6" data-testid="research-row">
             <p className="pv-data md:pt-1">
               {t(`kind.${pub.kind}`)}
               <span className="mt-1 block">{publicationDate(pub, locale)}</span>
             </p>
             <div className="min-w-0">
               <p className="pv-h3 text-[19px]">
-                {pub.url ? (
-                  <ExternalLink href={pub.url} srHint={tc("external")} className="transition hover:text-cyan">
-                    {pub.title}
-                  </ExternalLink>
-                ) : (
-                  pub.title
-                )}
+                <PaperTrigger paper={preview} className="text-left transition hover:text-cyan">
+                  {pub.title}
+                </PaperTrigger>
               </p>
               <p className="mt-2 text-sm leading-6 text-ink-3">
                 <span className="sr-only">{t("authors")}: </span>
@@ -199,6 +197,9 @@ export async function ResearchList({
               {(pub.venue || pub.publisher) && <p className="pv-small mt-1 italic">{[pub.venue, pub.publisher].filter(Boolean).join(", ")}</p>}
               {pub.summary && <p className="mt-2 max-w-[64ch] text-[15px] leading-6 text-ink-2">{pub.summary[locale]}</p>}
               <p className="mt-1 flex flex-wrap gap-x-5">
+                <PaperTrigger paper={preview} className={linkClass} testId="paper-cite">
+                  {t("preview")}
+                </PaperTrigger>
                 {pub.doi && (
                   <ExternalLink href={`https://doi.org/${pub.doi}`} srHint={tc("external")} className={linkClass}>
                     {t("doi")} {pub.doi}

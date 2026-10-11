@@ -1,0 +1,24 @@
+{
+  "fileName": "kurniadi-ahmad-wijaya-cv",
+  "sha256": "b75d89bd678dd60318c67bc46a7d3f6630c90b241436f5068c6ca56f507b1342",
+  "pages": [
+    {
+      "n": 1,
+      "src": "/cv/pages/kurniadi-ahmad-wijaya-cv-1.webp",
+      "width": 1600,
+      "height": 2636,
+      "srcSmall": "/cv/pages/kurniadi-ahmad-wijaya-cv-1-800.webp",
+      "widthSmall": 800,
+      "heightSmall": 1318
+    },
+    {
+      "n": 2,
+      "src": "/cv/pages/kurniadi-ahmad-wijaya-cv-2.webp",
+      "width": 1600,
+      "height": 2636,
+      "srcSmall": "/cv/pages/kurniadi-ahmad-wijaya-cv-2-800.webp",
+      "widthSmall": 800,
+      "heightSmall": 1318
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { CvButton } from "@/components/cv/CvButton";
 import { ContactPanel } from "@/components/page/About";
 import { AskCta, AskOnly } from "@/components/page/AskEntry";
 import { Marker, SectionSplit } from "@/components/page/Layout";
@@ -9,7 +10,6 @@ import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/contact">): Promise<Metadata> {
@@ -76,9 +76,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       <SectionSplit id="cv" title={t("cvTitle")} intro={t("cvIntro")}>
         <ul className="flex flex-wrap items-center gap-3">
           <li>
-            <a href={cvPdfPath(roof.cv.fileName)} download={cvDownloadName(roof.cv.fileName)} type="application/pdf" className="pv-btn pv-btn-primary">
-              {tc("downloadCv")} (PDF)
-            </a>
+            <CvButton className="pv-btn pv-btn-primary">{tc("viewCv")}</CvButton>
           </li>
           <li>
             <Link href="/cv" className="pv-go ml-2">

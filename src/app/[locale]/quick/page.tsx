@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { CvButton } from "@/components/cv/CvButton";
 import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { PageIntro, SectionSplit, StatLedger } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
@@ -10,7 +11,6 @@ import { getAwards, getCertifications, getLibrary, getPods, getPosts, getProfile
 import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
-import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/quick">): Promise<Metadata> {
@@ -123,9 +123,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
             </a>
           </li>
           <li>
-            <a href={cvPdfPath(roof.cv.fileName)} download={cvDownloadName(roof.cv.fileName)} type="application/pdf" className="pv-btn pv-btn-ghost">
-              {tc("downloadCv")} (PDF)
-            </a>
+            <CvButton className="pv-btn pv-btn-ghost">{tc("viewCv")}</CvButton>
           </li>
         </ul>
       </SectionSplit>

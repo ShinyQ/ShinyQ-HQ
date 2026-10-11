@@ -6,7 +6,7 @@ import type { PaletteGroup } from "@/hud/palette-types";
 import { buildPaletteEntries, fuzzyScore, normalize, scoreEntry, searchPalette } from "@/hud/search";
 
 const index = buildHudIndex(getContent());
-const entries = buildPaletteEntries(index, ["download-cv", "copy-email", "toggle-language", "quick-view"]);
+const entries = buildPaletteEntries(index, ["view-cv", "copy-email", "toggle-language", "quick-view"]);
 const group = (groups: PaletteGroup[], id: PaletteGroup["id"]) => groups.find((g) => g.id === id)?.entries ?? [];
 const keys = (groups: PaletteGroup[], id: PaletteGroup["id"]) => group(groups, id).map((entry) => entry.key);
 
@@ -16,7 +16,7 @@ describe("buildPaletteEntries", () => {
     expect(entries.filter((e) => e.group === "rooms")).toHaveLength(index.rooms.length);
     expect(entries.filter((e) => e.group === "years")).toHaveLength(index.years.length);
     expect(entries.filter((e) => e.group === "actions").map((e) => e.key)).toEqual([
-      "action:download-cv",
+      "action:view-cv",
       "action:copy-email",
       "action:toggle-language",
       "action:quick-view",
@@ -45,10 +45,10 @@ describe("searchPalette", () => {
     expect(keys(searchPalette(entries, "2024"), "years")[0]).toBe("year:2024");
   });
 
-  it('finds Download CV for the Indonesian "unduh"', () => {
-    const groups = searchPalette(entries, "unduh");
+  it('finds View CV for the Indonesian "lihat"', () => {
+    const groups = searchPalette(entries, "lihat");
     const found = [...keys(groups, "actions"), ...keys(groups, "missions")];
-    expect(found).toContain("action:download-cv");
+    expect(found).toContain("action:view-cv");
     expect(found).toContain("mission:cv");
   });
 

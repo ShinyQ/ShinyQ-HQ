@@ -12,7 +12,7 @@ for (const locale of LOCALES) {
       expect(response?.status()).toBe(200);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       await expect(page.locator("h1").first()).toBeVisible();
-      // /cv is a download button and a PDF preview; every other page carries real text.
+      // /cv is the CV viewer (page images); every other page carries real text.
       expect((await page.locator("main").innerText()).length).toBeGreaterThan(route.endsWith("/cv") ? 40 : 200);
       expect(errors).toEqual([]);
     });
@@ -56,5 +56,9 @@ test("the owner's CV PDF is exported byte for byte, once for every locale", () =
   const file = path.join("out", "cv", name);
   expect(existsSync(file), file).toBe(true);
   expect(readFileSync(file).equals(readFileSync(path.join("public", "cv", name)))).toBe(true);
-  expect(readdirSync(path.join("out", "cv"))).toEqual([name]);
+  expect(readdirSync(path.join("out", "cv")).sort()).toEqual([name, "pages"]);
+  // The CV viewer's page images (bun run cv:pages) are exported as they are committed.
+  for (const page of readdirSync(path.join("public", "cv", "pages"))) {
+    expect(readFileSync(path.join("out", "cv", "pages", page)).equals(readFileSync(path.join("public", "cv", "pages", page))), page).toBe(true);
+  }
 });

@@ -199,7 +199,7 @@ export function CommsTerminals({ roof, labels }: { roof: RoofData; labels: RoofL
   );
 }
 
-/** CV kiosk at (10, 6): download the CV PDF or open /cv. */
+/** CV kiosk at (10, 6): opens the RF:cv room (CV viewer modal, the PDF and /cv). */
 export function CvKiosk({ labels }: { labels: RoofLabels }) {
   const [hover, setHover] = useState(false);
   const { x, z, w, d } = ROOF.kiosk;

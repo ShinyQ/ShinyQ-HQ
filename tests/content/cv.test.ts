@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getRoof } from "@/content/load";
-import { cvDownloadName, cvPdfPath } from "@/lib/cv";
+import { CV_FILE_NAME, CV_PAGES, cvDownloadName, cvPdfPath } from "@/lib/cv";
+import manifest from "../../content/generated/cv-pages.json";
 import { parseRedirects } from "../../scripts/serve-static";
 
 const root = process.cwd();
@@ -22,9 +24,9 @@ describe("CV PDF (owner's file, served as-is for every locale)", () => {
     expect(statSync(file).size).toBeGreaterThan(10_000);
   });
 
-  it("is the only file in public/cv (no per-locale copies)", () => {
+  it("is the only PDF in public/cv (no per-locale copies); page images live in public/cv/pages", () => {
     const dir = path.join(root, "public", "cv");
-    expect(readdirSync(dir)).toEqual([`${fileName}.pdf`]);
+    expect(readdirSync(dir).sort()).toEqual([`${fileName}.pdf`, "pages"]);
   });
 
   it("keeps every old CV URL working with a 301 to the file", () => {
@@ -58,5 +60,34 @@ describe("CV PDF (owner's file, served as-is for every locale)", () => {
         "X-Frame-Options: SAMEORIGIN",
       ]),
     );
+  });
+});
+
+describe("CV page images (in-site viewer, rendered by `bun run cv:pages`)", () => {
+  it("were rendered from the committed PDF (run `bun run cv:pages` after replacing it)", () => {
+    const sha = createHash("sha256").update(readFileSync(path.join(root, "public", pdf))).digest("hex");
+    expect(manifest.fileName).toBe(fileName);
+    expect(CV_FILE_NAME).toBe(fileName);
+    expect(manifest.sha256, "public/cv PDF changed: run `bun run cv:pages` and commit the output").toBe(sha);
+  });
+
+  it("are numbered pages with a large and a small webp each, and nothing else", () => {
+    expect(CV_PAGES.length).toBeGreaterThan(0);
+    const expected: string[] = [];
+    CV_PAGES.forEach((page, i) => {
+      expect(page.n).toBe(i + 1);
+      expect(page.width).toBe(1600);
+      expect(page.widthSmall).toBe(800);
+      expect(page.height / page.width).toBeCloseTo(page.heightSmall / page.widthSmall, 2);
+      for (const src of [page.src, page.srcSmall]) {
+        expect(src).toMatch(new RegExp(`^/cv/pages/${fileName}-${page.n}(-800)?\\.webp$`));
+        const bytes = readFileSync(path.join(root, "public", src));
+        expect(bytes.subarray(0, 4).toString("latin1")).toBe("RIFF");
+        expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");
+        expect(bytes.length).toBeLessThan(400_000);
+        expected.push(path.basename(src));
+      }
+    });
+    expect(readdirSync(path.join(root, "public", "cv", "pages")).sort()).toEqual(expected.sort());
   });
 });

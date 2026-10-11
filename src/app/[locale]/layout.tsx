@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Analytics } from "@/components/Analytics";
 import { BootCover } from "@/components/BootCover";
+import { DialogHost } from "@/components/DialogHost";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -69,6 +70,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           {/* Outside the shell so the Rover Terminal and palette stay usable over the 3D tower. */}
           <MissionHud locale={locale} index={buildHudIndex(getContent())} />
           <AskDock locale={locale} />
+          <DialogHost />
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
         <Analytics />

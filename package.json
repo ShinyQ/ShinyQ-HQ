@@ -21,6 +21,7 @@
     "screenshots:pages": "SCREENSHOTS=1 playwright test e2e/pageview-visual.spec.ts --workers=1",
     "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json",
     "build:knowledge": "bun scripts/build-knowledge.ts",
+    "cv:pages": "bun scripts/cv-pages.ts",
     "ask:eval": "bun scripts/ask-eval.ts"
   },
   "dependencies": {

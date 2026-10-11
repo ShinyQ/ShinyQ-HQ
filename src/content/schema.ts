@@ -218,6 +218,10 @@ export const PublicationSchema = z.strictObject({
   /** Citation count from `library.researchMetrics.source`, as of `library.researchMetrics.asOf`. */
   citations: z.number().int().nonnegative().optional(),
   summary: LocalizedTextSchema.optional(),
+  /** Abstract for the paper preview modal, English only (written for this site, not copied from the publisher). */
+  abstract: nonEmpty.optional(),
+  /** Page range for citations, written "1-6". */
+  pages: z.string().regex(/^\d+(?:-\d+)?$/, "Expected a page range such as 1-6").optional(),
   pdf: httpsUrl.optional(),
   code: httpsUrl.optional(),
 });

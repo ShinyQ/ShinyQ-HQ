@@ -7596,6 +7596,7 @@
           "venue": "2021 International Conference on Artificial Intelligence and Big Data Analytics (ICAIBDA)",
           "publisher": "IEEE",
           "date": "2021-10-27",
+          "pages": "1-6",
           "year": 2021,
           "kind": "paper",
           "doi": "10.1109/icaibda53487.2021.9689712",
@@ -7605,7 +7606,8 @@
           "summary": {
             "en": "Analyzes sentiment in Indonesian digital wallet app reviews with CNN and LSTM.",
             "id": "Menganalisis sentimen ulasan aplikasi dompet digital Indonesia dengan CNN dan LSTM."
-          }
+          },
+          "abstract": "We apply deep learning to sentiment analysis of Indonesian digital wallet reviews. Reviews of four popular Indonesian e-wallet apps were collected from the Google Play Store and grouped into five aspects: accessibility, transactions, accounts, service and performance. A combined CNN and LSTM architecture classifies the sentiment of each review, reaching 87% training accuracy and 83% validation accuracy. Across the four apps, user sentiment leans negative in every aspect category."
         },
         {
           "id": "covid-19-herd-immunity-study",
@@ -7619,6 +7621,7 @@
           "venue": "2021 International Conference on Intelligent Cybernetics Technology & Applications (ICICyTA)",
           "publisher": "IEEE",
           "date": "2021-12-01",
+          "pages": "106-110",
           "year": 2021,
           "kind": "paper",
           "doi": "10.1109/icicyta53712.2021.9689122",
@@ -7627,7 +7630,8 @@
           "summary": {
             "en": "Forecasts COVID-19 case trends to study Indonesia's path to herd immunity.",
             "id": "Memprediksi tren kasus COVID-19 untuk mengkaji kemungkinan tercapainya herd immunity di Indonesia."
-          }
+          },
+          "abstract": "Herd immunity decides whether the COVID-19 outbreak is under control, and government policy on social restrictions and vaccination shapes how fast a country reaches it. This study analyzes the dynamics of COVID-19 cases in Indonesia against government policies, from large-scale social restrictions (PSBB) to emergency restrictions (PPKM Darurat), and the vaccination rate, and finds vaccination to be the key factor. Case and vaccination time series are forecast with an N-BEATS model to support the analysis, which estimated that positive cases would decline from October 2021 and that a mask removal policy could follow around February 2022. The study does not model vaccine-resistant variants, which could delay herd immunity."
         },
         {
           "id": "sentiboard-paper",
@@ -7647,7 +7651,8 @@
           "summary": {
             "en": "Tracks social media sentiment about a university in an IndoBERT dashboard (BSc thesis publication).",
             "id": "Memantau sentimen media sosial tentang sebuah universitas melalui dashboard IndoBERT (publikasi skripsi S1)."
-          }
+          },
+          "abstract": "This paper implements an IndoBERT model in a social media sentiment dashboard for a university (Universitas XYZ). Indonesian social media posts about the university are classified by sentiment with a fine-tuned IndoBERT model, and a web dashboard built with Django and Plotly presents the results as trends, so the university can monitor public opinion and respond to it."
         },
         {
           "id": "sentiboard-bsc-thesis",
@@ -7662,7 +7667,8 @@
           "summary": {
             "en": "My BSc thesis: Sentiboard, a university sentiment dashboard using IndoBERT.",
             "id": "Skripsi S1 saya: Sentiboard, dashboard sentimen universitas menggunakan IndoBERT."
-          }
+          },
+          "abstract": "My BSc thesis at Telkom University: Sentiboard, a web dashboard that monitors social media sentiment about a university. A fine-tuned IndoBERT model classifies Indonesian posts by sentiment, and a Django and Plotly dashboard turns the results into trends the university can act on."
         },
         {
           "id": "indobert-university-reviews-model",
@@ -8250,8 +8256,8 @@
       "id": "cv",
       "order": 5,
       "label": {
-        "en": "Download CV",
-        "id": "Unduh CV"
+        "en": "View CV",
+        "id": "Lihat CV"
       },
       "steps": [
         {
