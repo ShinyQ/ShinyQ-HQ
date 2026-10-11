@@ -98,3 +98,9 @@ e2e/          Playwright tests
 ## CI and deploys
 
 GitHub Actions runs typecheck, lint and unit tests next to the static build, then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`). If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.
+
+## Performance
+
+The HTML pages paint their text before any JavaScript runs, so Lighthouse's simulated LCP is set by the bytes of the HTML, the CSS and the three preloaded fonts. Budgets are enforced in CI (`lighthouserc.json`, `Lighthouse CI` job): LCP under 2 s, CLS under 0.01, TBT under 200 ms, and per page at most 60 KB of fonts, 80 KB of HTML, 20 KB of CSS and 240 KB of JavaScript. What keeps them there (subset fonts, deferred Next.js chunks, large client data in `/data/*.json` instead of layout props, small always-loaded islands): [`docs/deploy.md`](docs/deploy.md) section 8.
+
+In 3D every floor stays under 150 draw calls and 30k triangles (`expectRenderBudget` in the e2e suite). Touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite, no composer MSAA; `renderBudget` in `src/experience/scene/settings.ts`), neighbouring floors mount on idle after the first frames, and the nav grids build in about a millisecond.
