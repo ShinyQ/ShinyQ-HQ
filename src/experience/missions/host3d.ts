@@ -37,7 +37,7 @@ const LOBBY_STOPS: Record<string, Vec2> = {
   profile: { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.hologram.radius + 1.8 },
   stats: { x: LOBBY.hologram.x + LOBBY.statsRadius * 0.7, z: LOBBY.hologram.z + LOBBY.statsRadius * 0.7 },
   skills: { x: LOBBY.skillsWall.x, z: LOBBY.skillsWall.z + 2.6 },
-  certifications: { x: LOBBY.certWall.x - 2.6, z: LOBBY.certWall.z },
+  certifications: { x: LOBBY.certWall.x - LOBBY.certWall.w / 2 - 2, z: LOBBY.certWall.z },
 };
 
 /**

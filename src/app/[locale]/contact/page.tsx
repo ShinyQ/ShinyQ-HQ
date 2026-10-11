@@ -4,8 +4,9 @@ import { CvButton } from "@/components/cv/CvButton";
 import { ContactPanel } from "@/components/page/About";
 import { AskCta, AskOnly } from "@/components/page/AskEntry";
 import { Marker, SectionSplit } from "@/components/page/Layout";
-import { CertificationList, PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
-import { getCertifications, getProfile, getRoof, getSkills } from "@/content/load";
+import { Certifications } from "@/components/certs/Certifications";
+import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
+import { getProfile, getRoof, getSkills } from "@/content/load";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
@@ -64,7 +65,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       </SectionSplit>
 
       <SectionSplit id="certifications" title={th("certsTitle")}>
-        <CertificationList certifications={getCertifications()} locale={locale} />
+        <Certifications locale={locale} />
       </SectionSplit>
 
       <AskOnly>

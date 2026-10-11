@@ -5,9 +5,10 @@ import { PostList, PublicationList, ResearchList, TalkList } from "@/components/
 import { PageIntro, SectionSplit, StatLedger } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
 import { WorkRow } from "@/components/page/Work";
-import { AwardList, CertificationList, SkillsWall } from "@/components/ProfileBlocks";
+import { Certifications } from "@/components/certs/Certifications";
+import { AwardList, SkillsWall } from "@/components/ProfileBlocks";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
-import { getAwards, getCertifications, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
+import { getAwards, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
 import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
@@ -98,7 +99,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
       </SectionSplit>
 
       <SectionSplit {...section("certifications")}>
-        <CertificationList certifications={getCertifications()} locale={locale} />
+        <Certifications locale={locale} />
       </SectionSplit>
 
       <SectionSplit {...section("awards")}>

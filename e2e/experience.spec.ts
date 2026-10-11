@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -334,6 +334,28 @@ test.describe("missions in 3D", () => {
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "cancelled");
     await page.keyboard.up("s");
     expect((await snapshot(page)).floor).toBe("L1");
+  });
+
+  test("the certification preview opens over the tower and holds the world keys", async ({ page }) => {
+    const errors = collectErrors(page);
+    await enterHQ(page);
+    await waitForHydration(page);
+    const cert = data.certifications[0];
+    // A 3D badge sends this command; DialogHost shows the card outside the inert shell.
+    const view = { id: cert.id, code: cert.code ?? null, name: cert.name, short: cert.name, issuer: cert.issuer, logo: null, issued: cert.issued, issuedLabel: cert.issued, expires: null, expiresLabel: null, status: cert.status, url: cert.credentialUrl ?? null, credentialId: null, featured: false };
+    await page.evaluate((c) => window.dispatchEvent(new CustomEvent("hq:hud", { detail: { type: "cert", cert: c } })), view);
+    const dialog = page.getByRole("dialog", { name: cert.name });
+    await expect(dialog).toBeVisible();
+    const start = (await snapshot(page)).rover;
+    await page.keyboard.down("w");
+    await page.waitForTimeout(600);
+    await page.keyboard.up("w");
+    const now = (await snapshot(page)).rover;
+    expect(Math.hypot(now.x - start.x, now.z - start.z)).toBeLessThan(0.05);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    expect((await snapshot(page)).phase).toBe("explore");
+    expect(errors).toEqual([]);
   });
 
   test("the terminal opens after the intro on the first visit", async ({ page }) => {

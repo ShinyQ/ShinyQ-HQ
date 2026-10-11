@@ -5,7 +5,7 @@ import { BufferAttribute, BufferGeometry, CanvasTexture, SRGBColorSpace } from "
 import { atlasLayout, quadBuffers, type LogoQuad } from "./logoAtlas";
 
 /** Draws every logo into one canvas; failed images leave their cell empty. */
-function useAtlasTexture(srcs: string[], cols: number, rows: number, cell: number) {
+export function useAtlasTexture(srcs: string[], cols: number, rows: number, cell: number) {
   const [texture, setTexture] = useState<CanvasTexture | null>(null);
   const key = srcs.join("|");
   useEffect(() => {

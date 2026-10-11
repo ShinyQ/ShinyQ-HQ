@@ -637,5 +637,44 @@
       "sheet": "2D chips",
       "sheetTitle": "Type icons as Page View chips"
     }
+  },
+  "certs": {
+    "summary": "{count, plural, one {# certification} other {# certifications}} from {issuers, plural, one {# issuer} other {# issuers}}",
+    "featured": "Featured certifications",
+    "list": "All certifications",
+    "filters": "Filter certifications",
+    "issuer": "Issuer",
+    "allIssuers": "All",
+    "statusLabel": "Status",
+    "anyStatus": "Any status",
+    "search": "Search certifications",
+    "searchPlaceholder": "Search code or name",
+    "showing": "Showing {shown} of {total}",
+    "noMatch": "No certification matches these filters.",
+    "clear": "Clear filters",
+    "details": "Details",
+    "seeAll": "All {count} certifications",
+    "status": {
+      "earned": "Earned",
+      "in-progress": "In progress",
+      "expired": "Expired"
+    },
+    "preview": {
+      "issued": "Issued",
+      "planned": "Planned",
+      "renews": "Renews",
+      "expiredOn": "Expired",
+      "credentialId": "Credential ID",
+      "open": "Open credential",
+      "newTab": "opens in a new tab",
+      "close": "Close",
+      "noLink": "No public credential link.",
+      "pending": "The credential link appears once the exam is passed."
+    },
+    "wall": {
+      "all": "All",
+      "other": "Other",
+      "page": "{page} / {pages}"
+    }
   }
 }

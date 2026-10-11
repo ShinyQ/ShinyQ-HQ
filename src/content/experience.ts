@@ -3,10 +3,10 @@ import id from "../../messages/id.json";
 import type { CareerData, ExperienceData, LabPod } from "@/experience/types";
 import { formatPeriod } from "@/lib/format";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
+import { certViews } from "./cert-views";
 import { buildLibraryData, buildRoofData } from "./experience-floors";
 import {
   getAwards,
-  getCertifications,
   getContent,
   getLibrary,
   getMissions,
@@ -92,14 +92,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     },
     stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),
     skills: getSkills().map((g) => ({ id: g.id, label: g.label[locale], items: [...g.items], logos: g.items.map((name) => getTechLogo(name)?.src ?? null) })),
-    certifications: getCertifications().map((c) => ({
-      id: c.id,
-      code: c.code ?? null,
-      name: c.name,
-      issuer: c.issuer,
-      status: c.status,
-      url: c.credentialUrl ?? null,
-    })),
+    certifications: certViews(locale),
     missions: getMissions().map((m) => ({ id: m.id, label: m.label[locale] })),
     floors: Object.fromEntries(
       (Object.keys(FLOOR_ROUTE) as FloorId[]).map((f) => [f, { name: floorNames[f], route: FLOOR_ROUTE[f] }]),

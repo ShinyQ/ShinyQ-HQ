@@ -11,14 +11,14 @@ export interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   /** Panel width on tablets and desktops; phones always get a full-screen sheet. */
-  width?: "md" | "lg";
+  width?: "sm" | "md" | "lg";
   testId?: string;
 }
 
-const WIDTH = { md: "sm:h-auto sm:max-w-[720px]", lg: "sm:h-[min(92dvh,1100px)] sm:max-w-[1040px]" };
+const WIDTH = { sm: "sm:h-auto sm:max-w-[480px]", md: "sm:h-auto sm:max-w-[720px]", lg: "sm:h-[min(92dvh,1100px)] sm:max-w-[1040px]" };
 
 /**
- * Shared modal dialog for the CV viewer and paper previews: portals into document.body, moves focus
+ * Shared modal dialog for the CV viewer, paper and certification previews: portals into document.body, moves focus
  * to the first `[data-autofocus]` element (else the panel), traps Tab, closes on Esc and backdrop
  * click, locks page scroll and stays above the 3D HUD and the room drawer. Esc is captured on the
  * window so the drawer, hologram and rover ignore it; other world keys already pause while an

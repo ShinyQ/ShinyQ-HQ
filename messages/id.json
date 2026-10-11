@@ -637,5 +637,44 @@
       "sheet": "Chip 2D",
       "sheetTitle": "Ikon tipe sebagai chip Page View"
     }
+  },
+  "certs": {
+    "summary": "{count} sertifikasi dari {issuers} penerbit",
+    "featured": "Sertifikasi unggulan",
+    "list": "Semua sertifikasi",
+    "filters": "Filter sertifikasi",
+    "issuer": "Penerbit",
+    "allIssuers": "Semua",
+    "statusLabel": "Status",
+    "anyStatus": "Semua status",
+    "search": "Cari sertifikasi",
+    "searchPlaceholder": "Cari kode atau nama",
+    "showing": "Menampilkan {shown} dari {total}",
+    "noMatch": "Tidak ada sertifikasi yang cocok dengan filter ini.",
+    "clear": "Hapus filter",
+    "details": "Detail",
+    "seeAll": "Semua {count} sertifikasi",
+    "status": {
+      "earned": "Diraih",
+      "in-progress": "Sedang berjalan",
+      "expired": "Kedaluwarsa"
+    },
+    "preview": {
+      "issued": "Diterbitkan",
+      "planned": "Direncanakan",
+      "renews": "Diperbarui",
+      "expiredOn": "Kedaluwarsa",
+      "credentialId": "ID kredensial",
+      "open": "Buka kredensial",
+      "newTab": "terbuka di tab baru",
+      "close": "Tutup",
+      "noLink": "Tidak ada tautan kredensial publik.",
+      "pending": "Tautan kredensial muncul setelah ujian lulus."
+    },
+    "wall": {
+      "all": "Semua",
+      "other": "Lainnya",
+      "page": "{page} / {pages}"
+    }
   }
 }

@@ -22,7 +22,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
       <ProfileHologram name={data.profile.name} monogram={data.profile.monogram} headline={data.profile.headline} />
       <StatsRing stats={data.stats} />
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
-      <CertWall certifications={data.certifications} labels={labels.certs} />
+      <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
       <MissionKiosk missions={data.missions} labels={labels.kiosk} />
     </group>
   );

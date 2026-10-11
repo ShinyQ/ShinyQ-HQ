@@ -57,6 +57,9 @@ export const RULES: Rule[] = [
   // Dev-only pages and the walkable floors prototype (never in the production export).
   { test: /^src\/app\/\[locale\]\/dev\/|^src\/experience\/prototype\//, specs: [] },
 
+  // Certifications: Page View index and the shared preview card, which the 3D Lobby wall opens too.
+  { test: /^src\/components\/certs\/|^src\/content\/cert(s|-views)\.ts$/, specs: ["pageview", "experience", "static-routes"] },
+
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
   { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience"] },

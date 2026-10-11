@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
-import { boxesOverlap, lobbyElements, radialSpan, SKILLS_PAD, SKILLS_TEXT, skillsWallLayout, wrapCount, type Box } from "@/experience/floors/lobby/layout";
+import {
+  arcPoint,
+  boxesOverlap,
+  CERT_PAGE_SIZE,
+  CERT_PANEL_MAX_HALF,
+  CERT_WALL,
+  certPage,
+  certPanelHalf,
+  certSlots,
+  faceYaw,
+  lobbyElements,
+  radialSpan,
+  SKILLS_PAD,
+  SKILLS_TEXT,
+  skillsWallLayout,
+  wrapCount,
+  type Box,
+} from "@/experience/floors/lobby/layout";
 import { getSkills, tr } from "@/content/load";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { getStats } from "@/content/load";
@@ -100,5 +117,58 @@ describe("Lobby layout", () => {
 
   it("gives each skill column room to breathe", () => {
     expect(LOBBY.skillsWall.w / 4).toBeGreaterThanOrEqual(9);
+  });
+
+  describe("certification wall", () => {
+    const cw = LOBBY.certWall;
+
+    it("keeps the widest panel, badges and tabs inside the wall footprint", () => {
+      const r = CERT_WALL.radius + CERT_WALL.inset;
+      for (const a of [-CERT_PANEL_MAX_HALF, 0, CERT_PANEL_MAX_HALF]) {
+        for (const radius of [CERT_WALL.radius - 0.05, r]) {
+          const [x, , z] = arcPoint(radius, a, 0);
+          expect(x, `x at ${a}`).toBeGreaterThanOrEqual(cw.x - cw.w / 2);
+          expect(x, `x at ${a}`).toBeLessThanOrEqual(cw.x + cw.w / 2);
+          expect(Math.abs(z - cw.z), `z at ${a}`).toBeLessThanOrEqual(cw.d / 2);
+        }
+      }
+      expect(CERT_WALL.titleY + 0.45).toBeLessThanOrEqual(cw.h + 0.8);
+      expect(CERT_WALL.panel.y1).toBeLessThanOrEqual(CERT_WALL.titleY);
+    });
+
+    it("lays out up to 12 badges in two rows, sized to content and without overlaps", () => {
+      expect(certSlots(0)).toEqual([]);
+      expect(certSlots(7).map((s) => s.col)).toEqual([0, 1, 2, 3, 0, 1, 2]);
+      expect(certSlots(40)).toHaveLength(CERT_PAGE_SIZE);
+      const slots = certSlots(CERT_PAGE_SIZE);
+      for (const [a, b] of slots.flatMap((p, i) => slots.slice(i + 1).map((q) => [p, q] as const))) {
+        const [ax, , az] = arcPoint(CERT_WALL.radius, a.a, 0);
+        const [bx, , bz] = arcPoint(CERT_WALL.radius, b.a, 0);
+        const apart = a.row === b.row ? Math.hypot(ax - bx, az - bz) >= CERT_WALL.badge.w : Math.abs(a.y - b.y) >= CERT_WALL.badge.h;
+        expect(apart, `${a.index} and ${b.index}`).toBe(true);
+      }
+      // Bottom row clears the pager, top row stays under the tabs.
+      expect(Math.min(...slots.map((s) => s.y)) - CERT_WALL.badge.h / 2).toBeGreaterThan(CERT_WALL.pagerY + CERT_WALL.tab.h / 2);
+      expect(Math.max(...slots.map((s) => s.y)) + CERT_WALL.badge.h / 2).toBeLessThan(CERT_WALL.tabsY - CERT_WALL.tab.h / 2);
+      expect(certPanelHalf(3, [])).toBeLessThan(certPanelHalf(12, []));
+    });
+
+    it("pages past 12 and wraps around", () => {
+      expect(certPage(7, 0)).toEqual({ page: 0, pages: 1, start: 0, end: 7 });
+      expect(certPage(30, 2)).toEqual({ page: 2, pages: 3, start: 24, end: 30 });
+      expect(certPage(30, 3).page).toBe(0);
+      expect(certPage(30, -1).page).toBe(2);
+    });
+
+    it("turns every badge toward the plaza center", () => {
+      for (const a of [-0.3, 0, 0.3]) {
+        const yaw = faceYaw(a);
+        const [x, , z] = arcPoint(CERT_WALL.radius, a, 0);
+        const toCenter = { x: LOBBY.hologram.x - x, z: LOBBY.hologram.z - z };
+        const len = Math.hypot(toCenter.x, toCenter.z);
+        expect(Math.sin(yaw)).toBeCloseTo(toCenter.x / len);
+        expect(Math.cos(yaw)).toBeCloseTo(toCenter.z / len);
+      }
+    });
   });
 });
