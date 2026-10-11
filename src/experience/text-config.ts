@@ -1,4 +1,4 @@
-import { configureTextBuilder } from "troika-three-text";
+import { configureTextBuilder, GlyphsGeometry } from "troika-three-text";
 
 /**
  * Typeset in-world text on the main thread. The default worker loads blob: scripts, which the
@@ -10,3 +10,25 @@ import { configureTextBuilder } from "troika-three-text";
  * a fallback that covers them troika fetches font data from a CDN, which the CSP blocks.
  */
 configureTextBuilder({ useWorker: false, defaultFontURL: "/fonts/jetbrains-mono-symbols-700.woff" });
+
+/**
+ * Until its first (async) typesetting finishes, a troika glyph geometry keeps three's
+ * InstancedBufferGeometry default `instanceCount = Infinity` with no instance attributes. three
+ * then issues an instanced draw of Infinity (WebGL draws nothing) and counts Infinity triangles in
+ * `renderer.info`, which breaks the per-floor render budget while texts are still syncing (for
+ * example the neighbouring floors that mount on idle). Report 0 instances instead: three skips the
+ * draw, and every real count (`updateGlyphs`, `applyClipRect`) is finite and passes through.
+ */
+const INSTANCES = Symbol("instanceCount");
+type Counted = { [INSTANCES]?: number };
+if (!Object.getOwnPropertyDescriptor(GlyphsGeometry.prototype, "instanceCount")) {
+  Object.defineProperty(GlyphsGeometry.prototype, "instanceCount", {
+    configurable: true,
+    get(this: Counted) {
+      return this[INSTANCES] ?? 0;
+    },
+    set(this: Counted, value: number) {
+      this[INSTANCES] = Number.isFinite(value) ? value : 0;
+    },
+  });
+}

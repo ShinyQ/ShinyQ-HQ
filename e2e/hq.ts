@@ -98,10 +98,26 @@ export async function snapshot(page: Page): Promise<HQSnapshot> {
  * neighbouring floors mounted, October 2026). Call after the scene settled.
  */
 export const RENDER_BUDGET = { drawCalls: 150, triangles: 30_000 };
+const BUDGET_SAMPLES = 5;
 
+/**
+ * Checks the worst of a few samples (the Director copies `renderer.info` every 0.1 s), so a
+ * single frame cannot hide a spike. Counts must be finite: Infinity means a draw with an unbounded
+ * instance count (see the troika patch in src/experience/text-config.ts).
+ */
 export async function expectRenderBudget(page: Page) {
-  const { drawCalls, triangles } = await snapshot(page);
-  expect(drawCalls).toBeGreaterThan(10);
+  const samples: Pick<HQSnapshot, "drawCalls" | "triangles">[] = [];
+  for (let i = 0; i < BUDGET_SAMPLES; i++) {
+    if (i > 0) await page.waitForTimeout(300);
+    const { drawCalls, triangles } = await snapshot(page);
+    samples.push({ drawCalls, triangles });
+  }
+  for (const sample of samples) {
+    expect(Number.isFinite(sample.drawCalls) && Number.isFinite(sample.triangles), JSON.stringify(samples)).toBe(true);
+  }
+  const drawCalls = Math.max(...samples.map((s) => s.drawCalls));
+  const triangles = Math.max(...samples.map((s) => s.triangles));
+  expect(Math.min(...samples.map((s) => s.drawCalls))).toBeGreaterThan(10);
   expect(drawCalls).toBeLessThan(RENDER_BUDGET.drawCalls);
   expect(triangles).toBeLessThan(RENDER_BUDGET.triangles);
 }
