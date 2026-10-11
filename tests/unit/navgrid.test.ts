@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
+import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { collides, distanceToRect, resolveCircle } from "@/experience/nav/collision";
 import { buildNavGrid, findPath, isWalkable, nearestWalkable } from "@/experience/nav/navgrid";
 import type { Rect, Vec2 } from "@/experience/types";
@@ -109,5 +111,36 @@ describe("navgrid A*", () => {
     const path = findPath(lobby, l1.spawn, l1.approach)!;
     expect(path.at(-1)).toEqual(l1.approach);
     for (const p of path) expect(collides(p, ROVER.radius, l1.obstacles)).toBe(false);
+  });
+});
+
+describe("buildNavGrid", () => {
+  /** The original cells x obstacles build, kept as the reference for the faster one. */
+  function reference({ bounds: b, obstacles }: { bounds: Rect; obstacles: readonly Rect[] }, radius: number, cell = 1) {
+    const cols = Math.max(1, Math.ceil((b.maxX - b.minX) / cell));
+    const rows = Math.max(1, Math.ceil((b.maxZ - b.minZ) / cell));
+    const out = new Uint8Array(cols * rows);
+    const eps = 1e-6;
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) {
+        const p = { x: b.minX + (i + 0.5) * cell, z: b.minZ + (j + 0.5) * cell };
+        const inside = p.x >= b.minX + radius - eps && p.x <= b.maxX - radius + eps && p.z >= b.minZ + radius - eps && p.z <= b.maxZ - radius + eps;
+        out[j * cols + i] = inside && obstacles.every((o) => distanceToRect(p, o) >= radius - eps) ? 1 : 0;
+      }
+    }
+    return out;
+  }
+
+  it("matches the reference build on every real floor", () => {
+    const data = buildExperienceData("en", { L1: "", L2: "", L3: "", L4: "", RF: "" });
+    const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) });
+    for (const layout of Object.values(layouts)) {
+      expect(buildNavGrid(layout, ROVER.radius).walkable).toEqual(reference(layout, ROVER.radius));
+    }
+  });
+
+  it("matches the reference with fractional cells and obstacles past the bounds", () => {
+    const input = { bounds, obstacles: [wall, { minX: 8.7, maxX: 14, minZ: -12, maxZ: -7.3 }, { minX: -3.2, maxX: -3.1, minZ: 2.05, maxZ: 2.06 }] };
+    for (const cell of [0.5, 0.75, 1, 1.3]) expect(buildNavGrid(input, 0.9, cell).walkable).toEqual(reference(input, 0.9, cell));
   });
 });

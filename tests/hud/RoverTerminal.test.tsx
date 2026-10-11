@@ -120,8 +120,15 @@ describe("RoverTerminal", () => {
 
     it("types at 12 ms per character, then shows everything", () => {
       renderTerminal({ reducedMotion: false });
-      const typed = () => screen.getByRole("dialog").querySelector("[aria-hidden='true'].min-h-\\[60px\\]")!.textContent ?? "";
+      const lines = () => screen.getByRole("dialog").querySelector<HTMLElement>("[aria-hidden='true'].min-h-\\[60px\\]")!;
+      // Visible text only: the untyped rest is rendered invisible so the sheet does not grow while typing.
+      const typed = () => {
+        const copy = lines().cloneNode(true) as HTMLElement;
+        copy.querySelectorAll(".invisible").forEach((node) => node.remove());
+        return copy.textContent ?? "";
+      };
       expect(typed()).toBe("");
+      expect(lines().textContent).toContain(en.hud.terminal.question);
       act(() => vi.advanceTimersByTime(12 * 10));
       expect(typed()).toContain("rover@hq");
       expect(typed()).not.toContain(en.hud.terminal.question);

@@ -37,4 +37,6 @@ export const roverRuntime = {
   marker: { visible: false, opacity: 0, scale: 1, x: 0, z: 0 },
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
+  /** Most recent triangle count (dev probe for the per-floor budget). */
+  triangles: 0,
 };

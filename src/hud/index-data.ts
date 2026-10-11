@@ -1,10 +1,15 @@
+import { createHash } from "node:crypto";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import type { LocalizedText, Mission, SiteContent } from "@/content/schema";
 import type { PaletteActionId } from "./palette-types";
 import { buildRoomCatalog, buildYears, type RoomInfo, type StructuralLabels, type StructuralRoom, type YearInfo } from "@/experience/missions/rooms";
 
-/** Serializable data the client HUD needs. Built on the server so zod and the full dataset stay out of the client bundle. */
+/**
+ * Serializable data the client HUD needs. Built on the server so zod and the full dataset stay out of the
+ * client bundle, and served as a static file (`/data/hud/index.json`, see src/hud/index-client.ts) so it
+ * stays out of every page's HTML too.
+ */
 export interface HudIndex {
   missions: Mission[];
   rooms: RoomInfo[];
@@ -39,4 +44,9 @@ export function buildHudIndex(content: SiteContent): HudIndex {
       Object.entries(ACTION_KEYS).map(([action, key]) => [action, { en: en.hud.actions[key], id: id.hud.actions[key] }]),
     ) as Record<PaletteActionId, LocalizedText>,
   };
+}
+
+/** Short content hash of the index, appended to its URL so a cached copy never outlives a deploy. */
+export function hudIndexVersion(index: HudIndex): string {
+  return createHash("sha256").update(JSON.stringify(index)).digest("hex").slice(0, 12);
 }

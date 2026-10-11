@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { isAskEnabled } from "@/ask/client";
+import { isAskEnabled } from "@/ask/status";
 import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "@/experience/missions/host";
 import { roomFromPath } from "@/experience/missions/rooms";
@@ -15,6 +15,7 @@ import { CommandPalette } from "./CommandPalette";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
 import type { HudIndex } from "./index-data";
+import { loadHudIndex, useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
 import { RoverTerminal, markTerminalSeen, shouldAutoOpenTerminal } from "./RoverTerminal";
@@ -23,12 +24,17 @@ import { orderTerminalMissions } from "./terminal";
 
 const VISITS_KEY = "hq:visits";
 const AUTO_OPEN_DELAY_MS = 600;
+/** The auto-opened terminal waits this long at most for the Ask status, so the "[a] Ask" row is there from the start. */
+const AUTO_OPEN_STATUS_WAIT_MS = 1500;
 const MIN_TOAST_MS = 2400;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view"];
 
 export interface MissionHudProps {
   locale: Locale;
-  index: HudIndex;
+  /** Content hash of the static index file (`hudIndexVersion`); the HUD fetches it after hydration. */
+  indexVersion?: string;
+  /** Preloaded index (tests); skips the fetch. */
+  index?: HudIndex;
   /** Auto-open the Rover Terminal on the first visit. Static pages enable it on the Lobby only. */
   autoOpenOnLobby?: boolean;
 }
@@ -56,7 +62,8 @@ function countVisit(): number {
  * mission runner through the static host (route navigation). The 3D experience can reuse the
  * terminal and palette with its own `MissionHost`.
  */
-export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHudProps) {
+export function MissionHud({ locale, indexVersion, index: preloaded, autoOpenOnLobby = true }: MissionHudProps) {
+  const { index, settled } = useHudIndex(indexVersion, preloaded);
   const t = useTranslations("hud.status");
   const router = useRouter();
   const pathname = usePathname();
@@ -101,7 +108,8 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     [loadAskStatus],
   );
 
-  const runner: MissionRunner = useMemo(() => {
+  const runner: MissionRunner | null = useMemo(() => {
+    if (!index) return null;
     const deps: HostDeps = {
       locale,
       rooms: index.rooms,
@@ -127,26 +135,33 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     return createMissionRunner({ host, missions: index.missions, rooms: index.rooms, visited: () => visitedRooms() ?? readRecent() });
   }, [locale, index, router, say, showPalette]);
 
-  useEffect(() => registerRunner(runner), [runner]);
+  useEffect(() => (runner ? registerRunner(runner) : undefined), [runner]);
 
-  // The HUD is in the locale layout, so its first effect marks the page as hydrated. The Next.js
-  // chunks load after the first paint (scripts/defer-scripts.ts), so `load` no longer implies it;
-  // e2e tests wait for this attribute (`openPage` in e2e/hq.ts).
+  // The HUD is in the locale layout, so it marks the page as hydrated once its index has loaded (or
+  // failed to), so the palette and terminal are complete. The Next.js chunks load after the first paint
+  // (scripts/defer-scripts.ts), so `load` no longer implies it; e2e tests wait for this attribute
+  // (`openPage` in e2e/hq.ts).
   useEffect(() => {
-    document.documentElement.setAttribute("data-hydrated", "");
-  }, []);
+    if (settled) document.documentElement.setAttribute("data-hydrated", "");
+  }, [settled]);
 
-  const entries = useMemo(() => buildPaletteEntries(index, STATIC_ACTIONS), [index]);
-  const terminalMissions = useMemo(() => orderTerminalMissions(index.missions, visit), [index.missions, visit]);
+  const entries = useMemo(() => (index ? buildPaletteEntries(index, STATIC_ACTIONS) : []), [index]);
+  const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions, visit) : []), [index, visit]);
 
   // Visit counter, first-visit auto-open on the Lobby, HUD commands and global shortcuts.
   useEffect(() => {
     const visitTimer = window.setTimeout(() => setVisit(countVisit()), 0);
+    let alive = true;
     const autoTimer =
       autoOpenOnLobby && pathname === `/${locale}` && shouldAutoOpenTerminal()
         ? window.setTimeout(() => {
-            // In 3D the terminal opens after the intro instead (Director).
-            if (!isAutoOpenClaimed()) showTerminal();
+            // Open with the missions and the Ask row already known: the sheet is anchored to the bottom,
+            // so rows that arrive later would push it up (a layout shift on the Lobby).
+            const status = Promise.race([requestAskStatus(), new Promise<void>((resolve) => window.setTimeout(resolve, AUTO_OPEN_STATUS_WAIT_MS))]);
+            void Promise.all([preloaded ?? loadHudIndex(indexVersion), status]).then(() => {
+              // In 3D the terminal opens after the intro instead (Director).
+              if (alive && !isAutoOpenClaimed()) showTerminal();
+            });
           }, AUTO_OPEN_DELAY_MS)
         : undefined;
     const offCommand = onHudCommand((command) => {
@@ -179,6 +194,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      alive = false;
       window.clearTimeout(visitTimer);
       window.clearTimeout(autoTimer);
       offCommand();
@@ -190,10 +206,11 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
 
   // Remember rooms whose page was opened (palette "Recent", surprise skips them).
   useEffect(() => {
+    if (!index) return;
     const local = pathname.replace(/^\/(en|id)(?=\/|$)/, "") || "/";
     const room = roomFromPath(local, index.rooms);
     if (room && room.kind !== "lobby") pushRecent(room.id);
-  }, [pathname, index.rooms]);
+  }, [pathname, index]);
 
   const runAction = async (action: PaletteActionId) => {
     switch (action) {
@@ -201,6 +218,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
         openCv();
         return;
       case "copy-email":
+        if (!index) return;
         try {
           await navigator.clipboard.writeText(index.email);
           say(t("copied"));
@@ -230,6 +248,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
 
   const onSelect = (entry: PaletteEntry) => {
     const target = entry.target;
+    if (!runner) return;
     switch (target.type) {
       case "mission":
         void runner.start(target.id);
@@ -266,7 +285,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
         }}
         onRun={(id) => {
           setTerminalOpen(false);
-          void runner.start(id);
+          void runner?.start(id);
         }}
         onClose={() => setTerminalOpen(false)}
       />

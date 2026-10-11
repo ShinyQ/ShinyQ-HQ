@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getContent, getProfile } from "@/content/load";
 import { AskDock } from "@/hud/ask/AskDock";
-import { buildHudIndex } from "@/hud/index-data";
+import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { assertLocale } from "@/i18n/locale";
 import { bootFirstScript } from "@/lib/boot-first";
@@ -67,8 +67,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             </main>
             <SiteFooter locale={locale} />
           </div>
-          {/* Outside the shell so the Rover Terminal and palette stay usable over the 3D tower. */}
-          <MissionHud locale={locale} index={buildHudIndex(getContent())} />
+          {/* Outside the shell so the Rover Terminal and palette stay usable over the 3D tower. Its index
+              (rooms, missions) is fetched from /data/hud/index.json after hydration, not inlined. */}
+          <MissionHud locale={locale} indexVersion={hudIndexVersion(buildHudIndex(getContent()))} />
           <AskDock locale={locale} />
           <DialogHost />
         </NextIntlClientProvider>

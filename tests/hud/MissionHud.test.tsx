@@ -9,7 +9,8 @@ import { getContent } from "@/content/load";
 import type { AskOptions, AskResult } from "@/ask/client";
 import type { AskStatus } from "@/ask/protocol";
 import { onHudCommand, openAsk, openPalette, openTerminal, type HudCommand } from "@/hud/events";
-import { buildHudIndex } from "@/hud/index-data";
+import { primeHudIndex } from "@/hud/index-client";
+import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { RECENT_KEY } from "@/hud/recent";
 import { TERMINAL_SEEN_KEY } from "@/hud/RoverTerminal";
@@ -22,11 +23,18 @@ vi.mock("next/navigation", () => ({
 
 const askMock = vi.hoisted(() => ({
   status: null as AskStatus | null,
+  gate: null as Promise<void> | null,
   ask: vi.fn<(options: AskOptions) => Promise<AskResult>>(),
+}));
+vi.mock("@/ask/status", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ask/status")>()),
+  fetchAskStatus: async () => {
+    await askMock.gate;
+    return askMock.status;
+  },
 }));
 vi.mock("@/ask/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/ask/client")>()),
-  fetchAskStatus: async () => askMock.status,
   askQuestion: (options: AskOptions) => askMock.ask(options),
 }));
 
@@ -42,6 +50,7 @@ function renderHud() {
 
 beforeEach(() => {
   askMock.status = null;
+  askMock.gate = null;
   askMock.ask.mockReset();
   nav.push.mockReset();
   nav.pathname = "/en/labs";
@@ -50,31 +59,64 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  primeHudIndex(null);
+  vi.unstubAllGlobals();
+  document.documentElement.removeAttribute("data-hydrated");
   vi.useRealTimers();
   localStorage.clear();
   sessionStorage.clear();
 });
 
 describe("MissionHud on static pages", () => {
-  it("auto-opens the terminal once, on the Lobby, on the first visit", () => {
+  it("auto-opens the terminal once, on the Lobby, on the first visit", async () => {
     vi.useFakeTimers();
     localStorage.clear();
     nav.pathname = "/en";
     renderHud();
-    act(() => vi.advanceTimersByTime(700));
+    await act(async () => vi.advanceTimersByTime(700));
     expect(screen.getByRole("dialog", { name: "Rover Terminal" })).toBeInTheDocument();
     expect(localStorage.getItem(TERMINAL_SEEN_KEY)).toBe("1");
     cleanup();
     renderHud();
-    act(() => vi.advanceTimersByTime(700));
+    await act(async () => vi.advanceTimersByTime(700));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("does not auto-open on deep links", () => {
+  it("auto-opens the terminal with the Ask row already in place (no layout shift)", async () => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    nav.pathname = "/en";
+    askMock.status = { enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 };
+    let release = () => {};
+    askMock.gate = new Promise((resolve) => (release = resolve));
+    renderHud();
+    await act(async () => vi.advanceTimersByTime(700));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => release());
+    expect(screen.getByRole("dialog", { name: "Rover Terminal" })).toHaveTextContent("[a]");
+  });
+
+  it("fetches its index after hydration instead of inlining it", async () => {
+    const fetchMock = vi.fn(async () => Response.json(index));
+    vi.stubGlobal("fetch", fetchMock);
+    const version = hudIndexVersion(index);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <MissionHud locale="en" indexVersion={version} />
+      </NextIntlClientProvider>,
+    );
+    await vi.waitFor(() => expect(document.documentElement).toHaveAttribute("data-hydrated"));
+    expect(fetchMock).toHaveBeenCalledWith(`/data/hud/index.json?v=${version}`);
+    act(() => openPalette());
+    await userEvent.keyboard("voice{Enter}");
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/labs/voice-ai-contact-center"));
+  });
+
+  it("does not auto-open on deep links", async () => {
     vi.useFakeTimers();
     localStorage.clear();
     renderHud();
-    act(() => vi.advanceTimersByTime(700));
+    await act(async () => vi.advanceTimersByTime(700));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

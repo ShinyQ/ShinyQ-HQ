@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { RAIL, RAIL_LOOK_AHEAD } from "../src/experience/camera/rigs";
-import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -91,7 +91,7 @@ test.describe("Career Road (L2)", () => {
     await waitForPhase(page, "explore");
     await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
     await page.waitForTimeout(1500);
-    expect((await snapshot(page)).drawCalls).toBeLessThan(150);
+    await expectRenderBudget(page);
   });
 
   test("a deep link opens the room's drawer, Esc closes it and driving into a door opens it", async ({ page }) => {

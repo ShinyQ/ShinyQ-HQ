@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_IDS, floorIndex, floorY, SHAFT } from "../config";
+import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import { Labs, type LabsLabels } from "../floors/Labs";
 import { Library, type LibraryLabels } from "../floors/Library";
@@ -12,6 +12,7 @@ import { Roof, type RoofLabels } from "../floors/Roof";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { FloorLevel } from "./FloorLevel";
+import { nearFloors } from "./near";
 import type { PlaceholderLabels } from "./PlaceholderFloor";
 import { BoxEdges } from "./primitives";
 
@@ -26,14 +27,18 @@ export interface TowerLabels {
 
 const FRAME_TOP = floorY("RF") + 10;
 
-/** Floors render full detail only next to the current floor or the ride target; the rest are silhouettes. */
-function nearFloors(floor: FloorId, target: FloorId | null, exterior: boolean): FloorId[] {
-  return FLOOR_IDS.filter((id) => {
-    if (exterior && id === "L1") return true;
-    const d = Math.abs(floorIndex(id) - floorIndex(floor));
-    const dt = target ? Math.abs(floorIndex(id) - floorIndex(target)) : Infinity;
-    return Math.min(d, dt) <= 1;
-  });
+/** Neighbouring floors mount once the page is idle after the first frames (at most 1.5 s). */
+function useNeighboursReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => setReady(true), { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(() => setReady(true), 300);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return ready;
 }
 
 /** Outline around the shaft and every floor except the long L2 corridor, which runs out of the tower on purpose. */
@@ -60,7 +65,8 @@ export function Tower({
   const floor = useHQStore((s) => s.floor);
   const target = useHQStore((s) => s.ride?.to ?? null);
   const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
-  const near = nearFloors(floor, target, exterior);
+  const neighbours = useNeighboursReady();
+  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
 
   return (

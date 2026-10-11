@@ -14,7 +14,7 @@ import { formatYearMonth } from "@/lib/format";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
-import { getHQStore } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { onMissionState, register3DHost } from "./missions/bridge";
@@ -22,7 +22,7 @@ import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { Scene, type SceneLabels } from "./scene/Scene";
-import { sceneSettings } from "./scene/settings";
+import { renderBudget, sceneSettings } from "./scene/settings";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 
@@ -118,6 +118,8 @@ export default function Experience({
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
+  const coarse = useHQStore((s) => s.device.coarse);
+  const budget = renderBudget(tier, coarse);
 
   const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
   useLayoutEffect(() => startSession(data, tier, layouts, { startFloor, startRoom }), [data, tier, layouts, startFloor, startRoom]);
@@ -262,8 +264,8 @@ export default function Experience({
     <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
         <Canvas
-          dpr={tier === "full" ? [1, 2] : [1, 1.5]}
-          gl={{ antialias: tier === "full", powerPreference: "high-performance" }}
+          dpr={budget.dpr}
+          gl={{ antialias: false, powerPreference: "high-performance" }}
           camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
           onCreated={({ gl }) => {
             gl.toneMapping = ACESFilmicToneMapping;

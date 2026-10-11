@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAskEnabled } from "@/ask/client";
+import { isAskEnabled } from "@/ask/status";
 import type { Locale } from "@/content/schema";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR } from "@/lib/boot-first";

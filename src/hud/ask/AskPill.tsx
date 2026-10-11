@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { isAskEnabled } from "@/ask/client";
+import { isAskEnabled } from "@/ask/status";
 import { openAsk } from "@/hud/events";
 import { useAskStatus } from "./availability";
 import { loadAskChat } from "./AskDock";

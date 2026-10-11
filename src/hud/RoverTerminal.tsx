@@ -238,10 +238,17 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
         <div className="px-4 pt-3 pb-2">
           <p className="sr-only">{lines.join(" ")}</p>
           <div aria-hidden="true" className="min-h-[60px]">
+            {/* The untyped rest is laid out but invisible and the cursor takes no width, so the bottom
+                sheet keeps its height while the lines type (no layout shift). */}
             {shown.map((part, i) => (
               <p key={i} className={i === 0 ? "text-terminal-hi" : undefined}>
                 {part}
-                {typing && part.length > 0 && part.length < lines[i].length && <span className="animate-pulse">_</span>}
+                {typing && part.length > 0 && part.length < lines[i].length && (
+                  <span className="relative">
+                    <span className="absolute animate-pulse">_</span>
+                  </span>
+                )}
+                {part.length < lines[i].length && <span className="invisible">{lines[i].slice(part.length)}</span>}
               </p>
             ))}
           </div>

@@ -30,3 +30,22 @@ export function sceneSettings(tier: GpuTier, rig: RigKind = "follow"): SceneSett
     bloom: tier === "full" ? { intensity: 0.9, threshold: 0.6, radius: 0.45 } : null,
   };
 }
+
+export interface RenderBudget {
+  /** Device pixel ratio range for the canvas (R3F clamps window.devicePixelRatio into it). */
+  dpr: [number, number];
+  /** MSAA samples of the full-tier EffectComposer (the canvas itself never multisamples). */
+  multisampling: number;
+}
+
+/**
+ * Pixel budget per tier and device. Fill rate is the main cost on phones and weak GPUs (measured:
+ * the full-tier composer at 4x MSAA and DPR 2 costs 4 to 7x the lite frame), so touch devices
+ * (`coarse` pointer) render fewer pixels and skip composer MSAA; desktops keep the full look.
+ * The canvas never multisamples: on full the composer renders into its own targets, and lite has
+ * always run without antialiasing.
+ */
+export function renderBudget(tier: GpuTier, coarse: boolean): RenderBudget {
+  if (tier === "full") return coarse ? { dpr: [1, 1.5], multisampling: 0 } : { dpr: [1, 2], multisampling: 4 };
+  return { dpr: coarse ? [1, 1.25] : [1, 1.5], multisampling: 0 };
+}

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { isAskEnabled } from "@/ask/client";
+import { isAskEnabled } from "@/ask/status";
 import { ASK_MAX_QUESTION } from "@/ask/protocol";
 import { openAsk } from "@/hud/events";
 import { loadAskChat } from "@/hud/ask/AskDock";
