@@ -161,12 +161,12 @@ describe("L3 Project Roads layout", () => {
   it("parks deep links and elevator arrivals at the hub overview, with the shaft behind the camera", () => {
     expect(floor.spawn).toEqual(LABS.overview);
     expect(floor.arrival).toEqual(LABS.overview);
-    expect(inPlaza(layout.hub, LABS.overview)).toBe(true);
+    expect(Math.hypot(LABS.overview.x - layout.hub.center.x, LABS.overview.z - layout.hub.center.z)).toBeLessThan(LABS.hub.size);
     expect(isWalkable(buildNavGrid(floor, ROVER.radius), LABS.overview)).toBe(true);
     const zone = zoneAt("L3", LABS.overview, floor.viewZones);
     expect(zone?.id).toBe("L3:overview");
     for (const cls of ["desktop", "tablet", "mobile"] as const) {
-      const [cx, , cz] = followPose(cls, [LABS.overview.x, 0, LABS.overview.z], zone!.yaw).position;
+      const [cx, , cz] = followPose(cls, [LABS.overview.x, 0, LABS.overview.z], zone!.yaw, zone!.zoom).position;
       // The camera looks east along the floor from west of the rover, and stays clear of the shaft column.
       expect(cx).toBeLessThan(LABS.overview.x);
       expect(Math.abs(cz - LABS.overview.z)).toBeLessThan(0.01);

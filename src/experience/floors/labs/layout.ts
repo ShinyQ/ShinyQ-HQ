@@ -48,8 +48,10 @@ export const LABS = {
   boardStop: 3,
   /** Entries a board shows in large type; the full list opens in the palette. */
   boardEntries: 5,
-  /** Deep links (and the roll after an elevator ride) park here: the hub's east side, looking east along the floor. */
-  overview: { x: 5, z: 0 } as Vec2,
+  /** Deep links (and the roll after an elevator ride) park here: just east of the hub, where the wing roads fork. */
+  overview: { x: 12, z: 0 } as Vec2,
+  /** Overview camera zoom: the hub and both wing entrances in frame, the camera still east of the shaft. */
+  overviewZoom: 1.3,
   margin: 6,
   /** Hologram stage disc inside hero pods (6 u diameter). */
   stageRadius: 3,
@@ -212,10 +214,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
 
   const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));
   const viewZones: ViewZone[] = [
-    // The overview spot on the hub's east side: the camera sits west of the rover (yaw -3PI/4) and looks
-    // east along the floor, so the hub, both wing entrances and the pods fill the view and the shaft is
-    // behind the camera. Wing roads leave the hub west of it, so driving the roads never triggers it.
-    { id: "L3:overview", area: { minX: L.overview.x - 4, maxX: hubC.x + L.hub.size / 2, minZ: -4, maxZ: 4 }, yaw: (-3 * Math.PI) / 4 },
+    // The overview spot where the wing roads fork: the camera sits west of the rover (yaw -3PI/4), zoomed
+    // out, and looks east along the floor, so the hub, both wing entrances and the first pods fill the
+    // view and the shaft is behind the camera. The zone lies between the wing roads, so driving them never triggers it.
+    { id: "L3:overview", area: { minX: L.overview.x - 4, maxX: L.overview.x + 4, minZ: -4, maxZ: 4 }, yaw: (-3 * Math.PI) / 4, zoom: L.overviewZoom },
     // At a door the camera looks at the pod front at 45 degrees: from the south-east (the default) for
     // pods facing south, from the north-east for pods facing north, so a pod never sits between the
     // camera and the rover.
