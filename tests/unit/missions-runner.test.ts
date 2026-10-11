@@ -47,7 +47,7 @@ describe("mission runner: catalog", () => {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
     journey: ["elevator L2", "walk journey"],
-    projects: ["elevator L3", "palette pods"],
+    projects: ["elevator L3", "walk projects"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],
     blog: ["elevator L4", "drive L4:the-sun-the-moon-and-the-dark-sea", "open L4:the-sun-the-moon-and-the-dark-sea"],
