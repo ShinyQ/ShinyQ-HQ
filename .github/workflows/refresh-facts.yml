@@ -8,6 +8,7 @@ name: Refresh live facts
 # dispatches ci.yml on the PR branch (GITHUB_TOKEN may trigger workflow_dispatch), waits for that run
 # on the exact pushed commit, and merges only when the required jobs succeeded. Otherwise the PR
 # stays open and this job fails. No personal access token is needed (docs/ask-runbook.md).
+# After the merge it dispatches deploy.yml for the merge commit (production deploy and smoke check).
 
 on:
   schedule:
@@ -110,6 +111,18 @@ jobs:
           SHA: ${{ steps.pr.outputs.sha }}
         # --match-head-commit refuses to merge if the branch moved after CI ran.
         run: gh pr merge "$NUMBER" --squash --delete-branch --match-head-commit "$SHA"
+      - name: Deploy production
+        # Only this workflow deploys automatically (owner decision 2026-10-11); a push to main never
+        # does. Set the repository variable AUTO_DEPLOY_FACTS=false to stop it (docs/deploy.md).
+        if: steps.facts.outputs.changed == 'true' && vars.AUTO_DEPLOY_FACTS != 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+          AS_OF: ${{ steps.facts.outputs.as_of }}
+        run: |
+          merged=$(gh pr view "$NUMBER" --json mergeCommit --jq .mergeCommit.oid)
+          gh workflow run deploy.yml --ref main -f sha="$merged" -f reason="Live facts as of $AS_OF (#$NUMBER)"
+          echo "Dispatched deploy.yml for $merged: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/deploy.yml" >> "$GITHUB_STEP_SUMMARY"
       - name: Summary
         env:
           CHANGED: ${{ steps.facts.outputs.changed }}

@@ -54,7 +54,9 @@ Then commit `wrangler.toml` (KV IDs and site keys are not secret) and continue w
 
 ## 3. Deploy
 
-From the repo root of a clean `main` (the Function is bundled from `functions/`, the bindings come from `wrangler.toml`):
+Preferred: `gh workflow run deploy.yml --ref main` (Actions > Deploy). It builds, runs e2e, deploys with `--branch=main` and smoke-checks Ask and the live facts on production; failures open a `deploy-failed` issue (`docs/deploy.md`). The weekly facts refresh runs it automatically after its PR merges; nothing else deploys automatically.
+
+By hand, from the repo root of a clean `main` (the Function is bundled from `functions/`, the bindings come from `wrangler.toml`; add `NEXT_PUBLIC_CF_BEACON_TOKEN` for analytics, see `docs/deploy.md`):
 
 ```sh
 git switch main && git pull
@@ -66,7 +68,7 @@ bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main \
 
 `--branch=main` matters: without it wrangler uses the current git branch and the upload becomes a preview without secrets. A deploy fails if the KV ID in `wrangler.toml` points at a missing namespace; rerun the provisioning script.
 
-CI deploys (`deploy.yml`, off until the Cloudflare secrets exist) deploy from a checkout and rebuild the knowledge pack for the same reason. The PR preview job in `ci.yml` uploads `out/` only, so previews on `shinyq-hq` have no Function: test Ask on production or locally.
+`deploy.yml` deploys from a checkout and rebuilds the knowledge pack for the same reason. The PR preview job in `ci.yml` (off unless `CF_PREVIEWS=true`) uploads `out/` only, so previews have no Function: test Ask on production or locally.
 
 Local: `bun run build && bunx wrangler@4 pages dev out` (put the test Turnstile keys and any values in `.dev.vars`, gitignored).
 
@@ -167,7 +169,7 @@ Golden and red-team items never hard-code a live fact: write `{{facts.<path>}}` 
 
 | Workflow | When (WIB) | What | Needs |
 | --- | --- | --- | --- |
-| `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" only when a value changed, dispatches `ci.yml` on that branch (a PR pushed with `GITHUB_TOKEN` gets no `pull_request` run), waits up to 45 minutes for the run on the pushed commit, and squash-merges only when "Typecheck, lint, unit tests" and "Build, CV and e2e" succeeded (`--match-head-commit`). On a failure or timeout the PR stays open and the job fails. `main` has no branch protection, which is why the workflow checks CI itself instead of using auto-merge. A merge by `GITHUB_TOKEN` does not trigger `deploy.yml`; production still updates with the manual deploy (section 3) | `GITHUB_TOKEN` (`contents`, `pull-requests` and `actions: write`) |
+| `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" only when a value changed, dispatches `ci.yml` on that branch (a PR pushed with `GITHUB_TOKEN` gets no `pull_request` run), waits up to 45 minutes for the run on the pushed commit, and squash-merges only when "Typecheck, lint, unit tests" and "Build, CV and e2e" succeeded (`--match-head-commit`). On a failure or timeout the PR stays open and the job fails. `main` has no branch protection, which is why the workflow checks CI itself instead of using auto-merge. After the merge it dispatches `deploy.yml` for the merge commit (production deploy plus smoke check; `AUTO_DEPLOY_FACTS=false` turns that off) | `GITHUB_TOKEN` (`contents`, `pull-requests` and `actions: write`) |
 | `ask-eval.yml` | daily 03:30 | golden set (fails below 28/30), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
 | `content-gap.yml` | Mondays 03:00 | `scripts/content-gap.ts` lists the top 20 unanswered questions of the last 7 days and opens "Ask the HQ content gaps, week of YYYY-MM-DD" (`ask-content-gap`) when there is at least one | `CF_EVAL_TOKEN` |
 | `ci.yml` (check job) | every PR | `scripts/ask-staleness.ts` warns when the live facts or `content/site-content.json` are older than 45 days and keeps one PR comment up to date; `bun audit` (non-blocking); gitleaks in the "Secret scan" job (blocking) | none |
@@ -211,7 +213,7 @@ Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs li
 
 - 2FA on Cloudflare and GitHub: confirmed on 2026-10-11.
 - Monthly: Cloudflare audit log review (Manage Account > Audit Log) and the list of API tokens (`cf accounts tokens list`); delete anything unused.
-- Token expiry calendar: `CF_EVAL_TOKEN` expires 2027-01-09; `CF_LOGS_TOKEN` expires 2027-01-09; add the deploy token when created. Renew a week before.
+- Token expiry calendar: `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` and `CLOUDFLARE_API_TOKEN` ("shinyq-hq Pages deploy", Cloudflare Pages Edit only) all expire 2027-01-09. Renew a week before (`docs/deploy.md` for the deploy token).
 - Never paste secrets into issues, PRs, chats or commits; gitleaks runs on every PR.
 
 ## 14. Free-tier limits and how the design respects them

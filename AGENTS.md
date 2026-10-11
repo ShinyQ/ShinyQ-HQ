@@ -53,6 +53,7 @@ scripts/
   ask-eval.ts                   real-model golden and red-team runs (ask-eval.yml)
   provision-ask.ts              idempotent Cloudflare provisioning (dry run unless --apply)
   refresh-facts.ts, ask-staleness.ts, content-gap.ts, purge-ask-logs.ts   live facts, freshness warning, unanswered-question report, gateway log purge
+  deploy-smoke.ts               post-deploy production check (Ask status and pack date, live facts on /en, analytics beacon)
 src/
   app/(root)/                   "/" language redirect (own root layout)
   app/[locale]/                 all localized routes (root layout with <html lang>)
@@ -199,8 +200,8 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Before pushing: see "Fast verification" below (`verify:quick` plus `e2e:changed`); CI runs the full sharded suite.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`). Prefer the `rtk` git wrapper. One PR per phase; do not merge without the owner.
 - CI (`.github/workflows/ci.yml`) runs check and the build in parallel, e2e in 4 shards against that one build, the aggregate required check `Build, CV and e2e` (merged HTML report), a blocking `Lighthouse CI` job (`lighthouserc.json`, appendix 08 budgets: LCP, CLS and TBT fail the aggregate check; see `docs/deploy.md` section 8), and a Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
-- Production (`.github/workflows/deploy.yml`) deploys `out/` on push to `main` only when both secrets and the `CF_PAGES_PROJECT` variable are set. Owner setup: `docs/deploy.md`.
-- Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset, from `vars.CF_BEACON_TOKEN`).
+- Production (`.github/workflows/deploy.yml`) runs only on `workflow_dispatch`: by hand, or from `refresh-facts.yml` after it merges the weekly live-facts PR (`AUTO_DEPLOY_FACTS=false` stops that). A push to `main` never deploys. It builds, runs e2e, deploys `out/` plus `functions/`, smoke-checks production (`scripts/deploy-smoke.ts`) and opens a `deploy-failed` issue on failure. PR previews are off unless `CF_PREVIEWS=true`. Owner setup: `docs/deploy.md`.
+- Build-time env: `NEXT_PUBLIC_SITE_URL` (canonical origin, default `https://kurniadi.pages.dev`, from `vars.SITE_URL`) and `NEXT_PUBLIC_CF_BEACON_TOKEN` (Cloudflare Web Analytics, omitted when unset; only production builds in `deploy.yml` set it, from `vars.CF_BEACON_TOKEN`).
 - Audio: use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`. Sounds are synthesized, so there are no audio files to add. Sound is on by default (owner decision): a missing `hq:sound` means on, a stored `"off"` stays muted, and the context starts on the first user gesture. `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent without changing the stored choice.
 
 ## Fast verification

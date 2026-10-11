@@ -26,7 +26,7 @@ permissions:
 env:
   SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
-  NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+  # No beacon in screenshot builds (see ci.yml); only deploy.yml sets NEXT_PUBLIC_CF_BEACON_TOKEN.
 
 jobs:
   gate:

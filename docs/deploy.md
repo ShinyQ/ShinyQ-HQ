@@ -1,6 +1,6 @@
 # Deploying ShinyQ HQ
 
-The site is a Next.js static export (`out/`) hosted on Cloudflare Pages. GitHub Actions builds it and uploads it with `wrangler pages deploy` (Direct Upload). CI deploys stay off until the owner adds the two Cloudflare secrets (section 3); until then both deploy jobs log a notice and skip, and production is updated with the manual redeploy below.
+The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function (`functions/`), hosted on Cloudflare Pages and uploaded with `wrangler pages deploy` (Direct Upload). Since 2026-10-11 production deploys run from GitHub Actions (`deploy.yml`) in exactly two cases: automatically after the weekly live-facts PR merges (`refresh-facts.yml` dispatches it), and when someone runs the workflow by hand. A push to `main` never deploys by itself. The manual local deploy below still works.
 
 ## Current state (production cutover, 2026-10-09)
 
@@ -10,61 +10,76 @@ The site is a Next.js static export (`out/`) hosted on Cloudflare Pages. GitHub 
 | Production URL | https://kurniadi.pages.dev |
 | Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6` (never pushed, so every deploy is a preview) |
 | Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
-| Repository secrets | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`: not set yet, so `deploy.yml` and the `preview` job skip the upload |
+| Repository secrets | `CLOUDFLARE_API_TOKEN` (account-owned token "shinyq-hq Pages deploy", Cloudflare Pages Edit only, expires 2027-01-09) and `CLOUDFLARE_ACCOUNT_ID`, set on 2026-10-11 |
+| Repository variables | `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); `AUTO_DEPLOY_FACTS` unset (on); `CF_PREVIEWS` unset (PR previews off) |
 
 The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
 
 Notes:
 
 - Per-deployment URLs such as `https://<hash>.kurniadi.pages.dev` are behind an existing Cloudflare Access application (account level, not part of the Pages project). Only `kurniadi.pages.dev` itself is public.
-- The old project had automatic Cloudflare Web Analytics enabled. The new project does not. Re-enable it in the dashboard (Pages project > Metrics) or set `CF_BEACON_TOKEN` (section 4), not both.
+- Web Analytics: the manual-snippet site for `kurniadi.pages.dev` (created 2026-10-11) feeds `CF_BEACON_TOKEN`, which only production builds use (`deploy.yml`, or the manual command below). CI, screenshot and e2e builds never render the beacon, so test runs are not counted and the e2e cross-origin guard stays strict. Do not also turn on automatic Web Analytics for the Pages project, or every visit counts twice. The other Web Analytics site (`kurniadi.dev`, automatic) covers the custom domain zone.
 
-## Manual redeploy (until CI deploys are enabled)
+## Deploy from GitHub Actions (preferred)
 
-From a clean checkout of `main`, with `wrangler` logged in to the account that owns the project (`bunx wrangler@3 login`, once):
+```sh
+gh workflow run deploy.yml --ref main                       # tip of main
+gh workflow run deploy.yml --ref main -f sha=<commit on main> -f reason="why"
+gh run watch
+```
+
+Or Actions > Deploy > Run workflow. `deploy.yml` checks that the commit is on `main`, builds it twice (without the beacon for the 4 e2e shards, with `CF_BEACON_TOKEN` for production), rebuilds the Ask knowledge pack in the deploy job, runs `wrangler pages deploy out --branch=main`, then `scripts/deploy-smoke.ts`: `GET /api/ask` must be enabled with the pack date of that commit, and `/en` must return 200 with the commit's live contributions number and the beacon. It retries for up to 5 minutes while the production alias switches. Any failure opens (or comments on) the `deploy-failed` issue; production keeps serving the previous deployment.
+
+## Automatic deploy after the weekly facts refresh
+
+`refresh-facts.yml` (Mondays 02:00 WIB) merges the live-facts PR only after CI passed on it, then dispatches `deploy.yml` for the merge commit, so the stats ring, Page View and Ask show the new numbers without anyone deploying by hand. Nothing else deploys automatically: ordinary pushes and merges to `main` do not, and PR previews stay off unless the variable `CF_PREVIEWS=true` is set.
+
+- Turn the automatic deploy off: `gh variable set AUTO_DEPLOY_FACTS --body false` (the facts PR still merges; deploy by hand later). Turn it back on: `gh variable delete AUTO_DEPLOY_FACTS`.
+- Turn every Actions deploy off: `gh secret delete CLOUDFLARE_API_TOKEN` (the deploy job then skips with a notice; the manual local deploy keeps working).
+- Token rotation: "shinyq-hq Pages deploy" expires on 2027-01-09. Before then, create a new account-owned token with Cloudflare Pages Edit only (section 2, or the `cf accounts tokens create` command in `docs/ask-runbook.md` section 8 with the Pages Write permission group `8d28297797f24fb8a0c332fe0866ec89`), pipe it into `gh secret set CLOUDFLARE_API_TOKEN`, run one deploy, then delete the old token.
+
+## Manual local deploy
+
+From a clean checkout of `main`, with `wrangler` logged in to the account that owns the project (`bunx wrangler@4 login`, once). Run it from the repo root so `functions/` and `wrangler.toml` are included:
 
 ```sh
 git switch main && git pull
 bun install --frozen-lockfile
 bun run typecheck && bun run lint && bun run test
-NEXT_PUBLIC_SITE_URL=https://kurniadi.pages.dev bun run build
-bun run e2e
-bunx wrangler@3 pages deploy out --project-name=kurniadi --branch=main \
+CF_BEACON_TOKEN=$(gh variable get CF_BEACON_TOKEN)
+NEXT_PUBLIC_SITE_URL=https://kurniadi.pages.dev NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun run build
+bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main \
   --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
+NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun scripts/deploy-smoke.ts
 ```
 
-`--branch=main` matches the production branch, so the upload goes live on `kurniadi.pages.dev` at once. Then run the checks in section 5, step 3.
-
-## Enable automatic CI deploys
-
-1. Create an account-scoped API token with **Account > Cloudflare Pages > Edit** only (section 2). No zone, Workers or DNS permissions are needed.
-2. Add the secrets: `gh secret set CLOUDFLARE_API_TOKEN` and `gh secret set CLOUDFLARE_ACCOUNT_ID` (section 3).
-3. `CF_PAGES_PROJECT=kurniadi` is already set. Optionally set `SITE_URL` and `CF_BEACON_TOKEN` (section 4).
-4. Run `gh workflow run deploy.yml --ref main` and watch it with `gh run watch`. From then on every push to `main` deploys to production, and every pull request from this repository gets a preview on `shinyq-hq`.
+Run `bun run e2e` on a build without the beacon if you want the e2e suite: its cross-origin guard flags the analytics requests by design. `--branch=main` matches the production branch, so the upload goes live on `kurniadi.pages.dev` at once (previews get no Ask secrets, so Ask stays off there). Then run the checks in section 5, step 3.
 
 ## Overview
 
 | Trigger | Workflow | Cloudflare project | Result |
 | --- | --- | --- | --- |
-| Pull request from this repo | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
-| Push to `main`, or manual run | `deploy.yml` | `CF_PAGES_PROJECT` (for example `kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`) |
+| Pull request from this repo, only with `CF_PREVIEWS=true` | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
+| Weekly facts PR merged (`refresh-facts.yml`), or manual run | `deploy.yml` (`workflow_dispatch` only) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`), smoke-checked |
+| Push to `main` | `ci.yml` only | none | Checks; no deploy |
 | Every CI run | `ci.yml` job `lighthouse` (`Lighthouse CI`) | none | Lighthouse budgets (blocking) and reports as an artifact |
 
 ```mermaid
 flowchart LR
   PR[Pull request] --> CI[ci.yml: check, build, e2e]
   CI --> LH[lighthouse job, blocking]
-  CI --> PV[preview job]
+  CI --> PV[preview job, only if CF_PREVIEWS=true]
   PV --> PP[(Preview project: shinyq-hq)]
   M[Push to main] --> CI2[ci.yml: check, build, e2e]
-  M --> D[deploy.yml: build, e2e]
+  W[refresh-facts.yml merges the facts PR] --> D[deploy.yml: build, e2e, deploy, smoke check]
+  H[Manual run] --> D
   D --> G{Secrets and CF_PAGES_PROJECT set?}
   G -- no --> S[Notice, skip]
   G -- yes --> P[(Production project, branch main)]
   P --> U[kurniadi.pages.dev, later kurniadi.dev]
 ```
 
-`ci.yml` still runs typecheck, lint and unit tests on every push to `main`. `deploy.yml` runs its own build and Playwright smoke tests so a broken export never reaches production.
+`ci.yml` still runs typecheck, lint and unit tests on every push to `main`. `deploy.yml` runs its own build, the e2e suite and a post-deploy smoke check, and opens a `deploy-failed` issue when anything fails.
 
 ## 1. Choose the Pages project
 
@@ -80,7 +95,7 @@ Done for production on 2026-10-09 (see "Current state"); kept for reference. The
      2. Delete the `kurniadi` project (Settings > Delete project). This frees the name and the `kurniadi.pages.dev` subdomain. The old site is offline from this point until the first deploy.
      3. Recreate it immediately as a Direct Upload project with the same name:
         ```sh
-        bunx wrangler@3 pages project create kurniadi --production-branch=main
+        bunx wrangler@4 pages project create kurniadi --production-branch=main
         ```
      4. Run the first deploy (section 5) right away to keep the downtime short.
 3. Make sure the production branch is `main` (Settings > Builds and deployments > Production branch, or recreate with `--production-branch=main`). If it is anything else, deploys from `deploy.yml` are published as previews and the production URL does not change.
@@ -130,7 +145,9 @@ Settings > Secrets and variables > Actions > Variables, or with `gh`:
 gh variable set CF_PAGES_PROJECT --body kurniadi
 gh variable set CF_PREVIEW_PROJECT --body shinyq-hq            # optional
 gh variable set SITE_URL --body https://kurniadi.pages.dev     # optional
-gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # optional
+gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # set on 2026-10-11
+gh variable set AUTO_DEPLOY_FACTS --body false                 # optional: stop the weekly auto-deploy
+gh variable set CF_PREVIEWS --body true                        # optional: turn PR previews on
 ```
 
 | Variable | Required | Purpose |
@@ -138,15 +155,17 @@ gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # optional
 | `CF_PAGES_PROJECT` | Yes, to enable production deploys | Production Pages project name. While unset, `deploy.yml` builds and tests but skips the upload. |
 | `CF_PREVIEW_PROJECT` | Optional | Project for PR previews. Defaults to `shinyq-hq` (created automatically with a production branch that is never pushed, so every deploy stays a preview). |
 | `SITE_URL` | Optional | Public origin baked into canonical URLs, `hreflang`, sitemap, robots and OG URLs (`NEXT_PUBLIC_SITE_URL`). Defaults to `https://kurniadi.pages.dev`. Set to `https://kurniadi.dev` after the domain move. |
-| `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`). When empty, no beacon is rendered. |
+| `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
+| `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
+| `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
 
-Web Analytics token: Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
+Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
 
 The Content-Security-Policy in `public/_headers` already allows `static.cloudflareinsights.com` (script) and `cloudflareinsights.com` (beacon reports).
 
 ## 5. First deploy
 
-1. Merge the PR to `main`, or run the workflow manually: Actions > Deploy > Run workflow (or `gh workflow run deploy.yml --ref main`).
+1. Run the workflow: Actions > Deploy > Run workflow (or `gh workflow run deploy.yml --ref main`). Merging to `main` does not deploy.
 2. Follow the run: `gh run watch`. The `deploy` job shows the deployment URL in its summary and the `production` environment links to `SITE_URL`.
 3. Verify (replace the host if you use another project):
 
@@ -168,7 +187,7 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 ## 6. Rollback
 
 - Fastest: Cloudflare dashboard > Workers & Pages > project > Deployments, pick an earlier production deployment, then Rollback to this deployment. No rebuild needed.
-- From GitHub: open an earlier successful Deploy run and choose Re-run all jobs. It rebuilds that commit and deploys it. Or revert the commit on `main`, which triggers a normal deploy.
+- From GitHub: `gh workflow run deploy.yml --ref main -f sha=<earlier commit on main> -f reason=rollback`. Or revert the commit on `main` and run the workflow (a revert alone does not deploy).
 
 ## 7. Custom domain kurniadi.dev (later)
 
