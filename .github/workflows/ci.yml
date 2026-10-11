@@ -22,8 +22,8 @@ env:
   # Optional: when unset, only the committed default list is enforced.
   SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
-  # Cloudflare Web Analytics token; the beacon is omitted when empty.
-  NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+  # No NEXT_PUBLIC_CF_BEACON_TOKEN here: test builds never render the Web Analytics beacon, so the
+  # e2e cross-origin guard stays strict and test runs never count as page views. Only deploy.yml sets it.
 
 jobs:
   check:
@@ -209,8 +209,10 @@ jobs:
     name: Cloudflare Pages preview
     runs-on: ubuntu-latest
     needs: site
-    # Preview only. Production deploys run from .github/workflows/deploy.yml.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    # Preview only, and opt-in: set the repository variable CF_PREVIEWS=true to turn it on. The
+    # CLOUDFLARE_API_TOKEN secret exists for deploy.yml, so the variable keeps previews off by default.
+    # Production deploys run from .github/workflows/deploy.yml.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.CF_PREVIEWS == 'true'
     permissions:
       contents: read
       deployments: write

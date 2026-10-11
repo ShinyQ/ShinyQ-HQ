@@ -1,15 +1,28 @@
 name: Deploy
 
-# Production deploy of the static export to Cloudflare Pages.
-# Nothing deploys until the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
-# secrets and the CF_PAGES_PROJECT repository variable are all set.
-# The Pages project's production branch must be `main`, otherwise the
-# `--branch=main` deploy below is published as a preview. See docs/deploy.md.
+# Production deploy of the static export and the Ask the HQ Function to Cloudflare Pages.
+#
+# Runs only when dispatched, never on a push to main:
+#   - by refresh-facts.yml after it merged a weekly live-facts PR (sha = the merge commit), unless
+#     the repository variable AUTO_DEPLOY_FACTS is "false";
+#   - by hand: Actions > Deploy > Run workflow, or `gh workflow run deploy.yml --ref main [-f sha=<commit>]`.
+# The sha must be on main. The job builds once without the Web Analytics beacon for the e2e shards
+# (the cross-origin guard stays strict) and once with it for production, deploys with --branch=main,
+# smoke-checks production (scripts/deploy-smoke.ts) and opens a `deploy-failed` issue on failure.
+# Needs the CLOUDFLARE_API_TOKEN (Pages Edit only) and CLOUDFLARE_ACCOUNT_ID secrets and the
+# CF_PAGES_PROJECT variable; skips the upload with a notice while any is missing. docs/deploy.md.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit on main to deploy (default the tip of main)
+        required: false
+        type: string
+      reason:
+        description: Why (shown in the run summary)
+        required: false
+        type: string
 
 concurrency:
   group: deploy-production
@@ -21,31 +34,68 @@ permissions:
 env:
   SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
-  NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+  NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
 
 jobs:
+  resolve:
+    name: Resolve commit
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Check the commit is on main
+        id: sha
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          sha="${INPUT_SHA:-$(git rev-parse HEAD)}"
+          if ! [[ "$sha" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::sha must be a commit hash."
+            exit 1
+          fi
+          sha=$(git rev-parse --verify "$sha^{commit}")
+          if ! git merge-base --is-ancestor "$sha" HEAD; then
+            echo "::error::$sha is not on main; only main commits deploy to production."
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying \`$sha\` ($(git log -1 --format=%s "$sha"))." >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REASON" ]; then printf '\nReason: %s\n' "$REASON" >> "$GITHUB_STEP_SUMMARY"; fi
+
   site:
     name: Build static export
     runs-on: ubuntu-latest
+    needs: resolve
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          # The knowledge pack date comes from the last commit that touched content/.
+          fetch-depth: 0
       - uses: ./.github/actions/setup
-      - name: Set site URL
-        # Only export NEXT_PUBLIC_SITE_URL when the variable is set, so the
-        # default in src/lib/site.ts applies otherwise.
-        env:
-          SITE_URL: ${{ vars.SITE_URL }}
-        run: |
-          if [ -n "$SITE_URL" ]; then
-            echo "NEXT_PUBLIC_SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
-          fi
       - uses: actions/cache@v6
         with:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - name: Build static export
+      - name: Build for the e2e shards (no analytics beacon)
         run: bun run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-test
+          path: out/
+          retention-days: 3
+      - name: Build for production (with the analytics beacon)
+        env:
+          NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+        run: |
+          rm -rf out
+          bun run build
       - uses: actions/upload-artifact@v7
         with:
           name: site-production
@@ -53,22 +103,24 @@ jobs:
           retention-days: 30
 
   e2e:
-    # The same sharded suite as CI, against the exact files that get deployed.
+    # The same sharded suite as CI, against the same commit (built without the beacon).
     name: E2E shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
-    needs: site
+    needs: [resolve, site]
     strategy:
       fail-fast: true
       matrix:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
       - uses: ./.github/actions/setup
         with:
           playwright: "true"
       - uses: actions/download-artifact@v8
         with:
-          name: site-production
+          name: site-test
           path: out
       - name: Playwright e2e (shard ${{ matrix.shard }}/4)
         run: bun run e2e:shard ${{ matrix.shard }}/4
@@ -82,7 +134,7 @@ jobs:
   deploy:
     name: Cloudflare Pages production
     runs-on: ubuntu-latest
-    needs: [site, e2e]
+    needs: [resolve, site, e2e]
     permissions:
       contents: read
       deployments: write
@@ -93,6 +145,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+      SHA: ${{ needs.resolve.outputs.sha }}
     steps:
       - name: Check deploy configuration
         id: gate
@@ -107,6 +160,9 @@ jobs:
       # the bindings in wrangler.toml from the working directory (docs/ask-runbook.md).
       - uses: actions/checkout@v7
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - uses: actions/download-artifact@v8
@@ -121,17 +177,49 @@ jobs:
         id: deploy
         if: steps.gate.outputs.enabled == 'true'
         run: |
-          bunx wrangler@4 pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true | tee deploy.log
+          bunx wrangler@4 pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash="$SHA" --commit-dirty=true | tee deploy.log
           URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Smoke-check production
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+        run: bun scripts/deploy-smoke.ts --site "$NEXT_PUBLIC_SITE_URL" --timeout 300
       - name: Summary
         if: steps.gate.outputs.enabled == 'true'
         env:
-          SITE_URL: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
+          URL: ${{ steps.deploy.outputs.url }}
         run: |
           {
-            echo "Deployed ${{ github.sha }} to Cloudflare Pages project \`$CF_PAGES_PROJECT\`."
+            echo "Deployed \`$SHA\` to Cloudflare Pages project \`$CF_PAGES_PROJECT\`; the smoke check passed."
             echo ""
-            echo "- Deployment: ${{ steps.deploy.outputs.url }}"
-            echo "- Production: $SITE_URL"
+            echo "- Deployment: $URL"
+            echo "- Production: $NEXT_PUBLIC_SITE_URL"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: Report a failed deploy
+    runs-on: ubuntu-latest
+    needs: [resolve, site, e2e, deploy]
+    if: ${{ failure() }}
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SHA: ${{ needs.resolve.outputs.sha }}
+      REASON: ${{ inputs.reason }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open or update the deploy-failed issue
+        run: |
+          gh label create deploy-failed --color B60205 --description "Production deploy failed (deploy.yml)" 2>/dev/null || true
+          body="Production deploy of \`${SHA:-unknown}\` failed: $RUN_URL"
+          if [ -n "$REASON" ]; then body="$body"$'\n\n'"Reason: $REASON"; fi
+          body="$body"$'\n\n'"Production keeps serving the previous deployment. Fix the cause, then rerun the workflow (docs/deploy.md)."
+          number=$(gh issue list --label deploy-failed --state open --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "Production deploy failed" --label deploy-failed --body "$body"
+          fi
