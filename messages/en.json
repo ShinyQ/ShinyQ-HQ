@@ -547,6 +547,7 @@
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",
     "stopOf": "Stop {index} of {total}",
+    "stopShort": "{index}/{total}",
     "visited": "{count} visited",
     "driving": "On the way",
     "here": "You are here",

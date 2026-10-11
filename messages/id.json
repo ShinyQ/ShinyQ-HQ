@@ -547,6 +547,7 @@
     "explore": "Jelajah bebas",
     "resumeAt": "Lanjutkan di titik {index}",
     "stopOf": "Titik {index} dari {total}",
+    "stopShort": "{index}/{total}",
     "visited": "{count} dikunjungi",
     "driving": "Dalam perjalanan",
     "here": "Anda di sini",

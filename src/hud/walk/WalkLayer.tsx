@@ -31,6 +31,7 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
         types: { job: tc("type.job"), freelance: tc("type.freelance"), education: tc("type.education"), award: tc("type.award"), milestone: tc("type.milestone") },
         workshop: th("workshop"),
         workshopSub: t("workshopSub"),
+        prologue: th("prologue"),
       }),
       L3: labsWalk(data.labs.pods, { wings: data.labs.wings, more: t("more"), moreSub: t("moreSub") }),
     }),

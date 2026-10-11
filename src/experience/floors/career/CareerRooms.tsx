@@ -3,7 +3,7 @@
 import { Text } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { AdditiveBlending, BoxGeometry, BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
+import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
@@ -15,79 +15,42 @@ import type { CareerEntryView, CareerType, GpuTier } from "../../types";
 import { labelFade, type CareerRoom } from "./layout";
 
 const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
-/** Neon type icon height above the floor (award icons float above the trophy cups). */
-const ICON_Y: Record<CareerType, number> = { job: 2.7, freelance: 2.7, education: 2.7, milestone: 2.7, award: 3.3 };
+/** Neon type icon height above the floor (award icons float above the placings count). */
+const ICON_Y: Record<CareerType, number> = { job: 2.7, freelance: 2.7, education: 2.7, milestone: 2.7, award: 2.9 };
 const ICON_SIZE = 2.6;
 const FRAME_H = 2.2;
 const LABEL_Y = 4.7;
-const MAX_TROPHIES = 8;
 
 const dummy = new Object3D();
 
-/** Trophy cups on the award plinths: one per placing that year, in one draw call, plus a sweeping glint. */
-function Trophies({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, number> }) {
-  const ref = useRef<InstancedMesh>(null);
-  const glints = useRef<InstancedMesh>(null);
-  const spots = useMemo(
-    () =>
-      rooms.flatMap((room) => {
-        const n = Math.min(MAX_TROPHIES, counts.get(room.slug) ?? 0) || 1;
-        return Array.from({ length: n }, (_, k) => {
-          const a = (k / n) * Math.PI * 2;
-          const r = n === 1 ? 0 : 0.62;
-          return { x: room.center.x + Math.cos(a) * r, z: room.center.z + Math.sin(a) * r, h: 0.55 + (k % 3) * 0.12 };
-        });
-      }),
-    [rooms, counts],
-  );
-  const geometry = useMemo(() => new CylinderGeometry(0.2, 0.08, 0.5, 8), []);
-
-  const place = (mesh: InstancedMesh, spin: number) => {
-    spots.forEach((p, i) => {
-      dummy.position.set(p.x, 0.55 + p.h, p.z);
-      dummy.rotation.set(0, spin + i, 0);
-      dummy.scale.set(1, p.h / 0.55, 1);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-  };
-  const sweep = (mesh: InstancedMesh, t: number) => {
-    rooms.forEach((room, i) => {
-      const phase = (t * 0.45 + i * 0.37) % 2.4;
-      dummy.position.set(room.center.x - 1.1 + phase, 1.25, room.center.z);
-      dummy.rotation.set(0, 0, 0.35);
-      dummy.scale.setScalar(phase < 2.2 ? 1 : 0.001);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-  };
-
-  useLayoutEffect(() => {
-    if (ref.current) place(ref.current, 0);
-    if (glints.current) sweep(glints.current, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spots, rooms]);
-
-  useFrame((state) => {
-    const s = getHQStore().getState();
-    if (s.floor !== "L2" || s.reducedMotion) return;
-    const t = state.clock.elapsedTime;
-    if (ref.current) place(ref.current, t * 0.3);
-    if (glints.current) sweep(glints.current, t);
-  });
-
-  if (spots.length === 0) return null;
+/**
+ * Award rooms: the placings that year as "×10" on the plinth, under the trophy icon (the old ring of
+ * cups read as a second, distorted trophy from the rail camera). One small label per award room.
+ */
+function Placings({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, number> }) {
   return (
     <>
-      <instancedMesh ref={ref} args={[geometry, undefined, spots.length]} frustumCulled={false}>
-        <meshStandardMaterial color={CAREER_TONE.award} emissive={CAREER_TONE.award} emissiveIntensity={0.9} metalness={0.6} roughness={0.35} />
-      </instancedMesh>
-      <instancedMesh ref={glints} args={[undefined, undefined, rooms.length]} frustumCulled={false} raycast={() => null}>
-        <planeGeometry args={[0.16, 1.5]} />
-        <meshBasicMaterial color="#fff7d6" transparent opacity={0.35} blending={AdditiveBlending} depthWrite={false} side={DoubleSide} toneMapped={false} />
-      </instancedMesh>
+      {rooms.map((room) => {
+        const n = counts.get(room.slug) ?? 0;
+        if (n < 1) return null;
+        return (
+          <Text
+            key={room.id}
+            font={FONTS.monoBold}
+            fontSize={0.55}
+            color={CAREER_TONE.award}
+            outlineWidth={0.03}
+            outlineColor={COLORS.void}
+            anchorX="center"
+            anchorY="bottom"
+            position={[room.center.x, 0.6, room.center.z + 1.15]}
+            rotation={[-0.55, 0, 0]}
+            material-toneMapped={false}
+          >
+            {`\u00D7${n}`}
+          </Text>
+        );
+      })}
     </>
   );
 }
@@ -235,7 +198,7 @@ export function useLabelFade(xs: readonly number[], base?: readonly number[]) {
 
 /**
  * Career rooms docked on the year plazas: tinted pads, neon frames, pedestals, one Neon line type
- * icon per room (one draw call per type, two on the full tier), trophy cups on award plinths and a
+ * icon per room (one draw call per type, two on the full tier), the placings count on award plinths and a
  * label per room that fades with distance along the road.
  */
 export function CareerRooms({
@@ -268,7 +231,7 @@ export function CareerRooms({
       {TYPES.map((type) => (
         <HoloIcon key={type} strokes={CAREER_ICONS[type]} instances={icons[type]} color={CAREER_TONE[type]} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} />
       ))}
-      <Trophies rooms={awards} counts={trophies} />
+      <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
       {rooms.map((room, i) => {
         const entry = entries.get(room.slug);
