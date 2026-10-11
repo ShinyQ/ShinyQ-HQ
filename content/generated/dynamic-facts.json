@@ -2,13 +2,13 @@
   "asOf": "2026-10-11",
   "github": {
     "login": "ShinyQ",
-    "contributionsLastYear": 7541,
+    "contributionsLastYear": 7553,
     "publicRepos": 171
   },
   "huggingface": {
     "user": "ShinyQ",
     "models": 3,
-    "downloads": 37
+    "downloads": 41
   },
   "credentials": [
     { "id": "ai-103", "reachable": true },
