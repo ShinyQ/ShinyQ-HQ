@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SectionSplit } from "@/components/page/Layout";
 import type { ExperienceData, GpuTier } from "../../types";
 import { protoCerts } from "./fixture";
@@ -34,15 +34,10 @@ function read(): Params {
   };
 }
 
-/** Dev-only certification layout prototype: ?v=a|b|c&n=7|30&view=page|3d&tier=lite|full&clean=1. */
-export function CertsProto({ data }: { data: ExperienceData }) {
-  const [p, setP] = useState<Params | null>(null);
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    setP(read());
-    setMobile(window.innerWidth < 768);
-  }, []);
-  if (!p) return null;
+/** Client only (mounted through CertsProtoLoader with ssr: false). Dev-only certification layout prototype: ?v=a|b|c&n=7|30&view=page|3d&tier=lite|full&clean=1. */
+export default function CertsProto({ data }: { data: ExperienceData }) {
+  const [p] = useState(read);
+  const [mobile] = useState(() => window.innerWidth < 768);
   const certs = protoCerts(p.n);
   if (p.view === "3d") return <CertsWorld data={data} certs={certs} variant={p.v} tier={p.tier} mobile={mobile} still={p.still} />;
   return (

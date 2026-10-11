@@ -1,7 +1,7 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ACESFilmicToneMapping, AdditiveBlending, DoubleSide, FrontSide, type Group } from "three";
@@ -258,15 +258,14 @@ function CarouselKiosk({ certs, open, onAll, still }: { certs: ProtoCert[]; open
 /* ------------------------------------------------------------------ scene */
 
 function CameraRig({ rover, view }: { rover: { x: number; z: number }; view: { dx: number; y: number; dz: number; lookY: number; fov: number } }) {
-  const { camera } = useThree();
-  useEffect(() => {
+  useFrame(({ camera }) => {
     camera.position.set(rover.x + view.dx, view.y, rover.z + view.dz);
     camera.lookAt(rover.x + 4, view.lookY, rover.z);
-    if ("fov" in camera) {
+    if ("fov" in camera && camera.fov !== view.fov) {
       camera.fov = view.fov;
       camera.updateProjectionMatrix();
     }
-  }, [camera, rover, view]);
+  });
   return null;
 }
 

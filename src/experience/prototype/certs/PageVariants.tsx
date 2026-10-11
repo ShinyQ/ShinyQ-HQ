@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { CertPreview } from "./CertPreview";
 import { ISSUER_COLOR, ISSUER_LOGO, ISSUER_ORDER, featured, groupByIssuer, groupByYear, issuerGroup, shortName, sortCerts, type IssuerGroup, type ProtoCert, type ProtoStatus } from "./fixture";
 
@@ -172,7 +172,7 @@ export function FeaturedVariant({ certs, compact = false }: { certs: ProtoCert[]
   const [issuer, setIssuer] = useState<IssuerGroup | "all">("all");
   const [status, setStatus] = useState<ProtoStatus | "all">("all");
   const [q, setQ] = useState("");
-  const counts = useMemo(() => Object.fromEntries(ISSUER_ORDER.map((g) => [g, rest.filter((x) => issuerGroup(x.issuer) === g).length])), [rest]);
+  const counts = Object.fromEntries(ISSUER_ORDER.map((g) => [g, rest.filter((x) => issuerGroup(x.issuer) === g).length]));
   const shown = rest.filter(
     (x) =>
       (issuer === "all" || issuerGroup(x.issuer) === issuer) &&

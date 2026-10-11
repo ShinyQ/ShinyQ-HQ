@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { experienceDataFor } from "@/experience/gate-data";
-import { CertsProto } from "@/experience/prototype/certs/CertsProto";
+import { CertsProtoLoader } from "@/experience/prototype/certs/CertsProtoLoader";
 import { assertLocale } from "@/i18n/locale";
 
 /**
@@ -13,5 +13,5 @@ export const metadata: Metadata = { title: "Certifications prototype", robots: {
 export default async function CertsPrototypePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
-  return <CertsProto data={await experienceDataFor(locale)} />;
+  return <CertsProtoLoader data={await experienceDataFor(locale)} />;
 }
