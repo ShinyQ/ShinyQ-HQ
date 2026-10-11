@@ -6,7 +6,7 @@ import type { WalkDefinition, WalkStop } from "./walk";
 /**
  * Walk definitions built from the serializable 3D payload. L2 "Walk my journey" visits the career
  * rooms oldest first, then the Workshop annex; L3 "Tour my projects" visits the docked pods wing by
- * wing (Software, then AI; hero pods, then featured, as they dock along each wing road from the hub)
+ * wing (`software`, then `ai`; hero pods, then featured, as they dock along each wing road from the hub)
  * and ends at the wing directory boards ("More projects here").
  * Floors offer their walk only once their road ships (`WALK_FLOORS` in config.ts) or with `?walk=on`.
  */

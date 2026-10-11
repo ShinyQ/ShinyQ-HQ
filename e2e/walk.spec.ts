@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import data from "../content/site-content.json";
+import en from "../messages/en.json";
+import { asReturningVisitor, collectErrors, enterHQ, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Guided walks (missions/walk.ts + hud/walk). Floors offer their walk once their road ships
- * (`WALK_FLOORS`); these tests turn every walk on with `?walk=on`, so they do not depend on that list.
+ * (`WALK_FLOORS`); most tests turn every walk on with `?walk=on`, so they do not depend on that list.
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -72,18 +74,42 @@ test.describe("Guided walks", () => {
     expect(errors).toEqual([]);
   });
 
-  test("L3: the tour filters by wing and Prev steps back", async ({ page }) => {
+  test("L3: the tour starts at the first software hero pod, filters by wing and Prev steps back", async ({ page }) => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/labs");
     await page.getByTestId("walk-prompt").getByRole("button", { name: "Tour my projects" }).click();
-    await waitForArrival(page);
+    expect(await waitForArrival(page)).toBe("L3:digital-banking-integrations");
     await page.getByTestId("walk-filter").selectOption("ai");
-    await expect(page.getByTestId("walk-counter")).toContainText("AI Wing");
+    await expect(page.getByTestId("walk-counter")).toContainText(en.common.wing.ai);
     await page.getByTestId("walk-bar").getByRole("button", { name: /Next/ }).click();
     const ai2 = await waitForArrival(page);
     await page.getByTestId("walk-bar").getByRole("button", { name: /Previous/ }).click();
     const ai1 = await waitForArrival(page);
     expect(ai1).not.toBe(ai2);
+    expect(errors).toEqual([]);
+  });
+
+  test("L3 offers its tour without the flag", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en/labs?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    const prompt = page.getByTestId("walk-prompt");
+    await expect(prompt.getByRole("heading")).toHaveText("Tour my projects?");
+    await prompt.getByRole("button", { name: "Explore freely" }).click();
+    await expect(page.getByTestId("walk-launcher")).toBeVisible();
+  });
+
+  test("the Missions tour rides to L3 and starts the walk", async ({ page }) => {
+    const errors = collectErrors(page);
+    await enterHQ(page);
+    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    await page.getByRole("option", { name: data.missions.find((m) => m.id === "projects")!.label.en }).click();
+    await waitForFloor(page, "L3", 60_000).catch(() => undefined);
+    await expect(page.getByTestId("walk-bar")).toBeVisible({ timeout: 60_000 });
+    expect(await waitForArrival(page)).toBe("L3:digital-banking-integrations");
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 

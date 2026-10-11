@@ -62,7 +62,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience"] },
 
   // 3D floors.
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career"] },
   { test: /^src\/experience\/floors\/(library|roof)\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience"] },
