@@ -5782,8 +5782,8 @@
             "id": "Forecasting permintaan di Microsoft Fabric"
           },
           "tagline": {
-            "en": "A national bakery brand's demand-planning dashboard, with resolved capacity throttling and a complete medallion pipeline.",
-            "id": "Dashboard perencanaan permintaan untuk brand roti nasional, dengan capacity throttling teratasi dan medallion pipeline lengkap."
+            "en": "A national bakery brand's demand-planning platform on Microsoft Fabric: an on-premise database migrated into a medallion lakehouse, a forecasting dashboard and a data agent in Microsoft 365 Copilot.",
+            "id": "Platform perencanaan permintaan untuk brand roti nasional di Microsoft Fabric: database on-premise yang dimigrasikan ke lakehouse medallion, dashboard forecasting, dan data agent di Microsoft 365 Copilot."
           },
           "period": {
             "start": "2026-08",
@@ -5794,8 +5794,8 @@
             "id": "Engineer tunggal, bertanggung jawab atas operasional"
           },
           "problem": {
-            "en": "Planners needed a demand-forecasting dashboard on Microsoft Fabric. After a fast production launch, loads stalled for about 21 seconds. The next requirement was a pipeline using the client's own source data.",
-            "id": "Tim perencana membutuhkan dashboard forecasting permintaan di Microsoft Fabric. Setelah cepat masuk produksi, pemuatan tersendat sekitar 21 detik. Kebutuhan berikutnya adalah pipeline dari data sumber milik klien."
+            "en": "Planners needed a demand-forecasting dashboard, but the client's sales and master data lived in an on-premise database. After a fast production launch on Microsoft Fabric, loads stalled for about 21 seconds. The next requirement was a pipeline from the client's own source data.",
+            "id": "Tim perencana membutuhkan dashboard forecasting permintaan, tetapi data penjualan dan master data klien berada di database on-premise. Setelah cepat masuk produksi di Microsoft Fabric, pemuatan tersendat sekitar 21 detik. Kebutuhan berikutnya adalah pipeline dari data sumber milik klien."
           },
           "approach": [
             {
@@ -5807,12 +5807,12 @@
               "id": "Saya menggunakan zero-row probe dan capacity probe untuk memastikan penyebabnya adalah capacity throttling, sekaligus mengoreksi diagnosis sebelumnya. Pembacaan 83.824 baris saya ganti dengan sekitar 3.000 agregat yang di-stream."
             },
             {
-              "en": "I added a private, Entra-protected backend for AI executive briefings. After measuring slow non-streaming responses, I moved chat to a Microsoft 365 Copilot agent.",
-              "id": "Saya menambahkan backend privat dengan proteksi Entra untuk executive briefing berbasis AI. Setelah mengukur respons non-streaming yang lambat, saya memindahkan chat ke agent Microsoft 365 Copilot."
+              "en": "I added a private, Entra-protected backend for AI executive briefings. After measuring slow non-streaming responses, I moved chat to a Fabric data agent over the gold tables, published to Microsoft 365 Copilot so planners ask questions where they already work.",
+              "id": "Saya menambahkan backend privat dengan proteksi Entra untuk executive briefing berbasis AI. Setelah mengukur respons non-streaming yang lambat, saya memindahkan chat ke Fabric data agent di atas tabel gold, yang dipublikasikan ke Microsoft 365 Copilot agar tim perencana bisa bertanya langsung dari tempat mereka bekerja."
             },
             {
-              "en": "I built one fail-fast, stage-resumable medallion pipeline: data contract, bronze ingestion, silver data-quality rules, forecast adapter, gold serving tables and app sync with reconciliation.",
-              "id": "Saya membangun satu medallion pipeline yang fail-fast dan bisa dilanjutkan per tahap: data contract, ingestion bronze, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi dengan rekonsiliasi."
+              "en": "I migrated the client's on-premise database into Fabric with a medallion model, as one fail-fast, stage-resumable pipeline: data contract, bronze ingestion, silver data-quality rules, forecast adapter, gold serving tables and app sync with reconciliation.",
+              "id": "Saya memigrasikan database on-premise klien ke Fabric dengan model medallion, sebagai satu pipeline yang fail-fast dan bisa dilanjutkan per tahap: data contract, ingestion bronze, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi dengan rekonsiliasi."
             }
           ],
           "architecture": {
@@ -5843,6 +5843,17 @@
                 "kind": "ai"
               },
               {
+                "id": "agent",
+                "label": "Fabric data agent",
+                "sublabel": {
+                  "en": "Published to Microsoft 365 Copilot",
+                  "id": "Dipublikasikan ke Microsoft 365 Copilot"
+                },
+                "layer": 1,
+                "row": 2,
+                "kind": "ai"
+              },
+              {
                 "id": "lakehouse",
                 "label": "Fabric lakehouse",
                 "sublabel": {
@@ -5855,7 +5866,7 @@
               },
               {
                 "id": "source",
-                "label": "Client source data",
+                "label": "On-premise source database",
                 "layer": 3,
                 "row": 0,
                 "kind": "external"
@@ -5879,8 +5890,13 @@
               {
                 "from": "source",
                 "to": "lakehouse",
-                "label": "Data Pipelines",
+                "label": "Data Pipelines migration",
                 "async": true
+              },
+              {
+                "from": "agent",
+                "to": "lakehouse",
+                "label": "gold tables"
               }
             ]
           },
@@ -5948,7 +5964,88 @@
             "Microsoft 365 Copilot"
           ],
           "hologram": "chart",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/fabric-forecasting-dashboard/01-national-summary.webp",
+              "alt": {
+                "en": "National summary: baseline, uplift and buffer roll up to the shipped plan, next to deviation bands and forecast accuracy",
+                "id": "Ringkasan nasional: baseline, uplift, dan buffer dijumlahkan menjadi rencana kirim, berdampingan dengan band deviasi dan akurasi forecast"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/02-forecast-output.webp",
+              "alt": {
+                "en": "Forecast output: the weekly store by SKU plan with baseline, uplift drivers, buffer and the daily delivery split",
+                "id": "Forecast output: rencana mingguan per toko dan SKU dengan baseline, driver uplift, buffer, dan pembagian pengiriman harian"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/03-forecast-explanation.webp",
+              "alt": {
+                "en": "Store and SKU drawer explaining where a forecast comes from, with the forecaster adjustment rounds",
+                "id": "Drawer toko dan SKU yang menjelaskan asal sebuah forecast, lengkap dengan ronde penyesuaian forecaster"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/04-deviation.webp",
+              "alt": {
+                "en": "Deviation view ranking stores by the gap between shipped plan and sell-out, with Ideal, Watch and Critical bands",
+                "id": "Tampilan deviasi yang mengurutkan toko berdasarkan selisih rencana kirim dan sell-out, dengan band Ideal, Perlu perhatian, dan Kritis"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/05-buffer-policy.webp",
+              "alt": {
+                "en": "Buffer policy settings with a worked example of the national buffer pool and the late-arrival cut-off",
+                "id": "Pengaturan buffer policy dengan contoh perhitungan pool buffer nasional dan batas waktu kedatangan terlambat"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/06-ask-lumi.webp",
+              "alt": {
+                "en": "Ask dialog that hands the current dashboard scope to the forecasting agent in Microsoft 365 Copilot",
+                "id": "Dialog Ask yang meneruskan cakupan dashboard saat ini ke agent forecasting di Microsoft 365 Copilot"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/07-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the national summary, forecast output and deviation views",
+                "id": "Tampilan mobile untuk ringkasan nasional, forecast output, dan deviasi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/fabric-forecasting-dashboard/08-data-agent.webp",
+              "alt": {
+                "en": "Fabric data agent over the gold lakehouse tables answering a question about the largest plan versus sell-out gaps",
+                "id": "Fabric data agent di atas tabel lakehouse gold yang menjawab pertanyaan tentang selisih terbesar antara rencana dan sell-out"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "ai-solutions-assistant",
