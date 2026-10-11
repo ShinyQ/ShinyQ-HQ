@@ -4,7 +4,7 @@ import type { CareerType } from "../types";
  * One source of truth for the career type icons: line art on a 24 x 24 grid (SVG coordinates,
  * y down), in the style of the HUD's stroke icons. The 3D `HoloIcon` turns the strokes into neon
  * ribbons (flat or extruded) and `TypeIcon` draws the same strokes as SVG for Page View chips and
- * legends, so both match. Pure data and math: no React or three.
+ * legends, so both match (owner pick: the "Neon line" direction). Pure data and math: no React or three.
  */
 
 export type Point = [number, number];
@@ -59,55 +59,22 @@ export const CAREER_ICONS: Record<CareerType, Stroke[]> = {
   milestone: [open([5, 21.5], [5, 2.5]), shut([5, 3.5], [19, 3.5], [15.5, 8], [19, 12.5], [5, 12.5]), open([2.5, 21.5], [7.5, 21.5])],
 };
 
-/** Pointy-top hexagon around the icon (badge frame), radius in grid units. */
-export function hexFrame(r = 13.5): Stroke {
-  return shut(...Array.from({ length: 6 }, (_, i): Point => [12 + r * Math.cos(Math.PI / 6 + (i * Math.PI) / 3), 12 + r * Math.sin(Math.PI / 6 + (i * Math.PI) / 3)]));
-}
-
 /** SVG path data for strokes (`<path d>` with stroke, no fill). */
 export function iconPath(strokes: readonly Stroke[]): string {
   const f = (v: number) => Number(v.toFixed(2));
   return strokes.map((s) => `M${s.points.map(([x, y]) => `${f(x)} ${f(y)}`).join(" L")}${s.closed ? " Z" : ""}`).join(" ");
 }
 
-/** Icon visual directions explored in the floors prototype (owner sign-off picks one). */
-export type IconStyle = "line" | "badge" | "solid";
-
-export interface IconTone {
-  /** Main stroke color. */
-  stroke: string;
-  /** Glow, badge frame or chip tint. */
-  glow: string;
-}
-
 /**
- * Color systems per direction. `line`: one hue per type from a balanced neon spectrum (sky, pink,
- * violet, amber, emerald) with similar brightness. `badge`: the L2 amber family for every type, the
- * silhouette alone tells types apart. `solid`: pastel type colors (300 shades) on extruded strokes,
- * with a near-white stroke for the 2D chip.
+ * Career type colors (owner pick: "Neon line"): one hue per type from a balanced neon spectrum with
+ * similar brightness, shared by the 3D icons, spur stubs and the 2D chips.
  */
-export const ICON_TONES: Record<IconStyle, Record<CareerType, IconTone>> = {
-  line: {
-    job: { stroke: "#38bdf8", glow: "#38bdf8" },
-    freelance: { stroke: "#f472b6", glow: "#f472b6" },
-    education: { stroke: "#a78bfa", glow: "#a78bfa" },
-    award: { stroke: "#fbbf24", glow: "#fbbf24" },
-    milestone: { stroke: "#34d399", glow: "#34d399" },
-  },
-  badge: {
-    job: { stroke: "#fef3c7", glow: "#fbbf24" },
-    freelance: { stroke: "#fef3c7", glow: "#fbbf24" },
-    education: { stroke: "#fef3c7", glow: "#fbbf24" },
-    award: { stroke: "#fef3c7", glow: "#fbbf24" },
-    milestone: { stroke: "#fef3c7", glow: "#fbbf24" },
-  },
-  solid: {
-    job: { stroke: "#e0f2fe", glow: "#7dd3fc" },
-    freelance: { stroke: "#fce7f3", glow: "#f9a8d4" },
-    education: { stroke: "#ede9fe", glow: "#c4b5fd" },
-    award: { stroke: "#fef3c7", glow: "#fcd34d" },
-    milestone: { stroke: "#d1fae5", glow: "#6ee7b7" },
-  },
+export const CAREER_TONE: Record<CareerType, string> = {
+  job: "#38bdf8",
+  freelance: "#f472b6",
+  education: "#a78bfa",
+  award: "#fbbf24",
+  milestone: "#34d399",
 };
 
 /** Mesh data for a stroke icon in its own plane (x right, y up, z toward the viewer), centered. */
@@ -117,8 +84,8 @@ export interface IconMesh {
 }
 
 /**
- * Turns strokes into ribbons of `width` (grid units) scaled to `size` world units across, mitered
- * at joins. With `depth` > 0 the ribbons are extruded (front, back and side walls), else flat.
+ * Turns strokes into flat ribbons of `width` (grid units) scaled to `size` world units across,
+ * mitered at joins. `depth` > 0 extrudes them (front, back and side walls) for solid variants.
  */
 export function iconMesh(strokes: readonly Stroke[], { size = 2, width = 1.6, depth = 0 }: { size?: number; width?: number; depth?: number } = {}): IconMesh {
   const k = size / 24;

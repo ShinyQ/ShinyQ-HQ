@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arc, CAREER_ICONS, hexFrame, ICON_TONES, iconMesh, iconPath } from "@/experience/fx/holoIcons";
+import { arc, CAREER_ICONS, CAREER_TONE, iconMesh, iconPath } from "@/experience/fx/holoIcons";
 
 describe("career type icons", () => {
   it("has line art for every type inside the 24 x 24 grid", () => {
@@ -14,10 +14,9 @@ describe("career type icons", () => {
     }
   });
 
-  it("has a tone per type for every direction", () => {
-    for (const tones of Object.values(ICON_TONES)) expect(Object.keys(tones).sort()).toEqual(["award", "education", "freelance", "job", "milestone"]);
-    // The spectrum gives every type its own hue.
-    expect(new Set(Object.values(ICON_TONES.line).map((t) => t.stroke)).size).toBe(5);
+  it("gives every type its own neon color", () => {
+    expect(Object.keys(CAREER_TONE).sort()).toEqual(["award", "education", "freelance", "job", "milestone"]);
+    expect(new Set(Object.values(CAREER_TONE)).size).toBe(5);
   });
 
   it("writes SVG paths and arcs", () => {
@@ -25,7 +24,6 @@ describe("career type icons", () => {
     const a = arc(0, 0, 1, 0, Math.PI, 2);
     expect(a[1][0]).toBeCloseTo(0);
     expect(a[1][1]).toBeCloseTo(1);
-    expect(hexFrame().points).toHaveLength(6);
   });
 
   it("builds flat and extruded ribbons scaled to the icon size", () => {

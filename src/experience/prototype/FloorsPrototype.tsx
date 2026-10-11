@@ -15,7 +15,7 @@ import { careerLayoutInput } from "../floors/career/layout";
 import { TypeIcon } from "@/components/TypeIcon";
 import { GridFloor } from "../fx/GridFloor";
 import { HoloIcon } from "../fx/HoloIcon";
-import { CAREER_ICONS, ICON_TONES, type IconStyle } from "../fx/holoIcons";
+import { CAREER_ICONS, CAREER_TONE } from "../fx/holoIcons";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import { isMoveKey, moveVectorFromKeys } from "../input/intents";
 import type { MissionStatus } from "../missions/host";
@@ -30,10 +30,10 @@ import type { CareerType, DoorTrigger, ExperienceData, GpuTier, Rect, Vec2 } fro
 import { buildCareerRoad, CAREER_ROAD, type CareerRoadLayout, type RoadStyle } from "./careerRoad";
 import { buildLabsRoads, WING_COLOR, type LabsRoadsLayout } from "./labsRoads";
 
-/** Spur stubs take the type color of the icon direction being previewed. */
-function recolor(road: CareerRoadLayout, icons: IconStyle): RoadNetwork {
+/** Spur stubs take the career type colors. */
+function recolor(road: CareerRoadLayout): RoadNetwork {
   const type = new Map(road.rooms.map((r) => [r.id, r.type]));
-  return { ...road.network, spurs: road.network.spurs.map((sp) => ({ ...sp, color: type.has(sp.room) ? ICON_TONES[icons][type.get(sp.room)!].glow : sp.color })) };
+  return { ...road.network, spurs: road.network.spurs.map((sp) => ({ ...sp, color: type.has(sp.room) ? CAREER_TONE[type.get(sp.room)!] : sp.color })) };
 }
 
 /** Floor-independent slice the simulation needs. */
@@ -88,14 +88,13 @@ const memoryStorage = (): WalkStorage => {
 };
 
 function readParams() {
-  if (typeof window === "undefined") return { floor: "L2" as const, road: "meander" as RoadStyle, view: "rover" as View, tier: "full" as GpuTier, icons: "line" as IconStyle, sheet: false, at: null as Vec2 | null };
+  if (typeof window === "undefined") return { floor: "L2" as const, road: "meander" as RoadStyle, view: "rover" as View, tier: "full" as GpuTier, sheet: false, at: null as Vec2 | null };
   const q = new URLSearchParams(window.location.search);
   return {
     floor: (q.get("floor") === "L3" ? "L3" : "L2") as "L2" | "L3",
     road: (q.get("road") === "straight" ? "straight" : "meander") as RoadStyle,
     view: (q.get("view") === "top" ? "top" : "rover") as View,
     tier: (q.get("tier") === "lite" ? "lite" : "full") as GpuTier,
-    icons: (["line", "badge", "solid"].includes(q.get("icons") ?? "") ? q.get("icons") : "line") as IconStyle,
     sheet: q.get("sheet") === "1",
     at: (() => {
       const [x, z] = (q.get("at") ?? "").split(",").map(Number);
@@ -177,10 +176,8 @@ function CareerDecor({
   labels,
   titles,
   onRoom,
-  icons,
   tier,
 }: {
-  icons: IconStyle;
   tier: GpuTier;
   road: CareerRoadLayout;
   labels: { rooms: (n: number) => string; workshop: string };
@@ -196,7 +193,7 @@ function CareerDecor({
   return (
     <group>
       {TYPES.map((type) => (
-        <HoloIcon key={`${type}-${icons}`} strokes={CAREER_ICONS[type]} instances={instances[type]} style={icons} tone={ICON_TONES[icons][type]} size={3.4} tier={tier} reducedMotion={false} />
+        <HoloIcon key={type} strokes={CAREER_ICONS[type]} instances={instances[type]} color={CAREER_TONE[type]} tier={tier} reducedMotion={false} />
       ))}
       {road.years.map((y) => (
         <group key={y.year}>
@@ -235,7 +232,7 @@ function CareerDecor({
           </Text>
           {y.rooms.map((r) => {
             const rect = rectOf(r.center, r.w, r.d);
-            const color = ICON_TONES[icons][r.type].glow;
+            const color = CAREER_TONE[r.type];
             return (
               <group key={r.id}>
                 <mesh
@@ -397,9 +394,7 @@ function World({
   onRoom,
   labels,
   titles,
-  icons,
 }: {
-  icons: IconStyle;
   titles: Map<string, { title: string; sub?: string }>;
   floor: ProtoFloor;
   career: CareerRoadLayout;
@@ -428,7 +423,7 @@ function World({
       <GridFloor width={b.maxX - b.minX} depth={b.maxZ - b.minZ} center={[(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2]} />
       <RoadMarkings network={floor.network} color={floor.accent} tier={tier} reducedMotion={false} />
       {floor.id === "L2" ? (
-        <CareerDecor road={career} labels={labels} titles={titles} onRoom={onRoom} icons={icons} tier={tier} />
+        <CareerDecor road={career} labels={labels} titles={titles} onRoom={onRoom} tier={tier} />
       ) : (
         <LabsDecor labs={labs} wings={data.labs.wings} labels={labels} onRoom={onRoom} />
       )}
@@ -458,7 +453,6 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const [floorId, setFloorId] = useState<"L2" | "L3">(initial.floor);
   const [style, setStyle] = useState<RoadStyle>(initial.road);
   const [view, setView] = useState<View>(initial.view);
-  const [icons, setIcons] = useState<IconStyle>(initial.icons);
   const [sheet, setSheet] = useState(initial.sheet);
   const tt = useTranslations("common.type");
   const [card, setCard] = useState<{ title: string; sub?: string } | null>(null);
@@ -477,9 +471,9 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const floor: ProtoFloor = useMemo(
     () =>
       floorId === "L2"
-        ? { id: "L2", bounds: career.bounds, network: recolor(career, icons), obstacles: career.obstacles, doors: career.doors, approach: career.approach, accent: FLOOR_COLOR.L2 }
+        ? { id: "L2", bounds: career.bounds, network: recolor(career), obstacles: career.obstacles, doors: career.doors, approach: career.approach, accent: FLOOR_COLOR.L2 }
         : { id: "L3", bounds: labs.bounds, network: labs.network, obstacles: labs.obstacles, doors: labs.doors, approach: labs.approach, accent: FLOOR_COLOR.L3 },
-    [floorId, career, labs, icons],
+    [floorId, career, labs],
   );
   const grid = useMemo(() => buildNavGrid(floor, ROVER.radius), [floor]);
   const graph = useMemo(() => buildRoadGraph(floor.network), [floor]);
@@ -599,12 +593,7 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
         {tp("prompt")}
       </button>
     )}
-      <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("icons")}>
-        {(["line", "badge", "solid"] as const).map((v) => (
-          <button key={v} type="button" className={seg(icons === v)} aria-pressed={icons === v} onClick={() => setIcons(v)}>
-            {tp(v)}
-          </button>
-        ))}
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
         <button type="button" className={seg(sheet)} aria-pressed={sheet} onClick={() => setSheet((x) => !x)}>
           {tp("sheet")}
         </button>
@@ -640,7 +629,6 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
           }}
           labels={{ rooms: (n) => tp("rooms", { count: n }), workshop: tc("workshop"), more: t("more"), loop: tp("loop") }}
           titles={titles}
-          icons={icons}
         />
       </Canvas>
 
@@ -656,27 +644,22 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
       )}
 
       {sheet && (
-        <section className="glass glass-solid pointer-events-auto absolute top-1/2 left-1/2 w-[min(720px,calc(100%-1.5rem))] -translate-x-1/2 -translate-y-1/2 p-5" data-testid="proto-sheet">
+        <section className="glass glass-solid pointer-events-auto absolute top-1/2 left-1/2 w-[min(640px,calc(100%-1.5rem))] -translate-x-1/2 -translate-y-1/2 p-5" data-testid="proto-sheet">
           <p className="eyebrow text-amber">{tp("sheetTitle")}</p>
-          {(["line", "badge", "solid"] as const).map((style) => (
-            <div key={style} className="mt-4">
-              <p className="label text-ink-3">{tp(style)}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {TYPES.map((type) => (
-                  <span key={type} className="chip" style={{ borderColor: `${ICON_TONES[style][type].glow}66` }}>
-                    <TypeIcon type={type} style={style} size={style === "badge" ? 22 : 18} />
-                    <span className="text-ink">{tt(type)}</span>
-                    <span className="chip-count">{typeCounts[type]}</span>
-                  </span>
-                ))}
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-4">
-                {TYPES.map((type) => (
-                  <TypeIcon key={type} type={type} style={style} size={44} title={tt(type)} />
-                ))}
-              </div>
-            </div>
-          ))}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {TYPES.map((type) => (
+              <span key={type} className="chip" style={{ borderColor: `${CAREER_TONE[type]}66` }}>
+                <TypeIcon type={type} />
+                <span className="text-ink">{tt(type)}</span>
+                <span className="chip-count">{typeCounts[type]}</span>
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-5">
+            {TYPES.map((type) => (
+              <TypeIcon key={type} type={type} size={44} title={tt(type)} />
+            ))}
+          </div>
           <button type="button" className="link mt-3 min-h-11 text-sm" onClick={() => setSheet(false)}>
             {tp("close")}
           </button>

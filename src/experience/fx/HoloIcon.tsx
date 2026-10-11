@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { AdditiveBlending, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, NormalBlending, ShaderMaterial } from "three";
 import type { GpuTier } from "../types";
-import { hexFrame, iconMesh, type IconStyle, type IconTone, type Stroke } from "./holoIcons";
+import { iconMesh, type Stroke } from "./holoIcons";
 import { neonColor } from "./materials";
 import { useUniformTime } from "./useUniformTime";
 
@@ -69,10 +69,11 @@ function material(color: Color, opacity: number, additive: boolean, sway: number
 }
 
 export interface HoloIconProps {
+  /** Line art from holoIcons.ts (for example `CAREER_ICONS.job`). */
   strokes: readonly Stroke[];
   instances: readonly HoloIconInstance[];
-  style: IconStyle;
-  tone: IconTone;
+  /** Neon color (for career types, `CAREER_TONE[type]`). */
+  color: string;
   /** Icon width in world units. */
   size?: number;
   tier: GpuTier;
@@ -80,38 +81,23 @@ export interface HoloIconProps {
 }
 
 /**
- * Neon hologram icon (one per career type, or any stroke icon from holoIcons.ts), drawn for every
- * instance in one geometry and one material per layer: at most three draw calls per type
- * (icon, glow halo, badge frame). `line` is flat neon line art that sways toward the road, `badge`
- * adds a hexagon frame and a glass fill, `solid` extrudes thicker strokes. Reduced
- * motion holds every icon still; the lite tier drops the halo and the additive glow.
+ * Neon line hologram icon ("Neon line" direction): flat line art that sways toward the road, drawn
+ * for every instance in one geometry, so a type costs one draw call (two on the full tier, which adds
+ * a soft halo). Reduced motion holds every icon still; the lite tier drops the halo and the
+ * additive glow.
  */
-export function HoloIcon({ strokes, instances, style, tone, size = 2.4, tier, reducedMotion }: HoloIconProps) {
+export function HoloIcon({ strokes, instances, color, size = 3.4, tier, reducedMotion }: HoloIconProps) {
   const full = tier === "full";
-  // Icons sway toward the road instead of spinning: a flat icon seen edge-on is unreadable.
   const sway = reducedMotion ? 0 : 1;
 
   const layers = useMemo(() => {
     const out: { geometry: BufferGeometry; material: ShaderMaterial }[] = [];
     if (!instances.length) return out;
-    // Solid icons take the type glow as their body color (a white core washes out without bloom).
-    const strokeColor = neonColor(style === "solid" ? tone.glow : tone.stroke, full && style !== "solid" ? 1.6 : 1, tier);
-    const glowColor = new Color(tone.glow);
-    const main = iconMesh(strokes, { size, width: style === "solid" ? 2.2 : 1.5, depth: style === "solid" ? size * 0.12 : 0 });
-    out.push({ geometry: instanced(main, instances), material: material(strokeColor, 0.95, full && style !== "solid", sway) });
-    if (full) {
-      // Soft halo: the same strokes, wider and faint, just behind the icon.
-      const halo = iconMesh(strokes, { size, width: style === "solid" ? 5 : 4 });
-      out.push({ geometry: instanced(halo, instances, style === "solid" ? -size * 0.07 : -0.02), material: material(glowColor, 0.16, true, sway) });
-    }
-    if (style === "badge") {
-      const frame = iconMesh([hexFrame()], { size, width: 1.1 });
-      out.push({ geometry: instanced(frame, instances), material: material(neonColor(tone.glow, 1.6, tier), 0.9, full, sway) });
-      const fill = iconMesh([hexFrame(6.8)], { size, width: 13.6 });
-      out.push({ geometry: instanced(fill, instances, -0.03), material: material(glowColor, 0.07, false, sway) });
-    }
+    out.push({ geometry: instanced(iconMesh(strokes, { size, width: 1.5 }), instances), material: material(neonColor(color, full ? 1.6 : 1, tier), 0.95, full, sway) });
+    // Soft halo: the same strokes, wider and faint, just behind the icon.
+    if (full) out.push({ geometry: instanced(iconMesh(strokes, { size, width: 4 }), instances, -0.02), material: material(new Color(color), 0.16, true, sway) });
     return out;
-  }, [strokes, instances, style, tone, size, tier, full, sway]);
+  }, [strokes, instances, color, size, tier, full, sway]);
 
   const materials = useMemo(() => layers.map((l) => l.material), [layers]);
   useUniformTime(materials);
@@ -126,7 +112,7 @@ export function HoloIcon({ strokes, instances, style, tone, size = 2.4, tier, re
   );
 
   return (
-    <group name={`holo-icon-${style}`}>
+    <group name="holo-icon">
       {layers.map((l, i) => (
         <mesh key={i} geometry={l.geometry} material={l.material} frustumCulled={false} raycast={() => null} />
       ))}
