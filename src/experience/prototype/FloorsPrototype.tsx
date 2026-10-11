@@ -12,7 +12,10 @@ import { WalkPrompt } from "@/hud/walk/WalkPrompt";
 import "../text-config";
 import { COLORS, FLOOR_COLOR, ROVER } from "../config";
 import { careerLayoutInput } from "../floors/career/layout";
+import { TypeIcon } from "@/components/TypeIcon";
 import { GridFloor } from "../fx/GridFloor";
+import { HoloIcon } from "../fx/HoloIcon";
+import { CAREER_ICONS, ICON_TONES, type IconStyle } from "../fx/holoIcons";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import { isMoveKey, moveVectorFromKeys } from "../input/intents";
 import type { MissionStatus } from "../missions/host";
@@ -23,9 +26,15 @@ import { spaceViolations } from "../nav/space";
 import { RoverController } from "../rover/controller";
 import { cameraRelative } from "../rover/movement";
 import { FONTS } from "../tower/primitives";
-import type { DoorTrigger, ExperienceData, GpuTier, Rect, Vec2 } from "../types";
-import { buildCareerRoad, CAREER_ROAD, TYPE_COLOR, type CareerRoadLayout, type RoadStyle } from "./careerRoad";
+import type { CareerType, DoorTrigger, ExperienceData, GpuTier, Rect, Vec2 } from "../types";
+import { buildCareerRoad, CAREER_ROAD, type CareerRoadLayout, type RoadStyle } from "./careerRoad";
 import { buildLabsRoads, WING_COLOR, type LabsRoadsLayout } from "./labsRoads";
+
+/** Spur stubs take the type color of the icon direction being previewed. */
+function recolor(road: CareerRoadLayout, icons: IconStyle): RoadNetwork {
+  const type = new Map(road.rooms.map((r) => [r.id, r.type]));
+  return { ...road.network, spurs: road.network.spurs.map((sp) => ({ ...sp, color: type.has(sp.room) ? ICON_TONES[icons][type.get(sp.room)!].glow : sp.color })) };
+}
 
 /** Floor-independent slice the simulation needs. */
 interface ProtoFloor {
@@ -79,13 +88,19 @@ const memoryStorage = (): WalkStorage => {
 };
 
 function readParams() {
-  if (typeof window === "undefined") return { floor: "L2" as const, road: "meander" as RoadStyle, view: "rover" as View, tier: "full" as GpuTier };
+  if (typeof window === "undefined") return { floor: "L2" as const, road: "meander" as RoadStyle, view: "rover" as View, tier: "full" as GpuTier, icons: "line" as IconStyle, sheet: false, at: null as Vec2 | null };
   const q = new URLSearchParams(window.location.search);
   return {
     floor: (q.get("floor") === "L3" ? "L3" : "L2") as "L2" | "L3",
     road: (q.get("road") === "straight" ? "straight" : "meander") as RoadStyle,
     view: (q.get("view") === "top" ? "top" : "rover") as View,
     tier: (q.get("tier") === "lite" ? "lite" : "full") as GpuTier,
+    icons: (["line", "badge", "solid"].includes(q.get("icons") ?? "") ? q.get("icons") : "line") as IconStyle,
+    sheet: q.get("sheet") === "1",
+    at: (() => {
+      const [x, z] = (q.get("at") ?? "").split(",").map(Number);
+      return Number.isFinite(x) && Number.isFinite(z) && q.get("at") ? { x, z } : null;
+    })(),
   };
 }
 
@@ -155,20 +170,34 @@ function rectOf(c: Vec2, w: number, d: number): Rect {
   return { minX: c.x - w / 2, maxX: c.x + w / 2, minZ: c.z - d / 2, maxZ: c.z + d / 2 };
 }
 
+const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
+
 function CareerDecor({
   road,
   labels,
   titles,
   onRoom,
+  icons,
+  tier,
 }: {
+  icons: IconStyle;
+  tier: GpuTier;
   road: CareerRoadLayout;
   labels: { rooms: (n: number) => string; workshop: string };
   titles: Map<string, { title: string; sub?: string }>;
   onRoom: (room: RoomId) => void;
 }) {
   const accent = FLOOR_COLOR.L2;
+  const instances = useMemo(() => {
+    const out = {} as Record<CareerType, { x: number; y: number; z: number; face: number }[]>;
+    for (const type of TYPES) out[type] = road.rooms.filter((r) => r.type === type).map((r) => ({ x: r.center.x, y: 2.5, z: r.center.z, face: r.side === -1 ? 0 : Math.PI }));
+    return out;
+  }, [road]);
   return (
     <group>
+      {TYPES.map((type) => (
+        <HoloIcon key={`${type}-${icons}`} strokes={CAREER_ICONS[type]} instances={instances[type]} style={icons} tone={ICON_TONES[icons][type]} size={3.4} tier={tier} reducedMotion={false} />
+      ))}
       {road.years.map((y) => (
         <group key={y.year}>
           {/* Arch over the road with the year and a signpost. */}
@@ -206,7 +235,7 @@ function CareerDecor({
           </Text>
           {y.rooms.map((r) => {
             const rect = rectOf(r.center, r.w, r.d);
-            const color = TYPE_COLOR[r.type];
+            const color = ICON_TONES[icons][r.type].glow;
             return (
               <group key={r.id}>
                 <mesh
@@ -221,11 +250,11 @@ function CareerDecor({
                   <meshBasicMaterial color={color} transparent opacity={0.1} depthWrite={false} toneMapped={false} />
                 </mesh>
                 <Wire rect={rect} h={2.2} color={color} />
-                <mesh position={[r.center.x, 0.5, r.center.z]}>
-                  <boxGeometry args={[CAREER_ROAD.pedestal, 1, CAREER_ROAD.pedestal]} />
-                  <meshStandardMaterial color="#0f172a" emissive={color} emissiveIntensity={0.35} />
+                <mesh position={[r.center.x, 0.2, r.center.z]}>
+                  <cylinderGeometry args={[CAREER_ROAD.pedestal / 2, CAREER_ROAD.pedestal / 2 + 0.1, 0.4, 6]} />
+                  <meshStandardMaterial color="#0f172a" emissive={color} emissiveIntensity={0.5} />
                 </mesh>
-                <Label position={[r.center.x, 3.2, r.center.z]} title={titles.get(r.id)?.title ?? r.slug} sub={titles.get(r.id)?.sub} color={color} />
+                <Label position={[r.center.x, 4.9, r.center.z]} title={titles.get(r.id)?.title ?? r.slug} sub={titles.get(r.id)?.sub} color={color} />
               </group>
             );
           })}
@@ -347,6 +376,16 @@ function Driver({ floor, view }: { floor: ProtoFloor; view: View }) {
   return null;
 }
 
+/** Marks the prototype ready once a few frames have rendered (screenshot scripts wait for it). */
+function Ready() {
+  const frames = useRef(0);
+  useFrame(() => {
+    frames.current += 1;
+    if (frames.current === 30) document.querySelector("[data-testid='floors-prototype']")?.setAttribute("data-ready", "");
+  });
+  return null;
+}
+
 function World({
   floor,
   career,
@@ -358,7 +397,9 @@ function World({
   onRoom,
   labels,
   titles,
+  icons,
 }: {
+  icons: IconStyle;
   titles: Map<string, { title: string; sub?: string }>;
   floor: ProtoFloor;
   career: CareerRoadLayout;
@@ -387,7 +428,7 @@ function World({
       <GridFloor width={b.maxX - b.minX} depth={b.maxZ - b.minZ} center={[(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2]} />
       <RoadMarkings network={floor.network} color={floor.accent} tier={tier} reducedMotion={false} />
       {floor.id === "L2" ? (
-        <CareerDecor road={career} labels={labels} titles={titles} onRoom={onRoom} />
+        <CareerDecor road={career} labels={labels} titles={titles} onRoom={onRoom} icons={icons} tier={tier} />
       ) : (
         <LabsDecor labs={labs} wings={data.labs.wings} labels={labels} onRoom={onRoom} />
       )}
@@ -398,6 +439,7 @@ function World({
       </mesh>
       <RoverMesh />
       <Driver floor={floor} view={view} />
+      <Ready />
     </>
   );
 }
@@ -416,6 +458,9 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const [floorId, setFloorId] = useState<"L2" | "L3">(initial.floor);
   const [style, setStyle] = useState<RoadStyle>(initial.road);
   const [view, setView] = useState<View>(initial.view);
+  const [icons, setIcons] = useState<IconStyle>(initial.icons);
+  const [sheet, setSheet] = useState(initial.sheet);
+  const tt = useTranslations("common.type");
   const [card, setCard] = useState<{ title: string; sub?: string } | null>(null);
   const [prompted, setPrompted] = useState<Record<string, boolean>>({});
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
@@ -432,15 +477,15 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const floor: ProtoFloor = useMemo(
     () =>
       floorId === "L2"
-        ? { id: "L2", bounds: career.bounds, network: career.network, obstacles: career.obstacles, doors: career.doors, approach: career.approach, accent: FLOOR_COLOR.L2 }
+        ? { id: "L2", bounds: career.bounds, network: recolor(career, icons), obstacles: career.obstacles, doors: career.doors, approach: career.approach, accent: FLOOR_COLOR.L2 }
         : { id: "L3", bounds: labs.bounds, network: labs.network, obstacles: labs.obstacles, doors: labs.doors, approach: labs.approach, accent: FLOOR_COLOR.L3 },
-    [floorId, career, labs],
+    [floorId, career, labs, icons],
   );
   const grid = useMemo(() => buildNavGrid(floor, ROVER.radius), [floor]);
   const graph = useMemo(() => buildRoadGraph(floor.network), [floor]);
   const violations = useMemo(() => spaceViolations({ ...floor, start: floor.approach }), [floor]);
 
-  useEffect(() => resetRover(floor.approach), [floor]);
+  useEffect(() => resetRover(initial.at ?? floor.approach), [floor, initial.at]);
 
   // Keyboard driving (WASD and arrows).
   useEffect(() => {
@@ -515,6 +560,58 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const b = floor.bounds;
   const roomCount = floor.doors.length;
 
+  const typeCounts = Object.fromEntries(TYPES.map((type) => [type, career.rooms.filter((r) => r.type === type).length])) as Record<CareerType, number>;
+  const panelBody = (
+    <>
+    <p className="eyebrow text-amber">{tp("title")}</p>
+    <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={tp("floor")}>
+      {(["L2", "L3"] as const).map((id) => (
+        <button key={id} type="button" className={seg(floorId === id)} aria-pressed={floorId === id} onClick={() => setFloorId(id)}>
+          {tp(id)}
+        </button>
+      ))}
+    </div>
+    {floorId === "L2" && (
+      <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("road")}>
+        {(["straight", "meander"] as const).map((r) => (
+          <button key={r} type="button" className={seg(style === r)} aria-pressed={style === r} onClick={() => setStyle(r)}>
+            {tp(r)}
+          </button>
+        ))}
+      </div>
+    )}
+    <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("view")}>
+      {(["rover", "top"] as const).map((v) => (
+        <button key={v} type="button" className={seg(view === v)} aria-pressed={view === v} onClick={() => setView(v)}>
+          {tp(v)}
+        </button>
+      ))}
+    </div>
+    <p className="label mt-2 text-ink-3">
+      {tp("size", { w: Math.round(b.maxX - b.minX), d: Math.round(b.maxZ - b.minZ), rooms: roomCount, plazas: floor.network.plazas.length })}
+    </p>
+    <p className="label text-ink-3" data-testid="proto-rules">
+      {tp("rules")}: <span className={violations.length ? "text-pink" : "text-green"}>{violations.length ? tp("violations", { count: violations.length }) : tp("pass")}</span>
+    </p>
+    <p className="mt-1 hidden text-xs text-ink-3 md:block">{tp("hint")}</p>
+    {prompted[floorId] && state?.status === "idle" && (
+      <button type="button" className="link mt-1 min-h-11 text-xs" onClick={() => setPrompted((p) => ({ ...p, [floorId]: false }))}>
+        {tp("prompt")}
+      </button>
+    )}
+      <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("icons")}>
+        {(["line", "badge", "solid"] as const).map((v) => (
+          <button key={v} type="button" className={seg(icons === v)} aria-pressed={icons === v} onClick={() => setIcons(v)}>
+            {tp(v)}
+          </button>
+        ))}
+        <button type="button" className={seg(sheet)} aria-pressed={sheet} onClick={() => setSheet((x) => !x)}>
+          {tp("sheet")}
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="fixed inset-0 z-[60] overflow-hidden bg-void text-ink" data-testid="floors-prototype" data-floor={floorId} data-road={style} data-view={view}>
       <Canvas
@@ -543,89 +640,46 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
           }}
           labels={{ rooms: (n) => tp("rooms", { count: n }), workshop: tc("workshop"), more: t("more"), loop: tp("loop") }}
           titles={titles}
+          icons={icons}
         />
       </Canvas>
 
       {compact ? (
         <details className="glass glass-solid pointer-events-auto absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] p-2 text-sm" data-testid="proto-panel">
           <summary className="label min-h-11 cursor-pointer content-center px-2 text-amber">{tp("title")}</summary>
-          <div className="p-1">
-        <p className="eyebrow text-amber">{tp("title")}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={tp("floor")}>
-          {(["L2", "L3"] as const).map((id) => (
-            <button key={id} type="button" className={seg(floorId === id)} aria-pressed={floorId === id} onClick={() => setFloorId(id)}>
-              {tp(id)}
-            </button>
-          ))}
-        </div>
-        {floorId === "L2" && (
-          <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("road")}>
-            {(["straight", "meander"] as const).map((r) => (
-              <button key={r} type="button" className={seg(style === r)} aria-pressed={style === r} onClick={() => setStyle(r)}>
-                {tp(r)}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("view")}>
-          {(["rover", "top"] as const).map((v) => (
-            <button key={v} type="button" className={seg(view === v)} aria-pressed={view === v} onClick={() => setView(v)}>
-              {tp(v)}
-            </button>
-          ))}
-        </div>
-        <p className="label mt-2 text-ink-3">
-          {tp("size", { w: Math.round(b.maxX - b.minX), d: Math.round(b.maxZ - b.minZ), rooms: roomCount, plazas: floor.network.plazas.length })}
-        </p>
-        <p className="label text-ink-3" data-testid="proto-rules">
-          {tp("rules")}: <span className={violations.length ? "text-pink" : "text-green"}>{violations.length ? tp("violations", { count: violations.length }) : tp("pass")}</span>
-        </p>
-        <p className="mt-1 hidden text-xs text-ink-3 md:block">{tp("hint")}</p>
-        {prompted[floorId] && state?.status === "idle" && (
-          <button type="button" className="link mt-1 min-h-11 text-xs" onClick={() => setPrompted((p) => ({ ...p, [floorId]: false }))}>
-            {tp("prompt")}
-          </button>
-        )}
-          </div>
+          <div className="p-1">{panelBody}</div>
         </details>
       ) : (
         <section className="glass glass-solid pointer-events-auto absolute top-3 left-3 w-[min(340px,calc(100%-1.5rem))] p-3 text-sm" data-testid="proto-panel">
-        <p className="eyebrow text-amber">{tp("title")}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={tp("floor")}>
-          {(["L2", "L3"] as const).map((id) => (
-            <button key={id} type="button" className={seg(floorId === id)} aria-pressed={floorId === id} onClick={() => setFloorId(id)}>
-              {tp(id)}
-            </button>
+          {panelBody}
+        </section>
+      )}
+
+      {sheet && (
+        <section className="glass glass-solid pointer-events-auto absolute top-1/2 left-1/2 w-[min(720px,calc(100%-1.5rem))] -translate-x-1/2 -translate-y-1/2 p-5" data-testid="proto-sheet">
+          <p className="eyebrow text-amber">{tp("sheetTitle")}</p>
+          {(["line", "badge", "solid"] as const).map((style) => (
+            <div key={style} className="mt-4">
+              <p className="label text-ink-3">{tp(style)}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {TYPES.map((type) => (
+                  <span key={type} className="chip" style={{ borderColor: `${ICON_TONES[style][type].glow}66` }}>
+                    <TypeIcon type={type} style={style} size={style === "badge" ? 22 : 18} />
+                    <span className="text-ink">{tt(type)}</span>
+                    <span className="chip-count">{typeCounts[type]}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-4">
+                {TYPES.map((type) => (
+                  <TypeIcon key={type} type={type} style={style} size={44} title={tt(type)} />
+                ))}
+              </div>
+            </div>
           ))}
-        </div>
-        {floorId === "L2" && (
-          <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("road")}>
-            {(["straight", "meander"] as const).map((r) => (
-              <button key={r} type="button" className={seg(style === r)} aria-pressed={style === r} onClick={() => setStyle(r)}>
-                {tp(r)}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label={tp("view")}>
-          {(["rover", "top"] as const).map((v) => (
-            <button key={v} type="button" className={seg(view === v)} aria-pressed={view === v} onClick={() => setView(v)}>
-              {tp(v)}
-            </button>
-          ))}
-        </div>
-        <p className="label mt-2 text-ink-3">
-          {tp("size", { w: Math.round(b.maxX - b.minX), d: Math.round(b.maxZ - b.minZ), rooms: roomCount, plazas: floor.network.plazas.length })}
-        </p>
-        <p className="label text-ink-3" data-testid="proto-rules">
-          {tp("rules")}: <span className={violations.length ? "text-pink" : "text-green"}>{violations.length ? tp("violations", { count: violations.length }) : tp("pass")}</span>
-        </p>
-        <p className="mt-1 hidden text-xs text-ink-3 md:block">{tp("hint")}</p>
-        {prompted[floorId] && state?.status === "idle" && (
-          <button type="button" className="link mt-1 min-h-11 text-xs" onClick={() => setPrompted((p) => ({ ...p, [floorId]: false }))}>
-            {tp("prompt")}
+          <button type="button" className="link mt-3 min-h-11 text-sm" onClick={() => setSheet(false)}>
+            {tp("close")}
           </button>
-        )}
         </section>
       )}
 

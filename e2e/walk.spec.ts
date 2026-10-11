@@ -63,9 +63,9 @@ test.describe("Guided walks", () => {
     expect(saved).toMatchObject({ stop: second, done: false });
     expect(saved.visited).toEqual(expect.arrayContaining([first, second]));
 
+    // The room is still open, so the reload deep-links into it (phase "room").
     await page.reload();
     await waitForHQ(page);
-    await waitForPhase(page, "explore");
     await waitForSceneLive(page);
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
     await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
@@ -112,12 +112,13 @@ test.describe("Guided walks on a phone", () => {
     expect(box.y).toBeLessThan(200);
 
     const cdp = await page.context().newCDPSession(page);
-    const y = box.y + box.height * 0.3;
+    // Middle of the card (title and subtitle), away from the filter and the buttons.
+    const y = box.y + box.height * 0.45;
     let timestamp = Date.now() / 1000;
     const touch = (type: "touchStart" | "touchMove" | "touchEnd", x: number) =>
       cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }], timestamp: (timestamp += 0.04) });
-    await touch("touchStart", box.x + box.width * 0.8);
-    for (const f of [0.65, 0.5, 0.35, 0.2]) await touch("touchMove", box.x + box.width * f);
+    await touch("touchStart", box.x + box.width * 0.7);
+    for (const f of [0.6, 0.5, 0.4, 0.3]) await touch("touchMove", box.x + box.width * f);
     await touch("touchEnd", 0);
     await cdp.detach();
     await expect(page.getByTestId("walk-counter")).toContainText("Stop 2 of");
