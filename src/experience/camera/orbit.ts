@@ -143,8 +143,10 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
   ],
 };
 
-export function zoneAt(floor: FloorId, p: Vec2): ViewZone | null {
-  return VIEW_ZONES[floor]?.find((z) => p.x >= z.area.minX && p.x <= z.area.maxX && p.z >= z.area.minZ && p.z <= z.area.maxZ) ?? null;
+/** The zone the rover is in: static `VIEW_ZONES` first, then the floor layout's own (`FloorLayout.viewZones`). */
+export function zoneAt(floor: FloorId, p: Vec2, extra: readonly ViewZone[] = []): ViewZone | null {
+  const inside = (z: ViewZone) => p.x >= z.area.minX && p.x <= z.area.maxX && p.z >= z.area.minZ && p.z <= z.area.maxZ;
+  return VIEW_ZONES[floor]?.find(inside) ?? extra.find(inside) ?? null;
 }
 
 /**

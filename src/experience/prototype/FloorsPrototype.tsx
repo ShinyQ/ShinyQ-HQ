@@ -19,7 +19,7 @@ import { CAREER_ICONS, CAREER_TONE } from "../fx/holoIcons";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import { isMoveKey, moveVectorFromKeys } from "../input/intents";
 import type { MissionStatus } from "../missions/host";
-import { createWalk, type WalkController, type WalkDefinition, type WalkStorage } from "../missions/walk";
+import { createWalk, type WalkController, type WalkStorage } from "../missions/walk";
 import { buildNavGrid, findPath } from "../nav/navgrid";
 import { buildRoadGraph, roadRoute, type RoadNetwork } from "../nav/road";
 import { spaceViolations } from "../nav/space";
@@ -27,7 +27,7 @@ import { RoverController } from "../rover/controller";
 import { cameraRelative } from "../rover/movement";
 import { FONTS } from "../tower/primitives";
 import type { CareerType, DoorTrigger, ExperienceData, GpuTier, Rect, Vec2 } from "../types";
-import { buildLabsRoads, WING_COLOR, type LabsRoadsLayout } from "./labsRoads";
+import { buildLabsLayout, WING_TINT as WING_COLOR, type LabsLayout } from "../floors/labs/layout";
 
 /** Spur stubs take the career type colors. */
 function recolor(road: CareerRoadLayout): RoadNetwork {
@@ -266,10 +266,10 @@ function CareerDecor({
   );
 }
 
-function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsRoadsLayout; wings: Record<"software" | "ai", string>; labels: { more: string; loop: string }; onRoom: (room: RoomId) => void }) {
+function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsLayout; wings: Record<"software" | "ai", string>; labels: { more: string; loop: string }; onRoom: (room: RoomId) => void }) {
   return (
     <group>
-      {labs.pods.map((p) => {
+      {labs.placed.map((p) => {
         const color = WING_COLOR[p.pod.wing];
         const h = p.pod.tier === "hero" ? 3 : 2.4;
         return (
@@ -305,7 +305,7 @@ function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsRoadsLayout; win
               color={WING_COLOR[wing]}
               anchorX="center"
               anchorY="middle"
-              position={[labs.signs[wing].x, 0.05, labs.signs[wing].z]}
+              position={[labs.signs[wing].at.x, 0.05, labs.signs[wing].at.z]}
               rotation={[-Math.PI / 2, 0, 0]}
               material-toneMapped={false}
             >
@@ -314,7 +314,7 @@ function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsRoadsLayout; win
           </group>
         );
       })}
-      <Text font={FONTS.monoBold} fontSize={2.4} color={FLOOR_COLOR.L3} fillOpacity={0.4} anchorX="center" anchorY="middle" position={[labs.loopEnd.x, 0.05, labs.loopEnd.z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <Text font={FONTS.monoBold} fontSize={2.4} color={FLOOR_COLOR.L3} fillOpacity={0.4} anchorX="center" anchorY="middle" position={[labs.east.center.x, 0.05, labs.east.center.z]} rotation={[-Math.PI / 2, 0, 0]}>
         {labels.loop}
       </Text>
     </group>
@@ -397,7 +397,7 @@ function World({
   titles: Map<string, { title: string; sub?: string }>;
   floor: ProtoFloor;
   career: CareerRoadLayout;
-  labs: LabsRoadsLayout;
+  labs: LabsLayout;
   data: ExperienceData;
   tier: GpuTier;
   view: View;
@@ -466,12 +466,12 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   }, []);
 
   const career = useMemo(() => buildCareerRoad(careerLayoutInput(data.career), style), [data.career, style]);
-  const labs = useMemo(() => buildLabsRoads(data.labs.pods), [data.labs.pods]);
+  const labs = useMemo(() => buildLabsLayout(data.labs.pods), [data.labs.pods]);
   const floor: ProtoFloor = useMemo(
     () =>
       floorId === "L2"
         ? { id: "L2", bounds: career.bounds, network: recolor(career), obstacles: career.obstacles, doors: career.doors, approach: career.approach, accent: FLOOR_COLOR.L2 }
-        : { id: "L3", bounds: labs.bounds, network: labs.network, obstacles: labs.obstacles, doors: labs.doors, approach: labs.approach, accent: FLOOR_COLOR.L3 },
+        : { id: "L3", bounds: labs.floor.bounds, network: labs.network, obstacles: labs.floor.obstacles, doors: labs.floor.doors ?? [], approach: labs.floor.approach, accent: FLOOR_COLOR.L3 },
     [floorId, career, labs],
   );
   const grid = useMemo(() => buildNavGrid(floor, ROVER.radius), [floor]);
@@ -533,17 +533,12 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
       cancel: cancelLeg,
     };
     const out: Partial<Record<FloorId, WalkController>> = {};
-    const fix = (def: WalkDefinition | undefined): WalkDefinition | undefined =>
-      def && {
-        ...def,
-        stops: def.stops.map((s) => (s.id.startsWith("L3:directory:") ? { ...s, to: labs.boards[s.id.endsWith("ai") ? "ai" : "software"].stop } : s)),
-      };
     for (const id of ["L2", "L3"] as const) {
-      const def = fix(definitions[id]);
+      const def = definitions[id];
       if (def) out[id] = createWalk(def, host, { storage: memoryStorage() });
     }
     return out;
-  }, [definitions, doorOf, drive, titles, labs, t]);
+  }, [definitions, doorOf, drive, titles, t]);
   const walk = walks[floorId] ?? null;
   const state = useWalkState(walk);
 

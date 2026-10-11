@@ -1,5 +1,6 @@
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 import type { RoadNetwork } from "./nav/road";
+import type { ViewZone } from "./camera/orbit";
 
 export type Vec2 = { x: number; z: number };
 
@@ -34,6 +35,8 @@ export interface FloorLayout {
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
   road?: RoadNetwork;
+  /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
+  viewZones?: ViewZone[];
 }
 
 export type CareerType = "job" | "freelance" | "education" | "award" | "milestone";

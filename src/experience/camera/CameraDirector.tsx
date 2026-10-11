@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, type RefObject } from "react";
 import { Fog, PerspectiveCamera, Vector3 } from "three";
+import type { FloorId } from "@/content/schema";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore } from "@/store/useHQStore";
 import { roadZAt } from "../floors/career/layout";
@@ -10,7 +11,7 @@ import { intents, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
-import type { Vec2 } from "../types";
+import type { FloorLayout, Vec2 } from "../types";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
@@ -35,7 +36,15 @@ const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
  * turns all the way around the rover (drag, twist, trackpad, Q/E, buttons) with a small tilt;
  * the view persists until reset.
  */
-export function CameraDirector({ held, railAxis = [] }: { held: RefObject<Set<string>>; railAxis?: readonly Vec2[] }) {
+export function CameraDirector({
+  held,
+  railAxis = [],
+  layouts,
+}: {
+  held: RefObject<Set<string>>;
+  railAxis?: readonly Vec2[];
+  layouts?: Record<FloorId, FloorLayout>;
+}) {
   const local = useRef({
     orbit: createOrbitState(),
     now: 0,
@@ -83,7 +92,7 @@ export function CameraDirector({ held, railAxis = [] }: { held: RefObject<Set<st
     const exploring = s.phase === "explore" || s.phase === "elevator";
     const axis = exploring ? rotateAxisFromKeys(held.current ?? []) : 0;
     if (axis) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, 0, rig === "rail");
-    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime), s.reducedMotion);
+    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), s.reducedMotion);
     stepOrbit(orbit, dt, s.reducedMotion);
     roverRuntime.cameraYaw = orbit.yaw;
     roverRuntime.cameraRailYaw = orbit.railYaw;
