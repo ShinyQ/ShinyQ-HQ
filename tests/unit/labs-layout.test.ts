@@ -196,7 +196,7 @@ describe("L3 Project Roads layout", () => {
   });
 
   it("feeds the tour in docking order, wing by wing, ending at the directory boards", () => {
-    const walk = labsWalk(pods, { wings: { software: "Software Wing", ai: "AI Wing" }, more: "More projects here", moreSub: "" });
+    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering" }, more: "More projects here", moreSub: "" });
     const rooms = walk.stops.filter((s) => s.room).map((s) => s.room);
     expect(rooms).toEqual(layout.placed.map((p) => p.room));
     expect(walk.stops.slice(-2).map((s) => s.to)).toEqual([directoryStop("software"), directoryStop("ai")]);
