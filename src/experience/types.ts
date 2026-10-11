@@ -1,4 +1,5 @@
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
+import type { RoadNetwork } from "./nav/road";
 
 export type Vec2 = { x: number; z: number };
 
@@ -31,6 +32,8 @@ export interface FloorLayout {
   doors?: DoorTrigger[];
   /** Rail floors: x positions a horizontal swipe snaps to (L2 year segments and the annex). */
   scrubStops?: number[];
+  /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
+  road?: RoadNetwork;
 }
 
 export type CareerType = "job" | "freelance" | "education" | "award" | "milestone";

@@ -183,7 +183,8 @@ function aStar(g: NavGrid, start: number, goal: number): number[] | null {
   return path;
 }
 
-function lineClear(g: NavGrid, a: Vec2, b: Vec2): boolean {
+/** Whether the straight segment from `a` to `b` stays on walkable cells (sampled every 0.25 u). */
+export function segmentWalkable(g: NavGrid, a: Vec2, b: Vec2): boolean {
   const len = Math.hypot(b.x - a.x, b.z - a.z);
   const steps = Math.max(1, Math.ceil(len / 0.25));
   for (let s = 1; s <= steps; s++) {
@@ -219,7 +220,7 @@ export function findPath(g: NavGrid, from: Vec2, to: Vec2): Vec2[] | null {
   while (anchor < points.length - 1) {
     let next = anchor + 1;
     for (let k = points.length - 1; k > anchor + 1; k--) {
-      if (lineClear(g, points[anchor], points[k])) {
+      if (segmentWalkable(g, points[anchor], points[k])) {
         next = k;
         break;
       }

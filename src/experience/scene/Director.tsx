@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
@@ -14,6 +14,7 @@ import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
+import { buildRoadGraph, roadRoute, type RoadGraph } from "../nav/road";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
@@ -43,6 +44,22 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     for (const id of Object.keys(layouts) as FloorId[]) out[id] = buildNavGrid(layouts[id], ROVER.radius);
     return out;
   }, [layouts]);
+  const roads = useMemo(() => {
+    const out: Partial<Record<FloorId, RoadGraph>> = {};
+    for (const id of Object.keys(layouts) as FloorId[]) {
+      const road = layouts[id].road;
+      if (road) out[id] = buildRoadGraph(road);
+    }
+    return out;
+  }, [layouts]);
+  /** Autopilot route: along the floor's road when it has one (walkable floors), else the navgrid. */
+  const autopilotPath = useCallback(
+    (floor: FloorId, from: Vec2, to: Vec2) => {
+      const road = layouts[floor].road;
+      return road ? roadRoute(road, grids[floor], from, to, roads[floor]) : findPath(grids[floor], from, to);
+    },
+    [layouts, grids, roads],
+  );
 
   const state = useRef({
     controller: null as RoverController | null,
@@ -212,7 +229,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           const d = Math.hypot(controller.pose.x - from.approach.x, controller.pose.z - from.approach.z);
           atDoor = d < 0.8;
           if (!atDoor && !controller.following) {
-            const path = findPath(grids[ride.from], controller.pose, from.approach);
+            const path = autopilotPath(ride.from, controller.pose, from.approach);
             if (path?.length) controller.setPath(path, true);
             else atDoor = true;
           }
@@ -244,7 +261,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       // With a room open the rover finishes its path but takes no manual input.
       const request = roverRuntime.autopilot;
       if (request?.state === "pending" && !manual) {
-        const path = findPath(grids[s.floor], controller.pose, request.point);
+        const path = autopilotPath(s.floor, controller.pose, request.point);
         if (path?.length) {
           controller.setPath(path, true);
           request.state = "driving";

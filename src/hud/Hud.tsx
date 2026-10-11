@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { drawerLayout } from "./drawer/layout";
 import { READY_FLOORS } from "@/experience/config";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
@@ -14,6 +15,8 @@ import { ElevatorPanel } from "./ElevatorPanel";
 import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
 import { ViewControls } from "./ViewControls";
+import type { WalkPlacement } from "./walk/WalkBar";
+import { WalkLayer } from "./walk/WalkLayer";
 
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
@@ -90,6 +93,16 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const viewport = useHQStore((s) => s.device.viewport);
   const coarse = useHQStore((s) => s.device.coarse);
   const mobile = viewport === "mobile";
+  const [walking, setWalking] = useState(false);
+  const walkPlacement: WalkPlacement = mobile
+    ? "top"
+    : phase === "room"
+      ? typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side"
+        ? "dock"
+        : "top"
+      : coarse
+        ? "bottom-raised"
+        : "bottom";
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
@@ -105,12 +118,14 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {mobile ? <MobileMenu onExit={onExit} onToggleLang={onToggleLang} /> : <TopBar onExit={onExit} onToggleLang={onToggleLang} />}
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
-          {phase === "intro" ? <IntroSkip /> : phase !== "room" && <HintBar coarse={coarse} mobile={mobile} />}
+          {phase === "intro" ? <IntroSkip /> : phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
           {phase !== "intro" && phase !== "room" && <ViewControls />}
         </>
       )}
+      {/* Mounted in every phase so a walk keeps its state through the hologram view. */}
+      <WalkLayer data={data} placement={walkPlacement} coarse={coarse} hidden={phase === "boot" || phase === "intro" || phase === "hologram"} onActive={setWalking} />
       <FloorAnnouncer data={data} />
     </div>
   );

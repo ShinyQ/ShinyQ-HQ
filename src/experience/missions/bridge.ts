@@ -1,5 +1,5 @@
-import type { DrawerTab, Locale, RoomId } from "@/content/schema";
-import type { MissionHost, PaletteFilter } from "./host";
+import type { DrawerTab, Locale, MissionStep, RoomId } from "@/content/schema";
+import type { MissionHost, MissionStatus, PaletteFilter } from "./host";
 import type { RoomInfo } from "./rooms";
 import type { MissionRunner, MissionState } from "./runner";
 
@@ -62,6 +62,11 @@ export function registerRunner(next: MissionRunner): () => void {
 /** Elevator, drive and open for any room through the active runner ("See the case study" links). */
 export function goToRoom(room: RoomId, tab?: DrawerTab) {
   void runner?.goTo(room, tab);
+}
+
+/** Runs ad hoc steps through the active runner (guided walk legs). Resolves "cancelled" without a runner. */
+export function runMissionSteps(id: string, steps: readonly MissionStep[]): Promise<MissionStatus> {
+  return runner ? runner.runSteps(id, steps) : Promise.resolve("cancelled");
 }
 
 /** Manual input cancels a running mission (appendix 02 section 3). */

@@ -528,5 +528,42 @@
       "intro": "Pertanyaan seputar karya, proyek, karier, atau cara menghubungi saya, dijawab oleh AI dari isi situs ini.",
       "button": "Tanya AI"
     }
+  },
+  "walk": {
+    "journey": {
+      "title": "Jelajahi perjalanan saya?",
+      "body": "Perjalanan terpandu melewati setiap peran dan pencapaian saya, dari yang paling awal. Lewati jika ingin menjelajah lantai ini sendiri.",
+      "start": "Jelajahi perjalanan saya",
+      "name": "Tur perjalanan"
+    },
+    "projects": {
+      "title": "Tur proyek saya?",
+      "body": "Perjalanan terpandu melewati proyek utama dan unggulan saya, sayap demi sayap. Lewati jika ingin menjelajah lantai ini sendiri.",
+      "start": "Tur proyek saya",
+      "name": "Tur proyek"
+    },
+    "explore": "Jelajah bebas",
+    "resumeAt": "Lanjutkan di titik {index}",
+    "stopOf": "Titik {index} dari {total}",
+    "visited": "{count} dikunjungi",
+    "driving": "Dalam perjalanan",
+    "here": "Anda di sini",
+    "prev": "Sebelumnya",
+    "next": "Berikutnya",
+    "finish": "Selesai",
+    "open": "Buka",
+    "end": "Akhiri tur",
+    "resume": "Lanjutkan tur",
+    "filter": "Tampilkan",
+    "all": "Semua titik",
+    "done": "Tur selesai",
+    "doneBody": "{count} dari {total} titik dikunjungi.",
+    "again": "Ulangi tur",
+    "close": "Tutup",
+    "keys": "[ dan ] untuk berpindah titik",
+    "swipe": "Geser kartu untuk berpindah titik",
+    "workshopSub": "Side project, repository, dan model",
+    "more": "Proyek lainnya di sini",
+    "moreSub": "Semua proyek lain ada di papan direktori ini"
   }
 }

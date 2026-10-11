@@ -528,5 +528,42 @@
       "intro": "Questions about my work, projects, career or how to reach me, answered by AI from this site.",
       "button": "Ask AI"
     }
+  },
+  "walk": {
+    "journey": {
+      "title": "Walk my journey?",
+      "body": "A guided drive through every role and milestone, oldest first. Skip it to roam the floor on your own.",
+      "start": "Walk my journey",
+      "name": "Journey walk"
+    },
+    "projects": {
+      "title": "Tour my projects?",
+      "body": "A guided drive through the key and featured projects, wing by wing. Skip it to roam the floor on your own.",
+      "start": "Tour my projects",
+      "name": "Project tour"
+    },
+    "explore": "Explore freely",
+    "resumeAt": "Resume at stop {index}",
+    "stopOf": "Stop {index} of {total}",
+    "visited": "{count} visited",
+    "driving": "On the way",
+    "here": "You are here",
+    "prev": "Previous",
+    "next": "Next",
+    "finish": "Finish",
+    "open": "Open",
+    "end": "End walk",
+    "resume": "Resume walk",
+    "filter": "Show",
+    "all": "All stops",
+    "done": "Walk complete",
+    "doneBody": "{count} of {total} stops visited.",
+    "again": "Walk again",
+    "close": "Close",
+    "keys": "[ and ] step through the walk",
+    "swipe": "Swipe the card to step",
+    "workshopSub": "Side projects, repositories and models",
+    "more": "More projects here",
+    "moreSub": "Every other project is on this directory board"
   }
 }
