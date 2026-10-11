@@ -1,8 +1,8 @@
 # ShinyQ HQ
 
-The portfolio of **Kurniadi Ahmad Wijaya**, Software Engineer and AI Engineer (Azure).
+The portfolio of **Kurniadi Ahmad Wijaya**, Software Engineer and AI Engineer.
 
-ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rover through five floors, ride the elevator, drive the 2019 to 2026 Career Road (or take the guided "Walk my journey") and open case-study pods in the Software Wing and the AI Wing. Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML page, and those pages are the permanent no-WebGL fallback.
+ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rover through five floors, ride the elevator, drive the 2019 to 2026 Career Road (or take the guided "Walk my journey") and open case-study pods in the Product Engineering and AI Engineering wings. Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML page, and those pages are the permanent no-WebGL fallback.
 
 - Design spec: [`docs/superpowers/specs/2026-10-09-agent-hq-design.md`](docs/superpowers/specs/2026-10-09-agent-hq-design.md)
 - Phase plans: [`docs/superpowers/plans/`](docs/superpowers/plans/)
@@ -17,7 +17,7 @@ ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rove
 | 2 | Screen Rover (keyboard, click/tap-to-move, joystick) and the L1 Lobby | Done |
 | 3 to 6 | Career corridor, Labs, Library and Roof, missions, polish and launch | Planned |
 
-Try it: open `/en`, press **Boot rover**, drive with WASD or the arrow keys (or click the floor), and change floors with the elevator panel, the mouse wheel or PageUp/PageDown. Add `?tier=lite` or `?tier=static` to force a tier, and use **Page view** to read the page without 3D.
+Try it: open `/en`, press **Boot rover**, drive with WASD or the arrow keys (or click the floor), and change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About), the mouse wheel or PageUp/PageDown. Add `?tier=lite` or `?tier=static` to force a tier, and use **Page view** to read the page without 3D.
 
 Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer: a side panel on desktop (480 to 600 px wide, growing with the screen) or a bottom sheet on phones and portrait tablets. Its bar keeps the room code, prev/next, the "..." menu (README view, also on `t`) and close; the title and tabs scroll with the content, and the tabs stick under the bar, so the room body gets most of the height.
 
@@ -63,7 +63,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}` | Lobby: profile, stats, both wings' hero pods, latest journey, skills, certifications. Mounts the 3D tower on top when WebGL is available. |
 | `/{locale}/quick` | Quick view: everything on one page |
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
-| `/{locale}/labs`, `/{locale}/labs/{slug}` | Software and AI engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
+| `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks |
 | `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
 | `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |

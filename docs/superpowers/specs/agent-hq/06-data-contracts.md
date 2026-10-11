@@ -10,7 +10,7 @@ TypeScript types below are the source of truth. The zod schemas in `src/content/
 type Locale = "en" | "id";
 type LocalizedText = { en: string; id: string };
 type YearMonth = `${number}-${number}`;          // "2024-06"
-type Confidence = "verified" | "strongly-inferred";
+type Confidence = "verified" | "strongly-inferred" | "self-reported"; // internal review data, never rendered
 type Tier = "hero" | "featured" | "listed";
 type FloorId = "L1" | "L2" | "L3" | "L4" | "RF";
 type Accent = "violet" | "pink" | "green" | "amber" | "cyan" | "blue" | "white";
@@ -34,7 +34,7 @@ interface SiteContent {
 interface Profile {
   name: string;                          // "Kurniadi Ahmad Wijaya"
   handle: string;                        // "ShinyQ"
-  headline: LocalizedText;               // Software Engineer and AI Engineer (Azure)
+  headline: LocalizedText;               // Software Engineer and AI Engineer
   location: LocalizedText;
   bio: LocalizedText;                    // 2 to 3 sentences
   howIWork: LocalizedText;
@@ -80,7 +80,7 @@ interface Pod {
   assets: Asset[];
 }
 
-interface Result { value: string; label: LocalizedText; context: LocalizedText; confidence: Confidence; }
+interface Result { value: string; label: LocalizedText; context?: LocalizedText; confidence: Confidence; } // context: how it was measured, omitted when there is nothing to add
 
 interface Architecture {
   nodes: { id: string; label: string; sublabel?: LocalizedText; layer: number; row: number; kind: "client" | "service" | "ai" | "data" | "human" | "external" }[];

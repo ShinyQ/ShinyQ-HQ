@@ -115,7 +115,7 @@ function feature(p: any, size: "lead" | "pair") {
   const res = p.results.slice(0, 2).map(splitMetric);
   return `<article class="feature ${size === "lead" ? "c-1-8" : ""}">
   ${cover ? `<div class="shot"><img src="${size === "lead" ? media(cover.src) : thumb(cover.src)}" alt="${esc(tr(cover.alt))}" loading="lazy"></div>` : ""}
-  <p class="data row-flex"><span class="mark ${WING[p.wing]}">${p.wing === "ai" ? "AI" : "Software"}</span><span>${formatPeriod(p.period.start, p.period.end, L)}</span>${p.client ? `<span>${esc(p.client)}</span>` : ""}</p>
+  <p class="data row-flex"><span class="mark ${WING[p.wing]}">${esc(M.common.wing[p.wing])}</span><span>${formatPeriod(p.period.start, p.period.end, L)}</span>${p.client ? `<span>${esc(p.client)}</span>` : ""}</p>
   <h3 class="h3 ${size === "lead" ? "h3-l" : ""}"><a class="stretched" href="case.html">${esc(tr(p.title))}</a></h3>
   <p class="tagline">${esc(tr(p.tagline))}</p>
   ${size === "lead" ? `<div class="outcomes">${res.map((r) => `<div><p class="num">${esc(r.value)}</p><p>${esc(r.label)}</p></div>`).join("")}</div>` : `<p class="small"><span class="num ink" style="font-size:20px">${esc(res[0].value)}</span> ${esc(res[0].label)}</p>`}
@@ -125,7 +125,7 @@ function feature(p: any, size: "lead" | "pair") {
 function indexRow(p: any) {
   const r = p.results[0];
   return `<li class="index-row">
-  <div><p class="data row-flex" style="margin-bottom:8px"><span class="mark ${WING[p.wing]}">${p.wing === "ai" ? "AI" : "Software"}</span></p><h3 class="h3"><a href="case.html">${esc(tr(p.title))}</a></h3><p class="tagline">${esc(tr(p.tagline))}</p><div class="logos">${logos(p.stack)}</div></div>
+  <div><p class="data row-flex" style="margin-bottom:8px"><span class="mark ${WING[p.wing]}">${esc(M.common.wing[p.wing])}</span></p><h3 class="h3"><a href="case.html">${esc(tr(p.title))}</a></h3><p class="tagline">${esc(tr(p.tagline))}</p><div class="logos">${logos(p.stack)}</div></div>
   <p class="small">${p.client ? esc(p.client) : '<span style="color:var(--ink-3)">Internal / product</span>'}</p>
   <p class="data" style="padding-top:4px">${formatYearMonth(p.period.start, L)}</p>
   ${r ? `<div class="metric"><p class="num">${esc(r.value)}</p><p>${esc(tr(r.label))}</p></div>` : "<div></div>"}
@@ -221,7 +221,7 @@ function postRow(post: any) {
       const r = p.results.slice(0, 2).map(splitMetric);
       return `<article class="feature" style="grid-column:span ${span}">
   ${cover ? `<div class="shot"><img src="${thumb(cover.src)}" alt="${esc(tr(cover.alt))}"></div>` : `<div class="card" style="padding:24px"><p class="num" style="font-size:44px;line-height:1">${esc(r[0].value)}</p><p class="small" style="margin-top:8px">${esc(r[0].label)}</p></div>`}
-  <p class="data row-flex"><span class="mark ${WING[p.wing]}">${p.wing === "ai" ? "AI" : "Software"}</span><span>${formatPeriod(p.period.start, p.period.end, L)}</span>${p.client ? `<span>${esc(p.client)}</span>` : ""}</p>
+  <p class="data row-flex"><span class="mark ${WING[p.wing]}">${esc(M.common.wing[p.wing])}</span><span>${formatPeriod(p.period.start, p.period.end, L)}</span>${p.client ? `<span>${esc(p.client)}</span>` : ""}</p>
   <h3 class="h3 h3-l"><a class="stretched" href="case.html">${esc(tr(p.title))}</a></h3>
   <p class="tagline">${esc(tr(p.tagline))}</p>
   <div class="logos">${logos(p.stack, 9)}</div>
@@ -270,7 +270,6 @@ function postRow(post: any) {
   const i = sib.findIndex((x) => x.slug === p.slug);
   const prev = sib[i - 1];
   const next = sib[i + 1];
-  const conf = (c?: string) => (c ? `<span class="badge ${c === "verified" ? "ok" : c === "self-reported" ? "self" : "inf"}">${esc(M.common.confidence[c])}</span>` : "");
   const nodes = p.architecture?.nodes ?? [];
   const layers = new Map<string, any[]>();
   for (const nd of nodes) {
@@ -300,7 +299,7 @@ function postRow(post: any) {
     ${p.client ? `<div><dt class="data">${esc(M.labs.client)}</dt><dd>${esc(p.client)}</dd></div>` : ""}
   </dl>
   <section id="results" aria-label="${esc(M.labs.results)}"><ul class="results-ledger">${p.results
-    .map((r: any) => `<li><p class="num">${esc(r.value)}</p><p>${esc(tr(r.label))}</p>${r.context ? `<p class="ctx">${esc(tr(r.context))}</p>` : ""}${conf(r.confidence)}</li>`)
+    .map((r: any) => `<li><p class="num">${esc(r.value)}</p><p>${esc(tr(r.label))}</p>${r.context ? `<p class="ctx">${esc(tr(r.context))}</p>` : ""}</li>`)
     .join("")}</ul></section>
 </header>
 

@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as a **Software Engineer and AI Engineer (Azure)**: a backend and full-stack foundation (2019 to 2025: e-commerce, payments, fintech, SaaS) and enterprise AI platforms on Azure (2026), presented as one continuous craft with equal billing.
+Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as a **Software Engineer and AI Engineer** (platform-neutral title, revised 2026-10-11: Azure, AWS and VPS hosting appear in stacks and project details, never in the title): a backend and full-stack foundation (2019 to 2025: e-commerce, payments, fintech, SaaS) and enterprise AI platforms (2026), presented as one continuous craft with equal billing.
 
 ### Success criteria
 
@@ -48,7 +48,7 @@ A vertical tower of five floors connected by a glass elevator shaft. Every floor
 |---|---|---|---|
 | RF | Roof · Comms | Open deck with a beacon antenna | Contact links, CV download, socials, "hire me" beacon |
 | L4 | Library | Rows of holographic shelves | Blog posts, publications and theses, Hugging Face models, talks and workshops |
-| L3 | Labs | Project Roads: a hub plaza at the elevator with the wing directory boards, and two wing roads (software engineering north, AI engineering south) that run east and loop, with hero and featured pods docked along them and a guided "Tour my projects" (appendix 01 section 4) | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
+| L3 | Labs | Project Roads: a hub plaza at the elevator with the wing directory boards, and two wing roads (Product Engineering north, AI Engineering south; renamed 2026-10-11 from Software Wing and AI Wing, ids stay `software` and `ai`) that run east and loop, with hero and featured pods docked along them and a guided "Tour my projects" (appendix 01 section 4) | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
 | L2 | Career Archive | **Timeline corridor** from 2019 to 2026 with year rooms alternating left and right | Jobs, freelance, education, competitions and awards, ordered by time |
 | L1 | Lobby (spawn) | Hub plaza | Profile hologram, headline stats, skills wall, certifications, mission board |
 
@@ -96,7 +96,7 @@ Missions are data: `{ id, label, floor, targetRoomId, path? }`. Running a missio
 
 - Top left: profile card (name, title, current floor, rooms visited `n/N`).
 - Top right: Quick view and the ⌘K search button.
-- Side: elevator panel (RF, L4, L3, L2, L1) with the current floor highlighted.
+- Side: elevator panel (RF, L4, L3, L2, L1) with the current floor highlighted. Every button carries the Page View name of its floor (L1 Home, L2 Journey, L3 Work, L4 Writing, RF About): a pill with the name on desktop and tablets, the code over a short name on phones.
 - Bottom: context hint for the detected input type (pointer coarse vs fine).
 - Room drawer, rover terminal and command palette are all HTML: accessible, selectable and translatable.
 
@@ -117,9 +117,9 @@ All content comes from the consolidated evidence dossier compiled from local sou
 
 Owner decisions of 2026-10-09 (see appendix 07, section 7):
 
-- **Allowed:** client names (e.g. the bank, automotive, mining and food clients), freelance client names, former and current employer names, and pre-2026 metrics as stated in the newest CV (conservative values, labelled "self-reported" where no artifact exists).
+- **Allowed:** client names (e.g. the bank, automotive, mining and food clients), freelance client names, former and current employer names, and pre-2026 metrics as stated in the newest CV (conservative values).
 - **Never publish:** internal product codenames and private repository names (use descriptive public titles), cloud resource names, phone numbers, addresses, ID numbers, money amounts, salary or review text, and the Master's degree.
-- 2026 metrics must be VERIFIED or STRONGLY INFERRED and phrased honestly ("in a controlled A/B test", "offline evaluation", "modeled").
+- 2026 metrics must be backed by evidence and phrased honestly ("in a controlled A/B test", "offline evaluation", "modeled"). Owner decision 2026-10-11: confidence levels (verified, strongly inferred, self-reported) are internal review data only; the site, OG cards and Ask never show them.
 - Work is framed as "designed, directed, reviewed and shipped" (agent-assisted delivery), never as hand-written line counts.
 - No em dashes in any copy.
 
@@ -249,7 +249,7 @@ Rules:
 | 1 | Tower shell, elevator, camera rigs, input layer, store | Ride the elevator through five neon floors |
 | 2 | Screen Rover and L1 Lobby (profile hologram, stats, mission board) | Drive around the Lobby |
 | 3 | L2 Career Archive corridor (rail camera, year rooms) | Time-travel from 2019 to 2026 |
-| 4 | L3 Labs (Software Wing and AI Wing), Glass Drawer, hologram view for hero pods | Software and AI work as explorable pods |
+| 4 | L3 Labs (Product Engineering and AI Engineering wings), Glass Drawer, hologram view for hero pods | Software and AI work as explorable pods |
 | 5 | L4 Library, Roof, Rover Terminal, ⌘K, mission runner | Every mission works end to end |
 | 6 | Polish: GPU tiers, a11y, SEO, performance budgets, README easter egg | Launch-ready on all devices |
 
@@ -267,7 +267,7 @@ Rules:
 
 | Topic | Decision |
 |---|---|
-| Positioning | Software Engineer and AI Engineer (Azure), equal billing |
+| Positioning | Software Engineer and AI Engineer, equal billing (no cloud vendor in the title) |
 | Language | Bilingual EN / ID with a HUD toggle; English default |
 | Sound | Ambient sound and UI blips, on by default from the first gesture, toggle persists |
 | Analytics | Cloudflare Web Analytics, cookieless, no consent banner |

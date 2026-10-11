@@ -49,7 +49,7 @@ Sources (public only):
 |---|---|
 | `content/site-content.json` profile, stats, skills, certifications, awards | 1 profile chunk, 1 "now" chunk (current role, availability, location), 1 per skill group, 1 certifications, 1 awards |
 | Timeline entries | 1 per entry (role, org, dates, summary, highlights, stack) |
-| Labs pods | 1 to 2 per pod (title, product name, sector label, role, problem, approach, results with context and confidence, stack) |
+| Labs pods | 1 to 2 per pod (title, product name, sector label, role, problem, approach, results with context (confidence is never in the pack), stack) |
 | Library | 1 per post (title + excerpt + first 2 paragraphs), 1 per publication, 1 per talk |
 | Roof | contact chunk (email, LinkedIn, GitHub, Hugging Face, Medium) |
 | Side projects, public repos | 1 per item |

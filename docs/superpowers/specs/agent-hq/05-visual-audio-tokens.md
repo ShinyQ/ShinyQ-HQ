@@ -19,7 +19,7 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 | `accent.cyan` | `#22d3ee` | Rover eyes, elevator, focus rings, links |
 | `floor.L1` | `#34d399` | Lobby |
 | `floor.L2` | `#fbbf24` | Career Archive |
-| `floor.L3` | `#a78bfa` | Labs (Software Wing tint `#22d3ee`, AI Wing tint `#a78bfa`) |
+| `floor.L3` | `#a78bfa` | Labs (Product Engineering wing tint `#22d3ee`, AI Engineering wing tint `#a78bfa`) |
 | `floor.L4` | `#e5e7eb` | Library |
 | `floor.RF` | `#60a5fa` | Roof |
 | `pod.*` | violet `#a78bfa`, pink `#f472b6`, green `#34d399`, amber `#fbbf24`, cyan `#22d3ee`, blue `#60a5fa`, white `#e5e7eb` | Assigned per pod in content (`accent`) |

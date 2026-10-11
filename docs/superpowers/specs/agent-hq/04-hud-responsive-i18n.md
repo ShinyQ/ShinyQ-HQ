@@ -21,7 +21,7 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 | Search (⌘K) | Top-right icon button with a `⌘K` hint | Icon button | Icon button next to the menu |
 | Language toggle | Top-right `EN / ID` segmented control | Same | Inside the menu |
 | Sound toggle | Top-right speaker icon (on by default, starts on the first gesture; appendix 05 section 5) | Same | Inside the menu |
-| Elevator panel | Right edge, vertical, 5 round buttons | Right edge | Right edge, compact (36 px buttons) |
+| Elevator panel | Right edge, vertical, 5 pill buttons "L3 · Work" (code circle plus the Page View name: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About), current floor highlighted; code-only circles while a room drawer is open | Same pills | Right edge, compact: 32 px code circle over a 9 px short name, 48 px buttons in a 52 px column (the old footprint, so horizontal swipes keep their area); every button has the accessible name "Go to L3, Work (Labs)" |
 | Room drawer | Right side panel, 480 px (560 px from 1280 px wide, 600 px from 1400 px), full height minus margins | Portrait: bottom sheet. Landscape: side panel. | Bottom sheet with snap points at 55% and 92% height; scrolling the body expands it |
 | Rover Terminal | Anchored next to the rover, 360 px | Same | Bottom sheet |
 | Command palette | Centered modal, 640 px | Centered, 90% width | Full-screen sheet |
