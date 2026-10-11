@@ -1,3 +1,4 @@
+import { sortCertifications } from "../certs";
 import { getCertifications, getProfile, getSkills, getStats } from "../load";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
@@ -46,9 +47,9 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       accent: "green",
       sections: [
         {
-          items: getCertifications().map((c) => ({
+          items: sortCertifications(getCertifications()).map((c) => ({
             title: c.code ? `${c.code} · ${c.name}` : c.name,
-            meta: `${c.issuer} · ${c.status === "earned" ? formatYearMonth(c.issued, locale) : m.drawer.rooms.inProgress}`,
+            meta: `${c.issuer} · ${c.status === "in-progress" ? m.drawer.rooms.inProgress : formatYearMonth(c.issued, locale)}${c.status === "expired" ? ` · ${m.certs.status.expired}` : ""}`,
             href: c.credentialUrl,
             external: Boolean(c.credentialUrl),
           })),

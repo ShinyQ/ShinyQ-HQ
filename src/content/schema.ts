@@ -4,7 +4,7 @@ import { z } from "zod";
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
  * Documented additions (see AGENTS.md): Confidence "self-reported" (C4),
  * Profile.monogram/subheadline/currentRole/timezone/story/principles,
- * Certification.code, TimelineEntry.url/confidence, Pod.client, PostRef.url,
+ * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise".
  */
@@ -93,7 +93,13 @@ export const CertificationSchema = z.strictObject({
   issuer: nonEmpty,
   issued: YearMonthSchema,
   credentialUrl: httpsUrl.optional(),
-  status: z.enum(["earned", "in-progress"]),
+  /** Public credential or certificate ID, shown in the preview card. */
+  credentialId: nonEmpty.optional(),
+  status: z.enum(["earned", "in-progress", "expired"]),
+  /** Renewal or expiry month (role-based Microsoft certifications renew yearly). */
+  expires: YearMonthSchema.optional(),
+  /** Pin to the featured cards (at most 3 are shown; the newest earned fill the rest). */
+  featured: z.boolean().optional(),
 });
 
 export const TimelineEntrySchema = z.strictObject({

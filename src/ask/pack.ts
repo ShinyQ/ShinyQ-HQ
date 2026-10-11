@@ -159,8 +159,8 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
     keywords: ["certification", "microsoft", "azure", ...content.certifications.flatMap((c) => (c.code ? [c.code.toLowerCase()] : []))],
     text: join(
       content.certifications.map((c) => ({
-        en: `${c.name}${c.code ? ` (${c.code})` : ""} by ${c.issuer}, ${c.status === "earned" ? `earned ${c.issued}` : `in progress, planned ${c.issued}`}.`,
-        id: `${c.name}${c.code ? ` (${c.code})` : ""} dari ${c.issuer}, ${c.status === "earned" ? `diraih ${c.issued}` : `sedang berjalan, direncanakan ${c.issued}`}.`,
+        en: `${c.name}${c.code ? ` (${c.code})` : ""} by ${c.issuer}, ${c.status === "earned" ? `earned ${c.issued}` : c.status === "expired" ? `earned ${c.issued}, expired${c.expires ? ` ${c.expires}` : ""}` : `in progress, planned ${c.issued}`}.`,
+        id: `${c.name}${c.code ? ` (${c.code})` : ""} dari ${c.issuer}, ${c.status === "earned" ? `diraih ${c.issued}` : c.status === "expired" ? `diraih ${c.issued}, kedaluwarsa${c.expires ? ` ${c.expires}` : ""}` : `sedang berjalan, direncanakan ${c.issued}`}.`,
       })),
     ),
   });
