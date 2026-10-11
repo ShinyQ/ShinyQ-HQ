@@ -6,9 +6,10 @@ import { AskHeroBar } from "@/components/page/AskEntry";
 import { SectionSplit, SectionWide, StatLedger } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
 import { WorkFeature, WorkRow } from "@/components/page/Work";
-import { CertificationList, SkillsWall } from "@/components/ProfileBlocks";
+import { Certifications } from "@/components/certs/Certifications";
+import { SkillsWall } from "@/components/ProfileBlocks";
 import { buildExperienceData } from "@/content/experience";
-import { getCertifications, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
+import { getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
@@ -123,7 +124,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       </SectionSplit>
 
       <SectionSplit id="certifications" title={t("certsTitle")}>
-        <CertificationList certifications={getCertifications()} locale={locale} />
+        <Certifications locale={locale} limit={6} />
       </SectionSplit>
 
       <section aria-labelledby="closing-title" className="pv-wrap pv-sec">

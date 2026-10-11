@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openPage } from "./hq";
 import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost } from "./routes";
+import data from "../content/site-content.json";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
 const TEMPLATES = [
@@ -146,6 +147,39 @@ test("the CV modal passes axe and zooms with the keyboard", async ({ page }) => 
   await expect(dialog.getByTestId("cv-zoom")).toHaveText(/125%/);
   const results = await new AxeBuilder({ page }).include("[data-testid='cv-dialog']").analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+});
+
+const firstCert = [...data.certifications].filter((c) => c.status === "earned" && c.code).sort((a, b) => b.issued.localeCompare(a.issued))[0];
+
+test("certifications open the in-site preview card (no frame), keyboard first", async ({ page }) => {
+  await openPage(page, staticTier("/en"));
+  const section = page.locator("#certifications");
+  await expect(section.locator("[data-cert-open]")).toHaveCount(data.certifications.length);
+  await expect(section).not.toContainText(/verified/i);
+  const card = section.locator(`[data-cert-open="${firstCert.id}"]`);
+  await card.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: firstCert.name });
+  await expect(dialog).toBeVisible();
+  const open = dialog.getByRole("link", { name: /Open credential/ });
+  await expect(open).toHaveAttribute("href", firstCert.credentialUrl!);
+  await expect(open).toHaveAttribute("target", "_blank");
+  await expect(open).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await expectNoSeriousViolations(page);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(card).toBeFocused();
+});
+
+test("the Indonesian preview card is localized", async ({ page }) => {
+  await openPage(page, staticTier("/id/contact"));
+  await page.locator(`#certifications [data-cert-open="${firstCert.id}"]`).first().click();
+  const dialog = page.getByRole("dialog", { name: firstCert.name });
+  await expect(dialog.getByRole("link", { name: /Buka kredensial/ })).toBeVisible();
+  await expect(dialog).toContainText("Diraih");
+  await dialog.getByRole("button", { name: "Tutup" }).click();
+  await expect(dialog).toBeHidden();
 });
 
 test("no horizontal overflow on a 390 px phone", async ({ browser }) => {
