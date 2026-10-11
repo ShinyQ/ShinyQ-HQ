@@ -47,6 +47,9 @@ describe("tech logos", () => {
     expect(getTechLogo("AWS Lambda")?.label).toBe("AWS");
     expect(getTechLogo("azure-openai-realtime")?.src).toBe("/tech/azure-openai.svg");
     expect(getTechLogo("nodejs")?.src).toBe("/tech/nodejs.svg");
+    expect(getTechLogo("Microsoft Fabric")?.src).toBe("/tech/fabric.svg");
+    expect(getTechLogo("Lakehouse")?.src).toBe("/tech/fabric-lakehouse.svg");
+    expect(getTechLogo("Fabric Data Pipelines")?.src).toBe("/tech/fabric-data-pipelines.svg");
   });
 
   it("returns null for unknown names so callers fall back to text chips", () => {
