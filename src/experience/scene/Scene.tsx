@@ -13,7 +13,7 @@ import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
 import type { ExperienceData, GpuTier } from "../types";
 import { Director } from "./Director";
-import { sceneSettings } from "./settings";
+import { renderBudget, sceneSettings } from "./settings";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
@@ -51,6 +51,7 @@ export function Scene({
 }) {
   const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
   const settings = sceneSettings(tier);
+  const coarse = useHQStore((s) => s.device.coarse);
   return (
     <>
       <color attach="background" args={[settings.fog.color]} />
@@ -65,7 +66,7 @@ export function Scene({
       {tier === "full" && <FloorMotes />}
       {tier === "full" && (
         <Suspense fallback={null}>
-          <Effects />
+          <Effects multisampling={renderBudget(tier, coarse).multisampling} />
         </Suspense>
       )}
     </>

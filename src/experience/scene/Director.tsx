@@ -336,6 +336,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     if (now - local.lastSync > STORE_SYNC_S) {
       local.lastSync = now;
       roverRuntime.drawCalls = three.gl.info.render.calls;
+      roverRuntime.triangles = three.gl.info.render.triangles;
       s.setRover({
         x: pose.x,
         z: pose.z,

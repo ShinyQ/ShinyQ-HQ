@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { sceneSettings } from "@/experience/scene/settings";
+import { renderBudget, sceneSettings } from "@/experience/scene/settings";
 
 // Bloom keeps the prototype's radius but a higher threshold (0.6, not 0.32): neon is boosted above 1 by
 // neonColor, while body text (about 0.9) would otherwise bloom and wash out.
@@ -19,4 +19,12 @@ it("pushes the fog back for the rail and the exterior intro", () => {
   const intro = sceneSettings("lite", "intro").fog;
   expect(intro.near).toBeGreaterThan(80);
   expect(intro.far).toBeGreaterThan(intro.near);
+});
+
+it("keeps the desktop look and renders fewer pixels on touch devices", () => {
+  expect(renderBudget("full", false)).toEqual({ dpr: [1, 2], multisampling: 4 });
+  expect(renderBudget("lite", false)).toEqual({ dpr: [1, 1.5], multisampling: 0 });
+  // Phones and tablets: the composer's MSAA and DPR 2 cost 4 to 7x the lite frame.
+  expect(renderBudget("full", true)).toEqual({ dpr: [1, 1.5], multisampling: 0 });
+  expect(renderBudget("lite", true).dpr[1]).toBeLessThanOrEqual(1.25);
 });
