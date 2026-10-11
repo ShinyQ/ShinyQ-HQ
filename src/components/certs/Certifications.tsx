@@ -78,14 +78,13 @@ export async function Certifications({ locale, limit, certs = certViews(locale) 
   const rows = summary ? rest.slice(0, limit) : withFilters ? certs : rest;
   const filters: CertFilterData | null = withFilters
     ? {
-        items: certs.map(({ id, code, name, issuer, status }) => ({ id, code, name, issuer, status })),
         issuers: issuerCounts(certs).map(({ issuer, count }) => ({ issuer, count, logo: certs.find((c) => c.issuer === issuer)?.logo ?? null })),
         statuses: (["earned", "in-progress", "expired"] as const).filter((s) => certs.some((c) => c.status === s)),
       }
     : null;
   const hidden = summary ? rest.length - rows.length : 0;
   return (
-    <CertIndex filters={filters}>
+    <CertIndex certs={summary ? [...featured, ...rows] : certs} filters={filters}>
       <ul data-cert-featured="" aria-label={t("featured")} className="grid gap-3 md:grid-cols-3">
         {featured.map((cert) => (
           <li key={cert.id}>

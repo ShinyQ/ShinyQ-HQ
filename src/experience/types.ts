@@ -1,3 +1,4 @@
+import type { CertView } from "@/content/certs";
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 import type { RoadNetwork } from "./nav/road";
 import type { ViewZone } from "./camera/orbit";
@@ -102,19 +103,8 @@ export interface ExperienceData {
   stats: { id: string; value: string; label: string }[];
   /** `logos[i]` is the tech logo path for `items[i]` (null renders text only). */
   skills: { id: string; label: string; items: string[]; logos: (string | null)[] }[];
-  /** Sorted (earned newest first, then in progress, then expired); `short` drops the program prefix, `logo` is the issuer logo. */
-  certifications: {
-    id: string;
-    code: string | null;
-    name: string;
-    short: string;
-    issuer: string;
-    logo: string | null;
-    issued: string;
-    issuedLabel: string;
-    status: "earned" | "in-progress" | "expired";
-    url: string | null;
-  }[];
+  /** `certViews(locale)`: sorted (earned newest first, then in progress, then expired), also the preview card's data. */
+  certifications: CertView[];
   missions: { id: string; label: string }[];
   floors: Record<FloorId, { name: string; route: string }>;
   years: number[];

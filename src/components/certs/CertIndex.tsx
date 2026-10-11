@@ -2,50 +2,51 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { matchesCertFilter, parseCertFilter, type CertStatus } from "@/content/certs";
+import { matchesCertFilter, parseCertFilter, type CertStatus, type CertView } from "@/content/certs";
 import { setSearchParams, useSearch } from "@/components/page/urlState";
-import { openCertPreview } from "./events";
+import { preloadCertDialog } from "@/components/dialog-loaders";
+import { openCert } from "@/hud/events";
 import { IssuerMark } from "./IssuerMark";
 
-export interface CertIndexItem {
-  id: string;
-  code: string | null;
-  name: string;
-  issuer: string;
-  status: CertStatus;
-}
-
 export interface CertFilterData {
-  items: CertIndexItem[];
   issuers: { issuer: string; logo: string | null; count: number }[];
   statuses: CertStatus[];
 }
 
 /**
  * Island over the server-rendered certification cards and rows: every `[data-cert-open]` button opens
- * the shared preview, and with `filters` an issuer, status and search bar toggles `hidden` on the
+ * the preview card in `DialogHost` (`openCert`), and with `filters` an issuer, status and search bar toggles `hidden` on the
  * `[data-cert]` rows. Issuer and status live in the query string; while a filter is on, the featured
  * cards step aside and their rows (`data-featured`) join the list.
  */
-export function CertIndex({ filters, children }: { filters: CertFilterData | null; children: ReactNode }) {
+export function CertIndex({ certs, filters, children }: { certs: CertView[]; filters: CertFilterData | null; children: ReactNode }) {
   const t = useTranslations("certs");
   const root = useRef<HTMLDivElement>(null);
   const search = useSearch();
   const [q, setQ] = useState("");
   const { issuer, status } = parseCertFilter(search, filters?.issuers.map((i) => i.issuer) ?? []);
   const active = Boolean(filters && (issuer || status || q.trim()));
-  const shown = filters ? new Set(filters.items.filter((c) => matchesCertFilter(c, { issuer, status, q })).map((c) => c.id)) : null;
+  const shown = filters ? new Set(certs.filter((c) => matchesCertFilter(c, { issuer, status, q })).map((c) => c.id)) : null;
 
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     const onClick = (e: MouseEvent) => {
-      const button = (e.target as Element | null)?.closest<HTMLElement>("[data-cert-open]");
-      if (button?.dataset.certOpen) openCertPreview(button.dataset.certOpen);
+      const id = (e.target as Element | null)?.closest<HTMLElement>("[data-cert-open]")?.dataset.certOpen;
+      const cert = id ? certs.find((c) => c.id === id) : undefined;
+      if (cert) openCert(cert);
     };
+    // The dialog chunk loads on the first hover or focus, so the first click opens at once.
+    const preload = () => preloadCertDialog();
     el.addEventListener("click", onClick);
-    return () => el.removeEventListener("click", onClick);
-  }, []);
+    el.addEventListener("pointerover", preload, { once: true });
+    el.addEventListener("focusin", preload, { once: true });
+    return () => {
+      el.removeEventListener("click", onClick);
+      el.removeEventListener("pointerover", preload);
+      el.removeEventListener("focusin", preload);
+    };
+  }, [certs]);
 
   const key = shown ? [...shown].join("|") : "";
   useEffect(() => {
@@ -65,7 +66,7 @@ export function CertIndex({ filters, children }: { filters: CertFilterData | nul
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("issuer")}>
             <button type="button" className="chip min-h-11" aria-pressed={!issuer} onClick={() => setSearchParams({ issuer: null })}>
               {t("allIssuers")}
-              <span className="chip-count">{filters.items.length}</span>
+              <span className="chip-count">{certs.length}</span>
             </button>
             {filters.issuers.map((i) => (
               <button key={i.issuer} type="button" className="chip group min-h-11" aria-pressed={issuer === i.issuer} onClick={() => setSearchParams({ issuer: i.issuer })}>
@@ -97,7 +98,7 @@ export function CertIndex({ filters, children }: { filters: CertFilterData | nul
             )}
           </div>
           <p className="pv-data" aria-live="polite">
-            {active ? t("showing", { shown: shown?.size ?? 0, total: filters.items.length }) : t("summary", { count: filters.items.length, issuers: filters.issuers.length })}
+            {active ? t("showing", { shown: shown?.size ?? 0, total: certs.length }) : t("summary", { count: certs.length, issuers: filters.issuers.length })}
           </p>
         </div>
       )}

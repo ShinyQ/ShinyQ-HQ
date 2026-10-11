@@ -6,6 +6,25 @@ import { getTechLogo } from "./tech";
 
 export type CertStatus = "earned" | "in-progress" | "expired";
 
+/** Serializable, locale-resolved certification for client islands, the preview card and the 3D wall. */
+export interface CertView {
+  id: string;
+  code: string | null;
+  name: string;
+  short: string;
+  issuer: string;
+  logo: string | null;
+  issued: string;
+  issuedLabel: string;
+  expires: string | null;
+  expiresLabel: string | null;
+  status: CertStatus;
+  url: string | null;
+  credentialId: string | null;
+  featured: boolean;
+}
+
+
 /** The fields every helper needs; content certs and the serialized client shapes both fit. */
 export interface CertLike {
   id: string;

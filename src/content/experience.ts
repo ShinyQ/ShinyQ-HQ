@@ -92,7 +92,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     },
     stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),
     skills: getSkills().map((g) => ({ id: g.id, label: g.label[locale], items: [...g.items], logos: g.items.map((name) => getTechLogo(name)?.src ?? null) })),
-    certifications: certViews(locale).map(({ id, code, name, short, issuer, logo, issued, issuedLabel, status, url }) => ({ id, code, name, short, issuer, logo, issued, issuedLabel, status, url })),
+    certifications: certViews(locale),
     missions: getMissions().map((m) => ({ id: m.id, label: m.label[locale] })),
     floors: Object.fromEntries(
       (Object.keys(FLOOR_ROUTE) as FloorId[]).map((f) => [f, { name: floorNames[f], route: FLOOR_ROUTE[f] }]),

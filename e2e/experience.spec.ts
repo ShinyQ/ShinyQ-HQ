@@ -341,8 +341,9 @@ test.describe("missions in 3D", () => {
     await enterHQ(page);
     await waitForHydration(page);
     const cert = data.certifications[0];
-    // The 3D wall's badges call openCertPreview; the shared card lives outside the inert shell.
-    await page.evaluate((id) => window.dispatchEvent(new CustomEvent("hq:cert", { detail: id })), cert.id);
+    // A 3D badge sends this command; DialogHost shows the card outside the inert shell.
+    const view = { id: cert.id, code: cert.code ?? null, name: cert.name, short: cert.name, issuer: cert.issuer, logo: null, issued: cert.issued, issuedLabel: cert.issued, expires: null, expiresLabel: null, status: cert.status, url: cert.credentialUrl ?? null, credentialId: null, featured: false };
+    await page.evaluate((c) => window.dispatchEvent(new CustomEvent("hq:hud", { detail: { type: "cert", cert: c } })), view);
     const dialog = page.getByRole("dialog", { name: cert.name });
     await expect(dialog).toBeVisible();
     const start = (await snapshot(page)).rover;

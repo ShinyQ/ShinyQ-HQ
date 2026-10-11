@@ -4,8 +4,8 @@ import { Text } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh } from "three";
-import { openCertPreview } from "@/components/certs/events";
 import { issuerTabs } from "@/content/certs";
+import { openCert } from "@/hud/events";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { roverRuntime } from "../../rover/runtime";
@@ -180,7 +180,7 @@ function Panel({ half }: { half: number }) {
 /**
  * L1 certification wall: a curved holo-wall facing the plaza with issuer tabs (All, the main issuers,
  * Other) and up to 12 badges per page, earned newest first. Clicking a badge opens the shared preview
- * card (`openCertPreview`), never a third-party page in a frame. Badges are instanced, their outlines
+ * card (`openCert`, shown by `DialogHost`), never a third-party page in a frame. Badges are instanced, their outlines
  * and logos are one mesh each, so the wall stays near 30 draw calls at any certification count.
  */
 export function CertWall({ certifications, labels, tier }: { certifications: Cert[]; labels: CertLabels; tier: GpuTier }) {
@@ -298,7 +298,7 @@ export function CertWall({ certifications, labels, tier }: { certifications: Cer
         onClick={(e) => {
           e.stopPropagation();
           const i = pick(e);
-          if (i >= 0) openCertPreview(shown[i].id);
+          if (i >= 0) openCert(shown[i]);
         }}
       >
         <planeGeometry args={[badge.w, badge.h]} />

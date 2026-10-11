@@ -8,8 +8,6 @@ import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getContent, getProfile } from "@/content/load";
-import { CertPreviewHost } from "@/components/certs/CertPreview";
-import { certViews } from "@/content/cert-views";
 import { AskDock } from "@/hud/ask/AskDock";
 import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
@@ -73,8 +71,6 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <MissionHud locale={locale} index={buildHudIndex(getContent())} />
           <AskDock locale={locale} />
           <DialogHost />
-          {/* One certification preview for Page View and the 3D Lobby wall (outside the inert shell). */}
-          <CertPreviewHost certs={certViews(locale)} />
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
         <Analytics />

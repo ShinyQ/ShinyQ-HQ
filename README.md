@@ -60,7 +60,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 
 | Route | Content |
 |---|---|
-| `/{locale}` | Lobby: profile, stats, both wings' hero pods, latest journey, skills, certifications. Mounts the 3D tower on top when WebGL is available. |
+| `/{locale}` | Lobby: profile, stats, both wings' hero pods, latest journey, skills, certifications (3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`). Mounts the 3D tower on top when WebGL is available. |
 | `/{locale}/quick` | Quick view: everything on one page |
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
@@ -72,6 +72,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 
 - `content/site-content.json` is the single public dataset. It is validated by the zod schemas in `src/content/schema.ts` at build time and by the tests. All text is `{ en, id }`.
 - Blog posts are MDX files in `content/blog/<slug>.<locale>.mdx`. A missing translation falls back to the original with a note.
+- Certifications live in `certifications[]`: `status` is `earned`, `in-progress` or `expired`; optional `credentialUrl`, `credentialId`, `expires` (YYYY-MM) and `featured` (pin to the 3 featured cards). They sort themselves (earned newest first) and any number fits: Page View shows featured cards plus a dense list (issuer chips, status filter and search from 10 certifications on), the 3D Lobby a curved wall with issuer tabs and paging. Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed. New issuers get a logo through `src/content/tech.ts` (`public/tech/`).
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser. To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`); a unit test fails until the images match the PDF.
 - Research papers open a preview modal with the abstract (English), copyable APA, IEEE and BibTeX citations, and DOI and Google Scholar links in a new tab. Third-party pages are never framed.
 - Private evidence never enters the repo. The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret). Product names in `content/safety-allowlist.txt` are never flagged. An e2e check scans the built `out/` for the same terms.

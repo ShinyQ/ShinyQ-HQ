@@ -1,5 +1,6 @@
 import type { AskEntry } from "@/ask/protocol";
 import type { AskTopic } from "@/ask/suggestions";
+import type { CertView } from "@/content/certs";
 import type { PaperPreview } from "@/content/citation";
 import type { PaletteFilter } from "@/experience/missions/host";
 
@@ -20,7 +21,9 @@ export type HudCommand =
   /** The in-site CV viewer modal (page images of the owner's PDF), see `DialogHost`. */
   | { type: "cv" }
   /** Paper preview modal (abstract, citations, DOI and Scholar links), see `DialogHost`. */
-  | { type: "paper"; paper: PaperPreview };
+  | { type: "paper"; paper: PaperPreview }
+  /** Certification preview card (issuer, dates, credential ID, "Open credential"), see `DialogHost`. */
+  | { type: "cert"; cert: CertView };
 
 export function sendHudCommand(command: HudCommand) {
   window.dispatchEvent(new CustomEvent<HudCommand>(HUD_EVENT, { detail: command }));
@@ -30,6 +33,7 @@ export const openPalette = (filter?: PaletteFilter) => sendHudCommand({ type: "p
 export const openTerminal = () => sendHudCommand({ type: "terminal" });
 export const openCv = () => sendHudCommand({ type: "cv" });
 export const openPaper = (paper: PaperPreview) => sendHudCommand({ type: "paper", paper });
+export const openCert = (cert: CertView) => sendHudCommand({ type: "cert", cert });
 export const openAsk = (q?: string, options: { topic?: AskTopic; source?: AskEntry } = {}) => sendHudCommand({ type: "ask", q, ...options });
 
 export function onHudCommand(listener: (command: HudCommand) => void): () => void {

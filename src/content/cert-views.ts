@@ -1,25 +1,9 @@
 import { formatYearMonth } from "@/lib/format";
-import { issuerLogo, shortCertName, sortCertifications, type CertStatus } from "./certs";
+import { issuerLogo, shortCertName, sortCertifications, type CertView } from "./certs";
+
+export type { CertView } from "./certs";
 import { getCertifications } from "./load";
 import type { Certification, Locale } from "./schema";
-
-/** Serializable, locale-resolved certification for client islands, the preview card and the 3D wall. */
-export interface CertView {
-  id: string;
-  code: string | null;
-  name: string;
-  short: string;
-  issuer: string;
-  logo: string | null;
-  issued: string;
-  issuedLabel: string;
-  expires: string | null;
-  expiresLabel: string | null;
-  status: CertStatus;
-  url: string | null;
-  credentialId: string | null;
-  featured: boolean;
-}
 
 /** Every certification, sorted (earned newest first, then in progress, then expired). */
 export function certViews(locale: Locale): CertView[] {
