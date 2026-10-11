@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -339,6 +339,7 @@ test.describe("missions in 3D", () => {
   test("the certification preview opens over the tower and holds the world keys", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
+    await waitForHydration(page);
     const cert = data.certifications[0];
     // The 3D wall's badges call openCertPreview; the shared card lives outside the inert shell.
     await page.evaluate((id) => window.dispatchEvent(new CustomEvent("hq:cert", { detail: id })), cert.id);
