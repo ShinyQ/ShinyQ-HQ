@@ -5,7 +5,8 @@
  *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts
  *
  * Event layout written by functions/api/ask.ts: blobs [outcome, locale, source,
- * scrubbedQuestionOrEmpty, packVersion, reason], doubles [latencyMs, 1]. Only "unknown" events
+ * scrubbedQuestionOrEmpty, packVersion, reason, entry], doubles [latencyMs, 1]. `entry` is the UI
+ * entry point (hero, dock, pill, followup, terminal, palette). Only "unknown" events
  * carry the (already PII-scrubbed) question; "rejected" events are requests stopped before the
  * model (Turnstile, Origin, limits) and do not count as questions. The report goes into a public issue, so questions are scrubbed
  * again, blocklisted names are redacted and every question is shown as inline code.
@@ -98,6 +99,8 @@ export interface Report {
   sources: CountRow[];
   /** Why a request was rejected or an answer replaced (blob6), e.g. turnstile, blocked. */
   reasons?: CountRow[];
+  /** UI entry points of questions (blob7): hero, dock, pill, followup, terminal, palette. */
+  entries?: CountRow[];
   blocklist: readonly string[];
 }
 
@@ -127,6 +130,10 @@ export function formatReport(report: Report): string {
   for (const r of [...report.outcomes].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key || "(empty)"} | ${r.n} | ${percent(r.n, all)} |`);
   lines.push("", "## Sources", "", "| Source | Count | Share |", "|---|---|---|");
   for (const r of [...report.sources].filter((r) => r.key).sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, total)} |`);
+  if (report.entries?.length) {
+    lines.push("", "## Entry points", "", "| Entry point | Count | Share |", "|---|---|---|");
+    for (const r of [...report.entries].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z]/g, "") || "(none)"} | ${r.n} | ${percent(r.n, total)} |`);
+  }
   if (report.reasons?.length) {
     lines.push("", "## Rejections and replaced answers", "", "| Reason | Count |", "|---|---|");
     for (const r of [...report.reasons].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z0-9_-]/gi, "")} | ${r.n} |`);
@@ -152,6 +159,7 @@ export const QUERIES = {
   outcomes: "SELECT blob1 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   sources: "SELECT blob3 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   reasons: "SELECT blob6 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob6 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  entries: "SELECT blob7 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
 };
 
 async function sql(account: string, token: string, query: string): Promise<CountRow[]> {
@@ -187,8 +195,8 @@ async function main() {
     output("unknown_total=0");
     return;
   }
-  const [questionRows, outcomes, sources, reasons] = await Promise.all(Object.values(QUERIES).map((query) => sql(account, token, query)));
-  const report = formatReport({ weekOf: week, questions: groupQuestions(questionRows), outcomes, sources, reasons, blocklist: loadBlocklist() });
+  const [questionRows, outcomes, sources, reasons, entries] = await Promise.all(Object.values(QUERIES).map((query) => sql(account, token, query)));
+  const report = formatReport({ weekOf: week, questions: groupQuestions(questionRows), outcomes, sources, reasons, entries, blocklist: loadBlocklist() });
   const unknownTotal = questionRows.reduce((sum, r) => sum + r.n, 0);
   writeFileSync(process.env.CONTENT_GAP_REPORT || "content-gap-report.md", report);
   console.log(report);

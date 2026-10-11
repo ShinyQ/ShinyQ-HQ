@@ -166,6 +166,7 @@ Rules:
 - **⌘K:** typing a sentence shows an "Ask: '…'" row at the top that opens the same panel.
 - **Sound:** a soft `click` per streamed chunk, throttled, respecting mute.
 - **Text only:** answers are plain text, with no links rendered from the model output.
+- **Revamp (2026-10-11, owner approved):** the Terminal ask mode and the Page View panel are replaced by one shared chat dock (`src/hud/ask/`): a floating "Ask AI" launcher on every page (a pill in the 3D top-right cluster), a home hero ask bar, a once-per-session teaser, a side panel or bottom sheet with a sessionStorage thread, topic pills that expand into curated questions (`content/ask/suggestions.json`) and deterministic follow-ups from the answer's allowlisted source `tags`. The Rover Terminal option, the ⌘K row and `openAsk` all open the dock. The server still answers each question on its own; the request gains an optional `source` for analytics. Details: AGENTS.md "Ask the HQ".
 
 ## 9. Testing and evaluation
 - **Unit:** retrieval (synonyms, always-included chunks, token cap), prompt builder, cache keys (`packVersion` and `PROMPT_VERSION` invalidate), post-check blocklist, fallback state machine (timeouts, errors, empty), rate limiter.

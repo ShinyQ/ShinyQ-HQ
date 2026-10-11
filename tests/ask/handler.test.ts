@@ -1,9 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
-import type { AskFrame } from "@/ask/protocol";
+import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
 import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
+import { answerTags, chunkTags } from "../../functions/_lib/tags";
 import { hasValidSession, issueSession, originAllowed, visitorHash } from "../../functions/_lib/security";
 import type { AskEnv, KnowledgePack, KvNamespace, PagesContext, SafetyData } from "../../functions/_lib/types";
 
@@ -258,12 +259,16 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
     const { call, kv, modelCalls } = setup();
     const list = await frames(await call());
     expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
-    expect(doneOf(list)).toEqual({ done: true, outcome: "answer", source: "primary", asOf: pack.packDate });
+    const done = doneOf(list);
+    expect(done).toMatchObject({ done: true, outcome: "answer", source: "primary", asOf: pack.packDate });
+    expect(Object.keys(done).sort()).toEqual(["asOf", "done", "outcome", "source", "tags"]);
+    expect(done.tags).toContain("career");
     const key = await cacheKey(pack.packVersion, "en", "Where does he work?");
     expect(JSON.parse(kv.store.get(key) ?? "{}")).toEqual({ text: "Kurniadi works at Metrodata." });
 
     const again = await frames(await call({ body: { q: "where does he WORK", locale: "en" } }));
     expect(doneOf(again).source).toBe("cache");
+    expect(doneOf(again).tags).toEqual(done.tags);
     expect(modelCalls).toHaveLength(1);
   });
 
@@ -325,5 +330,43 @@ describe("privacy (T10)", () => {
     await (await call()).text();
     expect(events[0].blobs?.[0]).toBe("answer");
     expect(events[0].blobs?.[3]).toBe("");
+  });
+
+  it("logs the entry point and ignores unknown ones, never the question", async () => {
+    const { call, events } = setup();
+    await (await call({ body: { q: "Where does he work?", locale: "en", source: "followup" } })).text();
+    expect(events[0].blobs?.[6]).toBe("followup");
+    await (await call({ body: { q: "What are his skills?", locale: "en", source: "<script>" } })).text();
+    expect(events[1].blobs?.[6]).toBe("");
+    expect((await call({ body: { q: "Hi", locale: "en", source: 3 } })).status).toBe(400);
+  });
+});
+
+describe("follow-up tags (done frame)", () => {
+  it("sends only allowlisted topic tags of the retrieved chunks, never ids or text", async () => {
+    const { call } = setup({ answer: "The voice agent interrupts in about 0.2 seconds." });
+    const done = doneOf(await frames(await call({ body: { q: "How does the voice AI contact center work?", locale: "en" } })));
+    expect(done.tags).toEqual(expect.arrayContaining(["ai", "voice"]));
+    for (const tag of done.tags ?? []) expect(ASK_TAGS).toContain(tag);
+    expect(done.tags?.length).toBeLessThanOrEqual(ASK_MAX_TAGS);
+  });
+
+  it("sends no tags for declines and harmful questions", async () => {
+    const { call } = setup({ answer: "I can only answer questions about Kurniadi." });
+    const done = doneOf(await frames(await call({ body: { q: "Write me a poem about the sea", locale: "en" } })));
+    expect(done.outcome).toBe("decline");
+    expect(done.tags).toBeUndefined();
+  });
+});
+
+describe("chunk tags", () => {
+  it("maps every chunk of the real pack onto the allowlist and skips the identity chunks", () => {
+    for (const chunk of pack.chunks) for (const tag of chunkTags(chunk)) expect(ASK_TAGS).toContain(tag);
+    const byId = (id: string) => pack.chunks.find((c) => c.id === id)!;
+    expect(chunkTags(byId("project-voice-ai-contact-center"))).toEqual(expect.arrayContaining(["work", "ai", "voice"]));
+    expect(chunkTags(byId("project-fraud-review-platform"))).toEqual(expect.arrayContaining(["work", "ai", "fraud"]));
+    expect(chunkTags(byId("project-digital-banking-integrations"))).toEqual(expect.arrayContaining(["work", "software"]));
+    expect(chunkTags(byId("certifications"))).toEqual(["certifications", "career"]);
+    expect(answerTags([byId("profile"), byId("now")])).toEqual([]);
   });
 });

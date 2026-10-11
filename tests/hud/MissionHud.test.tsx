@@ -8,7 +8,7 @@ import en from "../../messages/en.json";
 import { getContent } from "@/content/load";
 import type { AskOptions, AskResult } from "@/ask/client";
 import type { AskStatus } from "@/ask/protocol";
-import { openAsk, openPalette, openTerminal, registerAskPanel } from "@/hud/events";
+import { onHudCommand, openAsk, openPalette, openTerminal, type HudCommand } from "@/hud/events";
 import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { RECENT_KEY } from "@/hud/recent";
@@ -157,36 +157,39 @@ describe("MissionHud with Ask the HQ", () => {
     expect(await screen.findByRole("option", { name: en.ask.terminal.option })).toBeInTheDocument();
   });
 
-  it("runs the palette Ask row in the terminal's ask mode", async () => {
+  it("sends the palette Ask row to the Ask dock and closes the palette", async () => {
     askMock.status = enabled;
-    askMock.ask.mockImplementation(async ({ onDelta }) => {
-      onDelta("Mostly AI agents.");
-      return { outcome: "answer", source: "cache", asOf: "2026-10-01" };
-    });
+    const commands: HudCommand[] = [];
+    const off = onHudCommand((command) => commands.push(command));
     renderHud();
     act(() => openPalette());
     await act(async () => {});
     await userEvent.keyboard("What are you building now?");
     expect(screen.getAllByRole("option")[0]).toHaveTextContent('Ask: "What are you building now?"');
     await userEvent.keyboard("{Enter}");
-    const terminal = await screen.findByRole("dialog", { name: "Rover Terminal" });
-    expect(screen.getByRole("textbox", { name: en.ask.terminal.label })).toHaveValue("What are you building now?");
-    await vi.waitFor(() => expect(terminal).toHaveTextContent("Mostly AI agents."));
-    expect(askMock.ask).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ q: "What are you building now?", locale: "en" }));
+    expect(commands.at(-1)).toEqual({ type: "ask", q: "What are you building now?", source: "palette" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(askMock.ask).not.toHaveBeenCalled();
+    off();
   });
 
-  it("hands openAsk to the Page View panel when one is mounted", async () => {
+  it("hands the terminal's ask option to the dock and closes the terminal", async () => {
     askMock.status = enabled;
-    askMock.ask.mockResolvedValue({ outcome: "answer", source: "cache", asOf: "2026-10-01" });
-    const panel = vi.fn(() => true);
-    const off = registerAskPanel(panel);
+    const commands: HudCommand[] = [];
+    const off = onHudCommand((command) => commands.push(command));
     renderHud();
-    act(() => openAsk("How can I contact him?"));
-    expect(panel).toHaveBeenCalledWith("How can I contact him?");
+    act(() => openTerminal());
+    await userEvent.click(await screen.findByRole("option", { name: en.ask.terminal.option }));
+    expect(commands.at(-1)).toEqual({ type: "ask", source: "terminal" });
     expect(screen.queryByRole("dialog")).toBeNull();
     off();
+  });
+
+  it("closes the terminal and the palette when openAsk runs", async () => {
+    renderHud();
+    act(() => openTerminal());
+    expect(screen.getByRole("dialog", { name: "Rover Terminal" })).toBeInTheDocument();
     act(() => openAsk("How can I contact him?"));
-    expect(await screen.findByRole("dialog", { name: "Rover Terminal" })).toBeInTheDocument();
-    await vi.waitFor(() => expect(askMock.ask).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

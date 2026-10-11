@@ -1,7 +1,8 @@
 name: Ask the HQ eval
 
 # Nightly real-model checks of Ask the HQ (spec section 9): the golden set must score at least
-# 28/30 and every red-team attack must end safely. A red-team failure opens or updates one issue
+# 28/30, at least 90% of the curated pill questions (content/ask/suggestions.json, EN and ID) must get
+# a real answer, and every red-team attack must end safely. A red-team failure opens or updates one issue
 # labelled ask-redteam. Skips (green, with a notice) until the CF_EVAL_TOKEN secret exists
 # (Workers AI Read, AI Gateway Read, Account Analytics Read; docs/ask-runbook.md).
 # The optional purge job deletes AI Gateway logs older than 7 days when CF_LOGS_TOKEN is set.
@@ -53,6 +54,36 @@ jobs:
         with:
           name: ask-eval-golden
           path: ask-eval-golden.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  suggestions:
+    name: Curated pills (real model)
+    runs-on: ubuntu-latest
+    env:
+      ASK_EVAL_REPORT: ask-eval-suggestions.md
+    steps:
+      - name: Check token
+        id: gate
+        run: |
+          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the curated pill eval."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Curated pills (content/ask/suggestions.json)
+        if: steps.gate.outputs.enabled == 'true'
+        run: bun scripts/ask-eval.ts suggestions
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
+        with:
+          name: ask-eval-suggestions
+          path: ask-eval-suggestions.md
           retention-days: 14
           if-no-files-found: ignore
 

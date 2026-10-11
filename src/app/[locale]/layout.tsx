@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getContent, getProfile } from "@/content/load";
+import { AskDock } from "@/hud/ask/AskDock";
 import { buildHudIndex } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { assertLocale } from "@/i18n/locale";
@@ -67,6 +68,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           </div>
           {/* Outside the shell so the Rover Terminal and palette stay usable over the 3D tower. */}
           <MissionHud locale={locale} index={buildHudIndex(getContent())} />
+          <AskDock locale={locale} />
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
         <Analytics />

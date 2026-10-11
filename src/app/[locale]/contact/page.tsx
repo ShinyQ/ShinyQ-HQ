@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContactPanel } from "@/components/page/About";
-import { AskPanel } from "@/components/page/AskPanel";
+import { AskCta, AskOnly } from "@/components/page/AskEntry";
 import { Marker, SectionSplit } from "@/components/page/Layout";
 import { CertificationList, PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { getCertifications, getProfile, getRoof, getSkills } from "@/content/load";
@@ -33,6 +33,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const tc = await getTranslations({ locale, namespace: "common" });
   const tq = await getTranslations({ locale, namespace: "quick" });
   const tf = await getTranslations({ locale, namespace: "floors" });
+  const tk = await getTranslations({ locale, namespace: "ask.cta" });
   const roof = getRoof();
   const profile = getProfile();
   const [lead, rest] = splitStory(profile.story[locale]);
@@ -66,7 +67,11 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
         <CertificationList certifications={getCertifications()} locale={locale} />
       </SectionSplit>
 
-      <AskPanel locale={locale} />
+      <AskOnly>
+        <SectionSplit id="ask" title={tk("title")} intro={tk("intro")}>
+          <AskCta />
+        </SectionSplit>
+      </AskOnly>
 
       <SectionSplit id="cv" title={t("cvTitle")} intro={t("cvIntro")}>
         <ul className="flex flex-wrap items-center gap-3">

@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { LOCALES, type Locale } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
 import { useAudio } from "@/lib/audio";
+import { AskPill } from "./ask/AskPill";
 import { HudLaunchers } from "./HudLaunchers";
 
 function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
@@ -58,16 +59,25 @@ const pill = "glass glass-solid inline-flex min-h-11 items-center rounded-full p
 export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
   const t = useTranslations("hud");
   return (
-    <div className="pointer-events-auto absolute top-4 right-4 flex items-center gap-2">
-      <HudLaunchers buttonClassName={launcher} />
-      <Link href="/quick" className={pill}>
-        {t("quickView")}
-      </Link>
-      <LangToggle onToggleLang={onToggleLang} />
-      <SoundToggle />
-      <button type="button" onClick={onExit} title={t("pageViewHint")} className={pill}>
-        {t("pageView")}
-      </button>
+    <div className="pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2">
+      <div className="flex items-center gap-2">
+        <span className="hidden lg:contents">
+          <AskPill />
+        </span>
+        <HudLaunchers buttonClassName={launcher} />
+        <Link href="/quick" className={pill}>
+          {t("quickView")}
+        </Link>
+        <LangToggle onToggleLang={onToggleLang} />
+        <SoundToggle />
+        <button type="button" onClick={onExit} title={t("pageViewHint")} className={pill}>
+          {t("pageView")}
+        </button>
+      </div>
+      {/* Tablets: the bar is already full, so Ask AI gets its own row instead of covering the profile card. */}
+      <span className="contents lg:hidden">
+        <AskPill />
+      </span>
     </div>
   );
 }
@@ -80,6 +90,7 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
   return (
     <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2">
       <div className="flex items-center gap-2">
+        <AskPill />
         <HudLaunchers buttonClassName={launcher} />
         <button
         type="button"

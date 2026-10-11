@@ -1,10 +1,12 @@
-import { ASK_MAX_QUESTION, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus } from "../../src/ask/protocol";
+import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag } from "../../src/ask/protocol";
 import { findBlocked } from "./checks";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
 import { scrubPII } from "./pii";
 import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
+import { retrieve } from "./retrieve";
+import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
@@ -79,6 +81,8 @@ interface ParsedBody {
   q: string;
   locale: AskLocale;
   token?: string;
+  /** Entry point for analytics; unknown values become "". */
+  entry: AskEntry | "";
 }
 
 function parseBody(raw: string): ParsedBody | null {
@@ -89,15 +93,23 @@ function parseBody(raw: string): ParsedBody | null {
     return null;
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const { q, locale, turnstileToken } = data as Record<string, unknown>;
+  const { q, locale, turnstileToken, source } = data as Record<string, unknown>;
   if (typeof q !== "string" || (locale !== "en" && locale !== "id")) return null;
   if (turnstileToken !== undefined && (typeof turnstileToken !== "string" || turnstileToken.length > 2048)) return null;
-  return { q, locale, token: turnstileToken as string | undefined };
+  if (source !== undefined && typeof source !== "string") return null;
+  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "" };
 }
 
 /** SSE frames are JSON, so a model token can never break the event stream (T6). */
 export function frame(data: AskFrame): string {
   return `data: ${JSON.stringify(data)}\n\n`;
+}
+
+type DoneFrame = Extract<AskFrame, { done: true }>;
+
+/** Adds the follow-up tags to the final frame only when there are any. */
+function withTags(done: DoneFrame, tags: AskTag[]): DoneFrame {
+  return tags.length ? { ...done, tags } : done;
 }
 
 /** Splits vetted text into word-aligned pieces for the typing effect. */
@@ -143,14 +155,19 @@ interface EventData {
   source: AskSource | "";
   question?: string;
   reason?: PipelineReason | AskErrorCode | "";
+  /** UI entry point (hero, dock, pill, followup, terminal, palette) or "". */
+  entry: AskEntry | "";
   latencyMs: number;
 }
 
-/** Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text (content gaps). */
+/**
+ * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
+ * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point.
+ */
 function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? ""],
+      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry],
       doubles: [e.latencyMs, 1],
       indexes: [e.outcome],
     });
@@ -199,7 +216,7 @@ export function createAskHandler(deps: HandlerDeps) {
     if (turnstileOn(env) && !(await hasValidSession(request, env.ASK_COOKIE_KEY, visitor, started))) {
       const hostname = new URL(request.url).hostname;
       if (!(await verifyTurnstile(body.token, env.TURNSTILE_SECRET as string, ip, hostname, deps.fetcher))) {
-        logEvent(env, pack, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", latencyMs: now() - started });
+        logEvent(env, pack, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", entry: body.entry, latencyMs: now() - started });
         return fail(403, "turnstile");
       }
       if (env.ASK_COOKIE_KEY) responseHeaders["Set-Cookie"] = await issueSession(env.ASK_COOKIE_KEY, visitor, started);
@@ -220,8 +237,9 @@ export function createAskHandler(deps: HandlerDeps) {
       const hit = await env.ASK_KV?.get(key);
       const cached = hit ? (JSON.parse(hit) as { text?: unknown }) : null;
       if (cached && typeof cached.text === "string" && findBlocked(cached.text, safety.blocklist).length === 0) {
-        logEvent(env, pack, { outcome: "answer", locale, source: "cache", latencyMs: now() - started });
-        return streamResponse(cached.text, { done: true, outcome: "answer", source: "cache", asOf: pack.packDate }, delay, responseHeaders);
+        logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, latencyMs: now() - started });
+        const tags = answerTags(retrieve(pack, question, locale).chunks);
+        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -256,8 +274,9 @@ export function createAskHandler(deps: HandlerDeps) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", latencyMs: now() - started });
-    return streamResponse(result.text, { done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate }, delay, responseHeaders);
+    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, latencyMs: now() - started });
+    const tags = result.outcome === "answer" || result.outcome === "unknown" ? result.tags : [];
+    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate }, tags), delay, responseHeaders);
   }
 
   return async function onRequest(context: PagesContext): Promise<Response> {

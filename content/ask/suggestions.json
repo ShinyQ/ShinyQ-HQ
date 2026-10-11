@@ -1,0 +1,286 @@
+{
+  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career or contact (the four topic pills; the first four of a topic show when it expands). tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
+  "items": [
+    {
+      "id": "work-best",
+      "topic": "work",
+      "q": { "en": "What are his best software projects?", "id": "Apa proyek software terbaiknya?" },
+      "tags": ["work", "software"],
+      "followUps": ["work-banking", "work-tickets", "work-stack"],
+      "expect": ["projects-summary"]
+    },
+    {
+      "id": "work-banking",
+      "topic": "work",
+      "q": { "en": "How did he build the digital banking integrations?", "id": "Bagaimana dia membangun integrasi digital banking?" },
+      "tags": ["work", "software"],
+      "followUps": ["work-stack", "work-tickets", "ai-fraud"],
+      "expect": ["project-digital-banking-integrations"]
+    },
+    {
+      "id": "work-tickets",
+      "topic": "work",
+      "q": { "en": "Tell me about his ticket marketplace backend", "id": "Ceritakan tentang backend marketplace tiketnya" },
+      "tags": ["work", "software"],
+      "followUps": ["work-banking", "work-vendor", "work-github"],
+      "expect": ["project-ticket-marketplace-backend"]
+    },
+    {
+      "id": "work-vendor",
+      "topic": "work",
+      "q": { "en": "Tell me about the vendor management portal", "id": "Ceritakan tentang portal manajemen vendor" },
+      "tags": ["work", "software"],
+      "followUps": ["work-stack", "work-best", "ai-agents"],
+      "expect": ["project-vendor-management-portal"]
+    },
+    {
+      "id": "work-stack",
+      "topic": "work",
+      "q": { "en": "Which backend stack does he use most?", "id": "Stack backend apa yang paling sering dia pakai?" },
+      "tags": ["skills", "software"],
+      "followUps": ["work-best", "career-skills", "work-github"],
+      "expect": ["skills-software"]
+    },
+    {
+      "id": "work-github",
+      "topic": "work",
+      "q": { "en": "What are his public GitHub repos?", "id": "Apa saja repo GitHub publiknya?" },
+      "tags": ["github", "work"],
+      "followUps": ["work-side", "work-best", "contact-channels"],
+      "expect": ["repos"]
+    },
+    {
+      "id": "work-side",
+      "topic": "work",
+      "q": { "en": "What side projects has he built?", "id": "Side project apa saja yang pernah dia buat?" },
+      "tags": ["work"],
+      "followUps": ["work-github", "ai-research", "work-best"],
+      "expect": ["side-*"]
+    },
+    {
+      "id": "work-security",
+      "topic": "work",
+      "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
+      "tags": ["work", "security"],
+      "followUps": ["ai-security", "work-stack", "work-best"],
+      "expect": ["project-vulnerability-scanning-automation"]
+    },
+    {
+      "id": "ai-voice",
+      "topic": "ai",
+      "q": { "en": "How does the voice AI contact center work?", "id": "Bagaimana cara kerja voice AI contact center?" },
+      "tags": ["ai", "voice"],
+      "followUps": ["ai-voice-latency", "ai-fraud", "ai-agents"],
+      "expect": ["project-voice-ai-contact-center"]
+    },
+    {
+      "id": "ai-fraud",
+      "topic": "ai",
+      "q": { "en": "How did the fraud review platform cut false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
+      "tags": ["ai", "fraud", "documents"],
+      "followUps": ["ai-shadow", "ai-documents", "ai-voice"],
+      "expect": ["project-fraud-review-platform"]
+    },
+    {
+      "id": "ai-agents",
+      "topic": "ai",
+      "q": { "en": "How does he use AI coding agents?", "id": "Bagaimana dia memakai AI coding agent?" },
+      "tags": ["ai", "agents", "writing"],
+      "followUps": ["ai-solutions-assistant", "ai-llm-failures", "career-certs"],
+      "expect": ["project-agent-orchestrated-delivery"]
+    },
+    {
+      "id": "ai-security",
+      "topic": "ai",
+      "q": { "en": "What does the AI code security platform do?", "id": "Apa fungsi AI code security platform?" },
+      "tags": ["ai", "security"],
+      "followUps": ["work-security", "ai-agents", "ai-fraud"],
+      "expect": ["project-ai-code-security-platform"]
+    },
+    {
+      "id": "ai-voice-latency",
+      "topic": "ai",
+      "q": { "en": "What latency did the voice agent reach?", "id": "Berapa latency yang dicapai voice agent-nya?" },
+      "tags": ["ai", "voice"],
+      "followUps": ["ai-voice-interrupt", "ai-fraud", "ai-llm-failures"],
+      "expect": ["project-voice-ai-contact-center"]
+    },
+    {
+      "id": "ai-shadow",
+      "topic": "ai",
+      "q": { "en": "Why did the fraud engine ship in shadow mode?", "id": "Kenapa fraud engine dirilis dalam shadow mode?" },
+      "tags": ["writing", "fraud", "ai"],
+      "followUps": ["ai-fraud", "ai-llm-failures", "contact-writing"],
+      "expect": ["post-why-the-better-fraud-engine-shipped-in-shadow-mode"]
+    },
+    {
+      "id": "ai-llm-failures",
+      "topic": "ai",
+      "q": { "en": "Why did 45% of his LLM calls fail?", "id": "Kenapa 45% panggilan LLM-nya gagal?" },
+      "tags": ["writing", "ai"],
+      "followUps": ["ai-voice-interrupt", "ai-shadow", "contact-writing"],
+      "expect": ["post-45-percent-of-our-llm-calls-failed"]
+    },
+    {
+      "id": "ai-voice-interrupt",
+      "topic": "ai",
+      "q": { "en": "How did he make a voice agent interruptible?", "id": "Bagaimana dia membuat voice agent bisa disela?" },
+      "tags": ["writing", "voice", "ai"],
+      "followUps": ["ai-voice", "ai-llm-failures", "contact-writing"],
+      "expect": ["post-making-a-voice-agent-interruptible"]
+    },
+    {
+      "id": "ai-documents",
+      "topic": "ai",
+      "q": { "en": "How does the AI CV screening platform work?", "id": "Bagaimana cara kerja platform AI CV screening?" },
+      "tags": ["ai", "documents"],
+      "followUps": ["ai-fraud", "ai-solutions-assistant", "ai-forecasting"],
+      "expect": ["project-ai-cv-screening-platform"]
+    },
+    {
+      "id": "ai-solutions-assistant",
+      "topic": "ai",
+      "q": { "en": "How does his bilingual RAG assistant work?", "id": "Bagaimana cara kerja asisten RAG dwibahasanya?" },
+      "tags": ["ai", "agents", "rag"],
+      "followUps": ["ai-agents", "ai-voice", "career-certs"],
+      "expect": ["project-ai-solutions-assistant"]
+    },
+    {
+      "id": "ai-forecasting",
+      "topic": "ai",
+      "q": { "en": "How does the Fabric forecasting dashboard work?", "id": "Bagaimana cara kerja dashboard forecasting di Fabric?" },
+      "tags": ["ai", "data"],
+      "followUps": ["ai-research", "ai-documents", "work-best"],
+      "expect": ["project-fabric-forecasting-dashboard"]
+    },
+    {
+      "id": "ai-research",
+      "topic": "ai",
+      "q": { "en": "What research has he published?", "id": "Riset apa saja yang sudah dia publikasikan?" },
+      "tags": ["research", "ai"],
+      "followUps": ["ai-models", "career-education", "work-side"],
+      "expect": ["publication-*"]
+    },
+    {
+      "id": "ai-models",
+      "topic": "ai",
+      "q": { "en": "Which models has he published on Hugging Face?", "id": "Model apa saja yang dia publikasikan di Hugging Face?" },
+      "tags": ["research", "ai", "github"],
+      "followUps": ["ai-research", "work-github", "career-education"],
+      "expect": ["publication-*"],
+      "answer": { "any": ["IndoBERT", "{{facts.huggingface.models}} model"] }
+    },
+    {
+      "id": "career-now",
+      "topic": "career",
+      "q": { "en": "What is he working on now?", "id": "Apa yang sedang dia kerjakan sekarang?" },
+      "tags": ["now", "career"],
+      "followUps": ["career-history", "career-certs", "contact-open"],
+      "expect": ["now"]
+    },
+    {
+      "id": "career-history",
+      "topic": "career",
+      "q": { "en": "Where has he worked before?", "id": "Di mana saja dia pernah bekerja?" },
+      "tags": ["career"],
+      "followUps": ["career-jenius", "career-freelance", "career-education"],
+      "expect": ["career-summary"]
+    },
+    {
+      "id": "career-certs",
+      "topic": "career",
+      "q": { "en": "Which Microsoft certifications does he have?", "id": "Sertifikasi Microsoft apa saja yang dia punya?" },
+      "tags": ["certifications", "career"],
+      "followUps": ["career-awards", "career-skills", "career-now"],
+      "expect": ["certifications"]
+    },
+    {
+      "id": "career-education",
+      "topic": "career",
+      "q": { "en": "Where did he study?", "id": "Di mana dia kuliah?" },
+      "tags": ["education", "career"],
+      "followUps": ["ai-research", "career-awards", "career-history"],
+      "expect": ["career-telkom-university-2019"]
+    },
+    {
+      "id": "career-awards",
+      "topic": "career",
+      "q": { "en": "What awards has he won?", "id": "Penghargaan apa saja yang pernah dia raih?" },
+      "tags": ["awards", "career"],
+      "followUps": ["career-certs", "career-education", "contact-talks"],
+      "expect": ["awards"]
+    },
+    {
+      "id": "career-jenius",
+      "topic": "career",
+      "q": { "en": "What did he do at Jenius?", "id": "Apa yang dia kerjakan di Jenius?" },
+      "tags": ["career"],
+      "followUps": ["career-history", "work-banking", "career-now"],
+      "expect": ["career-jenius-2024"]
+    },
+    {
+      "id": "career-freelance",
+      "topic": "career",
+      "q": { "en": "What freelance work has he done?", "id": "Pekerjaan freelance apa saja yang pernah dia ambil?" },
+      "tags": ["career", "work"],
+      "followUps": ["career-history", "work-tickets", "contact-open"],
+      "expect": ["career-summary"]
+    },
+    {
+      "id": "career-skills",
+      "topic": "career",
+      "q": { "en": "What are his strongest skills?", "id": "Apa keahlian terkuatnya?" },
+      "tags": ["skills"],
+      "followUps": ["work-stack", "career-certs", "ai-agents"],
+      "expect": ["skills-*"]
+    },
+    {
+      "id": "contact-reach",
+      "topic": "contact",
+      "q": { "en": "How can I contact him?", "id": "Bagaimana cara menghubunginya?" },
+      "tags": ["contact"],
+      "followUps": ["contact-open", "contact-where", "contact-channels"],
+      "expect": ["contact"]
+    },
+    {
+      "id": "contact-open",
+      "topic": "contact",
+      "q": { "en": "Is he open to new opportunities?", "id": "Apakah dia terbuka untuk peluang baru?" },
+      "tags": ["contact", "now"],
+      "followUps": ["contact-reach", "career-now", "work-best"],
+      "expect": ["now"]
+    },
+    {
+      "id": "contact-where",
+      "topic": "contact",
+      "q": { "en": "Where is he based?", "id": "Dia berdomisili di mana?" },
+      "tags": ["contact", "now"],
+      "followUps": ["contact-reach", "contact-open", "career-now"],
+      "expect": ["now"]
+    },
+    {
+      "id": "contact-channels",
+      "topic": "contact",
+      "q": { "en": "Where can I find him on LinkedIn and GitHub?", "id": "Di mana saya bisa menemukan dia di LinkedIn dan GitHub?" },
+      "tags": ["contact", "github"],
+      "followUps": ["work-github", "contact-reach", "contact-writing"],
+      "expect": ["contact"]
+    },
+    {
+      "id": "contact-writing",
+      "topic": "contact",
+      "q": { "en": "What has he written about?", "id": "Tulisan apa saja yang pernah dia buat?" },
+      "tags": ["writing"],
+      "followUps": ["ai-shadow", "ai-voice-interrupt", "contact-talks"],
+      "expect": ["post-*"]
+    },
+    {
+      "id": "contact-talks",
+      "topic": "contact",
+      "q": { "en": "Has he given any talks or workshops?", "id": "Apakah dia pernah mengisi talk atau workshop?" },
+      "tags": ["talks"],
+      "followUps": ["contact-writing", "career-awards", "contact-reach"],
+      "expect": ["talk-*"]
+    }
+  ]
+}

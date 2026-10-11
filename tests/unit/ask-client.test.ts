@@ -69,6 +69,17 @@ describe("SSE parser", () => {
     expect(parseFrame("[1]")).toBeNull();
   });
 
+  it("keeps only allowlisted follow-up tags on the done frame", () => {
+    expect(parseFrame('{"done":true,"outcome":"answer","source":"primary","asOf":"2026-10-01","tags":["ai","voice","<b>","ai",3]}')).toEqual({
+      done: true,
+      outcome: "answer",
+      source: "primary",
+      asOf: "2026-10-01",
+      tags: ["ai", "voice"],
+    });
+    expect(parseFrame('{"done":true,"outcome":"answer","source":"primary","asOf":"2026-10-01","tags":"ai"}')).not.toHaveProperty("tags");
+  });
+
   it("strips control, zero-width and bidi characters", () => {
     expect(sanitizeAnswer("a\u202Eb\u200Bc\u0007d\u2066e\uFEFF\r\nf\tg")).toBe("abcde\nf\tg");
   });
@@ -88,6 +99,13 @@ describe("askQuestion", () => {
     expect(init).toMatchObject({ method: "POST", credentials: "same-origin" });
     expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
     expect(bodyOf(d.fetch.mock.calls[0])).toEqual({ q: "What now?", locale: "en", turnstileToken: "token-1" });
+  });
+
+  it("sends the entry point and returns the answer's tags", async () => {
+    const d = deps([sse([frame({ delta: "Hi" }), frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-01", tags: ["career"] })])]);
+    const result = await askQuestion({ q: "Where did he work?", locale: "en", source: "followup", onDelta: () => {} }, d);
+    expect(result).toEqual({ outcome: "answer", source: "primary", asOf: "2026-10-01", tags: ["career"] });
+    expect(bodyOf(d.fetch.mock.calls[0])).toMatchObject({ q: "Where did he work?", locale: "en", source: "followup" });
   });
 
   it("reports a stream that ends without a done frame", async () => {

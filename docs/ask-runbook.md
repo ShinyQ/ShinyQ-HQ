@@ -184,7 +184,7 @@ Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Lo
 2. Workers AI usage (Dashboard > AI > Workers AI): neurons per day well under 10,000.
 3. The latest `ask-content-gap` issue: decide what to add to the site.
 4. Any open `ask-redteam` issue or a red `ask-eval.yml` run.
-5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason):
+5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette):
 
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" -H "Authorization: Bearer $CF_EVAL_TOKEN" \

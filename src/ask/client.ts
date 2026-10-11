@@ -4,7 +4,7 @@
  * opened, focused or scrolled into view, and Turnstile loads only when the server asks for it.
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6, T8, T13).
  */
-import type { AskError, AskErrorCode, AskFrame, AskLocale, AskOutcome, AskRequest, AskSource, AskStatus } from "./protocol";
+import { cleanTags, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag } from "./protocol";
 
 export const ASK_ENDPOINT = "/api/ask";
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
@@ -21,7 +21,7 @@ export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<
 export type AskClientError = AskErrorCode | "network" | "stream" | "aborted" | "unavailable";
 
 export type AskResult =
-  | { outcome: AskOutcome; source: AskSource; asOf: string }
+  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[] }
   | { error: AskClientError; retryAfter?: number };
 
 export const isAskError = (result: AskResult): result is Extract<AskResult, { error: AskClientError }> => "error" in result;
@@ -144,11 +144,13 @@ export function parseFrame(data: string): AskFrame | null {
   const v = value as Record<string, unknown>;
   if (typeof v.delta === "string") return { delta: v.delta };
   if (v.done === true && OUTCOMES.includes(v.outcome as AskOutcome)) {
+    const tags = cleanTags(v.tags);
     return {
       done: true,
       outcome: v.outcome as AskOutcome,
       source: SOURCES.includes(v.source as AskSource) ? (v.source as AskSource) : "none",
       asOf: typeof v.asOf === "string" ? v.asOf : "",
+      ...(tags.length ? { tags } : {}),
     };
   }
   return null;
@@ -272,6 +274,8 @@ export interface AskOptions {
   q: string;
   locale: AskLocale;
   signal?: AbortSignal;
+  /** UI entry point, for analytics. */
+  source?: AskEntry;
   /** Called with each sanitized text chunk, in order. */
   onDelta: (text: string) => void;
 }
@@ -315,7 +319,7 @@ function errorFor(status: number, body: AskError | null, response: Response): As
  */
 export async function askQuestion(options: AskOptions, overrides: Partial<AskDeps> = {}): Promise<AskResult> {
   const deps = { ...defaultDeps(), ...overrides };
-  const { q, locale, signal, onDelta } = options;
+  const { q, locale, signal, onDelta, source } = options;
   const status = await deps.status();
   if (!isAskEnabled(status)) return { error: "disabled" };
   const siteKey = status.turnstileSiteKey;
@@ -332,7 +336,7 @@ export async function askQuestion(options: AskOptions, overrides: Partial<AskDep
   };
 
   const post = (turnstileToken: string | null) => {
-    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}) };
+    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}) };
     return deps.fetch(ASK_ENDPOINT, {
       method: "POST",
       credentials: "same-origin",
@@ -416,7 +420,7 @@ async function readStream(response: Response, onDelta: (text: string) => void, s
 
   if (signal?.aborted) return { error: "aborted" };
   const final = done as Extract<AskFrame, { done: true }> | null;
-  return final ? { outcome: final.outcome, source: final.source, asOf: final.asOf } : { error: "stream" };
+  return final ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}) } : { error: "stream" };
 }
 
 /** Test hook: forgets the cached status, the Turnstile widget and the verified window. */
