@@ -112,14 +112,13 @@ describe("MissionHud on static pages", () => {
     expect(options).toHaveLength(index.rooms.filter((r) => r.kind === "pod").length);
   });
 
-  it("shows the rover line from a say step", async () => {
+  it("runs the journey walk mission as the journey page on static pages", async () => {
     renderHud();
     act(() => openTerminal());
     const journey = index.missions.find((m) => m.id === "journey")!;
+    expect(journey.steps.at(-1)).toEqual({ kind: "walk", walk: "journey" });
     await userEvent.click(screen.getByRole("option", { name: journey.label.en }));
-    const say = journey.steps.find((step) => step.kind === "say")!;
-    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(say.text.en));
-    expect(nav.push).toHaveBeenCalledWith("/en/journey#y2019");
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/journey"));
   });
 
   it("records opened rooms and lists them under Recent", async () => {

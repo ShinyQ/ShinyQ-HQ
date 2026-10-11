@@ -84,12 +84,11 @@ test.describe("missions on static pages", () => {
     await expect(terminal).toBeHidden();
   });
 
-  test("journey drives to 2019 and the rover speaks", async ({ page }) => {
+  test("journey opens the journey page (the guided walk needs 3D)", async ({ page }) => {
     await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Missions" }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();
-    await expect(page).toHaveURL(/\/en\/journey#y2019$/);
-    await expect(page.getByRole("status").filter({ hasText: mission("journey").steps.find((step) => step.kind === "say")!.text.en })).toBeVisible();
+    await expect(page).toHaveURL(/\/en\/journey$/);
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {

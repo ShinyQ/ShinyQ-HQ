@@ -1,4 +1,4 @@
-import type { DrawerTab, Locale, MissionStep, RoomId } from "@/content/schema";
+import type { DrawerTab, Locale, MissionStep, RoomId, WalkId } from "@/content/schema";
 import type { MissionHost, MissionStatus, PaletteFilter } from "./host";
 import type { RoomInfo } from "./rooms";
 import type { MissionRunner, MissionState } from "./runner";
@@ -67,6 +67,21 @@ export function goToRoom(room: RoomId, tab?: DrawerTab) {
 /** Runs ad hoc steps through the active runner (guided walk legs). Resolves "cancelled" without a runner. */
 export function runMissionSteps(id: string, steps: readonly MissionStep[]): Promise<MissionStatus> {
   return runner ? runner.runSteps(id, steps) : Promise.resolve("cancelled");
+}
+
+let walkStarter: ((id: WalkId) => boolean) | null = null;
+
+/** WalkLayer registers the guided walks it offers; `start` returns false when that walk is off. */
+export function registerWalkStarter(start: (id: WalkId) => boolean): () => void {
+  walkStarter = start;
+  return () => {
+    if (walkStarter === start) walkStarter = null;
+  };
+}
+
+/** Starts a guided walk (mission step `{ kind: "walk" }`). False when no walk with that id is offered. */
+export function startWalk(id: WalkId): boolean {
+  return walkStarter ? walkStarter(id) : false;
 }
 
 /** Manual input cancels a running mission (appendix 02 section 3). */

@@ -281,6 +281,8 @@ export const AwardSchema = z.strictObject({
 
 const Vec2Schema = z.strictObject({ x: z.number(), z: z.number() });
 export const DrawerTabSchema = z.enum(["overview", "architecture", "results", "stack"]);
+/** Guided walks (src/experience/missions/walks.ts): L2 "Walk my journey" and L3 "Tour my projects". */
+export const WalkIdSchema = z.enum(["journey", "projects"]);
 
 export const MissionStepSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("elevator"), floor: FloorIdSchema }),
@@ -289,6 +291,7 @@ export const MissionStepSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("say"), text: LocalizedTextSchema, ms: z.number().int().positive().optional() }),
   z.strictObject({ kind: z.literal("palette"), filter: z.enum(["pods", "rooms", "posts"]) }),
   z.strictObject({ kind: z.literal("surprise") }),
+  z.strictObject({ kind: z.literal("walk"), walk: WalkIdSchema }),
 ]);
 
 export const MissionSchema = z.strictObject({
@@ -354,5 +357,6 @@ export type RepoRef = z.infer<typeof RepoRefSchema>;
 export type Award = z.infer<typeof AwardSchema>;
 export type DrawerTab = z.infer<typeof DrawerTabSchema>;
 export type MissionStep = z.infer<typeof MissionStepSchema>;
+export type WalkId = z.infer<typeof WalkIdSchema>;
 export type Mission = z.infer<typeof MissionSchema>;
 export type SiteContent = z.infer<typeof SiteContentSchema>;

@@ -122,6 +122,7 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
       openRoom: (room, tab, ctx) => current().openRoom(room, tab, ctx),
       say: (text, ms, ctx) => current().say(text, ms, ctx),
       openPalette: (filter, ctx) => current().openPalette(filter, ctx),
+      walk: (id, ctx) => current().walk(id, ctx),
       finish: (status, id) => current().finish?.(status, id),
     };
     return createMissionRunner({ host, missions: index.missions, rooms: index.rooms, visited: () => visitedRooms() ?? readRecent() });
