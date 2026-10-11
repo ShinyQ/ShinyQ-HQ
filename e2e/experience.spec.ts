@@ -96,6 +96,7 @@ test.describe("elevator", () => {
     const page = await context.newPage();
     // Indonesian has the longest names (Perjalanan).
     await enterHQ(page, { path: "/id" });
+    await page.evaluate(() => document.fonts.ready);
     const panel = page.getByTestId("elevator-panel");
     expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(56);
     const clipped = await panel.locator("[data-testid='elevator-floor-label']").evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent));

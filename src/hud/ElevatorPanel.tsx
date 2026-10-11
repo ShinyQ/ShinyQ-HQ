@@ -33,7 +33,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
     <nav
       aria-label={t("elevator")}
       className={`glass glass-solid pointer-events-auto absolute top-1/2 right-2 flex -translate-y-1/2 flex-col md:right-4 ${
-        compact ? "items-center gap-0 rounded-[22px] p-0.5" : codesOnly ? "items-center gap-0.5 rounded-full p-1" : "items-stretch gap-0.5 rounded-3xl p-1"
+        compact ? "items-center gap-0 rounded-[22px] py-0.5" : codesOnly ? "items-center gap-0.5 rounded-full p-1" : "items-stretch gap-0.5 rounded-3xl p-1"
       }`}
       data-testid="elevator-panel"
     >
@@ -60,7 +60,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
             data-floor={id}
             className={
               compact
-                ? "group flex min-h-11 w-12 flex-col items-center justify-center gap-0.5 rounded-2xl py-0.5"
+                ? "group flex min-h-11 w-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl py-0.5"
                 : codesOnly
                   ? "group grid size-11 place-items-center rounded-full"
                   : `group flex min-h-11 items-center gap-2 rounded-full py-0.5 pr-3.5 pl-0.5 text-left transition ${current ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"}`
@@ -73,7 +73,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
                 data-testid="elevator-floor-label"
                 className={
                   compact
-                    ? `max-w-full truncate text-[9px] leading-3 font-semibold tracking-[-0.01em] ${current ? "text-ink" : "text-ink-3"}`
+                    ? `max-w-full truncate text-[9px] leading-3 font-semibold tracking-[-0.02em] ${current ? "text-ink" : "text-ink-3"}`
                     : `text-sm leading-5 font-semibold whitespace-nowrap ${current ? "text-ink" : "text-ink-2 group-hover:text-ink"}`
                 }
               >
