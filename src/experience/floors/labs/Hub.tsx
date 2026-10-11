@@ -1,16 +1,20 @@
 "use client";
 
 import { Text } from "@react-three/drei";
+import type { ThreeEvent } from "@react-three/fiber";
 import type { Wing } from "@/content/schema";
+import { openPalette } from "@/hud/events";
 import type { LabPod } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
-import { LABS, WING_TINT, type LabsLayout } from "./layout";
+import { LABS, tourOrder, WING_TINT, type LabsLayout } from "./layout";
 
 export interface HubLabels {
   wings: Record<Wing, string>;
   directory: string;
-  /** Footer of each directory board ("More projects here"). */
-  more: string;
+  /** Board footer: the full list opens in the palette. */
+  open: string;
+  /** "{count} projects", localized. */
+  count: (count: number) => string;
 }
 
 const WINGS = ["software", "ai"] as const;
@@ -54,51 +58,70 @@ function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }
   );
 }
 
-/** One face of a directory board: header, every pod of the wing and the "More projects here" footer. */
+const TOP = { name: 0.3, sub: 1.05, list: 1.55, listBottom: 1.95, footer: 1.3 } as const;
+
+/**
+ * One face of a directory board, sized to read from the board stop on a phone: the wing name, the
+ * project count, the top entries (hero, then featured) in large type, and a footer that points to the
+ * full list (clicking the board, or Open on the tour stop, opens the projects palette).
+ */
 function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly LabPod[]; labels: HubLabels; side: 1 | -1 }) {
-  const lines = list.map((p) => `${TIER_MARK[p.tier]} ${p.title}`).join("\n");
+  const name = labels.wings[wing].toUpperCase();
+  const top = tourOrder(list).slice(0, LABS.boardEntries);
+  const lines = top.map((p) => `${TIER_MARK[p.tier]} ${p.title}`).join("\n");
+  const width = board.d - 0.6;
   return (
     <group position={[(side * board.w) / 2 + side * 0.03, 0, 0]} rotation={[0, (side * Math.PI) / 2, 0]}>
       {/* Wing names come from messages (`common.wing`); long names shrink to the board width instead of wrapping. */}
       <Text
         font={FONTS.monoBold}
-        fontSize={Math.min(0.32, (board.d - 0.5) / (0.62 * Math.max(1, labels.wings[wing].length)))}
+        fontSize={Math.min(0.56, width / (0.62 * Math.max(1, name.length)))}
         color={WING_TINT[wing]}
         anchorX="center"
         anchorY="top"
         whiteSpace="nowrap"
-        position={[0, board.h - 0.25, 0]}
+        position={[0, board.h - TOP.name, 0]}
         material-toneMapped={false}
       >
-        {labels.wings[wing].toUpperCase()}
+        {name}
       </Text>
-      <Text font={FONTS.mono} fontSize={0.18} color="#a1a1aa" anchorX="center" anchorY="top" position={[0, board.h - 0.68, 0]}>
-        {labels.directory.toUpperCase()}
+      <Text font={FONTS.mono} fontSize={0.24} color="#a1a1aa" anchorX="center" anchorY="top" whiteSpace="nowrap" position={[0, board.h - TOP.sub, 0]}>
+        {`${labels.directory.toUpperCase()} \u00B7 ${labels.count(list.length).toUpperCase()}`}
       </Text>
       <Text
-        font={FONTS.sans}
-        fontSize={list.length > 14 ? 0.19 : 0.23}
-        lineHeight={1.3}
-        whiteSpace="nowrap"
-        color="#e5e7eb"
+        font={FONTS.sansBold}
+        fontSize={0.34}
+        lineHeight={1.25}
+        maxWidth={width}
+        color="#f4f4f5"
         anchorX="left"
         anchorY="top"
-        position={[-board.d / 2 + 0.25, board.h - 1.05, 0]}
-        clipRect={[-0.05, -(board.h - 1.7), board.d - 0.5, 0.2]}
+        position={[-width / 2, board.h - TOP.list, 0]}
+        clipRect={[-0.05, -(board.h - TOP.list - TOP.listBottom), width + 0.1, 0.2]}
       >
         {lines}
       </Text>
-      <Text font={FONTS.monoBold} fontSize={0.26} color={WING_TINT[wing]} anchorX="center" anchorY="bottom" position={[0, 0.3, 0]} material-toneMapped={false}>
-        {`${labels.more.toUpperCase()} \u2193`}
+      <Text font={FONTS.monoBold} fontSize={0.3} color={WING_TINT[wing]} anchorX="center" anchorY="bottom" whiteSpace="nowrap" position={[0, TOP.footer, 0]} material-toneMapped={false}>
+        {`\u25B8 ${labels.open.toUpperCase()}`}
       </Text>
     </group>
   );
 }
 
+function setCursor(value: string) {
+  document.body.style.cursor = value;
+}
+
+/** A click (not a drag) on a board opens every project in the palette. */
+function onBoardClick(e: ThreeEvent<MouseEvent>) {
+  if (e.delta > 6) return;
+  e.stopPropagation();
+  openPalette("pods");
+}
+
 /**
- * Directory boards on the hub rim: every pod of the wing, listed items included (they open in the
- * drawer). Both faces carry the list: the east face greets the hub and the stop in front of it, the
- * west face the rover arriving from the elevator.
+ * Directory boards on the hub rim. Both faces carry the same content: the east face greets the hub
+ * and the stop in front of it, the west face the rover arriving from the elevator.
  */
 function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels: HubLabels; pods: readonly LabPod[] }) {
   return (
@@ -109,8 +132,8 @@ function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels:
         return (
           <group key={wing} position={[center.x, 0, center.z]} name={`directory-${wing}`}>
             <GlassBox size={[board.w, board.h, board.d]} position={[0, board.h / 2, 0]} color={WING_TINT[wing]} fillOpacity={0.12} />
-            {/* Opaque core: each face shows only its own list, never the mirrored one behind it. */}
-            <mesh position={[0, board.h / 2, 0]}>
+            {/* Opaque core: each face shows only its own text, never the mirrored one behind it. */}
+            <mesh position={[0, board.h / 2, 0]} onClick={onBoardClick} onPointerOver={() => setCursor("pointer")} onPointerOut={() => setCursor("")}>
               <boxGeometry args={[board.w * 0.5, board.h - 0.04, board.d - 0.04]} />
               <meshBasicMaterial color="#070712" />
             </mesh>

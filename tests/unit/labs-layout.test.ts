@@ -158,18 +158,29 @@ describe("L3 Project Roads layout", () => {
     expect(zoneAt("L3", layout.hub.center, floor.viewZones)).toBeNull();
   });
 
-  it("frames the hub on arrival: the camera sits south-west of the rover, away from the shaft", () => {
-    const zone = zoneAt("L3", floor.approach, floor.viewZones);
-    expect(zone?.id).toBe("L3:arrival");
-    const [cx, , cz] = followPose("desktop", [floor.approach.x, 0, floor.approach.z], zone!.yaw).position;
-    expect(cx).toBeLessThan(floor.approach.x);
-    expect(cz).toBeGreaterThan(floor.approach.z);
-    // Looking toward the hub (east), the line of sight never crosses the shaft footprint.
-    for (let t = 0; t <= 1; t += 0.05) {
-      const x = cx + (floor.approach.x - cx) * t;
-      const z = cz + (floor.approach.z - cz) * t;
-      expect(Math.abs(x - SHAFT.x) < SHAFT.size / 2 && Math.abs(z - SHAFT.z) < SHAFT.size / 2).toBe(false);
+  it("parks deep links and elevator arrivals at the hub overview, with the shaft behind the camera", () => {
+    expect(floor.spawn).toEqual(LABS.overview);
+    expect(floor.arrival).toEqual(LABS.overview);
+    expect(inPlaza(layout.hub, LABS.overview)).toBe(true);
+    expect(isWalkable(buildNavGrid(floor, ROVER.radius), LABS.overview)).toBe(true);
+    const zone = zoneAt("L3", LABS.overview, floor.viewZones);
+    expect(zone?.id).toBe("L3:overview");
+    for (const cls of ["desktop", "tablet", "mobile"] as const) {
+      const [cx, , cz] = followPose(cls, [LABS.overview.x, 0, LABS.overview.z], zone!.yaw).position;
+      // The camera looks east along the floor from west of the rover, and stays clear of the shaft column.
+      expect(cx).toBeLessThan(LABS.overview.x);
+      expect(Math.abs(cz - LABS.overview.z)).toBeLessThan(0.01);
+      expect(cx).toBeGreaterThan(SHAFT.x + SHAFT.size / 2 + 3);
     }
+    // Driving the roads never swings the camera to the overview.
+    for (const road of network.roads)
+      for (let i = 0; i < road.points.length - 1; i++)
+        for (let k = 0; k <= 40; k++) {
+          const a = road.points[i];
+          const b = road.points[i + 1];
+          const p = { x: a.x + ((b.x - a.x) * k) / 40, z: a.z + ((b.z - a.z) * k) / 40 };
+          expect(zoneAt("L3", p, floor.viewZones)?.id, `${road.id} at ${p.x},${p.z}`).not.toBe("L3:overview");
+        }
   });
 
   it("turns the camera at each door so the pod is in front of the rover, never between it and the camera", () => {

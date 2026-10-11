@@ -6,7 +6,7 @@ import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 /**
  * L3 Project Roads (walkable floors plan, part 2). The global elevator shaft stays at x = -28, so
  * a short lead road runs from its door into a round hub plaza with the two wing directory boards.
- * The Software Wing road (north, z < 0) and the AI Wing road (south, z > 0) leave the hub, run east
+ * The `software` wing road (north, z < 0) and the `ai` wing road (south, z > 0) leave the hub, run east
  * and meet at the east plaza, so the floor is one loop without dead ends. Hero and featured pods
  * dock on both sides of their wing road (hero pods nearest the hub), each with a forecourt and a
  * spur to its door, at least 6 u apart. Listed pods stay on the directory boards.
@@ -43,16 +43,20 @@ export const LABS = {
   /** Diameter of the east plaza where the wing roads meet. */
   east: 18,
   /** Wing directory boards on the west rim of the hub, thin along x and facing east (+x) toward the follow camera. */
-  board: { x: -14, z: 9, w: 0.6, d: 6, h: 6.4 },
-  /** Distance from a board's front face to the stop in front of it. */
-  boardStop: 2.4,
+  board: { x: -14, z: 9.5, w: 0.6, d: 7, h: 7 },
+  /** Distance from a board's front face to the stop in front of it (the rover then hides none of the list). */
+  boardStop: 3,
+  /** Entries a board shows in large type; the full list opens in the palette. */
+  boardEntries: 5,
+  /** Deep links (and the roll after an elevator ride) park here: the hub's east side, looking east along the floor. */
+  overview: { x: 5, z: 0 } as Vec2,
   margin: 6,
   /** Hologram stage disc inside hero pods (6 u diameter). */
   stageRadius: 3,
   wallHeight: 2.6,
 } as const;
 
-/** -1 = north (Software Wing), +1 = south (AI Wing). */
+/** -1 = north (`software` wing), +1 = south (`ai` wing); display names come from messages (`common.wing`). */
 export const WING_SIDE: Record<Wing, -1 | 1> = { software: -1, ai: 1 };
 export const WING_TINT: Record<Wing, string> = { software: "#22d3ee", ai: "#a78bfa" };
 
@@ -208,9 +212,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
 
   const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));
   const viewZones: ViewZone[] = [
-    // Arriving by elevator: the camera swings south-west of the rover, so the hub and the wing roads
-    // fill the view instead of the shaft (a yaw of -PI/2; the shaft stays north-west, out of the line of sight).
-    { id: "L3:arrival", area: { minX: L.slabMinX, maxX: hubC.x - L.hub.size / 2, minZ: -half, maxZ: half }, yaw: -Math.PI / 2 },
+    // The overview spot on the hub's east side: the camera sits west of the rover (yaw -3PI/4) and looks
+    // east along the floor, so the hub, both wing entrances and the pods fill the view and the shaft is
+    // behind the camera. Wing roads leave the hub west of it, so driving the roads never triggers it.
+    { id: "L3:overview", area: { minX: L.overview.x - 4, maxX: hubC.x + L.hub.size / 2, minZ: -4, maxZ: 4 }, yaw: (-3 * Math.PI) / 4 },
     // At a door the camera looks at the pod front at 45 degrees: from the south-east (the default) for
     // pods facing south, from the north-east for pods facing north, so a pod never sits between the
     // camera and the rover.
@@ -222,7 +227,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     // The boards face east: a yaw of PI/4 puts the camera east of the rover, looking west at the board.
     ...(["software", "ai"] as const).map((wing) => {
       const b = boards[wing];
-      return { id: `L3:directory:${wing}`, area: { minX: b.maxX, maxX: b.maxX + 6, minZ: b.minZ - 1, maxZ: b.maxZ + 1 }, yaw: Math.PI / 4 };
+      return { id: `L3:directory:${wing}`, area: { minX: b.maxX, maxX: b.maxX + 6, minZ: b.minZ - 1, maxZ: b.maxZ + 1 }, yaw: Math.PI / 4, zoom: 0.75 };
     }),
   ];
   const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai)];
@@ -254,7 +259,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       door: L.door,
       approach: L.approach,
       obstacles,
-      spawn: L.approach,
+      spawn: L.overview,
+      arrival: L.overview,
       accent: L.accent,
       doors,
       road: network,

@@ -253,6 +253,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         else {
           controller.teleport(to.approach, Math.PI / 2);
           s.arriveFloor(ride.to);
+          // Floors with an arrival spot roll the rover on from the shaft (a mission's drive replaces it).
+          if (to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done")) roverRuntime.autopilot = { point: to.arrival, state: "pending" };
           audio.play("ding");
           local.arrivedUntil = now + ARRIVED_FACE_S;
           y = floorY(ride.to);

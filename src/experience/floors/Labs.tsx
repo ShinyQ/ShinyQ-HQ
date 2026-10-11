@@ -10,7 +10,7 @@ import { buildLabsLayout, LABS } from "./labs/layout";
 import { PacketLanes } from "./labs/PacketLanes";
 import { Pods } from "./labs/Pods";
 
-export type LabsLabels = Pick<HubLabels, "directory" | "more">;
+export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count">;
 
 /** L3 Project Roads (walkable floors plan, part 2), generated from the pods in content. */
 export function Labs({ data, labels, tier }: { data: ExperienceData; labels: LabsLabels; tier: GpuTier }) {
@@ -22,7 +22,7 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       <RoadMarkings network={layout.network} color={LABS.accent} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} />
       {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
       <Suspense fallback={null}>
-        <Hub layout={layout} pods={data.labs.pods} labels={{ wings: data.labs.wings, directory: labels.directory, more: labels.more }} />
+        <Hub layout={layout} pods={data.labs.pods} labels={{ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }} />
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
       <Pods placed={layout.placed} tier={t} />

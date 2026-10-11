@@ -35,6 +35,8 @@ export interface FloorLayout {
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
   road?: RoadNetwork;
+  /** After an elevator ride the rover rolls on to this point (along the road); a mission or input takes over at once. */
+  arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
   viewZones?: ViewZone[];
 }

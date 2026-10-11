@@ -609,7 +609,9 @@
     "swipe": "Swipe the card to step",
     "workshopSub": "Side projects, repositories and models",
     "more": "More projects here",
-    "moreSub": "Every other project is on this directory board",
+    "moreSub": "Open lists every project of this wing",
+    "boardCount": "{count, plural, one {# project} other {# projects}}",
+    "boardOpen": "Open the full list",
     "proto": {
       "title": "Walkable floors prototype",
       "floor": "Floor",

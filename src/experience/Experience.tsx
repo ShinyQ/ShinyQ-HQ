@@ -218,7 +218,7 @@ export default function Experience({
         certs: { title: tHome("certsTitle"), verify: tCommon("verify"), inProgress: tCommon("inProgress") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
-      labs: { directory: tDrawer("directory"), more: tWalk("more") },
+      labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
       career: {
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
