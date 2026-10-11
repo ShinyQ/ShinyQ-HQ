@@ -564,6 +564,27 @@
     "swipe": "Swipe the card to step",
     "workshopSub": "Side projects, repositories and models",
     "more": "More projects here",
-    "moreSub": "Every other project is on this directory board"
+    "moreSub": "Every other project is on this directory board",
+    "proto": {
+      "title": "Walkable floors prototype",
+      "floor": "Floor",
+      "L2": "L2 Career Road",
+      "L3": "L3 Project Roads",
+      "road": "Road",
+      "straight": "Straight",
+      "meander": "Meander",
+      "view": "View",
+      "rover": "Rover",
+      "top": "Top-down",
+      "rules": "Space rules",
+      "pass": "pass",
+      "violations": "{count} violations",
+      "size": "{w} x {d} u, {rooms} rooms, {plazas} plazas",
+      "rooms": "{count} rooms",
+      "loop": "Loop",
+      "hint": "Drive with WASD or click the floor. The walk uses the road.",
+      "close": "Close",
+      "prompt": "Show the prompt again"
+    }
   }
 }

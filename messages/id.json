@@ -564,6 +564,27 @@
     "swipe": "Geser kartu untuk berpindah titik",
     "workshopSub": "Side project, repository, dan model",
     "more": "Proyek lainnya di sini",
-    "moreSub": "Semua proyek lain ada di papan direktori ini"
+    "moreSub": "Semua proyek lain ada di papan direktori ini",
+    "proto": {
+      "title": "Prototipe lantai yang bisa dijelajahi",
+      "floor": "Lantai",
+      "L2": "L2 Career Road",
+      "L3": "L3 Project Roads",
+      "road": "Jalan",
+      "straight": "Lurus",
+      "meander": "Berkelok",
+      "view": "Tampilan",
+      "rover": "Rover",
+      "top": "Dari atas",
+      "rules": "Aturan ruang",
+      "pass": "lolos",
+      "violations": "{count} pelanggaran",
+      "size": "{w} x {d} u, {rooms} ruang, {plazas} plaza",
+      "rooms": "{count} ruang",
+      "loop": "Putaran",
+      "hint": "Setir dengan WASD atau klik lantai. Tur mengikuti jalan.",
+      "close": "Tutup",
+      "prompt": "Tampilkan tawaran lagi"
+    }
   }
 }

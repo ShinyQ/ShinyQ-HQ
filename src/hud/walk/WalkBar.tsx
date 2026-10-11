@@ -145,7 +145,7 @@ export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarPro
             <select
               value={state.filter ?? ""}
               onChange={(e) => void walk.setFilter(e.target.value || null)}
-              className="min-h-9 rounded-full border border-glass-border bg-void px-2 text-xs text-ink-2"
+              className="min-h-9 max-w-32 rounded-full border border-glass-border bg-void px-2 text-xs text-ink-2"
               data-testid="walk-filter"
             >
               <option value="">{t("all")}</option>
