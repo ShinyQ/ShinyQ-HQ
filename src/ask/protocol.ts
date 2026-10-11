@@ -1,6 +1,7 @@
 /**
  * Wire contract between the browser and the Ask the HQ Pages Function (`functions/api/ask.ts`).
- * Types only: imported by the client (`src/ask/client.ts`) and the Function, so both sides agree.
+ * Types and tiny dependency-free validators: imported by the client (`src/ask/client.ts`) and the
+ * Function, so both sides agree.
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md.
  */
 
@@ -19,12 +20,64 @@ export interface AskStatus {
   maxLength: number;
 }
 
+/**
+ * Which UI entry point sent a question (analytics only, never the question text): the home hero bar,
+ * the dock's own input, a topic question pill, a follow-up pill, the Rover Terminal or Cmd-K.
+ */
+export const ASK_ENTRIES = ["hero", "dock", "pill", "followup", "terminal", "palette"] as const;
+export type AskEntry = (typeof ASK_ENTRIES)[number];
+
+export const isAskEntry = (value: unknown): value is AskEntry => typeof value === "string" && (ASK_ENTRIES as readonly string[]).includes(value);
+
+/**
+ * Topic tags of the knowledge chunks an answer was retrieved from (the `done` frame), used by the
+ * client to pick follow-up questions. Allowlisted values only: never raw chunk text or ids.
+ */
+export const ASK_TAGS = [
+  "work",
+  "software",
+  "ai",
+  "career",
+  "now",
+  "contact",
+  "education",
+  "certifications",
+  "awards",
+  "skills",
+  "stats",
+  "writing",
+  "research",
+  "talks",
+  "github",
+  "voice",
+  "fraud",
+  "documents",
+  "agents",
+  "rag",
+  "security",
+  "data",
+] as const;
+export type AskTag = (typeof ASK_TAGS)[number];
+
+/** At most this many tags per answer. */
+export const ASK_MAX_TAGS = 8;
+
+export const isAskTag = (value: unknown): value is AskTag => typeof value === "string" && (ASK_TAGS as readonly string[]).includes(value);
+
+/** Keeps known tags only, deduplicated, in order, capped at `ASK_MAX_TAGS`. */
+export function cleanTags(value: unknown): AskTag[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(isAskTag))].slice(0, ASK_MAX_TAGS);
+}
+
 /** `POST /api/ask` body (Content-Type: application/json, same origin only). */
 export interface AskRequest {
   q: string;
   locale: AskLocale;
   /** Required unless a valid `hq_ask` session cookie (30 min) is present. */
   turnstileToken?: string;
+  /** Entry point, for analytics. Unknown values are ignored. */
+  source?: AskEntry;
 }
 
 /**
@@ -42,7 +95,7 @@ export type AskSource = "primary" | "fallback" | "cache" | "none";
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
 export type AskFrame =
   | { delta: string }
-  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string };
+  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[] };
 
 /** Error bodies (JSON) for non-200 responses. */
 export type AskErrorCode =

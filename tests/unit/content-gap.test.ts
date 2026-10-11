@@ -60,6 +60,21 @@ describe("report", () => {
     expect(md).not.toMatch(/\u2014/);
   });
 
+  it("lists the UI entry points, keeping only plain keys", () => {
+    const md = formatReport({
+      weekOf: "2026-10-12",
+      questions: [],
+      outcomes: [{ key: "answer", n: 10 }],
+      sources: [],
+      entries: [{ key: "pill", n: 6 }, { key: "hero", n: 3 }, { key: "", n: 1 }, { key: "<x>", n: 0 }],
+      blocklist: [],
+    });
+    expect(md).toContain("## Entry points");
+    expect(md).toContain("| pill | 6 | 60% |");
+    expect(md).toContain("| (none) | 1 | 10% |");
+    expect(md).not.toContain("<x>");
+  });
+
   it("says so when nothing was unanswered", () => {
     expect(formatReport({ weekOf: "2026-10-12", questions: [], outcomes: [], sources: [], blocklist: [] })).toContain("None this week.");
   });
