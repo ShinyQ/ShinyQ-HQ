@@ -471,20 +471,7 @@
     "title": "About and contact"
   },
   "ask": {
-    "title": "Ask about Kurniadi",
-    "intro": "Questions about his work, projects, career and how to reach him, answered by AI from this site.",
-    "label": "Your question",
-    "placeholder": "Ask about his work, projects or career",
-    "submit": "Ask",
-    "clear": "Clear",
-    "asked": "You asked",
     "thinking": "Thinking…",
-    "suggestionsLabel": "Suggested questions",
-    "suggestions": {
-      "now": "What is he building now?",
-      "ai": "Show his AI results",
-      "contact": "How can I contact him?"
-    },
     "asOf": "Answered by AI from this site, as of {date}",
     "privacyTitle": "Privacy",
     "privacy": "Questions and answers are processed by Cloudflare Workers AI at the nearest edge and logged for up to 7 days, with emails, phone numbers and ID numbers removed. They are never used for training. No account is needed, and the only cookie is a short-lived anti-bot check. Please don't share personal information.",
@@ -495,19 +482,51 @@
     },
     "terminal": {
       "option": "ask me anything ^_^",
-      "prompt": "rover@hq:~$ ask",
-      "label": "Ask the rover a question",
-      "placeholder": "type a question",
-      "hint": "Ask: Enter · Back: Esc",
-      "hintMenu": "Pick: a, 1 to 8 or arrows + Enter · Close: Esc",
-      "suggestions": {
-        "now": "What are you building now?",
-        "ai": "Show your AI results"
-      }
+      "hintMenu": "Pick: a, 1 to 8 or arrows + Enter · Close: Esc"
     },
     "palette": {
       "row": "Ask: \"{q}\"",
       "subtitle": "Answered by AI from this site"
+    },
+    "dock": {
+      "launcher": "Ask AI",
+      "launcherLabel": "Ask AI about Kurniadi",
+      "teaser": "Ask me anything about Kurniadi's work, projects or career.",
+      "teaserDismiss": "Dismiss",
+      "title": "Ask the HQ",
+      "subtitle": "AI answers from this site only",
+      "close": "Close chat",
+      "clear": "Clear chat",
+      "threadLabel": "Conversation",
+      "welcome": "Hi! I answer questions about Kurniadi's work, projects, career and how to reach him, using only what is on this site. Pick a topic or type a question.",
+      "you": "You",
+      "hq": "HQ",
+      "topicsLabel": "Pick a topic",
+      "topicQuestions": "{topic} questions",
+      "backToTopics": "All topics",
+      "followUpsLabel": "Ask next",
+      "moreTopics": "Other topics",
+      "edit": "Edit before asking: {q}",
+      "inputLabel": "Your question",
+      "placeholder": "Ask about his work, projects or career",
+      "send": "Send"
+    },
+    "topics": {
+      "work": "Work",
+      "ai": "AI",
+      "career": "Career",
+      "contact": "Contact"
+    },
+    "hero": {
+      "label": "Ask AI about my work",
+      "placeholder": "Ask anything about my work",
+      "submit": "Ask",
+      "topicsLabel": "Or start with"
+    },
+    "cta": {
+      "title": "Ask the HQ",
+      "intro": "Questions about my work, projects, career or how to reach me, answered by AI from this site.",
+      "button": "Ask AI"
     }
   }
 }

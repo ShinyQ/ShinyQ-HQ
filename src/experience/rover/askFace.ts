@@ -1,7 +1,7 @@
 import type { RoverFace } from "../types";
 
 /**
- * Face override from the Rover Terminal ask mode (src/hud/ask-ui.tsx): `thinking` while a question
+ * Face override from the Ask dock over the 3D tower (src/hud/ask/useAskThread.ts): `thinking` while a question
  * is answered, then `arrived` (^_^) or `blocked` (o_o) for a moment. Plain module state, so the HUD
  * can set it without importing the store or three.js; the Director reads it every frame.
  */

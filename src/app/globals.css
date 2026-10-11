@@ -367,3 +367,23 @@
     background-position: -200% 0;
   }
 }
+
+/* Ask the HQ dock (src/hud/ask): the one authored motion, used only under prefers-reduced-motion: no-preference. */
+@keyframes ask-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+    filter: blur(6px);
+  }
+}
+@keyframes ask-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes ask-teaser-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}

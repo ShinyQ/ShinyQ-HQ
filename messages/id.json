@@ -471,20 +471,7 @@
     "title": "Tentang dan kontak"
   },
   "ask": {
-    "title": "Tanya tentang Kurniadi",
-    "intro": "Pertanyaan seputar karya, proyek, karier, dan cara menghubunginya, dijawab oleh AI dari isi situs ini.",
-    "label": "Pertanyaan Anda",
-    "placeholder": "Tanyakan karya, proyek, atau kariernya",
-    "submit": "Tanya",
-    "clear": "Hapus",
-    "asked": "Pertanyaan Anda",
     "thinking": "Sedang berpikir…",
-    "suggestionsLabel": "Contoh pertanyaan",
-    "suggestions": {
-      "now": "Apa yang sedang ia bangun sekarang?",
-      "ai": "Tunjukkan hasil kerja AI-nya",
-      "contact": "Bagaimana cara menghubunginya?"
-    },
     "asOf": "Dijawab oleh AI dari isi situs ini, per {date}",
     "privacyTitle": "Privasi",
     "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI di edge terdekat dan disimpan dalam log paling lama 7 hari, dengan email, nomor telepon, dan nomor identitas dihapus. Data ini tidak pernah dipakai untuk training. Tidak perlu akun, dan satu-satunya cookie adalah pemeriksaan anti-bot yang berumur pendek. Mohon jangan bagikan informasi pribadi.",
@@ -495,19 +482,51 @@
     },
     "terminal": {
       "option": "tanya apa saja ^_^",
-      "prompt": "rover@hq:~$ ask",
-      "label": "Ajukan pertanyaan ke rover",
-      "placeholder": "ketik pertanyaan",
-      "hint": "Tanya: Enter · Kembali: Esc",
-      "hintMenu": "Pilih: a, 1 hingga 8 atau panah + Enter · Tutup: Esc",
-      "suggestions": {
-        "now": "Apa yang sedang Anda bangun sekarang?",
-        "ai": "Tunjukkan hasil AI Anda"
-      }
+      "hintMenu": "Pilih: a, 1 hingga 8 atau panah + Enter · Tutup: Esc"
     },
     "palette": {
       "row": "Tanya: \"{q}\"",
       "subtitle": "Dijawab oleh AI dari isi situs ini"
+    },
+    "dock": {
+      "launcher": "Tanya AI",
+      "launcherLabel": "Tanya AI tentang Kurniadi",
+      "teaser": "Tanyakan apa saja tentang karya, proyek, atau karier Kurniadi.",
+      "teaserDismiss": "Tutup",
+      "title": "Ask the HQ",
+      "subtitle": "Jawaban AI hanya dari isi situs ini",
+      "close": "Tutup chat",
+      "clear": "Hapus chat",
+      "threadLabel": "Percakapan",
+      "welcome": "Halo! Saya menjawab pertanyaan seputar karya, proyek, karier Kurniadi, dan cara menghubunginya, hanya dari isi situs ini. Pilih topik atau ketik pertanyaan.",
+      "you": "Anda",
+      "hq": "HQ",
+      "topicsLabel": "Pilih topik",
+      "topicQuestions": "Pertanyaan {topic}",
+      "backToTopics": "Semua topik",
+      "followUpsLabel": "Tanya berikutnya",
+      "moreTopics": "Topik lain",
+      "edit": "Ubah sebelum bertanya: {q}",
+      "inputLabel": "Pertanyaan Anda",
+      "placeholder": "Tanyakan karya, proyek, atau kariernya",
+      "send": "Kirim"
+    },
+    "topics": {
+      "work": "Karya",
+      "ai": "AI",
+      "career": "Karier",
+      "contact": "Kontak"
+    },
+    "hero": {
+      "label": "Tanya AI tentang pekerjaan saya",
+      "placeholder": "Tanyakan apa saja tentang pekerjaan saya",
+      "submit": "Tanya",
+      "topicsLabel": "Atau mulai dari"
+    },
+    "cta": {
+      "title": "Ask the HQ",
+      "intro": "Pertanyaan seputar karya, proyek, karier, atau cara menghubungi saya, dijawab oleh AI dari isi situs ini.",
+      "button": "Tanya AI"
     }
   }
 }
