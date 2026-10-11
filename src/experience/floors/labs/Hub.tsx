@@ -59,8 +59,21 @@ function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly La
   const lines = list.map((p) => `${TIER_MARK[p.tier]} ${p.title}`).join("\n");
   return (
     <group position={[(side * board.w) / 2 + side * 0.03, 0, 0]} rotation={[0, (side * Math.PI) / 2, 0]}>
-      <Text font={FONTS.monoBold} fontSize={0.3} color={WING_TINT[wing]} anchorX="center" anchorY="top" position={[0, board.h - 0.25, 0]} material-toneMapped={false}>
-        {`${labels.wings[wing].toUpperCase()} \u00B7 ${labels.directory.toUpperCase()}`}
+      {/* Wing names come from messages (`common.wing`); long names shrink to the board width instead of wrapping. */}
+      <Text
+        font={FONTS.monoBold}
+        fontSize={Math.min(0.32, (board.d - 0.5) / (0.62 * Math.max(1, labels.wings[wing].length)))}
+        color={WING_TINT[wing]}
+        anchorX="center"
+        anchorY="top"
+        whiteSpace="nowrap"
+        position={[0, board.h - 0.25, 0]}
+        material-toneMapped={false}
+      >
+        {labels.wings[wing].toUpperCase()}
+      </Text>
+      <Text font={FONTS.mono} fontSize={0.18} color="#a1a1aa" anchorX="center" anchorY="top" position={[0, board.h - 0.68, 0]}>
+        {labels.directory.toUpperCase()}
       </Text>
       <Text
         font={FONTS.sans}
@@ -70,8 +83,8 @@ function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly La
         color="#e5e7eb"
         anchorX="left"
         anchorY="top"
-        position={[-board.d / 2 + 0.25, board.h - 0.75, 0]}
-        clipRect={[-0.05, -(board.h - 1.4), board.d - 0.5, 0.2]}
+        position={[-board.d / 2 + 0.25, board.h - 1.05, 0]}
+        clipRect={[-0.05, -(board.h - 1.7), board.d - 0.5, 0.2]}
       >
         {lines}
       </Text>
@@ -96,6 +109,11 @@ function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels:
         return (
           <group key={wing} position={[center.x, 0, center.z]} name={`directory-${wing}`}>
             <GlassBox size={[board.w, board.h, board.d]} position={[0, board.h / 2, 0]} color={WING_TINT[wing]} fillOpacity={0.12} />
+            {/* Opaque core: each face shows only its own list, never the mirrored one behind it. */}
+            <mesh position={[0, board.h / 2, 0]}>
+              <boxGeometry args={[board.w * 0.5, board.h - 0.04, board.d - 0.04]} />
+              <meshBasicMaterial color="#070712" />
+            </mesh>
             <BoardFace wing={wing} list={list} labels={labels} side={1} />
             <BoardFace wing={wing} list={list} labels={labels} side={-1} />
           </group>
