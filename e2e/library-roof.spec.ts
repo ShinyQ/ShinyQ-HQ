@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, enterFloorRoute, enterHQ, openPage, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 
@@ -127,7 +127,7 @@ test.describe("missions to the Library and the Roof", () => {
     expect((await snapshot(page)).phase).toBe("explore");
   });
 
-  test("cv drives to the kiosk and links the one CV PDF", async ({ page }) => {
+  test("cv drives to the kiosk, opens the CV viewer over the tower and links the one CV PDF", async ({ page }) => {
     await enterFloorRoute(page, "/en/library");
     await runMission(page, "cv");
     await waitForRoom(page, "RF:cv");
@@ -144,6 +144,14 @@ test.describe("missions to the Library and the Roof", () => {
     await pdf.click();
     expect((await download).suggestedFilename()).toBe("kurniadi-ahmad-wijaya-cv.pdf");
     await expect(panel.getByRole("link", { name: "Open the CV page" })).toHaveAttribute("href", "/en/cv");
+    await panel.getByRole("button", { name: "View CV" }).click();
+    const viewer = page.getByRole("dialog", { name: "CV", exact: true });
+    await expect(viewer.getByRole("button", { name: "Close CV" })).toBeFocused();
+    // Esc closes the viewer only; the room stays open.
+    await page.keyboard.press("Escape");
+    await expect(viewer).toBeHidden();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("button", { name: "View CV" })).toBeFocused();
   });
 
   test("a Medium post from the palette opens in a new tab", async ({ page }) => {
@@ -191,6 +199,12 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(drawer.getByRole("link", { name: /DOI 10\.1109\/icaibda53487/ })).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
     await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
     await expectRoverNear(page, { x: 22.2, z: -7 });
+    await drawer.getByRole("button", { name: /Indonesian Digital Wallet/ }).click();
+    const paper = page.getByRole("dialog", { name: /Indonesian Digital Wallet/ });
+    await expect(paper.getByTestId("paper-abstract")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(paper).toBeHidden();
+    await expect(drawer).toBeVisible();
   });
 });
 
@@ -201,4 +215,27 @@ test("the static Library page has a Research section", async ({ page }) => {
   await expect(research.getByRole("link", { name: /DOI 10\.1109\/icicyta53712/ })).toHaveAttribute("href", "https://doi.org/10.1109/icicyta53712.2021.9689122");
   await expect(research.getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("href", "https://scholar.google.com/citations?user=u8OY1foAAAAJ");
   await expect(research).toContainText("as of Oct 2026");
+});
+
+test("a paper opens its preview modal with the abstract, citations and new-tab links, no iframes", async ({ page }) => {
+  await openPage(page, "/en/library?tier=static");
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  const research = page.locator("#research");
+  await research.getByRole("button", { name: /Study on the Dynamics of COVID-19/ }).click();
+  const dialog = page.getByRole("dialog", { name: /Study on the Dynamics of COVID-19/ });
+  await expect(dialog.getByRole("button", { name: "Close paper preview" })).toBeFocused();
+  await expect(dialog.getByTestId("paper-abstract")).toContainText("N-BEATS");
+  await dialog.getByRole("button", { name: "BibTeX" }).click();
+  await expect(dialog.getByTestId("paper-citation")).toContainText("@inproceedings{atmajaya2021study,");
+  await dialog.getByRole("button", { name: "Copy citation" }).click();
+  await expect(dialog.getByRole("status")).toHaveText("Citation copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^@inproceedings\{atmajaya2021study,/);
+  await expect(dialog.getByRole("link", { name: /DOI 10\.1109\/icicyta53712/ })).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(dialog.getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("target", "_blank");
+  await expect(page.locator("iframe")).toHaveCount(0);
+  const results = await new AxeBuilder({ page }).include("[data-testid='paper-dialog']").analyze();
+  expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(research.getByRole("button", { name: /Study on the Dynamics of COVID-19/ })).toBeFocused();
 });

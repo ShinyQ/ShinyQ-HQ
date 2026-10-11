@@ -1,6 +1,7 @@
 import type { Accent, Confidence, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
+import type { PaperPreview } from "../citation";
 
 /**
  * Glass Drawer content contract. One `RoomView` per room, locale-resolved and serializable, built on
@@ -78,6 +79,8 @@ export interface RoomResearchItem {
   /** Localized citation line with its source and date. */
   citations?: string;
   summary?: string;
+  /** Paper preview modal data (abstract, citation formats, Scholar link). */
+  preview: PaperPreview;
 }
 
 export interface RoomView {

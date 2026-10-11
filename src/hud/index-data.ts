@@ -16,7 +16,7 @@ export interface HudIndex {
 }
 
 const ACTION_KEYS: Record<PaletteActionId, keyof typeof en.hud.actions> = {
-  "download-cv": "downloadCv",
+  "view-cv": "viewCv",
   "copy-email": "copyEmail",
   "toggle-language": "toggleLanguage",
   "toggle-sound": "toggleSound",

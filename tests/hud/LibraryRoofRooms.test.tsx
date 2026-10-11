@@ -10,7 +10,9 @@ import type { Locale, RoomId } from "@/content/schema";
 import { buildRoomViews } from "@/content/room-views";
 import { getPosts, getRoof } from "@/content/load";
 import { RoomDrawer } from "@/hud/drawer/RoomDrawer";
+import { onHudCommand, type HudCommand } from "@/hud/events";
 import { audio } from "@/lib/audio";
+import { CV_PAGES } from "@/lib/cv";
 
 // next-intl's Link needs the Next router; a locale-prefixing anchor is enough here.
 vi.mock("@/i18n/navigation", async () => {
@@ -96,6 +98,22 @@ describe("Research shelf in the drawer", () => {
     expect(within(drawer).getByRole("link", { name: /Google Scholar/ })).toHaveAttribute("href", "https://scholar.google.com/citations?user=u8OY1foAAAAJ");
     expect(within(drawer).getByRole("link", { name: /IEEE Xplore/ })).toHaveAttribute("target", "_blank");
   });
+
+  it("opens the paper preview modal from the title and the abstract button", async () => {
+    const user = userEvent.setup();
+    const commands: HudCommand[] = [];
+    const off = onHudCommand((c) => commands.push(c));
+    const drawer = open("L4:research");
+    const ewallet = within(drawer).getAllByTestId("research-item").find((li) => li.textContent?.includes("Indonesian Digital Wallet"))!;
+    await user.click(within(ewallet).getByRole("button", { name: /Indonesian Digital Wallet/ }));
+    await user.click(within(ewallet).getByRole("button", { name: "Abstract and citation" }));
+    off();
+    expect(commands).toHaveLength(2);
+    for (const command of commands) {
+      expect(command.type).toBe("paper");
+      if (command.type === "paper") expect(command.paper.citations.bibtex).toMatch(/^@inproceedings\{fattahila2021indonesian,/);
+    }
+  });
 });
 
 describe("Roof rooms in the drawer", () => {
@@ -125,9 +143,17 @@ describe("Roof rooms in the drawer", () => {
     expect(await within(drawer).findByRole("status")).toHaveTextContent(roof.contact.email);
   });
 
-  it.each(["en", "id"] as const)("CV kiosk (%s): downloads the one CV PDF and links /cv", (locale) => {
+  it.each(["en", "id"] as const)("CV kiosk (%s): opens the CV viewer, offers the one CV PDF and links /cv", async (locale) => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
     const drawer = open("RF:cv", locale);
+    const commands: HudCommand[] = [];
+    const off = onHudCommand((c) => commands.push(c));
+    const user = userEvent.setup();
+    await user.click(within(drawer).getByRole("button", { name: locale === "id" ? "Lihat CV" : "View CV" }));
+    await user.click(within(drawer).getByTestId("cv-cover"));
+    off();
+    expect(commands).toEqual([{ type: "cv" }, { type: "cv" }]);
+    expect(within(drawer).getByRole("img", { name: locale === "id" ? `Halaman CV 1 dari ${CV_PAGES.length}` : `CV page 1 of ${CV_PAGES.length}` })).toBeInTheDocument();
     const pdfs = within(drawer).getAllByRole("link").filter((a) => a.getAttribute("href")?.endsWith(".pdf"));
     expect(pdfs.map((a) => a.getAttribute("href"))).toEqual([`/cv/${roof.cv.fileName}.pdf`]);
     expect(pdfs[0]).toHaveAttribute("download", `${roof.cv.fileName}.pdf`);

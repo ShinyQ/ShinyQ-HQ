@@ -1,0 +1,11 @@
+/** Lazy chunks of the site-wide modals; entry points call these on hover or focus to preload. */
+export const loadCvDialog = () => import("./cv/CvDialog");
+export const loadPaperDialog = () => import("./paper/PaperDialog");
+
+export function preloadCvDialog() {
+  void loadCvDialog();
+}
+
+export function preloadPaperDialog() {
+  void loadPaperDialog();
+}

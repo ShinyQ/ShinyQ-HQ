@@ -52,12 +52,14 @@ test.describe("command palette", () => {
   test("searches in Indonesian", async ({ page }) => {
     await openPage(page, "/id/labs", { waitUntil: "networkidle" });
     await page.keyboard.press("Control+k");
-    await page.keyboard.type("unduh");
-    await expect(page.getByRole("dialog", { name: "Palet perintah" }).getByRole("option").first()).toContainText("Unduh CV");
-    // Same file in every language.
-    const download = page.waitForEvent("download");
-    await page.keyboard.press("Enter");
-    expect((await download).suggestedFilename()).toBe(`${data.floors.roof.cv.fileName}.pdf`);
+    await page.keyboard.type("lihat cv");
+    const palette = page.getByRole("dialog", { name: "Palet perintah" });
+    await expect(palette.getByRole("option").first()).toContainText("Lihat CV");
+    // The "View CV" command opens the CV viewer modal, same PDF in every language.
+    await palette.getByRole("group", { name: "Perintah" }).getByRole("option", { name: /Lihat CV/ }).click();
+    const viewer = page.getByRole("dialog", { name: "CV", exact: true });
+    await expect(viewer).toBeVisible();
+    await expect(viewer.getByRole("link", { name: "Unduh PDF" })).toHaveAttribute("href", `/cv/${data.floors.roof.cv.fileName}.pdf`);
   });
 
   test("is a full-screen sheet on mobile", async ({ page }) => {

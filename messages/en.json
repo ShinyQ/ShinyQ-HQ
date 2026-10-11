@@ -42,7 +42,7 @@
     "previous": "Previous",
     "next": "Next",
     "external": "opens in a new tab",
-    "downloadCv": "Download CV",
+    "viewCv": "View CV",
     "email": "Email",
     "copyEmail": "Copy email",
     "copied": "Copied",
@@ -184,6 +184,7 @@
     "doi": "DOI",
     "pdf": "PDF",
     "code": "Source code",
+    "preview": "Abstract and citation",
     "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
     "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
     "profiles": "Research profiles"
@@ -202,15 +203,55 @@
     "beacon": "Beacon",
     "channels": "Contact links",
     "cvTitle": "CV kiosk",
-    "cvIntro": "Download my CV as a PDF.",
+    "cvIntro": "Read my CV here, or download the PDF.",
     "location": "Location"
   },
   "cv": {
     "title": "CV",
-    "intro": "My CV as a PDF, ready to download or read below.",
-    "download": "Download CV (PDF)",
-    "preview": "CV preview (PDF)",
-    "fallback": "No preview in this browser? Open the PDF."
+    "intro": "My CV, one PDF for both languages. Zoom in, read it here or download it.",
+    "view": "View CV",
+    "close": "Close CV",
+    "toolbar": "CV viewer controls",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit width",
+    "pages": "{count, plural, one {# page} other {# pages}}",
+    "pageOf": "Page {page} of {total}",
+    "pageAlt": "CV page {page} of {total}",
+    "region": "CV pages",
+    "download": "Download PDF",
+    "openTab": "Open in new tab",
+    "external": "opens in a new tab",
+    "fallback": "Pages not loading? Open the PDF.",
+    "hint": "Zoom: + and - · Fit: 0 · Close: Esc"
+  },
+  "paper": {
+    "close": "Close paper preview",
+    "authors": "Authors",
+    "venue": "Venue",
+    "year": "Year",
+    "cited": "Cited by",
+    "abstract": "Abstract",
+    "summary": "Summary",
+    "cite": "Cite this paper",
+    "format": "Citation format",
+    "formats": {
+      "apa": "APA",
+      "ieee": "IEEE",
+      "bibtex": "BibTeX"
+    },
+    "citationIn": "Citation in {format}",
+    "copy": "Copy citation",
+    "copied": "Citation copied",
+    "copyFailed": "Could not copy. Select the text and copy it.",
+    "links": "Links",
+    "doi": "DOI",
+    "scholar": "Google Scholar",
+    "publisher": "Publication page",
+    "pdf": "PDF",
+    "code": "Source code",
+    "external": "opens in a new tab"
   },
   "notFound": {
     "title": "Room not found",
@@ -324,7 +365,7 @@
       "close": "Close search"
     },
     "actions": {
-      "downloadCv": "Download CV",
+      "viewCv": "View CV",
       "copyEmail": "Copy email",
       "toggleLanguage": "Baca dalam bahasa Indonesia",
       "toggleSound": "Turn sound on or off",
@@ -351,7 +392,7 @@
       "lectern": "Reading desk",
       "read": "Read",
       "comms": "Contact links",
-      "cvHint": "Open the CV download"
+      "cvHint": "Open the CV viewer"
     },
     "view": {
       "label": "View controls",
@@ -416,6 +457,7 @@
       "channels": "Contact links",
       "availability": "Availability",
       "downloads": "Downloads",
+      "cvView": "View CV",
       "cvPage": "Open the CV page",
       "cvPdf": "Download CV (PDF)",
       "placings": "Competition results",

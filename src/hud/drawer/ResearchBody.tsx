@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
+import { PaperTrigger } from "@/components/paper/PaperTrigger";
 import type { RoomResearchItem } from "@/content/room-views/types";
 import type { RoomBodyProps } from "./bodies";
 
@@ -37,7 +38,11 @@ function Paper({ item, self }: { item: RoomResearchItem; self: string }) {
       <p className="label text-amber">
         {item.kind} · {item.date}
       </p>
-      <h3 className="text-[15px] leading-6 font-semibold text-ink">{item.href ? <External href={item.href}>{item.title}</External> : item.title}</h3>
+      <h3 className="text-[15px] leading-6 font-semibold text-ink">
+        <PaperTrigger paper={item.preview} className="text-left transition hover:text-amber">
+          {item.title}
+        </PaperTrigger>
+      </h3>
       <p className="text-[13px] leading-5 text-ink-2">
         <span className="sr-only">{t("authors")}: </span>
         <Authors authors={item.authors} self={self} />
@@ -45,6 +50,9 @@ function Paper({ item, self }: { item: RoomResearchItem; self: string }) {
       {item.venue && <p className="text-[13px] leading-5 text-ink-3 italic">{item.venue}</p>}
       {item.summary && <p className="text-sm leading-6 text-ink">{item.summary}</p>}
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
+        <PaperTrigger paper={item.preview} className="link" testId="paper-cite">
+          {t("preview")}
+        </PaperTrigger>
         {item.doi && (
           <External href={`https://doi.org/${item.doi}`}>
             {t("doi")} {item.doi}

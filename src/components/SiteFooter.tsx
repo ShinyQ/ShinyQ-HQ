@@ -3,6 +3,7 @@ import type { Locale } from "@/content/schema";
 import { getContact, getProfile, getRoof } from "@/content/load";
 import { Link } from "@/i18n/navigation";
 import { REPO_URL } from "@/lib/site";
+import { CvButton } from "./cv/CvButton";
 import { ExternalLink } from "./ExternalLink";
 import { PRIMARY_NAV } from "./SiteHeader";
 
@@ -20,7 +21,7 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
     ...(contact.medium ? [{ label: "Medium", href: contact.medium }] : []),
     ...(contact.googleScholar ? [{ label: "Google Scholar", href: contact.googleScholar }] : []),
   ];
-  const pages = [...PRIMARY_NAV.map((item) => ({ href: item.href, label: tn(item.key) })), { href: "/quick", label: tn("quick") }, { href: "/cv", label: tn("cv") }];
+  const pages = [...PRIMARY_NAV.map((item) => ({ href: item.href, label: tn(item.key) })), { href: "/quick", label: tn("quick") }];
   return (
     <footer className="no-print mt-24 border-t border-line sm:mt-32 lg:mt-40">
       {/* Bottom padding keeps the fixed Back to 3D button off the last links. */}
@@ -45,6 +46,11 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <CvButton className={linkClass} testId="cv-open-footer">
+                  {tn("cv")}
+                </CvButton>
+              </li>
             </ul>
           </nav>
           <div className="md:col-span-4">

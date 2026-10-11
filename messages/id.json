@@ -42,7 +42,7 @@
     "previous": "Sebelumnya",
     "next": "Berikutnya",
     "external": "terbuka di tab baru",
-    "downloadCv": "Unduh CV",
+    "viewCv": "Lihat CV",
     "email": "Email",
     "copyEmail": "Salin email",
     "copied": "Tersalin",
@@ -184,6 +184,7 @@
     "doi": "DOI",
     "pdf": "PDF",
     "code": "Kode sumber",
+    "preview": "Abstrak dan sitasi",
     "citations": "{count} sitasi di {source}, per {date}",
     "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
     "profiles": "Profil riset"
@@ -202,15 +203,55 @@
     "beacon": "Beacon",
     "channels": "Tautan kontak",
     "cvTitle": "Kios CV",
-    "cvIntro": "Unduh CV saya dalam format PDF.",
+    "cvIntro": "Baca CV saya di sini, atau unduh PDF-nya.",
     "location": "Lokasi"
   },
   "cv": {
     "title": "CV",
-    "intro": "CV saya dalam format PDF, siap diunduh atau dibaca di bawah.",
-    "download": "Unduh CV (PDF)",
-    "preview": "Pratinjau CV (PDF)",
-    "fallback": "Pratinjau tidak tampil di browser ini? Buka PDF-nya."
+    "intro": "CV saya, satu PDF untuk kedua bahasa. Perbesar, baca di sini, atau unduh.",
+    "view": "Lihat CV",
+    "close": "Tutup CV",
+    "toolbar": "Kontrol penampil CV",
+    "zoom": "Zoom",
+    "zoomIn": "Perbesar",
+    "zoomOut": "Perkecil",
+    "fit": "Sesuaikan lebar",
+    "pages": "{count, plural, other {# halaman}}",
+    "pageOf": "Halaman {page} dari {total}",
+    "pageAlt": "Halaman CV {page} dari {total}",
+    "region": "Halaman CV",
+    "download": "Unduh PDF",
+    "openTab": "Buka di tab baru",
+    "external": "terbuka di tab baru",
+    "fallback": "Halaman tidak tampil? Buka PDF-nya.",
+    "hint": "Zoom: + dan - · Sesuaikan: 0 · Tutup: Esc"
+  },
+  "paper": {
+    "close": "Tutup pratinjau makalah",
+    "authors": "Penulis",
+    "venue": "Publikasi",
+    "year": "Tahun",
+    "cited": "Dikutip",
+    "abstract": "Abstrak",
+    "summary": "Ringkasan",
+    "cite": "Kutip makalah ini",
+    "format": "Format sitasi",
+    "formats": {
+      "apa": "APA",
+      "ieee": "IEEE",
+      "bibtex": "BibTeX"
+    },
+    "citationIn": "Sitasi format {format}",
+    "copy": "Salin sitasi",
+    "copied": "Sitasi tersalin",
+    "copyFailed": "Gagal menyalin. Pilih teksnya lalu salin.",
+    "links": "Tautan",
+    "doi": "DOI",
+    "scholar": "Google Scholar",
+    "publisher": "Halaman publikasi",
+    "pdf": "PDF",
+    "code": "Kode sumber",
+    "external": "terbuka di tab baru"
   },
   "notFound": {
     "title": "Ruang tidak ditemukan",
@@ -324,7 +365,7 @@
       "close": "Tutup pencarian"
     },
     "actions": {
-      "downloadCv": "Unduh CV",
+      "viewCv": "Lihat CV",
       "copyEmail": "Salin email",
       "toggleLanguage": "Read in English",
       "toggleSound": "Aktifkan atau matikan suara",
@@ -351,7 +392,7 @@
       "lectern": "Meja baca",
       "read": "Baca",
       "comms": "Tautan kontak",
-      "cvHint": "Buka unduhan CV"
+      "cvHint": "Buka penampil CV"
     },
     "view": {
       "label": "Kontrol tampilan",
@@ -416,6 +457,7 @@
       "channels": "Tautan kontak",
       "availability": "Ketersediaan",
       "downloads": "Unduhan",
+      "cvView": "Lihat CV",
       "cvPage": "Buka halaman CV",
       "cvPdf": "Unduh CV (PDF)",
       "placings": "Hasil kompetisi",

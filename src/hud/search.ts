@@ -3,7 +3,7 @@ import type { HudIndex } from "./index-data";
 import type { PaletteActionId, PaletteEntry, PaletteGroup, PaletteSearchOptions } from "./palette-types";
 
 const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
-  "download-cv": ["cv", "resume", "pdf", "download", "unduh"],
+  "view-cv": ["cv", "resume", "pdf", "view", "lihat", "curriculum vitae"],
   "copy-email": ["email", "contact", "mail", "copy", "salin", "kontak"],
   "toggle-language": ["language", "bahasa", "english", "indonesia", "inggris"],
   "toggle-sound": ["sound", "audio", "mute", "suara"],

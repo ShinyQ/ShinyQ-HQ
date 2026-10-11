@@ -4,7 +4,7 @@ import type { RoomKind } from "@/experience/missions/rooms";
 
 export type PaletteGroupId = "ask" | "missions" | "recent" | "rooms" | "years" | "actions";
 
-export type PaletteActionId = "download-cv" | "copy-email" | "toggle-language" | "toggle-sound" | "quick-view";
+export type PaletteActionId = "view-cv" | "copy-email" | "toggle-language" | "toggle-sound" | "quick-view";
 
 export type PaletteTarget =
   | { type: "mission"; id: string }

@@ -11,10 +11,9 @@ import { createMissionRunner, type MissionRunner } from "@/experience/missions/r
 import { isAutoOpenClaimed, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
-import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { CommandPalette } from "./CommandPalette";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
-import { onHudCommand, openAsk } from "./events";
+import { onHudCommand, openAsk, openCv } from "./events";
 import type { HudIndex } from "./index-data";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
@@ -25,7 +24,7 @@ import { orderTerminalMissions } from "./terminal";
 const VISITS_KEY = "hq:visits";
 const AUTO_OPEN_DELAY_MS = 600;
 const MIN_TOAST_MS = 2400;
-const STATIC_ACTIONS: readonly PaletteActionId[] = ["download-cv", "copy-email", "toggle-language", "quick-view"];
+const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view"];
 
 export interface MissionHudProps {
   locale: Locale;
@@ -198,15 +197,9 @@ export function MissionHud({ locale, index, autoOpenOnLobby = true }: MissionHud
 
   const runAction = async (action: PaletteActionId) => {
     switch (action) {
-      case "download-cv": {
-        const link = document.createElement("a");
-        link.href = cvPdfPath(index.cvFileName);
-        link.download = cvDownloadName(index.cvFileName);
-        document.body.append(link);
-        link.click();
-        link.remove();
+      case "view-cv":
+        openCv();
         return;
-      }
       case "copy-email":
         try {
           await navigator.clipboard.writeText(index.email);

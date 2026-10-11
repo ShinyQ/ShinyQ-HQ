@@ -40,14 +40,14 @@ const rooms: RoomInfo[] = [
 const years: YearInfo[] = [{ year: 2024, room: "L2:jenius-2024", path: "/journey#y2024", keywords: ["Jenius"] }];
 
 const actionLabels: Record<PaletteActionId, { en: string; id: string }> = {
-  "download-cv": { en: "Download CV", id: "Unduh CV" },
+  "view-cv": { en: "View CV", id: "Lihat CV" },
   "copy-email": { en: "Copy email", id: "Salin email" },
   "toggle-language": { en: "Baca dalam Bahasa Indonesia", id: "Read in English" },
   "toggle-sound": { en: "Toggle sound", id: "Suara" },
   "quick-view": { en: "Quick view", id: "Tampilan ringkas" },
 };
 
-const entries = buildPaletteEntries({ missions, rooms, years, actionLabels }, ["download-cv", "copy-email"]);
+const entries = buildPaletteEntries({ missions, rooms, years, actionLabels }, ["view-cv", "copy-email"]);
 
 function setup(overrides: Partial<CommandPaletteProps> = {}, messages: typeof en = en, locale: "en" | "id" = "en") {
   const props: CommandPaletteProps = {

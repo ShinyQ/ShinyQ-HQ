@@ -1,5 +1,6 @@
 import { createTranslator } from "next-intl";
 import { getContact, getLibrary, getPosts, getProfile } from "../load";
+import { buildPaperPreview } from "../papers";
 import type { Locale } from "../schema";
 import { isResearch, publicationDate, researchPublications } from "../selectors";
 import { formatDate, formatYearMonth } from "@/lib/format";
@@ -58,6 +59,7 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
         code: p.code,
         citations: p.citations !== undefined && metrics ? t("citations", { count: p.citations, source: metrics.source, date: asOf }) : undefined,
         summary: p.summary?.[locale],
+        preview: buildPaperPreview(p, locale),
       })),
     },
     page: "/library#research",

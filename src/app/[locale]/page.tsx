@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { CvButton } from "@/components/cv/CvButton";
 import { PostList } from "@/components/LibraryBlocks";
 import { AskHeroBar } from "@/components/page/AskEntry";
 import { SectionSplit, SectionWide, StatLedger } from "@/components/page/Layout";
@@ -12,7 +13,6 @@ import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatYearMonth } from "@/lib/format";
-import { cvDownloadName, cvPdfPath } from "@/lib/cv";
 import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -37,8 +37,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     .slice(-4)
     .reverse();
   const experience = buildExperienceData(locale, { L1: tf("L1"), L2: tf("L2"), L3: tf("L3"), L4: tf("L4"), RF: tf("RF") });
-  const cv = cvPdfPath(roof.cv.fileName);
-  const cvName = cvDownloadName(roof.cv.fileName);
 
   return (
     <>
@@ -77,9 +75,9 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <Link href="/labs" className="pv-btn pv-btn-primary">
               {t("seeWork")}
             </Link>
-            <a href={cv} download={cvName} type="application/pdf" className="pv-btn pv-btn-ghost">
-              {tc("downloadCv")}
-            </a>
+            <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-hero">
+              {tc("viewCv")}
+            </CvButton>
           </div>
         </aside>
       </section>
@@ -142,9 +140,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           <Link href="/contact" className="pv-btn pv-btn-ghost">
             {t("aboutContact")}
           </Link>
-          <a href={cv} download={cvName} type="application/pdf" className="pv-btn pv-btn-ghost">
-            {tc("downloadCv")} (PDF)
-          </a>
+          <CvButton className="pv-btn pv-btn-ghost">{tc("viewCv")}</CvButton>
         </div>
       </section>
     </>
