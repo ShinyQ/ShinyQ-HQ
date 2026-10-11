@@ -56,3 +56,33 @@ export function quadBuffers(layout: AtlasLayout, quads: readonly LogoQuad[], z =
   });
   return { positions, uvs, indices, count: placed.length };
 }
+
+export interface OrientedQuad {
+  src: string;
+  /** World-space center. */
+  center: [number, number, number];
+  /** Y rotation; the quad faces its local +z like a plane rotated by `yaw`. */
+  yaw: number;
+  size: number;
+}
+
+/** Like `quadBuffers`, for quads that each turn by their own yaw (badges on the curved certification wall). */
+export function orientedQuadBuffers(layout: AtlasLayout, quads: readonly OrientedQuad[]) {
+  const placed = quads.filter((q) => layout.srcs.includes(q.src));
+  const positions = new Float32Array(placed.length * 12);
+  const uvs = new Float32Array(placed.length * 8);
+  const indices = new Uint16Array(placed.length * 6);
+  placed.forEach((q, i) => {
+    const h = q.size / 2;
+    // Local +x after a rotation of `yaw` about +y.
+    const rx = Math.cos(q.yaw) * h;
+    const rz = -Math.sin(q.yaw) * h;
+    const [x, y, z] = q.center;
+    const [u0, v0, u1, v1] = cellUv(layout, layout.srcs.indexOf(q.src));
+    positions.set([x - rx, y - h, z - rz, x + rx, y - h, z + rz, x + rx, y + h, z + rz, x - rx, y + h, z - rz], i * 12);
+    uvs.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
+    const b = i * 4;
+    indices.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6);
+  });
+  return { positions, uvs, indices, count: placed.length };
+}

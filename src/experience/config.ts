@@ -95,7 +95,8 @@ export const LOBBY = {
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
   /** Raised on a 0.35 u glowing plinth; 8.5 u tall so the longest column (12 items) reads at a larger size. */
   skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
-  certWall: { x: 25.5, z: -4, w: 1, d: 16, h: 5 },
+  /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
+  certWall: { x: 25, z: -4, w: 2.4, d: 18, h: 6.2 },
   kiosk: { x: 2, z: 15, w: 3, d: 2 },
   laneRadius: 12,
 } as const;

@@ -102,7 +102,19 @@ export interface ExperienceData {
   stats: { id: string; value: string; label: string }[];
   /** `logos[i]` is the tech logo path for `items[i]` (null renders text only). */
   skills: { id: string; label: string; items: string[]; logos: (string | null)[] }[];
-  certifications: { id: string; code: string | null; name: string; issuer: string; status: "earned" | "in-progress"; url: string | null }[];
+  /** Sorted (earned newest first, then in progress, then expired); `short` drops the program prefix, `logo` is the issuer logo. */
+  certifications: {
+    id: string;
+    code: string | null;
+    name: string;
+    short: string;
+    issuer: string;
+    logo: string | null;
+    issued: string;
+    issuedLabel: string;
+    status: "earned" | "in-progress" | "expired";
+    url: string | null;
+  }[];
   missions: { id: string; label: string }[];
   floors: Record<FloorId, { name: string; route: string }>;
   years: number[];

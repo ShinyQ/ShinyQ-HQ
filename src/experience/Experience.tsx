@@ -110,6 +110,7 @@ export default function Experience({
   const t = useTranslations("hud");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
+  const tCerts = useTranslations("certs");
   const tDrawer = useTranslations("drawer");
   const tLibrary = useTranslations("library");
   const tContact = useTranslations("contact");
@@ -215,7 +216,7 @@ export default function Experience({
       placeholder: { construction: t("constructionLabel"), hint: t("constructionHint") },
       lobby: {
         skillsTitle: tHome("skillsTitle"),
-        certs: { title: tHome("certsTitle"), verify: tCommon("verify"), inProgress: tCommon("inProgress") },
+        certs: { title: tHome("certsTitle"), all: tCerts("wall.all"), other: tCerts("wall.other"), inProgress: tCerts("status.in-progress"), expired: tCerts("status.expired") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
       labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
@@ -254,7 +255,7 @@ export default function Experience({
       },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon, tDrawer, tLibrary, tContact, tWalk, data.library.researchMetrics, data.locale],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, data.library.researchMetrics, data.locale],
   );
 
   return (

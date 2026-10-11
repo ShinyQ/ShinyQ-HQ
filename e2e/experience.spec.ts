@@ -336,6 +336,26 @@ test.describe("missions in 3D", () => {
     expect((await snapshot(page)).floor).toBe("L1");
   });
 
+  test("the certification preview opens over the tower and holds the world keys", async ({ page }) => {
+    const errors = collectErrors(page);
+    await enterHQ(page);
+    const cert = data.certifications[0];
+    // The 3D wall's badges call openCertPreview; the shared card lives outside the inert shell.
+    await page.evaluate((id) => window.dispatchEvent(new CustomEvent("hq:cert", { detail: id })), cert.id);
+    const dialog = page.getByRole("dialog", { name: cert.name });
+    await expect(dialog).toBeVisible();
+    const start = (await snapshot(page)).rover;
+    await page.keyboard.down("w");
+    await page.waitForTimeout(600);
+    await page.keyboard.up("w");
+    const now = (await snapshot(page)).rover;
+    expect(Math.hypot(now.x - start.x, now.z - start.z)).toBeLessThan(0.05);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    expect((await snapshot(page)).phase).toBe("explore");
+    expect(errors).toEqual([]);
+  });
+
   test("the terminal opens after the intro on the first visit", async ({ page }) => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);

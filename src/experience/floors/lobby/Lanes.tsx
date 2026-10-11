@@ -30,7 +30,7 @@ function buildLanes(): P[][] {
     ring,
     spoke([LOBBY.kiosk.x + 1.2, LOBBY.kiosk.z - 1.2]),
     spoke([LOBBY.skillsWall.x, LOBBY.skillsWall.z + 1.2]),
-    spoke([LOBBY.certWall.x - 1.4, LOBBY.certWall.z]),
+    spoke([LOBBY.certWall.x - LOBBY.certWall.w / 2 - 0.4, LOBBY.certWall.z]),
     spoke([-21, 0]),
   ];
 }
