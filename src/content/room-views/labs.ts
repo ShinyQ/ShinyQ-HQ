@@ -37,7 +37,7 @@ export function podView(pod: Pod, locale: Locale): RoomView {
       { title: m.labs.problem, body: pod.problem[locale] },
       { title: m.labs.approach, bullets: pod.approach.map((a) => a[locale]) },
     ],
-    metrics: pod.results.map((r) => ({ value: r.value, label: r.label[locale], context: r.context[locale], confidence: r.confidence })),
+    metrics: pod.results.map((r) => ({ value: r.value, label: r.label[locale], context: r.context?.[locale] })),
     architecture,
     stack: stackItems(pod.stack),
     gallery: galleryOf(pod.assets, locale),

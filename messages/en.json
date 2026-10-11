@@ -1,7 +1,7 @@
 {
   "meta": {
     "siteName": "ShinyQ HQ",
-    "description": "Kurniadi Ahmad Wijaya, Software Engineer and AI Engineer. Software and Azure AI case studies, career history, writing and contact.",
+    "description": "Kurniadi Ahmad Wijaya, Software Engineer and AI Engineer. Software and AI case studies, career history, writing and contact.",
     "quick": "Quick view",
     "journey": "Journey",
     "labs": "Labs",
@@ -46,19 +46,14 @@
     "email": "Email",
     "copyEmail": "Copy email",
     "copied": "Copied",
-    "confidence": {
-      "verified": "Verified",
-      "strongly-inferred": "Strongly inferred",
-      "self-reported": "Self-reported"
-    },
     "tier": {
       "hero": "Key project",
       "featured": "Featured",
       "listed": "Listed"
     },
     "wing": {
-      "software": "Software Wing",
-      "ai": "AI Wing"
+      "software": "Product Engineering",
+      "ai": "AI Engineering"
     },
     "type": {
       "job": "Employment",
@@ -80,8 +75,8 @@
     "ctaQuick": "Quick view",
     "ctaLabs": "Explore the Labs",
     "statsTitle": "At a glance",
-    "wingsTitle": "Software and AI engineering",
-    "wingsIntro": "My software engineering work since 2019, alongside enterprise AI work on Azure since 2026.",
+    "wingsTitle": "Product and AI engineering",
+    "wingsIntro": "My software engineering work since 2019, alongside enterprise AI work since 2026.",
     "journeyTitle": "Recent work",
     "skillsTitle": "Skills wall",
     "certsTitle": "Certifications",
@@ -137,10 +132,10 @@
   },
   "labs": {
     "title": "Labs",
-    "intro": "Software and AI case studies covering my contribution and results: software systems since 2019, and enterprise AI on Azure since 2026.",
+    "intro": "Software and AI case studies covering my contribution and results: software systems since 2019, and enterprise AI applications since 2026.",
     "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",
-    "aiIntro": "Enterprise AI platforms on Azure, with evaluation gates before release.",
-    "directory": "Wing directory",
+    "aiIntro": "Enterprise AI platforms with evaluation gates before release.",
+    "directory": "Directory",
     "problem": "Problem",
     "approach": "What I did",
     "architecture": "Architecture",
@@ -274,7 +269,7 @@
     "floor": "Floor",
     "visited": "Rooms visited",
     "elevator": "Elevator",
-    "goToFloor": "Go to {floor}, {name}",
+    "goToFloor": "Go to {floor}, {label} ({name})",
     "currentFloor": "Current floor: {floor}, {name}",
     "quickView": "Quick view",
     "pageView": "Page view",
@@ -399,6 +394,13 @@
       "rotateLeft": "Rotate left (Q)",
       "rotateRight": "Rotate right (E)",
       "reset": "Reset view (0)"
+    },
+    "floorLabel": {
+      "L1": "Home",
+      "L2": "Journey",
+      "L3": "Work",
+      "L4": "Writing",
+      "RF": "About"
     }
   },
   "drawer": {
@@ -469,9 +471,9 @@
       "copyFailed": "Could not copy email. Contact me at {email}.",
       "writtenIn": "Available in {languages} only"
     },
-    "directory": "Wing directory",
-    "signSoftware": "Software Wing",
-    "signAi": "AI Wing"
+    "directory": "Directory",
+    "signSoftware": "Product Engineering",
+    "signAi": "AI Engineering"
   },
   "gallery": {
     "title": "Gallery",
@@ -495,13 +497,13 @@
     "empty": "No projects match these filters.",
     "clear": "Clear filters",
     "wingShort": {
-      "software": "Software",
-      "ai": "AI"
+      "software": "Product Engineering",
+      "ai": "AI Engineering"
     }
   },
   "case": {
     "onThisPage": "On this page",
-    "more": "More from the {wing}",
+    "more": "More {wing} projects",
     "images": "{count, plural, one {# image} other {# images}}"
   },
   "writing": {

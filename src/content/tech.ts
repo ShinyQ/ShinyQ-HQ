@@ -130,6 +130,9 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("azure-monitor", "Azure Monitor"),
   svg("arm-templates", "ARM templates"),
   webp("agent-framework", "Microsoft Agent Framework"),
+  svg("fabric", "Microsoft Fabric", ["fabric"]),
+  svg("fabric-lakehouse", "Fabric Lakehouse", ["lakehouse"]),
+  svg("fabric-data-pipelines", "Fabric Data Pipelines"),
 ];
 
 /**
@@ -169,10 +172,7 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "forecasting",
   "marketplace metering api",
   "arm-ttk",
-  "lakehouse",
   "data api builder",
-  "fabric data pipelines",
-  "microsoft fabric",
   "microsoft 365 copilot",
   "nessus api",
   "entra id",

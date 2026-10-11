@@ -54,7 +54,6 @@ function isTextInput(target: EventTarget | null) {
  * columns once the body is wide enough, and an odd last card spans the row.
  */
 export function MetricTiles({ metrics, single = false, fluid = false }: { metrics: RoomMetric[]; single?: boolean; fluid?: boolean }) {
-  const tc = useTranslations("common.confidence");
   const columns = single ? "" : fluid ? "@[22rem]:grid-cols-2 @[22rem]:[&>li:last-child:nth-child(odd)]:col-span-2" : "min-[420px]:grid-cols-2";
   return (
     <ul className={`grid gap-2 ${columns}`}>
@@ -63,7 +62,6 @@ export function MetricTiles({ metrics, single = false, fluid = false }: { metric
           <p className="text-[28px] leading-8 font-extrabold tracking-tight text-ink">{m.value}</p>
           <p className="text-sm leading-5 text-ink">{m.label}</p>
           {m.context && <p className="text-[13px] leading-5 text-ink-2">{m.context}</p>}
-          {m.confidence && <p className="label mt-auto pt-1 text-ink-3">{tc(m.confidence)}</p>}
         </li>
       ))}
     </ul>

@@ -117,7 +117,9 @@ export const TimelineEntrySchema = z.strictObject({
 export const ResultSchema = z.strictObject({
   value: nonEmpty,
   label: LocalizedTextSchema,
-  context: LocalizedTextSchema,
+  /** How the number was measured; omitted when there is nothing to add. */
+  context: LocalizedTextSchema.optional(),
+  /** Internal provenance for content review; never rendered on the site or sent to Ask. */
   confidence: ConfidenceSchema,
 });
 

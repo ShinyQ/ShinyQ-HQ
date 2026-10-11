@@ -6,7 +6,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 
 ## 1. Positioning
 
-- **Headline:** Software Engineer and AI Engineer (Azure). Newest CV wording: "Software & AI Agent Specialist".
+- **Headline:** Software Engineer and AI Engineer (revised 2026-10-11: no "(Azure)"; the owner has also shipped on VPS hosting and AWS, so cloud vendors stay in stacks and project details). Newest CV wording: "Software & AI Agent Specialist".
 - **Sub-headline:** "I build software and AI on Azure that survives contact with real users."
 - **Story arc:** from 2019 backend and full-stack work (e-commerce, payments, fintech, SaaS), through a digital bank, to designing and operating enterprise AI platforms on Azure in 2026, delivered with spec-driven, AI-agent-orchestrated engineering.
 
@@ -25,7 +25,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 
 | Year | Rooms |
 |---|---|
-| 2019 | BSc Computer Science starts (Telkom University) · Freelance backend: anime figure e-commerce (2019 to 2022, links to the Software Wing pod) · Campus and community (internship, trainings) · Trophy case 2019 |
+| 2019 | BSc Computer Science starts (Telkom University) · Freelance backend: anime figure e-commerce (2019 to 2022, links to the Product Engineering pod) · Campus and community (internship, trainings) · Trophy case 2019 |
 | 2020 | Campus and community (VP Internal and SE Lead, bootcamp, Go practicum assistant) · Research: vaccination policy sentiment · Trophy case 2020 |
 | 2021 | Internships (backend; backend and AI; IT developer) · Research: e-wallet aspect sentiment (CNN-LSTM), COVID-19 forecasting · Certification desk 2021 · Trophy case 2021 |
 | 2022 | Backend Engineer, MNC Asia Holding (links to pod) · Contract software engineer · Sentiboard thesis and IndoBERT model · Campus and community (AI lecturer assistant, hackathon judge) · Trophy case 2022 |
@@ -38,7 +38,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 
 ## 4. L3 Labs
 
-### Software Wing (west)
+### Product Engineering wing (west; was "Software Wing")
 
 | Tier | Pod | Period | Notes |
 |---|---|---|---|
@@ -53,7 +53,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Event-tech search relevance and feedback analytics backend | 2023 | Freelance (Singapore), anonymized unless C8 says otherwise |
 | listed | Digital products and training e-commerce platform; University alumni and counseling platforms | | |
 
-### AI Wing (east)
+### AI Engineering wing (east; was "AI Wing")
 
 | Tier | Pod | Key verified result |
 |---|---|---|
@@ -96,7 +96,7 @@ These override anything above that conflicts with them.
 | C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). |
 | C2 | Current role wording | "Technical Consultant, Software & AI" at "Metrodata (PT Mitra Integrasi Informatika)", Feb 2026 to present |
 | C3 | Client names | **Revised 2026-10-10:** client companies of the owner's employers are **never named** on the site (text, alt text, slugs, metadata, OG cards, JSON-LD, search, room views, 3D labels); use sector labels ("a national digital bank", "an automotive manufacturer", "a national bakery brand", "a coal mining group", "a regional lender", "an insurer"). Employers stay named (Jenius (SMBC Indonesia) only for the 2024 to 2025 job). **Product names are allowed**, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck as Deck Studio inside MII Cowork, MII AI Ticketing, MII AI Dashboard Template); client products (ATLAS, FREDDY) keep a sector label. The owner's CV PDF is used as-is. Supersedes the earlier "Allowed" decision. |
-| C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 6, 2026), labelled "self-reported" when there is no artifact. No money amounts. |
+| C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 6, 2026), with no confidence label on the site (revised 2026-10-11: the owner removed every Verified / Self-reported / Strongly inferred label and the "Self-reported in my CV" notes; `confidence` stays in the dataset for internal review only). No money amounts. |
 | C5 | Photo | **No photo.** Use the "KAW" monogram hologram in the world and on the contact card. |
 | C6 | Jenius | "Software Engineer", Jun 2024 to Dec 2025 |
 | C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |

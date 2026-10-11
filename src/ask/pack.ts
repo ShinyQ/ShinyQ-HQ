@@ -30,6 +30,8 @@ type Bi = { en: string; id: string };
 
 const both = (en: string, id = en): Bi => ({ en, id });
 const loc = (text: LocalizedText | undefined): Bi => (text ? { en: text.en, id: text.id } : both(""));
+/** Display names of the L3 wings (messages `common.wing`), the same in both locales. */
+const WING_NAME = { software: "Product Engineering", ai: "AI Engineering" } as const;
 const join = (parts: (Bi | string | undefined | false)[], sep = " "): Bi => {
   const list = parts.filter((p): p is Bi | string => Boolean(p)).map((p) => (typeof p === "string" ? both(p) : p));
   return {
@@ -200,7 +202,7 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
     url: "/labs",
     keywords: ["project", "projects", "portfolio", "best", "hero"],
     text: join([
-      { en: "Projects (AI wing and software wing), highlighted ones first:", id: "Proyek (AI dan software), yang utama lebih dulu:" },
+      { en: "Projects (AI Engineering and Product Engineering), highlighted ones first:", id: "Proyek (AI Engineering dan Product Engineering), yang utama lebih dulu:" },
       join(
         [...pods]
           .sort((a, b) => ["hero", "featured", "listed"].indexOf(a.tier) - ["hero", "featured", "listed"].indexOf(b.tier) || a.order - b.order)
@@ -245,8 +247,8 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
       keywords: ["project", pod.wing, ...pod.stack.map((s) => s.toLowerCase()), pod.hologram],
       text: join([
         {
-          en: `Project (${pod.wing === "ai" ? "AI" : "software"}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,
-          id: `Proyek (${pod.wing === "ai" ? "AI" : "software"}): ${pod.title.id}, ${pod.period.start} hingga ${pod.period.end === "present" ? "sekarang" : pod.period.end}.`,
+          en: `Project (${WING_NAME[pod.wing]}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,
+          id: `Proyek (${WING_NAME[pod.wing]}): ${pod.title.id}, ${pod.period.start} hingga ${pod.period.end === "present" ? "sekarang" : pod.period.end}.`,
         },
         loc(pod.tagline),
         client && label("For", "Untuk", client),
@@ -256,7 +258,7 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
         join([
           { en: "Results:", id: "Hasil:" },
           ...pod.results.map((r) =>
-            join([both(r.value), loc(r.label), { en: `(${r.context.en}; ${r.confidence})`, id: `(${r.context.id}; ${r.confidence})` }], " "),
+            join([both(r.value), loc(r.label), r.context && { en: `(${r.context.en})`, id: `(${r.context.id})` }], " "),
           ),
         ]),
         label("Stack", "Stack", pod.stack.join(", ")),

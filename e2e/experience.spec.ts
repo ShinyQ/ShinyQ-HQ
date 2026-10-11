@@ -81,6 +81,29 @@ test.describe("elevator", () => {
     expect(errors).toEqual([]);
   });
 
+  test("every button names its floor with the page name", async ({ page }) => {
+    await enterHQ(page);
+    const panel = page.getByRole("navigation", { name: "Elevator" });
+    const names = { RF: "About", L4: "Writing", L3: "Work", L2: "Journey", L1: "Home" };
+    for (const [floor, name] of Object.entries(names)) {
+      await expect(panel.locator(`[data-floor="${floor}"]`)).toContainText(name);
+      await expect(panel.getByRole("button", { name: new RegExp(`^Go to ${floor}, ${name} \\(`) })).toBeVisible();
+    }
+  });
+
+  test("phone buttons keep their short names inside the compact column", async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    // Indonesian has the longest names (Perjalanan).
+    await enterHQ(page, { path: "/id" });
+    await page.evaluate(() => document.fonts.ready);
+    const panel = page.getByTestId("elevator-panel");
+    expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(56);
+    const clipped = await panel.locator("[data-testid='elevator-floor-label']").evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent));
+    expect(clipped).toEqual([]);
+    await context.close();
+  });
+
   test("wheel and PageUp/PageDown move one floor at a time", async ({ page }) => {
     await enterHQ(page);
     await page.mouse.move(720, 450);

@@ -39,7 +39,7 @@ const GRID_X = Array.from({ length: Math.floor(OG_IMAGE_SIZE.width / GRID_STEP) 
 const GRID_Y = Array.from({ length: Math.floor(OG_IMAGE_SIZE.height / GRID_STEP) }, (_, i) => (i + 1) * GRID_STEP);
 
 export interface OgCard {
-  /** Mono uppercase line above the title, e.g. "L3 · AI Wing". */
+  /** Mono uppercase line above the title, e.g. "L3 · AI Engineering". */
   eyebrow: string;
   title: string;
   subtitle?: string;

@@ -17,7 +17,7 @@ function subscribeResize(onChange: () => void) {
 
 const SWIPE_PX = 60;
 
-/** Hero pods with a hologram, in Labs order (Software Wing first, then AI Wing). */
+/** Hero pods with a hologram, in Labs order (Product Engineering first, then AI Engineering). */
 export function heroSequence(views: Record<string, RoomView>): RoomId[] {
   return Object.values(views)
     .filter((v) => v.hologram)

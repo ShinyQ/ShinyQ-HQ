@@ -4,12 +4,12 @@
     "handle": "ShinyQ",
     "monogram": "KAW",
     "headline": {
-      "en": "Software Engineer and AI Engineer (Azure)",
-      "id": "Software Engineer dan AI Engineer (Azure)"
+      "en": "Software Engineer and AI Engineer",
+      "id": "Software Engineer dan AI Engineer"
     },
     "subheadline": {
-      "en": "I build and operate software and AI applications on Azure.",
-      "id": "Saya membangun dan mengoperasikan aplikasi software dan AI di Azure."
+      "en": "I build and operate software and AI applications in production.",
+      "id": "Saya membangun dan mengoperasikan aplikasi software dan AI di production."
     },
     "currentRole": {
       "title": {
@@ -33,8 +33,8 @@
       "id": "Saya mulai belajar pengembangan Android di lab SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, lewat proyek dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan praktik Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan me-review hasilnya sebelum merge. Saya membangun voice agent yang bisa disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menebak. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
-      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot and Claude Code implement much of the code in parallel; I remain responsible for design, review, verification on Azure and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
-      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot dan Claude Code mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di Azure, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik."
+      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot and Claude Code implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
+      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot dan Claude Code mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik."
     },
     "principles": [
       {
@@ -55,8 +55,8 @@
           "id": "Delegasikan implementasi, tetap pegang review"
         },
         "text": {
-          "en": "AI coding agents implement much of the code in parallel. I am responsible for design, review, verification on Azure and the merge decision.",
-          "id": "AI coding agent mengerjakan sebagian besar kode secara paralel. Saya bertanggung jawab atas desain, review, verifikasi di Azure, dan keputusan merge."
+          "en": "AI coding agents implement much of the code in parallel. I am responsible for design, review, verification in a deployed environment and the merge decision.",
+          "id": "AI coding agent mengerjakan sebagian besar kode secara paralel. Saya bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan keputusan merge."
         }
       },
       {
@@ -723,8 +723,8 @@
               "id": "Mengintegrasikan payment gateway dan tarif pengiriman, dengan pemantauan lewat Sentry"
             },
             {
-              "en": "Served 2,000+ daily users at 99.9% uptime (self-reported)",
-              "id": "Melayani 2.000+ pengguna harian dengan uptime 99,9% (self-reported)"
+              "en": "Served 2,000+ daily users at 99.9% uptime",
+              "id": "Melayani 2.000+ pengguna harian dengan uptime 99,9%"
             }
           ],
           "stack": [
@@ -1668,8 +1668,8 @@
               "id": "Mengintegrasikan checkout payment gateway dengan webhook dan audit trail"
             },
             {
-              "en": "Reduced operations overhead by 40% through automated QR e-ticket generation and check-in (self-reported)",
-              "id": "Mengurangi beban operasional sebesar 40% lewat pembuatan e-ticket QR dan check-in otomatis (self-reported)"
+              "en": "Reduced operations overhead by 40% through automated QR e-ticket generation and check-in",
+              "id": "Mengurangi beban operasional sebesar 40% lewat pembuatan e-ticket QR dan check-in otomatis"
             }
           ],
           "stack": [
@@ -2078,10 +2078,6 @@
                 "en": "Insurance partners integrated; operational errors reduced by about 30%",
                 "id": "Mitra asuransi terintegrasi; error operasional berkurang sekitar 30%"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -2089,10 +2085,6 @@
               "label": {
                 "en": "Throughput increase after moving flows to Kafka and Redis",
                 "id": "Peningkatan throughput setelah beralih ke Kafka dan Redis"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             },
@@ -2102,10 +2094,6 @@
                 "en": "In-house SFTP uptime, with about 1,000 transfers per month",
                 "id": "Uptime SFTP in-house, dengan sekitar 1.000 transfer per bulan"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -2113,10 +2101,6 @@
               "label": {
                 "en": "Reduction in production issues after adopting full unit-test coverage",
                 "id": "Penurunan masalah produksi setelah menerapkan unit-test coverage penuh"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             }
@@ -2352,8 +2336,8 @@
                 "id": "Database utama dipusatkan di PostgreSQL, dengan Redis tetap sebagai cache"
               },
               "context": {
-                "en": "Verified against commit history and data models.",
-                "id": "Diverifikasi melalui riwayat commit dan model data."
+                "en": "From the commit history and data models.",
+                "id": "Dari riwayat commit dan model data."
               },
               "confidence": "verified"
             },
@@ -2364,8 +2348,8 @@
                 "id": "Akses API terpisah untuk peran admin, client, dan partner"
               },
               "context": {
-                "en": "Verified against route middleware and commit history.",
-                "id": "Diverifikasi melalui middleware route dan riwayat commit."
+                "en": "From the route middleware and commit history.",
+                "id": "Dari route middleware dan riwayat commit."
               },
               "confidence": "verified"
             }
@@ -2787,10 +2771,6 @@
                 "en": "Users served by the multi-tenant SaaS platforms",
                 "id": "Pengguna yang dilayani platform SaaS multi-tenant"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -2799,10 +2779,6 @@
                 "en": "Increase in workflow automation efficiency through Go APIs and Next.js dashboards",
                 "id": "Peningkatan efisiensi otomasi alur kerja melalui API Go dan dashboard Next.js"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -2810,10 +2786,6 @@
               "label": {
                 "en": "Reduction in SonarQube technical debt after refactoring",
                 "id": "Penurunan technical debt di SonarQube setelah refactor"
-              },
-              "context": {
-                "en": "Self-reported in my CV; SonarQube reports are not public.",
-                "id": "Saya laporkan dalam CV; laporan SonarQube tidak tersedia untuk publik."
               },
               "confidence": "self-reported"
             }
@@ -2986,10 +2958,6 @@
                 "en": "Reduction in realtime request latency with WebSocket and Redis",
                 "id": "Penurunan latensi request realtime dengan WebSocket dan Redis"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -2997,10 +2965,6 @@
               "label": {
                 "en": "Increase in transaction speed after the payment gateway refactor",
                 "id": "Peningkatan kecepatan transaksi setelah refactor payment gateway"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             },
@@ -3010,10 +2974,6 @@
                 "en": "Reduction in errors after MySQL and service tuning; queries ran about 20% faster",
                 "id": "Penurunan error setelah tuning MySQL dan layanan; query berjalan sekitar 20% lebih cepat"
               },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
-              },
               "confidence": "self-reported"
             },
             {
@@ -3021,10 +2981,6 @@
               "label": {
                 "en": "Increase in homepage load speed after the GraphQL migration",
                 "id": "Peningkatan kecepatan muat homepage setelah migrasi ke GraphQL"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             }
@@ -3193,10 +3149,6 @@
               "label": {
                 "en": "My longest engagement, spanning Sep 2019 to Dec 2022",
                 "id": "Kerja sama terpanjang saya, berlangsung dari Sep 2019 hingga Des 2022"
-              },
-              "context": {
-                "en": "Engagement dates agree across my CV, earlier site and repositories.",
-                "id": "Tanggal kerja sama konsisten dalam CV, situs sebelumnya, dan repositori."
               },
               "confidence": "verified"
             },
@@ -3662,8 +3614,8 @@
                 "id": "Pengecekan dan pengurangan kuota secara atomik mencegah kursi terakhir terjual dua kali"
               },
               "context": {
-                "en": "Verified in the booking code as a design property, not measured as a production incident count.",
-                "id": "Diverifikasi sebagai sifat desain dalam kode booking, bukan diukur dari jumlah insiden produksi."
+                "en": "A design property of the booking code, not a measured production incident count.",
+                "id": "Properti desain di kode booking, bukan hitungan insiden produksi yang diukur."
               },
               "confidence": "strongly-inferred"
             }
@@ -3838,8 +3790,8 @@
                 "id": "Peningkatan relevansi pencarian dengan collaborative filtering"
               },
               "context": {
-                "en": "Self-reported in my CV; the measurement method was not recorded.",
-                "id": "Saya laporkan dalam CV; metode pengukurannya tidak tercatat."
+                "en": "The measurement method was not recorded.",
+                "id": "Metode pengukurannya tidak tercatat."
               },
               "confidence": "self-reported"
             },
@@ -3848,10 +3800,6 @@
               "label": {
                 "en": "Reduction in server response time after PostgreSQL tuning",
                 "id": "Penurunan waktu respons server setelah tuning PostgreSQL"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             },
@@ -3862,8 +3810,8 @@
                 "id": "Akurasi klasifikasi sentimen, dievaluasi pada 200 sampel berlabel"
               },
               "context": {
-                "en": "Self-reported in my CV; based on a small evaluation set.",
-                "id": "Saya laporkan dalam CV; berdasarkan set evaluasi yang kecil."
+                "en": "Based on a small evaluation set.",
+                "id": "Berdasarkan evaluation set yang kecil."
               },
               "confidence": "self-reported"
             },
@@ -3872,10 +3820,6 @@
               "label": {
                 "en": "Increase in feedback analysis speed with queued daily reports",
                 "id": "Peningkatan kecepatan analisis feedback lewat laporan harian yang diantrekan"
-              },
-              "context": {
-                "en": "Self-reported in my CV; no public artifact is available.",
-                "id": "Saya laporkan dalam CV; tidak ada artefak yang tersedia untuk publik."
               },
               "confidence": "self-reported"
             }
@@ -4009,10 +3953,6 @@
               "label": {
                 "en": "University platforms delivered, covering a public portal and admin analytics",
                 "id": "Platform universitas yang diserahkan, mencakup portal publik dan analitik admin"
-              },
-              "context": {
-                "en": "Self-reported in my earlier portfolio; no repository or project dates are on record.",
-                "id": "Saya laporkan dalam portofolio sebelumnya; tidak ada repositori atau tanggal proyek yang tercatat."
               },
               "confidence": "self-reported"
             }
@@ -7030,8 +6970,8 @@
                 "id": "Perubahan role dan group dengan dual control serta audit diff"
               },
               "context": {
-                "en": "Verified through merged pull requests in the team repositories.",
-                "id": "Diverifikasi melalui pull request yang di-merge di repositori tim."
+                "en": "Counted from merged pull requests in the team repositories.",
+                "id": "Dihitung dari pull request yang di-merge di repositori tim."
               },
               "confidence": "verified"
             }

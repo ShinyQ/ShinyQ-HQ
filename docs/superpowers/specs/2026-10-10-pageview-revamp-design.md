@@ -87,7 +87,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 | `WorkIndex` (client) | filter bar (wing chips with counts, stack select, live result count) over `WorkFeature`s and `WorkRow`s; reads/writes `?wing=` and `?stack=` with `history.replaceState`, keeping other params. Server renders all rows so it works without JS. Sticky from 768 px; in flow on phones. |
 | `TimelineRow` | period, role (link), org with logo, summary, type marker. |
 | `JourneyFilter` (client) | type chips with counts; hides rows and empty years; `?type=`. |
-| `MetricLedger` | case-study results row with context and confidence badge. |
+| `MetricLedger` | case-study results row with context (no confidence badge since 2026-10-11). |
 | `FactRow` | role, period, client (only when present). |
 | `CaseToc` (client) | sticky "On this page" with scroll-spy (`IntersectionObserver`), hidden below 1024 px. |
 | `ArchitectureDiagram` | restyled: rows by `layer`, nodes with label and sublabel, kind tint on the border only. |
@@ -98,7 +98,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 | `CertRow`, `SkillGroup`, `PrincipleList` | About blocks. |
 | `ContactPanel` | availability, email button, copy email (client, existing `click` sound not used on pages), location, channels. |
 | `Closing` | Home end: availability statement as display text, email, About and CV actions. |
-| `ConfidenceBadge`, `Chip`, `TechLogoRow`, `OrgLogo`, `Monogram` | kept, restyled to tokens. |
+| `Chip`, `TechLogoRow`, `OrgLogo`, `Monogram` | kept, restyled to tokens. |
 | `PodCard`, `TimelineItem`, `MetricTile`, `Section`, `PageHeader` | kept only where still used (Quick view); removed when unused. |
 
 ## 6. Page templates
@@ -111,7 +111,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 
 **Journey.** Intro with year jump links. Sticky type filter. Years newest first: the year as a sticky `num` in 2 columns, rows in 10. Prologue entries keep the "Prologue" note. Workshop annex (`#workshop`): side projects as rows, public repos as rows with stars and language.
 
-**Journey entry.** Same header grammar as the case study (crumb, type marker, `display-l` role, org with logo, period, confidence), summary as lead, highlights as a ruled list, stack chips, link to the case study, prev/next.
+**Journey entry.** Same header grammar as the case study (crumb, type marker, `display-l` role, org with logo, period), summary as lead, highlights as a ruled list, stack chips, link to the case study, prev/next.
 
 **Writing (`/library`).** Intro with section chips (counts). Blog (`#posts`): lead post card, then rows (date, title, excerpt, tags, language or "Medium"). Research (`#research`): citations and h-index with source and "as of" date, paper rows. Models and datasets (`#publications`), Talks (`#talks`).
 
@@ -133,7 +133,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 
 - Filters with no match: the list area shows "No projects match these filters." and a "Clear filters" button; the result count reads "Showing 0 of 30" in a `role="status"` region.
 - Pods without gallery images: no Gallery chapter; their feature shows a result block instead of a cover.
-- Missing optional data (client, architecture, timeline ref, confidence) omits the row or chapter; no placeholders.
+- Missing optional data (client, architecture, timeline ref) omits the row or chapter; no placeholders.
 - Loading: pages are static; images use `loading="lazy"` with fixed aspect ratios so layout does not shift. The Room data fetch belongs to the HUD drawer, not to pages.
 - Translation missing (blog): existing notice, restyled as a `.card`.
 

@@ -38,9 +38,14 @@ describe("room views (Glass Drawer content)", () => {
           expect(view.tabs).toContain("architecture");
         }
         expect(view.metrics.length).toBe(pod.results.length);
-        expect(view.metrics.every((m) => m.context)).toBe(true);
+        expect(view.metrics.map((m) => m.context)).toEqual(pod.results.map((r) => r.context?.[locale]));
         expect(view.page).toBe(`/labs/${pod.slug}`);
       }
+    });
+
+    it(`never ships confidence labels or provenance notes to the drawer (${locale})`, () => {
+      const json = JSON.stringify(views);
+      expect(json).not.toMatch(/"confidence"|self-reported|strongly-inferred|Self-reported in my CV|Saya laporkan dalam CV/i);
     });
 
     it(`chains prev/next within each wing (${locale})`, () => {

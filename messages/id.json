@@ -1,7 +1,7 @@
 {
   "meta": {
     "siteName": "ShinyQ HQ",
-    "description": "Kurniadi Ahmad Wijaya, Software Engineer dan AI Engineer. Studi kasus software dan Azure AI, riwayat karier, tulisan, dan kontak.",
+    "description": "Kurniadi Ahmad Wijaya, Software Engineer dan AI Engineer. Studi kasus software dan AI, riwayat karier, tulisan, dan kontak.",
     "quick": "Ringkasan",
     "journey": "Perjalanan",
     "labs": "Labs",
@@ -46,19 +46,14 @@
     "email": "Email",
     "copyEmail": "Salin email",
     "copied": "Tersalin",
-    "confidence": {
-      "verified": "Terverifikasi",
-      "strongly-inferred": "Didukung bukti kuat",
-      "self-reported": "Dilaporkan sendiri"
-    },
     "tier": {
       "hero": "Proyek utama",
       "featured": "Pilihan",
       "listed": "Daftar"
     },
     "wing": {
-      "software": "Software Wing",
-      "ai": "AI Wing"
+      "software": "Product Engineering",
+      "ai": "AI Engineering"
     },
     "type": {
       "job": "Pekerjaan",
@@ -80,8 +75,8 @@
     "ctaQuick": "Lihat ringkasan",
     "ctaLabs": "Jelajahi Labs",
     "statsTitle": "Sekilas",
-    "wingsTitle": "Software dan AI engineering",
-    "wingsIntro": "Pekerjaan software engineering saya sejak 2019, berdampingan dengan pekerjaan AI enterprise di Azure sejak 2026.",
+    "wingsTitle": "Product dan AI engineering",
+    "wingsIntro": "Pekerjaan software engineering saya sejak 2019, berdampingan dengan pekerjaan AI enterprise sejak 2026.",
     "journeyTitle": "Pekerjaan terbaru",
     "skillsTitle": "Dinding keahlian",
     "certsTitle": "Sertifikasi",
@@ -137,10 +132,10 @@
   },
   "labs": {
     "title": "Labs",
-    "intro": "Studi kasus software dan AI, beserta kontribusi dan hasil kerja saya: sistem software sejak 2019, dan AI enterprise di Azure sejak 2026.",
+    "intro": "Studi kasus software dan AI, beserta kontribusi dan hasil kerja saya: sistem software sejak 2019, dan aplikasi AI enterprise sejak 2026.",
     "softwareIntro": "Sistem backend, full-stack, fintech, dan SaaS.",
-    "aiIntro": "Platform AI enterprise di Azure, dengan evaluation gate sebelum rilis.",
-    "directory": "Direktori sayap",
+    "aiIntro": "Platform AI enterprise dengan evaluation gate sebelum rilis.",
+    "directory": "Direktori",
     "problem": "Masalah",
     "approach": "Yang saya kerjakan",
     "architecture": "Arsitektur",
@@ -274,7 +269,7 @@
     "floor": "Lantai",
     "visited": "Ruang yang dikunjungi",
     "elevator": "Lift",
-    "goToFloor": "Ke {floor}, {name}",
+    "goToFloor": "Ke {floor}, {label} ({name})",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
     "quickView": "Ringkasan",
     "pageView": "Tampilan halaman",
@@ -399,6 +394,13 @@
       "rotateLeft": "Putar ke kiri (Q)",
       "rotateRight": "Putar ke kanan (E)",
       "reset": "Atur ulang tampilan (0)"
+    },
+    "floorLabel": {
+      "L1": "Beranda",
+      "L2": "Perjalanan",
+      "L3": "Karya",
+      "L4": "Tulisan",
+      "RF": "Tentang"
     }
   },
   "drawer": {
@@ -469,9 +471,9 @@
       "copyFailed": "Email gagal disalin. Hubungi saya di {email}.",
       "writtenIn": "Hanya tersedia dalam {languages}"
     },
-    "directory": "Direktori sayap",
-    "signSoftware": "Software Wing",
-    "signAi": "AI Wing"
+    "directory": "Direktori",
+    "signSoftware": "Product Engineering",
+    "signAi": "AI Engineering"
   },
   "gallery": {
     "title": "Galeri",
@@ -495,13 +497,13 @@
     "empty": "Tidak ada proyek yang cocok dengan filter ini.",
     "clear": "Hapus filter",
     "wingShort": {
-      "software": "Software",
-      "ai": "AI"
+      "software": "Product Engineering",
+      "ai": "AI Engineering"
     }
   },
   "case": {
     "onThisPage": "Di halaman ini",
-    "more": "Lainnya dari {wing}",
+    "more": "Proyek {wing} lainnya",
     "images": "{count, plural, other {# gambar}}"
   },
   "writing": {

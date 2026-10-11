@@ -42,6 +42,11 @@ describe("knowledge pack", () => {
     expect(all).not.toMatch(/\.pdf\b/i);
   });
 
+  it("never carries confidence labels, so answers cannot cite them", () => {
+    const text = pack.chunks.map((c) => `${c.text_en} ${c.text_id}`).join(" ");
+    expect(text).not.toMatch(/self-reported|strongly-inferred|; verified\)|Self-reported in my CV/i);
+  });
+
   it("fails validation when a client name sneaks in", () => {
     const content = structuredClone(getContent());
     content.profile.bio.en = `${content.profile.bio.en} He built dashboards for Mitsubishi.`;
