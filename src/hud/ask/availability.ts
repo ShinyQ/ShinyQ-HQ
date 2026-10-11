@@ -78,6 +78,29 @@ export function useHeroVisible(): boolean {
   );
 }
 
+let panelOpen = false;
+const panelListeners = new Set<() => void>();
+
+/** The dock reports whether its chat panel is open, so the 3D Walk HUD can step aside (left of the side panel). */
+export function setAskPanelOpen(open: boolean) {
+  if (panelOpen === open) return;
+  panelOpen = open;
+  panelListeners.forEach((listener) => listener());
+}
+
+export function useAskPanelOpen(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      panelListeners.add(listener);
+      return () => {
+        panelListeners.delete(listener);
+      };
+    },
+    () => panelOpen,
+    () => false,
+  );
+}
+
 function subscribeTower(listener: () => void) {
   const observer = new MutationObserver(listener);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-hq"] });
@@ -112,5 +135,6 @@ export function resetAskAvailability() {
   scheduled = false;
   current = undefined;
   heroVisible = false;
+  panelOpen = false;
   listeners.clear();
 }

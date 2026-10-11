@@ -22,6 +22,7 @@ export const ALL_SPECS = [
   "pageview",
   "seo",
   "static-routes",
+  "walk",
 ] as const;
 
 export type Spec = (typeof ALL_SPECS)[number];
@@ -52,6 +53,13 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/page\/AskEntry/, specs: ["ask", "pageview"] },
   // The dock is mounted on every page and over the 3D HUD (top-right pill).
   { test: /^src\/hud\/ask\//, specs: ["ask", "experience", "pageview"] },
+
+  // Dev-only pages and the walkable floors prototype (never in the production export).
+  { test: /^src\/app\/\[locale\]\/dev\/|^src\/experience\/prototype\//, specs: [] },
+
+  // Guided walks and the road kit (autopilot follows roads once a floor has one).
+  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions"] },
+  { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery"] },

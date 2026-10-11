@@ -8,7 +8,7 @@ import type { Locale } from "@/content/schema";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR } from "@/lib/boot-first";
 import type { AskRequest } from "./AskChat";
-import { requestAskStatus, scheduleAskStatus, useAskStatus, useDockLayout, useHeroVisible, useTowerOpen } from "./availability";
+import { requestAskStatus, scheduleAskStatus, setAskPanelOpen, useAskStatus, useDockLayout, useHeroVisible, useTowerOpen } from "./availability";
 import { CloseIcon, SparkIcon } from "./icons";
 
 export const loadAskChat = () => import("./AskChat");
@@ -36,6 +36,8 @@ function markTeaserSeen() {
 }
 
 const modalOpen = () => Boolean(document.querySelector("[role='dialog'][aria-modal='true']"));
+/** The 3D Walk HUD (prompt, card or pill) sits where the tower teaser would show on phones. */
+const walkOnScreen = () => Boolean(document.querySelector("[data-testid^='walk-']"));
 
 /**
  * Ask the HQ dock, mounted once in the locale layout (outside #site-shell, so it works over the 3D
@@ -56,6 +58,7 @@ export function AskDock({ locale }: { locale: Locale }) {
   const [teaser, setTeaser] = useState(false);
   const returnFocus = useRef<HTMLElement | null>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setAskPanelOpen(open), [open]);
   const enabled = isAskEnabled(status);
 
   const show = useCallback((next: Omit<AskRequest, "id">) => {
@@ -94,7 +97,7 @@ export function AskDock({ locale }: { locale: Locale }) {
     const delay = tower ? TEASER_DELAY_3D_MS : TEASER_DELAY_MS;
     const attempt = (retries: number) => {
       if (teaserSeen()) return;
-      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen()) {
+      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen() || walkOnScreen()) {
         if (retries > 0) timer = window.setTimeout(() => attempt(retries - 1), delay);
         return;
       }

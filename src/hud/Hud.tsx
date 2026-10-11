@@ -6,14 +6,18 @@ import { READY_FLOORS } from "@/experience/config";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { useHQStore } from "@/store/useHQStore";
+import { useAskPanelOpen } from "./ask/availability";
 import { BootOverlay } from "./BootOverlay";
 import { DrawerHost } from "./drawer/DrawerHost";
+import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
 import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
 import { ViewControls } from "./ViewControls";
+import type { WalkPlacement } from "./walk/WalkBar";
+import { WalkLayer } from "./walk/WalkLayer";
 
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
@@ -90,6 +94,20 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const viewport = useHQStore((s) => s.device.viewport);
   const coarse = useHQStore((s) => s.device.coarse);
   const mobile = viewport === "mobile";
+  const [walking, setWalking] = useState(false);
+  const askOpen = useAskPanelOpen();
+  // The Walk HUD steps aside for the room drawer and the Ask side panel (both on the right), and
+  // goes under the top controls where a bottom sheet would cover it. The Ask pill stays top right.
+  const side = typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side";
+  const walkPlacement: WalkPlacement = mobile
+    ? "top"
+    : phase === "room" || askOpen
+      ? side
+        ? "dock"
+        : "top"
+      : coarse
+        ? "bottom-raised"
+        : "bottom";
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
@@ -105,12 +123,14 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {mobile ? <MobileMenu onExit={onExit} onToggleLang={onToggleLang} /> : <TopBar onExit={onExit} onToggleLang={onToggleLang} />}
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
-          {phase === "intro" ? <IntroSkip /> : phase !== "room" && <HintBar coarse={coarse} mobile={mobile} />}
+          {phase === "intro" ? <IntroSkip /> : phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
           {phase !== "intro" && phase !== "room" && <ViewControls />}
         </>
       )}
+      {/* Mounted in every phase so a walk keeps its state through the hologram view. */}
+      <WalkLayer data={data} placement={walkPlacement} coarse={coarse} hidden={phase === "boot" || phase === "intro" || phase === "hologram"} onActive={setWalking} />
       <FloorAnnouncer data={data} />
     </div>
   );

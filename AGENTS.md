@@ -87,16 +87,22 @@ src/
   experience/                   3D experience (see "3D experience" below)
   experience/floors/career/     L2: pure layout.ts (buildCorridor, scrubTarget) plus R3F CareerRooms, YearGates, WorkshopAnnex
   experience/floors/labs/       L3: pure layout.ts, board.ts, hologramParts.ts plus R3F Atrium, Pods, PacketLanes, HologramStage
-  experience/missions/          pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring)
+  experience/missions/          pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring); walk.ts (guided walk engine) and walks.ts (L2/L3 walk definitions)
+  experience/nav/               pure navigation: navgrid, collision, doors; road.ts (road kit, pathBetween, roadRoute), roadGeometry.ts (road mesh data), space.ts (space rules)
+  experience/fx/RoadMarkings.tsx  road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor)
+  experience/fx/HoloIcon.tsx    neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx)
+  experience/prototype/         dev-only walkable floors prototype (L2 Career Road, L3 Project Roads, type icons); route src/app/[locale]/dev/floors/page.dev.tsx
   hud/                          HUD over the canvas (profile card, elevator panel, controls, boot, joystick) plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events, HologramOverlay
   hud/ask/                      Ask the HQ dock: AskDock (launcher, teaser, mounted in the layout), AskChat (lazy panel), AskPill (3D), useAskThread, availability (status, tower, layout)
+  hud/walk/                     Walk HUD (WalkBar), first-visit WalkPrompt, WalkLayer (3D wiring, keys, manual pause)
   hud/drawer/                   Glass Drawer: RoomDrawer (UI), DrawerHost (store, data, audio), bodies, layout, urlSync, data, ascii (README)
   store/useHQStore.ts           zustand store (appendix 06 section 2 plus documented additions)
+tests/helpers/space.ts          expectSpaceRules(...) for walkable floor layouts
 tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors, career layout, labs layout, room views, drawer layout and URL, ASCII, hologram
 tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, AskDock, RoomDrawer, L4/RF rooms
 tests/content/                  Vitest: dataset, public safety, assets
 tests/ask/                      Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json (30) and redteam.json sets
-e2e/                            Playwright: static routes, Page View (pageview.spec.ts: axe per template, filters, anchors, phone overflow), 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), missions + axe, opt-in screenshots (screenshots.spec.ts, pageview-visual.spec.ts)
+e2e/                            Playwright: static routes, Page View (pageview.spec.ts: axe per template, filters, anchors, phone overflow), 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), missions + axe, guided walks (walk.spec.ts, with ?walk=on), opt-in screenshots (screenshots.spec.ts, pageview-visual.spec.ts)
 ```
 
 ## Content access
@@ -115,7 +121,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Rooms come from `buildRoomCatalog` (`rooms.ts`). Room ids beyond pods, career entries and posts: `L1:profile`, `L1:stats`, `L1:skills`, `L1:certifications`, `L2:workshop`, `L4:research` (kind `research`: papers and the thesis, see `isResearch` in `content/selectors.ts`), `L4:publications` (the models shelf: models and datasets), `L4:talks`, `RF:contact`, `RF:cv`. Every room has a static `path` (open) and `floorPath` (drive).
 - The layout builds a serializable `HudIndex` on the server (`src/hud/index-data.ts`) so zod and the dataset never ship to the client. HUD components get data through props.
 - Open HUD overlays from anywhere with `openPalette(filter?)` / `openTerminal()` from `src/hud/events.ts` (window `hq:hud` events).
-- localStorage keys owned by the HUD: `hq:terminal-seen` (first-visit auto-open, Lobby only), `hq:recent` (recent rooms on the static tier), `hq:visits` (alternates best-swe and best-ai). `sessionStorage` keys owned by the Ask dock: `hq:ask-thread` (chat thread, last 20 messages), `hq:ask-teaser` (teaser shown this session). Tests and screenshots that must not see the auto-open terminal set `hq:terminal-seen`.
+- localStorage keys owned by the HUD: `hq:terminal-seen` (first-visit auto-open, Lobby only), `hq:recent` (recent rooms on the static tier), `hq:visits` (alternates best-swe and best-ai), `hq:walk:<walk id>` (guided walk progress: stop, filter, visited, done) and `hq:walk-prompt` (floors whose walk prompt was shown). `sessionStorage` keys owned by the Ask dock: `hq:ask-thread` (chat thread, last 20 messages), `hq:ask-teaser` (teaser shown this session). Tests and screenshots that must not see the auto-open terminal set `hq:terminal-seen`.
 
 ## i18n
 
@@ -145,6 +151,18 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Deviations from the spec (kept deliberately): the tier gate is a local heuristic instead of `detect-gpu` (no runtime CDN fetch; software renderers such as SwiftShader map to `static` like detect-gpu tier 0, so headless browsers and Lighthouse see the HTML page unless `?tier=` is set); L3 keeps the global shaft and puts the atrium in front of its door, with the wings as mirror halls running east (Software north, AI south; appendix 01 section 4 is updated); the rover spawns turned toward the camera so its face greets the visitor.
 - Playwright sets `navigator.webdriver`, so e2e tests that need the 3D tier pass `?tier=lite|full`; tests of real auto-detection call `asHumanBrowser(page)` (`e2e/hq.ts`).
 - `window.__hq` exposes `{ store, rover }` for Playwright. The rover hides during the hologram view; pod labels too.
+
+## Walkable floors: road kit and guided walks
+
+- Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads, guided walks offered on the first visit). The live L2 and L3 layouts are rebuilt on top of this kit; until then `WALK_FLOORS` (`src/experience/config.ts`) is empty and `?walk=on` turns every walk on (tests, previews; `?walk=off` forces them off).
+- Road kit (`src/experience/nav/road.ts`, pure): a `RoadNetwork` is `roads` (polylines with a `width`, optional `closed`; points run forward, chevrons point that way), `plazas` (`center`, `w`, `d`, `round`) and `spurs` (`room`, `from` on a road or plaza, `to` = the door pad `DoorTrigger.at`, optional `width` and stub `color`). Road ends that lie on another road and shared vertices join (loops). `pathBetween(net, a, b)` returns waypoints along the road (excluding `a`); `roadRoute(net, grid, from, to)` adds navgrid legs on and off the road and falls back to `findPath`. Also `projectOnRoad`, `sampleRoad`, `onNetwork`, `networkBounds`, `buildRoadGraph`.
+- A floor opts in by setting `FloorLayout.road`: every autopilot drive (missions, walks, the elevator approach) then follows the road through `roadRoute` in the Director. Click-to-move and scrubbing keep the navgrid.
+- Rendering: `<RoadMarkings network color tier reducedMotion />` (`src/experience/fx/RoadMarkings.tsx`; mesh data in `nav/roadGeometry.ts`). The lite tier and reduced motion drop the chevron pulse; the lite tier drops the additive edge glow.
+- Space rules (`src/experience/nav/space.ts`, asserted with `expectSpaceRules` from `tests/helpers/space.ts` in every walkable layout test): roads at least 8 u wide, plazas at least 16 u, roads clear of obstacles over their full width and spurs by the rover radius, obstacles either touching or at least 6 u apart (also from the slab edge), every door has a spur ending on its pad, and 6 u wide floor connects the start to within 4 u of every pad.
+- Guided walks (`src/experience/missions/walk.ts`, pure): `createWalk(definition, host)` with stops (`id`, `to` room or point, `room` to open, or `palette`; `title`, `subtitle`, `group`, `tags`), `filters`, `start/next/prev/go/open/pause/resume/end/setFilter`. Each leg runs as a mission (`runMissionSteps` in `missions/bridge.ts`), so manual input cancels it like any mission and the walk pauses ("Resume walk" pill). `walks.ts` builds the L2 (`careerWalk`, oldest first, then the Workshop; type filters) and L3 (`labsWalk`, hero then featured pods, then the wing directories; wing filters) definitions.
+- Walk HUD (`src/hud/walk/`): `WalkLayer` is mounted by `Hud` in every phase (state survives the hologram view), shows the first-visit `WalkPrompt` once per floor, the `WalkBar` (Prev / Open / Next / End, filter, progress, `[` and `]`, swipe on touch) at the bottom, bottom-left beside the room drawer or the Ask side panel (`dock`, via `useAskPanelOpen` from `hud/ask/availability.ts`), or under the top controls on phones and bottom sheets (`top`; on tablets right of the profile card, below the Ask pill row), and an idle launcher pill. The Ask pill stays in the top-right cluster, and the Ask tower teaser waits while a walk card is on screen. Strings live in `messages/*.json` `walk`.
+- Career type icons (owner pick: "Neon line"): `CAREER_ICONS` (24 x 24 line art: briefcase, laptop with code, graduation cap, trophy, flag) and `CAREER_TONE` (sky, pink, violet, amber, emerald) in `src/experience/fx/holoIcons.ts` feed both `<HoloIcon strokes instances color tier reducedMotion />` (all instances of a type in one geometry, one draw call plus a halo on the full tier, sway toward the road, still under reduced motion) and the SVG `<TypeIcon type />` (`src/components/TypeIcon.tsx`) for Page View chips and legends.
+- Prototype: `/{locale}/dev/floors?floor=L2|L3&road=straight|meander&view=rover|top&sheet=1&at=x,z&tier=full|lite` under `bun run dev` (owner picks: meander road, Neon line icons). `page.dev.tsx` files are routes only when `NODE_ENV` is not production or `HQ_DEV_PAGES=1` (`pageExtensions` in `next.config.ts`), so the static export never contains them.
 
 ## Glass Drawer (shared room panel, Phase 4)
 

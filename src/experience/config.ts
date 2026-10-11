@@ -13,6 +13,12 @@ export const SLAB_THICKNESS = 0.4;
 /** Floors whose 3D content is built. Others are placeholders and keep the URL at /{locale}. */
 export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
 
+/**
+ * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts).
+ * Empty until the L2 and L3 roads ship; `?walk=on` turns every walk on for tests and previews.
+ */
+export const WALK_FLOORS: readonly FloorId[] = [];
+
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
 export const CAR: Vec2 = { x: SHAFT.x, z: SHAFT.z };
