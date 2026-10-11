@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, enterFloorRoute, enterHQ, openPage, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 
@@ -67,11 +67,11 @@ test.describe("deep links", () => {
   test("L4 and RF stay under the draw call budget", async ({ page }) => {
     await enterFloorRoute(page, "/en/library");
     await page.waitForTimeout(1500);
-    expect((await snapshot(page)).drawCalls).toBeLessThan(150);
+    await expectRenderBudget(page);
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="RF"]').click();
     await waitForFloor(page, "RF");
     await page.waitForTimeout(1500);
-    expect((await snapshot(page)).drawCalls).toBeLessThan(150);
+    await expectRenderBudget(page);
   });
 });
 

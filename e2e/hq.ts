@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export interface HQSnapshot {
   phase: string;
@@ -8,12 +8,13 @@ export interface HQSnapshot {
   rover: { x: number; z: number; heading: number; speed: number; face: string };
   firstVisit: boolean;
   drawCalls: number;
+  triangles: number;
 }
 
 type HQWindow = Window & {
   __hq: {
-    store: { getState: () => Omit<HQSnapshot, "drawCalls"> };
-    rover: { drawCalls: number };
+    store: { getState: () => Omit<HQSnapshot, "drawCalls" | "triangles"> };
+    rover: { drawCalls: number; triangles: number };
   };
 };
 
@@ -87,8 +88,22 @@ export async function snapshot(page: Page): Promise<HQSnapshot> {
       rover: s.rover,
       firstVisit: s.firstVisit,
       drawCalls: hq.rover.drawCalls,
+      triangles: hq.rover.triangles,
     };
   });
+}
+
+/**
+ * Per-floor render budget (appendix 08 draw calls; triangles measured at most 15.2k with the
+ * neighbouring floors mounted, October 2026). Call after the scene settled.
+ */
+export const RENDER_BUDGET = { drawCalls: 150, triangles: 30_000 };
+
+export async function expectRenderBudget(page: Page) {
+  const { drawCalls, triangles } = await snapshot(page);
+  expect(drawCalls).toBeGreaterThan(10);
+  expect(drawCalls).toBeLessThan(RENDER_BUDGET.drawCalls);
+  expect(triangles).toBeLessThan(RENDER_BUDGET.triangles);
 }
 
 export async function waitForHQ(page: Page) {

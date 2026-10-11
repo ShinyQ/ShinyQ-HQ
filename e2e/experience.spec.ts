@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -160,9 +160,7 @@ test.describe("rover on desktop", () => {
   test("the Lobby stays under the draw call budget", async ({ page }) => {
     await enterHQ(page);
     await page.waitForTimeout(1500);
-    const { drawCalls } = await snapshot(page);
-    expect(drawCalls).toBeGreaterThan(10);
-    expect(drawCalls).toBeLessThan(150);
+    await expectRenderBudget(page);
   });
 });
 
