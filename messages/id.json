@@ -343,7 +343,9 @@
       "repos": "Repositori publik",
       "models": "Model Hugging Face",
       "window": "Labs di lantai L3",
-      "scrubHint": "Tahun: geser ke kiri untuk maju, ke kanan untuk kembali"
+      "scrubHint": "Tahun: geser ke kiri untuk maju, ke kanan untuk kembali",
+      "rooms": "{count} ruang",
+      "here": "Anda di sini"
     },
     "world": {
       "lectern": "Meja baca",

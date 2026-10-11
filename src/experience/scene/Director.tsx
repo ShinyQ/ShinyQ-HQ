@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
-import { scrubTarget } from "../floors/career/layout";
+import { roadZAt, scrubTarget } from "../floors/career/layout";
 import { openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
@@ -105,7 +105,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           if (s.phase === "room") s.closeRoom();
           if (store.getState().phase !== "explore") break;
           const x = scrubTarget(controller.pose.x, intent.dx, window.innerWidth, stops);
-          const path = findPath(grids[s.floor], controller.pose, { x, z: 0 });
+          // Land on the road (the Career Road meanders in z), else on the rail axis.
+          const z = roadZAt(layouts[s.floor].road?.roads[0]?.points ?? [], x);
+          const path = findPath(grids[s.floor], controller.pose, { x, z });
           if (path?.length) {
             controller.setPath(path, false);
             roverRuntime.target = path[path.length - 1];

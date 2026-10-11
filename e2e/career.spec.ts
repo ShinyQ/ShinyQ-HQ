@@ -40,7 +40,7 @@ async function swipe(page: Page, points: { x: number; y: number }[]) {
   await cdp.detach();
 }
 
-test.describe("Career Archive corridor (L2)", () => {
+test.describe("Career Road (L2)", () => {
   test("/journey starts on L2 without the intro and D drives forward through the years", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page);
@@ -52,8 +52,10 @@ test.describe("Career Archive corridor (L2)", () => {
     await expect(page.getByTestId("floor-announcer")).toContainText("L2");
     expect(new URL(page.url()).pathname).toBe("/en/journey");
 
+    await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2019");
+
     await page.keyboard.down("d");
-    // Past the 2020 gate at x = -6, staying on the corridor line.
+    // Under the 2019 arch at x = -16 and into its plaza, staying on the road's center line.
     await roverWhere(page, "x", ">", -4);
     await page.keyboard.up("d");
     const { rover } = await snapshot(page);
@@ -61,7 +63,7 @@ test.describe("Career Archive corridor (L2)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the L2 corridor stays under the draw call budget", async ({ page }) => {
+  test("the L2 road stays under the draw call budget", async ({ page }) => {
     await openJourney(page);
     await waitForPhase(page, "explore");
     await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
@@ -85,14 +87,36 @@ test.describe("Career Archive corridor (L2)", () => {
     await waitForPhase(page, "explore");
     await expect(drawer).toBeHidden();
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
+    await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2024");
 
-    // Straight across the corridor into the door zone of the 2024 room on the north side.
+    // Jenius docks on the south edge of the 2024 plaza: back off its pad into the plaza (W drives
+    // away from the camera), then drive straight back into the door, which opens the room again.
+    const pad = (await snapshot(page)).rover;
     await page.keyboard.down("w");
-    await waitForPhase(page, "room");
+    await roverWhere(page, "z", "<", pad.z - 4);
     await page.keyboard.up("w");
-    expect(await activeRoom(page)).toBe("L2:crypto-tracker-2024");
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
+    await page.keyboard.down("s");
+    await waitForPhase(page, "room");
+    await page.keyboard.up("s");
+    expect(await activeRoom(page)).toBe("L2:jenius-2024");
     await expect(drawer).toBeVisible();
-    await expect(page).toHaveURL(/\/en\/journey\/crypto-tracker-2024\?tier=lite$/);
+    await expect(page).toHaveURL(/\/en\/journey\/jenius-2024\?tier=lite$/);
+    expect(errors).toEqual([]);
+  });
+
+  test("Follow my career starts the guided walk at the first room", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openJourney(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    await page.keyboard.press("Control+k");
+    await page.keyboard.type("Follow my career");
+    await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: /Follow my career/ }).first().click();
+    await expect(page.getByTestId("walk-bar")).toBeVisible();
+    await expect(page.getByTestId("walk-counter")).toContainText(/Stop 1 of \d+/);
+    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", "L2:prologue-2016");
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -162,9 +186,9 @@ test.describe("Career Archive on touch", () => {
     // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot
     // cover or is dropped before the Director runs.
     await waitForSceneLive(page);
-    // Left swipe of ~60% of the width: two year stops forward (2019, then 2020 at x = 1).
+    // Left swipe of ~60% of the width: two plaza stops forward (2019, then the 2020 plaza at x = 53).
     await swipe(page, [{ x: 320, y: 480 }, { x: 220, y: 482 }, { x: 80, y: 484 }]);
-    await roverWhere(page, "x", ">", 0);
+    await roverWhere(page, "x", ">", 40);
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
     // Right swipe goes back in time.
     const before = (await snapshot(page)).rover.x;

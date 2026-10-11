@@ -11,7 +11,7 @@ import { useWalkDefinitions, useWalkState } from "@/hud/walk/WalkLayer";
 import { WalkPrompt } from "@/hud/walk/WalkPrompt";
 import "../text-config";
 import { COLORS, FLOOR_COLOR, ROVER } from "../config";
-import { careerLayoutInput } from "../floors/career/layout";
+import { buildCareerRoad, CAREER_ROAD, careerLayoutInput, type CareerRoadLayout, type RoadStyle } from "../floors/career/layout";
 import { TypeIcon } from "@/components/TypeIcon";
 import { GridFloor } from "../fx/GridFloor";
 import { HoloIcon } from "../fx/HoloIcon";
@@ -27,7 +27,6 @@ import { RoverController } from "../rover/controller";
 import { cameraRelative } from "../rover/movement";
 import { FONTS } from "../tower/primitives";
 import type { CareerType, DoorTrigger, ExperienceData, GpuTier, Rect, Vec2 } from "../types";
-import { buildCareerRoad, CAREER_ROAD, type CareerRoadLayout, type RoadStyle } from "./careerRoad";
 import { buildLabsRoads, WING_COLOR, type LabsRoadsLayout } from "./labsRoads";
 
 /** Spur stubs take the career type colors. */

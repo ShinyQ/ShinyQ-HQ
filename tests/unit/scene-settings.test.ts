@@ -15,7 +15,7 @@ it("matches the prototype on full and drops bloom on lite", () => {
 });
 
 it("pushes the fog back for the rail and the exterior intro", () => {
-  expect(sceneSettings("full", "rail").fog).toMatchObject({ near: 30, far: 70 });
+  expect(sceneSettings("full", "rail").fog).toMatchObject({ near: 40, far: 95 });
   const intro = sceneSettings("lite", "intro").fog;
   expect(intro.near).toBeGreaterThan(80);
   expect(intro.far).toBeGreaterThan(intro.near);

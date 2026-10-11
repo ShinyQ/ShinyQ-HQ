@@ -18,11 +18,14 @@ export const FOLLOW: Record<ViewportClass, { fov: number; offset: Vec3 }> = {
   mobile: { fov: 50, offset: [18, 24, 18] },
 };
 
-/** Rail rig for the L2 corridor: camera at (x, y, z) looking at (x + 4, 0, 0). */
+/**
+ * Rail rig for the L2 Career Road: camera at (x, y, z) looking at (x + 4, 0, 0). High and far
+ * enough that both room rows of a year plaza (about 20 u either side of the road) stay in frame.
+ */
 export const RAIL: Record<ViewportClass, { fov: number; y: number; z: number }> = {
-  desktop: { fov: 40, y: 13, z: 24 },
-  tablet: { fov: 45, y: 15, z: 28 },
-  mobile: { fov: 55, y: 18, z: 34 },
+  desktop: { fov: 40, y: 22, z: 30 },
+  tablet: { fov: 45, y: 24, z: 34 },
+  mobile: { fov: 55, y: 26, z: 38 },
 };
 export const RAIL_LOOK_AHEAD = 4;
 
@@ -67,19 +70,22 @@ export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, 
   };
 }
 
-/** Half width of the L2 corridor: inside it the rail keeps the spec pose. */
+/** Half width of the L2 road: inside it the rail keeps the spec pose. */
 export const RAIL_DEADBAND = 4;
 
-/** How far the rail slides in z so a rover inside a side room (|z| > 4) stays in frame. */
+/** How far the rail slides in z so a rover off the road (|z| > 4 from its axis) stays in frame. */
 export function railShift(roverZ: number): number {
   const out = Math.abs(roverZ) - RAIL_DEADBAND;
   return out > 0 ? Math.sign(roverZ) * out : 0;
 }
 
-/** Side-on rail camera for the L2 corridor; `yaw` (already clamped) swings it around the rover. */
-export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0): CameraPose {
+/**
+ * Side-on rail camera for the L2 road; `yaw` (already clamped) swings it around the rover. `axisZ`
+ * is the road's z at the rover (the Career Road meanders), so the rail follows the road's curves.
+ */
+export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0, axisZ = 0): CameraPose {
   const { fov, y, z } = RAIL[cls];
-  const shift = railShift(roverZ);
+  const shift = axisZ + railShift(roverZ - axisZ);
   return {
     position: [roverX + Math.sin(yaw) * z * zoom, floorY + y * zoom, Math.cos(yaw) * z * zoom + shift],
     target: [roverX + RAIL_LOOK_AHEAD, floorY, shift],
