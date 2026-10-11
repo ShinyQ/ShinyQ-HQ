@@ -27,6 +27,23 @@ let visited: (() => readonly RoomId[]) | null = null;
 let runner: MissionRunner | null = null;
 let autoOpenClaimed = false;
 const listeners = new Set<(state: MissionState) => void>();
+const waiting = new Set<(runner: MissionRunner | null) => void>();
+/** How long a cross-floor link or walk leg waits for the runner (MissionHud loads its index after hydration). */
+const RUNNER_WAIT_MS = 5000;
+
+/** The active runner, or the next one registered within `timeoutMs` (null after that). */
+function whenRunner(timeoutMs = RUNNER_WAIT_MS): Promise<MissionRunner | null> {
+  if (runner) return Promise.resolve(runner);
+  return new Promise((resolve) => {
+    const done = (next: MissionRunner | null) => {
+      clearTimeout(timer);
+      waiting.delete(done);
+      resolve(next);
+    };
+    const timer = setTimeout(() => done(null), timeoutMs);
+    waiting.add(done);
+  });
+}
 
 export function register3DHost(next: HostFactory, visitedRooms: () => readonly RoomId[]): () => void {
   factory = next;
@@ -53,6 +70,7 @@ export function visitedRooms(): readonly RoomId[] | null {
 export function registerRunner(next: MissionRunner): () => void {
   runner = next;
   const off = next.subscribe((state) => listeners.forEach((l) => l(state)));
+  [...waiting].forEach((resolve) => resolve(next));
   return () => {
     off();
     if (runner === next) runner = null;
@@ -61,12 +79,14 @@ export function registerRunner(next: MissionRunner): () => void {
 
 /** Elevator, drive and open for any room through the active runner ("See the case study" links). */
 export function goToRoom(room: RoomId, tab?: DrawerTab) {
-  void runner?.goTo(room, tab);
+  if (runner) void runner.goTo(room, tab);
+  else void whenRunner().then((next) => next?.goTo(room, tab));
 }
 
-/** Runs ad hoc steps through the active runner (guided walk legs). Resolves "cancelled" without a runner. */
+/** Runs ad hoc steps through the active runner (guided walk legs). Resolves "cancelled" when no runner shows up. */
 export function runMissionSteps(id: string, steps: readonly MissionStep[]): Promise<MissionStatus> {
-  return runner ? runner.runSteps(id, steps) : Promise.resolve("cancelled");
+  if (runner) return runner.runSteps(id, steps);
+  return whenRunner().then((next) => (next ? next.runSteps(id, steps) : "cancelled"));
 }
 
 let walkStarter: ((id: WalkId) => boolean) | null = null;
