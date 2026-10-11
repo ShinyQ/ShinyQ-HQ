@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { useState } from "react";
@@ -152,8 +152,55 @@ describe("RoomDrawer", () => {
     render(<Harness view={hero} layout="sheet" />);
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("data-layout", "sheet");
-    expect(dialog.style.height).toBe("45dvh");
+    expect(dialog.style.height).toBe("55dvh");
     await user.click(screen.getByRole("button", { name: "Expand panel" }));
     expect(dialog.style.height).toBe("92dvh");
+  });
+
+  it("condenses the bar once the title scrolls away and keeps the tabs in the scrolling body", () => {
+    render(<Harness view={hero} />);
+    const dialog = screen.getByRole("dialog");
+    const body = screen.getByTestId("drawer-body");
+    expect(body).toContainElement(screen.getByRole("tablist"));
+    expect(body).toContainElement(screen.getByRole("heading", { level: 2, name: hero.title }));
+    expect(dialog).not.toHaveAttribute("data-condensed");
+    body.scrollTop = 400;
+    fireEvent.scroll(body);
+    expect(dialog).toHaveAttribute("data-condensed", "true");
+    expect(screen.getByTestId("drawer-compact-title")).toHaveAttribute("aria-hidden", "true");
+    body.scrollTop = 0;
+    fireEvent.scroll(body);
+    expect(dialog).not.toHaveAttribute("data-condensed");
+  });
+
+  it("expands a half-open sheet when the body scrolls", () => {
+    render(<Harness view={hero} layout="sheet" />);
+    const dialog = screen.getByRole("dialog");
+    const body = screen.getByTestId("drawer-body");
+    body.scrollTop = 80;
+    fireEvent.scroll(body);
+    expect(dialog.style.height).toBe("92dvh");
+  });
+
+  it("matches the Ask panel width while it is open over the side panel", () => {
+    const { unmount } = render(<Harness view={hero} />);
+    expect(screen.getByRole("dialog").className).toContain("var(--hq-drawer-w)");
+    unmount();
+    render(<Harness view={hero} narrow />);
+    expect(screen.getByRole("dialog").className).toContain("w-[min(420px,");
+  });
+
+  it("keeps the footer to one primary action and offers the cross-floor link in the menu", async () => {
+    const user = userEvent.setup();
+    const onLink = vi.fn();
+    render(<Harness view={hero} onLink={onLink} />);
+    const footer = screen.getByRole("dialog").querySelector("footer")!;
+    expect(within(footer).getAllByRole("link")).toHaveLength(1);
+    expect(within(footer).queryByText(en.drawer.readmeHint)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+    const items = screen.getAllByRole("button", { name: new RegExp(hero.link!.label) });
+    expect(items).toHaveLength(2);
+    await user.click(items[1]);
+    expect(onLink).toHaveBeenCalledWith(hero.link!.room);
   });
 });

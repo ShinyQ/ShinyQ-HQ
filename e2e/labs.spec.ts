@@ -146,6 +146,27 @@ test.describe("L3 Labs in 3D", () => {
   });
 });
 
+test("desktop: the drawer body gets most of the height and the bar condenses on scroll", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openPod(page);
+  await waitForRoom(page, `L3:${heroPod.slug}`, 30_000);
+  const drawer = page.getByTestId("room-drawer");
+  const body = drawer.getByTestId("drawer-body");
+  const drawerBox = (await drawer.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(drawerBox.width).toBe(600);
+  expect(bodyBox.height / drawerBox.height).toBeGreaterThanOrEqual(0.65);
+  await expect(drawer).not.toHaveAttribute("data-condensed");
+  await body.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await expect(drawer).toHaveAttribute("data-condensed", "true");
+  // The tabs stick to the top of the scrolling body.
+  const tabs = (await drawer.getByRole("tablist").boundingBox())!;
+  expect(Math.abs(tabs.y - bodyBox.y)).toBeLessThanOrEqual(1);
+  await context.close();
+});
+
 test("mobile: the drawer is a bottom sheet with snap points", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
@@ -155,7 +176,7 @@ test("mobile: the drawer is a bottom sheet with snap points", async ({ browser }
   await expect(drawer).toHaveAttribute("data-layout", "sheet");
   const collapsed = await drawer.boundingBox();
   expect(collapsed?.width).toBe(390);
-  expect(Math.round((collapsed?.height ?? 0) / 844 * 100)).toBe(45);
+  expect(Math.round((collapsed?.height ?? 0) / 844 * 100)).toBe(55);
   await page.getByTestId("sheet-handle").click();
   await expect.poll(async () => Math.round(((await drawer.boundingBox())?.height ?? 0) / 844 * 100)).toBe(92);
   await page.getByRole("button", { name: "Close room" }).click();

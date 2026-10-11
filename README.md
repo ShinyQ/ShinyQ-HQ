@@ -19,6 +19,8 @@ ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rove
 
 Try it: open `/en`, press **Boot rover**, drive with WASD or the arrow keys (or click the floor), and change floors with the elevator panel, the mouse wheel or PageUp/PageDown. Add `?tier=lite` or `?tier=static` to force a tier, and use **Page view** to read the page without 3D.
 
+Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer: a side panel on desktop (480 to 600 px wide, growing with the screen) or a bottom sheet on phones and portrait tablets. Its bar keeps the room code, prev/next, the "..." menu (README view, also on `t`) and close; the title and tabs scroll with the content, and the tabs stick under the bar, so the room body gets most of the height.
+
 ## Stack
 
 Next.js 16 (App Router, static export) · React 19 · TypeScript strict · three.js with React Three Fiber, drei and postprocessing · zustand · Tailwind CSS 4 · next-intl · zod · MDX (next-mdx-remote) · Vitest · Playwright · Bun · Cloudflare Pages.

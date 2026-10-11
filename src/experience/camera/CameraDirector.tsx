@@ -140,7 +140,7 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
       s.phase === "hologram" && focus
         ? hologramShift(width / Math.max(1, height))
         : s.phase === "room" && s.activeRoom
-          ? cameraShift(drawerLayout(width, height))
+          ? cameraShift(drawerLayout(width, height), width)
           : { x: 0, y: 0 };
     const ks = s.reducedMotion ? 1 : springFactor(dt);
     l.shift.x += (want.x - l.shift.x) * ks;

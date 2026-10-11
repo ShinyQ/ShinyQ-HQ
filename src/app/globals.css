@@ -37,6 +37,21 @@
 }
 
 @layer base {
+  /* Glass Drawer side panel width (mirrored by SIDE_WIDTHS in src/hud/drawer/layout.ts). */
+  :root {
+    --hq-drawer-w: 480px;
+  }
+  @media (min-width: 1280px) {
+    :root {
+      --hq-drawer-w: 560px;
+    }
+  }
+  @media (min-width: 1400px) {
+    :root {
+      --hq-drawer-w: 600px;
+    }
+  }
+
   html {
     color-scheme: dark;
     scroll-behavior: smooth;

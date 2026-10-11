@@ -101,9 +101,9 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 | Property | Spec |
 |---|---|
 | Tabs | Overview, Architecture, Results, Stack. Year rooms and Library items use a single-pane variant. |
-| Header | Floor and room code (mono), title, role and period, tier badge |
+| Header | A slim bar that stays put: floor and room code (mono), prev/next arrows, the "..." menu (README with its `t` shortcut, the cross-floor link, Open page) and close. Below it the title, badges, role and period and the cross-floor link scroll with the body; once the title scrolls away it joins the bar (with the badges when they fit). Tabs stick under the bar. The scrolling body gets at least 65% of the drawer height on desktop. |
 | Metric tiles | 1 to 3 tiles, each with the value, the label and the context (e.g. "controlled A/B, n=4") |
-| Actions | "Full case study" (route link), "View architecture" (hero pods only), prev/next, close |
+| Actions | One footer row: "Full case study" (route link) plus "View architecture" (hero pods only); prev/next and close live in the bar |
 | Focus | Focus moves into the drawer on open and returns to the canvas on close. Esc closes it. |
 | URL | Opening updates the URL with `history.pushState`. Closing restores the floor URL. |
 

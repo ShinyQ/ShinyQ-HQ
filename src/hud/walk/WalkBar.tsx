@@ -13,8 +13,8 @@ const CARD: Record<WalkPlacement, string> = {
   bottom: "bottom-4 left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
   // Coarse pointers keep the joystick in the bottom-left corner.
   "bottom-raised": "bottom-[156px] left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
-  // Beside the side drawer (420 px on the right).
-  dock: "bottom-4 left-4 w-[min(520px,calc(100%-460px))]",
+  // Beside the side drawer (`--hq-drawer-w` on the right).
+  dock: "bottom-4 left-4 w-[min(520px,calc(100%-var(--hq-drawer-w)-40px))]",
 };
 
 const PILL: Record<WalkPlacement, string> = {
