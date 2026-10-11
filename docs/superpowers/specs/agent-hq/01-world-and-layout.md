@@ -35,22 +35,23 @@ Lanes: one ring lane around the hologram (radius 12) and spurs leaving the ring 
 
 Spacing rules (enforced by `tests/unit/lobby-layout.test.ts`): no two elements' bounding boxes overlap at any stats ring rotation (billboards counted at full width in x and z), nothing reaches into the walkable ring below rover height, and every wall and the kiosk keeps at least 4 u of walkway outside the ring. View zones in front of the skills and certifications walls turn the camera to face them (appendix 03).
 
-## 3. Floor L2: Career Archive (timeline corridor)
+## 3. Floor L2: Career Archive (Career Road)
 
-Footprint: a corridor along +x. Accent: amber `#fbbf24`.
+Footprint: one road along +x, forward in time (walkable floors plan, Part 2; owner picks: meander road, guided walk, Neon line icons). Accent: amber `#fbbf24`. Geometry lives in `src/experience/floors/career/layout.ts` (`buildCareerRoad`) and passes the walkable space rules (`src/experience/nav/space.ts`).
 
 | Element | Spec |
 |---|---|
-| Corridor | From x = -20 to x = `-20 + 14 * yearCount + 20`, width 8 u (z from -4 to 4), glowing floor strip with year markers every 14 u |
-| Year segments | One segment per year that has entries, in ascending order (2019 first). Segment length 14 u. |
-| Year rooms | Each entry in a year becomes a room 9 × 8 u. Rooms alternate sides (north for even index, south for odd) within the segment; the first row's doors sit at \|z\| = 6. If a year has more than 2 entries, extra rooms stack outward behind a 5 u aisle (the 1.6 u door pad plus 3.4 u of clear floor), reached through the 5 u alleys between year columns, so no path crosses another room (`buildCorridor`). |
-| Room labels | North rooms: a low sign at the door; south rooms: flat inside the back wall, nearer the rail camera than the pedestal. Outer rows show their label only once the rover is in their aisle (`labelVisible`), so stacked labels never overlap. |
-| Room types | `job`, `freelance`, `education`, `award` (smaller 6 × 6 trophy plinth), `milestone` (tall pillar). Each type has its own hologram. |
-| Year gate | An arch at the start of each segment showing the year in large mono digits |
-| Workshop annex | At the corridor end: a 20 × 16 u hall with side-project benches and a public-repo wall |
-| Elevator door | (-24, 0) at the corridor start |
+| Road | 8 u wide, from the elevator approach (-21, 0) to the Workshop annex. x increases monotonically (rail camera, swipe scrub); every other year plaza shifts 7 u in z (order 0, +7, 0, -7) and S-curves join them. Chevrons point forward in time. |
+| Year plazas | One open plaza per year that has entries, ascending (2019 first, pre-2019 entries fold in as the prologue). 18 u deep; length scales with the entry count (10 u bays, sides staggered by 5 u, at least 16 u). The year is written on the plaza floor. Plazas are 10 u apart. |
+| Year rooms | Each entry is a room 9 × 8 u (awards 6 × 8) docked in one row on a long plaza edge behind a 2 u apron, alternating sides (north first), door facing the road, with a spur in the type color. No room sits behind another. Only the 2 × 2 pedestal blocks the rover. |
+| Room icons | One Neon line icon per type, one hue each (`CAREER_ICONS`, `CAREER_TONE`): employment briefcase (sky), freelance laptop with code (pink), education cap (violet), award trophy (amber, plus one cup per placing on the plinth), milestone flag (emerald). The same icons mark types on the Page View. |
+| Room labels | Upright above each room, facing the rail camera; they fade with distance along the road (20 to 30 u). |
+| Year arch | A neon arch over the road before each plaza with the year in large mono digits and a signpost ("2021 · 8 rooms"). The HUD shows "You are here: 2021". |
+| Workshop annex | At the road's end: a 22 × 18 u plaza with the public-repo wall (north, the Workshop door) and side-project benches (south) |
+| Elevator door | (-24, 0) at the road start |
+| Guided walk | "Walk my journey": every room oldest first, then the Workshop, with a type filter; offered once on the first L2 visit (the visitor can explore freely instead) and started by the "Follow my career" mission. |
 
-The corridor's end opens onto a glass window that looks up at the Labs (L3 silhouette). Career rooms linked to a Labs pod show a "See the case study on L3" action that runs an elevator-and-drive mission.
+The road's end opens onto a glass window that looks up at the Labs (L3 silhouette). Career rooms linked to a Labs pod show a "See the case study on L3" action that runs an elevator-and-drive mission.
 
 ## Door triggers (every floor)
 

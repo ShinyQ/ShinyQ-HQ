@@ -71,7 +71,7 @@ test.describe("Career Road (L2)", () => {
     expect((await snapshot(page)).drawCalls).toBeLessThan(150);
   });
 
-  test("a deep link opens the room's drawer, Esc closes it and driving into a door opens the next", async ({ page }) => {
+  test("a deep link opens the room's drawer, Esc closes it and driving into a door opens it", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page, "/en/journey/jenius-2024");
     await waitForPhase(page, "room");
@@ -89,19 +89,23 @@ test.describe("Career Road (L2)", () => {
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
     await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2024");
 
-    // Jenius docks on the south edge of the 2024 plaza: back off its pad into the plaza (W drives
-    // away from the camera), then drive straight back into the door, which opens the room again.
-    const pad = (await snapshot(page)).rover;
-    await page.keyboard.down("w");
-    await roverWhere(page, "z", "<", pad.z - 4);
-    await page.keyboard.up("w");
-    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
-    await page.keyboard.down("s");
+    // Rooms dock in one row on both plaza edges. Open the 2024 room on the north edge, back off its
+    // pad into the plaza (S drives toward the camera), then drive straight back into its door.
+    await openJourney(page, "/en/journey/crypto-tracker-2024");
     await waitForPhase(page, "room");
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore");
+    const pad = (await snapshot(page)).rover;
+    await page.keyboard.down("s");
+    await roverWhere(page, "z", ">", pad.z + 4);
     await page.keyboard.up("s");
-    expect(await activeRoom(page)).toBe("L2:jenius-2024");
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
+    await page.keyboard.down("w");
+    await waitForPhase(page, "room");
+    await page.keyboard.up("w");
+    expect(await activeRoom(page)).toBe("L2:crypto-tracker-2024");
     await expect(drawer).toBeVisible();
-    await expect(page).toHaveURL(/\/en\/journey\/jenius-2024\?tier=lite$/);
+    await expect(page).toHaveURL(/\/en\/journey\/crypto-tracker-2024\?tier=lite$/);
     expect(errors).toEqual([]);
   });
 
