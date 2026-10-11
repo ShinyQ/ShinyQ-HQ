@@ -219,7 +219,7 @@ describe("walk definitions", () => {
       hasHologramView: false,
     });
     const pods = [pod("f1", "featured", "ai", 3), pod("h2", "hero", "ai", 0), pod("h1", "hero", "software", 0), pod("l1", "listed", "ai", 9), pod("h3", "hero", "software", 1)];
-    const walk = labsWalk(pods, { wings: { software: "Software Wing", ai: "AI Wing" }, more: "More projects here", moreSub: "" });
+    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering" }, more: "More projects here", moreSub: "" });
     expect(walk.stops.map((s) => s.id)).toEqual(["L3:h1", "L3:h3", "L3:h2", "L3:f1", "L3:directory:software", "L3:directory:ai"]);
     expect(walk.stops.at(-1)).toMatchObject({ palette: "pods" });
     expect(walk.stops.at(-1)?.room).toBeUndefined();

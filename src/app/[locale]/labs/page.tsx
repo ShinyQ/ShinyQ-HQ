@@ -42,7 +42,8 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
           <dl className="grid grid-cols-2 gap-3">
             {(["ai", "software"] as const).map((wing) => (
               <div key={wing} className="card p-4">
-                <dt className="pv-data">
+                {/* Two lines reserved: "Product Engineering" wraps on phones, and the counts stay aligned. */}
+                <dt className="pv-data min-h-[2lh]">
                   <Marker accent={WING_ACCENT[wing]}>{tw(`wingShort.${wing}`)}</Marker>
                 </dt>
                 <dd className="pv-num mt-3 text-[36px]">{all.filter((p) => p.wing === wing).length}</dd>

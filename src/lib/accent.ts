@@ -50,5 +50,5 @@ export const FLOOR_ACCENT: Record<FloorId, Accent> = {
   RF: "blue",
 };
 
-/** Software Wing tint cyan, AI Wing tint violet (appendix 05). */
+/** Product Engineering wing tint cyan, AI Engineering wing tint violet (appendix 05). */
 export const WING_ACCENT = { software: "cyan", ai: "violet" } as const satisfies Record<string, Accent>;

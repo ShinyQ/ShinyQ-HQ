@@ -60,7 +60,7 @@ describe("L3 Project Roads layout", () => {
     for (const p of path!) expect(onNetwork(network, p)).toBe(true);
   });
 
-  it("puts the Software Wing north (z < 0) and the AI Wing south (z > 0)", () => {
+  it("puts the Product Engineering wing north (z < 0) and the AI Engineering wing south (z > 0)", () => {
     for (const p of layout.placed) expect(Math.sign(p.center.z)).toBe(WING_SIDE[p.pod.wing]);
   });
 
