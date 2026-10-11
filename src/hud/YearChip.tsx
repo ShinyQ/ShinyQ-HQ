@@ -9,7 +9,7 @@ import { useHQStore } from "@/store/useHQStore";
 /**
  * "You are here: 2021" while the rover is on the L2 Career Road: the year whose arch it last passed,
  * or the Workshop annex at the road's end. Top center under the controls row (the top bar reaches the
- * middle on tablets); on phones the Walk HUD takes that spot while a walk runs.
+ * middle on tablets); on phones below the walk launcher, hidden while the Walk HUD or a room is open.
  */
 export function YearChip({ career, mobile, hidden = false }: { career: CareerData; mobile: boolean; hidden?: boolean }) {
   const t = useTranslations("hud.career");
@@ -19,7 +19,7 @@ export function YearChip({ career, mobile, hidden = false }: { career: CareerDat
   return (
     <p
       className={`glass glass-solid pointer-events-none absolute left-1/2 inline-flex min-h-9 -translate-x-1/2 items-center gap-2 rounded-full px-4 text-[13px] leading-5 whitespace-nowrap ${
-        mobile ? "top-[68px]" : "top-[84px]"
+        mobile ? "top-[120px]" : "top-[84px]"
       }`}
       data-testid="year-chip"
       data-place={place}

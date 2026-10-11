@@ -95,7 +95,8 @@ export function YearGates({
 
   return (
     <group name="year-gates">
-      <RoadMarkings network={layout.network} color={accent} tier={tier} reducedMotion={reducedMotion} />
+      {/* Long plazas under bloom read as solid amber at the default fill: keep the full tier subtle. */}
+      <RoadMarkings network={layout.network} color={accent} tier={tier} reducedMotion={reducedMotion} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <lineSegments geometry={arches} raycast={() => null}>
         <lineBasicMaterial color={neon} transparent opacity={0.9} toneMapped={false} />
       </lineSegments>

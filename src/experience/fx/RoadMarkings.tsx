@@ -60,6 +60,8 @@ export interface RoadMarkingsProps {
   /** Spur stub color when a spur has none. */
   stubColor?: string;
   chevronSpacing?: number;
+  /** Road, plaza and spur fill opacity (default 0.11 on the full tier, 0.09 on lite). */
+  fillOpacity?: number;
 }
 
 /**
@@ -68,7 +70,7 @@ export interface RoadMarkingsProps {
  * mesh) with a pulse running forward. The lite tier and reduced motion drop the pulse; the lite
  * tier also drops the edge glow (no additive blending, dimmer lines).
  */
-export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = "#e5e7eb", chevronSpacing = 4 }: RoadMarkingsProps) {
+export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = "#e5e7eb", chevronSpacing = 4, fillOpacity }: RoadMarkingsProps) {
   const full = tier === "full";
   const pulse = full && !reducedMotion;
 
@@ -144,7 +146,7 @@ export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = 
   return (
     <group name="road-markings">
       <mesh geometry={fill} raycast={() => null}>
-        <meshBasicMaterial color={color} transparent opacity={full ? 0.11 : 0.09} depthWrite={false} toneMapped={false} side={DoubleSide} />
+        <meshBasicMaterial color={color} transparent opacity={fillOpacity ?? (full ? 0.11 : 0.09)} depthWrite={false} toneMapped={false} side={DoubleSide} />
       </mesh>
       {network.spurs.length > 0 && (
         <mesh geometry={stubs} raycast={() => null}>
