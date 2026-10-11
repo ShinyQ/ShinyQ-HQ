@@ -28,7 +28,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       kind: "lobby",
       title: m.hud.rooms.stats,
       accent: "green",
-      metrics: getStats().map((s) => ({ value: s.value, label: s.label[locale], confidence: s.confidence })),
+      metrics: getStats().map((s) => ({ value: s.value, label: s.label[locale] })),
       page: "/#stats",
     }),
     single({

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import type { Confidence, Locale, LocalizedText } from "@/content/schema";
-import { ConfidenceBadge } from "../MetricTile";
+import type { Locale, LocalizedText } from "@/content/schema";
 
 /** Key facts in ruled columns (role, period, client...). Items without a value are skipped. */
 export function FactRow({ items }: { items: { label: string; value?: ReactNode }[] }) {
@@ -21,10 +20,9 @@ export interface LedgerResult {
   value: string;
   label: LocalizedText;
   context?: LocalizedText;
-  confidence?: Confidence;
 }
 
-/** Results as a ledger: the number, what it measures, its context and how sure it is. */
+/** Results as a ledger: the number, what it measures and how it was measured. */
 export function MetricLedger({ results, locale }: { results: readonly LedgerResult[]; locale: Locale }) {
   return (
     <ul className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
@@ -36,11 +34,6 @@ export function MetricLedger({ results, locale }: { results: readonly LedgerResu
           <p className="pv-num text-[28px] sm:text-[36px] lg:text-[40px]">{r.value}</p>
           <p className="text-sm leading-[21px] text-ink">{r.label[locale]}</p>
           {r.context && <p className="text-[13px] leading-[19px] text-ink-3">{r.context[locale]}</p>}
-          {r.confidence && (
-            <p className="mt-auto pt-1">
-              <ConfidenceBadge confidence={r.confidence} locale={locale} />
-            </p>
-          )}
         </li>
       ))}
     </ul>

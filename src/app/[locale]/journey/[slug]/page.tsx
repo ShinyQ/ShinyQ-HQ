@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ChipList } from "@/components/Chip";
 import { ExternalLink } from "@/components/ExternalLink";
-import { ConfidenceBadge } from "@/components/MetricTile";
 import { OrgLogo } from "@/components/OrgLogo";
 import { FactRow } from "@/components/page/Case";
 import { CrumbLink, Marker, TypeMarker } from "@/components/page/Layout";
@@ -65,12 +64,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
           items={[
             {
               label: tl("period"),
-              value: (
-                <span className="flex flex-wrap items-center gap-3">
-                  {formatPeriod(entry.start, entry.end, locale)}
-                  {entry.confidence && <ConfidenceBadge confidence={entry.confidence} locale={locale} />}
-                </span>
-              ),
+              value: formatPeriod(entry.start, entry.end, locale),
             },
           ]}
         />

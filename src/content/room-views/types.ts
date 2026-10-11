@@ -1,4 +1,4 @@
-import type { Accent, Confidence, DrawerTab, FloorId, RoomId } from "@/content/schema";
+import type { Accent, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
 import type { PaperPreview } from "../citation";
@@ -14,7 +14,6 @@ export interface RoomMetric {
   label: string;
   /** How the number was measured, e.g. "controlled A/B, n=4". */
   context?: string;
-  confidence?: Confidence;
 }
 
 export interface RoomLinkItem {
