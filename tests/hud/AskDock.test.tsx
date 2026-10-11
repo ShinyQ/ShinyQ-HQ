@@ -16,9 +16,12 @@ const askMock = vi.hoisted(() => ({
   status: null as AskStatus | null,
   ask: vi.fn<(options: AskOptions) => Promise<AskResult>>(),
 }));
+vi.mock("@/ask/status", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ask/status")>()),
+  fetchAskStatus: async () => askMock.status,
+}));
 vi.mock("@/ask/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/ask/client")>()),
-  fetchAskStatus: async () => askMock.status,
   askQuestion: (options: AskOptions) => askMock.ask(options),
 }));
 

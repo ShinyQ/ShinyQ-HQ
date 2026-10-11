@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toCertViews } from "@/content/cert-views";
-import { featuredCertifications, issuerCounts, issuerLogo, issuerTabs, matchesCertFilter, parseCertFilter, shortCertName, sortCertifications } from "@/content/certs";
+import { issuerLogo } from "@/content/cert-views";
+import { featuredCertifications, issuerCounts, issuerTabs, matchesCertFilter, parseCertFilter, shortCertName, sortCertifications } from "@/content/certs";
 import { getCertifications } from "@/content/load";
 import { CertificationSchema } from "@/content/schema";
 import { CERT_FIXTURE, certFixture } from "@/experience/prototype/certs/fixture";

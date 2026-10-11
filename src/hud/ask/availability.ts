@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { fetchAskStatus } from "@/ask/client";
+import { fetchAskStatus } from "@/ask/status";
 import type { AskStatus } from "@/ask/protocol";
 import { drawerLayout, type DrawerLayout } from "@/hud/drawer/layout";
 

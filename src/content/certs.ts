@@ -2,7 +2,6 @@
  * Pure certification helpers shared by Page View, the 3D Lobby wall and the preview card.
  * No zod, React or three imports, so client bundles and Vitest can use them.
  */
-import { getTechLogo } from "./tech";
 
 export type CertStatus = "earned" | "in-progress" | "expired";
 
@@ -95,12 +94,6 @@ export function issuerTabs(list: readonly CertLike[], max = 3): IssuerTab[] {
     ...named.map((c) => ({ key: c.issuer, issuers: [c.issuer], count: c.count })),
     ...(rest.length ? [{ key: "other", issuers: rest.map((c) => c.issuer), count: rest.reduce((n, c) => n + c.count, 0) }] : []),
   ];
-}
-
-/** Issuer logo under public/tech, or null for issuers shown as text (joint programs such as "Kominfo x IBM"). */
-export function issuerLogo(issuer: string): string | null {
-  if (/\sx\s/i.test(issuer)) return null;
-  return getTechLogo(issuer)?.src ?? null;
 }
 
 export interface CertFilter {

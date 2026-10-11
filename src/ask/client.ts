@@ -4,9 +4,9 @@
  * opened, focused or scrolled into view, and Turnstile loads only when the server asks for it.
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6, T8, T13).
  */
+import { ASK_ENDPOINT, fetchAskStatus, isAskEnabled, resetAskStatus } from "./status";
 import { cleanTags, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag } from "./protocol";
 
-export const ASK_ENDPOINT = "/api/ask";
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 export const TURNSTILE_SRC = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`;
 /** The server cookie lasts 30 minutes; skip the token a little earlier than that. */
@@ -28,47 +28,9 @@ export const isAskError = (result: AskResult): result is Extract<AskResult, { er
 
 /* ------------------------------------------------------------------ status */
 
-let statusPromise: Promise<AskStatus | null> | null = null;
-let statusValue: AskStatus | null | undefined;
-
-function isStatus(value: unknown): value is AskStatus {
-  if (!value || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.enabled === "boolean" &&
-    (v.turnstileSiteKey === null || typeof v.turnstileSiteKey === "string") &&
-    typeof v.asOf === "string" &&
-    typeof v.maxLength === "number"
-  );
-}
-
-/**
- * `GET /api/ask`, once per page load (the promise is cached). Resolves `null` when the feature is
- * unavailable: 503, 404 (no Functions, e.g. `bun run serve`), a network error or a bad body.
- */
-export function fetchAskStatus(fetchImpl: FetchFn = (input, init) => fetch(input, init)): Promise<AskStatus | null> {
-  statusPromise ??= (async () => {
-    try {
-      const response = await fetchImpl(ASK_ENDPOINT, { method: "GET", credentials: "same-origin", headers: { accept: "application/json" } });
-      if (!response.ok) return null;
-      const body: unknown = await response.json();
-      return isStatus(body) ? body : null;
-    } catch {
-      return null;
-    }
-  })().then((status) => {
-    statusValue = status;
-    return status;
-  });
-  return statusPromise;
-}
-
-/** The status if it already resolved: `undefined` while unknown, `null` when unavailable. */
-export function peekAskStatus(): AskStatus | null | undefined {
-  return statusValue;
-}
-
-export const isAskEnabled = (status: AskStatus | null | undefined): status is AskStatus => Boolean(status?.enabled);
+// The status helpers live in ./status so the always-loaded entry points (dock launcher, hero bar,
+// terminal) do not pull this module (Turnstile, SSE) into the first-load JavaScript.
+export { ASK_ENDPOINT, fetchAskStatus, isAskEnabled, peekAskStatus } from "./status";
 
 /* ------------------------------------------------------------- sanitizing */
 
@@ -425,8 +387,7 @@ async function readStream(response: Response, onDelta: (text: string) => void, s
 
 /** Test hook: forgets the cached status, the Turnstile widget and the verified window. */
 export function resetAskClient() {
-  statusPromise = null;
-  statusValue = undefined;
+  resetAskStatus();
   verifiedUntil = 0;
   widget = null;
   pending = null;

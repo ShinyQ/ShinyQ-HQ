@@ -1,9 +1,19 @@
 import { formatYearMonth } from "@/lib/format";
-import { issuerLogo, shortCertName, sortCertifications, type CertView } from "./certs";
+import { shortCertName, sortCertifications, type CertView } from "./certs";
 
 export type { CertView } from "./certs";
 import { getCertifications } from "./load";
 import type { Certification, Locale } from "./schema";
+import { getTechLogo } from "./tech";
+
+/**
+ * Issuer logo under public/tech, or null for issuers shown as text (joint programs such as "Kominfo x IBM").
+ * Server only: the tech registry stays out of the client islands that import ./certs.
+ */
+export function issuerLogo(issuer: string): string | null {
+  if (/\sx\s/i.test(issuer)) return null;
+  return getTechLogo(issuer)?.src ?? null;
+}
 
 /** Every certification, sorted (earned newest first, then in progress, then expired). */
 export function certViews(locale: Locale): CertView[] {
