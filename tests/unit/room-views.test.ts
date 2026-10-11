@@ -110,6 +110,17 @@ describe("room views (Glass Drawer content)", () => {
     expect(new Set(metrodata.gallery.map((g) => g.src.split("/")[2])).size).toBe(metrodata.gallery.length);
   });
 
+  it("tags career room badges with the entry type (neon line icon), and no other badges", () => {
+    const views = buildRoomViews("en");
+    for (const view of Object.values(views)) {
+      for (const badge of view.badges) {
+        if (view.kind === "career") expect(badge.type).toMatch(/^(job|freelance|education|award|milestone)$/);
+        else expect(badge.type).toBeUndefined();
+      }
+    }
+    expect(views["L2:jenius-2024"].badges).toEqual([{ label: "Employment", accent: "amber", type: "job" }]);
+  });
+
   it("adds logos to Library tags, model links and Roof channels", () => {
     const views = buildRoomViews("en");
     const posts = Object.values(views).filter((v) => v.kind === "post");

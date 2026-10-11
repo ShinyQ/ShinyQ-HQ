@@ -1,5 +1,6 @@
 import type { Accent, Confidence, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
+import type { CareerType } from "@/experience/types";
 
 /**
  * Glass Drawer content contract. One `RoomView` per room, locale-resolved and serializable, built on
@@ -91,8 +92,8 @@ export interface RoomView {
   logo?: { src: string; alt: string };
   /** Header metadata line items (role, period, client, org). */
   meta: string[];
-  /** Small badges next to the code (tier, wing, type). */
-  badges: { label: string; accent: Accent }[];
+  /** Small badges next to the code (tier, wing, type). `type` draws the career type icon in its neon tone instead of the accent. */
+  badges: { label: string; accent: Accent; type?: CareerType }[];
   accent: Accent;
   /** "tabs" for pods (Overview, Architecture, Results, Stack); "single" for every other room. */
   variant: "tabs" | "single";

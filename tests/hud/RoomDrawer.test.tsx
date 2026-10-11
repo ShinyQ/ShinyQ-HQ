@@ -203,4 +203,15 @@ describe("RoomDrawer", () => {
     await user.click(items[1]);
     expect(onLink).toHaveBeenCalledWith(hero.link!.room);
   });
+
+  it("draws the career type badge as the neon line icon in its type color", () => {
+    const { container } = render(<Harness view={views["L2:jenius-2024"]} />);
+    const badge = container.querySelector<HTMLElement>('[data-badge-type="job"]')!;
+    expect(badge).toHaveTextContent("Employment");
+    expect(badge.style.color).toBe("rgb(56, 189, 248)");
+    expect(badge.querySelector("svg[aria-hidden]")).not.toBeNull();
+    cleanup();
+    const pod = render(<Harness view={hero} />);
+    expect(pod.container.querySelector("[data-badge-type]")).toBeNull();
+  });
 });

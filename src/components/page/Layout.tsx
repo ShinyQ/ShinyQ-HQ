@@ -1,11 +1,24 @@
 import type { ReactNode } from "react";
 import type { Accent, Locale, Stat } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
+import { TypeIcon } from "@/components/TypeIcon";
+import { CAREER_TONE } from "@/experience/fx/holoIcons";
+import type { CareerType } from "@/experience/types";
 import { ACCENT_TEXT } from "@/lib/accent";
 
 /** Floor or wing locator: a small square in the accent color before a data label. */
 export function Marker({ accent, children }: { accent: Accent; children: ReactNode }) {
   return <span className={`pv-mark ${ACCENT_TEXT[accent]}`}>{children}</span>;
+}
+
+/** Career type locator: the neon line type icon and its label in the type color (matches the L2 floor). */
+export function TypeMarker({ type, children }: { type: CareerType; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2" style={{ color: CAREER_TONE[type] }}>
+      <TypeIcon type={type} size={16} className="shrink-0" />
+      {children}
+    </span>
+  );
 }
 
 export interface Crumb {

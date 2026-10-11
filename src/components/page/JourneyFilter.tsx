@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, type ReactNode } from "react";
 import { ENTRY_TYPES, parseTypeFilter, type EntryType } from "@/content/pageview";
-import { ACCENT_TEXT, TYPE_ACCENT } from "@/lib/accent";
+import { TypeIcon } from "@/components/TypeIcon";
 import { setSearchParams, useSearch } from "./urlState";
 
 /** Entry-type filter over the server-rendered timeline (`data-entry`, `data-type`, `data-year`). */
@@ -38,7 +38,7 @@ export function JourneyFilter({ counts, children }: { counts: Record<"all" | Ent
               disabled={counts[entryType] === 0}
               onClick={() => setSearchParams({ type: entryType })}
             >
-              <span aria-hidden="true" className={`pv-mark ${type === entryType ? "" : ACCENT_TEXT[TYPE_ACCENT[entryType]]}`} />
+              <TypeIcon type={entryType} size={16} className="shrink-0" color={type === entryType ? "currentColor" : undefined} />
               {tc(`type.${entryType}`)}
               <span className="chip-count">{counts[entryType]}</span>
             </button>

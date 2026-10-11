@@ -5,6 +5,8 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type P
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomLinkItem, RoomMetric, RoomSection, RoomView } from "@/content/room-views/types";
 import { Gallery as ImageGallery } from "@/components/Gallery";
+import { TypeIcon } from "@/components/TypeIcon";
+import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
 import { renderReadme } from "./ascii";
@@ -374,11 +376,24 @@ function HologramButton({ onClick, compact = false }: { onClick: () => void; com
 function Badges({ view, className, hidden = false }: { view: RoomView; className: string; hidden?: boolean }) {
   return (
     <span className={`label items-center gap-1.5 ${className}`} aria-hidden={hidden || undefined}>
-      {view.badges.map((b) => (
-        <span key={b.label} className={`rounded border border-current/40 px-1.5 py-0.5 ${ACCENT_TEXT[b.accent]}`}>
-          {b.label}
-        </span>
-      ))}
+      {view.badges.map((b) =>
+        b.type ? (
+          // Career types: the Neon line icon in its type hue, like the 3D room and the Page View chips.
+          <span
+            key={b.label}
+            className="inline-flex items-center gap-1.5 rounded border border-current/40 px-1.5 py-0.5"
+            style={{ color: CAREER_TONE[b.type] }}
+            data-badge-type={b.type}
+          >
+            <TypeIcon type={b.type} size={14} className="shrink-0" />
+            {b.label}
+          </span>
+        ) : (
+          <span key={b.label} className={`rounded border border-current/40 px-1.5 py-0.5 ${ACCENT_TEXT[b.accent]}`}>
+            {b.label}
+          </span>
+        ),
+      )}
     </span>
   );
 }
