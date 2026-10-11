@@ -17,7 +17,9 @@ describe("specsForChanges", () => {
   it("maps Ask the HQ code, the Function and the panel to the ask spec", () => {
     expect(specsForChanges(["functions/api/ask.ts"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["functions/_lib/rate-limit.ts", "src/ask/client.ts"]).specs).toEqual(["ask"]);
-    expect(specsForChanges(["src/components/page/AskPanel.tsx"]).specs).toEqual(["ask", "pageview"]);
+    expect(specsForChanges(["src/components/page/AskEntry.tsx"]).specs).toEqual(["ask", "pageview"]);
+    expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
+    expect(specsForChanges(["content/ask/suggestions.json"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "missions"]);
   });
 

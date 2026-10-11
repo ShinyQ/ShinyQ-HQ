@@ -48,8 +48,10 @@ export const RULES: Rule[] = [
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
-  { test: /^src\/components\/page\/AskPanel/, specs: ["ask", "pageview"] },
-  { test: /^src\/hud\/(AskTerminal|ask-ui)\.tsx$/, specs: ["ask", "missions"] },
+  { test: /^content\/ask\//, specs: ["ask"] },
+  { test: /^src\/components\/page\/AskEntry/, specs: ["ask", "pageview"] },
+  // The dock is mounted on every page and over the 3D HUD (top-right pill).
+  { test: /^src\/hud\/ask\//, specs: ["ask", "experience", "pageview"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery"] },
