@@ -180,8 +180,9 @@ jobs:
           done
 
   lighthouse:
-    # Blocking: the error-level budgets in lighthouserc.json (LCP, CLS, TBT; median of 3 runs) fail
-    # this job and, through the aggregate job, the required check.
+    # Blocking: the error-level budgets in lighthouserc.json (LCP, CLS, TBT as the median of 3 runs;
+    # font, document, CSS and JS transfer bytes) fail this job and, through the aggregate job, the
+    # required check.
     name: Lighthouse CI
     runs-on: ubuntu-latest
     needs: site

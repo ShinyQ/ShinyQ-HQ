@@ -200,12 +200,18 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 ## 8. Lighthouse CI
 
 - Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every PR and push. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
-- Pages: `/en`, `/en/quick`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device).
-- Budgets (appendix 08): LCP under 2500 ms, CLS under 0.05, TBT under 300 ms (error level, median run); performance score at least 0.8, accessibility at least 0.9 and SEO at least 0.9 (warn level).
+- Pages: `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device).
+- Budgets (tighter than appendix 08 since the October 2026 performance pass): LCP under 2000 ms, CLS under 0.01, TBT under 200 ms (error level, median run); transfer bytes per page at most 60 KB of fonts, 80 KB of HTML, 20 KB of CSS and 240 KB of JavaScript (error level); performance score at least 0.9, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
 - Blocking: a failed error-level budget fails `Lighthouse CI`, and the aggregate `Build, CV and e2e` job (the required check) needs it, so a PR cannot merge over budget. Branch rules may also list `Lighthouse CI` directly.
-- LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint. Two build-time measures keep the hero inside the budget, so keep them when changing fonts or the build: the preloaded fonts are self-hosted cuts narrowed to the axes the site uses (`src/assets/fonts/README.md`, about 110 KB for all three), and `scripts/defer-scripts.ts` (run by `bun run build`) requests the Next.js chunks only after the first contentful paint. Medians at the time of writing: about 2.1 s on `/en` and the pod page, 2.25 s on `/en/quick`.
+- LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint, so the bytes of the HTML, the CSS and the preloaded fonts decide it (the text paints before any JavaScript runs). Keep these measures when changing fonts, the layout or the build:
+  - The preloaded fonts are self-hosted cuts narrowed to the axes, characters and OpenType features the site uses (`src/assets/fonts/README.md`, `scripts/subset-fonts.sh`, about 55 KB for all three; `tests/content/fonts.test.ts` checks coverage and the budget).
+  - `scripts/defer-scripts.ts` (run by `bun run build`) requests the Next.js chunks only after the first contentful paint.
+  - Client props of the locale layout are inlined into every HTML file (RSC payload). Large client data goes into a static file under `/data/` instead: the Glass Drawer content (`/data/rooms/{locale}.json`) and the HUD index (`/data/hud/index.json`, fetched by `MissionHud` after hydration).
+  - Always-loaded client islands import only small modules: the Ask status from `src/ask/status.ts` (not the Turnstile and SSE client), certification helpers from `src/content/certs.ts` (the tech logo registry stays in the server-only `cert-views.ts`).
+  - Elements that appear after first paint on their own must not move content: the first-visit Rover Terminal opens only once its missions and the Ask status are known, and its greeting types into reserved space.
+- Medians at the time of writing (local `lhci autorun`): `/en` and the pod page about 1.58 s, `/en/journey` 1.73 s, `/en/quick` 1.81 s; CLS 0, TBT under 25 ms. Production adds the real TTFB of Cloudflare Pages (simulated at 50 to 500 ms).
 
 ## 9. Headers and redirects
 
