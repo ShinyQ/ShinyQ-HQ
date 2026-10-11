@@ -2,13 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { drawerLayout } from "./drawer/layout";
 import { READY_FLOORS } from "@/experience/config";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { useHQStore } from "@/store/useHQStore";
+import { useAskPanelOpen } from "./ask/availability";
 import { BootOverlay } from "./BootOverlay";
 import { DrawerHost } from "./drawer/DrawerHost";
+import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
@@ -94,10 +95,14 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const coarse = useHQStore((s) => s.device.coarse);
   const mobile = viewport === "mobile";
   const [walking, setWalking] = useState(false);
+  const askOpen = useAskPanelOpen();
+  // The Walk HUD steps aside for the room drawer and the Ask side panel (both on the right), and
+  // goes under the top controls where a bottom sheet would cover it. The Ask pill stays top right.
+  const side = typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side";
   const walkPlacement: WalkPlacement = mobile
     ? "top"
-    : phase === "room"
-      ? typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side"
+    : phase === "room" || askOpen
+      ? side
         ? "dock"
         : "top"
       : coarse

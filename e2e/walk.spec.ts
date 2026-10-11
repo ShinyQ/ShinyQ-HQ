@@ -124,3 +124,44 @@ test.describe("Guided walks on a phone", () => {
     await expect(page.getByTestId("walk-counter")).toContainText("Stop 2 of");
   });
 });
+
+type Box = { x: number; y: number; width: number; height: number };
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+/** The Ask dock pill sits in the top-right controls; its side panel opens on the right. The Walk HUD must stay clear of both. */
+async function openWalkWithAsk(page: Page) {
+  await page.route("**/api/ask", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ enabled: true, turnstileSiteKey: null, asOf: "2026-10-11", maxLength: 300 }) }),
+  );
+  await page.addInitScript(() => sessionStorage.setItem("hq:ask-teaser", "1"));
+  await openWithWalks(page, "/en/journey");
+  await page.getByTestId("walk-prompt").getByRole("button", { name: "Walk my journey" }).click();
+  await waitForArrival(page);
+}
+
+test.describe("Guided walks next to the Ask dock", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("desktop: the Walk HUD stays clear of the Ask pill and moves beside the Ask side panel", async ({ page }) => {
+    await openWalkWithAsk(page);
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore");
+    const pill = page.locator("[data-testid='ask-pill']:visible").first();
+    const bar = page.getByTestId("walk-bar");
+    expect(overlaps((await bar.boundingBox())!, (await pill.boundingBox())!)).toBe(false);
+    await pill.click();
+    const panel = page.getByTestId("ask-dock");
+    await expect(panel).toBeVisible();
+    await expect.poll(async () => overlaps((await bar.boundingBox())!, (await panel.boundingBox())!)).toBe(false);
+  });
+});
+
+test.describe("Guided walks next to the Ask dock on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("phone: the Walk HUD sits under the controls row with the Ask pill", async ({ page }) => {
+    await openWalkWithAsk(page);
+    const pill = page.locator("[data-testid='ask-pill']:visible").first();
+    expect(overlaps((await page.getByTestId("walk-bar").boundingBox())!, (await pill.boundingBox())!)).toBe(false);
+  });
+});

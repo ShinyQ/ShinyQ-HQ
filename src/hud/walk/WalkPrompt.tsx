@@ -5,7 +5,8 @@ import { useEffect, useId, useRef } from "react";
 import type { WalkPlacement } from "./WalkBar";
 
 const PLACE: Record<WalkPlacement, string> = {
-  top: "top-[68px] left-3 right-3",
+  // Phones: under the menu row. Tablets: under the Ask pill row, right of the profile card.
+  top: "top-[68px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
   bottom: "bottom-4 left-1/2 w-[min(440px,calc(100%-2rem))] -translate-x-1/2",
   "bottom-raised": "bottom-[156px] left-1/2 w-[min(440px,calc(100%-2rem))] -translate-x-1/2",
   dock: "bottom-4 left-4 w-[min(440px,calc(100%-460px))]",
