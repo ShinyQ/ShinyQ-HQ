@@ -22,22 +22,41 @@ const DIRS = [
   [-1, -1],
 ] as const;
 
-/** Builds the per-floor grid from the slab bounds and obstacles inflated by the rover radius. */
+/**
+ * Builds the per-floor grid from the slab bounds and obstacles inflated by the rover radius. Each
+ * obstacle only visits the cells its inflated rect can reach (cells x obstacles was about 84 ms for
+ * all floors on a 4x throttled phone).
+ */
 export function buildNavGrid({ bounds, obstacles }: { bounds: Rect; obstacles: readonly Rect[] }, radius: number, cell = 1): NavGrid {
   const cols = Math.max(1, Math.ceil((bounds.maxX - bounds.minX) / cell));
   const rows = Math.max(1, Math.ceil((bounds.maxZ - bounds.minZ) / cell));
   const walkable = new Uint8Array(cols * rows);
   const eps = 1e-6;
+  const cx = (i: number) => bounds.minX + (i + 0.5) * cell;
+  const cz = (j: number) => bounds.minZ + (j + 0.5) * cell;
   for (let j = 0; j < rows; j++) {
+    const z = cz(j);
+    if (z < bounds.minZ + radius - eps || z > bounds.maxZ - radius + eps) continue;
     for (let i = 0; i < cols; i++) {
-      const p = { x: bounds.minX + (i + 0.5) * cell, z: bounds.minZ + (j + 0.5) * cell };
-      const inside =
-        p.x >= bounds.minX + radius - eps &&
-        p.x <= bounds.maxX - radius + eps &&
-        p.z >= bounds.minZ + radius - eps &&
-        p.z <= bounds.maxZ - radius + eps;
-      const clear = inside && obstacles.every((o) => distanceToRect(p, o) >= radius - eps);
-      walkable[j * cols + i] = clear ? 1 : 0;
+      const x = cx(i);
+      if (x >= bounds.minX + radius - eps && x <= bounds.maxX - radius + eps) walkable[j * cols + i] = 1;
+    }
+  }
+  const p = { x: 0, z: 0 };
+  for (const o of obstacles) {
+    // Cells whose center can lie closer than the radius to the rect (one cell of slack each side).
+    const i0 = Math.max(0, Math.floor((o.minX - radius - bounds.minX) / cell) - 1);
+    const i1 = Math.min(cols - 1, Math.ceil((o.maxX + radius - bounds.minX) / cell) + 1);
+    const j0 = Math.max(0, Math.floor((o.minZ - radius - bounds.minZ) / cell) - 1);
+    const j1 = Math.min(rows - 1, Math.ceil((o.maxZ + radius - bounds.minZ) / cell) + 1);
+    for (let j = j0; j <= j1; j++) {
+      p.z = cz(j);
+      for (let i = i0; i <= i1; i++) {
+        const idx = j * cols + i;
+        if (!walkable[idx]) continue;
+        p.x = cx(i);
+        if (distanceToRect(p, o) < radius - eps) walkable[idx] = 0;
+      }
     }
   }
   return { minX: bounds.minX, minZ: bounds.minZ, cols, rows, cell, walkable };
