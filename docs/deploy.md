@@ -215,7 +215,7 @@ Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages re
 
 - `/*`: security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`) and a Content-Security-Policy. `script-src` needs `'unsafe-inline'` because the static export inlines Next.js hydration data, the root language redirect script and JSON-LD. `blob:` is allowed for workers and media used by WebGL and audio.
 - `/_next/static/*`: one year, `immutable` (file names are content hashed; this also covers the self-hosted `next/font` files).
-- `/cv/*`: the CV PDF is previewed in an iframe on `/{locale}/cv`, so this rule detaches the site-wide `Content-Security-Policy` and `X-Frame-Options` (`! Header`) and sets `frame-ancestors 'self'` and `SAMEORIGIN` instead: same-origin framing only. The site CSP allows it with `frame-src 'self'` and keeps `object-src 'none'`.
+- `/cv/*`: the CV PDF and its page images (`/cv/pages/*.webp`, shown by the in-site CV viewer; nothing frames the PDF any more). The rule, kept from the former iframe preview, detaches the site-wide `Content-Security-Policy` and `X-Frame-Options` (`! Header`) and sets `frame-ancestors 'self'` and `SAMEORIGIN` instead: same-origin framing only. The site CSP allows it with `frame-src 'self'` and keeps `object-src 'none'`.
 - `/brand/*`: one week. `/cv/*`: one hour, so a replaced CV shows up quickly. `/og/*`: one day for Open Graph images emitted under `/og/`. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
 - HTML keeps the Cloudflare default (revalidated on every request), so a new deploy is visible at once.
 

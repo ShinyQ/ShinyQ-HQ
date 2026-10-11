@@ -64,13 +64,14 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Software Wing and AI Wing case studies |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks |
 | `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
-| `/{locale}/cv` | CV download and inline preview of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) |
+| `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |
 
 ## Content
 
 - `content/site-content.json` is the single public dataset. It is validated by the zod schemas in `src/content/schema.ts` at build time and by the tests. All text is `{ en, id }`.
 - Blog posts are MDX files in `content/blog/<slug>.<locale>.mdx`. A missing translation falls back to the original with a note.
-- The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. To update it, replace that file (same name); nothing is generated from the site.
+- The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser. To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`); a unit test fails until the images match the PDF.
+- Research papers open a preview modal with the abstract (English), copyable APA, IEEE and BibTeX citations, and DOI and Google Scholar links in a new tab. Third-party pages are never framed.
 - Private evidence never enters the repo. The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret). Product names in `content/safety-allowlist.txt` are never flagged. An e2e check scans the built `out/` for the same terms.
 
 ## Structure
@@ -78,9 +79,9 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      static server, e2e planning, content validator
+scripts/      static server, e2e planning, content validator, CV page renderer (cv:pages)
 src/app/      routes ([locale] pages, "/" redirect, 404)
-src/components/  static-page UI
+src/components/  static-page UI, shared modal, CV viewer and paper previews
 src/content/  schema, accessors, selectors, blog loader, safety lint
 src/i18n/     next-intl routing and helpers
 src/lib/      formatting, accents, metadata, GPU tier, URL sync, viewport
