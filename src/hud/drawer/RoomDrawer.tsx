@@ -19,6 +19,8 @@ export interface RoomDrawerProps {
   readme: boolean;
   /** Titles of the prev/next rooms for the arrow buttons. */
   neighbours?: { prev?: string; next?: string };
+  /** Side layout only: match the Ask side panel's width while it is open over the drawer. */
+  narrow?: boolean;
   onTab: (tab: DrawerTab) => void;
   onToggleReadme: () => void;
   onClose: () => void;
@@ -45,10 +47,15 @@ function isTextInput(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
 
-export function MetricTiles({ metrics, single = false }: { metrics: RoomMetric[]; single?: boolean }) {
+/**
+ * Result cards. `fluid` sizes the grid by its container (the drawer body), not the viewport: two
+ * columns once the body is wide enough, and an odd last card spans the row.
+ */
+export function MetricTiles({ metrics, single = false, fluid = false }: { metrics: RoomMetric[]; single?: boolean; fluid?: boolean }) {
   const tc = useTranslations("common.confidence");
+  const columns = single ? "" : fluid ? "@[22rem]:grid-cols-2 @[22rem]:[&>li:last-child:nth-child(odd)]:col-span-2" : "min-[420px]:grid-cols-2";
   return (
-    <ul className={`grid gap-2 ${single ? "" : "min-[420px]:grid-cols-2"}`}>
+    <ul className={`grid gap-2 ${columns}`}>
       {metrics.map((m, i) => (
         <li key={i} className="flex flex-col gap-1 rounded-xl border border-glass-border bg-white/[0.03] p-3" data-testid="metric">
           <p className="text-[28px] leading-8 font-extrabold tracking-tight text-ink">{m.value}</p>
@@ -200,7 +207,18 @@ export function ArchitectureGrid({ architecture }: { architecture: RoomArchitect
   );
 }
 
-function Overflow({ readme, onToggleReadme, page, onLeave }: { readme: boolean; onToggleReadme: () => void; page?: string; onLeave?: () => void }) {
+interface OverflowProps {
+  readme: boolean;
+  onToggleReadme: () => void;
+  page?: string;
+  onLeave?: () => void;
+  /** Related room on another floor (also shown under the title, which scrolls away). */
+  link?: { label: string; onClick: () => void };
+}
+
+const MENU_ITEM = "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-ink transition hover:bg-white/5";
+
+function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps) {
   const t = useTranslations("drawer");
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -211,6 +229,8 @@ function Overflow({ readme, onToggleReadme, page, onLeave }: { readme: boolean; 
         aria-expanded={open}
         aria-controls={id}
         aria-label={t("more")}
+        aria-keyshortcuts="t"
+        title={t("readmeHint")}
         onClick={() => setOpen((v) => !v)}
         className="grid size-11 place-items-center rounded-full text-ink-2 transition hover:bg-white/5 hover:text-ink"
       >
@@ -221,24 +241,43 @@ function Overflow({ readme, onToggleReadme, page, onLeave }: { readme: boolean; 
         </svg>
       </button>
       {open && (
-        <ul id={id} className="glass glass-solid absolute top-12 right-0 z-10 w-52 p-1.5">
+        <ul id={id} className="glass glass-solid absolute top-12 right-0 z-30 w-64 p-1.5">
           <li>
             <button
               type="button"
               aria-pressed={readme}
+              aria-keyshortcuts="t"
+              title={t("readmeHint")}
               onClick={() => {
                 setOpen(false);
                 onToggleReadme();
               }}
-              className="flex min-h-11 w-full items-center justify-between rounded-md px-3 text-left text-sm text-ink transition hover:bg-white/5"
+              className={MENU_ITEM}
             >
               <span>{t("readme")}</span>
               <kbd className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">t</kbd>
             </button>
           </li>
+          {link && (
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  link.onClick();
+                }}
+                className={MENU_ITEM}
+              >
+                <span>{link.label}</span>
+                <span aria-hidden="true" className="text-amber">
+                  →
+                </span>
+              </button>
+            </li>
+          )}
           {page && (
             <li>
-              <Link href={page} onClick={onLeave} className="flex min-h-11 items-center rounded-md px-3 text-sm text-ink transition hover:bg-white/5">
+              <Link href={page} onClick={onLeave} className={MENU_ITEM}>
                 {t("openPage")}
               </Link>
             </li>
@@ -249,7 +288,7 @@ function Overflow({ readme, onToggleReadme, page, onLeave }: { readme: boolean; 
   );
 }
 
-/** Pointer-driven sheet height with snap points (appendix 04: 45% and 92%). */
+/** Pointer-driven sheet height with snap points (`SHEET_SNAPS`: half open and nearly full). */
 function useSheet(active: boolean, onClose: () => void) {
   const [fraction, setFraction] = useState<number>(SHEET_SNAPS[0]);
   const drag = useRef<{ startY: number; start: number; lastY: number; lastT: number; v: number } | null>(null);
@@ -294,7 +333,7 @@ function TabPanel({ view, tab, onHologram }: { view: RoomView; tab: DrawerTab; o
         <p className="text-sm text-ink-2">{t("noArchitecture")}</p>
       );
     case "results":
-      return <MetricTiles metrics={view.metrics} />;
+      return <MetricTiles metrics={view.metrics} fluid />;
     case "stack":
       return <Chips items={view.stack.map((s) => s.name)} logos={view.stack.map((s) => s.logo)} />;
     default:
@@ -303,7 +342,7 @@ function TabPanel({ view, tab, onHologram }: { view: RoomView; tab: DrawerTab; o
           {view.metrics.length > 0 && (
             <section className="space-y-2">
               <h3 className="label text-ink-2">{t("keyResults")}</h3>
-              <MetricTiles metrics={view.metrics.slice(0, 3)} />
+              <MetricTiles metrics={view.metrics.slice(0, 3)} fluid />
             </section>
           )}
           <Sections sections={view.sections} />
@@ -313,13 +352,15 @@ function TabPanel({ view, tab, onHologram }: { view: RoomView; tab: DrawerTab; o
   }
 }
 
-function HologramButton({ onClick }: { onClick: () => void }) {
+function HologramButton({ onClick, compact = false }: { onClick: () => void; compact?: boolean }) {
   const t = useTranslations("drawer");
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-violet/60 px-4 text-sm font-semibold text-ink transition hover:border-violet hover:bg-violet/10"
+      className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-violet/60 font-semibold text-ink transition hover:border-violet hover:bg-violet/10 ${
+        compact ? "px-3 text-[13px]" : "px-4 text-sm"
+      }`}
     >
       <span aria-hidden="true" className="text-violet">
         ◈
@@ -329,10 +370,32 @@ function HologramButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+/** Wing, tier and type chips: under the title, and in the condensed bar when it has room. */
+function Badges({ view, className, hidden = false }: { view: RoomView; className: string; hidden?: boolean }) {
+  return (
+    <span className={`label items-center gap-1.5 ${className}`} aria-hidden={hidden || undefined}>
+      {view.badges.map((b) => (
+        <span key={b.label} className={`rounded border border-current/40 px-1.5 py-0.5 ${ACCENT_TEXT[b.accent]}`}>
+          {b.label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const ICON_BUTTON = "grid size-11 shrink-0 place-items-center rounded-full text-ink-2 transition hover:bg-white/5 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent";
+/** Scrolled this far into the body, a half-open bottom sheet expands to full height. */
+const SHEET_EXPAND_AT = 24;
+
 /**
  * Glass Drawer (appendix 02 section 6, appendix 04 section 2): the shared room panel for every
  * floor. Pods get tabs; every other room uses the single-pane variant (with an optional custom body
  * from `bodies.tsx`). Presentational: `DrawerHost` wires it to the store, data and URL.
+ *
+ * Layout, top to bottom: a slim bar that stays put (room code, badges, prev/next, menu, close; the
+ * title joins it once the big title scrolls away), one scrolling region (title, subtitle, meta and the
+ * cross-floor link, then the tabs, which stick under the bar, then the tab body), and a one-row footer
+ * with the primary action.
  */
 export function RoomDrawer({
   view,
@@ -341,6 +404,7 @@ export function RoomDrawer({
   tab,
   readme,
   neighbours,
+  narrow = false,
   onTab,
   onToggleReadme,
   onClose,
@@ -353,9 +417,15 @@ export function RoomDrawer({
   const tc = useTranslations("common");
   const tl = useTranslations("labs");
   const panel = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const tablist = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const tabsId = useId();
   const sheet = useSheet(layout === "sheet", onClose);
+  // Condensed state belongs to one room, so a new room starts with the full header.
+  const [condensedRoom, setCondensedRoom] = useState<RoomId | null>(null);
+  const condensed = condensedRoom === view.id;
   const tabs = view.variant === "tabs" ? view.tabs : [];
   const activeTab = tabs.includes(tab) ? tab : "overview";
   const Body = ROOM_BODIES[view.kind];
@@ -367,10 +437,26 @@ export function RoomDrawer({
     [readme, view, t],
   );
 
-  // Focus moves into the drawer on open and when the room changes.
+  // Focus moves into the drawer on open and when the room changes; a new room starts at the top.
   useEffect(() => {
     panel.current?.focus({ preventScroll: true });
+    if (scroller.current) scroller.current.scrollTop = 0;
   }, [view.id]);
+
+  // A new tab starts at its top: when the tabs are stuck under the bar, scroll back to where they stick.
+  useEffect(() => {
+    const el = scroller.current;
+    const bar = tablist.current;
+    if (el && bar && el.scrollTop > bar.offsetTop) el.scrollTop = bar.offsetTop;
+  }, [activeTab]);
+
+  const onScroll = () => {
+    const el = scroller.current;
+    if (!el) return;
+    const title = heading.current;
+    setCondensedRoom(el.scrollTop > Math.max(8, title ? title.offsetTop + title.offsetHeight - 8 : 0) ? view.id : null);
+    if (layout === "sheet" && el.scrollTop > SHEET_EXPAND_AT && sheet.fraction < SHEET_SNAPS[SHEET_SNAPS.length - 1]) sheet.setFraction(SHEET_SNAPS[SHEET_SNAPS.length - 1]);
+  };
 
   // Esc and `t` work wherever focus is (the canvas, the body) unless another modal owns the keyboard.
   const actions = useRef({ onClose, onToggleReadme });
@@ -414,9 +500,11 @@ export function RoomDrawer({
     document.getElementById(`${tabsId}-${next}`)?.focus();
   };
 
+  // Side panel width comes from `--hq-drawer-w` (globals.css); with the Ask panel open it matches
+  // the Ask panel (420 px), which then covers it exactly instead of leaving a sliver.
   const placement =
     layout === "side"
-      ? "top-[68px] right-3 bottom-3 w-[min(420px,calc(100vw-1.5rem))] md:top-[76px] md:right-4 md:bottom-4"
+      ? `top-[68px] right-3 bottom-3 md:top-[76px] md:right-4 md:bottom-4 ${narrow ? "w-[min(420px,calc(100vw-1.5rem))]" : "w-[min(var(--hq-drawer-w),calc(100vw-1.5rem))]"}`
       : "inset-x-0 bottom-0 rounded-b-none pb-[env(safe-area-inset-bottom)]";
 
   let body: ReactNode;
@@ -442,7 +530,7 @@ export function RoomDrawer({
   } else {
     body = (
       <div className="space-y-5">
-        {view.metrics.length > 0 && <MetricTiles metrics={view.metrics} />}
+        {view.metrics.length > 0 && <MetricTiles metrics={view.metrics} fluid />}
         <Sections sections={view.sections} />
         {view.stack.length > 0 && (
           <section className="space-y-2">
@@ -455,6 +543,11 @@ export function RoomDrawer({
     );
   }
 
+  const primaryLabel = view.kind === "pod" ? tc("caseStudy") : view.kind === "post" ? t("rooms.readPost") : t("openPage");
+  const showHologram = view.hologram && !readme && activeTab !== "architecture";
+  const hasFooter = Boolean(view.page || view.external || showHologram);
+  const link = view.link ? { label: view.link.label, onClick: () => onLink(view.link!.room) } : undefined;
+
   return (
     <div
       ref={panel}
@@ -466,6 +559,7 @@ export function RoomDrawer({
       data-testid="room-drawer"
       data-layout={layout}
       data-room={view.id}
+      data-condensed={condensed ? "true" : undefined}
       className={`glass glass-solid pointer-events-auto absolute z-20 flex flex-col overflow-hidden shadow-[0_0_48px_-12px_rgb(0_0_0/0.8)] outline-none ${placement}`}
       style={layout === "sheet" ? { height: `${Math.round(sheet.fraction * 100)}dvh` } : undefined}
     >
@@ -483,18 +577,70 @@ export function RoomDrawer({
           </button>
         </div>
       )}
-      <header className="flex shrink-0 items-start gap-2 border-b border-glass-border px-4 pt-3 pb-3 sm:px-5">
-        <div className="min-w-0 flex-1">
-          <p className={`label flex flex-wrap items-center gap-x-2 gap-y-1 ${ACCENT_TEXT[view.accent]}`}>
-            <span className={`h-2 w-2 rounded-full ${ACCENT_DOT[view.accent]}`} aria-hidden="true" />
-            <span>{view.code}</span>
-            {view.badges.map((b) => (
-              <span key={b.label} className={`rounded border border-current/40 px-1.5 py-0.5 ${ACCENT_TEXT[b.accent]}`}>
-                {b.label}
-              </span>
-            ))}
+
+      <header className="flex min-h-14 shrink-0 items-center gap-1 border-b border-glass-border py-1.5 pr-1.5 pl-4 sm:pl-5" data-testid="drawer-bar">
+        <div className="@container/bar flex min-w-0 flex-1 flex-col justify-center">
+          <p className={`label flex min-w-0 items-center gap-x-2 whitespace-nowrap ${ACCENT_TEXT[view.accent]}`}>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${ACCENT_DOT[view.accent]}`} aria-hidden="true" />
+            <span className="min-w-0 truncate">{view.code}</span>
+            {condensed && <Badges view={view} className="hidden shrink-0 @[21rem]/bar:inline-flex" hidden />}
           </p>
-          <h2 id={titleId} className="mt-2 text-[22px] leading-7 font-extrabold tracking-tight text-ink sm:text-[26px] sm:leading-8">
+          {/* The title joins the bar once the big one scrolls away (screen readers keep the h2). */}
+          <div className={`grid motion-safe:transition-[grid-template-rows,opacity] motion-safe:duration-200 ${condensed ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+            <p aria-hidden="true" className="min-h-0 overflow-hidden" data-testid="drawer-compact-title">
+              <span className="block truncate pt-1 text-[15px] leading-5 font-bold text-ink">{view.title}</span>
+            </p>
+          </div>
+        </div>
+        {(view.prev || view.next) && (
+          <nav aria-label={tl("title")} className="flex shrink-0 items-center">
+            <button
+              type="button"
+              disabled={!view.prev}
+              onClick={() => view.prev && onNavigate(view.prev)}
+              aria-label={neighbours?.prev ? `${t("previous")}: ${neighbours.prev}` : t("previous")}
+              title={neighbours?.prev ?? t("previous")}
+              className={ICON_BUTTON}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              disabled={!view.next}
+              onClick={() => view.next && onNavigate(view.next)}
+              aria-label={neighbours?.next ? `${t("next")}: ${neighbours.next}` : t("next")}
+              title={neighbours?.next ?? t("next")}
+              className={ICON_BUTTON}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+          </nav>
+        )}
+        <Overflow readme={readme} onToggleReadme={onToggleReadme} page={view.page} onLeave={onLeave} link={link} />
+        <button type="button" onClick={onClose} aria-label={t("close")} className={ICON_BUTTON}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Focusable so keyboard users can scroll long rooms (axe scrollable-region-focusable). */}
+      <div
+        ref={scroller}
+        role="region"
+        aria-label={t("label")}
+        tabIndex={0}
+        onScroll={onScroll}
+        className="@container relative min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:ring-1 focus-visible:ring-cyan/60 focus-visible:ring-inset"
+        data-testid="drawer-body"
+      >
+        <div className="px-4 pt-4 pb-4 sm:px-5">
+          {view.badges.length > 0 && <Badges view={view} className="mb-2 flex flex-wrap" />}
+          <h2 ref={heading} id={titleId} className="text-[22px] leading-7 font-extrabold tracking-tight text-ink sm:text-[26px] sm:leading-8">
             {view.title}
           </h2>
           {view.subtitle && (
@@ -509,62 +655,60 @@ export function RoomDrawer({
             </p>
           )}
           {view.meta.length > 0 && <p className="mt-1 text-[13px] leading-5 text-ink-3">{view.meta.join(" · ")}</p>}
-        </div>
-        <Overflow readme={readme} onToggleReadme={onToggleReadme} page={view.page} onLeave={onLeave} />
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("close")}
-          className="grid size-11 shrink-0 place-items-center rounded-full text-ink-2 transition hover:bg-white/5 hover:text-ink"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
-        </button>
-      </header>
-
-      {tabs.length > 0 && !readme && (
-        <div role="tablist" aria-label={t("tabsLabel")} className="flex shrink-0 gap-1 overflow-x-auto border-b border-glass-border px-3 sm:px-4">
-          {tabs.map((id) => (
+          {link && (
             <button
-              key={id}
-              id={`${tabsId}-${id}`}
               type="button"
-              role="tab"
-              aria-selected={id === activeTab}
-              aria-controls={`${tabsId}-panel`}
-              tabIndex={id === activeTab ? 0 : -1}
-              onClick={() => onTab(id)}
-              onKeyDown={onTabKey}
-              className={`min-h-11 shrink-0 border-b-2 px-3 text-sm font-semibold transition ${
-                id === activeTab ? "border-cyan text-ink" : "border-transparent text-ink-2 hover:text-ink"
-              }`}
+              onClick={link.onClick}
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg border border-amber/50 px-3 text-[13px] font-semibold text-ink transition hover:border-amber hover:bg-amber/10"
             >
-              {t(`tabs.${id}`)}
+              {link.label}
+              <span aria-hidden="true" className="text-amber">
+                →
+              </span>
             </button>
-          ))}
+          )}
         </div>
-      )}
 
-      {/* Focusable so keyboard users can scroll long rooms (axe scrollable-region-focusable). */}
-      <div
-        role="region"
-        aria-label={t("label")}
-        tabIndex={0}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 outline-none focus-visible:ring-1 focus-visible:ring-cyan/60 sm:px-5"
-      >
-        {body}
+        {tabs.length > 0 && !readme && (
+          <div
+            ref={tablist}
+            role="tablist"
+            aria-label={t("tabsLabel")}
+            className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-y border-glass-border bg-[rgb(10_10_18)] px-2 sm:px-3"
+          >
+            {tabs.map((id) => (
+              <button
+                key={id}
+                id={`${tabsId}-${id}`}
+                type="button"
+                role="tab"
+                aria-selected={id === activeTab}
+                aria-controls={`${tabsId}-panel`}
+                tabIndex={id === activeTab ? 0 : -1}
+                onClick={() => onTab(id)}
+                onKeyDown={onTabKey}
+                className={`min-h-11 shrink-0 border-b-2 px-3 text-sm font-semibold transition ${
+                  id === activeTab ? "border-cyan text-ink" : "border-transparent text-ink-2 hover:text-ink"
+                }`}
+              >
+                {t(`tabs.${id}`)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className={`px-4 pb-6 sm:px-5 ${tabs.length > 0 && !readme ? "pt-4" : "mx-4 border-t border-glass-border px-0 pt-4 sm:mx-5 sm:px-0"}`}>{body}</div>
       </div>
 
-      <footer className="shrink-0 space-y-2 border-t border-glass-border px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap gap-2">
+      {hasFooter && (
+        <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-glass-border px-4 py-2.5 sm:px-5">
           {view.page && (
             <Link
               href={view.page}
               onClick={onLeave}
-              className="inline-flex min-h-11 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
             >
-              {view.kind === "pod" ? tc("caseStudy") : view.kind === "post" ? t("rooms.readPost") : t("openPage")}
+              {primaryLabel}
             </Link>
           )}
           {view.external && (
@@ -572,49 +716,15 @@ export function RoomDrawer({
               href={view.external}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
             >
               {t("external")}
               <span className="sr-only"> ({tc("external")})</span>
             </a>
           )}
-          {view.hologram && !readme && activeTab !== "architecture" && <HologramButton onClick={onHologram} />}
-          {view.link && (
-            <button
-              type="button"
-              onClick={() => onLink(view.link!.room)}
-              className="inline-flex min-h-11 items-center rounded-lg border border-amber/50 px-4 text-sm font-semibold text-ink transition hover:border-amber hover:bg-amber/10"
-            >
-              {view.link.label}
-            </button>
-          )}
-        </div>
-        {(view.prev || view.next) && (
-          <nav aria-label={tl("title")} className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              disabled={!view.prev}
-              onClick={() => view.prev && onNavigate(view.prev)}
-              aria-label={neighbours?.prev ? `${t("previous")}: ${neighbours.prev}` : t("previous")}
-              className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-2 text-sm text-ink-2 transition hover:bg-white/5 hover:text-ink disabled:opacity-40"
-            >
-              <span aria-hidden="true">←</span>
-              <span className="truncate">{neighbours?.prev ?? t("previous")}</span>
-            </button>
-            <button
-              type="button"
-              disabled={!view.next}
-              onClick={() => view.next && onNavigate(view.next)}
-              aria-label={neighbours?.next ? `${t("next")}: ${neighbours.next}` : t("next")}
-              className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-2 text-sm text-ink-2 transition hover:bg-white/5 hover:text-ink disabled:opacity-40"
-            >
-              <span className="truncate">{neighbours?.next ?? t("next")}</span>
-              <span aria-hidden="true">→</span>
-            </button>
-          </nav>
-        )}
-        <p className="hidden text-[12px] text-ink-3 sm:block">{t("readmeHint")}</p>
-      </footer>
+          {showHologram && <HologramButton onClick={onHologram} compact />}
+        </footer>
+      )}
     </div>
   );
 }

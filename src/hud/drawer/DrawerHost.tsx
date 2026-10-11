@@ -6,6 +6,7 @@ import type { RoomViews } from "@/content/room-views/types";
 import { READY_FLOORS } from "@/experience/config";
 import { VIEW_KEY } from "@/experience/ExperienceGate";
 import { goToRoom } from "@/experience/missions/bridge";
+import { useAskPanelOpen } from "@/hud/ask/availability";
 import { audio } from "@/lib/audio";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { useTranslations } from "next-intl";
@@ -77,6 +78,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   const tab = useHQStore((s) => s.drawerTab);
   const readme = useHQStore((s) => s.readme);
   const layout = useDrawerLayout();
+  const askOpen = useAskPanelOpen();
   const views = useRoomViews(locale);
   const returnFocus = useRef<HTMLElement | null>(null);
   const open = Boolean(activeRoom) && phase === "room";
@@ -123,6 +125,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
       tab={tab}
       readme={readme}
       neighbours={neighbours}
+      narrow={layout === "side" && askOpen}
       onTab={(next) => getHQStore().getState().setDrawerTab(next)}
       onToggleReadme={() => getHQStore().getState().toggleReadme()}
       onClose={() => getHQStore().getState().closeRoom()}
