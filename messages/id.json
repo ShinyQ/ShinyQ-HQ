@@ -609,7 +609,9 @@
     "swipe": "Geser kartu untuk berpindah titik",
     "workshopSub": "Side project, repository, dan model",
     "more": "Proyek lainnya di sini",
-    "moreSub": "Semua proyek lain ada di papan direktori ini",
+    "moreSub": "Buka untuk melihat semua proyek di sayap ini",
+    "boardCount": "{count} proyek",
+    "boardOpen": "Buka daftar lengkap",
     "proto": {
       "title": "Prototipe lantai yang bisa dijelajahi",
       "floor": "Lantai",

@@ -23,6 +23,8 @@ Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer: a si
 
 On L2 (`/en/journey`) one road runs forward in time: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door, and the Workshop annex at the end. The first visit offers **Walk my journey**, a guided drive through every room oldest first (Prev / Open / Next, `[` and `]`, a type filter); skip it to roam freely, or start it later from the launcher or the "Follow my career" mission. Career types use one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages. Add `?walk=on` or `?walk=off` to force guided walks on or off.
 
+On L3 (Labs) the floor is **Project Roads**: a hub plaza in front of the elevator with both wing directory boards, and two wing roads that run east and meet in a loop, with every key and featured project docked along them. The first visit offers **Tour my projects**, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones); skip it to roam, start it later from the launcher or the "Tour my projects" mission; the boards list each wing's top projects and open the full list on click.
+
 ## Stack
 
 Next.js 16 (App Router, static export) · React 19 · TypeScript strict · three.js with React Three Fiber, drei and postprocessing · zustand · Tailwind CSS 4 · next-intl · zod · MDX (next-mdx-remote) · Vitest · Playwright · Bun · Cloudflare Pages.
@@ -61,7 +63,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}` | Lobby: profile, stats, both wings' hero pods, latest journey, skills, certifications. Mounts the 3D tower on top when WebGL is available. |
 | `/{locale}/quick` | Quick view: everything on one page |
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
-| `/{locale}/labs`, `/{locale}/labs/{slug}` | Software Wing and AI Wing case studies |
+| `/{locale}/labs`, `/{locale}/labs/{slug}` | Software and AI engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks |
 | `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
 | `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |
@@ -85,7 +87,7 @@ src/components/  static-page UI, shared modal, CV viewer and paper previews
 src/content/  schema, accessors, selectors, blog loader, safety lint
 src/i18n/     next-intl routing and helpers
 src/lib/      formatting, accents, metadata, GPU tier, URL sync, viewport
-src/experience/  3D tower: canvas, scene, tower, rover, camera rigs, input intents, navgrid
+src/experience/  3D tower: canvas, scene, tower, floors (L3 Project Roads in floors/labs), rover, camera rigs, input intents, navgrid, road kit, missions and guided walks
 src/hud/      HTML HUD over the canvas
 src/store/    zustand store
 tests/        Vitest unit and content tests

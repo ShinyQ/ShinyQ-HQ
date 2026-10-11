@@ -58,9 +58,10 @@ export function createStaticHost({ locale, rooms, navigate, onSay, onPalette }: 
       onPalette?.(filter);
     },
     async walk(id) {
-      // No 3D on this tier: the walk's floor page lists the same stops.
+      // No 3D on this tier: the walk's floor page lists the same stops (the project tour also opens the pods palette).
       pending = FLOOR_PATHS[WALK_FLOOR[id]];
       flush();
+      if (id === "projects") onPalette?.("pods");
     },
     finish(status) {
       if (status === "done") flush();

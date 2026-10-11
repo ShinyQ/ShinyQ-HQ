@@ -17,7 +17,7 @@ export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
  * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts) once
  * their road ships; `?walk=on` turns every walk on for tests and previews, `?walk=off` turns them off.
  */
-export const WALK_FLOORS: readonly FloorId[] = ["L2"];
+export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -145,7 +145,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       LOBBY.spawn,
     ),
     L2: careerLayout(yearCount, extras),
-    // Atrium in front of the shaft door, wings as mirror halls running east (Phase 4 plan, decision 1).
+    // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).
     L3: buildLabsLayout(extras.labs ?? []).floor,
     // Deep links spawn L4 and RF in front of their content (the follow camera looks toward -x, -z).
     L4: { ...standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }, libraryObstacles(), { x: 4, z: 3.5 }), doors: LIBRARY_DOORS },

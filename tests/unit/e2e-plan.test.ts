@@ -4,7 +4,7 @@ import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
   it("maps floor code to its spec", () => {
-    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs"]);
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career"]);
     expect(specsForChanges(["src/experience/floors/roof/Comms.tsx"]).specs).toEqual(["library-roof"]);
   });

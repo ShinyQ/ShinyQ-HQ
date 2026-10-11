@@ -1,6 +1,6 @@
 "use client";
 
-import { Text } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Object3D, Quaternion, Vector3, type InstancedMesh } from "three";
@@ -13,7 +13,7 @@ import { intents } from "../../input/intents";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import { hologramParts } from "./hologramParts";
-import { LABS, type PlacedPod } from "./layout";
+import { LABS, WING_TINT, type PlacedPod } from "./layout";
 import { LineBatch } from "./lines";
 
 export const ACCENT_HEX: Record<Accent, string> = {
@@ -27,14 +27,13 @@ export const ACCENT_HEX: Record<Accent, string> = {
 };
 
 const H = LABS.wallHeight;
-const LABEL_ROTATION: [number, number, number] = [0, Math.PI / 4, 0];
 const IDLE_SPIN = 0.4;
 
 function setCursor(value: string) {
   document.body.style.cursor = value;
 }
 
-/** Pod rooms: glass walls (one instanced mesh), neon edges, door markers and hero stages (one line batch). */
+/** Pod rooms: glass walls (one instanced mesh), neon edges, door markers, forecourts and hero stages (one line batch). */
 function PodShells({ placed }: { placed: PlacedPod[] }) {
   const fills = useRef<InstancedMesh>(null);
   const tier = useHQStore((s) => s.tier);
@@ -53,6 +52,19 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
       batch.segment([p.door.x - 1, 0.04, frontZ, p.door.x + 1, 0.04, frontZ], "#f4f4f5");
       batch.segment([p.door.x - 1, 1.9, frontZ, p.door.x + 1, 1.9, frontZ], color);
       if (p.pod.tier === "hero") batch.circle(p.center.x, p.center.z, LABS.stageRadius, 0.04, color);
+      // Forecourt outline in the wing tint, between the road edge and the pod front.
+      const f = p.forecourt;
+      batch.path(
+        [
+          [f.minX, f.minZ],
+          [f.maxX, f.minZ],
+          [f.maxX, f.maxZ],
+          [f.minX, f.maxZ],
+          [f.minX, f.minZ],
+        ],
+        0.05,
+        WING_TINT[p.pod.wing],
+      );
     }
     return batch.build();
   }, [placed]);
@@ -179,7 +191,7 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
   );
 }
 
-/** Pod titles floating above each pod, turned toward the follow camera (hidden in the hologram view). */
+/** Pod titles floating above each pod, always facing the camera (it turns to face each pod at its door; hidden in the hologram view). */
 function PodLabels({ placed }: { placed: PlacedPod[] }) {
   const hologram = useHQStore((s) => s.phase === "hologram");
   return (
@@ -187,23 +199,22 @@ function PodLabels({ placed }: { placed: PlacedPod[] }) {
       {placed.map((p) => {
         const hero = p.pod.tier === "hero";
         return (
-          <Text
-            key={p.room}
-            font={FONTS.sansBold}
-            fontSize={hero ? 0.62 : 0.46}
-            maxWidth={hero ? 9 : 7}
-            textAlign="center"
-            lineHeight={1.15}
-            color="#f4f4f5"
-            outlineWidth={0.02}
-            outlineColor="#05050c"
-            anchorX="center"
-            anchorY="bottom"
-            position={[p.center.x, H + (hero ? 2.3 : 1.7), p.center.z]}
-            rotation={LABEL_ROTATION}
-          >
-            {p.pod.title}
-          </Text>
+          <Billboard key={p.room} position={[p.center.x, H + (hero ? 2.3 : 1.7), p.center.z]}>
+            <Text
+              font={FONTS.sansBold}
+              fontSize={hero ? 0.62 : 0.46}
+              maxWidth={hero ? 9 : 7}
+              textAlign="center"
+              lineHeight={1.15}
+              color="#f4f4f5"
+              outlineWidth={0.02}
+              outlineColor="#05050c"
+              anchorX="center"
+              anchorY="bottom"
+            >
+              {p.pod.title}
+            </Text>
+          </Billboard>
         );
       })}
     </group>

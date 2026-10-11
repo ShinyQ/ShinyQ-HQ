@@ -57,26 +57,28 @@ The road's end opens onto a glass window that looks up at the Labs (L3 silhouett
 
 A door trigger is the pad in front of a door: 1.6 u deep along the approach (`DOOR_SIZE`) and 2.4 u wide across the door opening (`DOOR_WIDTH`), drawn by `ProximityGlow`. A room opens only on intent: the rover drives into the door (within 45 degrees of its inward direction), stops or slows below 2 u/s on the pad, or stays on it for 250 ms (`stepDoorLatch`). Driving past a pad, or a click or mission path crossing it, does not open the room; a click on a room or a mission still opens it on arrival. Floor lanes stop 0.5 u before every pad, and neighbouring rooms and pods keep at least 3 u of clear floor between them (layout tests).
 
-## 4. Floor L3: Labs (Software Wing + AI Wing)
+## 4. Floor L3: Labs (Project Roads, Software Wing + AI Wing)
 
-Footprint: 81 × 56 u, from x = -24 to 57 and z = -28 to 28. Accent: violet `#a78bfa` for the floor, with each pod using its own accent. The global elevator shaft stays at x = -28 (as on every floor), so the elevator lands in an **atrium** right in front of its door. Both wings start at the atrium and run east as mirror-image halls on either side of a spine lane, so software engineering and AI engineering are the same distance from the elevator and get equal billing. (Phase 4 resolved the earlier conflict between an atrium door at (0, -7) and the shaft at x = -28 this way; the code lives in `src/experience/floors/labs/layout.ts`.)
+Rebuilt as walkable Project Roads (walkable floors plan, part 2; owner decisions: roomy roads with open plazas, a guided project tour offered on the first visit). The footprint follows the content: with today's 18 docked pods it is about 151 × 92 u, from x = -24 to about 127 and z = -46 to 46. Accent: violet `#a78bfa` for the floor and the roads, cyan `#22d3ee` for the Software Wing and violet for the AI Wing, each pod with its own accent. The global elevator shaft stays at x = -28. Software engineering and AI engineering are mirror images, the same distance from the elevator (equal billing). Code: `src/experience/floors/labs/layout.ts`.
 
 | Element | Spec |
 |---|---|
-| Elevator door | (-24, 0) on the shaft face, like L1, L2 and L4. The rover parks at (-21, 0), inside the atrium. |
-| Atrium | x from -24 to -10, z from -7 to 7. Wing signs painted on the floor ("SOFTWARE WING →" in cyan north of the spine, "AI WING →" in violet south of it). Two wing directory boards (0.6 × 4.4 u, 6.4 u tall, facing east) at (-12, -5.4) for the Software Wing and (-12, 5.4) for the AI Wing list every pod of their wing, listed items included. |
-| Spine lane | z = 0 from the atrium to the east end. Data packets animate along every lane at 2 u/s. |
-| Software Wing | The hall north of the spine (z < 0). Floor tint cyan `#22d3ee`. Pods with `wing: "software"`. |
-| AI Wing | The hall south of the spine (z > 0), the mirror image of the Software Wing. Floor tint violet `#a78bfa`. Pods with `wing: "ai"`. |
-| Hero row (per wing) | Up to 3 hero pods of 12 × 9 u next to the spine, centers at \|z\| = 8.5 and x = 6, 22 and 38 (4 u apart, nearest the atrium first) |
-| Featured row (per wing) | Up to 6 featured pods of 8 × 7 u, centers at \|z\| = 22.5 and x = -5 + 11 i (3 u apart), west to east |
-| Back lane (per wing) | \|z\| = 15, between the hero row and the featured row, joined to the spine at x = -7 and x = 47 |
+| Elevator door | (-24, 0) on the shaft face, like every floor. The rover parks at (-21, 0) on the lead road. |
+| Lead road | 8 u wide, from (-21, 0) to the hub center. |
+| Hub plaza | Round, 26 u across, centered at (-4, 0). Two double-sided wing directory boards (0.6 × 7 u, 7 u tall, facing east) on its west rim at (-14, ∓9.5) show the wing name, the project count and the top 5 projects (hero, then featured) in large type, readable from the board stop on a phone; clicking a board (or Open at the tour's "More projects here" stop) opens the full project list in the palette. Wing names are painted where each wing road leaves the hub and float above it. |
+| Wing roads | 8 u wide. The Software Wing road leaves the hub to (10, -24) and runs east at z = -24; the AI Wing road mirrors it at z = +24. Both end at the east plaza, so the floor is one loop with no dead ends. Chevrons point away from the hub. |
+| East plaza | Round, 18 u across, where the wing roads meet (14 u past the corner after the last pod). |
+| Docked pods (per wing) | Hero pods (12 × 9 u) by `order`, then featured pods (8 × 7 u) by `order`, alternating the outer side (away from the other wing) and the inner side (between the wing roads), starting at x = 14 (outer) and x = 20 (inner), 7 u apart along the road. Every pod has a 3 u forecourt between the road edge and its front and a 4 u spur to its door. At most 12 per wing; the rest fall back to the directory. |
+| Pod door | Front-center of each pod, facing its wing road: the trigger pad (1.6 u deep, 2.4 u wide) is centered 1.1 u in front of the front wall. |
 | Listed items | Not pods. They appear on the wing directory board and in ⌘K, and open in the drawer directly (missions stop in front of the board). |
-| Pod door | Front-center of each pod: hero doors face the spine (door trigger centered at \|z\| = 2.9), featured doors face the back lane (\|z\| = 17.9). Each trigger is the glowing pad in front of the door (1.6 u deep, 2.4 u wide); no lane runs over a pad. |
-| Hologram stage | Inside each hero pod: a 6 u diameter disc at the pod center used by the Hologram view. The diagram board stands on it, facing the spine. |
-| Pod holograms | One procedural hologram per pod by `hologram` kind (waveform, shield, documents, graph, chart, template, pipeline), floating and slowly rotating above the pod |
+| Packet lanes | A data spine at z = 0 between the inner rows (hub rim to east plaza) with a branch into the back of every inner pod. Packets at 2 u/s. |
+| Hologram stage | Inside each hero pod: a 6 u diameter disc at the pod center used by the Hologram view. The diagram board stands on it, facing the pod's road. |
+| Pod holograms | One procedural hologram per pod by `hologram` kind (waveform, shield, documents, graph, chart, template, pipeline), floating and slowly rotating above the pod. Pod titles are billboards. |
+| Arrival | Deep links to `/labs` spawn, and elevator rides roll on, to the overview spot (12, 0) where the wing roads fork. Its view zone puts the camera west of the rover, zoomed out to 1.3, looking east: the hub and both wing entrances in frame, the shaft behind the camera. |
+| Camera | View zones turn the follow camera at each door so the pod is in front of the rover, and face the directory boards. |
+| Tour my projects | Guided walk: Software Wing pods then AI Wing pods in docking order (hero first), then both directory boards; filter by wing. Offered on the first L3 visit; the `projects` mission starts it. |
 
-Pod order within a wing: by `tier` (hero first) and then by `order` in the data. Pods beyond the row capacity (more than 3 heroes or 6 featured) fall back to the wing directory.
+The space rules (roads at least 8 u wide, plazas at least 16 u, 6 u of clear floor around obstacles, a spur to every door) are asserted with the real pods in `tests/unit/labs-layout.test.ts`.
 
 ## 5. Floor L4: Library
 

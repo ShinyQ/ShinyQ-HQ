@@ -113,6 +113,7 @@ export default function Experience({
   const tDrawer = useTranslations("drawer");
   const tLibrary = useTranslations("library");
   const tContact = useTranslations("contact");
+  const tWalk = useTranslations("walk");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -217,7 +218,7 @@ export default function Experience({
         certs: { title: tHome("certsTitle"), verify: tCommon("verify"), inProgress: tCommon("inProgress") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
       },
-      labs: { directory: tDrawer("directory") },
+      labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
       career: {
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
@@ -253,7 +254,7 @@ export default function Experience({
       },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon, tDrawer, tLibrary, tContact, data.library.researchMetrics, data.locale],
+    [t, tHome, tCommon, tDrawer, tLibrary, tContact, tWalk, data.library.researchMetrics, data.locale],
   );
 
   return (

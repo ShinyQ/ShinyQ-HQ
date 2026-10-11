@@ -68,7 +68,7 @@ type MissionStep =
 | `best-ai` | Show me your best AI work | elevator L3 → drive to the door of the top AI Wing hero pod → open overview |
 | `best-swe` | Show me your software engineering | elevator L3 → drive to the door of the top Software Wing hero pod → open overview |
 | `journey` | Walk me through your journey | elevator L2 → drive to 2019 → `say` "drive or swipe forward through time" |
-| `projects` | All projects | elevator L3 → stop in the atrium → open the palette filtered to pods |
+| `projects` | Tour my projects | `walk` step: starts the L3 "Tour my projects" guided walk (rides to L3, then drives the wing roads pod by pod and ends at the wing directory boards). Static tier, or with walks off: L3 (`/labs`) and the palette filtered to pods |
 | `hire` | Hire / contact | elevator RF → drive to the comms terminals → open contact |
 | `cv` | Download CV | elevator RF → drive to the CV kiosk → open the CV drawer |
 | `blog` | Read the blog | elevator L4 → drive to the shelves → open the latest post |

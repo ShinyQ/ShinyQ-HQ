@@ -42,6 +42,16 @@ describe("static mission host", () => {
     expect(events).toEqual(expected);
   });
 
+  it("shows the floor page for a walk step (with the pods palette for the project tour)", async () => {
+    const { host, events } = setup("id");
+    const ctx = { signal: new AbortController().signal, missionId: "m" };
+    await host.walk("projects", ctx);
+    expect(events).toEqual(["nav /id/labs", "palette pods"]);
+    await host.walk("journey", ctx);
+    host.finish?.("done", "m");
+    expect(events.at(-1)).toBe("nav /id/journey");
+  });
+
   it("navigates surprise to the picked room page", async () => {
     const { runner, events } = setup();
     await runner.start("surprise");

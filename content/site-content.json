@@ -8216,8 +8216,8 @@
       "id": "projects",
       "order": 3,
       "label": {
-        "en": "Browse all projects",
-        "id": "Jelajahi semua proyek"
+        "en": "Tour my projects",
+        "id": "Tur proyek saya"
       },
       "steps": [
         {
@@ -8225,8 +8225,8 @@
           "floor": "L3"
         },
         {
-          "kind": "palette",
-          "filter": "pods"
+          "kind": "walk",
+          "walk": "projects"
         }
       ]
     },
