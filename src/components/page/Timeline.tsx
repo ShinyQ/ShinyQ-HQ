@@ -1,10 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, TimelineEntry } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
-import { TYPE_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { OrgLogo } from "../OrgLogo";
-import { Marker } from "./Layout";
+import { TypeMarker } from "./Layout";
 
 /** One career entry as a ruled row: period, role (link), organization, summary and type. */
 export async function TimelineRow({
@@ -42,7 +41,7 @@ export async function TimelineRow({
         <p className="mt-2.5 max-w-[64ch] text-[15px] leading-6 text-ink-2">{entry.summary[locale]}</p>
       </div>
       <p className="pv-data -order-1 md:order-none md:pt-1.5">
-        <Marker accent={TYPE_ACCENT[entry.type]}>{t(`type.${entry.type}`)}</Marker>
+        <TypeMarker type={entry.type}>{t(`type.${entry.type}`)}</TypeMarker>
       </p>
     </li>
   );

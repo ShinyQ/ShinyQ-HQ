@@ -6,7 +6,7 @@ import { BoxGeometry, BufferGeometry, Float32BufferAttribute, type InstancedMesh
 import { COLORS, FLOOR_GAP, FLOOR_COLOR } from "../../config";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import type { CareerData, Rect } from "../../types";
-import { BENCH, REPO_WALL, type CorridorLayout } from "./layout";
+import { BENCH, REPO_WALL, type CareerRoadLayout } from "./layout";
 
 export interface WorkshopLabels {
   workshop: string;
@@ -19,7 +19,7 @@ const dummy = new Object3D();
 const BENCH_H = 0.85;
 const WINDOW_H = 9;
 
-function Benches({ spots }: { spots: CorridorLayout["workshop"]["benches"] }) {
+function Benches({ spots }: { spots: CareerRoadLayout["workshop"]["benches"] }) {
   const ref = useRef<InstancedMesh>(null);
   const geometry = useMemo(() => new BoxGeometry(BENCH.w, BENCH_H, BENCH.d), []);
   useLayoutEffect(() => {
@@ -58,15 +58,15 @@ function repoColumns(repos: readonly string[], columns: number): string {
 }
 
 /**
- * Workshop annex at the end of the corridor: side-project benches, the public repo wall with the
- * Hugging Face models, and the glass window that looks up at the Labs on L3.
+ * Workshop annex at the end of the Career Road: side-project benches, the public repo wall with the
+ * Hugging Face models, and the glass window that looks up at the Labs on L3. The annex floor is a
+ * plaza of the road network (drawn by RoadMarkings).
  */
-export function WorkshopAnnex({ corridor, career, labs, labels }: { corridor: CorridorLayout; career: CareerData; labs: Rect; labels: WorkshopLabels }) {
-  const { annex, workshop, windowX } = corridor;
+export function WorkshopAnnex({ layout, career, labs, labels }: { layout: CareerRoadLayout; career: CareerData; labs: Rect; labels: WorkshopLabels }) {
+  const { workshop, windowX } = layout;
   const accent = FLOOR_COLOR.L2;
-  const cx = (annex.minX + annex.maxX) / 2;
-  const w = annex.maxX - annex.minX;
-  const d = annex.maxZ - annex.minZ;
+  const d = layout.annex.d;
+  const cx = (workshop.wall.minX + workshop.wall.maxX) / 2;
   const wallW = workshop.wall.maxX - workshop.wall.minX;
   const wallZ = (workshop.wall.minZ + workshop.wall.maxZ) / 2;
   const repos = useMemo(() => repoColumns(career.repos, 2), [career.repos]);
@@ -75,15 +75,14 @@ export function WorkshopAnnex({ corridor, career, labs, labels }: { corridor: Co
   // Sight lines from the window frame up to the east edge of the Labs slab (L3, one floor up).
   const sight = useMemo(() => {
     const pts: number[] = [];
-    for (const z of [annex.minZ, 0, annex.maxZ]) pts.push(windowX, WINDOW_H, z, labs.maxX, FLOOR_GAP, z * (labs.maxZ / annex.maxZ));
+    for (const z of [-d / 2, 0, d / 2]) pts.push(windowX, WINDOW_H, z, labs.maxX, FLOOR_GAP, z * (labs.maxZ / (d / 2)));
     const g = new BufferGeometry();
     g.setAttribute("position", new Float32BufferAttribute(pts, 3));
     return g;
-  }, [annex.minZ, annex.maxZ, windowX, labs.maxX, labs.maxZ]);
+  }, [d, windowX, labs.maxX, labs.maxZ]);
 
   return (
     <group name="workshop-annex">
-      <GlassBox size={[w, 0.04, d]} position={[cx, 0.02, 0]} color={accent} fillOpacity={0.05} edgeOpacity={0.55} />
       <Text font={FONTS.monoBold} fontSize={0.8} letterSpacing={0.12} color={accent} anchorX="center" anchorY="bottom" position={[cx, REPO_WALL.height + 0.9, wallZ]} material-toneMapped={false}>
         {labels.workshop.toUpperCase()}
       </Text>
@@ -114,9 +113,9 @@ export function WorkshopAnnex({ corridor, career, labs, labels }: { corridor: Co
           <Text
             key={project.id}
             font={FONTS.sansBold}
-            fontSize={0.3}
+            fontSize={0.24}
             lineHeight={1.3}
-            maxWidth={BENCH.w + 0.4}
+            maxWidth={BENCH.w - 0.15}
             textAlign="center"
             color="#f4f4f5"
             anchorX="center"
@@ -133,7 +132,7 @@ export function WorkshopAnnex({ corridor, career, labs, labels }: { corridor: Co
       <lineSegments geometry={sight}>
         <lineBasicMaterial color={COLORS.violet} transparent opacity={0.45} toneMapped={false} />
       </lineSegments>
-      <Text font={FONTS.monoBold} fontSize={0.5} letterSpacing={0.1} color={COLORS.violet} anchorX="right" anchorY="bottom" position={[windowX - 0.6, WINDOW_H - 1.2, annex.maxZ - 1]} material-toneMapped={false}>
+      <Text font={FONTS.monoBold} fontSize={0.5} letterSpacing={0.1} color={COLORS.violet} anchorX="right" anchorY="bottom" position={[windowX - 0.6, WINDOW_H - 1.2, d / 2 - 1]} material-toneMapped={false}>
         {`\u25B2 ${labels.window}`}
       </Text>
     </group>

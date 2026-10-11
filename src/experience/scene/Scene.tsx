@@ -60,7 +60,7 @@ export function Scene({
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
       <Rover tier={tier} />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
-      <CameraDirector held={held} />
+      <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} />
       <GlassClock />
       {tier === "full" && <FloorMotes />}
       {tier === "full" && (

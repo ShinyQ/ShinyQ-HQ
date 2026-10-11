@@ -124,6 +124,9 @@ export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarPro
     else void walk.prev();
   };
   const progress = state.total > 0 ? ((state.index + 1) / state.total) * 100 : 0;
+  // Phones (390 px and narrower) and bottom sheets: a compact counter ("1/36") and no status tag, so nothing truncates.
+  const compact = placement === "top";
+  const stopOf = t("stopOf", { index: state.index + 1, total: state.total });
 
   return (
     <section
@@ -137,8 +140,16 @@ export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarPro
       onPointerCancel={() => (swipe.current = null)}
     >
       <div className="flex items-center gap-2">
-        <p className="eyebrow min-w-0 flex-1 truncate text-amber" data-testid="walk-counter">
-          {[stop?.group, t("stopOf", { index: state.index + 1, total: state.total })].filter(Boolean).join(" · ")}
+        <p className="eyebrow min-w-0 flex-1 break-words text-amber" data-testid="walk-counter">
+          {stop?.group && `${stop.group} \u00B7 `}
+          {compact ? (
+            <>
+              <span className="sr-only">{stopOf}</span>
+              <span aria-hidden="true">{t("stopShort", { index: state.index + 1, total: state.total })}</span>
+            </>
+          ) : (
+            stopOf
+          )}
         </p>
         {definition.filters && definition.filters.length > 0 && (
           <label className="label flex items-center gap-1 text-ink-3">
@@ -146,7 +157,7 @@ export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarPro
             <select
               value={state.filter ?? ""}
               onChange={(e) => void walk.setFilter(e.target.value || null)}
-              className="min-h-9 max-w-32 rounded-full border border-glass-border bg-void px-2 text-xs text-ink-2"
+              className={`min-h-9 rounded-full ${compact ? "max-w-28" : "max-w-32"} border border-glass-border bg-void px-2 text-xs text-ink-2`}
               data-testid="walk-filter"
             >
               <option value="">{t("all")}</option>
@@ -162,12 +173,12 @@ export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarPro
           <span aria-hidden="true">✕</span>
         </button>
       </div>
-      <p className="truncate text-base leading-6 font-semibold text-ink" data-testid="walk-title" aria-live="polite">
+      <p className="line-clamp-2 text-base leading-6 font-semibold text-ink" data-testid="walk-title" aria-live="polite">
         {stop?.title}
       </p>
-      <p className="truncate text-[13px] leading-5 text-ink-2">
+      <p className="line-clamp-2 text-[13px] leading-5 text-ink-2">
         {stop?.subtitle}
-        <span className="label ml-2 text-ink-3">{state.status === "driving" ? t("driving") : t("here")}</span>
+        <span className={compact ? "sr-only" : "label ml-2 text-ink-3"}>{state.status === "driving" ? t("driving") : t("here")}</span>
       </p>
       <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
         <div className="h-full bg-amber transition-[width]" style={{ width: `${progress}%` }} />

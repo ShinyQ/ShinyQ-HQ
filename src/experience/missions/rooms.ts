@@ -1,5 +1,5 @@
 import { clientKeywords, groupEntriesByYear, isResearch, sortPods } from "@/content/selectors";
-import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
 
 export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
 
@@ -45,6 +45,9 @@ export const FLOOR_PATHS: Record<FloorId, string> = {
   L4: "/library",
   RF: "/contact",
 };
+
+/** Floor of each guided walk (mission step `{ kind: "walk" }`). */
+export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3" };
 
 export const FLOOR_ORDER: readonly FloorId[] = ["RF", "L4", "L3", "L2", "L1"];
 

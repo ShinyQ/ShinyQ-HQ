@@ -14,6 +14,8 @@ export interface CareerWalkLabels {
   types: Record<CareerType, string>;
   workshop: string;
   workshopSub: string;
+  /** Marks entries that started before 2019 and sit in the 2019 plaza, like the Page View timeline note. */
+  prologue?: string;
 }
 
 export interface LabsWalkLabels {
@@ -30,7 +32,8 @@ export function careerWalk(career: CareerData, labels: CareerWalkLabels): WalkDe
   const stops: WalkStop[] = career.years.flatMap(({ year, entries }) =>
     entries.map((e) => {
       const room = `L2:${e.slug}` as RoomId;
-      return { id: room, to: room, room, title: e.role, subtitle: [e.org, e.period].filter(Boolean).join(" · "), group: String(year), tags: [e.type] };
+      const subtitle = [e.prologue ? labels.prologue : null, e.org, e.period].filter(Boolean).join(" · ");
+      return { id: room, to: room, room, title: e.role, subtitle, group: String(year), tags: [e.type] };
     }),
   );
   const workshop: RoomId = "L2:workshop";

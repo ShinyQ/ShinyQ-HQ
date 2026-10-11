@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { getContent } from "@/content/load";
-import type { DrawerTab, FloorId, LocalizedText, RoomId } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, RoomId, WalkId } from "@/content/schema";
 import type { MissionHost, PaletteFilter, StepContext, Vec2 } from "@/experience/missions/host";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionState } from "@/experience/missions/runner";
@@ -9,7 +9,6 @@ import { structuralLabels } from "@/hud/index-data";
 const content = getContent();
 const missions = content.missions;
 const rooms = buildRoomCatalog(content, structuralLabels());
-const journeySay = missions.find((mission) => mission.id === "journey")!.steps.find((step) => step.kind === "say")!;
 
 type Call = string;
 
@@ -29,6 +28,7 @@ function fakeHost(overrides: Partial<MissionHost> = {}) {
     openRoom: (room: RoomId, tab: DrawerTab | undefined, ctx) => record(`open ${room}${tab ? ` ${tab}` : ""}`, ctx),
     say: (text: LocalizedText, ms: number | undefined, ctx) => record(`say ${text.en}${ms ? ` ${ms}` : ""}`, ctx),
     openPalette: (filter: PaletteFilter | undefined, ctx) => record(`palette ${filter ?? ""}`.trim(), ctx),
+    walk: (id: WalkId, ctx) => record(`walk ${id}`, ctx),
     finish,
     ...overrides,
   };
@@ -46,7 +46,7 @@ describe("mission runner: catalog", () => {
   const expected: Record<string, Call[]> = {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
-    journey: ["elevator L2", "drive L2:prologue-2016", `say ${journeySay.text.en} 2400`],
+    journey: ["elevator L2", "walk journey"],
     projects: ["elevator L3", "palette pods"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],

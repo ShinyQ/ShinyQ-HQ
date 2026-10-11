@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { FloorId } from "@/content/schema";
 import { WALK_FLOORS } from "@/experience/config";
 import { intents } from "@/experience/input/intents";
-import { cancelMission, runMissionSteps } from "@/experience/missions/bridge";
+import { cancelMission, registerWalkStarter, runMissionSteps } from "@/experience/missions/bridge";
 import { createWalk, markPromptSeen, promptSeen, type WalkController, type WalkDefinition, type WalkState } from "@/experience/missions/walk";
 import { careerWalk, labsWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { ExperienceData } from "@/experience/types";
@@ -31,6 +31,7 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
         types: { job: tc("type.job"), freelance: tc("type.freelance"), education: tc("type.education"), award: tc("type.award"), milestone: tc("type.milestone") },
         workshop: th("workshop"),
         workshopSub: t("workshopSub"),
+        prologue: th("prologue"),
       }),
       L3: labsWalk(data.labs.pods, { wings: data.labs.wings, more: t("more"), moreSub: t("moreSub") }),
     }),
@@ -102,6 +103,22 @@ export function WalkLayer({
     if (prompt) markPromptSeen(prompt);
     setPrompt(null);
   };
+
+  // Mission step `{ kind: "walk" }` ("Follow my career"): start that walk once the mission has ended,
+  // so the walk's first leg does not cancel the mission that started it.
+  useEffect(
+    () =>
+      registerWalkStarter((id) => {
+        const entry = (Object.entries(controllers) as [FloorId, WalkController][]).find(([, c]) => c.definition.id === id);
+        if (!entry) return false;
+        const [walkFloor, controller] = entry;
+        markPromptSeen(walkFloor);
+        setPrompt(null);
+        window.setTimeout(() => void controller.start(), 0);
+        return true;
+      }),
+    [controllers],
+  );
 
   // Manual driving pauses the walk (the Director already cancels a running leg); `[` and `]` step.
   useEffect(() => {

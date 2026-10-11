@@ -5,10 +5,12 @@ import { useEffect, useRef, type RefObject } from "react";
 import { Fog, PerspectiveCamera, Vector3 } from "three";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore } from "@/store/useHQStore";
+import { roadZAt } from "../floors/career/layout";
 import { intents, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
+import type { Vec2 } from "../types";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
@@ -33,7 +35,7 @@ const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
  * turns all the way around the rover (drag, twist, trackpad, Q/E, buttons) with a small tilt;
  * the view persists until reset.
  */
-export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
+export function CameraDirector({ held, railAxis = [] }: { held: RefObject<Set<string>>; railAxis?: readonly Vec2[] }) {
   const local = useRef({
     orbit: createOrbitState(),
     now: 0,
@@ -108,7 +110,7 @@ export function CameraDirector({ held }: { held: RefObject<Set<string>> }) {
         if (t >= INTRO_DURATION) s.finishIntro();
       }
     } else if (rig === "rail") {
-      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom, roverRuntime.z, orbit.railYaw);
+      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x));
     } else {
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];

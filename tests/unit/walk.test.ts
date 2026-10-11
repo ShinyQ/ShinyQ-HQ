@@ -200,6 +200,12 @@ describe("walk definitions", () => {
     expect(filterStops(walk.stops, "award").map((s) => s.id)).toEqual(["L2:workshop"]);
   });
 
+  it("marks prologue entries, which sit in the 2019 plaza like the Page View timeline", () => {
+    const walk = careerWalk(career, { types, workshop: "Workshop", workshopSub: "Side projects", prologue: "Prologue" });
+    expect(walk.stops[0]).toMatchObject({ group: "2019", subtitle: "Prologue · Org · 2016" });
+    expect(walk.stops[1].subtitle).toBe("Co · 2021");
+  });
+
   it("tours hero pods, then featured pods, then the directories", () => {
     const pod = (slug: string, tier: LabPod["tier"], wing: LabPod["wing"], order: number): LabPod => ({
       id: slug,

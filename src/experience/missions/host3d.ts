@@ -4,9 +4,9 @@ import { LOBBY, READY_FLOORS } from "../config";
 import { directoryStop } from "../floors/labs/layout";
 import { postStop } from "../floors/library/layout";
 import type { FloorLayout, Vec2 } from "../types";
-import type { HostDeps } from "./bridge";
+import { startWalk, type HostDeps } from "./bridge";
 import type { MissionHost, StepContext } from "./host";
-import { floorOf, localize, roomPath, type RoomInfo } from "./rooms";
+import { floorOf, localize, roomPath, WALK_FLOOR, type RoomInfo } from "./rooms";
 
 /** Autopilot request the Director fulfils on the next frames. */
 export interface AutopilotRequest {
@@ -147,6 +147,14 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
 
     async openPalette(filter) {
       deps.openPalette(filter);
+    },
+
+    async walk(id, ctx) {
+      // The walk's first leg starts once this mission has ended (WalkLayer defers it), so it does not cancel it.
+      if (startWalk(id)) return;
+      // Walk not offered on this floor yet: ride there and list its rooms instead.
+      await this.elevator(WALK_FLOOR[id], ctx);
+      deps.openPalette(id === "projects" ? "pods" : "rooms");
     },
 
     finish(status) {

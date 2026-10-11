@@ -6,7 +6,7 @@ import { ExternalLink } from "@/components/ExternalLink";
 import { ConfidenceBadge } from "@/components/MetricTile";
 import { OrgLogo } from "@/components/OrgLogo";
 import { FactRow } from "@/components/page/Case";
-import { CrumbLink, Marker } from "@/components/page/Layout";
+import { CrumbLink, Marker, TypeMarker } from "@/components/page/Layout";
 import { getContent, getPod, getTimeline, getTimelineEntry } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { adjacent } from "@/content/selectors";
@@ -14,7 +14,6 @@ import { ExperienceGate } from "@/experience/ExperienceGate";
 import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { TYPE_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { pageMetadata } from "@/lib/site";
 
@@ -53,7 +52,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
         <CrumbLink crumb={{ href: "/journey", label: t("navTitle") }} />
         <div className="mt-5 lg:w-3/4">
           <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Marker accent={TYPE_ACCENT[entry.type]}>{tc(`type.${entry.type}`)}</Marker>
+            <TypeMarker type={entry.type}>{tc(`type.${entry.type}`)}</TypeMarker>
             <span className="hidden sm:inline">L2:{entry.slug}</span>
           </p>
           <h1 className="pv-d-l mt-5">{entry.role[locale]}</h1>

@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, collectErrors, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
- * Guided walks (missions/walk.ts + hud/walk). Walks ship behind `WALK_FLOORS` (empty until the L2
- * and L3 roads land), so these tests turn them on with `?walk=on` on today's layouts.
+ * Guided walks (missions/walk.ts + hud/walk). Floors offer their walk once their road ships
+ * (`WALK_FLOORS`); these tests turn every walk on with `?walk=on`, so they do not depend on that list.
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -87,9 +87,9 @@ test.describe("Guided walks", () => {
     expect(errors).toEqual([]);
   });
 
-  test("without the flag no walk is offered (WALK_FLOORS is empty until the roads ship)", async ({ page }) => {
+  test("?walk=off offers no walk, even on a floor in WALK_FLOORS", async ({ page }) => {
     await asReturningVisitor(page);
-    await page.goto("/en/journey?tier=lite");
+    await page.goto("/en/journey?tier=lite&walk=off");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);

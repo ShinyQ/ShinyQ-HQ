@@ -36,8 +36,8 @@ describe("camera rigs", () => {
   });
 
   it("places the rail camera beside the corridor", () => {
-    expect(railPose("desktop", 10, 14)).toEqual({ position: [10, 27, 24], target: [14, 14, 0], fov: 40 });
-    expect(railPose("mobile", 0, 0).position).toEqual([0, 18, 34]);
+    expect(railPose("desktop", 10, 14)).toEqual({ position: [10, 36, 30], target: [14, 14, 0], fov: 40 });
+    expect(railPose("mobile", 0, 0).position).toEqual([0, 26, 38]);
   });
 
   it("keeps the rail fixed inside the corridor and slides it into side rooms", () => {
@@ -48,8 +48,16 @@ describe("camera rigs", () => {
     expect(railShift(-19)).toBe(-15);
     expect(railPose("desktop", 10, 14, 1, 2)).toEqual(railPose("desktop", 10, 14));
     const inRoom = railPose("desktop", 10, 14, 1, -14);
-    expect(inRoom.position[2]).toBe(24 - 10);
+    expect(inRoom.position[2]).toBe(30 - 10);
     expect(inRoom.target[2]).toBe(-10);
+  });
+
+  it("follows the road's axis on the meandering Career Road", () => {
+    // Rover on the road 7 u south of the slab axis: the rail sits on the road, not 3 u off it.
+    expect(railPose("desktop", 10, 14, 1, 7, 0, 7).target[2]).toBe(7);
+    expect(railPose("desktop", 10, 14, 1, 7, 0, 7).position[2]).toBe(37);
+    // Deep in a north room of that plaza: slides past the deadband from the road axis.
+    expect(railPose("desktop", 10, 14, 1, -8, 0, 7).target[2]).toBe(-4);
   });
 
   it("orbits 120 degrees during the intro and lands on the follow pose", () => {
@@ -99,8 +107,8 @@ describe("camera rigs", () => {
 
   it("swings the rail camera around the rover", () => {
     const pose = railPose("desktop", 10, 14, 1, 0, Math.PI / 6);
-    expect(pose.position[0]).toBeCloseTo(10 + 12);
-    expect(pose.position[2]).toBeCloseTo(24 * Math.cos(Math.PI / 6));
+    expect(pose.position[0]).toBeCloseTo(10 + 15);
+    expect(pose.position[2]).toBeCloseTo(30 * Math.cos(Math.PI / 6));
     expect(pose.target).toEqual([14, 14, 0]);
   });
 });

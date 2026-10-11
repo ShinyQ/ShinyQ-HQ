@@ -15,7 +15,7 @@ const FOG_COLOR = "#0a0a0f";
 const FOG_RANGE: Record<RigKind, [number, number]> = {
   follow: [38, 80],
   focus: [38, 80],
-  rail: [30, 70],
+  rail: [40, 95],
   intro: [90, 200],
 };
 

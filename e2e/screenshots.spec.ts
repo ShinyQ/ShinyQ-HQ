@@ -136,7 +136,7 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-type HQState = { __hq: { store: { getState: () => { phase: string; rover: { x: number } } } } };
+type HQState = { __hq: { store: { getState: () => { phase: string; rover: { x: number; z: number } } } } };
 
 /** Opens an L2 route in 3D (floor routes skip boot and intro) and waits for the corridor to draw. */
 async function openL2(browser: Browser, v: Viewport, path: string, phase: "explore" | "room") {
@@ -155,7 +155,7 @@ async function openL2(browser: Browser, v: Viewport, path: string, phase: "explo
 const roverPast = (page: Page, x: number) =>
   page.waitForFunction((min) => (window as unknown as HQState).__hq.store.getState().rover.x > min, x, { timeout: 150_000 });
 
-/** L2 Career Archive: corridor on the rail camera, a career room's drawer, and the Workshop annex. */
+/** L2 Career Road on the rail camera, a career room's drawer, and the Workshop annex. */
 for (const viewport of VIEWPORTS) {
   test(`3D L2 corridor @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(240_000);
@@ -179,12 +179,15 @@ for (const viewport of VIEWPORTS) {
 
   test(`3D L2 annex @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(300_000);
-    // From the 2026 room on the north side, east along z = -5 into the annex (its door zone opens the Workshop).
+    // From the 2026 room on the north side, back onto the road (S), then east along it into the annex.
     const { context, page } = await openL2(browser, viewport, "/en/journey/metrodata-2026", "room");
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
+    await page.keyboard.down("s");
+    await page.waitForFunction(() => (window as unknown as HQState).__hq.store.getState().rover.z > -9, null, { timeout: 60_000 });
+    await page.keyboard.up("s");
     await page.keyboard.down("d");
-    await roverPast(page, 100);
+    await roverPast(page, 340);
     await page.keyboard.up("d");
     await page.waitForTimeout(5000);
     await page.screenshot({ path: shot("hq-l2-annex", viewport) });

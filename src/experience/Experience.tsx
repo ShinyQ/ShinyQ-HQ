@@ -224,6 +224,7 @@ export default function Experience({
         repos: t("career.repos"),
         models: t("career.models"),
         window: t("career.window"),
+        rooms: (count: number) => t("career.rooms", { count }),
       },
       library: {
         blog: tLibrary("posts"),

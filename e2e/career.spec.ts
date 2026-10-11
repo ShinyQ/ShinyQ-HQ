@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { RAIL, RAIL_LOOK_AHEAD } from "../src/experience/camera/rigs";
+import { asReturningVisitor, collectErrors, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -29,6 +30,28 @@ const roverWhere = (page: Page, axis: "x" | "z", op: ">" | "<", value: number, t
 
 const activeRoom = (page: Page) => page.evaluate(() => (window as unknown as HQWindow).__hq.store.getState().activeRoom);
 
+/**
+ * Screen position (CSS px) of a floor point on L2, from the settled rail camera (desktop rig, no yaw):
+ * the camera sits at `__hq.camera()` and looks at (rover x + RAIL_LOOK_AHEAD, floor, camera z - RAIL.z).
+ */
+async function railScreenPoint(page: Page, p: { x: number; z: number }) {
+  const [cx, cy, cz] = await page.evaluate(() => (window as unknown as { __hq: { camera: () => [number, number, number] } }).__hq.camera());
+  const rover = (await snapshot(page)).rover;
+  const { width, height } = page.viewportSize()!;
+  const rig = RAIL.desktop;
+  const target = [rover.x + RAIL_LOOK_AHEAD, cy - rig.y, cz - rig.z];
+  const norm = (v: number[]) => v.map((c) => c / Math.hypot(...v));
+  const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const f = norm([target[0] - cx, target[1] - cy, target[2] - cz]);
+  const r = norm(cross(f, [0, 1, 0]));
+  const u = cross(r, f);
+  const d = [p.x - cx, cy - rig.y - cy, p.z - cz];
+  const t = Math.tan(((rig.fov / 2) * Math.PI) / 180);
+  const ndc = { x: dot(d, r) / (dot(d, f) * t * (width / height)), y: dot(d, u) / (dot(d, f) * t) };
+  return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
+}
+
 /** Real touch input through CDP with explicit timestamps (see experience.spec.ts). */
 async function swipe(page: Page, points: { x: number; y: number }[]) {
   const cdp = await page.context().newCDPSession(page);
@@ -40,7 +63,7 @@ async function swipe(page: Page, points: { x: number; y: number }[]) {
   await cdp.detach();
 }
 
-test.describe("Career Archive corridor (L2)", () => {
+test.describe("Career Road (L2)", () => {
   test("/journey starts on L2 without the intro and D drives forward through the years", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page);
@@ -52,8 +75,10 @@ test.describe("Career Archive corridor (L2)", () => {
     await expect(page.getByTestId("floor-announcer")).toContainText("L2");
     expect(new URL(page.url()).pathname).toBe("/en/journey");
 
+    await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2019");
+
     await page.keyboard.down("d");
-    // Past the 2020 gate at x = -6, staying on the corridor line.
+    // Under the 2019 arch at x = -16 and into its plaza, staying on the road's center line.
     await roverWhere(page, "x", ">", -4);
     await page.keyboard.up("d");
     const { rover } = await snapshot(page);
@@ -61,7 +86,7 @@ test.describe("Career Archive corridor (L2)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the L2 corridor stays under the draw call budget", async ({ page }) => {
+  test("the L2 road stays under the draw call budget", async ({ page }) => {
     await openJourney(page);
     await waitForPhase(page, "explore");
     await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
@@ -69,7 +94,7 @@ test.describe("Career Archive corridor (L2)", () => {
     expect((await snapshot(page)).drawCalls).toBeLessThan(150);
   });
 
-  test("a deep link opens the room's drawer, Esc closes it and driving into a door opens the next", async ({ page }) => {
+  test("a deep link opens the room's drawer, Esc closes it and driving into a door opens it", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page, "/en/journey/jenius-2024");
     await waitForPhase(page, "room");
@@ -85,14 +110,42 @@ test.describe("Career Archive corridor (L2)", () => {
     await waitForPhase(page, "explore");
     await expect(drawer).toBeHidden();
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
+    await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2024");
 
-    // Straight across the corridor into the door zone of the 2024 room on the north side.
-    await page.keyboard.down("w");
+    // Rooms dock in one row on both plaza edges. Open the 2024 room on the north edge, back off its
+    // pad into the plaza (S drives toward the camera), then click the room's floor: the rover drives
+    // to the door pad, stops on it and the room opens (a straight drive back would hinge on the turn).
+    await openJourney(page, "/en/journey/crypto-tracker-2024");
     await waitForPhase(page, "room");
-    await page.keyboard.up("w");
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore");
+    const pad = (await snapshot(page)).rover;
+    await page.keyboard.down("s");
+    await roverWhere(page, "z", ">", pad.z + 4);
+    await page.keyboard.up("s");
+    await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
+    await waitForCameraSettle(page);
+    const floor = await railScreenPoint(page, { x: pad.x, z: pad.z - 2.3 });
+    await page.getByTestId("hq-world").click({ position: floor });
+    await waitForPhase(page, "room", 60_000);
     expect(await activeRoom(page)).toBe("L2:crypto-tracker-2024");
     await expect(drawer).toBeVisible();
     await expect(page).toHaveURL(/\/en\/journey\/crypto-tracker-2024\?tier=lite$/);
+    expect(errors).toEqual([]);
+  });
+
+  test("Follow my career starts the guided walk at the first room", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openJourney(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    await page.keyboard.press("Control+k");
+    await page.keyboard.type("Follow my career");
+    await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: /Follow my career/ }).first().click();
+    await expect(page.getByTestId("walk-bar")).toBeVisible();
+    await expect(page.getByTestId("walk-counter")).toContainText(/Stop 1 of \d+/);
+    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", "L2:prologue-2016");
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -162,9 +215,9 @@ test.describe("Career Archive on touch", () => {
     // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot
     // cover or is dropped before the Director runs.
     await waitForSceneLive(page);
-    // Left swipe of ~60% of the width: two year stops forward (2019, then 2020 at x = 1).
+    // Left swipe of ~60% of the width: two plaza stops forward (2019, then the 2020 plaza at x = 53).
     await swipe(page, [{ x: 320, y: 480 }, { x: 220, y: 482 }, { x: 80, y: 484 }]);
-    await roverWhere(page, "x", ">", 0);
+    await roverWhere(page, "x", ">", 40);
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
     // Right swipe goes back in time.
     const before = (await snapshot(page)).rover.x;

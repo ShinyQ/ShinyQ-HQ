@@ -38,7 +38,7 @@ export function buildCareerViews(locale: Locale): RoomView[] {
       subtitle: entry.org,
       logo: entry.logo ? { src: entry.logo.src, alt: entry.logo.alt[locale] } : undefined,
       meta: [formatPeriod(entry.start, entry.end, locale), m.common.type[entry.type], ...(year > Number(entry.start.slice(0, 4)) ? [m.journey.prologue] : [])],
-      badges: [{ label: m.common.type[entry.type], accent: "amber" }],
+      badges: [{ label: m.common.type[entry.type], accent: "amber", type: entry.type }],
       accent: "amber",
       sections: [
         { body: entry.summary[locale] },

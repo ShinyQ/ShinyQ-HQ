@@ -18,6 +18,7 @@ import { ProfileCard } from "./ProfileCard";
 import { ViewControls } from "./ViewControls";
 import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
+import { YearChip } from "./YearChip";
 
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
@@ -123,6 +124,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {mobile ? <MobileMenu onExit={onExit} onToggleLang={onToggleLang} /> : <TopBar onExit={onExit} onToggleLang={onToggleLang} />}
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
+          {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && (walking || phase === "room")} />}
           {phase === "intro" ? <IntroSkip /> : phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />

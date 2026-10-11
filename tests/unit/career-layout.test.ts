@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { getSideProjects, getYears } from "@/content/load";
-import { buildCorridor, CORRIDOR, labelVisible, scrubTarget, WORKSHOP_ROOM } from "@/experience/floors/career/layout";
+import { buildFloorLayouts } from "@/experience/config";
+import {
+  BENCH,
+  buildCareerRoad,
+  CAREER_ROAD,
+  labelFade,
+  LABEL_FADE,
+  placeAt,
+  plazaLength,
+  roadZAt,
+  scrubTarget,
+  WORKSHOP_ROOM,
+} from "@/experience/floors/career/layout";
+import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { distanceToRect } from "@/experience/nav/collision";
+import { DOOR_SIZE } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
+import { onNetwork, pathBetween, roadRoute } from "@/experience/nav/road";
 import type { CareerLayoutInput, CareerType, Rect } from "@/experience/types";
+import { expectSpaceRules } from "../helpers/space";
 
 const year = (y: number, types: CareerType[]) => ({ year: y, entries: types.map((type, i) => ({ slug: `e${y}-${i}`, type })) });
 
@@ -25,43 +41,63 @@ const roomRect = (r: { center: { x: number; z: number }; w: number; d: number })
   maxZ: r.center.z + r.d / 2,
 });
 
-describe("buildCorridor", () => {
-  const c = buildCorridor(SAMPLE);
+describe("buildCareerRoad", () => {
+  const c = buildCareerRoad(SAMPLE);
 
-  it("makes one 14 u segment per year in ascending order from x = -20", () => {
-    expect(c.segments.map((s) => s.year)).toEqual([2019, 2020, 2021]);
-    expect(c.segments.map((s) => s.startX)).toEqual([-20, -6, 8]);
-    expect(c.segments.map((s) => s.centerX)).toEqual([-13, 1, 15]);
-    expect(c.endX).toBe(22);
+  it("makes one plaza per year in ascending order, sized by entry count, meandering in z", () => {
+    expect(c.years.map((y) => y.year)).toEqual([2019, 2020, 2021]);
+    expect(c.years.map((y) => y.plaza.w)).toEqual([plazaLength(5), plazaLength(1), plazaLength(2)]);
+    expect(c.years.map((y) => y.plaza.center.z)).toEqual([0, CAREER_ROAD.meander, 0]);
+    expect(c.years.map((y) => y.plaza.d)).toEqual([CAREER_ROAD.plazaDepth, CAREER_ROAD.plazaDepth, CAREER_ROAD.plazaDepth]);
+    // The first plaza starts `lead` after the elevator approach; one `link` between plazas.
+    expect(c.years[0].plaza.center.x - c.years[0].plaza.w / 2).toBe(CAREER_ROAD.approach.x + CAREER_ROAD.lead);
+    const gap = c.years[1].plaza.center.x - c.years[1].plaza.w / 2 - (c.years[0].plaza.center.x + c.years[0].plaza.w / 2);
+    expect(gap).toBeCloseTo(CAREER_ROAD.link);
   });
 
-  it("alternates sides and stacks extra rooms outward behind an aisle", () => {
-    const rooms = c.segments[0].rooms;
+  it("keeps x increasing along the road, so the rail camera and scrubbing still work", () => {
+    const xs = c.network.roads[0].points.map((p) => p.x);
+    for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThan(xs[i - 1]);
+    expect(c.stops).toEqual([...c.stops].sort((a, b) => a - b));
+  });
+
+  it("docks rooms on both plaza edges in one row, alternating and staggered", () => {
+    const rooms = c.years[0].rooms;
     expect(rooms.map((r) => r.side)).toEqual([-1, 1, -1, 1, -1]);
-    expect(rooms.map((r) => r.row)).toEqual([0, 0, 1, 1, 2]);
-    // Doors at 6, then back wall + 5 u aisle: 6 + 8 + 5 = 19 (north) and 6 + 6 + 5 = 17 (south, behind the award).
-    expect(rooms.map((r) => r.center.z)).toEqual([-10, 9, -23, 21, -36]);
-    expect(new Set(rooms.map((r) => r.center.x))).toEqual(new Set([-13]));
+    const front = CAREER_ROAD.plazaDepth / 2 + CAREER_ROAD.apron;
+    for (const r of c.rooms) {
+      const zc = c.years.find((y) => y.year === r.year)!.plaza.center.z;
+      expect(Math.abs(r.door.z - zc)).toBe(front);
+      expect(Math.abs(r.center.z - zc)).toBe(front + CAREER_ROAD.roomDepth / 2);
+    }
+    // North and south rooms never share an x, so labels never stack in the side view.
+    const north = new Set(rooms.filter((r) => r.side < 0).map((r) => r.center.x));
+    for (const r of rooms.filter((r) => r.side > 0)) expect(north.has(r.center.x)).toBe(false);
   });
 
-  it("uses smaller trophy plinths for awards", () => {
-    const award = c.rooms.find((r) => r.type === "award")!;
-    expect([award.w, award.d]).toEqual([6, 6]);
+  it("uses narrower trophy plinths for awards", () => {
+    expect(c.rooms.find((r) => r.type === "award")!.w).toBe(6);
     expect(c.rooms.find((r) => r.type === "job")).toMatchObject({ w: 9, d: 8 });
   });
 
-  it("puts each door zone just outside the corridor-facing edge", () => {
+  it("puts each door pad just outside the road-facing edge, facing into the room", () => {
     for (const room of c.rooms) {
-      const edge = Math.abs(room.center.z) - room.d / 2;
-      expect(Math.abs(room.door.z)).toBe(edge);
-      expect(Math.abs(room.at.z)).toBe(edge - CORRIDOR.doorSize / 2);
-      expect(Math.sign(room.at.z)).toBe(room.side);
       expect(room.at.x).toBe(room.center.x);
-      // Never on the corridor center line, so driving along the corridor never opens a room.
-      expect(Math.abs(room.at.z)).toBeGreaterThanOrEqual(CORRIDOR.halfWidth + CORRIDOR.doorSize / 2);
+      expect(room.at.z).toBeCloseTo(room.door.z - (room.side * DOOR_SIZE) / 2);
+      const door = c.doors.find((d) => d.room === room.id)!;
+      expect(door.facing).toEqual({ x: 0, z: room.side });
     }
     expect(c.doors).toHaveLength(c.rooms.length + 1);
     expect(c.doors.at(-1)!.room).toBe(WORKSHOP_ROOM);
+  });
+
+  it("gives every room a spur in its type color and keeps pads off the road", () => {
+    for (const room of c.rooms) {
+      const spur = c.network.spurs.find((s) => s.room === room.id)!;
+      expect(spur.to).toEqual(room.at);
+      expect(spur.color).toBe(CAREER_TONE[room.type]);
+      expect(onNetwork({ ...c.network, plazas: [], spurs: [] }, room.at)).toBe(false);
+    }
   });
 
   it("blocks only the pedestals inside rooms", () => {
@@ -71,98 +107,99 @@ describe("buildCorridor", () => {
     }
   });
 
-  it("fits every room and the Workshop annex on the slab", () => {
+  it("fits every room, the annex and its benches on the slab, with the window at the far end", () => {
     for (const room of c.rooms) expect(inside(roomRect(room), c.bounds)).toBe(true);
-    expect(inside(c.annex, c.bounds)).toBe(true);
-    expect(c.annex.minX).toBe(c.endX);
-    expect(c.annex.maxX - c.annex.minX).toBe(CORRIDOR.annexLength);
     expect(c.windowX).toBe(c.bounds.maxX);
+    expect(c.annex.center.x + c.annex.w / 2).toBe(c.bounds.maxX);
     expect(c.bounds.minX).toBe(-24);
-  });
-
-  it("places benches in front of the repo wall and the workshop door in front of the wall", () => {
     expect(c.workshop.benches).toHaveLength(5);
-    for (const b of c.workshop.benches) expect(b.z).toBeGreaterThan(0);
+    for (const b of c.workshop.benches) expect(b.z).toBeGreaterThanOrEqual(BENCH.rows[0]);
     expect(c.workshop.at.z).toBeLessThan(0);
     expect(c.workshop.at.z).toBeGreaterThan(c.workshop.wall.maxZ);
   });
 
-  it("lists scrub stops at segment centers and the annex", () => {
-    expect(c.stops).toEqual([-13, 1, 15, 32]);
+  it("lists scrub stops at plaza centers and the annex", () => {
+    expect(c.stops).toEqual([...c.years.map((y) => y.plaza.center.x), c.annex.center.x]);
+  });
+
+  it("passes the space rules", () => {
+    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach });
   });
 });
 
-describe("the real Career Archive", () => {
-  const c = buildCorridor(real);
+describe("the real Career Road", () => {
+  const c = buildCareerRoad(real);
   const grid = buildNavGrid(c, 1);
 
   it("covers every year from getYears with every entry", () => {
-    expect(c.segments.map((s) => s.year)).toEqual(getYears().map((y) => y.year));
+    expect(c.years.map((y) => y.year)).toEqual(getYears().map((y) => y.year));
     expect(c.rooms).toHaveLength(getYears().reduce((n, y) => n + y.entries.length, 0));
     expect(c.rooms.find((r) => r.slug === "prologue-2016")?.year).toBe(2019);
   });
 
-  it("can reach every door zone from the elevator", () => {
-    const start = { x: -21, z: 0 };
+  it("passes the space rules with the real content", () => {
+    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach });
+  });
+
+  it("can reach every door pad from the elevator, along the road", () => {
     for (const door of c.doors) {
-      const path = findPath(grid, start, door.at);
+      const path = roadRoute(c.network, grid, c.approach, door.at);
       expect(path, door.room).not.toBeNull();
       const end = path!.at(-1)!;
-      expect(Math.abs(end.x - door.at.x), door.room).toBeLessThanOrEqual(1);
-      expect(Math.abs(end.z - door.at.z), door.room).toBeLessThanOrEqual(1);
+      expect(Math.hypot(end.x - door.at.x, end.z - door.at.z), door.room).toBeLessThanOrEqual(1);
+      expect(findPath(grid, c.approach, door.at), door.room).not.toBeNull();
     }
     expect(isWalkable(grid, { x: c.stops.at(-1)!, z: 0 })).toBe(true);
   });
-});
 
-describe("walkable spacing on the real archive", () => {
-  const c = buildCorridor(real);
-  const zone = (at: { x: number; z: number }): Rect => ({
-    minX: at.x - CORRIDOR.doorSize / 2,
-    maxX: at.x + CORRIDOR.doorSize / 2,
-    minZ: at.z - CORRIDOR.doorSize / 2,
-    maxZ: at.z + CORRIDOR.doorSize / 2,
-  });
-  const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && a.maxX > b.minX && a.minZ < b.maxZ && a.maxZ > b.minZ;
-
-  it("keeps at least 3 u of clear floor between neighbouring rooms and door pads", () => {
-    for (const a of c.rooms) {
-      for (const b of c.rooms) {
-        if (a === b) continue;
-        const ra = roomRect(a);
-        const rb = roomRect(b);
-        const dx = Math.max(rb.minX - ra.maxX, ra.minX - rb.maxX);
-        const dz = Math.max(rb.minZ - ra.maxZ, ra.minZ - rb.maxZ);
-        expect(Math.max(dx, dz), `${a.slug} / ${b.slug}`).toBeGreaterThanOrEqual(3);
-        // The next row's door pad sits in the aisle behind a room, with 3 u clear in front of the back wall.
-        const gap = Math.max(zone(b.at).minX - ra.maxX, ra.minX - zone(b.at).maxX, zone(b.at).minZ - ra.maxZ, ra.minZ - zone(b.at).maxZ);
-        expect(gap, `${b.slug} pad vs ${a.slug}`).toBeGreaterThanOrEqual(3);
-      }
-    }
+  it("routes from the first room to the last room on the network", () => {
+    const path = pathBetween(c.network, c.rooms[0].at, c.rooms.at(-1)!.at)!;
+    for (const p of path) expect(onNetwork(c.network, p)).toBe(true);
   });
 
-  it("never puts a door pad on the corridor walkway or inside another room", () => {
-    const walkway: Rect = { minX: -Infinity, maxX: Infinity, minZ: -CORRIDOR.halfWidth, maxZ: CORRIDOR.halfWidth };
-    for (const door of c.doors) {
-      expect(overlaps(zone(door.at), walkway), door.room).toBe(false);
-      for (const r of c.rooms) if (r.id !== door.room) expect(overlaps(zone(door.at), roomRect(r)), `${door.room} in ${r.id}`).toBe(false);
-    }
+  it("is the L2 floor layout: road, doors, obstacles and scrub stops", () => {
+    const layouts = buildFloorLayouts(real.years.length, { career: real });
+    expect(layouts.L2.road).toEqual(c.network);
+    expect(layouts.L2.doors).toEqual(c.doors);
+    expect(layouts.L2.obstacles).toEqual(c.obstacles);
+    expect(layouts.L2.scrubStops).toEqual(c.stops);
+    expect(layouts.L2.bounds).toEqual(c.bounds);
   });
 });
 
-describe("labelVisible", () => {
-  const c = buildCorridor(SAMPLE);
-  const [north0, south0, north1] = c.segments[0].rooms;
-  it("shows only the first row from the corridor, so stacked signs never overlap", () => {
-    expect(labelVisible(north0, 0)).toBe(true);
-    expect(labelVisible(south0, 0)).toBe(true);
-    expect(labelVisible(north1, 0)).toBe(false);
+describe("placeAt", () => {
+  const c = buildCareerRoad(SAMPLE);
+  it("names the year from its arch on, the first year before the first arch, and the annex at the end", () => {
+    expect(placeAt(c, CAREER_ROAD.approach.x)).toBe(2019);
+    expect(placeAt(c, c.years[1].arch.center.x - 0.1)).toBe(2019);
+    expect(placeAt(c, c.years[1].arch.center.x + 0.1)).toBe(2020);
+    expect(placeAt(c, c.years[2].plaza.center.x)).toBe(2021);
+    expect(placeAt(c, c.annex.center.x)).toBe("workshop");
+    expect(placeAt({ years: [], annex: c.annex }, 0)).toBeNull();
   });
-  it("shows an outer room once the rover is in its aisle, and hides the inner one behind it", () => {
-    const aisle = -(Math.abs(north0.door.z) + north0.d + 2);
-    expect(labelVisible(north1, aisle)).toBe(true);
-    expect(labelVisible(north0, aisle)).toBe(false);
-    expect(labelVisible(north1, 5)).toBe(false);
+});
+
+describe("labelFade", () => {
+  it("is opaque near the rover and fades out by the far distance", () => {
+    expect(labelFade(0)).toBe(1);
+    expect(labelFade(-LABEL_FADE.near)).toBe(1);
+    expect(labelFade((LABEL_FADE.near + LABEL_FADE.far) / 2)).toBeCloseTo(0.5);
+    expect(labelFade(LABEL_FADE.far + 1)).toBe(0);
+  });
+});
+
+describe("roadZAt", () => {
+  const points = [
+    { x: 0, z: 0 },
+    { x: 10, z: 7 },
+    { x: 20, z: 7 },
+  ];
+  it("interpolates along a road whose x increases, clamped at both ends", () => {
+    expect(roadZAt(points, -5)).toBe(0);
+    expect(roadZAt(points, 5)).toBeCloseTo(3.5);
+    expect(roadZAt(points, 15)).toBe(7);
+    expect(roadZAt(points, 99)).toBe(7);
+    expect(roadZAt([], 3)).toBe(0);
   });
 });
 

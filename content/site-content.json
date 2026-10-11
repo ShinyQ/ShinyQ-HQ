@@ -8104,16 +8104,8 @@
           "floor": "L2"
         },
         {
-          "kind": "drive",
-          "to": "L2:prologue-2016"
-        },
-        {
-          "kind": "say",
-          "text": {
-            "en": "Drive or swipe to explore the years",
-            "id": "Maju atau geser untuk melihat tiap tahun"
-          },
-          "ms": 2400
+          "kind": "walk",
+          "walk": "journey"
         }
       ]
     },
