@@ -22,7 +22,7 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 | Language toggle | Top-right `EN / ID` segmented control | Same | Inside the menu |
 | Sound toggle | Top-right speaker icon (on by default, starts on the first gesture; appendix 05 section 5) | Same | Inside the menu |
 | Elevator panel | Right edge, vertical, 5 round buttons | Right edge | Right edge, compact (36 px buttons) |
-| Room drawer | Right side panel, 420 px, full height minus margins | Portrait: bottom sheet. Landscape: side panel. | Bottom sheet with snap points at 45% and 92% height |
+| Room drawer | Right side panel, 480 px (560 px from 1280 px wide, 600 px from 1400 px), full height minus margins | Portrait: bottom sheet. Landscape: side panel. | Bottom sheet with snap points at 55% and 92% height; scrolling the body expands it |
 | Rover Terminal | Anchored next to the rover, 360 px | Same | Bottom sheet |
 | Command palette | Centered modal, 640 px | Centered, 90% width | Full-screen sheet |
 | Joystick | Hidden | Bottom-left on coarse pointers | Bottom-left |
