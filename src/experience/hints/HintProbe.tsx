@@ -40,6 +40,7 @@ export function HintProbe() {
     const y = ((1 - point.y) / 2) * size.height;
     element.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
     element.style.visibility = onScreen ? "visible" : "hidden";
+    element.style.opacity = onScreen ? "1" : "0";
   });
   return null;
 }

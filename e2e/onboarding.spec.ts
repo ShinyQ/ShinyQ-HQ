@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, collectErrors, enterHQ, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, collectErrors, driveTo, enterHQ, hoveredTarget, padsOf, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Rover's dialog (src/hud/dialog): the first-session onboarding after the boot and intro, its
@@ -109,5 +109,37 @@ test.describe("floor lines", () => {
     await expect(box(page)).toHaveCount(0);
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("hq:walk-prompt") ?? "[]"))).toContain("L2");
+  });
+});
+
+test.describe("hint bubbles", () => {
+  test("near the elevator pad a ! bubble opens Rover's line, and Pick a floor drives there and opens the picker", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.addInitScript(() => localStorage.setItem("hq:hints", "on"));
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    const lift = (await padsOf(page, "L1")).find((p) => p.kind === "elevator")!;
+    await driveTo(page, { x: lift.at.x + 4, z: lift.at.z });
+    const bubble = page.getByTestId("hint-bubble");
+    await expect(bubble).toBeVisible({ timeout: 15_000 });
+    await expect(bubble).toHaveAttribute("data-hint", "L1:pad:elevator");
+    await expect(bubble).toHaveAttribute("data-kind", "elevator-pad");
+    expect(await hoveredTarget(page)).toBeNull();
+    await page.keyboard.press("Enter");
+    await expect(box(page)).toHaveAttribute("data-dialog", "hint:L1:pad:elevator");
+    await expect(box(page)).toContainText(en.dialog.hints.kind["elevator-pad"]);
+    await expect(bubble).toHaveCount(0);
+    await choices(page).getByRole("button", { name: en.dialog.hints.go.pickFloor }).click();
+    // Point-and-go's `interact`: a short drive onto the pad, then the floor picker.
+    await expect(page.getByTestId("pad-picker")).toBeVisible({ timeout: 30_000 });
+    await page.keyboard.press("Escape");
+
+    // Hints off from Ask Rover: the bubble goes away.
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: new RegExp(en.dialog.menu.hintsOn) }).click();
+    await page.keyboard.press("Escape");
+    await expect(bubble).toHaveCount(0);
   });
 });
