@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
+import en from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 
 const raw: unknown = JSON.parse(readFileSync(path.join(process.cwd(), "content", "site-content.json"), "utf8"));
 const parsed = SiteContentSchema.safeParse(raw);
@@ -98,6 +100,14 @@ describe("content/site-content.json", () => {
       ...pods.filter((p) => /hackathon/i.test(JSON.stringify(p))).map((p) => p.id),
     ];
     expect(hackathon2026).toEqual([]);
+  });
+
+  it("names the L3 wings in the best-swe and best-ai mission labels (common.wing)", () => {
+    for (const [id, wing] of [["best-swe", "software"], ["best-ai", "ai"]] as const) {
+      const label = content.missions.find((m) => m.id === id)!.label;
+      expect(label.en, id).toContain(en.common.wing[wing]);
+      expect(label.id, id).toContain(idMessages.common.wing[wing]);
+    }
   });
 
   it("starts every mission with a known step and targets existing rooms", () => {

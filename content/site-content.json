@@ -8092,8 +8092,8 @@
       "id": "best-swe",
       "order": 0,
       "label": {
-        "en": "Explore my software engineering work",
-        "id": "Lihat karya software engineering saya"
+        "en": "Explore my Product Engineering work",
+        "id": "Lihat karya Product Engineering saya"
       },
       "steps": [
         {
@@ -8115,8 +8115,8 @@
       "id": "best-ai",
       "order": 1,
       "label": {
-        "en": "Explore my AI engineering work",
-        "id": "Lihat karya AI engineering saya"
+        "en": "Explore my AI Engineering work",
+        "id": "Lihat karya AI Engineering saya"
       },
       "steps": [
         {
