@@ -38,9 +38,10 @@ const header = `<header class="site-header"><div class="wrap bar">
 <div class="tools"><button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>${esc(t("hud.launcher.missions"))}</button><nav aria-label="${esc(t("nav.language"))}" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav></div>
 </div><nav aria-label="${esc(t("nav.mobile"))}" class="mobile-nav">${NAV.map((n) => `<a href="#" style="--fc:var(--${FLOOR_ACCENT[n.floor]})">${esc(t(`nav.${n.key}`))}</a>`).join("")}</nav></header>`;
 
+// Elevator floor names (hud.floorLabel), as in src/components/page/Hero.tsx.
 const tower = [
-  ...(["RF", "L4", "L3", "L2"] as const).map((floor) => ({ floor, label: t(`nav.${NAV.find((n) => n.floor === floor)!.key}`), current: false })),
-  { floor: "L1" as const, label: t("floors.L1"), current: true },
+  ...(["RF", "L4", "L3", "L2"] as const).map((floor) => ({ floor, label: t(`hud.floorLabel.${floor}`), current: false })),
+  { floor: "L1" as const, label: t("hud.floorLabel.L1"), current: true },
 ];
 const towerHtml = `<nav aria-label="${esc(t("home.directoryTitle"))}" class="hx-tower"><p class="pv-data" style="margin-bottom:24px">${esc(t("home.directoryTitle"))}</p><ol class="hx-floors">${tower
   .map(
