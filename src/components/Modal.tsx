@@ -13,18 +13,20 @@ export interface ModalProps {
   /** Panel width on tablets and desktops; phones always get a full-screen sheet. */
   width?: "sm" | "md" | "lg";
   testId?: string;
+  /** Phones: a bottom sheet sized to its content instead of the full-screen sheet (short lists such as the pad pickers). */
+  sheet?: boolean;
 }
 
 const WIDTH = { sm: "sm:h-auto sm:max-w-[480px]", md: "sm:h-auto sm:max-w-[720px]", lg: "sm:h-[min(92dvh,1100px)] sm:max-w-[1040px]" };
 
 /**
- * Shared modal dialog for the CV viewer, paper and certification previews: portals into document.body, moves focus
+ * Shared modal dialog for the CV viewer, paper and certification previews and the floor pad pickers: portals into document.body, moves focus
  * to the first `[data-autofocus]` element (else the panel), traps Tab, closes on Esc and backdrop
  * click, locks page scroll and stays above the 3D HUD and the room drawer. Esc is captured on the
  * window so the drawer, hologram and rover ignore it; other world keys already pause while an
  * `aria-modal` dialog exists. The caller restores focus to the opener.
  */
-export function Modal({ labelledBy, onClose, children, width = "md", testId }: ModalProps) {
+export function Modal({ labelledBy, onClose, children, width = "md", testId, sheet = false }: ModalProps) {
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   useEffect(() => {
@@ -67,7 +69,10 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId }: M
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-stretch justify-center sm:items-center sm:p-6" data-testid={testId ? `${testId}-root` : undefined}>
+    <div
+      className={`fixed inset-0 z-[60] flex ${sheet ? "items-end" : "items-stretch"} justify-center sm:items-center sm:p-6`}
+      data-testid={testId ? `${testId}-root` : undefined}
+    >
       <div aria-hidden="true" className="absolute inset-0 bg-void/80 backdrop-blur-sm" onClick={() => close.current()} />
       <div
         ref={panel}
@@ -76,8 +81,11 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId }: M
         aria-labelledby={labelledBy}
         tabIndex={-1}
         data-testid={testId}
+        data-sheet={sheet ? "bottom" : undefined}
         onKeyDown={onKeyDown}
-        className={`glass glass-solid relative flex h-full w-full flex-col overflow-hidden rounded-none border-0 shadow-[0_0_64px_-16px_rgb(0_0_0/0.9)] outline-none sm:max-h-[min(92dvh,1100px)] sm:rounded-2xl sm:border ${WIDTH[width]}`}
+        className={`glass glass-solid relative flex w-full flex-col overflow-hidden shadow-[0_0_64px_-16px_rgb(0_0_0/0.9)] outline-none sm:max-h-[min(92dvh,1100px)] sm:rounded-2xl sm:border ${
+          sheet ? "max-h-[85dvh] rounded-t-2xl rounded-b-none border-t" : "h-full rounded-none border-0"
+        } ${WIDTH[width]}`}
       >
         {children}
       </div>

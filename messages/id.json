@@ -401,6 +401,21 @@
       "L3": "Karya",
       "L4": "Tulisan",
       "RF": "Tentang"
+    },
+    "pads": {
+      "floorTitle": "Naik lift",
+      "floorHint": "Pilih lantai: panah untuk berpindah, Enter untuk naik, Esc untuk menutup.",
+      "yearTitle": "Teleportasi ke tahun",
+      "yearHint": "Pilih tahun: panah untuk berpindah, Enter untuk teleportasi, Esc untuk menutup.",
+      "close": "Tutup",
+      "here": "Anda di sini",
+      "floorDesc": {
+        "L1": "Profil, statistik, keahlian dan sertifikasi",
+        "L2": "Career Road: satu plaza per tahun",
+        "L3": "Proyek product engineering dan AI engineering",
+        "L4": "Artikel blog, makalah riset dan talk",
+        "RF": "Kanal kontak dan CV"
+      }
     }
   },
   "drawer": {
