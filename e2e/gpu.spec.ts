@@ -69,7 +69,7 @@ test("intro and ride draw-call peaks (full tier)", async ({ page }) => {
   };
   const peaks = { intro: intro.peakCalls, ...Object.fromEntries(Object.entries(rides).map(([k, v]) => [k, v.peakCalls])) };
   report("peaks", peaks);
-  for (const value of Object.values(peaks)) expect(Number.isFinite(value) && value > 10).toBe(true);
+  for (const [name, value] of Object.entries(peaks)) expect(value, `${name} peak (all render passes)`).toBeLessThan(150);
 });
 
 test("programs added on the first arrival at each floor (full tier)", async ({ page }) => {

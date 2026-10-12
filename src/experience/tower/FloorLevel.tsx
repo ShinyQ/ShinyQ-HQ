@@ -15,6 +15,7 @@ import { PadGlow } from "../fx/PadGlow";
 import { registerFloorContent } from "./floorRegistry";
 import { floorContentVisible } from "./near";
 import { floorReady } from "./ridePrep";
+import { contentVisible } from "./visibility";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -54,8 +55,13 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     }
     if (edge.current) edge.current.opacity = above ? 0.16 * ghost : 0.95;
     // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
-    // still compiling waits for the car to move (tower/near.ts).
-    if (content.current) content.current.visible = floorContentVisible({ floorY: y, roverY: roverRuntime.y, exterior, ride, ready: floorReady(layout.id) });
+    // still compiling waits for the car to move (tower/near.ts, R5 P6). On top of that, a ride draws only
+    // its target and the floors right under the car, and the exterior only L1 and L2 (tower/visibility.ts).
+    if (content.current) {
+      content.current.visible =
+        floorContentVisible({ floorY: y, roverY: roverRuntime.y, exterior, ride, ready: floorReady(layout.id) }) &&
+        contentVisible({ id: layout.id, floorY: y, roverY: roverRuntime.y, exterior, rideTo: ride?.to ?? null });
+    }
   });
 
   useEffect(() => {
