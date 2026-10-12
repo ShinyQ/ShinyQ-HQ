@@ -150,6 +150,10 @@ describe("Highlights Hall scenery", () => {
     // Stat tiles end at 3.8 (TILE.y 2.9 + half of 1.8); the frame is 0.1 wider than the photo on each side.
     expect(quad.center[1] - PHOTO.size / 2 - 0.1).toBeGreaterThan(3.8);
     expect(quad.center[1] + PHOTO.size / 2 + 0.1).toBeLessThan(HALL.panel.h);
+    // Clear of the stat tiles below and the panel top above, aligned with the left tile.
+    expect(quad.center[1] - PHOTO.size / 2 - 0.1).toBeGreaterThanOrEqual(3.8 + 0.2 - 1e-9);
+    expect(quad.center[1] + PHOTO.size / 2 + 0.1).toBeLessThanOrEqual(HALL.panel.h - 0.2 + 1e-9);
+    expect(PHOTO.u - PHOTO.size / 2 - 0.1).toBeCloseTo(-3.6 - 1.1);
     for (const t of texts.filter((t) => faceCoords(t.position)?.s === about && t.position[1] > 3.8)) {
       expect(faceCoords(t.position)!.u, t.text).toBeGreaterThanOrEqual(PHOTO.u + PHOTO.size / 2 + 0.2);
     }
