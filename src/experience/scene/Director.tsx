@@ -13,8 +13,10 @@ import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
+import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { buildRoadGraph, roadRoute, type RoadGraph } from "../nav/road";
+import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
@@ -71,6 +73,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     now: 0,
     prevPhase: "",
     door: { room: null } as DoorLatch,
+    /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */
+    pad: { room: null } as DoorLatch<string>,
     /**
      * Room opened since the last frame. A drawer can open and close again between two frames (a
      * quick Esc on a slow device), so the door latch learns about opens from the store, not the phase.
@@ -90,7 +94,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const missionRunning = () => store.getState().mission?.status === "running";
     return intents.on((intent: Intent) => {
       // Any manual world input cancels a running mission and returns control (appendix 02).
-      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel" || intent.type === "scrub") && missionRunning()) cancelMission();
+      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel" || intent.type === "scrub" || intent.type === "teleport") && missionRunning()) cancelMission();
       const s = store.getState();
       const local = state.current;
       const controller = local.controller;
@@ -144,6 +148,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         case "open":
           if (s.phase === "explore" || s.phase === "room") s.openRoom(intent.room);
           break;
+        case "teleport": {
+          // L2 year teleporters: beam to the chosen plaza's pad. Any drive (autopilot, click-to-move) ends here.
+          const pad = layouts[s.floor].pads?.find((p) => p.id === intent.pad);
+          if (!controller || !pad || s.phase !== "explore" || s.ride || s.beam) break;
+          controller.clearPath();
+          roverRuntime.target = null;
+          roverRuntime.autopilot = null;
+          s.setBeam(startBeam(controller.pose, pad));
+          audio.play("whoosh");
+          break;
+        }
         case "toggle":
           if (intent.what === "sound") audio.toggleMuted();
           else if (intent.what === "lang") onToggleLang();
@@ -190,6 +205,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       local.controller = new RoverController({ x: s.rover.x, z: s.rover.z }, s.rover.heading);
       // Starting inside a door zone (resume, re-entry) must not reopen a room the visitor closed.
       local.door.room = doorAt(layouts[s.floor].doors, local.controller.pose)?.room ?? null;
+      // A deep link to L2 spawns on the elevator pad: it must not ask for a floor until the rover leaves it.
+      local.pad = primedPadLatch(layouts[s.floor].pads, local.controller.pose);
     }
     const controller = local.controller;
 
@@ -202,7 +219,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.pendingMove = null;
     if (move && s.mission?.status === "running") cancelMission();
 
-    const canDrive = s.phase === "explore" || (s.phase === "elevator" && s.ride?.stage === "toDoor");
+    // Teleport beam (L2): the rover holds still while the beam rises, jumps to the target pad (the camera
+    // cuts with it), then the beam fades. Reduced motion makes it a 150 ms fade cut (BeamFade in the HUD).
+    if (s.beam) {
+      const step = advanceBeam(s.beam, dt, s.reducedMotion);
+      if (step.jump) {
+        controller.teleport(s.beam.to, s.beam.heading);
+        roverRuntime.cameraSnap = true;
+      }
+      s.setBeam(step.beam);
+    }
+    const canDrive = !s.beam && (s.phase === "explore" || (s.phase === "elevator" && s.ride?.stage === "toDoor"));
     const manual = canDrive && move ? cameraRelative(move, roverRuntime.cameraForward) : null;
     const tuning: RoverTuning = {
       maxSpeed: s.device.coarse ? ROVER.maxSpeedCoarse : ROVER.maxSpeedFine,
@@ -252,6 +279,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         if (next) s.setRide(next);
         else {
           controller.teleport(to.approach, Math.PI / 2);
+          // The rover steps out onto the new floor's elevator pad: it stays quiet until the rover leaves it.
+          local.pad = primedPadLatch(to.pads, to.approach);
           s.arriveFloor(ride.to);
           // Floors with an arrival spot roll the rover on from the shaft (a mission's drive replaces it).
           if (to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done")) roverRuntime.autopilot = { point: to.arrival, state: "pending" };
@@ -310,6 +339,22 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       facing: door?.facing,
     });
     if (open) intents.emit({ type: "open", room: open });
+
+    // Floor pads: the door rules (stop or slow on the pad, or stay PAD.dwell), read from the live state
+    // so a ride that ended this frame already sees the new floor's primed pad. A beam, a picker or any
+    // other phase latches the pad under the rover instead.
+    const live = store.getState();
+    const padHit = stepPadLatch(local.pad, layouts[live.floor].pads, controller.pose, {
+      riding: live.ride !== null,
+      explore: live.phase === "explore" && !live.beam && !live.picker,
+      following: controller.following || live.mission?.status === "running",
+      now,
+      speed: controller.pose.speed,
+    });
+    if (padHit) {
+      live.openPicker(pickerFor(padHit));
+      audio.play("beep");
+    }
 
     const pose = controller.pose;
     audio.setRumble(pose.speed);

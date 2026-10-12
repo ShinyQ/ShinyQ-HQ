@@ -5,7 +5,7 @@ import { readdirSync } from "node:fs";
 describe("specsForChanges", () => {
   it("maps floor code to its spec", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
-    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career"]);
+    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
     expect(specsForChanges(["src/experience/floors/roof/Comms.tsx"]).specs).toEqual(["library-roof"]);
   });
 
@@ -47,6 +47,15 @@ describe("specsForChanges", () => {
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());
+  });
+
+  it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
+    expect(specsForChanges(["src/experience/nav/pads.ts"]).specs).toEqual(["experience", "pads"]);
+    expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "pads"]);
+    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["experience", "pads"]);
+    expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "pads"]);
+    expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads", "walk"]);
+    expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);
   });
 });
 

@@ -19,6 +19,7 @@ export const ALL_SPECS = [
   "labs",
   "library-roof",
   "missions",
+  "pads",
   "pageview",
   "seo",
   "static-routes",
@@ -44,7 +45,7 @@ export const RULES: Rule[] = [
   { test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },
   { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$/, specs: [] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   { test: /^functions\//, specs: ["ask"] },
@@ -62,11 +63,14 @@ export const RULES: Rule[] = [
 
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
   { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions"] },
-  { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience"] },
+  { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
+
+  // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
+  { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "experience"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
-  { test: /^src\/experience\/floors\/career\//, specs: ["career"] },
+  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
   { test: /^src\/experience\/floors\/(library|roof)\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },

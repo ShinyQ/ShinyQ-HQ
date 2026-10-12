@@ -242,3 +242,35 @@ export async function waitForRoom(page: Page, room: string, timeout = 90_000) {
     { timeout },
   );
 }
+
+/** A floor pad as read from `window.__hq.layouts` (elevator call pad, L2 year teleporters). */
+export interface PadSnapshot {
+  id: string;
+  kind: "elevator" | "teleport";
+  at: { x: number; z: number };
+  year?: number;
+}
+
+/** Floor pads of `floor` from the live layouts. */
+export async function padsOf(page: Page, floor: string): Promise<PadSnapshot[]> {
+  return page.evaluate((f) => (window as unknown as { __hq: { layouts: Record<string, { pads?: PadSnapshot[] }> } }).__hq.layouts[f].pads ?? [], floor);
+}
+
+/**
+ * Drives the rover to `point` the way a mission leg does (an autopilot request, along the road on
+ * walkable floors), then waits until the drive is over and the rover has nearly stopped.
+ */
+export async function driveTo(page: Page, point: { x: number; z: number }, timeout = 60_000) {
+  await page.evaluate((p) => {
+    (window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point: p, state: "pending" };
+  }, point);
+  await page.waitForFunction(
+    () => {
+      const rover = (window as unknown as { __hq: { rover: { autopilot: { state: string } | null; speed: number } } }).__hq.rover;
+      const state = rover.autopilot?.state;
+      return state !== "pending" && state !== "driving" && rover.speed < 0.5;
+    },
+    null,
+    { timeout },
+  );
+}

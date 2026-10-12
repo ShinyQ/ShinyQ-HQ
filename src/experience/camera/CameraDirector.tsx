@@ -128,6 +128,11 @@ export function CameraDirector({
       desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
     }
 
+    // A teleport moved the rover far along the road: cut to it instead of gliding across the floor.
+    if (roverRuntime.cameraSnap) {
+      roverRuntime.cameraSnap = false;
+      if (!focus) snap = true;
+    }
     l.desiredPos.set(...desired.position);
     l.desiredTarget.set(...desired.target);
     if (!l.ready || snap) {

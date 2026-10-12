@@ -29,6 +29,8 @@ export const roverRuntime = {
   cameraRailYaw: 0,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
+  /** Set by the Director when a teleport moves the rover: the camera cuts to it on the next frame instead of gliding. */
+  cameraSnap: false,
   /** Mission autopilot request (see missions/host3d.ts). */
   autopilot: null as AutopilotRequest | null,
   /** A mission was cancelled: show o_o for 600 ms. */
