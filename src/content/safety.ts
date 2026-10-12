@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { isPublicLiveUrl } from "./live-links";
 
 export const EM_DASH = "\u2014";
 
@@ -97,6 +98,16 @@ export const FORBIDDEN_PATTERNS: { name: string; pattern: RegExp }[] = [
 
 export function findForbiddenPatterns(text: string): string[] {
   return FORBIDDEN_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ name }) => name);
+}
+
+/**
+ * Forbidden patterns for one dataset string. A pod's `liveUrl` on an allowlisted public host
+ * (`PUBLIC_LIVE_HOSTS`, R4-J) is exempt from the Azure hostname rule; the same host in any other
+ * field, or any other host in `liveUrl`, still fails.
+ */
+export function leafForbiddenPatterns(leaf: StringLeaf): string[] {
+  if (/\[\d+\]\.liveUrl$/.test(leaf.path) && isPublicLiveUrl(leaf.value)) return [];
+  return findForbiddenPatterns(leaf.value);
 }
 
 /** Text files of the static export that carry site copy (pages, RSC payloads, data, feeds). */

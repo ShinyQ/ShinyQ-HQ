@@ -6,6 +6,7 @@ import {
   collectStrings,
   findBlockedTerms,
   findForbiddenPatterns,
+  leafForbiddenPatterns,
   isAllowedTerm,
   loadAllowlist,
   loadBlocklist,
@@ -121,5 +122,32 @@ describe("collectStrings", () => {
       { path: "$.a[0]", value: "x" },
       { path: "$.a[1].b", value: "y" },
     ]);
+  });
+});
+
+describe("leafForbiddenPatterns (public live links, R4-J)", () => {
+  it("exempts a pod liveUrl on an allowlisted host from the Azure hostname rule", () => {
+    expect(leafForbiddenPatterns({ path: "$.floors.labs.pods[3].liveUrl", value: "https://mii-microsoft.azurewebsites.net" })).toEqual([]);
+    expect(leafForbiddenPatterns({ path: "$[0].liveUrl", value: "https://mii-microsoft-ai.azurewebsites.net" })).toEqual([]);
+  });
+
+  it("still flags other Azure hosts in liveUrl and allowlisted hosts in any other field", () => {
+    expect(leafForbiddenPatterns({ path: "$.floors.labs.pods[3].liveUrl", value: "https://vendor-portal.azurewebsites.net" })).toContain("Azure resource hostname");
+    expect(leafForbiddenPatterns({ path: "$.floors.labs.pods[3].liveUrl", value: "https://mii-microsoft-ai.azurewebsites.net/dashboard" })).toContain(
+      "Azure resource hostname",
+    );
+    expect(leafForbiddenPatterns({ path: "$.floors.labs.pods[3].tagline.en", value: "See https://mii-microsoft.azurewebsites.net" })).toContain(
+      "Azure resource hostname",
+    );
+  });
+});
+
+describe("public MII Microsoft app names (R4-J)", () => {
+  it("drops the two public app names from the merged blocklist but keeps other private resource names", () => {
+    const terms = loadBlocklist({ SAFETY_BLOCKLIST: "mii-microsoft, mii-microsoft-ai, example-internal-api" });
+    expect(terms).toContain("example-internal-api");
+    expect(terms).not.toContain("mii-microsoft");
+    expect(terms).not.toContain("mii-microsoft-ai");
+    expect(findBlockedTerms("https://mii-microsoft-ai.azurewebsites.net", terms)).toEqual([]);
   });
 });

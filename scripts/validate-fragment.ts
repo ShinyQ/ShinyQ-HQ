@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { PodSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
-import { collectStrings, findBlockedTerms, findForbiddenPatterns, loadBlocklist } from "../src/content/safety";
+import { collectStrings, findBlockedTerms, leafForbiddenPatterns, loadBlocklist } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
 
 const [kind, file] = process.argv.slice(2);
@@ -38,7 +38,7 @@ if (!parsed.success) {
 
 const terms = loadBlocklist();
 for (const leaf of collectStrings(data)) {
-  const hits = [...findBlockedTerms(leaf.value, terms), ...findForbiddenPatterns(leaf.value)];
+  const hits = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
   if (hits.length > 0) {
     failed = true;
     console.error(`${leaf.path}: ${hits.join(", ")}\n  ${leaf.value}`);
