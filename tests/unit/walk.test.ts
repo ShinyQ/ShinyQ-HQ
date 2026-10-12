@@ -253,7 +253,7 @@ describe("walk definitions", () => {
     expect(walk.stops[1]).toEqual({ id: "RF:availability", to: ROOF_STOPS.availability, title: "Availability", subtitle: "Open to talk" });
     expect(walk.stops[2]).toEqual({ id: "RF:cv", to: "RF:cv", room: "RF:cv", title: "My CV", subtitle: "Read it here" });
     expect(walk.stops[3]).toEqual({ id: "RF:contact", to: "RF:contact", room: "RF:contact", title: "Get in touch", subtitle: "me@example.com" });
-    expect(WALK_FLOORS).toEqual(["L2", "L3", "RF"]);
+    expect(WALK_FLOORS).toEqual(["L2", "L3", "L4", "RF"]);
   });
 
   it("offers walks on ready floors, or everywhere with ?walk=on", () => {

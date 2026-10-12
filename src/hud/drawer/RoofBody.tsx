@@ -17,7 +17,7 @@ const SECONDARY =
 
 const itemsOf = (view: RoomView): RoomLinkItem[] => view.sections.flatMap((s) => s.items ?? []);
 
-/** Comms terminals: mailto and copy for the email, then the channels (new tab). */
+/** Comms station: mailto and copy for the email, then the channels (new tab). */
 function ContactBody({ view }: { view: RoomView }) {
   const t = useTranslations("drawer.rooms");
   const tc = useTranslations("common");
