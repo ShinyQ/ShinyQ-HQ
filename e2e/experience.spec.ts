@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -23,6 +23,23 @@ async function touch(page: Page, points: { x: number; y: number }[], holdMs = 0)
   }
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: next() });
   await cdp.detach();
+}
+
+type Peaks = { speed: number; trail: number };
+
+/** Records the highest rover speed and trail opacity over every rendered frame (the store only syncs every 0.1 s). */
+async function trackPeaks(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __hq: { rover: Peaks }; __peaks: Peaks };
+    w.__peaks = { speed: 0, trail: 0 };
+    const tick = () => {
+      w.__peaks.speed = Math.max(w.__peaks.speed, w.__hq.rover.speed);
+      w.__peaks.trail = Math.max(w.__peaks.trail, w.__hq.rover.trail);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  return () => page.evaluate(() => (window as unknown as { __peaks: Peaks }).__peaks);
 }
 
 test.describe("boot and intro", () => {
@@ -161,6 +178,54 @@ test.describe("rover on desktop", () => {
     await enterHQ(page);
     await page.waitForTimeout(1500);
     await expectRenderBudget(page);
+  });
+
+  test("holding Shift boosts manual driving to about twice the speed, with a trail", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const peaks = await trackPeaks(page);
+    // S drives toward the camera: open floor between the spawn and the south-east corner.
+    await page.keyboard.down("Shift");
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
+    await page.keyboard.up("s");
+    await page.keyboard.up("Shift");
+    const { speed, trail } = await peaks();
+    expect(speed).toBeLessThanOrEqual(18.01);
+    expect(trail).toBeGreaterThan(0);
+  });
+
+  test("without Shift the rover keeps its cruising speed and draws no trail", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const peaks = await trackPeaks(page);
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(8);
+    // Proving that nothing more happens: the speed stays at the 9 u/s cap.
+    await page.waitForTimeout(500);
+    await page.keyboard.up("s");
+    const { speed, trail } = await peaks();
+    expect(speed).toBeLessThanOrEqual(9.01);
+    expect(trail).toBe(0);
+  });
+
+  test("reduced motion boosts without the trail", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
+    // Not enterHQ: it works the same before and after the intro changes of Task 4.
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore", 30_000);
+    await waitForSceneLive(page);
+    const peaks = await trackPeaks(page);
+    await page.keyboard.down("Shift");
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
+    await page.keyboard.up("s");
+    await page.keyboard.up("Shift");
+    expect((await peaks()).trail).toBe(0);
+    await context.close();
   });
 });
 

@@ -20,6 +20,7 @@ import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
+import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
 import { advanceRide, carY, rideDirection, stageProgress } from "../tower/elevator";
@@ -239,6 +240,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       radius: ROVER.radius,
       maxTilt: ROVER.maxTilt,
     };
+    // Hold Shift or the touch boost button for about 2x speed: manual driving only, never the autopilot.
+    const boosting = boostOn(manual, held.current ?? [], joystick.boost);
+    const driveTuning = boostTuning(tuning, boosting);
 
     let y = floorY(s.floor);
     const ride = s.ride;
@@ -300,7 +304,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           request.state = "driving";
         } else request.state = "done";
       }
-      const result = controller.step(dt, manual, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
+      const result = controller.step(dt, manual, { tuning: driveTuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
       if (manual) roverRuntime.target = null;
       if (request?.state === "driving" && (result.arrived || result.blocked || manual || !controller.following)) request.state = "done";
       if (result.arrived) {
@@ -357,6 +361,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
 
     const pose = controller.pose;
+    roverRuntime.boost = stepBoostLevel(roverRuntime.boost, boosting && pose.speed > 1, dt);
     audio.setRumble(pose.speed);
     const liveRide = store.getState().ride;
     roverRuntime.x = pose.x;
