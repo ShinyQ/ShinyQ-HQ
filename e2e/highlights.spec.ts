@@ -124,9 +124,14 @@ async function faceStation(page: Page, station: HighlightStation) {
 async function openStation(page: Page, station: HighlightStation) {
   await faceStation(page, station);
   const start = (await snapshot(page)).rover;
+  const pad = stationOf(station).pad;
+  // Off the door pad (it is 1.6 u deep): only the click can open the room. The road can end the setup
+  // drive closer than asked (the experience spur), so the click's drive may be short.
+  expect(Math.hypot(start.x - pad.x, start.z - pad.z)).toBeGreaterThan(0.85);
+  await expect(page.getByTestId("room-drawer")).toHaveCount(0);
   const point = await clickablePoint(page, target(station));
   await page.mouse.click(point.x, point.y);
-  await waitForRoverMove(page, start, 1);
+  await waitForRoverMove(page, start, 0.3);
   await roomOpen(page, highlightRoom(station));
   await expectRoverNear(page, stationOf(station).pad);
   return page.getByTestId("room-drawer");
