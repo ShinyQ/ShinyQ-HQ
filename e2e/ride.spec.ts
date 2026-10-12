@@ -85,3 +85,14 @@ test("reduced motion keeps the 150 ms cut", async ({ page }) => {
   expect(ride.stages).toEqual(["toDoor", "moving"]);
   expect(ride.distinctY).toBeLessThanOrEqual(2);
 });
+
+test("the car waits for the new floor with the doors closed, then compiles nothing while it moves", async ({ page }) => {
+  await enterHQ(page);
+  await rideTo(page, "L3", 90_000);
+  const last = await lastRide(page);
+  console.log(`ride L1 to L3: ${JSON.stringify(last)}`);
+  expect(last).not.toBeNull();
+  expect(last!.timedOut).toBe(false);
+  expect(last!.programs).toBe(0);
+  expect(last!.distinctY).toBeGreaterThanOrEqual(12);
+});
