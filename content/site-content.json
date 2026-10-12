@@ -40,8 +40,8 @@
       {
         "id": "spec-first",
         "title": {
-          "en": "Define the spec first",
-          "id": "Tetapkan spec terlebih dahulu"
+          "en": "Define the Spec First",
+          "id": "Tetapkan Spec Terlebih Dahulu"
         },
         "text": {
           "en": "I write a numbered spec with acceptance criteria and a constitution that sets the agents' working rules before implementation starts.",
@@ -51,8 +51,8 @@
       {
         "id": "agents-parallel-human-gate",
         "title": {
-          "en": "Delegate implementation, own the review",
-          "id": "Delegasikan implementasi, tetap pegang review"
+          "en": "Delegate Implementation, Own the Review",
+          "id": "Delegasikan Implementasi, Tetap Pegang Review"
         },
         "text": {
           "en": "AI coding agents implement much of the code in parallel. I am responsible for design, review, verification in a deployed environment and the merge decision.",
@@ -62,8 +62,8 @@
       {
         "id": "evaluation-is-product",
         "title": {
-          "en": "Evaluate before release",
-          "id": "Evaluasi sebelum rilis"
+          "en": "Evaluate Before Release",
+          "id": "Evaluasi Sebelum Rilis"
         },
         "text": {
           "en": "I evaluate changes with gold sets, A/B tests, CI gates and shadow mode. I record negative results and leave changes disabled when they do not help.",
@@ -73,8 +73,8 @@
       {
         "id": "fail-and-recover",
         "title": {
-          "en": "Design for recovery",
-          "id": "Rancang agar bisa pulih"
+          "en": "Design for Recovery",
+          "id": "Rancang Agar Bisa Pulih"
         },
         "text": {
           "en": "I plan for failures and build a recovery path rather than assume the system will always work.",
@@ -84,8 +84,8 @@
       {
         "id": "numbers-carry-context",
         "title": {
-          "en": "Report metrics with context",
-          "id": "Laporkan metrik beserta konteksnya"
+          "en": "Report Metrics with Context",
+          "id": "Laporkan Metrik Beserta Konteksnya"
         },
         "text": {
           "en": "I publish a metric only when I can explain how it was measured: in the lab, offline or live.",
@@ -418,7 +418,7 @@
     },
     {
       "id": "capture-the-flag-2020",
-      "title": "Capture The Flag Competition",
+      "title": "Capture the Flag Competition",
       "placement": {
         "en": "3rd place",
         "id": "Juara 3"
@@ -1899,8 +1899,8 @@
           "client": "Jenius (SMBC Indonesia)",
           "timelineRef": "jenius-2024",
           "title": {
-            "en": "Digital banking integrations",
-            "id": "Integrasi perbankan digital"
+            "en": "Digital Banking Integrations",
+            "id": "Integrasi Perbankan Digital"
           },
           "tagline": {
             "en": "Insurance partner integrations and in-house SFTP file exchange for a digital bank.",
@@ -2135,8 +2135,8 @@
           "client": "TEMMPAT",
           "timelineRef": "temmpat-2025",
           "title": {
-            "en": "Event ticket marketplace backend",
-            "id": "Backend marketplace tiket acara"
+            "en": "Event Ticket Marketplace Backend",
+            "id": "Backend Marketplace Tiket Acara"
           },
           "tagline": {
             "en": "A live ticket marketplace backend for auctions, resale, wallet accounting and partner settlement.",
@@ -2384,8 +2384,8 @@
           "wing": "software",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Vendor management portal",
-            "id": "Portal manajemen vendor"
+            "en": "Vendor Management Portal",
+            "id": "Portal Manajemen Vendor"
           },
           "tagline": {
             "en": "eVendor, MII's internal vendor portal for purchase orders, invoices, tax checks and approvals, delivered by one engineer in about six weeks.",
@@ -2624,8 +2624,8 @@
           "client": "Jatis",
           "timelineRef": "jatis-2023",
           "title": {
-            "en": "Multi-tenant SaaS and asset management",
-            "id": "SaaS multi-tenant dan manajemen aset"
+            "en": "Multi-Tenant SaaS and Asset Management",
+            "id": "SaaS Multi-Tenant dan Manajemen Aset"
           },
           "tagline": {
             "en": "Shared SaaS platforms for corporate legal, asset and task management, with tenant-specific access.",
@@ -2817,8 +2817,8 @@
           "client": "MNC Group (Mister Aladin)",
           "timelineRef": "mnc-2022",
           "title": {
-            "en": "Travel payments and realtime backend",
-            "id": "Backend pembayaran dan realtime untuk travel"
+            "en": "Travel Payments and Realtime Backend",
+            "id": "Backend Pembayaran dan Realtime untuk Travel"
           },
           "tagline": {
             "en": "Faster payment processing, realtime updates and a GraphQL homepage backend for MNC Group's travel platform.",
@@ -3009,8 +3009,8 @@
           "client": "Shumi",
           "timelineRef": "shumi-2019",
           "title": {
-            "en": "Anime figure e-commerce backend",
-            "id": "Backend e-commerce figure anime"
+            "en": "Anime Figure E-Commerce Backend",
+            "id": "Backend E-Commerce Figure Anime"
           },
           "tagline": {
             "en": "Pre-order, payment and shipping workflows for an anime figure store that remains online.",
@@ -3250,8 +3250,8 @@
           "client": "BSSN",
           "timelineRef": "bssn-2023",
           "title": {
-            "en": "Vulnerability scanning automation",
-            "id": "Otomasi pemindaian kerentanan"
+            "en": "Vulnerability Scanning Automation",
+            "id": "Otomasi Pemindaian Kerentanan"
           },
           "tagline": {
             "en": "Automated scan scheduling, asset ownership and remediation reporting for Indonesia's national cyber agency.",
@@ -3470,8 +3470,8 @@
           "client": "DariOrdal",
           "timelineRef": "dariordal-2025",
           "title": {
-            "en": "Limited-quota event ticketing",
-            "id": "Ticketing acara berkuota terbatas"
+            "en": "Limited-Quota Event Ticketing",
+            "id": "Ticketing Acara Berkuota Terbatas"
           },
           "tagline": {
             "en": "Transactional booking prevents overselling for premium events, with online payments and QR e-tickets.",
@@ -3646,8 +3646,8 @@
           "client": "Jublia",
           "timelineRef": "jublia-2023",
           "title": {
-            "en": "Event matchmaking and feedback analytics",
-            "id": "Matchmaking acara dan analitik feedback"
+            "en": "Event Matchmaking and Feedback Analytics",
+            "id": "Matchmaking Acara dan Analitik Feedback"
           },
           "tagline": {
             "en": "Improved matchmaking search and LLM-based feedback analysis for a Singapore event-tech company.",
@@ -3846,8 +3846,8 @@
           "client": "Naremax",
           "timelineRef": "naremax-2025",
           "title": {
-            "en": "E-commerce for digital products and training",
-            "id": "E-commerce untuk produk digital dan pelatihan"
+            "en": "E-Commerce for Digital Products and Training",
+            "id": "E-Commerce untuk Produk Digital dan Pelatihan"
           },
           "tagline": {
             "en": "Backend modules for catalog, cart, orders and CRM, developed with an agency team in a TypeScript monorepo.",
@@ -3918,8 +3918,8 @@
           "wing": "software",
           "client": "Universitas Jenderal Achmad Yani",
           "title": {
-            "en": "University alumni and counseling platforms",
-            "id": "Platform alumni dan konseling universitas"
+            "en": "University Alumni and Counseling Platforms",
+            "id": "Platform Alumni dan Konseling Universitas"
           },
           "tagline": {
             "en": "Two Laravel platforms for alumni engagement and fundraising, and student counseling case management.",
@@ -4040,8 +4040,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Realtime voice AI contact center",
-            "id": "Contact center voice AI realtime"
+            "en": "Realtime Voice AI Contact Center",
+            "id": "Contact Center Voice AI Realtime"
           },
           "tagline": {
             "en": "ARIA, MII's voice AI contact center: natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.",
@@ -4403,8 +4403,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "AI code security platform",
-            "id": "Platform keamanan kode berbasis AI"
+            "en": "AI Code Security Platform",
+            "id": "Platform Keamanan Kode Berbasis AI"
           },
           "tagline": {
             "en": "Pris.AI, MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
@@ -4730,8 +4730,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "AI fraud document review",
-            "id": "Review dokumen fraud berbasis AI"
+            "en": "AI Fraud Document Review",
+            "id": "Review Dokumen Fraud Berbasis AI"
           },
           "tagline": {
             "en": "MII Fraud Detection, MII's internal platform: OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.",
@@ -5034,8 +5034,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "AI CV screening and evaluation",
-            "id": "AI CV screening dan evaluasi"
+            "en": "AI CV Screening and Evaluation",
+            "id": "AI CV Screening dan Evaluasi"
           },
           "tagline": {
             "en": "MII E-Recruitment, a failing prototype rebuilt into MII's tested, evaluated screening platform: AI provides evidence, and the recruiter decides.",
@@ -5300,8 +5300,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bank statement analysis PoC",
-            "id": "PoC analisis rekening koran"
+            "en": "Bank Statement Analysis PoC",
+            "id": "PoC Analisis Rekening Koran"
           },
           "tagline": {
             "en": "ATLAS, document AI for a national digital bank's evaluators, with strict access control, Indonesian data residency and faster document processing.",
@@ -5513,8 +5513,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Full-stack AI application template",
-            "id": "Template aplikasi AI full-stack"
+            "en": "Full-Stack AI Application Template",
+            "id": "Template Aplikasi AI Full-Stack"
           },
           "tagline": {
             "en": "The MII AI Dashboard Template, a shared starting point for client AI apps, combining the web tier, agents, persistence, sign-in and infrastructure.",
@@ -5718,8 +5718,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Demand forecasting on Microsoft Fabric",
-            "id": "Forecasting permintaan di Microsoft Fabric"
+            "en": "Demand Forecasting on Microsoft Fabric",
+            "id": "Forecasting Permintaan di Microsoft Fabric"
           },
           "tagline": {
             "en": "A national bakery brand's demand-planning platform on Microsoft Fabric: an on-premise database migrated into a medallion lakehouse, a forecasting dashboard and a data agent in Microsoft 365 Copilot.",
@@ -5996,8 +5996,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bilingual RAG assistant with citations",
-            "id": "Asisten RAG dwibahasa dengan sitasi"
+            "en": "Bilingual RAG Assistant with Citations",
+            "id": "Asisten RAG Dwibahasa dengan Sitasi"
           },
           "tagline": {
             "en": "A multi-agent assistant for MII's Microsoft AI portfolio site, answering only from curated content with citations.",
@@ -6234,8 +6234,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Spec-driven delivery with AI coding agents",
-            "id": "Delivery berbasis spec dengan AI coding agent"
+            "en": "Spec-Driven Delivery with AI Coding Agents",
+            "id": "Delivery Berbasis Spec dengan AI Coding Agent"
           },
           "tagline": {
             "en": "Written specs and constitutions guide parallel AI coding agents, with human review required at every merge.",
@@ -6385,8 +6385,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Packaging AI apps for Azure",
-            "id": "Pengemasan aplikasi AI untuk Azure"
+            "en": "Packaging AI Apps for Azure",
+            "id": "Pengemasan Aplikasi AI untuk Azure"
           },
           "tagline": {
             "en": "Four AI apps packaged as Azure managed applications with installation and usage metering.",
@@ -6450,8 +6450,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Shared Azure AI operations",
-            "id": "Operasional Azure AI bersama"
+            "en": "Shared Azure AI Operations",
+            "id": "Operasional Azure AI Bersama"
           },
           "tagline": {
             "en": "Model migration in one day, coordinated key rotation and alerts managed as code across AI apps.",
@@ -6543,8 +6543,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Fraud review dashboard and security remediation",
-            "id": "Dashboard review fraud dan remediasi keamanan"
+            "en": "Fraud Review Dashboard and Security Remediation",
+            "id": "Dashboard Review Fraud dan Remediasi Keamanan"
           },
           "tagline": {
             "en": "FREDDY, an automotive manufacturer's fraud review dashboard, delivered in two days, followed by remediation against the client's full security assessment.",
@@ -6632,8 +6632,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "AI ticketing assistant migration",
-            "id": "Migrasi asisten ticketing AI"
+            "en": "AI Ticketing Assistant Migration",
+            "id": "Migrasi Asisten Ticketing AI"
           },
           "tagline": {
             "en": "MII AI Ticketing, moved from LangGraph to Microsoft Agent Framework while preserving the public API.",
@@ -6751,8 +6751,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Chart-of-accounts AI assistant",
-            "id": "Asisten AI chart of accounts"
+            "en": "Chart-of-Accounts AI Assistant",
+            "id": "Asisten AI Chart of Accounts"
           },
           "tagline": {
             "en": "Resumable document processing and fewer sequential data calls for a coal mining group's finance assistant.",
@@ -6817,8 +6817,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Explainable credit scoring in the browser",
-            "id": "Credit scoring di browser yang dapat dijelaskan"
+            "en": "Explainable Credit Scoring in the Browser",
+            "id": "Credit Scoring di Browser yang Dapat Dijelaskan"
           },
           "tagline": {
             "en": "Browser-based gradient-boosted credit scoring that advises, while the credit officer decides.",
@@ -6933,8 +6933,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bank GenAI portal governance",
-            "id": "Governance portal GenAI bank"
+            "en": "Bank GenAI Portal Governance",
+            "id": "Governance Portal GenAI Bank"
           },
           "tagline": {
             "en": "Dual-control maker-checker approvals and audit trails for an enterprise GenAI admin portal.",
@@ -6994,8 +6994,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "AI presentation authoring and hosting",
-            "id": "Penyusunan dan hosting presentasi AI"
+            "en": "AI Presentation Authoring and Hosting",
+            "id": "Penyusunan dan Hosting Presentasi AI"
           },
           "tagline": {
             "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. AI agents in MII Cowork draft decks in sandboxes, an owner approves each change, and private decks stay behind their own passwords.",
@@ -7175,8 +7175,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bilingual AI solutions site",
-            "id": "Situs solusi AI dwibahasa"
+            "en": "Bilingual AI Solutions Site",
+            "id": "Situs Solusi AI Dwibahasa"
           },
           "tagline": {
             "en": "MII's bilingual Microsoft Solutions site, delivered through written specs, with a dedicated media pipeline.",
@@ -7311,8 +7311,8 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Enterprise AI contact center architecture",
-            "id": "Arsitektur contact center AI enterprise"
+            "en": "Enterprise AI Contact Center Architecture",
+            "id": "Arsitektur Contact Center AI Enterprise"
           },
           "tagline": {
             "en": "Voice and chat AI solution architecture for integration with an insurer's existing contact-center and CRM platforms.",
@@ -7370,8 +7370,8 @@
         {
           "slug": "making-a-voice-agent-interruptible",
           "title": {
-            "en": "How we made a voice agent interruptible",
-            "id": "Cara kami membuat voice agent bisa diinterupsi"
+            "en": "How We Made a Voice Agent Interruptible",
+            "id": "Cara Kami Membuat Voice Agent Bisa Diinterupsi"
           },
           "date": "2026-10-09",
           "tags": [
@@ -7393,8 +7393,8 @@
         {
           "slug": "why-the-better-fraud-engine-shipped-in-shadow-mode",
           "title": {
-            "en": "Why the better fraud engine shipped in shadow mode",
-            "id": "Mengapa fraud engine yang lebih baik dirilis dalam shadow mode"
+            "en": "Why the Better Fraud Engine Shipped in Shadow Mode",
+            "id": "Mengapa Fraud Engine yang Lebih Baik Dirilis dalam Shadow Mode"
           },
           "date": "2026-10-09",
           "tags": [
@@ -7416,8 +7416,8 @@
         {
           "slug": "45-percent-of-our-llm-calls-failed",
           "title": {
-            "en": "45% of our LLM calls failed: what the error strings told us",
-            "id": "45% panggilan LLM kami gagal: apa kata pesan error-nya"
+            "en": "45% of Our LLM Calls Failed: What the Error Strings Told Us",
+            "id": "45% Panggilan LLM Kami Gagal: Apa Kata Pesan Error-nya"
           },
           "date": "2026-10-09",
           "tags": [
@@ -7439,8 +7439,8 @@
         {
           "slug": "spec-driven-development-with-ai-coding-agents",
           "title": {
-            "en": "Spec-driven development with AI coding agents",
-            "id": "Spec-driven development bersama AI coding agent"
+            "en": "Spec-Driven Development with AI Coding Agents",
+            "id": "Spec-Driven Development Bersama AI Coding Agent"
           },
           "date": "2026-10-09",
           "tags": [
@@ -7482,7 +7482,7 @@
           "slug": "crud-nodejs-express-mysql",
           "title": {
             "en": "CRUD in Node.js with the Express Framework and MySQL",
-            "id": "CRUD NodeJS Menggunakan Framework ExpressJS Dan MySQL"
+            "id": "CRUD NodeJS Menggunakan Framework ExpressJS dan MySQL"
           },
           "date": "2022-02-28",
           "tags": [
@@ -7612,7 +7612,7 @@
         },
         {
           "id": "indobert-university-reviews-model",
-          "title": "IndoBERT sentiment model for Indonesian university reviews",
+          "title": "IndoBERT Sentiment Model for Indonesian University Reviews",
           "venue": "Hugging Face",
           "year": 2022,
           "kind": "model",
@@ -7620,7 +7620,7 @@
         },
         {
           "id": "indobertweet-review-sentiment-model",
-          "title": "IndoBERTweet app-review sentiment model",
+          "title": "IndoBERTweet App-Review Sentiment Model",
           "venue": "Hugging Face",
           "year": 2024,
           "kind": "model",
@@ -7628,7 +7628,7 @@
         },
         {
           "id": "indobert-review-sentiment-model",
-          "title": "IndoBERT app-review sentiment model",
+          "title": "IndoBERT App-Review Sentiment Model",
           "venue": "Hugging Face",
           "year": 2024,
           "kind": "model",
@@ -7639,8 +7639,8 @@
         {
           "id": "microsoft-ai-client-workshop",
           "title": {
-            "en": "Microsoft AI for business workflows",
-            "id": "Microsoft AI untuk alur kerja bisnis"
+            "en": "Microsoft AI for Business Workflows",
+            "id": "Microsoft AI untuk Alur Kerja Bisnis"
           },
           "event": "AI workshop for an industrial enterprise client (presentation author)",
           "date": "2026-09",
@@ -7649,8 +7649,8 @@
         {
           "id": "agent-framework-walkthrough",
           "title": {
-            "en": "From a request to a tool-using agent with tracing in Microsoft Agent Framework",
-            "id": "Dari satu request ke agent dengan tool dan tracing di Microsoft Agent Framework"
+            "en": "From a Request to a Tool-Using Agent with Tracing in Microsoft Agent Framework",
+            "id": "Dari Satu Request ke Agent dengan Tool dan Tracing di Microsoft Agent Framework"
           },
           "event": "Developer workshop presentation: Microsoft Agent Framework in Python",
           "date": "2026-10",
@@ -7659,8 +7659,8 @@
         {
           "id": "basic-ai-study-groups",
           "title": {
-            "en": "Study groups for Basic Artificial Intelligence",
-            "id": "Pendampingan kelompok belajar Kecerdasan Buatan Dasar"
+            "en": "Study Groups for Basic Artificial Intelligence",
+            "id": "Pendampingan Kelompok Belajar Kecerdasan Buatan Dasar"
           },
           "event": "Telkom University (Lecturer Assistant)",
           "date": "2022-03",
@@ -7669,8 +7669,8 @@
         {
           "id": "go-programming-practicum",
           "title": {
-            "en": "Go programming fundamentals practicum",
-            "id": "Praktikum dasar pemrograman Go"
+            "en": "Go Programming Fundamentals Practicum",
+            "id": "Praktikum Dasar Pemrograman Go"
           },
           "event": "Telkom University (Practicum Assistant)",
           "date": "2020-09",
@@ -7679,8 +7679,8 @@
         {
           "id": "programming-club-workshops",
           "title": {
-            "en": "Workshops and competitions for the programming club",
-            "id": "Workshop dan kompetisi untuk klub programming"
+            "en": "Workshops and Competitions for the Programming Club",
+            "id": "Workshop dan Kompetisi untuk Klub Programming"
           },
           "event": "Proclub Telkom University",
           "date": "2020-01",
@@ -7689,8 +7689,8 @@
         {
           "id": "hackathon-judge-2022",
           "title": {
-            "en": "Hackathon judging and team mentoring",
-            "id": "Penjurian hackathon dan pendampingan tim"
+            "en": "Hackathon Judging and Team Mentoring",
+            "id": "Penjurian Hackathon dan Pendampingan Tim"
           },
           "event": "Motion Laboratory hackathon, Telkom University",
           "date": "2022-01",
@@ -7792,7 +7792,7 @@
     },
     {
       "id": "certification-trainers",
-      "title": "Certification practice tools",
+      "title": "Certification Practice Tools",
       "summary": {
         "en": "I built exam simulators and focused practice packs for my Microsoft and GitHub exam preparation. The GH-600 trainer has 80 original scenario questions with explanations; the AI-103 simulator includes a timer and domain breakdown.",
         "id": "Saya membuat simulator ujian dan paket latihan terarah untuk persiapan ujian Microsoft dan GitHub. Trainer GH-600 berisi 80 soal skenario orisinal dengan pembahasan; simulator AI-103 dilengkapi timer dan rincian per domain."
@@ -7824,7 +7824,7 @@
     },
     {
       "id": "ewallet-sentiment",
-      "title": "E-wallet sentiment analysis (CNN-LSTM)",
+      "title": "E-Wallet Sentiment Analysis (CNN-LSTM)",
       "summary": {
         "en": "I analysed sentiment by aspect in app-store reviews of four Indonesian e-wallets. This model was our selection-phase entry in a data competition my team won; I later co-authored a paper on the work.",
         "id": "Saya menganalisis sentimen berdasarkan aspek pada ulasan app store empat e-wallet Indonesia. Model ini menjadi karya babak seleksi dalam kompetisi data yang dimenangkan tim saya, lalu saya ikut menulis paper tentang proyek tersebut."
@@ -7839,7 +7839,7 @@
     },
     {
       "id": "sp500-portfolio-optimizer",
-      "title": "S&P 500 portfolio optimizer",
+      "title": "S&P 500 Portfolio Optimizer",
       "summary": {
         "en": "A group-built Streamlit app that uses SLSQP to optimize returns within sector and diversification constraints.",
         "id": "Aplikasi Streamlit yang dibangun bersama tim, menggunakan SLSQP untuk mengoptimalkan imbal hasil dengan batasan sektor dan diversifikasi."
@@ -7855,7 +7855,7 @@
     },
     {
       "id": "crypto-portfolio-tracker",
-      "title": "Crypto portfolio tracker",
+      "title": "Crypto Portfolio Tracker",
       "summary": {
         "en": "I built this Next.js app to track crypto holdings using live market data.",
         "id": "Saya membangun aplikasi Next.js ini untuk melacak aset kripto menggunakan data pasar live."
@@ -7870,7 +7870,7 @@
     },
     {
       "id": "real-estate-cluster-map",
-      "title": "Real estate cluster map",
+      "title": "Real Estate Cluster Map",
       "summary": {
         "en": "An interactive, filterable map for exploring real estate listings grouped into clusters.",
         "id": "Peta interaktif dengan filter untuk menjelajahi listing properti yang dikelompokkan dalam klaster."
