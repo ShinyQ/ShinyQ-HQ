@@ -143,7 +143,7 @@ All server components unless noted. Live in `src/components/page/` (new) or repl
 - One h1 per page; section h2s labelled with `aria-labelledby`; lists are lists.
 - Stretched links on rows and features: the title is the link; the row is clickable via `::after`, focus ring on the title.
 - Filters are `button[aria-pressed]` and a labelled `select`; result count in `role="status"`.
-- ToC uses `aria-current="true"` for the visible section.
+- ToC uses `aria-current="true"` for the visible section, shown as ink text with a violet dot and a full violet hairline glow (R5 P10: no left rule; every link has a neutral dot).
 - Touch targets ≥ 44 px; skip link stays first.
 - `prefers-reduced-motion`: no image zoom on hover, no smooth scroll.
 - axe (WCAG 2 AA) runs on every page template in e2e.

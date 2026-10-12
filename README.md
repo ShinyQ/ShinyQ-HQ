@@ -65,6 +65,8 @@ Visitors can ask questions about Kurniadi's work, projects, career, contact deta
 
 Next.js 16 (App Router, static export) · React 19 · TypeScript strict · three.js with React Three Fiber, drei and postprocessing · zustand · Tailwind CSS 4 · next-intl · zod · MDX (next-mdx-remote) · Vitest · Playwright · Bun · Cloudflare Pages.
 
+Visual language: the Neon Grid tokens of spec appendix 05. Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see AGENTS.md, "Styling").
+
 ## Getting started
 
 ```bash
