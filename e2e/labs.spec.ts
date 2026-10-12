@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
-import { content, heroPod } from "./routes";
+import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -39,6 +39,30 @@ async function openPod(page: Page, slug = heroPod.slug, query = "") {
 }
 
 test.describe("L3 Labs in 3D", () => {
+  test("the drawer footer offers Visit live site after Read case study and opens it in a new tab without an opener", async ({ page, context }) => {
+    const pod = livePods.find((p) => p.slug === "solutions-marketing-site")!;
+    await context.route(/^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//, (route) =>
+      route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Live site stub</title>" }),
+    );
+    await openPod(page, pod.slug);
+    await waitForRoom(page, `L3:${pod.slug}`, 30_000);
+    expect((await state(page)).floor).toBe("L3");
+    const footer = page.getByTestId("drawer-footer");
+    const items = footer.locator(":scope > *");
+    await expect(items.nth(0)).toHaveText(en.common.caseStudy);
+    await expect(items.nth(1)).toHaveAttribute("data-testid", "drawer-live-link");
+    const visit = footer.getByTestId("drawer-live-link");
+    await expect(visit).toHaveAttribute("href", pod.liveUrl!);
+    await expect(visit).toHaveAttribute("target", "_blank");
+    await expect(visit).toHaveAttribute("rel", "noopener noreferrer");
+    const [popup] = await Promise.all([page.waitForEvent("popup"), visit.click()]);
+    await popup.waitForLoadState();
+    expect(new URL(popup.url()).origin).toBe(new URL(pod.liveUrl!).origin);
+    expect(await popup.evaluate(() => window.opener)).toBeNull();
+    await popup.close();
+    expect(await state(page)).toMatchObject({ phase: "room", activeRoom: `L3:${pod.slug}` });
+  });
+
   test("Ctrl+K drives to a pod and opens the drawer; Esc restores the floor URL", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);

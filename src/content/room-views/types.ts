@@ -110,6 +110,8 @@ export interface RoomView {
   page?: string;
   /** External page (posts hosted elsewhere). */
   external?: string;
+  /** Pods with a public live site (R4-J): "Visit live site" in the footer, new tab. Already allowlisted. */
+  live?: string;
   /** Related room on another floor ("See the case study on L3", "See it on L2"). */
   link?: { room: RoomId; label: string };
   /** Hero pods with at least 3 architecture nodes: "View architecture" opens the hologram. */

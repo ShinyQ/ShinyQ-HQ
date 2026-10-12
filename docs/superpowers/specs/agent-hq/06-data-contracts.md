@@ -78,6 +78,7 @@ interface Pod {
   stack: string[];
   hologram: "waveform" | "shield" | "documents" | "graph" | "chart" | "template" | "pipeline";
   assets: Asset[];
+  liveUrl?: string;                      // public live site (R4-J): https, site root, host in PUBLIC_LIVE_HOSTS
 }
 
 interface Result { value: string; label: LocalizedText; context?: LocalizedText; confidence: Confidence; } // context: how it was measured, omitted when there is nothing to add

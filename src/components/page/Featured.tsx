@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { Marker } from "./Layout";
+import { PodLiveCta } from "./Work";
 
 /** Thumbnails in the filmstrip under a featured project's cover. */
 const FILM = 3;
@@ -60,6 +61,7 @@ export async function FeaturedProject({ pod, locale, lead = false }: { pod: Pod;
         </Link>
       </h3>
       <p className="pv-body">{pod.tagline[locale]}</p>
+      <PodLiveCta pod={pod} locale={locale} />
       {result && (
         <p className="pv-small">
           <span className="pv-num text-[22px]">{result.value}</span> {result.label[locale]}

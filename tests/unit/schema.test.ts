@@ -41,3 +41,20 @@ describe("PodSchema", () => {
     expect(PodSchema.safeParse(pod).success).toBe(false);
   });
 });
+
+describe("Pod.liveUrl (R4-J)", () => {
+  it("accepts an allowlisted public site root and leaves it optional", () => {
+    expect(PodSchema.safeParse(makePod({ liveUrl: "https://mii-microsoft.azurewebsites.net" })).success).toBe(true);
+    expect(PodSchema.safeParse(makePod()).success).toBe(true);
+  });
+
+  it.each([
+    "https://vendor-portal.azurewebsites.net",
+    "https://mii-microsoft-ai.azurewebsites.net/dashboard",
+    "http://mii-microsoft.azurewebsites.net",
+  ])("rejects %s on the liveUrl path", (liveUrl) => {
+    const result = PodSchema.safeParse(makePod({ liveUrl }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["liveUrl"]);
+  });
+});

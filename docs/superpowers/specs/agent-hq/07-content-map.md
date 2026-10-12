@@ -50,8 +50,8 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Anime figure e-commerce backend (pre-orders, payments, shipping) | 2019 to 2022 | Shumi, site still live |
 | featured | Vulnerability-scanning automation for a national agency | 2023 | Freelance, anonymized |
 | featured | Limited-quota event ticketing with inventory locking | 2025 | Freelance, anonymized |
-| featured | Event-tech search relevance and feedback analytics backend | 2023 | Freelance (Singapore), anonymized unless C8 says otherwise |
-| listed | Digital products and training e-commerce platform; University alumni and counseling platforms | | |
+| featured | MII Microsoft Solutions Website: MII's public bilingual Microsoft Solutions site, built from 17 specs | 2026 | Metrodata. Live link (R4-J). Moved from the AI list. |
+| listed | Digital products and training e-commerce platform; University alumni and counseling platforms; Event-tech search relevance and feedback analytics backend (listed since R4-J, at most 6 featured per wing) | | |
 
 ### AI Engineering wing (east; was "AI Wing")
 
@@ -64,9 +64,9 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Bank Statement Analyzer PoC | ~20% faster pipeline, accuracy unchanged |
 | featured | Full-Stack AI App Accelerator | Baseline for 8 client repositories across 5 engagements |
 | featured | Forecasting on Microsoft Fabric | 21 s stall diagnosed as capacity throttling, ~1 s after the fix |
-| featured | Grounded Bilingual RAG Assistant | Prompt tokens -23%, model calls per turn 3 to 2 |
+| featured | MII Microsoft AI Portfolio and Assistant: portfolio site, multi-agent RAG assistant, /dashboard Studio (live link, R4-J) | Prompt tokens -23%, model calls per turn 3 to 2 |
 | featured | Spec-Driven, Agent-Orchestrated Delivery | How the work is delivered: specs in, parallel agents, human review gates |
-| listed | From Apps to Products (managed-app packaging) · Operating a Shared Azure AI Estate · Fraud Review Dashboard and Security Remediation · AI Ticketing Assistant Re-platform · Chart-of-Accounts AI Assistant · Explainable In-Browser Credit Scoring · Governance for a Bank's GenAI Portal · Agent-Authored Presentations · Bilingual Solutions Marketing Site · Enterprise AI Contact Center Architecture | |
+| listed | From Apps to Products (managed-app packaging) · Operating a Shared Azure AI Estate · Fraud Review Dashboard and Security Remediation · AI Ticketing Assistant Re-platform · Chart-of-Accounts AI Assistant · Explainable In-Browser Credit Scoring · Governance for a Bank's GenAI Portal · Agent-Authored Presentations · Enterprise AI Contact Center Architecture | |
 
 Hologram views: the 6 hero pods (3 per wing).
 

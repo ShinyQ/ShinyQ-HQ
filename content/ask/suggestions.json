@@ -140,7 +140,7 @@
     {
       "id": "ai-solutions-assistant",
       "topic": "ai",
-      "q": { "en": "How does his bilingual RAG assistant work?", "id": "Bagaimana cara kerja asisten RAG dwibahasanya?" },
+      "q": { "en": "How does the assistant on his MII Microsoft AI portfolio work?", "id": "Bagaimana cara kerja asisten di portofolio MII Microsoft AI miliknya?" },
       "tags": ["ai", "agents", "rag"],
       "followUps": ["ai-agents", "ai-voice", "career-certs"],
       "expect": ["project-ai-solutions-assistant"]

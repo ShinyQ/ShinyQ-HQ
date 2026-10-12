@@ -106,6 +106,16 @@ describe("L3 Project Roads layout", () => {
     expect(crowded.directory.ai.map((p) => p.slug)).toEqual([`f${LABS.maxPerWing}`, `f${LABS.maxPerWing + 1}`]);
   });
 
+  it("docks the MII Microsoft Solutions Website on the Product Engineering road, third in site order (R4-J)", () => {
+    const software = layout.placed.filter((p) => p.pod.wing === "software").map((p) => p.pod.slug);
+    const ai = layout.placed.filter((p) => p.pod.wing === "ai").map((p) => p.pod.slug);
+    expect(software.slice(0, 3)).toEqual(["anime-figure-ecommerce", "vulnerability-scanning-automation", "solutions-marketing-site"]);
+    expect(ai).toContain("ai-solutions-assistant");
+    expect(software).toHaveLength(ai.length);
+    expect(layout.directory.ai.map((p) => p.slug)).not.toContain("solutions-marketing-site");
+    expect(layout.directory.software.map((p) => p.slug)).toContain("event-tech-search-backend");
+  });
+
   it("keeps pods inside the slab, on forecourts off the road, at least 6 u apart", () => {
     const rects = layout.placed.map((p) => p.rect);
     for (const r of rects) {

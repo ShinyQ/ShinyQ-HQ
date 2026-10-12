@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { openPage } from "./hq";
 import cvManifest from "../content/generated/cv-pages.json";
-import { content, firstEntry, heroPod, hostedPost } from "./routes";
+import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
 
@@ -253,4 +253,39 @@ test("landing: three featured projects with their screenshots, the stats ticker,
   await expect(ticker).toHaveAttribute("id", "stats");
   for (const stat of data.stats) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
   await expect(page.getByTestId("enter-hq")).toBeHidden();
+});
+
+/** Stand-in for the public sites so the suite never depends on the network. */
+const LIVE_SITE = /^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//;
+
+test("Visit live site opens the public site in a new tab without an opener, on the case study and in the Work index", async ({ page, context }) => {
+  expect(livePods.map((p) => p.slug).sort()).toEqual(["ai-solutions-assistant", "solutions-marketing-site"]);
+  await context.route(LIVE_SITE, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Live site stub</title>" }));
+
+  for (const pod of livePods) {
+    await openPage(page, staticTier(`/en/labs/${pod.slug}`));
+    const cta = page.locator("main").getByRole("link", { name: /^Visit live site/ });
+    await expect(cta).toHaveCount(1);
+    await expect(cta).toHaveAttribute("href", pod.liveUrl!);
+    await expect(cta).toHaveAttribute("target", "_blank");
+    await expect(cta).toHaveAttribute("rel", "noopener noreferrer");
+    const [popup] = await Promise.all([page.waitForEvent("popup"), cta.click()]);
+    await popup.waitForLoadState();
+    expect(new URL(popup.url()).origin).toBe(new URL(pod.liveUrl!).origin);
+    expect(await popup.evaluate(() => window.opener)).toBeNull();
+    await popup.close();
+  }
+  await expectNoSeriousViolations(page);
+
+  await openPage(page, staticTier("/en/labs/vendor-management-portal"));
+  await expect(page.locator("[data-live-link]")).toHaveCount(0);
+
+  await openPage(page, staticTier("/en/labs"));
+  const rowLinks = page.locator("#all-projects [data-live-link]");
+  await expect(rowLinks).toHaveCount(livePods.length);
+  expect((await rowLinks.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).sort()).toEqual(livePods.map((p) => p.liveUrl).sort());
+  // The link sits above the row's stretched title link: clicking it opens the site, not the case study.
+  const [popup] = await Promise.all([page.waitForEvent("popup"), rowLinks.first().click()]);
+  await popup.close();
+  await expect(page).toHaveURL(/\/en\/labs\?tier=static$/);
 });

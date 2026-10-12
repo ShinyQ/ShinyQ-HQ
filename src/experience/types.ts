@@ -109,6 +109,8 @@ export interface LabPod {
   hasHologramView: boolean;
   /** At least one gallery image: gallery pods come first in every project list (`comparePods`). */
   hasGallery: boolean;
+  /** Public live site (R4-J), only on pods that have one; read it with `podLiveLink`. */
+  liveUrl?: string;
 }
 
 /** Optional per-floor inputs for `buildFloorLayouts` (each phase adds its own field). */

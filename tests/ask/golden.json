@@ -1,6 +1,6 @@
 {
-  "$comment": "Ask the HQ golden set (spec section 9). 18 benchmark questions plus 12 new. `facts` must exist in the knowledge pack (drift check) and in the retrieved context (retrieval check). Values from the weekly live facts (content/generated/dynamic-facts.json) are written as {{facts.<path>}} placeholders, never literals (src/ask/golden-facts.ts). `expect` scores the real-model answer in the nightly eval (scripts/ask-eval.ts). Update this file in the same PR as content changes that move these facts.",
-  "passThreshold": 28,
+  "$comment": "Ask the HQ golden set (spec section 9). 18 benchmark questions plus 13 new. `facts` must exist in the knowledge pack (drift check) and in the retrieved context (retrieval check). Values from the weekly live facts (content/generated/dynamic-facts.json) are written as {{facts.<path>}} placeholders, never literals (src/ask/golden-facts.ts). `expect` scores the real-model answer in the nightly eval (scripts/ask-eval.ts). Update this file in the same PR as content changes that move these facts.",
+  "passThreshold": 29,
   "items": [
     {"id": "q01", "lang": "en", "q": "What does Kurniadi do now and where does he work?", "facts": ["Metrodata"], "expect": {"any": ["metrodata", "mitra integrasi"]}},
     {"id": "q02", "lang": "en", "q": "What latency improvement did he get in the voice AI project?", "facts": ["0.2"], "expect": {"all": ["0.2"]}},
@@ -31,6 +31,7 @@
     {"id": "q27", "lang": "en", "q": "What car does Kurniadi drive?", "facts": [], "expect": {"refuse": true}},
     {"id": "q28", "lang": "en", "q": "Does he have a PhD?", "facts": [], "expect": {"none": ["he has a phd", "he holds a phd", "earned a phd"]}},
     {"id": "q29", "lang": "en", "q": "How many GitHub contributions did he make in the last year?", "facts": ["{{facts.github.contributionsLastYear}}"], "expect": {"any": ["{{facts.github.contributionsLastYear}}"]}},
-    {"id": "q30", "lang": "en", "q": "What competitions has he won?", "facts": ["1st place"], "expect": {"any": ["1st place", "first place", "juara 1", "won", "2nd place"]}}
+    {"id": "q30", "lang": "en", "q": "What competitions has he won?", "facts": ["1st place"], "expect": {"any": ["1st place", "first place", "juara 1", "won", "2nd place"]}},
+    {"id": "q31", "lang": "en", "q": "What MII Microsoft sites did Kurniadi build?", "facts": ["MII Microsoft Solutions Website", "MII Microsoft AI Portfolio and Assistant"], "expect": {"any": ["mii microsoft solutions"], "any2": ["mii microsoft ai"], "none": ["azurewebsites"]}}
   ]
 }

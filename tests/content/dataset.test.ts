@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { isPublicLiveUrl } from "@/content/live-links";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
@@ -75,6 +76,38 @@ describe("content/site-content.json", () => {
       expect(pods.filter((p) => p.wing === wing && p.tier === "hero")).toHaveLength(3);
       expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(6);
     }
+  });
+
+  it("links exactly the two public MII Microsoft sites, never an internal app (R4-J)", () => {
+    const live = Object.fromEntries(pods.filter((p) => p.liveUrl).map((p) => [p.slug, p.liveUrl]));
+    expect(live).toEqual({
+      "solutions-marketing-site": "https://mii-microsoft.azurewebsites.net",
+      "ai-solutions-assistant": "https://mii-microsoft-ai.azurewebsites.net",
+    });
+    for (const p of pods) if (p.liveUrl) expect(isPublicLiveUrl(p.liveUrl), p.slug).toBe(true);
+    expect(pods.find((p) => p.slug === "vendor-management-portal")?.liveUrl).toBeUndefined();
+  });
+
+  it("names the MII Microsoft sites and places them in their wings (R4-J)", () => {
+    const site = pods.find((p) => p.slug === "solutions-marketing-site")!;
+    const ai = pods.find((p) => p.slug === "ai-solutions-assistant")!;
+    expect([site.title.en, site.title.id, site.wing, site.tier, site.role.en]).toEqual([
+      "MII Microsoft Solutions Website",
+      "Situs Web MII Microsoft Solutions",
+      "software",
+      "featured",
+      "Sole engineer",
+    ]);
+    expect([ai.title.en, ai.title.id, ai.wing, ai.tier, ai.role.en]).toEqual([
+      "MII Microsoft AI Portfolio and Assistant",
+      "Portofolio dan Asisten MII Microsoft AI",
+      "ai",
+      "featured",
+      "Sole engineer",
+    ]);
+    expect(ai.tagline.en).toMatch(/multi-agent RAG assistant/);
+    expect(ai.tagline.en).toMatch(/\/dashboard Studio/);
+    expect(pods.find((p) => p.slug === "event-tech-search-backend")?.tier).toBe("listed");
   });
 
   it("has 4 to 6 lobby stats", () => {

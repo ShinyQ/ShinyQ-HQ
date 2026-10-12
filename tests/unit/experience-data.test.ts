@@ -109,4 +109,16 @@ describe("buildExperienceData", () => {
     expect(buildExperienceData("en", names).roof).toMatchObject({ timezone: profile.timezone, subheadline: profile.subheadline.en });
     expect(buildExperienceData("id", names).roof.subheadline).toBe(profile.subheadline.id);
   });
+
+  it("carries live links to the 3D chunk only for pods that have one (R4-J)", () => {
+    const pods = buildExperienceData("en", names).labs.pods;
+    expect(pods.filter((p) => p.liveUrl).map((p) => [p.slug, p.liveUrl])).toEqual(
+      expect.arrayContaining([
+        ["solutions-marketing-site", "https://mii-microsoft.azurewebsites.net"],
+        ["ai-solutions-assistant", "https://mii-microsoft-ai.azurewebsites.net"],
+      ]),
+    );
+    expect(pods.filter((p) => p.liveUrl)).toHaveLength(2);
+    expect(pods.filter((p) => !p.liveUrl).every((p) => !("liveUrl" in p))).toBe(true);
+  });
 });

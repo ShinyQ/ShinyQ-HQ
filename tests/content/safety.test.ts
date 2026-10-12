@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { EM_DASH, collectStrings, findBlockedTerms, findForbiddenPatterns, loadBlocklist } from "@/content/safety";
+import { EM_DASH, collectStrings, findBlockedTerms, findForbiddenPatterns, leafForbiddenPatterns, loadBlocklist } from "@/content/safety";
 
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
@@ -17,9 +17,9 @@ describe("public-safety lint", () => {
   });
 
   it("finds no blocklisted term or forbidden pattern in site-content.json", () => {
-    const hits = collectStrings(content).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedTerms(value, terms), ...findForbiddenPatterns(value)];
-      return found.length ? [`${at}: ${found.join(", ")}`] : [];
+    const hits = collectStrings(content).flatMap((leaf) => {
+      const found = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+      return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
