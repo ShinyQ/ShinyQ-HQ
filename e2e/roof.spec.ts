@@ -97,7 +97,7 @@ test.describe("RF roof deck", () => {
     const errors = collectErrors(page);
     await openRoof(page, { walk: "on" });
     const prompt = page.getByTestId("dialog-choices");
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.RF);
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.RF.replace("{name}", content.profile.name.split(" ")[0]), { timeout: 15_000 });
     await prompt.getByRole("button", { name: en.walk.meet.start }).click();
     const bar = page.getByTestId("walk-bar");
     await expect(page.getByTestId("walk-counter")).toContainText("Stop 1 of 4");

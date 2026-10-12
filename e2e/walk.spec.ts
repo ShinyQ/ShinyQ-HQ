@@ -39,8 +39,9 @@ test.describe("Guided walks", () => {
     await openWithWalks(page, "/en/journey");
 
     const prompt = page.getByTestId("dialog-choices");
-    await expect(prompt).toBeVisible();
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L2);
+    // The choices show once Rover's floor line has typed out.
+    await expect(prompt).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L2, { timeout: 15_000 });
     await prompt.getByRole("button", { name: "Walk my journey" }).click();
 
     const bar = page.getByTestId("walk-bar");
@@ -102,7 +103,7 @@ test.describe("Guided walks", () => {
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
     const prompt = page.getByTestId("dialog-choices");
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L3);
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L3, { timeout: 15_000 });
     await prompt.getByRole("button", { name: "Explore freely" }).click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });
@@ -111,7 +112,7 @@ test.describe("Guided walks", () => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/library");
     const prompt = page.getByTestId("dialog-choices");
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4);
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4, { timeout: 15_000 });
     await prompt.getByRole("button", { name: en.walk.writing.start }).click();
     const first = await waitForArrival(page);
     expect(first.startsWith("L4:")).toBe(true);
@@ -132,7 +133,7 @@ test.describe("Guided walks", () => {
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
     const prompt = page.getByTestId("dialog-choices");
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4);
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4, { timeout: 15_000 });
     await prompt.getByRole("button", { name: en.walk.explore }).click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });

@@ -186,6 +186,8 @@ test.describe("Career Archive on touch", () => {
 
   test("a horizontal swipe scrubs forward and back through the years", async ({ page }) => {
     const errors = collectErrors(page);
+    // Rover's L2 floor line would cover the swipe's start point on a phone.
+    await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L2"])));
     await openJourney(page);
     await waitForPhase(page, "explore");
     // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot
