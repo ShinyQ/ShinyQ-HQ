@@ -71,7 +71,7 @@ type MissionStep =
 | `projects` | Tour my projects | `walk` step: starts the L3 "Tour my projects" guided walk (rides to L3, then drives the wing roads pod by pod and ends at the wing directory boards). Static tier, or with walks off: L3 (`/labs`) and the palette filtered to pods |
 | `hire` | Hire / contact | elevator RF → drive to the comms terminals → open contact |
 | `cv` | Download CV | elevator RF → drive to the CV kiosk → open the CV drawer |
-| `blog` | Read the blog | elevator L4 → drive to the shelves → open the latest post |
+| `blog` | Read my writing | `walk` step: starts the L4 "Read my writing" guided walk (rides to L4, then drives station by station, posts newest first). Static tier, or with walks off: L4 (`/library`) and the palette filtered to posts |
 | `surprise` | Surprise me | random, as above |
 
 Software engineering and AI engineering get equal billing: `best-swe` and `best-ai` are always the first two options (their order alternates per visit).

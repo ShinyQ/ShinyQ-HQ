@@ -82,17 +82,17 @@ Rebuilt as walkable Project Roads (walkable floors plan, part 2; owner decisions
 
 The space rules (roads at least 8 u wide, plazas at least 16 u, 6 u of clear floor around obstacles, a spur to every door) are asserted with the real pods in `tests/unit/labs-layout.test.ts`.
 
-## 5. Floor L4: Library
+## 5. Floor L4: Library (Writing)
 
-Footprint: 48 × 32 u. Accent: white `#e5e7eb`.
+Walkable floor on the road kit (walkable floors plan, part 3). Accent: white `#e5e7eb`. Owner pick: Newsroom (concepts prototype at `/{locale}/dev/library`).
 
 | Element | Spec |
 |---|---|
-| Blog shelves | 2 rows of shelves at z = -10 and z = -2. Each post is a glowing book spine with a hover title, and a reading lectern opens the post. |
-| Publications shelf | At z = +8. Papers, theses and Hugging Face models as framed plates. |
-| Talks stage | At (16, 10): a small stage with a screen for talks and workshops |
-| Language badges | Every book shows `EN`, `ID` or `EN/ID` |
-| Elevator door | (-24, 0) |
+| Layout | A press plaza with a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book (the Reading Room's book hologram), then one timeline lane east with the other posts newest first, year marks on the road, and the Research, Models and datasets and Talks and workshops desks |
+| Stations | One per post (newest first, at most 12; older posts on the archive board), plus Research (`L4:research`), Models and datasets (`L4:publications`) and Talks and workshops (`L4:talks`). Each docks 6 u from its neighbours with a 3 u forecourt, a door pad facing the road and a spur |
+| Papers | Plates in front of the Research station open the paper preview modal |
+| Guided walk | "Read my writing": the stations in order, zone filters, offered on the first visit |
+| Elevator door | (-24, 0); the call pad spot x -24 to -15, z -4.5 to 4.5 stays free |
 
 ## 6. Floor RF: Roof (Comms)
 
