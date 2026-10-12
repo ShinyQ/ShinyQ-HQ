@@ -126,9 +126,12 @@ describe("RF in the tower", () => {
   it("is the roof deck, with the stops on the door pads", async () => {
     const { buildFloorLayouts } = await import("@/experience/config");
     const { ROOF_STOPS } = await import("@/experience/floors/roof/layout");
-    const rf = buildFloorLayouts(8).RF;
+    const { pads, ...rf } = buildFloorLayouts(8).RF;
     expect(rf).toEqual(buildRoofLayout().floor);
     expect(ROOF_STOPS).toEqual(buildRoofLayout().stops);
     expect(rf.doors?.map((d) => d.at)).toEqual([ROOF_STOPS.contact, ROOF_STOPS.cv]);
+    // The elevator call pad (added by the tower) sits in the spot the deck keeps free for it.
+    expect(pads?.map((p) => p.kind)).toEqual(["elevator"]);
+    expect(inside(pads![0].at, layout.callPad)).toBe(true);
   });
 });
