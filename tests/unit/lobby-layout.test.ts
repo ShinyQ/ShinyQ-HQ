@@ -19,6 +19,7 @@ import {
   type Box,
 } from "@/experience/floors/lobby/layout";
 import { getSkills, tr } from "@/content/load";
+import { wallSkillGroups } from "@/content/selectors";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { getStats } from "@/content/load";
 
@@ -108,9 +109,12 @@ describe("Lobby layout", () => {
 
   it("measures the skills wall so every heading and column fits with margin (both locales)", () => {
     for (const locale of ["en", "id"] as const) {
-      const groups = getSkills().map((g) => ({ label: tr(g.label, locale), items: g.items }));
+      const groups = wallSkillGroups(getSkills()).map((g) => ({ label: tr(g.label, locale), items: g.items }));
+      expect(groups).toHaveLength(4);
       const l = skillsWallLayout(groups);
       expect(l.h).toBeGreaterThanOrEqual(LOBBY.skillsWall.h);
+      // The CV refresh must not make the wall taller than it was (9.85 u at f61fbba).
+      expect(l.h).toBeLessThanOrEqual(9.85);
       // The longest heading wraps; every column reserves its lines, so items start below it.
       const headingBottom = SKILLS_PAD.top + l.labelLines * SKILLS_TEXT.labelSize * SKILLS_TEXT.labelLine;
       expect(l.itemTop - headingBottom).toBeGreaterThanOrEqual(0.3);

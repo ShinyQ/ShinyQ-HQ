@@ -158,20 +158,100 @@
   ],
   "skills": [
     {
-      "id": "software",
+      "id": "ai",
       "label": {
-        "en": "Software engineering",
-        "id": "Software engineering"
+        "en": "AI and LLM",
+        "id": "AI dan LLM"
       },
       "items": [
+        "Microsoft Agent Framework",
+        "LangGraph",
+        "LangChain",
+        "Azure OpenAI (incl. Realtime)",
+        "RAG",
+        "Hybrid/Vector Search",
+        "Prompt Shields",
+        "LLM evaluation",
+        "Hugging Face"
+      ]
+    },
+    {
+      "id": "azure",
+      "label": {
+        "en": "Azure",
+        "id": "Azure"
+      },
+      "items": [
+        "Azure AI Foundry",
+        "Azure AI Search",
+        "Cosmos DB",
+        "Document Intelligence",
+        "Azure Container Apps",
+        "Azure App Service",
+        "Azure Functions",
+        "Service Bus",
+        "Key Vault",
+        "Managed Identity",
+        "Microsoft Fabric",
+        "Azure Monitor"
+      ]
+    },
+    {
+      "id": "languages",
+      "label": {
+        "en": "Languages",
+        "id": "Bahasa pemrograman"
+      },
+      "items": [
+        "Python",
+        "TypeScript",
+        "JavaScript",
         "Go",
-        "Node.js / Express",
+        "Java",
+        "PHP"
+      ]
+    },
+    {
+      "id": "backend",
+      "label": {
+        "en": "Backend",
+        "id": "Backend"
+      },
+      "items": [
+        "FastAPI",
         "Spring Boot",
+        "Express.js",
+        "Gin",
+        "Echo",
         "Laravel",
-        "Python / FastAPI",
-        "Next.js / TypeScript",
+        "Flask",
+        "Django"
+      ]
+    },
+    {
+      "id": "frontend",
+      "label": {
+        "en": "Frontend",
+        "id": "Frontend"
+      },
+      "items": [
+        "Next.js",
+        "React",
+        "Vue",
+        "Nuxt",
+        "Tailwind CSS"
+      ]
+    },
+    {
+      "id": "data",
+      "label": {
+        "en": "Data and messaging",
+        "id": "Data dan messaging"
+      },
+      "items": [
         "PostgreSQL",
         "MySQL",
+        "MongoDB",
         "Redis",
         "Kafka",
         "RabbitMQ",
@@ -179,50 +259,21 @@
       ]
     },
     {
-      "id": "ai",
+      "id": "devops",
       "label": {
-        "en": "AI engineering",
-        "id": "AI engineering"
+        "en": "DevOps",
+        "id": "DevOps"
       },
       "items": [
-        "Azure OpenAI (incl. Realtime)",
-        "Microsoft Agent Framework",
-        "Azure AI Foundry",
-        "RAG with Azure AI Search",
-        "Document Intelligence",
-        "LLM evaluation"
-      ]
-    },
-    {
-      "id": "cloud",
-      "label": {
-        "en": "Cloud infrastructure and DevOps",
-        "id": "Infrastruktur cloud dan DevOps"
-      },
-      "items": [
-        "Azure Container Apps",
-        "Azure App Service",
-        "Azure Functions",
-        "Cosmos DB",
-        "Service Bus",
-        "Key Vault",
-        "Entra ID",
+        "Docker",
         "Bicep",
         "GitHub Actions",
-        "Docker",
-        "AWS"
-      ]
-    },
-    {
-      "id": "data",
-      "label": {
-        "en": "Data and modeling",
-        "id": "Data dan pemodelan"
-      },
-      "items": [
-        "Microsoft Fabric",
-        "IndoBERT / NLP",
-        "Forecasting"
+        "Jenkins",
+        "AWS",
+        "LiveKit",
+        "k6",
+        "SonarQube",
+        "Sentry"
       ]
     }
   ],

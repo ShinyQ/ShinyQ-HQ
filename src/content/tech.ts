@@ -180,6 +180,12 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "nessus api",
   "entra id",
   "microsoft entra id",
+  "rag",
+  "hybrid/vector search",
+  "prompt shields",
+  "java",
+  "nuxt",
+  "mongodb",
 ]);
 
 /** Lowercases, drops parentheticals and trailing version numbers ("Next.js 14" to "next.js"). */

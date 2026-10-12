@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { getContent, getPod, getProfile, getTimelineEntry } from "@/content/load";
+import { getContent, getPod, getProfile, getSkills, getTimelineEntry } from "@/content/load";
 
 /**
  * Round 5 CV refresh (owner request 2026-10-13): the CV PDF in public/cv is the source of truth for
@@ -179,5 +179,53 @@ describe.skipIf(!hasPdftotext)("CV markers in the committed PDF", () => {
 
   it("no longer lists the Master's degree", () => {
     expect(cvText()).not.toMatch(/Sepuluh Nopember|Master/);
+  });
+});
+
+/** The CV's skills taxonomy: CV label, then items as "site name|CV name" where the site writes the full product name. */
+const CV_SKILLS: { id: string; cv: string; items: string[] }[] = [
+  {
+    id: "ai",
+    cv: "AI/LLM:",
+    items: ["Microsoft Agent Framework", "LangGraph", "LangChain", "Azure OpenAI (incl. Realtime)", "RAG", "Hybrid/Vector Search", "Prompt Shields", "LLM evaluation|LLM Evaluation", "Hugging Face"],
+  },
+  {
+    id: "azure",
+    cv: "Azure:",
+    items: [
+      "Azure AI Foundry|AI Foundry",
+      "Azure AI Search|AI Search",
+      "Cosmos DB",
+      "Document Intelligence",
+      "Azure Container Apps|Container Apps",
+      "Azure App Service|App Service",
+      "Azure Functions|Functions",
+      "Service Bus",
+      "Key Vault",
+      "Managed Identity",
+      "Microsoft Fabric",
+      "Azure Monitor|Monitor",
+    ],
+  },
+  { id: "languages", cv: "Languages:", items: ["Python", "TypeScript", "JavaScript", "Go", "Java", "PHP"] },
+  { id: "backend", cv: "Backend:", items: ["FastAPI", "Spring Boot", "Express.js", "Gin", "Echo", "Laravel", "Flask", "Django"] },
+  { id: "frontend", cv: "Frontend:", items: ["Next.js", "React", "Vue", "Nuxt", "Tailwind CSS|Tailwind"] },
+  { id: "data", cv: "Data and messaging:", items: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Kafka", "RabbitMQ", "Elasticsearch"] },
+  { id: "devops", cv: "DevOps:", items: ["Docker", "Bicep", "GitHub Actions", "Jenkins", "AWS", "LiveKit", "k6", "SonarQube", "Sentry"] },
+];
+const siteName = (item: string) => item.split("|")[0];
+const cvName = (item: string) => item.split("|").pop()!;
+
+describe("skills follow the CV taxonomy", () => {
+  it("lists the CV groups in CV order with the CV items", () => {
+    expect(getSkills().map((g) => ({ id: g.id, items: g.items }))).toEqual(CV_SKILLS.map((g) => ({ id: g.id, items: g.items.map(siteName) })));
+  });
+
+  it.skipIf(!hasPdftotext)("matches the skills section of the committed PDF", () => {
+    const section = cvText().split("SKILLS")[1]?.split("CERTIFICATION")[0] ?? "";
+    for (const group of CV_SKILLS) {
+      expect(section, group.cv).toContain(group.cv);
+      for (const item of group.items) expect(section, item).toContain(cvName(item));
+    }
   });
 });

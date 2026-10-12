@@ -47,7 +47,7 @@
       "q": { "en": "Which backend stack does he use most?", "id": "Stack backend apa yang paling sering dia pakai?" },
       "tags": ["skills", "software"],
       "followUps": ["work-best", "career-skills", "work-github"],
-      "expect": ["skills-software"]
+      "expect": ["skills-backend"]
     },
     {
       "id": "work-github",
