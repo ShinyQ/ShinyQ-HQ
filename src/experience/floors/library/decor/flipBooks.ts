@@ -67,3 +67,21 @@ export function turnAngle(t: number, phase: number, reducedMotion: boolean): num
   const k = Math.min(1, Math.max(0, (cycle - 0.3) / 0.4));
   return k * k * (3 - 2 * k) * Math.PI;
 }
+
+/** Open book over a stage (Newsroom featured post): `lift` above the plinth top, `size` page height. */
+export const STAGE_BOOK = { lift: 2, size: 2.2 } as const;
+
+/**
+ * The turning book over a station: centered on it, `STAGE_BOOK.lift` above its top (`top`, the
+ * plinth height), open toward the road (the station's `facing` points from the road into it).
+ */
+export function stageBook(station: { center: { x: number; z: number }; facing: { x: number; z: number } }, top: number, phase = 0): BookInstance {
+  return {
+    x: station.center.x,
+    y: top + STAGE_BOOK.lift,
+    z: station.center.z,
+    face: Math.atan2(-station.facing.x, -station.facing.z),
+    size: STAGE_BOOK.size,
+    phase,
+  };
+}

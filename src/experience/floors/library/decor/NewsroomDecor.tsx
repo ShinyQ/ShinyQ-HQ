@@ -8,7 +8,9 @@ import { neonColor } from "../../../fx/materials";
 import { FONTS } from "../../../tower/primitives";
 import { LineBatch } from "../../labs/lines";
 import { ZONE_TONE } from "../model";
-import { ResearchPapers, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
+import { FlipBooks } from "./BookHolograms";
+import { ResearchPapers, STATION_HEIGHT, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
+import { stageBook } from "./flipBooks";
 
 /** Ticker speed (u/s) and the gap between headlines. */
 const TICKER = { speed: 2.4, separator: "   \u25c6   " } as const;
@@ -50,7 +52,8 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
 
 /**
  * Concept B, "Newsroom": the headline wall (newest title in large type and the ticker of every title),
- * the featured post on a lit stage, year marks along the timeline lane, and the shelves as press desks.
+ * the featured post on a lit stage under a turning open-book hologram, year marks along the timeline
+ * lane, and the shelves as press desks.
  */
 export function NewsroomDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones, onStation } = props;
@@ -59,6 +62,8 @@ export function NewsroomDecor(props: DecorProps) {
   const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
   const featuredPost = featured ? library.posts.find((p) => `L4:${p.slug}` === featured.room) : undefined;
   const ticker = library.posts.map((p) => p.title).join(TICKER.separator);
+  const others = useMemo(() => layout.stations.filter((s) => s !== featured), [layout.stations, featured]);
+  const books = useMemo(() => (featured ? [stageBook(featured, STATION_HEIGHT.blog)] : []), [featured]);
   const frame = useMemo(() => {
     if (!wall) return null;
     const batch = new LineBatch();
@@ -74,8 +79,9 @@ export function NewsroomDecor(props: DecorProps) {
   return (
     <group name="library-newsroom">
       <StationShells stations={layout.stations} tier={tier} onStation={onStation} />
-      <ZoneIcons stations={layout.stations} tier={tier} reducedMotion={reducedMotion} />
-      <StationLabels stations={layout.stations.filter((s) => s !== featured)} titles={titles} />
+      <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
+      {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
+      <StationLabels stations={others} titles={titles} />
       <ZoneSigns layout={layout} zones={zones} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
       {wall && frame && (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookBuffers, PAGE_ANGLES, PAGE_SEGMENTS, turnAngle } from "@/experience/floors/library/decor/flipBooks";
+import { bookBuffers, PAGE_ANGLES, PAGE_SEGMENTS, STAGE_BOOK, stageBook, turnAngle } from "@/experience/floors/library/decor/flipBooks";
 import { dockAlong, paperSlots } from "@/experience/floors/library/model";
 
 describe("open-book holograms", () => {
@@ -22,6 +22,25 @@ describe("open-book holograms", () => {
     expect(turnAngle(7, 0, false)).toBeCloseTo(Math.PI);
     expect(turnAngle(4, 0.25, false)).toBeCloseTo(Math.PI);
     for (const t of [0, 3, 6.5]) expect(turnAngle(t, 0.3, true)).toBe(Math.PI / 2);
+  });
+});
+
+describe("the turning book on the Newsroom featured stage", () => {
+  const [stage] = dockAlong([{ room: "L4:featured", zone: "blog" }], { a: { x: 0, z: 0 }, b: { x: 10, z: 0 }, side: 1, start: 2 }).stations;
+  const top = 1.1;
+  const book = stageBook(stage, top);
+
+  it("floats centered over the stage, clear of the plinth", () => {
+    expect(book).toMatchObject({ x: stage.center.x, z: stage.center.z, size: STAGE_BOOK.size });
+    expect(book.y - book.size / 2).toBeGreaterThan(top);
+  });
+
+  it("opens toward the road and fits the stage footprint", () => {
+    expect(Math.sin(book.face)).toBeCloseTo(-stage.facing.x);
+    expect(Math.cos(book.face)).toBeCloseTo(-stage.facing.z);
+    const halfWidth = 0.75 * book.size * Math.cos(PAGE_ANGLES[0]);
+    const footprint = Math.min(stage.rect.maxX - stage.rect.minX, stage.rect.maxZ - stage.rect.minZ);
+    expect(2 * halfWidth).toBeLessThan(footprint);
   });
 });
 
