@@ -16,6 +16,7 @@ import {
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { distanceToRect } from "@/experience/nav/collision";
 import { DOOR_SIZE } from "@/experience/nav/doors";
+import { PAD } from "@/experience/nav/pads";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import { onNetwork, pathBetween, roadRoute } from "@/experience/nav/road";
 import type { CareerLayoutInput, CareerType, Rect } from "@/experience/types";
@@ -122,8 +123,18 @@ describe("buildCareerRoad", () => {
     expect(c.stops).toEqual([...c.years.map((y) => y.plaza.center.x), c.annex.center.x]);
   });
 
-  it("passes the space rules", () => {
-    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach });
+  it("passes the space rules, teleporter pads included", () => {
+    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach, pads: c.pads });
+  });
+
+  it("puts a teleporter pad on every year plaza, beside the road near the plaza start", () => {
+    expect(c.pads.map((p) => p.id)).toEqual(c.years.map((y) => `teleport:${y.year}`));
+    for (const y of c.years) {
+      const x0 = y.plaza.center.x - y.plaza.w / 2;
+      expect(y.teleport).toEqual({ x: x0 + CAREER_ROAD.teleport.inset, z: y.plaza.center.z + CAREER_ROAD.teleport.offset });
+      expect(Math.abs(y.teleport.z - y.plaza.center.z) + PAD.radius).toBeLessThanOrEqual(y.plaza.d / 2);
+    }
+    expect(c.pads.every((p, i) => p.kind === "teleport" && p.year === c.years[i].year && p.at === c.years[i].teleport && p.face === 0)).toBe(true);
   });
 });
 
@@ -137,8 +148,8 @@ describe("the real Career Road", () => {
     expect(c.rooms.find((r) => r.slug === "prologue-2016")?.year).toBe(2019);
   });
 
-  it("passes the space rules with the real content", () => {
-    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach });
+  it("passes the space rules with the real content, teleporter pads included", () => {
+    expectSpaceRules({ bounds: c.bounds, obstacles: c.obstacles, doors: c.doors, network: c.network, start: c.approach, pads: c.pads });
   });
 
   it("can reach every door pad from the elevator, along the road", () => {

@@ -1,8 +1,9 @@
 import type { RoomId } from "@/content/schema";
 import { CAREER_TONE } from "../../fx/holoIcons";
 import { DOOR_SIZE } from "../../nav/doors";
+import { teleportPadId } from "../../nav/pads";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
-import type { CareerData, CareerLayoutInput, CareerType, DoorTrigger, Rect, Vec2 } from "../../types";
+import type { CareerData, CareerLayoutInput, CareerType, DoorTrigger, PadTrigger, Rect, Vec2 } from "../../types";
 
 /**
  * L2 Career Road (walkable floors plan, Part 2). Pure: no React or three. One road runs forward in
@@ -45,6 +46,11 @@ export const CAREER_ROAD = {
   archHeight: 4.8,
   /** Slab margin behind the outermost room (keeps 6 u between pedestals and the slab edge). */
   margin: 3,
+  /**
+   * Year teleporter pad on every plaza: this far past the plaza start and this far south of the road
+   * center (toward the rail camera), off the driving width, clear of the spurs and the floor digits.
+   */
+  teleport: { inset: 3.5, offset: 6.5 },
 } as const;
 
 export const ROOM_W: Record<CareerType, number> = { job: 9, freelance: 9, education: 9, milestone: 9, award: 6 };
@@ -79,6 +85,8 @@ export interface CareerYear {
   /** Arch center on the road just before the plaza, its two posts (across the road) and the road heading there. */
   arch: { center: Vec2; posts: [Vec2, Vec2]; angle: number };
   rooms: CareerRoom[];
+  /** Center of the year's teleporter pad (`teleport:<year>`). */
+  teleport: Vec2;
 }
 
 export interface CareerRoadLayout {
@@ -93,6 +101,8 @@ export interface CareerRoadLayout {
   windowX: number;
   obstacles: Rect[];
   doors: DoorTrigger[];
+  /** One teleporter pad per year plaza (FloorLayout.pads; the elevator pad is added by buildFloorLayouts). */
+  pads: PadTrigger[];
   /** Scrub stops along x: plaza centers, then the annex. */
   stops: number[];
   approach: Vec2;
@@ -182,7 +192,8 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
       };
     });
     rooms.push(...list);
-    years.push({ year, plaza, arch, rooms: list });
+    const teleport: Vec2 = { x: x + C.teleport.inset, z: zc + C.teleport.offset };
+    years.push({ year, plaza, arch, rooms: list, teleport });
     x += length + C.link;
   });
 
@@ -231,6 +242,8 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     ...rooms.map((r) => ({ room: r.id, at: r.at, facing: { x: 0, z: r.side } })),
     { room: WORKSHOP_ROOM, at: workshopAt, facing: { x: 0, z: -1 } },
   ];
+  // Icons face the rail camera (+z), like the room icons.
+  const pads: PadTrigger[] = years.map((y) => ({ id: teleportPadId(y.year), kind: "teleport", at: y.teleport, year: y.year, face: 0 }));
 
   return {
     style,
@@ -243,6 +256,7 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     windowX: bounds.maxX,
     obstacles,
     doors,
+    pads,
     stops: [...years.map((y) => y.plaza.center.x), annexX],
     approach: C.approach,
     door: C.door,
