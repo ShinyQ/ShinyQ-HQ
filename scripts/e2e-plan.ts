@@ -74,6 +74,7 @@ export const RULES: Rule[] = [
 
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
   { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud", "onboarding"] },
+  { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions", "walk"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.

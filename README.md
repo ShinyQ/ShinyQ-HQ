@@ -85,6 +85,7 @@ bun run dev                        # http://localhost:3000/en
 | `bun run typecheck` | Generate route types and run `tsc` |
 | `bun run lint` | ESLint |
 | `bun run test` | Vitest: content, safety lint, store, intents, navgrid A*, rover movement, camera rigs, orbit, collision and first person, URL sync, GPU tier |
+| `bun run bench` | Vitest benches (`tests/bench/`): `findPath` on the real floor layouts and palette typing, each against the pre-round-5 implementation; numbers for PR bodies, never a CI gate |
 | `bun run verify:quick` | Typecheck, lint, unit tests and `next build`: the pre-push check |
 | `bun run e2e:changed` | Playwright specs that cover your changed paths (`scripts/e2e-plan.ts`); `--dry` prints the plan |
 | `bun run e2e` / `e2e:full` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
