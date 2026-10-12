@@ -1,4 +1,4 @@
-import type { CareerType } from "../types";
+import type { CareerType, PadKind } from "../types";
 
 /**
  * One source of truth for the career type icons: line art on a 24 x 24 grid (SVG coordinates,
@@ -137,3 +137,22 @@ export function iconMesh(strokes: readonly Stroke[], { size = 2, width = 1.6, de
   }
   return out;
 }
+
+/** Closed ellipse around (cx, cy), `steps` points (a pad ring seen at an angle). */
+function ring(cx: number, cy: number, rx: number, ry: number, steps = 16): Point[] {
+  return Array.from({ length: steps }, (_, i) => {
+    const a = (i / steps) * Math.PI * 2;
+    return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry] as Point;
+  });
+}
+
+/** Floor pad icons on the same 24 x 24 grid: the elevator call pad and the L2 year teleporter. */
+export const PAD_ICONS: Record<PadKind, Stroke[]> = {
+  // Elevator: closed lift doors with an up and a down arrow.
+  elevator: [shut([4, 3], [20, 3], [20, 21], [4, 21]), open([12, 3], [12, 21]), open([6, 10], [8, 7], [10, 10]), open([14, 14], [16, 17], [18, 14])],
+  // Teleporter: three beams rising from a pad ring.
+  teleport: [shut(...ring(12, 19, 8, 3)), open([8, 18], [8, 5]), open([12, 16], [12, 2]), open([16, 18], [16, 5])],
+};
+
+/** Pad neon tones: the values of COLORS.cyan and COLORS.pink, kept as literals because config.ts imports the career layout, which imports this module. */
+export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6" };
