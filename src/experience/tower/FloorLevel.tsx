@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { floorY, SLAB_THICKNESS } from "../config";
@@ -10,6 +10,7 @@ import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
 import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
+import { registerFloorContent } from "./floorRegistry";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -47,6 +48,11 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     if (edge.current) edge.current.opacity = above ? 0.16 : 0.95;
     if (content.current) content.current.visible = !above && !below;
   });
+
+  useEffect(() => {
+    registerFloorContent(layout.id, content.current);
+    return () => registerFloorContent(layout.id, null);
+  }, [layout.id]);
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>
