@@ -28,7 +28,9 @@ import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
+import { programPins } from "./scene/programPins";
 import { renderProbe } from "./scene/renderProbe";
+import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -154,6 +156,9 @@ export default function Experience({
       renderProbe.gl = null;
       renderProbe.scene = null;
       renderProbe.camera = null;
+      // A new canvas is a new WebGL context: pins and warm floors belong to the old one.
+      programPins.clear();
+      resetWarm();
     },
     [],
   );
