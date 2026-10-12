@@ -6,19 +6,19 @@ import type { Vec2 } from "../types";
  * when the camera is behind it, so it never reads mirrored. Pure, so Vitest runs it in node.
  */
 
-/** Hysteresis on the normalized side test, so a sign seen edge-on does not flicker between its sides. */
-export const READABLE_HYSTERESIS = 0.1;
+/**
+ * Hysteresis (u) on the side test: the camera must be this far in front of or behind the sign's plane
+ * to turn it, so a sign seen edge-on does not flicker. A distance, not an angle, so far signs that the
+ * camera sees at a grazing angle still follow it.
+ */
+export const READABLE_HYSTERESIS = 0.5;
 
 /**
  * Whether the sign at `at` facing `yaw` should be shown turned around for a camera at `camera`.
  * `flipped` is the current state: it only changes once the camera is clearly on the other side.
  */
 export function readableFlip(flipped: boolean, yaw: number, at: Vec2, camera: Vec2): boolean {
-  const dx = camera.x - at.x;
-  const dz = camera.z - at.z;
-  const len = Math.hypot(dx, dz);
-  if (len < 1e-6) return flipped;
-  const side = (Math.sin(yaw) * dx + Math.cos(yaw) * dz) / len;
+  const side = Math.sin(yaw) * (camera.x - at.x) + Math.cos(yaw) * (camera.z - at.z);
   if (flipped) return side < READABLE_HYSTERESIS;
   return side < -READABLE_HYSTERESIS;
 }

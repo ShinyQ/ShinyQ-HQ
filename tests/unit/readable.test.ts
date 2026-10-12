@@ -16,9 +16,14 @@ describe("readable signs", () => {
   });
 
   it("does not flicker when the sign is seen edge-on", () => {
-    const edge = { x: 40, z: -30 * Math.sin(READABLE_HYSTERESIS / 2) };
+    const edge = { x: 40, z: -READABLE_HYSTERESIS / 2 };
     expect(readableFlip(false, 0, at, edge)).toBe(false);
     expect(readableFlip(true, 0, at, edge)).toBe(true);
+  });
+
+  it("follows the camera for far signs seen at a grazing angle", () => {
+    expect(readableFlip(true, 0, { x: 300, z: 10 }, { x: 0, z: 30 })).toBe(false);
+    expect(readableFlip(false, 0, { x: 300, z: 10 }, { x: 0, z: -30 })).toBe(true);
   });
 
   it("uses the sign's own facing", () => {

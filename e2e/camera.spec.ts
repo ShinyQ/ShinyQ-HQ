@@ -117,13 +117,35 @@ async function enterFirstPerson(page: Page) {
   await expect.poll(async () => (await probe(page)).blend, { timeout: 30_000 }).toBe(1);
 }
 
-/** A vertical left-button drag on open floor right of the rover, inside the HUD-free band (positive dy drags down). */
+/** A vertical left-button drag on open floor right of the rover, between the HUD's top and bottom rows (positive dy drags down). */
 async function verticalDrag(page: Page, dy: number) {
-  const y0 = dy > 0 ? 180 : 780;
-  await page.mouse.move(1000, y0);
+  const { width, height } = page.viewportSize()!;
+  const x = Math.round(width * 0.78);
+  const top = Math.round(height * 0.2);
+  const bottom = Math.round(height * 0.8);
+  const y0 = dy > 0 ? top : bottom;
+  const y1 = dy > 0 ? Math.min(bottom, top + dy) : Math.max(top, bottom + dy);
+  await page.mouse.move(x, y0);
   await page.mouse.down();
-  for (let i = 1; i <= 12; i++) await page.mouse.move(1000 + i, y0 + (dy * i) / 12);
+  for (let i = 1; i <= 12; i++) await page.mouse.move(x + i, y0 + ((y1 - y0) * i) / 12);
   await page.mouse.up();
+}
+
+/** Moves the mouse to a canvas point whose ray hits no target, so nothing stays hovered (a hovered target hides the "!" bubble). */
+async function hoverNothing(page: Page) {
+  const point = await page.evaluate(() => {
+    const hit = (window as unknown as { __hq: { interact: { hitAt: ((x: number, y: number) => string | null) | null } } }).__hq.interact.hitAt;
+    for (let fy = 0.3; fy <= 0.75; fy += 0.05) {
+      for (let fx = 0.3; fx <= 0.7; fx += 0.05) {
+        const x = Math.round(innerWidth * fx);
+        const y = Math.round(innerHeight * fy);
+        if (document.elementFromPoint(x, y)?.tagName === "CANVAS" && hit && hit(x, y) === null) return { x, y };
+      }
+    }
+    return null;
+  });
+  if (!point) throw new Error("No canvas point without a target");
+  await page.mouse.move(point.x, point.y);
 }
 
 /** Two-finger pinch through CDP: the distance between the fingers goes from `from` to `to` px. */
@@ -272,8 +294,7 @@ test.describe("wheel zoom and first person", () => {
     await enterFirstPerson(page);
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await expect.poll(async () => (await probe(page)).forward.x, { timeout: 15_000 }).toBeLessThan(-0.99);
-    // Off the canvas, so nothing is hovered (a hovered target hides the bubble).
-    await page.mouse.move(1, 1);
+    await hoverNothing(page);
     const bubble = page.getByTestId("hint-bubble");
     await expect(bubble).toBeVisible({ timeout: 15_000 });
     await expect(bubble).toHaveAttribute("data-hint", "L1:pad:elevator");
@@ -339,9 +360,10 @@ test.describe("touch", () => {
     await pinch(page, 120, 160);
     await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(0.95);
     expect((await probe(page)).mode).toBe("third");
-    await pinch(page, 80, 300);
+    // Fingers stay clear of the elevator panel on the right edge (a finger that lands on it is not a pinch).
+    await pinch(page, 60, 220);
     await expect.poll(async () => (await probe(page)).blend, { timeout: 30_000 }).toBe(1);
-    await pinch(page, 300, 120);
+    await pinch(page, 220, 90);
     await expect.poll(async () => (await probe(page)).blend, { timeout: 30_000 }).toBe(0);
     expect((await snapshot(page)).floor).toBe("L1");
   });
