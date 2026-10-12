@@ -5,9 +5,10 @@ import { contentVisible, RIDE_BELOW_REACH } from "@/experience/tower/visibility"
 const at = (id: "L1" | "L2" | "L3" | "L4" | "RF", roverY: number, extra: { exterior?: boolean; rideTo?: "L1" | "L2" | "L3" | "L4" | "RF" | null } = {}) =>
   contentVisible({ id, floorY: floorY(id), roverY, exterior: extra.exterior ?? false, rideTo: extra.rideTo ?? null });
 
-it("shows only the Lobby's detail in the boot and intro exterior (other floors keep slab and edges)", () => {
+it("shows the Lobby's and L2's detail in the boot and intro exterior (the opening shot frames L2), nothing above", () => {
   expect(at("L1", 0, { exterior: true })).toBe(true);
-  expect(at("L2", 0, { exterior: true })).toBe(false);
+  expect(at("L2", 0, { exterior: true })).toBe(true);
+  expect(at("L3", 0, { exterior: true })).toBe(false);
   expect(at("RF", 0, { exterior: true })).toBe(false);
 });
 
