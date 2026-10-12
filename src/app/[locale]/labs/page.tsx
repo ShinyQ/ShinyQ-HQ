@@ -9,13 +9,12 @@ import { getPods } from "@/content/load";
 import { podAttrs } from "@/content/pageview";
 import { assertLocale } from "@/i18n/locale";
 import { WING_ACCENT } from "@/lib/accent";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/labs">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "labs" });
-  const tw = await getTranslations({ locale, namespace: "work" });
-  return pageMetadata({ locale, path: "/labs", title: tw("title"), description: t("intro") });
+  return seoMetadata(assertLocale((await params).locale), "/labs");
 }
 
 /** Alternating 7/5 and 5/7 column spans for the key projects grid. */
@@ -33,6 +32,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
 
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, "/labs")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" />
       <PageIntro
         marker={<Marker accent="violet">L3 · {tf("L3")}</Marker>}

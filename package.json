@@ -11,7 +11,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify:quick": "bun run typecheck && bun run lint && bun run test && bun run build",
+    "verify:quick": "bun run typecheck && bun run lint && bun run test && bun run build && bun run og:check",
     "e2e": "playwright test",
     "e2e:full": "bun scripts/e2e-changed.ts --all",
     "e2e:changed": "bun scripts/e2e-changed.ts",
@@ -24,6 +24,8 @@
     "cv:pages": "bun scripts/cv-pages.ts",
     "paper:pages": "bun scripts/paper-pages.ts",
     "floor:thumbs": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"floor thumbnail\" --workers=1 && bun scripts/floor-thumbs.ts",
+    "og:check": "bun scripts/og-check.ts",
+    "og:stills": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"og still\" --workers=1 && bun scripts/og-stills.ts",
     "ask:eval": "bun scripts/ask-eval.ts"
   },
   "dependencies": {
@@ -59,6 +61,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "jsdom": "^30.1.2",
+    "sharp": "0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.3"

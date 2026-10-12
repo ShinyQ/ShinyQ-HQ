@@ -48,14 +48,24 @@ export function languageAlternates(path: string, toUrl: (p: string) => string = 
   };
 }
 
-export type OgTarget = { kind: "default"; locale: Locale } | { kind: "labs" | "blog"; locale: Locale; slug: string };
+/** Section pages with their own share card; journey entries share the journey card. */
+export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv"] as const;
+export type OgPage = (typeof OG_PAGES)[number];
 
-/** Public path of a build-time OG PNG, e.g. "/og/en.png" or "/og/id/labs/<slug>.png" (see src/app/og). */
+export type OgTarget =
+  | { kind: "default"; locale: Locale }
+  | { kind: "page"; locale: Locale; page: OgPage }
+  | { kind: "labs" | "blog"; locale: Locale; slug: string };
+
+/** Public path of a build-time OG JPEG, e.g. "/og/en.jpg", "/og/en/page/journey.jpg", "/og/id/labs/<slug>.jpg" (see src/app/og). */
 export function ogImagePath(target: OgTarget): string {
-  return target.kind === "default" ? `/og/${target.locale}.png` : `/og/${target.locale}/${target.kind}/${target.slug}.png`;
+  if (target.kind === "default") return `/og/${target.locale}.jpg`;
+  if (target.kind === "page") return `/og/${target.locale}/page/${target.page}.jpg`;
+  return `/og/${target.locale}/${target.kind}/${target.slug}.jpg`;
 }
 
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
+export const OG_IMAGE_TYPE = "image/jpeg";
 
 export const OG_LOCALE: Record<Locale, string> = { en: "en_US", id: "id_ID" };
 
@@ -90,12 +100,12 @@ export function pageMetadata({
     {
       url: image ?? ogImagePath({ kind: "default", locale }),
       ...OG_IMAGE_SIZE,
-      type: "image/png",
+      type: OG_IMAGE_TYPE,
       alt: imageAlt ?? title ?? SITE_NAME,
     },
   ];
   return {
-    ...(title ? { title } : {}),
+    ...(title ? { title: { absolute: title } } : {}),
     ...(description ? { description } : {}),
     alternates: {
       canonical: url,

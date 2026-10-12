@@ -38,7 +38,6 @@ describe("bilingual UI copy", () => {
   it("keeps site and section metadata descriptions within 160 characters", () => {
     for (const messages of [en, id]) {
       for (const description of [
-        messages.meta.description,
         messages.quick.intro,
         messages.journey.intro,
         messages.labs.intro,

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { Analytics } from "@/components/Analytics";
 import { BootCover } from "@/components/BootCover";
 import { DialogHost } from "@/components/DialogHost";
@@ -15,7 +15,8 @@ import { assertLocale } from "@/i18n/locale";
 import { bootFirstScript } from "@/lib/boot-first";
 import { routing } from "@/i18n/routing";
 import { personJsonLd, websiteJsonLd } from "@/lib/jsonld";
-import { SITE_NAME, SITE_URL, pageMetadata } from "@/lib/site";
+import { seoFor, seoMetadata } from "@/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { fontClassName } from "../fonts";
 import "../globals.css";
 
@@ -32,13 +33,12 @@ export const viewport: Viewport = {
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "meta" });
   const profile = getProfile();
-  const base = `${profile.name} · ${profile.headline[locale]}`;
+  const home = seoFor(locale, "/");
   return {
-    ...pageMetadata({ locale, path: "/", title: base, description: t("description") }),
+    ...seoMetadata(locale, "/"),
     metadataBase: new URL(SITE_URL),
-    title: { default: base, template: `%s · ${t("siteName")}` },
+    title: { default: home.title, template: "%s" },
     applicationName: SITE_NAME,
     authors: [{ name: profile.name, url: `${SITE_URL}/${locale}` }],
     creator: profile.name,

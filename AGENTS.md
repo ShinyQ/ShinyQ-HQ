@@ -11,7 +11,8 @@ Read this before changing anything. It applies to humans and AI agents in every 
 ## Hard rules
 
 - **No em dashes** (U+2014) anywhere: code, comments, copy, docs, commits, PR text. A unit test scans the repo. Use commas, colons, parentheses or "to".
-- **Public repo.** Never commit private evidence, private repository names, cloud resource names, phone numbers, addresses, ID numbers, money amounts, salary or review text, the Master's degree, 2026 hackathon entries or any photo.
+- **No first person in mottos, taglines or titles (owner rule, 2026-10-13).** No "I", "my", "me" (EN) or "saya", "aku" (ID) in `profile.headline`, `profile.subheadline` (the motto), pod titles and taglines, post titles, page titles or OG card text. `hasFirstPerson` (`src/lib/first-person.ts`) enforces it for the headline and titles (`tests/content/first-person.test.ts`), page titles (`tests/unit/seo-copy.test.ts`) and share card text (`tests/unit/og-cards.test.ts`); the motto and taglines are checked by the landing tests.
+- **Public repo.** Never commit private evidence, private repository names, cloud resource names, phone numbers, addresses, ID numbers, money amounts, salary or review text, the Master's degree, 2026 hackathon entries or any photo (exception, owner decision 2026-10-13: the owner's own portrait, `public/og-assets/kurniadi-photo.png` for share cards and JSON-LD, and the web sizes under `public/brand/`).
 - **No client company names (C3, revised 2026-10-10).** Clients of the owner's employers (for example the bank, automotive, bakery, mining, lender and insurer clients) never appear on the site: not in text, alt text, slugs, metadata, OG cards, JSON-LD, search, room views or 3D labels. Use a sector label instead (`Pod.client` as `{ en, id }`, e.g. "National digital bank" / "Bank digital nasional"). Employers stay named (Metrodata / PT Mitra Integrasi Informatika, Jenius (SMBC Indonesia) for the 2024 to 2025 job only, Jatis, MNC, internships), and so do the freelance clients in C8. Product names are allowed, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck, MII AI Ticketing; ATLAS and FREDDY are client work, so they get a sector label); never claim a product the owner did not build (Deck Studio inside MII Cowork, not all of Cowork). Sole exception: the owner's CV PDF in `public/cv/`, committed byte for byte at the owner's request (it may list items the site text hides); never edit or regenerate it. Its page images in `public/cv/pages/` (rendered by `bun run cv:pages` for the CV viewer) share that exception; never OCR them into site text or alt text (alt text is "CV page N of M").
 - **Content is data.** Pages, rooms, pods and missions are generated from `content/site-content.json`. Never hardcode career facts in components.
 - **Bilingual.** Every user-facing content string is `{ en, id }`. Indonesian is natural and professional ("saya"), technical terms stay in English. UI strings live in `messages/en.json` and `messages/id.json` with identical keys.
@@ -48,6 +49,7 @@ public/cv/                      the owner's CV PDF, committed as-is (one file fo
 public/cv/pages/                CV page images for the in-site viewer (1600 and 800 px lossless webp), output of `bun run cv:pages`, committed
 public/papers/                  self-hosted paper PDFs ({file}.pdf: redacted or authors' manuscript, see "Content access") and their page images ({file}/{file}-N.webp, 1400 px), output of `bun run paper:pages`, committed
 public/floors/                  elevator picker thumbnails (320 x 180 webp, one per floor), output of `bun run floor:thumbs`, committed
+public/og-assets/               share card inputs: one 1200x630 still per floor (floor-{L1,L2,L3,L4,RF}.jpg) and the owner's photo (400 px PNG), output of `bun run og:stills`, committed (the build never needs WebGL)
 public/_headers, _redirects     Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*) and redirects (old CV paths)
 scripts/
   serve-static.ts               serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, Lighthouse)
@@ -74,7 +76,7 @@ src/
   app/[locale]/                 all localized routes (root layout with <html lang>)
   app/global-not-found.tsx      404.html
   app/sitemap.ts, robots.ts     static metadata routes (all locales, hreflang alternates)
-  app/og/[...path]/route.tsx    build-time OG PNGs: /og/{locale}.png, /og/{locale}/{labs,blog}/{slug}.png
+  app/og/[...path]/route.tsx    build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg
   app/data/[...path]/route.ts   build-time Glass Drawer content: /data/rooms/{locale}.json
   components/                   static-page UI (server components unless noted)
   components/Modal.tsx          shared modal dialog (portal, focus trap, Esc, full-screen sheet on phones); DialogHost.tsx mounts the site-wide modals
@@ -104,10 +106,12 @@ src/
   i18n/                         next-intl routing, request config, navigation, assertLocale
   lib/                          format (Intl dates), accent class maps, gpu-tier, url-sync, viewport
   lib/boot-first.ts             game-first load: inline head script, shouldBootFirst, releaseBootCover
-  lib/site.ts                   SITE_URL, pageMetadata, ogImagePath, beacon token
+  lib/site.ts                   SITE_URL, pageMetadata (absolute titles), ogImagePath, OG_PAGES, beacon token
+  lib/seo.ts                    every page's title, description and share card: seoFor, seoMetadata, fitDescription, keyResult
   lib/routes.ts                 allPagePaths() for the sitemap (keep in sync with generateStaticParams)
-  lib/jsonld.ts                 schema.org Person, WebSite, CreativeWork (pods), BlogPosting (posts)
-  lib/og.tsx, og-cards.ts       Neon Grid OG card renderer and the list of cards
+  lib/jsonld.ts                 schema.org Person, WebSite, CreativeWork (pods), BlogPosting (posts), BreadcrumbList (pageJsonLd)
+  lib/og.tsx, og-layout.ts, og-assets.ts, og-encode.ts, og-cards.ts   neon cinematic OG renderer, pure layout rules, build-time inputs (floor stills, photo, pod covers), JPEG encoder, list of cards
+  lib/first-person.ts           hasFirstPerson (owner rule: no first person in mottos, taglines and titles)
   lib/audio/                    procedural Web Audio engine + useAudio hook (see its README)
   experience/                   3D experience (see "3D experience" below)
   experience/floors/career/     L2 Career Road: pure layout.ts (buildCareerRoad, placeAt, labelFade, roadZAt, scrubTarget) plus R3F CareerRooms, YearGates (road, arches), WorkshopAnnex
@@ -180,7 +184,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 - Locales `en` (default) and `id`, always prefixed. `/` is a static page that redirects using `localStorage["hq:locale"]`, then `navigator.language`.
 - In server components call `assertLocale((await params).locale)` then `setRequestLocale(locale)`, and use `getTranslations({ locale, namespace })`.
 - Use `Link` from `@/i18n/navigation` for internal links (it adds the locale prefix). Dates go through `src/lib/format.ts` (`formatYearMonth`, `formatPeriod`, `formatDate`); ranges are written "X to Y" / "X hingga Y", never with dashes.
-- Metadata: `pageMetadata({ locale, path, title, description, type?, publishedTime?, tags?, image? })` from `src/lib/site.ts` adds canonical, `hreflang` alternates, Open Graph and Twitter cards. `image` defaults to `/og/{locale}.png`; use `ogImagePath(...)` for pod and post cards. A page that sets `openGraph` replaces the parent's, so always go through `pageMetadata`.
+- Metadata: every `generateMetadata` returns `seoMetadata(locale, path)` from `src/lib/seo.ts` (titles lead with the owner's name, descriptions are 140 to 160 characters: a lead from content or the `seo` messages plus the longest closing line from `seo.more.<page>` or the case-study facts that fits, so they adapt when the headline, the motto or a tagline changes; the role comes from `profile.headline`; `tests/unit/seo-copy.test.ts` checks every page in both locales). It goes through `pageMetadata` (`src/lib/site.ts`: canonical, `hreflang`, Open Graph, Twitter, `title.absolute`). A page that sets `openGraph` replaces the parent's, so never build metadata by hand. Pages render `<JsonLd data={pageJsonLd(locale, path)} />` for their BreadcrumbList (and the pod or post item). Share cards: `ogImagePath(...)`, 1200x630 JPEG at most 300 KB (satori PNG re-encoded with sharp at build time); backgrounds are committed floor stills (`bun run og:stills`, re-run after a large floor change), never WebGL at build; no edge stripes (an accent dot chip and a full-outline glow instead).
 - New page routes must be added to `src/lib/routes.ts` (sitemap). New pods and hosted posts get OG cards and sitemap entries automatically.
 
 ## 3D experience (Phases 1 to 5a)
@@ -316,7 +320,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 
 The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally and let CI run everything.
 
-- Before every push: `bun run verify:quick` (typecheck, lint, unit tests, `next build`, about 1 to 2 minutes), then `bun run e2e:changed` (only the specs that cover your changed paths, usually 1 to 4 minutes). Together about 5 minutes.
+- Before every push: `bun run verify:quick` (typecheck, lint, unit tests, `next build`, then `og:check` over the export, about 1 to 2 minutes), then `bun run e2e:changed` (only the specs that cover your changed paths, usually 1 to 4 minutes). Together about 5 minutes.
 - `e2e:changed` diffs against the merge base with `origin/main` plus staged, unstaged and untracked files and maps paths to specs in `scripts/e2e-plan.ts` (for example `src/experience/floors/labs/**` to `labs`, `gallery` and `walk`, `src/experience/interact/**` to `interact`, `experience`, `pads` and `career`, `src/app/**` and `src/components/**` to `pageview`, `static-routes` and `gallery`, `src/hud/drawer/**` to the drawer specs, `drawer-solid` included, `src/hud/dialog/**` and `src/experience/hints/**` to `onboarding`, `experience` and `walk`). Changes to `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` run the full suite; unmapped paths add the smoke specs; docs and unit tests run nothing. `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`). When you add a spec or a folder, add its rule (a unit test checks every spec is known).
 - `bun run e2e:smoke` (static routes, SEO, deploy rules, game-first load, Page View, about 1 to 2 minutes) is the fallback when unsure. `bun run e2e:full` (whole suite, about 6 to 10 minutes locally) only when you change shared test infrastructure, before a phase PR, or to reproduce a CI failure locally (`bun run e2e:full e2e/career.spec.ts -g "swipe"`).
 - Screenshots (`bun run screenshots`, `screenshots:pages`, 15 minutes or more) run only when visuals change and the owner asks for captures, or in CI: nightly on `main`, on demand (Actions > Screenshots > Run workflow) or on a PR labelled `screenshots` (also automatic for changes under `docs/design/**`). Artifacts: `screenshots`.

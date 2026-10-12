@@ -1,7 +1,6 @@
 {
   "meta": {
     "siteName": "ShinyQ HQ",
-    "description": "Kurniadi Ahmad Wijaya, Software Engineer and AI Engineer. Software and AI case studies, career history, writing and contact.",
     "quick": "Quick view",
     "journey": "Journey",
     "labs": "Labs",
@@ -864,6 +863,108 @@
       "replay": "replay the tutorial",
       "hintsOn": "hints: on",
       "hintsOff": "hints: off"
+    }
+  },
+  "seo": {
+    "home": "Home",
+    "homeTitle": "{name}: {role} building production AI platforms",
+    "homeDescription": "{name}, {role} in {city}. {motto}",
+    "quickTitle": "{name} at a glance: AI and software work",
+    "quickDescription": "{name} on one page. {motto}",
+    "journeyTitle": "Career journey of {name}",
+    "journeyDescription": "The career journey of {name}, {from} to {to}: jobs, freelance projects, education, research and awards.",
+    "labsTitle": "Software and AI case studies by {name}",
+    "labsDescription": "{count} software and AI case studies by {name}: realtime voice agents, document AI, AI security and backends.",
+    "libraryTitle": "Writing and research by {name}",
+    "libraryDescription": "Articles, research publications, published models and talks by {name}, {role}.",
+    "contactTitle": "Contact {name}: software and AI roles",
+    "contactDescription": "Contact {name}, {role} in {city}, about software and AI engineering roles and projects.",
+    "cvTitle": "CV of {name}: software and AI engineering",
+    "cvDescription": "CV of {name}, {role}: Azure AI applications, backend systems, career, education and certifications.",
+    "podTitle": "{title} by {name}",
+    "postTitle": "{title} by {name}",
+    "entryTitle": "{name}: {role}",
+    "entryTitleOrg": "{name}: {role}, {org}",
+    "keyResult": "Key result: {value} ({label}).",
+    "builtWith": "Built with {stack}.",
+    "caseStudyBy": "Case study by {name}.",
+    "byName": "By {name}.",
+    "postBy": "By {name}, {role}.",
+    "articleBy": "Article by {name}.",
+    "readArticle": "Read the full article.",
+    "entryRole": "{role}, {org}, {period}.",
+    "entryOrg": "{org}, {period}.",
+    "entryPeriod": "{period}.",
+    "careerOf": "Career history of {name}.",
+    "seeJourney": "See the full career journey.",
+    "period": "{from} to {to}",
+    "present": "present",
+    "more": {
+      "home": {
+        "1": "{count} case studies with results, career history and writing.",
+        "2": "{count} case studies with results and writing.",
+        "3": "{count} case studies with results.",
+        "4": "{count} case studies."
+      },
+      "quick": {
+        "1": "Key projects, results, career, skills and certifications.",
+        "2": "Key projects, results, career and skills.",
+        "3": "Projects, results and career."
+      },
+      "journey": {
+        "1": "From backend engineering to production AI.",
+        "2": "From backend to production AI."
+      },
+      "labs": {
+        "1": "Each with problem, approach and results.",
+        "2": "With problem, approach and results.",
+        "3": "With results."
+      },
+      "library": {
+        "1": "On voice agents, LLM evaluation and shipping AI to production.",
+        "2": "On voice agents, LLM evaluation and AI delivery.",
+        "3": "On voice agents and LLM evaluation."
+      },
+      "contact": {
+        "1": "Email, LinkedIn, GitHub and CV.",
+        "2": "Email, LinkedIn and GitHub.",
+        "3": "Email and CV."
+      },
+      "cv": {
+        "1": "Read it online or download the PDF.",
+        "2": "Read online or download.",
+        "3": "View or download."
+      }
+    },
+    "og": {
+      "cta": "Explore the 3D HQ",
+      "writing": "Writing",
+      "pages": {
+        "quick": {
+          "title": "At a glance",
+          "subtitle": "Projects, results, career and skills on one page"
+        },
+        "journey": {
+          "title": "Career journey",
+          "subtitle": "{from} to {to} · {count} entries"
+        },
+        "labs": {
+          "title": "Case studies",
+          "subtitle": "{count} software and AI projects, with results"
+        },
+        "library": {
+          "title": "Writing and research",
+          "subtitle": "{posts} articles and {papers} publications"
+        },
+        "contact": {
+          "title": "Contact",
+          "subtitle": "Software and AI engineering roles and projects"
+        },
+        "cv": {
+          "title": "CV",
+          "subtitle": "Career, education and certifications in one PDF"
+        }
+      }
     }
   }
 }

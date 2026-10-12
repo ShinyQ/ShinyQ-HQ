@@ -71,5 +71,5 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 
 ### Phase 6: polish and launch
 - Performance budgets and the accessibility check pass in CI. Sound works and is on by default (owner decision, appendix 05 section 5), starting on the first gesture; a mute persists.
-- The README easter egg works. SEO metadata, `hreflang`, the sitemap and OG images exist.
+- The README easter egg works. SEO metadata, `hreflang`, the sitemap and OG images exist. Round 5 (P9): every page's title contains the owner's name (section pages at most 60 characters, home at most 95), every description is 140 to 160 characters (EN and ID), every page has a canonical, hreflang en/id/x-default and a 1200x630 JPEG share card of at most 300 KB with no edge stripes, and every page except home has a BreadcrumbList (`bun run og:check`, `tests/unit/seo-copy.test.ts`).
 - Production deploys to `kurniadi.pages.dev`. The old site's `/cv.pdf` path redirects to the new CV.

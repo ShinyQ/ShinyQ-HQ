@@ -1,25 +1,34 @@
 /**
- * The set of build-time OG images: one default per locale plus one per pod
- * and hosted post, in both locales. Paths end in `.png` so static hosts
- * serve the right Content-Type.
+ * The build-time OG images and their content: one home card per locale, one per section page
+ * (journey entries share the journey card), one per pod and per hosted post, in both locales.
+ * Paths end in `.jpg` (ogImagePath). Synchronous and pure over content and messages, so tests call it.
  */
-import { getTranslations } from "next-intl/server";
+import { createTranslator } from "next-intl";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile } from "@/content/load";
-import { LOCALES } from "@/content/schema";
+import { type FloorId, LOCALES, type Locale } from "@/content/schema";
 import { clientLabel } from "@/content/selectors";
+import { FLOOR_ACCENT, WING_ACCENT } from "@/lib/accent";
 import { formatDate } from "@/lib/format";
-import type { OgCard } from "@/lib/og";
-import { type OgTarget, ogImagePath } from "@/lib/site";
+import { OG_EYEBROW_MAX, type OgCard, clampText, ogText } from "@/lib/og-layout";
+import { journeyYears, keyResult } from "@/lib/seo";
+import { OG_PAGES, type OgPage, type OgTarget, ogImagePath } from "@/lib/site";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 
 export type { OgTarget };
 
+const MESSAGES = { en, id } as const;
+
+/** The floor each section page lives on in 3D: its eyebrow and accent. */
+export const PAGE_FLOOR: Record<OgPage, FloorId> = { quick: "L1", journey: "L2", labs: "L3", library: "L4", contact: "RF", cv: "RF" };
 
 export function allOgTargets(): OgTarget[] {
   const { floors } = getContent();
   const hosted = floors.library.posts.filter((p) => !p.url);
   return LOCALES.flatMap((locale): OgTarget[] => [
     { kind: "default", locale },
+    ...OG_PAGES.map((page) => ({ kind: "page" as const, locale, page })),
     ...floors.labs.pods.map((p) => ({ kind: "labs" as const, locale, slug: p.slug })),
     ...hosted.map((p) => ({ kind: "blog" as const, locale, slug: p.slug })),
   ]);
@@ -35,39 +44,80 @@ export function parseOgSegments(segments: string[]): OgTarget | undefined {
   return allOgTargets().find((t) => ogImagePath(t) === wanted);
 }
 
-export async function ogCard(target: OgTarget): Promise<OgCard> {
+function pageSubtitle(page: OgPage, locale: Locale): string {
+  const t = createTranslator({ locale, messages: MESSAGES[locale], namespace: "seo.og.pages" });
+  const { floors } = getContent();
+  if (page === "journey") return t("journey.subtitle", { ...journeyYears(), count: String(floors.careerArchive.entries.length) });
+  if (page === "labs") return t("labs.subtitle", { count: String(floors.labs.pods.length) });
+  if (page === "library") return t("library.subtitle", { posts: String(floors.library.posts.length), papers: String(floors.library.publications.length) });
+  return t(`${page}.subtitle`);
+}
+
+/** "L3 · <wing> · <sector>", dropping the wing (the accent color still shows it), then shortening, when it would not fit on one line. */
+function projectEyebrow(wing: string, sector: string | undefined, shot: boolean): string {
+  const max = shot ? OG_EYEBROW_MAX.shot : OG_EYEBROW_MAX.wide;
+  const full = ["L3", wing, sector].filter(Boolean).join(" · ");
+  if (!sector || full.length <= max) return full;
+  return clampText(`L3 · ${sector}`, max);
+}
+
+export function ogCard(target: OgTarget): OgCard {
   const { locale } = target;
+  const messages = MESSAGES[locale];
   const profile = getProfile();
+  const tx = (text: string) => ogText(text, locale);
+  const base = { name: profile.name, headline: tx(profile.headline[locale]) };
+
   if (target.kind === "default") {
-    const t = await getTranslations({ locale, namespace: "meta" });
     return {
-      eyebrow: `${t("siteName")} · L1`,
-      title: profile.headline[locale],
-      subtitle: profile.subheadline[locale],
+      ...base,
+      layout: "home",
+      eyebrow: `${messages.meta.siteName} · ${messages.floors.L1}`,
+      title: profile.name,
+      subtitle: tx(profile.headline[locale]),
+      motto: tx(profile.subheadline[locale]),
       accent: "cyan",
-      footer: profile.location[locale],
+      still: "L1",
+      cta: messages.seo.og.cta,
+    };
+  }
+  if (target.kind === "page") {
+    const floor = PAGE_FLOOR[target.page];
+    return {
+      ...base,
+      layout: "page",
+      eyebrow: `${floor} · ${messages.floors[floor]}`,
+      title: messages.seo.og.pages[target.page].title,
+      subtitle: pageSubtitle(target.page, locale),
+      accent: FLOOR_ACCENT[floor],
+      still: floor,
     };
   }
   if (target.kind === "labs") {
     const pod = getPod(target.slug);
     if (!pod) throw new Error(`Unknown pod for OG image: ${target.slug}`);
-    const tc = await getTranslations({ locale, namespace: "common" });
+    const result = keyResult(pod);
     return {
-      eyebrow: `L3 · ${tc(`wing.${pod.wing}`)}${pod.client ? ` · ${clientLabel(pod.client, locale)}` : ""}`,
-      title: pod.title[locale],
-      subtitle: pod.tagline[locale],
-      accent: pod.accent,
-      footer: profile.headline[locale],
+      ...base,
+      layout: "project",
+      eyebrow: projectEyebrow(messages.common.wing[pod.wing], clientLabel(pod.client, locale), Boolean(pod.assets[0])),
+      title: tx(pod.title[locale]),
+      subtitle: tx(pod.tagline[locale]),
+      accent: WING_ACCENT[pod.wing],
+      still: "L3",
+      shot: pod.assets[0]?.src,
+      result: { value: tx(result.value), label: tx(result.label[locale]) },
     };
   }
   const post = getPost(target.slug);
   if (!post) throw new Error(`Unknown post for OG image: ${target.slug}`);
   const contentLocale = getPostSource(target.slug, locale)?.locale ?? locale;
   return {
-    eyebrow: `L4 · ${formatDate(post.date, locale)}`,
-    title: post.title[contentLocale],
-    subtitle: post.excerpt[locale],
-    accent: "white",
-    footer: profile.headline[locale],
+    ...base,
+    layout: "post",
+    eyebrow: `L4 · ${messages.seo.og.writing} · ${formatDate(post.date, locale)}`,
+    title: tx(post.title[contentLocale]),
+    accent: "cyan",
+    still: "L4",
   };
 }

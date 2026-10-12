@@ -89,6 +89,14 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads", "walk"]);
     expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);
   });
+
+  it("maps share cards and search metadata to the SEO specs (R5 P9)", () => {
+    expect(specsForChanges(["src/lib/seo.ts"]).specs).toEqual(["seo", "static-routes"]);
+    expect(specsForChanges(["src/lib/og-layout.ts"]).specs).toEqual(["seo", "static-routes"]);
+    expect(specsForChanges(["public/og-assets/floor-L1.jpg"]).specs).toEqual(["seo", "static-routes"]);
+    expect(specsForChanges(["scripts/og-check.ts"]).specs).toEqual(["seo", "static-routes"]);
+    expect(specsForChanges(["scripts/og-stills.ts", "scripts/og-before-after.ts"]).specs).toEqual([]);
+  });
 });
 
 describe("assignShard", () => {

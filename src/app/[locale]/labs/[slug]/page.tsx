@@ -19,8 +19,8 @@ import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
-import { podJsonLd } from "@/lib/jsonld";
-import { ogImagePath, pageMetadata } from "@/lib/site";
+import { pageJsonLd } from "@/lib/jsonld";
+import { seoMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -30,18 +30,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/labs/[slug]">): Promise<Metadata> {
   const { locale: raw, slug } = await params;
-  const locale = assertLocale(raw);
-  const pod = getPod(slug);
-  if (!pod) return {};
-  return pageMetadata({
-    locale,
-    path: `/labs/${slug}`,
-    title: pod.title[locale],
-    description: pod.tagline[locale],
-    type: "article",
-    tags: pod.stack,
-    image: ogImagePath({ kind: "labs", locale, slug }),
-  });
+  return getPod(slug) ? seoMetadata(assertLocale(raw), `/labs/${slug}`) : {};
 }
 
 export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slug]">) {
@@ -73,7 +62,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   return (
     <>
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
-      <JsonLd data={podJsonLd(pod, locale)} />
+      <JsonLd data={pageJsonLd(locale, `/labs/${pod.slug}`)} />
       <article>
         <header className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
           <CrumbLink crumb={{ href: "/labs", label: tw("title") }} />

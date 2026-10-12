@@ -7,13 +7,12 @@ import { isResearch } from "@/content/selectors";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/library">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "library" });
-  const tw = await getTranslations({ locale, namespace: "writing" });
-  return pageMetadata({ locale, path: "/library", title: tw("title"), description: t("intro") });
+  return seoMetadata(assertLocale((await params).locale), "/library");
 }
 
 export default async function LibraryPage({ params }: PageProps<"/[locale]/library">) {
@@ -34,6 +33,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   ];
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, "/library")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L4" />
       <PageIntro
         marker={<Marker accent="white">L4 · {tf("L4")}</Marker>}

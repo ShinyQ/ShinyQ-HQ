@@ -9,12 +9,12 @@ import { typeCounts } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/journey">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "journey" });
-  return pageMetadata({ locale, path: "/journey", title: t("title"), description: t("intro") });
+  return seoMetadata(assertLocale((await params).locale), "/journey");
 }
 
 export default async function JourneyPage({ params }: PageProps<"/[locale]/journey">) {
@@ -26,6 +26,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
 
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, "/journey")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" />
       <PageIntro
         marker={<Marker accent="amber">L2 · {tf("L2")}</Marker>}
