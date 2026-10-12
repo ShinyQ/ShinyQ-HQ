@@ -6,7 +6,7 @@ import { asReturningVisitor, waitForFloor, waitForHQ, waitForPhase, waitForScene
  * programs, applied DPR and MSAA); time-based numbers come from scripts/perf-gpu.ts on real GPUs.
  */
 type Graphics = { pixelRatio: number; multisampling: number | null; bloomLevels: number | null };
-type RenderHandle = { resetPeak(): void; peakCalls: number; peakTriangles: number; programs(): number; programNames(): string[]; graphics?(): Graphics };
+type RenderHandle = { resetPeak(): void; peakCalls: number; peakTriangles: number; programs(): number; programNames(): string[]; graphics?(): Graphics; warmFloors(): string[] };
 type GpuWindow = { __hq: { store: { getState(): { goToFloor(f: string): void } }; render: RenderHandle } };
 
 test.describe.configure({ timeout: 240_000 });
@@ -72,11 +72,16 @@ test("intro and ride draw-call peaks (full tier)", async ({ page }) => {
   for (const [name, value] of Object.entries(peaks)) expect(value, `${name} peak (all render passes)`).toBeLessThan(150);
 });
 
-test("programs added on the first arrival at each floor (full tier)", async ({ page }) => {
+test("boot warms every floor: first arrivals add at most 2 programs each (full tier)", async ({ page }) => {
   await firstSession(page);
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.warmFloors().sort()), { timeout: 120_000 })
+    .toEqual(["L2", "L3", "L4", "RF"]);
   await bootRover(page);
   await waitForPhase(page, "explore", 60_000);
   await waitForSceneLive(page);
+  // Warm floors were unmounted again: RF is not a neighbour of L1.
+  expect(await page.evaluate(() => Boolean((window as unknown as SceneWindow).__hq.render.scene?.getObjectByName("roof")))).toBe(false);
   const seen = new Set((await counters(page)).names);
   const added: Record<string, string[]> = {};
   for (const floor of ["L2", "L3", "L4", "RF"]) {
@@ -86,7 +91,7 @@ test("programs added on the first arrival at each floor (full tier)", async ({ p
   }
   report("programs-added", Object.fromEntries(Object.entries(added).map(([k, v]) => [k, v.length])));
   report("programs-added-names", added);
-  expect(Object.keys(added)).toHaveLength(4);
+  for (const [floor, names] of Object.entries(added)) expect(names.length, `${floor}: ${names.join(", ")}`).toBeLessThanOrEqual(2);
 });
 
 const BUDGET_CASES = [

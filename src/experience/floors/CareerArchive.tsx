@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useHQStore } from "@/store/useHQStore";
+import { useWarmingFloor } from "../scene/warmState";
 import type { CareerData, Rect } from "../types";
 import { CareerRooms } from "./career/CareerRooms";
 import { buildCareerRoad, careerLayoutInput } from "./career/layout";
@@ -17,8 +18,9 @@ export interface CareerLabels extends WorkshopLabels {
 /** L2 Career Road (walkable floors plan, Part 2), generated from the year groups in the content. */
 export function CareerArchive({ career, labs, labels }: { career: CareerData; labs: Rect; labels: CareerLabels }) {
   // About 60 labels are typeset on the main thread, so build the road only once the rover is on L2 or
-  // heading there (the drive to the elevator door covers the cost), not while the Lobby intro plays.
-  const active = useHQStore((s) => s.floor === "L2" || s.ride?.to === "L2");
+  // heading there (the drive to the elevator door covers the cost), or while the boot warms its programs.
+  const warming = useWarmingFloor();
+  const active = useHQStore((s) => s.floor === "L2" || s.ride?.to === "L2") || warming === "L2";
   const tier = useHQStore((s) => s.tier);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const layout = useMemo(() => buildCareerRoad(careerLayoutInput(career)), [career]);

@@ -1,5 +1,6 @@
 import type { Camera, Scene, WebGLRenderer } from "three";
 import { postHandle } from "./postHandle";
+import { listWarm } from "./warmState";
 
 function shortHash(text: string): string {
   let h = 5381;
@@ -47,5 +48,9 @@ export const renderProbe = {
       multisampling: post?.composer()?.multisampling ?? null,
       bloomLevels: post?.bloom()?.mipmapBlurPass.levels ?? null,
     };
+  },
+  /** Floors whose programs are compiled and pinned (boot warm-up, neighbours, ride prepare). */
+  warmFloors(): string[] {
+    return listWarm();
   },
 };

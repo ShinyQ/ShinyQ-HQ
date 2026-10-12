@@ -18,6 +18,7 @@ import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
 import { Director } from "./Director";
+import { ProgramWarmup } from "./ProgramWarmup";
 import { QualityController } from "./QualityController";
 import { sceneSettings, type GfxOverride, type RenderBudget } from "./settings";
 
@@ -83,6 +84,7 @@ export const Scene = memo(function Scene({
       <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} layouts={layouts} />
       <GlassClock />
       <QualityController tier={tier} coarse={coarse} gfx={gfx} />
+      <ProgramWarmup tier={tier} />
       {tier === "full" && <FloorMotes />}
       {tier === "full" && (
         <Suspense fallback={null}>
