@@ -5,7 +5,7 @@
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6, T8, T13).
  */
 import { ASK_ENDPOINT, fetchAskStatus, isAskEnabled, resetAskStatus } from "./status";
-import { cleanTags, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag } from "./protocol";
+import { cleanTags, isAskCite, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag } from "./protocol";
 
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 export const TURNSTILE_SRC = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`;
@@ -21,7 +21,7 @@ export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<
 export type AskClientError = AskErrorCode | "network" | "stream" | "aborted" | "unavailable";
 
 export type AskResult =
-  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[] }
+  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string }
   | { error: AskClientError; retryAfter?: number };
 
 export const isAskError = (result: AskResult): result is Extract<AskResult, { error: AskClientError }> => "error" in result;
@@ -113,6 +113,7 @@ export function parseFrame(data: string): AskFrame | null {
       source: SOURCES.includes(v.source as AskSource) ? (v.source as AskSource) : "none",
       asOf: typeof v.asOf === "string" ? v.asOf : "",
       ...(tags.length ? { tags } : {}),
+      ...(isAskCite(v.cite) ? { cite: v.cite } : {}),
     };
   }
   return null;
@@ -382,7 +383,9 @@ async function readStream(response: Response, onDelta: (text: string) => void, s
 
   if (signal?.aborted) return { error: "aborted" };
   const final = done as Extract<AskFrame, { done: true }> | null;
-  return final ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}) } : { error: "stream" };
+  return final
+    ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}), ...(final.cite ? { cite: final.cite } : {}) }
+    : { error: "stream" };
 }
 
 /** Test hook: forgets the cached status, the Turnstile widget and the verified window. */

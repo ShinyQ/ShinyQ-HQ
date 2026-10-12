@@ -193,3 +193,18 @@ describe("fetchAskStatus", () => {
     expect(peekAskStatus()).toBeNull();
   });
 });
+
+describe("done frame citation", () => {
+  const done = (cite: unknown) => parseFrame(JSON.stringify({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-12", cite }));
+
+  it("keeps an allowlisted Page View path", () => {
+    expect(done("/contact#perspectives-spec-before-code")).toMatchObject({ cite: "/contact#perspectives-spec-before-code" });
+    expect(done("/contact#how")).toMatchObject({ cite: "/contact#how" });
+  });
+
+  it("drops anything else", () => {
+    for (const cite of ["https://evil.example", "//evil.example", "javascript:alert(1)", '/contact#how"><img src=x>', "/labs/x", 42, null]) {
+      expect(done(cite), String(cite)).not.toHaveProperty("cite");
+    }
+  });
+});

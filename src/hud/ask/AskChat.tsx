@@ -9,7 +9,7 @@ import type { ThreadMessage } from "@/ask/thread";
 import type { Locale } from "@/content/schema";
 import type { DrawerLayout } from "@/hud/drawer/layout";
 import { CloseIcon, EditIcon, SendIcon, SparkIcon } from "./icons";
-import { AskAsOf, useAskErrorMessage } from "./ui";
+import { AskAsOf, AskCiteLink, useAskErrorMessage } from "./ui";
 import { useAskThread, type AskFn } from "./useAskThread";
 
 export interface AskRequest {
@@ -229,7 +229,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                 </li>
               )}
               {messages.map((m) => (
-                <Message key={m.id} message={m} locale={locale} errorText={errorMessage} labels={{ you: td("you"), hq: td("hq") }} />
+                <Message key={m.id} message={m} locale={locale} errorText={errorMessage} labels={{ you: td("you"), hq: td("hq") }} onCite={layout === "sheet" ? onClose : undefined} />
               ))}
               {phase === "thinking" && (
                 <li className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-2" data-testid="ask-thinking">
@@ -280,7 +280,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                 ) : (
                   <ul className="grid grid-cols-2 gap-2" data-testid="ask-topics">
                     {ASK_TOPICS.map((key) => (
-                      <li key={key}>
+                      <li key={key} className="last:odd:col-span-2">
                         <button
                           type="button"
                           aria-expanded={false}
@@ -354,11 +354,14 @@ function Message({
   locale,
   errorText,
   labels,
+  onCite,
 }: {
   message: ThreadMessage;
   locale: Locale;
   errorText: (state: { error?: ThreadMessage["error"]; retryAfter?: number }) => string;
   labels: { you: string; hq: string };
+  /** Called before a source link navigates (closes the bottom sheet, which covers the page). */
+  onCite?: () => void;
 }) {
   if (message.role === "user") {
     return (
@@ -381,6 +384,7 @@ function Message({
         <span className="sr-only">{labels.hq}: </span>
         {message.text}
       </p>
+      {message.cite && <AskCiteLink path={message.cite} locale={locale} onNavigate={onCite} className="mt-1.5 text-[13px] leading-5" />}
       {message.outcome && message.outcome !== "fallback" && <AskAsOf asOf={message.asOf} locale={locale} className="mt-1.5 text-[11px] leading-4 text-ink-3" />}
     </li>
   );

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { AskClientError } from "@/ask/client";
+import { citeKind, isAskCite } from "@/ask/protocol";
 import type { Locale } from "@/content/schema";
 import { formatDate } from "@/lib/format";
 
@@ -29,6 +30,23 @@ export function AskPrivacy({ className }: { className?: string }) {
     <p className={className}>
       <span className="font-semibold">{t("privacyTitle")}: </span>
       {t("privacy")}
+    </p>
+  );
+}
+
+/**
+ * "Read on this site" link under a cited answer (spec section 13). A plain anchor on purpose: a
+ * same-page hash must fire `hashchange` so the Perspectives accordion opens (`OpenOnHash`); the
+ * path is allowlisted (`isAskCite`) and never comes from the model's text.
+ */
+export function AskCiteLink({ path, locale, className, onNavigate }: { path: string; locale: Locale; className?: string; onNavigate?: () => void }) {
+  const t = useTranslations("ask");
+  if (!isAskCite(path)) return null;
+  return (
+    <p className={className}>
+      <a href={`/${locale}${path}`} onClick={onNavigate} className="link" data-testid="ask-cite">
+        {t("dock.source", { label: t(`cite.${citeKind(path)}`) })}
+      </a>
     </p>
   );
 }

@@ -20,15 +20,16 @@ interface MockOptions {
   deltas?: string[];
   outcome?: string;
   tags?: string[];
+  cite?: string;
   /** HTTP status for POSTs (429: rate limited). */
   post?: number;
 }
 
-const sse = (deltas: string[], outcome: string, tags: string[]) =>
-  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
+const sse = (deltas: string[], outcome: string, tags: string[], cite?: string) =>
+  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
 
 /** Routes `/api/ask` and records every request to it. */
-async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], post = 200 }: MockOptions) {
+async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, post = 200 }: MockOptions) {
   const requests: Request[] = [];
   await page.route("**/api/ask", async (route) => {
     const request = route.request();
@@ -38,7 +39,7 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(status) });
     }
     if (post !== 200) return route.fulfill({ status: post, contentType: "application/json", headers: { "retry-after": "90" }, body: JSON.stringify({ error: "rate_limited", retryAfter: 90 }) });
-    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags) });
+    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite) });
   });
   return {
     all: requests,
@@ -313,4 +314,19 @@ test("3D: the top-right pill opens the dock over the tower, and typing does not 
   expect(api.bodies()[0]).toMatchObject({ q: "Where is he based?", source: "dock" });
   await page.keyboard.press("Escape");
   await expect(dock(page)).toBeHidden();
+});
+
+test("Perspectives topic: a cited answer links to its written source on About", async ({ page }) => {
+  const api = await mockAsk(page, { status: enabled(), deltas: ["Kurniadi writes that he owns every merge decision."], tags: ["perspectives"], cite: "/contact#how" });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByTestId("ask-topics").getByRole("button", { name: "Perspectives" }).click();
+  await dock(page).getByRole("button", { name: "What are his coding principles?", exact: true }).click();
+  await expect(thread(page)).toContainText("owns every merge decision");
+  expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill" });
+  const link = thread(page).getByTestId("ask-cite");
+  await expect(link).toHaveText("Read on this site: How I work on the About page");
+  await link.click();
+  await expect(page).toHaveURL(/\/en\/contact#how$/);
+  await expect(page.locator("#how")).toBeAttached();
 });

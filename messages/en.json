@@ -580,7 +580,7 @@
       "close": "Close chat",
       "clear": "Clear chat",
       "threadLabel": "Conversation",
-      "welcome": "Hi! I answer questions about Kurniadi's work, projects, career and how to reach him, using only what is on this site. Pick a topic or type a question.",
+      "welcome": "Hi! I answer questions about Kurniadi's work, projects, career, how he works and how to reach him, using only what is on this site. Pick a topic or type a question.",
       "you": "You",
       "hq": "HQ",
       "topicsLabel": "Pick a topic",
@@ -590,7 +590,8 @@
       "moreTopics": "Other topics",
       "edit": "Edit before asking: {q}",
       "inputLabel": "Your question",
-      "placeholder": "Ask about his work, projects or career",
+      "placeholder": "Ask about his work, projects or how he works",
+      "source": "Read on this site: {label}",
       "send": "Send"
     },
     "topics": {
@@ -599,6 +600,12 @@
       "career": "Career",
       "contact": "Contact",
       "perspectives": "Perspectives"
+    },
+    "cite": {
+      "perspective": "Perspectives on the About page",
+      "how": "How I work on the About page",
+      "blog": "his blog post",
+      "library": "the Library"
     },
     "hero": {
       "label": "Ask AI about my work",
