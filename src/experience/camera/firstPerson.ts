@@ -72,6 +72,11 @@ export function roverOpacity(blend: number): number {
   return 1 - easeBlend((blend - FIRST_PERSON.fadeFrom) / (FIRST_PERSON.fadeTo - FIRST_PERSON.fadeFrom));
 }
 
+/** Opacity factor for the ghost floors above the rover: they fade out with the glide, so first person has no ceiling. */
+export function ceilingOpacity(blend: number): number {
+  return 1 - easeBlend(blend);
+}
+
 export interface ViewHold {
   phase: string;
   ride: boolean;

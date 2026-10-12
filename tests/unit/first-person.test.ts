@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   blendPoses,
   CAMERA_NEAR,
+  ceilingOpacity,
   easeBlend,
   FIRST_PERSON,
   FIRST_PERSON_FOV,
@@ -49,6 +50,12 @@ describe("glide", () => {
     expect(blendPoses(a, b, 0)).toEqual(a);
     expect(blendPoses(a, b, 1)).toEqual(b);
     expect(blendPoses(a, b, 0.5).fov).toBeCloseTo(50);
+  });
+
+  it("fades the ghost floors above out with the glide (no ceiling in first person)", () => {
+    expect(ceilingOpacity(0)).toBe(1);
+    expect(ceilingOpacity(1)).toBe(0);
+    expect(ceilingOpacity(0.5)).toBeCloseTo(0.5);
   });
 
   it("fades the rover body only in the last part of the glide", () => {

@@ -63,6 +63,12 @@ type CameraWindow = {
   __blend: { min: number; values: number[] };
 };
 
+type ProbeWindow = { __hq: { probes: { flippedSigns: number; ghosts: Record<string, boolean> } } };
+const sceneProbes = (page: Page) => page.evaluate(() => {
+  const p = (window as unknown as ProbeWindow).__hq.probes;
+  return { flippedSigns: p.flippedSigns, ghosts: Object.entries(p.ghosts).filter(([, on]) => on).map(([floor]) => floor) };
+});
+
 const probe = (page: Page): Promise<CameraProbe> =>
   page.evaluate(() => {
     const r = (window as unknown as CameraWindow).__hq.rover;
@@ -146,9 +152,12 @@ test.describe("wheel zoom and first person", () => {
     await expect.poll(async () => (await probe(page)).zoom).toBeGreaterThan(1.1);
     expect((await snapshot(page)).floor).toBe("L1");
 
+    // Third person looks down through the ghost floors above; first person has no ceiling.
+    expect((await sceneProbes(page)).ghosts.length).toBeGreaterThan(0);
     await enterFirstPerson(page);
     const fp = await probe(page);
     expect(fp.mode).toBe("first");
+    await expect.poll(async () => (await sceneProbes(page)).ghosts).toEqual([]);
     expect(fp.position[1]).toBeCloseTo(fp.rover.y + FIRST_PERSON.eyeHeight, 1);
     expect(Math.hypot(fp.position[0] - fp.rover.x, fp.position[2] - fp.rover.z)).toBeLessThan(0.05);
     const inside = await snapshot(page);
@@ -282,8 +291,11 @@ test.describe("wheel zoom and first person", () => {
     const p = await probe(page);
     expect(p.position[2]).toBeLessThan(p.rover.z - 10);
     expect(p.yaw).toBe(0);
+    // Seen from the other side, the year signs, room labels and floor digits turn around (never mirrored).
+    await expect.poll(async () => (await sceneProbes(page)).flippedSigns, { timeout: 15_000 }).toBeGreaterThan(0);
     await page.keyboard.press("0");
     await expect.poll(async () => Math.abs(Math.sin((await probe(page)).railYaw / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
+    await expect.poll(async () => (await sceneProbes(page)).flippedSigns, { timeout: 15_000 }).toBe(0);
   });
 });
 

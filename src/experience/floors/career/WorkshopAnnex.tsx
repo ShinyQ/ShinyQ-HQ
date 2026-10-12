@@ -4,6 +4,8 @@ import { Text } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, type InstancedMesh, Object3D } from "three";
 import { COLORS, FLOOR_GAP, FLOOR_COLOR } from "../../config";
+import { monoWidth } from "../../fx/readableFlip";
+import { Readable } from "../../fx/Readable";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import type { CareerData, Rect } from "../../types";
 import { BENCH, REPO_WALL, type CareerRoadLayout } from "./layout";
@@ -83,48 +85,40 @@ export function WorkshopAnnex({ layout, career, labs, labels }: { layout: Career
 
   return (
     <group name="workshop-annex">
-      <Text font={FONTS.monoBold} fontSize={0.8} letterSpacing={0.12} color={accent} anchorX="center" anchorY="bottom" position={[cx, REPO_WALL.height + 0.9, wallZ]} material-toneMapped={false}>
-        {labels.workshop.toUpperCase()}
-      </Text>
-
       <GlassBox size={[wallW, REPO_WALL.height, REPO_WALL.thickness]} position={[cx, REPO_WALL.height / 2, wallZ]} color={COLORS.cyan} fillOpacity={0.06} edgeOpacity={0.7} />
-      <group position={[workshop.wall.minX + 0.5, REPO_WALL.height - 0.4, workshop.wall.maxZ + 0.05]}>
-        <Text font={FONTS.monoBold} fontSize={0.32} letterSpacing={0.1} color={COLORS.cyan} anchorX="left" anchorY="top" material-toneMapped={false}>
-          {`${labels.repos.toUpperCase()} (${career.repos.length})`}
+      {/* The title and both panels turn around the wall's center when the camera is behind the wall. */}
+      <Readable position={[cx, 0, wallZ]}>
+        <Text font={FONTS.monoBold} fontSize={0.8} letterSpacing={0.12} color={accent} anchorX="center" anchorY="bottom" position={[0, REPO_WALL.height + 0.9, 0]} material-toneMapped={false}>
+          {labels.workshop.toUpperCase()}
         </Text>
-        <Text font={FONTS.mono} fontSize={0.2} lineHeight={1.45} color="#d4d4d8" anchorX="left" anchorY="top" position={[0, -0.55, 0]} whiteSpace="nowrap">
-          {repos}
-        </Text>
-      </group>
-      <group position={[workshop.wall.maxX - 4.6, REPO_WALL.height - 0.4, workshop.wall.maxZ + 0.05]}>
-        <Text font={FONTS.monoBold} fontSize={0.32} letterSpacing={0.1} color={COLORS.violet} anchorX="left" anchorY="top" material-toneMapped={false}>
-          {labels.models.toUpperCase()}
-        </Text>
-        <Text font={FONTS.sans} fontSize={0.22} lineHeight={1.5} maxWidth={4.3} color="#d4d4d8" anchorX="left" anchorY="top" position={[0, -0.55, 0]}>
-          {models}
-        </Text>
-      </group>
+        <group position={[workshop.wall.minX + 0.5 - cx, REPO_WALL.height - 0.4, workshop.wall.maxZ + 0.05 - wallZ]}>
+          <Text font={FONTS.monoBold} fontSize={0.32} letterSpacing={0.1} color={COLORS.cyan} anchorX="left" anchorY="top" material-toneMapped={false}>
+            {`${labels.repos.toUpperCase()} (${career.repos.length})`}
+          </Text>
+          <Text font={FONTS.mono} fontSize={0.2} lineHeight={1.45} color="#d4d4d8" anchorX="left" anchorY="top" position={[0, -0.55, 0]} whiteSpace="nowrap">
+            {repos}
+          </Text>
+        </group>
+        <group position={[workshop.wall.maxX - 4.6 - cx, REPO_WALL.height - 0.4, workshop.wall.maxZ + 0.05 - wallZ]}>
+          <Text font={FONTS.monoBold} fontSize={0.32} letterSpacing={0.1} color={COLORS.violet} anchorX="left" anchorY="top" material-toneMapped={false}>
+            {labels.models.toUpperCase()}
+          </Text>
+          <Text font={FONTS.sans} fontSize={0.22} lineHeight={1.5} maxWidth={4.3} color="#d4d4d8" anchorX="left" anchorY="top" position={[0, -0.55, 0]}>
+            {models}
+          </Text>
+        </group>
+      </Readable>
 
       <Benches spots={workshop.benches} />
       {workshop.benches.map((b, i) => {
         const project = career.sideProjects[i];
         if (!project) return null;
         return (
-          <Text
-            key={project.id}
-            font={FONTS.sansBold}
-            fontSize={0.24}
-            lineHeight={1.3}
-            maxWidth={BENCH.w - 0.15}
-            textAlign="center"
-            color="#f4f4f5"
-            anchorX="center"
-            anchorY="bottom"
-            position={[b.x, BENCH_H + 0.2, b.z]}
-            rotation={[-0.4, 0, 0]}
-          >
-            {`${project.title}${project.year ? `\n${project.year}` : ""}`}
-          </Text>
+          <Readable key={project.id} position={[b.x, BENCH_H + 0.2, b.z]}>
+            <Text font={FONTS.sansBold} fontSize={0.24} lineHeight={1.3} maxWidth={BENCH.w - 0.15} textAlign="center" color="#f4f4f5" anchorX="center" anchorY="bottom" rotation={[-0.4, 0, 0]}>
+              {`${project.title}${project.year ? `\n${project.year}` : ""}`}
+            </Text>
+          </Readable>
         );
       })}
 
@@ -132,9 +126,12 @@ export function WorkshopAnnex({ layout, career, labs, labels }: { layout: Career
       <lineSegments geometry={sight}>
         <lineBasicMaterial color={COLORS.violet} transparent opacity={0.45} toneMapped={false} />
       </lineSegments>
-      <Text font={FONTS.monoBold} fontSize={0.5} letterSpacing={0.1} color={COLORS.violet} anchorX="right" anchorY="bottom" position={[windowX - 0.6, WINDOW_H - 1.2, d / 2 - 1]} material-toneMapped={false}>
-        {`\u25B2 ${labels.window}`}
-      </Text>
+      {/* Right-aligned at the window: seen from behind it turns around its own middle, so it stays inside the annex. */}
+      <Readable position={[windowX - 0.6, WINDOW_H - 1.2, d / 2 - 1]} pivot={[windowX - 0.6 - monoWidth(`\u25B2 ${labels.window}`, 0.5, 0.1) / 2, d / 2 - 1]}>
+        <Text font={FONTS.monoBold} fontSize={0.5} letterSpacing={0.1} color={COLORS.violet} anchorX="right" anchorY="bottom" material-toneMapped={false}>
+          {`\u25B2 ${labels.window}`}
+        </Text>
+      </Readable>
     </group>
   );
 }

@@ -7,6 +7,7 @@ import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttr
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
+import { Readable } from "../../fx/Readable";
 import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
@@ -33,21 +34,21 @@ function Placings({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, 
         const n = counts.get(room.slug) ?? 0;
         if (n < 1) return null;
         return (
-          <Text
-            key={room.id}
-            font={FONTS.monoBold}
-            fontSize={0.55}
-            color={CAREER_TONE.award}
-            outlineWidth={0.03}
-            outlineColor={COLORS.void}
-            anchorX="center"
-            anchorY="bottom"
-            position={[room.center.x, 0.6, room.center.z + 1.15]}
-            rotation={[-0.55, 0, 0]}
-            material-toneMapped={false}
-          >
-            {`\u00D7${n}`}
-          </Text>
+          <Readable key={room.id} position={[room.center.x, 0.6, room.center.z + 1.15]} pivot={[room.center.x, room.center.z]}>
+            <Text
+              font={FONTS.monoBold}
+              fontSize={0.55}
+              color={CAREER_TONE.award}
+              outlineWidth={0.03}
+              outlineColor={COLORS.void}
+              anchorX="center"
+              anchorY="bottom"
+              rotation={[-0.55, 0, 0]}
+              material-toneMapped={false}
+            >
+              {`\u00D7${n}`}
+            </Text>
+          </Readable>
         );
       })}
     </>
@@ -206,7 +207,7 @@ export function CareerRooms({
 }) {
   const icons = useMemo(() => {
     const out = {} as Record<CareerType, HoloIconInstance[]>;
-    // Icons face the rail camera (+z), so the line art never reads mirrored.
+    // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
     for (const type of TYPES) out[type] = rooms.filter((r) => r.type === type).map((r) => ({ x: r.center.x, y: ICON_Y[type], z: r.center.z, face: 0 }));
     return out;
   }, [rooms]);
@@ -227,24 +228,24 @@ export function CareerRooms({
         const entry = entries.get(room.slug);
         if (!entry) return null;
         return (
-          <Text
-            key={room.id}
-            ref={label(i)}
-            font={FONTS.sansBold}
-            fontSize={0.4}
-            lineHeight={1.25}
-            maxWidth={room.w + 0.6}
-            outlineWidth={0.03}
-            outlineColor={COLORS.void}
-            textAlign="center"
-            color="#f4f4f5"
-            anchorX="center"
-            anchorY="bottom"
-            position={[room.center.x, LABEL_Y, room.center.z]}
-            rotation={[-0.55, 0, 0]}
-          >
-            {`${entry.role}\n${entry.org} \u00B7 ${entry.period}`}
-          </Text>
+          <Readable key={room.id} position={[room.center.x, LABEL_Y, room.center.z]}>
+            <Text
+              ref={label(i)}
+              font={FONTS.sansBold}
+              fontSize={0.4}
+              lineHeight={1.25}
+              maxWidth={room.w + 0.6}
+              outlineWidth={0.03}
+              outlineColor={COLORS.void}
+              textAlign="center"
+              color="#f4f4f5"
+              anchorX="center"
+              anchorY="bottom"
+              rotation={[-0.55, 0, 0]}
+            >
+              {`${entry.role}\n${entry.org} \u00B7 ${entry.period}`}
+            </Text>
+          </Readable>
         );
       })}
     </group>

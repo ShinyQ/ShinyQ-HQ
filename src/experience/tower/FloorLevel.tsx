@@ -4,10 +4,12 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
+import { ceilingOpacity } from "../camera/firstPerson";
 import { floorY, SLAB_THICKNESS } from "../config";
 import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
+import { sceneProbes } from "../fx/probes";
 import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
 import { registerFloorContent } from "./floorRegistry";
@@ -21,8 +23,9 @@ const GHOST = 0.03;
 /**
  * One floor slab with accent edges and its content. Floors above the rover turn
  * into ghosts each frame so the follow camera, which sits higher than
- * FLOOR_GAP, can look down through them. The slab takes no clicks: the rover
- * only drives to point-and-go targets (interact/InteractLayer.tsx).
+ * FLOOR_GAP, can look down through them. In first person (round 5) the ghosts
+ * fade out and hide, so no ceiling hangs over the rover's eyes. The slab takes no
+ * clicks: the rover only drives to point-and-go targets (interact/InteractLayer.tsx).
  */
 export function FloorLevel({ layout, near, children }: { layout: FloorLayout; near: boolean; children?: ReactNode }) {
   const y = floorY(layout.id);
@@ -34,6 +37,7 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
   const fill = useRef<MeshBasicMaterial>(null);
   const edge = useRef<LineBasicMaterial>(null);
   const content = useRef<Group>(null);
+  const slab = useRef<Group>(null);
   const center = useMemo<[number, number]>(() => [cx, cz], [cx, cz]);
   const edges = useMemo(() => new EdgesGeometry(new BoxGeometry(w, SLAB_THICKNESS, d)), [w, d]);
 
@@ -41,11 +45,14 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     const { phase, ride } = getHQStore().getState();
     const exterior = phase === "boot" || phase === "intro";
     const above = !exterior && y > roverRuntime.y + 0.5;
+    const ghost = above ? ceilingOpacity(roverRuntime.cameraBlend) : 1;
+    if (slab.current) slab.current.visible = ghost > 0.01;
+    sceneProbes.ghosts[layout.id] = above && ghost > 0.01;
     if (fill.current) {
-      fill.current.opacity = above ? GHOST : SOLID;
+      fill.current.opacity = above ? GHOST * ghost : SOLID;
       fill.current.depthWrite = !above;
     }
-    if (edge.current) edge.current.opacity = above ? 0.16 : 0.95;
+    if (edge.current) edge.current.opacity = above ? 0.16 * ghost : 0.95;
     // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
     // still compiling waits for the car to move (tower/near.ts).
     if (content.current) content.current.visible = floorContentVisible({ floorY: y, roverY: roverRuntime.y, exterior, ride, ready: floorReady(layout.id) });
@@ -58,13 +65,15 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>
-      <mesh position={[cx, -SLAB_THICKNESS / 2, cz]}>
-        <boxGeometry args={[w, SLAB_THICKNESS, d]} />
-        <meshBasicMaterial ref={fill} color={SLAB_COLOR} transparent opacity={SOLID} />
-      </mesh>
-      <lineSegments geometry={edges} position={[cx, -SLAB_THICKNESS / 2, cz]}>
-        <lineBasicMaterial ref={edge} color={accent} transparent opacity={0.95} toneMapped={false} />
-      </lineSegments>
+      <group ref={slab}>
+        <mesh position={[cx, -SLAB_THICKNESS / 2, cz]}>
+          <boxGeometry args={[w, SLAB_THICKNESS, d]} />
+          <meshBasicMaterial ref={fill} color={SLAB_COLOR} transparent opacity={SOLID} />
+        </mesh>
+        <lineSegments geometry={edges} position={[cx, -SLAB_THICKNESS / 2, cz]}>
+          <lineBasicMaterial ref={edge} color={accent} transparent opacity={0.95} toneMapped={false} />
+        </lineSegments>
+      </group>
       <group ref={content}>
         {near && <GridFloor width={w} depth={d} center={center} />}
         {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}

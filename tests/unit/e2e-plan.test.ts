@@ -98,6 +98,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
+    expect(specsForChanges(["src/experience/fx/Readable.tsx", "src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience"]);
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {

@@ -31,6 +31,7 @@ import { renderBudget, sceneSettings } from "./scene/settings";
 import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
+import { sceneProbes } from "./fx/probes";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -105,7 +106,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep, probes: sceneProbes };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */

@@ -18,7 +18,10 @@ export interface HoloIconInstance {
 const VS = `attribute vec3 aCenter; attribute float aFace; attribute float aPhase;
 uniform float uTime; uniform float uSway;
 void main(){
-  float a = aFace + uSway*.45*sin(uTime*.8 + aPhase);
+  // Seen from behind (the camera turns all the way around), the icon turns half a turn so it never reads mirrored.
+  vec3 wc = (modelMatrix*vec4(aCenter, 1.)).xyz;
+  float face = aFace + (dot(vec2(sin(aFace), cos(aFace)), cameraPosition.xz - wc.xz) < 0. ? 3.14159265 : 0.);
+  float a = face + uSway*.45*sin(uTime*.8 + aPhase);
   float c = cos(a), s = sin(a);
   vec3 p = position;
   vec3 r = vec3(p.x*c + p.z*s, p.y + uSway*.12*sin(uTime*1.3 + aPhase), -p.x*s + p.z*c);
@@ -81,7 +84,8 @@ export interface HoloIconProps {
 }
 
 /**
- * Neon line hologram icon ("Neon line" direction): flat line art that sways toward the road, drawn
+ * Neon line hologram icon ("Neon line" direction): flat line art that sways toward the road and turns
+ * around when the camera is behind it (so it never reads mirrored), drawn
  * for every instance in one geometry, so a type costs one draw call (two on the full tier, which adds
  * a soft halo). Reduced motion holds every icon still; the lite tier drops the halo and the
  * additive glow.
