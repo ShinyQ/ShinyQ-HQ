@@ -39,7 +39,7 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
         <i className="hx-packet" />
         <i className="hx-packet" />
       </div>
-      <section aria-labelledby="hero-title" className="pv-wrap grid flex-1 content-start gap-12 py-10 sm:py-14 md:grid-cols-12 md:gap-6 md:pt-16 lg:content-center lg:pt-14">
+      <section aria-labelledby="hero-title" className="pv-wrap hx-main grid flex-1 content-start gap-12 py-10 sm:py-14 md:grid-cols-12 md:gap-6 md:pt-16 lg:content-center lg:pt-14">
         <div className="min-w-0 md:col-span-7 lg:col-span-8">
           <p className="pv-data hx-eyebrow">
             <span className="hx-dot" aria-hidden="true" />

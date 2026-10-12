@@ -260,6 +260,19 @@ test.describe("tiers and views", () => {
     await expect(page.getByTestId("hq")).toHaveCount(0, { timeout: 20_000 });
     const enter = page.getByRole("link", { name: en.home.hero.enter3d });
     await expect(enter).toBeVisible();
+    // With the stats ticker in the bottom band, the floating Back to 3D button keeps clear of its contents.
+    const back = page.getByTestId("back-to-3d");
+    await expect(back).toBeVisible();
+    const overlaps = await page.evaluate(() => {
+      const ticker = document.querySelector<HTMLElement>("#stats")!;
+      window.scrollBy(0, ticker.getBoundingClientRect().bottom - window.innerHeight + 8);
+      const button = document.querySelector<HTMLElement>("[data-testid=back-to-3d]")!.getBoundingClientRect();
+      return Array.from(ticker.querySelectorAll<HTMLElement>(".hx-tick-updated, .hx-pause, .hx-tick-view"))
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.left < button.right && r.right > button.left && r.top < button.bottom && r.bottom > button.top).length;
+    });
+    expect(overlaps).toBe(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await enter.click();
     await waitForHQ(page);
     expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBeNull();
