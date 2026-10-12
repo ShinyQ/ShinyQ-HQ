@@ -204,4 +204,12 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
     expect(dariordal?.results[0]).toMatchObject({ value: "45%" });
     expect(dariordal?.slug).toBe("limited-quota-event-ticketing");
   });
+
+  it("ships the Serupa gallery: desktop screens plus one mobile triptych, cover first", () => {
+    const assets = serupa?.assets ?? [];
+    expect(assets.length).toBeGreaterThanOrEqual(6);
+    expect(assets[0].src).toBe("/media/event-ticketing-platform/01-home.webp");
+    expect(assets.at(-1)?.src).toMatch(/^\/media\/event-ticketing-platform\/\d{2}-mobile\.webp$/);
+    expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
+  });
 });

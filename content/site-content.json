@@ -3906,7 +3906,88 @@
             "GitHub Actions"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/event-ticketing-platform/01-home.webp",
+              "alt": {
+                "en": "Attendee site home with a featured events carousel and this week's events, shown with sample data",
+                "id": "Beranda situs pengunjung dengan carousel acara unggulan dan acara minggu ini, ditampilkan dengan data contoh"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/02-events.webp",
+              "alt": {
+                "en": "Event search with location, date range and category filters",
+                "id": "Pencarian acara dengan filter lokasi, rentang tanggal, dan kategori"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/03-event-detail.webp",
+              "alt": {
+                "en": "Event page with date, venue, organizer and ticket tiers",
+                "id": "Halaman acara dengan tanggal, tempat, penyelenggara, dan tier tiket"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/04-checkout.webp",
+              "alt": {
+                "en": "Checkout payment step with card, virtual account, e-wallet and QRIS options next to the order summary with fees",
+                "id": "Langkah pembayaran checkout dengan opsi kartu, virtual account, e-wallet, dan QRIS di samping ringkasan pesanan beserta biaya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/05-my-tickets-qr.webp",
+              "alt": {
+                "en": "My Tickets showing a QR code for each ticket in an order, ready for the entrance",
+                "id": "My Tickets menampilkan kode QR untuk setiap tiket dalam satu pesanan, siap dipakai di pintu masuk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/06-organizer-events.webp",
+              "alt": {
+                "en": "Organizer dashboard listing events with their review status",
+                "id": "Dashboard penyelenggara berisi daftar acara beserta status review"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/07-create-event.webp",
+              "alt": {
+                "en": "Create event form, the first of four steps: details, category and cover image",
+                "id": "Formulir pembuatan acara, langkah pertama dari empat: detail, kategori, dan gambar sampul"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/08-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home page, an event page and My Tickets",
+                "id": "Tampilan mobile untuk beranda, halaman acara, dan My Tickets"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "event-tech-search-backend",
