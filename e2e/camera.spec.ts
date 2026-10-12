@@ -135,8 +135,9 @@ async function verticalDrag(page: Page, dy: number) {
 async function hoverNothing(page: Page) {
   const point = await page.evaluate(() => {
     const hit = (window as unknown as { __hq: { interact: { hitAt: ((x: number, y: number) => string | null) | null } } }).__hq.interact.hitAt;
-    for (let fy = 0.3; fy <= 0.75; fy += 0.05) {
-      for (let fx = 0.3; fx <= 0.7; fx += 0.05) {
+    // Close up (first person), one target can fill the middle of the view: scan out to the edges.
+    for (let fy = 0.2; fy <= 0.8; fy += 0.05) {
+      for (let fx = 0.05; fx <= 0.95; fx += 0.05) {
         const x = Math.round(innerWidth * fx);
         const y = Math.round(innerHeight * fy);
         if (document.elementFromPoint(x, y)?.tagName === "CANVAS" && hit && hit(x, y) === null) return { x, y };
