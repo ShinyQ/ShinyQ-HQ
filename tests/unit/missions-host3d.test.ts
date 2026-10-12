@@ -3,6 +3,7 @@ import type { StateStorage } from "zustand/middleware";
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { isAutoOpenClaimed, claimAutoOpen, register3DHost, registerWalkStarter, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
+import { directoryStop } from "@/experience/floors/labs/layout";
 import { ROOF_STOPS } from "@/experience/floors/roof/layout";
 import { create3DHost, roomTarget, type RoverChannel } from "@/experience/missions/host3d";
 import type { RoomInfo } from "@/experience/missions/rooms";
@@ -81,8 +82,8 @@ describe("roomTarget", () => {
     expect(roomTarget(ROOMS[1], "L2:jenius-2024", layouts, years)).toEqual({ x: -20 + 14 * 5 + 7, z: 0 });
     expect(roomTarget(ROOMS[2], "L3:voice-ai", layouts, years)).toEqual(layouts.L3.doors![0].at);
     const listed = roomTarget(ROOMS[3], "L3:listed", layouts, years);
+    expect(listed).toEqual(directoryStop("software"));
     expect(listed.z).toBeLessThan(0);
-    expect(listed.x).toBeLessThan(-10);
   });
 
   it("falls back near the floor label", () => {

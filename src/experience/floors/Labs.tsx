@@ -15,6 +15,8 @@ export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count">;
 /** L3 Project Roads (walkable floors plan, part 2), generated from the pods in content. */
 export function Labs({ data, labels, tier }: { data: ExperienceData; labels: LabsLabels; tier: GpuTier }) {
   const layout = useMemo(() => buildLabsLayout(data.labs.pods), [data.labs.pods]);
+  // Stable labels: the wall's BatchedText re-packs whenever its label list changes.
+  const hubLabels = useMemo(() => ({ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }), [data.labs.wings, labels]);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const t = tier === "full" ? "full" : "lite";
   return (
@@ -22,7 +24,7 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       <RoadMarkings network={layout.network} color={LABS.accent} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} />
       {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
       <Suspense fallback={null}>
-        <Hub layout={layout} pods={data.labs.pods} labels={{ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }} />
+        <Hub layout={layout} pods={data.labs.pods} labels={hubLabels} />
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
       <Pods placed={layout.placed} tier={t} />

@@ -2,26 +2,22 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Vector3, type Group } from "three";
-import type { Wing } from "@/content/schema";
+import { useHQStore } from "@/store/useHQStore";
+import { BatchedLabels } from "../../fx/BatchedLabels";
 import { yawTowards } from "../../fx/facing";
+import { neonColor } from "../../fx/materials";
 import type { LabPod, Vec2 } from "../../types";
-import { FONTS, GlassBox } from "../../tower/primitives";
-import { LABS, tourOrder, WING_TINT, type LabsLayout } from "./layout";
+import { FONTS } from "../../tower/primitives";
+import { MergedBoxes } from "../roof/kit";
+import { wallLabels, wallLines, wallSolids, type DirectoryLabels } from "./directory";
+import { LABS, WING_TINT, type LabsLayout } from "./layout";
+import { LineBatch } from "./lines";
 
-export interface HubLabels {
-  wings: Record<Wing, string>;
-  directory: string;
-  /** Board footer: the full list opens in the palette. */
-  open: string;
-  /** "{count} projects", localized. */
-  count: (count: number) => string;
-}
+export type HubLabels = DirectoryLabels;
 
 const WINGS = ["software", "ai"] as const;
-const { board } = LABS;
-const TIER_MARK: Record<LabPod["tier"], string> = { hero: "\u25C6", featured: "\u25C7", listed: "\u00B7" };
 /** Height of the floating wing signs (bottom of the text). */
 const SIGN_Y = 4.2;
 const NO_RAYCAST = () => null;
@@ -81,89 +77,43 @@ function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }
   );
 }
 
-const TOP = { name: 0.3, sub: 1.05, list: 1.55, listBottom: 1.95, footer: 1.3 } as const;
-
 /**
- * One face of a directory board, sized to read from the board stop on a phone: the wing name, the
- * project count, the top entries (docking order, gallery first) in large type, and a footer that points to the
- * full list (clicking the board, or Open on the tour stop, opens the projects palette).
+ * The wing directory wall where the wing roads fork (owner request 2026-10-13: noticeable on arrival):
+ * both panels in one merged mesh, their neon rims and title underlines in one line batch (boosted on
+ * the full tier so they bloom), every text in one BatchedText. Three draw calls in all. Phones list
+ * the top three projects in larger type, other screens the top five. Clicks go
+ * through point-and-go (`L3:board:<wing>` in interact/registry.ts), never handlers on these meshes.
  */
-function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly LabPod[]; labels: HubLabels; side: 1 | -1 }) {
-  const name = labels.wings[wing].toUpperCase();
-  const top = tourOrder(list).slice(0, LABS.boardEntries);
-  const lines = top.map((p) => `${TIER_MARK[p.tier]} ${p.title}`).join("\n");
-  const width = board.d - 0.6;
+function DirectoryWall({ labels, pods }: { labels: HubLabels; pods: readonly LabPod[] }) {
+  const tier = useHQStore((s) => s.tier);
+  // Phones show the top three in larger type (`LIST_STYLE.compact`); everything else the top five.
+  const size = useHQStore((s) => (s.device.viewport === "mobile" ? "compact" : "full"));
+  const solids = useMemo(() => wallSolids(), []);
+  const texts = useMemo(() => wallLabels(pods, labels, FONTS, size), [pods, labels, size]);
+  const lines = useMemo(() => {
+    const batch = new LineBatch();
+    for (const line of wallLines()) batch.segment(line.seg, line.color);
+    return batch.build();
+  }, []);
+  useEffect(() => () => lines.dispose(), [lines]);
+  const boost = useMemo(() => neonColor("#ffffff", 1.6, tier), [tier]);
   return (
-    <group position={[(side * board.w) / 2 + side * 0.03, 0, 0]} rotation={[0, (side * Math.PI) / 2, 0]}>
-      {/* Wing names come from messages (`common.wing`); long names shrink to the board width instead of wrapping. */}
-      <Text
-        font={FONTS.monoBold}
-        fontSize={Math.min(0.56, width / (0.62 * Math.max(1, name.length)))}
-        color={WING_TINT[wing]}
-        anchorX="center"
-        anchorY="top"
-        whiteSpace="nowrap"
-        position={[0, board.h - TOP.name, 0]}
-        material-toneMapped={false}
-      >
-        {name}
-      </Text>
-      <Text font={FONTS.mono} fontSize={0.24} color="#a1a1aa" anchorX="center" anchorY="top" whiteSpace="nowrap" position={[0, board.h - TOP.sub, 0]}>
-        {`${labels.directory.toUpperCase()} \u00B7 ${labels.count(list.length).toUpperCase()}`}
-      </Text>
-      <Text
-        font={FONTS.sansBold}
-        fontSize={0.34}
-        lineHeight={1.25}
-        maxWidth={width}
-        color="#f4f4f5"
-        anchorX="left"
-        anchorY="top"
-        position={[-width / 2, board.h - TOP.list, 0]}
-        clipRect={[-0.05, -(board.h - TOP.list - TOP.listBottom), width + 0.1, 0.2]}
-      >
-        {lines}
-      </Text>
-      <Text font={FONTS.monoBold} fontSize={0.3} color={WING_TINT[wing]} anchorX="center" anchorY="bottom" whiteSpace="nowrap" position={[0, TOP.footer, 0]} material-toneMapped={false}>
-        {`\u25B8 ${labels.open.toUpperCase()}`}
-      </Text>
+    <group name="directory-wall">
+      <MergedBoxes boxes={solids} color="#0b1020" emissive={LABS.accent} emissiveIntensity={0.06} />
+      <lineSegments geometry={lines} raycast={NO_RAYCAST}>
+        <lineBasicMaterial color={boost} vertexColors transparent opacity={0.95} toneMapped={false} />
+      </lineSegments>
+      <BatchedLabels labels={texts} name="directory-labels" />
     </group>
   );
 }
 
-/**
- * Directory boards on the hub rim. Both faces carry the same content: the east face greets the hub
- * and the stop in front of it, the west face the rover arriving from the elevator.
- */
-function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels: HubLabels; pods: readonly LabPod[] }) {
-  return (
-    <group>
-      {WINGS.map((wing) => {
-        const { center } = layout.boards[wing];
-        const list = pods.filter((p) => p.wing === wing);
-        return (
-          <group key={wing} position={[center.x, 0, center.z]} name={`directory-${wing}`}>
-            <GlassBox size={[board.w, board.h, board.d]} position={[0, board.h / 2, 0]} color={WING_TINT[wing]} fillOpacity={0.12} />
-            {/* Opaque core: each face shows only its own text, never the mirrored one behind it. */}
-            <mesh position={[0, board.h / 2, 0]}>
-              <boxGeometry args={[board.w * 0.5, board.h - 0.04, board.d - 0.04]} />
-              <meshBasicMaterial color="#070712" />
-            </mesh>
-            <BoardFace wing={wing} list={list} labels={labels} side={1} />
-            <BoardFace wing={wing} list={list} labels={labels} side={-1} />
-          </group>
-        );
-      })}
-    </group>
-  );
-}
-
-/** The hub plaza in front of the elevator: wing directory boards and the floating signs to each wing road. */
+/** The hub plaza in front of the elevator: the floating signs to each wing road, and the directory wall where the wing roads fork. */
 export function Hub({ layout, labels, pods }: { layout: LabsLayout; labels: HubLabels; pods: readonly LabPod[] }) {
   return (
     <group name="labs-hub">
       <WingSigns layout={layout} labels={labels} />
-      <DirectoryBoards layout={layout} labels={labels} pods={pods} />
+      <DirectoryWall labels={labels} pods={pods} />
     </group>
   );
 }

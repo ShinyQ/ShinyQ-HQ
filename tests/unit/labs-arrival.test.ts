@@ -4,6 +4,7 @@ import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { followOffsetScale } from "@/experience/camera/offset";
 import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
+import { LIST_STYLE, PANEL } from "@/experience/floors/labs/directory";
 import { buildLabsLayout, directoryBoard, LABS } from "@/experience/floors/labs/layout";
 import type { Vec2 } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
@@ -82,4 +83,37 @@ describe("L3 arrival frames the wing directory wall (owner request 2026-10-13)",
       }
     });
   }
+});
+
+describe("L3 directory wall legibility (owner request 2026-10-13)", () => {
+  // Em size in px of a text of `size` u at height `y` on the panel's west face.
+  const em = (w: number, h: number, at: Vec2, wing: (typeof WINGS)[number], y: number, size: number) =>
+    westFace(settledCamera(w, h, at).camera, w, h, wing).scale(y) * size;
+  // The lowest list line is the most foreshortened one.
+  const LIST_Y = 1.5;
+  const TITLE_Y = LABS.board.h - 2;
+
+  it("reads the wing titles on arrival: at least 12 px on a phone and 20 px on a laptop", () => {
+    for (const wing of WINGS) {
+      expect(em(390, 844, LABS.overview, wing, TITLE_Y, PANEL.title.size), wing).toBeGreaterThanOrEqual(12);
+      expect(em(1440, 900, LABS.overview, wing, TITLE_Y, PANEL.title.size), wing).toBeGreaterThanOrEqual(20);
+    }
+  });
+
+  it("reads the top projects on arrival on a laptop and a big monitor, and from the panel's stop on a phone", () => {
+    for (const wing of WINGS) {
+      expect(em(1440, 900, LABS.overview, wing, LIST_Y, PANEL.list.size), wing).toBeGreaterThanOrEqual(11.5);
+      expect(em(2560, 1440, LABS.overview, wing, LIST_Y, PANEL.list.size), wing).toBeGreaterThanOrEqual(18);
+      expect(em(390, 844, directoryBoard(wing).stop, wing, LIST_Y, PANEL.list.size), wing).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it("reads the phone's top three larger than the desktop list would, on arrival and from the panel's stop", () => {
+    for (const wing of WINGS) {
+      const arrival = em(390, 844, LABS.overview, wing, LIST_Y, LIST_STYLE.compact.size);
+      const stop = em(390, 844, directoryBoard(wing).stop, wing, LIST_Y, LIST_STYLE.compact.size);
+      expect(arrival, wing).toBeGreaterThan(em(390, 844, LABS.overview, wing, LIST_Y, PANEL.list.size) * 1.2);
+      expect(stop, wing).toBeGreaterThanOrEqual(12);
+    }
+  });
 });
