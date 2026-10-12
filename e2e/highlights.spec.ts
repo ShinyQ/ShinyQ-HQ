@@ -276,7 +276,7 @@ test.describe("Highlights Hall", () => {
   for (const tier of ["lite", "full"] as const) {
     test(`L1 keeps headroom under the floor budget from the plaza to the hall (${tier})`, async ({ page }) => {
       await enterHQ(page, { tier });
-      const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("projects").pad, stationOf("experience").pad];
+      const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("about").pad, stationOf("projects").pad, stationOf("experience").pad];
       for (const spot of spots) {
         if (spot) {
           await closeDrawer(page);
@@ -290,6 +290,17 @@ test.describe("Highlights Hall", () => {
       }
     });
   }
+
+  test("the About me station shows the owner's portrait in its neon frame, loaded with the hall", async ({ page }) => {
+    await enterHQ(page);
+    const request = page.waitForRequest((r) => r.url().endsWith("/brand/kurniadi-photo-320.webp"), { timeout: 90_000 });
+    await faceStation(page, "about");
+    const response = await (await request).response();
+    expect(response?.status()).toBe(200);
+    await waitForCameraSettle(page);
+    await expectRenderBudget(page);
+    expect((await snapshot(page)).drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+  });
 
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });

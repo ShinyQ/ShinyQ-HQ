@@ -4,16 +4,22 @@ import { getStats } from "@/content/load";
 import {
   coverCrop,
   HALL_ROWS,
+  hallAtlas,
   hallLabels,
+  hallPhoto,
   hallShots,
   hallSolids,
   onPanel,
+  PHOTO,
+  PHOTO_SRC,
+  SHOT_CELL,
   shotQuadBuffers,
   type HallLabels,
 } from "@/experience/floors/lobby/hallContent";
 import { podLiveLink } from "@/content/selectors";
 import { HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { experienceRows } from "@/experience/floors/lobby/stations";
+import { brandPhotoSrc } from "@/lib/brand-photo";
 
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const labels: HallLabels = {
@@ -97,7 +103,8 @@ describe("Highlights Hall scenery", () => {
 
   it("builds plinths, panels, stat tiles and screenshot frames inside the hall, clear of the door pads", () => {
     const solids = hallSolids(3);
-    expect(solids).toHaveLength(4 + 4 + 4 + 3);
+    // Plinths, panels, stat tiles, the portrait frame, screenshot frames.
+    expect(solids).toHaveLength(4 + 4 + 4 + 1 + 3);
     for (const b of solids) {
       expect(b.x - b.w / 2).toBeGreaterThanOrEqual(HALL.zone.minX);
       expect(b.x + b.w / 2).toBeLessThanOrEqual(HALL.zone.maxX + 1e-6);
@@ -109,23 +116,54 @@ describe("Highlights Hall scenery", () => {
     }
   });
 
-  it("puts the screenshots on the projects panel, facing the plaza, one atlas cell each", () => {
-    const quads = hallShots(3);
-    expect(quads.map((q) => q.index)).toEqual([0, 1, 2]);
-    const { positions, uvs, indices } = shotQuadBuffers(quads, 3);
-    expect(positions).toHaveLength(36);
+  it("puts the screenshots on the projects panel and the portrait on the about panel, one atlas cell each", () => {
+    const quads = [...hallShots(3), hallPhoto(3)];
+    expect(quads.map((q) => q.index)).toEqual([0, 1, 2, 3]);
+    const atlas = hallAtlas(["a", "b", "c"], SHOT_CELL.full);
+    expect(atlas).toMatchObject({ width: 3 * 480 + 300, height: 300 });
+    const { positions, uvs, indices } = shotQuadBuffers(quads, atlas.cells);
+    expect(positions).toHaveLength(48);
     // Float32 buffers: compare against the same values rounded to float32.
-    expect(Array.from(uvs.slice(0, 8))).toEqual(Array.from(new Float32Array([0, 0, 1 / 3, 0, 1 / 3, 1, 0, 1])));
+    expect(Array.from(uvs.slice(0, 8))).toEqual(Array.from(new Float32Array([0, 0, 480 / 1740, 0, 480 / 1740, 1, 0, 1])));
+    expect(Array.from(uvs.slice(24, 32))).toEqual(Array.from(new Float32Array([1440 / 1740, 0, 1, 0, 1, 1, 1440 / 1740, 1])));
     expect(Array.from(indices.slice(0, 6))).toEqual([0, 1, 2, 0, 2, 3]);
     // Counter-clockwise as seen from the plaza: (b - a) x (c - a) points out of the panel.
-    const v = (i: number) => [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]];
-    const [a, b, c] = [v(0), v(1), v(2)];
-    const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    for (const [quad, station] of [[0, "projects"], [3, "about"]] as const) {
+      const v = (i: number) => [positions[(quad * 4 + i) * 3], positions[(quad * 4 + i) * 3 + 1], positions[(quad * 4 + i) * 3 + 2]];
+      const [a, b, c] = [v(0), v(1), v(2)];
+      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+      const s = stationOf(station);
+      expect(n[0] * -s.facing.x + n[2] * -s.facing.z).toBeGreaterThan(0);
+    }
     const projects = stationOf("projects");
-    expect(n[0] * -projects.facing.x + n[2] * -projects.facing.z).toBeGreaterThan(0);
     expect(onPanel(projects, 0, 1, 0)).toEqual([projects.front.x, 1, projects.front.z]);
+  });
+
+  it("frames the portrait on the About me panel, above the stat tiles and left of the text block", () => {
+    const about = stationOf("about");
+    const quad = hallPhoto(3);
+    const at = faceCoords(quad.center);
+    expect(at?.s).toBe(about);
+    expect(at!.u - PHOTO.size / 2).toBeGreaterThanOrEqual(-about.width / 2);
+    // Stat tiles end at 3.8 (TILE.y 2.9 + half of 1.8); the frame is 0.1 wider than the photo on each side.
+    expect(quad.center[1] - PHOTO.size / 2 - 0.1).toBeGreaterThan(3.8);
+    expect(quad.center[1] + PHOTO.size / 2 + 0.1).toBeLessThan(HALL.panel.h);
+    for (const t of texts.filter((t) => faceCoords(t.position)?.s === about && t.position[1] > 3.8)) {
+      expect(faceCoords(t.position)!.u, t.text).toBeGreaterThanOrEqual(PHOTO.u + PHOTO.size / 2 + 0.2);
+    }
+    expect(PHOTO_SRC).toBe(brandPhotoSrc(320));
+    expect(hallAtlas(["a"], SHOT_CELL.lite).cells.at(-1)).toMatchObject({ src: PHOTO_SRC, x: 320, w: 200, h: 200 });
+  });
+
+  it("fits the headline in two lines beside the portrait (EN and ID)", () => {
+    for (const locale of ["en", "id"] as const) {
+      const d = buildExperienceData(locale, { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
+      const headline = hallLabels(d, labels, fonts).find((t) => t.text === d.profile.headline)!;
+      // Rough advance of the sans face: 0.55 em per character.
+      expect(Math.ceil((headline.text.length * headline.fontSize * 0.55) / headline.maxWidth!), locale).toBeLessThanOrEqual(2);
+    }
   });
 
   it("crops screenshots to cover their cell", () => {
