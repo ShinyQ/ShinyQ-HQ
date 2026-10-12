@@ -3534,20 +3534,20 @@
           },
           "approach": [
             {
-              "en": "I reorganized the Next.js 14 API into repository and service layers and automated deployment from GitHub.",
-              "id": "Saya menata API Next.js 14 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
+              "en": "I reorganized the Next.js 15 API routes into repository and service layers and automated deployment from GitHub.",
+              "id": "Saya menata API route Next.js 15 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
             },
             {
               "en": "I put quota checks and atomic decrements for each ticket tier inside one Prisma checkout transaction to prevent double-selling.",
               "id": "Saya menempatkan pengecekan dan pengurangan kuota secara atomik per tier tiket dalam satu transaksi checkout Prisma untuk mencegah tiket terjual dua kali."
             },
             {
-              "en": "I connected iPaymu payments and callbacks to QR e-ticket generation and email invoices, covering payment through event entry.",
-              "id": "Saya menghubungkan pembayaran dan callback iPaymu dengan pembuatan e-ticket QR serta invoice email, dari pembayaran hingga masuk acara."
+              "en": "I built ticket issuance, a My Tickets page with QR codes and the payment channel list from iPaymu, and redesigned the emails; my teammate integrated iPaymu checkout, callbacks and PDF invoices.",
+              "id": "Saya membangun penerbitan tiket, halaman My Tickets dengan kode QR, dan daftar channel pembayaran dari iPaymu, serta mendesain ulang email; rekan tim saya mengintegrasikan checkout iPaymu, callback, dan invoice PDF."
             },
             {
-              "en": "I built an admin dashboard for event management, sortable and exportable transaction tables, refresh-token sessions and analytics.",
-              "id": "Saya membangun dashboard admin untuk pengelolaan acara, tabel transaksi yang bisa diurutkan dan diekspor, sesi refresh token, serta analytics."
+              "en": "I built the admin dashboard: event management, sortable transaction tables with Excel export, refresh-token sessions, a Redis event cache and Google Analytics.",
+              "id": "Saya membangun dashboard admin: pengelolaan acara, tabel transaksi yang bisa diurutkan dan diekspor ke Excel, sesi refresh token, cache acara di Redis, dan Google Analytics."
             }
           ],
           "architecture": {
@@ -3556,8 +3556,8 @@
                 "id": "storefront",
                 "label": "Ticket storefront",
                 "sublabel": {
-                  "en": "Next.js 14",
-                  "id": "Next.js 14"
+                  "en": "Next.js 15",
+                  "id": "Next.js 15"
                 },
                 "layer": 0,
                 "row": 0,
@@ -3639,10 +3639,10 @@
           },
           "results": [
             {
-              "value": "57%",
+              "value": "45%",
               "label": {
-                "en": "Share of repository commits I authored (54 of 95), across 24 merged pull requests",
-                "id": "Proporsi commit repositori yang saya tulis (54 dari 95), dalam 24 pull request yang di-merge"
+                "en": "Share of non-merge commits I authored (32 of 71), plus 14 of 24 merged pull requests",
+                "id": "Proporsi commit non-merge yang saya tulis (32 dari 71), ditambah 14 dari 24 pull request yang di-merge"
               },
               "context": {
                 "en": "Counted in git history and pull requests from Jul to Aug 2025.",
@@ -3664,7 +3664,7 @@
             }
           ],
           "stack": [
-            "Next.js 14",
+            "Next.js 15",
             "TypeScript",
             "Prisma",
             "PostgreSQL",
@@ -3674,6 +3674,7 @@
             "TanStack Table",
             "Tailwind CSS",
             "shadcn/ui",
+            "GitHub Actions",
             "Bun"
           ],
           "hologram": "pipeline",

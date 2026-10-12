@@ -196,4 +196,12 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
     expect(serupa?.slug).not.toMatch(/serupa/i);
     expect(dariordal?.tier).toBe("listed");
   });
+
+  it("refreshes DariOrdal from its repository: Next.js 15, the teammate's payment work, non-merge commit share", () => {
+    expect(JSON.stringify(dariordal)).not.toContain("Next.js 14");
+    expect(dariordal?.stack).toContain("Next.js 15");
+    expect(dariordal?.approach.some((a) => a.en.includes("my teammate integrated iPaymu"))).toBe(true);
+    expect(dariordal?.results[0]).toMatchObject({ value: "45%" });
+    expect(dariordal?.slug).toBe("limited-quota-event-ticketing");
+  });
 });
