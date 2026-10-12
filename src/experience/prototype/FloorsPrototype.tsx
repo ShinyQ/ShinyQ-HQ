@@ -35,9 +35,9 @@ function recolor(road: CareerRoadLayout): RoadNetwork {
   return { ...road.network, spurs: road.network.spurs.map((sp) => ({ ...sp, color: type.has(sp.room) ? CAREER_TONE[type.get(sp.room)!] : sp.color })) };
 }
 
-/** Floor-independent slice the simulation needs. */
-interface ProtoFloor {
-  id: "L2" | "L3";
+/** Floor-independent slice the simulation needs (also used by the L4 concepts prototype). */
+export interface ProtoFloor {
+  id: "L2" | "L3" | "L4";
   bounds: Rect;
   network: RoadNetwork;
   obstacles: Rect[];
@@ -46,7 +46,7 @@ interface ProtoFloor {
   accent: string;
 }
 
-type View = "rover" | "top";
+export type View = "rover" | "top";
 
 interface Sim {
   controller: RoverController;
@@ -57,17 +57,17 @@ interface Sim {
 }
 
 /** Prototype simulation state, mutated in useFrame and event handlers (like `roverRuntime`). */
-const sim: Sim = { controller: new RoverController({ x: -21, z: 0 }, Math.PI / 2), keys: new Set(), leg: null, cameraForward: { x: 0, z: -1 } };
+export const sim: Sim = { controller: new RoverController({ x: -21, z: 0 }, Math.PI / 2), keys: new Set(), leg: null, cameraForward: { x: 0, z: -1 } };
 
 /** Ends the running leg (manual input, a new leg or the walk ending). */
-function cancelLeg() {
+export function cancelLeg() {
   sim.leg?.resolve("cancelled");
   sim.leg = null;
   sim.controller.clearPath();
 }
 
 /** Autopilots the prototype rover along `path`; resolves when it arrives or the leg is cancelled. */
-function startLeg(path: Vec2[] | null): Promise<MissionStatus> {
+export function startLeg(path: Vec2[] | null): Promise<MissionStatus> {
   cancelLeg();
   if (!path?.length) return Promise.resolve("done");
   return new Promise((resolve) => {
@@ -76,12 +76,12 @@ function startLeg(path: Vec2[] | null): Promise<MissionStatus> {
   });
 }
 
-function resetRover(at: Vec2) {
+export function resetRover(at: Vec2) {
   cancelLeg();
   sim.controller = new RoverController(at, Math.PI / 2);
 }
 
-const memoryStorage = (): WalkStorage => {
+export const memoryStorage = (): WalkStorage => {
   const map = new Map<string, string>();
   return { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v) };
 };
@@ -104,7 +104,7 @@ function readParams() {
 
 /* ------------------------------------------------------------------ world */
 
-function RoverMesh() {
+export function RoverMesh() {
   const group = useRef<Group>(null);
   useFrame(() => {
     const g = group.current;
@@ -321,7 +321,7 @@ function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsLayout; wings: R
   );
 }
 
-function Driver({ floor, view }: { floor: ProtoFloor; view: View }) {
+export function Driver({ floor, view }: { floor: ProtoFloor; view: View }) {
   const look = useRef(new Vector3());
   useFrame(({ camera, size }, rawDt) => {
     const dt = Math.min(rawDt, 0.25);
