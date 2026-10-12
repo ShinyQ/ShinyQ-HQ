@@ -24,6 +24,8 @@ const BY_TYPE: Record<KnowledgeChunk["type"], AskTag[]> = {
   contact: ["contact"],
   "side-project": ["work"],
   repo: ["work", "github"],
+  principle: ["perspectives"],
+  perspective: ["perspectives"],
 };
 
 /** Topic markers matched on a chunk's id and keywords (lowercase). */
@@ -43,7 +45,7 @@ export function chunkTags(chunk: KnowledgeChunk): AskTag[] {
     const wing = chunk.keywords.includes("ai") ? "ai" : "software";
     tags.push(wing);
   }
-  if (chunk.type === "project" || chunk.type === "post" || chunk.type === "side-project") {
+  if (chunk.type === "project" || chunk.type === "post" || chunk.type === "side-project" || chunk.type === "perspective") {
     const haystack = `${chunk.id} ${chunk.keywords.join(" ")}`.toLowerCase();
     for (const [tag, re] of TOPICS) if (re.test(haystack)) tags.push(tag);
   }

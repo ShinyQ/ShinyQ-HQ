@@ -56,6 +56,7 @@ export const ASK_TAGS = [
   "rag",
   "security",
   "data",
+  "perspectives",
 ] as const;
 export type AskTag = (typeof ASK_TAGS)[number];
 

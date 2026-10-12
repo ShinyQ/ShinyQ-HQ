@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { listBlogFiles } from "@/content/blog";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
-import { getContent } from "@/content/load";
 import { loadAllowlist, loadBlocklist } from "@/content/safety";
-import type { Locale } from "@/content/schema";
+import { getContent, getPerspectives } from "@/content/load";
+import type { Locale, Perspective } from "@/content/schema";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import { buildKnowledgePack, validatePack } from "./pack";
 
@@ -28,10 +28,17 @@ export function loadDynamicFacts() {
   return DynamicFactsSchema.parse(JSON.parse(readFileSync(DYNAMIC_FACTS_FILE, "utf8")));
 }
 
-export function buildRepoPack(date = contentDate()): { pack: KnowledgePack; safety: SafetyData; errors: string[] } {
+export function buildRepoPack(date = contentDate(), options: { perspectives?: readonly Perspective[] } = {}): { pack: KnowledgePack; safety: SafetyData; errors: string[] } {
   const posts: Record<string, Partial<Record<Locale, string>>> = {};
   for (const { slug, locale, file } of listBlogFiles()) (posts[slug] ??= {})[locale] = readFileSync(file, "utf8");
   const blocklist = loadBlocklist();
-  const pack = buildKnowledgePack({ content: getContent(), facts: loadDynamicFacts(), posts, contentDate: date, products: loadAllowlist() });
+  const pack = buildKnowledgePack({
+    content: getContent(),
+    facts: loadDynamicFacts(),
+    posts,
+    contentDate: date,
+    products: loadAllowlist(),
+    perspectives: options.perspectives ?? getPerspectives(),
+  });
   return { pack, safety: { blocklist }, errors: validatePack(pack, blocklist) };
 }
