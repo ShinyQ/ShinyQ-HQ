@@ -279,7 +279,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost), or click a spot on the floor. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Page view shows the portfolio as a page.",
+    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Page view shows the portfolio as a page.",
     "floor": "Floor",
     "elevator": "Elevator",
     "goToFloor": "Go to {floor}, {label} ({name})",
@@ -293,8 +293,8 @@
     "sound": "Sound",
     "menu": "Menu",
     "profile": "Profile",
-    "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Move: click floor · Rotate: drag or Q/E · Floors: scroll or PgUp/PgDn",
-    "hintCoarse": "Move: tap floor · Drive: joystick · Boost: hold the boost button · Rotate: drag · Floors: swipe up or down",
+    "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Floors: scroll or PgUp/PgDn",
+    "hintCoarse": "Drive: joystick · Boost: hold the boost button · Go: tap a glowing object twice · Rotate: drag · Floors: swipe up or down",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "joystick": "Rover joystick",
@@ -434,7 +434,12 @@
     "interact": {
       "teleporter": "Teleporter {year}",
       "board": "{wing} directory",
-      "archive": "Post archive"
+      "archive": "Post archive",
+      "live": "{label}. Click to go there.",
+      "liveTap": "{label} selected. Tap it again or use the Go button.",
+      "go": "Go to {label}",
+      "hintFine": "Click a glowing object to go there.",
+      "hintCoarse": "Tap a glowing object, then tap it again to go there."
     }
   },
   "drawer": {

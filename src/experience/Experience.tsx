@@ -24,6 +24,7 @@ import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
+import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { renderBudget, sceneSettings } from "./scene/settings";
 import { floorOf } from "./missions/rooms";
@@ -327,6 +328,7 @@ export default function Experience({
           role="img"
           aria-label={t("canvasLabel")}
           aria-describedby="hq-desc"
+          onPointerMissed={onWorldMissed}
         >
           <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} />
           <FirstFrame onFrame={onFirstFrame} />

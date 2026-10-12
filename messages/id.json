@@ -279,7 +279,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo), atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Tampilan halaman menampilkan portofolio sebagai halaman.",
+    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Tampilan halaman menampilkan portofolio sebagai halaman.",
     "floor": "Lantai",
     "elevator": "Lift",
     "goToFloor": "Ke {floor}, {label} ({name})",
@@ -293,8 +293,8 @@
     "sound": "Suara",
     "menu": "Menu",
     "profile": "Profil",
-    "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Gerak: klik lantai · Putar: seret atau Q/E · Lantai: scroll atau PgUp/PgDn",
-    "hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Turbo: tahan tombol turbo · Putar: seret · Lantai: geser ke atas atau bawah",
+    "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Lantai: scroll atau PgUp/PgDn",
+    "hintCoarse": "Kemudi: joystick · Turbo: tahan tombol turbo · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Lantai: geser ke atas atau bawah",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "joystick": "Joystick rover",
@@ -434,7 +434,12 @@
     "interact": {
       "teleporter": "Teleporter {year}",
       "board": "Direktori {wing}",
-      "archive": "Arsip tulisan"
+      "archive": "Arsip tulisan",
+      "live": "{label}. Klik untuk menuju ke sana.",
+      "liveTap": "{label} dipilih. Ketuk sekali lagi atau gunakan tombol Pergi.",
+      "go": "Pergi ke {label}",
+      "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
+      "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana."
     }
   },
   "drawer": {

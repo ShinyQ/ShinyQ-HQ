@@ -298,16 +298,25 @@ type InteractWindow = Window & {
       highlight: number;
       project: ((p: { x: number; y: number; z: number }) => ScreenPoint | null) | null;
       screenOf: (id: string, lift?: number) => ScreenPoint | null;
+      screenAt: (id: string, fx: number, fz: number, lift: number) => ScreenPoint | null;
+      hitAt: ((x: number, y: number) => string | null) | null;
     };
     rover: { x: number; y: number; z: number; cameraForward: { x: number; z: number } };
     store: { getState: () => { hover: { item: { id: string }; via: string } | null } };
   };
 };
 
-/** CSS px kept clear of the HUD on a desktop viewport (top bar and profile card, bottom band, elevator panel). */
-export const DESKTOP_SAFE = { top: 200, bottom: 200, side: 140 };
+/** CSS px kept clear of the viewport edges on a desktop viewport (HUD panels are skipped through `elementFromPoint`). */
+export const DESKTOP_SAFE = { top: 90, bottom: 90, side: 40 };
 /** The same on a 390 x 844 phone (two top rows, the bottom band with the joystick). */
-export const PHONE_SAFE = { top: 190, bottom: 320, side: 70 };
+export const PHONE_SAFE = { top: 120, bottom: 140, side: 24 };
+
+/** Where `visibleTarget` found each target clickable (fractions of its pick volume); `targetPoint` reuses it. */
+type Sample = { fx: number; fz: number; lift: number };
+const samples = new Map<string, Sample>();
+const SAMPLES: Sample[] = [0.85, 0.5, 0.2].flatMap((lift) =>
+  [0.5, 0.3, 0.7, 0.15, 0.85].flatMap((fx) => [0.5, 0.3, 0.7, 0.15, 0.85].map((fz) => ({ fx, fz, lift }))),
+);
 
 export interface TargetQuery {
   kinds: string[];
@@ -329,31 +338,46 @@ export async function interactablesOf(page: Page): Promise<InteractSnapshot[]> {
  */
 export async function visibleTarget(page: Page, { kinds, safe = DESKTOP_SAFE, minDistance = 0 }: TargetQuery): Promise<InteractSnapshot> {
   const found = await page.evaluate(
-    ({ kinds, safe, minDistance }) => {
+    ({ kinds, safe, minDistance, grid }) => {
       const { interact, rover } = (window as unknown as InteractWindow).__hq;
-      if (!interact.project) return null;
+      if (!interact.project || !interact.hitAt) return null;
       const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
       const w = window.innerWidth;
       const h = window.innerHeight;
+      // A sample counts when it is inside the safe box, the bare canvas is under it, the raycast hits this very
+      // target (no other volume in front) and it is 100 px or more from the rover (a click on the rover opens Ask Rover).
+      const clickable = (id: string, s: { fx: number; fz: number; lift: number }) => {
+        const p = interact.screenAt(id, s.fx, s.fz, s.lift);
+        if (!p || p.x < safe.side || p.x > w - safe.side || p.y < safe.top || p.y > h - safe.bottom) return false;
+        if (document.elementFromPoint(p.x, p.y)?.tagName !== "CANVAS") return false;
+        if (self && Math.hypot(p.x - self.x, p.y - self.y) <= 100) return false;
+        return interact.hitAt!(p.x, p.y) === id;
+      };
       const hits = interact.items
-        .map((i) => ({ i, d: Math.hypot(i.at.x - rover.x, i.at.z - rover.z), p: interact.screenOf(i.id) }))
-        .filter(({ i, d }) => kinds.includes(i.kind) && d >= minDistance)
-        .filter(({ p }) => p !== null && p.x > safe.side && p.x < w - safe.side && p.y > safe.top && p.y < h - safe.bottom)
-        .filter(({ p }) => document.elementFromPoint(p!.x, p!.y)?.tagName === "CANVAS")
-        .filter(({ p }) => !self || Math.hypot(p!.x - self.x, p!.y - self.y) > 100)
+        .filter((i) => kinds.includes(i.kind) && Math.hypot(i.at.x - rover.x, i.at.z - rover.z) >= minDistance)
+        .map((i) => ({ i, d: Math.hypot(i.at.x - rover.x, i.at.z - rover.z), s: grid.find((s) => clickable(i.id, s)) }))
+        .filter(({ s }) => s !== undefined)
         .sort((a, b) => a.d - b.d);
-      const hit = hits[0]?.i;
-      return hit ? { id: hit.id, kind: hit.kind, label: hit.label, at: hit.at, bounds: hit.bounds, action: hit.action } : null;
+      const hit = hits[0];
+      return hit ? { item: { id: hit.i.id, kind: hit.i.kind, label: hit.i.label, at: hit.i.at, bounds: hit.i.bounds, action: hit.i.action }, sample: hit.s! } : null;
     },
-    { kinds, safe, minDistance },
+    { kinds, safe, minDistance, grid: SAMPLES },
   );
   if (!found) throw new Error(`No ${kinds.join(" or ")} target on screen`);
-  return found;
+  samples.set(found.item.id, found.sample);
+  return found.item;
 }
 
-/** Screen position (CSS px) of a target's pick volume near its top, so the rover in front of it never takes the click. */
-export async function targetPoint(page: Page, id: string, lift = 0.85): Promise<ScreenPoint> {
-  const point = await page.evaluate(({ id, lift }) => (window as unknown as InteractWindow).__hq.interact.screenOf(id, lift), { id, lift });
+/**
+ * Screen position (CSS px) of a target: where `visibleTarget` found it clickable, else near the top of its
+ * pick volume (`lift`), so the rover in front of it never takes the click.
+ */
+export async function targetPoint(page: Page, id: string, lift?: number): Promise<ScreenPoint> {
+  const sample = lift === undefined ? (samples.get(id) ?? { fx: 0.5, fz: 0.5, lift: 0.85 }) : { fx: 0.5, fz: 0.5, lift };
+  const point = await page.evaluate(
+    ({ id, sample }) => (window as unknown as InteractWindow).__hq.interact.screenAt(id, sample.fx, sample.fz, sample.lift),
+    { id, sample },
+  );
   if (!point) throw new Error(`${id} is not on screen`);
   return point;
 }

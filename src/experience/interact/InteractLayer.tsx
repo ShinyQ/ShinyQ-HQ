@@ -8,6 +8,8 @@ import {
   BoxGeometry,
   EdgesGeometry,
   Object3D,
+  Raycaster,
+  Vector2,
   Vector3,
   type InstancedMesh,
   type LineBasicMaterial,
@@ -138,8 +140,19 @@ export function InteractLayer({ layouts, data, tier }: { layouts: FloorLayouts; 
       const top = ((1 - v.y) / 2) * size.height;
       return x >= 0 && x <= size.width && top >= 0 && top <= size.height ? { x, y: top } : null;
     };
+    const ray = new Raycaster();
+    const ndc = new Vector2();
+    interactRuntime.hitAt = (x, y) => {
+      const m = mesh.current;
+      if (!m) return null;
+      ndc.set((x / size.width) * 2 - 1, 1 - (y / size.height) * 2);
+      ray.setFromCamera(ndc, camera);
+      const id = ray.intersectObject(m, false)[0]?.instanceId;
+      return id === undefined ? null : (interactRuntime.items[id]?.id ?? null);
+    };
     return () => {
       interactRuntime.project = null;
+      interactRuntime.hitAt = null;
     };
   }, [camera, size]);
 

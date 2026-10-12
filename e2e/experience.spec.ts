@@ -636,10 +636,20 @@ test.describe("free orbit camera", () => {
 test.describe("free orbit on touch", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-  test("one-finger drag rotates, a tap still selects a target", async ({ page }) => {
+  test("a tap selects a target without moving, and a one-finger drag rotates", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
+    // A plain tap is not a drag: it selects the target under it (point-and-go) and offers Go; a tap on
+    // empty floor clears it again. Neither moves the rover.
+    const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], safe: PHONE_SAFE });
+    const point = await targetPoint(page, target.id);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect.poll(() => hoveredTarget(page)).toEqual({ id: target.id, via: "tap" });
+    await expect(page.getByTestId("interact-go")).toBeVisible();
+    const empty = await emptyFloorPoint(page);
+    await page.touchscreen.tap(empty.x, empty.y);
+    await expect(page.getByTestId("interact-go")).toHaveCount(0);
     const before = await snapshot(page);
     // A slow horizontal drag across empty floor (not a swipe).
     const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
@@ -654,13 +664,6 @@ test.describe("free orbit on touch", () => {
     expect(after.floor).toBe("L1");
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
 
-    // A plain tap is not a drag: it selects the target under it (point-and-go) and offers Go.
-    await waitForCameraSettle(page);
-    const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], safe: PHONE_SAFE });
-    const point = await targetPoint(page, target.id);
-    await page.touchscreen.tap(point.x, point.y);
-    await expect.poll(() => hoveredTarget(page)).toEqual({ id: target.id, via: "tap" });
-    await expect(page.getByTestId("interact-go")).toBeVisible();
 
     await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
