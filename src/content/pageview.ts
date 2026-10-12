@@ -91,3 +91,11 @@ export function withParams(search: string, values: Record<string, string | null>
 export function podAttrs(pod: Pick<Pod, "wing" | "stack">) {
   return { "data-pod": "", "data-wing": pod.wing, "data-stack": pod.stack.join("|") };
 }
+
+/**
+ * Landing features: the first `count` pods that have a gallery, in the order given (pass `getPods()`:
+ * key projects first, then featured, then listed). Pods without screenshots stay in the rows below.
+ */
+export function pickFeaturedPods<T extends Pick<Pod, "assets">>(sorted: readonly T[], count = 3): T[] {
+  return sorted.filter((pod) => pod.assets.length > 0).slice(0, count);
+}

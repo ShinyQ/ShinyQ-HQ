@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { matchesPod, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
+import { matchesPod, pickFeaturedPods, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
+import { getPods } from "@/content/load";
+import type { Pod } from "@/content/schema";
 
 const pods = [
   { wing: "ai" as const, stack: ["FastAPI", "Azure OpenAI"] },
@@ -57,5 +59,26 @@ describe("withParams", () => {
 
   it("serializes pod attributes for the filter islands", () => {
     expect(podAttrs({ wing: "ai", stack: ["A", "B"] })).toEqual({ "data-pod": "", "data-wing": "ai", "data-stack": "A|B" });
+  });
+});
+
+describe("pickFeaturedPods", () => {
+  const pod = (id: string, images: number) => ({ id, assets: Array.from({ length: images }, () => ({})) as unknown as Pod["assets"] });
+
+  it("keeps the given order and skips pods without a gallery", () => {
+    expect(pickFeaturedPods([pod("a", 0), pod("b", 2), pod("c", 1), pod("d", 5), pod("e", 3)]).map((p) => p.id)).toEqual(["b", "c", "d"]);
+  });
+
+  it("returns fewer when fewer pods have a gallery", () => {
+    expect(pickFeaturedPods([pod("a", 0), pod("b", 1)]).map((p) => p.id)).toEqual(["b"]);
+    expect(pickFeaturedPods([pod("a", 1), pod("b", 1)], 1).map((p) => p.id)).toEqual(["a"]);
+  });
+
+  it("features three pods with screenshots from the real dataset, best ranked first", () => {
+    const pods = getPods();
+    const picks = pickFeaturedPods(pods);
+    expect(picks).toHaveLength(3);
+    for (const p of picks) expect(p.assets.length).toBeGreaterThan(0);
+    expect(picks[0]).toBe(pods.find((p) => p.assets.length > 0));
   });
 });
