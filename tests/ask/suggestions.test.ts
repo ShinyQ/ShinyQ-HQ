@@ -3,7 +3,9 @@ import { ASK_MAX_QUESTION, ASK_TAGS } from "@/ask/protocol";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { ASK_TOPICS, matchSuggestion, pickFollowUps, SUGGESTIONS, TOPIC_SIZE, topicQuestions, type Suggestion } from "@/ask/suggestions";
+import { getContent } from "@/content/load";
 import { findBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
+import { orderPods } from "@/content/selectors";
 import { retrieve } from "../../functions/_lib/retrieve";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import { scoreSuggestion, suggestionItems } from "../../scripts/ask-eval";
@@ -43,6 +45,18 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
         expect(ids.has(id), `${s.id} -> ${id}`).toBe(true);
         expect(id).not.toBe(s.id);
       }
+    }
+  });
+
+  it("asks about projects in site order within each topic (gallery first, orderPods)", () => {
+    const rank = new Map(orderPods(getContent().floors.labs.pods).map((pod, i) => [`project-${pod.slug}`, i]));
+    for (const topic of ASK_TOPICS) {
+      const seen: string[] = [];
+      for (const s of SUGGESTIONS.filter((q) => q.topic === topic)) {
+        for (const chunk of s.expect ?? []) if (rank.has(chunk) && !seen.includes(chunk)) seen.push(chunk);
+      }
+      const ranks = seen.map((chunk) => rank.get(chunk)!);
+      expect(ranks, `${topic}: ${seen.join(", ")}`).toEqual([...ranks].sort((a, b) => a - b));
     }
   });
 

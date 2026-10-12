@@ -10,6 +10,14 @@
       "expect": ["projects-summary"]
     },
     {
+      "id": "work-security",
+      "topic": "work",
+      "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
+      "tags": ["work", "security"],
+      "followUps": ["ai-security", "work-stack", "work-best"],
+      "expect": ["project-vulnerability-scanning-automation"]
+    },
+    {
       "id": "work-banking",
       "topic": "work",
       "q": { "en": "How did he build the digital banking integrations?", "id": "Bagaimana dia membangun integrasi digital banking?" },
@@ -58,20 +66,20 @@
       "expect": ["side-*"]
     },
     {
-      "id": "work-security",
-      "topic": "work",
-      "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
-      "tags": ["work", "security"],
-      "followUps": ["ai-security", "work-stack", "work-best"],
-      "expect": ["project-vulnerability-scanning-automation"]
-    },
-    {
       "id": "ai-voice",
       "topic": "ai",
       "q": { "en": "How does the voice AI contact center work?", "id": "Bagaimana cara kerja voice AI contact center?" },
       "tags": ["ai", "voice"],
       "followUps": ["ai-voice-latency", "ai-fraud", "ai-agents"],
       "expect": ["project-voice-ai-contact-center"]
+    },
+    {
+      "id": "ai-security",
+      "topic": "ai",
+      "q": { "en": "What does the AI code security platform do?", "id": "Apa fungsi AI code security platform?" },
+      "tags": ["ai", "security"],
+      "followUps": ["work-security", "ai-agents", "ai-fraud"],
+      "expect": ["project-ai-code-security-platform"]
     },
     {
       "id": "ai-fraud",
@@ -82,20 +90,12 @@
       "expect": ["project-fraud-review-platform"]
     },
     {
-      "id": "ai-agents",
+      "id": "ai-documents",
       "topic": "ai",
-      "q": { "en": "How does he use AI coding agents?", "id": "Bagaimana dia memakai AI coding agent?" },
-      "tags": ["ai", "agents", "writing"],
-      "followUps": ["ai-solutions-assistant", "ai-llm-failures", "career-certs"],
-      "expect": ["project-agent-orchestrated-delivery"]
-    },
-    {
-      "id": "ai-security",
-      "topic": "ai",
-      "q": { "en": "What does the AI code security platform do?", "id": "Apa fungsi AI code security platform?" },
-      "tags": ["ai", "security"],
-      "followUps": ["work-security", "ai-agents", "ai-fraud"],
-      "expect": ["project-ai-code-security-platform"]
+      "q": { "en": "How does the AI CV screening platform work?", "id": "Bagaimana cara kerja platform AI CV screening?" },
+      "tags": ["ai", "documents"],
+      "followUps": ["ai-fraud", "ai-solutions-assistant", "ai-forecasting"],
+      "expect": ["project-ai-cv-screening-platform"]
     },
     {
       "id": "ai-voice-latency",
@@ -130,12 +130,12 @@
       "expect": ["post-making-a-voice-agent-interruptible"]
     },
     {
-      "id": "ai-documents",
+      "id": "ai-forecasting",
       "topic": "ai",
-      "q": { "en": "How does the AI CV screening platform work?", "id": "Bagaimana cara kerja platform AI CV screening?" },
-      "tags": ["ai", "documents"],
-      "followUps": ["ai-fraud", "ai-solutions-assistant", "ai-forecasting"],
-      "expect": ["project-ai-cv-screening-platform"]
+      "q": { "en": "How does the Fabric forecasting dashboard work?", "id": "Bagaimana cara kerja dashboard forecasting di Fabric?" },
+      "tags": ["ai", "data"],
+      "followUps": ["ai-research", "ai-documents", "work-best"],
+      "expect": ["project-fabric-forecasting-dashboard"]
     },
     {
       "id": "ai-solutions-assistant",
@@ -146,12 +146,12 @@
       "expect": ["project-ai-solutions-assistant"]
     },
     {
-      "id": "ai-forecasting",
+      "id": "ai-agents",
       "topic": "ai",
-      "q": { "en": "How does the Fabric forecasting dashboard work?", "id": "Bagaimana cara kerja dashboard forecasting di Fabric?" },
-      "tags": ["ai", "data"],
-      "followUps": ["ai-research", "ai-documents", "work-best"],
-      "expect": ["project-fabric-forecasting-dashboard"]
+      "q": { "en": "How does he use AI coding agents?", "id": "Bagaimana dia memakai AI coding agent?" },
+      "tags": ["ai", "agents", "writing"],
+      "followUps": ["ai-solutions-assistant", "ai-llm-failures", "career-certs"],
+      "expect": ["project-agent-orchestrated-delivery"]
     },
     {
       "id": "ai-research",
