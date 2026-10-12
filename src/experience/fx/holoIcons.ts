@@ -1,3 +1,4 @@
+import type { LibraryZone } from "../floors/library/model";
 import type { CareerType, PadKind } from "../types";
 
 /**
@@ -156,3 +157,22 @@ export const PAD_ICONS: Record<PadKind, Stroke[]> = {
 
 /** Pad neon tones: the values of COLORS.cyan and COLORS.pink, kept as literals because config.ts imports the career layout, which imports this module. */
 export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6" };
+
+/** L4 zone icons in the same "Neon line" style: open book, paper, model cube, presentation screen. */
+export const LIBRARY_ICONS: Record<LibraryZone, Stroke[]> = {
+  // Blog: an open book with a spine and two text lines per page.
+  blog: [
+    shut([12, 6], [12, 20], [3, 18], [3, 4]),
+    shut([12, 6], [21, 4], [21, 18], [12, 20]),
+    open([5.5, 8.5], [9.5, 9.5]),
+    open([5.5, 12], [9.5, 13]),
+    open([14.5, 9.5], [18.5, 8.5]),
+    open([14.5, 13], [18.5, 12]),
+  ],
+  // Research: a paper with a folded corner and text lines.
+  research: [shut([5, 2.5], [15, 2.5], [19, 6.5], [19, 21.5], [5, 21.5]), open([15, 2.5], [15, 6.5], [19, 6.5]), open([8, 10], [16, 10]), open([8, 13.5], [16, 13.5]), open([8, 17], [13, 17])],
+  // Models and datasets: an isometric cube.
+  models: [shut([12, 2.5], [20.5, 7], [20.5, 17], [12, 21.5], [3.5, 17], [3.5, 7]), open([3.5, 7], [12, 11.5], [20.5, 7]), open([12, 11.5], [12, 21.5])],
+  // Talks and workshops: a presentation screen on a stand with a rising chart.
+  talks: [shut([3, 3.5], [21, 3.5], [21, 15.5], [3, 15.5]), open([12, 15.5], [12, 19]), open([8, 21.5], [12, 19], [16, 21.5]), open([6.5, 12.5], [10, 9], [13, 11], [17.5, 6.5])],
+};
