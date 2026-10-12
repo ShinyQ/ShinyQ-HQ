@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  baseElevation,
+  followForward,
   followPose,
   forwardOf,
   INTRO_DURATION,
@@ -7,13 +9,19 @@ import {
   INTRO_SWEEP,
   introAngle,
   introPose,
+  orbitOffset,
   PITCH_LIMITS,
+  pitchRange,
+  RAIL,
+  railForward,
   railPose,
   railShift,
   reducedIntroPose,
+  scrubSign,
   selectRig,
   springFactor,
 } from "@/experience/camera/rigs";
+import { sceneSettings } from "@/experience/scene/settings";
 
 describe("camera rigs", () => {
   it("selects intro, rail on L2 and follow elsewhere", () => {
@@ -114,10 +122,73 @@ describe("camera rigs", () => {
     expect(Math.asin(low[1] / radius)).toBeCloseTo(PITCH_LIMITS[0]);
   });
 
-  it("swings the rail camera around the rover", () => {
+  it("orbits the rail camera all the way around the rover, look-ahead included", () => {
     const pose = railPose("desktop", 10, 14, 1, 0, Math.PI / 6);
     expect(pose.position[0]).toBeCloseTo(10 + 15);
     expect(pose.position[2]).toBeCloseTo(30 * Math.cos(Math.PI / 6));
-    expect(pose.target).toEqual([14, 14, 0]);
+    expect(pose.target[0]).toBeCloseTo(10 + 4 * Math.cos(Math.PI / 6));
+    expect(pose.target[2]).toBeCloseTo(-4 * Math.sin(Math.PI / 6));
+    const behind = railPose("desktop", 10, 14, 1, 0, Math.PI);
+    expect(behind.position[2]).toBeCloseTo(-30);
+    expect(behind.target[0]).toBeCloseTo(6);
+  });
+
+  it("tilts the rail camera within the pitch limits and keeps the side view at pitch 0", () => {
+    const radius = Math.hypot(RAIL.desktop.y, RAIL.desktop.z);
+    const low = railPose("desktop", 0, 0, 1, 0, 0, 0, -5);
+    expect(Math.asin(low.position[1] / radius)).toBeCloseTo(PITCH_LIMITS[0]);
+    const high = railPose("desktop", 0, 0, 1, 0, 0, 0, 5);
+    expect(Math.asin(high.position[1] / radius)).toBeCloseTo(PITCH_LIMITS[1]);
+    expect(railPose("desktop", 10, 14, 1, 0, 0, 0, 0)).toEqual(railPose("desktop", 10, 14));
+  });
+});
+
+describe("round 5 orbit limits", () => {
+  it("keeps the default offsets exactly", () => {
+    expect(orbitOffset([16, 18, 16], 0, 0)).toEqual([16, 18, 16]);
+    expect(orbitOffset([0, 22, 30], 0, 0)).toEqual([0, 22, 30]);
+  });
+
+  it("tilts from just above the floor to near top-down on every rig and class", () => {
+    expect(PITCH_LIMITS[0]).toBeGreaterThan(0);
+    expect(PITCH_LIMITS[0]).toBeLessThan(0.1);
+    expect(PITCH_LIMITS[1]).toBeGreaterThan(1.4);
+    expect(PITCH_LIMITS[1]).toBeLessThan(Math.PI / 2);
+    for (const cls of ["desktop", "tablet", "mobile"] as const) {
+      for (const rig of ["follow", "rail"] as const) {
+        const [lo, hi] = pitchRange(cls, rig);
+        expect(baseElevation(cls, rig) + lo).toBeCloseTo(PITCH_LIMITS[0]);
+        expect(baseElevation(cls, rig) + hi).toBeCloseTo(PITCH_LIMITS[1]);
+        expect(lo).toBeLessThan(0);
+        expect(hi).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("gives the follow forward of a yaw without building a pose", () => {
+    for (const yaw of [0, 0.7, Math.PI / 4, Math.PI, -2]) {
+      const f = followForward("desktop", yaw);
+      const g = forwardOf(followPose("desktop", [0, 0, 0], yaw));
+      expect(f.x).toBeCloseTo(g.x);
+      expect(f.z).toBeCloseTo(g.z);
+    }
+    // A quarter-turn step to the right looks west (-x).
+    expect(followForward("desktop", Math.PI / 4).x).toBeCloseTo(-1);
+  });
+
+  it("steers the rail along the view and flips scrubs when the view is turned around", () => {
+    expect(railForward(0).x).toBeCloseTo(0);
+    expect(railForward(0).z).toBeCloseTo(-1);
+    expect(railForward(Math.PI).z).toBeCloseTo(1);
+    expect(scrubSign(0)).toBe(1);
+    expect(scrubSign(0.5)).toBe(1);
+    expect(scrubSign(Math.PI)).toBe(-1);
+    expect(scrubSign(2 * Math.PI + 0.2)).toBe(1);
+  });
+
+  it("adds a first-person fog without changing the third-person ranges", () => {
+    expect(sceneSettings("lite", "follow").fog).toMatchObject({ near: 38, far: 80 });
+    expect(sceneSettings("lite", "rail").fog).toMatchObject({ near: 40, far: 95 });
+    expect(sceneSettings("lite", "first").fog).toMatchObject({ near: 14, far: 64 });
   });
 });
