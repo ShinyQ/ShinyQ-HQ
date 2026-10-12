@@ -335,7 +335,7 @@ const QUOTE_POST = "/id/blog/the-sun-the-moon-and-the-dark-sea";
  * Pages that still show a stripe while P10 lands (certification cards: Task 5; case study ToC: Task 6;
  * blockquotes: Task 7). Each task deletes its paths; a fixed path left here fails.
  */
-const P10_PENDING = new Set<string>([`/en/labs/${heroPod.slug}`, QUOTE_POST]);
+const P10_PENDING = new Set<string>([QUOTE_POST]);
 
 test.describe("no colored edge stripes", () => {
   test("Page View templates, the case study table of contents and a post with quotes", async ({ page }) => {
