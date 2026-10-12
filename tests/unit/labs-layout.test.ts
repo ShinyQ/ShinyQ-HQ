@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
-import { followPose } from "@/experience/camera/rigs";
+import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER, SHAFT } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { chevronMarks } from "@/experience/nav/roadGeometry";
 import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE } from "@/experience/floors/labs/layout";
+import { HINT } from "@/experience/hints/select";
 import { labsWalk } from "@/experience/missions/walks";
 import { distanceToRect } from "@/experience/nav/collision";
 import { DOOR_WIDTH } from "@/experience/nav/doors";
@@ -217,45 +218,72 @@ describe("L3 Project Roads layout", () => {
         }
   });
 
-  it("stands the directory boards on the hub, with walkable stops in front that turn the camera to them", () => {
+  it("starts the packet spine east of the directory wall, so no lane runs under it", () => {
+    const [spine] = layout.lanes;
+    expect(spine[0]).toEqual([LABS.board.x + LABS.board.w / 2 + 1, 0]);
+    expect(spine[1][0]).toBe(layout.east.center.x - LABS.east / 2 - 1);
+  });
+
+  it("stands the directory wall where the wing roads fork, its panels facing west with walkable stops that turn the camera to them", () => {
     const grid = buildNavGrid(floor, ROVER.radius);
+    // Two touching panels on z = 0, Product Engineering north.
+    expect(layout.boards.software.maxZ).toBeCloseTo(0);
+    expect(layout.boards.ai.minZ).toBeCloseTo(0);
+    expect(rectGap(layout.boards.software, layout.boards.ai)).toBe(0);
     for (const wing of ["software", "ai"] as const) {
       const board = layout.boards[wing];
       const stop = directoryStop(wing);
       expect(stop).toEqual(board.stop);
+      expect(Math.sign(board.center.z)).toBe(WING_SIDE[wing]);
+      // East of the hub, between the wing roads, 6 u clear of every pod.
+      expect(board.minX).toBeGreaterThan(layout.hub.center.x + layout.hub.w / 2);
+      expect(board.maxZ).toBeLessThan(LABS.wingZ - LABS.road / 2);
+      expect(board.minZ).toBeGreaterThan(-(LABS.wingZ - LABS.road / 2));
+      for (const p of layout.placed) expect(rectGap(board, p.rect), p.room).toBeGreaterThanOrEqual(6);
+      // The stop is 3 u in front of the west face, walkable, reached along the road, and turns the camera to the panel.
+      expect(stop.x).toBeCloseTo(board.minX - LABS.boardStop);
+      expect(stop.z).toBe(board.center.z);
       expect(isWalkable(grid, stop)).toBe(true);
-      expect(Math.sign(stop.z)).toBe(WING_SIDE[wing]);
-      expect(stop.x).toBeGreaterThan(board.maxX);
-      expect(inPlaza(layout.hub, stop)).toBe(true);
-      expect(inPlaza(layout.hub, board.center, 1)).toBe(true);
-      expect(zoneAt("L3", stop, floor.viewZones)?.id).toBe(`L3:directory:${wing}`);
+      expect(roadRoute(network, grid, floor.approach, stop)).not.toBeNull();
+      const zone = zoneAt("L3", stop, floor.viewZones);
+      expect(zone?.id).toBe(`L3:directory:${wing}`);
+      expect(zone?.yaw).toBeCloseTo((-3 * Math.PI) / 4);
+      expect(zone?.zoom).toBe(LABS.boardZoom);
     }
     // The lead road from the elevator never turns the camera.
     expect(zoneAt("L3", layout.hub.center, floor.viewZones)).toBeNull();
   });
 
-  it("parks deep links and elevator arrivals at the hub overview, with the shaft behind the camera", () => {
+  it("parks deep links and elevator arrivals on the hub's east rim facing the wall, with the shaft behind the camera", () => {
     expect(floor.spawn).toEqual(LABS.overview);
     expect(floor.arrival).toEqual(LABS.overview);
-    expect(Math.hypot(LABS.overview.x - layout.hub.center.x, LABS.overview.z - layout.hub.center.z)).toBeLessThan(LABS.hub.size);
+    expect(inPlaza(layout.hub, LABS.overview)).toBe(true);
+    expect(LABS.overview.x).toBeLessThan(layout.boards.software.minX);
     expect(isWalkable(buildNavGrid(floor, ROVER.radius), LABS.overview)).toBe(true);
+    // No hint bubble pops over the wall on arrival: both board stops lie beyond the hint radius.
+    for (const wing of ["software", "ai"] as const) {
+      const stop = directoryStop(wing);
+      expect(Math.hypot(stop.x - LABS.overview.x, stop.z - LABS.overview.z), wing).toBeGreaterThan(HINT.radius);
+    }
     const zone = zoneAt("L3", LABS.overview, floor.viewZones);
     expect(zone?.id).toBe("L3:overview");
     for (const cls of ["desktop", "tablet", "mobile"] as const) {
-      const [cx, , cz] = followPose(cls, [LABS.overview.x, 0, LABS.overview.z], zone!.yaw, zone!.zoom).position;
+      // The Director aims FOLLOW_LOOK_AHEAD ahead of the rover along the camera's forward (+x here).
+      const [cx, , cz] = followPose(cls, [LABS.overview.x + FOLLOW_LOOK_AHEAD[cls], 0, LABS.overview.z], zone!.yaw, zone!.zoom).position;
       // The camera looks east along the floor from west of the rover, and stays clear of the shaft column.
       expect(cx).toBeLessThan(LABS.overview.x);
       expect(Math.abs(cz - LABS.overview.z)).toBeLessThan(0.01);
       expect(cx).toBeGreaterThan(SHAFT.x + SHAFT.size / 2 + 3);
     }
-    // Driving the roads never swings the camera to the overview.
+    // Driving the roads never swings the camera to the overview or a panel.
     for (const road of network.roads)
       for (let i = 0; i < road.points.length - 1; i++)
         for (let k = 0; k <= 40; k++) {
           const a = road.points[i];
           const b = road.points[i + 1];
           const p = { x: a.x + ((b.x - a.x) * k) / 40, z: a.z + ((b.z - a.z) * k) / 40 };
-          expect(zoneAt("L3", p, floor.viewZones)?.id, `${road.id} at ${p.x},${p.z}`).not.toBe("L3:overview");
+          const id = zoneAt("L3", p, floor.viewZones)?.id ?? "";
+          expect(id === "L3:overview" || id.startsWith("L3:directory:"), `${road.id} at ${p.x},${p.z}`).toBe(false);
         }
   });
 
