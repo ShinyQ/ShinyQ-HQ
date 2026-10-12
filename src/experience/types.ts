@@ -146,6 +146,8 @@ export interface LibraryData {
     title: string;
     date: string;
     languages: ("en" | "id")[];
+    /** Content tags (the constellation links posts that share one). */
+    tags: string[];
     /** External (Medium) posts have no `/blog` page. */
     url: string | null;
   }[];
