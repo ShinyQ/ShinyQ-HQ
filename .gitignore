@@ -26,3 +26,6 @@ functions/_generated/
 .dev.vars
 ask-eval-report*.md
 .cloudflare/
+
+# Local screenshot-diff baselines (Playwright toMatchSnapshot), never committed.
+/e2e/*-snapshots/

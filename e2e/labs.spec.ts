@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, snapshot, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
+import { asReturningVisitor, collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
@@ -214,3 +214,22 @@ test("the Labs floor stays under the draw call budget", async ({ page }) => {
   await page.waitForTimeout(1500);
   await expectRenderBudget(page);
 });
+
+/**
+ * L3 arrival draw calls before the round 5 consolidation (P8 Task 1 baseline on SwiftShader, default
+ * 1280x720 viewport, deep link to /en/labs): the directory wall in the arrival view must not raise them.
+ */
+const L3_ARRIVAL_CALLS = { lite: 66, full: 85 } as const;
+
+for (const tier of ["lite", "full"] as const) {
+  test(`the Labs arrival view stays at or under its pre-consolidation draw calls (${tier})`, async ({ page }) => {
+    await enterFloorRoute(page, "/en/labs", { tier });
+    await waitForCameraSettle(page);
+    await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
+    // Troika texts typeset asynchronously; give them time to land, like the floor budget test above.
+    await page.waitForTimeout(1500);
+    const { drawCalls } = await snapshot(page);
+    console.log(`L3 arrival draw calls (${tier}): ${drawCalls}`);
+    expect(drawCalls).toBeLessThanOrEqual(L3_ARRIVAL_CALLS[tier]);
+  });
+}
