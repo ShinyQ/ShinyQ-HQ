@@ -28,6 +28,7 @@ const pod = (slug: string, wing: LabPod["wing"], tier: LabPod["tier"], order: nu
   hologram: "pipeline",
   order,
   hasHologramView: tier === "hero",
+  hasGallery: false,
 });
 
 describe("L3 Project Roads layout", () => {
@@ -64,26 +65,33 @@ describe("L3 Project Roads layout", () => {
     for (const p of layout.placed) expect(Math.sign(p.center.z)).toBe(WING_SIDE[p.pod.wing]);
   });
 
-  it("docks hero pods nearest the hub, then featured pods, alternating sides of the wing road", () => {
+  it("docks pods in site order (gallery pods nearest the hub), alternating sides of the wing road", () => {
     for (const wing of ["software", "ai"] as const) {
       const docked = layout.placed.filter((p) => p.pod.wing === wing);
       expect(docked.map((p) => p.pod.slug)).toEqual(tourOrder(pods.filter((p) => p.wing === wing)).map((p) => p.slug));
       docked.forEach((p, i) => expect(p.row).toBe(i % 2 === 0 ? "outer" : "inner"));
       for (const row of ["outer", "inner"] as const) {
-        const xs = docked.filter((p) => p.row === row).map((p) => p.center.x);
+        const inRow = docked.filter((p) => p.row === row);
+        const xs = inRow.map((p) => p.center.x);
         expect(xs).toEqual([...xs].sort((a, b) => a - b));
+        const gallery = inRow.map((p) => p.pod.hasGallery);
+        expect(gallery, `${wing} ${row}`).toEqual([...gallery].sort((a, b) => Number(b) - Number(a)));
       }
-      const lastHero = Math.max(...docked.filter((p) => p.pod.tier === "hero").map((p) => p.rect.minX));
-      const firstFeatured = Math.min(...docked.filter((p) => p.pod.tier === "featured").map((p) => p.rect.minX));
-      expect(lastHero).toBeLessThan(firstFeatured);
     }
   });
 
-  it("gives both wings mirror-image placement (equal billing)", () => {
-    const slots = (wing: "software" | "ai") => layout.placed.filter((p) => p.pod.wing === wing).map((p) => `${p.pod.tier}@${p.center.x},${Math.abs(p.center.z)}`);
+  it("docks a featured pod with a gallery ahead of a hero pod without one", () => {
+    const mixed = buildLabsLayout([pod("hero-plain", "software", "hero", 0), { ...pod("featured-shots", "software", "featured", 5), hasGallery: true }]);
+    expect(mixed.placed.map((p) => p.pod.slug)).toEqual(["featured-shots", "hero-plain"]);
+    expect(mixed.placed[0].center.x).toBeLessThan(mixed.placed[1].center.x);
+  });
+
+  it("gives both wings mirror-image placement (equal billing), whatever the tiers in each slot", () => {
+    const slots = (wing: "software" | "ai") => layout.placed.filter((p) => p.pod.wing === wing).map((p) => `${p.row}@${p.center.x},${Math.abs(p.door.z)}`);
     const sw = slots("software");
     const ai = slots("ai");
     const shared = Math.min(sw.length, ai.length);
+    expect(shared).toBeGreaterThan(0);
     expect(sw.slice(0, shared)).toEqual(ai.slice(0, shared));
   });
 

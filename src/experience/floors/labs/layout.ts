@@ -1,4 +1,5 @@
 import type { RoomId, Wing } from "@/content/schema";
+import { comparePods } from "@/content/selectors";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
@@ -8,8 +9,9 @@ import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
  * a short lead road runs from its door into a round hub plaza with the two wing directory boards.
  * The `software` wing road (north, z < 0) and the `ai` wing road (south, z > 0) leave the hub, run east
  * and meet at the east plaza, so the floor is one loop without dead ends. Hero and featured pods
- * dock on both sides of their wing road (hero pods nearest the hub), each with a forecourt and a
- * spur to its door, at least 6 u apart. Listed pods stay on the directory boards.
+ * dock on both sides of their wing road in site order (`comparePods`: gallery pods nearest the hub),
+ * one `slot` each, so both wings stay mirror images whatever their tiers; each pod has a forecourt
+ * and a spur to its door, at least 6 u apart. Listed pods stay on the directory boards.
  * Pure module (no React or three): Vitest runs it in node.
  */
 export const LABS = {
@@ -32,6 +34,8 @@ export const LABS = {
   forecourt: 3,
   hero: { w: 12, d: 9 },
   featured: { w: 8, d: 7 },
+  /** Length of row each docked pod reserves (the hero width): slot i sits at the same x in both wings. */
+  slot: 12,
   /** Pods docked per wing; the rest go to the wing directory. */
   maxPerWing: 12,
   /** Pod front wall to door pad center (the rover fits on the pad). */
@@ -132,16 +136,15 @@ export function boardSize(layers: number, rows: number): { width: number; height
   return { width: width * scale, height: height * scale, scale };
 }
 
-/** Hero pods (by `order`), then featured pods (by `order`): the docking order along a wing road and the tour order. */
+/** Hero and featured pods in site order (`comparePods`: gallery first): the docking order along a wing road and the tour order. */
 export function tourOrder(pods: readonly LabPod[]): LabPod[] {
-  const byOrder = (a: LabPod, b: LabPod) => a.order - b.order;
-  return [...pods.filter((p) => p.tier === "hero").sort(byOrder), ...pods.filter((p) => p.tier === "featured").sort(byOrder)];
+  return pods.filter((p) => p.tier !== "listed").sort(comparePods);
 }
 
 /**
- * Places pods from data (`ExperienceData.labs.pods`). Per wing, hero then featured pods dock along
- * the wing road from the hub eastward, alternating the outer and the inner side; the loop corner
- * follows the farthest pod of either wing, so both wings share one east plaza.
+ * Places pods from data (`ExperienceData.labs.pods`). Per wing, hero and featured pods dock in
+ * `tourOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
+ * inner side; the loop corner follows the farthest pod of either wing, so both wings share one east plaza.
  */
 export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const L = LABS;
@@ -157,15 +160,15 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     const inWing = pods.filter((p) => p.wing === wing);
     const tour = tourOrder(inWing);
     const docked = tour.slice(0, L.maxPerWing);
-    directory[wing] = [...tour.slice(L.maxPerWing), ...inWing.filter((p) => p.tier === "listed")];
+    directory[wing] = [...tour.slice(L.maxPerWing), ...inWing.filter((p) => p.tier === "listed").sort(comparePods)];
     const cursor = { outer: L.outerStart as number, inner: L.innerStart as number };
     docked.forEach((pod, i) => {
       const row = i % 2 === 0 ? "outer" : "inner";
       // Side of the road the pod sits on: away from the other wing (outer) or toward it (inner).
       const side = (row === "outer" ? WING_SIDE[wing] : -WING_SIDE[wing]) as -1 | 1;
       const { w, d } = pod.tier === "hero" ? L.hero : L.featured;
-      const x = cursor[row] + w / 2;
-      cursor[row] += w + L.gap;
+      const x = cursor[row] + L.slot / 2;
+      cursor[row] += L.slot + L.gap;
       const front = zr + side * (half + L.forecourt);
       const center = { x, z: front + (side * d) / 2 };
       const edge = zr + side * half;

@@ -84,6 +84,8 @@ export interface LabPod {
   order: number;
   /** Hero pods with at least 3 architecture nodes open the hologram view. */
   hasHologramView: boolean;
+  /** At least one gallery image: gallery pods come first in every project list (`comparePods`). */
+  hasGallery: boolean;
 }
 
 /** Optional per-floor inputs for `buildFloorLayouts` (each phase adds its own field). */
@@ -109,7 +111,7 @@ export interface ExperienceData {
   floors: Record<FloorId, { name: string; route: string }>;
   years: number[];
   roomCount: number;
-  /** L3 Labs: pods in wing order (hero, featured, listed, then `order`) and wing labels. */
+  /** L3 Labs: pods in site order (`orderPods`: gallery first, then hero, featured, listed, then `order`) and wing labels. */
   labs: { pods: LabPod[]; wings: Record<Wing, string> };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
   career: CareerData;

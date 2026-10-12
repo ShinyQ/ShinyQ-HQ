@@ -206,8 +206,8 @@ describe("walk definitions", () => {
     expect(walk.stops[1].subtitle).toBe("Co · 2021");
   });
 
-  it("tours hero pods, then featured pods, then the directories", () => {
-    const pod = (slug: string, tier: LabPod["tier"], wing: LabPod["wing"], order: number): LabPod => ({
+  it("tours gallery pods first, then hero before featured, wing by wing, then the directories", () => {
+    const pod = (slug: string, tier: LabPod["tier"], wing: LabPod["wing"], order: number, hasGallery = false): LabPod => ({
       id: slug,
       slug,
       title: slug,
@@ -217,10 +217,18 @@ describe("walk definitions", () => {
       accent: "cyan",
       hologram: "graph",
       hasHologramView: false,
+      hasGallery,
     });
-    const pods = [pod("f1", "featured", "ai", 3), pod("h2", "hero", "ai", 0), pod("h1", "hero", "software", 0), pod("l1", "listed", "ai", 9), pod("h3", "hero", "software", 1)];
+    const pods = [
+      pod("f1", "featured", "ai", 3),
+      pod("h2", "hero", "ai", 0),
+      pod("h1", "hero", "software", 0),
+      pod("l1", "listed", "ai", 9, true),
+      pod("h3", "hero", "software", 1),
+      pod("g1", "featured", "software", 5, true),
+    ];
     const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering" }, more: "More projects here", moreSub: "" });
-    expect(walk.stops.map((s) => s.id)).toEqual(["L3:h1", "L3:h3", "L3:h2", "L3:f1", "L3:directory:software", "L3:directory:ai"]);
+    expect(walk.stops.map((s) => s.id)).toEqual(["L3:g1", "L3:h1", "L3:h3", "L3:h2", "L3:f1", "L3:directory:software", "L3:directory:ai"]);
     expect(walk.stops.at(-1)).toMatchObject({ palette: "pods" });
     expect(walk.stops.at(-1)?.room).toBeUndefined();
     const placedOnly = labsWalk(pods, { wings: { software: "S", ai: "A" }, more: "", moreSub: "" }, new Set(["h1"]));

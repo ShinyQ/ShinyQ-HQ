@@ -39,7 +39,7 @@ const ROOMS: RoomInfo[] = [
 ];
 const byId = (id: string) => ROOMS.find((r) => r.id === id);
 const layouts = buildFloorLayouts(8, {
-  labs: [{ id: "voice-ai", slug: "voice-ai", title: "Voice AI", tier: "hero", wing: "ai", accent: "violet", hologram: "waveform", order: 0, hasHologramView: true }],
+  labs: [{ id: "voice-ai", slug: "voice-ai", title: "Voice AI", tier: "hero", wing: "ai", accent: "violet", hologram: "waveform", order: 0, hasHologramView: true, hasGallery: true }],
 });
 const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 const signal = () => new AbortController().signal;
