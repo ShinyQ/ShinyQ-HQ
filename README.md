@@ -91,6 +91,8 @@ bun run dev                        # http://localhost:3000/en
 | `bun run screenshots:pages` | Page View captures at 1440x900, 1024x1366 and 390x844, plus the landing at 1440x900, 834x1112 and 390x844 (`screenshots/landing/`) |
 | `bun run validate:content` | Schema and safety check for `content/site-content.json` |
 | `bun run floor:thumbs` | Captures every floor from its start spot (after a build) and writes the elevator picker thumbnails `public/floors/*.webp` (needs `cwebp`) |
+| `bun run og:stills` | Captures every floor at 1200x630 (after a build, WebGL on SwiftShader) and writes the share card backgrounds `public/og-assets/floor-*.jpg`; `--photo <png>` refreshes the owner's photo |
+| `bun run og:check` | Social-card check over `out/`: every page's title, 140 to 160 character description, canonical, hreflang, Open Graph and Twitter tags, and every share image (1200x630 JPEG, at most 300 KB); writes 300 px previews to `screenshots/og-preview/` |
 
 ## Routes
 
@@ -129,7 +131,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      static server, e2e planning, content validator, title case, CV and paper page renderers (cv:pages, paper:pages), floor thumbnails (floor:thumbs), Ask pack, evals, provisioning, deploy smoke check
+scripts/      static server, e2e planning, content validator, title case, CV and paper page renderers (cv:pages, paper:pages), floor thumbnails (floor:thumbs), share card stills and checks (og:stills, og:check, og-before-after), Ask pack, evals, provisioning, deploy smoke check
 functions/    Cloudflare Pages Function for Ask the HQ (api/ask.ts, _lib/ pipeline)
 src/app/      routes ([locale] pages, "/" redirect, 404)
 src/components/  static-page UI, shared modal, page image viewer (CV and paper PDFs) and paper previews
