@@ -50,8 +50,11 @@ const ROLE = { top: 4.45, step: 0.6 } as const;
 export const SHOT = { y: 3.55, w: 4.6, h: 2.875 } as const;
 /** Atlas cell per screenshot (16:10), smaller on the lite tier. */
 export const SHOT_CELL = { full: { w: 480, h: 300 }, lite: { w: 320, h: 200 } } as const;
-/** The owner's portrait on the About me panel (owner decision 2026-10-13): `u` along the face, center height, square side. */
-export const PHOTO = { u: -3.45, y: 4.85, size: 1.8 } as const;
+/**
+ * The owner's portrait on the About me panel (owner decision 2026-10-13): `u` along the face, center height,
+ * square side. Its frame lines up with the left stat tile and keeps 0.2 u clear of the tiles and the panel top.
+ */
+export const PHOTO = { u: -3.8, y: 4.9, size: 1.6 } as const;
 export const PHOTO_SRC = brandPhotoSrc(320);
 /** The light studio backdrop would bloom on the full tier; drawn slightly darker it reads like the screenshots. */
 export const PHOTO_BRIGHTNESS = 0.85;
