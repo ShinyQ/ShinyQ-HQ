@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
+import { findEdgeAccents } from "./edge-audit";
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -60,6 +61,10 @@ for (const vp of VIEWPORTS) {
 
     const results = await new AxeBuilder({ page }).include("[data-testid='room-drawer']").withRules(["color-contrast"]).analyze();
     expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+
+    // R5 P10: no colored left or top edge stripe in the drawer or the HUD over the world.
+    expect(await page.evaluate(findEdgeAccents, "[data-testid='room-drawer']"), "drawer").toEqual([]);
+    expect(await page.evaluate(findEdgeAccents, "[data-testid='hud']"), "HUD").toEqual([]);
     await context.close();
   });
 }
