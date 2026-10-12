@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { RAIL, RAIL_LOOK_AHEAD } from "../src/experience/camera/rigs";
 
 export interface HQSnapshot {
   phase: string;
@@ -273,4 +274,26 @@ export async function driveTo(page: Page, point: { x: number; z: number }, timeo
     null,
     { timeout },
   );
+}
+
+/**
+ * Screen position (CSS px) of a floor point on L2, from the settled rail camera (desktop rig, no yaw):
+ * the camera sits at `__hq.camera()` and looks at (rover x + RAIL_LOOK_AHEAD, floor, camera z - RAIL.z).
+ */
+export async function railScreenPoint(page: Page, p: { x: number; z: number }) {
+  const [cx, cy, cz] = await page.evaluate(() => (window as unknown as { __hq: { camera: () => [number, number, number] } }).__hq.camera());
+  const rover = (await snapshot(page)).rover;
+  const { width, height } = page.viewportSize()!;
+  const rig = RAIL.desktop;
+  const target = [rover.x + RAIL_LOOK_AHEAD, cy - rig.y, cz - rig.z];
+  const norm = (v: number[]) => v.map((c) => c / Math.hypot(...v));
+  const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const f = norm([target[0] - cx, target[1] - cy, target[2] - cz]);
+  const r = norm(cross(f, [0, 1, 0]));
+  const u = cross(r, f);
+  const d = [p.x - cx, cy - rig.y - cy, p.z - cz];
+  const t = Math.tan(((rig.fov / 2) * Math.PI) / 180);
+  const ndc = { x: dot(d, r) / (dot(d, f) * t * (width / height)), y: dot(d, u) / (dot(d, f) * t) };
+  return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
 }

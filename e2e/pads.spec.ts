@@ -1,5 +1,21 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, driveTo, expectRenderBudget, padsOf, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import en from "../messages/en.json";
+import {
+  asReturningVisitor,
+  collectErrors,
+  driveTo,
+  expectRenderBudget,
+  padsOf,
+  railScreenPoint,
+  waitForCameraSettle,
+  waitForFloor,
+  waitForFrames,
+  waitForHQ,
+  waitForPhase,
+  waitForRoverMove,
+  waitForSceneLive,
+} from "./hq";
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -13,7 +29,7 @@ type PadWindow = Window & {
         setBeam: (beam: unknown) => void;
       };
     };
-    rover: { x: number; z: number };
+    rover: { x: number; z: number; autopilot: unknown; target: unknown };
     camera: () => [number, number, number];
   };
 };
@@ -79,5 +95,120 @@ test.describe("floor pads on the Career Road (L2)", () => {
     // Landing on the target pad does not open its picker.
     await waitForFrames(page, 30);
     expect(await picker(page)).toBeNull();
+  });
+});
+
+test.describe("pad pickers", () => {
+  test("the elevator pad lists every floor, Esc closes it for good, and a pick rides the elevator", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openJourney(page);
+    const lift = (await padsOf(page, "L2")).find((p) => p.kind === "elevator")!;
+    const dialog = page.getByRole("dialog", { name: en.hud.pads.floorTitle });
+    await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    await driveTo(page, lift.at);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("[data-option]")).toHaveCount(5);
+    await expect(dialog.locator('[data-option="L3"]')).toContainText(en.hud.floorLabel.L3);
+    await expect(dialog.locator('[data-option="L2"]')).toHaveAttribute("aria-current", "true");
+    await expect(dialog.locator('[data-option="L2"]')).toBeFocused();
+    await expect.poll(() => dialog.locator('[data-option="L1"] img').evaluate((img: HTMLImageElement) => (img.complete ? img.naturalWidth : 0))).toBeGreaterThan(0);
+    const axe = await new AxeBuilder({ page }).include("[data-testid='pad-picker']").analyze();
+    expect(axe.violations).toEqual([]);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    // Still on the pad: it stays quiet until the rover leaves.
+    await waitForFrames(page, 30);
+    await expect(dialog).toHaveCount(0);
+
+    await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    await driveTo(page, lift.at);
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("ArrowUp");
+    await expect(dialog.locator('[data-option="L3"]')).toBeFocused();
+    await page.keyboard.press("Enter");
+    await waitForFloor(page, "L3");
+    await expect(page.getByTestId("elevator-panel").locator('[data-floor="L3"]')).toHaveAttribute("aria-current", "true");
+    // Stepping out onto the L3 elevator pad does not ask again.
+    await waitForFrames(page, 30);
+    await expect(dialog).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("a click on a teleporter opens the year picker without driving, and a pick beams the rover to that plaza", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openJourney(page);
+    await waitForCameraSettle(page);
+    const teleports = (await padsOf(page, "L2")).filter((p) => p.kind === "teleport");
+    const first = teleports[0];
+    const target = teleports[4];
+    const before = await roverAt(page);
+    await page.getByTestId("hq-world").click({ position: await railScreenPoint(page, first.at) });
+    const dialog = page.getByRole("dialog", { name: en.hud.pads.yearTitle });
+    await expect(dialog).toBeVisible();
+    const still = await roverAt(page);
+    expect(Math.hypot(still.x - before.x, still.z - before.z)).toBeLessThan(0.5);
+    await expect(dialog.locator("[data-option]")).toHaveCount(teleports.length);
+    await expect(dialog.locator(`[data-option="${first.year}"]`)).toHaveAttribute("aria-current", "true");
+    await expect(dialog.locator(`[data-option="${first.year}"]`)).toContainText(en.hud.career.prologue);
+
+    await dialog.locator(`[data-option="${target.year}"]`).click();
+    await expect(dialog).toHaveCount(0);
+    await expect.poll(() => beam(page)).toBeNull();
+    const at = await roverAt(page);
+    expect(Math.hypot(at.x - target.at.x, at.z - target.at.z)).toBeLessThan(0.5);
+    await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", String(target.year));
+    const drive = await page.evaluate(() => {
+      const r = (window as unknown as PadWindow).__hq.rover;
+      return { autopilot: r.autopilot, target: r.target };
+    });
+    expect(drive).toEqual({ autopilot: null, target: null });
+    await waitForFrames(page, 30);
+    expect(await picker(page)).toBeNull();
+
+    // Driving works at once from the new plaza.
+    await page.keyboard.down("d");
+    await waitForRoverMove(page, target.at, 3);
+    await page.keyboard.up("d");
+    expect(errors).toEqual([]);
+  });
+
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("the teleport is a short fade cut that still lands on the target pad", async ({ page }) => {
+      await openJourney(page);
+      const teleports = (await padsOf(page, "L2")).filter((p) => p.kind === "teleport");
+      const target = teleports[2];
+      await driveTo(page, teleports[0].at);
+      const dialog = page.getByRole("dialog", { name: en.hud.pads.yearTitle });
+      await expect(dialog).toBeVisible();
+      await dialog.locator(`[data-option="${target.year}"]`).click();
+      await expect.poll(() => beam(page)).toBeNull();
+      const at = await roverAt(page);
+      expect(Math.hypot(at.x - target.at.x, at.z - target.at.z)).toBeLessThan(0.5);
+      await expect(page.getByTestId("beam-fade")).toHaveClass(/opacity-0/);
+    });
+  });
+
+  test.describe("on a phone", () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test("the floor picker is a bottom sheet and a tap rides the elevator", async ({ page }) => {
+      await openJourney(page);
+      const lift = (await padsOf(page, "L2")).find((p) => p.kind === "elevator")!;
+      await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+      await driveTo(page, lift.at);
+      const dialog = page.getByRole("dialog", { name: en.hud.pads.floorTitle });
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toHaveAttribute("data-sheet", "bottom");
+      const box = (await dialog.boundingBox())!;
+      expect(Math.abs(box.y + box.height - 844)).toBeLessThanOrEqual(1);
+      expect(box.height).toBeLessThan(844 * 0.9);
+      await dialog.locator('[data-option="L1"]').tap();
+      await waitForFloor(page, "L1");
+      await waitForFrames(page, 30);
+      await expect(dialog).toHaveCount(0);
+    });
   });
 });
