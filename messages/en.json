@@ -280,7 +280,6 @@
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
     "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive, or click a spot on the floor. Drag, use Q and E or the rotate buttons to turn the view; press 0 to reset it. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, mouse wheel or PageUp and PageDown to change floors. Quick view opens the portfolio as a page.",
     "floor": "Floor",
-    "visited": "Rooms visited",
     "elevator": "Elevator",
     "goToFloor": "Go to {floor}, {label} ({name})",
     "currentFloor": "Current floor: {floor}, {name}",
