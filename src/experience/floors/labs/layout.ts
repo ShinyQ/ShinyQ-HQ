@@ -5,13 +5,14 @@ import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 
 /**
- * L3 Project Roads (walkable floors plan, part 2). The global elevator shaft stays at x = -28, so
- * a short lead road runs from its door into a round hub plaza with the two wing directory boards.
- * The `software` wing road (north, z < 0) and the `ai` wing road (south, z > 0) leave the hub, run east
- * and meet at the east plaza, so the floor is one loop without dead ends. Hero and featured pods
- * dock on both sides of their wing road in site order (`comparePods`: gallery pods nearest the hub),
- * one `slot` each, so both wings stay mirror images whatever their tiers; each pod has a forecourt
- * and a spur to its door, at least 6 u apart. Listed pods stay on the directory boards.
+ * L3 Project Roads (walkable floors plan, part 2; consolidated in round 5, owner request 2026-10-13).
+ * The global elevator shaft stays at x = -28, so a short lead road runs from its door into a round hub
+ * plaza with the two wing directory boards. The `software` wing road (north, z < 0) and the `ai` wing
+ * road (south, z > 0) leave the hub and run east; each turns `tail` past its last pod into the east
+ * plaza, so the floor is one loop without dead ends or empty road ends. Hero and featured pods dock on
+ * both sides of their wing road in site order (`comparePods`: gallery pods nearest the hub), one `slot`
+ * each, so both wings stay mirror images whatever their tiers; each pod has a forecourt and a spur to
+ * its door, at least 6 u apart. Listed pods stay on the directory boards.
  * Pure module (no React or three): Vitest runs it in node.
  */
 export const LABS = {
@@ -41,9 +42,8 @@ export const LABS = {
   /** Pod front wall to door pad center (the rover fits on the pad). */
   padInset: 1.1,
   spurWidth: 4,
-  /** Road from the last pod to the loop corner, and the corner's x offset to the east plaza. */
-  tail: 8,
-  loop: 14,
+  /** Road past the far edge of a wing's last pod before it turns into the east plaza: half the road plus a forecourt. */
+  tail: 7,
   /** Diameter of the east plaza where the wing roads meet. */
   east: 18,
   /** Wing directory boards on the west rim of the hub, thin along x and facing east (+x) toward the follow camera. */
@@ -144,7 +144,7 @@ export function tourOrder(pods: readonly LabPod[]): LabPod[] {
 /**
  * Places pods from data (`ExperienceData.labs.pods`). Per wing, hero and featured pods dock in
  * `tourOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
- * inner side; the loop corner follows the farthest pod of either wing, so both wings share one east plaza.
+ * inner side; each wing road turns `tail` past its own last pod and both meet at one east plaza.
  */
 export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const L = LABS;
@@ -153,7 +153,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const hub: Plaza = { id: "hub", center: hubC, w: L.hub.size, d: L.hub.size, round: true };
   const placed: PlacedPod[] = [];
   const directory: Record<Wing, LabPod[]> = { software: [], ai: [] };
-  let farX: number = L.wingStartX;
+  // Far edge (max x) of each wing's last docked pod.
+  const lastEdge: Record<Wing, number> = { software: -Infinity, ai: -Infinity };
 
   for (const wing of ["software", "ai"] as const) {
     const zr = WING_SIDE[wing] * L.wingZ;
@@ -184,15 +185,18 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
         depth: d,
         forecourt: { minX: x - w / 2, maxX: x + w / 2, minZ: Math.min(edge, front), maxZ: Math.max(edge, front) },
       });
+      lastEdge[wing] = Math.max(lastEdge[wing], x + w / 2);
     });
-    farX = Math.max(farX, cursor.outer - L.gap, cursor.inner - L.gap);
   }
 
-  const turnX = farX + L.tail;
-  const loopEnd: Vec2 = { x: turnX + L.loop, z: 0 };
+  // Each wing road turns `tail` past its own last pod; the east plaza sits on the later turn, so a
+  // shorter wing cuts across to it instead of running on empty. An empty wing still reaches a plaza
+  // and a margin past the point where the wing roads start.
+  const turnX = (wing: Wing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail);
+  const loopEnd: Vec2 = { x: Math.max(turnX("software"), turnX("ai")), z: 0 };
   const wingRoad = (wing: Wing): Road => {
     const z = WING_SIDE[wing] * L.wingZ;
-    return { id: wing, points: [hubC, { x: L.wingStartX, z }, { x: turnX, z }, loopEnd], width: L.road };
+    return { id: wing, points: [hubC, { x: L.wingStartX, z }, { x: turnX(wing), z }, loopEnd], width: L.road };
   };
   const lead: Road = { id: "lead", points: [L.approach, hubC], width: L.road };
   const east: Plaza = { id: "east", center: loopEnd, w: L.east, d: L.east, round: true };

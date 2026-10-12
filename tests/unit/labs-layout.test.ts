@@ -61,6 +61,45 @@ describe("L3 Project Roads layout", () => {
     for (const p of path!) expect(onNetwork(network, p)).toBe(true);
   });
 
+  it("ends each wing road one tail past its last docked pod, so no stretch of road runs on empty (owner request 2026-10-13)", () => {
+    for (const wing of ["software", "ai"] as const) {
+      const road = network.roads.find((r) => r.id === wing)!;
+      const docked = layout.placed.filter((p) => p.pod.wing === wing);
+      const lastEdge = Math.max(...docked.map((p) => p.rect.maxX));
+      expect(road.points[2].x, wing).toBe(lastEdge + LABS.tail);
+      // From the last door to the turn is at most half a hero pod plus the tail.
+      const lastDoor = Math.max(...docked.map((p) => p.door.x));
+      expect(road.points[2].x - lastDoor, wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
+      expect(road.points.at(-1)).toEqual(layout.east.center);
+    }
+    // The east plaza sits on the later of the two turns, on the axis between the wings.
+    const turns = network.roads.filter((r) => r.id !== "lead").map((r) => r.points[2].x);
+    expect(layout.east.center).toEqual({ x: Math.max(...turns), z: 0 });
+  });
+
+  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods", () => {
+    const lastEdge = Math.max(...layout.placed.map((p) => p.rect.maxX));
+    expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
+    expect(floor.bounds.maxX - lastEdge).toBe(LABS.tail + LABS.east / 2 + LABS.margin);
+  });
+
+  it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing cutting across to the plaza", () => {
+    const lopsided = buildLabsLayout([
+      ...Array.from({ length: 9 }, (_, i) => pod(`s${i}`, "software", i % 3 ? "featured" : "hero", i)),
+      ...Array.from({ length: 3 }, (_, i) => pod(`a${i}`, "ai", "hero", i)),
+    ]);
+    expectSpaceRules({ bounds: lopsided.floor.bounds, obstacles: lopsided.floor.obstacles, doors: lopsided.floor.doors ?? [], network: lopsided.network, start: lopsided.floor.approach });
+    const ai = lopsided.network.roads.find((r) => r.id === "ai")!;
+    const software = lopsided.network.roads.find((r) => r.id === "software")!;
+    const aiEdge = Math.max(...lopsided.placed.filter((p) => p.pod.wing === "ai").map((p) => p.rect.maxX));
+    expect(ai.points[2].x).toBe(aiEdge + LABS.tail);
+    expect(ai.points[2].x).toBeLessThan(software.points[2].x);
+    expect(ai.points.at(-1)).toEqual(lopsided.east.center);
+    const empty = buildLabsLayout([]);
+    expectSpaceRules({ bounds: empty.floor.bounds, obstacles: empty.floor.obstacles, doors: empty.floor.doors ?? [], network: empty.network, start: empty.floor.approach });
+    expect(empty.east.center.x).toBe(LABS.wingStartX + LABS.east + LABS.margin);
+  });
+
   it("puts the Product Engineering wing north (z < 0) and the AI Engineering wing south (z > 0)", () => {
     for (const p of layout.placed) expect(Math.sign(p.center.z)).toBe(WING_SIDE[p.pod.wing]);
   });
