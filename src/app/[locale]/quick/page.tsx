@@ -8,7 +8,9 @@ import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { AwardList, SkillsWall } from "@/components/ProfileBlocks";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
-import { getAwards, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
+import { PerspectiveList } from "@/components/page/Perspectives";
+import { getAwards, getContent, getLibrary, getPerspectives, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
+import { perspectiveLinks } from "@/content/perspectives";
 import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
@@ -20,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/quick">)
   return pageMetadata({ locale, path: "/quick", title: t("title"), description: t("intro") });
 }
 
-const TOC = ["profile", "stats", "software", "ai", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
+const TOC = ["profile", "perspectives", "stats", "software", "ai", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
 
 export default async function QuickViewPage({ params }: PageProps<"/[locale]/quick">) {
   const locale = assertLocale((await params).locale);
@@ -33,6 +35,11 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
   const roof = getRoof();
   const library = getLibrary();
   const timeline = getTimeline().reverse();
+  const ta = await getTranslations({ locale, namespace: "about" });
+  const content = getContent();
+  const perspectives = getPerspectives().map((entry) => ({ entry, links: perspectiveLinks(entry, content, locale) }));
+  // The section and its ToC chip exist only once the owner approved at least one entry.
+  const toc = TOC.filter((id) => id !== "perspectives" || perspectives.length > 0);
 
   const section = (id: (typeof TOC)[number]) => ({ id, title: t(id) });
 
@@ -45,7 +52,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
             {t("toc")}
           </h2>
           <ul className="flex gap-1.5 whitespace-nowrap">
-            {TOC.map((id) => (
+            {toc.map((id) => (
               <li key={id}>
                 <a href={`#${id}`} className="chip min-h-11">
                   {t(id)}
@@ -65,6 +72,20 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <p className="pv-body mt-5">{profile.bio[locale]}</p>
         <p className="pv-body mt-4">{profile.howIWork[locale]}</p>
       </SectionSplit>
+
+      {perspectives.length > 0 && (
+        <SectionSplit {...section("perspectives")} intro={ta("perspectives.intro")}>
+          <PerspectiveList
+            items={perspectives}
+            locale={locale}
+            labels={{
+              related: ta("perspectives.related"),
+              external: tc("external"),
+              asOf: (date) => ta("perspectives.asOf", { date: formatYearMonth(date, locale) }),
+            }}
+          />
+        </SectionSplit>
+      )}
 
       <SectionSplit {...section("stats")}>
         <StatLedger stats={getStats()} locale={locale} />

@@ -115,6 +115,7 @@
     "intro": "My work and background on one page, with links to the full case studies.",
     "toc": "On this page",
     "profile": "Profile",
+    "perspectives": "Perspectives",
     "stats": "At a glance",
     "software": "Selected software engineering work",
     "ai": "Selected AI engineering work",
@@ -543,7 +544,13 @@
     "hIndexLabel": "h-index"
   },
   "about": {
-    "title": "About and contact"
+    "title": "About and contact",
+    "perspectives": {
+      "title": "Perspectives",
+      "intro": "Questions people ask about how I work, answered in my own words.",
+      "related": "Related",
+      "asOf": "Written {date}"
+    }
   },
   "ask": {
     "thinking": "Thinking…",

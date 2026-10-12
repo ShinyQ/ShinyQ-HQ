@@ -115,6 +115,7 @@
     "intro": "Pekerjaan dan latar belakang saya dalam satu halaman, dengan tautan ke studi kasus lengkap.",
     "toc": "Isi halaman",
     "profile": "Profil",
+    "perspectives": "Perspektif",
     "stats": "Sekilas",
     "software": "Pilihan karya software engineering",
     "ai": "Pilihan karya AI engineering",
@@ -543,7 +544,13 @@
     "hIndexLabel": "h-index"
   },
   "about": {
-    "title": "Tentang dan kontak"
+    "title": "Tentang dan kontak",
+    "perspectives": {
+      "title": "Perspektif",
+      "intro": "Pertanyaan yang sering diajukan tentang cara saya bekerja, saya jawab dengan kata-kata saya sendiri.",
+      "related": "Terkait",
+      "asOf": "Ditulis {date}"
+    }
   },
   "ask": {
     "thinking": "Sedang berpikir…",
