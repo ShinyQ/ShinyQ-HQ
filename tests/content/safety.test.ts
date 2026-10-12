@@ -6,6 +6,7 @@ import { EM_DASH, collectStrings, findBlockedTerms, findForbiddenPatterns, leafF
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
 const content = JSON.parse(read("content", "site-content.json"));
+const perspectives = JSON.parse(read("content", "perspectives.json"));
 const blogFiles = readdirSync(path.join(root, "content", "blog")).filter((f) => f.endsWith(".mdx"));
 const messageFiles = readdirSync(path.join(root, "messages")).filter((f) => f.endsWith(".json"));
 
@@ -20,6 +21,14 @@ describe("public-safety lint", () => {
     const hits = collectStrings(content).flatMap((leaf) => {
       const found = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
       return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
+    });
+    expect(hits).toEqual([]);
+  });
+
+  it("finds no blocklisted term or forbidden pattern in content/perspectives.json (drafts included: the repo is public)", () => {
+    const hits = collectStrings(perspectives).flatMap(({ path: at, value }) => {
+      const found = [...findBlockedTerms(value, terms), ...findForbiddenPatterns(value)];
+      return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });

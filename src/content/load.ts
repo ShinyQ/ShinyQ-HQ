@@ -1,7 +1,9 @@
 import raw from "../../content/site-content.json";
 import factsRaw from "../../content/generated/dynamic-facts.json";
+import perspectivesRaw from "../../content/perspectives.json";
 import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
-import { SiteContentSchema, type Locale, type LocalizedText, type SiteContent, type Stat } from "./schema";
+import { publishedPerspectives } from "./perspectives";
+import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 
 let cached: SiteContent | undefined;
@@ -23,6 +25,19 @@ let cachedFacts: DynamicFacts | undefined;
 export function getDynamicFacts(): DynamicFacts {
   cachedFacts ??= DynamicFactsSchema.parse(factsRaw);
   return cachedFacts;
+}
+
+let cachedPerspectives: PerspectivesFile | undefined;
+
+/** The whole perspectives file, drafts included. For checks and tests only: never render it. */
+export function getPerspectivesFile(): PerspectivesFile {
+  cachedPerspectives ??= PerspectivesFileSchema.parse(perspectivesRaw);
+  return cachedPerspectives;
+}
+
+/** Approved perspectives only, in file order. About, Quick view and the Ask pack read this. */
+export function getPerspectives(): Perspective[] {
+  return publishedPerspectives(getPerspectivesFile());
 }
 
 /** Stats whose value comes from the live facts, so the stats ring, Page View and Ask agree. */

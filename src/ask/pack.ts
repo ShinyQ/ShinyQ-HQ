@@ -4,7 +4,7 @@ import type { Locale, LocalizedText, SiteContent } from "@/content/schema";
 import { findBlockedTerms } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
-import { cleanText } from "../../functions/_lib/text";
+import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 
 /**
@@ -46,14 +46,6 @@ const label = (en: string, id: string, value: Bi | string): Bi => {
   return { en: `${en}: ${v.en}.`, id: `${id}: ${v.id}.` };
 };
 
-/** Sentences that read like instructions to a model are dropped from pack text (T2). */
-const INSTRUCTION_LIKE = [
-  /\bignore\b[^.]{0,40}\b(previous|prior|above|earlier)\b[^.]{0,20}\b(instructions?|rules?|prompts?)\b/i,
-  /(^|\s)(system|assistant|developer)\s*:/i,
-  /\byou are (now )?(an?|the) (ai|assistant|model|chatbot|llm)\b/i,
-  /\b(abaikan|lupakan)\b[^.]{0,40}\b(instruksi|aturan|perintah)\b/i,
-];
-
 /** Strips markdown/HTML/JSX, invisible characters and instruction-like sentences. */
 export function sanitizePackText(text: string): string {
   const plain = text
@@ -65,7 +57,7 @@ export function sanitizePackText(text: string): string {
   const cleaned = cleanText(plain);
   return cleaned
     .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => !INSTRUCTION_LIKE.some((re) => re.test(sentence)))
+    .filter((sentence) => !isInstructionLike(sentence))
     .join(" ")
     .replace(/\u2014/g, ", ");
 }

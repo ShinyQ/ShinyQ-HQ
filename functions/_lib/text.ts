@@ -188,3 +188,15 @@ export function detectLocale(text: string, fallback: "en" | "id"): "en" | "id" {
   if (enHits >= 1) return "en";
   return fallback;
 }
+
+/** Sentences that read like instructions to a model: dropped from pack text and refused in perspectives (T2). */
+const INSTRUCTION_LIKE = [
+  /\bignore\b[^.]{0,40}\b(previous|prior|above|earlier)\b[^.]{0,20}\b(instructions?|rules?|prompts?)\b/i,
+  /(^|\s)(system|assistant|developer)\s*:/i,
+  /\byou are (now )?(an?|the) (ai|assistant|model|chatbot|llm)\b/i,
+  /\b(abaikan|lupakan)\b[^.]{0,40}\b(instruksi|aturan|perintah)\b/i,
+];
+
+export function isInstructionLike(sentence: string): boolean {
+  return INSTRUCTION_LIKE.some((re) => re.test(sentence));
+}
