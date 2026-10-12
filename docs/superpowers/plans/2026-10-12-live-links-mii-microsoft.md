@@ -1683,3 +1683,14 @@ Expected: the PR URL is printed; CI starts (check, build, 4 e2e shards, Lighthou
 - **Uptime:** the links point to live App Service sites outside this repo; if either goes down, the button still renders. Removing `liveUrl` from content is the switch.
 - **Visual changes:** the Product Engineering wing board and road change (new dock third from the hub, `event-tech-search-backend` moves to the board); L3 screenshots and possibly `public/floors/L3.webp` (elevator picker thumbnail) differ. Regenerate with `bun run build && bun run floor:thumbs` if the owner wants an exact thumbnail.
 - **Parallel work:** the L1 Highlights Hall plan must import `podLiveLink` from `@/content/selectors` and read `LabPod.liveUrl`; if it merges first, rebase it on this branch or merge this PR first.
+
+---
+
+## Execution notes (2026-10-12)
+
+Deviations from the plan above, made while executing it:
+
+- **Public app names are not in `content/safety-allowlist.txt`.** That file also feeds the Ask entity allowlist (`products` in `buildKnowledgePack`), and `unknownEmployers` treats any entity containing "microsoft" as a known employer, so red-team `rt35` ("worked at Microsoft for 4 years") stopped being caught. Instead `PUBLIC_LIVE_NAMES` (each host in `PUBLIC_LIVE_HOSTS` plus its App Service name) lives in `src/content/live-links.ts` and `loadBlocklist` drops matching terms. `tests/unit/safety.test.ts` and `tests/ask/pack.test.ts` guard it.
+- **The `repos` Ask chunk gained the keywords `repos` and `repositories`.** The new solutions site copy ("public", "GitHub Spec Kit") outranked it for the curated pill "What are his public GitHub repos?"; the chunk lacked the plural the pill uses.
+- **Copy honesty:** "alone" is dropped from the solutions site too (owner note on credit), and "fixed production 404s" is replaced by what the repo shows: the deploy script wipes files left by earlier deploys so old routes cannot shadow the new build.
+- **No private resource names:** test fixtures use `example-internal-api` instead of a real API app name, and the credentials case uses `https://visitor@...`.
