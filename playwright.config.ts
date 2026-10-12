@@ -3,11 +3,18 @@ import { defineConfig, devices, type ReporterDescription } from "@playwright/tes
 const PORT = Number(process.env.E2E_PORT ?? 4173);
 const CI = Boolean(process.env.CI);
 const SCREENSHOTS = Boolean(process.env.SCREENSHOTS);
+// Perf lane (e2e/perf/): the CI `3D perf gates` job, `bun run e2e:perf`, the nightly timeline and the local look check.
+const PERF = Boolean(process.env.PERF);
+// Static export the web server serves: `out` by default, `E2E_DIR=out-main` for before/after runs against a main build.
+const DIR = process.env.E2E_DIR ?? "out";
 // Set by scripts/e2e-shard.ts in CI: each shard writes a blob report that the aggregate job merges.
 const SHARD = process.env.E2E_SHARD;
 
 /** Screenshot specs only run with SCREENSHOTS=1 (nightly workflow, `bun run screenshots`). */
 const SCREENSHOT_SPECS = ["**/screenshots.spec.ts", "**/pageview-visual.spec.ts", "**/delivery-visual.spec.ts"];
+
+/** Perf specs only run with PERF=1, so the regular suite, `e2e:changed` and the CI shards never list them. */
+const PERF_SPECS = ["**/perf/**"];
 
 function reporter(): ReporterDescription[] {
   if (SHARD) return [["list"], ["blob", { fileName: `report-${SHARD.replace("/", "-of-")}.zip` }]];
@@ -18,7 +25,7 @@ function reporter(): ReporterDescription[] {
 export default defineConfig({
   testDir: "e2e",
   // Ignored (not just skipped) so they do not count toward sharding or the test list.
-  testIgnore: SCREENSHOTS ? [] : SCREENSHOT_SPECS,
+  testIgnore: [...(SCREENSHOTS ? [] : SCREENSHOT_SPECS), ...(PERF ? [] : PERF_SPECS)],
   fullyParallel: true,
   // Each worker renders WebGL on the CPU (SwiftShader); more workers starve each other.
   // CI runners have 4 vCPUs, so the default (half the cores) is also 2.
@@ -34,7 +41,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `bun scripts/serve-static.ts --port ${PORT}`,
+    command: `bun scripts/serve-static.ts --port ${PORT} --dir ${DIR}`,
     url: `http://127.0.0.1:${PORT}/en`,
     reuseExistingServer: !CI,
     timeout: 30_000,

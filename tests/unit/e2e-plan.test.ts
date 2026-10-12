@@ -10,6 +10,14 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
+
+  it("keeps the perf lane out of the regular suite and treats the budgets as shared infrastructure", () => {
+    expect(specsForChanges(["e2e/perf/look.spec.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/perf/baseline.json"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/budgets.ts"]).specs).toBe("all");
+    expect(specsForChanges(["scripts/perf-summary.ts", "scripts/perf-base.sh", "scripts/ci-status.ts"]).specs).toEqual([]);
+  });
+
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
     expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
