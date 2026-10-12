@@ -1,4 +1,5 @@
 import type { FloorId, RoomId } from "@/content/schema";
+import type { Interactable } from "../interact/registry";
 import type { Vec2 } from "../types";
 
 /**
@@ -8,6 +9,8 @@ import type { Vec2 } from "../types";
 export type Intent =
   | { type: "move"; x: number; y: number }
   | { type: "goto"; point: Vec2 }
+  /** Point-and-go: a click (or a second tap, or the Go chip) on a registry target. The Director drives there and runs its action. */
+  | { type: "interact"; item: Interactable }
   | { type: "elevator"; to: "up" | "down" | FloorId }
   | { type: "scrub"; dx: number }
   | { type: "open"; room: RoomId }

@@ -6,6 +6,7 @@ import { FLOOR_IDS, floorIndex, LOBBY } from "@/experience/config";
 import type { Ride } from "@/experience/tower/elevator";
 import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
+import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 
 export type Phase =
@@ -68,6 +69,10 @@ export interface HQState {
   picker: PickerRequest | null;
   /** L2 teleport beam in progress, advanced by the Director. */
   beam: Beam | null;
+  /** Point-and-go: the target under the mouse (`via: "pointer"`) or picked by a first tap (`via: "tap"`). Not persisted. */
+  hover: HoverState | null;
+  /** The one-time "click a glowing object" hint is showing (`interact/missed.ts`). Not persisted. */
+  pointHint: boolean;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -100,6 +105,9 @@ export interface HQState {
   openPicker: (picker: PickerRequest) => void;
   closePicker: () => void;
   setBeam: (beam: Beam | null) => void;
+  /** Sets the point-and-go target; a repeat of the same target and source is ignored (pointer moves fire often). */
+  setHover: (hover: HoverState | null) => void;
+  setPointHint: (on: boolean) => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number }) => void;
 }
@@ -138,6 +146,8 @@ export function createHQStore(storage?: StateStorage) {
         readme: false,
         picker: null,
         beam: null,
+        hover: null,
+        pointHint: false,
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -200,6 +210,12 @@ export function createHQStore(storage?: StateStorage) {
         },
         closePicker: () => set({ picker: null }),
         setBeam: (beam) => set({ beam }),
+        setHover: (hover) => {
+          const current = get().hover;
+          if (current?.item.id === hover?.item.id && current?.via === hover?.via) return;
+          set({ hover });
+        },
+        setPointHint: (pointHint) => set({ pointHint }),
         resume: (floor, at) =>
           set({
             floor,
