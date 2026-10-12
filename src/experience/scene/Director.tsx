@@ -23,7 +23,7 @@ import { faceFor } from "../rover/faces";
 import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
-import { advanceRide, carY, rideDirection, stageProgress } from "../tower/elevator";
+import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt, TYPICAL_FRAME_DT } from "../tower/elevator";
 import type { FloorLayout, Vec2 } from "../types";
 
 const BLOCKED_FACE_S = 0.6;
@@ -75,6 +75,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     frameCalls: 0,
     frameTriangles: 0,
     now: 0,
+    /** Moving average of recent frame times: sets how much ride time one frame may add (`rideCap`). */
+    typicalDt: TYPICAL_FRAME_DT,
     prevPhase: "",
     door: { room: null } as DoorLatch,
     /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */
@@ -208,6 +210,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
   useFrame((three, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);
     const local = state.current;
+    local.typicalDt = trackFrameDt(local.typicalDt, rawDt);
     // Shared clock with the rover mesh (flag, hop and blink timers).
     local.now = three.clock.elapsedTime;
     const now = local.now;
@@ -312,7 +315,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       y = carY(ride, s.reducedMotion);
 
       if (store.getState().ride) {
-        const next = advanceRide(ride, dt, { atDoor, reduced: s.reducedMotion });
+        const next = advanceRide(ride, dt, { atDoor, reduced: s.reducedMotion, cap: rideCap(local.typicalDt) });
         if (next) s.setRide(next);
         else {
           controller.teleport(to.approach, Math.PI / 2);

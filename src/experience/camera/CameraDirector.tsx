@@ -9,6 +9,7 @@ import { getHQStore } from "@/store/useHQStore";
 import { roadZAt } from "../floors/career/layout";
 import { intents, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
+import { RIDE_CAP } from "../tower/elevator";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
@@ -82,10 +83,12 @@ export function CameraDirector({
   useFrame((three, rawDt) => {
     const camera = three.camera as PerspectiveCamera;
     const scene = three.scene;
-    const dt = Math.min(rawDt, MAX_FRAME_DT);
+    const s = getHQStore().getState();
+    // During a ride the camera eases with the car's per-frame cap, so a long frame pauses both instead
+    // of the camera catching up in one jump (R5 P6).
+    const dt = Math.min(rawDt, s.ride && s.ride.stage !== "toDoor" ? RIDE_CAP.max : MAX_FRAME_DT);
     const l = local.current;
     l.now += dt;
-    const s = getHQStore().getState();
     const cls = s.device.camera;
     const rig = selectRig(s.phase, s.floor);
     const roverTarget: [number, number, number] = [roverRuntime.x, roverRuntime.y + 1, roverRuntime.z];

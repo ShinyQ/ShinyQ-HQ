@@ -15,6 +15,25 @@ export interface Ride {
 export const STAGE_TIME = { boarding: 0.45, closing: 0.2, opening: 0.2, exiting: 0.45 } as const;
 /** Reduced motion: a 150 ms fade cut instead of the ride (appendix 02 section 2). */
 export const REDUCED_CUT = 0.15;
+/**
+ * Most ride time one frame may add (R5 P6). A long frame (a shader compile, a floor mounting) pauses
+ * the ride instead of skipping it: at 60 fps a stall adds at most 1/30 s, so the 0.8 s dolly shows at
+ * least 16 car heights however long the stall. Devices that are steadily slower keep riding in real
+ * time down to 20 fps (`rideCap`).
+ */
+export const RIDE_CAP = { min: 1 / 30, max: 1 / 20 } as const;
+/** Starting estimate of a typical frame (60 fps) for `trackFrameDt`. */
+export const TYPICAL_FRAME_DT = 1 / 60;
+
+/** Ride time one frame may add: twice the typical frame, within RIDE_CAP. */
+export function rideCap(typicalDt: number): number {
+  return Math.min(RIDE_CAP.max, Math.max(RIDE_CAP.min, 2 * typicalDt));
+}
+
+/** Moving average of recent frame times; one stall moves it by at most a tenth of RIDE_CAP.max. */
+export function trackFrameDt(typical: number, frameDt: number): number {
+  return typical + (Math.min(Math.max(frameDt, 0), RIDE_CAP.max) - typical) * 0.1;
+}
 
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
@@ -39,13 +58,25 @@ const NEXT: Record<RideStage, RideStage | null> = {
   exiting: null,
 };
 
-/** Advances the ride. Returns null when the rover has left the car on the new floor. */
-export function advanceRide(ride: Ride, dt: number, { atDoor, reduced }: { atDoor: boolean; reduced: boolean }): Ride | null {
+export interface RideOptions {
+  /** The rover reached the shaft door (`toDoor` only). */
+  atDoor: boolean;
+  reduced: boolean;
+  /** Most ride time this frame may add (`rideCap`); defaults to RIDE_CAP.min. */
+  cap?: number;
+}
+
+/**
+ * Advances the ride by one frame of `frameDt` seconds. Returns null when the rover has left the car on
+ * the new floor. `toDoor` runs on the frame time (the rover drives in real time); every other stage
+ * adds at most `cap`.
+ */
+export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, cap = RIDE_CAP.min }: RideOptions): Ride | null {
   if (ride.stage === "toDoor") {
-    if (!atDoor) return { ...ride, t: ride.t + dt };
+    if (!atDoor) return { ...ride, t: ride.t + frameDt };
     return { ...ride, stage: reduced ? "moving" : "boarding", t: 0 };
   }
-  const t = ride.t + dt;
+  const t = ride.t + Math.min(frameDt, cap);
   if (t < stageDuration(ride, reduced)) return { ...ride, t };
   const next = reduced && ride.stage === "moving" ? null : NEXT[ride.stage];
   return next ? { ...ride, stage: next, t: 0 } : null;
