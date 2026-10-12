@@ -82,7 +82,7 @@ describe("specsForChanges", () => {
 
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
-      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts")
+      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts" && f !== "visual-gate.spec.ts")
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());
@@ -99,6 +99,13 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
     expect(specsForChanges(["src/experience/fx/Readable.tsx", "src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
+  });
+
+  it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {
+    expect(specsForChanges(["e2e/visual-gate.spec.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/vclock.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["scripts/visual-gate.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["scripts/perf-gpu.ts"]).specs).toEqual([]);
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
