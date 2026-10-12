@@ -350,3 +350,19 @@ test.describe("phone layout", () => {
     await context.close();
   });
 });
+
+test.describe("pauses behind modals", () => {
+  test("Rover's line hides while the CV viewer (DialogHost) is open and comes back where it was", async ({ page }) => {
+    await enterHQ(page);
+    await page.keyboard.press("Control+k");
+    await page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox").fill("tutorial");
+    await page.keyboard.press("Enter");
+    await expectLine(page, "welcome");
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("hq:hud", { detail: { type: "cv" } })));
+    await expect(page.getByTestId("cv-dialog")).toBeVisible({ timeout: 15_000 });
+    await expect(box(page)).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("cv-dialog")).toHaveCount(0);
+    await expectLine(page, "welcome");
+  });
+});

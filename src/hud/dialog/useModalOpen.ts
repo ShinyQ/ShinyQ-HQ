@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 const MODAL = "[role='dialog'][aria-modal='true']";
 
-/** True while any modal dialog is open (terminal, palette, pad picker, room drawer, CV, paper, cert). */
+/** True while any modal dialog is open (terminal, palette, pad picker, room drawer, the CV and paper viewers in DialogHost, cert). */
 export function useModalOpen(): boolean {
   const [open, setOpen] = useState(false);
   useEffect(() => {

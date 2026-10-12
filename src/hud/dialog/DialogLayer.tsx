@@ -12,7 +12,7 @@ import { useModalOpen } from "./useModalOpen";
 /** Rover never talks over these: the line waits (hidden, clock stopped) until they close. */
 const QUIET_PHASES: readonly Phase[] = ["boot", "intro", "room", "hologram", "palette", "terminal", "static"];
 
-/** Lazily loaded on the first line: the box, the spotlight, and the pause and reduced motion rules. */
+/** Mounted with the first line (inside the 3D chunk): the box, the spotlight, and the pause and reduced motion rules. */
 export default function DialogLayer() {
   const phase = useHQStore((s) => s.phase);
   const picker = useHQStore((s) => s.picker !== null);
