@@ -208,6 +208,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     return { id: wing, points: [hubC, { x: L.wingStartX, z }, { x: turnX(wing), z }, loopEnd], width: L.road };
   };
   const lead: Road = { id: "lead", points: [L.approach, hubC], width: L.road };
+  // A short stub from the hub toward the directory wall, ending half a road width before it: the
+  // arrival spot and both panel stops lie on it, so a click on a panel drives straight there instead
+  // of out onto a wing road and back (roadRoute only shortcuts hops under ROAD.shortcut).
+  const stub: Road = { id: "directory", points: [hubC, { x: L.board.x - L.board.w / 2 - half, z: 0 }], width: L.road };
   const east: Plaza = { id: "east", center: loopEnd, w: L.east, d: L.east, round: true };
   const spurs: Spur[] = placed.map((p) => ({
     room: p.room,
@@ -217,7 +221,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     color: WING_TINT[p.pod.wing],
   }));
   // No floor arrows on L3 (owner request 2026-10-13): the wing roads, signs and directory guide the way.
-  const network: RoadNetwork = { roads: [lead, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs, chevrons: false };
+  const network: RoadNetwork = { roads: [lead, stub, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs, chevrons: false };
 
   const boards = { software: directoryBoard("software"), ai: directoryBoard("ai") };
   const sign = (wing: Wing) => {

@@ -77,7 +77,7 @@ describe("L3 Project Roads layout", () => {
       expect(road.points.at(-1)).toEqual(layout.east.center);
     }
     // The east plaza sits on the later of the two turns, on the axis between the wings.
-    const turns = network.roads.filter((r) => r.id !== "lead").map((r) => r.points[2].x);
+    const turns = network.roads.filter((r) => r.id === "software" || r.id === "ai").map((r) => r.points[2].x);
     expect(layout.east.center).toEqual({ x: Math.max(...turns), z: 0 });
   });
 
@@ -218,6 +218,28 @@ describe("L3 Project Roads layout", () => {
         }
   });
 
+  it("drives from the arrival spot straight to either panel along a short road stub, never back round the hub", () => {
+    const grid = buildNavGrid(floor, ROVER.radius);
+    const stub = network.roads.find((r) => r.id === "directory")!;
+    expect(stub.points).toEqual([layout.hub.center, { x: layout.boards.software.minX - LABS.road / 2, z: 0 }]);
+    expect(onNetwork(network, LABS.overview)).toBe(true);
+    for (const wing of ["software", "ai"] as const) {
+      const stop = directoryStop(wing);
+      expect(onNetwork(network, stop), wing).toBe(true);
+      const route = roadRoute(network, grid, LABS.overview, stop)!;
+      expect(route.at(-1)).toEqual(stop);
+      // Every waypoint lies east of the arrival spot: the rover never turns back toward the hub first.
+      for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x);
+      let length = 0;
+      let at = LABS.overview;
+      for (const p of route) {
+        length += Math.hypot(p.x - at.x, p.z - at.z);
+        at = p;
+      }
+      expect(length, wing).toBeLessThan(10);
+    }
+  });
+
   it("starts the packet spine east of the directory wall, so no lane runs under it", () => {
     const [spine] = layout.lanes;
     expect(spine[0]).toEqual([LABS.board.x + LABS.board.w / 2 + 1, 0]);
@@ -276,7 +298,7 @@ describe("L3 Project Roads layout", () => {
       expect(cx).toBeGreaterThan(SHAFT.x + SHAFT.size / 2 + 3);
     }
     // Driving the roads never swings the camera to the overview or a panel.
-    for (const road of network.roads)
+    for (const road of network.roads.filter((r) => r.id !== "directory"))
       for (let i = 0; i < road.points.length - 1; i++)
         for (let k = 0; k <= 40; k++) {
           const a = road.points[i];
