@@ -3640,7 +3640,7 @@
           "id": "event-tech-search-backend",
           "slug": "event-tech-search-backend",
           "order": 8,
-          "tier": "featured",
+          "tier": "listed",
           "accent": "cyan",
           "wing": "software",
           "client": "Jublia",
@@ -5996,12 +5996,12 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bilingual RAG Assistant with Citations",
-            "id": "Asisten RAG Dwibahasa dengan Sitasi"
+            "en": "MII Microsoft AI Portfolio and Assistant",
+            "id": "Portofolio dan Asisten MII Microsoft AI"
           },
           "tagline": {
-            "en": "A multi-agent assistant for MII's Microsoft AI portfolio site, answering only from curated content with citations.",
-            "id": "Asisten multi-agent untuk situs portofolio Microsoft AI milik MII, yang hanya menjawab dari konten terkurasi dengan sitasi."
+            "en": "The bilingual portfolio site of MII's Microsoft AI practice, in dark and light themes, with a multi-agent RAG assistant that answers with citations and a /dashboard Studio for content and analytics.",
+            "id": "Situs portofolio dwibahasa untuk praktik Microsoft AI di MII, dengan tema gelap dan terang, asisten RAG multi-agent yang menjawab dengan sitasi, dan Studio /dashboard untuk konten dan analitik."
           },
           "period": {
             "start": "2026-07",
@@ -6012,17 +6012,25 @@
             "id": "Satu-satunya engineer"
           },
           "problem": {
-            "en": "The bilingual company site needed cited answers from curated content, prompt-injection defenses and an enforceable daily budget.",
-            "id": "Situs perusahaan dwibahasa membutuhkan jawaban dari konten terkurasi dengan sitasi, perlindungan terhadap prompt injection, dan batas anggaran harian yang dapat ditegakkan."
+            "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work, an assistant that answers only from curated content with citations and resists prompt injection within an enforceable daily budget, and a studio where the team publishes projects and reads analytics without an engineer.",
+            "id": "Praktik Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, asisten yang hanya menjawab dari konten terkurasi dengan sitasi dan tahan terhadap prompt injection dalam batas anggaran harian yang dapat ditegakkan, serta studio tempat tim menerbitkan proyek dan membaca analitik tanpa engineer."
           },
           "approach": [
             {
-              "en": "I built a deterministic router and three YAML agents using Microsoft Agent Framework.",
-              "id": "Saya membangun router deterministik dan tiga YAML agent menggunakan Microsoft Agent Framework."
+              "en": "I built the bilingual Next.js site and its BFF: a dark and light themed portfolio with a project matcher that ranks published projects for a visitor's business challenge.",
+              "id": "Saya membangun situs Next.js dwibahasa beserta BFF-nya: portofolio bertema gelap dan terang dengan project matcher yang mengurutkan proyek yang sudah terbit sesuai tantangan bisnis pengunjung."
+            },
+            {
+              "en": "I built the assistant on a FastAPI backend: a deterministic router and three YAML agents using Microsoft Agent Framework, with a guarded fallback tier when a model path fails.",
+              "id": "Saya membangun asisten di backend FastAPI: router deterministik dan tiga YAML agent menggunakan Microsoft Agent Framework, dengan tier fallback yang terjaga saat jalur model gagal."
             },
             {
               "en": "I combined Cosmos DB vector search and Azure AI Search hybrid retrieval with citation gating, Prompt Shields and sentence-level output checks.",
               "id": "Saya menggabungkan vector search Cosmos DB dan hybrid retrieval Azure AI Search dengan citation gating, Prompt Shields, serta pemeriksaan output per kalimat."
+            },
+            {
+              "en": "I built the /dashboard Studio behind Microsoft Entra ID: a project catalogue editor, document indexing, consultation reservations, cookieless analytics and reviews of assistant conversations.",
+              "id": "Saya membangun Studio /dashboard di balik Microsoft Entra ID: editor katalog proyek, pengindeksan dokumen, reservasi konsultasi, analitik tanpa cookie, dan peninjauan percakapan asisten."
             },
             {
               "en": "I fixed production failures that were not being surfaced: broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens.",
@@ -6073,6 +6081,17 @@
                 "layer": 3,
                 "row": 0,
                 "kind": "data"
+              },
+              {
+                "id": "studio",
+                "label": "Studio dashboard",
+                "sublabel": {
+                  "en": "Entra ID admin",
+                  "id": "Admin Entra ID"
+                },
+                "layer": 0,
+                "row": 1,
+                "kind": "client"
               }
             ],
             "edges": [
@@ -6093,6 +6112,11 @@
                 "from": "agents",
                 "to": "retrieval",
                 "label": "cited passages"
+              },
+              {
+                "from": "studio",
+                "to": "retrieval",
+                "label": "publish"
               }
             ]
           },
@@ -6124,11 +6148,13 @@
           ],
           "stack": [
             "Next.js",
+            "FastAPI",
             "Microsoft Agent Framework",
             "Cosmos DB",
             "Azure AI Search",
             "Azure OpenAI",
             "Azure AI Content Safety",
+            "Microsoft Entra ID",
             "App Service"
           ],
           "hologram": "graph",
@@ -6223,7 +6249,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "liveUrl": "https://mii-microsoft-ai.azurewebsites.net"
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -7169,18 +7196,18 @@
         {
           "id": "solutions-marketing-site",
           "slug": "solutions-marketing-site",
-          "order": 17,
-          "tier": "listed",
+          "order": 11,
+          "tier": "featured",
           "accent": "pink",
-          "wing": "ai",
+          "wing": "software",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Bilingual AI Solutions Site",
-            "id": "Situs Solusi AI Dwibahasa"
+            "en": "MII Microsoft Solutions Website",
+            "id": "Situs Web MII Microsoft Solutions"
           },
           "tagline": {
-            "en": "MII's bilingual Microsoft Solutions site, delivered through written specs, with a dedicated media pipeline.",
-            "id": "Situs Microsoft Solutions dwibahasa milik MII, dikerjakan berdasarkan spec tertulis, dengan media pipeline khusus."
+            "en": "The public bilingual website of MII's Microsoft Solutions division, covering its practices, delivered engagements, products, licensing and promotions, built from 17 written specs.",
+            "id": "Situs web publik dwibahasa untuk divisi Microsoft Solutions di MII, mencakup practice, engagement yang telah dikerjakan, produk, lisensi, dan promosi, dibangun dari 17 spec tertulis."
           },
           "period": {
             "start": "2026-08",
@@ -7191,17 +7218,25 @@
             "id": "Satu-satunya engineer"
           },
           "problem": {
-            "en": "The Microsoft AI practice needed a bilingual solutions site that non-engineering staff could maintain.",
-            "id": "Tim praktik Microsoft AI membutuhkan situs solusi dwibahasa yang dapat diperbarui oleh staf non-engineering."
+            "en": "MII's Microsoft Solutions division needed one public site in English and Indonesian for its three practices (Microsoft 365, Azure and Power Platform), delivered engagements, MII products, device and CSP licensing catalogues and promotions, with content that stays accurate as offers change.",
+            "id": "Divisi Microsoft Solutions di MII membutuhkan satu situs publik dalam bahasa Inggris dan Indonesia untuk tiga practice-nya (Microsoft 365, Azure, dan Power Platform), engagement yang telah dikerjakan, produk MII, katalog perangkat dan lisensi CSP, serta promosi, dengan konten yang tetap akurat saat penawaran berubah."
           },
           "approach": [
             {
-              "en": "I delivered the site through 17 specs using GitHub Spec Kit.",
-              "id": "Saya mengerjakan situs ini melalui 17 spec menggunakan GitHub Spec Kit."
+              "en": "I built the site through 17 GitHub Spec Kit specs, from the first landing page to the practice pages, the promotions catalogue and the devices experience.",
+              "id": "Saya membangun situs ini melalui 17 spec GitHub Spec Kit, dari landing page pertama hingga halaman practice, katalog promosi, dan pengalaman perangkat."
             },
             {
-              "en": "I built the media pipeline on Blob Storage and resolved production 404s.",
-              "id": "Saya membangun media pipeline di Blob Storage dan mengatasi error 404 di produksi."
+              "en": "I kept every page as typed bilingual content validated at build time, so a missing translation or a broken content rule fails the build instead of shipping.",
+              "id": "Saya menyimpan setiap halaman sebagai konten dwibahasa bertipe yang divalidasi saat build, sehingga terjemahan yang hilang atau aturan konten yang dilanggar menggagalkan build alih-alih terbit."
+            },
+            {
+              "en": "I built an outcome navigator that maps a business goal to the matching practice and capabilities, plus searchable engagement, licensing and promotion catalogues.",
+              "id": "Saya membangun outcome navigator yang memetakan tujuan bisnis ke practice dan kapabilitas yang sesuai, serta katalog engagement, lisensi, dan promosi yang bisa dicari."
+            },
+            {
+              "en": "I moved media to Azure Blob Storage with a synced manifest and shipped the standalone build to App Service with a deploy script that wipes files left by earlier deploys, so old routes cannot shadow the new build, and checks every route on the live site.",
+              "id": "Saya memindahkan media ke Azure Blob Storage dengan manifest yang tersinkron dan merilis build standalone ke App Service dengan skrip deploy yang menghapus file sisa deploy sebelumnya, sehingga route lama tidak menutupi build baru, dan memeriksa setiap route di situs live."
             }
           ],
           "results": [
@@ -7220,6 +7255,8 @@
           ],
           "stack": [
             "Next.js",
+            "TypeScript",
+            "Tailwind CSS",
             "Azure Blob Storage",
             "App Service",
             "GitHub Spec Kit"
@@ -7296,7 +7333,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "liveUrl": "https://mii-microsoft.azurewebsites.net"
         },
         {
           "id": "insurer-contact-center-architecture",

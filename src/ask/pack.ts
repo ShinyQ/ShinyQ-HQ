@@ -367,7 +367,7 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
     type: "repo",
     title: "Public repositories",
     url: "/labs",
-    keywords: ["github", "repository", "repo", "open", "source"],
+    keywords: ["github", "repository", "repositories", "repo", "repos", "open", "source"],
     text: join([
       { en: "Public GitHub repositories:", id: "Repositori GitHub publik:" },
       join(repos.map((r) => join([both(`${r.name} (${r.language}, ${r.stars} stars):`), loc(r.description)], " "))),
