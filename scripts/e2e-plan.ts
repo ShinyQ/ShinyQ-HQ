@@ -16,6 +16,7 @@ export const ALL_SPECS = [
   "drawer-solid",
   "experience",
   "gallery",
+  "hud",
   "labs",
   "library-roof",
   "missions",
@@ -64,7 +65,7 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/certs\/|^src\/content\/cert(s|-views)\.ts$/, specs: ["pageview", "experience", "static-routes"] },
 
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
-  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions"] },
+  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
@@ -85,9 +86,9 @@ export const RULES: Rule[] = [
   { test: /^src\/store\//, specs: ["experience"] },
 
   // HUD over the canvas.
-  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid"] },
+  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid"] },
-  { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid"] },
+  { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.
   { test: /^src\/app\/globals\.css$/, specs: ["drawer-solid", "pageview", "static-routes"] },
 

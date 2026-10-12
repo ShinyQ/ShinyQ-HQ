@@ -517,7 +517,7 @@ export function RoomDrawer({
   // the Ask panel (420 px), which then covers it exactly instead of leaving a sliver.
   const placement =
     layout === "side"
-      ? `top-[68px] right-3 bottom-3 md:top-[76px] md:right-4 md:bottom-4 ${narrow ? "w-[min(420px,calc(100vw-1.5rem))]" : "w-[min(var(--hq-drawer-w),calc(100vw-1.5rem))]"}`
+      ? `top-[124px] right-3 bottom-3 md:right-4 md:bottom-4 lg:top-[76px] ${narrow ? "w-[min(420px,calc(100vw-1.5rem))]" : "w-[min(var(--hq-drawer-w),calc(100vw-1.5rem))]"}`
       : "inset-x-0 bottom-0 rounded-b-none pb-[env(safe-area-inset-bottom)]";
 
   let body: ReactNode;

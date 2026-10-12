@@ -41,7 +41,7 @@ for (const vp of VIEWPORTS) {
     const background = await drawer.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(alphaOf(background)).toBeGreaterThanOrEqual(0.9);
 
-    // No visible top-bar control (Quick view, language, sound, Page view, menu) may sit under the drawer.
+    // No visible top-bar control (Ask Rover, search, language, sound, Page view, Ask AI, menu) may sit under the drawer.
     const box = (await drawer.boundingBox())!;
     const controls = await page.locator("[data-testid='hud'] :is(a, button):visible").evaluateAll((els) =>
       els
@@ -69,7 +69,7 @@ test("HUD pills over the world are near-opaque", async ({ page }) => {
   await page.goto("/en?tier=lite");
   await waitForHQ(page);
   await waitForPhase(page, "explore");
-  const pill = page.getByRole("link", { name: "Quick view" });
+  const pill = page.getByRole("button", { name: "Sound" });
   await expect(pill).toBeVisible();
   expect(alphaOf(await pill.evaluate((el) => getComputedStyle(el).backgroundColor))).toBeGreaterThanOrEqual(0.9);
 });

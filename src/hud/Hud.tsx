@@ -50,7 +50,7 @@ function FloorNotice({ data, mobile }: { data: ExperienceData; mobile: boolean }
   if (!exploring || READY_FLOORS.includes(floor)) return null;
   const { name, route } = data.floors[floor];
   return (
-    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[68px]" : "top-[168px]"}`}>
+    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[116px]" : "top-[168px]"}`}>
       <p className="text-ink-2">{t("underConstruction", { name })}</p>
       <Link href={route} className="link mt-1 inline-flex min-h-11 items-center">
         {t("openFloorPage", { name })}

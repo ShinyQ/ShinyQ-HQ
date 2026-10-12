@@ -126,7 +126,6 @@ for (const viewport of VIEWPORTS) {
 
   test(`page view with Back to 3D @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     const { context, page } = await open3D(browser, viewport);
-    if (viewport.name === "mobile") await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("button", { name: "Page view" }).click();
     await expect(page.getByRole("button", { name: "Back to 3D" })).toBeInViewport({ timeout: 30_000 });
     await page.evaluate(() => document.fonts.ready);

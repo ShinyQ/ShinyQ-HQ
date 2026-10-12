@@ -8,8 +8,8 @@ import type { WalkController, WalkState } from "@/experience/missions/walk";
 export type WalkPlacement = "top" | "bottom" | "bottom-raised" | "dock";
 
 const CARD: Record<WalkPlacement, string> = {
-  // Phones: under the menu row. Tablets: under the Ask pill row, right of the profile card.
-  top: "top-[68px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
+  // Phones: under both top rows (menu, then Page view and Ask AI). Tablets: under the Page view row, right of the profile card.
+  top: "top-[116px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
   bottom: "bottom-4 left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
   // Coarse pointers keep the joystick in the bottom-left corner.
   "bottom-raised": "bottom-[156px] left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
@@ -18,7 +18,7 @@ const CARD: Record<WalkPlacement, string> = {
 };
 
 const PILL: Record<WalkPlacement, string> = {
-  top: "top-[68px] left-1/2 -translate-x-1/2 sm:top-[124px]",
+  top: "top-[116px] left-1/2 -translate-x-1/2 sm:top-[124px]",
   bottom: "bottom-4 left-1/2 -translate-x-1/2",
   "bottom-raised": "bottom-[156px] left-1/2 -translate-x-1/2",
   dock: "bottom-4 left-4",
@@ -26,7 +26,7 @@ const PILL: Record<WalkPlacement, string> = {
 
 /** The idle launcher sits above the hint bar, which stays visible while no walk runs. */
 const LAUNCHER: Record<WalkPlacement, string> = {
-  top: "top-[68px] left-1/2 -translate-x-1/2 sm:top-[124px]",
+  top: "top-[116px] left-1/2 -translate-x-1/2 sm:top-[124px]",
   bottom: "bottom-16 left-1/2 -translate-x-1/2",
   "bottom-raised": "bottom-[208px] left-1/2 -translate-x-1/2",
   dock: "bottom-4 left-4",

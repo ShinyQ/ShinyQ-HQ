@@ -278,12 +278,11 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo), atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Buka Ringkasan untuk membaca portofolio dalam tampilan halaman.",
+    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo), atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Tampilan halaman menampilkan portofolio sebagai halaman.",
     "floor": "Lantai",
     "elevator": "Lift",
     "goToFloor": "Ke {floor}, {label} ({name})",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
-    "quickView": "Ringkasan",
     "pageView": "Tampilan halaman",
     "pageViewHint": "Tampilkan halaman ini tanpa menara 3D",
     "explore3d": "Jelajahi dalam 3D",

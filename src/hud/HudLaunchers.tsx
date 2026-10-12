@@ -8,7 +8,7 @@ const noop = () => () => {};
 const isApple = () => /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent);
 
 /** Header entry points: Ask Rover (the Rover Terminal and its missions) and the command palette (⌘K). */
-export function HudLaunchers({ buttonClassName }: { buttonClassName?: string } = {}) {
+export function HudLaunchers({ buttonClassName, labelClassName = "sr-only sm:not-sr-only" }: { buttonClassName?: string; labelClassName?: string } = {}) {
   const t = useTranslations("hud.launcher");
   const shortcut = useSyncExternalStore(noop, () => (isApple() ? "⌘K" : "Ctrl K"), () => "Ctrl K");
   const button =
@@ -20,7 +20,7 @@ export function HudLaunchers({ buttonClassName }: { buttonClassName?: string } =
         <span aria-hidden="true" className="font-mono text-cyan">
           &gt;_
         </span>
-        <span className="sr-only sm:not-sr-only">{t("askRover")}</span>
+        <span className={labelClassName}>{t("askRover")}</span>
       </button>
       <button
         type="button"
