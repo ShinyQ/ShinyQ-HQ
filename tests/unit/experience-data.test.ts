@@ -87,6 +87,8 @@ describe("buildExperienceData", () => {
     expect(medium.length).toBeGreaterThan(0);
     for (const p of medium) expect(p.url).toMatch(/^https:\/\//);
     expect(buildExperienceData("id", names).library.posts[0].title).toBe(getLibrary().posts.find((p) => p.slug === data.library.posts[0].slug)!.title.id);
+    // Tags ride along for the L4 layouts (the constellation links posts that share one).
+    for (const p of data.library.posts) expect(p.tags).toEqual(getLibrary().posts.find((q) => q.slug === p.slug)!.tags);
   });
 
   it("carries the Roof: availability, email and channels", () => {

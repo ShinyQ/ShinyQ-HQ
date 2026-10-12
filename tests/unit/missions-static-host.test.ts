@@ -32,7 +32,7 @@ describe("static mission host", () => {
     ["best-swe", "id", ["nav /id/labs/digital-banking-integrations"]],
     ["hire", "id", ["nav /id/contact"]],
     ["cv", "en", ["nav /en/cv"]],
-    ["blog", "en", ["nav /en/blog/the-sun-the-moon-and-the-dark-sea"]],
+    ["blog", "en", ["nav /en/library", "palette posts"]],
     ["journey", "en", ["nav /en/journey"]],
     ["journey", "id", ["nav /id/journey"]],
     ["projects", "en", ["nav /en/labs", "palette pods"]],
@@ -42,11 +42,13 @@ describe("static mission host", () => {
     expect(events).toEqual(expected);
   });
 
-  it("shows the floor page for a walk step (with the pods palette for the project tour)", async () => {
+  it("shows the floor page for a walk step (with the pods palette for the project tour, the posts palette for the writing walk)", async () => {
     const { host, events } = setup("id");
     const ctx = { signal: new AbortController().signal, missionId: "m" };
     await host.walk("projects", ctx);
     expect(events).toEqual(["nav /id/labs", "palette pods"]);
+    await host.walk("writing", ctx);
+    expect(events.slice(2)).toEqual(["nav /id/library", "palette posts"]);
     await host.walk("journey", ctx);
     host.finish?.("done", "m");
     expect(events.at(-1)).toBe("nav /id/journey");

@@ -1,5 +1,6 @@
 import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
+import type { PaletteFilter } from "./host";
 
 export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
 
@@ -47,7 +48,10 @@ export const FLOOR_PATHS: Record<FloorId, string> = {
 };
 
 /** Floor of each guided walk (mission step `{ kind: "walk" }`). */
-export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3" };
+export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4" };
+
+/** Palette a walk's floor page opens next to it when the walk cannot run (static tier, or the walk is off). */
+export const WALK_PALETTE: Partial<Record<WalkId, PaletteFilter>> = { projects: "pods", writing: "posts" };
 
 export const FLOOR_ORDER: readonly FloorId[] = ["RF", "L4", "L3", "L2", "L1"];
 

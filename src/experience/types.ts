@@ -1,5 +1,6 @@
 import type { CertView } from "@/content/certs";
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
+import type { LibraryLayoutInput } from "./floors/library/model";
 import type { RoadNetwork } from "./nav/road";
 import type { ViewZone } from "./camera/orbit";
 
@@ -60,6 +61,8 @@ export interface FloorLayout {
   arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
   viewZones?: ViewZone[];
+  /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
+  listStop?: Vec2;
 }
 
 export type CareerType = "job" | "freelance" | "education" | "award" | "milestone";
@@ -112,6 +115,7 @@ export interface LabPod {
 export interface LayoutExtras {
   labs?: readonly LabPod[];
   career?: CareerLayoutInput;
+  library?: LibraryLayoutInput;
 }
 
 export type GpuTier = "full" | "lite" | "static";
@@ -146,6 +150,8 @@ export interface LibraryData {
     title: string;
     date: string;
     languages: ("en" | "id")[];
+    /** Content tags (the constellation links posts that share one). */
+    tags: string[];
     /** External (Medium) posts have no `/blog` page. */
     url: string | null;
   }[];

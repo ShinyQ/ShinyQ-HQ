@@ -3,13 +3,16 @@ import { asReturningVisitor, driveTo, padsOf, waitForHQ, waitForPhase, waitForRo
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
-const VIEWPORTS = [
+type Viewport = { name: string; width: number; height: number; tier: "full" | "lite"; touch: boolean };
+
+const VIEWPORTS: readonly Viewport[] = [
   { name: "desktop", width: 1440, height: 900, tier: "full", touch: false },
   { name: "tablet", width: 1024, height: 1366, tier: "full", touch: true },
   { name: "mobile", width: 390, height: 844, tier: "lite", touch: true },
-] as const;
+];
 
-type Viewport = (typeof VIEWPORTS)[number];
+/** L4 Writing at the sizes its concepts were reviewed in (1440x900, 834x1112, 390x844). */
+const L4_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "tablet", width: 834, height: 1112, tier: "full", touch: true }, VIEWPORTS[2]];
 
 const PAGES = [
   { name: "lobby", path: "/en" },
@@ -67,11 +70,8 @@ async function openRoomFromPalette(page: Page, query: string, room: string) {
 }
 
 const FLOOR_SHOTS = [
-  { name: "hq-l4-library", path: "/en/library" },
   { name: "hq-rf-roof", path: "/en/contact" },
-  { name: "hq-l4-post", path: "/en/library", query: "The Sun, The Moon", room: "L4:the-sun-the-moon-and-the-dark-sea" },
   { name: "hq-rf-comms", path: "/en/contact", query: "Comms terminals", room: "RF:contact" },
-  { name: "hq-l4-research", path: "/en/library", query: "Research shelf", room: "L4:research" },
 ] as const;
 
 for (const viewport of VIEWPORTS) {
@@ -191,6 +191,28 @@ for (const viewport of VIEWPORTS) {
     await page.keyboard.up("d");
     await page.waitForTimeout(5000);
     await page.screenshot({ path: shot("hq-l2-annex", viewport) });
+    await context.close();
+  });
+}
+
+/** L4 Writing: the floor with the first-visit prompt, the first stop of "Read my writing" and the Research drawer. */
+for (const viewport of L4_VIEWPORTS) {
+  test(`3D hq-l4 @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(300_000);
+    const { context, page } = await open3DAt(browser, viewport, "/en/library");
+    // In-world text (troika) builds its glyphs slowly on SwiftShader.
+    await page.waitForTimeout(8000);
+    const prompt = page.getByTestId("walk-prompt");
+    await expect(prompt).toBeVisible();
+    await page.screenshot({ path: shot("hq-l4-writing", viewport) });
+    await prompt.getByRole("button", { name: "Read my writing" }).click();
+    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-status", "arrived", { timeout: 120_000 });
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: shot("hq-l4-walk", viewport) });
+    await page.getByTestId("walk-bar").getByRole("button", { name: "End walk" }).first().click();
+    await openRoomFromPalette(page, "Research shelf", "L4:research");
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: shot("hq-l4-research", viewport) });
     await context.close();
   });
 }

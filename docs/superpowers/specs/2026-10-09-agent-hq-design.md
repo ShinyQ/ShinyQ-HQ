@@ -47,7 +47,7 @@ A vertical tower of five floors connected by a glass elevator shaft. Every floor
 | Floor | Name | Layout | Content |
 |---|---|---|---|
 | RF | Roof · Comms | Open deck with a beacon antenna | Contact links, CV download, socials, "hire me" beacon |
-| L4 | Library | Rows of holographic shelves | Blog posts, publications and theses, Hugging Face models, talks and workshops |
+| L4 | Library (Writing) | Walkable floor, owner pick of three concepts (appendix 01 section 5) | Blog posts, publications and theses, Hugging Face models, talks and workshops |
 | L3 | Labs | Project Roads: a hub plaza at the elevator with the wing directory boards, and two wing roads (Product Engineering north, AI Engineering south; renamed 2026-10-11 from Software Wing and AI Wing, ids stay `software` and `ai`) that run east and loop, with hero and featured pods docked along them and a guided "Tour my projects" (appendix 01 section 4) | Case studies: software engineering projects (2019 to 2026) and AI projects (2026) |
 | L2 | Career Archive | **Timeline corridor** from 2019 to 2026 with year rooms alternating left and right | Jobs, freelance, education, competitions and awards, ordered by time |
 | L1 | Lobby (spawn) | Hub plaza | Profile hologram, headline stats, skills wall, certifications, mission board |

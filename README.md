@@ -27,6 +27,8 @@ On L2 (`/en/journey`) one road runs forward in time: a plaza per year, rooms doc
 
 On L3 (Labs) the floor is **Project Roads**: a hub plaza in front of the elevator with both wing directory boards, and two wing roads that run east and meet in a loop, with every key and featured project docked along them. The first visit offers **Tour my projects**, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones); skip it to roam, start it later from the launcher or the "Tour my projects" mission; the boards list each wing's top projects and open the full list on click.
 
+On L4 (Writing) the floor is the **Newsroom**: a press plaza with a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book, then one timeline lane east with the other posts newest first, year marks on the road, and the Research (its paper plates open the paper preview), Models and datasets and Talks and workshops desks. The first visit offers **Read my writing**, a guided drive station by station (posts newest first, then Research, Models and datasets, Talks and workshops; a zone filter); skip it to roam freely, or start it later from the launcher or the "Read my writing" mission. Posts beyond the first 12 wait on the archive board, which opens the posts palette.
+
 ## Stack
 
 Next.js 16 (App Router, static export) · React 19 · TypeScript strict · three.js with React Three Fiber, drei and postprocessing · zustand · Tailwind CSS 4 · next-intl · zod · MDX (next-mdx-remote) · Vitest · Playwright · Bun · Cloudflare Pages.
@@ -68,7 +70,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/quick` | Quick view: everything on one page |
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
-| `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks |
+| `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks; in 3D, L4 Writing with the "Read my writing" walk (a post's drawer mirrors its `/blog/{slug}` URL, which is the article page) |
 | `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
 | `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |
 
@@ -94,7 +96,7 @@ src/components/  static-page UI, shared modal, CV viewer and paper previews
 src/content/  schema, accessors, selectors, blog loader, safety lint
 src/i18n/     next-intl routing and helpers
 src/lib/      formatting, accents, metadata, GPU tier, URL sync, viewport
-src/experience/  3D tower: canvas, scene, tower, floors (L3 Project Roads in floors/labs), rover, camera rigs, input intents, navgrid, road kit, missions and guided walks
+src/experience/  3D tower: canvas, scene, tower, floors (L3 Project Roads in floors/labs, L4 Writing in floors/library), rover, camera rigs, input intents, navgrid, road kit, missions and guided walks
 src/hud/      HTML HUD over the canvas
 src/store/    zustand store
 tests/        Vitest unit and content tests

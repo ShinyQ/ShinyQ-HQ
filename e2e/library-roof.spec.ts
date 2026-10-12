@@ -8,6 +8,14 @@ test.describe.configure({ timeout: 150_000 });
 
 const BLOG_POST = "the-sun-the-moon-and-the-dark-sea";
 
+/** The autopilot target the Director is driving to (a door pad), read from the shared rover runtime. */
+async function autopilotPoint(page: Page) {
+  return page.evaluate(() => {
+    const r = (window as unknown as { __hq: { rover: { autopilot: { point: { x: number; z: number } } | null } } }).__hq.rover.autopilot;
+    return r?.point ?? null;
+  });
+}
+
 async function runMission(page: Page, missionId: string) {
   const label = content.missions.find((mission) => mission.id === missionId)!.label.en;
   await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
@@ -76,32 +84,50 @@ test.describe("deep links", () => {
 });
 
 test.describe("missions to the Library and the Roof", () => {
-  test("blog rides to L4, drives to the spine and opens the post", async ({ page }) => {
+  test("Read my writing rides to L4 and walks to the newest post, whose drawer mirrors its /blog page", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
     await runMission(page, "blog");
-    await waitForRoom(page, `L4:${BLOG_POST}`);
-    const s = await snapshot(page);
-    expect(s.floor).toBe("L4");
-    const stop = await page.evaluate(() => {
-      const r = (window as unknown as { __hq: { rover: { autopilot: { point: { x: number; z: number } } | null } } }).__hq.rover.autopilot;
-      return r?.point ?? null;
-    });
+    const bar = page.getByTestId("walk-bar");
+    await expect(bar).toBeVisible({ timeout: 60_000 });
+    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
+    const room = (await bar.getAttribute("data-stop"))!;
+    expect(room.startsWith("L4:")).toBe(true);
+    await waitForRoom(page, room);
+    expect((await snapshot(page)).floor).toBe("L4");
+    const stop = await autopilotPoint(page);
     expect(stop).not.toBeNull();
     await expectRoverNear(page, stop!);
+    const post = content.floors.library.posts.find((p) => `L4:${p.slug}` === room)!;
     const panel = page.getByTestId("room-drawer");
-    await expect(panel).toHaveAttribute("data-room", `L4:${BLOG_POST}`);
-    const post = content.floors.library.posts.find((post) => post.slug === BLOG_POST)!;
     await expect(panel.getByRole("heading", { level: 2 })).toHaveText(post.title.en);
-    await expect(panel).toContainText("ID");
-    // Opening a hosted post mirrors its page URL.
-    await expect(page).toHaveURL(new RegExp(`/en/blog/${BLOG_POST}\\?tier=lite$`));
+    // A hosted post mirrors its page URL; the walk prompt never shows over a mission's walk.
+    await expect(page).toHaveURL(new RegExp(`/en/blog/${post.slug}\\?tier=lite$`));
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     const read = panel.getByRole("link", { name: "Read post" });
-    await expect(read).toHaveAttribute("href", `/en/blog/${BLOG_POST}`);
+    await expect(read).toHaveAttribute("href", `/en/blog/${post.slug}`);
     await read.click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("h1").first()).toHaveText(post.title.en);
     expect(errors).toEqual([]);
+  });
+
+  test("a post opened in 3D goes back to /library, and its /blog link reloads as the article page", async ({ page }) => {
+    await enterFloorRoute(page, "/en/library");
+    await page.keyboard.press("Control+k");
+    await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
+    await page.keyboard.type("The Sun, The Moon");
+    await page.keyboard.press("Enter");
+    await waitForRoom(page, `L4:${BLOG_POST}`);
+    await expect(page).toHaveURL(new RegExp(`/en/blog/${BLOG_POST}\\?tier=lite$`));
+    await page.goBack();
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
+    await expect.poll(async () => (await snapshot(page)).phase).toBe("explore");
+    // The post route is the article page itself (no 3D gate), so a shared /blog link lands on the post.
+    await page.goto(`/en/blog/${BLOG_POST}?tier=lite`);
+    await expect(page.getByTestId("hq")).toHaveCount(0);
+    const post = content.floors.library.posts.find((p) => p.slug === BLOG_POST)!;
+    await expect(page.locator("h1").first()).toHaveText(post.title.en);
   });
 
   test("hire rides to the Roof, parks at the comms terminals and copies the email", async ({ page, context }) => {
@@ -198,7 +224,7 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(drawer.locator("strong", { hasText: "Kurniadi Ahmad Wijaya" }).first()).toBeVisible();
     await expect(drawer.getByRole("link", { name: /DOI 10\.1109\/icaibda53487/ })).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
     await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
-    await expectRoverNear(page, { x: 22.2, z: -7 });
+    await expectRoverNear(page, (await autopilotPoint(page))!);
     await drawer.getByRole("button", { name: /Indonesian Digital Wallet/ }).click();
     const paper = page.getByRole("dialog", { name: /Indonesian Digital Wallet/ });
     await expect(paper.getByTestId("paper-abstract")).toBeVisible();

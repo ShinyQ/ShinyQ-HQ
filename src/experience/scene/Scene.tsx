@@ -10,6 +10,7 @@ import { Motes } from "../fx/Motes";
 import { TeleportBeam } from "../fx/TeleportBeam";
 import { useUniformTime } from "../fx/useUniformTime";
 import { careerLayoutInput } from "../floors/career/layout";
+import { libraryLayoutInput } from "../floors/library/model";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
 import type { ExperienceData, GpuTier } from "../types";
@@ -50,7 +51,10 @@ export function Scene({
   held: RefObject<Set<string>>;
   onToggleLang: () => void;
 }) {
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
+  const layouts = useMemo(
+    () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
+    [data.years.length, data.labs.pods, data.career, data.library],
+  );
   const settings = sceneSettings(tier);
   const coarse = useHQStore((s) => s.device.coarse);
   return (

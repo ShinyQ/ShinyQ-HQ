@@ -73,7 +73,9 @@ export const RULES: Rule[] = [
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
-  { test: /^src\/experience\/floors\/(library|roof)\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof"] },
+  // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk"] },
+  { test: /^src\/experience\/floors\/roof\//, specs: ["library-roof"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },

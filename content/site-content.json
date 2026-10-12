@@ -8227,12 +8227,8 @@
           "floor": "L4"
         },
         {
-          "kind": "drive",
-          "to": "L4:the-sun-the-moon-and-the-dark-sea"
-        },
-        {
-          "kind": "open",
-          "room": "L4:the-sun-the-moon-and-the-dark-sea"
+          "kind": "walk",
+          "walk": "writing"
         }
       ]
     },

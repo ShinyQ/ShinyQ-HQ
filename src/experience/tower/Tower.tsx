@@ -84,7 +84,7 @@ export function Tower({
                 ) : id === "L2" ? (
                   <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
                 ) : id === "L4" ? (
-                  <Library library={data.library} labels={labels.library} />
+                  <Library data={data} labels={labels.library} tier={tier} />
                 ) : (
                   <Roof roof={data.roof} labels={labels.roof} tier={tier} />
                 )}

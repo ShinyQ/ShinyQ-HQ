@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arc, CAREER_ICONS, CAREER_TONE, iconMesh, iconPath, PAD_ICONS, PAD_TONE } from "@/experience/fx/holoIcons";
+import { arc, CAREER_ICONS, CAREER_TONE, iconMesh, iconPath, LIBRARY_ICONS, PAD_ICONS, PAD_TONE } from "@/experience/fx/holoIcons";
 
 describe("career type icons", () => {
   it("has line art for every type inside the 24 x 24 grid", () => {
@@ -52,5 +52,22 @@ describe("career type icons", () => {
     }
     expect(PAD_TONE).toEqual({ elevator: "#22d3ee", teleport: "#f472b6" });
     expect(iconMesh(PAD_ICONS.teleport, { size: 1.4 }).positions.length).toBeGreaterThan(0);
+  });
+});
+
+describe("library zone icons", () => {
+  it("draws every zone inside the 24 x 24 grid with at least three strokes", () => {
+    expect(Object.keys(LIBRARY_ICONS).sort()).toEqual(["blog", "models", "research", "talks"]);
+    for (const strokes of Object.values(LIBRARY_ICONS)) {
+      expect(strokes.length).toBeGreaterThanOrEqual(3);
+      for (const s of strokes) for (const [x, y] of s.points) {
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThanOrEqual(24);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(y).toBeLessThanOrEqual(24);
+      }
+      const mesh = iconMesh(strokes, { size: 2 });
+      expect(mesh.indices.length % 3).toBe(0);
+    }
   });
 });

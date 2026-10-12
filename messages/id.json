@@ -616,6 +616,12 @@
       "start": "Tur proyek saya",
       "name": "Tur proyek"
     },
+    "writing": {
+      "title": "Baca tulisan saya?",
+      "body": "Perjalanan terpandu melewati tulisan saya dari yang terbaru, lalu riset, model, serta talk dan workshop saya. Lewati jika ingin menjelajah lantai ini sendiri.",
+      "start": "Baca tulisan saya",
+      "name": "Tur tulisan"
+    },
     "explore": "Jelajah bebas",
     "resumeAt": "Lanjutkan di titik {index}",
     "stopOf": "Titik {index} dari {total}",
@@ -640,6 +646,8 @@
     "workshopSub": "Side project, repository, dan model",
     "more": "Proyek lainnya di sini",
     "moreSub": "Buka untuk melihat semua proyek di sayap ini",
+    "moreWriting": "Tulisan lainnya di sini",
+    "moreWritingSub": "Buka untuk melihat semua tulisan",
     "boardCount": "{count} proyek",
     "boardOpen": "Buka daftar lengkap",
     "proto": {
@@ -664,6 +672,16 @@
       "prompt": "Tampilkan tawaran lagi",
       "sheet": "Chip 2D",
       "sheetTitle": "Ikon tipe sebagai chip Page View"
+    },
+    "protoLibrary": {
+      "title": "Konsep lantai tulisan",
+      "concept": "Konsep",
+      "atrium": "A: Ruang Baca",
+      "newsroom": "B: Ruang Redaksi",
+      "constellation": "C: Konstelasi",
+      "budget": "{calls} draw call, {triangles} segitiga",
+      "pad": "Pad panggil lift (dibiarkan kosong)",
+      "posts": "{count} tulisan di lantai, {archive} di papan arsip"
     }
   },
   "certs": {

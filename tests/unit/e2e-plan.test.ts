@@ -12,6 +12,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
     expect(specsForChanges(["src/experience/floors/roof/Comms.tsx"]).specs).toEqual(["library-roof"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "walk"]);
   });
 
   it("maps static pages and content", () => {

@@ -10,13 +10,13 @@ import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
-import { formatYearMonth } from "@/lib/format";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
+import { libraryLayoutInput } from "./floors/library/model";
 import { onMissionState, register3DHost } from "./missions/bridge";
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
@@ -121,7 +121,10 @@ export default function Experience({
   const coarse = useHQStore((s) => s.device.coarse);
   const budget = renderBudget(tier, coarse);
 
-  const layouts = useMemo(() => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) }), [data.years.length, data.labs.pods, data.career]);
+  const layouts = useMemo(
+    () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
+    [data.years.length, data.labs.pods, data.career, data.library],
+  );
   useLayoutEffect(() => startSession(data, tier, layouts, { startFloor, startRoom }), [data, tier, layouts, startFloor, startRoom]);
 
   // Cover the page: the HTML stays in the DOM for SEO but is inert while the tower is open.
@@ -231,22 +234,7 @@ export default function Experience({
         rooms: (count: number) => t("career.rooms", { count }),
       },
       library: {
-        blog: tLibrary("posts"),
-        onMedium: tLibrary("onMedium"),
-        publications: tLibrary("publications"),
-        talks: tLibrary("talks"),
-        research: tLibrary("research"),
-        metrics: data.library.researchMetrics
-          ? tLibrary("metrics", {
-              citations: data.library.researchMetrics.citations,
-              hIndex: data.library.researchMetrics.hIndex,
-              source: data.library.researchMetrics.source,
-              date: formatYearMonth(data.library.researchMetrics.asOf, data.locale),
-            })
-          : "",
-        kind: { paper: tLibrary("kind.paper"), thesis: tLibrary("kind.thesis"), model: tLibrary("kind.model"), dataset: tLibrary("kind.dataset") },
-        lectern: t("world.lectern"),
-        read: t("world.read"),
+        zones: { blog: tLibrary("posts"), research: tLibrary("research"), models: tLibrary("publications"), talks: tLibrary("talks") },
       },
       roof: {
         beacon: tContact("beacon"),
@@ -257,7 +245,7 @@ export default function Experience({
       },
       rover: { hello: t("statusHello") },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, data.library.researchMetrics, data.locale],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk],
   );
 
   return (

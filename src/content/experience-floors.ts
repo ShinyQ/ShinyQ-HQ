@@ -12,6 +12,7 @@ export function buildLibraryData(locale: Locale): LibraryData {
       title: p.title[locale],
       date: p.date,
       languages: [...p.languages],
+      tags: [...p.tags],
       url: p.url ?? null,
     })),
     research: library.publications

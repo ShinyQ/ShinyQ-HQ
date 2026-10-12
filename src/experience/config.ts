@@ -1,7 +1,7 @@
 import type { FloorId } from "@/content/schema";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
-import { LIBRARY_DOORS, libraryObstacles } from "./floors/library/layout";
+import { buildLibraryLayout } from "./floors/library/layout";
 import { ROOF_DOORS, roofObstacles } from "./floors/roof/layout";
 import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
@@ -18,7 +18,7 @@ export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
  * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts) once
  * their road ships; `?walk=on` turns every walk on for tests and previews, `?walk=off` turns them off.
  */
-export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3"];
+export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3", "L4"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -163,8 +163,9 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).
     L3: buildLabsLayout(extras.labs ?? []).floor,
-    // Deep links spawn L4 and RF in front of their content (the follow camera looks toward -x, -z).
-    L4: { ...standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }, libraryObstacles(), { x: 4, z: 3.5 }), doors: LIBRARY_DOORS },
+    // Writing: the owner's pick from the L4 concepts (walkable floors plan, part 3).
+    L4: buildLibraryLayout(extras.library).floor,
+    // Deep links spawn RF in front of its content (the follow camera looks toward -x, -z).
     RF: { ...standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, roofObstacles(), { x: 4, z: 12 }), doors: ROOF_DOORS },
   };
   return Object.fromEntries(FLOOR_IDS.map((id) => [id, withElevatorPad(layouts[id])])) as Record<FloorId, FloorLayout>;

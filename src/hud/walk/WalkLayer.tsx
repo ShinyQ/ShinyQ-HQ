@@ -7,7 +7,9 @@ import { WALK_FLOORS } from "@/experience/config";
 import { intents } from "@/experience/input/intents";
 import { cancelMission, registerWalkStarter, runMissionSteps } from "@/experience/missions/bridge";
 import { createWalk, markPromptSeen, promptSeen, type WalkController, type WalkDefinition, type WalkState } from "@/experience/missions/walk";
-import { careerWalk, labsWalk, walkFloorsEnabled } from "@/experience/missions/walks";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { careerWalk, labsWalk, libraryWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import { WalkBar, type WalkPlacement } from "./WalkBar";
@@ -25,6 +27,7 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
   const t = useTranslations("walk");
   const tc = useTranslations("common");
   const th = useTranslations("hud.career");
+  const tl = useTranslations("library");
   return useMemo(
     () => ({
       L2: careerWalk(data.career, {
@@ -34,8 +37,18 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
         prologue: th("prologue"),
       }),
       L3: labsWalk(data.labs.pods, { wings: data.labs.wings, more: t("more"), moreSub: t("moreSub") }),
+      L4: libraryWalk(
+        data.library,
+        {
+          zones: { blog: tl("posts"), research: tl("research"), models: tl("publications"), talks: tl("talks") },
+          onMedium: tl("onMedium"),
+          more: t("moreWriting"),
+          moreSub: t("moreWritingSub"),
+        },
+        buildLibraryLayout(libraryLayoutInput(data.library)),
+      ),
     }),
-    [data.career, data.labs, t, tc, th],
+    [data.career, data.labs, data.library, t, tc, th, tl],
   );
 }
 

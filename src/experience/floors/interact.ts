@@ -24,11 +24,3 @@ export function roomHandlers(room: RoomId, setHover?: (hover: boolean) => void) 
     },
   };
 }
-
-/** `EN`, `ID` or `EN/ID` (appendix 01 section 5). */
-export function languageBadge(languages: readonly string[]): string {
-  return [...languages]
-    .sort()
-    .map((l) => l.toUpperCase())
-    .join("/");
-}

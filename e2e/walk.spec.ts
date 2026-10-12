@@ -27,7 +27,8 @@ const firstSoftwareStop = `L3:${orderPods((data.floors.labs.pods as unknown as P
 async function waitForArrival(page: Page) {
   await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
   const stop = await stopOf(page);
-  if (stop?.includes(":directory:")) return stop;
+  // Board stops (L3 wing directories, the L4 archive) open a palette, not a room.
+  if (stop?.includes(":directory:") || stop === "L4:archive") return stop;
   await waitForRoom(page, stop!);
   return stop!;
 }
@@ -103,6 +104,36 @@ test.describe("Guided walks", () => {
     const prompt = page.getByTestId("walk-prompt");
     await expect(prompt.getByRole("heading")).toHaveText("Tour my projects?");
     await prompt.getByRole("button", { name: "Explore freely" }).click();
+    await expect(page.getByTestId("walk-launcher")).toBeVisible();
+  });
+
+  test("L4: Read my writing starts at a post, opens its drawer and filters by zone", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openWithWalks(page, "/en/library");
+    const prompt = page.getByTestId("walk-prompt");
+    await expect(prompt.getByRole("heading")).toHaveText(en.walk.writing.title);
+    await prompt.getByRole("button", { name: en.walk.writing.start }).click();
+    const first = await waitForArrival(page);
+    expect(first.startsWith("L4:")).toBe(true);
+    await expect(page.getByTestId("room-drawer")).toHaveAttribute("data-room", first);
+    await page.getByTestId("walk-filter").selectOption("research");
+    await expect(page.getByTestId("walk-counter")).toContainText(en.library.research);
+    // A filter picks its stop without driving; Open drives there and opens the Research drawer.
+    await page.getByTestId("walk-bar").getByRole("button", { name: en.walk.open, exact: true }).click();
+    await waitForRoom(page, "L4:research");
+    await expect(page.getByTestId("room-drawer").getByTestId("research-item").first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("L4 offers its walk without the flag", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en/library?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    const prompt = page.getByTestId("walk-prompt");
+    await expect(prompt.getByRole("heading")).toHaveText(en.walk.writing.title);
+    await prompt.getByRole("button", { name: en.walk.explore }).click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });
 
