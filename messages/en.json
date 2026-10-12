@@ -339,7 +339,11 @@
       "talks": "Talks stage",
       "contact": "Comms station",
       "cv": "CV kiosk",
-      "research": "Research shelf"
+      "research": "Research shelf",
+      "highlightsAbout": "Highlights: about me",
+      "highlightsProjects": "Highlights: top projects",
+      "highlightsExperience": "Highlights: work experience",
+      "highlightsContact": "Highlights: contact"
     },
     "launcher": {
       "search": "Search",

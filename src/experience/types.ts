@@ -146,6 +146,8 @@ export interface ExperienceData {
   career: CareerData;
   library: LibraryData;
   roof: RoofData;
+  /** L1 Highlights Hall: the landing's featured projects with their cover thumbnails. */
+  highlights: HighlightsData;
 }
 
 /** L4 payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/library.ts`). Posts keep `getPosts()` order (newest first), like the room catalog. */
@@ -178,4 +180,10 @@ export interface RoofData {
   timezone: string;
   /** One-line intro for the about card (`profile.subheadline`). */
   subheadline: string;
+}
+
+/** L1 Highlights Hall payload (locale-resolved; drawer content comes from `room-views/highlights.ts`). */
+export interface HighlightsData {
+  /** The Page View landing's featured projects (`pickFeaturedPods` over site order), each with its 480 px cover thumbnail. */
+  projects: { slug: string; title: string; wing: Wing; thumb: string }[];
 }

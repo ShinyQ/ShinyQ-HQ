@@ -5,6 +5,7 @@ import { formatPeriod } from "@/lib/format";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
 import { certViews } from "./cert-views";
 import { buildLibraryData, buildRoofData } from "./experience-floors";
+import { buildHighlightsData } from "./highlights";
 import {
   getAwards,
   getContent,
@@ -105,5 +106,6 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     career: buildCareerData(locale),
     library: buildLibraryData(locale),
     roof: buildRoofData(locale),
+    highlights: buildHighlightsData(locale),
   };
 }

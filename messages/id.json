@@ -339,7 +339,11 @@
       "talks": "Panggung sesi berbagi",
       "contact": "Stasiun komunikasi",
       "cv": "Kios CV",
-      "research": "Rak riset"
+      "research": "Rak riset",
+      "highlightsAbout": "Sorotan: tentang saya",
+      "highlightsProjects": "Sorotan: proyek unggulan",
+      "highlightsExperience": "Sorotan: pengalaman kerja",
+      "highlightsContact": "Sorotan: kontak"
     },
     "launcher": {
       "search": "Cari",
