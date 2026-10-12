@@ -58,7 +58,7 @@ Tone: the EN voice is concise and confident. The ID voice is natural, profession
 
 ## 5. Copy guidelines
 
-- Headline positioning: **Software Engineer and AI Engineer**. Software engineering (2019 to 2025: backend, full-stack, fintech, SaaS) and AI engineering (2026: Azure AI platforms) are presented as one continuous craft, not as "old job vs new job".
+- Headline positioning: **AI and Software Engineer** (the CV's order since 2026-10-13; earlier "Software Engineer and AI Engineer"). Software engineering (2019 to 2025: backend, full-stack, fintech, SaaS) and AI engineering (2026: Azure AI platforms) are presented as one continuous craft, not as "old job vs new job".
 - Write outcomes first, then how. Example: "Callers can interrupt the agent naturally (2 s to 0.2 s, controlled A/B)".
 - Use "I" in EN and "saya" in ID. No buzzword stacks, no em dashes.
 - Rover microcopy is playful but short (max 40 characters per line on the rover screen).
