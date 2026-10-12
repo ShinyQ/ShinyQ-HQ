@@ -430,7 +430,12 @@
         "RF": "Contact channels and the CV"
       }
     },
-    "boost": "Boost"
+    "boost": "Boost",
+    "interact": {
+      "teleporter": "Teleporter {year}",
+      "board": "{wing} directory",
+      "archive": "Post archive"
+    }
   },
   "drawer": {
     "label": "Room details",

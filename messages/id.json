@@ -430,7 +430,12 @@
         "RF": "Kanal kontak dan CV"
       }
     },
-    "boost": "Turbo"
+    "boost": "Turbo",
+    "interact": {
+      "teleporter": "Teleporter {year}",
+      "board": "Direktori {wing}",
+      "archive": "Arsip tulisan"
+    }
   },
   "drawer": {
     "label": "Detail ruang",
