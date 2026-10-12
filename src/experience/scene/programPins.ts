@@ -81,6 +81,22 @@ export function pinObject(src: Object3D, material: Material): Object3D | null {
   return null;
 }
 
+/**
+ * Runs `fn` with `target` bound, switching only when it is not bound already. A switch is not free: three
+ * resets the canvas viewport with `floor()` on `setRenderTarget(null)` while `setSize` uses `round()`, so
+ * a lite-tier canvas at a fractional size (390 px at DPR 1.25) would draw 1 px narrower afterwards.
+ */
+export function withTarget<T>(gl: WebGLRenderer, target: WebGLRenderTarget | null, fn: () => T): T {
+  const previous = gl.getRenderTarget();
+  if (previous === target) return fn();
+  gl.setRenderTarget(target);
+  try {
+    return fn();
+  } finally {
+    gl.setRenderTarget(previous);
+  }
+}
+
 const keyOf = (gl: WebGLRenderer, m: Material): string | null => (gl.properties.get(m) as { currentProgram?: { cacheKey: string } }).currentProgram?.cacheKey ?? null;
 
 function disposePin(pin: Object3D) {
@@ -120,13 +136,7 @@ export const programPins = {
     if (fresh.length === 0) return 0;
     const batch = new Group();
     for (const f of fresh) batch.add(f.pin);
-    const previous = gl.getRenderTarget();
-    gl.setRenderTarget(target);
-    try {
-      gl.compile(batch, camera, scene);
-    } finally {
-      gl.setRenderTarget(previous);
-    }
+    withTarget(gl, target, () => gl.compile(batch, camera, scene));
     let pinned = 0;
     for (const { pin, key } of fresh) {
       if (keyOf(gl, (pin as Renderable).material as Material) === key) {

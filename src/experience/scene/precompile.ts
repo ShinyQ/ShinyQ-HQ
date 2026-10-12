@@ -2,7 +2,7 @@ import type { Camera, Material, Object3D, Scene, WebGLRenderer, WebGLRenderTarge
 import type { FloorId } from "@/content/schema";
 import { FLOOR_ROOT, getFloorContent } from "../tower/floorRegistry";
 import { sceneTarget } from "./postHandle";
-import { programPins } from "./programPins";
+import { programPins, withTarget } from "./programPins";
 import { renderProbe } from "./renderProbe";
 import { markWarm } from "./warmState";
 
@@ -60,14 +60,7 @@ export async function precompileObject(gl: WebGLRenderer, object: Object3D, came
   const start = performance.now();
   const programsBefore = gl.info.programs?.length ?? 0;
   const target = options.target === undefined ? sceneTarget() : options.target;
-  const previous = gl.getRenderTarget();
-  let materials: Set<Material>;
-  gl.setRenderTarget(target);
-  try {
-    materials = gl.compile(object, camera, scene);
-  } finally {
-    gl.setRenderTarget(previous);
-  }
+  const materials: Set<Material> = withTarget(gl, target, () => gl.compile(object, camera, scene));
   const parallel = gl.extensions.has("KHR_parallel_shader_compile");
   const ready = await waitReady(gl, materials, options.timeoutMs ?? 2000);
   const pinned = options.pin === false ? 0 : programPins.pinFrom(gl, object, camera, scene, target);

@@ -53,6 +53,14 @@ describe("programPins.pinFrom", () => {
     expect(programPins.pinFrom(gl as unknown as WebGLRenderer, root, {} as never, {} as never, null)).toBe(0);
   });
 
+  it("leaves the bound target alone when it is already the one to compile for", () => {
+    const gl = fakeRenderer();
+    const root = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    gl.compile(root);
+    programPins.pinFrom(gl as unknown as WebGLRenderer, root, {} as never, {} as never, null);
+    expect(gl.targets).toEqual([]);
+  });
+
   it("binds the target while compiling pins and restores the previous one", () => {
     const gl = fakeRenderer();
     const root = new Mesh(new BoxGeometry(), new MeshBasicMaterial());

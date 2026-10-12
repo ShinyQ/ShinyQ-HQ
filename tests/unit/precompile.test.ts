@@ -26,6 +26,13 @@ it("compiles for the given target, restores the previous one and pins", async ()
   expect(report).toMatchObject({ materials: 1, pinned: 1, parallel: true, timedOut: false });
 });
 
+it("never switches render targets when the target is already bound (three floors the canvas viewport on a switch to null)", async () => {
+  const gl = fakeRenderer();
+  const root = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+  await precompileObject(gl as unknown as WebGLRenderer, root, {} as never, {} as never, { target: null });
+  expect(gl.targets).toEqual([]);
+});
+
 it("gives up waiting after the timeout (programs keep compiling in the driver)", async () => {
   const gl = fakeRenderer({ ready: false });
   const report = await precompileObject(gl as unknown as WebGLRenderer, new Mesh(new BoxGeometry(), new MeshBasicMaterial()), {} as never, {} as never, { target: null, timeoutMs: 30, pin: false });
