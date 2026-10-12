@@ -3,6 +3,11 @@ import { ALL_SPECS, assignShard, parseShard, SMOKE_SPECS, specsForChanges } from
 import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
+  it("maps the 3D gate, its tier probe and the landing's Enter button to the gate specs", () => {
+    expect(specsForChanges(["src/experience/gate-tier.ts"]).specs).toEqual(["boot-first", "experience"]);
+    expect(specsForChanges(["src/components/page/EnterHqButton.tsx"]).specs).toEqual(["boot-first", "experience", "pageview"]);
+  });
+
   it("maps floor code to its spec", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);

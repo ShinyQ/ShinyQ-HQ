@@ -1,4 +1,5 @@
 import type { Pod, TimelineEntry } from "./schema";
+import { podHasGallery } from "./selectors";
 
 /**
  * Pure helpers for the Page View filters and nav. Client-safe: type-only imports, so the
@@ -90,4 +91,13 @@ export function withParams(search: string, values: Record<string, string | null>
 /** Data attributes the filter islands read from server-rendered rows. */
 export function podAttrs(pod: Pick<Pod, "wing" | "stack">) {
   return { "data-pod": "", "data-wing": pod.wing, "data-stack": pod.stack.join("|") };
+}
+
+/**
+ * Landing features: the first `count` pods that have a gallery (`podHasGallery`), in the order given
+ * (pass `getPods()`, which is `orderPods`: gallery first, then hero, featured, listed). Pods without
+ * screenshots stay in the rows below.
+ */
+export function pickFeaturedPods<T extends Pick<Pod, "assets">>(sorted: readonly T[], count = 3): T[] {
+  return sorted.filter(podHasGallery).slice(0, count);
 }

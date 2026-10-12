@@ -1,0 +1,74 @@
+/*
+  Landing mockup only (not shipped). The Page View mockup stylesheet supplies the header and base
+  (in the base layer, like Tailwind's preflight), the real src/app/pageview.css and landing.css supply
+  the pv- and hx- classes (components layer), and the rules below stand in for the Tailwind utilities
+  the components use (unlayered, like Tailwind's utilities layer).
+*/
+@import url("../pageview/pageview.css") layer(base);
+@import url("../../../src/app/pageview.css");
+@import url("../../../src/app/landing.css");
+
+/* Stands in for Tailwind's preflight image rule (the real app has it). */
+@layer base {
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+:root {
+  --color-void: var(--void);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-cyan: var(--cyan);
+  --color-violet: var(--violet);
+  --color-green: var(--green);
+  --color-amber: var(--amber);
+  --color-blue: var(--blue);
+  --color-white: var(--white);
+  --color-pink: var(--pink);
+  --font-display: var(--display);
+  --font-mono: var(--mono);
+  --ease-standard: var(--ease);
+}
+
+.text-cyan { color: var(--cyan); }
+.text-violet { color: var(--violet); }
+.text-green { color: var(--green); }
+.text-amber { color: var(--amber); }
+.text-blue { color: var(--blue); }
+.text-white { color: var(--white); }
+.text-pink { color: var(--pink); }
+.relative { position: relative; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.m-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.m-hero { display: grid; flex: 1; align-content: center; gap: 48px; padding-block: 40px; }
+.m-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; margin-bottom: 40px; }
+.m-feat { display: grid; gap: 56px 24px; }
+.m-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.pv-feature { display: flex; flex-direction: column; gap: 16px; }
+.m-ask { margin-top: 32px; max-width: 640px; }
+.m-ask-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--cyan); }
+.m-ask-form { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 16px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); }
+.m-ask-input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 17px; outline: none; }
+.m-ask-send { min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink-3); font: inherit; font-weight: 600; }
+
+@media (min-width: 768px) {
+  .m-hero { align-content: start; padding-top: 64px; padding-bottom: 56px; }
+  .m-feat { grid-template-columns: 1fr 1fr; }
+  .m-lead { grid-column: span 2; }
+}
+
+@media (min-width: 1024px) {
+  .m-hero { align-content: center; padding-top: 56px; }
+  .m-feat { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .m-lead { grid-column: span 7; grid-row: span 2; }
+  .m-side { grid-column: span 5; }
+}

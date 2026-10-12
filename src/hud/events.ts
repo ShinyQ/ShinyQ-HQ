@@ -23,7 +23,9 @@ export type HudCommand =
   /** Paper preview modal (abstract, citations, DOI and Scholar links), see `DialogHost`. */
   | { type: "paper"; paper: PaperPreview }
   /** Certification preview card (issuer, dates, credential ID, "Open credential"), see `DialogHost`. */
-  | { type: "cert"; cert: CertView };
+  | { type: "cert"; cert: CertView }
+  /** Page View to the 3D tower (the landing's "Enter the 3D HQ"), handled by `ExperienceGate` like Back to 3D. */
+  | { type: "enter3d" };
 
 export function sendHudCommand(command: HudCommand) {
   window.dispatchEvent(new CustomEvent<HudCommand>(HUD_EVENT, { detail: command }));
@@ -34,6 +36,7 @@ export const openTerminal = () => sendHudCommand({ type: "terminal" });
 export const openCv = () => sendHudCommand({ type: "cv" });
 export const openPaper = (paper: PaperPreview) => sendHudCommand({ type: "paper", paper });
 export const openCert = (cert: CertView) => sendHudCommand({ type: "cert", cert });
+export const enterHq = () => sendHudCommand({ type: "enter3d" });
 export const openAsk = (q?: string, options: { topic?: AskTopic; source?: AskEntry } = {}) => sendHudCommand({ type: "ask", q, ...options });
 
 export function onHudCommand(listener: (command: HudCommand) => void): () => void {

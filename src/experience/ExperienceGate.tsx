@@ -2,14 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { BOOT_ATTR, isBotLike, PROBE_KEY, releaseBootCover } from "@/lib/boot-first";
-import { decideTier, readTierInputs } from "@/lib/gpu-tier";
+import { onHudCommand } from "@/hud/events";
+import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
+import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import type { FloorId, RoomId } from "@/content/schema";
-import type { ExperienceData, GpuTier } from "./types";
+import type { ExperienceData } from "./types";
 
 const loadExperience = () => import("./Experience");
 const Experience = dynamic(loadExperience, { ssr: false });
@@ -21,44 +22,6 @@ if (typeof document !== "undefined" && document.documentElement.hasAttribute(BOO
 export const VIEW_KEY = "hq:view";
 
 const onFirstFrame = () => releaseBootCover("ready");
-
-let detected: GpuTier | undefined;
-let scheduled = false;
-const tierListeners = new Set<() => void>();
-
-/**
- * Probes WebGL once per page load, after the commit that mounts the gate. Creating a context is not
- * free (seconds on software renderers such as SwiftShader), so it must never run during render:
- * a client navigation into a gated route would block until the probe finishes.
- */
-function subscribeTier(listener: () => void) {
-  tierListeners.add(listener);
-  if (detected === undefined && !scheduled) {
-    scheduled = true;
-    window.setTimeout(() => {
-      // Crawlers and automation stay on the page: no WebGL probe, no 3D chunk.
-      if (detected === undefined && isBotLike(navigator, window.location.search)) detected = "static";
-      if (detected === undefined) {
-        const inputs = readTierInputs(window.location.search);
-        detected = decideTier(inputs);
-        // Remember an auto-detected static device, so the next page skips the boot cover.
-        if (detected === "static" && !inputs.override) {
-          try {
-            sessionStorage.setItem(PROBE_KEY, "static");
-          } catch {
-            // Storage can be unavailable; the cover then shows until the probe, as on this page.
-          }
-        }
-      }
-      tierListeners.forEach((l) => l());
-    }, 0);
-  }
-  return () => {
-    tierListeners.delete(listener);
-  };
-}
-const readDetectedTier = () => detected ?? null;
-const readServerTier = () => null;
 
 function readView(): "3d" | "page" {
   try {
@@ -75,18 +38,18 @@ function readView(): "3d" | "page" {
  */
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
-  const detectedTier = useSyncExternalStore(subscribeTier, readDetectedTier, readServerTier);
+  const detectedTier = useGateTier();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
-  const back3D = () => {
+  const back3D = useCallback(() => {
     try {
       sessionStorage.removeItem(VIEW_KEY);
     } catch {
       // Storage can be unavailable; the toggle still works for this render.
     }
     setView("3d");
-  };
+  }, []);
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
   // The boot cover hides the page until 3D draws its first frame; reveal the page when 3D is off.
@@ -95,11 +58,20 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     else if (tier && view === "page") releaseBootCover("page");
   }, [tier, view]);
 
-  // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
+  // Lets the Director open the Rover Terminal after the intro only while the tower is open; the Page View never auto-opens it.
   useEffect(() => {
     claimAutoOpen(immersive);
     return () => claimAutoOpen(false);
   }, [immersive]);
+
+  // The landing's "Enter the 3D HQ" (EnterHqButton) asks for the tower the same way Back to 3D does.
+  useEffect(
+    () =>
+      onHudCommand((command) => {
+        if (command.type === "enter3d") back3D();
+      }),
+    [back3D],
+  );
 
   if (!tier) return null;
 

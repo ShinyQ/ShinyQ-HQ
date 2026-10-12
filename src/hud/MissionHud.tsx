@@ -8,24 +8,21 @@ import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "@/experience/missions/host";
 import { roomFromPath } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionRunner } from "@/experience/missions/runner";
-import { isAutoOpenClaimed, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
+import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
 import { CommandPalette } from "./CommandPalette";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
 import type { HudIndex } from "./index-data";
-import { loadHudIndex, useHudIndex } from "./index-client";
+import { useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
-import { RoverTerminal, markTerminalSeen, shouldAutoOpenTerminal } from "./RoverTerminal";
+import { RoverTerminal, markTerminalSeen } from "./RoverTerminal";
 import { buildPaletteEntries } from "./search";
 import { orderTerminalMissions } from "./terminal";
 
 const VISITS_KEY = "hq:visits";
-const AUTO_OPEN_DELAY_MS = 600;
-/** The auto-opened terminal waits this long at most for the Ask status, so the "[a] Ask" row is there from the start. */
-const AUTO_OPEN_STATUS_WAIT_MS = 1500;
 const MIN_TOAST_MS = 2400;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view"];
 
@@ -35,8 +32,6 @@ export interface MissionHudProps {
   indexVersion?: string;
   /** Preloaded index (tests); skips the fetch. */
   index?: HudIndex;
-  /** Auto-open the Rover Terminal on the first visit. Static pages enable it on the Lobby only. */
-  autoOpenOnLobby?: boolean;
 }
 
 function isEditable(target: EventTarget | null): boolean {
@@ -60,9 +55,10 @@ function countVisit(): number {
 /**
  * Missions HUD for the static pages: wires the Rover Terminal and the command palette to the
  * mission runner through the static host (route navigation). The 3D experience can reuse the
- * terminal and palette with its own `MissionHost`.
+ * terminal and palette with its own `MissionHost`. The terminal never opens on its own over the
+ * Page View (it would cover the landing); only the 3D Lobby opens it, after the intro (Director).
  */
-export function MissionHud({ locale, indexVersion, index: preloaded, autoOpenOnLobby = true }: MissionHudProps) {
+export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHudProps) {
   const { index, settled } = useHudIndex(indexVersion, preloaded);
   const t = useTranslations("hud.status");
   const router = useRouter();
@@ -148,22 +144,9 @@ export function MissionHud({ locale, indexVersion, index: preloaded, autoOpenOnL
   const entries = useMemo(() => (index ? buildPaletteEntries(index, STATIC_ACTIONS) : []), [index]);
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions, visit) : []), [index, visit]);
 
-  // Visit counter, first-visit auto-open on the Lobby, HUD commands and global shortcuts.
+  // Visit counter, HUD commands and global shortcuts.
   useEffect(() => {
     const visitTimer = window.setTimeout(() => setVisit(countVisit()), 0);
-    let alive = true;
-    const autoTimer =
-      autoOpenOnLobby && pathname === `/${locale}` && shouldAutoOpenTerminal()
-        ? window.setTimeout(() => {
-            // Open with the missions and the Ask row already known: the sheet is anchored to the bottom,
-            // so rows that arrive later would push it up (a layout shift on the Lobby).
-            const status = Promise.race([requestAskStatus(), new Promise<void>((resolve) => window.setTimeout(resolve, AUTO_OPEN_STATUS_WAIT_MS))]);
-            void Promise.all([preloaded ?? loadHudIndex(indexVersion), status]).then(() => {
-              // In 3D the terminal opens after the intro instead (Director).
-              if (alive && !isAutoOpenClaimed()) showTerminal();
-            });
-          }, AUTO_OPEN_DELAY_MS)
-        : undefined;
     const offCommand = onHudCommand((command) => {
       if (command.type === "terminal") showTerminal();
       else if (command.type === "palette") showPalette(command.filter ?? null);
@@ -194,14 +177,10 @@ export function MissionHud({ locale, indexVersion, index: preloaded, autoOpenOnL
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      alive = false;
       window.clearTimeout(visitTimer);
-      window.clearTimeout(autoTimer);
       offCommand();
       window.removeEventListener("keydown", onKeyDown);
     };
-    // The auto-open check runs once per mount (first page view), not on every navigation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTerminal, showPalette, loadAskStatus]);
 
   // Remember rooms whose page was opened (palette "Recent", surprise skips them).

@@ -4,6 +4,7 @@ import { openPage } from "./hq";
 import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost } from "./routes";
 import data from "../content/site-content.json";
+import en from "../messages/en.json";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
 const TEMPLATES = [
@@ -190,4 +191,66 @@ test("no horizontal overflow on a 390 px phone", async ({ browser }) => {
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
   await page.close();
+});
+
+/** Sum of layout shifts since navigation (buffered), observed for `ms`. */
+async function layoutShiftOver(page: Page, ms: number) {
+  return page.evaluate(
+    (wait) =>
+      new Promise<number>((resolve) => {
+        let total = 0;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
+            if (!entry.hadRecentInput) total += entry.value;
+          }
+        }).observe({ type: "layout-shift", buffered: true });
+        setTimeout(() => resolve(total), wait);
+      }),
+    ms,
+  );
+}
+
+const ASK_ON = { enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 };
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 834, height: 1112 },
+  { width: 390, height: 844 },
+]) {
+  test(`landing: the hero owns the first screen on a first visit at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    // Fresh context: a first visit (no hq:terminal-seen) with motion on.
+    const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
+    const page = await context.newPage();
+    await page.route("**/api/ask", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ASK_ON) }));
+    await openPage(page, "/en?tier=static");
+    const name = page.getByRole("heading", { level: 1, name: data.profile.name });
+    await expect(name).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole("textbox", { name: en.ask.hero.label })).toBeInViewport();
+    expect(await layoutShiftOver(page, 2500)).toBeLessThan(0.01);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const covered = await name.evaluate((h1) => {
+      const r = h1.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !h1.contains(hit);
+    });
+    expect(covered).toBe(false);
+    await context.close();
+  });
+}
+
+test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
+  await openPage(page, staticTier("/en"));
+  const cards = page.locator("#work [data-feature-pod]");
+  await expect(cards).toHaveCount(3);
+  for (const card of await cards.all()) {
+    const slug = (await card.getAttribute("data-feature-pod"))!;
+    const pod = data.floors.labs.pods.find((p) => p.slug === slug)!;
+    expect(pod.assets.length).toBeGreaterThan(0);
+    await expect(card.getByRole("link", { name: pod.title.en })).toHaveAttribute("href", `/en/labs/${slug}`);
+    await expect(card.locator("img").first()).toHaveAttribute("src", pod.assets[0].src);
+  }
+  const ticker = page.getByRole("region", { name: en.home.statsTitle });
+  await expect(ticker).toHaveAttribute("id", "stats");
+  for (const stat of data.stats) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
+  await expect(page.getByTestId("enter-hq")).toBeHidden();
 });

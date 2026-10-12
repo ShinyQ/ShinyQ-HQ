@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./pageview.css";
+@import "./landing.css";
 
 /* Neon Grid tokens (spec appendix 05). */
 @theme {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bootFirstScript, isBotLike, shouldBootFirst, splitBootLine, type BootFirstInput } from "@/lib/boot-first";
+import { bootFirstScript, canOffer3D, isBotLike, shouldBootFirst, splitBootLine, type BootFirstInput } from "@/lib/boot-first";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
 
@@ -90,21 +90,57 @@ describe("shouldBootFirst", () => {
   });
 });
 
+describe("canOffer3D", () => {
+  const ok = { search: "", hasWebGL2: true, saveData: false };
+
+  it("offers 3D with WebGL2 and without Save-Data", () => {
+    expect(canOffer3D(ok)).toBe(true);
+    expect(canOffer3D({ ...ok, search: "?tier=lite" })).toBe(true);
+    expect(canOffer3D({ ...ok, search: "?tier=full&x=1" })).toBe(true);
+  });
+
+  it("never offers it without WebGL2, with Save-Data, to bots or when the URL forces the static tier", () => {
+    expect(canOffer3D({ ...ok, hasWebGL2: false })).toBe(false);
+    expect(canOffer3D({ ...ok, saveData: true })).toBe(false);
+    expect(canOffer3D({ ...ok, bot: true })).toBe(false);
+    expect(canOffer3D({ ...ok, search: "?tier=static" })).toBe(false);
+    expect(canOffer3D({ ...ok, search: "?a=1&tier=static" })).toBe(false);
+  });
+});
+
 describe("bootFirstScript", () => {
   it("is valid JS that sets the attribute on a gated route", () => {
     expect(runScript({ path: "/en" }).attrs.get("data-hq-boot")).toBe("1");
   });
 
-  it("leaves the page alone when 3D is not possible or not wanted", () => {
-    expect(runScript({ path: "/en/quick" }).attrs.size).toBe(0);
-    expect(runScript({ path: "/en", stored: "page" }).attrs.size).toBe(0);
+  it("does not boot into 3D when it is not possible or not wanted", () => {
+    expect(runScript({ path: "/en/quick" }).attrs.has("data-hq-boot")).toBe(false);
+    expect(runScript({ path: "/en", stored: "page" }).attrs.has("data-hq-boot")).toBe(false);
     expect(runScript({ path: "/en", webgl2: false }).attrs.size).toBe(0);
     expect(runScript({ path: "/en", saveData: true }).attrs.size).toBe(0);
-    expect(runScript({ path: "/en", probe: "static" }).attrs.size).toBe(0);
+    expect(runScript({ path: "/en", probe: "static" }).attrs.has("data-hq-boot")).toBe(false);
     expect(runScript({ path: "/en", ua: "Chrome-Lighthouse" }).attrs.size).toBe(0);
     expect(runScript({ path: "/en", ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }).attrs.size).toBe(0);
     expect(runScript({ path: "/en", webdriver: true }).attrs.size).toBe(0);
     expect(runScript({ path: "/en", webdriver: true, search: "?tier=lite" }).attrs.get("data-hq-boot")).toBe("1");
+  });
+
+  it("flags html[data-hq-3d] wherever 3D could run, even when this visit stays on the page", () => {
+    for (const input of [{ path: "/en" }, { path: "/en", stored: "page" }, { path: "/en", probe: "static" }, { path: "/en/quick" }, { path: "/en", webdriver: true, search: "?tier=lite" }]) {
+      expect(runScript(input).attrs.get("data-hq-3d"), JSON.stringify(input)).toBe("1");
+    }
+  });
+
+  it("does not flag 3D without WebGL2, with Save-Data, for bots or on ?tier=static", () => {
+    for (const input of [
+      { path: "/en", webgl2: false },
+      { path: "/en", saveData: true },
+      { path: "/en", ua: "Chrome-Lighthouse" },
+      { path: "/en", webdriver: true },
+      { path: "/en", search: "?tier=static" },
+    ]) {
+      expect(runScript(input).attrs.has("data-hq-3d"), JSON.stringify(input)).toBe(false);
+    }
   });
 
   it("arms a safety timeout that reveals the page", () => {

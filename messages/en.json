@@ -94,7 +94,20 @@
     "openTo": "Open to",
     "since": "since {date}",
     "location": "Location",
-    "statusLabel": "Current status"
+    "statusLabel": "Current status",
+    "introTitle": "In short",
+    "moreWork": "More key projects",
+    "featuredShots": "{count, plural, one {# screenshot} other {# screenshots}}",
+    "hero": {
+      "welcome": "Welcome to {site}",
+      "enter3d": "Enter the 3D HQ",
+      "enter3dHint": "Drive a rover through the five-floor tower"
+    },
+    "ticker": {
+      "updated": "Updated {date}",
+      "live": "Live",
+      "pause": "Pause motion"
+    }
   },
   "quick": {
     "title": "Quick view",

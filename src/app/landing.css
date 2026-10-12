@@ -1,0 +1,362 @@
+/*
+  Landing layer: the cinematic first screen of the Page View home (src/components/page/Hero.tsx).
+  Motion is CSS only and compositor only (transform, opacity): no JavaScript, and the backdrop holds no
+  image or text, so it is never an LCP candidate. Every animation starts after 0.5 s with its first
+  keyframe as the still frame. prefers-reduced-motion and the "Pause motion" checkbox stop it.
+*/
+@layer components {
+  /* First screen: the header is 60 px plus the 49 px tab row below lg, 68 px from lg. */
+  .hx {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - 109px);
+    overflow: hidden;
+  }
+
+  @media (min-width: 64rem) {
+    .hx {
+      min-height: calc(100svh - 68px);
+    }
+  }
+
+  /* Phones: the hero alone fills the first screen, so the ticker starts below the fold and never sits
+     under the floating "Ask AI" (bottom left) and "Back to 3D" (bottom right) buttons. */
+  @media (max-width: 39.99rem) {
+    .hx-main {
+      min-height: calc(100svh - 109px);
+    }
+  }
+
+  .hx-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .hx-glow {
+    position: absolute;
+    inset: -20% -10% 0;
+    background:
+      radial-gradient(40% 45% at 78% 32%, rgb(167 139 250 / 0.22), transparent 70%),
+      radial-gradient(36% 42% at 16% 18%, rgb(34 211 238 / 0.16), transparent 70%);
+    animation: hx-drift 18s ease-in-out 0.5s infinite alternate both;
+  }
+
+  /* Neon Grid floor in perspective, rolling toward the visitor one cell per loop. */
+  .hx-ground {
+    position: absolute;
+    left: -50%;
+    right: -50%;
+    bottom: 0;
+    height: 60%;
+    perspective: 520px;
+    mask-image: linear-gradient(to top, #000 15%, transparent 90%);
+  }
+
+  .hx-ground-grid {
+    position: absolute;
+    inset: -100% 0 0;
+    transform-origin: 50% 100%;
+    transform: rotateX(64deg);
+    background-image:
+      linear-gradient(rgb(99 102 241 / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(99 102 241 / 0.4) 1px, transparent 1px);
+    background-size: 56px 56px;
+    animation: hx-run 3.2s linear 0.5s infinite both;
+  }
+
+  /* Data packets crossing the screen behind the text. */
+  .hx-packet {
+    position: absolute;
+    left: 0;
+    width: 88px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan));
+    opacity: 0;
+    animation: hx-packet 9s linear 0.5s infinite backwards;
+  }
+
+  .hx-packet:nth-of-type(1) {
+    top: 24%;
+    animation-delay: 1s;
+  }
+
+  .hx-packet:nth-of-type(2) {
+    top: 52%;
+    animation-delay: 4s;
+    background: linear-gradient(90deg, transparent, var(--color-violet));
+  }
+
+  .hx-packet:nth-of-type(3) {
+    top: 71%;
+    animation-delay: 6.5s;
+  }
+
+  .hx-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    border: 1px solid var(--color-line-2);
+    border-radius: 999px;
+    background: rgb(5 5 12 / 0.6);
+    color: var(--color-ink-2);
+  }
+
+  .hx-dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--color-green);
+    box-shadow: 0 0 10px var(--color-green);
+    animation: hx-pulse 2s ease-in-out 0.5s infinite;
+  }
+
+  /* The LCP element: static, solid color (no gradient text, no entrance animation). */
+  .hx-name {
+    font-size: clamp(48px, 9.6vw, 132px);
+    line-height: 0.9;
+    text-shadow: 0 0 48px rgb(34 211 238 / 0.22);
+  }
+
+  /* Shown only where 3D can run; the head script sets html[data-hq-3d] before first paint. */
+  .hx-enter {
+    display: none;
+    background: var(--color-cyan);
+    color: var(--color-void);
+    box-shadow: 0 0 32px -6px var(--color-cyan);
+  }
+
+  .hx-enter:hover {
+    background: #67e8f9;
+  }
+
+  html[data-hq-3d] .hx-enter {
+    display: inline-flex;
+  }
+
+  .hx-tick-track,
+  .hx-film {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Stats ticker band at the bottom of the first screen (#stats). */
+  .hx-tick {
+    position: relative;
+    border-block: 1px solid var(--color-line);
+    background: rgb(5 5 12 / 0.72);
+  }
+
+  .hx-tick-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "upd pause"
+      "view view";
+    align-items: center;
+    column-gap: 16px;
+    padding-block: 4px 10px;
+  }
+
+  /* From sm the ticker can share the bottom of the first screen with the floating buttons, so the bar
+     keeps their columns free: "Ask AI" (left 24 px, about 128 px wide) and, where 3D is offered,
+     "Back to 3D" (right 24 px, about 206 px wide), each plus a 12 px gap. --hx-out is the margin
+     outside the 1240 px container. */
+  @media (min-width: 40rem) {
+    .hx-tick-bar {
+      --hx-out: max(0px, (100vw - 1240px) / 2);
+      padding-left: max(clamp(20px, 4vw, 48px), 164px - var(--hx-out));
+    }
+
+    html[data-hq-3d] .hx-tick-bar {
+      padding-right: max(clamp(20px, 4vw, 48px), 242px - var(--hx-out));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .hx-tick-bar {
+      grid-template-columns: auto auto minmax(0, 1fr);
+      grid-template-areas: "upd pause view";
+      padding-block: 6px;
+    }
+  }
+
+  .hx-tick-updated {
+    grid-area: upd;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    color: var(--color-green);
+    white-space: nowrap;
+  }
+
+  .hx-tick-view {
+    grid-area: view;
+    display: flex;
+    gap: 48px;
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+
+  .hx-tick-track {
+    display: flex;
+    flex: none;
+    gap: 48px;
+    min-width: max-content;
+    animation: hx-marquee 70s linear 0.5s infinite;
+  }
+
+  .hx-tick-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .hx-tick-value {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .hx-tick-label {
+    font-size: 14px;
+    color: var(--color-ink-2);
+  }
+
+  .hx-tick-live {
+    color: var(--color-green);
+  }
+
+  /* Left of the marquee, so the floating "Back to 3D" button (bottom right) never covers it. */
+  .hx-pause {
+    grid-area: pause;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .hx-pause-box {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-cyan);
+  }
+
+  /* Featured project cards. */
+  .hx-shot {
+    position: relative;
+  }
+
+  .hx-shots {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgb(5 5 12 / 0.8);
+    color: var(--color-ink);
+  }
+
+  .hx-film {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hx-film img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
+  }
+
+  .hx-card:hover .pv-shot {
+    border-color: rgb(167 139 250 / 0.5);
+    box-shadow: 0 0 40px -12px var(--color-violet);
+  }
+
+  @keyframes hx-drift {
+    to {
+      transform: translate3d(-4%, 3%, 0) scale(1.06);
+    }
+  }
+
+  @keyframes hx-run {
+    to {
+      transform: rotateX(64deg) translateY(56px);
+    }
+  }
+
+  @keyframes hx-packet {
+    0% {
+      transform: translateX(-10vw);
+      opacity: 0;
+    }
+    12%,
+    80% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(110vw);
+      opacity: 0;
+    }
+  }
+
+  @keyframes hx-pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes hx-marquee {
+    to {
+      transform: translateX(calc(-100% - 48px));
+    }
+  }
+
+  /* "Pause motion" (a native checkbox in the ticker) stops every hero animation. */
+  .hx:has(.hx-pause-box:checked) :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track) {
+    animation-play-state: paused;
+  }
+
+  /* Reduced motion: a still frame and the stats wrapped in rows (no scroll region). The global rule only shortens
+     durations, which would make infinite loops jump, so the names are removed here. */
+  @media (prefers-reduced-motion: reduce) {
+    .hx-glow,
+    .hx-ground-grid,
+    .hx-dot,
+    .hx-tick-track {
+      animation: none;
+    }
+
+    .hx-packet,
+    .hx-pause,
+    .hx-tick-track[aria-hidden="true"] {
+      display: none;
+    }
+
+    .hx-tick-view {
+      overflow: visible;
+      mask-image: none;
+    }
+
+    .hx-tick-track {
+      flex-wrap: wrap;
+      min-width: 0;
+      column-gap: 32px;
+      row-gap: 0;
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { openPage } from "./hq";
 import { heroPod } from "./routes";
 import rawData from "../content/site-content.json";
 import { SiteContentSchema } from "../src/content/schema";
+import en from "../messages/en.json";
 
 const data = SiteContentSchema.parse(rawData);
 const mission = (id: string) => data.missions.find((entry) => entry.id === id)!;
@@ -113,13 +114,14 @@ test.describe("missions on static pages", () => {
   });
 });
 
-test("Rover Terminal auto-opens once on the first Lobby visit", async ({ page }) => {
+test("the Page View Lobby never opens the Rover Terminal on its own; the header button does", async ({ page }) => {
+  // First visit: hq:terminal-seen is not set.
   await openPage(page, "/en?tier=static");
-  await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.reload();
-  await page.waitForTimeout(1000);
-  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.waitForTimeout(2500);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
+  await page.getByRole("button", { name: en.hud.launcher.missions }).click();
+  await expect(page.getByRole("dialog", { name: en.hud.terminal.title })).toBeVisible();
 });
 
 test.describe("accessibility (axe)", () => {
