@@ -94,7 +94,21 @@
     "openTo": "Terbuka untuk",
     "since": "sejak {date}",
     "location": "Lokasi",
-    "statusLabel": "Status saat ini"
+    "statusLabel": "Status saat ini",
+    "introTitle": "Singkatnya",
+    "moreWork": "Proyek utama lainnya",
+    "featuredShots": "{count} tangkapan layar",
+    "hero": {
+      "welcome": "Selamat datang di {site}",
+      "enter3d": "Masuk ke HQ 3D",
+      "enter3dHint": "Kemudikan rover menjelajahi gedung lima lantai",
+      "here": "Anda di sini"
+    },
+    "ticker": {
+      "updated": "Diperbarui {date}",
+      "live": "Terkini",
+      "pause": "Jeda animasi"
+    }
   },
   "quick": {
     "title": "Ringkasan",
