@@ -38,9 +38,9 @@ test.describe("Guided walks", () => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/journey");
 
-    const prompt = page.getByTestId("walk-prompt");
+    const prompt = page.getByTestId("dialog-choices");
     await expect(prompt).toBeVisible();
-    await expect(prompt.getByRole("heading")).toHaveText("Walk my journey?");
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L2);
     await prompt.getByRole("button", { name: "Walk my journey" }).click();
 
     const bar = page.getByTestId("walk-bar");
@@ -76,14 +76,14 @@ test.describe("Guided walks", () => {
     await waitForHQ(page);
     await waitForSceneLive(page);
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
   test("L3: the tour starts at the first software pod in site order, filters by wing and Prev steps back", async ({ page }) => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/labs");
-    await page.getByTestId("walk-prompt").getByRole("button", { name: "Tour my projects" }).click();
+    await page.getByTestId("dialog-choices").getByRole("button", { name: "Tour my projects" }).click();
     expect(await waitForArrival(page)).toBe(firstSoftwareStop);
     await page.getByTestId("walk-filter").selectOption("ai");
     await expect(page.getByTestId("walk-counter")).toContainText(en.common.wing.ai);
@@ -101,8 +101,8 @@ test.describe("Guided walks", () => {
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    const prompt = page.getByTestId("walk-prompt");
-    await expect(prompt.getByRole("heading")).toHaveText("Tour my projects?");
+    const prompt = page.getByTestId("dialog-choices");
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L3);
     await prompt.getByRole("button", { name: "Explore freely" }).click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });
@@ -110,8 +110,8 @@ test.describe("Guided walks", () => {
   test("L4: Read my writing starts at a post, opens its drawer and filters by zone", async ({ page }) => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/library");
-    const prompt = page.getByTestId("walk-prompt");
-    await expect(prompt.getByRole("heading")).toHaveText(en.walk.writing.title);
+    const prompt = page.getByTestId("dialog-choices");
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4);
     await prompt.getByRole("button", { name: en.walk.writing.start }).click();
     const first = await waitForArrival(page);
     expect(first.startsWith("L4:")).toBe(true);
@@ -131,8 +131,8 @@ test.describe("Guided walks", () => {
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    const prompt = page.getByTestId("walk-prompt");
-    await expect(prompt.getByRole("heading")).toHaveText(en.walk.writing.title);
+    const prompt = page.getByTestId("dialog-choices");
+    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L4);
     await prompt.getByRole("button", { name: en.walk.explore }).click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });
@@ -145,7 +145,7 @@ test.describe("Guided walks", () => {
     await waitForFloor(page, "L3", 60_000).catch(() => undefined);
     await expect(page.getByTestId("walk-bar")).toBeVisible({ timeout: 60_000 });
     expect(await waitForArrival(page)).toBe(firstSoftwareStop);
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -157,7 +157,7 @@ test.describe("Guided walks", () => {
     await waitForSceneLive(page);
     // Proving that nothing shows: the prompt would appear 700 ms after explore.
     await page.waitForTimeout(1500);
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     await expect(page.getByTestId("walk-launcher")).toHaveCount(0);
   });
 });
@@ -167,7 +167,7 @@ test.describe("Guided walks on a phone", () => {
 
   test("the Walk HUD sits under the top bar and a swipe steps forward", async ({ page }) => {
     await openWithWalks(page, "/en/journey");
-    await page.getByTestId("walk-prompt").getByRole("button", { name: "Walk my journey" }).click();
+    await page.getByTestId("dialog-choices").getByRole("button", { name: "Walk my journey" }).click();
     await waitForArrival(page);
     const bar = page.getByTestId("walk-bar");
     const box = (await bar.boundingBox())!;
@@ -197,7 +197,7 @@ async function openWalkWithAsk(page: Page) {
   );
   await page.addInitScript(() => sessionStorage.setItem("hq:ask-teaser", "1"));
   await openWithWalks(page, "/en/journey");
-  await page.getByTestId("walk-prompt").getByRole("button", { name: "Walk my journey" }).click();
+  await page.getByTestId("dialog-choices").getByRole("button", { name: "Walk my journey" }).click();
   await waitForArrival(page);
 }
 

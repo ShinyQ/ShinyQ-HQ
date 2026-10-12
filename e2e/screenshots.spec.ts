@@ -203,7 +203,7 @@ for (const viewport of L4_VIEWPORTS) {
     const { context, page } = await open3DAt(browser, viewport, "/en/library");
     // In-world text (troika) builds its glyphs slowly on SwiftShader.
     await page.waitForTimeout(8000);
-    const prompt = page.getByTestId("walk-prompt");
+    const prompt = page.getByTestId("dialog-choices");
     await expect(prompt).toBeVisible();
     await page.screenshot({ path: shot("hq-l4-writing", viewport) });
     await prompt.getByRole("button", { name: "Read my writing" }).click();
@@ -344,7 +344,7 @@ test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
       await page.goto("/en/labs?tier=lite&walk=on");
       await waitForHQ(page);
       await waitForPhase(page, "explore");
-      await page.getByTestId("walk-prompt").getByRole("button", { name: "Explore freely" }).click();
+      await page.getByTestId("dialog-choices").getByRole("button", { name: "Explore freely" }).click();
       await expect(page.getByTestId("walk-launcher")).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       // In-world text (troika) builds its glyphs slowly on SwiftShader.

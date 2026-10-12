@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { collectErrors, enterHQ, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, collectErrors, enterHQ, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Rover's dialog (src/hud/dialog): the first-session onboarding after the boot and intro, its
@@ -91,5 +91,23 @@ test.describe("replay", () => {
     await palette.getByRole("combobox").fill("tutorial");
     await page.keyboard.press("Enter");
     await expectLine(page, "welcome");
+  });
+});
+
+test.describe("floor lines", () => {
+  test("the first visit to L2 gets one Rover line that ends with the walk choice", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en/journey?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    await expect(box(page)).toHaveAttribute("data-dialog", "floor:L2", { timeout: 15_000 });
+    await expect(box(page)).toContainText(en.dialog.floor.L2);
+    await expect(choices(page).getByRole("button", { name: en.walk.journey.start })).toBeVisible();
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await choices(page).getByRole("button", { name: en.walk.explore }).click();
+    await expect(box(page)).toHaveCount(0);
+    await expect(page.getByTestId("walk-launcher")).toBeVisible();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("hq:walk-prompt") ?? "[]"))).toContain("L2");
   });
 });

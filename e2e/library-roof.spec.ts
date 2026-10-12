@@ -101,9 +101,9 @@ test.describe("missions to the Library and the Roof", () => {
     const post = content.floors.library.posts.find((p) => `L4:${p.slug}` === room)!;
     const panel = page.getByTestId("room-drawer");
     await expect(panel.getByRole("heading", { level: 2 })).toHaveText(post.title.en);
-    // A hosted post mirrors its page URL; the walk prompt never shows over a mission's walk.
+    // A hosted post mirrors its page URL; the floor line never shows over a mission's walk.
     await expect(page).toHaveURL(new RegExp(`/en/blog/${post.slug}\\?tier=lite$`));
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     const read = panel.getByRole("link", { name: "Read post" });
     await expect(read).toHaveAttribute("href", `/en/blog/${post.slug}`);
     await read.click();

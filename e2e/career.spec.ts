@@ -121,7 +121,7 @@ test.describe("Career Road (L2)", () => {
     await expect(page.getByTestId("walk-bar")).toBeVisible();
     await expect(page.getByTestId("walk-counter")).toContainText(/Stop 1 of \d+/);
     await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", "L2:prologue-2016");
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
