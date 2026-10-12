@@ -1,5 +1,6 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
 import { directoryStop, tourOrder } from "../floors/labs/layout";
+import { experienceRows, highlightRoom, type HighlightStation } from "../floors/lobby/stations";
 import { LIBRARY_ZONES, type LibraryLayout, type LibraryZone } from "../floors/library/model";
 import { ROOF_STOPS } from "../floors/roof/layout";
 import type { CareerData, CareerType, ExperienceData, LabPod, LibraryData } from "../types";
@@ -124,4 +125,36 @@ export function roofWalk({ roof, profile }: Pick<ExperienceData, "roof" | "profi
     { id: "RF:contact", to: "RF:contact", room: "RF:contact", title: labels.contact, subtitle: roof.email },
   ];
   return { id: "meet", floor: "RF", stops };
+}
+
+export interface HighlightsWalkLabels {
+  about: string;
+  projects: string;
+  experience: string;
+  contact: string;
+  /** Subtitle of the experience stop, e.g. "9 employment roles and 6 freelance projects, newest first". */
+  counts: (employment: number, freelance: number) => string;
+}
+
+/**
+ * L1 "Quick tour": the four Highlights Hall stations in order (about me, top projects, work
+ * experience, contact), each opening its drawer on arrival. No filters. Started from the launcher
+ * pill, Ask Rover or Cmd-K (mission `highlights`); L1 never shows the first-visit prompt.
+ */
+export function highlightsWalk(data: Pick<ExperienceData, "profile" | "roof" | "highlights" | "career">, labels: HighlightsWalkLabels): WalkDefinition {
+  const { employment, freelance } = experienceRows(data.career);
+  const stop = (station: HighlightStation, title: string, subtitle: string): WalkStop => {
+    const room = highlightRoom(station);
+    return { id: room, to: room, room, title, subtitle };
+  };
+  return {
+    id: "highlights",
+    floor: "L1",
+    stops: [
+      stop("about", labels.about, data.profile.headline),
+      stop("projects", labels.projects, data.highlights.projects.map((p) => p.title).join(" · ")),
+      stop("experience", labels.experience, labels.counts(employment.length, freelance.length)),
+      stop("contact", labels.contact, data.roof.email),
+    ],
+  };
 }

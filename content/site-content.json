@@ -8617,8 +8617,26 @@
       ]
     },
     {
-      "id": "journey",
+      "id": "highlights",
       "order": 2,
+      "label": {
+        "en": "Quick tour: the highlights",
+        "id": "Tur singkat: sorotan utama"
+      },
+      "steps": [
+        {
+          "kind": "elevator",
+          "floor": "L1"
+        },
+        {
+          "kind": "walk",
+          "walk": "highlights"
+        }
+      ]
+    },
+    {
+      "id": "journey",
+      "order": 3,
       "label": {
         "en": "Follow my career, 2019 to 2026",
         "id": "Telusuri karier saya, 2019 hingga 2026"
@@ -8636,7 +8654,7 @@
     },
     {
       "id": "projects",
-      "order": 3,
+      "order": 4,
       "label": {
         "en": "Tour my projects",
         "id": "Tur proyek saya"
@@ -8654,7 +8672,7 @@
     },
     {
       "id": "hire",
-      "order": 4,
+      "order": 5,
       "label": {
         "en": "Discuss a role or project",
         "id": "Diskusikan peluang kerja atau proyek"
@@ -8676,7 +8694,7 @@
     },
     {
       "id": "cv",
-      "order": 5,
+      "order": 6,
       "label": {
         "en": "View CV",
         "id": "Lihat CV"
@@ -8698,7 +8716,7 @@
     },
     {
       "id": "blog",
-      "order": 6,
+      "order": 7,
       "label": {
         "en": "Read my writing",
         "id": "Baca tulisan saya"
@@ -8716,7 +8734,7 @@
     },
     {
       "id": "surprise",
-      "order": 7,
+      "order": 8,
       "label": {
         "en": "Pick something for me",
         "id": "Pilihkan sesuatu untuk saya"

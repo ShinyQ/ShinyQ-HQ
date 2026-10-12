@@ -497,7 +497,7 @@ test.describe("missions in 3D", () => {
     await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     const terminal = page.getByRole("dialog", { name: "Ask Rover" });
     await expect(terminal).toBeVisible();
-    await page.keyboard.press("5");
+    await page.keyboard.press("6");
     await expect(terminal).toBeHidden();
     // The rover drives to the elevator, rides to the Roof and opens the comms terminals in the drawer.
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride !== null);

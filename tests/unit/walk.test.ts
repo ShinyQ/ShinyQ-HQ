@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { MissionStep } from "@/content/schema";
 import type { MissionStatus } from "@/experience/missions/host";
 import { createWalk, filterStops, markPromptSeen, promptSeen, WALK_STORAGE_PREFIX, type WalkDefinition, type WalkHost, type WalkStorage } from "@/experience/missions/walk";
-import { careerWalk, labsWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
+import { careerWalk, highlightsWalk, labsWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { CareerData, LabPod } from "@/experience/types";
-import { WALK_FLOORS } from "@/experience/config";
+import { NO_WALK_PROMPT, WALK_FLOORS } from "@/experience/config";
 import { ROOF_STOPS } from "@/experience/floors/roof/layout";
 
 const memory = (): WalkStorage & { data: Map<string, string> } => {
@@ -253,7 +253,32 @@ describe("walk definitions", () => {
     expect(walk.stops[1]).toEqual({ id: "RF:availability", to: ROOF_STOPS.availability, title: "Availability", subtitle: "Open to talk" });
     expect(walk.stops[2]).toEqual({ id: "RF:cv", to: "RF:cv", room: "RF:cv", title: "My CV", subtitle: "Read it here" });
     expect(walk.stops[3]).toEqual({ id: "RF:contact", to: "RF:contact", room: "RF:contact", title: "Get in touch", subtitle: "me@example.com" });
-    expect(WALK_FLOORS).toEqual(["L2", "L3", "L4", "RF"]);
+    expect(WALK_FLOORS).toEqual(["L1", "L2", "L3", "L4", "RF"]);
+  });
+
+  it("tours the Highlights Hall on L1: about, projects, experience, then contact, without a first-visit prompt", () => {
+    const walk = highlightsWalk(
+      {
+        profile: { name: "N", monogram: "N", headline: "Engineer", role: "Role · Org", location: "Jakarta" },
+        roof: { availability: "Open to talk", email: "me@example.com", channels: [], timezone: "GMT+7", subheadline: "Builds." },
+        highlights: {
+          projects: [
+            { slug: "a", title: "A", wing: "ai", thumb: "/media/a/01.thumb.webp" },
+            { slug: "b", title: "B", wing: "software", thumb: "/media/b/01.thumb.webp" },
+          ],
+        },
+        career,
+      },
+      { about: "About me", projects: "Top 3 projects", experience: "Work experience", contact: "Contact", counts: (e, f) => `${e} employment, ${f} freelance` },
+    );
+    expect(walk).toMatchObject({ id: "highlights", floor: "L1" });
+    expect(walk.filters).toBeUndefined();
+    expect(walk.stops.map((s) => s.id)).toEqual(["L1:highlights-about", "L1:highlights-projects", "L1:highlights-experience", "L1:highlights-contact"]);
+    expect(walk.stops[0]).toEqual({ id: "L1:highlights-about", to: "L1:highlights-about", room: "L1:highlights-about", title: "About me", subtitle: "Engineer" });
+    expect(walk.stops[1].subtitle).toBe("A · B");
+    expect(walk.stops[2].subtitle).toBe("1 employment, 0 freelance");
+    expect(walk.stops[3].subtitle).toBe("me@example.com");
+    expect(NO_WALK_PROMPT).toEqual(["L1"]);
   });
 
   it("offers walks on ready floors, or everywhere with ?walk=on", () => {

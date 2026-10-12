@@ -46,6 +46,7 @@ describe("mission runner: catalog", () => {
   const expected: Record<string, Call[]> = {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
+    highlights: ["elevator L1", "walk highlights"],
     journey: ["elevator L2", "walk journey"],
     projects: ["elevator L3", "walk projects"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],

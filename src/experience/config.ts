@@ -19,7 +19,13 @@ export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
  * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts) once
  * their road ships; `?walk=on` turns every walk on for tests and previews, `?walk=off` turns them off.
  */
-export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3", "L4", "RF"];
+export const WALK_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
+
+/**
+ * Floors whose walk never shows the generic first-visit prompt; the launcher pill, Ask Rover and Cmd-K
+ * still start it. L1: a separate onboarding introduces the Highlights Hall and its Quick tour.
+ */
+export const NO_WALK_PROMPT: readonly FloorId[] = ["L1"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;

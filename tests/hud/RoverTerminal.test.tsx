@@ -215,8 +215,8 @@ describe("terminal helpers", () => {
     const all = getContent().missions;
     expect(orderTerminalMissions(all, 0).slice(0, 2).map((m) => m.id)).toEqual(["best-swe", "best-ai"]);
     expect(orderTerminalMissions(all, 1).slice(0, 2).map((m) => m.id)).toEqual(["best-ai", "best-swe"]);
-    expect(orderTerminalMissions(all, 1).map((m) => m.id).slice(2)).toEqual(["journey", "projects", "hire", "cv", "blog", "surprise"]);
-    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(8);
+    expect(orderTerminalMissions(all, 1).map((m) => m.id).slice(2)).toEqual(["highlights", "journey", "projects", "hire", "cv", "blog", "surprise"]);
+    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(9);
   });
 
   it("records that the terminal was seen", () => {

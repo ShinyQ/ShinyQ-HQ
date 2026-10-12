@@ -63,7 +63,7 @@ export const FLOOR_PATHS: Record<FloorId, string> = {
 };
 
 /** Floor of each guided walk (mission step `{ kind: "walk" }`). */
-export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4" };
+export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4", highlights: "L1" };
 
 /** Palette a walk's floor page opens next to it when the walk cannot run (static tier, or the walk is off). */
 export const WALK_PALETTE: Partial<Record<WalkId, PaletteFilter>> = { projects: "pods", writing: "posts" };

@@ -3,13 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { FloorId } from "@/content/schema";
-import { WALK_FLOORS } from "@/experience/config";
+import { NO_WALK_PROMPT, WALK_FLOORS } from "@/experience/config";
 import { intents } from "@/experience/input/intents";
 import { cancelMission, registerWalkStarter, runMissionSteps } from "@/experience/missions/bridge";
 import { createWalk, markPromptSeen, promptSeen, type WalkController, type WalkDefinition, type WalkState } from "@/experience/missions/walk";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
-import { careerWalk, labsWalk, libraryWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
+import { careerWalk, highlightsWalk, labsWalk, libraryWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { ExperienceData } from "@/experience/types";
 import { FLOOR_LINES, floorIntroLine } from "@/hud/dialog/floorIntro";
 import { useOnboardingSettled } from "@/hud/dialog/hooks";
@@ -32,8 +32,19 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
   const th = useTranslations("hud.career");
   const tl = useTranslations("library");
   const tContact = useTranslations("contact");
+  const tHall = useTranslations("hall");
   return useMemo(
     () => ({
+      L1: highlightsWalk(
+        { profile: data.profile, roof: data.roof, highlights: data.highlights, career: data.career },
+        {
+          about: tHall("about"),
+          projects: tHall("projects"),
+          experience: tHall("experience"),
+          contact: tHall("contact"),
+          counts: (employment, freelance) => tHall("counts", { employment, freelance }),
+        },
+      ),
       L2: careerWalk(data.career, {
         types: { job: tc("type.job"), freelance: tc("type.freelance"), education: tc("type.education"), award: tc("type.award"), milestone: tc("type.milestone") },
         workshop: th("workshop"),
@@ -56,7 +67,7 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
         { about: t("meet.about"), availability: t("meet.availability"), cv: t("meet.cv"), cvSub: tContact("cvIntro"), contact: t("meet.contact") },
       ),
     }),
-    [data.career, data.labs, data.library, data.roof, data.profile, t, tc, th, tl, tContact],
+    [data.career, data.labs, data.library, data.roof, data.profile, data.highlights, t, tc, th, tl, tContact, tHall],
   );
 }
 
@@ -122,7 +133,7 @@ export function WalkLayer({
 
   // First visit to a floor with a walk: once the first-session tour is settled and the rover is free, Rover introduces the floor.
   useEffect(() => {
-    if (!walk || !exploring || active || !settled || !FLOOR_LINES.includes(floor) || promptSeen(floor)) return;
+    if (!walk || !exploring || active || !settled || !FLOOR_LINES.includes(floor) || NO_WALK_PROMPT.includes(floor) || promptSeen(floor)) return;
     const timer = window.setTimeout(() => setPrompt(floor), PROMPT_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [walk, exploring, active, settled, floor]);
@@ -212,7 +223,7 @@ export function WalkLayer({
       placement={placement}
       coarse={coarse}
       slot={bottomSlot}
-      launcher={promptSeen(floor) ? t(`${walk.definition.id}.start`) : undefined}
+      launcher={promptSeen(floor) || NO_WALK_PROMPT.includes(floor) ? t(`${walk.definition.id}.start`) : undefined}
     />
   );
 }

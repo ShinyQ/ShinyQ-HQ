@@ -84,8 +84,8 @@ test.describe("missions on static pages", () => {
     await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     const terminal = page.getByRole("dialog", { name: "Ask Rover" });
     await expect(terminal).toContainText("rover@hq:~$ ./ask-rover");
-    await expect(terminal.getByRole("option").nth(4)).toContainText(mission("hire").label.en);
-    await page.keyboard.press("5");
+    await expect(terminal.getByRole("option").nth(5)).toContainText(mission("hire").label.en);
+    await page.keyboard.press("6");
     await expect(page).toHaveURL(/\/en\/contact$/);
     await expect(terminal).toBeHidden();
   });

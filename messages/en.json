@@ -679,6 +679,12 @@
       "cv": "My CV",
       "contact": "Get in touch"
     },
+    "highlights": {
+      "title": "Take the quick tour?",
+      "body": "A four-stop drive through the Highlights Hall: about me, my top projects, my work experience and how to reach me.",
+      "start": "Quick tour",
+      "name": "Quick tour"
+    },
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",
     "stopOf": "Stop {index} of {total}",

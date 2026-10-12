@@ -679,6 +679,12 @@
       "cv": "CV saya",
       "contact": "Hubungi saya"
     },
+    "highlights": {
+      "title": "Ikut tur singkat?",
+      "body": "Perjalanan empat pemberhentian di Aula Sorotan: tentang saya, proyek teratas, pengalaman kerja dan cara menghubungi saya.",
+      "start": "Tur singkat",
+      "name": "Tur singkat"
+    },
     "explore": "Jelajah bebas",
     "resumeAt": "Lanjutkan di titik {index}",
     "stopOf": "Titik {index} dari {total}",

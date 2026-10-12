@@ -158,6 +158,15 @@ describe("MissionHud on static pages", () => {
     await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/journey"));
   });
 
+  it("runs the Quick tour as the landing page on static pages", async () => {
+    renderHud();
+    act(() => openTerminal());
+    const tour = index.missions.find((m) => m.id === "highlights")!;
+    expect(tour.steps).toEqual([{ kind: "elevator", floor: "L1" }, { kind: "walk", walk: "highlights" }]);
+    await userEvent.click(screen.getByRole("option", { name: tour.label.en }));
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en"));
+  });
+
   it("records opened rooms and lists them under Recent", async () => {
     nav.pathname = "/en/labs/fraud-review-platform";
     renderHud();

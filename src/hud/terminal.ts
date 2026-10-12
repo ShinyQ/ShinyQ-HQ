@@ -20,12 +20,12 @@ const EQUAL_BILLING = ["best-swe", "best-ai"] as const;
 
 /**
  * Terminal order: `best-swe` and `best-ai` always lead, alternating which comes first per visit
- * (equal billing), then the rest in catalog order. At most 8 options (keys 1 to 8).
+ * (equal billing), then the rest in catalog order. At most 9 options (keys 1 to 9).
  */
 export function orderTerminalMissions(missions: readonly Mission[], visit: number): Mission[] {
   const sorted = [...missions].sort((a, b) => a.order - b.order);
   const lead = EQUAL_BILLING.map((id) => sorted.find((m) => m.id === id)).filter((m): m is Mission => Boolean(m));
   if (visit % 2 === 1) lead.reverse();
   const rest = sorted.filter((m) => !lead.includes(m));
-  return [...lead, ...rest].slice(0, 8);
+  return [...lead, ...rest].slice(0, 9);
 }
