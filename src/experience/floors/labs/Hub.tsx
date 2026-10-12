@@ -62,7 +62,7 @@ const TOP = { name: 0.3, sub: 1.05, list: 1.55, listBottom: 1.95, footer: 1.3 } 
 
 /**
  * One face of a directory board, sized to read from the board stop on a phone: the wing name, the
- * project count, the top entries (hero, then featured) in large type, and a footer that points to the
+ * project count, the top entries (docking order, gallery first) in large type, and a footer that points to the
  * full list (clicking the board, or Open on the tour stop, opens the projects palette).
  */
 function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly LabPod[]; labels: HubLabels; side: 1 | -1 }) {

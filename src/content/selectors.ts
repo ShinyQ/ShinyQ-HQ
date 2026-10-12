@@ -15,9 +15,31 @@ export function clientKeywords(client: Pod["client"]): string[] {
 
 const TIER_RANK: Record<Tier, number> = { hero: 0, featured: 1, listed: 2 };
 
-/** Spec appendix 01 section 4: hero first, then by `order`. */
-export function sortPods(pods: readonly Pod[]): Pod[] {
-  return [...pods].sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier] || a.order - b.order);
+/** What decides a pod's place in every project list (Page View, Cmd-K, L3 docking, the tour, Ask). */
+export interface PodRank {
+  tier: Tier;
+  order: number;
+  hasGallery: boolean;
+}
+
+/** A pod has a gallery when it ships at least one reviewed screenshot (`assets[0]` is its cover). */
+export function podHasGallery(pod: Pick<Pod, "assets">): boolean {
+  return pod.assets.length > 0;
+}
+
+/**
+ * Site order for projects (owner decision 2026-10-12): pods with a gallery first, then hero before
+ * featured before listed, then `order`. Ties keep their input order (Array.prototype.sort is stable).
+ */
+export function comparePods(a: PodRank, b: PodRank): number {
+  return Number(b.hasGallery) - Number(a.hasGallery) || TIER_RANK[a.tier] - TIER_RANK[b.tier] || a.order - b.order;
+}
+
+const podRank = (pod: Pod): PodRank => ({ tier: pod.tier, order: pod.order, hasGallery: podHasGallery(pod) });
+
+/** Pods in site order (`comparePods`); the one selector behind every project list. */
+export function orderPods(pods: readonly Pod[]): Pod[] {
+  return [...pods].sort((a, b) => comparePods(podRank(a), podRank(b)));
 }
 
 /** Oldest first; ties broken by end date then id for stable output. */

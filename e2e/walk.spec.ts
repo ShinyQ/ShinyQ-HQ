@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
+import { orderPods } from "../src/content/selectors";
+import type { Pod } from "../src/content/schema";
 import { asReturningVisitor, collectErrors, enterHQ, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
@@ -18,6 +20,9 @@ async function openWithWalks(page: Page, path: string) {
 }
 
 const stopOf = (page: Page) => page.getByTestId("walk-bar").getAttribute("data-stop");
+
+/** The tour's first stop: the first docked Product Engineering pod in site order (gallery first). */
+const firstSoftwareStop = `L3:${orderPods((data.floors.labs.pods as unknown as Pod[]).filter((p) => p.wing === "software" && p.tier !== "listed"))[0].slug}`;
 
 async function waitForArrival(page: Page) {
   await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
@@ -74,11 +79,11 @@ test.describe("Guided walks", () => {
     expect(errors).toEqual([]);
   });
 
-  test("L3: the tour starts at the first software hero pod, filters by wing and Prev steps back", async ({ page }) => {
+  test("L3: the tour starts at the first software pod in site order, filters by wing and Prev steps back", async ({ page }) => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/labs");
     await page.getByTestId("walk-prompt").getByRole("button", { name: "Tour my projects" }).click();
-    expect(await waitForArrival(page)).toBe("L3:digital-banking-integrations");
+    expect(await waitForArrival(page)).toBe(firstSoftwareStop);
     await page.getByTestId("walk-filter").selectOption("ai");
     await expect(page.getByTestId("walk-counter")).toContainText(en.common.wing.ai);
     await page.getByTestId("walk-bar").getByRole("button", { name: /Next/ }).click();
@@ -108,7 +113,7 @@ test.describe("Guided walks", () => {
     await page.getByRole("option", { name: data.missions.find((m) => m.id === "projects")!.label.en }).click();
     await waitForFloor(page, "L3", 60_000).catch(() => undefined);
     await expect(page.getByTestId("walk-bar")).toBeVisible({ timeout: 60_000 });
-    expect(await waitForArrival(page)).toBe("L3:digital-banking-integrations");
+    expect(await waitForArrival(page)).toBe(firstSoftwareStop);
     await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     expect(errors).toEqual([]);
   });

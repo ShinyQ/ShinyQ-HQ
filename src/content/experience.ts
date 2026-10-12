@@ -21,10 +21,10 @@ import {
   getYears,
 } from "./load";
 import type { FloorId, Locale } from "./schema";
-import { FIRST_CORRIDOR_YEAR } from "./selectors";
+import { FIRST_CORRIDOR_YEAR, podHasGallery } from "./selectors";
 import { getTechLogo } from "./tech";
 
-/** L3 pods in wing order with only what the 3D floor draws (the drawer loads full content separately). */
+/** L3 pods in site order (`orderPods`) with only what the 3D floor draws (the drawer loads full content separately). */
 export function labPods(locale: Locale): LabPod[] {
   return getPods().map((p) => ({
     id: p.id,
@@ -36,6 +36,7 @@ export function labPods(locale: Locale): LabPod[] {
     hologram: p.hologram,
     order: p.order,
     hasHologramView: p.tier === "hero" && (p.architecture?.nodes.length ?? 0) >= 3,
+    hasGallery: podHasGallery(p),
   }));
 }
 

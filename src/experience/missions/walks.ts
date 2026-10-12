@@ -6,8 +6,8 @@ import type { WalkDefinition, WalkStop } from "./walk";
 /**
  * Walk definitions built from the serializable 3D payload. L2 "Walk my journey" visits the career
  * rooms oldest first, then the Workshop annex; L3 "Tour my projects" visits the docked pods wing by
- * wing (`software`, then `ai`; hero pods, then featured, as they dock along each wing road from the hub)
- * and ends at the wing directory boards ("More projects here").
+ * wing (`software`, then `ai`; in site order, gallery pods first, as they dock along each wing road
+ * from the hub) and ends at the wing directory boards ("More projects here").
  * Floors offer their walk only once their road ships (`WALK_FLOORS` in config.ts) or with `?walk=on`.
  */
 
@@ -43,8 +43,9 @@ export function careerWalk(career: CareerData, labels: CareerWalkLabels): WalkDe
 }
 
 /**
- * Wing by wing (the wing roads are far apart): each wing's hero pods (by `order`), then its featured
- * pods, in docking order along the road; listed pods stay on the directory boards, where the tour ends.
+ * Wing by wing (the wing roads are far apart): each wing's hero and featured pods in docking order
+ * (`tourOrder`: gallery first, then tier, then `order`); listed pods stay on the directory boards,
+ * where the tour ends.
  */
 export function labsWalk(pods: readonly LabPod[], labels: LabsWalkLabels, placed?: ReadonlySet<string>): WalkDefinition {
   const tour = LABS_FILTERS.flatMap((wing) => tourOrder(pods.filter((p) => p.wing === wing && (!placed || placed.has(p.slug)))));
