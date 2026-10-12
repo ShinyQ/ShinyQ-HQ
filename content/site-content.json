@@ -3764,7 +3764,7 @@
         {
           "id": "event-ticketing-platform",
           "slug": "event-ticketing-platform",
-          "order": 11,
+          "order": 12,
           "tier": "featured",
           "accent": "pink",
           "wing": "software",
