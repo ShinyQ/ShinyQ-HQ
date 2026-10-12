@@ -1,84 +1,112 @@
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
-import { ROOF, ROOF_DOORS, ROOF_LANES, ROOF_STOPS, roofObstacles, TERMINAL_COUNT, terminalSlots } from "@/experience/floors/roof/layout";
+import { followPose, forwardOf } from "@/experience/camera/rigs";
+import { ROVER } from "@/experience/config";
+import { buildRoofLayout, channelSlots, ROOF_DECK, roofActive, type RoofStop } from "@/experience/floors/roof/layout";
 import { distanceToRect } from "@/experience/nav/collision";
-import { DOOR_WIDTH, doorAt } from "@/experience/nav/doors";
+import { doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
+import { rectGap } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
+import { expectSpaceRules } from "../helpers/space";
 
-const layouts = buildFloorLayouts(8);
+const layout = buildRoofLayout();
+const { floor } = layout;
 const inside = (p: Vec2, r: Rect) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
+const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && b.minX < a.maxX && a.minZ < b.maxZ && b.minZ < a.maxZ;
 
-function expectReachable(stop: Vec2) {
-  const layout = layouts.RF;
-  const grid = buildNavGrid(layout, ROVER.radius);
-  expect(isWalkable(grid, stop)).toBe(true);
-  for (const o of layout.obstacles) expect(distanceToRect(stop, o)).toBeGreaterThanOrEqual(ROVER.radius);
-  const path = findPath(grid, layout.approach, stop);
-  expect(path?.length).toBeGreaterThan(0);
-  const end = path![path!.length - 1];
-  expect(Math.hypot(end.x - stop.x, end.z - stop.z)).toBeLessThan(0.75);
-}
-
-describe("RF Roof layout", () => {
-  it("is a ready floor with the beacon, terminals and CV kiosk as obstacles", () => {
-    expect(READY_FLOORS).toEqual(expect.arrayContaining(["L1", "L4", "RF"]));
-    expect(layouts.RF.obstacles).toEqual(roofObstacles());
-    expect(layouts.RF.obstacles).toHaveLength(2 + TERMINAL_COUNT);
-    expect(layouts.RF.door).toEqual({ x: -20, z: 0 });
-    expect(inside({ x: ROOF.beacon.x, z: ROOF.beacon.z }, layouts.RF.obstacles[0])).toBe(true);
-  });
-
-  it("puts the comms terminals on an arc of radius 10 in front of the beacon", () => {
-    const slots = terminalSlots();
-    expect(slots).toHaveLength(TERMINAL_COUNT);
-    for (const t of slots) {
-      expect(Math.hypot(t.x - ROOF.beacon.x, t.z - ROOF.beacon.z)).toBeCloseTo(10);
-      expect(t.z).toBeGreaterThan(ROOF.beacon.z);
+describe("RF roof deck layout", () => {
+  it("passes the walkable floor space rules whatever the channel count", () => {
+    for (const channels of [0, 6, 12]) {
+      const l = buildRoofLayout({ channels });
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
     }
-    const middle = Math.floor(TERMINAL_COUNT / 2);
-    expect(slots[middle]).toMatchObject({ x: 0, angle: 0 });
-    expect(slots[0].x).toBeCloseTo(-slots[TERMINAL_COUNT - 1].x);
   });
 
-  it("parks in front of the middle terminal and the CV kiosk at (10, 6)", () => {
-    expect(ROOF.kiosk).toMatchObject({ x: 10, z: 6 });
-    expectReachable(ROOF_STOPS.contact);
-    expectReachable(ROOF_STOPS.cv);
-    expect(ROOF_STOPS.contact.x).toBe(0);
-    expect(ROOF_STOPS.cv.x).toBe(10);
+  it("keeps today's elevator door and approach, and rolls arrivals on to the spawn", () => {
+    expect(floor).toMatchObject({ id: "RF", door: { x: -20, z: 0 }, approach: { x: -17, z: 0 }, accent: ROOF_DECK.accent });
+    expect(floor.road).toBe(layout.network);
+    expect(floor.arrival).toEqual(floor.spawn);
+    expect(floor.spawn).not.toEqual(floor.approach);
   });
 
-  it("spawns deep links on a walkable cell in front of the content", () => {
-    expect(isWalkable(buildNavGrid(layouts.RF, ROVER.radius), layouts.RF.spawn)).toBe(true);
-    expect(layouts.RF.spawn).not.toEqual(layouts.RF.approach);
+  it("keeps the spot in front of the elevator free for the call pad", () => {
+    const pad = layout.callPad;
+    expect(inside(floor.approach, pad)).toBe(true);
+    for (const o of floor.obstacles) expect(rectGap(o, pad)).toBeGreaterThan(0);
+    for (const d of floor.doors ?? []) expect(inside(d.at, pad)).toBe(false);
+    for (const s of Object.values(layout.stops)) expect(inside(s, pad)).toBe(false);
+    expect(inside(floor.spawn, pad)).toBe(false);
   });
 
-  it("opens the comms terminals and the CV kiosk at their stops, never at the spawn or the elevator", () => {
-    expect(layouts.RF.doors).toEqual([
-      { room: "RF:contact", at: ROOF_STOPS.contact, facing: { x: 0, z: -1 } },
-      { room: "RF:cv", at: ROOF_STOPS.cv, facing: { x: 0, z: -1 } },
+  it("opens RF:contact at the comms station and RF:cv at the CV station, pads facing in", () => {
+    expect(floor.doors).toEqual([
+      { room: "RF:contact", at: layout.stops.contact, facing: { x: 0, z: -1 } },
+      { room: "RF:cv", at: layout.stops.cv, facing: { x: 1, z: 0 } },
     ]);
-    expect(doorAt(layouts.RF.doors, layouts.RF.spawn)).toBeNull();
-    expect(doorAt(layouts.RF.doors, layouts.RF.approach)).toBeNull();
+    expect(distanceToRect(layout.stops.contact, layout.comms)).toBeCloseTo(ROOF_DECK.padInset);
+    expect(distanceToRect(layout.stops.cv, layout.cv)).toBeCloseTo(ROOF_DECK.padInset);
+    const [a, b] = floor.doors!;
+    expect(Math.hypot(a.at.x - b.at.x, a.at.z - b.at.z)).toBeGreaterThan(3);
+    expect(doorAt(floor.doors, floor.spawn)).toBeNull();
+    expect(doorAt(floor.doors, floor.approach)).toBeNull();
+    expect(doorAt(floor.doors, layout.stops.about)).toBeNull();
+    expect(doorAt(floor.doors, layout.stops.availability)).toBeNull();
   });
-});
 
-describe("RF lanes", () => {
-  const near = (r: Rect, x: number, z: number, pad: number) => x > r.minX - pad && x < r.maxX + pad && z > r.minZ - pad && z < r.maxZ + pad;
-  const samples = (paths: [number, number][][]) =>
-    paths.flatMap((p) =>
-      p.slice(1).flatMap((b, i) => {
-        const a = p[i];
-        return Array.from({ length: 21 }, (_, k) => [a[0] + ((b[0] - a[0]) * k) / 20, a[1] + ((b[1] - a[1]) * k) / 20] as const);
-      }),
-    );
-
-  it("stop before every door pad and never run under the terminals", () => {
-    const half = DOOR_WIDTH / 2 + 0.375 + 0.1;
-    for (const [x, z] of samples(ROOF_LANES)) {
-      for (const d of ROOF_DOORS) expect(Math.abs(x - d.at.x) < half && Math.abs(z - d.at.z) < half, `${d.room} at ${x},${z}`).toBe(false);
-      for (const r of roofObstacles()) expect(near(r, x, z, 0.3), `RF ${x},${z}`).toBe(false);
+  it("reaches every stop and the spawn from the elevator on the navgrid", () => {
+    const grid = buildNavGrid(floor, ROVER.radius);
+    for (const [name, stop] of Object.entries(layout.stops)) {
+      expect(isWalkable(grid, stop), name).toBe(true);
+      const path = findPath(grid, floor.approach, stop);
+      expect(path?.length, name).toBeGreaterThan(0);
+      const end = path![path!.length - 1];
+      expect(Math.hypot(end.x - stop.x, end.z - stop.z), name).toBeLessThan(0.75);
     }
+    expect(isWalkable(grid, floor.spawn)).toBe(true);
+  });
+
+  it("turns the follow camera toward each station at its stop", () => {
+    const stations: [RoofStop, Rect][] = [
+      ["contact", layout.comms],
+      ["cv", layout.cv],
+      ["about", layout.about],
+      ["availability", layout.centerpiece],
+    ];
+    for (const [stop, station] of stations) {
+      const p = layout.stops[stop];
+      const zone = (floor.viewZones ?? []).find((z) => inside(p, z.area));
+      expect(zone?.id, stop).toBe(`RF:${stop}`);
+      const forward = forwardOf(followPose("desktop", [p.x, 0, p.z], zone!.yaw, zone!.zoom ?? 1));
+      const c = { x: (station.minX + station.maxX) / 2 - p.x, z: (station.minZ + station.maxZ) / 2 - p.z };
+      const cos = (forward.x * c.x + forward.z * c.z) / Math.hypot(c.x, c.z);
+      expect(cos, stop).toBeGreaterThan(0.9);
+    }
+  });
+
+  it("has view zones that never overlap, with the overview around the spawn", () => {
+    const zones = floor.viewZones ?? [];
+    for (let i = 0; i < zones.length; i++)
+      for (let j = i + 1; j < zones.length; j++) expect(overlaps(zones[i].area, zones[j].area), `${zones[i].id} ${zones[j].id}`).toBe(false);
+    expect(zones.find((z) => inside(floor.spawn, z.area))?.id).toBe("RF:overview");
+  });
+
+  it("spreads the channel anchors across the comms station", () => {
+    expect(channelSlots(0)).toEqual([]);
+    expect(channelSlots(1)).toEqual([{ x: 2, z: -17 }]);
+    const six = layout.channelSlots;
+    expect(six).toHaveLength(6);
+    expect(six[0].x).toBeCloseTo(layout.comms.minX + 1);
+    expect(six[5].x).toBeCloseTo(layout.comms.maxX - 1);
+    for (let i = 1; i < six.length; i++) expect(six[i].x).toBeGreaterThan(six[i - 1].x);
+    for (const s of six) expect(inside(s, layout.comms)).toBe(true);
+    expect(buildRoofLayout({ channels: 3 }).channelSlots).toHaveLength(3);
+  });
+
+  it("maps the open RF room to the scenery state", () => {
+    expect(roofActive("room", "RF:contact")).toBe("contact");
+    expect(roofActive("room", "RF:cv")).toBe("cv");
+    expect(roofActive("explore", "RF:contact")).toBeNull();
+    expect(roofActive("room", "L4:talks")).toBeNull();
+    expect(roofActive("room", null)).toBeNull();
   });
 });
