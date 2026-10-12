@@ -2,6 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
+import type { WebGLRenderer } from "three";
 import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
@@ -24,6 +25,8 @@ import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
 import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt, TYPICAL_FRAME_DT } from "../tower/elevator";
+import { destinationReady, ridePrep } from "../tower/ridePrep";
+import { finishRideStats, formatRideSummary, startRideStats, stepRideStats, type RideStats } from "../tower/rideStats";
 import type { FloorLayout, Vec2 } from "../types";
 
 const BLOCKED_FACE_S = 0.6;
@@ -31,6 +34,8 @@ const ARRIVED_FACE_S = 1.4;
 const STORE_SYNC_S = 0.1;
 
 const lerp2 = (a: Vec2, b: Vec2, t: number): Vec2 => ({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+/** Shader programs three has linked so far (grows when a material needs a new program). */
+const programCount = (gl: WebGLRenderer) => gl.info.programs?.length ?? 0;
 
 export interface DirectorProps {
   layouts: Record<FloorId, FloorLayout>;
@@ -77,6 +82,10 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     now: 0,
     /** Moving average of recent frame times: sets how much ride time one frame may add (`rideCap`). */
     typicalDt: TYPICAL_FRAME_DT,
+    /** Measurements of the running ride (`window.__hq.ridePrep.lastRide` once it ends). */
+    rideStats: null as RideStats | null,
+    /** `?perf=1`: log every ride's summary to the console (owner check on real devices). */
+    perf: typeof window !== "undefined" && new URLSearchParams(window.location.search).get("perf") === "1",
     prevPhase: "",
     door: { room: null } as DoorLatch,
     /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */
@@ -215,6 +224,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.now = three.clock.elapsedTime;
     const now = local.now;
     const s = store.getState();
+    if (!s.ride) local.rideStats = null;
     // Count every pass of a frame (the full tier's composer renders several): read the last frame's
     // totals, then reset by hand, because `autoReset` would keep only the final pass.
     const info = three.gl.info;
@@ -313,9 +323,18 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         controller.teleport(CAR, ride.stage === "opening" ? Math.PI / 2 : -Math.PI / 2);
       }
       y = carY(ride, s.reducedMotion);
+      if (ride.stage !== "toDoor") {
+        local.rideStats ??= startRideStats(ride.from, ride.to, Math.abs(floorY(ride.to) - floorY(ride.from)));
+        stepRideStats(local.rideStats, { stage: ride.stage, y, frameDt: rawDt, held: ride.held ?? 0, programs: programCount(three.gl) });
+      }
 
       if (store.getState().ride) {
-        const next = advanceRide(ride, dt, { atDoor, reduced: s.reducedMotion, cap: rideCap(local.typicalDt) });
+        const next = advanceRide(ride, dt, {
+          atDoor,
+          reduced: s.reducedMotion,
+          ready: destinationReady(ride.to),
+          cap: rideCap(local.typicalDt),
+        });
         if (next) s.setRide(next);
         else {
           controller.teleport(to.approach, Math.PI / 2);
@@ -325,6 +344,12 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           // Floors with an arrival spot roll the rover on from the shaft (a mission's drive replaces it).
           if (to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done")) roverRuntime.autopilot = { point: to.arrival, state: "pending" };
           audio.play("ding");
+          if (local.rideStats) {
+            const summary = finishRideStats(local.rideStats, programCount(three.gl));
+            ridePrep.lastRide = summary;
+            if (local.perf) console.info(formatRideSummary(summary));
+            local.rideStats = null;
+          }
           local.arrivedUntil = now + ARRIVED_FACE_S;
           y = floorY(ride.to);
         }

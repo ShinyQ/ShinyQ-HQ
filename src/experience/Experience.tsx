@@ -24,6 +24,7 @@ import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
+import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { renderBudget, sceneSettings } from "./scene/settings";
@@ -104,7 +105,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
