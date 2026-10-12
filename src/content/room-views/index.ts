@@ -1,5 +1,6 @@
 import type { Locale } from "../schema";
 import { buildCareerViews } from "./career";
+import { buildHighlightsViews } from "./highlights";
 import { buildLabsViews } from "./labs";
 import { buildLibraryViews } from "./library";
 import { buildLobbyViews } from "./lobby";
@@ -10,6 +11,7 @@ import type { RoomViews } from "./types";
 export function buildRoomViews(locale: Locale): RoomViews {
   const views = [
     ...buildLobbyViews(locale),
+    ...buildHighlightsViews(locale),
     ...buildCareerViews(locale),
     ...buildLabsViews(locale),
     ...buildLibraryViews(locale),

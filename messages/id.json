@@ -741,6 +741,20 @@
       "posts": "{count} tulisan di lantai, {archive} di papan arsip"
     }
   },
+  "hall": {
+    "hall": "Aula Sorotan",
+    "about": "Tentang saya",
+    "projects": "3 proyek teratas",
+    "projectsSub": "Tiga proyek yang akan saya tunjukkan lebih dulu, lengkap dengan screenshot.",
+    "experience": "Pengalaman kerja",
+    "counts": "{employment} peran pekerjaan dan {freelance} proyek freelance, terbaru lebih dulu",
+    "contact": "Kontak",
+    "more": "+{count} lainnya di panel",
+    "cvHint": "CV saya tinggal satu ketukan: buka stasiun ini",
+    "fullProfile": "Baca profil lengkap saya",
+    "openProject": "Buka di Labs",
+    "openRole": "Buka di Career Road"
+  },
   "certs": {
     "summary": "{count} sertifikasi dari {issuers} penerbit",
     "featured": "Sertifikasi unggulan",

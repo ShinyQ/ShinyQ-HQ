@@ -741,6 +741,20 @@
       "posts": "{count} posts on the floor, {archive} on the archive board"
     }
   },
+  "hall": {
+    "hall": "Highlights Hall",
+    "about": "About me",
+    "projects": "Top 3 projects",
+    "projectsSub": "The three projects I would show first, with screenshots.",
+    "experience": "Work experience",
+    "counts": "{employment} employment roles and {freelance} freelance projects, newest first",
+    "contact": "Contact",
+    "more": "+{count} more in the drawer",
+    "cvHint": "My CV is one tap away: open this station",
+    "fullProfile": "Read my full profile",
+    "openProject": "Open in the Labs",
+    "openRole": "Open on the Career Road"
+  },
   "certs": {
     "summary": "{count, plural, one {# certification} other {# certifications}} from {issuers, plural, one {# issuer} other {# issuers}}",
     "featured": "Featured certifications",

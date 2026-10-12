@@ -74,6 +74,18 @@ describe("room catalog", () => {
     expect(index.missions.map((m) => m.order)).toEqual([...index.missions.map((m) => m.order)].sort((a, b) => a - b));
     expect(byId.get("RF:cv")!.title.id).not.toBe(byId.get("RF:cv")!.title.en);
   });
+
+  it("adds the four Highlights Hall stations, each with a landing anchor for the static tier", () => {
+    const hall = rooms.filter((r) => r.kind === "highlights");
+    expect(hall.map((r) => r.id)).toEqual(["L1:highlights-about", "L1:highlights-projects", "L1:highlights-experience", "L1:highlights-contact"]);
+    expect(hall.map((r) => r.path)).toEqual(["/#intro", "/#work", "/#journey", "/#contact"]);
+    for (const room of hall) {
+      expect(room.floorPath).toBe(room.path);
+      expect(room.surpriseWeight).toBe(0);
+      expect(room.keywords).toContain("highlights");
+    }
+    expect(roomFromPath("/", rooms)?.id).toBe("L1:profile");
+  });
 });
 
 describe("pickSurprise", () => {
