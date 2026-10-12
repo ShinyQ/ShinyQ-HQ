@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, padsOf, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -274,6 +274,36 @@ for (const floor of FLOOR_THUMBS) {
     // The full tier renders through the bloom composer: give the floor time to mount and settle.
     await page.waitForTimeout(8000);
     await page.screenshot({ path: `screenshots/floor-thumbs/${floor.id}.png` });
+    await context.close();
+  });
+}
+
+for (const viewport of VIEWPORTS) {
+  test(`3D pad pickers @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(240_000);
+    const { context, page } = await open3DAt(browser, viewport, "/en/journey");
+    const pads = await padsOf(page, "L2");
+    const lift = pads.find((p) => p.kind === "elevator")!;
+    const teleport = pads.find((p) => p.kind === "teleport")!;
+    const picker = page.getByTestId("pad-picker");
+
+    await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    await driveTo(page, lift.at);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: shot("hq-pad-floors", viewport) });
+    await page.keyboard.press("Escape");
+
+    await driveTo(page, teleport.at);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: shot("hq-pad-years", viewport) });
+    await page.keyboard.press("Escape");
+    await expect(picker).toHaveCount(0);
+
+    // The rover parked on the 2019 teleporter, with the pad glow and the floating icons.
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: shot("hq-pad-teleporter", viewport) });
     await context.close();
   });
 }
