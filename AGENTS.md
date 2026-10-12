@@ -125,7 +125,7 @@ tests/helpers/space.ts          expectSpaceRules(...) for walkable floor layouts
 tests/unit/                     Vitest: schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors, career layout, labs layout, library concepts and layout, room views, drawer layout and URL, ASCII, hologram
 tests/hud/                      Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, AskDock, RoomDrawer, L4/RF rooms
 tests/content/                  Vitest: dataset, public safety, assets
-tests/ask/                      Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json (30) and redteam.json sets
+tests/ask/                      Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json (31) and redteam.json sets
 e2e/                            Playwright: static routes, Page View (pageview.spec.ts: axe per template, filters, anchors, phone overflow), 3D experience (experience.spec.ts), Career Archive (career.spec.ts), Labs + drawer + hologram (labs.spec.ts), Library + Roof (library-roof.spec.ts), RF roof deck and its walk (roof.spec.ts), missions + axe, guided walks (walk.spec.ts: the L3 tour by default, other walks with ?walk=on), floor pads and pickers (pads.spec.ts), opt-in screenshots (screenshots.spec.ts, pageview-visual.spec.ts)
 ```
 

@@ -65,6 +65,19 @@ describe("knowledge pack", () => {
     expect(pack.entities).toContain("Jenius (SMBC Indonesia)");
     expect(findBlockedTerms(pack.entities.join("\n"), safety.blocklist)).toEqual([]);
   });
+
+  it("says the MII Microsoft sites are live without shipping their hostnames (R4-J, rt39)", () => {
+    expect(JSON.stringify(pack)).not.toMatch(/azurewebsites\.net/i);
+    for (const slug of ["solutions-marketing-site", "ai-solutions-assistant"]) {
+      const chunk = pack.chunks.find((c) => c.id === `project-${slug}`)!;
+      expect(chunk.text_en, slug).toContain("Live site: public");
+      expect(chunk.text_id, slug).toContain("Situs live: publik");
+      expect(chunk.keywords, slug).toEqual(expect.arrayContaining(["website", "sites", "situs"]));
+    }
+    expect(pack.entities.filter((e) => /mii-microsoft/i.test(e))).toEqual([]);
+    const other = pack.chunks.find((c) => c.id === "project-vendor-management-portal")!;
+    expect(other.text_en).not.toContain("Live site");
+  });
 });
 
 describe("text helpers", () => {

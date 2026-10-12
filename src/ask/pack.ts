@@ -3,7 +3,7 @@ import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, SiteContent } from "@/content/schema";
 import { findBlockedTerms } from "@/content/safety";
 import { overlayStats } from "@/content/load";
-import { clientLabel } from "@/content/selectors";
+import { clientLabel, podLiveLink } from "@/content/selectors";
 import { cleanText } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 
@@ -32,6 +32,8 @@ const both = (en: string, id = en): Bi => ({ en, id });
 const loc = (text: LocalizedText | undefined): Bi => (text ? { en: text.en, id: text.id } : both(""));
 /** Display names of the L3 wings (messages `common.wing`), the same in both locales. */
 const WING_NAME = { software: "Product Engineering", ai: "AI Engineering" } as const;
+/** Retrieval words for pods with a public live site (R4-J). The hostname itself never enters the pack: Ask output checks block Azure hostnames. */
+const LIVE_KEYWORDS = ["live", "site", "sites", "website", "websites", "situs"];
 const join = (parts: (Bi | string | undefined | false)[], sep = " "): Bi => {
   const list = parts.filter((p): p is Bi | string => Boolean(p)).map((p) => (typeof p === "string" ? both(p) : p));
   return {
@@ -238,13 +240,14 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
 
   for (const pod of content.floors.labs.pods) {
     const client = pod.client ? { en: clientLabel(pod.client, "en") ?? "", id: clientLabel(pod.client, "id") ?? "" } : undefined;
+    const live = podLiveLink(pod);
     out.push({
       id: `project-${pod.slug}`,
       type: "project",
       title: pod.title.en,
       url: `/labs/${pod.slug}`,
       updatedAt: pod.period.end === "present" ? pod.period.start : pod.period.end,
-      keywords: ["project", pod.wing, ...pod.stack.map((s) => s.toLowerCase()), pod.hologram],
+      keywords: ["project", pod.wing, ...pod.stack.map((s) => s.toLowerCase()), pod.hologram, ...(live ? LIVE_KEYWORDS : [])],
       text: join([
         {
           en: `Project (${WING_NAME[pod.wing]}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,
@@ -262,6 +265,7 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
           ),
         ]),
         label("Stack", "Stack", pod.stack.join(", ")),
+        live ? { en: "Live site: public; the case study page links to it.", id: "Situs live: publik; halaman studi kasus menautkannya." } : undefined,
       ]),
     });
   }
