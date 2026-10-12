@@ -110,6 +110,12 @@ describe("JSON-LD", () => {
   it("escapes markup so content cannot close the script tag", () => {
     expect(serializeJsonLd({ name: "</script><b>" })).not.toContain("<");
   });
+
+  it("links a pod's public live site with sameAs, and only then (R4-J)", () => {
+    const live = floors.labs.pods.find((p) => p.liveUrl)!;
+    expect(podJsonLd(live, "en").sameAs).toEqual([live.liveUrl]);
+    expect(podJsonLd(floors.labs.pods.find((p) => !p.liveUrl)!, "en")).not.toHaveProperty("sameAs");
+  });
 });
 
 describe("OG images", () => {

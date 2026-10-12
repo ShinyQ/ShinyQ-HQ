@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getPods } from "@/content/load";
-import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, sortTimeline, type PodRank } from "@/content/selectors";
+import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, podLiveLink, sortTimeline, type PodRank } from "@/content/selectors";
 import type { Asset } from "@/content/schema";
 import { makeEntry, makePod } from "../fixtures/minimal-content";
 
@@ -71,5 +71,24 @@ describe("adjacent", () => {
   it("returns neighbours", () => {
     expect(adjacent([1, 2, 3], 0)).toEqual({ prev: undefined, next: 2 });
     expect(adjacent([1, 2, 3], 2)).toEqual({ prev: 2, next: undefined });
+  });
+});
+
+describe("podLiveLink (R4-J)", () => {
+  it("returns the public site and its host", () => {
+    expect(podLiveLink(makePod({ liveUrl: "https://mii-microsoft.azurewebsites.net" }))).toEqual({
+      href: "https://mii-microsoft.azurewebsites.net",
+      host: "mii-microsoft.azurewebsites.net",
+    });
+  });
+
+  it("returns null without a link, or for a host outside the allowlist (stale or hand-made payloads)", () => {
+    expect(podLiveLink(makePod())).toBeNull();
+    expect(podLiveLink({ liveUrl: "https://internal-portal.azurewebsites.net" })).toBeNull();
+    expect(podLiveLink({ liveUrl: "https://mii-microsoft-ai.azurewebsites.net/dashboard" })).toBeNull();
+  });
+
+  it("finds exactly the two MII Microsoft sites in the dataset", () => {
+    expect(getPods().filter((p) => podLiveLink(p)).map((p) => p.slug).sort()).toEqual(["ai-solutions-assistant", "solutions-marketing-site"]);
   });
 });

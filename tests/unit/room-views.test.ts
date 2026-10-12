@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getContent, getPods, getProfile } from "@/content/load";
 import { buildRoomViews } from "@/content/room-views";
+import { podView } from "@/content/room-views/labs";
 import { LOCALES } from "@/content/schema";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
 import en from "../../messages/en.json";
+import { makePod } from "../fixtures/minimal-content";
 
 const catalog = buildRoomCatalog(getContent(), structuralLabels());
 
@@ -142,5 +144,16 @@ describe("room views (Glass Drawer content)", () => {
     const models = views["L4:publications"].sections[0].items!.filter((i) => i.logo);
     expect(models.every((i) => i.logo === "/tech/huggingface.webp")).toBe(true);
     expect(views["L4:research"].research!.profiles.every((p) => p.logo?.startsWith("/tech/"))).toBe(true);
+  });
+});
+
+describe("pod live links (R4-J)", () => {
+  it("gives a pod view the live site exactly when the pod has one", () => {
+    for (const locale of LOCALES) {
+      const views = buildRoomViews(locale);
+      for (const pod of getPods()) expect(views[`L3:${pod.slug}`].live, pod.slug).toBe(pod.liveUrl);
+    }
+    expect(podView(makePod({ liveUrl: "https://mii-microsoft-ai.azurewebsites.net" }), "en").live).toBe("https://mii-microsoft-ai.azurewebsites.net");
+    expect(podView(makePod(), "en").live).toBeUndefined();
   });
 });

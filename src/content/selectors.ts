@@ -1,4 +1,5 @@
 import { formatDate, formatYearMonth } from "@/lib/format";
+import { isPublicLiveUrl } from "./live-links";
 import type { Locale, Pod, Publication, Tier, TimelineEntry } from "./schema";
 
 /** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */
@@ -11,6 +12,22 @@ export function clientLabel(client: Pod["client"], locale: Locale): string | und
 export function clientKeywords(client: Pod["client"]): string[] {
   if (!client) return [];
   return typeof client === "string" ? [client] : [client.en, client.id];
+}
+
+/** A pod's public live site, for every "Visit live site" surface (case study, rows, Glass Drawer, L1 Highlights Hall). */
+export interface PodLiveLink {
+  href: string;
+  /** Host name for compact labels, e.g. "mii-microsoft.azurewebsites.net". */
+  host: string;
+}
+
+/**
+ * The live link of a `Pod` or a 3D `LabPod`, or null. Re-checks `PUBLIC_LIVE_HOSTS` so a stale or
+ * hand-built payload can never render a link to an internal app.
+ */
+export function podLiveLink(pod: { liveUrl?: string }): PodLiveLink | null {
+  if (!pod.liveUrl || !isPublicLiveUrl(pod.liveUrl)) return null;
+  return { href: pod.liveUrl, host: new URL(pod.liveUrl).hostname };
 }
 
 const TIER_RANK: Record<Tier, number> = { hero: 0, featured: 1, listed: 2 };

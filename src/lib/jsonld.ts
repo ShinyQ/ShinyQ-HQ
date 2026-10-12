@@ -4,6 +4,7 @@
  */
 import { getContact, getProfile } from "@/content/load";
 import type { Locale, Pod, PostRef } from "@/content/schema";
+import { podLiveLink } from "@/content/selectors";
 import { SITE_NAME, SITE_URL, absoluteUrl, localePath } from "@/lib/site";
 
 type JsonLdObject = Record<string, unknown>;
@@ -46,6 +47,7 @@ export function websiteJsonLd(locale: Locale): JsonLdObject {
 
 export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
   const url = absoluteUrl(localePath(locale, `/labs/${pod.slug}`));
+  const live = podLiveLink(pod);
   return {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -60,6 +62,7 @@ export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
     dateCreated: pod.period.start,
     ...(pod.period.end !== "present" ? { dateModified: pod.period.end } : {}),
     keywords: pod.stack.join(", "),
+    ...(live ? { sameAs: [live.href] } : {}),
     ...(pod.assets.length > 0 ? { image: pod.assets.slice(0, 3).map((a) => absoluteUrl(a.src)) } : {}),
     genre: pod.wing === "ai" ? "AI engineering" : "Software engineering",
     creator: { "@id": PERSON_ID },

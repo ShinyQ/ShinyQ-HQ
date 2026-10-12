@@ -1,6 +1,6 @@
 import { getPods, getTimelineEntryById } from "../load";
 import type { Locale, Pod, Wing } from "../schema";
-import { clientLabel } from "../selectors";
+import { clientLabel, podLiveLink } from "../selectors";
 import { formatPeriod } from "@/lib/format";
 import { chain, galleryOf, messages, roomId, stackItems } from "./shared";
 import type { RoomArchitecture, RoomView } from "./types";
@@ -42,6 +42,7 @@ export function podView(pod: Pod, locale: Locale): RoomView {
     stack: stackItems(pod.stack),
     gallery: galleryOf(pod.assets, locale),
     page: `/labs/${pod.slug}`,
+    live: podLiveLink(pod)?.href,
     link: entry ? { room: roomId("L2", entry.slug), label: m.drawer.seeOnL2 } : undefined,
     hologram: pod.tier === "hero" && (architecture?.nodes.length ?? 0) >= 3,
     tabs: architecture ? ["overview", "architecture", "results", "stack"] : ["overview", "results", "stack"],
