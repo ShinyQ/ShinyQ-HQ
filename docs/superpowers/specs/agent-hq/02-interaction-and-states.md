@@ -16,7 +16,7 @@ stateDiagram-v2
   explore --> palette: Cmd-K or "/"
   palette --> autopilot: mission or room chosen
   palette --> explore: Esc
-  explore --> elevator: elevator panel / wheel / swipe
+  explore --> elevator: elevator panel / call pad / PgUp PgDn / swipe
   elevator --> explore: arrived
   explore --> autopilot: click a room label (far away)
   autopilot --> explore: any manual input (cancel)
