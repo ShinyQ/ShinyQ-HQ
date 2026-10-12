@@ -1,5 +1,7 @@
 # RF Roof Revamp Implementation Plan
 
+> Outcome: the coordinator picked C. Signal Garden plus the courier drone from B on 2026-10-12 (owner away; reviews the PR). Lite draw calls at 1440x900: the old RF 113, the new roof 64 (full tier 67); the e2e cap is 80. Walk on first visit: yes. Review fixes: the availability sign is large and faces the spawn camera (`ROOF_DECK.signYaw`, the overview turned `overviewYaw` north so the comms station fits on phones), the channel labels are larger and staggered on two rows, and the availability stop moved onto the sign's line (4.5, 6.1).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the "boring" RF Roof (beacon, seven comms terminals, CV kiosk) with a walkable roof deck in one of three owner-picked concepts, keeping every contact function, cutting draw calls, and adding a short "Meet me" guided walk.

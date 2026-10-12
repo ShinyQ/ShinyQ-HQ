@@ -203,7 +203,7 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       cv: [{ x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2 }],
       about: [{ x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI }],
     };
-    const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 7.2, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
+    const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
     return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
   const sending = active === "contact";

@@ -45,6 +45,8 @@ On L3 (Labs) the floor is **Project Roads**: a hub plaza in front of the elevato
 
 On L4 (Writing) the floor is the **Newsroom**: a press plaza with a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book, then one timeline lane east with the other posts newest first, year marks on the road, and the Research (its paper plates open the paper preview), Models and datasets and Talks and workshops desks. The first visit offers **Read my writing**, a guided drive station by station (posts newest first, then Research, Models and datasets, Talks and workshops; a zone filter); skip it to roam freely, or start it later from the launcher or the "Read my writing" pick in Ask Rover. Posts beyond the first 12 wait on the archive board, which opens the posts palette.
 
+On RF (`/en/contact`) the roof is a walkable deck: a road from the elevator into a round plaza around a lattice comms mast that carries the availability as a large neon sign, the comms station (all contact channels and the email, an antenna per channel ringing in its own hue) to the north, the CV kiosk to the east and an about board with location and timezone to the south-west. A courier drone patrols the mast and flies over the comms station or the CV kiosk while that room is open. The first visit offers **Meet me**, a four-stop guided drive (about, availability, CV, contact).
+
 ## Ask the HQ (AI Q&A)
 
 Visitors can ask questions about Kurniadi's work, projects, career and contact details and get short answers grounded only in this site's content (EN and ID).
@@ -97,7 +99,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks; in 3D, L4 Writing with the "Read my writing" walk (a post's drawer mirrors its `/blog/{slug}` URL, which is the article page) |
-| `/{locale}/contact` | Roof: about, contact channels, availability, CV, full certifications list |
+| `/{locale}/contact` | Roof: about, contact channels, availability, CV, full certifications list; in 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board) with the "Meet me" walk |
 | `/api/ask` | Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer |
 | `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |
 
