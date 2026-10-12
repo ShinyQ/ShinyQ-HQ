@@ -40,25 +40,40 @@ export function continuationSteps(target: IntroTarget): MissionStep[] {
 
 let pending: IntroTarget | null = null;
 let continuing = false;
+const continuationListeners = new Set<() => void>();
+const notifyContinuation = () => continuationListeners.forEach((listener) => listener());
+
+/** Notified whenever a deep link becomes pending, starts continuing or ends (the onboarding waits for it). */
+export function onContinuationChange(listener: () => void): () => void {
+  continuationListeners.add(listener);
+  return () => {
+    continuationListeners.delete(listener);
+  };
+}
 
 /** Remembers where to continue once the intro ends (null clears it). */
 export function setIntroTarget(target: IntroTarget | null) {
   pending = target;
+  notifyContinuation();
 }
 
 /** Hands the pending target over once; while its continuation runs, `isContinuing()` is true. */
 export function takeIntroTarget(): IntroTarget | null {
   const target = pending;
   pending = null;
-  if (target) continuing = true;
+  if (target) {
+    continuing = true;
+    notifyContinuation();
+  }
   return target;
 }
 
 export function endContinuation() {
   continuing = false;
+  notifyContinuation();
 }
 
-/** A deep link is pending or being continued (the Lobby-only first-visit terminal stays closed). */
+/** A deep link is pending or being continued (the onboarding waits for it to arrive). */
 export function isContinuing(): boolean {
   return continuing || pending !== null;
 }
