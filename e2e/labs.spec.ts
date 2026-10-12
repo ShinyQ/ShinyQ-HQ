@@ -1,6 +1,25 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
+import {
+  asReturningVisitor,
+  collectErrors,
+  DESKTOP_SAFE,
+  expectRenderBudget,
+  enterFloorRoute,
+  enterHQ,
+  hoveredTarget,
+  hoverTarget,
+  interactablesOf,
+  PHONE_SAFE,
+  snapshot,
+  targetPoint,
+  waitForCameraSettle,
+  waitForFloor,
+  waitForFrames,
+  waitForHQ,
+  waitForPhase,
+  waitForSceneLive,
+} from "./hq";
 import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
@@ -233,3 +252,79 @@ for (const tier of ["lite", "full"] as const) {
     expect(drawCalls).toBeLessThanOrEqual(L3_ARRIVAL_CALLS[tier]);
   });
 }
+
+type PanelWindow = Window & { __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null } } };
+
+/** The L3 arrival as a returning visitor (walks off, so no prompt covers the floor), camera settled. */
+async function openLabsArrival(page: Page) {
+  await asReturningVisitor(page);
+  await page.goto("/en/labs?tier=lite&walk=off");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await waitForCameraSettle(page);
+}
+
+/** Screen box (CSS px) of a wing panel: the corners of its point-and-go pick volume. */
+async function panelBox(page: Page, wing: "software" | "ai") {
+  return page.evaluate((id) => {
+    const { interact } = (window as unknown as PanelWindow).__hq;
+    const points = [0, 1].flatMap((fx) => [0, 1].flatMap((fz) => [0.02, 0.98].map((lift) => interact.screenAt(id, fx, fz, lift))));
+    if (points.some((p) => !p)) return null;
+    const xs = points.map((p) => p!.x);
+    const ys = points.map((p) => p!.y);
+    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+  }, `L3:board:${wing}`);
+}
+
+test.describe("L3 directory wall (round 5 consolidation)", () => {
+  for (const size of [
+    { width: 1440, height: 900, safe: DESKTOP_SAFE, phone: false },
+    { width: 390, height: 844, safe: PHONE_SAFE, phone: true },
+  ] as const) {
+    test(`both wing panels are whole and unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, isMobile: size.phone, hasTouch: size.phone });
+      const page = await context.newPage();
+      await openLabsArrival(page);
+      for (const wing of ["software", "ai"] as const) {
+        const box = await panelBox(page, wing);
+        expect(box, wing).not.toBeNull();
+        expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
+        expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);
+        expect(box!.minY, wing).toBeGreaterThanOrEqual(size.safe.top);
+        expect(box!.maxY, wing).toBeLessThanOrEqual(size.height - size.safe.bottom);
+        const middle = { x: (box!.minX + box!.maxX) / 2, y: (box!.minY + box!.maxY) / 2 };
+        expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, middle), `${wing}: HUD over the panel`).toBe("CANVAS");
+      }
+      await context.close();
+    });
+  }
+
+  test("a click on a wing panel drives to its stop and opens the full project list", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openLabsArrival(page);
+    const id = "L3:board:software";
+    const stop = (await interactablesOf(page)).find((i) => i.id === id)!.at;
+    await hoverTarget(page, id);
+    const point = await targetPoint(page, id);
+    await page.mouse.click(point.x, point.y);
+    const palette = page.getByRole("dialog", { name: en.hud.palette.title });
+    await expect(palette).toBeVisible({ timeout: 60_000 });
+    await expect(palette.getByRole("option").first()).toBeVisible();
+    const { rover } = await snapshot(page);
+    expect(Math.hypot(rover.x - stop.x, rover.z - stop.z)).toBeLessThan(1.5);
+  });
+
+  test("on a phone a tap selects a wing panel and Go opens the full project list", async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    await openLabsArrival(page);
+    const id = "L3:board:ai";
+    const point = await targetPoint(page, id);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "tap" });
+    await page.getByTestId("interact-go").tap();
+    await expect(page.getByRole("dialog", { name: en.hud.palette.title })).toBeVisible({ timeout: 60_000 });
+    await context.close();
+  });
+});

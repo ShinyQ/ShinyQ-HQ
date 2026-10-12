@@ -766,6 +766,8 @@ for (const viewport of P6_VIEWPORTS) {
  */
 const P8_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
 const P8_PHASE = process.env.P8_PHASE === "after" ? "after" : "before";
+/** Per-wait budget: SwiftShader at 2560x1440 on the full tier is slow, more so on a busy machine. */
+const P8_WAIT = 180_000;
 const p8Shot = (name: string, v: Viewport) => `screenshots/r5-p8/${P8_PHASE}/${name}-${v.width}x${v.height}.png`;
 
 async function p8Open(browser: Browser, v: Viewport, path: string, reducedMotion: "reduce" | "no-preference") {
@@ -783,7 +785,7 @@ async function p8Open(browser: Browser, v: Viewport, path: string, reducedMotion
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
   await page.evaluate(() => document.fonts.ready);
-  await waitForCameraSettle(page);
+  await waitForCameraSettle(page, { timeout: P8_WAIT });
   await page.waitForTimeout(1500);
   return { context, page };
 }
@@ -800,16 +802,16 @@ type RoadsWindow = Window & { __hq: { layouts: { L3: { road: { roads: { id: stri
 /** Drives along a wing road to 14 u before its turn, then turns the camera to look east at the road end (reset, then three 45 degree steps left). */
 async function p8WingEnd(page: Page, wing: "software" | "ai") {
   const end = await page.evaluate((id) => (window as unknown as RoadsWindow).__hq.layouts.L3.road.roads.find((r) => r.id === id)!.points[2], wing);
-  await driveTo(page, { x: end.x - 14, z: end.z });
+  await driveTo(page, { x: end.x - 14, z: end.z }, P8_WAIT);
   await page.getByRole("button", { name: en.hud.view.reset }).click();
   for (let i = 0; i < 3; i++) await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
-  await waitForCameraSettle(page);
+  await waitForCameraSettle(page, { timeout: P8_WAIT });
   await page.waitForTimeout(1000);
 }
 
 for (const v of P8_VIEWPORTS) {
   test(`r5-p8 L3 review @ ${v.width}x${v.height}`, async ({ browser }) => {
-    test.setTimeout(300_000);
+    test.setTimeout(P8_WAIT * 6);
     const { context, page } = await p8Open(browser, v, "/en/labs", "no-preference");
     await page.screenshot({ path: p8Shot("l3-arrival", v) });
     await p8Metrics(page, "l3-arrival", v);
@@ -819,8 +821,8 @@ for (const v of P8_VIEWPORTS) {
       await p8Metrics(page, `l3-end-${wing}`, v);
     }
     const board = (await interactablesOf(page)).find((i) => i.id === "L3:board:software")!;
-    await driveTo(page, board.at);
-    await waitForCameraSettle(page);
+    await driveTo(page, board.at, P8_WAIT);
+    await waitForCameraSettle(page, { timeout: P8_WAIT });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: p8Shot("l3-board-software", v) });
     await p8Metrics(page, "l3-board-software", v);
@@ -834,7 +836,7 @@ for (const v of P8_VIEWPORTS) {
     { id: "RF", path: "/en/contact" },
   ] as const) {
     test(`r5-p8 unchanged ${floor.id} @ ${v.width}x${v.height}`, async ({ browser }) => {
-      test.setTimeout(240_000);
+      test.setTimeout(P8_WAIT * 3);
       const { context, page } = await p8Open(browser, v, floor.path, "reduce");
       await p8Metrics(page, `unchanged-${floor.id}`, v);
       // Gate: at most 1% of pixels may differ by more than the per-pixel threshold 0.2 (SwiftShader noise floor, checked in Task 1 Step 7).
