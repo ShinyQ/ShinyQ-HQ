@@ -112,6 +112,24 @@ test.describe("missions to the Library and the Roof", () => {
     expect(errors).toEqual([]);
   });
 
+  test("a post opened in 3D goes back to /library, and its /blog link reloads as the article page", async ({ page }) => {
+    await enterFloorRoute(page, "/en/library");
+    await page.keyboard.press("Control+k");
+    await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
+    await page.keyboard.type("The Sun, The Moon");
+    await page.keyboard.press("Enter");
+    await waitForRoom(page, `L4:${BLOG_POST}`);
+    await expect(page).toHaveURL(new RegExp(`/en/blog/${BLOG_POST}\\?tier=lite$`));
+    await page.goBack();
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
+    await expect.poll(async () => (await snapshot(page)).phase).toBe("explore");
+    // The post route is the article page itself (no 3D gate), so a shared /blog link lands on the post.
+    await page.goto(`/en/blog/${BLOG_POST}?tier=lite`);
+    await expect(page.getByTestId("hq")).toHaveCount(0);
+    const post = content.floors.library.posts.find((p) => p.slug === BLOG_POST)!;
+    await expect(page.locator("h1").first()).toHaveText(post.title.en);
+  });
+
   test("hire rides to the Roof, parks at the comms terminals and copies the email", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await enterHQ(page);
