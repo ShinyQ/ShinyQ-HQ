@@ -51,6 +51,8 @@ export const RULES: Rule[] = [
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },
   { test: /^src\/components\/page\/AskEntry/, specs: ["ask", "pageview"] },
+  // The landing's way into the tower: exercised from page view (experience) and on a software renderer (boot-first).
+  { test: /^src\/components\/page\/EnterHqButton\.tsx$/, specs: ["boot-first", "experience", "pageview"] },
   // The dock is mounted on every page and over the 3D HUD (top-right pill).
   { test: /^src\/hud\/ask\//, specs: ["ask", "experience", "pageview"] },
 
@@ -72,7 +74,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   { test: /^src\/experience\/camera\//, specs: ["experience", "career"] },
-  { test: /^src\/experience\/ExperienceGate\.tsx$|^src\/lib\/(boot-first|gpu-tier)\.ts$|^src\/components\/BootCover\.tsx$/, specs: ["boot-first", "experience"] },
+  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts)$|^src\/lib\/(boot-first|gpu-tier)\.ts$|^src\/components\/BootCover\.tsx$/, specs: ["boot-first", "experience"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },
 
