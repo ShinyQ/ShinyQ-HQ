@@ -1,7 +1,8 @@
-import type { AskOutcome } from "../../src/ask/protocol";
+import { isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
-import type { KnowledgePack, SafetyData } from "./types";
+import { tokenize } from "./text";
+import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./types";
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
 export const MAX_ANSWER_CHARS = 1000;
@@ -24,6 +25,17 @@ const UNKNOWN_PHRASES = [
   "belum ada informasi",
   "tidak tersedia di situs",
   "tidak ada di situs",
+  "hasn't shared a view",
+  "has not shared a view",
+  "hasn't shared a written view",
+  "has not shared a written view",
+  "no written view",
+  "hasn't written about",
+  "has not written about",
+  "belum membagikan pandangan",
+  "belum membagikan pendapat",
+  "belum menulis tentang",
+  "tidak ada pandangan tertulis",
 ];
 const DECLINE_PHRASES = [
   "can only answer",
@@ -51,6 +63,10 @@ const DECLINE_PHRASES = [
   "tidak bisa memenuhi",
   "tidak dapat menjawab",
   "tidak bisa menjawab",
+  "only cover",
+  "hanya membahas",
+  "tidak bisa membagikan",
+  "tidak dapat membagikan",
 ];
 
 /** Secret-looking strings that must never be displayed (T11). */
@@ -187,6 +203,7 @@ const BENIGN = [
   "I do not have that information on this site.",
   "Kurniadi: his work, projects, career, skills, education, writing and how to contact him.",
   "I can only answer questions about Kurniadi and his work.",
+  "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
 ];
 const ruleShingles = (() => {
   const benign = new Set(BENIGN.flatMap(shingles));
@@ -208,10 +225,81 @@ export function defamatoryWords(text: string, context: string): string[] {
   return [...new Set((text.match(DEFAMATORY) ?? []).map((w) => w.toLowerCase()))].filter((w) => !new RegExp(`\\b${w}\\b`).test(allowed));
 }
 
-export type CheckFailure = "blocklist" | "forbidden" | "secret" | "leak" | "defamation" | "numeric" | "entity" | "employer" | "empty";
+/** First-person voice as Kurniadi (T18). Quoted text is his written words and does not count. */
+const FIRST_PERSON: RegExp[] = [
+  /\b(?:I|I'm|I've)\s+(?:think|believe|prefer|feel|always|never|like|love|hate|wrote|built|define|chose|learned|shipped|own)\b/,
+  /\b[Mm]y\s+(?:principles?|views?|opinions?|approach|code|projects?|career|team|manager|boss|clients?|salary|family|work)\b/,
+  /\bas Kurniadi\b(?!['\u2019]s)/i,
+  /\b(?:menurut saya|prinsip saya|pendapat saya|pandangan saya)\b/i,
+  /\bsaya\s+(?:pikir|rasa|percaya|lebih suka|lebih memilih|selalu|menulis|membangun|memakai|menggunakan|me-review|bekerja)\b/i,
+];
+
+export function firstPersonVoice(text: string): boolean {
+  const unquoted = text.replace(/"[^"]*"|\u201C[^\u201D]*\u201D/g, " ");
+  return FIRST_PERSON.some((re) => re.test(unquoted));
+}
+
+/** Wording that attributes an opinion to Kurniadi; such an answer needs a written source even for a factual question. */
+const OPINION_CLAIM: RegExp[] = [
+  /\b(?:he|kurniadi)\s+(?:believes|thinks|feels|prefers|would\s+(?:say|think|prefer|recommend|argue|probably|likely))\b/i,
+  /\bin his (?:view|opinion)\b/i,
+  /\bhis (?:view|opinion|stance|philosophy|belief)\b/i,
+  /\bmenurut(?:nya| kurniadi| dia)\b/i,
+  /\b(?:dia|kurniadi)\s+(?:percaya|berpendapat|lebih suka|lebih memilih|merasa)\b/i,
+  /\bpandangan(?:nya| kurniadi)\b/i,
+];
+
+export function claimsOpinion(text: string): boolean {
+  return OPINION_CLAIM.some((re) => re.test(text));
+}
+
+/** Chunk types that hold Kurniadi's own written views. Posts tagged "personal" never count (spec section 13). */
+export const SOURCE_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>(["perspective", "principle", "post", "talk"]);
+
+const isSource = (chunk: KnowledgeChunk) => SOURCE_TYPES.has(chunk.type) && !chunk.keywords.includes("personal");
+
+/** Quoted titles in a source's localized text (How I work and principle titles, a post or perspective title), else its title. */
+export function sourceTitles(chunk: KnowledgeChunk, locale: AskLocale): string[] {
+  const text = locale === "id" ? chunk.text_id : chunk.text_en;
+  const quoted = [...text.matchAll(/"([^"]{4,120})"/g)].map((m) => m[1]);
+  return quoted.length ? quoted : [chunk.title];
+}
+
+const fold = (text: string) => text.toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/** Runs of three content words (stopwords and his name removed): the unit of "follows his written words". */
+function contentRuns(text: string): string[] {
+  const words = tokenize(text).filter((w) => w !== "kurniadi");
+  const out: string[] = [];
+  for (let i = 0; i + 3 <= words.length; i++) out.push(words.slice(i, i + 3).join(" "));
+  return out;
+}
+
+/**
+ * The retrieved written source an answer cites (T16): it names one of the source's quoted titles,
+ * or shares at least two distinct three-word runs with it. One shared run ("AI coding agents") is
+ * not enough, so a made-up opinion that borrows one phrase does not pass.
+ */
+export function citedSource(answer: string, chunks: readonly KnowledgeChunk[], locale: AskLocale): KnowledgeChunk | undefined {
+  const folded = ` ${fold(answer)} `;
+  const runs = new Set(contentRuns(answer));
+  return chunks.filter(isSource).find((chunk) => {
+    if (sourceTitles(chunk, locale).some((title) => fold(title).length >= 8 && folded.includes(` ${fold(title)} `))) return true;
+    const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
+    return [...runs].filter((run) => own.has(run)).length >= 2;
+  });
+}
+
+/** The first retrieved written source with a citable path, for the no-view answer. */
+export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale): { title: string; url: string } | undefined {
+  const chunk = chunks.find((c) => isSource(c) && isAskCite(c.url));
+  return chunk?.url ? { title: sourceTitles(chunk, locale)[0], url: chunk.url } : undefined;
+}
+
+export type CheckFailure = "blocklist" | "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty";
 
 export type CheckResult =
-  | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline"> }
+  | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline">; cite?: string }
   | { ok: false; reason: CheckFailure; detail: string[]; replacement: CannedKind };
 
 export interface CheckInput {
@@ -222,10 +310,15 @@ export interface CheckInput {
   pack: Pick<KnowledgePack, "entities">;
   vocabulary: ReadonlySet<string>;
   safety: SafetyData;
+  /** Retrieved chunks (the perspective source check); empty means no written source is available. */
+  chunks?: readonly KnowledgeChunk[];
+  /** The question asks for Kurniadi's views (`isPerspectiveQuestion`). */
+  perspective?: boolean;
+  locale?: AskLocale;
 }
 
 /** Output checks in spec order (7.4 step 8). The first failure decides the replacement message. */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, locale = "en" }: CheckInput): CheckResult {
   const text = sanitizeAnswer(answer);
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
   const blocked = findBlocked(text, safety.blocklist);
@@ -233,6 +326,7 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (FORBIDDEN_OUTPUT.some((re) => re.test(text))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
   if (SECRET_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: "decline" };
+  if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: "decline" };
 
   const accusations = defamatoryWords(text, context);
   if (accusations.length) return { ok: false, reason: "defamation", detail: accusations, replacement: "unknown" };
@@ -249,5 +343,11 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const questionWords = new Set(echo.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
+  // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
+  if (outcome === "answer" && (perspective || claimsOpinion(text))) {
+    const source = citedSource(text, chunks, locale);
+    if (!source) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    return isAskCite(source.url) ? { ok: true, text, outcome, cite: source.url } : { ok: true, text, outcome };
+  }
   return { ok: true, text, outcome };
 }

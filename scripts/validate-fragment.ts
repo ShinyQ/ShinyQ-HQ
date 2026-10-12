@@ -5,9 +5,11 @@
  *   bun scripts/validate-fragment.ts rest <file.json>   (SiteContent without floors.labs)
  *   bun scripts/validate-fragment.ts full <file.json>   (complete SiteContent, titles in Title Case too)
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
-import { PodSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
+import { PerspectivesFileSchema, PodSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
+import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, findBlockedTerms, leafForbiddenPatterns, loadBlocklist } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
 
@@ -36,8 +38,26 @@ if (!parsed.success) {
   }
 }
 
+// The full dataset includes Kurniadi's perspectives, validated and linted next to it.
+const perspectivesFile = path.join(path.dirname(file), "perspectives.json");
+const perspectivesData: unknown = kind === "full" && existsSync(perspectivesFile) ? JSON.parse(readFileSync(perspectivesFile, "utf8")) : undefined;
+if (perspectivesData !== undefined) {
+  const perspectives = PerspectivesFileSchema.safeParse(perspectivesData);
+  if (!perspectives.success) {
+    failed = true;
+    console.error(`${perspectivesFile}:\n${z.prettifyError(perspectives.error)}`);
+  } else if (parsed.success) {
+    for (const issue of perspectiveIssues(perspectives.data, parsed.data as SiteContent)) {
+      failed = true;
+      console.error(`${perspectivesFile}: ${issue}`);
+    }
+    const published = publishedPerspectives(perspectives.data).length;
+    console.log(`Perspectives: ${published} published, ${perspectives.data.entries.length - published} drafts (not published)`);
+  }
+}
+
 const terms = loadBlocklist();
-for (const leaf of collectStrings(data)) {
+for (const leaf of [...collectStrings(data), ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives"))]) {
   const hits = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
   if (hits.length > 0) {
     failed = true;

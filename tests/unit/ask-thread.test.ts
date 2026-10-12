@@ -57,3 +57,14 @@ describe("ask thread storage", () => {
     expect(() => saveThread([user(1)], full)).not.toThrow();
   });
 });
+
+describe("thread citations", () => {
+  it("keeps a valid citation path and drops a forged one", () => {
+    const [ok, bad] = parseThread([
+      { id: "a", role: "assistant", text: "x", cite: "/blog/spec-driven-development-with-ai-coding-agents" },
+      { id: "b", role: "assistant", text: "y", cite: "//evil.example" },
+    ]);
+    expect(ok.cite).toBe("/blog/spec-driven-development-with-ai-coding-agents");
+    expect(bad).not.toHaveProperty("cite");
+  });
+});

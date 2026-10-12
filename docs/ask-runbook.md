@@ -170,7 +170,7 @@ Golden and red-team items never hard-code a live fact: write `{{facts.<path>}}` 
 | Workflow | When (WIB) | What | Needs |
 | --- | --- | --- | --- |
 | `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" only when a value changed, dispatches `ci.yml` on that branch (a PR pushed with `GITHUB_TOKEN` gets no `pull_request` run), waits up to 45 minutes for the run on the pushed commit, and squash-merges only when "Typecheck, lint, unit tests" and "Build, CV and e2e" succeeded (`--match-head-commit`). On a failure or timeout the PR stays open and the job fails. `main` has no branch protection, which is why the workflow checks CI itself instead of using auto-merge. After the merge it dispatches `deploy.yml` for the merge commit (production deploy plus smoke check; `AUTO_DEPLOY_FACTS=false` turns that off) | `GITHUB_TOKEN` (`contents`, `pull-requests` and `actions: write`) |
-| `ask-eval.yml` | daily 03:30 | golden set (fails below 30/32), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
+| `ask-eval.yml` | daily 03:30 | golden set (fails below 36/38), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
 | `content-gap.yml` | Mondays 03:00 | `scripts/content-gap.ts` lists the top 20 unanswered questions of the last 7 days and opens "Ask the HQ content gaps, week of YYYY-MM-DD" (`ask-content-gap`) when there is at least one | `CF_EVAL_TOKEN` |
 | `ci.yml` (check job) | every PR | `scripts/ask-staleness.ts` warns when the live facts or `content/site-content.json` are older than 45 days and keeps one PR comment up to date; `bun audit` (non-blocking); gitleaks in the "Secret scan" job (blocking) | none |
 
@@ -184,7 +184,7 @@ Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Lo
 2. Workers AI usage (Dashboard > AI > Workers AI): neurons per day well under 10,000.
 3. The latest `ask-content-gap` issue: decide what to add to the site.
 4. Any open `ask-redteam` issue or a red `ask-eval.yml` run.
-5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette):
+5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette). Reasons since 2026-10-12 also include private, others (declined before the model), roleplay (first-person answer replaced) and unsourced (opinion without a written source, answered with the no-view message):
 
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" -H "Authorization: Bearer $CF_EVAL_TOKEN" \
@@ -229,6 +229,19 @@ Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs li
 
 Nothing in this setup is billable on the Free plan: no paid add-on, spend limit or Unified Billing is enabled, and the gateway uses the default `postpaid` billing mode, which on the Free plan means the free quota and nothing else.
 
+## 15. Perspectives: edit and approve
+
+Perspectives are Kurniadi's own answers to common professional questions (`content/perspectives.json`, spec section 13). They appear on About and Quick view and in Ask only once approved.
+
+1. Edit `content/perspectives.json`. Keep 10 to 20 entries, each `{ id, question: { en, id }, answer: { en, id }, tags, asOf: "YYYY-MM", sources? }`. Write answers in the first person and keep them professional: no family, health, religion, politics or pay, no opinions about specific people, employers or clients, and never a client company name. Keep each answer under 520 characters per language (shorter is better for the pack budget). `sources` link a post, talk or project slug that backs the answer.
+2. Approve: add `"approved": true` to each entry you approve, or set `"status": "approved"` to publish every entry that has no `approved` field. `"approved": false` keeps one entry a draft either way.
+3. Check: `bun run validate:content` (prints `Perspectives: N published, M drafts (not published)`), then `bun run test tests/content tests/ask` (schema, sources, public-safety lint, the pack size with every entry approved, retrieval).
+4. Ship in one PR. The deploy rebuilds the pack (new `packVersion`, so cached answers refresh). A content-only change needs no `PROMPT_VERSION` bump.
+5. After the deploy, ask two approved questions in the dock and check that "Read on this site" opens the entry on About.
+6. Questions with no written view show up in the weekly `ask-content-gap` issue (outcome `unknown`, reason `unsourced`). Answer the useful ones by adding an entry.
+
+Pack budget: the pack must stay under 200 KB with every entry approved (`tests/ask/pack.test.ts`). Today it is about 177 KB with no entry approved and about 195 KB with all 15 approved. Project chunks already keep only the lead approach steps of featured (2) and listed (1) pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`; the case study pages keep every step). If that test fails, shorten answers first, then trim post or repo text (deviation 8). Never raise the cap.
+
 ## Deviations from the plan
 
 Deliberate differences from `docs/superpowers/specs/2026-10-11-ask-hq-design.md`, with the reason for each:
@@ -242,7 +255,7 @@ Deliberate differences from `docs/superpowers/specs/2026-10-11-ask-hq-design.md`
 | 5 | Declines and fallbacks are not cached | Only checked `answer` outcomes are cached; unknowns are not cached either, and a cached text is re-checked against the blocklist on read | Unknowns feed the content-gap report and change as content grows |
 | 6 | Entity allowlist check | Two heuristics: every mid-sentence capitalized word must exist in the pack vocabulary (or the question, for refusals), and "worked at X" must name an employer, freelance client or product. A defamation word check (fired, stole, korupsi, ...) was added | There is no reliable company-name detector without a model; these catch the benchmark failure modes (invented employers, people, accusations) |
 | 7 | One client-name message with the project's sector label | One generic message ("I can't share client names or private details. Projects for clients are described by sector on this site.") | The blocked answer does not say which project it was about |
-| 8 | Pack holds BM25 statistics | The pack holds text only; BM25 statistics and the vocabulary are built once per isolate at module load | Keeps the pack under the 200 KB cap (181 KB today); near the cap, trim repo or post text first |
+| 8 | Pack holds BM25 statistics | The pack holds text only; BM25 statistics and the vocabulary are built once per isolate at module load | Keeps the pack under the 200 KB cap (about 177 KB today, about 195 KB with every perspective approved); near the cap, trim repo or post text first. Since 2026-10-12 project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS`) |
 | 9 | `profile.now.updatedAt` drives the staleness check | No schema change: the "now" chunk is built from `profile.currentRole` and `roof.availability`; the pack date is the newer of the last git change to `content/` and `dynamic-facts.asOf` | Avoids touching `content/site-content.json` while PR #27 is open |
 | 10 | Function integration tests with `wrangler pages dev` and a mocked `AI` binding | Vitest drives `createAskHandler` with in-memory KV, Analytics Engine and model mocks (`tests/ask/handler.test.ts`); the bundle was also smoke-tested once in workerd with `wrangler pages dev` and a mocked model (status, Turnstile, cookie, cache hit, SSE, Origin) | No wrangler dependency in CI, and the remote `AI` binding needs a Cloudflare token |
 | 11 | Rate limits by IP hash | Same, plus the optional `ASK_RL` rate limiting binding (commented out in `wrangler.toml`) | Pages support for `[[ratelimits]]` is still rolling out; the in-memory window is per isolate |

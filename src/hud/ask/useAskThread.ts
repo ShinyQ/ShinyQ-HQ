@@ -114,6 +114,7 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
         const answer: ThreadMessage = { ...(at === -1 ? { id: answerId, role: "assistant" as const, text: "" } : list[at]), outcome: result.outcome };
         if (result.asOf) answer.asOf = result.asOf;
         if (result.tags?.length) answer.tags = result.tags;
+        if (result.cite) answer.cite = result.cite;
         if (curated) answer.qid = curated;
         if (at === -1) return capThread([...list, answer]);
         const next = [...list];

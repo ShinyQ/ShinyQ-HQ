@@ -119,6 +119,32 @@ describe("Ask dock launcher", () => {
 });
 
 describe("Ask dock chat", () => {
+  it("offers the Perspectives topic and links a cited answer to its source", async () => {
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta("Kurniadi writes that he owns every merge decision.");
+      return { outcome: "answer", source: "primary", asOf: "2026-10-11", tags: ["perspectives"], cite: "/contact#how" };
+    });
+    await ready();
+    act(() => openAsk());
+    const panel = await dock();
+    await userEvent.click(within(within(panel).getByTestId("ask-topics")).getByRole("button", { name: en.ask.topics.perspectives }));
+    const questions = within(panel).getByTestId("ask-topic-questions");
+    expect(questions).toHaveAttribute("data-topic", "perspectives");
+    await userEvent.click(within(questions).getByRole("button", { name: "What are his coding principles?" }));
+    const link = await within(panel).findByTestId("ask-cite");
+    expect(link).toHaveAttribute("href", "/en/contact#how");
+    expect(link).toHaveTextContent(d.source.replace("{label}", en.ask.cite.how));
+  });
+
+  it("shows no source link when the answer cites nothing", async () => {
+    answerWith("The voice agent answers calls.");
+    await ready();
+    act(() => openAsk("How does the voice AI contact center work?"));
+    const panel = await dock();
+    await vi.waitFor(() => expect(within(panel).getByTestId("ask-thread")).toHaveTextContent("The voice agent answers calls."));
+    expect(within(panel).queryByTestId("ask-cite")).toBeNull();
+  });
+
   it("sends an openAsk question with its entry point and renders the answer as plain text", async () => {
     answerWith("Hello <img src=x onerror=alert(1)> there");
     await ready();

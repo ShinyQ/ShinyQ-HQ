@@ -16,7 +16,9 @@ export type ChunkType =
   | "contact"
   | "side-project"
   | "repo"
-  | "live-stats";
+  | "live-stats"
+  | "principle"
+  | "perspective";
 
 export interface KnowledgeChunk {
   id: string;
@@ -38,6 +40,8 @@ export interface KnowledgePack {
   chunks: KnowledgeChunk[];
   /** Names the answer may use as employers or clients (T3): employers, freelance clients, products. */
   entities: string[];
+  /** Employers, schools and freelance clients (never products): opinion questions that name one are declined (spec section 13). */
+  orgs: string[];
 }
 
 /** Output safety data compiled at build time from the public-safety blocklist (includes private terms; never public). */

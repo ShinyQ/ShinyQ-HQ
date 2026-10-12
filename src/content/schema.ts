@@ -7,7 +7,7 @@ import { liveUrlProblem } from "./live-links";
  * Profile.monogram/subheadline/currentRole/timezone/story/principles,
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
- * "palette" and "surprise".
+ * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema).
  */
 
 export const LOCALES = ["en", "id"] as const;
@@ -320,6 +320,50 @@ export const MissionSchema = z.strictObject({
   steps: z.array(MissionStepSchema).min(1),
 });
 
+/**
+ * Kurniadi's written professional perspectives (content/perspectives.json, owner decision
+ * 2026-10-12). Kept outside SiteContent so drafts can be reviewed before anything publishes; read
+ * entries only through `getPerspectives()` (published) in `@/content/load`.
+ */
+export const PERSPECTIVE_QUESTION_MAX = 120;
+export const PERSPECTIVE_ANSWER_MAX = 520;
+export const PERSPECTIVES_MIN = 10;
+export const PERSPECTIVES_MAX = 20;
+
+const boundedText = (max: number) => z.strictObject({ en: nonEmpty.max(max), id: nonEmpty.max(max) });
+
+export const PerspectiveSourceSchema = z.strictObject({
+  kind: z.enum(["post", "talk", "project"]),
+  slug: SlugSchema,
+});
+
+export const PerspectiveSchema = z.strictObject({
+  id: SlugSchema,
+  question: boundedText(PERSPECTIVE_QUESTION_MAX),
+  answer: boundedText(PERSPECTIVE_ANSWER_MAX),
+  tags: z.array(SlugSchema).min(1).max(6),
+  asOf: YearMonthSchema,
+  sources: z.array(PerspectiveSourceSchema).min(1).max(4).optional(),
+  /** true publishes this entry, false pins it as a draft, absent follows the file `status`. */
+  approved: z.boolean().optional(),
+});
+
+export const PerspectivesFileSchema = z
+  .strictObject({
+    $comment: z.string().optional(),
+    status: z.enum(["draft", "approved"]),
+    entries: z.array(PerspectiveSchema).min(PERSPECTIVES_MIN).max(PERSPECTIVES_MAX),
+  })
+  .superRefine((file, ctx) => {
+    const seen = new Set<string>();
+    file.entries.forEach((entry, i) => {
+      if (seen.has(entry.id)) {
+        ctx.addIssue({ code: "custom", path: ["entries", i, "id"], message: `Duplicate perspective id "${entry.id}"` });
+      }
+      seen.add(entry.id);
+    });
+  });
+
 export const SiteContentSchema = z.strictObject({
   profile: ProfileSchema,
   stats: z.array(StatSchema).min(4).max(6),
@@ -379,3 +423,6 @@ export type MissionStep = z.infer<typeof MissionStepSchema>;
 export type WalkId = z.infer<typeof WalkIdSchema>;
 export type Mission = z.infer<typeof MissionSchema>;
 export type SiteContent = z.infer<typeof SiteContentSchema>;
+export type PerspectiveSource = z.infer<typeof PerspectiveSourceSchema>;
+export type Perspective = z.infer<typeof PerspectiveSchema>;
+export type PerspectivesFile = z.infer<typeof PerspectivesFileSchema>;

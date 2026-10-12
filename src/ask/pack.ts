@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
-import type { Locale, LocalizedText, SiteContent } from "@/content/schema";
+import type { Locale, LocalizedText, Perspective, Pod, SiteContent } from "@/content/schema";
+import { perspectivePath } from "@/content/perspectives";
 import { findBlockedTerms } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
-import { cleanText } from "../../functions/_lib/text";
+import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 
 /**
@@ -13,6 +14,13 @@ import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_
  */
 
 export const PACK_MAX_BYTES = 200 * 1024;
+
+/**
+ * Approach steps per project chunk by tier. The case study page keeps every step; the pack keeps
+ * the lead steps of featured and listed pods so the pack stays under its cap with every
+ * perspective approved (runbook deviation 8). Answers get at most 6,000 characters of context anyway.
+ */
+export const PACK_APPROACH_STEPS = { hero: Infinity, featured: 2, listed: 1 } as const satisfies Record<Pod["tier"], number>;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 
 export interface PackSources {
@@ -24,6 +32,8 @@ export interface PackSources {
   contentDate: string;
   /** Product names allowed on the site (content/safety-allowlist.txt). */
   products: readonly string[];
+  /** Approved perspectives only (`getPerspectives()`); drafts never enter the pack. */
+  perspectives?: readonly Perspective[];
 }
 
 type Bi = { en: string; id: string };
@@ -34,6 +44,8 @@ const loc = (text: LocalizedText | undefined): Bi => (text ? { en: text.en, id: 
 const WING_NAME = { software: "Product Engineering", ai: "AI Engineering" } as const;
 /** Retrieval words for pods with a public live site (R4-J). The hostname itself never enters the pack: Ask output checks block Azure hostnames. */
 const LIVE_KEYWORDS = ["live", "site", "sites", "website", "websites", "situs"];
+/** Section title of How I work on About (messages `home.howTitle`), quoted in the pack so answers can cite it. */
+const HOW_TITLE = { en: "How I work", id: "Cara saya bekerja" } as const;
 const join = (parts: (Bi | string | undefined | false)[], sep = " "): Bi => {
   const list = parts.filter((p): p is Bi | string => Boolean(p)).map((p) => (typeof p === "string" ? both(p) : p));
   return {
@@ -46,14 +58,6 @@ const label = (en: string, id: string, value: Bi | string): Bi => {
   return { en: `${en}: ${v.en}.`, id: `${id}: ${v.id}.` };
 };
 
-/** Sentences that read like instructions to a model are dropped from pack text (T2). */
-const INSTRUCTION_LIKE = [
-  /\bignore\b[^.]{0,40}\b(previous|prior|above|earlier)\b[^.]{0,20}\b(instructions?|rules?|prompts?)\b/i,
-  /(^|\s)(system|assistant|developer)\s*:/i,
-  /\byou are (now )?(an?|the) (ai|assistant|model|chatbot|llm)\b/i,
-  /\b(abaikan|lupakan)\b[^.]{0,40}\b(instruksi|aturan|perintah)\b/i,
-];
-
 /** Strips markdown/HTML/JSX, invisible characters and instruction-like sentences. */
 export function sanitizePackText(text: string): string {
   const plain = text
@@ -65,7 +69,7 @@ export function sanitizePackText(text: string): string {
   const cleaned = cleanText(plain);
   return cleaned
     .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => !INSTRUCTION_LIKE.some((re) => re.test(sentence)))
+    .filter((sentence) => !isInstructionLike(sentence))
     .join(" ")
     .replace(/\u2014/g, ", ");
 }
@@ -91,7 +95,7 @@ interface Draft {
   keywords?: string[];
 }
 
-function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] {
+function drafts({ content, facts, posts = {}, products, perspectives = [] }: PackSources): Draft[] {
   const out: Draft[] = [];
   const { profile } = content;
   const roof = content.floors.roof;
@@ -110,8 +114,24 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
       loc(profile.subheadline),
       loc(profile.bio),
       label("Location", "Lokasi", loc(profile.location)),
-      label("How he works", "Cara kerja", loc(profile.howIWork)),
-      join(profile.principles.map((p) => join([loc(p.title), loc(p.text)], ": ")), " "),
+    ]),
+  });
+
+  // His own principles, cited by perspective answers (spec section 13). Titles are quoted so the
+  // source check can match them.
+  out.push({
+    id: "principles",
+    type: "principle",
+    title: HOW_TITLE.en,
+    url: "/contact#how",
+    keywords: ["principles", "principle", "approach", "values", "how", ...profile.principles.map((p) => p.id)],
+    text: join([
+      {
+        en: `Kurniadi's principles, in his own words, from "${HOW_TITLE.en}" on the About page:`,
+        id: `Prinsip Kurniadi, dengan kata-katanya sendiri, dari "${HOW_TITLE.id}" di halaman About:`,
+      },
+      loc(profile.howIWork),
+      join(profile.principles.map((p) => ({ en: `"${p.title.en}": ${p.text.en}`, id: `"${p.title.id}": ${p.text.id}` }))),
     ]),
   });
 
@@ -257,7 +277,7 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
         client && label("For", "Untuk", client),
         label("Role", "Peran", loc(pod.role)),
         label("Problem", "Masalah", loc(pod.problem)),
-        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.map(loc)]),
+        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.slice(0, PACK_APPROACH_STEPS[pod.tier]).map(loc)]),
         join([
           { en: "Results:", id: "Hasil:" },
           ...pod.results.map((r) =>
@@ -285,6 +305,21 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
         loc(post.excerpt),
         { en: body.en ? leadParagraphs(body.en) : "", id: body.id ? leadParagraphs(body.id) : body.en ? leadParagraphs(body.en) : "" },
       ]),
+    });
+  }
+
+  for (const p of perspectives) {
+    out.push({
+      id: `perspective-${p.id}`,
+      type: "perspective",
+      title: p.question.en,
+      url: perspectivePath(p.id),
+      updatedAt: p.asOf,
+      keywords: ["perspective", ...p.tags],
+      text: {
+        en: `Kurniadi's written view "${p.question.en.replace(/"/g, "")}": ${p.answer.en}`,
+        id: `Pandangan tertulis Kurniadi "${p.question.id.replace(/"/g, "")}": ${p.answer.id}`,
+      },
     });
   }
 
@@ -365,7 +400,8 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
     });
   }
 
-  const repos = [...content.publicRepos].sort((a, b) => b.stars - a.stars);
+  // Unstarred repositories stay on GitHub only: keeps the pack under its cap with every perspective approved (runbook deviation 8).
+  const repos = content.publicRepos.filter((r) => r.stars > 0).sort((a, b) => b.stars - a.stars);
   out.push({
     id: "repos",
     type: "repo",
@@ -425,7 +461,8 @@ export function buildKnowledgePack(sources: PackSources): KnowledgePack {
   const employers = content.floors.careerArchive.entries.filter((e) => e.type === "job" || e.type === "freelance" || e.type === "education").map((e) => e.org);
   const clients = content.floors.labs.pods.flatMap((p) => (typeof p.client === "string" ? [p.client] : []));
   const entities = [...new Set([...employers, ...clients, ...products].map((name) => cleanText(name)))].sort();
-  const body = { packDate, chunks, entities };
+  const orgs = [...new Set([...employers, ...clients].map((name) => cleanText(name)))].sort();
+  const body = { packDate, chunks, entities, orgs };
   const packVersion = createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16);
   return { packVersion, ...body };
 }

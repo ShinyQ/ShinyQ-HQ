@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { openPage } from "./hq";
@@ -5,6 +7,9 @@ import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
+import { draftFingerprints, perspectiveAnchor, publishedPerspectives } from "../src/content/perspectives";
+import { PerspectivesFileSchema } from "../src/content/schema";
+import { scanBuildOutput } from "../src/content/safety";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
 const TEMPLATES = [
@@ -288,4 +293,33 @@ test("Visit live site opens the public site in a new tab without an opener, on t
   const [popup] = await Promise.all([page.waitForEvent("popup"), rowLinks.first().click()]);
   await popup.close();
   await expect(page).toHaveURL(/\/en\/labs\?tier=static$/);
+});
+
+const perspectivesFile = PerspectivesFileSchema.parse(JSON.parse(readFileSync(path.join(process.cwd(), "content", "perspectives.json"), "utf8")));
+const publishedEntries = publishedPerspectives(perspectivesFile);
+
+test("Perspectives: unpublished drafts never reach the static export", () => {
+  const prints = draftFingerprints(perspectivesFile);
+  test.skip(prints.length === 0, "every perspective is approved");
+  expect(scanBuildOutput(path.join(process.cwd(), "out"), prints)).toEqual([]);
+});
+
+test("Perspectives: About and Quick view show exactly the approved entries", async ({ page }) => {
+  for (const locale of ["en", "id"] as const) {
+    for (const route of ["contact", "quick"]) {
+      await openPage(page, staticTier(`/${locale}/${route}`));
+      await expect(page.locator("#perspectives [data-perspective]"), `${locale}/${route}`).toHaveCount(publishedEntries.length);
+    }
+  }
+  await expect(page.getByRole("link", { name: "Perspektif", exact: true })).toHaveCount(publishedEntries.length > 0 ? 1 : 0);
+});
+
+test("Perspectives: an entry opens from the anchor Ask cites and passes axe", async ({ page }) => {
+  test.skip(publishedEntries.length === 0, "no approved perspective yet; the section is absent (checked above)");
+  const first = publishedEntries[0];
+  await openPage(page, `${staticTier("/en/contact")}#${perspectiveAnchor(first.id)}`);
+  const entry = page.locator(`#${perspectiveAnchor(first.id)}`);
+  await expect(entry).toHaveAttribute("open", "");
+  await expect(entry).toContainText(first.answer.en);
+  await expectNoSeriousViolations(page);
 });

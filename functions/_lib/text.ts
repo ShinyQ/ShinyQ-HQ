@@ -153,6 +153,35 @@ export const SYNONYMS: Record<string, string> = {
   statistics: "stats",
   contributions: "stats",
   kontribusi: "stats",
+  // Questions about his views (spec section 13).
+  think: "perspective",
+  thinks: "perspective",
+  opinion: "perspective",
+  opinions: "perspective",
+  view: "perspective",
+  views: "perspective",
+  perspectives: "perspective",
+  principle: "perspective",
+  principles: "perspective",
+  philosophy: "perspective",
+  believe: "perspective",
+  believes: "perspective",
+  advice: "perspective",
+  stance: "perspective",
+  pendapat: "perspective",
+  pendapatnya: "perspective",
+  pandangan: "perspective",
+  pandangannya: "perspective",
+  prinsip: "perspective",
+  prinsipnya: "perspective",
+  filosofi: "perspective",
+  saran: "perspective",
+  nasihat: "perspective",
+  perspektif: "perspective",
+  reliable: "reliability",
+  reliabilitas: "reliability",
+  keandalan: "reliability",
+  andal: "reliability",
 };
 
 /** Lowercase word tokens without stopwords. Numbers are kept (metrics, years, cert codes). */
@@ -187,4 +216,16 @@ export function detectLocale(text: string, fallback: "en" | "id"): "en" | "id" {
   const enHits = words.filter((w) => ["what", "who", "where", "when", "how", "does", "did", "is", "the", "his", "he"].includes(w)).length;
   if (enHits >= 1) return "en";
   return fallback;
+}
+
+/** Sentences that read like instructions to a model: dropped from pack text and refused in perspectives (T2). */
+const INSTRUCTION_LIKE = [
+  /\bignore\b[^.]{0,40}\b(previous|prior|above|earlier)\b[^.]{0,20}\b(instructions?|rules?|prompts?)\b/i,
+  /(^|\s)(system|assistant|developer)\s*:/i,
+  /\byou are (now )?(an?|the) (ai|assistant|model|chatbot|llm)\b/i,
+  /\b(abaikan|lupakan)\b[^.]{0,40}\b(instruksi|aturan|perintah)\b/i,
+];
+
+export function isInstructionLike(sentence: string): boolean {
+  return INSTRUCTION_LIKE.some((re) => re.test(sentence));
 }

@@ -115,6 +115,7 @@
     "intro": "Pekerjaan dan latar belakang saya dalam satu halaman, dengan tautan ke studi kasus lengkap.",
     "toc": "Isi halaman",
     "profile": "Profil",
+    "perspectives": "Perspektif",
     "stats": "Sekilas",
     "software": "Pilihan karya software engineering",
     "ai": "Pilihan karya AI engineering",
@@ -553,7 +554,13 @@
     "hIndexLabel": "h-index"
   },
   "about": {
-    "title": "Tentang dan kontak"
+    "title": "Tentang dan kontak",
+    "perspectives": {
+      "title": "Perspektif",
+      "intro": "Pertanyaan yang sering diajukan tentang cara saya bekerja, saya jawab dengan kata-kata saya sendiri.",
+      "related": "Terkait",
+      "asOf": "Ditulis {date}"
+    }
   },
   "ask": {
     "thinking": "Sedang berpikir…",
@@ -583,7 +590,7 @@
       "close": "Tutup chat",
       "clear": "Hapus chat",
       "threadLabel": "Percakapan",
-      "welcome": "Halo! Saya menjawab pertanyaan seputar karya, proyek, karier Kurniadi, dan cara menghubunginya, hanya dari isi situs ini. Pilih topik atau ketik pertanyaan.",
+      "welcome": "Halo! Saya menjawab pertanyaan seputar karya, proyek, karier, cara kerja Kurniadi, dan cara menghubunginya, hanya dari isi situs ini. Pilih topik atau ketik pertanyaan.",
       "you": "Anda",
       "hq": "HQ",
       "topicsLabel": "Pilih topik",
@@ -593,14 +600,22 @@
       "moreTopics": "Topik lain",
       "edit": "Ubah sebelum bertanya: {q}",
       "inputLabel": "Pertanyaan Anda",
-      "placeholder": "Tanyakan karya, proyek, atau kariernya",
+      "placeholder": "Tanyakan karya, proyek, atau cara kerjanya",
+      "source": "Baca di situs ini: {label}",
       "send": "Kirim"
     },
     "topics": {
       "work": "Karya",
       "ai": "AI",
       "career": "Karier",
-      "contact": "Kontak"
+      "contact": "Kontak",
+      "perspectives": "Perspektif"
+    },
+    "cite": {
+      "perspective": "Perspektif di halaman About",
+      "how": "Cara saya bekerja di halaman About",
+      "blog": "tulisan blognya",
+      "library": "halaman Library"
     },
     "hero": {
       "label": "Tanya AI tentang pekerjaan saya",
