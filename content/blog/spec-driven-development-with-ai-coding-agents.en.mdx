@@ -6,11 +6,11 @@ tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-r
 readingTime: "6 min"
 ---
 
-I built a vendor management portal in about six weeks as the only engineer on the repository. AI coding agents wrote most of the code. I opened and merged all 179 pull requests.
+I built a vendor management portal in about six weeks as the only engineer on the repository. AI coding agents wrote most of the code. I opened all 179 pull requests and merged 142 of them.
 
 That last part is both how the work got done and the weakest part of the process: there was no second human reviewer.
 
-The project ran from 21 August to 4 October 2026, for a business unit in the group. It handles vendor onboarding, purchase orders, delivery acceptance, invoices with tax verification and multi-step approvals. The stack is FastAPI, PostgreSQL and Next.js, deployed to Azure App Service. By the end, it had 51 numbered specs, 21 backend domains and 110 Alembic migrations.
+The project ran from 21 August to 4 October 2026, for Metrodata. It handles vendor onboarding, purchase orders, delivery acceptance, invoices with tax verification and multi-step approvals. The stack is FastAPI, PostgreSQL and Next.js, deployed to Azure App Service. By the end, it had 51 numbered specs, 21 backend domains and 109 Alembic migrations.
 
 There are no AI features in the product. I used GitHub Copilot and Claude to implement it. My work was writing the specs, designing the architecture, reviewing the PRs and deciding what merged. That split depended on defining the work before handing it to an agent. It still let some serious bugs through.
 

@@ -260,3 +260,20 @@ describe("image-free client pods (owner decision 2026-10-11)", () => {
     for (const slug of ["mining-coa-assistant", "automotive-fraud-dashboard"]) expect(pods.find((p) => p.slug === slug)?.assets, slug).toEqual([]);
   });
 });
+
+describe("spec-driven development post facts (R5-P11)", () => {
+  const post = (locale: "en" | "id") =>
+    readFileSync(path.join(process.cwd(), "content", "blog", `spec-driven-development-with-ai-coding-agents.${locale}.mdx`), "utf8");
+
+  it("matches the vendor portal repository and names Metrodata", () => {
+    expect(post("en")).toContain("I opened all 179 pull requests and merged 142 of them.");
+    expect(post("id")).toContain("Saya membuka semua 179 pull request dan me-merge 142 di antaranya.");
+    expect(post("en")).toContain("4 October 2026, for Metrodata.");
+    expect(post("id")).toContain("4 Oktober 2026 untuk Metrodata.");
+    expect(post("en")).toContain("21 backend domains and 109 Alembic migrations.");
+    expect(post("id")).toContain("21 domain backend, dan 109 migrasi Alembic.");
+    for (const locale of ["en", "id"] as const) {
+      expect(post(locale)).not.toMatch(/\b110 (Alembic|migrasi)|business unit in the group|unit bisnis di grup|merged all 179|saya merge sendiri/);
+    }
+  });
+});
