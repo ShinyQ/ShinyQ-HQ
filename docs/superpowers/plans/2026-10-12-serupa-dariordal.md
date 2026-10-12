@@ -1911,8 +1911,8 @@ Expected: `validate:content` without errors, `title-case.ts` reports no titles t
 - [ ] **Step 2: No private names in the branch**
 
 ```bash
-git --no-pager log --format='%s%n%b' origin/main..HEAD | rg -i 'Ticket-Hub_|_BE\b|_FE\b|_Dashboard|NextJS_Prisma|<attendee-site-domain>|<private names>' || echo "commit messages clean"
-git --no-pager diff origin/main...HEAD -- . ':!public/media' | rg -i 'Ticket-Hub_|NextJS_Prisma|<private names>|<api host>' || echo "diff clean"
+git --no-pager log --format='%s%n%b' origin/main..HEAD | rg -i '<private repo, teammate and host patterns>' || echo "commit messages clean"
+git --no-pager diff origin/main...HEAD -- . ':!public/media' | rg -i '<private repo, teammate and host patterns>' || echo "diff clean"
 ```
 
 Expected: `commit messages clean` and `diff clean`. (`<attendee-site-domain>.com` may appear in the diff only through the Task 9 Step 5 live link.)
