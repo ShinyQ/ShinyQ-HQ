@@ -707,17 +707,16 @@ test.describe("orbit on every floor", () => {
     });
   }
 
-  test("the L2 rail keeps its side view with limited yaw", async ({ page }) => {
+  test("the L2 camera turns all the way around the rover too", async ({ page }) => {
     await asReturningVisitor(page);
     await page.goto("/en/journey?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore", 60_000);
     await page.keyboard.down("e");
-    await expect.poll(async () => (await yaws(page)).rail, { timeout: 30_000 }).toBeGreaterThan(0.55);
-    await page.waitForTimeout(1500);
+    await expect.poll(async () => (await yaws(page)).rail, { timeout: 60_000 }).toBeGreaterThan(Math.PI + 0.3);
     await page.keyboard.up("e");
     const { rail, yaw } = await yaws(page);
-    expect(rail).toBeLessThanOrEqual((35 * Math.PI) / 180 + 1e-6);
+    expect(rail).toBeGreaterThan((35 * Math.PI) / 180);
     expect(yaw).toBe(0);
   });
 });

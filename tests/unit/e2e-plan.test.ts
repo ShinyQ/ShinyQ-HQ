@@ -92,6 +92,14 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/camera-visual.spec.ts"]).specs).toEqual([]);
   });
 
+  it("maps the camera, its input, the rover fade and the view buttons to the camera spec", () => {
+    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["camera", "career", "experience"]);
+    expect(specsForChanges(["src/experience/input/useInputSources.ts"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
+  });
+
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
     expect(specsForChanges(["src/experience/nav/pads.ts"]).specs).toEqual(["experience", "pads"]);
     expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "pads"]);

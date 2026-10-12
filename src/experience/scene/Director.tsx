@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { WebGLRenderer } from "three";
 import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
+import { scrubSign } from "../camera/rigs";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
 import { openCv, openPalette, openTerminal } from "@/hud/events";
@@ -125,7 +126,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           if (!controller || !stops?.length) break;
           if (s.phase === "room") s.closeRoom();
           if (store.getState().phase !== "explore") break;
-          const x = scrubTarget(controller.pose.x, intent.dx, window.innerWidth, stops);
+          // Turned around (the camera orbits 360 degrees), a swipe still moves toward the side it pulls from.
+          const x = scrubTarget(controller.pose.x, intent.dx * scrubSign(roverRuntime.cameraRailYaw), window.innerWidth, stops);
           // Land on the road (the Career Road meanders in z), else on the rail axis.
           const z = roadZAt(layouts[s.floor].road?.roads[0]?.points ?? [], x);
           const path = findPath(grids[s.floor], controller.pose, { x, z });
@@ -432,6 +434,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     roverRuntime.heading = pose.heading;
     roverRuntime.speed = pose.speed;
     roverRuntime.tilt = pose.tilt;
+    // The camera holds third person while the rover follows a path (autopilot, scrub, mission leg, elevator approach).
+    roverRuntime.driving = controller.following;
     const rideFace = liveRide && liveRide.stage !== "toDoor" ? rideDirection(liveRide) : null;
     roverRuntime.face = (!rideFace && askFace()) || faceFor({
       phase: s.phase,

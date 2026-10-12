@@ -11,6 +11,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 export const ALL_SPECS = [
   "ask",
   "boot-first",
+  "camera",
   "career",
   "deploy",
   "drawer-solid",
@@ -100,7 +101,9 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   // Elevator ride smoothness (R5 P6): the ride clock, floor preparation, precompile and troika sync tracking.
   { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts)$|text-config\.ts$)/, specs: ["ride", "experience"] },
-  { test: /^src\/experience\/camera\//, specs: ["experience", "career", "ride"] },
+  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
+  // Round 5 camera work: input, the rover body fade and the view buttons.
+  { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },
