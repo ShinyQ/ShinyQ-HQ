@@ -1,0 +1,166 @@
+{
+  "documents": {
+    "ewallet-sentiment-cnn-lstm": {
+      "sha256": "bdc06a1e908eee3ab15dffa8f13f1b5f385c20e35ed7cac829bb93f64b890d4e",
+      "bytes": 988180,
+      "pages": [
+        {
+          "n": 1,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-1.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 2,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-2.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 3,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-3.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 4,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-4.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 5,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-5.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 6,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-6.webp",
+          "width": 1400,
+          "height": 1978
+        },
+        {
+          "n": 7,
+          "src": "/papers/ewallet-sentiment-cnn-lstm/ewallet-sentiment-cnn-lstm-7.webp",
+          "width": 1400,
+          "height": 1978
+        }
+      ]
+    },
+    "sentiboard-bsc-thesis": {
+      "sha256": "c5f4999f6e767cf1e645df96ed92caf0263d80e7cd419c898a6564535e5868ad",
+      "bytes": 2030898,
+      "pages": [
+        {
+          "n": 1,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-1.webp",
+          "width": 1400,
+          "height": 1980
+        },
+        {
+          "n": 2,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-2.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 3,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-3.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 4,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-4.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 5,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-5.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 6,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-6.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 7,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-7.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 8,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-8.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 9,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-9.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 10,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-10.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 11,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-11.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 12,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-12.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 13,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-13.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 14,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-14.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 15,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-15.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 16,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-16.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 17,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-17.webp",
+          "width": 1400,
+          "height": 1982
+        },
+        {
+          "n": 18,
+          "src": "/papers/sentiboard-bsc-thesis/sentiboard-bsc-thesis-18.webp",
+          "width": 1400,
+          "height": 1982
+        }
+      ]
+    }
+  }
+}

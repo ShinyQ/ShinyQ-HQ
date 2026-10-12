@@ -8019,7 +8019,12 @@
             "en": "Analyzes sentiment in Indonesian digital wallet app reviews with CNN and LSTM.",
             "id": "Menganalisis sentimen ulasan aplikasi dompet digital Indonesia dengan CNN dan LSTM."
           },
-          "abstract": "We apply deep learning to sentiment analysis of Indonesian digital wallet reviews. Reviews of four popular Indonesian e-wallet apps were collected from the Google Play Store and grouped into five aspects: accessibility, transactions, accounts, service and performance. A combined CNN and LSTM architecture classifies the sentiment of each review, reaching 87% training accuracy and 83% validation accuracy. Across the four apps, user sentiment leans negative in every aspect category."
+          "abstract": "We apply deep learning to sentiment analysis of Indonesian digital wallet reviews. Reviews of four popular Indonesian e-wallet apps were collected from the Google Play Store and grouped into five aspects: accessibility, transactions, accounts, service and performance. A combined CNN and LSTM architecture classifies the sentiment of each review, reaching 87% training accuracy and 83% validation accuracy. Across the four apps, user sentiment leans negative in every aspect category.",
+          "document": {
+            "file": "ewallet-sentiment-cnn-lstm",
+            "version": "manuscript",
+            "notice": "ieee"
+          }
         },
         {
           "id": "covid-19-herd-immunity-study",
@@ -8074,13 +8079,18 @@
           ],
           "venue": "Telkom University",
           "year": 2023,
+          "date": "2023-02",
           "kind": "thesis",
           "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
           "summary": {
             "en": "My BSc thesis: Sentiboard, a university sentiment dashboard using IndoBERT.",
             "id": "Skripsi S1 saya: Sentiboard, dashboard sentimen universitas menggunakan IndoBERT."
           },
-          "abstract": "My BSc thesis at Telkom University: Sentiboard, a web dashboard that monitors social media sentiment about a university. A fine-tuned IndoBERT model classifies Indonesian posts by sentiment, and a Django and Plotly dashboard turns the results into trends the university can act on."
+          "abstract": "My BSc final project (Tugas Akhir) at Telkom University: Sentiboard, a web dashboard that monitors social media sentiment about a university, so it can see how students respond to its services without manual surveys. A fine-tuned IndoBERT model classifies Indonesian posts by sentiment, and a Django dashboard turns the results into trends, filters and exports. The system was built with an iterative incremental method and checked with black box testing and a user acceptance test.",
+          "document": {
+            "file": "sentiboard-bsc-thesis",
+            "version": "redacted"
+          }
         },
         {
           "id": "indobert-university-reviews-model",

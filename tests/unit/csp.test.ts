@@ -74,4 +74,11 @@ describe("Content-Security-Policy (public/_headers)", () => {
     expect(cv).toContain("! Content-Security-Policy");
     expect(cspOf(cv)).toEqual(["frame-ancestors 'self'"]);
   });
+
+  it("keeps paper PDFs out of frames, with the PDF viewer free of the site policy", () => {
+    const papers = block("/papers/*");
+    expect(papers).toContain("! Content-Security-Policy");
+    expect(cspOf(papers)).toEqual(["frame-ancestors 'none'"]);
+    expect(papers).not.toContain("! X-Frame-Options");
+  });
 });
