@@ -109,4 +109,4 @@ Footprint: 40 × 40 u, open sky (stars and slow-moving particle clouds). Accent:
 
 - The tower is seen from outside during boot: five glowing slabs stacked inside a faint wireframe frame, with the elevator tube on the west side.
 - The camera orbits 120° over 2.5 s while descending, then flies through the L1 slab edge into the Lobby.
-- Reduced motion: skip the orbit and fade straight into the Lobby.
+- Reduced motion: hold one still exterior shot for the same 2.5 s, then cut into the Lobby (the intro is never skipped).
