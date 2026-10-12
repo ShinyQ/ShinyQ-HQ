@@ -7,7 +7,6 @@ import { Modal } from "../Modal";
 import { IssuerMark } from "./IssuerMark";
 
 const STATUS_CLASS = { earned: "text-green", "in-progress": "text-amber", expired: "text-ink-3" } as const;
-const RULE = { earned: "bg-cyan", "in-progress": "bg-amber", expired: "bg-ink-3" } as const;
 
 /**
  * Certification preview card (lazy chunk, opened by `DialogHost` on the `hq:hud` "cert" command from
@@ -20,7 +19,6 @@ export default function CertDialog({ cert, onClose }: { cert: CertView; onClose:
   const titleId = useId();
   return (
     <Modal labelledBy={titleId} onClose={onClose} width="sm" testId="cert-dialog">
-      <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-0.5 ${RULE[cert.status]}`} />
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="flex items-center gap-3">
           <IssuerMark cert={cert} size={28} />

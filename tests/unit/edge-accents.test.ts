@@ -10,8 +10,6 @@ import { scanCss, scanFile, scanTree } from "../helpers/edge-accents";
 const KNOWN = [
   "src/app/globals.css: css: border-left: 2px solid var(--color-violet);",
   "src/app/pageview.css: css: border-left-color: var(--color-violet);",
-  "src/components/certs/CertDialog.tsx: bar: top h-0.5",
-  "src/components/certs/Certifications.tsx: bar: top h-0.5",
   "src/lib/og.tsx: style: side bar width 10",
 ];
 

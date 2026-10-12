@@ -335,7 +335,7 @@ const QUOTE_POST = "/id/blog/the-sun-the-moon-and-the-dark-sea";
  * Pages that still show a stripe while P10 lands (certification cards: Task 5; case study ToC: Task 6;
  * blockquotes: Task 7). Each task deletes its paths; a fixed path left here fails.
  */
-const P10_PENDING = new Set<string>(["/en", "/en/contact", "/en/quick", "/id", `/en/labs/${heroPod.slug}`, QUOTE_POST]);
+const P10_PENDING = new Set<string>([`/en/labs/${heroPod.slug}`, QUOTE_POST]);
 
 test.describe("no colored edge stripes", () => {
   test("Page View templates, the case study table of contents and a post with quotes", async ({ page }) => {
@@ -387,5 +387,22 @@ test.describe("no colored edge stripes", () => {
     expect(look.fill).not.toBe("rgba(0, 0, 0, 0)");
     expect(look.dot).toBe("visible");
     expect(await page.evaluate(findEdgeAccents, "[role='dialog']:has([role='listbox'])")).toEqual([]);
+  });
+
+  test("certification cards glow on hover and the preview card has no top rule", async ({ page }) => {
+    await openPage(page, staticTier("/en"));
+    const card = page.locator("#certifications .card[data-cert-open]").first();
+    await card.hover();
+    await expect
+      .poll(() =>
+        card.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return cs.boxShadow !== "none" && cs.borderTopColor === cs.borderLeftColor && cs.borderLeftColor === cs.borderRightColor;
+        }),
+      )
+      .toBe(true);
+    await card.click();
+    await expect(page.getByTestId("cert-dialog")).toBeVisible();
+    expect(await page.evaluate(findEdgeAccents, "[data-testid='cert-dialog']")).toEqual([]);
   });
 });
