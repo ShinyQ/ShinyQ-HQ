@@ -387,7 +387,10 @@ test.describe("tiers and views", () => {
     await page.mouse.wheel(0, 2000);
     await expect(back).toBeInViewport({ ratio: 1 });
     await page.reload();
-    await expect(back).toBeInViewport({ ratio: 1 });
+    // After a reload the gate renders the button only once the deferred chunks hydrated and its
+    // WebGL probe decided the tier (seconds on SwiftShader), so wait on those, not on a fixed time.
+    await waitForHydration(page, 30_000);
+    await expect(back).toBeInViewport({ ratio: 1, timeout: 30_000 });
     await back.click();
     await waitForHQ(page);
   });
