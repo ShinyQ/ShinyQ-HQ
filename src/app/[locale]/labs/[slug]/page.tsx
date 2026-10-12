@@ -7,13 +7,14 @@ import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
 import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
+import { LiveSiteLink } from "@/components/LiveSiteLink";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
 import { CaseToc } from "@/components/page/CaseToc";
 import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
-import { adjacent, clientLabel } from "@/content/selectors";
+import { adjacent, clientLabel, podLiveLink } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
@@ -59,6 +60,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const { prev, next } = adjacent(siblings, siblings.findIndex((p) => p.id === pod.id));
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
   const images = toGalleryImages(pod.assets, locale);
+  const live = podLiveLink(pod);
   const toc = [
     { id: "results", label: t("results") },
     { id: "problem", label: t("problem") },
@@ -83,6 +85,11 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             </p>
             <h1 className="pv-d-l mt-5">{pod.title[locale]}</h1>
             <p className="pv-lead mt-6">{pod.tagline[locale]}</p>
+            {live && (
+              <p className="mt-8">
+                <LiveSiteLink href={live.href} label={tc("visitLive")} srHint={tc("external")} className="pv-btn pv-btn-primary" />
+              </p>
+            )}
           </div>
           <FactRow
             items={[

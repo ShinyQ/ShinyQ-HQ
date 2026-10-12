@@ -2,12 +2,31 @@ import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
 import { coverImage } from "@/content/media";
 import { podAttrs } from "@/content/pageview";
-import { clientLabel } from "@/content/selectors";
+import { clientLabel, podLiveLink } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod, formatYearMonth } from "@/lib/format";
 import { TechLogoRow } from "../Chip";
+import { LiveSiteLink } from "../LiveSiteLink";
 import { Marker } from "./Layout";
+
+/**
+ * "Visit live site" on a project card or row (R4-J). `relative z-10` lifts it over the card's
+ * stretched title link (`pv-stretch`), so both stay clickable. Renders nothing without a live site.
+ */
+export async function PodLiveCta({ pod, locale, className = "" }: { pod: Pod; locale: Locale; className?: string }) {
+  const live = podLiveLink(pod);
+  if (!live) return null;
+  const tc = await getTranslations({ locale, namespace: "common" });
+  return (
+    <LiveSiteLink
+      href={live.href}
+      label={tc("visitLive")}
+      srHint={tc("external")}
+      className={`pv-uline relative z-10 inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-ink hover:text-cyan ${className}`}
+    />
+  );
+}
 
 /**
  * A project with its cover (or its headline result when it has no images).
@@ -51,6 +70,7 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
         </Link>
       </h3>
       <p className="pv-body">{pod.tagline[locale]}</p>
+      <PodLiveCta pod={pod} locale={locale} />
       {size === "lead" && first && (
         <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
           {[first, second].filter(Boolean).map((r) => (
@@ -95,6 +115,7 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
         <div className="mt-3">
           <TechLogoRow items={pod.stack} max={8} />
         </div>
+        <PodLiveCta pod={pod} locale={locale} className="mt-2" />
       </div>
       <p className="pv-small hidden md:block md:pt-6">{clientLabel(pod.client, locale)}</p>
       <p className="pv-data hidden md:block md:pt-7">{start}</p>
