@@ -2,7 +2,7 @@
 // GlyphsGeometry's instanceCount (src/experience/text-config.ts) and batch labels with BatchedText
 // (src/experience/fx/BatchedLabels.tsx).
 declare module "troika-three-text" {
-  import type { InstancedBufferGeometry, Material, Mesh } from "three";
+  import type { Color, InstancedBufferGeometry, Material, Mesh } from "three";
 
   export function configureTextBuilder(config: { useWorker?: boolean; defaultFontURL?: string; sdfGlyphSize?: number; textureWidth?: number }): void;
   export class GlyphsGeometry extends InstancedBufferGeometry {
@@ -12,7 +12,7 @@ declare module "troika-three-text" {
     text: string;
     font: string | null;
     fontSize: number;
-    color: string | number | null;
+    color: string | number | Color | null;
     // Narrowed to the values this repo uses (troika also accepts numbers and percentages).
     anchorX: "left" | "center" | "right";
     anchorY: "top" | "middle" | "bottom";
@@ -21,7 +21,7 @@ declare module "troika-three-text" {
     lineHeight: number | "normal";
     letterSpacing: number;
     outlineWidth: number | string;
-    outlineColor: string | number;
+    outlineColor: string | number | Color;
     fillOpacity: number;
     outlineOpacity: number;
     material: Material;

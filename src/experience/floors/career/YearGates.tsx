@@ -125,7 +125,7 @@ export function YearGates({
           </Text>
         </Readable>
       ))}
-      <BatchedLabels ref={signpostBatch} labels={signposts.labels} name="career-signposts" toneMapped />
+      <BatchedLabels ref={signpostBatch} labels={signposts.labels} name="career-signposts" toneMapped exactColors />
       {years.map((y, i) => (
         <Readable key={`floor-${y.year}`} position={[y.plaza.center.x, 0.04, y.plaza.center.z]}>
           <Text

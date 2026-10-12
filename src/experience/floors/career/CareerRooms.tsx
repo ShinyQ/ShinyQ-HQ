@@ -240,7 +240,7 @@ export function CareerRooms({
       ))}
       <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
-      <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped />
+      <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped exactColors />
     </group>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, type Ref } from "react";
 import { MeshBasicMaterial } from "three";
 import { BatchedText, Text } from "troika-three-text";
-import { applyLabel, type BatchedLabel } from "./labelProps";
+import { applyLabel, batchColor, type BatchedLabel } from "./labelProps";
 
 /** Live access to a batch: `members[i]` is the troika Text for `labels[i]` (empty until the first commit). */
 export interface BatchedLabelsHandle {
@@ -23,12 +23,15 @@ export function BatchedLabels({
   name = "labels",
   renderOrder,
   toneMapped = false,
+  exactColors = false,
   ref,
 }: {
   labels: readonly BatchedLabel[];
   name?: string;
   renderOrder?: number;
   toneMapped?: boolean;
+  /** Draw member colors exactly like drei `Text` (see `batchColor`); set it for batches that replace plain labels. */
+  exactColors?: boolean;
   ref?: Ref<BatchedLabelsHandle>;
 }) {
   const { batch, base } = useMemo(() => {
@@ -46,6 +49,10 @@ export function BatchedLabels({
     const created = labels.map((label) => {
       const text = new Text();
       applyLabel(text, label);
+      if (exactColors) {
+        text.color = batchColor(label.color);
+        if (label.outlineColor) text.outlineColor = batchColor(label.outlineColor);
+      }
       batch.addText(text);
       return text;
     });
@@ -58,7 +65,7 @@ export function BatchedLabels({
         text.dispose();
       }
     };
-  }, [batch, labels]);
+  }, [batch, labels, exactColors]);
 
   useEffect(
     () => () => {

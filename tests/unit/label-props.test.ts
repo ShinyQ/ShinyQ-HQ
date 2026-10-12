@@ -1,6 +1,6 @@
-import { Object3D } from "three";
+import { Color, Object3D } from "three";
 import { describe, expect, it } from "vitest";
-import { applyLabel, type LabelTarget } from "@/experience/fx/labelProps";
+import { applyLabel, batchColor, type LabelTarget } from "@/experience/fx/labelProps";
 
 function target(): LabelTarget {
   return Object.assign(new Object3D(), {
@@ -45,5 +45,17 @@ describe("applyLabel", () => {
     expect(t).toMatchObject({ outlineWidth: 0, outlineColor: 0x000000, fillOpacity: 1, outlineOpacity: 1 });
     applyLabel(t, { text: "x", position: [0, 0, 0], font: "f", fontSize: 1, color: "#000", outlineWidth: 0.03, outlineColor: "#05050c", fillOpacity: 0.3 });
     expect(t).toMatchObject({ outlineWidth: 0.03, outlineColor: "#05050c", fillOpacity: 0.3, outlineOpacity: 1 });
+  });
+});
+
+describe("batchColor", () => {
+  it("packs to the linear color drei Text would draw (troika packs getHex, sRGB, and reads it as linear)", () => {
+    for (const hex of ["#34d399", "#d4d4d8", "#0a0a0f", "#ffffff"]) {
+      const linear = new Color(hex);
+      const packed = batchColor(hex).getHex();
+      expect((packed >> 16) & 255).toBe(Math.round(linear.r * 255));
+      expect((packed >> 8) & 255).toBe(Math.round(linear.g * 255));
+      expect(packed & 255).toBe(Math.round(linear.b * 255));
+    }
   });
 });

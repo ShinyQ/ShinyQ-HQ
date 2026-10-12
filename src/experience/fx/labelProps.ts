@@ -1,4 +1,4 @@
-import type { Object3D } from "three";
+import { Color, type Object3D } from "three";
 
 /** One in-world label for `BatchedLabels` (all labels of a floor in one draw call). */
 export interface BatchedLabel {
@@ -30,7 +30,7 @@ export interface LabelTarget extends Pick<Object3D, "position" | "rotation"> {
   text: string;
   font: string | null;
   fontSize: number;
-  color: string | number | null;
+  color: string | number | Color | null;
   anchorX: "left" | "center" | "right";
   anchorY: "top" | "middle" | "bottom";
   textAlign: "left" | "center" | "right";
@@ -38,7 +38,7 @@ export interface LabelTarget extends Pick<Object3D, "position" | "rotation"> {
   lineHeight: number | "normal";
   letterSpacing: number;
   outlineWidth: number | string;
-  outlineColor: string | number;
+  outlineColor: string | number | Color;
   fillOpacity: number;
   outlineOpacity: number;
 }
@@ -61,4 +61,14 @@ export function applyLabel(t: LabelTarget, l: BatchedLabel): void {
   t.outlineOpacity = 1;
   t.position.set(l.position[0], l.position[1], l.position[2]);
   t.rotation.set(l.tilt ? -l.tilt : 0, l.yaw ?? 0, 0, "YXZ");
+}
+
+/**
+ * A color for a `BatchedText` member that draws like a plain troika `Text`. The batch packs each
+ * member's color with `Color.getHex()` (sRGB) and its shader reads the value as linear, so batched
+ * text renders brighter than the same color on its own. Converting once more cancels that out.
+ * Opt-in (`BatchedLabels exactColors`): the batches that shipped before keep their signed-off look.
+ */
+export function batchColor(color: string): Color {
+  return new Color(color).convertSRGBToLinear();
 }

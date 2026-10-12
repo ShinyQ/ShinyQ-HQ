@@ -181,8 +181,8 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
           <circleGeometry args={[DOT_RADIUS, 20]} />
           <meshBasicMaterial toneMapped={false} />
         </instancedMesh>
-        <BatchedLabels ref={values} labels={valueLabels} name="stats-values" renderOrder={-1} />
-        <BatchedLabels ref={labels} labels={labelLabels} name="stats-labels" renderOrder={-1} toneMapped />
+        <BatchedLabels ref={values} labels={valueLabels} name="stats-values" renderOrder={-1} exactColors />
+        <BatchedLabels ref={labels} labels={labelLabels} name="stats-labels" renderOrder={-1} toneMapped exactColors />
       </group>
     </group>
   );
