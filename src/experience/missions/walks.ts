@@ -1,6 +1,7 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
 import { directoryStop, tourOrder } from "../floors/labs/layout";
-import type { CareerData, CareerType, LabPod } from "../types";
+import { LIBRARY_ZONES, type LibraryLayout, type LibraryZone } from "../floors/library/model";
+import type { CareerData, CareerType, LabPod, LibraryData } from "../types";
 import type { WalkDefinition, WalkStop } from "./walk";
 
 /**
@@ -57,6 +58,36 @@ export function labsWalk(pods: readonly LabPod[], labels: LabsWalkLabels, placed
     stops.push({ id: `L3:directory:${wing}`, to: directoryStop(wing), palette: "pods", title: labels.more, subtitle: labels.moreSub, group: labels.wings[wing], tags: [wing] });
   }
   return { id: "projects", floor: "L3", stops, filters: LABS_FILTERS.map((id) => ({ id, label: labels.wings[id] })) };
+}
+
+export interface LibraryWalkLabels {
+  /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
+  zones: Record<LibraryZone, string>;
+  onMedium: string;
+  more: string;
+  moreSub: string;
+}
+
+export const LIBRARY_FILTERS: readonly LibraryZone[] = LIBRARY_ZONES;
+
+/**
+ * L4 "Read my writing": every station in the layout's order (docked posts, then Research, Models and
+ * Talks), then the archive board when older posts did not fit. Post titles come from the payload
+ * (content), zone names from messages; filters list only zones that have a stop.
+ */
+export function libraryWalk(library: LibraryData, labels: LibraryWalkLabels, layout: Pick<LibraryLayout, "stations" | "board">): WalkDefinition {
+  const posts = new Map(library.posts.map((p) => [`L4:${p.slug}`, p]));
+  const stops: WalkStop[] = layout.stations.map((s) => {
+    const post = posts.get(s.room);
+    const badge = post ? [...post.languages].sort().map((l) => l.toUpperCase()).join("/") : "";
+    const subtitle = post ? [post.date.slice(0, 4), post.url ? labels.onMedium : badge].join(" · ") : undefined;
+    return { id: s.room, to: s.room, room: s.room, title: post?.title ?? labels.zones[s.zone], subtitle, group: labels.zones[s.zone], tags: [s.zone] };
+  });
+  if (layout.board) {
+    stops.push({ id: "L4:archive", to: layout.board.stop, palette: "posts", title: labels.more, subtitle: labels.moreSub, group: labels.zones.blog, tags: ["blog"] });
+  }
+  const filters = LIBRARY_FILTERS.filter((zone) => stops.some((s) => s.tags?.includes(zone))).map((id) => ({ id, label: labels.zones[id] }));
+  return { id: "writing", floor: "L4", stops, filters };
 }
 
 /** Query flag that turns walks on for every floor that has one (tests and owner previews). */

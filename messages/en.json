@@ -616,6 +616,12 @@
       "start": "Tour my projects",
       "name": "Project tour"
     },
+    "writing": {
+      "title": "Read my writing?",
+      "body": "A guided drive past my posts, newest first, then my research, models and talks. Skip it to roam the floor on your own.",
+      "start": "Read my writing",
+      "name": "Writing walk"
+    },
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",
     "stopOf": "Stop {index} of {total}",
@@ -640,6 +646,8 @@
     "workshopSub": "Side projects, repositories and models",
     "more": "More projects here",
     "moreSub": "Open lists every project of this wing",
+    "moreWriting": "More writing here",
+    "moreWritingSub": "Open lists every post",
     "boardCount": "{count, plural, one {# project} other {# projects}}",
     "boardOpen": "Open the full list",
     "proto": {
@@ -664,6 +672,16 @@
       "prompt": "Show the prompt again",
       "sheet": "2D chips",
       "sheetTitle": "Type icons as Page View chips"
+    },
+    "protoLibrary": {
+      "title": "Writing floor concepts",
+      "concept": "Concept",
+      "atrium": "A: Reading Room",
+      "newsroom": "B: Newsroom",
+      "constellation": "C: Constellation",
+      "budget": "{calls} draw calls, {triangles} triangles",
+      "pad": "Elevator call pad (kept free)",
+      "posts": "{count} posts on the floor, {archive} on the archive board"
     }
   },
   "certs": {
