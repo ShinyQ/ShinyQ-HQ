@@ -3678,7 +3678,88 @@
             "Bun"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/limited-quota-event-ticketing/01-home.webp",
+              "alt": {
+                "en": "Ticket storefront landing page with the call to find tickets, shown with sample data",
+                "id": "Halaman utama toko tiket dengan ajakan mencari tiket, ditampilkan dengan data contoh"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/02-event-detail.webp",
+              "alt": {
+                "en": "Event details dialog with venue, date, remaining tickets and terms",
+                "id": "Dialog detail acara dengan tempat, tanggal, sisa tiket, dan syarat ketentuan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/03-checkout.webp",
+              "alt": {
+                "en": "Checkout step with payment channels, the ticket summary, service fee and tax",
+                "id": "Langkah checkout dengan channel pembayaran, ringkasan tiket, biaya layanan, dan pajak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/04-my-tickets-qr.webp",
+              "alt": {
+                "en": "My Tickets with an expanded order showing a QR e-ticket per seat",
+                "id": "My Tickets dengan pesanan yang dibuka dan menampilkan e-ticket QR untuk setiap kursi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/05-admin-dashboard.webp",
+              "alt": {
+                "en": "Admin dashboard overview of users, events, tickets sold and revenue",
+                "id": "Ringkasan dashboard admin untuk pengguna, acara, tiket terjual, dan pendapatan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/06-transactions.webp",
+              "alt": {
+                "en": "Transaction table per event with ticket counts, gross revenue, service fees and tax",
+                "id": "Tabel transaksi per acara dengan jumlah tiket, pendapatan kotor, biaya layanan, dan pajak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/07-create-event.webp",
+              "alt": {
+                "en": "Create event form with event details and ticket types",
+                "id": "Formulir pembuatan acara dengan detail acara dan jenis tiket"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/08-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the storefront, event details and My Tickets",
+                "id": "Tampilan mobile untuk toko tiket, detail acara, dan My Tickets"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "event-ticketing-platform",

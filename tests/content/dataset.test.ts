@@ -212,4 +212,12 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
     expect(assets.at(-1)?.src).toMatch(/^\/media\/event-ticketing-platform\/\d{2}-mobile\.webp$/);
     expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
   });
+
+  it("ships the DariOrdal gallery: desktop screens plus one mobile triptych, cover first", () => {
+    const assets = dariordal?.assets ?? [];
+    expect(assets.length).toBeGreaterThanOrEqual(6);
+    expect(assets[0].src).toBe("/media/limited-quota-event-ticketing/01-home.webp");
+    expect(assets.at(-1)?.src).toMatch(/^\/media\/limited-quota-event-ticketing\/\d{2}-mobile\.webp$/);
+    expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
+  });
 });
