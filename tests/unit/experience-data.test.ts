@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCareerData, buildExperienceData, countRooms } from "@/content/experience";
-import { getAwards, getCertifications, getContent, getLibrary, getPublicRepos, getRoof, getSideProjects, getStats, getYears } from "@/content/load";
+import { getAwards, getCertifications, getContent, getLibrary, getProfile, getPublicRepos, getRoof, getSideProjects, getStats, getYears } from "@/content/load";
 import { TERMINAL_COUNT } from "@/experience/floors/roof/layout";
 import { buildRoomCatalog, type StructuralLabels } from "@/experience/missions/rooms";
 import en from "../../messages/en.json";
@@ -102,5 +102,11 @@ describe("buildExperienceData", () => {
     // One comms terminal per channel plus email.
     expect(en.channels.length + 1).toBe(TERMINAL_COUNT);
     expect(en.channels.find((c) => c.id === "github")?.href).toBe(roof.contact.github);
+  });
+
+  it("carries the Roof about card: timezone and one-line intro", () => {
+    const profile = getProfile();
+    expect(buildExperienceData("en", names).roof).toMatchObject({ timezone: profile.timezone, subheadline: profile.subheadline.en });
+    expect(buildExperienceData("id", names).roof.subheadline).toBe(profile.subheadline.id);
   });
 });

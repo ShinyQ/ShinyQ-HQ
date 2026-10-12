@@ -169,4 +169,8 @@ export interface RoofData {
   availability: string;
   email: string;
   channels: { id: "linkedin" | "github" | "huggingface" | "medium" | "googleScholar" | "ieeeXplore"; label: string; href: string }[];
+  /** Profile timezone (for example "GMT+7"), shown next to the location on the about card. */
+  timezone: string;
+  /** One-line intro for the about card (`profile.subheadline`). */
+  subheadline: string;
 }
