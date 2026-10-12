@@ -87,6 +87,16 @@ describe("interactablesFor on the real content", () => {
     }
   });
 
+  it("gives every career room and every docked pod a target, including the newest content", () => {
+    const careerRooms = experience.career.years.flatMap((y) => y.entries.map((e) => `L2:door:${e.slug}`));
+    const docked = buildLabsLayout(experience.labs.pods).placed.map((p) => `L3:door:${p.pod.slug}`);
+    const ids = (floor: FloorId) => new Set(items[floor].map((i) => i.id));
+    for (const id of careerRooms) expect(ids("L2").has(id), id).toBe(true);
+    for (const id of docked) expect(ids("L3").has(id), id).toBe(true);
+    expect(ids("L2").has("L2:door:serupa-2025")).toBe(true);
+    expect(ids("L3").has("L3:door:event-ticketing-platform")).toBe(true);
+  });
+
   it("names rooms after their content", () => {
     for (const p of buildLabsLayout(experience.labs.pods).placed) expect(find("L3", `L3:door:${p.pod.slug}`)?.label).toBe(p.pod.title);
     for (const s of buildLibraryLayout(libraryLayoutInput(experience.library)).stations) {
