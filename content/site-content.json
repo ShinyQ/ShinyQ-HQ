@@ -4,8 +4,8 @@
     "handle": "ShinyQ",
     "monogram": "KAW",
     "headline": {
-      "en": "Software Engineer and AI Engineer",
-      "id": "Software Engineer dan AI Engineer"
+      "en": "AI and Software Engineer",
+      "id": "AI dan Software Engineer"
     },
     "subheadline": {
       "en": "I build and operate software and AI applications in production.",
@@ -25,8 +25,8 @@
     },
     "timezone": "GMT+7",
     "bio": {
-      "en": "I am a Software Engineer and AI Engineer based in Jakarta. At Metrodata, I have designed, built and operated Azure AI applications since February 2026 for banking, automotive, mining and food manufacturing clients. My work includes realtime voice agents, document AI, AI security tooling and grounded RAG assistants. Before that, I spent four years building backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius.",
-      "id": "Saya Software Engineer dan AI Engineer yang berbasis di Jakarta. Sejak Februari 2026, saya merancang, membangun, dan mengoperasikan aplikasi Azure AI di Metrodata untuk klien perbankan, otomotif, pertambangan, dan manufaktur makanan. Pekerjaan saya mencakup voice agent realtime, document AI, tooling keamanan berbasis AI, dan asisten RAG yang grounded. Sebelumnya, saya menghabiskan empat tahun membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius."
+      "en": "I am an AI and Software Engineer based in Jakarta, with 4+ years of building production systems for digital banking, fintech and enterprise SaaS. Since February 2026, I have led the delivery of Azure-native AI platforms at Metrodata for 12+ enterprise clients in sectors such as banking, automotive, mining and food manufacturing: multi-agent RAG assistants, realtime voice agents, document AI and AI code security. Before that, I built backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius. I make LLM systems reliable in production through evaluation, guardrails and observability.",
+      "id": "Saya AI dan Software Engineer yang berbasis di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin delivery platform AI berbasis Azure di Metrodata untuk 12+ klien enterprise di sektor seperti perbankan, otomotif, pertambangan, dan manufaktur makanan: asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
     },
     "story": {
       "en": "I started learning Android development in a vocational school lab in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
@@ -283,6 +283,13 @@
       "issuer": "Kominfo x IBM",
       "issued": "2021-07",
       "status": "earned"
+    },
+    {
+      "id": "toefl-itp",
+      "name": "TOEFL ITP (score 547)",
+      "issuer": "ETS",
+      "issued": "2024",
+      "status": "expired"
     }
   ],
   "awards": [
@@ -1174,8 +1181,8 @@
           },
           "highlights": [
             {
-              "en": "Reduced realtime request latency by 15% with AWS WebSocket and Redis",
-              "id": "Menurunkan latensi request realtime sebesar 15% dengan AWS WebSocket dan Redis"
+              "en": "Reduced realtime request latency by 15% with AWS API Gateway WebSocket and Redis",
+              "id": "Menurunkan latensi request realtime sebesar 15% dengan AWS API Gateway WebSocket dan Redis"
             },
             {
               "en": "Made transactions 30% faster by refactoring the payment gateway with GraphQL and AWS Lambda",
@@ -1380,8 +1387,8 @@
               "id": "Meningkatkan efisiensi otomasi sebesar 30% lewat API Go (Echo) dan dashboard React serta Next.js"
             },
             {
-              "en": "Reduced technical debt by 60% through SonarQube-guided refactoring of legacy modules",
-              "id": "Mengurangi technical debt sebesar 60% lewat refactor modul lama berdasarkan temuan SonarQube"
+              "en": "Reduced SonarQube-reported technical debt by 60% by refactoring legacy modules",
+              "id": "Mengurangi technical debt yang dilaporkan SonarQube sebesar 60% dengan me-refactor modul lama"
             }
           ],
           "stack": [
@@ -1757,11 +1764,11 @@
           "type": "freelance",
           "org": "TEMMPAT",
           "role": {
-            "en": "Lead Backend Engineer (freelance)",
-            "id": "Lead Backend Engineer (freelance)"
+            "en": "Backend Engineer (freelance)",
+            "id": "Backend Engineer (freelance)"
           },
           "start": "2025-11",
-          "end": "2026-02",
+          "end": "2025-12",
           "summary": {
             "en": "I led the v2 backend refactor for a premium event ticket marketplace, separating auction and resale workflows into a modular engine.",
             "id": "Saya memimpin refactor backend v2 untuk marketplace tiket acara premium, menata alur lelang dan resale dalam engine yang modular."
@@ -1852,8 +1859,8 @@
           "start": "2026-02",
           "end": "present",
           "summary": {
-            "en": "I design and deliver Azure AI applications in the Microsoft AI practice for banking, automotive, mining and food manufacturing clients, alongside the practice's own products. I write the specs, direct AI coding agents and review their work before release.",
-            "id": "Di praktik Microsoft AI, saya merancang dan merilis aplikasi Azure AI untuk klien perbankan, otomotif, pertambangan, dan manufaktur makanan, serta produk tim sendiri. Saya menulis spec, mengarahkan AI coding agent, dan me-review hasilnya sebelum rilis."
+            "en": "In the Microsoft AI practice, I lead end-to-end delivery of Azure-native AI platforms for 12+ enterprise clients in sectors such as banking, automotive, mining and food manufacturing, from architecture to production, alongside the practice's own products. I built a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
+            "id": "Di praktik Microsoft AI, saya memimpin delivery end-to-end platform AI berbasis Azure untuk 12+ klien enterprise di sektor seperti perbankan, otomotif, pertambangan, dan manufaktur makanan, dari arsitektur hingga production, serta produk tim sendiri. Saya membangun template AI full-stack reusable yang dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan me-review hasilnya sebelum rilis."
           },
           "highlights": [
             {
@@ -2187,11 +2194,11 @@
           },
           "period": {
             "start": "2025-11",
-            "end": "2026-02"
+            "end": "2025-12"
           },
           "role": {
-            "en": "Lead Backend Engineer (freelance), responsible for the v2 refactor",
-            "id": "Lead Backend Engineer (freelance), penanggung jawab refactor v2"
+            "en": "Backend Engineer (freelance), led the v2 refactor",
+            "id": "Backend Engineer (freelance), memimpin refactor v2"
           },
           "problem": {
             "en": "TEMMPAT supports buying, reselling and auctioning concert and event tickets. Its v1 backend split data between MongoDB and PostgreSQL without clear layers. The business needed dependable escrow-style payments, refunds and partner payouts.",
@@ -2367,8 +2374,8 @@
                 "id": "Proporsi commit repositori yang saya tulis (162 dari 267)"
               },
               "context": {
-                "en": "Counted in the client repository's git history; my commits span Nov 2025 to Feb 2026.",
-                "id": "Dihitung dari riwayat git repositori klien; commit saya mencakup Nov 2025 hingga Feb 2026."
+                "en": "Counted in the client repository's git history.",
+                "id": "Dihitung dari riwayat git repositori klien."
               },
               "confidence": "verified"
             },
@@ -2882,8 +2889,8 @@
           },
           "approach": [
             {
-              "en": "I built realtime request handling with AWS WebSocket APIs and Redis.",
-              "id": "Saya membangun penanganan request realtime dengan AWS WebSocket API dan Redis."
+              "en": "I built realtime request handling with AWS API Gateway WebSocket APIs and Redis.",
+              "id": "Saya membangun penanganan request realtime dengan AWS API Gateway WebSocket API dan Redis."
             },
             {
               "en": "I refactored the payment gateway integration using GraphQL and AWS Lambda.",
@@ -2924,7 +2931,7 @@
               },
               {
                 "id": "websocket",
-                "label": "AWS WebSocket",
+                "label": "API Gateway WebSocket",
                 "sublabel": {
                   "en": "Realtime updates",
                   "id": "Update realtime"
@@ -3036,7 +3043,7 @@
             "PHP",
             "GraphQL",
             "AWS Lambda",
-            "AWS WebSocket APIs",
+            "AWS API Gateway WebSocket",
             "Redis",
             "MySQL"
           ],
@@ -6042,16 +6049,16 @@
           },
           "results": [
             {
-              "value": "8 repos",
+              "value": "10+",
               "label": {
-                "en": "Client repositories started from the template across 5 engagements",
-                "id": "Repository klien yang dimulai dari template ini dalam 5 proyek"
+                "en": "Client projects that adopted the template",
+                "id": "Proyek klien yang mengadopsi template ini"
               },
               "context": {
-                "en": "Byte-level lineage analysis found 36 to 90% of each derivative's initial files came from the template.",
-                "id": "Analisis asal file hingga level byte menunjukkan 36 hingga 90% file awal setiap proyek turunan berasal dari template."
+                "en": "Byte-level lineage of the 8 client repositories analyzed found 36 to 90% of each derivative's initial files came from the template.",
+                "id": "Analisis asal file hingga level byte pada 8 repository klien yang dianalisis menunjukkan 36 hingga 90% file awal setiap proyek turunan berasal dari template."
               },
-              "confidence": "verified"
+              "confidence": "self-reported"
             },
             {
               "value": "3 engineers",

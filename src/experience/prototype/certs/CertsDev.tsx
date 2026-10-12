@@ -7,7 +7,7 @@ import type { ExperienceData, GpuTier } from "../../types";
 
 const CertsWorld = dynamic(() => import("./CertsWorld"), { ssr: false });
 
-/** Mounts the 3D wall over the page when the query asks for it: ?view=3d&n=7|30&tier=lite|full. */
+/** Mounts the 3D wall over the page when the query asks for it: ?view=3d&n=8|30&tier=lite|full. */
 function CertsDev({ data, sets }: { data: ExperienceData; sets: Record<"live" | "fixture", ExperienceData["certifications"]> }) {
   const t = useTranslations("certs");
   const tHome = useTranslations("home");

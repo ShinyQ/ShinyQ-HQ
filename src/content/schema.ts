@@ -25,6 +25,8 @@ export const YearMonthSchema = z
   .string()
   .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Expected YYYY-MM");
 export const YearMonthOrPresentSchema = z.union([YearMonthSchema, z.literal("present")]);
+/** "YYYY-MM", or "YYYY" when the source (the CV) gives only a year; never invent a month. */
+export const YearOrYearMonthSchema = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, "Expected YYYY or YYYY-MM");
 export const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
 
 export const ConfidenceSchema = z.enum(["verified", "strongly-inferred", "self-reported"]);
@@ -92,7 +94,7 @@ export const CertificationSchema = z.strictObject({
   code: nonEmpty.optional(),
   name: nonEmpty,
   issuer: nonEmpty,
-  issued: YearMonthSchema,
+  issued: YearOrYearMonthSchema,
   credentialUrl: httpsUrl.optional(),
   /** Public credential or certificate ID, shown in the preview card. */
   credentialId: nonEmpty.optional(),

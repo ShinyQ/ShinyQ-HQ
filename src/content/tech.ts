@@ -33,7 +33,7 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("k6", "k6"),
   svg("docker", "Docker", ["docker compose"]),
   webp("jenkins", "Jenkins"),
-  webp("aws", "AWS", ["amazon web services", "aws s3", "aws lambda", "aws ec2", "aws websocket apis"]),
+  webp("aws", "AWS", ["amazon web services", "aws s3", "aws lambda", "aws ec2", "aws websocket apis", "aws api gateway websocket"]),
   svg("bun", "Bun"),
   svg("sequelize", "Sequelize"),
   svg("socketio", "Socket.IO"),

@@ -12,6 +12,11 @@ describe("formatYearMonth", () => {
     expect(formatYearMonth("present", "en")).toBe("Present");
     expect(formatYearMonth("present", "id")).toBe("Sekarang");
   });
+
+  it("keeps a year alone (a certification the CV dates by year only)", () => {
+    expect(formatYearMonth("2024", "en")).toBe("2024");
+    expect(formatYearMonth("2024", "id")).toBe("2024");
+  });
 });
 
 describe("formatPeriod", () => {
