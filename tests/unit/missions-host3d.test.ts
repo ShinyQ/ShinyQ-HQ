@@ -210,6 +210,9 @@ describe("3D mission host", () => {
     await host.walk("projects", { signal: signal(), missionId: "projects" });
     expect(store.getState().floor).toBe("L3");
     expect(deps.openPalette).toHaveBeenCalledWith("pods");
+    await host.walk("writing", { signal: signal(), missionId: "blog" });
+    expect(store.getState().floor).toBe("L4");
+    expect(deps.openPalette).toHaveBeenLastCalledWith("posts");
     off();
     await host.walk("journey", { signal: signal(), missionId: "journey" });
     expect(started).toEqual(["journey"]);

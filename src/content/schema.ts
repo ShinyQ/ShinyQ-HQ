@@ -294,7 +294,7 @@ export const AwardSchema = z.strictObject({
 const Vec2Schema = z.strictObject({ x: z.number(), z: z.number() });
 export const DrawerTabSchema = z.enum(["overview", "architecture", "results", "stack"]);
 /** Guided walks (src/experience/missions/walks.ts): L2 "Walk my journey" and L3 "Tour my projects". */
-export const WalkIdSchema = z.enum(["journey", "projects"]);
+export const WalkIdSchema = z.enum(["journey", "projects", "writing"]);
 
 export const MissionStepSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("elevator"), floor: FloorIdSchema }),

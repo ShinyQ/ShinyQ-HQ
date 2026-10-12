@@ -5,7 +5,7 @@ import { directoryStop } from "../floors/labs/layout";
 import type { FloorLayout, Vec2 } from "../types";
 import { startWalk, type HostDeps } from "./bridge";
 import type { MissionHost, StepContext } from "./host";
-import { floorOf, localize, roomPath, WALK_FLOOR, type RoomInfo } from "./rooms";
+import { floorOf, localize, roomPath, WALK_FLOOR, WALK_PALETTE, type RoomInfo } from "./rooms";
 
 /** Autopilot request the Director fulfils on the next frames. */
 export interface AutopilotRequest {
@@ -140,7 +140,7 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
       if (startWalk(id)) return;
       // Walk not offered on this floor yet: ride there and list its rooms instead.
       await this.elevator(WALK_FLOOR[id], ctx);
-      deps.openPalette(id === "projects" ? "pods" : "rooms");
+      deps.openPalette(WALK_PALETTE[id] ?? "rooms");
     },
 
     finish(status) {

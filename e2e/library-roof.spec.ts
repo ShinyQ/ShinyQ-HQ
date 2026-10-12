@@ -84,28 +84,28 @@ test.describe("deep links", () => {
 });
 
 test.describe("missions to the Library and the Roof", () => {
-  test("blog rides to L4, drives to the spine and opens the post", async ({ page }) => {
+  test("Read my writing rides to L4 and walks to the newest post, whose drawer mirrors its /blog page", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
     await runMission(page, "blog");
-    await waitForRoom(page, `L4:${BLOG_POST}`);
-    const s = await snapshot(page);
-    expect(s.floor).toBe("L4");
-    const stop = await page.evaluate(() => {
-      const r = (window as unknown as { __hq: { rover: { autopilot: { point: { x: number; z: number } } | null } } }).__hq.rover.autopilot;
-      return r?.point ?? null;
-    });
+    const bar = page.getByTestId("walk-bar");
+    await expect(bar).toBeVisible({ timeout: 60_000 });
+    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
+    const room = (await bar.getAttribute("data-stop"))!;
+    expect(room.startsWith("L4:")).toBe(true);
+    await waitForRoom(page, room);
+    expect((await snapshot(page)).floor).toBe("L4");
+    const stop = await autopilotPoint(page);
     expect(stop).not.toBeNull();
     await expectRoverNear(page, stop!);
+    const post = content.floors.library.posts.find((p) => `L4:${p.slug}` === room)!;
     const panel = page.getByTestId("room-drawer");
-    await expect(panel).toHaveAttribute("data-room", `L4:${BLOG_POST}`);
-    const post = content.floors.library.posts.find((post) => post.slug === BLOG_POST)!;
     await expect(panel.getByRole("heading", { level: 2 })).toHaveText(post.title.en);
-    await expect(panel).toContainText("ID");
-    // Opening a hosted post mirrors its page URL.
-    await expect(page).toHaveURL(new RegExp(`/en/blog/${BLOG_POST}\\?tier=lite$`));
+    // A hosted post mirrors its page URL; the walk prompt never shows over a mission's walk.
+    await expect(page).toHaveURL(new RegExp(`/en/blog/${post.slug}\\?tier=lite$`));
+    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     const read = panel.getByRole("link", { name: "Read post" });
-    await expect(read).toHaveAttribute("href", `/en/blog/${BLOG_POST}`);
+    await expect(read).toHaveAttribute("href", `/en/blog/${post.slug}`);
     await read.click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("h1").first()).toHaveText(post.title.en);

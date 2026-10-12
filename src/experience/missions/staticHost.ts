@@ -1,6 +1,6 @@
 import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "./host";
-import { FLOOR_PATHS, localize, roomPath, WALK_FLOOR, type RoomInfo } from "./rooms";
+import { FLOOR_PATHS, localize, roomPath, WALK_FLOOR, WALK_PALETTE, type RoomInfo } from "./rooms";
 
 export interface StaticHostOptions {
   locale: Locale;
@@ -58,10 +58,11 @@ export function createStaticHost({ locale, rooms, navigate, onSay, onPalette }: 
       onPalette?.(filter);
     },
     async walk(id) {
-      // No 3D on this tier: the walk's floor page lists the same stops (the project tour also opens the pods palette).
+      // No 3D on this tier: the walk's floor page lists the same stops (the project tour and the writing walk also open their palette).
       pending = FLOOR_PATHS[WALK_FLOOR[id]];
       flush();
-      if (id === "projects") onPalette?.("pods");
+      const filter = WALK_PALETTE[id];
+      if (filter) onPalette?.(filter);
     },
     finish(status) {
       if (status === "done") flush();
