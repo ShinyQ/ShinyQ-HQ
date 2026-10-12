@@ -44,6 +44,13 @@ describe("3D top bar", () => {
     const pageView = screen.getByTestId("page-view");
     expect(pageView).toHaveTextContent(en.hud.pageView);
     expect(pageView.className).toContain("bg-cyan");
+    // Owner request: a document icon on the left; the accessible name stays the label.
+    const icon = pageView.firstElementChild!;
+    expect(icon.tagName.toLowerCase()).toBe("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveAttribute("data-testid", "page-view-icon");
+    expect(pageView).toHaveAccessibleName(en.hud.pageView);
+    expect(pageView.className).toContain("gap-2");
     expect(pageView.nextElementSibling).toBe(screen.getByTestId("ask-pill"));
     const controls = within(screen.getByTestId("hud-topbar")).getAllByRole("button");
     expect(controls.at(-1)).toBe(screen.getByTestId("ask-pill"));
@@ -59,6 +66,7 @@ describe("3D top bar", () => {
       </Wrap>,
     );
     expect(screen.getByTestId("page-view").nextElementSibling).toBe(screen.getByTestId("ask-pill"));
+    expect(screen.getByTestId("page-view").firstElementChild).toBe(screen.getByTestId("page-view-icon"));
     const menuButton = screen.getByRole("button", { name: en.hud.menu });
     await userEvent.click(menuButton);
     const menu = document.getElementById(menuButton.getAttribute("aria-controls")!)!;

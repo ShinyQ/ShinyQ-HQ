@@ -54,14 +54,37 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
 const launcher = "glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
 /** Page view is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
 const primary =
-  "inline-flex min-h-11 items-center rounded-full bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
+  "inline-flex min-h-11 items-center gap-2 rounded-full bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
 
-/** Page view (highlighted) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
+/** Document glyph left of "Page view" (owner request): the portfolio as a page. Same stroke style as the HUD icons. */
+function PageIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0"
+      data-testid="page-view-icon"
+    >
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
+    </svg>
+  );
+}
+
+/** Page view (highlighted, document icon on the left) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
 function ViewActions({ onExit }: { onExit: () => void }) {
   const t = useTranslations("hud");
   return (
     <div className="flex items-center gap-2" data-testid="hud-view-actions">
       <button type="button" onClick={onExit} title={t("pageViewHint")} className={primary} data-testid="page-view">
+        <PageIcon />
         {t("pageView")}
       </button>
       <AskPill />
