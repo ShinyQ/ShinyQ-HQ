@@ -8,7 +8,8 @@ import { driveUntil, frameCount, installVirtualClock, stepFrames, waitForQuiet }
  * `bun scripts/visual-gate.ts`, which captures baselines from a base build and then compares.
  */
 test.skip(!process.env.VISUAL_GATE, "Run through `bun scripts/visual-gate.ts`");
-test.describe.configure({ mode: "serial", timeout: 300_000 });
+// Not serial: one failing pose must not skip the rest (the gate runs with one worker, so still in order).
+test.describe.configure({ timeout: 300_000 });
 // Base and head are captured on the same machine, so the real GPU keeps the comparison fair and is
 // about 100x faster than SwiftShader at 2880x1800 (full tier: about 1.2 s per frame there). macOS runs
 // on ANGLE Metal; VISUAL_GATE_GPU=swiftshader (or another OS) keeps the suite's SwiftShader.
@@ -127,8 +128,12 @@ async function settle(page: Page, pose: Pose) {
     await driveUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", { maxFrames: 1200, batch: 1 });
     await stepFrames(page, 24);
   }
-  await waitForQuiet(page);
-  await stepFrames(page, 2);
+  // Last frames one task at a time: troika repacks a text batch in a promise after its members typeset
+  // (a worker), and a real browser runs those between frames, not inside one stepped evaluate.
+  for (let i = 0; i < 3; i++) {
+    await waitForQuiet(page, 150);
+    await stepFrames(page, 1);
+  }
 }
 
 for (const device of DEVICES) {
