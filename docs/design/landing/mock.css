@@ -50,7 +50,6 @@
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .m-hero { display: grid; flex: 1; align-content: center; gap: 48px; padding-block: 40px; }
-.m-c4 { display: none; }
 .m-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; margin-bottom: 40px; }
 .m-feat { display: grid; gap: 56px 24px; }
 .m-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; }
@@ -62,17 +61,13 @@
 .m-ask-send { min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--ink-3); font: inherit; font-weight: 600; }
 
 @media (min-width: 768px) {
-  .m-hero { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-content: start; padding-top: 64px; padding-bottom: 56px; }
-  .m-c8 { grid-column: span 7; }
-  .m-c4 { display: flex; grid-column: span 5; align-items: center; justify-content: flex-end; }
+  .m-hero { align-content: start; padding-top: 64px; padding-bottom: 56px; }
   .m-feat { grid-template-columns: 1fr 1fr; }
   .m-lead { grid-column: span 2; }
 }
 
 @media (min-width: 1024px) {
   .m-hero { align-content: center; padding-top: 56px; }
-  .m-c8 { grid-column: span 8; }
-  .m-c4 { grid-column: span 4; }
   .m-feat { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .m-lead { grid-column: span 7; grid-row: span 2; }
   .m-side { grid-column: span 5; }

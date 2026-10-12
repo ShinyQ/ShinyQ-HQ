@@ -253,5 +253,4 @@ test("landing: three featured projects with their screenshots, the stats ticker,
   await expect(ticker).toHaveAttribute("id", "stats");
   for (const stat of data.stats) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
   await expect(page.getByTestId("enter-hq")).toBeHidden();
-  await expect(page.getByRole("navigation", { name: en.home.directoryTitle }).getByRole("link")).toHaveCount(5);
 });

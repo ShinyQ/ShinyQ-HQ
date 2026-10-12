@@ -101,8 +101,7 @@
     "hero": {
       "welcome": "Welcome to {site}",
       "enter3d": "Enter the 3D HQ",
-      "enter3dHint": "Drive a rover through the five-floor tower",
-      "here": "You are here"
+      "enter3dHint": "Drive a rover through the five-floor tower"
     },
     "ticker": {
       "updated": "Updated {date}",

@@ -101,8 +101,7 @@
     "hero": {
       "welcome": "Selamat datang di {site}",
       "enter3d": "Masuk ke HQ 3D",
-      "enter3dHint": "Kemudikan rover menjelajahi gedung lima lantai",
-      "here": "Anda di sini"
+      "enter3dHint": "Kemudikan rover menjelajahi gedung lima lantai"
     },
     "ticker": {
       "updated": "Diperbarui {date}",

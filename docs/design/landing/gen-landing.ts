@@ -1,7 +1,7 @@
 // Landing mockup for the owner's sign-off (not shipped). Run from the repo root:
 //   bun docs/design/landing/gen-landing.ts
 // Real dataset, real messages and the real stylesheets (src/app/pageview.css, src/app/landing.css).
-// The markup mirrors src/components/page/{Hero,HeroTower,StatTicker,Featured}.tsx.
+// The markup mirrors src/components/page/{Hero,StatTicker,Featured}.tsx.
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { createTranslator } from "next-intl";
@@ -37,18 +37,6 @@ const header = `<header class="site-header"><div class="wrap bar">
 <nav aria-label="${esc(t("nav.label"))}"><ul class="nav">${NAV.map((n) => `<li><a href="#" style="--fc:var(--${FLOOR_ACCENT[n.floor]})"><span class="fl">${n.floor}</span>${esc(t(`nav.${n.key}`))}</a></li>`).join("")}</ul></nav>
 <div class="tools"><button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>${esc(t("hud.launcher.missions"))}</button><nav aria-label="${esc(t("nav.language"))}" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav></div>
 </div><nav aria-label="${esc(t("nav.mobile"))}" class="mobile-nav">${NAV.map((n) => `<a href="#" style="--fc:var(--${FLOOR_ACCENT[n.floor]})">${esc(t(`nav.${n.key}`))}</a>`).join("")}</nav></header>`;
-
-// Elevator floor names (hud.floorLabel), as in src/components/page/Hero.tsx.
-const tower = [
-  ...(["RF", "L4", "L3", "L2"] as const).map((floor) => ({ floor, label: t(`hud.floorLabel.${floor}`), current: false })),
-  { floor: "L1" as const, label: t("hud.floorLabel.L1"), current: true },
-];
-const towerHtml = `<nav aria-label="${esc(t("home.directoryTitle"))}" class="hx-tower"><p class="pv-data" style="margin-bottom:24px">${esc(t("home.directoryTitle"))}</p><ol class="hx-floors">${tower
-  .map(
-    (f) =>
-      `<li class="${ACCENT_TEXT[FLOOR_ACCENT[f.floor]]}"><a href="#" class="hx-level"${f.current ? ' aria-current="page"' : ""}><span aria-hidden="true" class="hx-slab"></span><span class="pv-data hx-code">${f.floor}</span><span class="hx-level-name">${esc(f.label)}</span>${f.current ? `<span class="pv-data">${esc(t("home.hero.here"))}</span>` : ""}</a></li>`,
-  )
-  .join("")}</ol></nav>`;
 
 const askBar = `<div class="m-ask"><label class="pv-data m-ask-label">${SPARK}${esc(t("ask.hero.label"))}</label><form class="m-ask-form" role="search"><input class="m-ask-input" placeholder="${esc(t("ask.hero.placeholder"))}"><button type="button" class="m-ask-send">${esc(t("ask.hero.submit"))}</button></form><div class="m-row" style="margin-top:12px"><span class="pv-small">${esc(t("ask.hero.topicsLabel"))}</span>${(["work", "ai", "career", "contact"] as const).map((k) => `<button type="button" class="chip">${esc(t(`ask.topics.${k}`))}</button>`).join("")}</div></div>`;
 
@@ -88,7 +76,7 @@ ${header}
 <div class="hx">
 <div class="hx-bg" aria-hidden="true"><div class="hx-glow"></div><div class="hx-ground"><div class="hx-ground-grid"></div></div><i class="hx-packet"></i><i class="hx-packet"></i><i class="hx-packet"></i></div>
 <section aria-labelledby="hero-title" class="pv-wrap hx-main m-hero">
-<div class="m-c8">
+<div>
 <p class="pv-data hx-eyebrow"><span class="hx-dot" aria-hidden="true"></span>${esc(t("home.hero.welcome", { site: t("meta.siteName") }))}</p>
 <h1 id="hero-title" class="pv-d-xl hx-name" style="margin-top:24px">${esc(profile.name)}</h1>
 <p class="pv-lead" style="margin-top:28px;font-weight:600">${esc(profile.headline[L])}</p>
@@ -96,7 +84,6 @@ ${header}
 <div class="m-row" style="margin-top:36px"><a href="#" class="pv-btn hx-enter" title="${esc(t("home.hero.enter3dHint"))}">${CUBE}${esc(t("home.hero.enter3d"))}</a><a href="#" class="pv-btn pv-btn-ghost">${esc(t("home.seeWork"))}</a></div>
 ${askBar}
 </div>
-<div class="m-c4">${towerHtml}</div>
 </section>
 ${ticker}
 </div>
