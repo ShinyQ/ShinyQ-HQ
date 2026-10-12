@@ -21,6 +21,16 @@ const ids = new Set(SUGGESTIONS.map((s) => s.id));
 const hit = (chunkIds: string[], expected: string) => (expected.endsWith("*") ? chunkIds.some((id) => id.startsWith(expected.slice(0, -1))) : chunkIds.includes(expected));
 
 describe("curated question bank (content/ask/suggestions.json)", () => {
+  it("offers a Perspectives topic of 4 to 6 questions, each grounded in his written sources", () => {
+    const perspectives = SUGGESTIONS.filter((s) => s.topic === "perspectives");
+    expect(perspectives.length).toBeGreaterThanOrEqual(4);
+    expect(perspectives.length).toBeLessThanOrEqual(6);
+    for (const s of perspectives) {
+      expect(s.tags, s.id).toContain("perspectives");
+      expect((s.expect ?? []).some((chunk) => /^(principles|perspective-|post-|talk-)/.test(chunk)), s.id).toBe(true);
+    }
+  });
+
   it("has about 30 well-formed bilingual questions with unique ids", () => {
     expect(SUGGESTIONS.length).toBeGreaterThanOrEqual(28);
     expect(ids.size).toBe(SUGGESTIONS.length);

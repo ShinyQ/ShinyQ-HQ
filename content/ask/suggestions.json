@@ -1,5 +1,5 @@
 {
-  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career or contact (the four topic pills; the first four of a topic show when it expands). tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
+  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career, contact or perspectives (the five topic pills; the first four of a topic show when it expands). tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
   "items": [
     {
       "id": "work-best",
@@ -150,7 +150,7 @@
       "topic": "ai",
       "q": { "en": "How does he use AI coding agents?", "id": "Bagaimana dia memakai AI coding agent?" },
       "tags": ["ai", "agents", "writing"],
-      "followUps": ["ai-solutions-assistant", "ai-llm-failures", "career-certs"],
+      "followUps": ["persp-agents", "ai-solutions-assistant", "ai-llm-failures"],
       "expect": ["project-agent-orchestrated-delivery"]
     },
     {
@@ -271,7 +271,7 @@
       "topic": "contact",
       "q": { "en": "What has he written about?", "id": "Tulisan apa saja yang pernah dia buat?" },
       "tags": ["writing"],
-      "followUps": ["ai-shadow", "ai-voice-interrupt", "contact-talks"],
+      "followUps": ["persp-principles", "ai-shadow", "ai-voice-interrupt"],
       "expect": ["post-*"]
     },
     {
@@ -281,6 +281,46 @@
       "tags": ["talks"],
       "followUps": ["contact-writing", "career-awards", "contact-reach"],
       "expect": ["talk-*"]
+    },
+    {
+      "id": "persp-principles",
+      "topic": "perspectives",
+      "q": { "en": "What are his coding principles?", "id": "Apa prinsip coding-nya?" },
+      "tags": ["perspectives"],
+      "followUps": ["persp-agents", "persp-review", "persp-metrics"],
+      "expect": ["principles"]
+    },
+    {
+      "id": "persp-agents",
+      "topic": "perspectives",
+      "q": { "en": "What does he think about AI coding agents?", "id": "Apa pandangannya tentang AI coding agent?" },
+      "tags": ["perspectives", "agents", "ai"],
+      "followUps": ["persp-review", "ai-agents", "persp-principles"],
+      "expect": ["principles", "post-spec-driven-development-with-ai-coding-agents", "project-agent-orchestrated-delivery"]
+    },
+    {
+      "id": "persp-review",
+      "topic": "perspectives",
+      "q": { "en": "What does he look for in code review?", "id": "Apa yang dia perhatikan saat code review?" },
+      "tags": ["perspectives", "agents"],
+      "followUps": ["persp-agents", "persp-reliability", "work-security"],
+      "expect": ["principles", "project-agent-orchestrated-delivery"]
+    },
+    {
+      "id": "persp-reliability",
+      "topic": "perspectives",
+      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menangani reliabilitas LLM?" },
+      "tags": ["perspectives", "ai", "writing"],
+      "followUps": ["ai-llm-failures", "persp-metrics", "ai-shadow"],
+      "expect": ["post-45-percent-of-our-llm-calls-failed"]
+    },
+    {
+      "id": "persp-metrics",
+      "topic": "perspectives",
+      "q": { "en": "How does he report metrics and results?", "id": "Bagaimana dia melaporkan metrik dan hasil?" },
+      "tags": ["perspectives", "stats"],
+      "followUps": ["persp-principles", "ai-voice-latency", "ai-fraud"],
+      "expect": ["principles"]
     }
   ]
 }

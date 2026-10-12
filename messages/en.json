@@ -597,7 +597,8 @@
       "work": "Work",
       "ai": "AI",
       "career": "Career",
-      "contact": "Contact"
+      "contact": "Contact",
+      "perspectives": "Perspectives"
     },
     "hero": {
       "label": "Ask AI about my work",
