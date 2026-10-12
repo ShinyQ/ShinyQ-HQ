@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
@@ -15,6 +15,9 @@ import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
 import type { PlaceholderLabels } from "./PlaceholderFloor";
 import { BoxEdges } from "./primitives";
+import { precompileFloor } from "../scene/precompile";
+import { beginFloorPrep, endFloorPrep, finishFloorPrep } from "./ridePrep";
+import { PREPARE_TIMEOUT } from "./elevator";
 
 export interface TowerLabels {
   placeholder: PlaceholderLabels;
@@ -39,6 +42,23 @@ function useNeighboursReady(): boolean {
     return () => window.clearTimeout(timer);
   }, []);
   return ready;
+}
+
+/**
+ * Precompiles a floor's shader programs as soon as its content commits (it sits inside the floor's
+ * Suspense boundary, after the floor), so the elevator can wait for them with the doors closed instead
+ * of compiling mid-dolly (R5 P6). Before the first frame there is nothing to compile against and the
+ * first render compiles anyway, so the floor counts as ready at once.
+ */
+function FloorPrep({ floor }: { floor: FloorId }) {
+  useLayoutEffect(() => {
+    const token = beginFloorPrep(floor);
+    void precompileFloor(floor, { timeoutMs: PREPARE_TIMEOUT * 1000 })
+      .catch(() => null)
+      .finally(() => finishFloorPrep(floor, token));
+    return () => endFloorPrep(floor, token);
+  }, [floor]);
+  return null;
 }
 
 /** Outline around the shaft and every floor except the long L2 corridor, which runs out of the tower on purpose. */
@@ -88,6 +108,7 @@ export function Tower({
                 ) : (
                   <Roof data={data} labels={labels.roof} tier={tier} />
                 )}
+                <FloorPrep floor={id} />
               </Suspense>
             )}
           </FloorLevel>
