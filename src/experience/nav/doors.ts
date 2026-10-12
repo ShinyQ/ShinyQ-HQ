@@ -61,34 +61,36 @@ export function doorAlong(doors: readonly DoorTrigger[] | undefined, a: Vec2, b:
   return null;
 }
 
-/** Room whose zone the rover already used; it must leave the zone before that door fires again. */
-export interface DoorLatch {
-  room: RoomId | null;
+/** Room whose zone the rover already used; it must leave the zone before that door fires again. Floor pads reuse it with pad ids. */
+export interface DoorLatch<K extends string = RoomId> {
+  room: K | null;
   /** Zone the rover is in and when it entered it (for the dwell). */
-  zone?: RoomId | null;
+  zone?: K | null;
   since?: number;
   /**
    * Room opened by a mission, a click or the palette, whose pad must not fire again until the rover
    * has been on it and left (or has stopped elsewhere): a drawer can open while the rover is still
    * driving toward the pad, and closing it must not reopen the room when the rover gets there.
    */
-  consumed?: RoomId | null;
+  consumed?: K | null;
   consumedSeen?: boolean;
 }
 
-export interface DoorStep {
+export interface DoorStep<K extends string = RoomId> {
   /** Phase is "explore" (no drawer, ride or overlay). */
   explore: boolean;
   /** The rover follows a path (click-to-move or mission autopilot). */
   following: boolean;
-  /** Clock (s) and rover speed (u/s); a fast pass needs DOOR_DWELL in the zone. */
+  /** Clock (s) and rover speed (u/s); a fast pass needs `dwell` in the zone. */
   now?: number;
   speed?: number;
   /** Rover heading (radians, forward is (sin, cos)) and the door's inward direction. */
   heading?: number;
   facing?: Vec2;
   /** The room whose drawer is open right now (store `activeRoom` while the phase is "room"). */
-  openRoom?: RoomId | null;
+  openRoom?: K | null;
+  /** Seconds a fast pass must stay in the zone before it fires (default DOOR_DWELL; floor pads use PAD.dwell). */
+  dwell?: number;
 }
 
 /** Below this speed (u/s) the rover counts as stopped for releasing a consumed pad it never reached. */
@@ -100,10 +102,14 @@ export const DOOR_HEADING = Math.SQRT1_2;
 /**
  * Advances the latch for the zone the rover is in and returns the room to open, if any.
  * Doors fire only on intent: the rover drives into the door (along `facing`), stops or slows down
- * on the pad, or stays on it for DOOR_DWELL. A path or a fast manual drive passing over a pad does not open it, and a mission
+ * on the pad, or stays on it for `dwell`. A path or a fast manual drive passing over a pad does not open it, and a mission
  * drive resolves before the drawer opens.
  */
-export function stepDoorLatch(latch: DoorLatch, current: RoomId | null, { explore, following, now = 0, speed = 0, heading, facing, openRoom = null }: DoorStep): RoomId | null {
+export function stepDoorLatch<K extends string = RoomId>(
+  latch: DoorLatch<K>,
+  current: K | null,
+  { explore, following, now = 0, speed = 0, heading, facing, openRoom = null, dwell = DOOR_DWELL }: DoorStep<K>,
+): K | null {
   if (openRoom && openRoom !== latch.consumed) {
     latch.consumed = openRoom;
     latch.consumedSeen = false;
@@ -129,7 +135,7 @@ export function stepDoorLatch(latch: DoorLatch, current: RoomId | null, { explor
   }
   if (current === latch.room || current === latch.consumed || following) return null;
   const into = heading !== undefined && facing !== undefined && Math.sin(heading) * facing.x + Math.cos(heading) * facing.z >= DOOR_HEADING;
-  if (speed >= DOOR_SLOW && !into && now - (latch.since ?? now) < DOOR_DWELL) return null;
+  if (speed >= DOOR_SLOW && !into && now - (latch.since ?? now) < dwell) return null;
   latch.room = current;
   return current;
 }

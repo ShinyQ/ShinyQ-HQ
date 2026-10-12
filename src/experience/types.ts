@@ -19,6 +19,24 @@ export interface DoorTrigger {
   facing?: Vec2;
 }
 
+/** Floor pad kinds: the elevator call pad (every floor) and the L2 year teleporter. */
+export type PadKind = "elevator" | "teleport";
+
+/** A glowing floor pad the rover parks on (or the visitor clicks) to open a picker. Not an obstacle. */
+export interface PadTrigger {
+  /** `elevator:<FloorId>` or `teleport:<year>`, unique per floor. */
+  id: string;
+  kind: PadKind;
+  /** Center of the pad (floor-local). */
+  at: Vec2;
+  /** Trigger and glow radius (default PAD.radius). */
+  radius?: number;
+  /** Teleporters: the year whose plaza the pad stands on. */
+  year?: number;
+  /** Yaw of the floating icon (forward is (sin, cos)), toward the floor's camera. */
+  face: number;
+}
+
 export interface FloorLayout {
   id: FloorId;
   /** Walkable slab footprint. */
@@ -32,6 +50,8 @@ export interface FloorLayout {
   accent: string;
   /** Door triggers checked by the Director every frame (generic for every floor). */
   doors?: DoorTrigger[];
+  /** Floor pads (elevator call pad on every floor, L2 year teleporters), checked by the Director every frame. */
+  pads?: PadTrigger[];
   /** Rail floors: x positions a horizontal swipe snaps to (L2 year segments and the annex). */
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
