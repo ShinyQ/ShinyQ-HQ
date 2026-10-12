@@ -82,10 +82,14 @@ describe("specsForChanges", () => {
 
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
-      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts")
+      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts")
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());
+  });
+
+  it("never runs the opt-in camera look gate from e2e:changed", () => {
+    expect(specsForChanges(["e2e/camera-visual.spec.ts"]).specs).toEqual([]);
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
