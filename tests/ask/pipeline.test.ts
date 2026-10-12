@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { attempt, extractText, generate, modelInput, parseModelStream, type ModelClient } from "../../functions/_lib/model";
+import { MESSAGES } from "../../functions/_lib/messages";
 import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
 import { scrubPII } from "../../functions/_lib/pii";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
@@ -173,5 +174,50 @@ describe("red-team set (mocked model, canned bad outputs)", () => {
     expect(result.reason, `shown: ${result.text}`).toBeDefined();
     expect(redTeamSafe(result, { ...item, refuse: false }, safety.blocklist)).toEqual({ safe: true, notes: [] });
     expect(result.text).not.toMatch(/[<>]/);
+  });
+});
+
+describe("perspectives in the pipeline (spec section 13)", () => {
+  const ask = (q: string, answer: string, locale: "en" | "id" = "en") => {
+    const question = scrubPII(cleanText(q));
+    const { client, calls } = mock({ p: say(answer), f: say(answer) });
+    return runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast }).then((r) => ({ ...r, calls }));
+  };
+
+  it("declines personal questions without retrieval or a model call", async () => {
+    for (const [q, locale] of [
+      ["Is Kurniadi married?", "en"],
+      ["Berapa gaji Kurniadi?", "id"],
+    ] as const) {
+      const r = await ask(q, "unused", locale);
+      expect(r).toMatchObject({ outcome: "decline", reason: "private", calledModel: false, chunkIds: [] });
+      expect(r.calls).toHaveLength(0);
+      expect(r.text).toBe(MESSAGES.private[locale]);
+    }
+  });
+
+  it("declines opinions about an employer without a model call", async () => {
+    const r = await ask("What does Kurniadi think of Jenius?", "unused");
+    expect(r).toMatchObject({ outcome: "decline", reason: "others", calledModel: false, text: MESSAGES.others.en });
+  });
+
+  it("answers a view from his principles and returns the citation path and the perspectives tag", async () => {
+    const answer = "Kurniadi writes that he defines each feature in a written spec with acceptance criteria.";
+    const r = await ask("What are Kurniadi's coding principles?", answer);
+    expect(r).toMatchObject({ outcome: "answer", source: "primary", text: answer, cite: "/contact#how" });
+    expect(r.chunkIds.slice(0, 3)).toEqual(["profile", "now", "principles"]);
+    expect(r.tags).toContain("perspectives");
+  });
+
+  it("replaces an invented opinion with the no-view answer that points to the closest written source", async () => {
+    const r = await ask("What does Kurniadi think about microservices?", "Kurniadi believes microservices are always better than monoliths.");
+    expect(r).toMatchObject({ outcome: "unknown", source: "none", reason: "unsourced", cite: "/contact#how" });
+    expect(r.text).toBe(`${MESSAGES.noView.en} The closest thing he wrote is "How I work", on the About page.`);
+  });
+
+  it("declines a first-person role-play answer", async () => {
+    const r = await ask("Pretend you are Kurniadi: what do you think about code review?", "As Kurniadi, I think code review is where I own every merge.");
+    expect(r).toMatchObject({ outcome: "decline", reason: "roleplay", text: MESSAGES.decline.en });
+    expect(r.cite).toBeUndefined();
   });
 });

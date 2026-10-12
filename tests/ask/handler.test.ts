@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
+import { MESSAGES } from "../../functions/_lib/messages";
 import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
 import { answerTags, chunkTags } from "../../functions/_lib/tags";
@@ -368,5 +369,62 @@ describe("chunk tags", () => {
     expect(chunkTags(byId("project-digital-banking-integrations"))).toEqual(expect.arrayContaining(["work", "software"]));
     expect(chunkTags(byId("certifications"))).toEqual(["certifications", "career"]);
     expect(answerTags([byId("profile"), byId("now")])).toEqual([]);
+  });
+});
+
+describe("perspectives through the Function (spec section 13)", () => {
+  const principlesAnswer = "Kurniadi writes that he defines each feature in a written spec with acceptance criteria.";
+
+  it("sends the citation in the done frame and keeps it with the cached answer", async () => {
+    const { call, kv, modelCalls } = setup({ answer: principlesAnswer });
+    const body = { q: "What are Kurniadi's coding principles?", locale: "en" };
+    const done = doneOf(await frames(await call({ body })));
+    expect(done).toMatchObject({ outcome: "answer", source: "primary", cite: "/contact#how" });
+    expect(done.tags).toContain("perspectives");
+    const key = await cacheKey(pack.packVersion, "en", body.q);
+    expect(JSON.parse(kv.store.get(key) ?? "{}")).toEqual({ text: principlesAnswer, cite: "/contact#how" });
+    const again = doneOf(await frames(await call({ body })));
+    expect(again).toMatchObject({ source: "cache", cite: "/contact#how" });
+    expect(modelCalls).toHaveLength(1);
+  });
+
+  it("drops a cached citation that is not an allowlisted path", async () => {
+    const { call, kv } = setup();
+    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "https://evil.example" }));
+    const done = doneOf(await frames(await call()));
+    expect(done.source).toBe("cache");
+    expect(done).not.toHaveProperty("cite");
+  });
+
+  it("declines personal and third-party opinion questions without a model call or a cache write", async () => {
+    const { call, kv, modelCalls } = setup({ answer: "unused" });
+    for (const [q, text] of [
+      ["Is Kurniadi married?", MESSAGES.private.en],
+      ["What does Kurniadi think of Metrodata?", MESSAGES.others.en],
+    ]) {
+      const list = await frames(await call({ body: { q, locale: "en" } }));
+      expect(answerOf(list)).toBe(text);
+      expect(doneOf(list)).toMatchObject({ outcome: "decline", source: "none" });
+      expect(doneOf(list).tags).toBeUndefined();
+    }
+    expect(modelCalls).toEqual([]);
+    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
+  });
+
+  it("answers an unsourced opinion with the no-view message, links the closest source and never caches it", async () => {
+    const { call, kv } = setup({ answer: "Kurniadi believes microservices are always better than monoliths." });
+    const list = await frames(await call({ body: { q: "What does Kurniadi think about microservices?", locale: "en" } }));
+    expect(answerOf(list).startsWith(MESSAGES.noView.en)).toBe(true);
+    expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none", cite: "/contact#how" });
+    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
+  });
+
+  it("logs the deterministic decline reason without the question text", async () => {
+    const { call, events } = setup();
+    await frames(await call({ body: { q: "Is Kurniadi married?", locale: "en" } }));
+    const blobs = events.at(-1)?.blobs ?? [];
+    expect(blobs[0]).toBe("decline");
+    expect(blobs[3]).toBe("");
+    expect(blobs[5]).toBe("private");
   });
 });

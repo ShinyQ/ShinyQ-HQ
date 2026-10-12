@@ -1,4 +1,4 @@
-import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag } from "../../src/ask/protocol";
+import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
 import { findBlocked } from "./checks";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
@@ -10,6 +10,9 @@ import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
+
+/** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
+const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "unsourced"]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
@@ -235,11 +238,12 @@ export function createAskHandler(deps: HandlerDeps) {
     const key = await cacheKey(pack.packVersion, locale, question);
     try {
       const hit = await env.ASK_KV?.get(key);
-      const cached = hit ? (JSON.parse(hit) as { text?: unknown }) : null;
+            const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
       if (cached && typeof cached.text === "string" && findBlocked(cached.text, safety.blocklist).length === 0) {
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, latencyMs: now() - started });
         const tags = answerTags(retrieve(pack, question, locale).chunks);
-        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate }, tags), delay, responseHeaders);
+        const cite = isAskCite(cached.cite) ? cached.cite : undefined;
+        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -267,16 +271,18 @@ export function createAskHandler(deps: HandlerDeps) {
     const background: Promise<unknown>[] = [];
     if (result.calledModel) {
       background.push(countModelCall(env.ASK_KV, visitor, started));
-      const bad = result.reason === "model_failed" || (result.reason !== undefined && result.reason !== "harmful");
+      const bad = result.reason === "model_failed" || (result.reason !== undefined && !EXPECTED_REASONS.has(result.reason));
       background.push(recordSample(env.ASK_KV, bad, started));
     }
     if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback") && env.ASK_KV) {
-      background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
+      background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
     logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, latencyMs: now() - started });
-    const tags = result.outcome === "answer" || result.outcome === "unknown" ? result.tags : [];
-    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate }, tags), delay, responseHeaders);
+    const shareable = result.outcome === "answer" || result.outcome === "unknown";
+    const tags = shareable ? result.tags : [];
+    const cite = shareable ? result.cite : undefined;
+    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}) }, tags), delay, responseHeaders);
   }
 
   return async function onRequest(context: PagesContext): Promise<Response> {
