@@ -1,7 +1,7 @@
 "use client";
 
 import { Billboard, Text } from "@react-three/drei";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Object3D, Quaternion, Vector3, type InstancedMesh } from "three";
 import type { Accent } from "@/content/schema";
@@ -9,7 +9,6 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { floorY } from "../../config";
 import { createInstancedGlassMaterial, neonColor } from "../../fx/materials";
 import { useUniformTime } from "../../fx/useUniformTime";
-import { intents } from "../../input/intents";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import { hologramParts } from "./hologramParts";
@@ -29,9 +28,6 @@ export const ACCENT_HEX: Record<Accent, string> = {
 const H = LABS.wallHeight;
 const IDLE_SPIN = 0.4;
 
-function setCursor(value: string) {
-  document.body.style.cursor = value;
-}
 
 /** Pod rooms: glass walls (one instanced mesh), neon edges, door markers, forecourts and hero stages (one line batch). */
 function PodShells({ placed }: { placed: PlacedPod[] }) {
@@ -86,22 +82,12 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
     m.computeBoundingSphere();
   }, [placed]);
 
-  // Clicking a pod drives the rover to its door, where the trigger opens the drawer.
-  const onClick = (e: ThreeEvent<MouseEvent>) => {
-    if (e.delta > 6 || e.instanceId === undefined) return;
-    e.stopPropagation();
-    const p = placed[e.instanceId];
-    if (p) intents.emit({ type: "goto", point: p.door });
-  };
 
   return (
     <group>
       <instancedMesh
         ref={fills}
         args={[undefined, undefined, placed.length]}
-        onClick={onClick}
-        onPointerOver={() => setCursor("pointer")}
-        onPointerOut={() => setCursor("")}
         material={glass}
         renderOrder={2}
       >

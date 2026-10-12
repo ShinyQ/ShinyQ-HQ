@@ -22,8 +22,8 @@ export interface DecorProps {
   reducedMotion: boolean;
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
   zones: Record<LibraryZone, string>;
-  /** In-world click on a station: drive there and open its drawer. */
-  onStation: (room: RoomId) => void;
+  /** Dev prototypes only: a click on a station. The tower clicks stations through point-and-go (interact/registry.ts). */
+  onStation?: (room: RoomId) => void;
   /** In-world click on a paper: open its preview modal (`openPaperFor`). */
   onPaper: (id: string) => void;
 }
@@ -47,7 +47,7 @@ function setCursor(value: string) {
 }
 
 /** Station plinths and alcoves: glass boxes (one instanced mesh) and their edges and door markers (one line batch). */
-export function StationShells({ stations, tier, onStation }: { stations: readonly LibraryStation[]; tier: GpuTier; onStation: (room: RoomId) => void }) {
+export function StationShells({ stations, tier, onStation }: { stations: readonly LibraryStation[]; tier: GpuTier; onStation?: (room: RoomId) => void }) {
   const mesh = useRef<InstancedMesh>(null);
   const glass = useMemo(() => createInstancedGlassMaterial(tierFill(0.06, tier)), [tier]);
   const list = useMemo(() => [glass], [glass]);
@@ -89,11 +89,12 @@ export function StationShells({ stations, tier, onStation }: { stations: readonl
   }, [stations]);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
-    if (e.delta > 6 || e.instanceId === undefined) return;
+    if (!onStation || e.delta > 6 || e.instanceId === undefined) return;
     e.stopPropagation();
     const s = stations[e.instanceId];
     if (s) onStation(s.room);
   };
+  const handlers = onStation ? { onClick, onPointerOver: () => setCursor("pointer"), onPointerOut: () => setCursor("") } : {};
 
   return (
     <group name="library-stations">
@@ -103,9 +104,7 @@ export function StationShells({ stations, tier, onStation }: { stations: readonl
         args={[undefined, undefined, Math.max(1, stations.length)]}
         material={glass}
         renderOrder={2}
-        onClick={onClick}
-        onPointerOver={() => setCursor("pointer")}
-        onPointerOut={() => setCursor("")}
+        {...handlers}
       >
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>

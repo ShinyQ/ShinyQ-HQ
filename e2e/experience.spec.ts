@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -242,17 +242,16 @@ test.describe("rover on desktop", () => {
     expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
   });
 
-  test("click to move drives to the clicked point", async ({ page }) => {
+  test("a click on empty floor does not move the rover", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
-    // Below and left of the rover, which sits near the screen center.
-    await page.mouse.click(500, 580);
-    await waitForRoverMove(page, start, 2);
-    await page.waitForFunction(() => {
-      const r = (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover;
-      return r.speed === 0;
-    });
+    const empty = await emptyFloorPoint(page);
+    await page.mouse.click(empty.x, empty.y);
+    await waitForFrames(page, 30);
+    const { rover, phase } = await snapshot(page);
+    expect(Math.hypot(rover.x - start.x, rover.z - start.z)).toBeLessThan(0.05);
+    expect(phase).toBe("explore");
   });
 
   test("the Lobby stays under the draw call budget", async ({ page }) => {
@@ -313,15 +312,17 @@ test.describe("rover on desktop", () => {
 test.describe("rover on touch devices", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-  test("tap to move, joystick and vertical swipe", async ({ page }) => {
+  test("a tap on empty floor does not move the rover; the joystick and a vertical swipe still do", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
 
     await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
-    await page.touchscreen.tap(140, 600);
-    await waitForRoverMove(page, start, 2);
-    await page.waitForTimeout(1500);
+    const empty = await emptyFloorPoint(page);
+    await page.touchscreen.tap(empty.x, empty.y);
+    await waitForFrames(page, 30);
+    const still = (await snapshot(page)).rover;
+    expect(Math.hypot(still.x - start.x, still.z - start.z)).toBeLessThan(0.05);
 
     const joystick = page.getByTestId("joystick");
     await expect(joystick).toBeVisible();
@@ -570,7 +571,7 @@ async function holdUntil(page: Page, key: string, check: (yaw: number) => boolea
 }
 
 test.describe("free orbit camera", () => {
-  test("mouse drag rotates the view; a click without drag still moves the rover", async ({ page }) => {
+  test("mouse drag rotates the view; a click without drag still drives to a target", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     const before = await snapshot(page);
@@ -592,12 +593,14 @@ test.describe("free orbit camera", () => {
     await page.mouse.up({ button: "right" });
     expect(await currentYaw(page)).toBeGreaterThan(yaw + 0.5);
 
-    // The view persists (no spring-back) and a plain click still drives.
+    // The view persists (no spring-back) and a plain click on a target still drives there (point-and-go).
     await page.waitForTimeout(2500);
     expect(Math.abs((await currentYaw(page)) - yaw)).toBeGreaterThan(0.5);
     await waitForCameraSettle(page);
     const start = (await snapshot(page)).rover;
-    await page.mouse.click(560, 520);
+    const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], minDistance: 3 });
+    const point = await targetPoint(page, target.id);
+    await page.mouse.click(point.x, point.y);
     await waitForRoverMove(page, start, 1.5);
   });
 
@@ -633,7 +636,7 @@ test.describe("free orbit camera", () => {
 test.describe("free orbit on touch", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-  test("one-finger drag rotates, a tap still moves", async ({ page }) => {
+  test("one-finger drag rotates, a tap still selects a target", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
@@ -651,9 +654,13 @@ test.describe("free orbit on touch", () => {
     expect(after.floor).toBe("L1");
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
 
+    // A plain tap is not a drag: it selects the target under it (point-and-go) and offers Go.
     await waitForCameraSettle(page);
-    await page.touchscreen.tap(150, 600);
-    await waitForRoverMove(page, after.rover, 1.5);
+    const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], safe: PHONE_SAFE });
+    const point = await targetPoint(page, target.id);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect.poll(() => hoveredTarget(page)).toEqual({ id: target.id, via: "tap" });
+    await expect(page.getByTestId("interact-go")).toBeVisible();
 
     await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
@@ -696,19 +703,4 @@ test.describe("orbit on every floor", () => {
     expect(rail).toBeLessThanOrEqual((35 * Math.PI) / 180 + 1e-6);
     expect(yaw).toBe(0);
   });
-});
-
-test("the click marker appears where the floor is clicked and fades", async ({ page }) => {
-  await enterHQ(page);
-  // Input sent before the scene loop and camera are live is dropped (AGENTS.md, Fast verification).
-  await waitForCameraSettle(page);
-  type M = { __hq: { marker: { visible: boolean; opacity: number; x: number; z: number }; rover: { x: number; z: number } } };
-  const before = await page.evaluate(() => ({ ...(window as unknown as M).__hq.marker }));
-  const viewport = page.viewportSize()!;
-  // Lower middle of the view is open floor in front of the rover at the Lobby spawn.
-  await page.getByTestId("hq-world").click({ position: { x: viewport.width / 2 + 160, y: viewport.height - 140 } });
-  // The ring lands where the floor was clicked (its position persists after the fade, so a slow frame cannot miss it)...
-  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker).then((m) => m.x !== before.x || m.z !== before.z)).toBe(true);
-  // ...and fades out.
-  await expect.poll(() => page.evaluate(() => (window as unknown as M).__hq.marker.opacity), { timeout: 10_000 }).toBeLessThan(0.05);
 });

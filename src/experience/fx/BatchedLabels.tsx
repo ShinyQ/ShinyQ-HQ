@@ -8,7 +8,7 @@ import { applyLabel, type BatchedLabel } from "./labelProps";
 /**
  * All labels of a floor in one draw call: a troika `BatchedText` packs every member's glyphs, font,
  * color and transform (relative to this group) into one mesh. Members cannot billboard, so give each
- * label a fixed `yaw` toward where it is read from. Not raycast: wrap clickable signs in a `HitBox`.
+ * label a fixed `yaw` toward where it is read from. Not raycast: make clickable signs point-and-go targets (interact/registry.ts).
  */
 export function BatchedLabels({ labels, name = "labels" }: { labels: readonly BatchedLabel[]; name?: string }) {
   const { batch, base } = useMemo(() => {

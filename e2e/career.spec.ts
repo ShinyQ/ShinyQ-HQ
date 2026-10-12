@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, railScreenPoint, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -89,8 +89,8 @@ test.describe("Career Road (L2)", () => {
     await expect(page.getByTestId("year-chip")).toHaveAttribute("data-place", "2024");
 
     // Rooms dock in one row on both plaza edges. Open the 2024 room on the north edge, back off its
-    // pad into the plaza (S drives toward the camera), then click the room's floor: the rover drives
-    // to the door pad, stops on it and the room opens (a straight drive back would hinge on the turn).
+    // pad into the plaza (S drives toward the camera), then click the room itself (point-and-go): the
+    // rover drives back to the door pad and the room opens.
     await openJourney(page, "/en/journey/crypto-tracker-2024");
     await waitForPhase(page, "room");
     await page.keyboard.press("Escape");
@@ -101,8 +101,8 @@ test.describe("Career Road (L2)", () => {
     await page.keyboard.up("s");
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { rover: { speed: number } } } } }).__hq.store.getState().rover.speed === 0);
     await waitForCameraSettle(page);
-    const floor = await railScreenPoint(page, { x: pad.x, z: pad.z - 2.3 });
-    await page.getByTestId("hq-world").click({ position: floor });
+    const room = await targetPoint(page, "L2:door:crypto-tracker-2024");
+    await page.mouse.click(room.x, room.y);
     await waitForPhase(page, "room", 60_000);
     expect(await activeRoom(page)).toBe("L2:crypto-tracker-2024");
     await expect(drawer).toBeVisible();

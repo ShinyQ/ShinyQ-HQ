@@ -1,14 +1,13 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
 import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
-import { intents } from "../../input/intents";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType, GpuTier } from "../../types";
@@ -83,21 +82,12 @@ function Pads({ rooms, tier }: { rooms: CareerRoom[]; tier: GpuTier }) {
     if (pedestals.current) pedestals.current.instanceMatrix.needsUpdate = true;
   }, [rooms]);
 
-  const onClick = (e: ThreeEvent<MouseEvent>) => {
-    if (e.delta > 6 || e.instanceId === undefined) return;
-    e.stopPropagation();
-    const room = rooms[e.instanceId];
-    if (room) intents.emit({ type: "goto", point: room.at });
-  };
 
   return (
     <>
       <instancedMesh
         ref={pads}
         args={[plane, undefined, rooms.length]}
-        onClick={onClick}
-        onPointerOver={() => (document.body.style.cursor = "pointer")}
-        onPointerOut={() => (document.body.style.cursor = "")}
         frustumCulled={false}
       >
         <meshBasicMaterial transparent opacity={tierFill(0.12, tier)} depthWrite={false} toneMapped={false} />

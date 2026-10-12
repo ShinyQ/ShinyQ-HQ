@@ -23,7 +23,7 @@ describe("boost", () => {
     expect(boostOn(ahead, ["w", "shift"], false)).toBe(true);
     expect(boostOn(ahead, ["Shift"], false)).toBe(true);
     expect(boostOn(ahead, [], true)).toBe(true);
-    // Autopilot (missions, walks, elevator approach) and click-to-move have no manual input.
+    // Autopilot (missions, walks, elevator approach, point-and-go drives) has no manual input.
     expect(boostOn(null, ["shift"], true)).toBe(false);
     expect(boostOn({ x: 0, z: 0 }, ["shift"], true)).toBe(false);
   });
