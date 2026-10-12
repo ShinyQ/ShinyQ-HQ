@@ -4,14 +4,15 @@ import { useEffect, useRef, type RefObject } from "react";
 import {
   classifySwipe,
   classifyWheel,
-  createWheelGate,
   exceedsDragThreshold,
   intents,
   isMoveKey,
+  isPitchKey,
   isRotateKey,
   keyToIntent,
   pinchFactor,
   twistDelta,
+  wheelZoomFactor,
 } from "./intents";
 
 /** Radians of yaw per pixel of drag or trackpad deltaX, and pitch per pixel of vertical drag. */
@@ -39,7 +40,7 @@ interface PointerTrack {
 /**
  * Attaches keyboard (window), wheel and pointer listeners (world element) and
  * translates them into intents. Returns the set of held movement and rotation
- * keys (WASD, arrows, Q/E, Shift), which the director and camera poll every frame.
+ * keys (WASD, arrows, Q/E, R/F, Shift), which the director and camera poll every frame.
  */
 export function useInputSources(world: RefObject<HTMLElement | null>) {
   const held = useRef(new Set<string>());
@@ -57,7 +58,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
       const inControl = Boolean(target?.closest(CONTROL));
       const key = e.key.toLowerCase();
       if (key === "shift") keys.add(key);
-      if (!inText && !e.metaKey && !e.ctrlKey && !e.altKey && (isMoveKey(key) || isRotateKey(key))) {
+      if (!inText && !e.metaKey && !e.ctrlKey && !e.altKey && (isMoveKey(key) || isRotateKey(key) || isPitchKey(key))) {
         keys.add(key);
         e.preventDefault();
         return;
@@ -86,7 +87,6 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = world.current;
     if (!el) return;
-    const gate = createWheelGate();
     const pointers = new Map<number, PointerTrack>();
     // Previous two-finger positions, for pinch (zoom), twist (yaw) and vertical pan (pitch).
     let pair: { a: { x: number; y: number }; b: { x: number; y: number } } | null = null;
@@ -94,14 +94,9 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const kind = classifyWheel({ dx: e.deltaX, dy: e.deltaY, ctrl: e.ctrlKey });
-      if (kind === "zoom") {
-        intents.emit({ type: "zoom", factor: Math.exp(e.deltaY * 0.002) });
-      } else if (kind === "rotate") {
-        intents.emit({ type: "orbit", dyaw: -e.deltaX * WHEEL_YAW, source: "wheel" });
-      } else if (kind === "elevator") {
-        const dir = gate(e.deltaY, e.timeStamp);
-        if (dir) intents.emit({ type: "elevator", to: dir });
-      }
+      // Owner request (round 5): scrolling and pinching zoom (all the way in is first person); floors stay on PageUp/PageDown and the elevator.
+      if (kind === "zoom") intents.emit({ type: "zoom", factor: wheelZoomFactor(e.deltaY, e.deltaMode) });
+      else if (kind === "rotate") intents.emit({ type: "orbit", dyaw: -e.deltaX * WHEEL_YAW, source: "wheel" });
     };
 
     const currentPair = () => {

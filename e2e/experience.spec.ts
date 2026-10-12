@@ -212,17 +212,22 @@ test.describe("elevator", () => {
     await context.close();
   });
 
-  test("wheel and PageUp/PageDown move one floor at a time", async ({ page }) => {
+  test("PageUp/PageDown move one floor at a time; the wheel zooms and never changes floors", async ({ page }) => {
     await enterHQ(page);
     await page.mouse.move(720, 450);
     await page.mouse.wheel(0, -120);
+    await page.mouse.wheel(0, 120);
+    await page.mouse.wheel(0, 120);
+    await waitForFrames(page, 10);
+    const after = await snapshot(page);
+    expect(after.floor).toBe("L1");
+    expect(after.ride).toBeNull();
+    await page.keyboard.press("PageUp");
     await waitForFloor(page, "L2");
     await page.keyboard.press("PageUp");
     await waitForFloor(page, "L3");
     await page.keyboard.press("PageDown");
     await waitForFloor(page, "L2");
-    await page.mouse.wheel(0, 120);
-    await waitForFloor(page, "L1");
   });
 
   test("built floors sync their route", async ({ page }) => {

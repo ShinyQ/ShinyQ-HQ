@@ -3,7 +3,6 @@ import {
   applyDeadZone,
   classifySwipe,
   createIntentBus,
-  createWheelGate,
   isMoveKey,
   keyToIntent,
   moveVectorFromKeys,
@@ -52,31 +51,6 @@ describe("keyboard mapping", () => {
     expect(keyToIntent("PageUp", { inText: true })).toBeNull();
     expect(keyToIntent("k", { meta: true, inText: true })).toBeNull();
     expect(keyToIntent("q")).toBeNull();
-  });
-});
-
-describe("wheel gate", () => {
-  it("fires once per continuous gesture", () => {
-    const gate = createWheelGate();
-    const fired = [];
-    for (let t = 0; t < 2000; t += 16) {
-      const r = gate(-30, t);
-      if (r) fired.push(r);
-    }
-    expect(fired).toEqual(["up"]);
-  });
-
-  it("fires again for a new gesture after the cooldown", () => {
-    const gate = createWheelGate();
-    expect(gate(120, 0)).toBe("down");
-    expect(gate(120, 300)).toBeNull();
-    expect(gate(120, 1100)).toBe("down");
-  });
-
-  it("ignores tiny deltas", () => {
-    const gate = createWheelGate();
-    expect(gate(5, 0)).toBeNull();
-    expect(gate(5, 500)).toBeNull();
   });
 });
 
