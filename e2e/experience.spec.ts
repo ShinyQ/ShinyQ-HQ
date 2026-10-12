@@ -243,9 +243,9 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
-    // Lobby slab x -24 to 28, z -21 to 21 (centered on the elevator axis), minus the rover radius.
+    // Lobby slab x -24 to 64 (the Highlights Hall east of x = 28), z -21 to 21, minus the rover radius.
     expect(rover.x).toBeGreaterThan(-23.01);
-    expect(rover.x).toBeLessThan(27.01);
+    expect(rover.x).toBeLessThan(63.01);
     expect(rover.z).toBeGreaterThan(-20.01);
     expect(rover.z).toBeLessThan(20.01);
     // Never inside the hologram pedestal at (6, 0).
@@ -497,7 +497,7 @@ test.describe("missions in 3D", () => {
     await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     const terminal = page.getByRole("dialog", { name: "Ask Rover" });
     await expect(terminal).toBeVisible();
-    await page.keyboard.press("5");
+    await page.keyboard.press("6");
     await expect(terminal).toBeHidden();
     // The rover drives to the elevator, rides to the Roof and opens the comms terminals in the drawer.
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride !== null);

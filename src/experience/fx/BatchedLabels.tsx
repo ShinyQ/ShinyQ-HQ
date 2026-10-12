@@ -10,7 +10,7 @@ import { applyLabel, type BatchedLabel } from "./labelProps";
  * color and transform (relative to this group) into one mesh. Members cannot billboard, so give each
  * label a fixed `yaw` toward where it is read from. Not raycast: make clickable signs point-and-go targets (interact/registry.ts).
  */
-export function BatchedLabels({ labels, name = "labels" }: { labels: readonly BatchedLabel[]; name?: string }) {
+export function BatchedLabels({ labels, name = "labels", renderOrder }: { labels: readonly BatchedLabel[]; name?: string; renderOrder?: number }) {
   const { batch, base } = useMemo(() => {
     const base = new MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false });
     const batch = new BatchedText();
@@ -43,5 +43,5 @@ export function BatchedLabels({ labels, name = "labels" }: { labels: readonly Ba
     [batch, base],
   );
 
-  return <primitive object={batch} name={name} />;
+  return <primitive object={batch} name={name} renderOrder={renderOrder ?? 0} />;
 }

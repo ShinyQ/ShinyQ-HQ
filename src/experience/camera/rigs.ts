@@ -18,6 +18,9 @@ export const FOLLOW: Record<ViewportClass, { fov: number; offset: Vec3 }> = {
   mobile: { fov: 50, offset: [18, 24, 18] },
 };
 
+/** How far ahead of the rover (along the camera's forward) the follow camera looks, per camera class. */
+export const FOLLOW_LOOK_AHEAD: Record<ViewportClass, number> = { desktop: 6, tablet: 6, mobile: 5 };
+
 /**
  * Rail rig for the L2 Career Road: camera at (x, y, z) looking at (x + 4, 0, 0). High and far
  * enough that both room rows of a year plaza (about 20 u either side of the road) stay in frame.

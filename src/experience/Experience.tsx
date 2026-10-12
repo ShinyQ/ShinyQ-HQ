@@ -27,6 +27,7 @@ import { interactRuntime } from "./interact/runtime";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { renderBudget, sceneSettings } from "./scene/settings";
+import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 
@@ -93,6 +94,9 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     place(resume.floor, { x: resume.x, z: resume.z });
   } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
     place(startFloor, doorOf(startFloor, startRoom) ?? layouts[startFloor].spawn);
+  } else if (startRoom && floorOf(startRoom) === "L1") {
+    // `/{locale}#highlights-<station>`: start on the station's door pad, then open it below.
+    place("L1", doorOf("L1", startRoom) ?? layouts.L1.spawn);
   } else {
     s.setPhase(lobbyStartPhase(true));
   }
@@ -131,6 +135,7 @@ export default function Experience({
   const tLibrary = useTranslations("library");
   const tContact = useTranslations("contact");
   const tWalk = useTranslations("walk");
+  const tHall = useTranslations("hall");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -245,10 +250,11 @@ export default function Experience({
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  // On L4 only hosted posts have their own route (/blog/{slug}); shelves and Medium posts keep /library.
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts and the L1 Highlights Hall stations keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
-    return (room: RoomId) => !room.startsWith("L4:") || hosted.has(room);
+    // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
+    return (room: RoomId) => !isHighlightRoom(room) && (!room.startsWith("L4:") || hosted.has(room));
   }, [data.library.posts]);
   useRoomUrlSync(data.locale, hasPage);
 
@@ -259,6 +265,25 @@ export default function Experience({
         skillsTitle: tHome("skillsTitle"),
         certs: { title: tHome("certsTitle"), all: tCerts("wall.all"), other: tCerts("wall.other"), inProgress: tCerts("status.in-progress"), expired: tCerts("status.expired") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
+        hall: {
+          about: tHall("about"),
+          projects: tHall("projects"),
+          experience: tHall("experience"),
+          contact: tHall("contact"),
+          // The career type labels, like the L2 type icons and the /journey chips.
+          employment: tCommon("type.job"),
+          freelance: tCommon("type.freelance"),
+          visitLive: tCommon("visitLive"),
+          stations: {
+            about: t("rooms.highlightsAbout"),
+            projects: t("rooms.highlightsProjects"),
+            experience: t("rooms.highlightsExperience"),
+            contact: t("rooms.highlightsContact"),
+          },
+          more: (count: number) => tHall("more", { count }),
+          cvHint: tHall("cvHint"),
+          hall: tHall("hall"),
+        },
       },
       labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
       career: {
@@ -299,10 +324,14 @@ export default function Experience({
           contact: t("rooms.contact"),
           cv: t("rooms.cv"),
           research: t("rooms.research"),
+          highlightsAbout: t("rooms.highlightsAbout"),
+          highlightsProjects: t("rooms.highlightsProjects"),
+          highlightsExperience: t("rooms.highlightsExperience"),
+          highlightsContact: t("rooms.highlightsContact"),
         },
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall],
   );
 
   return (

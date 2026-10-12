@@ -2,6 +2,7 @@ import type { FloorId } from "@/content/schema";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
+import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
@@ -18,7 +19,13 @@ export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
  * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts) once
  * their road ships; `?walk=on` turns every walk on for tests and previews, `?walk=off` turns them off.
  */
-export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3", "L4", "RF"];
+export const WALK_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
+
+/**
+ * Floors whose walk never shows the generic first-visit prompt; the launcher pill, Ask Rover and Cmd-K
+ * still start it. L1: a separate onboarding introduces the Highlights Hall and its Quick tour.
+ */
+export const NO_WALK_PROMPT: readonly FloorId[] = ["L1"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -87,12 +94,17 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
  * tests/unit/lobby-layout.test.ts.
  */
 export const LOBBY = {
-  bounds: { minX: -24, maxX: 28, minZ: -21, maxZ: 21 },
+  /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
+  bounds: { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 },
   /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
   spawn: { x: 14, z: 10 },
   hologram: { x: 6, z: 0, radius: 3 },
-  /** Name and headline float above the stats tiles. */
-  titleY: 7.6,
+  /**
+   * Name and headline float above the stats tiles and the monogram (both top out at 5.85), low and
+   * small enough that the name clears the HUD top bar at 1440 x 900 (tests/unit/lobby-title.test.ts).
+   */
+  titleY: 6.4,
+  titleFont: { name: 0.58, headline: 0.3, gap: 0.12 },
   statsRadius: 10,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
@@ -100,7 +112,8 @@ export const LOBBY = {
   skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
   certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
-  kiosk: { x: 2, z: 19, w: 3, d: 2 },
+  /** Ask Rover kiosk footprint (x 1 to 3, z 17.6 to 21): touches the south slab edge; floors/lobby/kiosk.ts turns it to face east. */
+  kiosk: { x: 2, z: 19.3, w: 2, d: 3.4 },
   laneRadius: 12,
 } as const;
 
@@ -151,17 +164,25 @@ function withElevatorPad(layout: FloorLayout): FloorLayout {
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, kiosk } = LOBBY;
   const layouts: Record<FloorId, FloorLayout> = {
-    L1: standard(
-      "L1",
-      LOBBY.bounds,
-      [
-        rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
-        rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
-        rect(certWall.x, certWall.z, certWall.w, certWall.d),
-        rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
-      ],
-      LOBBY.spawn,
-    ),
+    L1: {
+      ...standard(
+        "L1",
+        LOBBY.bounds,
+        [
+          rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
+          rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
+          rect(certWall.x, certWall.z, certWall.w, certWall.d),
+          rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
+          ...HALL_LAYOUT.obstacles,
+        ],
+        LOBBY.spawn,
+      ),
+      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera zones.
+      doors: HALL_LAYOUT.doors,
+      road: HALL_LAYOUT.network,
+      roadZone: HALL_LAYOUT.zone,
+      viewZones: HALL_LAYOUT.viewZones,
+    },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).
     L3: buildLabsLayout(extras.labs ?? []).floor,

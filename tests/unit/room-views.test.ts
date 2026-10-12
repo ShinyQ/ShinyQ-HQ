@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getContent, getPods, getProfile } from "@/content/load";
+import { getContact, getContent, getPods, getProfile, getStats, getTimeline } from "@/content/load";
+import { highlightEntries } from "@/content/highlights";
+import { pickFeaturedPods } from "@/content/pageview";
 import { buildRoomViews } from "@/content/room-views";
 import { podView } from "@/content/room-views/labs";
 import { LOCALES } from "@/content/schema";
+import { podLiveLink } from "@/content/selectors";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
 import en from "../../messages/en.json";
@@ -155,5 +158,36 @@ describe("pod live links (R4-J)", () => {
     }
     expect(podView(makePod({ liveUrl: "https://mii-microsoft-ai.azurewebsites.net" }), "en").live).toBe("https://mii-microsoft-ai.azurewebsites.net");
     expect(podView(makePod(), "en").live).toBeUndefined();
+  });
+});
+
+describe("Highlights Hall room views", () => {
+  it("builds the Highlights Hall stations from the landing's selectors (both locales)", () => {
+    for (const locale of LOCALES) {
+      const views = buildRoomViews(locale);
+      const about = views["L1:highlights-about"];
+      expect(about.kind).toBe("highlights");
+      expect(about.title).toBe(getProfile().name);
+      expect(about.metrics.map((m) => m.value)).toEqual(getStats().slice(0, 4).map((s) => s.value));
+      expect(about.link?.room).toBe("L1:profile");
+
+      const projects = views["L1:highlights-projects"];
+      expect(projects.cards?.map((c) => c.room)).toEqual(pickFeaturedPods(getPods()).map((p) => `L3:${p.slug}`));
+      for (const card of projects.cards ?? []) expect(card.image?.thumb).toMatch(/\.thumb\.webp$/);
+      // Live sites (R4-J) only through the guarded selector; never a hard-coded slug.
+      expect(projects.cards?.map((c) => c.live)).toEqual(pickFeaturedPods(getPods()).map((p) => podLiveLink(p)?.href));
+
+      const experience = views["L1:highlights-experience"];
+      const { employment, freelance } = highlightEntries(getTimeline());
+      expect(experience.cards?.map((c) => c.room)).toEqual([...employment, ...freelance].map((e) => `L2:${e.slug}`));
+      expect(new Set(experience.cards?.map((c) => c.group)).size).toBe(2);
+      expect(experience.cards?.every((c) => c.type === "job" || c.type === "freelance")).toBe(true);
+
+      const contact = views["L1:highlights-contact"];
+      const items = contact.sections.flatMap((s) => s.items ?? []);
+      expect(items.some((i) => i.href === `mailto:${getContact().email}`)).toBe(true);
+      expect(items.some((i) => i.href?.endsWith(".pdf"))).toBe(true);
+      expect([about, projects, experience, contact].map((v) => v.next)).toEqual(["L1:highlights-projects", "L1:highlights-experience", "L1:highlights-contact", undefined]);
+    }
   });
 });

@@ -137,7 +137,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <Certifications locale={locale} limit={6} />
       </SectionSplit>
 
-      <section aria-labelledby="closing-title" className="pv-wrap pv-sec">
+      <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec">
         <h2 id="closing-title" className="pv-d-l max-w-[18ch] text-[clamp(34px,4.6vw,64px)]">
           {roof.availability[locale]}
         </h2>

@@ -1,8 +1,9 @@
 "use client";
 
-import { Text } from "@react-three/drei";
 import { useMemo } from "react";
 import { COLORS, LOBBY } from "../../config";
+import { BatchedLabels } from "../../fx/BatchedLabels";
+import type { BatchedLabel } from "../../fx/labelProps";
 import type { ExperienceData } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import { SKILLS_PAD, SKILLS_TEXT, skillsWallLayout } from "./layout";
@@ -35,29 +36,41 @@ export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]
       }),
     [skills, w, h, column, ITEM_TOP],
   );
+  // Title, headings and item columns in one BatchedText (one draw call instead of one per text).
+  const labels = useMemo<BatchedLabel[]>(
+    () => [
+      { text: title.toUpperCase(), position: [0, h + 0.3, 0], font: FONTS.monoBold, fontSize: 0.42, letterSpacing: 0.12, color: COLORS.green, anchorX: "center", anchorY: "bottom" },
+      ...skills.flatMap((group, i): BatchedLabel[] => {
+        const left = -w / 2 + i * column + COLUMN_PAD;
+        const front = d / 2 + 0.03;
+        return [
+          {
+            text: group.label.toUpperCase(),
+            position: [left, h - SKILLS_PAD.top, front],
+            font: FONTS.monoBold,
+            fontSize: LABEL_SIZE,
+            letterSpacing: LABEL_TRACKING,
+            lineHeight: LABEL_LINE,
+            color: GROUP_ACCENT[group.id] ?? COLORS.white,
+            anchorX: "left",
+            anchorY: "top",
+            textAlign: "left",
+            maxWidth: textWidth,
+          },
+          // No maxWidth: one item per line, never wrapped (the drei Text used whiteSpace="nowrap").
+          { text: group.items.join("\n"), position: [left + ICON_GAP, h - ITEM_TOP, front], font: FONTS.sans, fontSize: ITEM_SIZE, lineHeight: ITEM_LINE, color: "#e4e4e7", anchorX: "left", anchorY: "top", textAlign: "left" },
+        ];
+      }),
+    ],
+    [skills, title, h, w, d, column, textWidth, ITEM_TOP],
+  );
   return (
     <group position={[x, 0, z]}>
       {/* Glowing plinth; the wall stands on it. */}
       <GlassBox size={[w, plinth, d + 0.4]} position={[0, plinth / 2, 0]} color={COLORS.green} fillOpacity={0.35} edgeOpacity={1} />
       <group position={[0, plinth, 0]}>
         <GlassBox size={[w, h, d]} position={[0, h / 2, 0]} color={COLORS.green} fillOpacity={0.05} edgeOpacity={0.85} />
-        <Text font={FONTS.monoBold} fontSize={0.42} letterSpacing={0.12} color={COLORS.green} anchorX="center" anchorY="bottom" position={[0, h + 0.3, 0]} material-toneMapped={false}>
-          {title.toUpperCase()}
-        </Text>
-        {skills.map((group, i) => {
-          const left = -w / 2 + i * column + COLUMN_PAD;
-          const accent = GROUP_ACCENT[group.id] ?? COLORS.white;
-          return (
-            <group key={group.id} position={[left, 0, d / 2 + 0.03]}>
-              <Text font={FONTS.monoBold} fontSize={LABEL_SIZE} letterSpacing={LABEL_TRACKING} lineHeight={LABEL_LINE} color={accent} anchorX="left" anchorY="top" position={[0, h - SKILLS_PAD.top, 0]} maxWidth={textWidth} material-toneMapped={false}>
-                {group.label.toUpperCase()}
-              </Text>
-              <Text font={FONTS.sans} fontSize={ITEM_SIZE} color="#e4e4e7" anchorX="left" anchorY="top" position={[ICON_GAP, h - ITEM_TOP, 0]} lineHeight={ITEM_LINE} maxWidth={textWidth - ICON_GAP} whiteSpace="nowrap">
-                {group.items.join("\n")}
-              </Text>
-            </group>
-          );
-        })}
+        <BatchedLabels labels={labels} name="skills-labels" />
         <group position={[0, 0, d / 2 + 0.035]}>
           <LogoQuads quads={quads} />
         </group>

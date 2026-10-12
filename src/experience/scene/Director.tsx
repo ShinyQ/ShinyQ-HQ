@@ -15,7 +15,7 @@ import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
-import { buildRoadGraph, roadRoute, type RoadGraph } from "../nav/road";
+import { buildRoadGraph, roadRoute, routeUsesRoad, type RoadGraph } from "../nav/road";
 import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
@@ -55,11 +55,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
     return out;
   }, [layouts]);
-  /** Autopilot route: along the floor's road when it has one (walkable floors), else the navgrid. */
+  /** Autopilot route: along the floor's road when it has one (walkable floors; on L1 only into or out of the hall), else the navgrid. */
   const autopilotPath = useCallback(
     (floor: FloorId, from: Vec2, to: Vec2) => {
-      const road = layouts[floor].road;
-      return road ? roadRoute(road, grids[floor], from, to, roads[floor]) : findPath(grids[floor], from, to);
+      const layout = layouts[floor];
+      return routeUsesRoad(layout, from, to) ? roadRoute(layout.road!, grids[floor], from, to, roads[floor]) : findPath(grids[floor], from, to);
     },
     [layouts, grids, roads],
   );
@@ -71,6 +71,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     arrivedUntil: 0,
     statusUntil: 0,
     lastSync: 0,
+    /** Draw calls and triangles of the last whole frame (every render pass). */
+    frameCalls: 0,
+    frameTriangles: 0,
     now: 0,
     prevPhase: "",
     door: { room: null } as DoorLatch,
@@ -198,6 +201,13 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.now = three.clock.elapsedTime;
     const now = local.now;
     const s = store.getState();
+    // Count every pass of a frame (the full tier's composer renders several): read the last frame's
+    // totals, then reset by hand, because `autoReset` would keep only the final pass.
+    const info = three.gl.info;
+    info.autoReset = false;
+    local.frameCalls = info.render.calls;
+    local.frameTriangles = info.render.triangles;
+    info.reset();
 
     // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {
@@ -397,8 +407,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
 
     if (now - local.lastSync > STORE_SYNC_S) {
       local.lastSync = now;
-      roverRuntime.drawCalls = three.gl.info.render.calls;
-      roverRuntime.triangles = three.gl.info.render.triangles;
+      roverRuntime.drawCalls = local.frameCalls;
+      roverRuntime.triangles = local.frameTriangles;
       s.setRover({
         x: pose.x,
         z: pose.z,

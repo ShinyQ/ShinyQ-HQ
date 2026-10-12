@@ -57,6 +57,11 @@ export interface FloorLayout {
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
   road?: RoadNetwork;
+  /**
+   * Limits `road` to drives that start or end inside this rect (L1: the Highlights Hall east of the
+   * certification wall); other drives on the floor use the navgrid. Unset: every drive follows the road.
+   */
+  roadZone?: Rect;
   /** After an elevator ride the rover rolls on to this point (along the road); a mission or input takes over at once. */
   arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
@@ -146,6 +151,8 @@ export interface ExperienceData {
   career: CareerData;
   library: LibraryData;
   roof: RoofData;
+  /** L1 Highlights Hall: the landing's featured projects with their cover thumbnails. */
+  highlights: HighlightsData;
 }
 
 /** L4 payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/library.ts`). Posts keep `getPosts()` order (newest first), like the room catalog. */
@@ -178,4 +185,10 @@ export interface RoofData {
   timezone: string;
   /** One-line intro for the about card (`profile.subheadline`). */
   subheadline: string;
+}
+
+/** L1 Highlights Hall payload (locale-resolved; drawer content comes from `room-views/highlights.ts`). */
+export interface HighlightsData {
+  /** The Page View landing's featured projects (`pickFeaturedPods` over site order), each with its 480 px cover thumbnail. */
+  projects: { slug: string; title: string; wing: Wing; thumb: string }[];
 }

@@ -18,7 +18,7 @@ const SECONDARY =
 const itemsOf = (view: RoomView): RoomLinkItem[] => view.sections.flatMap((s) => s.items ?? []);
 
 /** Comms station: mailto and copy for the email, then the channels (new tab). */
-function ContactBody({ view }: { view: RoomView }) {
+export function ContactBody({ view }: { view: RoomView }) {
   const t = useTranslations("drawer.rooms");
   const tc = useTranslations("common");
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
@@ -84,7 +84,7 @@ function ContactBody({ view }: { view: RoomView }) {
 }
 
 /** CV kiosk: opens the CV viewer modal (page images of the owner's PDF), plus the PDF and the /cv page. */
-function CvBody({ view }: { view: RoomView }) {
+export function CvBody({ view }: { view: RoomView }) {
   const t = useTranslations("drawer.rooms");
   const tcv = useTranslations("cv");
   const items = itemsOf(view);

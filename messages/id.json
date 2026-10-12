@@ -339,7 +339,11 @@
       "talks": "Panggung sesi berbagi",
       "contact": "Stasiun komunikasi",
       "cv": "Kios CV",
-      "research": "Rak riset"
+      "research": "Rak riset",
+      "highlightsAbout": "Sorotan: tentang saya",
+      "highlightsProjects": "Sorotan: proyek unggulan",
+      "highlightsExperience": "Sorotan: pengalaman kerja",
+      "highlightsContact": "Sorotan: kontak"
     },
     "launcher": {
       "search": "Cari",
@@ -441,7 +445,7 @@
       "close": "Tutup",
       "here": "Anda di sini",
       "floorDesc": {
-        "L1": "Profil, statistik, keahlian dan sertifikasi",
+        "L1": "Profil, Aula Sorotan, keahlian dan sertifikasi",
         "L2": "Career Road: satu plaza per tahun",
         "L3": "Proyek product engineering dan AI engineering",
         "L4": "Artikel blog, makalah riset dan talk",
@@ -675,6 +679,12 @@
       "cv": "CV saya",
       "contact": "Hubungi saya"
     },
+    "highlights": {
+      "title": "Ikut tur singkat?",
+      "body": "Perjalanan empat pemberhentian di Aula Sorotan: tentang saya, proyek teratas, pengalaman kerja dan cara menghubungi saya.",
+      "start": "Tur singkat",
+      "name": "Tur singkat"
+    },
     "explore": "Jelajah bebas",
     "resumeAt": "Lanjutkan di titik {index}",
     "stopOf": "Titik {index} dari {total}",
@@ -736,6 +746,20 @@
       "pad": "Pad panggil lift (dibiarkan kosong)",
       "posts": "{count} tulisan di lantai, {archive} di papan arsip"
     }
+  },
+  "hall": {
+    "hall": "Aula Sorotan",
+    "about": "Tentang saya",
+    "projects": "3 proyek teratas",
+    "projectsSub": "Tiga proyek yang akan saya tunjukkan lebih dulu, lengkap dengan screenshot.",
+    "experience": "Pengalaman kerja",
+    "counts": "{employment} peran pekerjaan dan {freelance} proyek freelance, terbaru lebih dulu",
+    "contact": "Kontak",
+    "more": "+{count} lainnya di panel",
+    "cvHint": "CV saya tinggal satu ketukan: buka stasiun ini",
+    "fullProfile": "Baca profil lengkap saya",
+    "openProject": "Buka di Labs",
+    "openRole": "Buka di Career Road"
   },
   "certs": {
     "summary": "{count} sertifikasi dari {issuers} penerbit",

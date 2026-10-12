@@ -1,8 +1,9 @@
+import { pickFeaturedPods } from "@/content/pageview";
 import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
 import type { PaletteFilter } from "./host";
 
-export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -36,7 +37,21 @@ export interface YearInfo {
 }
 
 /** UI labels for structural rooms that have no content title (they come from `messages/*.json` `hud.rooms`). */
-export type StructuralRoom = "profile" | "stats" | "skills" | "certifications" | "workshop" | "publications" | "talks" | "contact" | "cv" | "research";
+export type StructuralRoom =
+  | "profile"
+  | "stats"
+  | "skills"
+  | "certifications"
+  | "workshop"
+  | "publications"
+  | "talks"
+  | "contact"
+  | "cv"
+  | "research"
+  | "highlightsAbout"
+  | "highlightsProjects"
+  | "highlightsExperience"
+  | "highlightsContact";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
@@ -48,7 +63,7 @@ export const FLOOR_PATHS: Record<FloorId, string> = {
 };
 
 /** Floor of each guided walk (mission step `{ kind: "walk" }`). */
-export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4" };
+export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4", highlights: "L1" };
 
 /** Palette a walk's floor page opens next to it when the walk cannot run (static tier, or the walk is off). */
 export const WALK_PALETTE: Partial<Record<WalkId, PaletteFilter>> = { projects: "pods", writing: "posts" };
@@ -84,6 +99,13 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
   add({ floor: "L1", slug: "stats", kind: "lobby", title: labels.stats, keywords: content.stats.map((s) => s.label.en), path: "/#stats", floorPath: "/#stats", surpriseWeight: 0 });
   add({ floor: "L1", slug: "skills", kind: "lobby", title: labels.skills, keywords: content.skills.flatMap((g) => g.items), path: "/#skills", floorPath: "/#skills", surpriseWeight: 0 });
   add({ floor: "L1", slug: "certifications", kind: "lobby", title: labels.certifications, keywords: content.certifications.flatMap((c) => [c.name, c.issuer, c.code ?? ""]).filter(Boolean), path: "/#certifications", floorPath: "/#certifications", surpriseWeight: 0 });
+  // L1 Highlights Hall: four stations behind the certification wall. The static tier shows the landing's matching section.
+  const featured = pickFeaturedPods(orderPods(content.floors.labs.pods));
+  const hall = ["highlights", "sorotan", "summary", "ringkasan"];
+  add({ floor: "L1", slug: "highlights-about", kind: "highlights", title: labels.highlightsAbout, subtitle: content.profile.headline, keywords: [...hall, "about", "tentang", content.profile.name], path: "/#intro", floorPath: "/#intro", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-projects", kind: "highlights", title: labels.highlightsProjects, keywords: [...hall, "top projects", "proyek", ...featured.map((p) => p.title.en)], path: "/#work", floorPath: "/#work", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-experience", kind: "highlights", title: labels.highlightsExperience, keywords: [...hall, "experience", "pengalaman", "employment", "pekerjaan", "freelance"], path: "/#journey", floorPath: "/#journey", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-contact", kind: "highlights", title: labels.highlightsContact, subtitle: content.floors.roof.availability, keywords: [...hall, "contact", "kontak", "email", "cv"], path: "/#contact", floorPath: "/#contact", surpriseWeight: 0 });
 
   // L2 Career Archive
   for (const { year, entries } of groupEntriesByYear(content.floors.careerArchive.entries)) {

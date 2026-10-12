@@ -339,7 +339,11 @@
       "talks": "Talks stage",
       "contact": "Comms station",
       "cv": "CV kiosk",
-      "research": "Research shelf"
+      "research": "Research shelf",
+      "highlightsAbout": "Highlights: about me",
+      "highlightsProjects": "Highlights: top projects",
+      "highlightsExperience": "Highlights: work experience",
+      "highlightsContact": "Highlights: contact"
     },
     "launcher": {
       "search": "Search",
@@ -441,7 +445,7 @@
       "close": "Close",
       "here": "You are here",
       "floorDesc": {
-        "L1": "Profile, stats, skills and certifications",
+        "L1": "Profile, the Highlights Hall, skills and certifications",
         "L2": "The Career Road: one plaza per year",
         "L3": "Product and AI engineering projects",
         "L4": "Blog posts, research papers and talks",
@@ -675,6 +679,12 @@
       "cv": "My CV",
       "contact": "Get in touch"
     },
+    "highlights": {
+      "title": "Take the quick tour?",
+      "body": "A four-stop drive through the Highlights Hall: about me, my top projects, my work experience and how to reach me.",
+      "start": "Quick tour",
+      "name": "Quick tour"
+    },
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",
     "stopOf": "Stop {index} of {total}",
@@ -736,6 +746,20 @@
       "pad": "Elevator call pad (kept free)",
       "posts": "{count} posts on the floor, {archive} on the archive board"
     }
+  },
+  "hall": {
+    "hall": "Highlights Hall",
+    "about": "About me",
+    "projects": "Top 3 projects",
+    "projectsSub": "The three projects I would show first, with screenshots.",
+    "experience": "Work experience",
+    "counts": "{employment} employment roles and {freelance} freelance projects, newest first",
+    "contact": "Contact",
+    "more": "+{count} more in the drawer",
+    "cvHint": "My CV is one tap away: open this station",
+    "fullProfile": "Read my full profile",
+    "openProject": "Open in the Labs",
+    "openRole": "Open on the Career Road"
   },
   "certs": {
     "summary": "{count, plural, one {# certification} other {# certifications}} from {issuers, plural, one {# issuer} other {# issuers}}",

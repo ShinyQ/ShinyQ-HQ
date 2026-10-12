@@ -16,6 +16,7 @@ export const ALL_SPECS = [
   "drawer-solid",
   "experience",
   "gallery",
+  "highlights",
   "hud",
   "interact",
   "labs",
@@ -78,6 +79,13 @@ export const RULES: Rule[] = [
 
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
   { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk"] },
+
+  // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.
+  {
+    test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|HighlightsHall|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
+    specs: ["experience", "highlights", "walk"],
+  },
+
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
@@ -86,7 +94,7 @@ export const RULES: Rule[] = [
   // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
   { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
-  { test: /^src\/experience\/floors\/lobby\//, specs: ["experience"] },
+  { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   { test: /^src\/experience\/camera\//, specs: ["experience", "career"] },

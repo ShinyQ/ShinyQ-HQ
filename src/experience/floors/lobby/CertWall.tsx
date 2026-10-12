@@ -1,6 +1,5 @@
 "use client";
 
-import { Text } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh } from "three";
@@ -8,6 +7,8 @@ import { issuerTabs } from "@/content/certs";
 import { openCert } from "@/hud/events";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
+import { BatchedLabels } from "../../fx/BatchedLabels";
+import type { BatchedLabel } from "../../fx/labelProps";
 import { roverRuntime } from "../../rover/runtime";
 import type { ExperienceData, GpuTier } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
@@ -32,11 +33,16 @@ const BODY_HOVER = new Color("#132433");
 const LOGO = { size: 0.34, inset: 0.32 };
 const NEAR = 5;
 
+/** Offset (x right, y up, z toward the plaza) from the wall point at angle `a` and height `y`, to world space. */
+function facePoint(a: number, y: number, x: number, dy: number, z: number, r: number = R): [number, number, number] {
+  const yaw = faceYaw(a);
+  const [cx, cy, cz] = arcPoint(r, a, y);
+  return [cx + Math.cos(yaw) * x + Math.sin(yaw) * z, cy + dy, cz - Math.sin(yaw) * x + Math.cos(yaw) * z];
+}
+
 /** Badge-local offset (x right, y up, z toward the plaza) to world space. */
 function badgePoint(slot: CertSlot, x: number, y: number, z: number): [number, number, number] {
-  const yaw = faceYaw(slot.a);
-  const [cx, cy, cz] = arcPoint(R, slot.a, slot.y);
-  return [cx + Math.cos(yaw) * x + Math.sin(yaw) * z, cy + y, cz - Math.sin(yaw) * x + Math.cos(yaw) * z];
+  return facePoint(slot.a, slot.y, x, y, z);
 }
 
 /** Neon outlines of every badge in one line geometry (one draw call), colored by status. */
@@ -93,42 +99,36 @@ function BadgeLogos({ slots, certs }: { slots: CertSlot[]; certs: Cert[] }) {
   );
 }
 
-function BadgeText({ slot, cert, labels }: { slot: CertSlot; cert: Cert; labels: CertLabels }) {
+/** Headline (code or issuer) and the name plus date of one badge, for the wall's text batch. */
+function badgeLabels(slot: CertSlot, cert: Cert, labels: CertLabels): BatchedLabel[] {
   const headline = cert.code ?? cert.issuer;
   const left = -badge.w / 2 + (cert.logo ? LOGO.inset * 2 + 0.06 : 0.15);
   const footer = cert.status === "earned" ? cert.issuedLabel : cert.status === "in-progress" ? labels.inProgress : labels.expired;
-  return (
-    <group position={arcPoint(R, slot.a, slot.y)} rotation={[0, faceYaw(slot.a), 0]}>
-      <Text
-        font={FONTS.monoBold}
-        fontSize={cert.code ? 0.28 : 0.17}
-        color={ACCENT[cert.status]}
-        anchorX="left"
-        anchorY="middle"
-        position={[left, badge.h / 2 - LOGO.inset, 0.02]}
-        maxWidth={badge.w / 2 - left - 0.1}
-        whiteSpace="nowrap"
-        material-toneMapped={false}
-      >
-        {headline}
-      </Text>
-      <Text
-        font={FONTS.sans}
-        fontSize={0.12}
-        color={cert.status === "expired" ? "#8b8b94" : "#d4d4d8"}
-        anchorX="left"
-        anchorY="top"
-        position={[-badge.w / 2 + 0.15, badge.h / 2 - 0.66, 0.02]}
-        maxWidth={badge.w - 0.3}
-        lineHeight={1.3}
-      >
-        {`${cert.short}\n${footer.toUpperCase()}`}
-      </Text>
-    </group>
-  );
+  const yaw = faceYaw(slot.a);
+  return [
+    // No maxWidth: one line, never wrapped (the drei Text used whiteSpace="nowrap").
+    { text: headline, position: badgePoint(slot, left, badge.h / 2 - LOGO.inset, 0.02), yaw, font: FONTS.monoBold, fontSize: cert.code ? 0.28 : 0.17, color: ACCENT[cert.status], anchorX: "left", anchorY: "middle" },
+    {
+      text: `${cert.short}\n${footer.toUpperCase()}`,
+      position: badgePoint(slot, -badge.w / 2 + 0.15, badge.h / 2 - 0.66, 0.02),
+      yaw,
+      font: FONTS.sans,
+      fontSize: 0.12,
+      color: cert.status === "expired" ? "#8b8b94" : "#d4d4d8",
+      anchorX: "left",
+      anchorY: "top",
+      maxWidth: badge.w - 0.3,
+      lineHeight: 1.3,
+    },
+  ];
 }
 
-function Pill({ label, a, y, w, active, color, onClick }: { label: string; a: number; y: number; w: number; active: boolean; color: string; onClick: () => void }) {
+/** Label of a tab or pager pill (drawn in the wall's text batch, over the pill). */
+function pillLabel(label: string, a: number, y: number, active: boolean, color: string): BatchedLabel {
+  return { text: label, position: facePoint(a, y, 0, 0, 0.02), yaw: faceYaw(a), font: FONTS.monoBold, fontSize: CERT_WALL.tab.font, letterSpacing: 0.08, color: active ? "#05050c" : color, anchorX: "center", anchorY: "middle" };
+}
+
+function Pill({ a, y, w, active, color, onClick }: { a: number; y: number; w: number; active: boolean; color: string; onClick: () => void }) {
   return (
     <group
       position={arcPoint(R, a, y)}
@@ -148,9 +148,6 @@ function Pill({ label, a, y, w, active, color, onClick }: { label: string; a: nu
         <meshBasicMaterial color={active ? color : "#0f0f19"} transparent opacity={0.9} toneMapped={false} />
       </mesh>
       <BoxEdges size={[w, CERT_WALL.tab.h, 0.01]} color={color} opacity={active ? 1 : 0.55} />
-      <Text font={FONTS.monoBold} fontSize={CERT_WALL.tab.font} letterSpacing={0.08} color={active ? "#05050c" : color} anchorX="center" anchorY="middle" position={[0, 0, 0.02]} material-toneMapped={false}>
-        {label}
-      </Text>
     </group>
   );
 }
@@ -180,8 +177,8 @@ function Panel({ half }: { half: number }) {
 /**
  * L1 certification wall: a curved holo-wall facing the plaza with issuer tabs (All, the main issuers,
  * Other) and up to 12 badges per page, earned newest first. Clicking a badge opens the shared preview
- * card (`openCert`, shown by `DialogHost`), never a third-party page in a frame. Badges are instanced, their outlines
- * and logos are one mesh each, so the wall stays near 30 draw calls at any certification count.
+ * card (`openCert`, shown by `DialogHost`), never a third-party page in a frame. Badges are instanced, their outlines,
+ * logos and every text (title, tabs, badges, pager) are one mesh each, so the wall stays near 15 draw calls at any count.
  */
 export function CertWall({ certifications, labels, tier }: { certifications: Cert[]; labels: CertLabels; tier: GpuTier }) {
   const reducedMotion = useHQStore((s) => s.reducedMotion);
@@ -246,28 +243,43 @@ export function CertWall({ certifications, labels, tier }: { certifications: Cer
     if (b.instanceColor) b.instanceColor.needsUpdate = true;
   });
 
+  // Title, tab and pager labels and every badge's texts in one BatchedText (one draw call), over the logos.
+  const texts = useMemo<BatchedLabel[]>(
+    () => [
+      {
+        text: `${labels.title.toUpperCase()} · ${certifications.length}`,
+        position: arcPoint(R + CERT_WALL.inset, 0, CERT_WALL.titleY),
+        yaw: faceYaw(0),
+        font: FONTS.monoBold,
+        fontSize: 0.42,
+        letterSpacing: 0.12,
+        color: COLORS.cyan,
+        anchorX: "center",
+        anchorY: "bottom",
+      },
+      ...tabSlots.map((t, i) => pillLabel(tabLabels[i], t.a, CERT_WALL.tabsY, tabs[i] === tab, COLORS.cyan)),
+      ...slots.flatMap((slot, i) => badgeLabels(slot, shown[i], labels)),
+      ...(page.pages > 1
+        ? [
+            pillLabel("<", -0.08, CERT_WALL.pagerY, false, COLORS.cyan),
+            { text: `${page.page + 1} / ${page.pages}`, position: arcPoint(R, 0, CERT_WALL.pagerY), yaw: faceYaw(0), font: FONTS.mono, fontSize: 0.22, color: "#a1a1aa", anchorX: "center", anchorY: "middle" } satisfies BatchedLabel,
+            pillLabel(">", 0.08, CERT_WALL.pagerY, false, COLORS.cyan),
+          ]
+        : []),
+    ],
+    // tabLabels and tabSlots derive from tabs and labels.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [labels, certifications.length, tabs, tab, slots, shown, page.page, page.pages],
+  );
+
   const pick = (e: ThreeEvent<PointerEvent | MouseEvent>) => (e.instanceId !== undefined && e.instanceId < shown.length ? e.instanceId : -1);
 
   return (
     <group name="cert-wall">
       <Panel half={half} />
-      <Text
-        font={FONTS.monoBold}
-        fontSize={0.42}
-        letterSpacing={0.12}
-        color={COLORS.cyan}
-        anchorX="center"
-        anchorY="bottom"
-        position={arcPoint(R + CERT_WALL.inset, 0, CERT_WALL.titleY)}
-        rotation={[0, faceYaw(0), 0]}
-        material-toneMapped={false}
-      >
-        {`${labels.title.toUpperCase()} · ${certifications.length}`}
-      </Text>
       {tabSlots.map((t, i) => (
         <Pill
           key={tabs[i].key}
-          label={tabLabels[i]}
           a={t.a}
           y={CERT_WALL.tabsY}
           w={t.w}
@@ -308,16 +320,11 @@ export function CertWall({ certifications, labels, tier }: { certifications: Cer
         <lineBasicMaterial vertexColors transparent opacity={0.85} toneMapped={false} />
       </lineSegments>
       <BadgeLogos slots={slots} certs={shown} />
-      {slots.map((slot, i) => (
-        <BadgeText key={shown[i].id} slot={slot} cert={shown[i]} labels={labels} />
-      ))}
+      <BatchedLabels labels={texts} name="cert-labels" renderOrder={4} />
       {page.pages > 1 && (
         <>
-          <Pill label="<" a={-0.08} y={CERT_WALL.pagerY} w={0.8} active={false} color={COLORS.cyan} onClick={() => setPageIndex(page.page - 1)} />
-          <Text font={FONTS.mono} fontSize={0.22} color="#a1a1aa" anchorX="center" anchorY="middle" position={arcPoint(R, 0, CERT_WALL.pagerY)} rotation={[0, faceYaw(0), 0]}>
-            {`${page.page + 1} / ${page.pages}`}
-          </Text>
-          <Pill label=">" a={0.08} y={CERT_WALL.pagerY} w={0.8} active={false} color={COLORS.cyan} onClick={() => setPageIndex(page.page + 1)} />
+          <Pill a={-0.08} y={CERT_WALL.pagerY} w={0.8} active={false} color={COLORS.cyan} onClick={() => setPageIndex(page.page - 1)} />
+          <Pill a={0.08} y={CERT_WALL.pagerY} w={0.8} active={false} color={COLORS.cyan} onClick={() => setPageIndex(page.page + 1)} />
         </>
       )}
     </group>

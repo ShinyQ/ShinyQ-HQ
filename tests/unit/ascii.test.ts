@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { renderAsciiArchitecture, renderReadme, wrap, type ReadmeLabels } from "@/hud/drawer/ascii";
+import { buildRoomViews } from "@/content/room-views";
+import en from "../../messages/en.json";
 
 const EM_DASH = "\u2014";
 
@@ -183,6 +185,13 @@ describe("renderReadme", () => {
     const dashed = renderReadme({ ...view, title: `A ${EM_DASH} B`, sections: [{ body: `x ${EM_DASH} y` }] }, labels);
     expect(dashed).not.toContain(EM_DASH);
     expect(renderAsciiArchitecture(arch)).not.toContain(EM_DASH);
+  });
+
+  it("lists the Highlights Hall cards in the README view", () => {
+    const view = buildRoomViews("en")["L1:highlights-experience"];
+    const text = renderReadme(view, { overview: "Overview", architecture: "Architecture", results: "Results", stack: "Stack", links: "Links" });
+    expect(text).toContain(`### ${en.common.type.job}`);
+    expect(text).toContain(view.cards![0].title);
   });
 });
 

@@ -16,6 +16,7 @@ import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { createOrbitState, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
 import {
+  FOLLOW_LOOK_AHEAD,
   followPose,
   forwardOf,
   hologramShift,
@@ -29,8 +30,6 @@ import {
 } from "./rigs";
 
 const RAIL_FORWARD = { x: 0, z: -1 };
-/** The follow camera aims this far ahead of the rover, so the floor in front fills the frame. */
-const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
 
 /**
  * Applies the active camera rig every frame with critically damped smoothing. The follow rig

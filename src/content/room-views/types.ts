@@ -82,6 +82,23 @@ export interface RoomResearchItem {
   preview: PaperPreview;
 }
 
+/**
+ * A card that rides to another room (Highlights Hall: a project on L3, a role on L2). Locale-resolved;
+ * `group` is the heading the card is listed under ("Employment", "Freelance").
+ */
+export interface RoomCard {
+  room: RoomId;
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  group?: string;
+  image?: RoomImage;
+  /** Career rooms: the Neon line type icon in its `CAREER_TONE`. */
+  type?: CareerType;
+  /** Project cards: the public live site (`podLiveLink(pod)?.href`, R4-J), shown as "Visit live site". */
+  live?: string;
+}
+
 export interface RoomView {
   id: RoomId;
   floor: FloorId;
@@ -122,6 +139,8 @@ export interface RoomView {
   tabs: DrawerTab[];
   /** Research shelf: papers with authors, venue and DOI; `self` is the owner's name to highlight. */
   research?: { items: RoomResearchItem[]; self: string; profiles: RoomLinkItem[]; metrics?: string };
+  /** Highlights Hall: cards that ride to their room (`HighlightsBody`). */
+  cards?: RoomCard[];
 }
 
 export type RoomViews = Record<RoomId, RoomView>;

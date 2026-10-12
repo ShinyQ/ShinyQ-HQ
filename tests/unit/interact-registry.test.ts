@@ -6,6 +6,8 @@ import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
+import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
+import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import {
@@ -74,10 +76,24 @@ describe("interactablesFor on the real content", () => {
   });
 
   it("turns every door into a target that drives to the door pad and opens its room", () => {
+    // L1 doors are the Highlights Hall stations: the hall registers them itself while it is mounted
+    // (registerExtraInteractables, see hallInteract.ts), so L1 is checked with that registration.
+    const dispose = registerExtraInteractables(
+      "L1",
+      highlightsInteractables(HALL_LAYOUT, {
+        about: en.hud.rooms.highlightsAbout,
+        projects: en.hud.rooms.highlightsProjects,
+        experience: en.hud.rooms.highlightsExperience,
+        contact: en.hud.rooms.highlightsContact,
+      }),
+    );
+    const withHall = { ...items, L1: interactablesFor("L1", layouts, data) };
+    dispose();
+    expect(layouts.L1.doors?.length).toBe(HALL_LAYOUT.stations.length);
     for (const floor of FLOOR_IDS) {
       for (const door of layouts[floor].doors ?? []) {
-        const kind = floor === "RF" ? "station" : "door";
-        const item = find(floor, `${floor}:${kind}:${door.room.slice(3)}`);
+        const kind = floor === "RF" || floor === "L1" ? "station" : "door";
+        const item = withHall[floor].find((i) => i.id === `${floor}:${kind}:${door.room.slice(3)}`);
         expect(item, door.room).toBeDefined();
         expect(item!.kind).toBe(kind);
         expect(item!.action).toEqual({ type: "open-room", room: door.room });

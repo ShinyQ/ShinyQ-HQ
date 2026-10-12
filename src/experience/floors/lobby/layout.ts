@@ -147,6 +147,11 @@ export function skillsWallLayout(groups: readonly { label: string; items: readon
 export const HOLOGRAM = { hexRadius: 2.3, y: 3.4 } as const;
 /** Half of the name/headline text block width (Text maxWidth 14). */
 const TITLE_HALF_WIDTH = 7;
+/** Troika's "normal" line height is about 1.2 em. */
+const TITLE_LINE = 1.2;
+/** Height of the name's top (the headline hangs below `LOBBY.titleY`). */
+export const TITLE_TOP = LOBBY.titleY + LOBBY.titleFont.name * TITLE_LINE;
+const TITLE_BOTTOM = LOBBY.titleY - LOBBY.titleFont.gap - LOBBY.titleFont.headline * TITLE_LINE;
 const BOB = 0.15;
 
 export interface Box {
@@ -171,13 +176,13 @@ export function lobbyElements(statCount: number, ringTurn = 0): Box[] {
   const out: Box[] = [
     box("pedestal", h.x, h.z, h.radius + 0.2, h.radius + 0.2, 0, 0.62),
     box("monogram", h.x, h.z, HOLOGRAM.hexRadius, HOLOGRAM.hexRadius, 0.62, HOLOGRAM.y + HOLOGRAM.hexRadius + BOB),
-    box("title", h.x, h.z, TITLE_HALF_WIDTH, TITLE_HALF_WIDTH, LOBBY.titleY - 0.6, LOBBY.titleY + 0.9),
+    box("title", h.x, h.z, TITLE_HALF_WIDTH, TITLE_HALF_WIDTH, TITLE_BOTTOM, TITLE_TOP),
     // The skills wall title floats 0.3 u above the wall.
     box("skills-wall", sw.x, sw.z, sw.w / 2, sw.d / 2 + 0.05, 0, sw.h + 0.8),
     // The curved wall's footprint (config) holds the widest panel: see the cert wall layout test.
     box("cert-wall", cw.x, cw.z, cw.w / 2, cw.d / 2, 0, cw.h + 0.8),
-    // Body plus the tilted screen above it (rotated 45 degrees, offset toward the camera).
-    box("kiosk", k.x + 0.15, k.z + 0.15, k.w / 2 + 0.3, k.d / 2 + 0.6, 0, 3.2),
+    // Body, stand and the screen centered above them, facing east (floors/lobby/kiosk.ts); the tilt leans it 0.3 u.
+    box("kiosk", k.x, k.z, k.w / 2 + 0.3, k.d / 2, 0, 3.4),
     box("elevator-door", -24, 0, 1, 1.6, 0, 3.2),
   ];
   for (let i = 0; i < statCount; i++) {

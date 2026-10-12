@@ -9,6 +9,7 @@ import {
   projectOnRoad,
   roadLength,
   roadRoute,
+  routeUsesRoad,
   sampleRoad,
   type RoadNetwork,
 } from "@/experience/nav/road";
@@ -104,6 +105,16 @@ describe("pathBetween", () => {
 });
 
 describe("roadRoute", () => {
+  it("limits a road to its zone when the floor sets one", () => {
+    const road = { roads: [], plazas: [], spurs: [] };
+    const zone = { minX: 0, maxX: 10, minZ: 0, maxZ: 10 };
+    expect(routeUsesRoad({}, { x: 1, z: 1 }, { x: 2, z: 2 })).toBe(false);
+    expect(routeUsesRoad({ road }, { x: -5, z: -5 }, { x: -6, z: -6 })).toBe(true);
+    expect(routeUsesRoad({ road, roadZone: zone }, { x: -5, z: -5 }, { x: -6, z: -6 })).toBe(false);
+    expect(routeUsesRoad({ road, roadZone: zone }, { x: -5, z: -5 }, { x: 5, z: 5 })).toBe(true);
+    expect(routeUsesRoad({ road, roadZone: zone }, { x: 5, z: 5 }, { x: -6, z: -6 })).toBe(true);
+  });
+
   const bounds: Rect = { minX: -6, maxX: 66, minZ: -14, maxZ: 14 };
   const pedestals: Rect[] = [
     { minX: 9, maxX: 11, minZ: -13, maxZ: -11 },
