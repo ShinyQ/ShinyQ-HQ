@@ -1,6 +1,23 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, collectErrors, driveTo, enterHQ, hoveredTarget, padsOf, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import {
+  asReturningVisitor,
+  collectErrors,
+  driveTo,
+  enterHQ,
+  expectRenderBudget,
+  hoveredTarget,
+  padsOf,
+  PHONE_SAFE,
+  snapshot,
+  targetPoint,
+  visibleTarget,
+  waitForFloor,
+  waitForHQ,
+  waitForPhase,
+  waitForRoverMove,
+  waitForSceneLive,
+} from "./hq";
 
 /**
  * Rover's dialog (src/hud/dialog): the first-session onboarding after the boot and intro, its
@@ -141,5 +158,195 @@ test.describe("hint bubbles", () => {
     await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: new RegExp(en.dialog.menu.hintsOn) }).click();
     await page.keyboard.press("Escape");
     await expect(bubble).toHaveCount(0);
+  });
+});
+
+type Box = { x: number; y: number; width: number; height: number };
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+const rect = async (locator: Locator): Promise<Box> => (await locator.boundingBox())!;
+
+/** Shows point-and-go's one-time "Click a glowing object" hint (InteractStatus) without clicking the world. */
+async function showPointHint(page: Page) {
+  await page.evaluate(() =>
+    (window as unknown as { __hq: { store: { getState: () => { setPointHint: (on: boolean) => void } } } }).__hq.store.getState().setPointHint(true),
+  );
+  await expect(page.getByTestId("point-hint")).toBeVisible();
+}
+
+/** Drives forward until the try-it step notices (2 u). */
+async function driveABit(page: Page) {
+  const from = (await snapshot(page)).rover;
+  await page.keyboard.down("w");
+  await waitForRoverMove(page, from, 2.5);
+  await page.keyboard.up("w");
+}
+
+test.describe("every step of the tour", () => {
+  test("each try-it step waits for the visitor, rings its HUD control and advances", async ({ page }) => {
+    const errors = collectErrors(page);
+    await freshVisit(page);
+    await waitForPhase(page, "explore", 30_000);
+    await expectLine(page, "welcome");
+    await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).click();
+
+    await expectLine(page, "move");
+    await expect(box(page)).toContainText(en.dialog.onboarding.moveFine);
+    await expect(page.getByTestId("dialog-skip")).toHaveText(en.dialog.onboarding.skip);
+    // Point-and-go's one-time hint sits in the bottom band, below the box.
+    await showPointHint(page);
+    expect(overlaps(await rect(box(page)), await rect(page.getByTestId("point-hint")))).toBe(false);
+    await next(page);
+
+    await expectLine(page, "point-go");
+    await expect(box(page)).toContainText(en.dialog.onboarding.pointGoFine);
+    await expect(page.getByTestId("dialog-try")).toBeVisible();
+    // Pressing on does not skip a try-it step.
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Enter");
+    await expect(box(page)).toHaveAttribute("data-line", "point-go");
+    await driveABit(page);
+
+    await expectLine(page, "moved");
+    await next(page);
+
+    // The Highlights Hall step shows only when the parallel plan's station is in the registry.
+    await expectLine(page, /^(highlights|elevator)$/);
+    if ((await box(page).getAttribute("data-line")) === "highlights") {
+      await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
+    }
+
+    await expectLine(page, "elevator");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "elevator");
+    await next(page);
+    await expectLine(page, "ask-rover");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "ask-rover");
+    await next(page);
+    await expectLine(page, "ask-ai");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "ask-ai");
+    await next(page);
+    await expectLine(page, "closing");
+    await next(page);
+
+    await expect(box(page)).toHaveCount(0);
+    await expect(page.getByTestId("onboard-spotlight")).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem("hq:onboarded"))).toBe("done");
+    expect(errors).toEqual([]);
+  });
+
+  test("a deep link rides on first, then runs the short tour, then the floor line with the walk choice", async ({ page }) => {
+    await freshVisit(page, "/en/library");
+    await waitForFloor(page, "L4");
+    await expect(box(page)).toHaveAttribute("data-dialog", "onboarding", { timeout: 30_000 });
+    await expectLine(page, "welcome");
+    await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).click();
+    await expectLine(page, "move");
+    await next(page);
+    await expectLine(page, "point-go");
+    // The fallback: Continue appears after 12 s without driving.
+    await choices(page).getByRole("button", { name: en.dialog.continue }).click({ timeout: 20_000 });
+    await expectLine(page, "moved");
+    await next(page);
+    await expectLine(page, "ask-rover");
+    await next(page);
+    await expectLine(page, "ask-ai");
+    await next(page);
+    await expectLine(page, "closing");
+    await expect(box(page)).toContainText(en.dialog.onboarding.closingShort);
+    await next(page);
+    await expect(box(page)).toHaveAttribute("data-dialog", "floor:L4", { timeout: 15_000 });
+    await expect(choices(page).getByRole("button", { name: en.walk.writing.start })).toBeVisible();
+  });
+
+  test("the ! bubble adds no draw calls", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.addInitScript(() => localStorage.setItem("hq:hints", "on"));
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    const lift = (await padsOf(page, "L1")).find((p) => p.kind === "elevator")!;
+    await driveTo(page, { x: lift.at.x + 4, z: lift.at.z });
+    await expect(page.getByTestId("hint-bubble")).toBeVisible({ timeout: 15_000 });
+    await expectRenderBudget(page);
+  });
+});
+
+test.describe("reduced motion", () => {
+  test("lines appear whole, one press advances, and nothing pulses", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
+    await freshVisit(page);
+    await waitForPhase(page, "explore", 30_000);
+    await expectLine(page, "welcome");
+    await expect(box(page)).toHaveAttribute("data-typing", "false");
+    await expect(box(page)).toHaveAttribute("data-motion", "still");
+    await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).click();
+    await expectLine(page, "move");
+    await expect(box(page)).toHaveAttribute("data-typing", "false");
+    await page.keyboard.press("Enter");
+    await expectLine(page, "point-go");
+    await driveABit(page);
+    await expectLine(page, "moved");
+    await page.keyboard.press("Enter");
+    await expectLine(page, /^(highlights|elevator)$/);
+    if ((await box(page).getAttribute("data-line")) === "highlights") {
+      await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
+    }
+    await expectLine(page, "elevator");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-motion", "still");
+    await context.close();
+  });
+});
+
+test.describe("phone layout", () => {
+  test("390x844: the box clears the joystick, boost, view controls, elevator panel and the Go chip; tap, Go and taps advance", async ({ browser }: { browser: Browser }) => {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+    const page = await context.newPage();
+    await freshVisit(page);
+    await waitForPhase(page, "explore", 30_000);
+    await expectLine(page, "welcome");
+    await expect(page.getByTestId("boost")).toBeVisible();
+    const dialog = await rect(box(page));
+    expect(dialog.x).toBeGreaterThanOrEqual(0);
+    expect(dialog.x + dialog.width).toBeLessThanOrEqual(390);
+    expect(dialog.y + dialog.height).toBeLessThanOrEqual(844);
+    for (const id of ["joystick", "boost", "view-controls", "elevator-panel"]) {
+      expect(overlaps(dialog, await rect(page.getByTestId(id))), id).toBe(false);
+    }
+    await showPointHint(page);
+    expect(overlaps(dialog, await rect(page.getByTestId("point-hint")))).toBe(false);
+
+    await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).tap();
+    await expectLine(page, "move");
+    await expect(box(page)).toContainText(en.dialog.onboarding.moveCoarse);
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    await box(page).tap();
+    await expectLine(page, "point-go");
+    await expect(box(page)).toContainText(en.dialog.onboarding.pointGoCoarse);
+
+    // Point-and-go on touch, as the line teaches: the first tap selects (Go chip), the chip drives.
+    const top = (await rect(box(page))).y;
+    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, bottom: 844 - top + 8 }, minDistance: 4 });
+    const point = await targetPoint(page, target.id);
+    await page.touchscreen.tap(point.x, point.y);
+    const go = page.getByTestId("interact-go");
+    await expect(go).toBeVisible();
+    await expect(go).toHaveText(en.hud.interact.go.replace("{label}", target.label));
+    expect(overlaps(await rect(box(page)), await rect(go))).toBe(false);
+    await expect(page.getByTestId("hint-bubble")).toHaveCount(0);
+    await expect(box(page)).toHaveAttribute("data-line", "point-go");
+    const from = (await snapshot(page)).rover;
+    await go.tap();
+    await waitForRoverMove(page, from, 2.5);
+    // Stop the drive before it arrives (arrival would open a drawer, a picker or Ask Rover and pause the line).
+    await page.keyboard.press("Escape");
+    await expectLine(page, "moved");
+
+    await page.getByTestId("dialog-skip").tap();
+    await expectLine(page, "skipped");
+    await box(page).tap();
+    if ((await box(page).count()) > 0) await box(page).tap();
+    await expect(box(page)).toHaveCount(0);
+    await context.close();
   });
 });

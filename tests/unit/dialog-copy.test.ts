@@ -33,6 +33,6 @@ describe("dialog placement", () => {
     expect(dialogPlacement("mobile", true)).toBe("phone");
     expect(DIALOG_PLACE.bottom).toContain("bottom-[128px]");
     expect(DIALOG_PLACE.raised).toContain("bottom-[160px]");
-    expect(DIALOG_PLACE.phone).toContain("right-[60px]");
+    expect(DIALOG_PLACE.phone).toContain("right-[68px]");
   });
 });

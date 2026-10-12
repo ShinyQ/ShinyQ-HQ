@@ -131,6 +131,6 @@ describe("DialogBox", () => {
   it("clears the joystick, boost and elevator panel on phones", () => {
     renderBox("phone");
     act(() => void say("Hi"));
-    expect(screen.getByTestId("dialog-box").className).toContain("right-[60px]");
+    expect(screen.getByTestId("dialog-box").className).toContain("right-[68px]");
   });
 });
