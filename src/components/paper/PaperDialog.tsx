@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PaperCitations, PaperPreview } from "@/content/citation";
 import { Modal } from "../Modal";
+import { PaperNotice, PaperReader } from "./PaperReader";
 
 type Format = keyof PaperCitations;
 const FORMATS: readonly Format[] = ["apa", "ieee", "bibtex"];
@@ -25,13 +26,28 @@ function External({ href, children, testId }: { href: string; children: ReactNod
 /**
  * Paper preview modal (lazy chunk, opened by `DialogHost` on the `hq:hud` "paper" command): title,
  * authors with the owner highlighted, venue, date, abstract, a copyable citation (APA, IEEE,
- * BibTeX) and DOI, Google Scholar, PDF and code links in a new tab. Nothing from a third party is
- * framed (CSP keeps `frame-src 'self'`).
+ * BibTeX) and DOI, Google Scholar, PDF and code links in a new tab. Papers with a self-hosted PDF
+ * get "Read the paper", which swaps the body for the paper reader (page images, `PaperReader`);
+ * `read` opens the reader at once. Nothing from a third party is framed (CSP keeps `frame-src 'self'`).
  */
-export default function PaperDialog({ paper, onClose }: { paper: PaperPreview; onClose: () => void }) {
+export default function PaperDialog({ paper, read = false, onClose }: { paper: PaperPreview; read?: boolean; onClose: () => void }) {
   const t = useTranslations("paper");
   const titleId = useId();
   const citeId = useId();
+  const doc = paper.document;
+  const [reading, setReading] = useState(read && Boolean(doc));
+  const readRef = useRef<HTMLButtonElement>(null);
+  const backRef = useRef<HTMLButtonElement>(null);
+  const switched = useRef(false);
+  useEffect(() => {
+    // The Modal focuses on mount; after a switch, focus the control that switches back.
+    if (!switched.current) return;
+    (reading ? backRef : readRef).current?.focus({ preventScroll: true });
+  }, [reading]);
+  const switchTo = (next: boolean) => {
+    switched.current = true;
+    setReading(next);
+  };
   const [format, setFormat] = useState<Format>("apa");
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   const reset = useRef<number | undefined>(undefined);
@@ -53,6 +69,14 @@ export default function PaperDialog({ paper, onClose }: { paper: PaperPreview; o
     window.clearTimeout(reset.current);
     reset.current = window.setTimeout(() => setStatus("idle"), 4000);
   };
+
+  if (reading && doc) {
+    return (
+      <Modal labelledBy={titleId} onClose={onClose} width="lg" testId="paper-dialog">
+        <PaperReader paper={paper} document={doc} titleId={titleId} backRef={backRef} onBack={() => switchTo(false)} onClose={onClose} />
+      </Modal>
+    );
+  }
 
   return (
     <Modal labelledBy={titleId} onClose={onClose} width="md" testId="paper-dialog">
@@ -98,6 +122,26 @@ export default function PaperDialog({ paper, onClose }: { paper: PaperPreview; o
             </>
           )}
         </dl>
+
+        {doc && (
+          <section className="space-y-2 rounded-lg border border-line p-3" data-testid="paper-document">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <button
+                ref={readRef}
+                type="button"
+                onClick={() => switchTo(true)}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
+                data-testid="paper-read"
+              >
+                {t("read")}
+              </button>
+              <p className="text-sm text-ink-2">
+                {t("readHint", { count: doc.pageCount })} · {t(`version.${doc.version}`)}
+              </p>
+            </div>
+            <PaperNotice paper={paper} document={doc} />
+          </section>
+        )}
 
         {(paper.abstract || paper.summary) && (
           <section aria-labelledby={`${titleId}-abstract`}>

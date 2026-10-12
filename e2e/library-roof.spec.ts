@@ -231,6 +231,12 @@ test.describe("missions to the Library and the Roof", () => {
     await page.keyboard.press("Escape");
     await expect(paper).toBeHidden();
     await expect(drawer).toBeVisible();
+    await drawer.getByRole("link", { name: "Read the paper" }).first().click();
+    const reader = page.getByTestId("paper-viewer-modal");
+    await expect(reader.getByRole("img", { name: /, page 1 of \d+$/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(reader).toBeHidden();
+    await expect(drawer).toBeVisible();
   });
 });
 
@@ -264,4 +270,59 @@ test("a paper opens its preview modal with the abstract, citations and new-tab l
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(research.getByRole("button", { name: /Study on the Dynamics of COVID-19/ })).toBeFocused();
+});
+
+test("a self-hosted paper opens in the paper reader: page images, zoom, download, IEEE notice, back to the abstract", async ({ page }) => {
+  await openPage(page, "/en/library?tier=static");
+  const research = page.locator("#research");
+  const row = research.getByTestId("research-row").filter({ hasText: "Indonesian Digital Wallet" });
+  const read = row.getByRole("link", { name: "Read the paper" });
+  await expect(read).toHaveAttribute("href", "/papers/ewallet-sentiment-cnn-lstm.pdf");
+  // Papers without a hosted PDF (the IEEE final version is not allowed) have no reader.
+  await expect(research.getByTestId("research-row").filter({ hasText: "Study on the Dynamics of COVID-19" }).getByRole("link", { name: "Read the paper" })).toHaveCount(0);
+
+  await read.click();
+  const dialog = page.getByRole("dialog", { name: "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method" });
+  const reader = dialog.getByTestId("paper-viewer-modal");
+  await expect(dialog.getByRole("button", { name: "Close paper preview" })).toBeFocused();
+  await expect(reader.getByTestId("paper-reader-meta")).toHaveText("7 pages · Authors' manuscript");
+  const first = reader.getByRole("img", { name: "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method, page 1 of 7" });
+  await expect(first).toBeVisible();
+  await expect.poll(() => first.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1400);
+  await expect(reader.getByRole("img")).toHaveCount(7);
+  await expect(reader.getByTestId("paper-notice")).toContainText("Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses");
+  await expect(reader.getByTestId("paper-notice").getByRole("link")).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
+  await expect(reader.getByTestId("paper-download")).toHaveAttribute("href", "/papers/ewallet-sentiment-cnn-lstm.pdf");
+  await expect(reader.getByTestId("paper-open-tab")).toHaveAttribute("rel", "noopener noreferrer");
+  await reader.getByRole("button", { name: "Zoom in" }).click();
+  await expect(reader.getByTestId("paper-zoom")).toHaveText(/125%/);
+  const pdf = await page.request.get("/papers/ewallet-sentiment-cnn-lstm.pdf");
+  expect(pdf.headers()["content-type"]).toContain("pdf");
+  await expect(page.locator("iframe")).toHaveCount(0);
+  const results = await new AxeBuilder({ page }).include("[data-testid='paper-dialog']").analyze();
+  expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+
+  await reader.getByRole("button", { name: "Abstract and citation" }).click();
+  await expect(dialog.getByTestId("paper-abstract")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Read the paper" })).toBeFocused();
+  await expect(dialog.getByTestId("paper-document")).toContainText("7 pages, PDF on this site");
+  await dialog.getByRole("button", { name: "Read the paper" }).click();
+  await expect(dialog.getByRole("button", { name: "Abstract and citation" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(read).toBeFocused();
+});
+
+test("the thesis reader shows the redacted PDF as a full-screen sheet on phones", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPage(page, "/id/library?tier=static");
+  const row = page.locator("#research").getByTestId("research-row").filter({ hasText: "Sentiboard" });
+  await row.getByRole("link", { name: "Baca makalah" }).click();
+  const dialog = page.getByTestId("paper-dialog");
+  await expect(dialog.getByTestId("paper-reader-meta")).toHaveText("18 halaman · Data pribadi disamarkan");
+  await expect(dialog.getByRole("img", { name: "Sentiboard: University Sentiment Dashboard Using IndoBERT, halaman 1 dari 18" })).toBeVisible();
+  await expect(dialog.getByTestId("paper-notice")).toHaveCount(0);
+  const box = (await dialog.boundingBox())!;
+  expect(box.width).toBe(390);
+  expect(box.height).toBe(844);
 });

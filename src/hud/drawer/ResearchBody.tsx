@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
+import { PaperReadLink } from "@/components/paper/PaperReadLink";
 import { PaperTrigger } from "@/components/paper/PaperTrigger";
 import type { RoomResearchItem } from "@/content/room-views/types";
 import type { RoomBodyProps } from "./bodies";
@@ -53,6 +54,11 @@ function Paper({ item, self }: { item: RoomResearchItem; self: string }) {
         <PaperTrigger paper={item.preview} className="link" testId="paper-cite">
           {t("preview")}
         </PaperTrigger>
+        {item.preview.document && (
+          <PaperReadLink paper={item.preview} className="link">
+            {t("read")}
+          </PaperReadLink>
+        )}
         {item.doi && (
           <External href={`https://doi.org/${item.doi}`}>
             {t("doi")} {item.doi}

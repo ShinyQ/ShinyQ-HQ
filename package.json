@@ -22,6 +22,7 @@
     "validate:content": "bun scripts/validate-fragment.ts full content/site-content.json",
     "build:knowledge": "bun scripts/build-knowledge.ts",
     "cv:pages": "bun scripts/cv-pages.ts",
+    "paper:pages": "bun scripts/paper-pages.ts",
     "floor:thumbs": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"floor thumbnail\" --workers=1 && bun scripts/floor-thumbs.ts",
     "ask:eval": "bun scripts/ask-eval.ts"
   },

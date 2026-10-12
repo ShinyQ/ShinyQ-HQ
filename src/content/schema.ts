@@ -218,28 +218,58 @@ export const PostRefSchema = z.strictObject({
   url: httpsUrl.optional(),
 });
 
-export const PublicationSchema = z.strictObject({
-  id: SlugSchema,
-  title: nonEmpty,
-  venue: nonEmpty.optional(),
-  year: z.number().int().min(2000).max(2100),
-  url: httpsUrl.optional(),
-  kind: z.enum(["paper", "thesis", "model", "dataset"]),
-  // Research metadata (papers and the thesis); all optional and additive.
-  authors: z.array(nonEmpty).min(1).optional(),
-  publisher: nonEmpty.optional(),
-  date: z.union([IsoDateSchema, YearMonthSchema]).optional(),
-  doi: z.string().regex(/^10\.\d{4,9}\/\S+$/, "Expected a DOI such as 10.1109/abc.2021.123").optional(),
-  /** Citation count from `library.researchMetrics.source`, as of `library.researchMetrics.asOf`. */
-  citations: z.number().int().nonnegative().optional(),
-  summary: LocalizedTextSchema.optional(),
-  /** Abstract for the paper preview modal, English only (written for this site, not copied from the publisher). */
-  abstract: nonEmpty.optional(),
-  /** Page range for citations, written "1-6". */
-  pages: z.string().regex(/^\d+(?:-\d+)?$/, "Expected a page range such as 1-6").optional(),
-  pdf: httpsUrl.optional(),
-  code: httpsUrl.optional(),
+/**
+ * A paper PDF hosted on this site (`public/papers/{file}.pdf`, page images from `bun run paper:pages`).
+ * Rules (README "Paper PDFs"): personal data is redacted by rasterizing the page, and IEEE papers are
+ * only ever the authors' manuscript with IEEE's notice, never the publisher's final PDF.
+ */
+export const PaperDocumentSchema = z.strictObject({
+  file: SlugSchema,
+  /** `manuscript`: the authors' version; `redacted`: the full text with personal data blacked out; `published`: the publisher's PDF (only where the publisher allows it). */
+  version: z.enum(["manuscript", "redacted", "published"]),
+  /** Publisher notice shown next to the PDF; `ieee` is IEEE's author posting notice. */
+  notice: z.enum(["ieee"]).optional(),
 });
+
+export const PublicationSchema = z
+  .strictObject({
+    id: SlugSchema,
+    title: nonEmpty,
+    venue: nonEmpty.optional(),
+    year: z.number().int().min(2000).max(2100),
+    url: httpsUrl.optional(),
+    kind: z.enum(["paper", "thesis", "model", "dataset"]),
+    // Research metadata (papers and the thesis); all optional and additive.
+    authors: z.array(nonEmpty).min(1).optional(),
+    publisher: nonEmpty.optional(),
+    date: z.union([IsoDateSchema, YearMonthSchema]).optional(),
+    doi: z.string().regex(/^10\.\d{4,9}\/\S+$/, "Expected a DOI such as 10.1109/abc.2021.123").optional(),
+    /** Citation count from `library.researchMetrics.source`, as of `library.researchMetrics.asOf`. */
+    citations: z.number().int().nonnegative().optional(),
+    summary: LocalizedTextSchema.optional(),
+    /** Abstract for the paper preview modal, English only (written for this site, not copied from the publisher). */
+    abstract: nonEmpty.optional(),
+    /** Page range for citations, written "1-6". */
+    pages: z.string().regex(/^\d+(?:-\d+)?$/, "Expected a page range such as 1-6").optional(),
+    pdf: httpsUrl.optional(),
+    code: httpsUrl.optional(),
+    /** Self-hosted PDF, read in the in-site paper reader (papers and the thesis only). */
+    document: PaperDocumentSchema.optional(),
+  })
+  .superRefine((pub, ctx) => {
+    const doc = pub.document;
+    if (!doc) return;
+    if (pub.kind === "model" || pub.kind === "dataset") {
+      ctx.addIssue({ code: "custom", path: ["document"], message: "Only papers and theses can have a document" });
+    }
+    if (pub.publisher === "IEEE" && (doc.version !== "manuscript" || doc.notice !== "ieee")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["document"],
+        message: "IEEE papers may only host the authors' manuscript with the IEEE notice (version manuscript, notice ieee)",
+      });
+    }
+  });
 
 /** Scholar profile metrics shown on the Research shelf, always with their date. */
 export const ResearchMetricsSchema = z.strictObject({

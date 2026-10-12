@@ -29,6 +29,13 @@
   X-Frame-Options: SAMEORIGIN
   Cache-Control: public, max-age=3600
 
+# Self-hosted paper PDFs and their page images (paper reader). The site CSP is detached so the
+# browser PDF viewer opens them in a new tab; they are never framed.
+/papers/*
+  ! Content-Security-Policy
+  Content-Security-Policy: frame-ancestors 'none'
+  Cache-Control: public, max-age=3600
+
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*
   Cache-Control: public, max-age=86400

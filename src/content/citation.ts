@@ -11,6 +11,16 @@ export interface PaperCitations {
   bibtex: string;
 }
 
+/** A self-hosted PDF of the paper, read in the paper reader (page images from `paperPages(file)`). */
+export interface PaperDocumentRef {
+  file: string;
+  /** `/papers/{file}.pdf`. */
+  pdf: string;
+  version: "manuscript" | "redacted" | "published";
+  notice?: "ieee";
+  pageCount: number;
+}
+
 export interface PaperPreview {
   id: string;
   title: string;
@@ -33,6 +43,8 @@ export interface PaperPreview {
   url?: string;
   pdf?: string;
   code?: string;
+  /** Self-hosted PDF ("Read the paper"). */
+  document?: PaperDocumentRef;
   /** Google Scholar search for the exact title. */
   scholar: string;
   /** Localized citation count line with its source and date. */

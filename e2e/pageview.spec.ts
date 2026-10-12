@@ -127,7 +127,7 @@ for (const [locale, label] of [
 test("every CV entry point opens the CV viewer modal instead of downloading, in both languages", async ({ page }) => {
   for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
     await openPage(page, staticTier(path));
-    await expect(page.locator('main a[href$=".pdf"]'), path).toHaveCount(0);
+    await expect(page.locator('main a[href^="/cv/"][href$=".pdf"]'), path).toHaveCount(0);
     const entries = page.locator("#site-shell [data-testid^='cv-open']");
     expect(await entries.count(), path).toBeGreaterThan(1);
     for (const entry of await entries.all()) {
