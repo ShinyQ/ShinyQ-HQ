@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
@@ -9,6 +10,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
+import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
@@ -22,6 +24,9 @@ import { ViewControls } from "./ViewControls";
 import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
+
+/** Rover's text box: its chunk loads with the first line. */
+const DialogLayer = dynamic(() => import("./dialog/DialogLayer"), { ssr: false });
 
 /** Control hints, in the bottom band's center column under the walk pill. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
@@ -101,6 +106,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const [walking, setWalking] = useState(false);
   const [bottomSlot, setBottomSlot] = useState<HTMLDivElement | null>(null);
   const askOpen = useAskPanelOpen();
+  const speaking = useDialog((v) => v.line !== null);
   // The room drawer and the Ask panel cover the bottom band (sheets) or the right side (side panels):
   // the Walk HUD then docks beside the side panel or goes under the top controls. Otherwise its pills
   // join the bottom band, and its card sits above the band (coarse) or at the bottom (fine pointers).
@@ -138,7 +144,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
             right={explorable ? <ViewControls /> : null}
           >
             <InteractStatus coarse={coarse} />
-            {explorable && !walking && <HintBar coarse={coarse} mobile={mobile} />}
+            {explorable && !walking && !speaking && <HintBar coarse={coarse} mobile={mobile} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />
         </>
@@ -153,6 +159,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
         onActive={setWalking}
       />
       <FloorAnnouncer data={data} />
+      {speaking && <DialogLayer />}
       <PadPicker data={data} />
     </div>
   );

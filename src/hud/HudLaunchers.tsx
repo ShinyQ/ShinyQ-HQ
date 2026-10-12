@@ -16,7 +16,7 @@ export function HudLaunchers({ buttonClassName, labelClassName = "sr-only sm:not
     "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border border-glass-border px-2.5 text-sm text-ink-2 transition hover:border-cyan/50 hover:text-ink";
   return (
     <div className="flex items-center gap-1.5">
-      <button type="button" onClick={openTerminal} className={button} aria-haspopup="dialog">
+      <button type="button" onClick={openTerminal} className={button} aria-haspopup="dialog" data-onboard="ask-rover">
         <span aria-hidden="true" className="font-mono text-cyan">
           &gt;_
         </span>

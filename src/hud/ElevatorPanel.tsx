@@ -36,6 +36,7 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
         compact ? "items-center gap-0 rounded-[22px] py-0.5" : codesOnly ? "items-center gap-0.5 rounded-full p-1" : "items-stretch gap-0.5 rounded-3xl p-1"
       }`}
       data-testid="elevator-panel"
+      data-onboard="elevator"
     >
       {TOP_DOWN.map((id) => {
         const current = id === floor;

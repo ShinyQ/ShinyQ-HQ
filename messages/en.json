@@ -773,5 +773,71 @@
       "other": "Other",
       "page": "{page} / {pages}"
     }
+  },
+  "dialog": {
+    "name": "Rover",
+    "next": "Next",
+    "continue": "Continue",
+    "choices": "Choices",
+    "tryIt": "Try it now",
+    "onboarding": {
+      "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick tour of how things work?",
+      "start": "Show me around",
+      "skip": "Skip tutorial",
+      "skipped": "No problem. You can replay the tour from Ask Rover anytime.",
+      "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
+      "moveCoarse": "Drag the joystick to drive. Hold the boost button to go faster.",
+      "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
+      "pointGoCoarse": "Or tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
+      "moved": "Nice driving!",
+      "highlights": "The Highlights Hall on the east side shows {name}'s best work at a glance. Want to see it?",
+      "showMe": "Take me there",
+      "later": "Later",
+      "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
+      "askRover": "Not sure where to go? Ask Rover has guided trips.",
+      "askAi": "And Ask AI answers questions about {name}'s work.",
+      "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
+      "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
+    },
+    "floor": {
+      "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",
+      "L3": "Welcome to Project Roads: product and AI projects on two wings that meet in one loop.",
+      "L4": "This is the Newsroom: posts newest first, then research, models and talks.",
+      "RF": "Up on the roof: who {name} is, availability, the CV and how to get in touch."
+    },
+    "hints": {
+      "bubble": "Hint: {label}",
+      "kind": {
+        "door": "{label}: drive into the door to open it.",
+        "elevator-pad": "Step on me to pick a floor.",
+        "teleporter": "Stop on this pad to beam to another year.",
+        "station": "{label}: open it for a closer look.",
+        "kiosk": "{label}: open it to use the kiosk.",
+        "board": "{label}: open it to see the full list."
+      },
+      "object": {
+        "highlights": "The Highlights Hall: {name}'s best work in one place.",
+        "askRover": "The Ask Rover kiosk: guided trips around the HQ.",
+        "cv": "The CV kiosk: read or download the CV.",
+        "contact": "The comms station: every way to reach {name}.",
+        "research": "The Research desk: papers with abstracts and citations.",
+        "workshop": "The Workshop: side projects, repos and models."
+      },
+      "go": {
+        "open": "Open",
+        "pickFloor": "Pick a floor",
+        "pickYear": "Pick a year",
+        "askRover": "Ask Rover",
+        "browse": "Browse",
+        "viewCv": "View CV",
+        "go": "Go"
+      },
+      "notNow": "Not now"
+    },
+    "menu": {
+      "replay": "replay the tutorial",
+      "hintsOn": "hints: on",
+      "hintsOff": "hints: off"
+    }
   }
 }
