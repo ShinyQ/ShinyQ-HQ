@@ -244,7 +244,7 @@ for (const viewport of VIEWPORTS) {
 }
 
 const OVERLAYS = [
-  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Missions" }).click() },
+  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Ask Rover", exact: true }).click() },
   {
     name: "palette",
     open: async (tab: Page) => {

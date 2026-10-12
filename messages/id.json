@@ -308,8 +308,8 @@
     "bootLine6": "rover siap ^_^",
     "bootStart": "Nyalakan rover",
     "staticNotice": "3D tidak tersedia. Tampilan halaman dibuka.",
-    "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskHint": "Pilih kios atau rover untuk memilih misi",
+    "kioskTitle": "rover@hq:~$ ./ask-rover",
+    "kioskHint": "Pilih kios atau rover untuk membuka Tanya Rover",
     "constructionLabel": "Sedang dibangun",
     "constructionHint": "Buka lantai ini dalam tampilan halaman",
     "statusHello": "halo!",
@@ -326,13 +326,13 @@
       "research": "Rak riset"
     },
     "launcher": {
-      "missions": "Misi",
       "search": "Cari",
-      "searchShortcut": "Buka pencarian ({shortcut})"
+      "searchShortcut": "Buka pencarian ({shortcut})",
+      "askRover": "Tanya Rover"
     },
     "terminal": {
-      "title": "Terminal Rover",
-      "prompt": "rover@hq:~$ ./missions",
+      "title": "Tanya Rover",
+      "prompt": "rover@hq:~$ ./ask-rover",
       "greeting": {
         "morning": "selamat pagi",
         "afternoon": "selamat siang",
@@ -340,19 +340,19 @@
         "night": "selamat malam"
       },
       "question": "lanjut ke mana? ^_^",
-      "options": "Misi",
+      "options": "Pilihan Tanya Rover",
       "driveMyself": "saya jelajahi sendiri",
       "hint": "Pilih: 1 hingga 8 atau panah + Enter · Tutup: Esc",
       "close": "Tutup terminal"
     },
     "palette": {
       "title": "Palet perintah",
-      "label": "Cari misi, ruang, tahun, dan perintah",
-      "placeholder": "Cari misi, ruang, tahun, atau perintah",
+      "label": "Cari Tanya Rover, ruang, tahun, dan perintah",
+      "placeholder": "Cari pilihan Tanya Rover, ruang, tahun, atau perintah",
       "results": "Hasil",
       "empty": "Tidak ada hasil untuk \"{query}\"",
       "groups": {
-        "missions": "Misi",
+        "missions": "Tanya Rover",
         "recent": "Baru dikunjungi",
         "rooms": "Ruang",
         "years": "Tahun",

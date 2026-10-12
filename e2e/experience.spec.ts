@@ -107,7 +107,7 @@ test.describe("boot and intro", () => {
     await waitForRoom(page, "L3:voice-ai-contact-center");
     await expect(page).toHaveURL(url);
     // The first-visit terminal belongs to the Lobby; a deep link continues to its room instead.
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
 
     // Same session: the deep link opens straight in.
     await page.reload();
@@ -477,11 +477,11 @@ test.describe("tiers and views", () => {
 });
 
 test.describe("missions in 3D", () => {
-  test("the HUD Missions button runs hire through the tower", async ({ page }) => {
+  test("the HUD Ask Rover button runs hire through the tower", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
-    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
-    const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
+    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
     await expect(terminal).toBeVisible();
     await page.keyboard.press("5");
     await expect(terminal).toBeHidden();
@@ -494,7 +494,7 @@ test.describe("missions in 3D", () => {
 
   test("manual input cancels a running mission", async ({ page }) => {
     await enterHQ(page);
-    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: data.missions.find((mission) => mission.id === "journey")!.label.en }).click();
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "running");
     await page.keyboard.down("s");
@@ -529,11 +529,11 @@ test.describe("missions in 3D", () => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await page.waitForTimeout(1200);
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
     await expect(start).not.toHaveAttribute("aria-disabled", "true");
     await start.click();
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible({ timeout: 30_000 });
   });
 
   test("the 3D HUD has no serious accessibility violations", async ({ page }) => {

@@ -259,11 +259,11 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
   expect(errors).toEqual([]);
 });
 
-test("Rover Terminal's ask option opens the dock", async ({ page }) => {
+test("Ask Rover's ask option opens the dock", async ({ page }) => {
   const api = await mockAsk(page, { status: enabled() });
   await openPage(page, "/en/labs?tier=static");
-  await page.getByRole("button", { name: "Missions" }).click();
-  const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
+  await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+  const terminal = page.getByRole("dialog", { name: "Ask Rover" });
   await expect(terminal.getByRole("option", { name: "ask me anything ^_^" })).toBeVisible();
   await page.keyboard.press("a");
   await expect(terminal).toBeHidden();

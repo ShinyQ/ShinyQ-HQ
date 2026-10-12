@@ -32,7 +32,7 @@ function Harness({ reducedMotion = true }: { reducedMotion?: boolean }) {
   return (
     <NextIntlClientProvider locale="en" messages={en}>
       <button type="button" onClick={() => setOpen(true)}>
-        Missions
+        Ask Rover
       </button>
       <RoverTerminal open={open} locale="en" missions={missions} onRun={() => setOpen(false)} onClose={() => setOpen(false)} now={morning} reducedMotion={reducedMotion} />
     </NextIntlClientProvider>
@@ -53,8 +53,8 @@ describe("RoverTerminal", () => {
 
   it("shows the prompt, greeting, numbered missions and drive myself", () => {
     renderTerminal();
-    const dialog = screen.getByRole("dialog", { name: "Rover Terminal" });
-    expect(dialog).toHaveTextContent("rover@hq:~$ ./missions");
+    const dialog = screen.getByRole("dialog", { name: "Ask Rover" });
+    expect(dialog).toHaveTextContent("rover@hq:~$ ./ask-rover");
     expect(dialog).toHaveTextContent("good morning.");
     expect(dialog).toHaveTextContent(en.hud.terminal.question);
     const options = screen.getAllByRole("option");
@@ -107,7 +107,7 @@ describe("RoverTerminal", () => {
 
   it("closes on Esc and returns focus to the opener", async () => {
     render(<Harness />);
-    const opener = screen.getByRole("button", { name: "Missions" });
+    const opener = screen.getByRole("button", { name: "Ask Rover" });
     await userEvent.click(opener);
     expect(screen.getByRole("listbox")).toHaveFocus();
     await userEvent.keyboard("{Escape}");
@@ -163,7 +163,7 @@ describe("RoverTerminal", () => {
 
   it("speaks Indonesian", () => {
     renderTerminal({ now: new Date(2026, 9, 9, 20, 0) }, "id");
-    const dialog = screen.getByRole("dialog", { name: "Terminal Rover" });
+    const dialog = screen.getByRole("dialog", { name: "Tanya Rover" });
     expect(dialog).toHaveTextContent("selamat malam.");
     expect(dialog).toHaveTextContent(id.hud.terminal.question);
     expect(screen.getAllByRole("option").at(-1)).toHaveTextContent(id.hud.terminal.driveMyself);

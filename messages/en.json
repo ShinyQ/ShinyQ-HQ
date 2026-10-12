@@ -308,8 +308,8 @@
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
     "staticNotice": "3D is unavailable. Showing page view.",
-    "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskHint": "Select the kiosk or rover to pick a mission",
+    "kioskTitle": "rover@hq:~$ ./ask-rover",
+    "kioskHint": "Select the kiosk or the rover to open Ask Rover",
     "constructionLabel": "Under construction",
     "constructionHint": "Open this floor in page view",
     "statusHello": "hello!",
@@ -326,13 +326,13 @@
       "research": "Research shelf"
     },
     "launcher": {
-      "missions": "Missions",
       "search": "Search",
-      "searchShortcut": "Open search ({shortcut})"
+      "searchShortcut": "Open search ({shortcut})",
+      "askRover": "Ask Rover"
     },
     "terminal": {
-      "title": "Rover Terminal",
-      "prompt": "rover@hq:~$ ./missions",
+      "title": "Ask Rover",
+      "prompt": "rover@hq:~$ ./ask-rover",
       "greeting": {
         "morning": "good morning",
         "afternoon": "good afternoon",
@@ -340,19 +340,19 @@
         "night": "hello, night owl"
       },
       "question": "where next? ^_^",
-      "options": "Missions",
+      "options": "Ask Rover options",
       "driveMyself": "explore on my own",
       "hint": "Pick: 1 to 8 or arrows + Enter · Close: Esc",
       "close": "Close terminal"
     },
     "palette": {
       "title": "Command palette",
-      "label": "Search missions, rooms, years and actions",
-      "placeholder": "Find a mission, room, year or action",
+      "label": "Search Ask Rover, rooms, years and actions",
+      "placeholder": "Find an Ask Rover pick, room, year or action",
       "results": "Results",
       "empty": "No results for \"{query}\"",
       "groups": {
-        "missions": "Missions",
+        "missions": "Ask Rover",
         "recent": "Recent",
         "rooms": "Rooms",
         "years": "Years",
