@@ -296,6 +296,8 @@ test.describe("wheel zoom and first person", () => {
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await expect.poll(async () => (await probe(page)).forward.x, { timeout: 15_000 }).toBeLessThan(-0.99);
     await hoverNothing(page);
+    // The rotate button keeps focus after the click, and Enter on a focused control is that control's.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     const bubble = page.getByTestId("hint-bubble");
     await expect(bubble).toBeVisible({ timeout: 15_000 });
     await expect(bubble).toHaveAttribute("data-hint", "L1:pad:elevator");
