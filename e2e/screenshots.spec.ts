@@ -367,3 +367,26 @@ test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
     });
   }
 });
+
+for (const vp of [
+  { width: 1440, height: 900, touch: false },
+  { width: 390, height: 844, touch: true },
+] as const) {
+  test(`live site link on the case study and in the L3 drawer @ ${vp.width}x${vp.height}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1, hasTouch: vp.touch, isMobile: vp.touch });
+    const page = await context.newPage();
+    await page.goto("/en/labs/solutions-marketing-site?tier=static");
+    await expect(page.locator("main [data-live-link]").first()).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: `screenshots/live-link-page-${vp.width}x${vp.height}.png` });
+    await asReturningVisitor(page);
+    await page.goto("/en/labs/solutions-marketing-site?tier=lite");
+    await waitForHQ(page);
+    await waitForRoom(page, "L3:solutions-marketing-site");
+    await expect(page.getByTestId("drawer-live-link")).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: `screenshots/live-link-drawer-${vp.width}x${vp.height}.png` });
+    await context.close();
+  });
+}

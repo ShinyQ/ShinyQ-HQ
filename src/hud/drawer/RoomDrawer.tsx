@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type P
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomLinkItem, RoomMetric, RoomSection, RoomView } from "@/content/room-views/types";
 import { Gallery as ImageGallery } from "@/components/Gallery";
+import { LiveSiteLink } from "@/components/LiveSiteLink";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
@@ -408,7 +409,8 @@ const SHEET_EXPAND_AT = 24;
  * Layout, top to bottom: a slim bar that stays put (room code, badges, prev/next, menu, close; the
  * title joins it once the big title scrolls away), one scrolling region (title, subtitle and meta,
  * then the tabs, which stick under the bar, then the tab body), and a footer row: the primary action,
- * the cross-floor link right of it (owner request: more room for the body), then View architecture.
+ * Visit live site for pods with a public site (R4-J, new tab), the cross-floor link right of them
+ * (owner request: more room for the body), then View architecture.
  */
 export function RoomDrawer({
   view,
@@ -559,7 +561,7 @@ export function RoomDrawer({
   const primaryLabel = view.kind === "pod" ? tc("caseStudy") : view.kind === "post" ? t("rooms.readPost") : t("openPage");
   const showHologram = view.hologram && !readme && activeTab !== "architecture";
   const link = view.link ? { label: view.link.label, onClick: () => onLink(view.link!.room) } : undefined;
-  const hasFooter = Boolean(view.page || view.external || link || showHologram);
+  const hasFooter = Boolean(view.page || view.external || view.live || link || showHologram);
 
   return (
     <div
@@ -722,6 +724,15 @@ export function RoomDrawer({
               {t("external")}
               <span className="sr-only"> ({tc("external")})</span>
             </a>
+          )}
+          {view.live && (
+            <LiveSiteLink
+              href={view.live}
+              label={tc("visitLive")}
+              srHint={tc("external")}
+              testId="drawer-live-link"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-cyan/50 px-3 text-[13px] font-semibold text-ink transition hover:border-cyan hover:bg-cyan/10"
+            />
           )}
           {link && (
             <button

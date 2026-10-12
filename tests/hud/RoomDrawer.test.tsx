@@ -25,6 +25,7 @@ const views = buildRoomViews("en");
 const hero = views[`L3:${getPods("ai").find((p) => p.tier === "hero")!.slug}`];
 const listed = views[`L3:${getPods().find((p) => p.tier === "listed")!.slug}`];
 const skills = views["L1:skills"];
+const liveView = views["L3:solutions-marketing-site"];
 
 afterEach(cleanup);
 
@@ -207,6 +208,23 @@ describe("RoomDrawer", () => {
     expect(onLink).toHaveBeenCalledWith(hero.link!.room);
   });
 
+  it("puts Visit live site right after Read case study and before the cross-floor link, in a new tab (R4-J)", () => {
+    render(<Harness view={liveView} />);
+    const footer = screen.getByTestId("drawer-footer");
+    const visit = within(footer).getByRole("link", { name: `${en.common.visitLive} (${en.common.external})` });
+    expect(footer.children[0]).toHaveTextContent(en.common.caseStudy);
+    expect(footer.children[1]).toBe(visit);
+    expect(visit).toHaveAttribute("href", liveView.live!);
+    expect(visit).toHaveAttribute("target", "_blank");
+    expect(visit).toHaveAttribute("rel", "noopener noreferrer");
+    expect(footer.children[2]).toBe(within(footer).getByRole("button", { name: liveView.link!.label }));
+  });
+
+  it("shows no live link for rooms without a public site", () => {
+    render(<Harness view={hero} />);
+    expect(screen.queryByTestId("drawer-live-link")).toBeNull();
+  });
+
   it("uses the same footer order for every room type, custom bodies included", () => {
     const byKind = new Map<string, RoomView>();
     for (const view of Object.values(views)) {
@@ -218,7 +236,7 @@ describe("RoomDrawer", () => {
     for (const view of byKind.values()) {
       const { unmount } = render(<Harness view={view} />);
       const footer = screen.queryByTestId("drawer-footer");
-      const primaries = (view.page ? 1 : 0) + (view.external ? 1 : 0);
+      const primaries = (view.page ? 1 : 0) + (view.external ? 1 : 0) + (view.live ? 1 : 0);
       if (primaries) expect(footer, view.id).not.toBeNull();
       if (view.link) {
         expect(within(screen.getByTestId("drawer-body")).queryByRole("button", { name: view.link.label }), view.id).toBeNull();
