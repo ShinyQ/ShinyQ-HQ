@@ -1,9 +1,7 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import type { ThreeEvent } from "@react-three/fiber";
 import type { Wing } from "@/content/schema";
-import { openPalette } from "@/hud/events";
 import type { LabPod } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import { LABS, tourOrder, WING_TINT, type LabsLayout } from "./layout";
@@ -108,16 +106,6 @@ function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly La
   );
 }
 
-function setCursor(value: string) {
-  document.body.style.cursor = value;
-}
-
-/** A click (not a drag) on a board opens every project in the palette. */
-function onBoardClick(e: ThreeEvent<MouseEvent>) {
-  if (e.delta > 6) return;
-  e.stopPropagation();
-  openPalette("pods");
-}
 
 /**
  * Directory boards on the hub rim. Both faces carry the same content: the east face greets the hub
@@ -133,7 +121,7 @@ function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels:
           <group key={wing} position={[center.x, 0, center.z]} name={`directory-${wing}`}>
             <GlassBox size={[board.w, board.h, board.d]} position={[0, board.h / 2, 0]} color={WING_TINT[wing]} fillOpacity={0.12} />
             {/* Opaque core: each face shows only its own text, never the mirrored one behind it. */}
-            <mesh position={[0, board.h / 2, 0]} onClick={onBoardClick} onPointerOver={() => setCursor("pointer")} onPointerOut={() => setCursor("")}>
+            <mesh position={[0, board.h / 2, 0]}>
               <boxGeometry args={[board.w * 0.5, board.h - 0.04, board.d - 0.04]} />
               <meshBasicMaterial color="#070712" />
             </mesh>

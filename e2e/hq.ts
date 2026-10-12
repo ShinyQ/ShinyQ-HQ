@@ -1,5 +1,4 @@
 import { expect, type Page } from "@playwright/test";
-import { RAIL, RAIL_LOOK_AHEAD } from "../src/experience/camera/rigs";
 
 export interface HQSnapshot {
   phase: string;
@@ -280,24 +279,150 @@ export async function driveTo(page: Page, point: { x: number; z: number }, timeo
   );
 }
 
+/** A point-and-go target as read from `window.__hq.interact` (current floor). */
+export interface InteractSnapshot {
+  id: string;
+  kind: string;
+  label: string;
+  at: { x: number; z: number };
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  action: { type: string; room?: string; year?: number; command?: string };
+}
+
+type ScreenPoint = { x: number; y: number };
+
+type InteractWindow = Window & {
+  __hq: {
+    interact: {
+      items: InteractSnapshot[];
+      highlight: number;
+      project: ((p: { x: number; y: number; z: number }) => ScreenPoint | null) | null;
+      screenOf: (id: string, lift?: number) => ScreenPoint | null;
+      screenAt: (id: string, fx: number, fz: number, lift: number) => ScreenPoint | null;
+      hitAt: ((x: number, y: number) => string | null) | null;
+    };
+    rover: { x: number; y: number; z: number; cameraForward: { x: number; z: number } };
+    store: { getState: () => { hover: { item: { id: string }; via: string } | null } };
+  };
+};
+
+/** CSS px kept clear of the viewport edges on a desktop viewport (HUD panels are skipped through `elementFromPoint`). */
+export const DESKTOP_SAFE = { top: 90, bottom: 90, side: 40 };
+/** The same on a 390 x 844 phone (two top rows, the bottom band with the joystick). */
+export const PHONE_SAFE = { top: 120, bottom: 140, side: 24 };
+
+/** Where `visibleTarget` found each target clickable (fractions of its pick volume); `targetPoint` reuses it. */
+type Sample = { fx: number; fz: number; lift: number };
+const samples = new Map<string, Sample>();
+const SAMPLES: Sample[] = [0.85, 0.5, 0.2].flatMap((lift) =>
+  [0.5, 0.3, 0.7, 0.15, 0.85].flatMap((fx) => [0.5, 0.3, 0.7, 0.15, 0.85].map((fz) => ({ fx, fz, lift }))),
+);
+
+export interface TargetQuery {
+  kinds: string[];
+  safe?: { top: number; bottom: number; side: number };
+  /** Skip targets whose approach point is closer than this to the rover (u). */
+  minDistance?: number;
+}
+
+/** The current floor's targets. */
+export async function interactablesOf(page: Page): Promise<InteractSnapshot[]> {
+  return page.evaluate(() =>
+    (window as unknown as InteractWindow).__hq.interact.items.map(({ id, kind, label, at, bounds, action }) => ({ id, kind, label, at, bounds, action })),
+  );
+}
+
 /**
- * Screen position (CSS px) of a floor point on L2, from the settled rail camera (desktop rig, no yaw):
- * the camera sits at `__hq.camera()` and looks at (rover x + RAIL_LOOK_AHEAD, floor, camera z - RAIL.z).
+ * The target of `kinds` nearest to the rover whose pick volume shows on the bare canvas inside `safe`,
+ * at least 100 px from the rover on screen (a click on the rover opens Ask Rover). Fails when none shows.
  */
-export async function railScreenPoint(page: Page, p: { x: number; z: number }) {
-  const [cx, cy, cz] = await page.evaluate(() => (window as unknown as { __hq: { camera: () => [number, number, number] } }).__hq.camera());
-  const rover = (await snapshot(page)).rover;
-  const { width, height } = page.viewportSize()!;
-  const rig = RAIL.desktop;
-  const target = [rover.x + RAIL_LOOK_AHEAD, cy - rig.y, cz - rig.z];
-  const norm = (v: number[]) => v.map((c) => c / Math.hypot(...v));
-  const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-  const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const f = norm([target[0] - cx, target[1] - cy, target[2] - cz]);
-  const r = norm(cross(f, [0, 1, 0]));
-  const u = cross(r, f);
-  const d = [p.x - cx, cy - rig.y - cy, p.z - cz];
-  const t = Math.tan(((rig.fov / 2) * Math.PI) / 180);
-  const ndc = { x: dot(d, r) / (dot(d, f) * t * (width / height)), y: dot(d, u) / (dot(d, f) * t) };
-  return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
+export async function visibleTarget(page: Page, { kinds, safe = DESKTOP_SAFE, minDistance = 0 }: TargetQuery): Promise<InteractSnapshot> {
+  const found = await page.evaluate(
+    ({ kinds, safe, minDistance, grid }) => {
+      const { interact, rover } = (window as unknown as InteractWindow).__hq;
+      if (!interact.project || !interact.hitAt) return null;
+      const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // A sample counts when it is inside the safe box, the bare canvas is under it, the raycast hits this very
+      // target (no other volume in front) and it is 100 px or more from the rover (a click on the rover opens Ask Rover).
+      const clickable = (id: string, s: { fx: number; fz: number; lift: number }) => {
+        const p = interact.screenAt(id, s.fx, s.fz, s.lift);
+        if (!p || p.x < safe.side || p.x > w - safe.side || p.y < safe.top || p.y > h - safe.bottom) return false;
+        if (document.elementFromPoint(p.x, p.y)?.tagName !== "CANVAS") return false;
+        if (self && Math.hypot(p.x - self.x, p.y - self.y) <= 100) return false;
+        return interact.hitAt!(p.x, p.y) === id;
+      };
+      const hits = interact.items
+        .filter((i) => kinds.includes(i.kind) && Math.hypot(i.at.x - rover.x, i.at.z - rover.z) >= minDistance)
+        .map((i) => ({ i, d: Math.hypot(i.at.x - rover.x, i.at.z - rover.z), s: grid.find((s) => clickable(i.id, s)) }))
+        .filter(({ s }) => s !== undefined)
+        .sort((a, b) => a.d - b.d);
+      const hit = hits[0];
+      return hit ? { item: { id: hit.i.id, kind: hit.i.kind, label: hit.i.label, at: hit.i.at, bounds: hit.i.bounds, action: hit.i.action }, sample: hit.s! } : null;
+    },
+    { kinds, safe, minDistance, grid: SAMPLES },
+  );
+  if (!found) throw new Error(`No ${kinds.join(" or ")} target on screen`);
+  samples.set(found.item.id, found.sample);
+  return found.item;
+}
+
+/**
+ * Screen position (CSS px) of a target: where `visibleTarget` found it clickable, else near the top of its
+ * pick volume (`lift`), so the rover in front of it never takes the click.
+ */
+export async function targetPoint(page: Page, id: string, lift?: number): Promise<ScreenPoint> {
+  const sample = lift === undefined ? (samples.get(id) ?? { fx: 0.5, fz: 0.5, lift: 0.85 }) : { fx: 0.5, fz: 0.5, lift };
+  const point = await page.evaluate(
+    ({ id, sample }) => (window as unknown as InteractWindow).__hq.interact.screenAt(id, sample.fx, sample.fz, sample.lift),
+    { id, sample },
+  );
+  if (!point) throw new Error(`${id} is not on screen`);
+  return point;
+}
+
+/** The store's point-and-go target: `{ id, via }` or null. */
+export async function hoveredTarget(page: Page): Promise<{ id: string; via: string } | null> {
+  return page.evaluate(() => {
+    const hover = (window as unknown as InteractWindow).__hq.store.getState().hover;
+    return hover ? { id: hover.item.id, via: hover.via } : null;
+  });
+}
+
+/** Moves the mouse onto a target and waits until it is the hovered one. */
+export async function hoverTarget(page: Page, id: string): Promise<ScreenPoint> {
+  const point = await targetPoint(page, id);
+  await page.mouse.move(point.x, point.y, { steps: 4 });
+  await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "pointer" });
+  return point;
+}
+
+/** Screen position of open floor near the rover, toward the camera: no target covers it and no HUD sits over it. */
+export async function emptyFloorPoint(page: Page): Promise<ScreenPoint> {
+  const point = await page.evaluate(() => {
+    const { interact, rover } = (window as unknown as InteractWindow).__hq;
+    if (!interact.project) return null;
+    const f = rover.cameraForward;
+    const len = Math.hypot(f.x, f.z) || 1;
+    const back = { x: -f.x / len, z: -f.z / len };
+    const right = { x: -back.z, z: back.x };
+    for (const d of [2.5, 4, 6]) {
+      for (const side of [0, 2, -2]) {
+        const x = rover.x + back.x * d + right.x * side;
+        const z = rover.z + back.z * d + right.z * side;
+        if (interact.items.some((i) => x >= i.bounds.minX && x <= i.bounds.maxX && z >= i.bounds.minZ && z <= i.bounds.maxZ)) continue;
+        const p = interact.project({ x, y: rover.y, z });
+        if (p && document.elementFromPoint(p.x, p.y)?.tagName === "CANVAS") return p;
+      }
+    }
+    return null;
+  });
+  if (!point) throw new Error("No open floor between the rover and the camera");
+  return point;
+}
+
+/** Highlight opacity drawn this frame. */
+export async function highlightOf(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as InteractWindow).__hq.interact.highlight);
 }

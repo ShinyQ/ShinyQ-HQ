@@ -145,7 +145,7 @@ export function WalkLayer({
   useEffect(() => {
     if (!walk) return;
     const offIntents = intents.on((intent) => {
-      if (intent.type === "move" || intent.type === "goto" || intent.type === "scrub") {
+      if (intent.type === "move" || intent.type === "interact" || intent.type === "scrub") {
         if (prompt) closePrompt();
         if (walk.state.status === "driving" || walk.state.status === "arrived") walk.pause();
       }

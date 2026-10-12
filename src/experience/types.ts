@@ -65,6 +65,9 @@ export interface FloorLayout {
   listStop?: Vec2;
 }
 
+/** Every floor's layout, as built by `buildFloorLayouts`. */
+export type FloorLayouts = Record<FloorId, FloorLayout>;
+
 export type CareerType = "job" | "freelance" | "education" | "award" | "milestone";
 
 /** What the L2 corridor layout needs: entries per year, oldest first (pre-2019 folded into 2019). */

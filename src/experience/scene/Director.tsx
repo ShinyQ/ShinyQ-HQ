@@ -6,12 +6,13 @@ import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore } from "@/store/useHQStore";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
-import { openTerminal } from "@/hud/events";
+import { openCv, openPalette, openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { isContinuing } from "../introContinue";
-import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
+import { performInteract } from "../interact/pick";
+import { cancelMission, goToRoom, isAutoOpenClaimed, runMissionSteps } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
@@ -96,7 +97,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const missionRunning = () => store.getState().mission?.status === "running";
     return intents.on((intent: Intent) => {
       // Any manual world input cancels a running mission and returns control (appendix 02).
-      if ((intent.type === "goto" || intent.type === "elevator" || intent.type === "cancel" || intent.type === "scrub" || intent.type === "teleport") && missionRunning()) cancelMission();
+      if ((intent.type === "interact" || intent.type === "elevator" || intent.type === "cancel" || intent.type === "scrub" || intent.type === "teleport") && missionRunning()) cancelMission();
       const s = store.getState();
       const local = state.current;
       const controller = local.controller;
@@ -120,24 +121,37 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           }
           break;
         }
-        case "goto": {
-          // Clicking the floor while a room is open closes the drawer and drives away (appendix 02).
-          if (s.phase === "room") s.closeRoom();
-          if (!controller || (store.getState().phase !== "explore" && s.phase !== "elevator")) break;
-          if (s.ride && s.ride.stage !== "toDoor") break;
-          if (s.ride) s.cancelRide();
-          const path = findPath(grids[s.floor], controller.pose, intent.point);
-          if (path?.length) {
-            controller.setPath(path, false);
-            roverRuntime.target = path[path.length - 1];
+        case "interact": {
+          // Point-and-go (owner request): drive to the target along the road, then run its action. The
+          // drive is a mission leg, so manual input cancels it like any mission.
+          if (s.phase !== "explore" && s.phase !== "room" && s.phase !== "elevator") break;
+          if (s.beam || s.picker || (s.ride && s.ride.stage !== "toDoor")) break;
+          if (s.ride) {
+            s.cancelRide();
+            controller?.clearPath();
           }
+          void performInteract(intent.item, {
+            rover: () => (local.controller ? { x: local.controller.pose.x, z: local.controller.pose.z } : { x: roverRuntime.x, z: roverRuntime.z }),
+            goToRoom,
+            runSteps: runMissionSteps,
+            openPicker: (picker) => {
+              if (store.getState().phase === "room") store.getState().closeRoom();
+              store.getState().openPicker(picker);
+              if (store.getState().picker) audio.play("beep");
+            },
+            command: (command) => {
+              if (command.type === "terminal") intents.emit({ type: "terminal" });
+              else if (command.type === "palette") openPalette(command.filter);
+              else openCv();
+            },
+          });
           break;
         }
         case "elevator":
           s.requestElevator(intent.to);
           break;
         case "cancel":
-          // Esc never skips the boot or the intro (owner decision); it stops elevator drives and click-to-move.
+          // Esc never skips the boot or the intro (owner decision); it stops elevator drives and scrub drives.
           if (s.phase === "boot" || s.phase === "intro") break;
           if (s.ride?.stage === "toDoor") {
             s.cancelRide();
@@ -152,7 +166,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           if (s.phase === "explore" || s.phase === "room") s.openRoom(intent.room);
           break;
         case "teleport": {
-          // L2 year teleporters: beam to the chosen plaza's pad. Any drive (autopilot, click-to-move) ends here.
+          // L2 year teleporters: beam to the chosen plaza's pad. Any drive (autopilot, scrub) ends here.
           const pad = layouts[s.floor].pads?.find((p) => p.id === intent.pad);
           if (!controller || !pad || s.phase !== "explore" || s.ride || s.beam) break;
           controller.clearPath();

@@ -17,6 +17,7 @@ export const ALL_SPECS = [
   "experience",
   "gallery",
   "hud",
+  "interact",
   "labs",
   "library-roof",
   "missions",
@@ -71,6 +72,8 @@ export const RULES: Rule[] = [
 
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
   { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "experience"] },
+  // Point-and-go: the registry, pick logic, the hit layer and its HUD status (pads and career rooms are clicked through it).
+  { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },

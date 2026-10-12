@@ -1,0 +1,171 @@
+import { expect, test, type Page } from "@playwright/test";
+import en from "../messages/en.json";
+import {
+  asReturningVisitor,
+  collectErrors,
+  emptyFloorPoint,
+  expectRenderBudget,
+  highlightOf,
+  hoveredTarget,
+  hoverTarget,
+  PHONE_SAFE,
+  snapshot,
+  targetPoint,
+  visibleTarget,
+  waitForCameraSettle,
+  waitForFrames,
+  waitForHQ,
+  waitForPhase,
+  waitForRoom,
+  waitForRoverMove,
+  waitForSceneLive,
+} from "./hq";
+
+test.describe.configure({ timeout: 180_000 });
+
+/** A floor route as a returning visitor with guided walks off (the first-visit prompt would cover the floor). */
+async function openFloor(page: Page, path: string) {
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=lite&walk=off`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await waitForCameraSettle(page);
+}
+
+type StoreWindow = Window & { __hq: { store: { getState: () => { mission: { status: string } | null; activeRoom: string | null } } } };
+const roverAt = async (page: Page) => (await snapshot(page)).rover;
+const missionStatus = (page: Page) => page.evaluate(() => (window as unknown as StoreWindow).__hq.store.getState().mission?.status ?? null);
+
+test.describe("point and go with a mouse", () => {
+  test("hovering a pod highlights it with its name, and a click drives to its door and opens the drawer", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door"] });
+    expect(pod.action.type).toBe("open-room");
+    await hoverTarget(page, pod.id);
+    await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe("pointer");
+    // The outline, the destination ring and the floating label stay inside the floor budget.
+    await waitForFrames(page, 10);
+    await expectRenderBudget(page);
+    const start = await roverAt(page);
+    const point = await targetPoint(page, pod.id);
+    await page.mouse.click(point.x, point.y);
+    await waitForRoverMove(page, start, 2);
+    await waitForRoom(page, pod.action.room!);
+    const end = await roverAt(page);
+    expect(Math.hypot(end.x - pod.at.x, end.z - pod.at.z)).toBeLessThan(1.5);
+    expect(errors).toEqual([]);
+  });
+
+  test("moving off every target clears the highlight and the pointer cursor", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const target = await visibleTarget(page, { kinds: ["door", "board"] });
+    await hoverTarget(page, target.id);
+    await page.mouse.move(4, 4, { steps: 4 });
+    await expect.poll(() => hoveredTarget(page)).toBeNull();
+    await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe("");
+  });
+
+  test("manual driving cancels a point-and-go drive before it arrives", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door"], minDistance: 10 });
+    const start = await roverAt(page);
+    const point = await targetPoint(page, pod.id);
+    await page.mouse.click(point.x, point.y);
+    await waitForRoverMove(page, start, 1);
+    await page.keyboard.down("s");
+    await expect.poll(() => missionStatus(page)).toBe("cancelled");
+    await page.keyboard.up("s");
+    await waitForFrames(page, 30);
+    const end = await roverAt(page);
+    expect(Math.hypot(end.x - pod.at.x, end.z - pod.at.z)).toBeGreaterThan(1.5);
+    expect(await page.evaluate(() => (window as unknown as StoreWindow).__hq.store.getState().activeRoom)).not.toBe(pod.action.room);
+  });
+
+  test("hovering on the Career Road stays inside the render budget", async ({ page }) => {
+    await openFloor(page, "/en/journey");
+    const target = await visibleTarget(page, { kinds: ["teleporter", "door"] });
+    await hoverTarget(page, target.id);
+    await waitForFrames(page, 10);
+    await expectRenderBudget(page);
+  });
+});
+
+test.describe("point and go feedback", () => {
+  test("the hovered target is announced for screen readers", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door"] });
+    await hoverTarget(page, pod.id);
+    await expect(page.getByTestId("interact-live")).toHaveText(en.hud.interact.live.replace("{label}", pod.label));
+  });
+
+  test("a click on empty floor does not move the rover and shows the hint once", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const start = await roverAt(page);
+    const empty = await emptyFloorPoint(page);
+    await page.mouse.click(empty.x, empty.y);
+    const hint = page.getByTestId("point-hint");
+    await expect(hint).toHaveText(en.hud.interact.hintFine);
+    await waitForFrames(page, 20);
+    const still = await roverAt(page);
+    expect(Math.hypot(still.x - start.x, still.z - start.z)).toBeLessThan(0.05);
+    await expect(hint).toHaveCount(0, { timeout: 10_000 });
+    await page.mouse.click(empty.x, empty.y);
+    await waitForFrames(page, 20);
+    await expect(hint).toHaveCount(0);
+  });
+});
+
+test.describe("point and go on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+
+  test("a first tap selects a target and offers Go; Go drives there and opens it", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door"], safe: PHONE_SAFE });
+    const start = await roverAt(page);
+    const point = await targetPoint(page, pod.id);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect.poll(() => hoveredTarget(page)).toEqual({ id: pod.id, via: "tap" });
+    const go = page.getByTestId("interact-go");
+    await expect(go).toBeVisible();
+    await expect(go).toContainText(pod.label);
+    await waitForFrames(page, 20);
+    const still = await roverAt(page);
+    expect(Math.hypot(still.x - start.x, still.z - start.z)).toBeLessThan(0.05);
+    await go.tap();
+    await waitForRoom(page, pod.action.room!);
+    expect(errors).toEqual([]);
+  });
+
+  test("a second tap on the same target drives there; a tap on empty floor clears the selection", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door"], safe: PHONE_SAFE });
+    const point = await targetPoint(page, pod.id);
+    const go = page.getByTestId("interact-go");
+    await page.touchscreen.tap(point.x, point.y);
+    await expect(go).toBeVisible();
+    const empty = await emptyFloorPoint(page);
+    await page.touchscreen.tap(empty.x, empty.y);
+    await expect(go).toHaveCount(0);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect(go).toBeVisible();
+    await page.touchscreen.tap(point.x, point.y);
+    await waitForRoom(page, pod.action.room!);
+  });
+});
+
+test.describe("point and go with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("the highlight holds still", async ({ page }) => {
+    await openFloor(page, "/en/labs");
+    const pod = await visibleTarget(page, { kinds: ["door", "board", "elevator-pad"] });
+    await hoverTarget(page, pod.id);
+    await waitForFrames(page, 5);
+    expect(await highlightOf(page)).toBeCloseTo(0.9, 5);
+    await waitForFrames(page, 20);
+    expect(await highlightOf(page)).toBeCloseTo(0.9, 5);
+  });
+});

@@ -51,7 +51,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 - The camera rigs (follow, rail, dolly) work with placeholder geometry. The GPU tier gate selects `full`, `lite` or `static`.
 
 ### Phase 2: rover and Lobby
-- The rover drives with keyboard, click-to-move, tap-to-move and joystick, with collision.
+- The rover drives with keyboard and joystick, with collision (click and tap to move were replaced by point-and-go in October 2026, see appendix 03).
 - Faces change by state. The Lobby shows the profile hologram, stats ring, skills wall and certifications wall from content.
 
 ### Phase 3: Career Archive

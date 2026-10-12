@@ -18,7 +18,7 @@ export const roverRuntime = {
   /** Time (s) until which the arrival flag is shown. */
   flagUntil: 0,
   flagAt: { x: 0, z: 0 } as Vec2,
-  /** Current click-to-move destination, if any. */
+  /** Current scrub destination on rail floors, if any (drawn as the target ring). */
   target: null as Vec2 | null,
   hopUntil: 0,
   /** Horizontal camera forward, used for camera-relative steering. */
@@ -39,8 +39,6 @@ export const roverRuntime = {
   boost: 0,
   /** Boost trail opacity as drawn this frame (0 when hidden or under reduced motion; test probe). */
   trail: 0,
-  /** Click-to-move marker: a ring that expands and fades where the floor was clicked (also a test probe). */
-  marker: { visible: false, opacity: 0, scale: 1, x: 0, z: 0 },
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
   /** Most recent triangle count (dev probe for the per-floor budget). */

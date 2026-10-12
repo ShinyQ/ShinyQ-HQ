@@ -13,6 +13,8 @@ import { careerLayoutInput } from "../floors/career/layout";
 import { libraryLayoutInput } from "../floors/library/model";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
+import { InteractLayer } from "../interact/InteractLayer";
+import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
 import { Director } from "./Director";
 import { renderBudget, sceneSettings } from "./settings";
@@ -36,6 +38,8 @@ function FloorMotes() {
 
 export interface SceneLabels extends TowerLabels {
   rover: { hello: string };
+  /** Point-and-go labels for targets without a content title. */
+  interact: InteractLabels;
 }
 
 export function Scene({
@@ -55,6 +59,7 @@ export function Scene({
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
     [data.years.length, data.labs.pods, data.career, data.library],
   );
+  const interactData = useMemo(() => ({ experience: data, labels: labels.interact }), [data, labels.interact]);
   const settings = sceneSettings(tier);
   const coarse = useHQStore((s) => s.device.coarse);
   return (
@@ -64,6 +69,7 @@ export function Scene({
       <hemisphereLight args={settings.hemisphere} />
       <directionalLight color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
+      <InteractLayer layouts={layouts} data={interactData} tier={tier} />
       <Rover tier={tier} />
       <TeleportBeam />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />

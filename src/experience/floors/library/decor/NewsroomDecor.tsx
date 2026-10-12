@@ -104,11 +104,15 @@ export function NewsroomDecor(props: DecorProps) {
               position={[wall.minX + 0.6, 6.4, wall.maxZ + 0.06]}
               color="#f4f4f5"
               material-toneMapped={false}
-              onClick={(e) => {
-                if (e.delta > 6 || !featured) return;
-                e.stopPropagation();
-                onStation(featured.room);
-              }}
+              onClick={
+                onStation
+                  ? (e) => {
+                      if (e.delta > 6 || !featured) return;
+                      e.stopPropagation();
+                      onStation(featured.room);
+                    }
+                  : undefined
+              }
             >
               {featuredPost.title}
             </Text>

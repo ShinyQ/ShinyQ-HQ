@@ -1,12 +1,10 @@
 "use client";
 
-import type { ThreeEvent } from "@react-three/fiber";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { floorY, SLAB_THICKNESS } from "../config";
-import { DRAG_THRESHOLD, intents } from "../input/intents";
 import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
@@ -17,30 +15,13 @@ const SLAB_COLOR = "#07070f";
 const SOLID = 1;
 const GHOST = 0.03;
 
-function onFloorClick(e: ThreeEvent<MouseEvent>) {
-  // A press that travelled past the drag threshold rotated the view; it is not click-to-move.
-  const pointerType = "pointerType" in e.nativeEvent ? String((e.nativeEvent as PointerEvent).pointerType) : "mouse";
-  if (e.delta > DRAG_THRESHOLD[pointerType as keyof typeof DRAG_THRESHOLD] || e.delta > DRAG_THRESHOLD.touch) return;
-  e.stopPropagation();
-  intents.emit({ type: "goto", point: { x: e.point.x, z: e.point.z } });
-}
-
 /**
  * One floor slab with accent edges and its content. Floors above the rover turn
  * into ghosts each frame so the follow camera, which sits higher than
- * FLOOR_GAP, can look down through them.
+ * FLOOR_GAP, can look down through them. The slab takes no clicks: the rover
+ * only drives to point-and-go targets (interact/InteractLayer.tsx).
  */
-export function FloorLevel({
-  layout,
-  near,
-  interactive,
-  children,
-}: {
-  layout: FloorLayout;
-  near: boolean;
-  interactive: boolean;
-  children?: ReactNode;
-}) {
+export function FloorLevel({ layout, near, children }: { layout: FloorLayout; near: boolean; children?: ReactNode }) {
   const y = floorY(layout.id);
   const { bounds, accent } = layout;
   const w = bounds.maxX - bounds.minX;
@@ -69,7 +50,7 @@ export function FloorLevel({
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>
-      <mesh position={[cx, -SLAB_THICKNESS / 2, cz]} onClick={interactive ? onFloorClick : undefined}>
+      <mesh position={[cx, -SLAB_THICKNESS / 2, cz]}>
         <boxGeometry args={[w, SLAB_THICKNESS, d]} />
         <meshBasicMaterial ref={fill} color={SLAB_COLOR} transparent opacity={SOLID} />
       </mesh>
@@ -79,7 +60,7 @@ export function FloorLevel({
       <group ref={content}>
         {near && <GridFloor width={w} depth={d} center={center} />}
         {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}
-        {near && layout.pads && <PadGlow pads={layout.pads} floorY={y} interactive={interactive} />}
+        {near && layout.pads && <PadGlow pads={layout.pads} floorY={y} />}
         {children}
       </group>
     </group>

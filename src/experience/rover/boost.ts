@@ -3,8 +3,8 @@ import type { RoverTuning } from "./movement";
 
 /**
  * Hold-to-boost (owner request): Shift on keyboards, the boost button beside the joystick on touch
- * screens. Manual driving only; the autopilot (missions, walks, the elevator approach) and
- * click-to-move keep their speed. Pure, so Vitest runs it in node.
+ * screens. Manual driving only; the autopilot (missions, walks, the elevator approach and
+ * point-and-go drives) keeps its speed. Pure, so Vitest runs it in node.
  */
 export const BOOST = {
   /** Top speed and acceleration factor while boosting (9 to 18 u/s on fine pointers). */

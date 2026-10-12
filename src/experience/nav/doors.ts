@@ -79,7 +79,7 @@ export interface DoorLatch<K extends string = RoomId> {
 export interface DoorStep<K extends string = RoomId> {
   /** Phase is "explore" (no drawer, ride or overlay). */
   explore: boolean;
-  /** The rover follows a path (click-to-move or mission autopilot). */
+  /** The rover follows a path (scrub or mission autopilot). */
   following: boolean;
   /** Clock (s) and rover speed (u/s); a fast pass needs `dwell` in the zone. */
   now?: number;

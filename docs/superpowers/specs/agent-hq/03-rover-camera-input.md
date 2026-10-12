@@ -45,7 +45,7 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 | Body tilt into turns | up to 8° | up to 8° |
 
 - Keyboard steering is camera-relative (W = away from the camera).
-- Click or tap to move uses A* on the floor navgrid with 8-way movement, then string-pulling to smooth the path. Unreachable targets snap to the nearest reachable cell.
+- Point-and-go (owner request, October 2026; replaces click and tap to move): hovering a glowing target (door, elevator call pad, L2 teleporter, station, kiosk, board) highlights it with its name; a click (on touch: a first tap selects, a second tap or the Go chip goes) drives the rover along the road (`roadRoute`, with A* on the navgrid for the legs off the road) and runs the target's action on arrival. A click or tap on empty floor never moves the rover. Targets come from one registry (`src/experience/interact/registry.ts`).
 - Collision: circle versus inflated AABBs, resolved by sliding along walls.
 - Door triggers: a 2 × 2 u zone in front of each room door. Entering it opens the room, except while autopilot is heading to a different target.
 
@@ -76,7 +76,8 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 | Zoom | Ctrl+wheel | Pinch | | Pinch |
 | Reset view | HUD reset button | HUD reset button | `0` or `Home` | HUD reset button |
 | Rotate step (45°) | HUD rotate buttons | HUD rotate buttons | Tab to the HUD rotate buttons | HUD rotate buttons (bottom right) |
-| Move | Click without drag | Click | WASD / arrows | Tap, or the joystick (its area never rotates) |
+| Move | WASD / arrows | WASD / arrows | WASD / arrows | The joystick (its area never rotates) |
+| Go to a target | Hover to see its name, click to drive there | Same | Cmd-K or Ask Rover | Tap to select, tap again or press Go |
 
 ## 3. Input layer
 
@@ -85,7 +86,7 @@ Every device input maps to an **intent**. Floors and the HUD only consume intent
 | Intent | Payload | Sources |
 |---|---|---|
 | `move` | Normalized 2D vector | WASD/arrows, virtual joystick |
-| `goto` | World point or `RoomId` | Click/tap on the floor, click a room label |
+| `interact` | `Interactable` (registry entry) | Click on a hovered target, a second tap or the Go chip on touch |
 | `elevator` | `up`, `down` or `FloorId` | Wheel, PageUp/PageDown, vertical swipe (> 60 px, < 400 ms), elevator panel |
 | `scrub` | Δx | Horizontal swipe on L2 (rail), mapped to rover x |
 | `orbit` | Δyaw, optional Δpitch, `smooth` for eased steps, `source` (`mouse`, `touch`, `twist`, `wheel`, `keys`, `button`) | Drag (mouse, one finger), two-finger twist, trackpad deltaX, HUD rotate buttons. Held `Q`/`E` are polled each frame by the camera. |
@@ -100,5 +101,5 @@ Every device input maps to an **intent**. Floors and the HUD only consume intent
 - Gestures inside HUD panels never reach the world (pointer capture at the panel root).
 - The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a hold-to-boost button beside it (above it on phones). Keyboards boost with Shift. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
 - Held keys emit `move` every frame, with no dependency on OS key repeat.
-- A press becomes a drag only after it travels past the threshold (6 px mouse or pen, 8 px touch). A shorter press stays a click or tap (click to move); a longer one only rotates.
+- A press becomes a drag only after it travels past the threshold (6 px mouse or pen, 8 px touch). A shorter press stays a click or tap (it picks a target, or does nothing on empty floor); a longer one only rotates.
 - Keyboard shortcuts are ignored while focus is in a text input (palette search).

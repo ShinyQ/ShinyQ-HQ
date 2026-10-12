@@ -11,7 +11,7 @@ import { neonColor } from "../../fx/materials";
 import { ROAD } from "../../nav/road";
 import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
-import { aboutCard, CHANNEL_TONE, HitBox, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
+import { aboutCard, CHANNEL_TONE, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
 import { ROOF_DECK, type RoofActive } from "./layout";
 import { latticeSegments, roofDetail, scatter, type Box } from "./solids";
 
@@ -222,8 +222,6 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       <HoloIcon strokes={ROOF_ICONS.email} instances={scene.icons.email} color={ROOF_BLUE} size={1.6} tier={tier} reducedMotion={reducedMotion} />
       <HoloIcon strokes={ROOF_ICONS.cv} instances={scene.icons.cv} color={ROOF_CYAN} size={1.6} tier={tier} reducedMotion={reducedMotion} />
       <HoloIcon strokes={ROOF_ICONS.about} instances={scene.icons.about} color={ROOF_VIOLET} size={1.6} tier={tier} reducedMotion={reducedMotion} />
-      <HitBox rect={layout.comms} h={4} room="RF:contact" />
-      <HitBox rect={layout.cv} h={3.6} room="RF:cv" />
     </group>
   );
 }

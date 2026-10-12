@@ -12,6 +12,7 @@ import { BootOverlay } from "./BootOverlay";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
+import { InteractStatus } from "./InteractStatus";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
@@ -136,6 +137,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
             }
             right={explorable ? <ViewControls /> : null}
           >
+            <InteractStatus coarse={coarse} />
             {explorable && !walking && <HintBar coarse={coarse} mobile={mobile} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />

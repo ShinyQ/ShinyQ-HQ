@@ -49,7 +49,7 @@ export interface PadStep {
   riding: boolean;
   /** A pad may open its picker now (phase explore, no beam, no picker open). */
   explore: boolean;
-  /** The rover follows a path (click-to-move, autopilot) or a mission runs. */
+  /** The rover follows a path (scrub, autopilot) or a mission runs. */
   following: boolean;
   now: number;
   speed: number;

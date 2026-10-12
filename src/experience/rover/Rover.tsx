@@ -74,8 +74,6 @@ function makeTrailTexture() {
 const GLOW_CYAN = "#67e8f9";
 /** Full trail length behind the rover (u) at boost level 1. */
 const TRAIL_LEN = 3.2;
-const MARKER_FADE = 1.2;
-const MARKER_GROW = 1.5;
 
 function readMonoFont() {
   const value = getComputedStyle(document.documentElement).getPropertyValue("--font-jetbrains").trim();
@@ -93,7 +91,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
   const dust = useRef<InstancedMesh>(null);
   const glow = useRef<Mesh>(null);
   const ring = useRef<Mesh>(null);
-  const marker = useRef<Mesh>(null);
   const trail = useRef<Mesh>(null);
   const [glowTexture] = useState(makeGlowTexture);
   const [trailTexture] = useState(makeTrailTexture);
@@ -134,19 +131,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
     dummy: new Object3D(),
   });
 
-  useEffect(
-    () =>
-      intents.on((intent) => {
-        if (intent.type !== "goto") return;
-        const m = roverRuntime.marker;
-        m.x = intent.point.x;
-        m.z = intent.point.z;
-        m.opacity = 1;
-        m.scale = 1;
-        m.visible = true;
-      }),
-    [],
-  );
 
   useEffect(() => {
     const l = local.current;
@@ -193,18 +177,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
       }
     }
 
-    const mk = r.marker;
-    if (mk.visible) {
-      mk.opacity = Math.max(0, mk.opacity - dt * MARKER_FADE);
-      if (!reduced) mk.scale *= 1 + dt * MARKER_GROW;
-      if (mk.opacity <= 0) mk.visible = false;
-    }
-    if (marker.current) {
-      marker.current.visible = mk.visible;
-      marker.current.position.set(mk.x, r.y + 0.03, mk.z);
-      marker.current.scale.setScalar(mk.scale);
-      (marker.current.material as MeshBasicMaterial).opacity = mk.opacity;
-    }
 
     if (t > l.nextBlink) {
       l.blinkUntil = t + 0.15;
@@ -290,10 +262,13 @@ export function Rover({ tier }: { tier: GpuTier }) {
     e.stopPropagation();
     intents.emit({ type: "terminal" });
   };
+  // A click on the rover opens Ask Rover, so a target behind it must not light up. The over handler makes
+  // the rover hover-tracked, which lets its stopPropagation clear the hover of objects behind it.
+  const stopHover = (e: ThreeEvent<PointerEvent>) => e.stopPropagation();
 
   return (
     <>
-      <group ref={root} name="rover" onClick={onClick}>
+      <group ref={root} name="rover" onClick={onClick} onPointerOver={stopHover} onPointerMove={stopHover}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
           <circleGeometry args={[1, 24]} />
           <meshBasicMaterial transparent depthWrite={false}>
@@ -370,10 +345,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
       <mesh ref={target} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
         <ringGeometry args={[0.5, 0.68, 32]} />
         <meshBasicMaterial color={COLORS.cyan} transparent opacity={0.85} toneMapped={false} />
-      </mesh>
-      <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} visible={false} raycast={() => null}>
-        <ringGeometry args={[0.3, 0.42, 32]} />
-        <meshBasicMaterial color={GLOW_CYAN} transparent opacity={0} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </mesh>
       <instancedMesh ref={dust} args={[undefined, undefined, DUST]} frustumCulled={false}>
         <boxGeometry args={[0.14, 0.14, 0.14]} />

@@ -1,12 +1,11 @@
 "use client";
 
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { AdditiveBlending, CircleGeometry, Color, Float32BufferAttribute, Object3D, RingGeometry, type InstancedMesh } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { DRAG_THRESHOLD, intents } from "../input/intents";
-import { PAD, padRadius, pickerFor } from "../nav/pads";
+import { useHQStore } from "@/store/useHQStore";
+import { PAD, padRadius } from "../nav/pads";
 import { roverRuntime } from "../rover/runtime";
 import type { PadKind, PadTrigger } from "../types";
 import { HoloIcon, type HoloIconInstance } from "./HoloIcon";
@@ -36,10 +35,10 @@ function padGeometry() {
 
 /**
  * Floor pads (elevator call pad, L2 year teleporters): one instanced additive disc for every pad on the
- * floor, brightening as the rover gets close, plus a floating neon icon per pad kind. Clicking or
- * tapping a pad on the current floor opens its picker without driving there.
+ * floor, brightening as the rover gets close, plus a floating neon icon per pad kind. Clicks go through
+ * point-and-go (interact/registry.ts): the rover drives onto the pad, then the picker opens.
  */
-export function PadGlow({ pads, floorY, interactive }: { pads: PadTrigger[]; floorY: number; interactive: boolean }) {
+export function PadGlow({ pads, floorY }: { pads: PadTrigger[]; floorY: number }) {
   const mesh = useRef<InstancedMesh>(null);
   const tier = useHQStore((s) => s.tier);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
@@ -91,22 +90,10 @@ export function PadGlow({ pads, floorY, interactive }: { pads: PadTrigger[]; flo
     return out;
   }, [pads]);
 
-  const onClick = (e: ThreeEvent<MouseEvent>) => {
-    // A press that travelled past the drag threshold rotated the view; it is not a click or tap.
-    const pointerType = "pointerType" in e.nativeEvent ? String((e.nativeEvent as PointerEvent).pointerType) : "mouse";
-    if (e.delta > DRAG_THRESHOLD[pointerType as keyof typeof DRAG_THRESHOLD] || e.delta > DRAG_THRESHOLD.touch) return;
-    const pad = e.instanceId === undefined ? undefined : pads[e.instanceId];
-    if (!pad || getHQStore().getState().phase !== "explore") return;
-    e.stopPropagation();
-    // A click is manual input: it ends a mission leg or a drive first, like clicking the floor.
-    intents.emit({ type: "cancel" });
-    getHQStore().getState().openPicker(pickerFor(pad));
-  };
-
   if (pads.length === 0) return null;
   return (
     <group name="floor-pads">
-      <instancedMesh ref={mesh} args={[geometry, undefined, pads.length]} frustumCulled={false} {...(interactive ? { onClick } : { raycast: () => null })}>
+      <instancedMesh ref={mesh} args={[geometry, undefined, pads.length]} frustumCulled={false} raycast={() => null}>
         <meshBasicMaterial vertexColors transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </instancedMesh>
       {KINDS.map((kind) =>

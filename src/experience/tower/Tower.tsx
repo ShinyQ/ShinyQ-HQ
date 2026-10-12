@@ -74,7 +74,7 @@ export function Tower({
       {FLOOR_IDS.map((id) => {
         const isNear = near.includes(id);
         return (
-          <FloorLevel key={id} layout={layouts[id]} near={isNear} interactive={id === floor}>
+          <FloorLevel key={id} layout={layouts[id]} near={isNear}>
             {isNear && (
               <Suspense fallback={null}>
                 {id === "L1" ? (

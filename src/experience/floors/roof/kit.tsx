@@ -14,13 +14,11 @@ import {
   ShaderMaterial,
   type InstancedMesh,
 } from "three";
-import type { RoomId } from "@/content/schema";
 import type { BatchedLabel } from "../../fx/labelProps";
 import { neonColor } from "../../fx/materials";
 import { useUniformTime } from "../../fx/useUniformTime";
 import { FONTS } from "../../tower/primitives";
-import type { ExperienceData, GpuTier, Rect, RoofData } from "../../types";
-import { roomHandlers } from "../interact";
+import type { ExperienceData, GpuTier, RoofData } from "../../types";
 import type { RoofActive, RoofLayout } from "./layout";
 import { boxBuffers, boxEdgeBuffers, type Box } from "./solids";
 
@@ -168,14 +166,6 @@ export function PulseRings({ sources, radius = 0.6, grow = 4, speed = 0.5, tier,
   return <instancedMesh ref={mesh} args={[geometry, material, sources.length]} frustumCulled={false} raycast={() => null} />;
 }
 
-/** Invisible click target over a station (three raycasts hidden meshes; it costs no draw call): drives there and opens the room. */
-export function HitBox({ rect, room, h, y = 0 }: { rect: Rect; room: RoomId; h: number; y?: number }) {
-  return (
-    <mesh position={[(rect.minX + rect.maxX) / 2, y + h / 2, (rect.minZ + rect.maxZ) / 2]} visible={false} {...roomHandlers(room)}>
-      <boxGeometry args={[rect.maxX - rect.minX, h, rect.maxZ - rect.minZ]} />
-    </mesh>
-  );
-}
 
 /** The about card rows, top to bottom from `top`: eyebrow, name, headline, role, location and timezone, one-line intro. */
 export function aboutCard(

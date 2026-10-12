@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { StateStorage } from "zustand/middleware";
 import { createHQStore, STORE_KEY, type HQStore } from "@/store/useHQStore";
+import type { Interactable } from "@/experience/interact/registry";
 
 function memoryStorage(): StateStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -172,5 +173,34 @@ describe("HQ store", () => {
     store.getState().setBeam(null);
     expect(store.getState().beam).toBeNull();
     expect(storage.data.get(STORE_KEY) ?? "").not.toContain("picker");
+  });
+
+  it("holds the point-and-go target, ignores repeats and never persists it", () => {
+    const item: Interactable = {
+      id: "L3:door:demo",
+      floor: "L3",
+      kind: "door",
+      label: "Demo",
+      at: { x: 0, z: 0 },
+      bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
+      action: { type: "open-room", room: "L3:demo" },
+    };
+    expect(store.getState().hover).toBeNull();
+    expect(store.getState().pointHint).toBe(false);
+    const seen: (string | null)[] = [];
+    const off = store.subscribe((s, prev) => {
+      if (s.hover !== prev.hover) seen.push(s.hover ? `${s.hover.item.id}/${s.hover.via}` : null);
+    });
+    store.getState().setHover({ item, via: "pointer" });
+    store.getState().setHover({ item, via: "pointer" });
+    store.getState().setHover({ item, via: "tap" });
+    store.getState().setHover(null);
+    store.getState().setHover(null);
+    off();
+    expect(seen).toEqual(["L3:door:demo/pointer", "L3:door:demo/tap", null]);
+    store.getState().setPointHint(true);
+    expect(store.getState().pointHint).toBe(true);
+    store.getState().setHover({ item, via: "tap" });
+    expect(storage.data.get(STORE_KEY) ?? "").not.toMatch(/hover|pointHint|L3:door:demo/);
   });
 });

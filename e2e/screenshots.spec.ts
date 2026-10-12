@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, padsOf, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -390,3 +390,47 @@ for (const vp of [
     await context.close();
   });
 }
+
+test.describe("point and go", () => {
+  test("hover label and outline on L3 @ 1440x900", async ({ browser }) => {
+    test.setTimeout(240_000);
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    await page.goto("/en/labs?tier=full&walk=off");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await page.evaluate(() => document.fonts.ready);
+    // The full tier renders through the bloom composer: give the floor time to mount and settle.
+    await page.waitForTimeout(6000);
+    const pod = await visibleTarget(page, { kinds: ["door"] });
+    await hoverTarget(page, pod.id);
+    // Troika builds the label glyphs slowly on SwiftShader.
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: "screenshots/hq-point-hover-1440x900.png" });
+    const empty = await emptyFloorPoint(page);
+    await page.mouse.click(empty.x, empty.y);
+    await expect(page.getByTestId("point-hint")).toBeVisible();
+    await page.screenshot({ path: "screenshots/hq-point-hint-1440x900.png" });
+    await context.close();
+  });
+
+  test("tap to select with the Go chip on L3 @ 390x844", async ({ browser }) => {
+    test.setTimeout(240_000);
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    await page.goto("/en/labs?tier=lite&walk=off");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(4000);
+    const pod = await visibleTarget(page, { kinds: ["door"], safe: PHONE_SAFE });
+    const point = await targetPoint(page, pod.id);
+    await page.touchscreen.tap(point.x, point.y);
+    await expect(page.getByTestId("interact-go")).toBeVisible();
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: "screenshots/hq-point-tap-390x844.png" });
+    await context.close();
+  });
+});
