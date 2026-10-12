@@ -2,7 +2,7 @@ import raw from "../../content/site-content.json";
 import factsRaw from "../../content/generated/dynamic-facts.json";
 import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
 import { SiteContentSchema, type Locale, type LocalizedText, type SiteContent, type Stat } from "./schema";
-import { groupEntriesByYear, sortPods, sortTimeline } from "./selectors";
+import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 
 let cached: SiteContent | undefined;
 
@@ -57,7 +57,7 @@ export const getMissions = () => [...getContent().missions].sort((a, b) => a.ord
 
 export function getPods(wing?: "software" | "ai") {
   const pods = getContent().floors.labs.pods;
-  return sortPods(wing ? pods.filter((p) => p.wing === wing) : pods);
+  return orderPods(wing ? pods.filter((p) => p.wing === wing) : pods);
 }
 
 export function getPod(slug: string) {

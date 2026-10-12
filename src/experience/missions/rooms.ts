@@ -1,4 +1,4 @@
-import { clientKeywords, groupEntriesByYear, isResearch, sortPods } from "@/content/selectors";
+import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
 
 export type RoomKind = "lobby" | "career" | "workshop" | "pod" | "post" | "shelf" | "research" | "roof";
@@ -101,7 +101,7 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
   add({ floor: "L2", slug: "workshop", kind: "workshop", title: labels.workshop, keywords: [...content.sideProjects.map((p) => p.title), ...content.publicRepos.map((r) => r.name)], path: "/journey#workshop", floorPath: "/journey#workshop", surpriseWeight: 0.5 });
 
   // L3 Labs
-  for (const pod of sortPods(content.floors.labs.pods)) {
+  for (const pod of orderPods(content.floors.labs.pods)) {
     add({
       floor: "L3",
       slug: pod.slug,
