@@ -14,7 +14,9 @@ import { experienceDataFor } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export const dynamicParams = false;
 
@@ -24,10 +26,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/journey/[slug]">): Promise<Metadata> {
   const { locale: raw, slug } = await params;
-  const locale = assertLocale(raw);
-  const entry = getTimelineEntry(slug);
-  if (!entry) return {};
-  return pageMetadata({ locale, path: `/journey/${slug}`, title: `${entry.role[locale]} · ${entry.org}`, description: entry.summary[locale] });
+  return getTimelineEntry(slug) ? seoMetadata(assertLocale(raw), `/journey/${slug}`) : {};
 }
 
 export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/journey/[slug]">) {
@@ -46,6 +45,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
 
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, `/journey/${entry.slug}`)} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" startRoom={`L2:${entry.slug}`} />
       <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
         <CrumbLink crumb={{ href: "/journey", label: t("navTitle") }} />

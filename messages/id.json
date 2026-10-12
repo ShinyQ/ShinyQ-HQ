@@ -1,7 +1,6 @@
 {
   "meta": {
     "siteName": "ShinyQ HQ",
-    "description": "Kurniadi Ahmad Wijaya, Software Engineer dan AI Engineer. Studi kasus software dan AI, riwayat karier, tulisan, dan kontak.",
     "quick": "Ringkasan",
     "journey": "Perjalanan",
     "labs": "Labs",
@@ -864,6 +863,108 @@
       "replay": "putar ulang tutorial",
       "hintsOn": "petunjuk: aktif",
       "hintsOff": "petunjuk: mati"
+    }
+  },
+  "seo": {
+    "home": "Beranda",
+    "homeTitle": "{name}: {role} yang membangun platform AI production",
+    "homeDescription": "{name}, {role} di {city}. {motto}",
+    "quickTitle": "Ringkasan profil dan karya {name}",
+    "quickDescription": "{name} dalam satu halaman. {motto}",
+    "journeyTitle": "Perjalanan karier {name}",
+    "journeyDescription": "Perjalanan karier {name}, {from} hingga {to}: pekerjaan, proyek freelance, pendidikan, riset, dan penghargaan.",
+    "labsTitle": "Studi kasus software dan AI oleh {name}",
+    "labsDescription": "{count} studi kasus software dan AI oleh {name}: voice agent realtime, document AI, keamanan AI, dan backend.",
+    "libraryTitle": "Tulisan dan riset oleh {name}",
+    "libraryDescription": "Artikel, publikasi riset, model yang dipublikasikan, dan materi talk oleh {name}, {role}.",
+    "contactTitle": "Kontak {name}: peran software dan AI",
+    "contactDescription": "Hubungi {name}, {role} di {city}, untuk peran dan proyek software serta AI engineering.",
+    "cvTitle": "CV {name}: software dan AI engineering",
+    "cvDescription": "CV {name}, {role}: aplikasi Azure AI, sistem backend, karier, pendidikan, dan sertifikasi.",
+    "podTitle": "{title} oleh {name}",
+    "postTitle": "{title} oleh {name}",
+    "entryTitle": "{name}: {role}",
+    "entryTitleOrg": "{name}: {role}, {org}",
+    "keyResult": "Hasil utama: {value} ({label}).",
+    "builtWith": "Dibangun dengan {stack}.",
+    "caseStudyBy": "Studi kasus oleh {name}.",
+    "byName": "Oleh {name}.",
+    "postBy": "Oleh {name}, {role}.",
+    "articleBy": "Artikel oleh {name}.",
+    "readArticle": "Baca artikel lengkapnya.",
+    "entryRole": "{role}, {org}, {period}.",
+    "entryOrg": "{org}, {period}.",
+    "entryPeriod": "{period}.",
+    "careerOf": "Riwayat karier {name}.",
+    "seeJourney": "Lihat perjalanan karier lengkap.",
+    "period": "{from} hingga {to}",
+    "present": "sekarang",
+    "more": {
+      "home": {
+        "1": "{count} studi kasus lengkap dengan hasil, karier, dan tulisan.",
+        "2": "{count} studi kasus lengkap dengan hasil.",
+        "3": "{count} studi kasus dengan hasil.",
+        "4": "{count} studi kasus."
+      },
+      "quick": {
+        "1": "Proyek utama, hasil, karier, keahlian, dan sertifikasi.",
+        "2": "Proyek utama, hasil, karier, dan keahlian.",
+        "3": "Proyek, hasil, dan karier."
+      },
+      "journey": {
+        "1": "Dari backend hingga AI production.",
+        "2": "Dari backend ke AI."
+      },
+      "labs": {
+        "1": "Lengkap dengan masalah, pendekatan, dan hasil.",
+        "2": "Dengan masalah, pendekatan, dan hasil.",
+        "3": "Dengan hasil."
+      },
+      "library": {
+        "1": "Tentang voice agent, evaluasi LLM, dan AI production.",
+        "2": "Tentang voice agent dan evaluasi LLM.",
+        "3": "Tentang voice agent."
+      },
+      "contact": {
+        "1": "Email, LinkedIn, GitHub, dan CV.",
+        "2": "Email, LinkedIn, dan GitHub.",
+        "3": "Email dan CV."
+      },
+      "cv": {
+        "1": "Baca langsung atau unduh PDF-nya.",
+        "2": "Baca atau unduh PDF-nya.",
+        "3": "Baca atau unduh."
+      }
+    },
+    "og": {
+      "cta": "Jelajahi HQ 3D",
+      "writing": "Tulisan",
+      "pages": {
+        "quick": {
+          "title": "Sekilas",
+          "subtitle": "Proyek, hasil, karier, dan keahlian dalam satu halaman"
+        },
+        "journey": {
+          "title": "Perjalanan karier",
+          "subtitle": "{from} hingga {to} · {count} entri"
+        },
+        "labs": {
+          "title": "Studi kasus",
+          "subtitle": "{count} proyek software dan AI, lengkap dengan hasil"
+        },
+        "library": {
+          "title": "Tulisan dan riset",
+          "subtitle": "{posts} artikel dan {papers} publikasi"
+        },
+        "contact": {
+          "title": "Kontak",
+          "subtitle": "Peran dan proyek software serta AI engineering"
+        },
+        "cv": {
+          "title": "CV",
+          "subtitle": "Karier, pendidikan, dan sertifikasi dalam satu PDF"
+        }
+      }
     }
   }
 }

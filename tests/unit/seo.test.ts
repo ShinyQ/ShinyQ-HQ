@@ -3,8 +3,9 @@ import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { Analytics } from "@/components/Analytics";
 import { getContent } from "@/content/load";
-import { PERSON_ID, personJsonLd, podJsonLd, postJsonLd, serializeJsonLd } from "@/lib/jsonld";
-import { allOgTargets, ogSegments, parseOgSegments } from "@/lib/og-cards";
+import { LOCALES } from "@/content/schema";
+import { PERSON_ID, breadcrumbJsonLd, pageJsonLd, personJsonLd, podJsonLd, postJsonLd, serializeJsonLd, websiteJsonLd } from "@/lib/jsonld";
+import { seoFor } from "@/lib/seo";
 import { allPagePaths } from "@/lib/routes";
 import {
   SITE_URL,
@@ -42,9 +43,10 @@ describe("pageMetadata", () => {
   it("sets canonical, hreflang alternates and the default share card", () => {
     const meta = pageMetadata({ locale: "id", path: "/labs", title: "Labs", description: "Desc" });
     expect(meta.alternates?.canonical).toBe("/id/labs");
+    expect(meta.title).toEqual({ absolute: "Labs" });
     expect(meta.alternates?.languages).toEqual({ en: "/en/labs", id: "/id/labs", "x-default": "/en/labs" });
     expect(meta.openGraph).toMatchObject({ locale: "id_ID", url: "/id/labs", siteName: "ShinyQ HQ", type: "website" });
-    expect(meta.openGraph?.images).toEqual([{ url: "/og/id.png", width: 1200, height: 630, type: "image/png", alt: "Labs" }]);
+    expect(meta.openGraph?.images).toEqual([{ url: "/og/id.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Labs" }]);
     expect(meta.twitter).toMatchObject({ card: "summary_large_image", title: "Labs" });
   });
 
@@ -56,7 +58,7 @@ describe("pageMetadata", () => {
     const image = ogImagePath({ kind: "blog", locale: "en", slug: "post" });
     const meta = pageMetadata({ locale: "en", path: "/blog/post", title: "Post", type: "article", publishedTime: "2026-01-02", image });
     expect(meta.openGraph).toMatchObject({ type: "article", publishedTime: "2026-01-02" });
-    expect(meta.openGraph?.images).toMatchObject([{ url: "/og/en/blog/post.png" }]);
+    expect(meta.openGraph?.images).toMatchObject([{ url: "/og/en/blog/post.jpg" }]);
   });
 });
 
@@ -116,18 +118,50 @@ describe("JSON-LD", () => {
     expect(podJsonLd(live, "en").sameAs).toEqual([live.liveUrl]);
     expect(podJsonLd(floors.labs.pods.find((p) => !p.liveUrl)!, "en")).not.toHaveProperty("sameAs");
   });
-});
 
-describe("OG images", () => {
-  it("covers a default card plus every pod and hosted post in both locales", () => {
-    const targets = allOgTargets();
-    expect(targets).toHaveLength(2 * (1 + floors.labs.pods.length + hostedPosts.length));
-    expect(targets.map(ogImagePath).every((p) => p.startsWith("/og/") && p.endsWith(".png"))).toBe(true);
+  it("gives the person the content headline, the motto and the photo", () => {
+    const { profile } = getContent();
+    expect(personJsonLd("id")).toMatchObject({
+      jobTitle: profile.headline.id,
+      disambiguatingDescription: profile.subheadline.id,
+      image: `${SITE_URL}/og-assets/kurniadi-photo.png`,
+    });
+    expect(websiteJsonLd("en")).toMatchObject({ description: seoFor("en", "/").description, alternateName: profile.name });
   });
 
-  it("round-trips route segments", () => {
-    for (const target of allOgTargets()) expect(parseOgSegments(ogSegments(target))).toEqual(target);
-    expect(parseOgSegments(["xx.png"])).toBeUndefined();
+  it("describes pods and posts with the page description and the share card", () => {
+    const pod = floors.labs.pods[0];
+    const work = podJsonLd(pod, "en");
+    expect(work.description).toBe(seoFor("en", `/labs/${pod.slug}`).description);
+    expect((work.image as string[])[0]).toBe(`${SITE_URL}/og/en/labs/${pod.slug}.jpg`);
+    const post = hostedPosts[0];
+    const article = postJsonLd(post, "id", "id");
+    expect(article.description).toBe(seoFor("id", `/blog/${post.slug}`).description);
+    expect(article.image).toEqual([`${SITE_URL}/og/id/blog/${post.slug}.jpg`]);
+  });
+
+  it("adds a BreadcrumbList to every page except home", () => {
+    for (const locale of LOCALES) {
+      for (const path of allPagePaths()) {
+        const types = pageJsonLd(locale, path).map((d) => d["@type"]);
+        if (path === "/") expect(types).toEqual([]);
+        else expect(types[0], path).toBe("BreadcrumbList");
+      }
+    }
+  });
+
+  it("orders crumbs from home to the page with absolute URLs", () => {
+    const pod = floors.labs.pods[0];
+    const [crumbs, work] = pageJsonLd("en", `/labs/${pod.slug}`);
+    expect(crumbs.itemListElement).toEqual([
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/en` },
+      { "@type": "ListItem", position: 2, name: "Labs", item: `${SITE_URL}/en/labs` },
+      { "@type": "ListItem", position: 3, name: pod.title.en, item: `${SITE_URL}/en/labs/${pod.slug}` },
+    ]);
+    expect(work["@type"]).toBe("CreativeWork");
+    expect(breadcrumbJsonLd([{ name: "Beranda", path: "/" }], "id")).toMatchObject({ "@type": "BreadcrumbList", itemListElement: [{ item: `${SITE_URL}/id` }] });
+    const [postCrumbs] = pageJsonLd("id", `/blog/${hostedPosts[0].slug}`);
+    expect((postCrumbs.itemListElement as { name: string }[])[1].name).toBe("Perpustakaan");
   });
 });
 

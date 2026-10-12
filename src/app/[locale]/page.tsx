@@ -17,11 +17,10 @@ import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatDate, formatYearMonth } from "@/lib/format";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  return pageMetadata({ locale, path: "/" });
+  return seoMetadata(assertLocale((await params).locale), "/");
 }
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {

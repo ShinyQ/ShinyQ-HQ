@@ -9,8 +9,8 @@ import { getContent, getPost } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { assertLocale } from "@/i18n/locale";
 import { formatDate } from "@/lib/format";
-import { postJsonLd } from "@/lib/jsonld";
-import { ogImagePath, pageMetadata } from "@/lib/site";
+import { pageJsonLd } from "@/lib/jsonld";
+import { seoMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -22,19 +22,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/blog/[slug]">): Promise<Metadata> {
   const { locale: raw, slug } = await params;
-  const locale = assertLocale(raw);
   const post = getPost(slug);
-  if (!post) return {};
-  return pageMetadata({
-    locale,
-    path: `/blog/${slug}`,
-    title: post.title[locale],
-    description: post.excerpt[locale],
-    type: "article",
-    publishedTime: post.date,
-    tags: post.tags,
-    image: ogImagePath({ kind: "blog", locale, slug }),
-  });
+  return post && !post.url ? seoMetadata(assertLocale(raw), `/blog/${slug}`) : {};
 }
 
 export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog/[slug]">) {
@@ -52,7 +41,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
 
   return (
     <>
-      <JsonLd data={postJsonLd(post, locale, found.locale)} />
+      <JsonLd data={pageJsonLd(locale, `/blog/${slug}`)} />
       <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14" lang={found.locale}>
         <div className="mx-auto max-w-[720px]">
           <p lang={locale}>

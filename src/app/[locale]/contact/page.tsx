@@ -14,12 +14,12 @@ import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/contact">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "about" });
-  return pageMetadata({ locale, path: "/contact", title: t("title"), description: getRoof().availability[locale] });
+  return seoMetadata(assertLocale((await params).locale), "/contact");
 }
 
 /** First sentences as the lead, the rest as body copy. */
@@ -46,6 +46,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
 
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, "/contact")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="RF" />
       <header className="pv-wrap grid gap-10 pt-8 sm:pt-12 lg:grid-cols-12 lg:gap-6 lg:pt-16">
         <div className="min-w-0 lg:col-span-7">

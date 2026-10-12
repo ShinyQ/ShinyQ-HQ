@@ -14,12 +14,12 @@ import { perspectiveLinks } from "@/content/perspectives";
 import { isResearch } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
-import { pageMetadata } from "@/lib/site";
+import { seoMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { pageJsonLd } from "@/lib/jsonld";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/quick">): Promise<Metadata> {
-  const locale = assertLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: "quick" });
-  return pageMetadata({ locale, path: "/quick", title: t("title"), description: t("intro") });
+  return seoMetadata(assertLocale((await params).locale), "/quick");
 }
 
 const TOC = ["profile", "perspectives", "stats", "software", "ai", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
@@ -45,6 +45,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
 
   return (
     <>
+      <JsonLd data={pageJsonLd(locale, "/quick")} />
       <PageIntro title={t("title")} lead={t("intro")} />
       <nav aria-labelledby="toc-title" className="pv-wrap mt-10">
         <div className="glass pv-filters overflow-x-auto px-3 py-2">
