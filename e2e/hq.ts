@@ -19,13 +19,16 @@ type HQWindow = Window & {
 };
 
 /**
- * Marks the visitor as returning in this browser session: the boot and the intro already played
- * (`hq:intro`), so any route opens straight in. Nothing can skip them any more.
+ * Marks the visitor as returning: the boot and the intro already played this session (`hq:intro`),
+ * the first-session tour ran (`hq:onboarded`) and hint bubbles are off (`hq:hints`), so any route
+ * opens straight in and nothing covers the world.
  */
 export async function asReturningVisitor(page: Page) {
   await page.addInitScript(() => {
-    // The Rover Terminal auto-opens once per browser; tests open it explicitly.
     localStorage.setItem("hq:terminal-seen", "1");
+    // The first-session tour already ran; "!" hint bubbles off so they never cover a click target.
+    localStorage.setItem("hq:onboarded", "done");
+    localStorage.setItem("hq:hints", "off");
     sessionStorage.setItem("hq:intro", "seen");
     if (!localStorage.getItem("hq:v1")) {
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));

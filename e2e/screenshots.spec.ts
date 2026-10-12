@@ -96,7 +96,10 @@ for (const viewport of VIEWPORTS) {
     test(`${page.name} (HTML) @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
       const tab = await context.newPage();
-      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+      await tab.addInitScript(() => {
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:onboarded", "done");
+      });
       await tab.goto(`${page.path}?tier=static`, { waitUntil: "networkidle" });
       await tab.evaluate(() => document.fonts.ready);
       await expect(tab.locator("h1").first()).toBeVisible();
@@ -258,7 +261,10 @@ for (const viewport of VIEWPORTS) {
     test(`${overlay.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
       const tab = await context.newPage();
-      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+      await tab.addInitScript(() => {
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:onboarded", "done");
+      });
       await tab.goto("/en?tier=static", { waitUntil: "networkidle" });
       await tab.evaluate(() => document.fonts.ready);
       await overlay.open(tab);

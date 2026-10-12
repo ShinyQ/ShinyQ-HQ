@@ -67,6 +67,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   await page.addInitScript(
     ({ key, teaser }) => {
       localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
       if (!teaser) sessionStorage.setItem(key, "1");
     },
     { key: TEASER_SEEN, teaser },

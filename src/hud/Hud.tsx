@@ -10,6 +10,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
+import { OnboardingLayer } from "./dialog/OnboardingLayer";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
@@ -159,6 +160,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
         onActive={setWalking}
       />
       <FloorAnnouncer data={data} />
+      <OnboardingLayer data={data} />
       {speaking && <DialogLayer />}
       <PadPicker data={data} />
     </div>

@@ -9,7 +9,7 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { getContent } from "@/content/load";
 import type { Locale } from "@/content/schema";
-import { RoverTerminal, markTerminalSeen, shouldAutoOpenTerminal, type RoverTerminalProps } from "@/hud/RoverTerminal";
+import { RoverTerminal, markTerminalSeen, type RoverTerminalProps } from "@/hud/RoverTerminal";
 import { greetingKey, orderTerminalMissions } from "@/hud/terminal";
 
 const missions = orderTerminalMissions(getContent().missions, 0);
@@ -219,9 +219,8 @@ describe("terminal helpers", () => {
     expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(8);
   });
 
-  it("auto-opens only until the terminal was seen", () => {
-    expect(shouldAutoOpenTerminal()).toBe(true);
+  it("records that the terminal was seen", () => {
     markTerminalSeen();
-    expect(shouldAutoOpenTerminal()).toBe(false);
+    expect(localStorage.getItem("hq:terminal-seen")).toBe("1");
   });
 });

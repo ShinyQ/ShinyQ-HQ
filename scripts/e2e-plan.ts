@@ -21,6 +21,7 @@ export const ALL_SPECS = [
   "labs",
   "library-roof",
   "missions",
+  "onboarding",
   "pads",
   "pageview",
   "roof",
@@ -67,7 +68,7 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/certs\/|^src\/content\/cert(s|-views)\.ts$/, specs: ["pageview", "experience", "static-routes"] },
 
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
-  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud"] },
+  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud", "onboarding"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
@@ -75,6 +76,8 @@ export const RULES: Rule[] = [
   // Point-and-go: the registry, pick logic, the hit layer and its HUD status (pads and career rooms are clicked through it).
   { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career"] },
 
+  // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
+  { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk"] },
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
@@ -87,7 +90,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   { test: /^src\/experience\/camera\//, specs: ["experience", "career"] },
-  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience"] },
+  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },
 

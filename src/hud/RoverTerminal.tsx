@@ -9,15 +9,6 @@ export const TERMINAL_SEEN_KEY = "hq:terminal-seen";
 const CHAR_MS = 12;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
-/** True until the terminal has been shown once on this device (auto-open on the first visit). */
-export function shouldAutoOpenTerminal(): boolean {
-  try {
-    return localStorage.getItem(TERMINAL_SEEN_KEY) === null;
-  } catch {
-    return false;
-  }
-}
-
 export function markTerminalSeen() {
   try {
     localStorage.setItem(TERMINAL_SEEN_KEY, "1");

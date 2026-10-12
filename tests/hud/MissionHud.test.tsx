@@ -76,7 +76,7 @@ describe("MissionHud on static pages", () => {
     renderHud();
     await act(async () => vi.advanceTimersByTime(5000));
     expect(screen.queryByRole("dialog")).toBeNull();
-    // Still unseen, so the 3D Lobby greets a first visitor with it after the intro.
+    // Nothing opens it on its own any more (the 3D tour is the Rover dialog); the key only records an open.
     expect(localStorage.getItem(TERMINAL_SEEN_KEY)).toBeNull();
   });
 
