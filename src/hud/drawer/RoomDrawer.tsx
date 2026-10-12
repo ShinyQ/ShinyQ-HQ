@@ -406,9 +406,9 @@ const SHEET_EXPAND_AT = 24;
  * from `bodies.tsx`). Presentational: `DrawerHost` wires it to the store, data and URL.
  *
  * Layout, top to bottom: a slim bar that stays put (room code, badges, prev/next, menu, close; the
- * title joins it once the big title scrolls away), one scrolling region (title, subtitle, meta and the
- * cross-floor link, then the tabs, which stick under the bar, then the tab body), and a one-row footer
- * with the primary action.
+ * title joins it once the big title scrolls away), one scrolling region (title, subtitle and meta,
+ * then the tabs, which stick under the bar, then the tab body), and a footer row: the primary action,
+ * the cross-floor link right of it (owner request: more room for the body), then View architecture.
  */
 export function RoomDrawer({
   view,
@@ -558,8 +558,8 @@ export function RoomDrawer({
 
   const primaryLabel = view.kind === "pod" ? tc("caseStudy") : view.kind === "post" ? t("rooms.readPost") : t("openPage");
   const showHologram = view.hologram && !readme && activeTab !== "architecture";
-  const hasFooter = Boolean(view.page || view.external || showHologram);
   const link = view.link ? { label: view.link.label, onClick: () => onLink(view.link!.room) } : undefined;
+  const hasFooter = Boolean(view.page || view.external || link || showHologram);
 
   return (
     <div
@@ -668,18 +668,6 @@ export function RoomDrawer({
             </p>
           )}
           {view.meta.length > 0 && <p className="mt-1 text-[13px] leading-5 text-ink-3">{view.meta.join(" · ")}</p>}
-          {link && (
-            <button
-              type="button"
-              onClick={link.onClick}
-              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg border border-amber/50 px-3 text-[13px] font-semibold text-ink transition hover:border-amber hover:bg-amber/10"
-            >
-              {link.label}
-              <span aria-hidden="true" className="text-amber">
-                →
-              </span>
-            </button>
-          )}
         </div>
 
         {tabs.length > 0 && !readme && (
@@ -714,7 +702,7 @@ export function RoomDrawer({
       </div>
 
       {hasFooter && (
-        <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-glass-border px-4 py-2.5 sm:px-5">
+        <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-glass-border px-4 py-2.5 sm:px-5" data-testid="drawer-footer">
           {view.page && (
             <Link
               href={view.page}
@@ -734,6 +722,19 @@ export function RoomDrawer({
               {t("external")}
               <span className="sr-only"> ({tc("external")})</span>
             </a>
+          )}
+          {link && (
+            <button
+              type="button"
+              onClick={link.onClick}
+              data-testid="drawer-cross-link"
+              className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-lg border border-amber/50 px-3 text-left text-[13px] font-semibold text-ink transition hover:border-amber hover:bg-amber/10"
+            >
+              <span className="min-w-0">{link.label}</span>
+              <span aria-hidden="true" className="shrink-0 text-amber">
+                →
+              </span>
+            </button>
           )}
           {showHologram && <HologramButton onClick={onHologram} compact />}
         </footer>

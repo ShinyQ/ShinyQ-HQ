@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, enterHQ, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * 3D HUD layout (owner round R3-B): the top bar (no Quick view, a highlighted Page view with Ask AI
@@ -104,5 +104,45 @@ test.describe("bottom band", () => {
       expect(overlaps(controls.joystick, controls.view)).toBe(false);
       await context.close();
     });
+  }
+});
+
+const DRAWER = [
+  { name: "desktop", width: 1440, height: 900, touch: false },
+  { name: "phone", width: 390, height: 844, touch: true },
+] as const;
+const CROSS_LINKS = [
+  { path: "/en/journey/jenius-2024", room: "L2:jenius-2024", primary: en.drawer.openPage, link: en.drawer.seeOnL3 },
+  { path: "/en/labs/digital-banking-integrations", room: "L3:digital-banking-integrations", primary: en.common.caseStudy, link: en.drawer.seeOnL2 },
+] as const;
+
+test.describe("room drawer footer", () => {
+  for (const vp of DRAWER) {
+    for (const target of CROSS_LINKS) {
+      test(`${vp.name}: ${target.room} shows the cross-floor link right of the primary action`, async ({ browser }) => {
+        const { context, page } = await newPage(browser, vp);
+        // A room deep link opens the drawer at once (phase room, never explore), so no enterFloorRoute.
+        await asReturningVisitor(page);
+        await page.goto(`${target.path}?tier=lite`);
+        await waitForHQ(page);
+        await waitForRoom(page, target.room);
+        const drawer = page.getByTestId("room-drawer");
+        const footer = drawer.getByTestId("drawer-footer");
+        const primary = footer.getByRole("link", { name: target.primary });
+        const cross = footer.getByRole("button", { name: target.link });
+        await expect(primary).toBeVisible();
+        await expect(cross).toBeVisible();
+        await expect(drawer.getByTestId("drawer-body").getByRole("button", { name: target.link })).toHaveCount(0);
+        const p = await box(primary);
+        const c = await box(cross);
+        const f = await box(footer);
+        const sameRow = Math.abs(p.y - c.y) < 4;
+        if (vp.name === "desktop") expect(sameRow).toBe(true);
+        // Right of the primary action, or wrapped onto the next row on narrow phones; never outside the footer.
+        expect(sameRow ? c.x >= p.x + p.width : c.y >= p.y + p.height).toBe(true);
+        expect(c.x + c.width).toBeLessThanOrEqual(f.x + f.width + 0.5);
+        await context.close();
+      });
+    }
   }
 });
