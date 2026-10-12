@@ -144,7 +144,12 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
               if (local.padOpens !== padOpensBefore) return;
               if (store.getState().phase === "room") store.getState().closeRoom();
               store.getState().openPicker(picker);
-              if (store.getState().picker) audio.play("beep");
+              if (!store.getState().picker) return;
+              audio.play("beep");
+              // The picker consumes the pad under the rover now, not on the next frame: an Esc before
+              // that frame would otherwise let the latch open it again.
+              const pose = local.controller?.pose ?? roverRuntime;
+              local.pad = primedPadLatch(layouts[store.getState().floor].pads, pose);
             },
             command: (command) => {
               if (command.type === "terminal") intents.emit({ type: "terminal" });
