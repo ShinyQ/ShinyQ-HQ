@@ -168,3 +168,23 @@ test("the L1 stats ring draws in 5 objects (full tier)", async ({ page }) => {
   await waitForSceneLive(page);
   expect(await renderables(page, "stats-ring")).toBe(5);
 });
+
+test("L2 room labels and signposts are batched (full tier)", async ({ page }) => {
+  await asReturningVisitor(page);
+  await page.goto("/en/journey?tier=full");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  const plainTexts = await page.evaluate(() => {
+    let count = 0;
+    (window as unknown as SceneWindow).__hq.render.scene?.getObjectByName("career-rooms")?.traverse((o) => {
+      const t = o as unknown as { text?: unknown; addText?: unknown };
+      if (typeof t.text === "string" && typeof t.addText !== "function") count += 1;
+    });
+    return count;
+  });
+  // Only award placings stay plain Text (a handful); every room label is in the batch.
+  expect(plainTexts).toBeLessThan(10);
+  expect(await renderables(page, "career-room-labels")).toBe(1);
+  expect(await renderables(page, "career-signposts")).toBe(1);
+});

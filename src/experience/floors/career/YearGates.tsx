@@ -6,6 +6,7 @@ import { useMemo, useRef } from "react";
 import { BufferGeometry, Float32BufferAttribute, type Mesh } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
+import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { neonColor } from "../../fx/materials";
 import { Readable } from "../../fx/Readable";
 import { RoadMarkings } from "../../fx/RoadMarkings";
@@ -13,7 +14,8 @@ import { roverRuntime } from "../../rover/runtime";
 import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { CAREER_ROAD, type CareerRoadLayout } from "./layout";
-import { useLabelFade } from "./CareerRooms";
+import { useLabelFade, useMemberFade } from "./CareerRooms";
+import { signpostSet } from "./labels";
 
 const BAR = 0.5;
 const FLOOR_DIGITS_OPACITY = 0.3;
@@ -90,9 +92,12 @@ export function YearGates({
   });
 
   // Signposts and floor digits fade with distance like the room labels (the floor runs about 390 u).
-  const xs = useMemo(() => years.flatMap((y) => [y.arch.center.x, y.plaza.center.x]), [years]);
-  const base = useMemo(() => years.flatMap(() => [1, FLOOR_DIGITS_OPACITY]), [years]);
-  const fade = useLabelFade(xs, base);
+  const signposts = useMemo(() => signpostSet(years, roomsLabel), [years, roomsLabel]);
+  const signpostBatch = useRef<BatchedLabelsHandle>(null);
+  useMemberFade(signpostBatch, signposts.xs);
+  const floorXs = useMemo(() => years.map((y) => y.plaza.center.x), [years]);
+  const floorBase = useMemo(() => years.map(() => FLOOR_DIGITS_OPACITY), [years]);
+  const fade = useLabelFade(floorXs, floorBase);
 
   return (
     <group name="year-gates">
@@ -103,46 +108,28 @@ export function YearGates({
       </lineSegments>
       {years.map((y, i) => (
         <Readable key={y.year} position={[y.arch.center.x, 0, y.arch.center.z]}>
-          {(flipped) => (
-            <>
-              <Text
-                ref={(node: Mesh | null) => {
-                  digits.current[i] = node;
-                }}
-                font={FONTS.monoBold}
-                fontSize={2.2}
-                letterSpacing={0.04}
-                color={accent}
-                anchorX="center"
-                anchorY="bottom"
-                position={[0, H + BAR + 0.3, 0]}
-                material-toneMapped={false}
-              >
-                {String(y.year)}
-              </Text>
-              <Text
-                ref={fade(2 * i)}
-                font={FONTS.mono}
-                fontSize={0.42}
-                letterSpacing={0.06}
-                color={COLORS.white}
-                outlineWidth={0.03}
-                outlineColor={COLORS.void}
-                anchorX="center"
-                anchorY="top"
-                position={[0, H - 0.2, CAREER_ROAD.width / 2 + 1.4]}
-              >
-                {/* The arrow points into the plaza (+x), which is on the viewer's left when the sign is seen from behind. */}
-                {flipped ? `\u2190 ${y.year} \u00B7 ${roomsLabel(y.rooms.length)}` : `${y.year} \u00B7 ${roomsLabel(y.rooms.length)} \u2192`}
-              </Text>
-            </>
-          )}
+          <Text
+            ref={(node: Mesh | null) => {
+              digits.current[i] = node;
+            }}
+            font={FONTS.monoBold}
+            fontSize={2.2}
+            letterSpacing={0.04}
+            color={accent}
+            anchorX="center"
+            anchorY="bottom"
+            position={[0, H + BAR + 0.3, 0]}
+            material-toneMapped={false}
+          >
+            {String(y.year)}
+          </Text>
         </Readable>
       ))}
+      <BatchedLabels ref={signpostBatch} labels={signposts.labels} name="career-signposts" toneMapped />
       {years.map((y, i) => (
         <Readable key={`floor-${y.year}`} position={[y.plaza.center.x, 0.04, y.plaza.center.z]}>
           <Text
-            ref={fade(2 * i + 1)}
+            ref={fade(i)}
             font={FONTS.monoBold}
             fontSize={5}
             letterSpacing={0.06}

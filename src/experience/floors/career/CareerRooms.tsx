@@ -2,16 +2,18 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
+import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
 import { Readable } from "../../fx/Readable";
 import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType, GpuTier } from "../../types";
+import { roomLabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
 const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
@@ -19,7 +21,6 @@ const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", 
 const ICON_Y: Record<CareerType, number> = { job: 2.7, freelance: 2.7, education: 2.7, milestone: 2.7, award: 2.9 };
 const ICON_SIZE = 2.6;
 const FRAME_H = 2.2;
-const LABEL_Y = 4.7;
 
 const dummy = new Object3D();
 
@@ -187,6 +188,20 @@ export function useLabelFade(xs: readonly number[], base?: readonly number[]) {
   };
 }
 
+/** The distance fade for members of a `BatchedLabels` (the batch packs each member's opacities every frame). */
+export function useMemberFade(handle: RefObject<BatchedLabelsHandle | null>, xs: readonly number[]) {
+  useFrame(() => {
+    const members = handle.current?.members;
+    if (!members || members.length !== xs.length) return;
+    xs.forEach((x, i) => {
+      const k = labelFade(x - roverRuntime.x);
+      const opacity = k > 0.01 ? k : 0;
+      members[i].fillOpacity = opacity;
+      members[i].outlineOpacity = opacity;
+    });
+  });
+}
+
 /**
  * Career rooms docked on the year plazas: tinted pads, neon frames, pedestals, one Neon line type
  * icon per room (one draw call per type, two on the full tier), the placings count on award plinths and a
@@ -212,8 +227,9 @@ export function CareerRooms({
     return out;
   }, [rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
-  const xs = useMemo(() => rooms.map((r) => r.center.x), [rooms]);
-  const label = useLabelFade(xs);
+  const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
+  const labelBatch = useRef<BatchedLabelsHandle>(null);
+  useMemberFade(labelBatch, roomLabels.xs);
 
   return (
     <group name="career-rooms">
@@ -224,30 +240,7 @@ export function CareerRooms({
       ))}
       <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
-      {rooms.map((room, i) => {
-        const entry = entries.get(room.slug);
-        if (!entry) return null;
-        return (
-          <Readable key={room.id} position={[room.center.x, LABEL_Y, room.center.z]}>
-            <Text
-              ref={label(i)}
-              font={FONTS.sansBold}
-              fontSize={0.4}
-              lineHeight={1.25}
-              maxWidth={room.w + 0.6}
-              outlineWidth={0.03}
-              outlineColor={COLORS.void}
-              textAlign="center"
-              color="#f4f4f5"
-              anchorX="center"
-              anchorY="bottom"
-              rotation={[-0.55, 0, 0]}
-            >
-              {`${entry.role}\n${entry.org} \u00B7 ${entry.period}`}
-            </Text>
-          </Readable>
-        );
-      })}
+      <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped />
     </group>
   );
 }
