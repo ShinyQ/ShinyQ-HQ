@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForCameraSettle, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
@@ -715,3 +715,41 @@ test.describe("CV refresh captures", () => {
     });
   }
 });
+
+/**
+ * R5 P6 review poses at the round 5 sizes, for before/after captures:
+ * `SHOT_DIR=screenshots/before` on main, `SHOT_DIR=screenshots/after` on the branch.
+ * l1-plaza and l3-arrival are diff-gated (must not change); topbar, profile and l1-about are the
+ * intended changes (icon, photo badge, hall portrait) for owner review.
+ */
+const P6_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop-qhd", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
+const p6Shot = (name: string, v: Viewport) => `${process.env.SHOT_DIR ?? "screenshots"}/p6/${name}-${v.width}x${v.height}.png`;
+const HIDE_HUD = "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }";
+
+for (const viewport of P6_VIEWPORTS) {
+  test(`P6 review poses @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(420_000);
+    const { context, page } = await open3D(browser, viewport);
+    await waitForCameraSettle(page);
+    await page.getByTestId("hud-topbar").screenshot({ path: p6Shot("topbar", viewport) });
+    const profile =
+      viewport.name === "mobile" ? page.getByRole("button", { name: new RegExp(`^${en.hud.profile}:`) }) : page.getByRole("region", { name: en.hud.profile });
+    await profile.screenshot({ path: p6Shot("profile", viewport) });
+    const hide = await page.addStyleTag({ content: HIDE_HUD });
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: p6Shot("l1-plaza", viewport) });
+    const about = stationOf("about");
+    await driveTo(page, { x: about.pad.x - about.facing.x * 2.5, z: about.pad.z - about.facing.z * 2.5 });
+    await waitForCameraSettle(page);
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: p6Shot("l1-about", viewport) });
+    await hide.evaluate((el) => (el as Element).remove());
+    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L3"]').click();
+    await waitForFloor(page, "L3", 120_000);
+    await waitForCameraSettle(page);
+    await page.addStyleTag({ content: HIDE_HUD });
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: p6Shot("l3-arrival", viewport) });
+    await context.close();
+  });
+}

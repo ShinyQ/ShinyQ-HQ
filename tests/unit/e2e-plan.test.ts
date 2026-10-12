@@ -3,6 +3,13 @@ import { ALL_SPECS, assignShard, parseShard, SMOKE_SPECS, specsForChanges } from
 import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
+  it("maps the elevator ride code to the ride spec", () => {
+    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["career", "experience", "ride"]);
+    expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
+  });
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
     expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["experience", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["experience", "onboarding", "walk"]);
