@@ -60,6 +60,25 @@ export const CAREER_ICONS: Record<CareerType, Stroke[]> = {
   milestone: [open([5, 21.5], [5, 2.5]), shut([5, 3.5], [19, 3.5], [15.5, 8], [19, 12.5], [5, 12.5]), open([2.5, 21.5], [7.5, 21.5])],
 };
 
+/** Roof station icons (RF revamp), same 24 x 24 line-art grid as the career icons. */
+export type RoofIcon = "email" | "cv" | "about" | "signal";
+
+export const ROOF_ICONS: Record<RoofIcon, Stroke[]> = {
+  // Email: envelope with its flap.
+  email: [shut([3, 6], [21, 6], [21, 18], [3, 18]), open([3, 6], [12, 13], [21, 6])],
+  // CV: page with a folded corner and three text lines.
+  cv: [shut([6, 3], [15, 3], [19, 7], [19, 21], [6, 21]), open([15, 3], [15, 7], [19, 7]), open([9, 11], [16, 11]), open([9, 14], [16, 14]), open([9, 17], [13, 17])],
+  // About: head and shoulders.
+  about: [shut(...arc(12, 8, 4, 0, Math.PI * 2, 12).slice(0, -1)), open(...arc(12, 21, 7, Math.PI, Math.PI * 2, 10))],
+  // Signal: a mast on a tripod with two waves.
+  signal: [
+    open([12, 22], [12, 10]),
+    open([8, 22], [12, 15], [16, 22]),
+    open(...arc(12, 9, 4, -Math.PI * 0.85, -Math.PI * 0.15, 6)),
+    open(...arc(12, 9, 7.5, -Math.PI * 0.85, -Math.PI * 0.15, 8)),
+  ],
+};
+
 /** SVG path data for strokes (`<path d>` with stroke, no fill). */
 export function iconPath(strokes: readonly Stroke[]): string {
   const f = (v: number) => Number(v.toFixed(2));
