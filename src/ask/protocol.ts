@@ -71,6 +71,23 @@ export function cleanTags(value: unknown): AskTag[] {
   return [...new Set(value.filter(isAskTag))].slice(0, ASK_MAX_TAGS);
 }
 
+/**
+ * Page View paths an answer may cite (the `done` frame `cite`, spec section 13): a perspective or
+ * How I work on About, a hosted post, the Library. Anything else is dropped by both ends.
+ */
+export const ASK_CITE_PATTERN = /^\/(?:contact#(?:perspectives-[a-z0-9]+(?:-[a-z0-9]+)*|how)|blog\/[a-z0-9]+(?:-[a-z0-9]+)*|library)$/;
+
+export type AskCiteKind = "perspective" | "how" | "blog" | "library";
+
+export const isAskCite = (value: unknown): value is string => typeof value === "string" && value.length <= 120 && ASK_CITE_PATTERN.test(value);
+
+export function citeKind(path: string): AskCiteKind {
+  if (path.startsWith("/contact#perspectives-")) return "perspective";
+  if (path === "/contact#how") return "how";
+  if (path.startsWith("/blog/")) return "blog";
+  return "library";
+}
+
 /** `POST /api/ask` body (Content-Type: application/json, same origin only). */
 export interface AskRequest {
   q: string;
@@ -96,7 +113,7 @@ export type AskSource = "primary" | "fallback" | "cache" | "none";
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
 export type AskFrame =
   | { delta: string }
-  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[] };
+  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string };
 
 /** Error bodies (JSON) for non-200 responses. */
 export type AskErrorCode =

@@ -44,7 +44,15 @@ export interface PipelineResult {
   tags: AskTag[];
 }
 
-const OUTCOME_OF: Record<CannedKind, AskOutcome> = { unknown: "unknown", decline: "decline", restricted: "decline", fallback: "fallback" };
+const OUTCOME_OF: Record<CannedKind, AskOutcome> = {
+  unknown: "unknown",
+  decline: "decline",
+  restricted: "decline",
+  fallback: "fallback",
+  private: "decline",
+  others: "decline",
+  noView: "unknown",
+};
 
 /** Lowercase vocabulary of the pack (entity check). */
 export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
