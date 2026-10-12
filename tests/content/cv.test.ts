@@ -10,6 +10,13 @@ import { parseRedirects } from "../../scripts/serve-static";
 const root = process.cwd();
 const { fileName } = getRoof().cv;
 const pdf = cvPdfPath(fileName);
+/**
+ * sha256 of the owner's current CV (2026-10-13 refresh, round 5). When the owner sends a new CV:
+ * replace the PDF under the same name, run `bun run cv:pages`, update this pin and the site facts
+ * in `tests/content/cv-facts.test.ts` in the same PR.
+ */
+const CV_SHA256 = "86695d1f52c473f44286dc82ff63b132b450c67ff988037ec43595987c30f89f";
+const pdfSha = () => createHash("sha256").update(readFileSync(path.join(root, "public", pdf))).digest("hex");
 
 describe("CV PDF (owner's file, served as-is for every locale)", () => {
   it("is one language-neutral path with a matching download name", () => {
@@ -22,6 +29,10 @@ describe("CV PDF (owner's file, served as-is for every locale)", () => {
     expect(existsSync(file), file).toBe(true);
     expect(readFileSync(file).subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(statSync(file).size).toBeGreaterThan(10_000);
+  });
+
+  it("is the owner's current CV (pinned sha256)", () => {
+    expect(pdfSha(), "public/cv PDF is not the 2026-10-13 CV").toBe(CV_SHA256);
   });
 
   it("is the only PDF in public/cv (no per-locale copies); page images live in public/cv/pages", () => {
