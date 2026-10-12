@@ -44,7 +44,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 |---|---|---|---|
 | hero | Digital Banking Integrations: insurance partner microservices and an in-house SFTP service | 2024 to 2025 | Jenius. Metrics follow C4 (qualitative unless verified). |
 | hero | Event Ticket Marketplace Backend: auctions, resale, wallet ledger and settlement | 2025 to 2026 | Freelance, anonymized. 61% of commits (verified from git). |
-| hero | Vendor Management Portal (eVendor), built for Metrodata, delivered solo in 6 weeks | 2026 | Full-stack (FastAPI, PostgreSQL, Next.js). Moved here from the AI list to show software depth in 2026. `client: "Metrodata"`; gallery from the live app with private data blurred (R5-P11, owner 2026-10-13). |
+| hero | Vendor Management Portal (eVendor), built for Metrodata, delivered solo in 6 weeks | 2026 | Full-stack (FastAPI, PostgreSQL, Next.js). Moved here from the AI list to show software depth in 2026. `client: "Metrodata"` (R5-P11, owner 2026-10-13); screenshots of the live app are allowed, with private data blurred (not captured yet). |
 | featured | Multi-tenant SaaS platform and asset management architecture | 2023 to 2024 | Jatis |
 | featured | Payments and real-time backend | 2022 to 2023 | MNC Asia Holding |
 | featured | Anime figure e-commerce backend (pre-orders, payments, shipping) | 2019 to 2022 | Shumi, site still live |
@@ -103,4 +103,4 @@ These override anything above that conflicts with them.
 | C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |
 | C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Serupa, Jublia, BSSN, Shumi), unless they are also clients of an employer (then C3 applies) |
 | C9 | JagaRupa | Personal side project, **shown** in the Workshop annex (not as an employer project; no hackathon result) |
-| C10 | Gallery exclusions | **Revised 2026-10-13:** SITA (`mining-coa-assistant`) and FREDDY (`automotive-fraud-dashboard`) stay text only, no screenshots (owner, 2026-10-11). The vendor portal (eVendor) is no longer excluded: it is Metrodata's own portal and shows a gallery from the live app with vendor and people names, emails, phone numbers, money and amounts, tax IDs, bank accounts, document numbers, Azure hostnames and tenant names blurred. |
+| C10 | Gallery exclusions | **Revised 2026-10-13:** SITA (`mining-coa-assistant`) and FREDDY (`automotive-fraud-dashboard`) stay text only, no screenshots (owner, 2026-10-11). The vendor portal (eVendor) is no longer excluded: it is Metrodata's own portal and may show a gallery from the live app with vendor and people names, emails, phone numbers, money and amounts, tax IDs, bank accounts, document numbers, Azure hostnames and tenant names blurred. |
