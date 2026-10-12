@@ -397,7 +397,9 @@
       "lectern": "Reading desk",
       "read": "Read",
       "comms": "Contact links",
-      "cvHint": "Open the CV viewer"
+      "cvHint": "Open the CV viewer",
+      "about": "About me",
+      "availability": "Availability"
     },
     "view": {
       "label": "View controls",

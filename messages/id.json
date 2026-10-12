@@ -397,7 +397,9 @@
       "lectern": "Meja baca",
       "read": "Baca",
       "comms": "Tautan kontak",
-      "cvHint": "Buka penampil CV"
+      "cvHint": "Buka penampil CV",
+      "about": "Tentang saya",
+      "availability": "Ketersediaan"
     },
     "view": {
       "label": "Kontrol tampilan",
