@@ -77,6 +77,22 @@ test("Indonesian at 1024 px: the wider Page view keeps the one-row bar clear of 
   await context.close();
 });
 
+test.describe("profile photo badge", () => {
+  for (const vp of TOP_BAR) {
+    test(`${vp.name}: the profile card shows the owner's round photo`, async ({ browser }) => {
+      const { context, page } = await newPage(browser, vp);
+      await enterHQ(page);
+      const img = page.getByTestId("hud").getByTestId("profile-photo").locator("img");
+      await expect(img).toBeVisible();
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+      const b = await box(img);
+      expect(Math.abs(b.width - b.height)).toBeLessThan(1);
+      expect(await img.evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe("0px");
+      await context.close();
+    });
+  }
+});
+
 const BOTTOM = [
   { name: "tablet", width: 834, height: 1112, touch: true },
   { name: "phone", width: 390, height: 844, touch: true },

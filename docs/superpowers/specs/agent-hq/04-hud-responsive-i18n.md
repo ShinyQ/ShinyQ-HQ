@@ -16,7 +16,7 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 
 | Element | Desktop | Tablet | Mobile |
 |---|---|---|---|
-| Profile card | Top-left, 280 px, name, title, floor | Same, 240 px | Collapsed pill: monogram plus floor; tap to expand |
+| Profile card | Top-left, 280 px, round photo badge, name, title, floor | Same, 240 px | Collapsed pill: photo badge plus floor; tap to expand |
 | Quick view | Not in the 3D HUD (Page View footer, Home hero and About) | Same | Same |
 | Page view and Ask AI | Top-right, last in the bar: Page view (primary, solid cyan, a document icon left of the label), then Ask AI at the far right | Own row under the bar, same order | Second row under the menu row, same order |
 | Search (⌘K) | Top-right icon button with a `⌘K` hint | Icon button | Icon button next to the menu |
