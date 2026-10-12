@@ -150,4 +150,8 @@ describe("public MII Microsoft app names (R4-J)", () => {
     expect(terms).not.toContain("mii-microsoft-ai");
     expect(findBlockedTerms("https://mii-microsoft-ai.azurewebsites.net", terms)).toEqual([]);
   });
+
+  it("keeps them out of the product allowlist, which feeds the Ask employer check", () => {
+    expect(loadAllowlist().filter((name) => /mii-microsoft/i.test(name))).toEqual([]);
+  });
 });

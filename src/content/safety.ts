@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { isPublicLiveUrl } from "./live-links";
+import { isPublicLiveUrl, PUBLIC_LIVE_NAMES } from "./live-links";
 
 export const EM_DASH = "\u2014";
 
@@ -41,7 +41,8 @@ export function isAllowedTerm(term: string, allow: readonly string[]): boolean {
 /**
  * Merges the committed default list, the gitignored local list and the
  * SAFETY_BLOCKLIST env var (used as a CI secret) so private terms are never
- * published in the repo, minus the allowed product names.
+ * published in the repo, minus the allowed product names and the public live
+ * site names (`PUBLIC_LIVE_NAMES`, R4-J).
  */
 export function loadBlocklist(
   env: Record<string, string | undefined> = process.env,
@@ -52,7 +53,7 @@ export function loadBlocklist(
     if (existsSync(file)) parseBlocklist(readFileSync(file, "utf8")).forEach((t) => terms.add(t));
   }
   if (env.SAFETY_BLOCKLIST) parseBlocklist(env.SAFETY_BLOCKLIST).forEach((t) => terms.add(t));
-  return [...terms].filter((t) => !isAllowedTerm(t, allow));
+  return [...terms].filter((t) => !isAllowedTerm(t, allow) && !isAllowedTerm(t, PUBLIC_LIVE_NAMES));
 }
 
 function escapeRegExp(value: string): string {

@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { isPublicLiveUrl, liveUrlProblem, PUBLIC_LIVE_HOSTS } from "@/content/live-links";
+import { isPublicLiveUrl, liveUrlProblem, PUBLIC_LIVE_HOSTS, PUBLIC_LIVE_NAMES } from "@/content/live-links";
 
 describe("public live links (R4-J)", () => {
   it("allows exactly the two public MII Microsoft sites", () => {
     expect([...PUBLIC_LIVE_HOSTS].sort()).toEqual(["mii-microsoft-ai.azurewebsites.net", "mii-microsoft.azurewebsites.net"]);
+  });
+
+  it("derives the public names the blocklist may never flag: each host and its app name", () => {
+    expect([...PUBLIC_LIVE_NAMES].sort()).toEqual([
+      "mii-microsoft",
+      "mii-microsoft-ai",
+      "mii-microsoft-ai.azurewebsites.net",
+      "mii-microsoft.azurewebsites.net",
+    ]);
   });
 
   it.each(["https://mii-microsoft.azurewebsites.net", "https://mii-microsoft-ai.azurewebsites.net/"])("accepts the site root %s", (url) => {

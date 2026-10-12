@@ -15,7 +15,3 @@ MII Cowork
 MII Deck
 eVendor
 MII E-Recruitment
-# Public App Service names of the owner's two public MII Microsoft sites (R4-J). Their URLs are
-# Pod.liveUrl values on the PUBLIC_LIVE_HOSTS allowlist; other resource names stay private and blocked.
-mii-microsoft
-mii-microsoft-ai

@@ -23,6 +23,14 @@ export function liveUrlProblem(url: string): string | null {
   return null;
 }
 
+/**
+ * The public hosts and their App Service names ("mii-microsoft"). `loadBlocklist` drops a private term
+ * equal to one of them, so the public links pass the lint while every other resource name stays blocked.
+ * Kept out of `content/safety-allowlist.txt` on purpose: that file also feeds the Ask entity allowlist,
+ * where "mii-microsoft" would make "worked at Microsoft" look like a known employer.
+ */
+export const PUBLIC_LIVE_NAMES: readonly string[] = PUBLIC_LIVE_HOSTS.flatMap((host) => [host, host.split(".")[0]]);
+
 export function isPublicLiveUrl(url: string): boolean {
   return liveUrlProblem(url) === null;
 }
