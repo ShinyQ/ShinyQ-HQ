@@ -155,6 +155,7 @@ test.describe("hint bubbles", () => {
     // Point-and-go's `interact`: a short drive onto the pad, then the floor picker.
     await expect(page.getByTestId("pad-picker")).toBeVisible({ timeout: 30_000 });
     await page.keyboard.press("Escape");
+    await expect(page.getByTestId("pad-picker")).toHaveCount(0);
 
     // Hints off from Ask Rover: the bubble goes away.
     await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
