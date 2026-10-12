@@ -6,11 +6,13 @@ import { BufferAttribute, BufferGeometry, CanvasTexture, SRGBColorSpace } from "
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels } from "../../fx/BatchedLabels";
 import { RoadMarkings } from "../../fx/RoadMarkings";
+import { registerExtraInteractables } from "../../interact/registry";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { MergedBoxes, MergedEdges } from "../roof/kit";
 import { coverCrop, hallLabels, hallShots, hallSolids, SHOT_CELL, shotQuadBuffers, type HallLabels } from "./hallContent";
+import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
 
 /** Draws the cover thumbnails into one canvas row (cover fit); a failed image leaves its cell dark. */
@@ -88,10 +90,12 @@ function ShotWall({ thumbs, tier }: { thumbs: readonly string[]; tier: GpuTier }
 /**
  * L1 Highlights Hall: road markings (passage, plaza, spurs), every solid in one mesh plus one edge
  * mesh, every text in one BatchedText and the screenshots in one lazy atlas mesh. Clicks go through the
- * point-and-go registry (Task 11), not through meshes here. Static: nothing animates, so reduced motion needs no case.
+ * point-and-go registry (`hallInteract.ts`, registered below), not through meshes here. Static: nothing animates, so reduced motion needs no case.
  */
 export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; labels: HallLabels; tier: GpuTier }) {
   const reducedMotion = useHQStore((s) => s.reducedMotion);
+  // Point-and-go: the stations are registry targets while the hall is mounted (the hall has no click handlers of its own).
+  useEffect(() => registerExtraInteractables("L1", highlightsInteractables(HALL_LAYOUT, labels.stations)), [labels.stations]);
   const solids = useMemo(() => hallSolids(data.highlights.projects.length), [data.highlights.projects.length]);
   const texts = useMemo(() => hallLabels(data, labels, FONTS), [data, labels]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
