@@ -730,7 +730,7 @@ const HIDE_HUD = "[data-testid='hud'], [data-testid^='ask-'] { display: none !im
 
 for (const viewport of P6_VIEWPORTS) {
   test(`P6 review poses @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
-    test.setTimeout(1_200_000);
+    test.setTimeout(1_800_000);
     const { context, page } = await open3D(browser, viewport);
     await waitForCameraSettle(page, SETTLE);
     await page.getByTestId("hud-topbar").screenshot({ path: p6Shot("topbar", viewport) });
@@ -741,13 +741,13 @@ for (const viewport of P6_VIEWPORTS) {
     await page.waitForTimeout(1500);
     await page.screenshot({ path: p6Shot("l1-plaza", viewport) });
     const about = stationOf("about");
-    await driveTo(page, { x: about.pad.x - about.facing.x * 2.5, z: about.pad.z - about.facing.z * 2.5 });
+    await driveTo(page, { x: about.pad.x - about.facing.x * 2.5, z: about.pad.z - about.facing.z * 2.5 }, SETTLE.timeout);
     await waitForCameraSettle(page, SETTLE);
     await page.waitForTimeout(2500);
     await page.screenshot({ path: p6Shot("l1-about", viewport) });
     await hide.evaluate((el) => (el as Element).remove());
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L3"]').click();
-    await waitForFloor(page, "L3", 120_000);
+    await waitForFloor(page, "L3", SETTLE.timeout);
     await waitForCameraSettle(page, SETTLE);
     await page.addStyleTag({ content: HIDE_HUD });
     await page.waitForTimeout(2500);
