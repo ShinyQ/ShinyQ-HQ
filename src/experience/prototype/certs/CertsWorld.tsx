@@ -17,7 +17,7 @@ import { sceneSettings } from "../../scene/settings";
 import type { ExperienceData, GpuTier } from "../../types";
 
 /** Rover in front of the wall, camera behind it looking east (the L1:certifications view zone). */
-const ROVER_AT = { x: 18, z: -4 };
+const ROVER_AT = { x: 18, z: LOBBY.certWall.z };
 
 function CameraRig({ mobile }: { mobile: boolean }) {
   const view = mobile ? { dx: -12, y: 10, fov: 60 } : { dx: -11, y: 8, fov: 45 };

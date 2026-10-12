@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForHydration, waitForPhase, waitForRoverMove } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -25,37 +25,135 @@ async function touch(page: Page, points: { x: number; y: number }[], holdMs = 0)
   await cdp.detach();
 }
 
+type Peaks = { speed: number; trail: number };
+
+/** Records the highest rover speed and trail opacity over every rendered frame (the store only syncs every 0.1 s). */
+async function trackPeaks(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __hq: { rover: Peaks }; __peaks: Peaks };
+    w.__peaks = { speed: 0, trail: 0 };
+    const tick = () => {
+      w.__peaks.speed = Math.max(w.__peaks.speed, w.__hq.rover.speed);
+      w.__peaks.trail = Math.max(w.__peaks.trail, w.__hq.rover.trail);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  return () => page.evaluate(() => (window as unknown as { __peaks: Peaks }).__peaks);
+}
+
 test.describe("boot and intro", () => {
-  test("first visit shows the boot overlay, then the intro, then explore", async ({ page }) => {
+  test("the boot and the intro play in full once per session; nothing skips them", async ({ page }) => {
     const errors = collectErrors(page);
+    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const boot = page.getByTestId("boot");
     await expect(boot).toBeVisible();
-    await expect(boot.getByRole("button", { name: "Boot rover" })).toBeFocused();
-    await boot.getByRole("button", { name: "Boot rover" }).click();
+    await expect(page.getByRole("button", { name: /skip/i })).toHaveCount(0);
+    const start = boot.getByRole("button", { name: "Boot rover" });
+    await expect(start).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(boot).toBeVisible();
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
     await waitForPhase(page, "intro");
-    await expect(page.getByRole("button", { name: /Skip intro/ })).toBeVisible();
+    const introAt = Date.now();
+    // Esc used to skip the intro; proving that it no longer does.
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    expect((await snapshot(page)).phase).toBe("intro");
     await waitForPhase(page, "explore", 30_000);
-    expect((await snapshot(page)).firstVisit).toBe(false);
+    expect(Date.now() - introAt).toBeGreaterThanOrEqual(2000);
+    expect(await page.evaluate(() => sessionStorage.getItem("hq:intro"))).toBe("seen");
 
-    // Return visit: no boot overlay, the intro plays and Escape skips it.
+    // Same session: straight into the Lobby, no boot and no intro.
     await page.reload();
     await waitForHQ(page);
-    await waitForPhase(page, "intro");
+    expect((await snapshot(page)).phase).toBe("explore");
     await expect(page.getByTestId("boot")).toHaveCount(0);
-    await page.keyboard.press("Escape");
-    await waitForPhase(page, "explore");
     expect(errors).toEqual([]);
   });
 
-  test("reduced motion skips the orbit", async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: "reduce" });
+  test("a new session plays the boot again, even for a returning visitor", async ({ browser }) => {
+    const context = await browser.newContext();
     const page = await context.newPage();
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));
+    });
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
-    await page.getByRole("button", { name: "Boot rover" }).click();
-    await waitForPhase(page, "explore", 5_000);
+    await expect(page.getByTestId("boot")).toBeVisible();
+    expect((await snapshot(page)).phase).toBe("boot");
+    await context.close();
+  });
+
+  test("a room deep link plays the boot and the intro first, then the rover rides on and opens the room", async ({ page }) => {
+    const errors = collectErrors(page);
+    const url = /\/en\/labs\/voice-ai-contact-center\?tier=lite$/;
+    await page.goto("/en/labs/voice-ai-contact-center?tier=lite");
+    await waitForHQ(page);
+    const boot = page.getByTestId("boot");
+    await expect(boot).toBeVisible();
+    expect((await snapshot(page)).floor).toBe("L1");
+    await expect(page).toHaveURL(url);
+    const start = boot.getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
+    await waitForPhase(page, "intro");
+    await expect(page).toHaveURL(url);
+    await waitForPhase(page, "explore", 30_000);
+    await waitForRoom(page, "L3:voice-ai-contact-center");
+    await expect(page).toHaveURL(url);
+    // The first-visit terminal belongs to the Lobby; a deep link continues to its room instead.
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
+
+    // Same session: the deep link opens straight in.
+    await page.reload();
+    await waitForHQ(page);
+    await waitForRoom(page, "L3:voice-ai-contact-center", 30_000);
+    await expect(page.getByTestId("boot")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("a floor deep link plays the intro in the Lobby, then rides to its floor", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.goto("/en/library?tier=lite");
+    await waitForHQ(page);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
+    await waitForPhase(page, "intro");
+    expect((await snapshot(page)).floor).toBe("L1");
+    await waitForFloor(page, "L4");
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
+  });
+
+  test("reduced motion holds a still intro of the same length", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
+    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
+    await waitForPhase(page, "intro");
+    const introAt = Date.now();
+    await waitForFrames(page, 3);
+    const read = () =>
+      page.evaluate(() => {
+        const w = window as unknown as { __hq: { camera: () => number[]; store: { getState: () => { phase: string } } } };
+        return { camera: w.__hq.camera(), phase: w.__hq.store.getState().phase };
+      });
+    const a = await read();
+    await page.waitForTimeout(300);
+    const b = await read();
+    expect(b.phase).toBe("intro");
+    expect(Math.hypot(a.camera[0] - b.camera[0], a.camera[1] - b.camera[1], a.camera[2] - b.camera[2])).toBeLessThan(0.01);
+    await waitForPhase(page, "explore", 30_000);
+    expect(Date.now() - introAt).toBeGreaterThanOrEqual(2000);
     await context.close();
   });
 
@@ -135,13 +233,13 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
-    // Lobby slab x -24 to 28, z -24 to 18, minus the rover radius.
+    // Lobby slab x -24 to 28, z -21 to 21 (centered on the elevator axis), minus the rover radius.
     expect(rover.x).toBeGreaterThan(-23.01);
     expect(rover.x).toBeLessThan(27.01);
-    expect(rover.z).toBeGreaterThan(-23.01);
-    expect(rover.z).toBeLessThan(17.01);
-    // Never inside the hologram pedestal at (6, -4).
-    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z + 4) > 3.9).toBe(true);
+    expect(rover.z).toBeGreaterThan(-20.01);
+    expect(rover.z).toBeLessThan(20.01);
+    // Never inside the hologram pedestal at (6, 0).
+    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
   });
 
   test("click to move drives to the clicked point", async ({ page }) => {
@@ -161,6 +259,54 @@ test.describe("rover on desktop", () => {
     await enterHQ(page);
     await page.waitForTimeout(1500);
     await expectRenderBudget(page);
+  });
+
+  test("holding Shift boosts manual driving to about twice the speed, with a trail", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const peaks = await trackPeaks(page);
+    // S drives toward the camera: open floor between the spawn and the south-east corner.
+    await page.keyboard.down("Shift");
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
+    await page.keyboard.up("s");
+    await page.keyboard.up("Shift");
+    const { speed, trail } = await peaks();
+    expect(speed).toBeLessThanOrEqual(18.01);
+    expect(trail).toBeGreaterThan(0);
+  });
+
+  test("without Shift the rover keeps its cruising speed and draws no trail", async ({ page }) => {
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const peaks = await trackPeaks(page);
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(8);
+    // Proving that nothing more happens: the speed stays at the 9 u/s cap.
+    await page.waitForTimeout(500);
+    await page.keyboard.up("s");
+    const { speed, trail } = await peaks();
+    expect(speed).toBeLessThanOrEqual(9.01);
+    expect(trail).toBe(0);
+  });
+
+  test("reduced motion boosts without the trail", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
+    // Not enterHQ: it works the same before and after the intro changes of Task 4.
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore", 30_000);
+    await waitForSceneLive(page);
+    const peaks = await trackPeaks(page);
+    await page.keyboard.down("Shift");
+    await page.keyboard.down("s");
+    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
+    await page.keyboard.up("s");
+    await page.keyboard.up("Shift");
+    expect((await peaks()).trail).toBe(0);
+    await context.close();
   });
 });
 
@@ -241,7 +387,10 @@ test.describe("tiers and views", () => {
     await page.mouse.wheel(0, 2000);
     await expect(back).toBeInViewport({ ratio: 1 });
     await page.reload();
-    await expect(back).toBeInViewport({ ratio: 1 });
+    // After a reload the gate renders the button only once the deferred chunks hydrated and its
+    // WebGL probe decided the tier (seconds on SwiftShader), so wait on those, not on a fixed time.
+    await waitForHydration(page, 30_000);
+    await expect(back).toBeInViewport({ ratio: 1, timeout: 30_000 });
     await back.click();
     await waitForHQ(page);
   });
@@ -322,7 +471,6 @@ test.describe("tiers and views", () => {
     // A stored mute survives a reload.
     await page.reload();
     await waitForHQ(page);
-    await page.getByRole("button", { name: /Skip intro|Lewati intro/ }).click();
     await waitForPhase(page, "explore");
     await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
     await page.keyboard.press("m");
@@ -332,11 +480,11 @@ test.describe("tiers and views", () => {
 });
 
 test.describe("missions in 3D", () => {
-  test("the HUD Missions button runs hire through the tower", async ({ page }) => {
+  test("the HUD Ask Rover button runs hire through the tower", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
-    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
-    const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
+    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
     await expect(terminal).toBeVisible();
     await page.keyboard.press("5");
     await expect(terminal).toBeHidden();
@@ -349,7 +497,7 @@ test.describe("missions in 3D", () => {
 
   test("manual input cancels a running mission", async ({ page }) => {
     await enterHQ(page);
-    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: data.missions.find((mission) => mission.id === "journey")!.label.en }).click();
     await page.waitForFunction(() => (window as unknown as { __hq: { store: { getState: () => { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status === "running");
     await page.keyboard.down("s");
@@ -384,9 +532,11 @@ test.describe("missions in 3D", () => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await page.waitForTimeout(1200);
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Skip intro" }).click();
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible({ timeout: 30_000 });
   });
 
   test("the 3D HUD has no serious accessibility violations", async ({ page }) => {

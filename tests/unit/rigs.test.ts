@@ -3,12 +3,14 @@ import {
   followPose,
   forwardOf,
   INTRO_DURATION,
+  INTRO_ORBIT,
   INTRO_SWEEP,
   introAngle,
   introPose,
   PITCH_LIMITS,
   railPose,
   railShift,
+  reducedIntroPose,
   selectRig,
   springFactor,
 } from "@/experience/camera/rigs";
@@ -20,6 +22,13 @@ describe("camera rigs", () => {
     expect(selectRig("explore", "L2")).toBe("rail");
     expect(selectRig("elevator", "L3")).toBe("follow");
     expect(selectRig("explore", "RF")).toBe("follow");
+  });
+
+  it("holds one still exterior shot for the reduced-motion intro", () => {
+    const end = followPose("desktop", [14, 1, 10]);
+    const still = reducedIntroPose("desktop", end);
+    expect(still).toEqual(introPose("desktop", INTRO_ORBIT, end));
+    expect(still.position[1]).toBeGreaterThan(end.position[1]);
   });
 
   it("uses the follow offsets per camera class", () => {

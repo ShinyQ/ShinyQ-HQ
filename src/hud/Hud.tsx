@@ -1,12 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
+import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
@@ -21,6 +22,7 @@ import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
 
+/** Control hints, in the bottom band's center column under the walk pill. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
   const rail = useHQStore((s) => s.floor === "L2");
@@ -32,12 +34,7 @@ function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   }, [mobile]);
   if (hidden) return null;
   return (
-    <p
-      className={`glass glass-solid pointer-events-none absolute left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 px-4 py-2 text-center text-[13px] leading-5 text-ink-2 ${
-        coarse ? "bottom-[156px]" : "bottom-4"
-      }`}
-      data-testid="hint"
-    >
+    <p className="glass glass-solid pointer-events-none order-last max-w-full px-4 py-2 text-center text-[13px] leading-5 text-ink-2" data-testid="hint">
       {coarse ? (rail ? t("career.scrubHint") : t("hintCoarse")) : t("hintFine")}
     </p>
   );
@@ -50,27 +47,12 @@ function FloorNotice({ data, mobile }: { data: ExperienceData; mobile: boolean }
   if (!exploring || READY_FLOORS.includes(floor)) return null;
   const { name, route } = data.floors[floor];
   return (
-    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[68px]" : "top-[168px]"}`}>
+    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[116px]" : "top-[168px]"}`}>
       <p className="text-ink-2">{t("underConstruction", { name })}</p>
       <Link href={route} className="link mt-1 inline-flex min-h-11 items-center">
         {t("openFloorPage", { name })}
       </Link>
     </div>
-  );
-}
-
-function IntroSkip() {
-  const t = useTranslations("hud");
-  const finishIntro = useHQStore((s) => s.finishIntro);
-  return (
-    <button
-      type="button"
-      onClick={finishIntro}
-      className="glass glass-solid pointer-events-auto absolute bottom-20 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink"
-    >
-      {t("skipIntro")}
-      <kbd className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">Esc</kbd>
-    </button>
   );
 }
 
@@ -90,6 +72,25 @@ function CutFade() {
   return <div aria-hidden="true" className={`pointer-events-none absolute inset-0 bg-void ${cut ? "opacity-100" : "opacity-0"}`} />;
 }
 
+/**
+ * Bottom HUD band: one flex row, so nothing in it can overlap (owner request: the hint and the walk
+ * pill sit at the bottom on tablets and phones). Left: the joystick and the boost button (coarse
+ * pointers; phones stack the boost button above the joystick). Center: the walk pill (WalkBar
+ * portals it into `slotRef`) above the controls hint. Right: the view controls (vertical on phones).
+ * It hugs the bottom edge above the iOS home indicator (safe area).
+ */
+function BottomBand({ left, right, children, slotRef }: { left: ReactNode; right: ReactNode; children: ReactNode; slotRef: (node: HTMLDivElement | null) => void }) {
+  return (
+    <div data-testid="hud-bottom" className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 pr-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-5 md:pr-4">
+      <div className="flex shrink-0 flex-col-reverse items-end gap-3 sm:flex-1 sm:flex-row sm:items-center">{left}</div>
+      <div ref={slotRef} data-testid="hud-bottom-center" className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2 sm:flex-initial">
+        {children}
+      </div>
+      <div className="flex shrink-0 justify-end sm:flex-1">{right}</div>
+    </div>
+  );
+}
+
 /** HTML HUD over the canvas. It talks to the scene only through the store and intents. */
 export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onExit: () => void; onToggleLang: () => void }) {
   const phase = useHQStore((s) => s.phase);
@@ -97,19 +98,15 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const coarse = useHQStore((s) => s.device.coarse);
   const mobile = viewport === "mobile";
   const [walking, setWalking] = useState(false);
+  const [bottomSlot, setBottomSlot] = useState<HTMLDivElement | null>(null);
   const askOpen = useAskPanelOpen();
-  // The Walk HUD steps aside for the room drawer and the Ask side panel (both on the right), and
-  // goes under the top controls where a bottom sheet would cover it. The Ask pill stays top right.
+  // The room drawer and the Ask panel cover the bottom band (sheets) or the right side (side panels):
+  // the Walk HUD then docks beside the side panel or goes under the top controls. Otherwise its pills
+  // join the bottom band, and its card sits above the band (coarse) or at the bottom (fine pointers).
   const side = typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side";
-  const walkPlacement: WalkPlacement = mobile
-    ? "top"
-    : phase === "room" || askOpen
-      ? side
-        ? "dock"
-        : "top"
-      : coarse
-        ? "bottom-raised"
-        : "bottom";
+  const covered = phase === "room" || askOpen;
+  const walkPlacement: WalkPlacement = covered ? (side ? "dock" : "top") : mobile ? "top" : coarse ? "bottom-raised" : "bottom";
+  const explorable = phase !== "intro" && phase !== "room";
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
@@ -127,14 +124,32 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
           {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && (walking || phase === "room")} />}
-          {phase === "intro" ? <IntroSkip /> : phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
-          {coarse && phase !== "intro" && <Joystick />}
+          <BottomBand
+            slotRef={setBottomSlot}
+            left={
+              coarse && phase !== "intro" ? (
+                <>
+                  <Joystick />
+                  <BoostButton />
+                </>
+              ) : null
+            }
+            right={explorable ? <ViewControls /> : null}
+          >
+            {explorable && !walking && <HintBar coarse={coarse} mobile={mobile} />}
+          </BottomBand>
           <DrawerHost locale={data.locale} />
-          {phase !== "intro" && phase !== "room" && <ViewControls />}
         </>
       )}
       {/* Mounted in every phase so a walk keeps its state through the hologram view. */}
-      <WalkLayer data={data} placement={walkPlacement} coarse={coarse} hidden={phase === "boot" || phase === "intro" || phase === "hologram"} onActive={setWalking} />
+      <WalkLayer
+        data={data}
+        placement={walkPlacement}
+        bottomSlot={covered ? null : bottomSlot}
+        coarse={coarse}
+        hidden={phase === "boot" || phase === "intro" || phase === "hologram"}
+        onActive={setWalking}
+      />
       <FloorAnnouncer data={data} />
       <PadPicker data={data} />
     </div>

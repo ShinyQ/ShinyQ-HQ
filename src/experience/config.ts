@@ -81,24 +81,26 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
 });
 
 /**
- * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator so the walls
- * keep a clear walkway (at least 4 u) outside the lane ring; see tests/unit/lobby-layout.test.ts.
+ * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on
+ * its axis (z = 0, like the door at (-24, 0)), so the lane ring and the slab line up with the
+ * elevator; the walls keep a clear walkway (at least 4 u) outside the lane ring. See
+ * tests/unit/lobby-layout.test.ts.
  */
 export const LOBBY = {
-  bounds: { minX: -24, maxX: 28, minZ: -24, maxZ: 18 },
+  bounds: { minX: -24, maxX: 28, minZ: -21, maxZ: 21 },
   /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
-  spawn: { x: 14, z: 6 },
-  hologram: { x: 6, z: -4, radius: 3 },
+  spawn: { x: 14, z: 10 },
+  hologram: { x: 6, z: 0, radius: 3 },
   /** Name and headline float above the stats tiles. */
   titleY: 7.6,
   statsRadius: 10,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
   /** Raised on a 0.35 u glowing plinth; 8.5 u tall so the longest column (12 items) reads at a larger size. */
-  skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
+  skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
-  certWall: { x: 25, z: -4, w: 2.4, d: 18, h: 6.2 },
-  kiosk: { x: 2, z: 15, w: 3, d: 2 },
+  certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
+  kiosk: { x: 2, z: 19, w: 3, d: 2 },
   laneRadius: 12,
 } as const;
 

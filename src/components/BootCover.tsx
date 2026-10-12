@@ -19,7 +19,6 @@ export async function BootCover({ locale, name, monogram }: { locale: Locale; na
         shown={lines.length}
         stagger
         startLabel={t("bootStart")}
-        skipLabel={t("skipIntro")}
         placeholder
       />
     </div>

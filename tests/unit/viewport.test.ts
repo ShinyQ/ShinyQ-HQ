@@ -35,7 +35,7 @@ describe("tower config", () => {
     expect(layouts.L1.approach).toEqual({ x: -21, z: 0 });
     expect(layouts.RF.door).toEqual({ x: -20, z: 0 });
     expect(layouts.RF.approach).toEqual({ x: -17, z: 0 });
-    expect(layouts.L1.spawn).toEqual({ x: 14, z: 6 });
+    expect(layouts.L1.spawn).toEqual({ x: 14, z: 10 });
   });
 
   it("sizes the L2 corridor from the year count", () => {

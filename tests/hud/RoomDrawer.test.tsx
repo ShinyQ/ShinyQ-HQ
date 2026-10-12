@@ -190,18 +190,42 @@ describe("RoomDrawer", () => {
     expect(screen.getByRole("dialog").className).toContain("w-[min(420px,");
   });
 
-  it("keeps the footer to one primary action and offers the cross-floor link in the menu", async () => {
+  it("puts the cross-floor link in the footer right after the one primary link, and keeps it in the menu", async () => {
     const user = userEvent.setup();
     const onLink = vi.fn();
     render(<Harness view={hero} onLink={onLink} />);
-    const footer = screen.getByRole("dialog").querySelector("footer")!;
+    const footer = screen.getByTestId("drawer-footer");
     expect(within(footer).getAllByRole("link")).toHaveLength(1);
     expect(within(footer).queryByText(en.drawer.readmeHint)).toBeNull();
+    expect(footer.children[0]).toHaveTextContent(en.common.caseStudy);
+    expect(footer.children[1]).toBe(within(footer).getByRole("button", { name: hero.link!.label }));
+    expect(within(screen.getByTestId("drawer-body")).queryByRole("button", { name: hero.link!.label })).toBeNull();
     await user.click(screen.getByRole("button", { name: "More actions" }));
     const items = screen.getAllByRole("button", { name: new RegExp(hero.link!.label) });
     expect(items).toHaveLength(2);
     await user.click(items[1]);
     expect(onLink).toHaveBeenCalledWith(hero.link!.room);
+  });
+
+  it("uses the same footer order for every room type, custom bodies included", () => {
+    const byKind = new Map<string, RoomView>();
+    for (const view of Object.values(views)) {
+      const seen = byKind.get(view.kind);
+      if (!seen || (view.link && !seen.link)) byKind.set(view.kind, view);
+    }
+    expect([...byKind.keys()]).toEqual(expect.arrayContaining(["lobby", "career", "pod", "post", "research", "roof"]));
+    expect([...byKind.values()].filter((v) => v.link).map((v) => v.kind).sort()).toEqual(["career", "pod"]);
+    for (const view of byKind.values()) {
+      const { unmount } = render(<Harness view={view} />);
+      const footer = screen.queryByTestId("drawer-footer");
+      const primaries = (view.page ? 1 : 0) + (view.external ? 1 : 0);
+      if (primaries) expect(footer, view.id).not.toBeNull();
+      if (view.link) {
+        expect(within(screen.getByTestId("drawer-body")).queryByRole("button", { name: view.link.label }), view.id).toBeNull();
+        expect(footer!.children[primaries], view.id).toBe(within(footer!).getByRole("button", { name: view.link.label }));
+      }
+      unmount();
+    }
   });
 
   it("draws the career type badge as the neon line icon in its type color", () => {

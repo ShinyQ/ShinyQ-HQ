@@ -7,8 +7,9 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 ```mermaid
 stateDiagram-v2
   [*] --> boot
-  boot --> intro: Boot rover / auto on return visit
-  intro --> explore: intro finished or skipped
+  [*] --> explore: intro already played this session
+  boot --> intro: Boot rover (once the log has typed out)
+  intro --> explore: intro finished (never skipped); a deep link then rides on to its floor or room
   explore --> terminal: click rover / Enter near rover / first visit
   terminal --> autopilot: mission chosen
   terminal --> explore: Esc / "drive myself"
@@ -37,8 +38,8 @@ stateDiagram-v2
 
 | From → To | Visual | Duration | Reduced motion |
 |---|---|---|---|
-| boot → intro | Boot lines type out (max 6 lines), then a CRT-off flash | 1.2 s (skippable) | Instant |
-| intro → explore | Exterior orbit and fly-in (see appendix 01) | 2.5 s | 200 ms fade |
+| boot → intro | Boot lines type out (max 6 lines), then a CRT-off flash; first 3D load of each browser session, any route | 1.2 s, never skipped | Same pace (revealing lines is not motion) |
+| intro → explore | Exterior orbit and fly-in (see appendix 01); first 3D load of each browser session, any route | 2.5 s, never skipped | A still exterior shot for the same 2.5 s, then a cut |
 | explore → elevator → explore | Rover drives to the door, doors close, camera dollies vertically, doors open | Drive time + 0.8 s dolly | 150 ms fade cut |
 | autopilot step | Rover follows the navgrid path at autopilot speed | Distance-based | Same, but no camera sway |
 | → room | Rover plants its flag, the room hologram brightens, the drawer slides in | 300 ms | Instant drawer |

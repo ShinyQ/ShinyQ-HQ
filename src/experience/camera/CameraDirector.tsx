@@ -22,6 +22,7 @@ import {
   INTRO_DURATION,
   introPose,
   railPose,
+  reducedIntroPose,
   selectRig,
   springFactor,
   type CameraPose,
@@ -55,6 +56,8 @@ export function CameraDirector({
     desiredPos: new Vector3(),
     desiredTarget: new Vector3(),
     shift: { x: 0, y: 0 },
+    /** Reduced motion: cut (no glide) from the still intro shot to the follow camera on the next frame. */
+    cut: false,
   });
 
   useEffect(
@@ -109,14 +112,15 @@ export function CameraDirector({
       if (s.phase === "boot") {
         l.introStart = null;
         desired = introPose(cls, 0, end);
-      } else if (s.reducedMotion) {
-        desired = end;
-        s.finishIntro();
       } else {
+        // The intro always runs its full length; reduced motion holds a still exterior shot instead of the orbit.
         l.introStart ??= l.now;
         const t = l.now - l.introStart;
-        desired = introPose(cls, t, end);
-        if (t >= INTRO_DURATION) s.finishIntro();
+        desired = s.reducedMotion ? reducedIntroPose(cls, end) : introPose(cls, t, end);
+        if (t >= INTRO_DURATION) {
+          s.finishIntro();
+          l.cut = s.reducedMotion;
+        }
       }
     } else if (rig === "rail") {
       desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x));
@@ -133,6 +137,11 @@ export function CameraDirector({
       roverRuntime.cameraSnap = false;
       if (!focus) snap = true;
     }
+    if (l.cut && rig !== "intro") {
+      snap = true;
+      l.cut = false;
+    }
+
     l.desiredPos.set(...desired.position);
     l.desiredTarget.set(...desired.target);
     if (!l.ready || snap) {

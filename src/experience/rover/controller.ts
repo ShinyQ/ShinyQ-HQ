@@ -19,6 +19,13 @@ const STALL_SECONDS = 1.2;
 export const MAX_PHYSICS_STEP = 1 / 30;
 /** Longest frame the simulation accepts (slow devices still move in near real time). */
 export const MAX_FRAME_DT = 0.25;
+/** Farthest one sub-step may travel (well under the 1 u rover radius), so boosted driving never tunnels. */
+export const MAX_STEP_DISTANCE = 0.4;
+
+/** Sub-steps for a frame of `dt` seconds: none longer than MAX_PHYSICS_STEP or MAX_STEP_DISTANCE at `topSpeed`. */
+export function physicsSteps(dt: number, topSpeed: number): number {
+  return Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP), Math.ceil((Math.max(0, topSpeed) * dt) / MAX_STEP_DISTANCE));
+}
 
 /** Owns the rover pose and an optional path. Pure TypeScript so it can be unit tested. */
 export class RoverController {
@@ -53,7 +60,8 @@ export class RoverController {
   /** Advances one frame in fixed sub-steps of at most MAX_PHYSICS_STEP. */
   step(frameDt: number, manual: Vec2 | null, ctx: UpdateContext): UpdateResult {
     const dt = Math.min(frameDt, MAX_FRAME_DT);
-    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP));
+    const top = Math.max(ctx.tuning.maxSpeed, this.autopilot ? ctx.autopilotSpeed : 0, this.pose.speed);
+    const steps = physicsSteps(dt, top);
     const result: UpdateResult = { arrived: false, blocked: false };
     for (let i = 0; i < steps; i++) {
       const r = this.update(dt / steps, manual, ctx);

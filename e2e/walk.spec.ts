@@ -137,10 +137,10 @@ test.describe("Guided walks", () => {
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
   });
 
-  test("the Missions tour rides to L3 and starts the walk", async ({ page }) => {
+  test("the Ask Rover tour rides to L3 and starts the walk", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
-    await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
+    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: data.missions.find((m) => m.id === "projects")!.label.en }).click();
     await waitForFloor(page, "L3", 60_000).catch(() => undefined);
     await expect(page.getByTestId("walk-bar")).toBeVisible({ timeout: 60_000 });

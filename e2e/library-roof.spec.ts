@@ -18,8 +18,8 @@ async function autopilotPoint(page: Page) {
 
 async function runMission(page: Page, missionId: string) {
   const label = content.missions.find((mission) => mission.id === missionId)!.label.en;
-  await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
-  await page.getByRole("dialog", { name: "Rover Terminal" }).getByRole("option", { name: label }).click();
+  await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
+  await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: label }).click();
 }
 
 /** Rover parked near `point` (floor-local), within `tolerance`. */
@@ -29,13 +29,12 @@ async function expectRoverNear(page: Page, point: { x: number; z: number }, tole
 }
 
 test.describe("deep links", () => {
-  test("/en/library opens the Library in 3D without boot or intro", async ({ page }) => {
+  test("/en/library opens the Library in 3D once the intro played this session", async ({ page }) => {
     const errors = collectErrors(page);
     await enterFloorRoute(page, "/en/library");
     const s = await snapshot(page);
     expect(s).toMatchObject({ floor: "L4", phase: "explore", ride: null });
     await expect(page.getByTestId("boot")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Skip intro" })).toHaveCount(0);
     await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
     await expect(page.getByTestId("floor-announcer")).toContainText("L4");
     // The HTML page stays underneath for SEO.

@@ -78,9 +78,9 @@ test.describe("missions on static pages", () => {
 
   test("terminal runs hire with its number key", async ({ page }) => {
     await openPage(page, `/en/labs/${heroPod.slug}`);
-    await page.getByRole("button", { name: "Missions" }).click();
-    const terminal = page.getByRole("dialog", { name: "Rover Terminal" });
-    await expect(terminal).toContainText("rover@hq:~$ ./missions");
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
+    await expect(terminal).toContainText("rover@hq:~$ ./ask-rover");
     await expect(terminal.getByRole("option").nth(4)).toContainText(mission("hire").label.en);
     await page.keyboard.press("5");
     await expect(page).toHaveURL(/\/en\/contact$/);
@@ -89,14 +89,14 @@ test.describe("missions on static pages", () => {
 
   test("journey opens the journey page (the guided walk needs 3D)", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Missions" }).click();
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();
     await expect(page).toHaveURL(/\/en\/journey$/);
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Missions" }).click();
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: mission("projects").label.en }).click();
     await expect(page).toHaveURL(/\/en\/labs$/);
     const palette = page.getByRole("dialog", { name: "Command palette" });
@@ -107,7 +107,7 @@ test.describe("missions on static pages", () => {
 
   test("Esc means drive myself", async ({ page }) => {
     await openPage(page, "/en/journey");
-    await page.getByRole("button", { name: "Missions" }).click();
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page).toHaveURL(/\/en\/journey$/);
@@ -120,7 +120,7 @@ test("the Page View Lobby never opens the Rover Terminal on its own; the header 
   await page.waitForTimeout(2500);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
-  await page.getByRole("button", { name: en.hud.launcher.missions }).click();
+  await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
   await expect(page.getByRole("dialog", { name: en.hud.terminal.title })).toBeVisible();
 });
 
@@ -130,8 +130,8 @@ test.describe("accessibility (axe)", () => {
   test("Lobby with the terminal open", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Missions" }).click();
-    await expect(page.getByRole("dialog", { name: "Rover Terminal" })).toBeVisible();
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 

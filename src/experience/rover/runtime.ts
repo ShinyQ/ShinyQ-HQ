@@ -35,6 +35,10 @@ export const roverRuntime = {
   autopilot: null as AutopilotRequest | null,
   /** A mission was cancelled: show o_o for 600 ms. */
   cancelFlash: false,
+  /** Boost level 0 to 1, eased by the Director while Shift or the touch boost button drives the rover. */
+  boost: 0,
+  /** Boost trail opacity as drawn this frame (0 when hidden or under reduced motion; test probe). */
+  trail: 0,
   /** Click-to-move marker: a ring that expands and fades where the floor was clicked (also a test probe). */
   marker: { visible: false, opacity: 0, scale: 1, x: 0, z: 0 },
   /** Most recent draw call count (dev probe for the per-floor budget). */

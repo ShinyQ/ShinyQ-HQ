@@ -1,15 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRef, type PointerEvent } from "react";
+import { useRef, type PointerEvent, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import type { WalkController, WalkState } from "@/experience/missions/walk";
 
 /** Where the walk HUD sits: under the top bar (phones, where the drawer is a bottom sheet) or at the bottom. */
 export type WalkPlacement = "top" | "bottom" | "bottom-raised" | "dock";
 
 const CARD: Record<WalkPlacement, string> = {
-  // Phones: under the menu row. Tablets: under the Ask pill row, right of the profile card.
-  top: "top-[68px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
+  // Phones: under both top rows (menu, then Page view and Ask AI). Tablets: under the Page view row, right of the profile card.
+  top: "top-[116px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
   bottom: "bottom-4 left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
   // Coarse pointers keep the joystick in the bottom-left corner.
   "bottom-raised": "bottom-[156px] left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
@@ -18,7 +19,7 @@ const CARD: Record<WalkPlacement, string> = {
 };
 
 const PILL: Record<WalkPlacement, string> = {
-  top: "top-[68px] left-1/2 -translate-x-1/2 sm:top-[124px]",
+  top: "top-[116px] left-1/2 -translate-x-1/2 sm:top-[124px]",
   bottom: "bottom-4 left-1/2 -translate-x-1/2",
   "bottom-raised": "bottom-[156px] left-1/2 -translate-x-1/2",
   dock: "bottom-4 left-4",
@@ -26,7 +27,7 @@ const PILL: Record<WalkPlacement, string> = {
 
 /** The idle launcher sits above the hint bar, which stays visible while no walk runs. */
 const LAUNCHER: Record<WalkPlacement, string> = {
-  top: "top-[68px] left-1/2 -translate-x-1/2 sm:top-[124px]",
+  top: "top-[116px] left-1/2 -translate-x-1/2 sm:top-[124px]",
   bottom: "bottom-16 left-1/2 -translate-x-1/2",
   "bottom-raised": "bottom-[208px] left-1/2 -translate-x-1/2",
   dock: "bottom-4 left-4",
@@ -44,6 +45,8 @@ export interface WalkBarProps {
   coarse: boolean;
   /** Label of the idle launcher pill (the walk's start label); no pill without it. */
   launcher?: string;
+  /** The HUD bottom band's center column: the launcher and the paused pill render there, in flow. */
+  slot?: HTMLElement | null;
 }
 
 /**
@@ -52,40 +55,50 @@ export interface WalkBarProps {
  * short summary; idle walks show a small launcher pill. A horizontal swipe on the card steps
  * through the walk (left is next).
  */
-export function WalkBar({ walk, state, placement, coarse, launcher }: WalkBarProps) {
+export function WalkBar({ walk, state, placement, coarse, launcher, slot = null }: WalkBarProps) {
   const t = useTranslations("walk");
   const swipe = useRef<{ id: number; x: number } | null>(null);
   const { definition } = walk;
   const name = t(`${definition.id}.name`);
+  // Pills join the HUD bottom band when it offers its slot (nothing covers it); else they keep their own spot.
+  const pill = (node: ReactElement) => (slot ? createPortal(node, slot) : node);
 
   if (state.status === "idle") {
     if (!launcher) return null;
-    return (
-      <div className={`pointer-events-auto absolute ${LAUNCHER[placement]}`} data-testid="walk-launcher">
-        <button type="button" onClick={() => void walk.start()} className="glass glass-solid inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink">
-          <span aria-hidden="true" className="text-amber">
+    return pill(
+      <div className={`pointer-events-auto ${slot ? "flex max-w-full justify-center" : `absolute ${LAUNCHER[placement]}`}`} data-testid="walk-launcher">
+        <button
+          type="button"
+          onClick={() => void walk.start()}
+          className="glass glass-solid inline-flex min-h-11 max-w-full items-center gap-2 rounded-full px-4 py-1.5 text-left text-sm font-semibold text-ink"
+        >
+          <span aria-hidden="true" className="shrink-0 text-amber">
             ▶
           </span>
-          {launcher}
+          <span className="min-w-0">{launcher}</span>
         </button>
-      </div>
+      </div>,
     );
   }
 
   if (state.status === "paused") {
-    return (
-      <div className={`pointer-events-auto absolute flex items-center gap-2 ${PILL[placement]}`} data-testid="walk-pill">
-        <button type="button" onClick={() => void walk.resume()} className="glass glass-solid inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink">
-          <span aria-hidden="true" className="text-amber">
+    return pill(
+      <div className={`pointer-events-auto flex items-center gap-2 ${slot ? "max-w-full justify-center" : `absolute ${PILL[placement]}`}`} data-testid="walk-pill">
+        <button
+          type="button"
+          onClick={() => void walk.resume()}
+          className="glass glass-solid inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full px-4 py-1.5 text-left text-sm font-semibold text-ink"
+        >
+          <span aria-hidden="true" className="shrink-0 text-amber">
             ▶
           </span>
-          {t("resume")}
-          <span className="label text-ink-3">{t("stopOf", { index: state.index + 1, total: state.total })}</span>
+          <span className="min-w-0">{t("resume")}</span>
+          <span className={slot ? "label hidden text-ink-3 sm:inline" : "label text-ink-3"}>{t("stopOf", { index: state.index + 1, total: state.total })}</span>
         </button>
-        <button type="button" onClick={() => walk.end()} aria-label={t("end")} className="glass glass-solid grid size-11 place-items-center rounded-full text-ink-2 hover:text-ink">
+        <button type="button" onClick={() => walk.end()} aria-label={t("end")} className="glass glass-solid grid size-11 shrink-0 place-items-center rounded-full text-ink-2 hover:text-ink">
           <span aria-hidden="true">✕</span>
         </button>
-      </div>
+      </div>,
     );
   }
 

@@ -278,13 +278,11 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir, atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Buka Ringkasan untuk membaca portofolio dalam tampilan halaman.",
+    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo), atau klik titik di lantai. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan; tekan 0 untuk mengatur ulang. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, scroll mouse, atau PageUp dan PageDown. Tampilan halaman menampilkan portofolio sebagai halaman.",
     "floor": "Lantai",
-    "visited": "Ruang yang dikunjungi",
     "elevator": "Lift",
     "goToFloor": "Ke {floor}, {label} ({name})",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
-    "quickView": "Ringkasan",
     "pageView": "Tampilan halaman",
     "pageViewHint": "Tampilkan halaman ini tanpa menara 3D",
     "explore3d": "Jelajahi dalam 3D",
@@ -294,8 +292,8 @@
     "sound": "Suara",
     "menu": "Menu",
     "profile": "Profil",
-    "hintFine": "Kemudi: WASD atau panah · Gerak: klik lantai · Putar: seret atau Q/E · Lantai: scroll atau PgUp/PgDn",
-    "hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Putar: seret · Lantai: geser ke atas atau bawah",
+    "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Gerak: klik lantai · Putar: seret atau Q/E · Lantai: scroll atau PgUp/PgDn",
+    "hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Turbo: tahan tombol turbo · Putar: seret · Lantai: geser ke atas atau bawah",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "joystick": "Joystick rover",
@@ -308,10 +306,9 @@
     "bootLine5": "[ ok ] lift siap",
     "bootLine6": "rover siap ^_^",
     "bootStart": "Nyalakan rover",
-    "skipIntro": "Lewati intro",
     "staticNotice": "3D tidak tersedia. Tampilan halaman dibuka.",
-    "kioskTitle": "rover@hq:~$ ./missions",
-    "kioskHint": "Pilih kios atau rover untuk memilih misi",
+    "kioskTitle": "rover@hq:~$ ./ask-rover",
+    "kioskHint": "Pilih kios atau rover untuk membuka Tanya Rover",
     "constructionLabel": "Sedang dibangun",
     "constructionHint": "Buka lantai ini dalam tampilan halaman",
     "statusHello": "halo!",
@@ -328,13 +325,13 @@
       "research": "Rak riset"
     },
     "launcher": {
-      "missions": "Misi",
       "search": "Cari",
-      "searchShortcut": "Buka pencarian ({shortcut})"
+      "searchShortcut": "Buka pencarian ({shortcut})",
+      "askRover": "Tanya Rover"
     },
     "terminal": {
-      "title": "Terminal Rover",
-      "prompt": "rover@hq:~$ ./missions",
+      "title": "Tanya Rover",
+      "prompt": "rover@hq:~$ ./ask-rover",
       "greeting": {
         "morning": "selamat pagi",
         "afternoon": "selamat siang",
@@ -342,19 +339,19 @@
         "night": "selamat malam"
       },
       "question": "lanjut ke mana? ^_^",
-      "options": "Misi",
+      "options": "Pilihan Tanya Rover",
       "driveMyself": "saya jelajahi sendiri",
       "hint": "Pilih: 1 hingga 8 atau panah + Enter · Tutup: Esc",
       "close": "Tutup terminal"
     },
     "palette": {
       "title": "Palet perintah",
-      "label": "Cari misi, ruang, tahun, dan perintah",
-      "placeholder": "Cari misi, ruang, tahun, atau perintah",
+      "label": "Cari Tanya Rover, ruang, tahun, dan perintah",
+      "placeholder": "Cari pilihan Tanya Rover, ruang, tahun, atau perintah",
       "results": "Hasil",
       "empty": "Tidak ada hasil untuk \"{query}\"",
       "groups": {
-        "missions": "Misi",
+        "missions": "Tanya Rover",
         "recent": "Baru dikunjungi",
         "rooms": "Ruang",
         "years": "Tahun",
@@ -429,7 +426,8 @@
         "L4": "Artikel blog, makalah riset dan talk",
         "RF": "Kanal kontak dan CV"
       }
-    }
+    },
+    "boost": "Turbo"
   },
   "drawer": {
     "label": "Detail ruang",

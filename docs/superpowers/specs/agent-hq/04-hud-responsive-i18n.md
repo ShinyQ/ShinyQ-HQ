@@ -16,8 +16,9 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 
 | Element | Desktop | Tablet | Mobile |
 |---|---|---|---|
-| Profile card | Top-left, 280 px, name, title, floor, visited `n/N` | Same, 240 px | Collapsed pill: monogram plus floor; tap to expand |
-| Quick view | Top-right button | Top-right button | Inside the menu (≡) |
+| Profile card | Top-left, 280 px, name, title, floor | Same, 240 px | Collapsed pill: monogram plus floor; tap to expand |
+| Quick view | Not in the 3D HUD (Page View footer, Home hero and About) | Same | Same |
+| Page view and Ask AI | Top-right, last in the bar: Page view (primary, solid cyan), then Ask AI at the far right | Own row under the bar, same order | Second row under the menu row, same order |
 | Search (⌘K) | Top-right icon button with a `⌘K` hint | Icon button | Icon button next to the menu |
 | Language toggle | Top-right `EN / ID` segmented control | Same | Inside the menu |
 | Sound toggle | Top-right speaker icon (on by default, starts on the first gesture; appendix 05 section 5) | Same | Inside the menu |
@@ -25,8 +26,9 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 | Room drawer | Right side panel, 480 px (560 px from 1280 px wide, 600 px from 1400 px), full height minus margins | Portrait: bottom sheet. Landscape: side panel. | Bottom sheet with snap points at 55% and 92% height; scrolling the body expands it |
 | Rover Terminal | Anchored next to the rover, 360 px | Same | Bottom sheet |
 | Command palette | Centered modal, 640 px | Centered, 90% width | Full-screen sheet |
-| Joystick | Hidden | Bottom-left on coarse pointers | Bottom-left |
-| Hint bar | Bottom-center, keyboard hints | Touch hints | Touch hints, auto-hides after 6 s |
+| Joystick and boost | Hidden (hold Shift to boost) | Bottom band, left, boost button beside the joystick (coarse pointers) | Bottom band, left, boost button above the joystick |
+| Hint bar and walk pill | Bottom band, center: walk pill above keyboard hints | Same, touch hints, between the joystick and the view controls | Same, hints auto-hide after 6 s |
+| View controls | Bottom band, right | Same | Bottom band, right, vertical |
 
 - All HUD panels use the glass style (appendix 05) and must not cover the rover: the follow camera's screen-space target shifts left by 15% when the side drawer is open, and up by 20% when a bottom sheet is open.
 - Safe areas: honor `env(safe-area-inset-*)` on iOS.

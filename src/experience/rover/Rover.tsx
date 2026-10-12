@@ -22,6 +22,7 @@ import { COLORS } from "../config";
 import { neonColor } from "../fx/materials";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
+import { BOOST } from "./boost";
 import { MAX_FRAME_DT } from "./controller";
 import { faceFrame } from "./faces";
 import { drawBlob, drawFace, FACE_H, FACE_W } from "./faceTexture";
@@ -54,7 +55,25 @@ function makeGlowTexture() {
   return texture;
 }
 
+/** Boost trail: a cyan streak behind the rover, opaque at the rover and fading out behind it. */
+function makeTrailTexture() {
+  const canvas = makeCanvas(32, 128);
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, "rgba(103,232,249,0)");
+    g.addColorStop(1, "rgba(103,232,249,.85)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 32, 128);
+  }
+  const texture = new GlowTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
 const GLOW_CYAN = "#67e8f9";
+/** Full trail length behind the rover (u) at boost level 1. */
+const TRAIL_LEN = 3.2;
 const MARKER_FADE = 1.2;
 const MARKER_GROW = 1.5;
 
@@ -75,7 +94,9 @@ export function Rover({ tier }: { tier: GpuTier }) {
   const glow = useRef<Mesh>(null);
   const ring = useRef<Mesh>(null);
   const marker = useRef<Mesh>(null);
+  const trail = useRef<Mesh>(null);
   const [glowTexture] = useState(makeGlowTexture);
+  const [trailTexture] = useState(makeTrailTexture);
   const neon = useMemo(
     () => ({
       face: neonColor("#ffffff", 1.6, tier),
@@ -158,6 +179,18 @@ export function Rover({ tier }: { tier: GpuTier }) {
     if (ring.current) {
       ring.current.scale.setScalar(1 + breath * 0.06);
       (ring.current.material as MeshBasicMaterial).opacity = 0.4 + 0.3 * Math.min(1, r.speed / 12);
+    }
+
+    // Boost trail: grows and brightens with the boost level; no trail under reduced motion.
+    const level = reduced ? 0 : r.boost;
+    r.trail = level > BOOST.trailMin ? level * 0.7 : 0;
+    if (trail.current) {
+      trail.current.visible = r.trail > 0;
+      if (r.trail > 0) {
+        trail.current.scale.set(1, level, 1);
+        trail.current.position.z = -(0.7 + (TRAIL_LEN * level) / 2);
+        (trail.current.material as MeshBasicMaterial).opacity = r.trail;
+      }
     }
 
     const mk = r.marker;
@@ -274,6 +307,11 @@ export function Rover({ tier }: { tier: GpuTier }) {
         <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} raycast={() => null}>
           <ringGeometry args={[0.55, 0.82, 48]} />
           <meshBasicMaterial color={GLOW_CYAN} transparent opacity={0.55} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+        {/* Local -z is behind the rover; the plane's +y edge (transparent end of the gradient) points there. */}
+        <mesh ref={trail} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, -0.7]} visible={false} raycast={() => null}>
+          <planeGeometry args={[1.1, TRAIL_LEN]} />
+          <meshBasicMaterial map={trailTexture} transparent opacity={0} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
         </mesh>
         {tier === "full" && <pointLight color={GLOW_CYAN} intensity={8} distance={7} decay={2} position={[0, 0.6, 0]} />}
         <group ref={body}>

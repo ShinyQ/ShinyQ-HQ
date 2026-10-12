@@ -120,7 +120,7 @@ export function AskDock({ locale }: { locale: Locale }) {
         <div
           className={`no-print pointer-events-none fixed z-40 flex gap-2 ${
             tower
-              ? "top-[68px] right-3 sm:top-[124px] sm:right-4 lg:top-[76px]"
+              ? "top-[116px] right-3 sm:top-[124px] sm:right-4 lg:top-[76px]"
               : "bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 flex-col-reverse items-start sm:bottom-6 sm:left-6 sm:flex-row sm:items-center sm:gap-3"
           }`}
         >

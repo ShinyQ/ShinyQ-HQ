@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { LOCALES, type Locale } from "@/content/schema";
-import { Link } from "@/i18n/navigation";
 import { useAudio } from "@/lib/audio";
 import { AskPill } from "./ask/AskPill";
 import { HudLaunchers } from "./HudLaunchers";
@@ -53,68 +52,67 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
 }
 
 const launcher = "glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
-const pill = "glass glass-solid inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-ink transition hover:text-cyan";
+/** Page view is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
+const primary =
+  "inline-flex min-h-11 items-center rounded-full bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
 
-/** Desktop and tablet top-right controls (appendix 04 section 2). */
-export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
+/** Page view (highlighted) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
+function ViewActions({ onExit }: { onExit: () => void }) {
   const t = useTranslations("hud");
   return (
-    <div className="pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2">
-      <div className="flex items-center gap-2">
-        <span className="hidden lg:contents">
-          <AskPill />
-        </span>
-        <HudLaunchers buttonClassName={launcher} />
-        <Link href="/quick" className={pill}>
-          {t("quickView")}
-        </Link>
-        <LangToggle onToggleLang={onToggleLang} />
-        <SoundToggle />
-        <button type="button" onClick={onExit} title={t("pageViewHint")} className={pill}>
-          {t("pageView")}
-        </button>
-      </div>
-      {/* Tablets: the bar is already full, so Ask AI gets its own row instead of covering the profile card. */}
-      <span className="contents lg:hidden">
-        <AskPill />
-      </span>
+    <div className="flex items-center gap-2" data-testid="hud-view-actions">
+      <button type="button" onClick={onExit} title={t("pageViewHint")} className={primary} data-testid="page-view">
+        {t("pageView")}
+      </button>
+      <AskPill />
     </div>
   );
 }
 
-/** Mobile menu (≡) holding Quick view, language, sound and page view. */
+/**
+ * Desktop and tablet top-right controls (appendix 04 section 2): one row from 1024 px; below that,
+ * Page view and Ask AI get their own row under the bar.
+ */
+export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
+  return (
+    <div className="pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2 lg:flex-row lg:items-center" data-testid="hud-topbar">
+      <div className="flex items-center gap-2">
+        <HudLaunchers buttonClassName={launcher} labelClassName="sr-only md:not-sr-only" />
+        <LangToggle onToggleLang={onToggleLang} />
+        <SoundToggle />
+      </div>
+      <ViewActions onExit={onExit} />
+    </div>
+  );
+}
+
+/** Phones: Ask Rover, search and the menu (language, sound) on the first row; Page view and Ask AI on the second. */
 export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
   const t = useTranslations("hud");
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2">
+    <div className="pointer-events-auto absolute top-3 right-3 flex flex-col items-end gap-2" data-testid="hud-topbar">
       <div className="flex items-center gap-2">
-        <AskPill />
-        <HudLaunchers buttonClassName={launcher} />
+        <HudLaunchers buttonClassName={launcher} labelClassName="sr-only" />
         <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        aria-label={t("menu")}
-        onClick={() => setOpen((v) => !v)}
-        className="glass glass-solid grid size-11 place-items-center rounded-full text-ink"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          aria-label={t("menu")}
+          onClick={() => setOpen((v) => !v)}
+          className="glass glass-solid grid size-11 place-items-center rounded-full text-ink"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
           </svg>
         </button>
       </div>
+      <ViewActions onExit={onExit} />
       {open && (
         <div id={id} className="glass glass-solid flex w-56 flex-col gap-2 p-3">
-          <Link href="/quick" className={`${pill} justify-center`}>
-            {t("quickView")}
-          </Link>
           <LangToggle onToggleLang={onToggleLang} />
           <SoundToggle withLabel />
-          <button type="button" onClick={onExit} className={`${pill} justify-center`}>
-            {t("pageView")}
-          </button>
         </div>
       )}
     </div>

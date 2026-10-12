@@ -37,13 +37,12 @@ async function open3D(browser: Browser, v: Viewport) {
   await asReturningVisitor(page);
   await page.goto(`/en?tier=${v.tier}`);
   await waitForHQ(page);
-  await page.getByRole("button", { name: /Skip intro/ }).click();
   await waitForPhase(page, "explore");
   await page.evaluate(() => document.fonts.ready);
   return { context, page };
 }
 
-/** Deep links a floor route (no intro). */
+/** Deep links a floor route (the intro already played this session). */
 async function open3DAt(browser: Browser, v: Viewport, path: string) {
   const context = await browser.newContext({
     viewport: { width: v.width, height: v.height },
@@ -127,7 +126,6 @@ for (const viewport of VIEWPORTS) {
 
   test(`page view with Back to 3D @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     const { context, page } = await open3D(browser, viewport);
-    if (viewport.name === "mobile") await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("button", { name: "Page view" }).click();
     await expect(page.getByRole("button", { name: "Back to 3D" })).toBeInViewport({ timeout: 30_000 });
     await page.evaluate(() => document.fonts.ready);
@@ -245,7 +243,7 @@ for (const viewport of VIEWPORTS) {
 }
 
 const OVERLAYS = [
-  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Missions" }).click() },
+  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Ask Rover", exact: true }).click() },
   {
     name: "palette",
     open: async (tab: Page) => {
@@ -288,8 +286,6 @@ for (const floor of FLOOR_THUMBS) {
     await asReturningVisitor(page);
     await page.goto(`${floor.path}?tier=full&walk=off`);
     await waitForHQ(page);
-    // The Lobby plays the intro; skip it when the button exists (a later intro may have no Skip button).
-    if (floor.id === "L1") await page.getByRole("button", { name: /Skip intro/ }).click({ timeout: 10_000 }).catch(() => {});
     await waitForPhase(page, "explore");
     await page.evaluate(() => document.fonts.ready);
     await page.addStyleTag({ content: "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }" });
@@ -329,3 +325,45 @@ for (const viewport of VIEWPORTS) {
     await context.close();
   });
 }
+
+test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
+  for (const vp of [
+    { width: 834, height: 1112 },
+    { width: 390, height: 844 },
+  ] as const) {
+    test(`bottom band on L3 @ ${vp.width}x${vp.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: vp, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+      const page = await context.newPage();
+      await asReturningVisitor(page);
+      await page.goto("/en/labs?tier=lite&walk=on");
+      await waitForHQ(page);
+      await waitForPhase(page, "explore");
+      await page.getByTestId("walk-prompt").getByRole("button", { name: "Explore freely" }).click();
+      await expect(page.getByTestId("walk-launcher")).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(3000);
+      await page.screenshot({ path: `screenshots/hq-bottom-band-${vp.width}x${vp.height}.png` });
+      await context.close();
+    });
+  }
+
+  for (const vp of [
+    { width: 1440, height: 900, touch: false },
+    { width: 390, height: 844, touch: true },
+  ] as const) {
+    test(`drawer footer on L2 @ ${vp.width}x${vp.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1, hasTouch: vp.touch, isMobile: vp.touch });
+      const page = await context.newPage();
+      await asReturningVisitor(page);
+      await page.goto("/en/journey/jenius-2024?tier=lite");
+      await waitForHQ(page);
+      await waitForRoom(page, "L2:jenius-2024");
+      await expect(page.getByTestId("drawer-footer")).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(3000);
+      await page.screenshot({ path: `screenshots/hq-drawer-footer-${vp.width}x${vp.height}.png` });
+      await context.close();
+    });
+  }
+});

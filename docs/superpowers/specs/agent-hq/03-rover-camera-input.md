@@ -36,6 +36,8 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 |---|---|---|
 | Max speed (manual) | 9 u/s | 8 u/s |
 | Max speed (autopilot) | 12 u/s | 12 u/s |
+| Max speed (boost: hold Shift or the boost button, manual driving only) | 18 u/s | 16 u/s |
+| Acceleration while boosting | 36 u/s² | 36 u/s² |
 | Acceleration | 18 u/s² | 18 u/s² |
 | Braking | 26 u/s² | 26 u/s² |
 | Turn rate | 3.5 rad/s | 3.5 rad/s |
@@ -96,7 +98,7 @@ Every device input maps to an **intent**. Floors and the HUD only consume intent
 | `toggle` | `sound`, `lang`, `readme` | HUD buttons, keys `m`, `l`, `t` |
 
 - Gestures inside HUD panels never reach the world (pointer capture at the panel root).
-- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone.
+- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a hold-to-boost button beside it (above it on phones). Keyboards boost with Shift. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
 - Held keys emit `move` every frame, with no dependency on OS key repeat.
 - A press becomes a drag only after it travels past the threshold (6 px mouse or pen, 8 px touch). A shorter press stays a click or tap (click to move); a longer one only rotates.
 - Keyboard shortcuts are ignored while focus is in a text input (palette search).

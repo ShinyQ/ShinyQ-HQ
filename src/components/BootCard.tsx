@@ -12,17 +12,18 @@ export interface BootCardProps {
   /** CSS-staggered line reveal (the SSR cover, which has no JS yet). */
   stagger?: boolean;
   startLabel: string;
-  skipLabel: string;
   onStart?: () => void;
-  onSkip?: () => void;
+  /** The log is still typing: Boot rover stays focusable but does nothing yet (the boot is never skipped). */
+  startDisabled?: boolean;
   startRef?: Ref<HTMLButtonElement>;
-  /** Render the buttons invisible (cover): same layout as the overlay, nothing to click or focus. */
+  /** Render the button invisible (cover): same layout as the overlay, nothing to click or focus. */
   placeholder?: boolean;
 }
 
 /**
  * The boot card shared by the SSR boot cover and the 3D boot overlay, so the handoff from one to
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
+ * There is no skip: the boot and the intro always play in full (owner decision).
  */
 export function BootCard({ startRef, ...p }: BootCardProps) {
   return (
@@ -53,18 +54,13 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
           ref={startRef}
           type="button"
           onClick={p.onStart}
+          aria-disabled={p.startDisabled || undefined}
           tabIndex={p.placeholder ? -1 : undefined}
-          className="inline-flex min-h-11 items-center rounded-xl bg-[#6366f1] px-6 py-3 font-semibold text-white shadow-[0_0_30px_rgba(99,102,241,.55)] transition hover:bg-[#6366f1]/85"
+          className={`inline-flex min-h-11 items-center rounded-xl bg-[#6366f1] px-6 py-3 font-semibold text-white shadow-[0_0_30px_rgba(99,102,241,.55)] transition hover:bg-[#6366f1]/85 ${
+            p.startDisabled ? "cursor-wait opacity-70" : ""
+          }`}
         >
           {p.startLabel}
-        </button>
-        <button
-          type="button"
-          onClick={p.onSkip}
-          tabIndex={p.placeholder ? -1 : undefined}
-          className="inline-flex min-h-11 items-center rounded-xl border border-[#6366f1]/45 px-5 text-ink-2 transition hover:border-[#6366f1] hover:text-ink"
-        >
-          {p.skipLabel}
         </button>
       </div>
     </div>

@@ -73,12 +73,15 @@ export function useWalkState(walk: WalkController | null): WalkState | null {
 export function WalkLayer({
   data,
   placement,
+  bottomSlot = null,
   coarse,
   hidden = false,
   onActive,
 }: {
   data: ExperienceData;
   placement: WalkPlacement;
+  /** The HUD bottom band's center column, when nothing covers it (pills render there). */
+  bottomSlot?: HTMLElement | null;
   coarse: boolean;
   /** Boot, intro and the hologram view own the screen: the walk keeps its state but draws nothing. */
   hidden?: boolean;
@@ -182,5 +185,14 @@ export function WalkLayer({
       />
     );
   }
-  return <WalkBar walk={walk} state={state} placement={placement} coarse={coarse} launcher={promptSeen(floor) ? t(`${walk.definition.id}.start`) : undefined} />;
+  return (
+    <WalkBar
+      walk={walk}
+      state={state}
+      placement={placement}
+      coarse={coarse}
+      slot={bottomSlot}
+      launcher={promptSeen(floor) ? t(`${walk.definition.id}.start`) : undefined}
+    />
+  );
 }
