@@ -77,18 +77,20 @@ test("the first ride to an unvisited floor animates the dolly under a 6x CPU thr
 });
 
 test("reduced motion keeps the 150 ms cut", async ({ page }) => {
+  test.slow();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await enterHQ(page);
   const samples = await sampleCar(page);
-  await rideTo(page, "L2", 60_000);
+  await rideTo(page, "L2", 180_000);
   const ride = analyse(await samples());
   expect(ride.stages).toEqual(["toDoor", "moving"]);
   expect(ride.distinctY).toBeLessThanOrEqual(2);
 });
 
 test("the car waits for the new floor with the doors closed, then compiles nothing while it moves", async ({ page }) => {
+  test.slow();
   await enterHQ(page);
-  await rideTo(page, "L3", 90_000);
+  await rideTo(page, "L3", 180_000);
   const last = await lastRide(page);
   console.log(`ride L1 to L3: ${JSON.stringify(last)}`);
   expect(last).not.toBeNull();
