@@ -331,11 +331,6 @@ test("Perspectives: an entry opens from the anchor Ask cites and passes axe", as
 /** R5 P10 (owner, 2026-10-13): no colored left or top edge stripe; a dot or icon chip plus an outline glow instead. */
 const QUOTE_POST = "/id/blog/the-sun-the-moon-and-the-dark-sea";
 
-/**
- * Pages that still show a stripe while P10 lands (certification cards: Task 5; case study ToC: Task 6;
- * blockquotes: Task 7). Each task deletes its paths; a fixed path left here fails.
- */
-const P10_PENDING = new Set<string>([QUOTE_POST]);
 
 test.describe("no colored edge stripes", () => {
   test("Page View templates, the case study table of contents and a post with quotes", async ({ page }) => {
@@ -350,9 +345,7 @@ test.describe("no colored edge stripes", () => {
         });
         await expect(page.locator(".pv-toc a[aria-current='true']")).toHaveCount(1);
       }
-      const found = await page.evaluate(findEdgeAccents, "body");
-      if (P10_PENDING.has(path)) expect(found.length, `${path} has no stripe left: delete it from P10_PENDING`).toBeGreaterThan(0);
-      else expect(found, path).toEqual([]);
+      expect(await page.evaluate(findEdgeAccents, "body"), path).toEqual([]);
     }
   });
 

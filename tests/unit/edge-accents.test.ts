@@ -8,7 +8,6 @@ import { scanCss, scanFile, scanTree } from "../helpers/edge-accents";
  * whichever of P9 and P10 merges second deletes that entry.
  */
 const KNOWN = [
-  "src/app/globals.css: css: border-left: 2px solid var(--color-violet);",
   "src/lib/og.tsx: style: side bar width 10",
 ];
 

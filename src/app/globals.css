@@ -258,11 +258,24 @@
     line-height: 30px;
   }
 
+  /* Quotes: a glowing violet dot on the first line, in the same 18 px gutter the old edge rule used (R5 P10). */
   .prose-hq blockquote {
-    border-left: 2px solid var(--color-violet);
-    padding-left: 1rem;
+    position: relative;
+    padding-left: calc(1rem + 2px);
     color: var(--color-ink);
     font-style: italic;
+  }
+
+  .prose-hq blockquote::before {
+    content: "";
+    position: absolute;
+    left: 1px;
+    top: 11px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--color-violet);
+    box-shadow: 0 0 8px var(--color-violet);
   }
 
   .prose-hq a {
