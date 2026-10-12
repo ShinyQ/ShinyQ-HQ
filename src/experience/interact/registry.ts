@@ -2,6 +2,7 @@ import type { FloorId, RoomId, Wing } from "@/content/schema";
 import { LOBBY } from "../config";
 import { buildCareerRoad, careerLayoutInput, REPO_WALL } from "../floors/career/layout";
 import { buildLabsLayout, LABS, type LabsLayout } from "../floors/labs/layout";
+import { kioskStop } from "../floors/lobby/kiosk";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
 import { buildRoofLayout } from "../floors/roof/layout";
@@ -62,7 +63,7 @@ const PAD_HEIGHT = PAD.iconY + PAD.iconSize / 2;
 const CAREER_ROOM_HEIGHT = 2.4;
 /** L4 stations (blog plinths are low, so their volume reaches their billboard titles). */
 const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6 };
-const KIOSK_HEIGHT = 3.2;
+const KIOSK_HEIGHT = 3.4;
 const PROFILE_HEIGHT = 7;
 const ARCHIVE_HEIGHT = 4;
 /** Door items without a known room footprint keep a plain door-pad volume this tall. */
@@ -182,8 +183,8 @@ function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
       floor: "L1",
       kind: "kiosk",
       label: data.labels.kiosk,
-      // On the open floor south of the kiosk, clear of its obstacle by more than the rover radius.
-      at: { x: kiosk.x, z: kiosk.z - kiosk.d / 2 - 2.5 },
+      // Centered in front of the screen (floors/lobby/kiosk.ts), so the rover stops facing it.
+      at: kioskStop(),
       bounds: rectAround(kiosk, kiosk.w, kiosk.d),
       height: KIOSK_HEIGHT,
       action: { type: "command", command: "terminal" },

@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 
@@ -299,6 +299,20 @@ for (const floor of FLOOR_THUMBS) {
     // The full tier renders through the bloom composer: give the floor time to mount and settle.
     await page.waitForTimeout(8000);
     await page.screenshot({ path: `screenshots/floor-thumbs/${floor.id}.png` });
+    await context.close();
+  });
+}
+
+/** The L1 Ask Rover kiosk from its point-and-go stop, at the owner's review sizes (`hq-l1-kiosk-*`). */
+for (const viewport of L4_VIEWPORTS) {
+  test(`3D hq-l1-kiosk @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(180_000);
+    const { context, page } = await open3D(browser, viewport);
+    await expect.poll(async () => (await interactablesOf(page)).some((i) => i.id === "L1:kiosk:ask-rover"), { timeout: 30_000 }).toBe(true);
+    const kiosk = (await interactablesOf(page)).find((i) => i.id === "L1:kiosk:ask-rover")!;
+    await driveTo(page, kiosk.at);
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: shot("hq-l1-kiosk", viewport) });
     await context.close();
   });
 }

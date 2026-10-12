@@ -11,7 +11,7 @@ import type { InteractKind, Interactable } from "./registry";
  */
 
 /** Height (u) of a pick volume when the registry entry gives none. */
-export const PICK_HEIGHT: Record<InteractKind, number> = { door: 2.6, "elevator-pad": 2.9, teleporter: 2.9, station: 4, kiosk: 3.2, board: 7 };
+export const PICK_HEIGHT: Record<InteractKind, number> = { door: 2.6, "elevator-pad": 2.9, teleporter: 2.9, station: 4, kiosk: 3.4, board: 7 };
 /**
  * The floating name tag stands over the destination ring (the approach point), this high above the floor:
  * in-world titles sit over the objects themselves, so the tag never doubles or covers them. Pads lift it

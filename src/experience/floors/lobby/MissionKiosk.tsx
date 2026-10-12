@@ -2,13 +2,13 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { getHQStore } from "@/store/useHQStore";
-import { COLORS, LOBBY } from "../../config";
+import { COLORS } from "../../config";
 import type { ExperienceData } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
+import { KIOSK, kioskAllLines, kioskFontSize, kioskLines, kioskParts } from "./kiosk";
 
-const VISIBLE = 5;
 const TICK = 2.2;
 
 export interface KioskLabels {
@@ -16,45 +16,52 @@ export interface KioskLabels {
   hint: string;
 }
 
-/** Diegetic mirror of the Rover Terminal missions; a point-and-go target (L1:kiosk:ask-rover) that opens Ask Rover. */
+/**
+ * Diegetic mirror of the Rover Terminal missions; a point-and-go target (L1:kiosk:ask-rover) that opens
+ * Ask Rover. Body, stand and screen turn as one unit (floors/lobby/kiosk.ts); lines never wrap.
+ */
 export function MissionKiosk({ missions, labels }: { missions: ExperienceData["missions"]; labels: KioskLabels }) {
-  const { x, z, w, d } = LOBBY.kiosk;
-  // The screen shows five missions at a time and scrolls one line every 2.2 s (static under reduced motion).
+  const parts = useMemo(() => kioskParts(), []);
+  const names = useMemo(() => missions.map((m) => m.label), [missions]);
+  const fontSize = useMemo(() => kioskFontSize(kioskAllLines(names, labels.title, labels.hint), parts.screen.w), [names, labels.title, labels.hint, parts]);
+  // Five missions at a time, one line every 2.2 s (static under reduced motion).
   const [offset, setOffset] = useState(0);
   const clock = useRef(0);
   useFrame((_, dt) => {
-    if (missions.length <= VISIBLE || getHQStore().getState().reducedMotion) return;
+    if (names.length <= KIOSK.visible || getHQStore().getState().reducedMotion) return;
     clock.current += Math.min(dt, 0.1);
     if (clock.current > TICK) {
       clock.current = 0;
-      setOffset((o) => (o + 1) % missions.length);
+      setOffset((o) => (o + 1) % names.length);
     }
   });
-  const shown = Array.from({ length: Math.min(VISIBLE, missions.length) }, (_, k) => (offset + k) % missions.length);
-  const lines = [labels.title, ...shown.map((i) => `${i + 1}. ${missions[i].label}`), "", `> ${labels.hint}`].join("\n");
+  const text = kioskLines(names, labels.title, labels.hint, offset, parts.screen.w).join("\n");
+  const { group, body, stand, screen } = parts;
   return (
-    <group position={[x, 0, z]}>
-      <GlassBox size={[w, 1.2, d]} position={[0, 0.6, 0]} color={COLORS.green} fillOpacity={0.1} />
-      <group position={[0.3, 2.15, 0.3]} rotation={[0, Math.PI / 4, 0]}>
-        <group rotation={[-0.3, 0, 0]}>
-          <mesh>
-            <planeGeometry args={[3.1, 1.9]} />
-            <meshBasicMaterial color={COLORS.terminalBg} transparent opacity={0.95} />
-          </mesh>
-          <Text
-            font={FONTS.mono}
-            fontSize={0.12}
-            color={COLORS.terminalFg}
-            anchorX="left"
-            anchorY="top"
-            position={[-1.45, 0.82, 0.01]}
-            lineHeight={1.45}
-            maxWidth={2.9}
-            material-toneMapped={false}
-          >
-            {lines}
-          </Text>
-        </group>
+    <group position={group.position} rotation={[0, group.yaw, 0]}>
+      <GlassBox size={body.size} position={body.position} color={COLORS.green} fillOpacity={0.1} />
+      <mesh position={stand.position} raycast={() => null}>
+        <boxGeometry args={stand.size} />
+        <meshBasicMaterial color={COLORS.green} transparent opacity={0.35} toneMapped={false} />
+      </mesh>
+      <group position={screen.position} rotation={[-screen.tilt, 0, 0]}>
+        <mesh raycast={() => null}>
+          <planeGeometry args={[screen.w, screen.h]} />
+          <meshBasicMaterial color={COLORS.terminalBg} transparent opacity={0.95} />
+        </mesh>
+        <Text
+          font={FONTS.mono}
+          fontSize={fontSize}
+          color={COLORS.terminalFg}
+          anchorX="left"
+          anchorY="top"
+          position={[-screen.w / 2 + KIOSK.screen.pad, screen.h / 2 - KIOSK.screen.pad, 0.01]}
+          lineHeight={KIOSK.screen.lineHeight}
+          whiteSpace="nowrap"
+          material-toneMapped={false}
+        >
+          {text}
+        </Text>
       </group>
     </group>
   );

@@ -28,7 +28,7 @@ Footprint: 52 × 42 u, x from -24 to 28 and z from -21 to 21. The west edge stay
 | Lane ring (walkable) | Around the hologram, radius 12 | Rover footprint 10.5 to 13.5 | Clear of every element at rover height |
 | Skills wall | (6, -18.5) | 40 × 1, at least 8.5 u tall on a 0.35 u glowing plinth; `skillsWallLayout` measures headings (they may wrap; every column reserves the same heading lines) and grows the wall so the longest column ends 1.8 u above its base | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u) |
 | Certifications wall | Footprint (25, 0) | 2.4 × 18, height 6.2 | Curved holo-wall on an arc of radius 19.6 around the hologram, every badge facing the plaza (`CERT_WALL` in `floors/lobby/layout.ts`). Issuer tabs (All, issuers with 2 or more, Other), up to 12 badges per page in two rows (earned newest first, then in progress, then expired), a pager past 12; the panel sizes to the All tab's first page. A badge opens the shared certification preview card. |
-| Ask Rover kiosk | (2, 19) | 3 × 2 | Diegetic mirror of Ask Rover (the Rover Terminal missions) |
+| Ask Rover kiosk | (2, 19.3), touching the south edge | 2 × 3.4 | Diegetic mirror of Ask Rover: body, stand and screen as one unit square to the grid, facing east (`floors/lobby/kiosk.ts`); lines never wrap |
 | Elevator door | (-24, 0) | | |
 
 Lanes: one ring lane around the hologram (radius 12) and spurs leaving the ring outward to the kiosk, both walls and the elevator.

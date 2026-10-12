@@ -104,7 +104,8 @@ export const LOBBY = {
   skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
   certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
-  kiosk: { x: 2, z: 19, w: 3, d: 2 },
+  /** Ask Rover kiosk footprint (x 1 to 3, z 17.6 to 21): touches the south slab edge; floors/lobby/kiosk.ts turns it to face east. */
+  kiosk: { x: 2, z: 19.3, w: 2, d: 3.4 },
   laneRadius: 12,
 } as const;
 

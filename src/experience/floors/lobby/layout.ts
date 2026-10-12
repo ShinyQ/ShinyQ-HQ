@@ -181,8 +181,8 @@ export function lobbyElements(statCount: number, ringTurn = 0): Box[] {
     box("skills-wall", sw.x, sw.z, sw.w / 2, sw.d / 2 + 0.05, 0, sw.h + 0.8),
     // The curved wall's footprint (config) holds the widest panel: see the cert wall layout test.
     box("cert-wall", cw.x, cw.z, cw.w / 2, cw.d / 2, 0, cw.h + 0.8),
-    // Body plus the tilted screen above it (rotated 45 degrees, offset toward the camera).
-    box("kiosk", k.x + 0.15, k.z + 0.15, k.w / 2 + 0.3, k.d / 2 + 0.6, 0, 3.2),
+    // Body, stand and the screen centered above them, facing east (floors/lobby/kiosk.ts); the tilt leans it 0.3 u.
+    box("kiosk", k.x, k.z, k.w / 2 + 0.3, k.d / 2, 0, 3.4),
     box("elevator-door", -24, 0, 1, 1.6, 0, 3.2),
   ];
   for (let i = 0; i < statCount; i++) {

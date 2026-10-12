@@ -28,7 +28,7 @@ function buildLanes(): P[][] {
   };
   return [
     ring,
-    spoke([LOBBY.kiosk.x + 1.2, LOBBY.kiosk.z - 1.2]),
+    spoke([LOBBY.kiosk.x + LOBBY.kiosk.w / 2 + 0.4, LOBBY.kiosk.z]),
     spoke([LOBBY.skillsWall.x, LOBBY.skillsWall.z + 1.2]),
     spoke([LOBBY.certWall.x - LOBBY.certWall.w / 2 - 0.4, LOBBY.certWall.z]),
     spoke([-21, 0]),
