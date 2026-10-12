@@ -15,6 +15,9 @@ import { BoxEdges, FONTS } from "../../tower/primitives";
 const ACCENTS = [COLORS.green, COLORS.cyan, COLORS.violet, COLORS.amber, COLORS.pink, "#60a5fa"];
 const { w: TILE_W, h: TILE_H, y: TILE_Y, stagger: TILE_STAGGER } = LOBBY.statsTile;
 
+/** The tile's accent marker: a dot at the top right, level with the value (R5 P10, owner decision 2026-10-13). */
+const STAT_DOT = { x: TILE_W / 2 - 0.3, y: TILE_H / 2 - 0.45, radius: 0.08 };
+
 const COUNT_SECONDS = 0.9;
 const LIFT = 0.15;
 const LIFT_RADIUS = 4;
@@ -107,9 +110,9 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
                 <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />
               </mesh>
               <BoxEdges size={[TILE_W, TILE_H, 0.01]} color={accent} opacity={0.9} />
-              {/* Accent glow line along the top edge. */}
-              <mesh position={[0, TILE_H / 2 - 0.04, 0.012]}>
-                <planeGeometry args={[TILE_W - 0.1, 0.06]} />
+              {/* Glowing accent dot beside the value (R5 P10: never a colored top edge). */}
+              <mesh position={[STAT_DOT.x, STAT_DOT.y, 0.012]}>
+                <circleGeometry args={[STAT_DOT.radius, 20]} />
                 <meshBasicMaterial color={glow[i % glow.length]} toneMapped={false} />
               </mesh>
               <StatValue value={stat.value} color={accent} />
