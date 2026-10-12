@@ -68,32 +68,25 @@ afterEach(() => {
 });
 
 describe("MissionHud on static pages", () => {
-  it("auto-opens the terminal once, on the Lobby, on the first visit", async () => {
-    vi.useFakeTimers();
-    localStorage.clear();
-    nav.pathname = "/en";
-    renderHud();
-    await act(async () => vi.advanceTimersByTime(700));
-    expect(screen.getByRole("dialog", { name: "Rover Terminal" })).toBeInTheDocument();
-    expect(localStorage.getItem(TERMINAL_SEEN_KEY)).toBe("1");
-    cleanup();
-    renderHud();
-    await act(async () => vi.advanceTimersByTime(700));
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("auto-opens the terminal with the Ask row already in place (no layout shift)", async () => {
+  it("never auto-opens the terminal over the Page View Lobby, even on the first visit", async () => {
     vi.useFakeTimers();
     localStorage.clear();
     nav.pathname = "/en";
     askMock.status = { enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 };
-    let release = () => {};
-    askMock.gate = new Promise((resolve) => (release = resolve));
     renderHud();
-    await act(async () => vi.advanceTimersByTime(700));
+    await act(async () => vi.advanceTimersByTime(5000));
     expect(screen.queryByRole("dialog")).toBeNull();
-    await act(async () => release());
-    expect(screen.getByRole("dialog", { name: "Rover Terminal" })).toHaveTextContent("[a]");
+    // Still unseen, so the 3D Lobby greets a first visitor with it after the intro.
+    expect(localStorage.getItem(TERMINAL_SEEN_KEY)).toBeNull();
+  });
+
+  it("opens the terminal on request and marks it seen", async () => {
+    localStorage.clear();
+    nav.pathname = "/en";
+    renderHud();
+    act(() => openTerminal());
+    expect(await screen.findByRole("dialog", { name: en.hud.terminal.title })).toBeInTheDocument();
+    expect(localStorage.getItem(TERMINAL_SEEN_KEY)).toBe("1");
   });
 
   it("fetches its index after hydration instead of inlining it", async () => {
