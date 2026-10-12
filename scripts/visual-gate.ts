@@ -1,8 +1,10 @@
 /**
  * Look-preserving gate (round 5, P2): captures e2e/visual-gate.spec.ts baselines from a base ref and
- * compares the working tree against them. Local only (unset CI so Playwright reuses this server).
- * Usage: bun scripts/visual-gate.ts [--base origin/main] [--profile strict|msaa|batching|release] [--self] [--grep <text>] [--no-build]
+ * compares the working tree (or `--head <ref>`) against them. Local only (unset CI so Playwright reuses
+ * this server). Builds of refs are cached per commit in sibling worktrees (`../<repo>-visual-<sha>`).
+ * Usage: bun scripts/visual-gate.ts [--base origin/main] [--head <ref>] [--profile strict|msaa|batching|release] [--self] [--grep <text>] [--no-build]
  *   --base     ref to compare against (each task uses HEAD, the release check uses origin/main)
+ *   --head     ref to compare (default: the working tree, built here unless --no-build)
  *   --self     compares the base with itself (noise floor of the harness)
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -16,6 +18,7 @@ const opt = (name: string, fallback: string) => {
 };
 const PORT = Number(process.env.E2E_PORT ?? 4431);
 const base = opt("base", "origin/main");
+const head = opt("head", "");
 const profile = opt("profile", "strict");
 const grep = opt("grep", "");
 const root = process.cwd();
@@ -27,19 +30,26 @@ const must = (cmd: string[], cwd = root) => {
   if (run(cmd, cwd) !== 0) throw new Error(`failed: ${cmd.join(" ")} (in ${cwd})`);
 };
 
-const sha = Bun.spawnSync(["git", "rev-parse", base]).stdout.toString().trim();
-if (!sha) throw new Error(`unknown ref ${base}`);
-const baseDir = path.resolve(root, "..", `${path.basename(root)}-visual-base`);
-const marker = path.join(baseDir, "out", ".visual-gate-sha");
-
-if (!existsSync(marker) || readFileSync(marker, "utf8").trim() !== sha) {
-  if (!existsSync(baseDir)) must(["git", "worktree", "add", "--detach", baseDir, sha]);
-  else must(["git", "checkout", "--detach", sha], baseDir);
-  must(["bun", "install", "--frozen-lockfile"], baseDir);
-  must(["bun", "run", "build"], baseDir);
-  writeFileSync(marker, sha);
+/** Builds `ref` once in its own sibling worktree and returns its `out/` directory. */
+function buildRef(ref: string): { sha: string; out: string } {
+  const sha = Bun.spawnSync(["git", "rev-parse", ref]).stdout.toString().trim();
+  if (!sha) throw new Error(`unknown ref ${ref}`);
+  const dir = path.resolve(root, "..", `${path.basename(root)}-visual-${sha.slice(0, 8)}`);
+  const marker = path.join(dir, "out", ".visual-gate-sha");
+  if (!existsSync(marker) || readFileSync(marker, "utf8").trim() !== sha) {
+    if (!existsSync(dir)) must(["git", "worktree", "add", "--detach", dir, sha]);
+    else must(["git", "checkout", "--detach", sha], dir);
+    must(["bun", "install", "--frozen-lockfile"], dir);
+    must(["bun", "run", "build"], dir);
+    writeFileSync(marker, sha);
+  }
+  return { sha, out: path.join(dir, "out") };
 }
-if (!flag("no-build") && !flag("self")) must(["bun", "run", "build"]);
+
+const baseBuild = buildRef(base);
+const sha = baseBuild.sha;
+const headOut = flag("self") ? baseBuild.out : head ? buildRef(head).out : path.join(root, "out");
+if (!head && !flag("no-build") && !flag("self")) must(["bun", "run", "build"]);
 
 async function serve(dir: string) {
   const server = Bun.spawn(["bun", "scripts/serve-static.ts", "--port", String(PORT), "--dir", dir], { cwd: root, stdout: "ignore", stderr: "inherit" });
@@ -62,13 +72,13 @@ function capture(label: string, update: boolean) {
   return run(cmd, root, { VISUAL_GATE: "1", VISUAL_GATE_PROFILE: profile, VISUAL_GATE_LABEL: label, E2E_PORT: String(PORT), CI: "" });
 }
 
-const baseServer = await serve(path.join(baseDir, "out"));
+const baseServer = await serve(baseBuild.out);
 const updated = capture("base", true);
 baseServer.kill();
 if (updated !== 0) throw new Error("baseline capture failed");
 
-const headServer = await serve(flag("self") ? path.join(baseDir, "out") : path.join(root, "out"));
-const code = capture(flag("self") ? "base-again" : "head", false);
+const headServer = await serve(headOut);
+const code = capture(flag("self") ? "base-again" : head ? `head-${head}` : "head", false);
 headServer.kill();
 console.log(code === 0 ? `visual gate: PASS (profile ${profile}, base ${base} ${sha.slice(0, 8)})` : `visual gate: FAIL (profile ${profile}); diffs in test-results/`);
 process.exit(code);
