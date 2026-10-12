@@ -14,6 +14,10 @@ function target(): LabelTarget {
     maxWidth: Infinity,
     lineHeight: "normal" as LabelTarget["lineHeight"],
     letterSpacing: 0,
+    outlineWidth: 0.5 as LabelTarget["outlineWidth"],
+    outlineColor: "#fff" as LabelTarget["outlineColor"],
+    fillOpacity: 0.2,
+    outlineOpacity: 0.2,
   });
 }
 
@@ -33,5 +37,13 @@ describe("applyLabel", () => {
     expect(t.rotation.y).toBeCloseTo(Math.PI / 2);
     expect(t.rotation.x).toBeCloseTo(-0.3);
     expect(t).toMatchObject({ maxWidth: 4, textAlign: "center", lineHeight: 1.2, letterSpacing: 0.1 });
+  });
+
+  it("writes troika's outline and opacity defaults unless the label sets them", () => {
+    const t = target();
+    applyLabel(t, { text: "x", position: [0, 0, 0], font: "f", fontSize: 1, color: "#000" });
+    expect(t).toMatchObject({ outlineWidth: 0, outlineColor: 0x000000, fillOpacity: 1, outlineOpacity: 1 });
+    applyLabel(t, { text: "x", position: [0, 0, 0], font: "f", fontSize: 1, color: "#000", outlineWidth: 0.03, outlineColor: "#05050c", fillOpacity: 0.3 });
+    expect(t).toMatchObject({ outlineWidth: 0.03, outlineColor: "#05050c", fillOpacity: 0.3, outlineOpacity: 1 });
   });
 });

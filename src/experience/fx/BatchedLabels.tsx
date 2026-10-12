@@ -1,34 +1,59 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, type Ref } from "react";
 import { MeshBasicMaterial } from "three";
 import { BatchedText, Text } from "troika-three-text";
 import { applyLabel, type BatchedLabel } from "./labelProps";
 
+/** Live access to a batch: `members[i]` is the troika Text for `labels[i]` (empty until the first commit). */
+export interface BatchedLabelsHandle {
+  readonly batch: BatchedText;
+  readonly members: readonly Text[];
+}
+
 /**
- * All labels of a floor in one draw call: a troika `BatchedText` packs every member's glyphs, font,
- * color and transform (relative to this group) into one mesh. Members cannot billboard, so give each
- * label a fixed `yaw` toward where it is read from. Not raycast: make clickable signs point-and-go targets (interact/registry.ts).
+ * All labels of a floor in one draw call (two with outlines): a troika `BatchedText` packs every member's
+ * glyphs, font, color, opacity and transform (relative to this group) into one mesh. Members cannot
+ * billboard on their own, so give each label a fixed `yaw`, or move members per frame through the `ref`
+ * handle (set `matrixAutoUpdate = false` and write `matrix`). `toneMapped` matches the labels it replaces
+ * (drei Text defaults to tone mapped). Not raycast: make clickable signs point-and-go targets (interact/registry.ts).
  */
-export function BatchedLabels({ labels, name = "labels", renderOrder }: { labels: readonly BatchedLabel[]; name?: string; renderOrder?: number }) {
+export function BatchedLabels({
+  labels,
+  name = "labels",
+  renderOrder,
+  toneMapped = false,
+  ref,
+}: {
+  labels: readonly BatchedLabel[];
+  name?: string;
+  renderOrder?: number;
+  toneMapped?: boolean;
+  ref?: Ref<BatchedLabelsHandle>;
+}) {
   const { batch, base } = useMemo(() => {
-    const base = new MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false });
+    const base = new MeshBasicMaterial({ toneMapped, transparent: true, depthWrite: false });
     const batch = new BatchedText();
     batch.material = base;
     batch.raycast = () => undefined;
     return { batch, base };
-  }, []);
+  }, [toneMapped]);
+  const members = useRef<Text[]>([]);
+
+  useImperativeHandle(ref, () => ({ batch, get members() { return members.current; } }), [batch]);
 
   useEffect(() => {
-    const members = labels.map((label) => {
+    const created = labels.map((label) => {
       const text = new Text();
       applyLabel(text, label);
       batch.addText(text);
       return text;
     });
+    members.current = created;
     batch.sync();
     return () => {
-      for (const text of members) {
+      members.current = [];
+      for (const text of created) {
         batch.removeText(text);
         text.dispose();
       }

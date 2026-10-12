@@ -20,6 +20,10 @@ declare module "troika-three-text" {
     maxWidth: number;
     lineHeight: number | "normal";
     letterSpacing: number;
+    outlineWidth: number | string;
+    outlineColor: string | number;
+    fillOpacity: number;
+    outlineOpacity: number;
     material: Material;
     sync(callback?: () => void): void;
     dispose(): void;
