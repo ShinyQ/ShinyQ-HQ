@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import en from "../messages/en.json";
@@ -550,3 +551,51 @@ test.describe("Rover dialog", () => {
     });
   }
 });
+
+/**
+ * Share card backgrounds (`bun run og:stills`, R5 P9): each floor from its start spot, like the floor
+ * thumbnails, at 1200x630 rendered at 2x on the full tier (bloom on) with the HUD and Ask dock hidden.
+ * At 2x on SwiftShader a frame takes seconds, so the test counts rendered frames to let the floor
+ * settle, then stops the animation loop so the screenshot reads one finished frame.
+ * scripts/og-stills.ts converts them to public/og-assets/floor-{id}.jpg.
+ */
+type OgLoop = { frames: number; stop: boolean; stopped: boolean };
+const ogLoop = (page: Page) => page.evaluate(() => (window as unknown as { __ogLoop: OgLoop }).__ogLoop);
+
+for (const floor of FLOOR_THUMBS) {
+  test(`og still ${floor.id}`, async ({ browser }) => {
+    test.setTimeout(600_000);
+    const context = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 2 });
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    await page.addInitScript(() => {
+      const loop: OgLoop = { frames: 0, stop: false, stopped: false };
+      (window as unknown as { __ogLoop: OgLoop }).__ogLoop = loop;
+      const raf = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = (cb) =>
+        raf((ts) => {
+          if (loop.stop) {
+            loop.stopped = true;
+            return;
+          }
+          loop.frames++;
+          cb(ts);
+        });
+    });
+    await page.goto(`${floor.path}?tier=full&walk=off`);
+    await waitForHQ(page);
+    await waitForPhase(page, "explore", 240_000);
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({ content: "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }" });
+    // Let the floor and its neighbours mount and the bloom settle, then freeze one finished frame.
+    const start = (await ogLoop(page)).frames;
+    await expect.poll(async () => (await ogLoop(page)).frames - start, { timeout: 420_000, intervals: [2000] }).toBeGreaterThanOrEqual(15);
+    await page.evaluate(() => {
+      (window as unknown as { __ogLoop: OgLoop }).__ogLoop.stop = true;
+    });
+    await expect.poll(async () => (await ogLoop(page)).stopped, { timeout: 60_000, intervals: [1000] }).toBe(true);
+    mkdirSync("screenshots/og-stills", { recursive: true });
+    await page.screenshot({ path: `screenshots/og-stills/${floor.id}.png`, timeout: 120_000 });
+    await context.close();
+  });
+}
