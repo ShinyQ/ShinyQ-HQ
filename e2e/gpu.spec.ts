@@ -113,3 +113,36 @@ for (const c of BUDGET_CASES) {
     await context.close();
   });
 }
+
+type QualityWindow = { __hq: { quality: { snapshot(): { level: number; locked: boolean; flips: number; applied: { dpr: number; multisampling: number; bloomLevels: number } | null }; simulate(ms: number | null): void } } };
+const quality = (page: Page) => page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.snapshot());
+
+test("the safety net is off under automation by default", async ({ page }) => {
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=full");
+  await waitForHQ(page);
+  await waitForSceneLive(page);
+  await page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.simulate(60));
+  await page.waitForTimeout(9_000);
+  expect((await quality(page)).level).toBe(0);
+});
+
+test("the safety net steps down on sustained slow frames, at most twice a minute, MSAA before bloom", async ({ page }) => {
+  test.setTimeout(150_000);
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=full&gfx=monitor-on");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  // DPR 1 desktop: the ladder is [msaa-off, bloom-lite].
+  await page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.simulate(40));
+  await expect.poll(async () => (await quality(page)).level, { timeout: 30_000 }).toBe(1);
+  await expect.poll(async () => (await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).multisampling, { timeout: 10_000 }).toBe(0);
+  expect((await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).bloomLevels).toBe(8);
+  await expect.poll(async () => (await quality(page)).level, { timeout: 30_000 }).toBe(2);
+  expect((await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).bloomLevels).toBe(6);
+  const snap = await quality(page);
+  expect(snap.flips).toBeLessThanOrEqual(2);
+  await page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.simulate(null));
+  expect(await page.evaluate(() => sessionStorage.getItem("hq:gfx"))).toBe(JSON.stringify({ level: 2, locked: false }));
+});
