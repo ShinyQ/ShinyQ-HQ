@@ -95,11 +95,19 @@ const live = () => {
   return Boolean(s && s.phase === "explore" && (w.__hq?.rover.drawCalls ?? 0) > 0 && !document.documentElement.hasAttribute("data-hq-boot"));
 };
 
-/** Steps to exactly `frame` frames since load; fails if the page needed more frames to get there. */
+/**
+ * Steps to exactly `frame` frames since load (fails if the page needed more frames to get there). Async
+ * work (fetches, fonts, typesetting) settles every `STEP_CHUNK` frames, so it lands on the same frame
+ * whatever a frame costs in real time: a slower frame (a shader compile) must not move the pose.
+ */
+const STEP_CHUNK = 30;
 async function stepTo(page: Page, frame: number) {
   const frames = await frameCount(page);
   if (frames > frame) throw new Error(`reached the pose at frame ${frames}, after the fixed frame ${frame}`);
-  await stepFrames(page, frame - frames);
+  for (let at = frames; at < frame; at += STEP_CHUNK) {
+    await stepFrames(page, Math.min(STEP_CHUNK, frame - at));
+    await waitForQuiet(page, 100);
+  }
 }
 
 async function settle(page: Page, pose: Pose) {

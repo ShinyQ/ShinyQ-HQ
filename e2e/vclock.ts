@@ -110,7 +110,7 @@ export async function driveUntil(page: Page, check: () => boolean, { maxFrames, 
   for (let done = 0; done < maxFrames; done += batch) {
     await stepFrames(page, batch);
     if (await page.evaluate(check)) return frameCount(page);
-    if (done % 120 === 0) await waitForQuiet(page, 150);
+    await waitForQuiet(page, 100);
   }
   throw new Error(`state not reached within ${maxFrames} frames`);
 }
