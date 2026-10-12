@@ -148,6 +148,7 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "sinon",
   "alembic",
   "kysely",
+  "drizzle orm",
   "datatables",
   "ckeditor",
   "openai",

@@ -1684,6 +1684,49 @@
           "confidence": "verified"
         },
         {
+          "id": "serupa-2025",
+          "slug": "serupa-2025",
+          "type": "freelance",
+          "org": "Serupa",
+          "role": {
+            "en": "Full Stack Engineer (freelance)",
+            "id": "Full Stack Engineer (freelance)"
+          },
+          "start": "2025-06",
+          "end": "2025-08",
+          "summary": {
+            "en": "In a two-person team, I built the API foundation, accounts and events of Serupa's event ticketing platform, plus its attendee site and organizer dashboard.",
+            "id": "Dalam tim dua orang, saya membangun fondasi API serta fitur akun dan acara pada platform ticketing acara Serupa, beserta situs pengunjung dan dashboard penyelenggaranya."
+          },
+          "highlights": [
+            {
+              "en": "Set up the Express API on Bun with PostgreSQL, Drizzle, a Redis event cache and S3 uploads",
+              "id": "Menyiapkan API Express di Bun dengan PostgreSQL, Drizzle, cache acara di Redis, dan upload ke S3"
+            },
+            {
+              "en": "Built the Next.js attendee site from event search to checkout and QR e-tickets",
+              "id": "Membangun situs pengunjung Next.js dari pencarian acara hingga checkout dan e-ticket QR"
+            },
+            {
+              "en": "Connected the organizer dashboard to the API for creating and managing events",
+              "id": "Menghubungkan dashboard penyelenggara ke API untuk membuat dan mengelola acara"
+            }
+          ],
+          "stack": [
+            "Express",
+            "TypeScript",
+            "Bun",
+            "PostgreSQL",
+            "Drizzle ORM",
+            "Redis",
+            "Next.js",
+            "TanStack Query"
+          ],
+          "discipline": "software",
+          "podRef": "event-ticketing-platform",
+          "confidence": "verified"
+        },
+        {
           "id": "370-agency-2025",
           "slug": "370-agency-2025",
           "type": "job",
@@ -3464,7 +3507,7 @@
           "id": "limited-quota-event-ticketing",
           "slug": "limited-quota-event-ticketing",
           "order": 7,
-          "tier": "featured",
+          "tier": "listed",
           "accent": "green",
           "wing": "software",
           "client": "DariOrdal",
@@ -3491,20 +3534,20 @@
           },
           "approach": [
             {
-              "en": "I reorganized the Next.js 14 API into repository and service layers and automated deployment from GitHub.",
-              "id": "Saya menata API Next.js 14 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
+              "en": "I reorganized the Next.js 15 API routes into repository and service layers and automated deployment from GitHub.",
+              "id": "Saya menata API route Next.js 15 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
             },
             {
               "en": "I put quota checks and atomic decrements for each ticket tier inside one Prisma checkout transaction to prevent double-selling.",
               "id": "Saya menempatkan pengecekan dan pengurangan kuota secara atomik per tier tiket dalam satu transaksi checkout Prisma untuk mencegah tiket terjual dua kali."
             },
             {
-              "en": "I connected iPaymu payments and callbacks to QR e-ticket generation and email invoices, covering payment through event entry.",
-              "id": "Saya menghubungkan pembayaran dan callback iPaymu dengan pembuatan e-ticket QR serta invoice email, dari pembayaran hingga masuk acara."
+              "en": "I built ticket issuance, a My Tickets page with QR codes and the payment channel list from iPaymu, and redesigned the emails; my teammate integrated iPaymu checkout, callbacks and PDF invoices.",
+              "id": "Saya membangun penerbitan tiket, halaman My Tickets dengan kode QR, dan daftar channel pembayaran dari iPaymu, serta mendesain ulang email; rekan tim saya mengintegrasikan checkout iPaymu, callback, dan invoice PDF."
             },
             {
-              "en": "I built an admin dashboard for event management, sortable and exportable transaction tables, refresh-token sessions and analytics.",
-              "id": "Saya membangun dashboard admin untuk pengelolaan acara, tabel transaksi yang bisa diurutkan dan diekspor, sesi refresh token, serta analytics."
+              "en": "I built the admin dashboard: event management, sortable transaction tables with Excel export, refresh-token sessions, a Redis event cache and Google Analytics.",
+              "id": "Saya membangun dashboard admin: pengelolaan acara, tabel transaksi yang bisa diurutkan dan diekspor ke Excel, sesi refresh token, cache acara di Redis, dan Google Analytics."
             }
           ],
           "architecture": {
@@ -3513,8 +3556,8 @@
                 "id": "storefront",
                 "label": "Ticket storefront",
                 "sublabel": {
-                  "en": "Next.js 14",
-                  "id": "Next.js 14"
+                  "en": "Next.js 15",
+                  "id": "Next.js 15"
                 },
                 "layer": 0,
                 "row": 0,
@@ -3596,10 +3639,10 @@
           },
           "results": [
             {
-              "value": "57%",
+              "value": "45%",
               "label": {
-                "en": "Share of repository commits I authored (54 of 95), across 24 merged pull requests",
-                "id": "Proporsi commit repositori yang saya tulis (54 dari 95), dalam 24 pull request yang di-merge"
+                "en": "Share of non-merge commits I authored (32 of 71), plus 14 of 24 merged pull requests",
+                "id": "Proporsi commit non-merge yang saya tulis (32 dari 71), ditambah 14 dari 24 pull request yang di-merge"
               },
               "context": {
                 "en": "Counted in git history and pull requests from Jul to Aug 2025.",
@@ -3621,7 +3664,7 @@
             }
           ],
           "stack": [
-            "Next.js 14",
+            "Next.js 15",
             "TypeScript",
             "Prisma",
             "PostgreSQL",
@@ -3631,10 +3674,401 @@
             "TanStack Table",
             "Tailwind CSS",
             "shadcn/ui",
+            "GitHub Actions",
             "Bun"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/limited-quota-event-ticketing/01-home.webp",
+              "alt": {
+                "en": "Ticket storefront landing page with the call to find tickets, shown with sample data",
+                "id": "Halaman utama toko tiket dengan ajakan mencari tiket, ditampilkan dengan data contoh"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/02-event-detail.webp",
+              "alt": {
+                "en": "Event details dialog with venue, date, remaining tickets and terms",
+                "id": "Dialog detail acara dengan tempat, tanggal, sisa tiket, dan syarat ketentuan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/03-checkout.webp",
+              "alt": {
+                "en": "Checkout step with payment channels, the ticket summary, service fee and tax",
+                "id": "Langkah checkout dengan channel pembayaran, ringkasan tiket, biaya layanan, dan pajak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/04-my-tickets-qr.webp",
+              "alt": {
+                "en": "My Tickets with an expanded order showing a QR e-ticket per seat",
+                "id": "My Tickets dengan pesanan yang dibuka dan menampilkan e-ticket QR untuk setiap kursi"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/05-admin-dashboard.webp",
+              "alt": {
+                "en": "Admin dashboard overview of users, events, tickets sold and revenue",
+                "id": "Ringkasan dashboard admin untuk pengguna, acara, tiket terjual, dan pendapatan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/06-transactions.webp",
+              "alt": {
+                "en": "Transaction table per event with ticket counts, gross revenue, service fees and tax",
+                "id": "Tabel transaksi per acara dengan jumlah tiket, pendapatan kotor, biaya layanan, dan pajak"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/07-create-event.webp",
+              "alt": {
+                "en": "Create event form with event details and ticket types",
+                "id": "Formulir pembuatan acara dengan detail acara dan jenis tiket"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/limited-quota-event-ticketing/08-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the storefront, event details and My Tickets",
+                "id": "Tampilan mobile untuk toko tiket, detail acara, dan My Tickets"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
+        },
+        {
+          "id": "event-ticketing-platform",
+          "slug": "event-ticketing-platform",
+          "order": 12,
+          "tier": "featured",
+          "accent": "pink",
+          "wing": "software",
+          "client": "Serupa",
+          "timelineRef": "serupa-2025",
+          "title": {
+            "en": "Serupa Ticket Hub: Event Ticketing Platform",
+            "id": "Serupa Ticket Hub: Platform Ticketing Acara"
+          },
+          "tagline": {
+            "en": "An event ticketing platform with an attendee site, an organizer dashboard and an Express API, from event discovery to QR e-tickets.",
+            "id": "Platform ticketing acara dengan situs pengunjung, dashboard penyelenggara, dan API Express, dari pencarian acara hingga e-ticket QR."
+          },
+          "period": {
+            "start": "2025-06",
+            "end": "2025-08"
+          },
+          "role": {
+            "en": "Full Stack Engineer in a two-person team (backend foundation, accounts, events, caching and uploads, the attendee site and the organizer dashboard)",
+            "id": "Full Stack Engineer dalam tim dua orang (fondasi backend, akun, acara, caching dan upload, situs pengunjung, serta dashboard penyelenggara)"
+          },
+          "problem": {
+            "en": "Serupa needed its own ticketing platform: organizers publish events with ticket tiers, attendees find events and get free or paid tickets online, and every order ends in a ticket that can be shown at the door. Two freelance engineers built it as three apps between June and August 2025.",
+            "id": "Serupa membutuhkan platform ticketing sendiri: penyelenggara memublikasikan acara dengan beberapa tier tiket, pengunjung mencari acara dan mendapatkan tiket gratis maupun berbayar secara online, dan setiap pesanan berakhir dengan tiket yang bisa ditunjukkan di pintu masuk. Dua engineer freelance membangunnya sebagai tiga aplikasi antara Juni dan Agustus 2025."
+          },
+          "approach": [
+            {
+              "en": "I set up the API on Express 5 and Bun with routes, controllers, services and repositories over PostgreSQL and Drizzle, plus Helmet, rate limiting, structured logs, seed data and GitHub Actions deploys.",
+              "id": "Saya menyiapkan API di Express 5 dan Bun dengan lapisan route, controller, service, dan repository di atas PostgreSQL dan Drizzle, ditambah Helmet, rate limiting, log terstruktur, data seed, dan deploy lewat GitHub Actions."
+            },
+            {
+              "en": "I built accounts and events in the API: JWT access and refresh tokens, email verification and password reset, user and admin roles, event search with filters, a Redis event cache with invalidation, rate-limited view counts and S3 uploads for event covers and profile photos.",
+              "id": "Saya membangun fitur akun dan acara di API: access token dan refresh token JWT, verifikasi email dan reset password, peran user dan admin, pencarian acara dengan filter, cache acara di Redis dengan invalidasi, penghitungan view dengan rate limit, serta upload cover acara dan foto profil ke S3."
+            },
+            {
+              "en": "I built the attendee site in Next.js with TanStack Query: event discovery and search, event pages with ticket tiers, a free-ticket flow, checkout with a payment method choice, payment result pages and My Tickets with QR codes, plus SEO metadata and a sitemap.",
+              "id": "Saya membangun situs pengunjung dengan Next.js dan TanStack Query: penemuan dan pencarian acara, halaman acara dengan tier tiket, alur tiket gratis, checkout dengan pilihan metode pembayaran, halaman hasil pembayaran, dan My Tickets dengan kode QR, ditambah metadata SEO dan sitemap."
+            },
+            {
+              "en": "I turned a v0-generated scaffold into the organizer dashboard and connected sign-in and event creation, editing and listing, with sub-categories and a location map, to the API.",
+              "id": "Saya mengubah kerangka hasil v0 menjadi dashboard penyelenggara dan menghubungkan login serta pembuatan, pengeditan, dan daftar acara, lengkap dengan sub-kategori dan peta lokasi, ke API."
+            },
+            {
+              "en": "My teammate built ticket orders and payments in the API (quota and per-user limits, payment links and callbacks for QRIS, cards, e-wallets and virtual accounts, PDF invoices, status emails and Socket.IO payment events); my checkout and My Tickets pages call those endpoints.",
+              "id": "Rekan tim saya membangun pemesanan tiket dan pembayaran di API (batas kuota dan batas per pengguna, link pembayaran dan callback untuk QRIS, kartu, e-wallet, dan virtual account, invoice PDF, email status, serta event pembayaran lewat Socket.IO); halaman checkout dan My Tickets buatan saya memanggil endpoint tersebut."
+            }
+          ],
+          "architecture": {
+            "nodes": [
+              {
+                "id": "attendee-site",
+                "label": "Attendee site",
+                "sublabel": {
+                  "en": "Next.js 15, TanStack Query",
+                  "id": "Next.js 15, TanStack Query"
+                },
+                "layer": 0,
+                "row": 0,
+                "kind": "client"
+              },
+              {
+                "id": "organizer-dashboard",
+                "label": "Organizer dashboard",
+                "sublabel": {
+                  "en": "Next.js 15, Radix UI",
+                  "id": "Next.js 15, Radix UI"
+                },
+                "layer": 0,
+                "row": 1,
+                "kind": "client"
+              },
+              {
+                "id": "express-api",
+                "label": "Express API",
+                "sublabel": {
+                  "en": "Bun, JWT, Socket.IO",
+                  "id": "Bun, JWT, Socket.IO"
+                },
+                "layer": 1,
+                "row": 0,
+                "kind": "service"
+              },
+              {
+                "id": "postgresql",
+                "label": "PostgreSQL (Drizzle)",
+                "sublabel": {
+                  "en": "Events, tickets and orders",
+                  "id": "Acara, tiket, dan pesanan"
+                },
+                "layer": 2,
+                "row": 0,
+                "kind": "data"
+              },
+              {
+                "id": "redis",
+                "label": "Redis",
+                "sublabel": {
+                  "en": "Event cache, view counts, payment links",
+                  "id": "Cache acara, jumlah view, link pembayaran"
+                },
+                "layer": 2,
+                "row": 1,
+                "kind": "data"
+              },
+              {
+                "id": "s3",
+                "label": "AWS S3",
+                "sublabel": {
+                  "en": "Covers, photos, invoices",
+                  "id": "Cover, foto, invoice"
+                },
+                "layer": 2,
+                "row": 2,
+                "kind": "external"
+              },
+              {
+                "id": "payment-gateway",
+                "label": "Payment gateway",
+                "sublabel": {
+                  "en": "QRIS, cards, e-wallets, VAs",
+                  "id": "QRIS, kartu, e-wallet, VA"
+                },
+                "layer": 2,
+                "row": 3,
+                "kind": "external"
+              }
+            ],
+            "edges": [
+              {
+                "from": "attendee-site",
+                "to": "express-api",
+                "label": "REST + JWT"
+              },
+              {
+                "from": "organizer-dashboard",
+                "to": "express-api",
+                "label": "manage events"
+              },
+              {
+                "from": "express-api",
+                "to": "postgresql",
+                "label": "queries"
+              },
+              {
+                "from": "express-api",
+                "to": "redis",
+                "label": "cache"
+              },
+              {
+                "from": "express-api",
+                "to": "s3",
+                "label": "uploads"
+              },
+              {
+                "from": "express-api",
+                "to": "payment-gateway",
+                "label": "payment links"
+              },
+              {
+                "from": "payment-gateway",
+                "to": "express-api",
+                "label": "callbacks",
+                "async": true
+              }
+            ]
+          },
+          "results": [
+            {
+              "value": "3 apps",
+              "label": {
+                "en": "Delivered as an Express API, an attendee site and an organizer dashboard",
+                "id": "Diserahkan sebagai API Express, situs pengunjung, dan dashboard penyelenggara"
+              },
+              "context": {
+                "en": "From the three project repositories.",
+                "id": "Dari tiga repositori proyek."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "95%",
+              "label": {
+                "en": "Share of commits I authored on the attendee site and the organizer dashboard (62 of 65)",
+                "id": "Proporsi commit yang saya tulis di situs pengunjung dan dashboard penyelenggara (62 dari 65)"
+              },
+              "context": {
+                "en": "Non-merge commits in git history from Jun to Aug 2025, excluding commits generated by v0.",
+                "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025, tanpa commit yang dihasilkan v0."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "34%",
+              "label": {
+                "en": "Share of backend commits I authored (45 of 133); my teammate wrote the order and payment code",
+                "id": "Proporsi commit backend yang saya tulis (45 dari 133); rekan tim saya menulis kode pesanan dan pembayaran"
+              },
+              "context": {
+                "en": "Non-merge commits in git history from Jun to Aug 2025.",
+                "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Express",
+            "TypeScript",
+            "Bun",
+            "PostgreSQL",
+            "Drizzle ORM",
+            "Redis",
+            "Socket.IO",
+            "JWT",
+            "Google OAuth",
+            "AWS S3",
+            "Next.js 15",
+            "TanStack Query",
+            "Tailwind CSS",
+            "shadcn/ui",
+            "GitHub Actions"
+          ],
+          "hologram": "pipeline",
+          "assets": [
+            {
+              "src": "/media/event-ticketing-platform/01-home.webp",
+              "alt": {
+                "en": "Attendee site home with a featured events carousel and this week's events, shown with sample data",
+                "id": "Beranda situs pengunjung dengan carousel acara unggulan dan acara minggu ini, ditampilkan dengan data contoh"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/02-events.webp",
+              "alt": {
+                "en": "Event search with location, date range and category filters",
+                "id": "Pencarian acara dengan filter lokasi, rentang tanggal, dan kategori"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/03-event-detail.webp",
+              "alt": {
+                "en": "Event page with date, venue, organizer and ticket tiers",
+                "id": "Halaman acara dengan tanggal, tempat, penyelenggara, dan tier tiket"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/04-checkout.webp",
+              "alt": {
+                "en": "Checkout payment step with card, virtual account, e-wallet and QRIS options next to the order summary with fees",
+                "id": "Langkah pembayaran checkout dengan opsi kartu, virtual account, e-wallet, dan QRIS di samping ringkasan pesanan beserta biaya"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/05-my-tickets-qr.webp",
+              "alt": {
+                "en": "My Tickets showing a QR code for each ticket in an order, ready for the entrance",
+                "id": "My Tickets menampilkan kode QR untuk setiap tiket dalam satu pesanan, siap dipakai di pintu masuk"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/06-organizer-events.webp",
+              "alt": {
+                "en": "Organizer dashboard listing events with their review status",
+                "id": "Dashboard penyelenggara berisi daftar acara beserta status review"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/07-create-event.webp",
+              "alt": {
+                "en": "Create event form, the first of four steps: details, category and cover image",
+                "id": "Formulir pembuatan acara, langkah pertama dari empat: detail, kategori, dan gambar sampul"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/event-ticketing-platform/08-mobile.webp",
+              "alt": {
+                "en": "Mobile layouts of the home page, an event page and My Tickets",
+                "id": "Tampilan mobile untuk beranda, halaman acara, dan My Tickets"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "event-tech-search-backend",

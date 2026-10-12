@@ -160,3 +160,64 @@ describe("content/site-content.json", () => {
     expect(missing).toEqual([]);
   });
 });
+
+describe("ticketing projects (owner request 2026-10-12)", () => {
+  const data = parsed.success ? parsed.data : undefined;
+  const ticketPods = data?.floors.labs.pods ?? [];
+  const ticketEntries = data?.floors.careerArchive.entries ?? [];
+  const serupa = ticketPods.find((p) => p.id === "event-ticketing-platform");
+  const serupaEntry = ticketEntries.find((e) => e.id === "serupa-2025");
+  const dariordal = ticketPods.find((p) => p.id === "limited-quota-event-ticketing");
+
+  it("adds the Serupa pod to Product Engineering, linked both ways to its Journey entry", () => {
+    expect(serupa).toMatchObject({
+      wing: "software",
+      tier: "featured",
+      client: "Serupa",
+      timelineRef: "serupa-2025",
+      period: { start: "2025-06", end: "2025-08" },
+    });
+    expect(serupaEntry).toMatchObject({
+      type: "freelance",
+      org: "Serupa",
+      start: "2025-06",
+      end: "2025-08",
+      podRef: "event-ticketing-platform",
+    });
+  });
+
+  it("describes the two-person split the commit history shows, without a lead title", () => {
+    expect(serupa?.role.en).toContain("two-person team");
+    expect(serupa?.role.en).not.toMatch(/\blead\b/i);
+    expect(serupa?.approach.some((a) => a.en.startsWith("My teammate built"))).toBe(true);
+  });
+
+  it("keeps the client name out of the slug and frees a featured slot with the sibling ticketing pod", () => {
+    expect(serupa?.slug).not.toMatch(/serupa/i);
+    expect(dariordal?.tier).toBe("listed");
+  });
+
+  it("refreshes DariOrdal from its repository: Next.js 15, the teammate's payment work, non-merge commit share", () => {
+    expect(JSON.stringify(dariordal)).not.toContain("Next.js 14");
+    expect(dariordal?.stack).toContain("Next.js 15");
+    expect(dariordal?.approach.some((a) => a.en.includes("my teammate integrated iPaymu"))).toBe(true);
+    expect(dariordal?.results[0]).toMatchObject({ value: "45%" });
+    expect(dariordal?.slug).toBe("limited-quota-event-ticketing");
+  });
+
+  it("ships the Serupa gallery: desktop screens plus one mobile triptych, cover first", () => {
+    const assets = serupa?.assets ?? [];
+    expect(assets.length).toBeGreaterThanOrEqual(6);
+    expect(assets[0].src).toBe("/media/event-ticketing-platform/01-home.webp");
+    expect(assets.at(-1)?.src).toMatch(/^\/media\/event-ticketing-platform\/\d{2}-mobile\.webp$/);
+    expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
+  });
+
+  it("ships the DariOrdal gallery: desktop screens plus one mobile triptych, cover first", () => {
+    const assets = dariordal?.assets ?? [];
+    expect(assets.length).toBeGreaterThanOrEqual(6);
+    expect(assets[0].src).toBe("/media/limited-quota-event-ticketing/01-home.webp");
+    expect(assets.at(-1)?.src).toMatch(/^\/media\/limited-quota-event-ticketing\/\d{2}-mobile\.webp$/);
+    expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
+  });
+});
