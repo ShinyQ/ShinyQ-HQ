@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
@@ -10,6 +9,9 @@ import { useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
+// Rover's dialog rides in the 3D chunk (itself lazy): a second dynamic import here made Turbopack
+// regroup shared modules into Page View chunks (+7 KB JS on every page, over the Lighthouse budget).
+import DialogLayer from "./dialog/DialogLayer";
 import { HintLayer } from "./dialog/HintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
 import { firstName } from "./dialog/onboarding";
@@ -27,9 +29,6 @@ import { ViewControls } from "./ViewControls";
 import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
-
-/** Rover's text box: its chunk loads with the first line. */
-const DialogLayer = dynamic(() => import("./dialog/DialogLayer"), { ssr: false });
 
 /** Control hints, in the bottom band's center column under the walk pill. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
