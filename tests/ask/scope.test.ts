@@ -13,7 +13,7 @@ beforeAll(() => {
   ({ pack, safety } = buildRepoPack("2026-10-11"));
 });
 
-const originalGolden = golden.items.filter((i) => Number(i.id.slice(1)) <= 30);
+const originalGolden = golden.items.filter((i) => Number(i.id.slice(1)) <= 32);
 const refuses = (item: (typeof golden.items)[number]) => (item.expect as { refuse?: boolean }).refuse === true;
 
 describe("isPerspectiveQuestion", () => {

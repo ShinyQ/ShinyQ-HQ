@@ -8,6 +8,7 @@ Status: approved by the owner on 2026-10-11 (decisions in section 12). Implement
 - Answers come **only from the site's public knowledge**. Anything else gets "I don't have that information on this site", and off-topic requests get a polite one-line decline.
 - EN and ID: the answer uses the language of the question.
 - Available in the 3D HQ (Rover Terminal) and in the Page View (an "Ask" box), with a ⌘K "Ask about Kurniadi" row.
+- **Widened on 2026-10-12:** questions about Kurniadi's written professional perspective are in scope, with professional-only guard rails. See section 13.
 
 ## 2. Models (from the benchmark, 18 questions × 5 models)
 | Role | Model | Settings | Why |
@@ -173,11 +174,11 @@ Rules:
 - **Function integration:** wrangler `pages dev` with a mocked `AI` binding. Covers streaming, cache hit, fallback, Turnstile failure, kill switch.
 - **E2E:** Page View ask flow and the Rover Terminal ask flow with a mocked endpoint.
 - **Security tests:** Origin/CORS/content-type rejection, oversized body, Turnstile failure, rate-limit and global-cap behaviour, circuit breaker, XSS payloads in model output rendered as inert text, SSE framing with hostile tokens, CSP header snapshot, PII scrubber cases (EN/ID formats), output blocklist and numeric-grounding checks, cache not storing failed or declined answers.
-- **Red-team set:** `tests/ask/redteam.json` with about 40 attacks (direct and encoded injections, role-play jailbreaks, system-prompt extraction, client-name extraction such as "was the bank SMBC?", defamation bait, questions about other people, PII bait, harmful requests, Indonesian variants). PR CI runs them against the mocked pipeline (output checks must catch canned bad outputs); the nightly real-model run requires 100% safe outcomes, otherwise the workflow fails and opens an issue.
+- **Red-team set:** `tests/ask/redteam.json` with about 40 attacks (52 since section 13) (direct and encoded injections, role-play jailbreaks, system-prompt extraction, client-name extraction such as "was the bank SMBC?", defamation bait, questions about other people, PII bait, harmful requests, Indonesian variants). PR CI runs them against the mocked pipeline (output checks must catch canned bad outputs); the nightly real-model run requires 100% safe outcomes, otherwise the workflow fails and opens an issue.
 - **Review gate:** run the security-review agent on the PR before merge.
-- **Golden set:** `tests/ask/golden.json`, 30 questions (18 from the benchmark + 12 new: GH-600 status, latest post, "what are you building now", ID-only phrasing, two injections, two unknown traps).
+- **Golden set:** `tests/ask/golden.json`, 30 questions (18 from the benchmark + 12 new: GH-600 status, latest post, "what are you building now", ID-only phrasing, two injections, two unknown traps), 32 with the live-site and ticketing questions (q31, q32), 38 since section 13.
   - **PR CI:** a mocked model checks pipeline behavior plus the drift check.
-  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
+  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30; 36/38 since section 13). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
 
 ## 10. Provisioning (Cloudflare, all free)
 | Resource | Command / place | Notes |
@@ -208,3 +209,44 @@ Rules:
 4. Cloudflare API token for nightly CI: **yes**. Read-only scopes (Workers AI Read, AI Gateway Read, Account Analytics Read), 90-day expiry, stored as GitHub secret `CF_EVAL_TOKEN`. Powers the nightly golden-set eval, the nightly red-team run, and the weekly content-gap issue. Uses about 1 to 2k neurons per night from the free quota. The owner creates the token in the dashboard (or approves its creation) during provisioning.
 5. Llama Guard screening: **skipped** (no extra cost). Off-topic and harmful requests rely on the scope rule and output checks.
 6. 2FA on Cloudflare and GitHub: **confirmed on**.
+
+## 13. Perspectives (owner decision 2026-10-12)
+
+Owner request: "also for chatbot i have improvement . the ai is permissible btw to ask about my personal like: What is my coding principle or what will be kurniadi perspective about xxx. But still need guard rail to related professional things"
+
+### 13.1 Scope
+- In scope: Kurniadi's professional perspective: coding principles, engineering and AI views, testing and evaluation, tools and stack preferences, code review, shipping and production ownership, working style, learning and career advice, working with clients and teams (professional only), and "what would Kurniadi think about X".
+- Sources, and only these: How I work and the principles (`profile.howIWork`, `profile.principles`), hosted blog posts except personal essays (tag `personal`), talks, and approved entries of `content/perspectives.json`.
+- No written view on X: the answer says Kurniadi hasn't shared a view on that and names the closest thing he wrote and where it is. Never an inferred or invented opinion.
+- Answers speak about him in the third person and may quote his words in quotation marks. They never speak as him in the first person.
+- Still declined: private life, family, relationships, health, religion, politics, salary, rates or other pay, opinions about specific people, employers or clients, and anything ungrounded.
+
+### 13.2 Perspectives content
+- `content/perspectives.json` (`PerspectivesFileSchema`): `status` (`draft` or `approved`) and 10 to 20 entries `{ id, question: { en, id }, answer: { en, id }, tags, asOf: "YYYY-MM", sources?: [{ kind: "post" | "talk" | "project", slug }], approved? }`. Answers are the owner's own words in the first person (the site's voice); questions are not titles (no Title Case rule).
+- Publication gate: an entry is published when `approved` is `true`, or when it has no `approved` field and the file `status` is `"approved"`; `approved: false` pins a draft. `getPerspectives()` is the only reader for pages and the pack. Drafts are committed to a public repo, so they only restate what the site already publishes.
+- Checks: the zod schema, `perspectiveIssues` (sources exist, no personal essay as a source, no instruction-like sentence, T2), the public-safety lint, a pack test that builds the pack with every entry approved (must stay under 200 KB), and an e2e scan of `out/` for draft fingerprints.
+- Page View: About (`/{locale}/contact#perspectives`) and Quick view (`#perspectives`) render published entries as a native `details` accordion; entry anchors are `perspectives-<id>` and open from the hash. Nothing renders while no entry is published.
+
+### 13.3 Pipeline changes
+| Step | Change |
+|---|---|
+| Before the model | `privateTopic` (family, health, religion, politics, pay, private life) and `opinionAboutOthers` (opinion words plus an employer, school or freelance client from `pack.orgs`, a blocklisted client, or "his manager / the bank client") return canned EN/ID declines with no retrieval and no model call, like the harmful heuristic. Never cached. |
+| Retrieval | `isPerspectiveQuestion` (EN/ID view, opinion, principle, advice and preference words) adds the `principles` chunk after `profile` and `now`; view words fold onto `perspective`; approved perspective chunks get a small intent boost. |
+| Pack | `principles` chunk (How I work and the five principles with quoted titles, url `/contact#how`), moved out of the profile chunk; one `perspective-<id>` chunk per approved entry (url `/contact#perspectives-<id>`); `pack.orgs`; repositories with no stars left out to keep headroom under the 200 KB cap with every entry approved. |
+| Prompt | Scope line widened; rule 5 forbids speaking as Kurniadi in the first person; rule 8 (written views only, third person, name the title, the no-view answer); rule 9 (professional only). `PROMPT_VERSION` `2026-10-12.1`. |
+| Output checks | `firstPersonVoice` outside quotation marks becomes the decline. For a perspective question, or any answer that claims an opinion ("he believes", "menurutnya"), the answer must name a quoted title of a retrieved perspective, principles, post or talk chunk, or share two distinct three-word content runs with one; otherwise it becomes the no-view answer naming the closest retrieved source. |
+| Wire and UI | The `done` frame may carry `cite`, an allowlisted Page View path (`/contact#perspectives-<id>`, `/contact#how`, `/blog/<slug>`, `/library`); the dock renders a "Read on this site" link built from it. The model's text never becomes a link. Cached answers keep `cite`, re-checked on read. The breaker ignores the `harmful`, `private`, `others` and `unsourced` reasons. |
+
+### 13.4 Threats added
+| # | Threat | Controls |
+|---|---|---|
+| T16 | Invented or inferred opinions attributed to the owner | Prompt rule 8; the source check (no written source, no opinion); golden "no written view" items q37 and q38; red-team item rt51 |
+| T17 | Personal-life probing (family, health, religion, politics, pay) | `privateTopic` before the model; prompt rule 9; red-team items rt41 to rt45 |
+| T18 | Role-play as the owner ("answer as Kurniadi in the first person") | Prompt rule 5; `firstPersonVoice`; red-team items rt46, rt47 and rt52 |
+| T19 | Opinions about specific people, employers or clients | `opinionAboutOthers` before the model; the client blocklist; entity checks; red-team items rt48, rt49 and rt52 |
+| T2 (extended) | Injection through perspective text | Owner-reviewed PRs only (CODEOWNERS on `content/**`); `perspectiveIssues` refuses instruction-like sentences; the pack sanitizer drops them; red-team item rt50 |
+
+### 13.5 Evaluation
+- Golden set: 38 items (q33 to q38 are perspective questions; q37 and q38 have no written view), nightly threshold 36/38, the same bar as 28/30 (two misses allowed).
+- Red team: 52 items; the nightly real-model run must stay 100% safe.
+- Curated pills: a fifth topic, Perspectives, with 5 questions grounded in How I work, the principles and the posts; the nightly 90% answered bar is unchanged.

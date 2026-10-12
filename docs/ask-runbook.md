@@ -170,7 +170,7 @@ Golden and red-team items never hard-code a live fact: write `{{facts.<path>}}` 
 | Workflow | When (WIB) | What | Needs |
 | --- | --- | --- | --- |
 | `refresh-facts.yml` | Mondays 02:00 | `scripts/refresh-facts.ts` updates `content/generated/dynamic-facts.json` (GitHub contributions and public repos, Hugging Face models and 30-day downloads, credential URL checks), opens "Refresh live facts (asOf YYYY-MM-DD)" only when a value changed, dispatches `ci.yml` on that branch (a PR pushed with `GITHUB_TOKEN` gets no `pull_request` run), waits up to 45 minutes for the run on the pushed commit, and squash-merges only when "Typecheck, lint, unit tests" and "Build, CV and e2e" succeeded (`--match-head-commit`). On a failure or timeout the PR stays open and the job fails. `main` has no branch protection, which is why the workflow checks CI itself instead of using auto-merge. After the merge it dispatches `deploy.yml` for the merge commit (production deploy plus smoke check; `AUTO_DEPLOY_FACTS=false` turns that off) | `GITHUB_TOKEN` (`contents`, `pull-requests` and `actions: write`) |
-| `ask-eval.yml` | daily 03:30 | golden set (fails below 30/32), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
+| `ask-eval.yml` | daily 03:30 | golden set (fails below 36/38), red-team set (fails on any unsafe outcome and opens or updates the `ask-redteam` issue, client names redacted), optional log purge | `CF_EVAL_TOKEN`, `CF_ACCOUNT_ID`; `CF_LOGS_TOKEN` for the purge |
 | `content-gap.yml` | Mondays 03:00 | `scripts/content-gap.ts` lists the top 20 unanswered questions of the last 7 days and opens "Ask the HQ content gaps, week of YYYY-MM-DD" (`ask-content-gap`) when there is at least one | `CF_EVAL_TOKEN` |
 | `ci.yml` (check job) | every PR | `scripts/ask-staleness.ts` warns when the live facts or `content/site-content.json` are older than 45 days and keeps one PR comment up to date; `bun audit` (non-blocking); gitleaks in the "Secret scan" job (blocking) | none |
 
@@ -184,7 +184,7 @@ Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Lo
 2. Workers AI usage (Dashboard > AI > Workers AI): neurons per day well under 10,000.
 3. The latest `ask-content-gap` issue: decide what to add to the site.
 4. Any open `ask-redteam` issue or a red `ask-eval.yml` run.
-5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette):
+5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette). Reasons since 2026-10-12 also include private, others (declined before the model), roleplay (first-person answer replaced) and unsourced (opinion without a written source, answered with the no-view message):
 
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" -H "Authorization: Bearer $CF_EVAL_TOKEN" \
@@ -228,6 +228,19 @@ Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs li
 | Turnstile | free, unlimited challenges | invisible mode |
 
 Nothing in this setup is billable on the Free plan: no paid add-on, spend limit or Unified Billing is enabled, and the gateway uses the default `postpaid` billing mode, which on the Free plan means the free quota and nothing else.
+
+## 15. Perspectives: edit and approve
+
+Perspectives are Kurniadi's own answers to common professional questions (`content/perspectives.json`, spec section 13). They appear on About and Quick view and in Ask only once approved.
+
+1. Edit `content/perspectives.json`. Keep 10 to 20 entries, each `{ id, question: { en, id }, answer: { en, id }, tags, asOf: "YYYY-MM", sources? }`. Write answers in the first person and keep them professional: no family, health, religion, politics or pay, no opinions about specific people, employers or clients, and never a client company name. Keep each answer under 520 characters per language (shorter is better for the pack budget). `sources` link a post, talk or project slug that backs the answer.
+2. Approve: add `"approved": true` to each entry you approve, or set `"status": "approved"` to publish every entry that has no `approved` field. `"approved": false` keeps one entry a draft either way.
+3. Check: `bun run validate:content` (prints `Perspectives: N published, M drafts (not published)`), then `bun run test tests/content tests/ask` (schema, sources, public-safety lint, the pack size with every entry approved, retrieval).
+4. Ship in one PR. The deploy rebuilds the pack (new `packVersion`, so cached answers refresh). A content-only change needs no `PROMPT_VERSION` bump.
+5. After the deploy, ask two approved questions in the dock and check that "Read on this site" opens the entry on About.
+6. Questions with no written view show up in the weekly `ask-content-gap` issue (outcome `unknown`, reason `unsourced`). Answer the useful ones by adding an entry.
+
+Pack budget: the pack must stay under 200 KB with every entry approved (`tests/ask/pack.test.ts`). If that test fails, shorten answers first, then trim post or repo text (deviation 8). Never raise the cap.
 
 ## Deviations from the plan
 
