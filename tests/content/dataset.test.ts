@@ -160,3 +160,40 @@ describe("content/site-content.json", () => {
     expect(missing).toEqual([]);
   });
 });
+
+describe("ticketing projects (owner request 2026-10-12)", () => {
+  const data = parsed.success ? parsed.data : undefined;
+  const ticketPods = data?.floors.labs.pods ?? [];
+  const ticketEntries = data?.floors.careerArchive.entries ?? [];
+  const serupa = ticketPods.find((p) => p.id === "event-ticketing-platform");
+  const serupaEntry = ticketEntries.find((e) => e.id === "serupa-2025");
+  const dariordal = ticketPods.find((p) => p.id === "limited-quota-event-ticketing");
+
+  it("adds the Serupa pod to Product Engineering, linked both ways to its Journey entry", () => {
+    expect(serupa).toMatchObject({
+      wing: "software",
+      tier: "featured",
+      client: "Serupa",
+      timelineRef: "serupa-2025",
+      period: { start: "2025-06", end: "2025-08" },
+    });
+    expect(serupaEntry).toMatchObject({
+      type: "freelance",
+      org: "Serupa",
+      start: "2025-06",
+      end: "2025-08",
+      podRef: "event-ticketing-platform",
+    });
+  });
+
+  it("describes the two-person split the commit history shows, without a lead title", () => {
+    expect(serupa?.role.en).toContain("two-person team");
+    expect(serupa?.role.en).not.toMatch(/\blead\b/i);
+    expect(serupa?.approach.some((a) => a.en.startsWith("My teammate built"))).toBe(true);
+  });
+
+  it("keeps the client name out of the slug and frees a featured slot with the sibling ticketing pod", () => {
+    expect(serupa?.slug).not.toMatch(/serupa/i);
+    expect(dariordal?.tier).toBe("listed");
+  });
+});

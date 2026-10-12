@@ -31,7 +31,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | 2022 | Backend Engineer, MNC Asia Holding (links to pod) · Contract software engineer · Sentiboard thesis and IndoBERT model · Campus and community (AI lecturer assistant, hackathon judge) · Trophy case 2022 |
 | 2023 | Graduated BSc (GPA 3.88) · Full Stack Developer, Jatis (links to pod) · Freelance: vulnerability-scanning automation (links to pod) · Freelance: event-tech backend, Singapore (links to pod) |
 | 2024 | Software Engineer, Jenius / SMBC Indonesia (Jun 2024 to Dec 2025, links to pod) · Master of Management Technology (ITS) starts · Side projects: crypto tracker, S&P 500 optimizer |
-| 2025 | Freelance: premium event ticketing (links to pod) · Freelance: event ticket marketplace backend (links to pod) · Freelance: digital products e-commerce · RAG-LLM thesis prototype · Portfolio v1 |
+| 2025 | Freelance: premium event ticketing (links to pod) · Freelance: Serupa event ticketing platform (links to pod) · Freelance: event ticket marketplace backend (links to pod) · Freelance: digital products e-commerce · RAG-LLM thesis prototype · Portfolio v1 |
 | 2026 | Technical Consultant, Software & AI (Feb 2026 to present, links to the Labs) · Certification desk 2026 · Hackathons: partner AI hackathon entry, Agentic AI hackathon (both "entry submitted", see C1) · Upcoming: regional Codex hackathon |
 
 **Workshop annex** (end of corridor): side projects (JagaRupa, CalorIQ, DevLens, AI Jury Council, certification trainers, Sentiboard, e-wallet sentiment, S&P 500 optimizer, crypto tracker, real-estate cluster map, alumni and counseling platforms, Pola.ai upcoming) and a wall of ~20 public repositories plus 3 Hugging Face models.
@@ -49,8 +49,9 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Payments and real-time backend | 2022 to 2023 | MNC Asia Holding |
 | featured | Anime figure e-commerce backend (pre-orders, payments, shipping) | 2019 to 2022 | Shumi, site still live |
 | featured | Vulnerability-scanning automation for a national agency | 2023 | Freelance, anonymized |
-| featured | Limited-quota event ticketing with inventory locking | 2025 | Freelance, anonymized |
+| featured | Serupa Ticket Hub: event ticketing platform (attendee site, organizer dashboard, Express API) | 2025 | Freelance (Serupa), two-person team; commit shares verified from git (added 2026-10-12) |
 | featured | MII Microsoft Solutions Website: MII's public bilingual Microsoft Solutions site, built from 17 specs | 2026 | Metrodata. Live link (R4-J). Moved from the AI list. |
+| listed | Limited-quota event ticketing with inventory locking | 2025 | Freelance (DariOrdal); listed since 2026-10-12 to keep 6 featured pods per wing |
 | listed | Digital products and training e-commerce platform; University alumni and counseling platforms; Event-tech search relevance and feedback analytics backend (listed since R4-J, at most 6 featured per wing) | | |
 
 ### AI Engineering wing (east; was "AI Wing")
@@ -100,5 +101,5 @@ These override anything above that conflicts with them.
 | C5 | Photo | **No photo.** Use the "KAW" monogram hologram in the world and on the contact card. |
 | C6 | Jenius | "Software Engineer", Jun 2024 to Dec 2025 |
 | C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |
-| C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Jublia, BSSN, Shumi), unless they are also clients of an employer (then C3 applies) |
+| C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Serupa, Jublia, BSSN, Shumi), unless they are also clients of an employer (then C3 applies) |
 | C9 | JagaRupa | Personal side project, **shown** in the Workshop annex (not as an employer project; no hackathon result) |
