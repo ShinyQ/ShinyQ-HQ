@@ -196,6 +196,25 @@
     background: var(--color-surface);
   }
 
+  /* AccentDot (src/components/AccentDot.tsx): the colored marker next to a label, never an edge stripe. */
+  .hq-dot {
+    display: inline-block;
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .hq-dot-md {
+    width: 8px;
+    height: 8px;
+  }
+
+  .hq-dot-glow {
+    box-shadow: 0 0 8px currentColor;
+  }
+
   .label {
     font-family: var(--font-mono);
     font-size: 11px;
@@ -413,4 +432,23 @@
     0 0 0 2px var(--color-void),
     0 0 0 4px rgb(34 211 238 / 0.55),
     0 12px 32px rgb(0 0 0 / 0.5);
+}
+
+/*
+ * Hover, keyboard focus, current and selected states light up the whole hairline with a soft glow
+ * (R5 P10: never one colored edge). `--hq-glow` picks the color (default cyan). The global
+ * :focus-visible outline stays on top for keyboard users.
+ */
+@utility hq-glow {
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-standard);
+
+  &:hover,
+  &:focus-visible,
+  &[aria-current="true"],
+  &[aria-selected="true"] {
+    border-color: color-mix(in srgb, var(--hq-glow, var(--color-cyan)) 50%, transparent);
+    box-shadow: 0 0 24px -8px var(--hq-glow, var(--color-cyan));
+  }
 }

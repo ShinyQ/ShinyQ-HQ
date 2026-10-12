@@ -76,6 +76,14 @@ describe("RoomDrawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("marks the room's accent with a dot in the bar, never an edge stripe (R5 P10)", () => {
+    render(<Harness view={hero} />);
+    const dot = screen.getByTestId("drawer-bar").querySelector("[data-accent-dot]");
+    expect(dot).toHaveAttribute("data-accent-dot", hero.accent);
+    expect(dot).toHaveClass("hq-dot", "hq-dot-md");
+    expect(dot).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("shows the four pod tabs and switches with clicks and arrow keys", async () => {
     const user = userEvent.setup();
     render(<Harness view={hero} />);

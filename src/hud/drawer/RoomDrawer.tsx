@@ -4,12 +4,13 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
+import { AccentDot } from "@/components/AccentDot";
 import { Gallery as ImageGallery } from "@/components/Gallery";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
-import { ACCENT_DOT, ACCENT_TEXT } from "@/lib/accent";
+import { ACCENT_TEXT } from "@/lib/accent";
 import { renderReadme } from "./ascii";
 import { ROOM_BODIES } from "./bodies";
 import { Chips, MetricTiles, Sections } from "./blocks";
@@ -496,7 +497,7 @@ export function RoomDrawer({
       <header className="flex min-h-14 shrink-0 items-center gap-1 border-b border-glass-border py-1.5 pr-1.5 pl-4 sm:pl-5" data-testid="drawer-bar">
         <div className="@container/bar flex min-w-0 flex-1 flex-col justify-center">
           <p className={`label flex min-w-0 items-center gap-x-2 whitespace-nowrap ${ACCENT_TEXT[view.accent]}`}>
-            <span className={`h-2 w-2 shrink-0 rounded-full ${ACCENT_DOT[view.accent]}`} aria-hidden="true" />
+            <AccentDot tone={view.accent} size="md" />
             <span className="min-w-0 truncate">{view.code}</span>
             {condensed && <Badges view={view} className="hidden shrink-0 @[21rem]/bar:inline-flex" hidden />}
           </p>
