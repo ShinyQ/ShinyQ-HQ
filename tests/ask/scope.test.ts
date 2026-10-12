@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
+import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
-import { retrieve } from "../../functions/_lib/retrieve";
+import { PERSPECTIVE_CAP, retrieve } from "../../functions/_lib/retrieve";
 import { isPerspectiveQuestion, opinionAboutOthers, orgAliases, privateTopic } from "../../functions/_lib/scope";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import golden from "./golden.json";
@@ -120,5 +121,33 @@ describe("perspective retrieval", () => {
 
   it("does not force the principles into factual questions", () => {
     expect(retrieve(pack, "Which Microsoft certifications does he have?", "en").chunks.map((c) => c.id)).not.toContain("principles");
+  });
+});
+
+describe("perspective retrieval with every draft approved", () => {
+  let approved: KnowledgePack;
+  beforeAll(() => {
+    approved = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries }).pack;
+  });
+
+  it("keeps at most PERSPECTIVE_CAP perspective chunks so posts and projects still reach the context", () => {
+    for (const [q, locale] of [
+      ["What is Kurniadi's view on AI coding agents?", "en"],
+      ["Apa pandangannya tentang AI coding agent?", "id"],
+    ] as const) {
+      const ids = retrieve(approved, q, locale).chunks.map((c) => c.id);
+      expect(ids.filter((id) => id.startsWith("perspective-")).length, ids.join(", ")).toBeLessThanOrEqual(PERSPECTIVE_CAP);
+      expect(ids, q).toContain("perspective-ai-coding-agents");
+      expect(ids, q).toContain("post-spec-driven-development-with-ai-coding-agents");
+    }
+  });
+
+  it("still retrieves every curated Perspectives question's expected chunks", () => {
+    for (const s of SUGGESTIONS.filter((x) => (x.topic as string) === "perspectives")) {
+      for (const locale of ["en", "id"] as const) {
+        const ids = retrieve(approved, s.q[locale], locale).chunks.map((c) => c.id);
+        for (const chunk of s.expect ?? []) expect(ids, `${s.id} (${locale})`).toContain(chunk);
+      }
+    }
   });
 });

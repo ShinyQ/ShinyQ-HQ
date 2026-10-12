@@ -10,6 +10,8 @@ export const TOP_K = 6;
 export const ALWAYS_INCLUDE = ["profile", "now"] as const;
 /** Added after the always-included chunks for questions about Kurniadi's views, so the answer has his principles to cite. */
 export const PERSPECTIVE_INCLUDE = "principles";
+/** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
+export const PERSPECTIVE_CAP = 3;
 
 /**
  * Intent boosts: a question that names a topic (directly or through a synonym, e.g. "kuliah" for
@@ -72,9 +74,12 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     const chunk = pack.chunks.find((c) => c.id === id);
     if (chunk) picked.push(chunk);
   }
+  let perspectives = 0;
   for (const { chunk } of ranked) {
     if (picked.length >= TOP_K + always.length) break;
-    if (!picked.includes(chunk)) picked.push(chunk);
+    if (picked.includes(chunk)) continue;
+    if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) continue;
+    picked.push(chunk);
   }
 
   let budget = CONTEXT_CHAR_BUDGET;
