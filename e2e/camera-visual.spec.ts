@@ -12,7 +12,9 @@ import en from "../messages/en.json";
  */
 const MODE = process.env.CAMERA_SHOTS as "baseline" | "compare" | undefined;
 test.skip(!MODE, "Set CAMERA_SHOTS=baseline or CAMERA_SHOTS=compare");
-test.describe.configure({ timeout: 300_000 });
+// Full tier at 2560x1440 renders on the CPU (SwiftShader): a pose can take minutes on a busy machine.
+test.describe.configure({ timeout: 1_800_000 });
+const WAIT = 240_000;
 
 const DIR = "screenshots/camera";
 const MAX_SHARE = 0.005;
@@ -51,8 +53,8 @@ async function open(browser: Browser, v: Viewport, path: string) {
   await asReturningVisitor(page);
   await page.goto(`${path}?tier=${v.tier}`);
   await waitForHQ(page);
-  await waitForPhase(page, "explore", 60_000);
-  await waitForSceneLive(page);
+  await waitForPhase(page, "explore", WAIT);
+  await waitForSceneLive(page, WAIT);
   return { context, page };
 }
 
@@ -69,7 +71,7 @@ async function apply(page: Page, pose: Pose, v: Viewport) {
 }
 
 async function capture(page: Page): Promise<{ png: Buffer; metrics: Metrics }> {
-  await waitForCameraSettle(page);
+  await waitForCameraSettle(page, { timeout: WAIT });
   await page.evaluate(() => document.fonts.ready);
   await waitForFrames(page, 20);
   await page.addStyleTag({ content: "[data-testid='hud']{visibility:hidden!important}" });
@@ -147,7 +149,7 @@ for (const v of VIEWPORTS) {
       await page.mouse.move(v.width / 2, v.height / 2);
       // From the default zoom the third notch enters first person; later notches are ignored there.
       for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -120);
-      await page.waitForFunction(() => (window as unknown as { __hq: { rover: { cameraBlend: number } } }).__hq.rover.cameraBlend === 1, null, { timeout: 30_000 });
+      await page.waitForFunction(() => (window as unknown as { __hq: { rover: { cameraBlend: number } } }).__hq.rover.cameraBlend === 1, null, { timeout: WAIT });
       const { png, metrics } = await capture(page);
       await context.close();
       const name = `fp-${floor}-${v.width}x${v.height}`;
