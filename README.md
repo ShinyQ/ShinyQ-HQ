@@ -4,9 +4,16 @@ The portfolio of **Kurniadi Ahmad Wijaya**, Software Engineer and AI Engineer.
 
 ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rover through five floors, ride the elevator, drive the 2019 to 2026 Career Road (or take the guided "Walk my journey") and open case-study pods in the Product Engineering and AI Engineering wings. Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML page, and those pages are the permanent no-WebGL fallback.
 
-- Design spec: [`docs/superpowers/specs/2026-10-09-agent-hq-design.md`](docs/superpowers/specs/2026-10-09-agent-hq-design.md)
-- Phase plans: [`docs/superpowers/plans/`](docs/superpowers/plans/)
-- Repo conventions for contributors and agents: [`AGENTS.md`](AGENTS.md)
+Live: https://kurniadi.pages.dev
+
+| Doc | What it covers |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents (hard rules, folder layout, content style, Fast verification) |
+| [`docs/superpowers/specs/2026-10-09-agent-hq-design.md`](docs/superpowers/specs/2026-10-09-agent-hq-design.md) | Design spec and appendices |
+| [`docs/superpowers/specs/2026-10-11-ask-hq-design.md`](docs/superpowers/specs/2026-10-11-ask-hq-design.md) | Ask the HQ design (models, security threat model, data freshness) |
+| [`docs/superpowers/plans/`](docs/superpowers/plans/) | Implementation plans, one per feature PR |
+| [`docs/deploy.md`](docs/deploy.md) | Deploys, secrets and variables, analytics, Cloudflare resources, Lighthouse budgets, headers |
+| [`docs/ask-runbook.md`](docs/ask-runbook.md) | Ask the HQ operations: provisioning, kill switch, cache purge, secret rotation, evals |
 
 ## Status
 
@@ -15,7 +22,13 @@ ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rove
 | 0 | Scaffold, content schema, public-safe dataset, static pages, CV PDF, CI | Done |
 | 1 | Tower shell: five floors, glass elevator, camera rigs, input intents, store, GPU tiers | Done |
 | 2 | Screen Rover (keyboard, click/tap-to-move, joystick) and the L1 Lobby | Done |
-| 3 to 6 | Career corridor, Labs, Library and Roof, missions, polish and launch | Planned |
+| 3 to 5 | Career Archive, Labs and the Glass Drawer, Library and Roof, missions | Done |
+| 6 | Launch on Cloudflare Pages (`kurniadi.pages.dev`), SEO, Lighthouse CI | Done |
+| Ask | Ask the HQ: grounded AI Q&A (Gemma 4 with Mistral fallback), chat dock, weekly live facts | Done |
+| Walkable floors | Road kit, guided walks, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
+| Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
+| Walkable floors 2 | L4 Writing as the walkable Newsroom with the "Read my writing" walk | Done |
+| In progress | HUD polish (Shift boost, Ask Rover, unskippable intro, top bar, drawer footer, centered Lobby), RF Signal Garden | Open PRs |
 
 Try it: open `/en`, press **Boot rover**, drive with WASD or the arrow keys (or click the floor), and change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About), the mouse wheel or PageUp/PageDown. Every floor also has a glowing call pad in front of the elevator door: stop on it (or click it) and pick a floor from a list with previews. Add `?tier=lite` or `?tier=static` to force a tier, and use **Page view** to read the page without 3D.
 
@@ -25,9 +38,21 @@ Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer: a si
 
 On L2 (`/en/journey`) one road runs forward in time: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door, and the Workshop annex at the end. Every year plaza has a teleporter pad beside the road: stop on it (or click it) and pick a year to beam straight to that plaza. The first visit offers **Walk my journey**, a guided drive through every room oldest first (Prev / Open / Next, `[` and `]`, a type filter); skip it to roam freely, or start it later from the launcher or the "Follow my career" mission. Career types use one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages. Add `?walk=on` or `?walk=off` to force guided walks on or off.
 
+On L1 (Lobby) the stats ring, the skills wall and the certifications wall (a curved holo-wall with issuer tabs and paging) surround the plaza in front of the elevator. RF (Roof) holds the contact channels, the CV kiosk and the availability beacon; it is being redesigned (see Status).
+
 On L3 (Labs) the floor is **Project Roads**: a hub plaza in front of the elevator with both wing directory boards, and two wing roads that run east and meet in a loop, with every key and featured project docked along them. The first visit offers **Tour my projects**, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones); skip it to roam, start it later from the launcher or the "Tour my projects" mission; the boards list each wing's top projects and open the full list on click.
 
 On L4 (Writing) the floor is the **Newsroom**: a press plaza with a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book, then one timeline lane east with the other posts newest first, year marks on the road, and the Research (its paper plates open the paper preview), Models and datasets and Talks and workshops desks. The first visit offers **Read my writing**, a guided drive station by station (posts newest first, then Research, Models and datasets, Talks and workshops; a zone filter); skip it to roam freely, or start it later from the launcher or the "Read my writing" mission. Posts beyond the first 12 wait on the archive board, which opens the posts palette.
+
+## Ask the HQ (AI Q&A)
+
+Visitors can ask questions about Kurniadi's work, projects, career and contact details and get short answers grounded only in this site's content (EN and ID).
+
+- Where: the floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, the Rover Terminal (`a`) and the Cmd-K "Ask AI" row. Topic pills (Work, AI, Career, Contact) expand into curated questions (`content/ask/suggestions.json`), and each answer suggests related follow-ups with no extra AI call. The thread is kept in `sessionStorage` only.
+- How: a Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`), then calls Workers AI through AI Gateway `shinyq-hq`: **Gemma 4 26B** (`@cf/google/gemma-4-26b-a4b-it`, thinking off), falling back once to **Mistral Small 3.1** on error, timeout or an empty answer. Answers stream over SSE, are cached in KV for 7 days and are rendered as plain text.
+- Safety: invisible Turnstile, Origin checks, per-visitor and global rate limits, PII scrubbing, prompt-injection handling, output checks (client-name blocklist, numeric grounding, entity and prompt-leak checks), a circuit breaker and an `ASK_ENABLED` kill switch. Full threat model: the Ask design spec section 7.
+- Freshness: `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys. `ask-eval.yml` runs the golden set (30 questions) and the red-team set (40 attacks) against the real models nightly; `content-gap.yml` reports unanswered questions weekly.
+- Operations (provisioning, kill switch, cache purge, secret rotation, token expiry): [`docs/ask-runbook.md`](docs/ask-runbook.md).
 
 ## Stack
 
@@ -71,7 +96,8 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
 | `/{locale}/library`, `/{locale}/blog/{slug}` | Blog, publications, models, talks; in 3D, L4 Writing with the "Read my writing" walk (a post's drawer mirrors its `/blog/{slug}` URL, which is the article page) |
-| `/{locale}/contact` | Roof: beacon, channels, CV kiosk |
+| `/{locale}/contact` | Roof: about, contact channels, availability, CV, full certifications list |
+| `/api/ask` | Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer |
 | `/{locale}/cv` | CV viewer: page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal. |
 
 ## Content
@@ -90,10 +116,12 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      static server, e2e planning, content validator, CV page renderer (cv:pages), floor thumbnails (floor:thumbs)
+scripts/      static server, e2e planning, content validator, title case, CV page renderer (cv:pages), floor thumbnails (floor:thumbs), Ask pack, evals, provisioning, deploy smoke check
+functions/    Cloudflare Pages Function for Ask the HQ (api/ask.ts, _lib/ pipeline)
 src/app/      routes ([locale] pages, "/" redirect, 404)
 src/components/  static-page UI, shared modal, CV viewer and paper previews
-src/content/  schema, accessors, selectors, blog loader, safety lint
+src/content/  schema, accessors, selectors (orderPods), title case, blog loader, safety lint
+src/ask/      Ask client, protocol, knowledge pack, suggestions, chat thread
 src/i18n/     next-intl routing and helpers
 src/lib/      formatting, accents, metadata, GPU tier, URL sync, viewport
 src/experience/  3D tower: canvas, scene, tower, floors (L3 Project Roads in floors/labs, L4 Writing in floors/library), rover, camera rigs, input intents, navgrid, road kit, missions and guided walks
@@ -101,11 +129,15 @@ src/hud/      HTML HUD over the canvas
 src/store/    zustand store
 tests/        Vitest unit and content tests
 e2e/          Playwright tests
+docs/         design spec, plans, deploy guide, Ask runbook, design mockups
+.github/workflows/  ci, deploy, screenshots, refresh-facts, ask-eval, content-gap
 ```
 
 ## CI and deploys
 
-GitHub Actions runs typecheck, lint and unit tests next to the static build, then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`). If the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets exist, PRs also deploy a preview to the separate Cloudflare Pages project `shinyq-hq`. Production on `kurniadi.pages.dev` is switched over in Phase 6.
+GitHub Actions runs typecheck, lint and unit tests next to the static build, then the Playwright suite in 4 parallel shards against that build; `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF), and `Lighthouse CI` enforces the performance budgets. Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`).
+
+Production is the Cloudflare Pages project `kurniadi` at https://kurniadi.pages.dev. `deploy.yml` deploys a commit on `main` when dispatched (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`) and after each weekly facts merge: it builds, runs the e2e shards, deploys with `wrangler pages deploy`, then smoke-checks `/api/ask`, `/en` and the analytics beacon, opening a `deploy-failed` issue on any failure. Ordinary merges to `main` do not deploy by themselves. PR previews (project `shinyq-hq`) are off unless `CF_PREVIEWS=true`. Cloudflare Web Analytics runs on production builds only. Details, secrets, variables and the Cloudflare resource inventory: [`docs/deploy.md`](docs/deploy.md).
 
 ## Performance
 

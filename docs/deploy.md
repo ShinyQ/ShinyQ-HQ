@@ -191,6 +191,9 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 
 ## 7. Custom domain kurniadi.dev (later)
 
+Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the domain is on Indonesia's TrustPositif blocklist (likely from a previous owner): Indonesian ISPs answer its DNS with a block page and intercept plain DNS to outside resolvers, so no Cloudflare setting can fix it for Indonesian visitors. Before moving production to the domain, point it at the Pages project (step 1) so it shows the portfolio, then request delisting ("normalisasi") at https://trustpositif.komdigi.go.id/normalisasi (or normalisasi@aduankonten.id). Until it is delisted, keep `kurniadi.pages.dev` as the canonical origin and do not redirect to the domain.
+
+
 1. Pages project > Custom domains > Set up a custom domain: add `kurniadi.dev`, and `www.kurniadi.dev` if wanted.
 2. DNS: if the zone is on Cloudflare, Pages creates the records for you. Otherwise add `CNAME kurniadi.dev -> <project>.pages.dev` (the apex works through CNAME flattening when the zone is on Cloudflare; other DNS hosts need ALIAS/ANAME support) and `CNAME www -> <project>.pages.dev`.
 3. `gh variable set SITE_URL --body https://kurniadi.dev`, then redeploy (`gh workflow run deploy.yml --ref main`) so canonical URLs, `hreflang`, the sitemap and OG URLs use the new origin.
@@ -238,3 +241,20 @@ Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages re
 The "Ask the HQ" assistant adds one Pages Function (`functions/api/ask.ts`) and its bindings in `wrangler.toml` (Workers AI, KV `shinyq-hq-ask`, Analytics Engine `ask_events`, vars). Because `wrangler.toml` sets `pages_build_output_dir`, `wrangler pages deploy out` bundles `functions/` and applies those bindings, so always deploy from the repo root after `bun run build` (which also builds the knowledge pack into `functions/_generated/`), and keep `--branch=main` so the Pages secrets apply. The dashboard can no longer edit the bindings or vars that the file owns.
 
 `ASK_ENABLED = "false"` in `wrangler.toml` is the kill switch: the endpoint returns 503 and the UI hides. Provisioning, secrets, smoke test, rotation and incidents: [`docs/ask-runbook.md`](ask-runbook.md).
+
+## 11. Cloudflare resource inventory
+
+Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11 after removing the old site's unused Workers, KV, D1, R2 cache buckets and tokens.
+
+| Kind | Name | Used by |
+|---|---|---|
+| Pages | `kurniadi` | Production, https://kurniadi.pages.dev |
+| Pages | `shinyq-hq` | Optional PR previews (`CF_PREVIEWS=true`) |
+| KV | `shinyq-hq-ask` | Ask answer cache and rate-limit counters |
+| AI Gateway | `shinyq-hq` | Ask model calls (cache, logs, rate limit) |
+| Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `kurniadi.dev`) |
+| Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
+| Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
+| R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
+| Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
+| API tokens | `shinyq-hq Pages deploy` (`CLOUDFLARE_API_TOKEN`), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | All expire 2027-01-09; rotate before then (`docs/ask-runbook.md`) |
