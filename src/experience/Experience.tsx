@@ -42,6 +42,10 @@ function readDevice() {
   return { viewport: viewportClass(w, h), camera: cameraClass(w, h), coarse: window.matchMedia(COARSE_QUERY).matches };
 }
 
+function readScreen() {
+  return { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio || 1 };
+}
+
 let started = false;
 
 export interface ExperienceStart {
@@ -144,7 +148,7 @@ export default function Experience({
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
   const coarse = useHQStore((s) => s.device.coarse);
   const gfx = useMemo(() => parseGfxOverride(window.location.search), []);
-  const budget = useMemo(() => withOverride(renderBudget(tier, coarse), gfx), [tier, coarse, gfx]);
+  const budget = useMemo(() => withOverride(renderBudget(tier, coarse, readScreen()), gfx), [tier, coarse, gfx]);
   useEffect(
     () => () => {
       renderProbe.gl = null;

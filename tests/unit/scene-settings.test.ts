@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "@/experience/scene/settings";
+import { budgetDpr, parseGfxOverride, PIXEL_BUDGET, renderBudget, sceneSettings, withOverride } from "@/experience/scene/settings";
 
 // Bloom keeps the prototype's radius but a higher threshold (0.6, not 0.32): neon is boosted above 1 by
 // neonColor, while body text (about 0.9) would otherwise bloom and wash out.
@@ -21,12 +21,37 @@ it("pushes the fog back for the rail and the exterior intro", () => {
   expect(intro.far).toBeGreaterThan(intro.near);
 });
 
-it("keeps the desktop look and renders fewer pixels on touch devices", () => {
-  expect(renderBudget("full", false)).toEqual({ dpr: [1, 2], multisampling: 4, bloomLevels: 8 });
-  expect(renderBudget("lite", false)).toEqual({ dpr: [1, 1.5], multisampling: 0, bloomLevels: 8 });
-  // Phones and tablets: the composer's MSAA and DPR 2 cost 4 to 7x the lite frame.
-  expect(renderBudget("full", true)).toEqual({ dpr: [1, 1.5], multisampling: 0, bloomLevels: 8 });
-  expect(renderBudget("lite", true).dpr[1]).toBeLessThanOrEqual(1.25);
+const MAC = { width: 1440, height: 900, dpr: 2 };
+
+it("keeps DPR 2 on Retina laptops and drops composer MSAA there (DPR already antialiases)", () => {
+  expect(renderBudget("full", false, MAC)).toEqual({ dpr: [1, 2], multisampling: 0, bloomLevels: 8 });
+  expect(renderBudget("full", false, { width: 1728, height: 1117, dpr: 2 })).toEqual({ dpr: [1, 2], multisampling: 0, bloomLevels: 8 });
+});
+
+it("keeps 4x MSAA on DPR 1 desktops, including the 2560x1440 monitor", () => {
+  expect(renderBudget("full", false, { width: 2560, height: 1440, dpr: 1 })).toEqual({ dpr: [1, 1.5], multisampling: 4, bloomLevels: 8 });
+  expect(renderBudget("full", false, { width: 1920, height: 1080, dpr: 1.25 })).toEqual({ dpr: [1, 2], multisampling: 4, bloomLevels: 8 });
+});
+
+it("drops MSAA from DPR 1.5 up (Windows at 150%)", () => {
+  expect(renderBudget("full", false, { width: 1707, height: 960, dpr: 1.5 }).multisampling).toBe(0);
+});
+
+it("caps DPR by total pixels on very large canvases", () => {
+  // 5K display: 2560x1440 CSS at DPR 2 would be 14.7 MP; the budget allows 8.3 MP, so DPR 1.5.
+  expect(renderBudget("full", false, { width: 2560, height: 1440, dpr: 2 })).toEqual({ dpr: [1, 1.5], multisampling: 0, bloomLevels: 8 });
+  // 4K at DPR 1 fits exactly; larger canvases never go below DPR 1.
+  expect(renderBudget("full", false, { width: 3840, height: 2160, dpr: 1 }).dpr).toEqual([1, 1]);
+  expect(renderBudget("full", false, { width: 5120, height: 2160, dpr: 1 }).dpr).toEqual([1, 1]);
+  expect(budgetDpr(2560, 1440, 2)).toBe(1.5);
+  expect(budgetDpr(1440, 900, 2)).toBe(2);
+  expect(2560 * 1440 * 1.5 * 1.5).toBeLessThanOrEqual(PIXEL_BUDGET);
+});
+
+it("keeps the touch and lite budgets", () => {
+  expect(renderBudget("full", true, { width: 1024, height: 1366, dpr: 2 })).toEqual({ dpr: [1, 1.5], multisampling: 0, bloomLevels: 8 });
+  expect(renderBudget("lite", true, { width: 390, height: 844, dpr: 3 })).toEqual({ dpr: [1, 1.25], multisampling: 0, bloomLevels: 8 });
+  expect(renderBudget("lite", false, MAC)).toEqual({ dpr: [1, 1.5], multisampling: 0, bloomLevels: 8 });
 });
 
 it("parses the ?gfx= debug override and ignores junk", () => {

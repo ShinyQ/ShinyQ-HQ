@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * GPU and rendering gates (round 5, P2). Counters are deterministic on SwiftShader (draw calls,
@@ -88,3 +88,28 @@ test("programs added on the first arrival at each floor (full tier)", async ({ p
   report("programs-added-names", added);
   expect(Object.keys(added)).toHaveLength(4);
 });
+
+const BUDGET_CASES = [
+  { name: "Retina laptop", width: 1440, height: 900, dpr: 2, tier: "full", touch: false, pixelRatio: 2, msaa: 0 },
+  { name: "DPR 1 desktop", width: 1440, height: 900, dpr: 1, tier: "full", touch: false, pixelRatio: 1, msaa: 4 },
+  { name: "5K display", width: 2560, height: 1440, dpr: 2, tier: "full", touch: false, pixelRatio: 1.5, msaa: 0 },
+  { name: "phone", width: 390, height: 844, dpr: 3, tier: "lite", touch: true, pixelRatio: 1.25, msaa: null },
+] as const;
+
+for (const c of BUDGET_CASES) {
+  test(`pixel budget and MSAA rule: ${c.name}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: c.width, height: c.height }, deviceScaleFactor: c.dpr, hasTouch: c.touch, isMobile: c.touch });
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    await page.goto(`/en?tier=${c.tier}`);
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    const graphics = () => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!());
+    await expect.poll(async () => (await graphics()).multisampling, { timeout: 30_000 }).toBe(c.msaa);
+    const g = await graphics();
+    expect(g.pixelRatio).toBeCloseTo(c.pixelRatio, 2);
+    if (c.tier === "full") expect(g.bloomLevels).toBe(8);
+    await context.close();
+  });
+}

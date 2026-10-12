@@ -1,4 +1,5 @@
 import type { Camera, Scene, WebGLRenderer } from "three";
+import { postHandle } from "./postHandle";
 
 function shortHash(text: string): string {
   let h = 5381;
@@ -37,5 +38,14 @@ export const renderProbe = {
   /** `Material#hash` per program, sorted (cache keys hold whole shader sources, so they are hashed). */
   programNames(): string[] {
     return (this.gl?.info.programs ?? []).map((p) => `${(p as { name?: string }).name ?? "program"}#${shortHash(p.cacheKey)}`).sort();
+  },
+  /** What the frame really uses now: canvas DPR, composer MSAA and bloom MIP levels (null on lite). */
+  graphics(): { pixelRatio: number; multisampling: number | null; bloomLevels: number | null } {
+    const post = postHandle.get();
+    return {
+      pixelRatio: this.gl?.getPixelRatio() ?? 0,
+      multisampling: post?.composer()?.multisampling ?? null,
+      bloomLevels: post?.bloom()?.mipmapBlurPass.levels ?? null,
+    };
   },
 };
