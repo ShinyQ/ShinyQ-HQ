@@ -19,6 +19,8 @@ ShinyQ HQ is an explorable 3D neon tower ("Agent HQ"): pilot a small Screen Rove
 
 Try it: open `/en`, press **Boot rover**, drive with WASD or the arrow keys (or click the floor), and change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About), the mouse wheel or PageUp/PageDown. Every floor also has a glowing call pad in front of the elevator door: stop on it (or click it) and pick a floor from a list with previews. Add `?tier=lite` or `?tier=static` to force a tier, and use **Page view** to read the page without 3D.
 
+The Page View home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion, with a Pause motion switch), **Enter the 3D HQ** (shown wherever WebGL2 is available), the **Ask AI** bar, the tower directory and a live stats ticker, followed by three featured projects with their screenshots. The Rover Terminal never opens on its own over the Page View; it greets first-time visitors in the 3D Lobby after the intro, and the **Missions** button opens it anywhere.
+
 Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer: a side panel on desktop (480 to 600 px wide, growing with the screen) or a bottom sheet on phones and portrait tablets. Its bar keeps the room code, prev/next, the "..." menu (README view, also on `t`) and close; the title and tabs scroll with the content, and the tabs stick under the bar, so the room body gets most of the height.
 
 On L2 (`/en/journey`) one road runs forward in time: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door, and the Workshop annex at the end. Every year plaza has a teleporter pad beside the road: stop on it (or click it) and pick a year to beam straight to that plaza. The first visit offers **Walk my journey**, a guided drive through every room oldest first (Prev / Open / Next, `[` and `]`, a type filter); skip it to roam freely, or start it later from the launcher or the "Follow my career" mission. Career types use one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages. Add `?walk=on` or `?walk=off` to force guided walks on or off.
@@ -52,6 +54,7 @@ bun run dev                        # http://localhost:3000/en
 | `bun run e2e` / `e2e:full` | Playwright against `out/` (run a build first): static routes plus the 3D experience on SwiftShader WebGL (tests force `?tier=`, since software WebGL alone maps to static) |
 | `bun run e2e:smoke` | Fast subset: static routes, SEO, deploy rules, game-first load, Page View |
 | `bun run screenshots` | HTML pages and 3D captures (boot, Lobby, L2 rail) at 1440x900, 1024x1366 and 390x844 into `screenshots/` |
+| `bun run screenshots:pages` | Page View captures at 1440x900, 1024x1366 and 390x844, plus the landing at 1440x900, 834x1112 and 390x844 (`screenshots/landing/`) |
 | `bun run validate:content` | Schema and safety check for `content/site-content.json` |
 | `bun run floor:thumbs` | Captures every floor from its start spot (after a build) and writes the elevator picker thumbnails `public/floors/*.webp` (needs `cwebp`) |
 
@@ -61,7 +64,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 
 | Route | Content |
 |---|---|
-| `/{locale}` | Lobby: profile, stats, both wings' hero pods, latest journey, skills, certifications (3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`). Mounts the 3D tower on top when WebGL is available. |
+| `/{locale}` | Lobby: cinematic hero (name over a CSS-only animated Neon Grid, Enter the 3D HQ, Ask AI, tower directory), live stats ticker (`#stats`), three featured projects with screenshots and the other key projects (`#work`), a short intro with the current role (`#intro`), latest journey, writing, skills, certifications (3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`). Mounts the 3D tower on top when WebGL is available. |
 | `/{locale}/quick` | Quick view: everything on one page |
 | `/{locale}/journey`, `/{locale}/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door) |
 | `/{locale}/labs`, `/{locale}/labs/{slug}` | Product Engineering and AI Engineering case studies; in 3D, L3 Project Roads (a slug deep link opens that pod at its door) |
