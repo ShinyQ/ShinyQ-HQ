@@ -63,8 +63,8 @@ export const roverRuntime = {
   /** Camera FOV kick (degrees) and follow distance factor from the boost (test probes). */
   boostFov: 0,
   boostPull: 1,
-  /** Most recent draw call count (dev probe for the per-floor budget). */
+  /** Whole-frame draw calls (scene plus post passes), mirrored every 0.1 s; the split is in `__hq.perf.stats`. */
   drawCalls: 0,
-  /** Most recent triangle count (dev probe for the per-floor budget). */
+  /** Whole-frame triangles, mirrored every 0.1 s. */
   triangles: 0,
 };

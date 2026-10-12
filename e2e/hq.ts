@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { BUDGET_WINDOW, GPU_MEMORY_BUDGET, RENDER_BUDGET, type RenderBudget } from "./budgets";
 
 export interface HQSnapshot {
   phase: string;
@@ -7,14 +8,35 @@ export interface HQSnapshot {
   ride: { from: string; to: string; stage: string } | null;
   rover: { x: number; z: number; heading: number; speed: number; face: string };
   firstVisit: boolean;
+  /** Whole-frame draw calls (scene plus post passes) and triangles, mirrored every 0.1 s. */
   drawCalls: number;
   triangles: number;
+  /** Last frame's scene draw calls and post-processing passes (`__hq.perf.stats`). */
+  sceneCalls: number;
+  postCalls: number;
+}
+
+/** `window.__hq.perf.stats` (src/experience/perf/renderStats.ts). */
+interface PerfStatsProbe {
+  sceneCalls: number;
+  postCalls: number;
+  triangles: number;
+  peakSceneCalls: number;
+  peakPostCalls: number;
+  peakTriangles: number;
+  minSceneCalls: number;
+  peakFrames: number;
+  programs: number;
+  geometries: number;
+  textures: number;
+  frames: number;
 }
 
 type HQWindow = Window & {
   __hq: {
-    store: { getState: () => Omit<HQSnapshot, "drawCalls" | "triangles"> };
+    store: { getState: () => Omit<HQSnapshot, "drawCalls" | "triangles" | "sceneCalls" | "postCalls"> };
     rover: { drawCalls: number; triangles: number };
+    perf: { stats: PerfStatsProbe; resetPeaks: () => void };
   };
 };
 
@@ -96,37 +118,90 @@ export async function snapshot(page: Page): Promise<HQSnapshot> {
       firstVisit: s.firstVisit,
       drawCalls: hq.rover.drawCalls,
       triangles: hq.rover.triangles,
+      sceneCalls: hq.perf.stats.sceneCalls,
+      postCalls: hq.perf.stats.postCalls,
     };
   });
 }
 
-/**
- * Per-floor render budget (appendix 08 draw calls; triangles measured at most 15.2k with the
- * neighbouring floors mounted, October 2026). Call after the scene settled.
- */
-export const RENDER_BUDGET = { drawCalls: 150, triangles: 30_000 };
-const BUDGET_SAMPLES = 5;
+/** Worst frames since `resetRenderPeaks` (every rendered frame counts, not samples). */
+export interface RenderPeaks {
+  sceneCalls: number;
+  postCalls: number;
+  triangles: number;
+  minSceneCalls: number;
+  frames: number;
+}
+
+export async function resetRenderPeaks(page: Page) {
+  await page.evaluate(() => (window as unknown as HQWindow).__hq.perf.resetPeaks());
+}
+
+export async function readRenderPeaks(page: Page): Promise<RenderPeaks> {
+  return page.evaluate(() => {
+    const s = (window as unknown as HQWindow).__hq.perf.stats;
+    return { sceneCalls: s.peakSceneCalls, postCalls: s.peakPostCalls, triangles: s.peakTriangles, minSceneCalls: s.minSceneCalls, frames: s.peakFrames };
+  });
+}
 
 /**
- * Checks the worst of a few samples (the Director copies `renderer.info` every 0.1 s), so a
- * single frame cannot hide a spike. Counts must be finite: Infinity means a draw with an unbounded
- * instance count (see the troika patch in src/experience/text-config.ts).
+ * Asserts a peak window against the floor budget (appendix 08 section 2): scene calls and triangles
+ * under the budget, post passes at most the budget, every count finite (Infinity means a draw with an
+ * unbounded instance count, see the troika patch in src/experience/text-config.ts), and at least 3
+ * rendered frames (a paused or stalled canvas must not pass on stale numbers).
  */
-export async function expectRenderBudget(page: Page) {
-  const samples: Pick<HQSnapshot, "drawCalls" | "triangles">[] = [];
-  for (let i = 0; i < BUDGET_SAMPLES; i++) {
-    if (i > 0) await page.waitForTimeout(300);
-    const { drawCalls, triangles } = await snapshot(page);
-    samples.push({ drawCalls, triangles });
-  }
-  for (const sample of samples) {
-    expect(Number.isFinite(sample.drawCalls) && Number.isFinite(sample.triangles), JSON.stringify(samples)).toBe(true);
-  }
-  const drawCalls = Math.max(...samples.map((s) => s.drawCalls));
-  const triangles = Math.max(...samples.map((s) => s.triangles));
-  expect(Math.min(...samples.map((s) => s.drawCalls))).toBeGreaterThan(10);
-  expect(drawCalls).toBeLessThan(RENDER_BUDGET.drawCalls);
-  expect(triangles).toBeLessThan(RENDER_BUDGET.triangles);
+export function expectPeaksWithinBudget(peaks: RenderPeaks, label: string, budget: RenderBudget = RENDER_BUDGET) {
+  const detail = `${label}: ${JSON.stringify(peaks)}`;
+  expect(peaks.frames, `${detail} (no frames rendered in the window)`).toBeGreaterThanOrEqual(3);
+  expect(Number.isFinite(peaks.sceneCalls) && Number.isFinite(peaks.postCalls) && Number.isFinite(peaks.triangles), detail).toBe(true);
+  expect(peaks.sceneCalls, detail).toBeLessThan(budget.sceneCalls);
+  expect(peaks.postCalls, detail).toBeLessThanOrEqual(budget.postCalls);
+  expect(peaks.triangles, detail).toBeLessThan(budget.triangles);
+}
+
+/**
+ * Per-floor render budget, called once the scene settled: the worst frame over at least
+ * BUDGET_WINDOW.frames frames and BUDGET_WINDOW.ms. Returns the peaks for floor caps and logs.
+ */
+export async function expectRenderBudget(page: Page): Promise<RenderPeaks> {
+  await resetRenderPeaks(page);
+  await waitForFrames(page, BUDGET_WINDOW.frames, BUDGET_WINDOW.ms);
+  const peaks = await readRenderPeaks(page);
+  expectPeaksWithinBudget(peaks, "settled");
+  expect(peaks.minSceneCalls, JSON.stringify(peaks)).toBeGreaterThan(RENDER_BUDGET.minSceneCalls);
+  return peaks;
+}
+
+/** Live GPU objects (`renderer.info`): the memory gate's counters (three.js has no material count). */
+export interface GpuCounters {
+  geometries: number;
+  textures: number;
+  programs: number;
+}
+
+export async function readGpuCounters(page: Page): Promise<GpuCounters> {
+  await waitForFrames(page, 2);
+  return page.evaluate(() => {
+    const s = (window as unknown as HQWindow).__hq.perf.stats;
+    return { geometries: s.geometries, textures: s.textures, programs: s.programs };
+  });
+}
+
+/** No GPU object growth between two reads (GPU_MEMORY_BUDGET allows 0 by default). */
+export function expectNoGpuGrowth(before: GpuCounters, after: GpuCounters, budget: GpuCounters = GPU_MEMORY_BUDGET) {
+  const detail = JSON.stringify({ before, after });
+  expect(after.geometries - before.geometries, `geometries ${detail}`).toBeLessThanOrEqual(budget.geometries);
+  expect(after.textures - before.textures, `textures ${detail}`).toBeLessThanOrEqual(budget.textures);
+  expect(after.programs - before.programs, `programs ${detail}`).toBeLessThanOrEqual(budget.programs);
+}
+
+/** JS heap in use after a forced garbage collection (Chrome DevTools Protocol), in bytes. */
+export async function readJsHeapAfterGc(page: Page): Promise<number> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("HeapProfiler.collectGarbage");
+  const { usedSize } = await cdp.send("Runtime.getHeapUsage");
+  await cdp.detach();
+  return usedSize;
 }
 
 export async function waitForHQ(page: Page) {
@@ -201,16 +276,17 @@ export async function waitForCameraSettle(page: Page, { frames = 12, minMs = 300
   );
 }
 
-/** Resolves after `count` rendered animation frames (state that updates per frame, not per millisecond). */
-export async function waitForFrames(page: Page, count = 10) {
+/** Resolves after `count` rendered animation frames and at least `minMs` (state that updates per frame, not per millisecond). */
+export async function waitForFrames(page: Page, count = 10, minMs = 0) {
   await page.evaluate(
-    (count) =>
+    ({ count, minMs }) =>
       new Promise<void>((resolve) => {
+        const start = performance.now();
         let seen = 0;
-        const tick = () => (++seen >= count ? resolve() : requestAnimationFrame(tick));
+        const tick = () => (++seen >= count && performance.now() - start >= minMs ? resolve() : requestAnimationFrame(tick));
         requestAnimationFrame(tick);
       }),
-    count,
+    { count, minMs },
   );
 }
 

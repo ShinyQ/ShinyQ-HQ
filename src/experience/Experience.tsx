@@ -27,6 +27,7 @@ import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { beamNow, rideNow } from "./tower/rideClock";
+import { renderStats, resetPeaks } from "./perf/renderStats";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
@@ -137,6 +138,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
       const live = store.getState();
       return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };
     },
+    // Render counters split into scene calls and post passes, with peaks since resetPeaks() (e2e budgets, ?perf=1).
+    perf: { stats: renderStats, resetPeaks },
   };
 }
 

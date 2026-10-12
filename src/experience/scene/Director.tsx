@@ -26,6 +26,7 @@ import { faceFor } from "../rover/faces";
 import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
+import { renderStats } from "../perf/renderStats";
 import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt, TYPICAL_FRAME_DT } from "../tower/elevator";
 import { destinationReady, ridePrep } from "../tower/ridePrep";
 import { beamNow, clearBeam, clearRide, keepBeam, keepRide, rideNow } from "../tower/rideClock";
@@ -80,9 +81,6 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     arrivedUntil: 0,
     statusUntil: 0,
     lastSync: 0,
-    /** Draw calls and triangles of the last whole frame (every render pass). */
-    frameCalls: 0,
-    frameTriangles: 0,
     now: 0,
     /** Moving average of recent frame times: sets how much ride time one frame may add (`rideCap`). */
     typicalDt: TYPICAL_FRAME_DT,
@@ -230,14 +228,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const now = local.now;
     const s = store.getState();
     if (!s.ride) local.rideStats = null;
-    // Count every pass of a frame (the full tier's composer renders several): read the last frame's
-    // totals, then reset by hand, because `autoReset` would keep only the final pass.
-    const info = three.gl.info;
-    info.autoReset = false;
-    local.frameCalls = info.render.calls;
-    local.frameTriangles = info.render.triangles;
-    info.reset();
-    renderProbe.record(local.frameCalls, local.frameTriangles);
+    // Whole-frame totals of the last frame (every render pass), from RenderCounter (runs first each frame).
+    renderProbe.record(renderStats.sceneCalls + renderStats.postCalls, renderStats.triangles);
 
     // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {
@@ -474,8 +466,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
 
     if (now - local.lastSync > STORE_SYNC_S) {
       local.lastSync = now;
-      roverRuntime.drawCalls = local.frameCalls;
-      roverRuntime.triangles = local.frameTriangles;
+      // Whole-frame totals (scene plus post passes), counted by RenderCounter.
+      roverRuntime.drawCalls = renderStats.sceneCalls + renderStats.postCalls;
+      roverRuntime.triangles = renderStats.triangles;
       s.setRover({
         x: pose.x,
         z: pose.z,

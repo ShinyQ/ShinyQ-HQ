@@ -27,6 +27,7 @@ import {
   waitForRoverMove,
   waitForSceneLive,
 } from "./hq";
+import { FLOOR_SCENE_CAPS } from "./budgets";
 
 /**
  * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md): the passage past the
@@ -36,8 +37,6 @@ import {
  */
 test.describe.configure({ timeout: 180_000 });
 
-/** Headroom under the 150-call floor budget (`RENDER_BUDGET` in e2e/hq.ts): the Lobby is the busiest floor. */
-const L1_MAX_DRAW_CALLS = 140;
 const STATIONS: readonly HighlightStation[] = HIGHLIGHT_STATIONS;
 const tour = content.missions.find((m) => m.id === "highlights")!;
 const featured = pickFeaturedPods(orderPods(content.floors.labs.pods as unknown as Pod[]));
@@ -283,10 +282,10 @@ test.describe("Highlights Hall", () => {
           await driveTo(page, spot);
         }
         await waitForCameraSettle(page);
-        await expectRenderBudget(page);
-        const { drawCalls, triangles } = await snapshot(page);
-        console.log(`L1 ${tier} at ${spot ? `(${spot.x}, ${spot.z})` : "spawn"}: ${drawCalls} calls, ${triangles} triangles`);
-        expect(drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+        const peaks = await expectRenderBudget(page);
+        console.log(`L1 ${tier} at ${spot ? `(${spot.x}, ${spot.z})` : "spawn"}: ${peaks.sceneCalls} scene calls + ${peaks.postCalls} post passes, ${peaks.triangles} triangles`);
+        // Headroom under the 150 scene-call budget: the Lobby is the busiest floor.
+        expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
       }
     });
   }
@@ -310,7 +309,7 @@ test.describe("Highlights Hall", () => {
     expect(await page.evaluate(() => (window as unknown as InteractWindow).__hq.store.getState().reducedMotion)).toBe(true);
     await driveTo(page, { x: 34, z: 13 });
     await waitForCameraSettle(page);
-    await expectRenderBudget(page);
-    expect((await snapshot(page)).drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+    const peaks = await expectRenderBudget(page);
+    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 });

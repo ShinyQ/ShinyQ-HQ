@@ -4,15 +4,13 @@ import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import { buildRoofLayout, ROOF_STOPS } from "../src/experience/floors/roof/layout";
 import { asReturningVisitor, collectErrors, expectRenderBudget, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { FLOOR_SCENE_CAPS } from "./budgets";
 
 /**
  * RF roof deck (RF revamp plan): deep link, contact actions, render budget and the "Meet me" walk.
  * Walks are off unless a test turns them on, so the first-visit prompt never races the palette.
  */
 test.describe.configure({ timeout: 150_000 });
-
-/** The whole RF frame on the lite tier. Today's roof measured 113 draw calls (Task 1I Step 4); the cap stays at least 30 below. */
-const RF_MAX_DRAW_CALLS = 80;
 
 const CHANNELS = { linkedin: "LinkedIn", github: "GitHub", huggingface: "Hugging Face", medium: "Medium", googleScholar: "Google Scholar", ieeeXplore: "IEEE Xplore" } as const;
 
@@ -89,8 +87,9 @@ test.describe("RF roof deck", () => {
   test("RF stays under the floor budget and well under today's roof", async ({ page }) => {
     await openRoof(page);
     await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
-    expect((await snapshot(page)).drawCalls).toBeLessThan(RF_MAX_DRAW_CALLS);
+    const peaks = await expectRenderBudget(page);
+    // The old roof measured 113 calls; the deck stays at least 30 below that (FLOOR_SCENE_CAPS.RF).
+    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.RF);
   });
 
   test("Meet me: the first visit offers the walk, which visits the about board, the availability, the CV and contact", async ({ page }) => {
@@ -121,7 +120,8 @@ test.describe("RF roof deck", () => {
     await openRoof(page);
     expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { reducedMotion: boolean } } } }).__hq.store.getState().reducedMotion)).toBe(true);
     await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
-    expect((await snapshot(page)).drawCalls).toBeLessThan(RF_MAX_DRAW_CALLS);
+    const peaks = await expectRenderBudget(page);
+    // The old roof measured 113 calls; the deck stays at least 30 below that (FLOOR_SCENE_CAPS.RF).
+    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.RF);
   });
 });
