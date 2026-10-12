@@ -94,6 +94,7 @@ describe("output checks", () => {
     expect(classifyOutcome("I can only answer questions about Kurniadi and his work.")).toBe("decline");
     expect(classifyOutcome("He works at Metrodata.")).toBe("answer");
     expect(classifyOutcome("Kurniadi hasn't shared a view on that.")).toBe("unknown");
+    expect(classifyOutcome("Kurniadi belum membagikan pendapat tertulis mengenai perbandingan Rust dan Go di situs ini.")).toBe("unknown");
     for (const text of [MESSAGES.unknown, MESSAGES.decline, MESSAGES.restricted, MESSAGES.private, MESSAGES.others, MESSAGES.noView]) {
       expect(["unknown", "decline"]).toContain(classifyOutcome(text.en));
       expect(["unknown", "decline"]).toContain(classifyOutcome(text.id));
@@ -260,5 +261,13 @@ describe("perspective checks", () => {
     expect(leaksPrompt("Kurniadi has not shared a view on blockchain on this site.")).toBe(false);
     expect(leaksPrompt(RULES[8])).toBe(true);
     expect(leaksPrompt(RULES[9])).toBe(true);
+  });
+});
+
+describe("model no-view refusals (real-model spot check, golden q36)", () => {
+  it("keeps the model's own Indonesian no-view refusal that echoes the question's topics", () => {
+    const question = "Apa pendapat Kurniadi tentang Rust dibanding Go?";
+    const answer = "Kurniadi belum membagikan pendapat tertulis mengenai perbandingan antara Rust dan Go di situs ini.";
+    expect(perspectiveCheck(answer, question, "id")).toMatchObject({ ok: true, outcome: "unknown" });
   });
 });

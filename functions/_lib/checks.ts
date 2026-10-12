@@ -33,6 +33,7 @@ const UNKNOWN_PHRASES = [
   "hasn't written about",
   "has not written about",
   "belum membagikan pandangan",
+  "belum membagikan pendapat",
   "belum menulis tentang",
   "tidak ada pandangan tertulis",
 ];
