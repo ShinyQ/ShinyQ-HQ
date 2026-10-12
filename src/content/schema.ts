@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { liveUrlProblem } from "./live-links";
 
 /**
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
  * Documented additions (see AGENTS.md): Confidence "self-reported" (C4),
  * Profile.monogram/subheadline/currentRole/timezone/story/principles,
- * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, PostRef.url,
+ * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise".
  */
@@ -190,8 +191,14 @@ export const PodSchema = z
     stack: z.array(nonEmpty).min(1),
     hologram: z.enum(["waveform", "shield", "documents", "graph", "chart", "template", "pipeline"]),
     assets: z.array(AssetSchema),
+    /** Public live site (R4-J): https, site root only, host in `PUBLIC_LIVE_HOSTS`. Read it through `podLiveLink`. */
+    liveUrl: httpsUrl.optional(),
   })
   .superRefine((pod, ctx) => {
+    if (pod.liveUrl) {
+      const problem = liveUrlProblem(pod.liveUrl);
+      if (problem) ctx.addIssue({ code: "custom", path: ["liveUrl"], message: problem });
+    }
     if (pod.tier === "hero" && (!pod.architecture || pod.architecture.nodes.length < 3)) {
       ctx.addIssue({
         code: "custom",
