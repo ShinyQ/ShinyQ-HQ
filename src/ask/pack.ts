@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
-import type { Locale, LocalizedText, Perspective, SiteContent } from "@/content/schema";
+import type { Locale, LocalizedText, Perspective, Pod, SiteContent } from "@/content/schema";
 import { perspectivePath } from "@/content/perspectives";
 import { findBlockedTerms } from "@/content/safety";
 import { overlayStats } from "@/content/load";
@@ -14,6 +14,13 @@ import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_
  */
 
 export const PACK_MAX_BYTES = 200 * 1024;
+
+/**
+ * Approach steps per project chunk by tier. The case study page keeps every step; the pack keeps
+ * the lead steps of featured and listed pods so the pack stays under its cap with every
+ * perspective approved (runbook deviation 8). Answers get at most 6,000 characters of context anyway.
+ */
+export const PACK_APPROACH_STEPS = { hero: Infinity, featured: 2, listed: 1 } as const satisfies Record<Pod["tier"], number>;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 
 export interface PackSources {
@@ -270,7 +277,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
         client && label("For", "Untuk", client),
         label("Role", "Peran", loc(pod.role)),
         label("Problem", "Masalah", loc(pod.problem)),
-        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.map(loc)]),
+        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.slice(0, PACK_APPROACH_STEPS[pod.tier]).map(loc)]),
         join([
           { en: "Results:", id: "Hasil:" },
           ...pod.results.map((r) =>

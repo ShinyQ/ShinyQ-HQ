@@ -264,7 +264,7 @@ describe("perspective checks", () => {
   });
 });
 
-describe("model no-view refusals (real-model spot check, golden q36)", () => {
+describe("model no-view refusals (real-model spot check, golden q38)", () => {
   it("keeps the model's own Indonesian no-view refusal that echoes the question's topics", () => {
     const question = "Apa pendapat Kurniadi tentang Rust dibanding Go?";
     const answer = "Kurniadi belum membagikan pendapat tertulis mengenai perbandingan antara Rust dan Go di situs ini.";

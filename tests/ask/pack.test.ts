@@ -3,7 +3,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
-import { buildKnowledgePack, leadParagraphs, PACK_MAX_BYTES, sanitizePackText, validatePack } from "@/ask/pack";
+import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, sanitizePackText, validatePack } from "@/ask/pack";
 import { getContent, getPerspectivesFile } from "@/content/load";
 import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
@@ -224,5 +224,18 @@ describe("perspectives and principles in the pack", () => {
   it("lists only starred public repositories (pack budget, runbook deviation 8)", () => {
     const repos = byId(pack, "repos")!;
     for (const repo of getContent().publicRepos) expect(repos.text_en.includes(`${repo.name} (`), repo.name).toBe(repo.stars > 0);
+  });
+});
+
+describe("pack budget for project chunks", () => {
+  it("keeps every approach step of hero pods and caps featured and listed pods (the case study pages keep them all)", () => {
+    expect(PACK_APPROACH_STEPS).toEqual({ hero: Infinity, featured: 2, listed: 1 });
+    for (const pod of getContent().floors.labs.pods) {
+      const chunk = pack.chunks.find((c) => c.id === `project-${pod.slug}`)!;
+      pod.approach.forEach((step, i) => {
+        const kept = i < PACK_APPROACH_STEPS[pod.tier];
+        expect(chunk.text_en.includes(cleanText(step.en)), `${pod.slug} step ${i + 1}`).toBe(kept);
+      });
+    }
   });
 });
