@@ -1,136 +1,188 @@
 "use client";
 
-import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
-import { PerspectiveCamera, Vector3, type Group } from "three";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { BufferAttribute, BufferGeometry, Color, DynamicDrawUsage, Matrix4, Quaternion, Vector3, type Group, type InstancedMesh, type PerspectiveCamera } from "three";
+import type { Text } from "troika-three-text";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { countUp } from "../../fx/countUp";
+import type { BatchedLabel } from "../../fx/labelProps";
 import { neonColor } from "../../fx/materials";
 import { roverRuntime } from "../../rover/runtime";
 import { COLORS, LOBBY } from "../../config";
 import type { ExperienceData } from "../../types";
-import { BoxEdges, FONTS } from "../../tower/primitives";
+import { FONTS } from "../../tower/primitives";
+import { backToFront, composeTile, DOT_OFFSET, DOT_RADIUS, LABEL_OFFSET, TILE_H, TILE_W, TILE_Y, tileBase, VALUE_OFFSET, writeEdges } from "./statsRingLayout";
 
 const ACCENTS = [COLORS.green, COLORS.cyan, COLORS.violet, COLORS.amber, COLORS.pink, "#60a5fa"];
-const { w: TILE_W, h: TILE_H, y: TILE_Y, stagger: TILE_STAGGER } = LOBBY.statsTile;
-
-/** The tile's accent marker: a dot at the top right, level with the value (R5 P10, owner decision 2026-10-13). */
-const STAT_DOT = { x: TILE_W / 2 - 0.3, y: TILE_H / 2 - 0.45, radius: 0.08 };
-
 const COUNT_SECONDS = 0.9;
+/** Each count-up step retypesets the values; 30 Hz reads the same as every frame and costs half. */
+const COUNT_INTERVAL = 1 / 30;
 const LIFT = 0.15;
 const LIFT_RADIUS = 4;
 /** Clock time when the count-up started (once per page load, on the first view of the Lobby). */
 let countStart: number | null = null;
 
-/** Stat value that counts up from zero the first time the Lobby is explored (instant under reduced motion). */
-function StatValue({ value, color }: { value: string; color: string }) {
-  const [shown, setShown] = useState(() => (countStart === null ? countUp(value, 0) : value));
-  useFrame((state) => {
-    const s = getHQStore().getState();
-    if (countStart === null) {
-      if (s.floor !== "L1" || s.phase !== "explore") return;
-      countStart = state.clock.elapsedTime;
-    }
-    const p = s.reducedMotion ? 1 : (state.clock.elapsedTime - countStart) / COUNT_SECONDS;
-    const next = countUp(value, 1 - Math.pow(1 - Math.min(1, p), 3));
-    if (next !== shown) setShown(next);
-  });
-  return (
-    <Text font={FONTS.sansBold} fontSize={0.62} color={color} anchorX="left" anchorY="middle" position={[-TILE_W / 2 + 0.2, TILE_H / 2 - 0.45, 0.02]} material-toneMapped={false}>
-      {shown}
-    </Text>
-  );
+function place(text: Text, tile: Matrix4, offset: Matrix4) {
+  text.matrixAutoUpdate = false;
+  text.matrix.multiplyMatrices(tile, offset);
 }
 
 /**
- * Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). Tiles
- * billboard toward the camera, so they read from any orbit angle, and float above the rover.
+ * Headline stats as floating tiles on a ring around the hologram (appendix 01 section 2). Tiles face
+ * the camera, float above the rover and shrink away when they would hide it. Drawn in 5 calls (REPORT
+ * F5.2): plates and accent dots are instanced, edges are one line set rewritten per frame, values and
+ * labels are two text batches whose members follow the tiles. Plates draw before the hologram
+ * (`renderOrder` -3 to -1) and far to near, like the separately sorted tiles did.
  */
 export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
+  const n = stats.length;
   const ring = useRef<Group>(null);
-  const tiles = useRef<(Group | null)[]>([]);
-  const scratch = useRef({ tile: new Vector3(), rover: new Vector3() });
+  const plates = useRef<InstancedMesh>(null);
+  const glows = useRef<InstancedMesh>(null);
+  const values = useRef<BatchedLabelsHandle>(null);
+  const labels = useRef<BatchedLabelsHandle>(null);
   const tier = useHQStore((st) => st.tier);
-  const glow = useMemo(() => ACCENTS.map((c) => neonColor(c, 2, tier)), [tier]);
+  const frame = useRef({ ys: stats.map((_, i) => tileBase(i, n)[1]), scales: stats.map(() => 1), shown: [] as string[], lastCount: -Infinity, done: false });
+  const scratch = useRef({ ringQ: new Quaternion(), camQ: new Quaternion(), facing: new Quaternion(), part: new Matrix4(), tp: new Vector3(), rp: new Vector3(), dist: [] as number[], mats: [] as Matrix4[] });
+
+  const valueLabels = useMemo<BatchedLabel[]>(
+    () => stats.map((s, i) => ({ text: countStart === null ? countUp(s.value, 0) : s.value, position: [0, 0, 0], font: FONTS.sansBold, fontSize: 0.62, color: ACCENTS[i % ACCENTS.length], anchorX: "left", anchorY: "middle" })),
+    [stats],
+  );
+  const labelLabels = useMemo<BatchedLabel[]>(
+    () => stats.map((s) => ({ text: s.label, position: [0, 0, 0], font: FONTS.sans, fontSize: 0.17, color: "#d4d4d8", anchorX: "left", anchorY: "top", lineHeight: 1.35, maxWidth: TILE_W - 0.4 })),
+    [stats],
+  );
+
+  const edges = useMemo(() => {
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(new Float32Array(n * 72), 3).setUsage(DynamicDrawUsage));
+    const colors = new Float32Array(n * 72);
+    const c = new Color();
+    for (let i = 0; i < n; i++) {
+      c.copy(neonColor(ACCENTS[i % ACCENTS.length], 1.4, tier));
+      for (let k = 0; k < 24; k++) colors.set([c.r, c.g, c.b], i * 72 + k * 3);
+    }
+    g.setAttribute("color", new BufferAttribute(colors, 3));
+    return g;
+  }, [n, tier]);
+  useEffect(() => () => edges.dispose(), [edges]);
+
+  useLayoutEffect(() => {
+    frame.current.shown = valueLabels.map((l) => l.text);
+    frame.current.done = false;
+  }, [valueLabels]);
+
+  useLayoutEffect(() => {
+    const g = glows.current;
+    if (!g) return;
+    for (let i = 0; i < n; i++) g.setColorAt(i, neonColor(ACCENTS[i % ACCENTS.length], 2, tier));
+    if (g.instanceColor) g.instanceColor.needsUpdate = true;
+  }, [n, tier]);
 
   useFrame((state, rawDt) => {
-    if (!ring.current) return;
+    const r = ring.current;
+    const p = plates.current;
+    const g = glows.current;
+    if (!r || !p || !g) return;
     const dt = Math.min(rawDt, 0.1);
-    const reduced = getHQStore().getState().reducedMotion;
+    const s = getHQStore().getState();
+    const reduced = s.reducedMotion;
     if (!reduced) {
-      ring.current.rotation.y += dt * 0.06;
-      ring.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+      r.rotation.y += dt * 0.06;
+      r.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
     }
+    r.updateWorldMatrix(true, false);
 
-    // A tile that sits between the camera and the rover on screen shrinks away, so the rover is
-    // never hidden behind the ring (it returns once the view is clear).
+    // Billboard: every tile turns to the camera (drei Billboard: inverse ring rotation times camera rotation).
     const camera = state.camera as PerspectiveCamera;
-    const { tile: tp, rover: rp } = scratch.current;
+    const { ringQ, camQ, facing, part, tp, rp, dist, mats } = scratch.current;
+    while (mats.length < n) mats.push(new Matrix4());
+    dist.length = n;
+    r.getWorldQuaternion(ringQ);
+    camera.getWorldQuaternion(camQ);
+    facing.copy(ringQ).invert().multiply(camQ);
+
+    // A tile between the camera and the rover on screen shrinks away, so the rover is never hidden.
     rp.set(roverRuntime.x, roverRuntime.y + 1.4, roverRuntime.z);
     const roverDistance = rp.distanceTo(camera.position);
     rp.project(camera);
     const tanHalf = Math.tan(((camera.fov / 2) * Math.PI) / 180);
     const k = reduced ? 1 : 1 - Math.exp(-dt * 12);
-    tiles.current.forEach((tile, i) => {
-      if (!tile) return;
-      tile.getWorldPosition(tp);
+    const f = frame.current;
+    for (let i = 0; i < n; i++) {
+      const [bx, by, bz] = tileBase(i, n);
+      tp.set(bx, f.ys[i], bz).applyMatrix4(r.matrixWorld);
       // Tiles lift a little when the rover drives under them.
       const near = Math.hypot(tp.x - roverRuntime.x, tp.z - roverRuntime.z) < LIFT_RADIUS && Math.abs(tp.y - TILE_Y - roverRuntime.y) < 3;
-      const base = TILE_Y + (i % 2) * TILE_STAGGER;
-      tile.position.y += (base + (near ? LIFT : 0) - tile.position.y) * k;
+      f.ys[i] += (by + (near ? LIFT : 0) - f.ys[i]) * k;
       const distance = tp.distanceTo(camera.position);
+      dist[i] = distance;
       tp.project(camera);
       // Tile half-size plus the rover's half-size (about 1 u wide, 1.6 u tall), in screen units.
       const halfY = (TILE_H / 2 + 1.6) / (distance * tanHalf);
       const halfX = (TILE_W / 2 + 1.0) / (distance * tanHalf * camera.aspect);
       const covers = distance < roverDistance && Math.abs(tp.x - rp.x) < halfX && Math.abs(tp.y - rp.y) < halfY;
-      const scale = tile.scale.x + ((covers ? 0.001 : 1) - tile.scale.x) * k;
-      tile.scale.setScalar(scale);
-      tile.visible = scale > 0.01;
+      f.scales[i] += ((covers ? 0.001 : 1) - f.scales[i]) * k;
+      composeTile(mats[i], bx, f.ys[i], bz, facing, f.scales[i]);
+    }
+
+    backToFront(dist).forEach((i, slot) => p.setMatrixAt(slot, mats[i]));
+    p.instanceMatrix.needsUpdate = true;
+    const positions = edges.getAttribute("position") as BufferAttribute;
+    for (let i = 0; i < n; i++) {
+      g.setMatrixAt(i, part.multiplyMatrices(mats[i], DOT_OFFSET));
+      writeEdges(positions.array as Float32Array, i, mats[i]);
+    }
+    g.instanceMatrix.needsUpdate = true;
+    positions.needsUpdate = true;
+
+    const vm = values.current?.members;
+    const lm = labels.current?.members;
+    if (vm?.length === n && lm?.length === n) {
+      for (let i = 0; i < n; i++) {
+        place(vm[i], mats[i], VALUE_OFFSET);
+        place(lm[i], mats[i], LABEL_OFFSET);
+      }
+    }
+
+    // Count up from zero the first time the Lobby is explored (instant under reduced motion).
+    if (countStart === null && s.floor === "L1" && s.phase === "explore") countStart = state.clock.elapsedTime;
+    if (countStart === null || f.done || vm?.length !== n) return;
+    const t = state.clock.elapsedTime;
+    const progress = reduced ? 1 : Math.min(1, (t - countStart) / COUNT_SECONDS);
+    if (progress < 1 && t - f.lastCount < COUNT_INTERVAL) return;
+    f.lastCount = t;
+    const eased = 1 - Math.pow(1 - progress, 3);
+    stats.forEach((stat, i) => {
+      const next = countUp(stat.value, eased);
+      if (next === f.shown[i]) return;
+      f.shown[i] = next;
+      vm[i].text = next;
+      vm[i].sync();
     });
+    if (progress >= 1) f.done = true;
   });
 
   return (
-    <group position={[LOBBY.hologram.x, 0, LOBBY.hologram.z]}>
+    <group position={[LOBBY.hologram.x, 0, LOBBY.hologram.z]} name="stats-ring">
       <group ref={ring}>
-        {stats.map((stat, i) => {
-          const a = (i / stats.length) * Math.PI * 2 + Math.PI / 4;
-          const accent = ACCENTS[i % ACCENTS.length];
-          return (
-            <Billboard
-              key={stat.id}
-              ref={(node) => {
-                tiles.current[i] = node;
-              }}
-              position={[Math.sin(a) * LOBBY.statsRadius, TILE_Y + (i % 2) * TILE_STAGGER, Math.cos(a) * LOBBY.statsRadius]}>
-              <mesh>
-                <planeGeometry args={[TILE_W, TILE_H]} />
-                <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />
-              </mesh>
-              <BoxEdges size={[TILE_W, TILE_H, 0.01]} color={accent} opacity={0.9} />
-              {/* Glowing accent dot beside the value (R5 P10: never a colored top edge). */}
-              <mesh position={[STAT_DOT.x, STAT_DOT.y, 0.012]}>
-                <circleGeometry args={[STAT_DOT.radius, 20]} />
-                <meshBasicMaterial color={glow[i % glow.length]} toneMapped={false} />
-              </mesh>
-              <StatValue value={stat.value} color={accent} />
-              <Text
-                font={FONTS.sans}
-                fontSize={0.17}
-                color="#d4d4d8"
-                anchorX="left"
-                anchorY="top"
-                lineHeight={1.35}
-                maxWidth={TILE_W - 0.4}
-                position={[-TILE_W / 2 + 0.2, TILE_H / 2 - 0.9, 0.02]}
-              >
-                {stat.label}
-              </Text>
-            </Billboard>
-          );
-        })}
+        <instancedMesh ref={plates} args={[undefined, undefined, n]} frustumCulled={false} renderOrder={-3}>
+          <planeGeometry args={[TILE_W, TILE_H]} />
+          <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />
+        </instancedMesh>
+        <lineSegments geometry={edges} frustumCulled={false} renderOrder={-2}>
+          <lineBasicMaterial vertexColors transparent opacity={0.9} toneMapped={false} />
+        </lineSegments>
+        {/* Glowing accent dot beside each value (R5 P10: never a colored top edge). */}
+        <instancedMesh ref={glows} args={[undefined, undefined, n]} frustumCulled={false}>
+          <circleGeometry args={[DOT_RADIUS, 20]} />
+          <meshBasicMaterial toneMapped={false} />
+        </instancedMesh>
+        <BatchedLabels ref={values} labels={valueLabels} name="stats-values" renderOrder={-1} />
+        <BatchedLabels ref={labels} labels={labelLabels} name="stats-labels" renderOrder={-1} toneMapped />
       </group>
     </group>
   );

@@ -146,3 +146,25 @@ test("the safety net steps down on sustained slow frames, at most twice a minute
   await page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.simulate(null));
   expect(await page.evaluate(() => sessionStorage.getItem("hq:gfx"))).toBe(JSON.stringify({ level: 2, locked: false }));
 });
+
+type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): { traverse(cb: (o: { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; visible: boolean }) => void): void } | undefined } | null } } };
+
+/** Renderable objects (one draw call each, two for an outlined text batch) under a named group. */
+async function renderables(page: Page, name: string) {
+  return page.evaluate((name) => {
+    let count = 0;
+    (window as unknown as SceneWindow).__hq.render.scene?.getObjectByName(name)?.traverse((o) => {
+      if (o.visible && (o.isMesh || o.isLine || o.isPoints)) count += 1;
+    });
+    return count;
+  }, name);
+}
+
+test("the L1 stats ring draws in 5 objects (full tier)", async ({ page }) => {
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=full");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  expect(await renderables(page, "stats-ring")).toBe(5);
+});
