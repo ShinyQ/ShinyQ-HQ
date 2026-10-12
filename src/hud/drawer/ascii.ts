@@ -206,6 +206,18 @@ export function renderReadme(view: RoomView, labels: ReadmeLabels): string {
     }
   }
 
+  if (view.cards?.length) {
+    let group: string | undefined;
+    out.push("");
+    for (const card of view.cards) {
+      if (card.group && card.group !== group) {
+        group = card.group;
+        out.push(`### ${clean(card.group)}`, "");
+      }
+      out.push(...hanging("- ", [card.title, card.subtitle, card.meta].filter(Boolean).join(" · ")));
+    }
+  }
+
   if (view.architecture) {
     out.push(
       "",
