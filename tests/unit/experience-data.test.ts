@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildCareerData, buildExperienceData, countRooms } from "@/content/experience";
 import { getAwards, getCertifications, getContent, getLibrary, getProfile, getPublicRepos, getRoof, getSideProjects, getStats, getYears } from "@/content/load";
-import { TERMINAL_COUNT } from "@/experience/floors/roof/layout";
+import { buildRoofLayout } from "@/experience/floors/roof/layout";
 import { buildRoomCatalog, type StructuralLabels } from "@/experience/missions/rooms";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
@@ -99,8 +99,8 @@ describe("buildExperienceData", () => {
     expect(id.availability).toBe(roof.availability.id);
     expect(en.email).toBe(roof.contact.email);
     expect(en.channels.map((c) => c.id)).toEqual(["linkedin", "github", "huggingface", "medium", "googleScholar", "ieeeXplore"]);
-    // One comms terminal per channel plus email.
-    expect(en.channels.length + 1).toBe(TERMINAL_COUNT);
+    // One anchor on the comms station per channel.
+    expect(buildRoofLayout({ channels: en.channels.length }).channelSlots).toHaveLength(en.channels.length);
     expect(en.channels.find((c) => c.id === "github")?.href).toBe(roof.contact.github);
   });
 

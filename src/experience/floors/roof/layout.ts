@@ -1,30 +1,6 @@
 import type { ViewZone } from "../../camera/orbit";
-import { towardPad } from "../../nav/doors";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { DoorTrigger, FloorLayout, Rect, Vec2 } from "../../types";
-
-/** RF Roof element positions (appendix 01 section 6). Floor-local, pure. */
-export const ROOF = {
-  beacon: { x: 0, z: -6, r: 1.2 },
-  /** Comms terminals sit on an arc of this radius in front of (+z of) the beacon. */
-  arc: 10,
-  /** Angle between neighbouring terminals (radians). */
-  arcStep: (24 * Math.PI) / 180,
-  terminal: { w: 1.8, d: 0.8, h: 1.1 },
-  kiosk: { x: 10, z: 6, w: 3, d: 2 },
-} as const;
-
-/** Email plus LinkedIn, GitHub, Hugging Face, Medium, Google Scholar and IEEE Xplore. */
-export const TERMINAL_COUNT = 7;
-const STOP_GAP = 2.4;
-
-export interface TerminalSlot {
-  index: number;
-  x: number;
-  z: number;
-  /** Yaw so the screen faces away from the beacon (local +z points outward). */
-  angle: number;
-}
 
 const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   minX: cx - w / 2,
@@ -32,49 +8,6 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   minZ: cz - d / 2,
   maxZ: cz + d / 2,
 });
-
-/** Terminals spread symmetrically on the arc, the middle one straight in front of the beacon. */
-export function terminalSlots(count = TERMINAL_COUNT): TerminalSlot[] {
-  const { beacon, arc, arcStep } = ROOF;
-  return Array.from({ length: count }, (_, index) => {
-    const angle = (index - (count - 1) / 2) * arcStep;
-    return { index, angle, x: beacon.x + arc * Math.sin(angle), z: beacon.z + arc * Math.cos(angle) };
-  });
-}
-
-const middle = terminalSlots()[Math.floor(TERMINAL_COUNT / 2)];
-const { kiosk } = ROOF;
-
-/** Mission stops on the Roof. */
-export const ROOF_STOPS: Record<"contact" | "cv", Vec2> = {
-  contact: { x: middle.x, z: middle.z + ROOF.terminal.d / 2 + STOP_GAP },
-  cv: { x: kiosk.x, z: kiosk.z + kiosk.d / 2 + STOP_GAP },
-};
-
-/** Navgrid obstacles (before rover inflation). Terminals use a square that covers any yaw. */
-export function roofObstacles(count = TERMINAL_COUNT): Rect[] {
-  const { beacon, terminal } = ROOF;
-  const side = Math.max(terminal.w, terminal.d);
-  return [
-    rect(beacon.x, beacon.z, beacon.r * 2, beacon.r * 2),
-    ...terminalSlots(count).map((t) => rect(t.x, t.z, side, side)),
-    rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
-  ];
-}
-
-/** Door triggers: in front of the middle comms terminal and the CV kiosk. */
-export const ROOF_DOORS: DoorTrigger[] = [
-  { room: "RF:contact", at: ROOF_STOPS.contact, facing: { x: 0, z: -1 } },
-  { room: "RF:cv", at: ROOF_STOPS.cv, facing: { x: 0, z: -1 } },
-];
-
-const LANE_Z = ROOF_STOPS.cv.z;
-
-/** Prototype data lanes on RF: from the elevator around the comms arc toward the CV kiosk, with a spur to the email terminal. Lanes stop before door pads. */
-export const ROOF_LANES: [number, number][][] = [
-  [[-17, 0], [-17, LANE_Z], towardPad([-17, LANE_Z], ROOF_STOPS.cv)],
-  [[ROOF_STOPS.contact.x, LANE_Z], towardPad([ROOF_STOPS.contact.x, LANE_Z], ROOF_STOPS.contact)],
-];
 
 /* ----------------------------------------------------------------- RF revamp: the roof deck */
 
@@ -102,12 +35,16 @@ export const ROOF_DECK = {
   spurWidth: 4,
   /** About board front to the rover stop in front of it. */
   aboutStop: 3.5,
-  /** Rover stop south of the centerpiece, facing its availability sign. */
-  availability: { x: 2, z: 6 },
+  /** Rover stop south of the centerpiece, on the line the availability sign faces (`signYaw`). */
+  availability: { x: 4.5, z: 6.1 },
   /** Deep links spawn here and elevator arrivals roll on here: south-east of the plaza, looking north-west over it. */
   spawn: { x: 8, z: 7 },
   /** Overview zoom at the spawn: the plaza, the comms station and the CV station in frame. */
   overviewZoom: 1.25,
+  /** Overview yaw at the spawn (offset from the default angle): looks north-north-west, the comms station near the middle. */
+  overviewYaw: -Math.PI / 8,
+  /** The availability sign on the mast faces the overview camera head on (yaw PI/4 is the default camera's direction). */
+  signYaw: Math.PI / 8,
 } as const;
 
 export type RoofStop = "about" | "availability" | "cv" | "contact";
@@ -185,16 +122,17 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   const spawn: Vec2 = { x: D.spawn.x, z: D.spawn.z };
   const box = (p: Vec2, r = 2): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
   const viewZones: ViewZone[] = [
-    // Spawn and arrival: the default south-east angle, zoomed out over the plaza toward the comms station.
-    { id: "RF:overview", area: box(spawn, 3), yaw: 0, zoom: D.overviewZoom },
+    // Spawn and arrival: turned a little north of the default angle and zoomed out, so the mast, its
+    // availability sign and the comms station all fit, also on portrait phones.
+    { id: "RF:overview", area: box(spawn, 1.5), yaw: D.overviewYaw, zoom: D.overviewZoom },
     // Comms (facing south): the camera south of the rover, looking north at the station and the channels above it.
     { id: "RF:contact", area: { minX: comms.minX, maxX: comms.maxX, minZ: contactPad.z - 2, maxZ: contactPad.z + 2 }, yaw: -Math.PI / 4 },
     // CV station (facing west): the camera west of the rover, looking east.
     { id: "RF:cv", area: { minX: cvPad.x - 2, maxX: cv.minX, minZ: cv.minZ, maxZ: cv.maxZ }, yaw: (-3 * Math.PI) / 4 },
     // About board (facing north): the camera north of the rover, looking south.
     { id: "RF:about", area: { minX: about.minX, maxX: about.maxX, minZ: stops.about.z - 2, maxZ: about.minZ }, yaw: (3 * Math.PI) / 4 },
-    // Availability sign on the centerpiece (facing south): the camera south of the rover, looking north.
-    { id: "RF:availability", area: box(stops.availability), yaw: -Math.PI / 4 },
+    // Availability sign on the mast (facing `signYaw`): the overview angle, looking straight at it.
+    { id: "RF:availability", area: box(stops.availability, 1.8), yaw: D.overviewYaw },
   ];
   return {
     floor: {
@@ -221,3 +159,6 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     callPad: plain(D.callPad),
   };
 }
+
+/** Mission and walk stops on the roof (the door pads for RF:contact and RF:cv). */
+export const ROOF_STOPS: Record<RoofStop, Vec2> = buildRoofLayout().stops;

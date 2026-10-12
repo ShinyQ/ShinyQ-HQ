@@ -4,12 +4,8 @@ import {
   boxEdgeBuffers,
   latticeSegments,
   mulberry32,
-  ringPoints,
   roofDetail,
   scatter,
-  SKYLINE_GROUND,
-  skylineBoxes,
-  skylineWindows,
   type Box,
 } from "@/experience/floors/roof/solids";
 
@@ -72,18 +68,6 @@ describe("roof solids", () => {
     for (let i = 0; i < seg.length; i += 3) if (Math.abs(seg[i + 1] - 14) < 1e-6) expect(Math.abs(seg[i])).toBeCloseTo(0.4);
   });
 
-  it("puts the skyline far outside the slab, below the roof's eye line, the same every time", () => {
-    const boxes = skylineBoxes(32);
-    expect(boxes).toHaveLength(34);
-    for (const b of boxes) {
-      expect(Math.hypot(b.x, b.z)).toBeGreaterThan(70);
-      expect(b.y).toBeGreaterThanOrEqual(SKYLINE_GROUND);
-      expect(b.y + b.h).toBeLessThan(12);
-    }
-    expect(skylineBoxes(32)).toEqual(boxes);
-    expect(skylineWindows(boxes, 3)).toHaveLength(34 * 3 * 3);
-  });
-
   it("scatters seeded points that respect the reject rule", () => {
     const area = { minX: 0, maxX: 10, minZ: 0, maxZ: 10 };
     const pts = scatter(40, area, (p) => p.x < 5);
@@ -93,10 +77,7 @@ describe("roof solids", () => {
     expect(scatter(5, area, () => true)).toEqual([]);
   });
 
-  it("places ring points and seeds a stable random sequence", () => {
-    const ring = ringPoints({ x: 2, z: 0 }, 8, 4);
-    expect(ring[0].x).toBeCloseTo(10);
-    expect(ring[1].z).toBeCloseTo(8);
+  it("seeds a stable random sequence", () => {
     const a = mulberry32(7);
     const b = mulberry32(7);
     expect([a(), a()]).toEqual([b(), b()]);

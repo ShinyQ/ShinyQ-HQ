@@ -2,7 +2,7 @@ import type { GpuTier, Rect, Vec2 } from "../../types";
 
 /**
  * Pure geometry for the roof scenery (no three): merged boxes and their edges (one draw call each
- * for all the solids of a scenery), the antenna lattice, the far skyline and seeded scatter.
+ * for all the solids of a scenery), the antenna lattice and seeded scatter.
  * Vitest runs it in node.
  */
 
@@ -125,40 +125,6 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** Street level under the roof, in roof floor coordinates (the roof sits 56 u up). */
-export const SKYLINE_GROUND = -56;
-
-/** Far city silhouettes on a ring 75 to 110 u around the tower, tops below the roof's eye line, plus a slim obelisk to the north-west. */
-export function skylineBoxes(count: number, seed = 3): Box[] {
-  const rand = mulberry32(seed);
-  const boxes: Box[] = [];
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2 + rand() * 0.08;
-    const r = 75 + rand() * 35;
-    boxes.push({ x: Math.cos(a) * r, y: SKYLINE_GROUND, z: Math.sin(a) * r, w: 6 + rand() * 10, h: 26 + rand() * 35, d: 6 + rand() * 8, yaw: -a });
-  }
-  boxes.push({ x: -70, y: SKYLINE_GROUND, z: -62, w: 3, h: 60, d: 3 }, { x: -70, y: SKYLINE_GROUND + 60, z: -62, w: 1.2, h: 4, d: 1.2 });
-  return boxes;
-}
-
-/** Lit windows on the side of each skyline box that faces the tower (points, xyz). */
-export function skylineWindows(boxes: readonly Box[], perBox: number, seed = 9): Float32Array {
-  const rand = mulberry32(seed);
-  const out: number[] = [];
-  for (const b of boxes) {
-    const len = Math.hypot(b.x, b.z) || 1;
-    const nx = -b.x / len;
-    const nz = -b.z / len;
-    const half = Math.min(b.w, b.d) / 2;
-    for (let k = 0; k < perBox; k++) {
-      const u = (rand() - 0.5) * half * 1.6;
-      const y = b.y + 2 + rand() * Math.max(0, b.h - 4);
-      out.push(b.x + nx * (half + 0.2) - nz * u, y, b.z + nz * (half + 0.2) + nx * u);
-    }
-  }
-  return new Float32Array(out);
-}
-
 /** Up to `count` seeded points in `area` that `reject` does not refuse (decor such as floor lights). */
 export function scatter(count: number, area: Rect, reject: (p: Vec2) => boolean, seed = 5, tries = count * 20): Vec2[] {
   const rand = mulberry32(seed);
@@ -170,18 +136,11 @@ export function scatter(count: number, area: Rect, reject: (p: Vec2) => boolean,
   return out;
 }
 
-/** `n` points on a circle of radius `r` around `c`, starting east and turning toward +z. */
-export function ringPoints(c: Vec2, r: number, n: number): Vec2[] {
-  return Array.from({ length: n }, (_, i) => ({ x: c.x + Math.cos((i / n) * Math.PI * 2) * r, z: c.z + Math.sin((i / n) * Math.PI * 2) * r }));
-}
-
 /** How much decor each tier draws (the lite tier also drops additive glow and icon halos in the components). */
 export interface RoofDetail {
-  skyline: number;
-  windows: number;
   flowers: number;
 }
 
 export function roofDetail(tier: GpuTier): RoofDetail {
-  return tier === "full" ? { skyline: 56, windows: 6, flowers: 90 } : { skyline: 32, windows: 3, flowers: 40 };
+  return tier === "full" ? { flowers: 90 } : { flowers: 40 };
 }

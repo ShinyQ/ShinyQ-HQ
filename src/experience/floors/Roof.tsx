@@ -1,22 +1,29 @@
 "use client";
 
-import { LaneStrip } from "../fx/LaneStrip";
-import type { GpuTier, RoofData } from "../types";
-import { ROOF_LANES } from "./roof/layout";
-import { Beacon, CommsTerminals, CvKiosk, type RoofLabels } from "./roof/Comms";
+import { Suspense, useMemo } from "react";
+import { useHQStore } from "@/store/useHQStore";
+import { RoadMarkings } from "../fx/RoadMarkings";
+import type { ExperienceData, GpuTier } from "../types";
+import type { RoofLabels } from "./roof/kit";
+import { buildRoofLayout, ROOF_DECK, roofActive } from "./roof/layout";
+import { SignalGarden as Scenery } from "./roof/SignalGarden";
 import { Sky } from "./roof/Sky";
 
 export type { RoofLabels };
 
-/** RF Roof (appendix 01 section 6): open sky, beacon, comms terminals and the CV kiosk. */
-export function Roof({ roof, labels, tier }: { roof: RoofData; labels: RoofLabels; tier: GpuTier }) {
+/** RF roof deck (RF revamp): road, plaza and stations from `buildRoofLayout`, dressed by the owner's picked scenery. */
+export function Roof({ data, labels, tier }: { data: ExperienceData; labels: RoofLabels; tier: GpuTier }) {
+  const layout = useMemo(() => buildRoofLayout({ channels: data.roof.channels.length }), [data.roof.channels.length]);
+  const reducedMotion = useHQStore((s) => s.reducedMotion);
+  const active = useHQStore((s) => roofActive(s.phase, s.activeRoom));
   return (
     <group name="roof">
-      <LaneStrip paths={ROOF_LANES} />
+      <RoadMarkings network={layout.network} color={ROOF_DECK.accent} tier={tier} reducedMotion={reducedMotion} />
       <Sky tier={tier} />
-      <Beacon availability={roof.availability} label={labels.beacon} tier={tier} />
-      <CommsTerminals roof={roof} labels={labels} />
-      <CvKiosk labels={labels} />
+      {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
+      <Suspense fallback={null}>
+        <Scenery layout={layout} roof={data.roof} profile={data.profile} labels={labels} tier={tier} reducedMotion={reducedMotion} active={active} />
+      </Suspense>
     </group>
   );
 }

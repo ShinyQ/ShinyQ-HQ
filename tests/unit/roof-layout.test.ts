@@ -83,6 +83,17 @@ describe("RF roof deck layout", () => {
     }
   });
 
+  it("hangs the availability sign square to the spawn camera, the availability stop in front of it", () => {
+    const zone = (floor.viewZones ?? []).find((z) => z.id === "RF:overview")!;
+    const forward = forwardOf(followPose("desktop", [floor.spawn.x, 0, floor.spawn.z], zone.yaw, zone.zoom ?? 1));
+    const normal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
+    expect(forward.x * normal.x + forward.z * normal.z).toBeCloseTo(-1, 3);
+    const c = layout.centerpiece.center;
+    const s = layout.stops.availability;
+    const d = Math.hypot(s.x - c.x, s.z - c.z);
+    expect(((s.x - c.x) / d) * normal.x + ((s.z - c.z) / d) * normal.z).toBeGreaterThan(0.999);
+  });
+
   it("has view zones that never overlap, with the overview around the spawn", () => {
     const zones = floor.viewZones ?? [];
     for (let i = 0; i < zones.length; i++)
@@ -108,5 +119,16 @@ describe("RF roof deck layout", () => {
     expect(roofActive("explore", "RF:contact")).toBeNull();
     expect(roofActive("room", "L4:talks")).toBeNull();
     expect(roofActive("room", null)).toBeNull();
+  });
+});
+
+describe("RF in the tower", () => {
+  it("is the roof deck, with the stops on the door pads", async () => {
+    const { buildFloorLayouts } = await import("@/experience/config");
+    const { ROOF_STOPS } = await import("@/experience/floors/roof/layout");
+    const rf = buildFloorLayouts(8).RF;
+    expect(rf).toEqual(buildRoofLayout().floor);
+    expect(ROOF_STOPS).toEqual(buildRoofLayout().stops);
+    expect(rf.doors?.map((d) => d.at)).toEqual([ROOF_STOPS.contact, ROOF_STOPS.cv]);
   });
 });
