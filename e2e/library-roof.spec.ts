@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
+import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -134,7 +135,7 @@ test.describe("missions to the Library and the Roof", () => {
     await enterHQ(page);
     await runMission(page, "hire");
     await waitForRoom(page, "RF:contact");
-    await expectRoverNear(page, { x: 0, z: 6.8 });
+    await expectRoverNear(page, ROOF_STOPS.contact);
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     const panel = page.getByTestId("room-drawer");
     await expect(panel).toContainText(content.floors.roof.availability.en);
@@ -156,7 +157,7 @@ test.describe("missions to the Library and the Roof", () => {
     await enterFloorRoute(page, "/en/library");
     await runMission(page, "cv");
     await waitForRoom(page, "RF:cv");
-    await expectRoverNear(page, { x: 10, z: 9.4 });
+    await expectRoverNear(page, ROOF_STOPS.cv);
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     const panel = page.getByTestId("room-drawer");
     const pdf = panel.getByTestId("cv-pdf");

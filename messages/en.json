@@ -320,7 +320,7 @@
       "workshop": "Workshop annex",
       "publications": "Models shelf",
       "talks": "Talks stage",
-      "contact": "Comms terminals",
+      "contact": "Comms station",
       "cv": "CV kiosk",
       "research": "Research shelf"
     },
@@ -397,7 +397,9 @@
       "lectern": "Reading desk",
       "read": "Read",
       "comms": "Contact links",
-      "cvHint": "Open the CV viewer"
+      "cvHint": "Open the CV viewer",
+      "about": "About me",
+      "availability": "Availability"
     },
     "view": {
       "label": "View controls",
@@ -619,6 +621,16 @@
       "body": "A guided drive past my posts, newest first, then my research, models and talks. Skip it to roam the floor on your own.",
       "start": "Read my writing",
       "name": "Writing walk"
+    },
+    "meet": {
+      "title": "Meet me?",
+      "body": "A short guided drive: who I am, my availability, my CV and how to reach me. Skip it to roam the roof on your own.",
+      "start": "Meet me",
+      "name": "Meet me walk",
+      "about": "About me",
+      "availability": "Availability",
+      "cv": "My CV",
+      "contact": "Get in touch"
     },
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",

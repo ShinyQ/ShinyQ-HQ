@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getContent, getPods } from "@/content/load";
+import { getContent, getPods, getProfile } from "@/content/load";
 import { buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
@@ -9,6 +9,11 @@ import en from "../../messages/en.json";
 const catalog = buildRoomCatalog(getContent(), structuralLabels());
 
 describe("room views (Glass Drawer content)", () => {
+  it("shows the location and timezone in the comms station header", () => {
+    const profile = getProfile();
+    for (const locale of LOCALES) expect(buildRoomViews(locale)["RF:contact"].meta).toEqual([profile.location[locale], profile.timezone]);
+  });
+
   for (const locale of LOCALES) {
     const views = buildRoomViews(locale);
 

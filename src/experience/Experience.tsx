@@ -271,11 +271,12 @@ export default function Experience({
         zones: { blog: tLibrary("posts"), research: tLibrary("research"), models: tLibrary("publications"), talks: tLibrary("talks") },
       },
       roof: {
-        beacon: tContact("beacon"),
         comms: t("world.comms"),
         email: tCommon("email"),
         cvTitle: tContact("cvTitle"),
         cvHint: t("world.cvHint"),
+        about: t("world.about"),
+        availability: t("world.availability"),
       },
       rover: { hello: t("statusHello") },
     }),

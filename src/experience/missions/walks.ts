@@ -1,14 +1,16 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
 import { directoryStop, tourOrder } from "../floors/labs/layout";
 import { LIBRARY_ZONES, type LibraryLayout, type LibraryZone } from "../floors/library/model";
-import type { CareerData, CareerType, LabPod, LibraryData } from "../types";
+import { ROOF_STOPS } from "../floors/roof/layout";
+import type { CareerData, CareerType, ExperienceData, LabPod, LibraryData } from "../types";
 import type { WalkDefinition, WalkStop } from "./walk";
 
 /**
  * Walk definitions built from the serializable 3D payload. L2 "Walk my journey" visits the career
  * rooms oldest first, then the Workshop annex; L3 "Tour my projects" visits the docked pods wing by
  * wing (`software`, then `ai`; in site order, gallery pods first, as they dock along each wing road
- * from the hub) and ends at the wing directory boards ("More projects here").
+ * from the hub) and ends at the wing directory boards ("More projects here"); RF "Meet me" visits
+ * the about board, the availability sign, the CV kiosk and the comms station.
  * Floors offer their walk only once their road ships (`WALK_FLOORS` in config.ts) or with `?walk=on`.
  */
 
@@ -99,4 +101,27 @@ export function walkFloorsEnabled(ready: readonly FloorId[], search: string): re
   if (flag === "on") return ["L1", "L2", "L3", "L4", "RF"];
   if (flag === "off") return [];
   return ready;
+}
+
+export interface RoofWalkLabels {
+  about: string;
+  availability: string;
+  cv: string;
+  /** Subtitle of the CV stop (contact.cvIntro). */
+  cvSub: string;
+  contact: string;
+}
+
+/**
+ * RF "Meet me": who I am (the about board), my availability (the sign on the mast), the CV kiosk,
+ * then the comms station. The first two are points with nothing to open; the last two open their rooms.
+ */
+export function roofWalk({ roof, profile }: Pick<ExperienceData, "roof" | "profile">, labels: RoofWalkLabels): WalkDefinition {
+  const stops: WalkStop[] = [
+    { id: "RF:about", to: ROOF_STOPS.about, title: labels.about, subtitle: [profile.role, profile.location, roof.timezone].join(" · ") },
+    { id: "RF:availability", to: ROOF_STOPS.availability, title: labels.availability, subtitle: roof.availability },
+    { id: "RF:cv", to: "RF:cv", room: "RF:cv", title: labels.cv, subtitle: labels.cvSub },
+    { id: "RF:contact", to: "RF:contact", room: "RF:contact", title: labels.contact, subtitle: roof.email },
+  ];
+  return { id: "meet", floor: "RF", stops };
 }

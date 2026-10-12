@@ -2,7 +2,7 @@ import type { FloorId } from "@/content/schema";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
-import { ROOF_DOORS, roofObstacles } from "./floors/roof/layout";
+import { buildRoofLayout } from "./floors/roof/layout";
 import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
@@ -18,7 +18,7 @@ export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
  * Floors that offer their guided walk (first-visit prompt and Walk HUD, see missions/walks.ts) once
  * their road ships; `?walk=on` turns every walk on for tests and previews, `?walk=off` turns them off.
  */
-export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3", "L4"];
+export const WALK_FLOORS: readonly FloorId[] = ["L2", "L3", "L4", "RF"];
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -113,7 +113,7 @@ export function corridorEnd(yearCount: number): number {
 }
 
 function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec2): FloorLayout {
-  const doorX = id === "RF" ? -20 : -24;
+  const doorX = -24;
   const approach = { x: doorX + 3, z: 0 };
   return {
     id,
@@ -167,8 +167,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
     L3: buildLabsLayout(extras.labs ?? []).floor,
     // Writing: the owner's pick from the L4 concepts (walkable floors plan, part 3).
     L4: buildLibraryLayout(extras.library).floor,
-    // Deep links spawn RF in front of its content (the follow camera looks toward -x, -z).
-    RF: { ...standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, roofObstacles(), { x: 4, z: 12 }), doors: ROOF_DOORS },
+    // RF roof deck: lead road, round plaza, comms and CV stations, free call pad (RF revamp plan).
+    RF: buildRoofLayout().floor,
   };
   return Object.fromEntries(FLOOR_IDS.map((id) => [id, withElevatorPad(layouts[id])])) as Record<FloorId, FloorLayout>;
 }

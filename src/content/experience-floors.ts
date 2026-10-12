@@ -1,5 +1,5 @@
 import type { LibraryData, RoofData } from "@/experience/types";
-import { getLibrary, getPosts, getRoof } from "./load";
+import { getLibrary, getPosts, getProfile, getRoof } from "./load";
 import type { Locale } from "./schema";
 import { isResearch } from "./selectors";
 
@@ -39,9 +39,10 @@ const CHANNEL_LABEL = {
   ieeeXplore: "IEEE Xplore",
 } as const;
 
-/** RF payload for the 3D chunk: beacon text and the comms channels. */
+/** RF payload for the 3D chunk: availability, the comms channels and the about card's timezone and intro. */
 export function buildRoofData(locale: Locale): RoofData {
   const { contact, availability } = getRoof();
+  const profile = getProfile();
   const channels = (Object.keys(CHANNEL_LABEL) as (keyof typeof CHANNEL_LABEL)[]).flatMap((id) => {
     const href = contact[id];
     return href ? [{ id, label: CHANNEL_LABEL[id], href }] : [];
@@ -50,5 +51,7 @@ export function buildRoofData(locale: Locale): RoofData {
     availability: availability[locale],
     email: contact.email,
     channels,
+    timezone: profile.timezone,
+    subheadline: profile.subheadline[locale],
   };
 }

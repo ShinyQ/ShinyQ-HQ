@@ -70,7 +70,7 @@ async function openRoomFromPalette(page: Page, query: string, room: string) {
 
 const FLOOR_SHOTS = [
   { name: "hq-rf-roof", path: "/en/contact" },
-  { name: "hq-rf-comms", path: "/en/contact", query: "Comms terminals", room: "RF:contact" },
+  { name: "hq-rf-comms", path: "/en/contact", query: "Comms station", room: "RF:contact" },
 ] as const;
 
 for (const viewport of VIEWPORTS) {

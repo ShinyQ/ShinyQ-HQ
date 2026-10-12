@@ -1,14 +1,15 @@
-import { getContact, getRoof } from "../load";
+import { getContact, getProfile, getRoof } from "../load";
 import type { Locale } from "../schema";
 import { cvPdfPath } from "@/lib/cv";
 import { chain, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
-/** RF Roof (Phase 5a): comms terminals and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
+/** RF roof deck: the comms station and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
 export function buildRoofViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const roof = getRoof();
   const contact = getContact();
+  const profile = getProfile();
   const channels = [
     { title: m.common.email, meta: contact.email, href: `mailto:${contact.email}` },
     { ...linkLogo("LinkedIn"), title: "LinkedIn", href: contact.linkedin, external: true },
@@ -24,6 +25,7 @@ export function buildRoofViews(locale: Locale): RoomView[] {
       kind: "roof",
       title: m.hud.rooms.contact,
       subtitle: roof.availability[locale],
+      meta: [profile.location[locale], profile.timezone],
       accent: "blue",
       sections: [{ title: m.drawer.rooms.channels, items: channels }],
       page: "/contact",

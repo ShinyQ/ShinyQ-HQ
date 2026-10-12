@@ -22,6 +22,7 @@ export const ALL_SPECS = [
   "missions",
   "pads",
   "pageview",
+  "roof",
   "seo",
   "static-routes",
   "walk",
@@ -76,7 +77,9 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk"] },
-  { test: /^src\/experience\/floors\/roof\//, specs: ["library-roof"] },
+  // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
+  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
+  { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },

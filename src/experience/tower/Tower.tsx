@@ -86,7 +86,7 @@ export function Tower({
                 ) : id === "L4" ? (
                   <Library data={data} labels={labels.library} tier={tier} />
                 ) : (
-                  <Roof roof={data.roof} labels={labels.roof} tier={tier} />
+                  <Roof data={data} labels={labels.roof} tier={tier} />
                 )}
               </Suspense>
             )}

@@ -11,13 +11,15 @@ describe("specsForChanges", () => {
   it("maps floor code to its spec", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
-    expect(specsForChanges(["src/experience/floors/roof/Comms.tsx"]).specs).toEqual(["library-roof"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "walk"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience"]);
     expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience"]);
     expect(specsForChanges(["src/hud/Controls.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "missions"]);
     expect(specsForChanges(["src/hud/walk/WalkBar.tsx"]).specs).toEqual(["hud", "missions", "walk"]);
+    expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
+    expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
+    expect(specsForChanges(["src/content/room-views/roof.ts"]).specs).toEqual(["library-roof", "roof"]);
   });
 
   it("maps static pages and content", () => {
