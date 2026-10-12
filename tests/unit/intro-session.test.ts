@@ -64,6 +64,16 @@ describe("intro continuation (deep links play the intro first, then the rover co
     expect(continuationSteps({ floor: "L2" })).toEqual([{ kind: "elevator", floor: "L2" }]);
   });
 
+  it("continues a Highlights Hall deep link in the Lobby: drive to the station and open it", () => {
+    const target = introTarget({ startRoom: "L1:highlights-contact", ready: ["L1", "L2", "L3", "L4", "RF"] });
+    expect(target).toEqual({ floor: "L1", room: "L1:highlights-contact", architecture: false });
+    expect(continuationSteps(target!)).toEqual([
+      { kind: "elevator", floor: "L1" },
+      { kind: "drive", to: "L1:highlights-contact" },
+      { kind: "open", room: "L1:highlights-contact" },
+    ]);
+  });
+
   it("hands the pending target over once and reports the continuation until it ends", () => {
     expect(isContinuing()).toBe(false);
     setIntroTarget({ floor: "L2" });

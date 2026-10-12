@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
+import { gateStartRoom } from "./floors/lobby/stations";
 import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
@@ -40,6 +41,8 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
+  // `/{locale}#highlights-<station>` opens that Highlights Hall station (read once on the client; never on floor or room routes).
+  const [hashRoom] = useState<RoomId | undefined>(() => (typeof window === "undefined" ? undefined : gateStartRoom(startFloor, undefined, window.location.hash)));
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
   const back3D = useCallback(() => {
@@ -91,7 +94,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
       data={data}
       tier={tier}
       startFloor={startFloor}
-      startRoom={startRoom}
+      startRoom={startRoom ?? hashRoom}
       onFirstFrame={onFirstFrame}
       onExit={() => {
         try {

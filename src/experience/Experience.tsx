@@ -27,6 +27,7 @@ import { interactRuntime } from "./interact/runtime";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { renderBudget, sceneSettings } from "./scene/settings";
+import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 
@@ -93,6 +94,9 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     place(resume.floor, { x: resume.x, z: resume.z });
   } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
     place(startFloor, doorOf(startFloor, startRoom) ?? layouts[startFloor].spawn);
+  } else if (startRoom && floorOf(startRoom) === "L1") {
+    // `/{locale}#highlights-<station>`: start on the station's door pad, then open it below.
+    place("L1", doorOf("L1", startRoom) ?? layouts.L1.spawn);
   } else {
     s.setPhase(lobbyStartPhase(true));
   }
@@ -246,10 +250,11 @@ export default function Experience({
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  // On L4 only hosted posts have their own route (/blog/{slug}); shelves and Medium posts keep /library.
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts and the L1 Highlights Hall stations keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
-    return (room: RoomId) => !room.startsWith("L4:") || hosted.has(room);
+    // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
+    return (room: RoomId) => !isHighlightRoom(room) && (!room.startsWith("L4:") || hosted.has(room));
   }, [data.library.posts]);
   useRoomUrlSync(data.locale, hasPage);
 

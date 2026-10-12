@@ -1,5 +1,6 @@
-import { test } from "@playwright/test";
-import { driveTo, enterHQ, expectRenderBudget, snapshot } from "./hq";
+import { expect, test, type Page } from "@playwright/test";
+import { stationOf } from "../src/experience/floors/lobby/hallLayout";
+import { asReturningVisitor, collectErrors, driveTo, enterHQ, expectRenderBudget, snapshot, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 
 /**
  * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md). The probe below prints
@@ -19,4 +20,22 @@ test("L1 draw calls: plaza and passage", async ({ page }) => {
     console.log(`L1 ${tier}: spawn ${spawn.drawCalls} calls, ${spawn.triangles} triangles; passage ${passage.drawCalls} calls, ${passage.triangles} triangles`);
     await expectRenderBudget(page);
   }
+});
+
+async function expectRoverNear(page: Page, point: { x: number; z: number }, tolerance = 1.5) {
+  const { rover } = await snapshot(page);
+  expect(Math.hypot(rover.x - point.x, rover.z - point.z)).toBeLessThan(tolerance);
+}
+
+test("a #highlights-<station> link on the landing opens that station at its door", async ({ page }) => {
+  const errors = collectErrors(page);
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=lite#highlights-contact");
+  await waitForHQ(page);
+  await waitForRoom(page, "L1:highlights-contact");
+  await expectRoverNear(page, stationOf("contact").pad);
+  await page.keyboard.press("Escape");
+  await waitForPhase(page, "explore");
+  await expect(page).toHaveURL(/\/en\?tier=lite/);
+  expect(errors).toEqual([]);
 });

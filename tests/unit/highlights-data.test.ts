@@ -6,7 +6,7 @@ import { buildHighlightsData, highlightEntries, highlightProjects } from "@/cont
 import { getPod, getPods, getTimeline } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
 import { podLiveLink } from "@/content/selectors";
-import { experienceRows, highlightRoom, highlightsRoomFromHash, isHighlightRoom } from "@/experience/floors/lobby/stations";
+import { experienceRows, gateStartRoom, highlightRoom, highlightsRoomFromHash, isHighlightRoom } from "@/experience/floors/lobby/stations";
 
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 
@@ -70,5 +70,12 @@ describe("Highlights rooms", () => {
     expect(highlightsRoomFromHash("#HIGHLIGHTS-CONTACT")).toBe("L1:highlights-contact");
     expect(highlightsRoomFromHash("#work")).toBeNull();
     expect(highlightsRoomFromHash("")).toBeNull();
+  });
+
+  it("starts the landing on a station from its hash, and never overrides a floor or room route", () => {
+    expect(gateStartRoom(undefined, undefined, "#highlights-projects")).toBe("L1:highlights-projects");
+    expect(gateStartRoom(undefined, undefined, "#work")).toBeUndefined();
+    expect(gateStartRoom("L3", undefined, "#highlights")).toBeUndefined();
+    expect(gateStartRoom(undefined, "L3:x", "#highlights")).toBe("L3:x");
   });
 });
