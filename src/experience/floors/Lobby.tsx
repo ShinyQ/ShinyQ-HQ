@@ -2,6 +2,8 @@
 
 import type { ExperienceData, GpuTier } from "../types";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
+import type { HallLabels } from "./lobby/hallContent";
+import { HighlightsHall } from "./lobby/HighlightsHall";
 import { Lanes } from "./lobby/Lanes";
 import { MissionKiosk, type KioskLabels } from "./lobby/MissionKiosk";
 import { ProfileHologram } from "./lobby/ProfileHologram";
@@ -12,6 +14,7 @@ export interface LobbyLabels {
   skillsTitle: string;
   certs: CertLabels;
   kiosk: KioskLabels;
+  hall: HallLabels;
 }
 
 /** L1 Lobby (appendix 01 section 2), generated from content. */
@@ -24,6 +27,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
       <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
       <MissionKiosk missions={data.missions} labels={labels.kiosk} />
+      <HighlightsHall data={data} labels={labels.hall} tier={tier} />
     </group>
   );
 }

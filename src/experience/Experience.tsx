@@ -131,6 +131,7 @@ export default function Experience({
   const tLibrary = useTranslations("library");
   const tContact = useTranslations("contact");
   const tWalk = useTranslations("walk");
+  const tHall = useTranslations("hall");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -259,6 +260,25 @@ export default function Experience({
         skillsTitle: tHome("skillsTitle"),
         certs: { title: tHome("certsTitle"), all: tCerts("wall.all"), other: tCerts("wall.other"), inProgress: tCerts("status.in-progress"), expired: tCerts("status.expired") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
+        hall: {
+          about: tHall("about"),
+          projects: tHall("projects"),
+          experience: tHall("experience"),
+          contact: tHall("contact"),
+          // The career type labels, like the L2 type icons and the /journey chips.
+          employment: tCommon("type.job"),
+          freelance: tCommon("type.freelance"),
+          visitLive: tCommon("visitLive"),
+          stations: {
+            about: t("rooms.highlightsAbout"),
+            projects: t("rooms.highlightsProjects"),
+            experience: t("rooms.highlightsExperience"),
+            contact: t("rooms.highlightsContact"),
+          },
+          more: (count: number) => tHall("more", { count }),
+          cvHint: tHall("cvHint"),
+          hall: tHall("hall"),
+        },
       },
       labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
       career: {
@@ -306,7 +326,7 @@ export default function Experience({
         },
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall],
   );
 
   return (
