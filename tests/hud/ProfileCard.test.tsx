@@ -7,6 +7,7 @@ import en from "../../messages/en.json";
 import { buildExperienceData } from "@/content/experience";
 import { ProfileCard } from "@/hud/ProfileCard";
 import { getHQStore } from "@/store/useHQStore";
+import { brandPhotoSrc } from "@/lib/brand-photo";
 
 const data = buildExperienceData("en", { L1: "Home", L2: "Journey", L3: "Work", L4: "Writing", RF: "About" });
 
@@ -26,5 +27,34 @@ describe("ProfileCard", () => {
     expect(card).not.toHaveTextContent(/visited/i);
     expect(card.querySelector("[aria-hidden='true'].rounded-full")).toBeNull();
     expect(getHQStore().getState().visited).toEqual(["L1:skills", "L1:stats"]);
+  });
+
+  it("shows the owner's round photo instead of the KAW monogram, decorative and with a fixed size", () => {
+    getHQStore().setState({ floor: "L3" });
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ProfileCard data={data} mobile={false} />
+      </NextIntlClientProvider>,
+    );
+    const badge = screen.getByTestId("profile-photo");
+    const img = badge.querySelector("img")!;
+    expect(img).toHaveAttribute("src", brandPhotoSrc(160));
+    expect(img.getAttribute("srcset")).toContain(`${brandPhotoSrc(320)} 320w`);
+    expect(img).toHaveAttribute("sizes", "44px");
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("width", "40");
+    expect(img).toHaveAttribute("height", "40");
+    expect(screen.getByRole("region", { name: en.hud.profile }).querySelector("svg text")).toBeNull();
+  });
+
+  it("uses the same photo in the collapsed phone pill", () => {
+    getHQStore().setState({ floor: "L1" });
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ProfileCard data={data} mobile />
+      </NextIntlClientProvider>,
+    );
+    const pill = screen.getByRole("button", { name: new RegExp(`^${en.hud.profile}: ${data.profile.name}`) });
+    expect(pill.querySelector("[data-testid='profile-photo'] img")).toHaveAttribute("sizes", "36px");
   });
 });

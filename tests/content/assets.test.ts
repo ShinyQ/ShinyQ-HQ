@@ -21,6 +21,14 @@ function collectAssets(value: unknown, at = "$", out: { at: string; asset: Asset
 }
 
 describe("assets", () => {
+  it("ships the owner's portrait in three square webp sizes (C5 revised 2026-10-13)", () => {
+    for (const w of [160, 320, 640]) {
+      const file = path.join(root, "public", "brand", `kurniadi-photo-${w}.webp`);
+      expect(existsSync(file), file).toBe(true);
+      expect(statSync(file).size).toBeLessThan(80 * 1024);
+    }
+  });
+
   const assets = collectAssets(content);
 
   it("only references files committed under public/", () => {
