@@ -87,7 +87,7 @@ ${header}
 <main id="main">
 <div class="hx">
 <div class="hx-bg" aria-hidden="true"><div class="hx-glow"></div><div class="hx-ground"><div class="hx-ground-grid"></div></div><i class="hx-packet"></i><i class="hx-packet"></i><i class="hx-packet"></i></div>
-<section aria-labelledby="hero-title" class="pv-wrap m-hero">
+<section aria-labelledby="hero-title" class="pv-wrap hx-main m-hero">
 <div class="m-c8">
 <p class="pv-data hx-eyebrow"><span class="hx-dot" aria-hidden="true"></span>${esc(t("home.hero.welcome", { site: t("meta.siteName") }))}</p>
 <h1 id="hero-title" class="pv-d-xl hx-name" style="margin-top:24px">${esc(profile.name)}</h1>

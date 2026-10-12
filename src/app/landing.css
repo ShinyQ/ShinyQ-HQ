@@ -21,15 +21,11 @@
     }
   }
 
-  /* Where 3D is offered, the floating "Back to 3D" button (bottom right, 48 px tall plus 16 px, 56 px
-     plus 24 px from sm) may sit over the bottom of the first screen: keep the ticker band above it. */
-  html[data-hq-3d] .hx {
-    padding-bottom: 72px;
-  }
-
-  @media (min-width: 40rem) {
-    html[data-hq-3d] .hx {
-      padding-bottom: 88px;
+  /* Phones: the hero alone fills the first screen, so the ticker starts below the fold and never sits
+     under the floating "Ask AI" (bottom left) and "Back to 3D" (bottom right) buttons. */
+  @media (max-width: 39.99rem) {
+    .hx-main {
+      min-height: calc(100svh - 109px);
     }
   }
 
@@ -255,7 +251,22 @@
     padding-block: 4px 10px;
   }
 
-  @media (min-width: 48rem) {
+  /* From sm the ticker can share the bottom of the first screen with the floating buttons, so the bar
+     keeps their columns free: "Ask AI" (left 24 px, about 128 px wide) and, where 3D is offered,
+     "Back to 3D" (right 24 px, about 206 px wide), each plus a 12 px gap. --hx-out is the margin
+     outside the 1240 px container. */
+  @media (min-width: 40rem) {
+    .hx-tick-bar {
+      --hx-out: max(0px, (100vw - 1240px) / 2);
+      padding-left: max(clamp(20px, 4vw, 48px), 164px - var(--hx-out));
+    }
+
+    html[data-hq-3d] .hx-tick-bar {
+      padding-right: max(clamp(20px, 4vw, 48px), 242px - var(--hx-out));
+    }
+  }
+
+  @media (min-width: 64rem) {
     .hx-tick-bar {
       grid-template-columns: auto auto minmax(0, 1fr);
       grid-template-areas: "upd pause view";
