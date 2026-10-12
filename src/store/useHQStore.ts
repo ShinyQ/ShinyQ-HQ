@@ -4,6 +4,8 @@ import { createStore } from "zustand/vanilla";
 import type { DrawerTab, FloorId, Locale, RoomId } from "@/content/schema";
 import { FLOOR_IDS, floorIndex, LOBBY } from "@/experience/config";
 import type { Ride } from "@/experience/tower/elevator";
+import type { PickerRequest } from "@/experience/nav/pads";
+import type { Beam } from "@/experience/nav/teleport";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 
 export type Phase =
@@ -62,6 +64,10 @@ export interface HQState {
   notice: string | null;
   /** README easter egg: the drawer shows the terminal view of the room (Phase 4). */
   readme: boolean;
+  /** Floor pad picker over the world: floors (elevator call pad) or years (L2 teleporter). */
+  picker: PickerRequest | null;
+  /** L2 teleport beam in progress, advanced by the Director. */
+  beam: Beam | null;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -90,6 +96,10 @@ export interface HQState {
   setDevice: (device: Partial<DeviceState>) => void;
   setReducedMotion: (reduced: boolean) => void;
   notify: (notice: string | null) => void;
+  /** Opens a pad picker; only while exploring, with no ride and no beam running. */
+  openPicker: (picker: PickerRequest) => void;
+  closePicker: () => void;
+  setBeam: (beam: Beam | null) => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number }) => void;
 }
@@ -126,6 +136,8 @@ export function createHQStore(storage?: StateStorage) {
         reducedMotion: false,
         notice: null,
         readme: false,
+        picker: null,
+        beam: null,
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -142,7 +154,7 @@ export function createHQStore(storage?: StateStorage) {
             return;
           }
           if (to === floor) return;
-          set({ ride: { from: floor, to, stage: "toDoor", t: 0 }, phase: "elevator", activeRoom: null });
+          set({ ride: { from: floor, to, stage: "toDoor", t: 0 }, phase: "elevator", activeRoom: null, picker: null });
         },
         setRide: (ride) => set({ ride }),
         cancelRide: () => {
@@ -181,6 +193,13 @@ export function createHQStore(storage?: StateStorage) {
         setDevice: (device) => set({ device: { ...get().device, ...device } }),
         setReducedMotion: (reducedMotion) => set({ reducedMotion }),
         notify: (notice) => set({ notice }),
+        openPicker: (picker) => {
+          const { phase, ride, beam } = get();
+          if (phase !== "explore" || ride || beam) return;
+          set({ picker });
+        },
+        closePicker: () => set({ picker: null }),
+        setBeam: (beam) => set({ beam }),
         resume: (floor, at) =>
           set({
             floor,

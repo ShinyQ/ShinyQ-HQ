@@ -146,4 +146,31 @@ describe("HQ store", () => {
     fresh.getState().resume("L3", { x: -21, z: 0 });
     expect(fresh.getState()).toMatchObject({ floor: "L3", phase: "explore", rover: { x: -21, z: 0 } });
   });
+
+  it("opens a pad picker only while exploring, and a new ride closes it", () => {
+    store.getState().openPicker({ kind: "floor" });
+    expect(store.getState().picker).toEqual({ kind: "floor" });
+    store.getState().closePicker();
+    expect(store.getState().picker).toBeNull();
+    store.getState().openRoom("L3:voice-ai-contact-center");
+    store.getState().openPicker({ kind: "year", from: 2021 });
+    expect(store.getState().picker).toBeNull();
+    store.getState().closeRoom();
+    store.getState().openPicker({ kind: "year", from: 2021 });
+    expect(store.getState().picker).toEqual({ kind: "year", from: 2021 });
+    store.getState().requestElevator("L3");
+    expect(store.getState().ride?.to).toBe("L3");
+    expect(store.getState().picker).toBeNull();
+  });
+
+  it("holds the teleport beam and refuses a picker while it runs", () => {
+    const beam = { pad: "teleport:2023", from: { x: 0, z: 0 }, to: { x: 140, z: -0.5 }, heading: Math.PI / 2, t: 0, jumped: false };
+    store.getState().setBeam(beam);
+    expect(store.getState().beam).toEqual(beam);
+    store.getState().openPicker({ kind: "floor" });
+    expect(store.getState().picker).toBeNull();
+    store.getState().setBeam(null);
+    expect(store.getState().beam).toBeNull();
+    expect(storage.data.get(STORE_KEY) ?? "").not.toContain("picker");
+  });
 });

@@ -11,6 +11,8 @@ export type Intent =
   | { type: "elevator"; to: "up" | "down" | FloorId }
   | { type: "scrub"; dx: number }
   | { type: "open"; room: RoomId }
+  /** L2 year teleporter: beam the rover to the pad with this id (`teleport:<year>`) on the current floor. */
+  | { type: "teleport"; pad: string }
   | { type: "cancel" }
   | { type: "palette" }
   | { type: "terminal" }
