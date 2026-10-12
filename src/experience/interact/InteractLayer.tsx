@@ -2,7 +2,7 @@
 
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BoxGeometry,
@@ -71,22 +71,42 @@ function Highlight({ item, tier, reducedMotion }: { item: Interactable; tier: Gp
   );
 }
 
-/** The target's name floating above it, always facing the camera (one troika draw call). */
+/** troika's laid-out text block: [minX, minY, maxX, maxY] in local units. */
+type TextSync = { textRenderInfo?: { blockBounds?: number[] } };
+
+/**
+ * The target's name floating above it, always facing the camera: troika text on a dark pill drawn over the
+ * scene (no depth test), so it reads like a tooltip and covers the object's own in-world title instead of
+ * doubling it. Two draw calls.
+ */
 function Label({ item }: { item: Interactable }) {
+  const [box, setBox] = useState<number[] | null>(null);
   return (
     <Billboard position={labelAnchor(item)}>
+      {box && (
+        <mesh position={[(box[0] + box[2]) / 2, (box[1] + box[3]) / 2, -0.01]} renderOrder={10} raycast={NO_RAYCAST}>
+          <planeGeometry args={[box[2] - box[0] + 0.5, box[3] - box[1] + 0.3]} />
+          <meshBasicMaterial color="#05050c" transparent opacity={0.94} depthTest={false} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
       <Text
         font={FONTS.sansBold}
-        fontSize={0.6}
-        maxWidth={9}
+        fontSize={0.5}
+        maxWidth={8}
         textAlign="center"
         anchorX="center"
         anchorY="bottom"
         lineHeight={1.1}
         color="#f4f4f5"
-        outlineWidth={0.05}
+        outlineWidth={0.03}
         outlineColor="#05050c"
+        renderOrder={11}
+        material-depthTest={false}
         material-toneMapped={false}
+        onSync={(text: TextSync) => {
+          const bounds = text.textRenderInfo?.blockBounds;
+          if (bounds) setBox([bounds[0], bounds[1], bounds[2], bounds[3]]);
+        }}
       >
         {item.label}
       </Text>
@@ -226,7 +246,7 @@ export function InteractLayer({ layouts, data, tier }: { layouts: FloorLayouts; 
           <Highlight item={hover.item} tier={tier} reducedMotion={reducedMotion} />
           {/* Text loads its font asynchronously; keep it from holding back the outline. */}
           <Suspense fallback={null}>
-            <Label item={hover.item} />
+            <Label key={hover.item.id} item={hover.item} />
           </Suspense>
         </>
       )}

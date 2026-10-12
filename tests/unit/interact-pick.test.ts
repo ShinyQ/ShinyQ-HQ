@@ -5,7 +5,8 @@ import {
   clickDecision,
   highlightOpacity,
   isDragClick,
-  LABEL_LIFT,
+  LABEL_HEIGHT,
+  LABEL_PAD_HEIGHT,
   labelAnchor,
   parseCommand,
   performInteract,
@@ -69,8 +70,10 @@ describe("pick volumes", () => {
     expect(pickVolume(lift).size[1]).toBe(PICK_HEIGHT["elevator-pad"]);
   });
 
-  it("floats the label above the box", () => {
-    expect(labelAnchor(pod)).toEqual([10, 2.6 + LABEL_LIFT, 6.5]);
+  it("floats the name tag over the approach point, above the icon on pads", () => {
+    expect(labelAnchor(pod)).toEqual([pod.at.x, LABEL_HEIGHT, pod.at.z]);
+    expect(labelAnchor(lift)).toEqual([lift.at.x, LABEL_PAD_HEIGHT, lift.at.z]);
+    expect(LABEL_PAD_HEIGHT).toBeGreaterThan(LABEL_HEIGHT);
   });
 });
 

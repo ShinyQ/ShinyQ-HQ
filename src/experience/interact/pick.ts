@@ -12,8 +12,13 @@ import type { InteractKind, Interactable } from "./registry";
 
 /** Height (u) of a pick volume when the registry entry gives none. */
 export const PICK_HEIGHT: Record<InteractKind, number> = { door: 2.6, "elevator-pad": 2.9, teleporter: 2.9, station: 4, kiosk: 3.2, board: 7 };
-/** The floating label sits this far above the pick volume. */
-export const LABEL_LIFT = 0.7;
+/**
+ * The floating name tag stands over the destination ring (the approach point), this high above the floor:
+ * in-world titles sit over the objects themselves, so the tag never doubles or covers them. Pads lift it
+ * over their floating icon.
+ */
+export const LABEL_HEIGHT = 1.6;
+export const LABEL_PAD_HEIGHT = PAD.iconY + PAD.iconSize / 2 + 0.4;
 /** The rover counts as already there inside this radius: the whole pad for pickers, a short radius elsewhere. */
 export const REACH = { pad: PAD.radius, point: 0.8 } as const;
 
@@ -29,10 +34,10 @@ export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind"
   return { center: [(minX + maxX) / 2, h / 2, (minZ + maxZ) / 2], size: [maxX - minX, h, maxZ - minZ] };
 }
 
-/** Where the floating label stands (floor-local): above the middle of the pick volume. */
-export function labelAnchor(item: Pick<Interactable, "bounds" | "height" | "kind">): [number, number, number] {
-  const { center, size } = pickVolume(item);
-  return [center[0], size[1] + LABEL_LIFT, center[2]];
+/** Where the floating name tag stands (floor-local): over the approach point, where the rover will stop. */
+export function labelAnchor(item: Pick<Interactable, "at" | "kind">): [number, number, number] {
+  const pad = item.kind === "elevator-pad" || item.kind === "teleporter";
+  return [item.at.x, pad ? LABEL_PAD_HEIGHT : LABEL_HEIGHT, item.at.z];
 }
 
 /** A press that travelled past the drag threshold rotated the view; it is not a click or a tap. */

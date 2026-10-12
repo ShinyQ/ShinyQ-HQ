@@ -39,7 +39,7 @@ export function InteractStatus({ coarse }: { coarse: boolean }) {
           type="button"
           onClick={go}
           data-testid="interact-go"
-          className="glass glass-solid pointer-events-auto min-h-11 max-w-full truncate px-4 text-sm font-semibold text-cyan"
+          className="glass glass-solid pointer-events-auto line-clamp-2 min-h-11 max-w-full px-4 py-1.5 text-center text-sm leading-5 font-semibold text-cyan"
         >
           {t("go", { label: hover.item.label })}
         </button>
