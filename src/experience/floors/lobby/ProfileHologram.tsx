@@ -111,10 +111,20 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
         </Text>
       </group>
       <Billboard position={[0, LOBBY.titleY, 0]}>
-        <Text font={FONTS.sansBold} fontSize={0.78} color="#f4f4f5" anchorX="center" anchorY="bottom" maxWidth={14} textAlign="center">
+        <Text font={FONTS.sansBold} fontSize={LOBBY.titleFont.name} color="#f4f4f5" anchorX="center" anchorY="bottom" maxWidth={14} textAlign="center">
           {name}
         </Text>
-        <Text font={FONTS.sans} fontSize={0.4} color={COLORS.cyan} anchorX="center" anchorY="top" position={[0, -0.12, 0]} maxWidth={14} textAlign="center" material-toneMapped={false}>
+        <Text
+          font={FONTS.sans}
+          fontSize={LOBBY.titleFont.headline}
+          color={COLORS.cyan}
+          anchorX="center"
+          anchorY="top"
+          position={[0, -LOBBY.titleFont.gap, 0]}
+          maxWidth={14}
+          textAlign="center"
+          material-toneMapped={false}
+        >
           {headline}
         </Text>
       </Billboard>

@@ -23,7 +23,7 @@ Footprint: 52 × 42 u, x from -24 to 28 and z from -21 to 21. The west edge stay
 |---|---|---|---|
 | Spawn point | (14, 10) | | Rover start on the default camera diagonal from the plaza, turned toward the camera |
 | Profile hologram | (6, 0) | Pedestal radius 3 | Rotating wireframe monogram "KAW" (hexagon radius 2.3, center height 3.4) |
-| Name and headline | Above the hologram, height 7.6 | Text block up to 14 wide | Billboarded, always above the stats tiles |
+| Name and headline | Above the hologram, height 6.4 (name 0.58 u, headline 0.3 u) | Text block up to 14 wide | Billboarded, always above the stats tiles and the monogram, and below the HUD top bar at 1440 x 900 (`tests/unit/lobby-title.test.ts`) |
 | Stats ring | Around the hologram, radius 10 | 4 to 6 tiles, 3.4 × 1.9, center height 4.25 (staggered +0.5) | Headline stats (see appendix 07). Tiles billboard toward the camera and float above the rover (bottom above 2.8 u), so they read from any orbit angle and never block the walkway. |
 | Lane ring (walkable) | Around the hologram, radius 12 | Rover footprint 10.5 to 13.5 | Clear of every element at rover height |
 | Skills wall | (6, -18.5) | 40 × 1, at least 8.5 u tall on a 0.35 u glowing plinth; `skillsWallLayout` measures headings (they may wrap; every column reserves the same heading lines) and grows the wall so the longest column ends 1.8 u above its base | Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u) |

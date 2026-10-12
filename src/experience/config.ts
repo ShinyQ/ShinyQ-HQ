@@ -91,8 +91,12 @@ export const LOBBY = {
   /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
   spawn: { x: 14, z: 10 },
   hologram: { x: 6, z: 0, radius: 3 },
-  /** Name and headline float above the stats tiles. */
-  titleY: 7.6,
+  /**
+   * Name and headline float above the stats tiles and the monogram (both top out at 5.85), low and
+   * small enough that the name clears the HUD top bar at 1440 x 900 (tests/unit/lobby-title.test.ts).
+   */
+  titleY: 6.4,
+  titleFont: { name: 0.58, headline: 0.3, gap: 0.12 },
   statsRadius: 10,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
