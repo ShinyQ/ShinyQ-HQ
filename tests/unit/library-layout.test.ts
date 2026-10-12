@@ -21,7 +21,13 @@ describe("L4 Writing floor (the picked concept)", () => {
     expect(layout.concept).toBe(LIBRARY_CONCEPT);
     expect(layout.stations).toEqual(CONCEPT_BUILDERS[LIBRARY_CONCEPT](input).stations);
     const floors = buildFloorLayouts(data.years.length, { library: input });
-    expect(floors.L4).toEqual(layout.floor);
+    // buildFloorLayouts adds the elevator call pad; it lands inside the spot the concepts keep free.
+    const { pads, ...floor } = floors.L4;
+    expect(floor).toEqual(layout.floor);
+    expect(pads?.map((p) => p.id)).toEqual(["elevator:L4"]);
+    const pad = pads![0].at;
+    const zone = LIBRARY_FLOOR.padZone;
+    expect(pad.x >= zone.minX && pad.x <= zone.maxX && pad.z >= zone.minZ && pad.z <= zone.maxZ).toBe(true);
     expect(READY_FLOORS).toContain("L4");
   });
 

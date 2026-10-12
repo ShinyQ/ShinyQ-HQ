@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
 
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
-const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) });
+const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) });
 
 describe("floor pads in the real layouts", () => {
   it("gives every floor one elevator call pad on its approach, 3 u in front of the shaft door", () => {
@@ -35,7 +36,7 @@ describe("floor pads in the real layouts", () => {
   });
 
   it("keeps the road floors inside the full space rules with their pads", () => {
-    for (const id of ["L2", "L3"] as const) {
+    for (const id of ["L2", "L3", "L4"] as const) {
       const l = layouts[id];
       expectSpaceRules({ bounds: l.bounds, obstacles: l.obstacles, doors: l.doors ?? [], network: l.road!, start: l.approach, pads: l.pads });
     }
