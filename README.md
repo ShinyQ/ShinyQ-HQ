@@ -112,6 +112,10 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 - Certifications live in `certifications[]`: `status` is `earned`, `in-progress` or `expired`; optional `credentialUrl`, `credentialId`, `expires` (YYYY-MM) and `featured` (pin to the 3 featured cards). They sort themselves (earned newest first) and any number fits: Page View shows featured cards plus a dense list (issuer chips, status filter and search from 10 certifications on), the 3D Lobby a curved wall with issuer tabs and paging. Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed. New issuers get a logo through `src/content/tech.ts` (`public/tech/`).
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages. CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser. To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`); a unit test fails until the images match the PDF.
 - Research papers open a preview modal with the abstract (English), copyable APA, IEEE and BibTeX citations, and DOI and Google Scholar links in a new tab. Third-party pages are never framed.
+- Paper PDFs: a paper or thesis with `document` in `site-content.json` gets "Read the paper" (Page View research list, the paper modal, the L4 Research drawer), which opens the paper reader in the paper modal: pre-rendered page images with zoom, the page count, "Download PDF" and "Open in new tab". To add one:
+  1. Check the publisher's posting rule. IEEE allows the authors' accepted manuscript with IEEE's notice, never the publisher's final PDF, so IEEE papers must use `version: "manuscript"` and `notice: "ieee"` (the schema enforces both; the notice and the DOI link render next to the reader). Today the ICAIBDA 2021 e-wallet paper is the authors' manuscript; the ICICyTA 2021 COVID-19 paper has no hosted PDF because only the IEEE final version exists. Its accepted manuscript can be added later the same way.
+  2. Redact personal data first: student or staff IDs, home addresses, phone numbers, signatures and QR codes that link to them. Rasterize the affected pages with the regions blacked out (so no text is left to extract) and keep the other pages as they are; never commit the unredacted original. Use `version: "redacted"`. The thesis PDF (`sentiboard-bsc-thesis`) was redacted this way on pages 1 to 4.
+  3. Save it as `public/papers/{file}.pdf` (`file` = the publication id), add `"document": { "file", "version", "notice"? }` and run `bun run paper:pages` (needs `pdftoppm`, `pdftotext` and `cwebp`). It refuses a PDF whose text still holds personal data patterns or blocklisted names, then writes `public/papers/{file}/` (1400 px webp per page) and `content/generated/paper-pages.json`; `tests/content/papers.test.ts` fails until the images match the PDF.
 - Private evidence never enters the repo. The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret). Product names in `content/safety-allowlist.txt` are never flagged. An e2e check scans the built `out/` for the same terms.
 
 ## Structure
@@ -119,10 +123,10 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      static server, e2e planning, content validator, title case, CV page renderer (cv:pages), floor thumbnails (floor:thumbs), Ask pack, evals, provisioning, deploy smoke check
+scripts/      static server, e2e planning, content validator, title case, CV and paper page renderers (cv:pages, paper:pages), floor thumbnails (floor:thumbs), Ask pack, evals, provisioning, deploy smoke check
 functions/    Cloudflare Pages Function for Ask the HQ (api/ask.ts, _lib/ pipeline)
 src/app/      routes ([locale] pages, "/" redirect, 404)
-src/components/  static-page UI, shared modal, CV viewer and paper previews
+src/components/  static-page UI, shared modal, page image viewer (CV and paper PDFs) and paper previews
 src/content/  schema, accessors, selectors (orderPods), title case, blog loader, safety lint
 src/ask/      Ask client, protocol, knowledge pack, suggestions, chat thread
 src/i18n/     next-intl routing and helpers
