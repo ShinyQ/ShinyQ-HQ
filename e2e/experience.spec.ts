@@ -254,6 +254,17 @@ test.describe("tiers and views", () => {
     await waitForHQ(page);
   });
 
+  test("the landing's Enter the 3D HQ opens the tower from page view", async ({ page }) => {
+    await enterHQ(page);
+    await page.getByRole("button", { name: "Page view" }).click();
+    await expect(page.getByTestId("hq")).toHaveCount(0, { timeout: 20_000 });
+    const enter = page.getByRole("link", { name: en.home.hero.enter3d });
+    await expect(enter).toBeVisible();
+    await enter.click();
+    await waitForHQ(page);
+    expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBeNull();
+  });
+
   test("a real WebGL context loss falls back to the static page", async ({ page }) => {
     await enterHQ(page);
     await page.evaluate(() => {

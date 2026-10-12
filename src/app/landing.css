@@ -21,6 +21,18 @@
     }
   }
 
+  /* Where 3D is offered, the floating "Back to 3D" button (bottom right, 48 px tall plus 16 px, 56 px
+     plus 24 px from sm) may sit over the bottom of the first screen: keep the ticker band above it. */
+  html[data-hq-3d] .hx {
+    padding-bottom: 72px;
+  }
+
+  @media (min-width: 40rem) {
+    html[data-hq-3d] .hx {
+      padding-bottom: 88px;
+    }
+  }
+
   .hx-bg {
     position: absolute;
     inset: 0;
@@ -401,7 +413,7 @@
     animation-play-state: paused;
   }
 
-  /* Reduced motion: a still frame and one scrollable row of stats. The global rule only shortens
+  /* Reduced motion: a still frame and the stats wrapped in rows (no scroll region). The global rule only shortens
      durations, which would make infinite loops jump, so the names are removed here. */
   @media (prefers-reduced-motion: reduce) {
     .hx-glow,
@@ -420,8 +432,15 @@
     }
 
     .hx-tick-view {
-      overflow-x: auto;
+      overflow: visible;
       mask-image: none;
+    }
+
+    .hx-tick-track {
+      flex-wrap: wrap;
+      min-width: 0;
+      column-gap: 32px;
+      row-gap: 0;
     }
   }
 }

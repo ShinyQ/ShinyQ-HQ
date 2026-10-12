@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, collectErrors } from "./hq";
+import { asHumanBrowser, collectErrors, waitForHQ } from "./hq";
+import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -104,4 +105,17 @@ test("non-gated pages are unaffected", async ({ page }) => {
   await page.goto("/en/quick", { waitUntil: "domcontentloaded" });
   expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
   await expect(page.locator("#site-shell")).toBeVisible();
+});
+
+test("a software renderer still offers Enter the 3D HQ, which forces the lite tier", async ({ page }) => {
+  // No ?tier= override: SwiftShader maps to the static tier, so the page shows; WebGL2 exists, so the offer stays.
+  await asHumanBrowser(page);
+  await page.goto("/en");
+  await expect(page.locator("html")).toHaveAttribute("data-hq-boot-released", "static", { timeout: 30_000 });
+  await expect(page.locator("html")).toHaveAttribute("data-hq-3d", "1");
+  const enter = page.getByRole("link", { name: en.home.hero.enter3d });
+  await expect(enter).toBeVisible();
+  await enter.click();
+  await expect(page).toHaveURL(/\/en\?tier=lite$/);
+  await waitForHQ(page);
 });

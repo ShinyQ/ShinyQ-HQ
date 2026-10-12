@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CvButton } from "@/components/cv/CvButton";
 import { PostList } from "@/components/LibraryBlocks";
-import { AskHeroBar } from "@/components/page/AskEntry";
-import { SectionSplit, SectionWide, StatLedger } from "@/components/page/Layout";
+import { FeaturedProject } from "@/components/page/Featured";
+import { HomeHero } from "@/components/page/Hero";
+import { SectionSplit, SectionWide } from "@/components/page/Layout";
+import { StatTicker } from "@/components/page/StatTicker";
 import { TimelineRow } from "@/components/page/Timeline";
-import { WorkFeature, WorkRow } from "@/components/page/Work";
+import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
 import { buildExperienceData } from "@/content/experience";
-import { getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
+import { DYNAMIC_STATS, getDynamicFacts, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
+import { pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { formatYearMonth } from "@/lib/format";
+import { formatDate, formatYearMonth } from "@/lib/format";
 import { pageMetadata } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -31,81 +34,88 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const tl = await getTranslations({ locale, namespace: "library" });
   const profile = getProfile();
   const roof = getRoof();
-  const [lead, ...pair] = getPods("ai").filter((p) => p.tier === "hero");
-  const software = getPods("software").filter((p) => p.tier === "hero");
+  const pods = getPods();
+  const featured = pickFeaturedPods(pods);
+  const [lead, ...side] = featured;
+  const featuredIds = new Set(featured.map((pod) => pod.id));
+  const more = pods.filter((pod) => pod.tier === "hero" && !featuredIds.has(pod.id));
   const latest = getTimeline()
     .filter((e) => e.type === "job" || e.type === "freelance")
     .slice(-4)
     .reverse();
   const experience = buildExperienceData(locale, { L1: tf("L1"), L2: tf("L2"), L3: tf("L3"), L4: tf("L4"), RF: tf("RF") });
+  const status = [
+    {
+      label: t("currentRole"),
+      value: profile.currentRole.title[locale],
+      detail: `${profile.currentRole.org} · ${t("since", { date: formatYearMonth(profile.currentRole.since, locale) })}`,
+    },
+    { label: t("location"), value: profile.location[locale], detail: profile.timezone },
+    { label: t("openTo"), value: roof.availability[locale] },
+  ];
 
   return (
     <>
       <ExperienceGate data={experience} />
-      <section aria-labelledby="hero-title" className="pv-wrap grid gap-10 pt-10 sm:pt-16 lg:grid-cols-12 lg:gap-6 lg:pt-24">
-        <div className="min-w-0 lg:col-span-8">
-          <h1 id="hero-title" className="pv-d-xl">
-            {profile.name}
-          </h1>
-          <p className="pv-lead mt-8 font-semibold">{profile.headline[locale]}</p>
-          <p className="pv-lead mt-1">{profile.subheadline[locale]}</p>
-          <p className="pv-body mt-5">{profile.bio[locale]}</p>
-          <AskHeroBar />
-        </div>
-        <aside aria-label={t("statusLabel")} className="card self-end p-5 sm:p-6 lg:col-span-4">
-          <dl className="divide-y divide-line">
-            {[
-              {
-                label: t("currentRole"),
-                value: profile.currentRole.title[locale],
-                detail: `${profile.currentRole.org} · ${t("since", { date: formatYearMonth(profile.currentRole.since, locale) })}`,
-              },
-              { label: t("location"), value: profile.location[locale], detail: profile.timezone },
-              { label: t("openTo"), value: roof.availability[locale] },
-            ].map((row) => (
-              <div key={row.label} className="grid grid-cols-[92px_1fr] gap-3 py-3.5 first:pt-0">
-                <dt className="pv-data pt-1">{row.label}</dt>
-                <dd className="text-[15px] leading-[22px] text-ink">
-                  {row.value}
-                  {row.detail && <span className="block text-sm text-ink-2">{row.detail}</span>}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <Link href="/labs" className="pv-btn pv-btn-primary">
-              {t("seeWork")}
-            </Link>
-            <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-hero">
-              {tc("viewCv")}
-            </CvButton>
-          </div>
-        </aside>
-      </section>
+      <HomeHero
+        locale={locale}
+        ticker={
+          <StatTicker
+            stats={getStats()}
+            locale={locale}
+            liveIds={Object.keys(DYNAMIC_STATS)}
+            title={t("statsTitle")}
+            live={t("ticker.live")}
+            updated={t("ticker.updated", { date: formatDate(getDynamicFacts().asOf, locale) })}
+            pause={t("ticker.pause")}
+          />
+        }
+      />
 
-      <SectionSplit id="stats" title={t("statsTitle")}>
-        <StatLedger stats={getStats()} locale={locale} />
-      </SectionSplit>
-
-      <SectionWide id="work" title={t("selectedWork")} more={{ href: "/labs", label: t("allProjects", { count: getPods().length }) }}>
-        <div className="grid gap-x-6 gap-y-14 lg:grid-cols-12">
+      <SectionWide id="work" title={t("selectedWork")} more={{ href: "/labs", label: t("allProjects", { count: pods.length }) }}>
+        <div className="grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-12">
           {lead && (
-            <div className="lg:col-span-7">
-              <WorkFeature pod={lead} locale={locale} size="lead" />
+            <div className="md:col-span-2 lg:col-span-7 lg:row-span-2">
+              <FeaturedProject pod={lead} locale={locale} lead />
             </div>
           )}
-          <div className="flex flex-col gap-12 lg:col-span-5">
-            {pair.map((pod) => (
-              <WorkFeature key={pod.id} pod={pod} locale={locale} size="pair" />
-            ))}
-          </div>
-        </div>
-        <ul className="pv-rows pv-rows-closed mt-16">
-          {software.map((pod) => (
-            <WorkRow key={pod.id} pod={pod} locale={locale} />
+          {side.map((pod) => (
+            <div key={pod.id} className="lg:col-span-5">
+              <FeaturedProject pod={pod} locale={locale} />
+            </div>
           ))}
-        </ul>
+        </div>
+        {more.length > 0 && (
+          <>
+            <h3 className="pv-data mt-16">{t("moreWork")}</h3>
+            <ul className="pv-rows pv-rows-closed mt-4">
+              {more.map((pod) => (
+                <WorkRow key={pod.id} pod={pod} locale={locale} />
+              ))}
+            </ul>
+          </>
+        )}
       </SectionWide>
+
+      <SectionSplit id="intro" title={t("introTitle")}>
+        <p className="pv-lead">{profile.bio[locale]}</p>
+        <dl className="mt-8 divide-y divide-line border-y border-line">
+          {status.map((row) => (
+            <div key={row.label} className="grid grid-cols-[120px_1fr] gap-3 py-4">
+              <dt className="pv-data pt-1">{row.label}</dt>
+              <dd className="text-[15px] leading-[22px] text-ink">
+                {row.value}
+                {row.detail && <span className="block text-sm text-ink-2">{row.detail}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-8">
+          <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-hero">
+            {tc("viewCv")}
+          </CvButton>
+        </div>
+      </SectionSplit>
 
       <SectionSplit id="journey" title={t("journeyTitle")} intro={tj("intro")} more={{ href: "/journey", label: t("fullJourney") }}>
         <ul className="pv-rows pv-rows-closed">

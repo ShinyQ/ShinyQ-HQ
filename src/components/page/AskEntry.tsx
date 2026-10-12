@@ -50,6 +50,10 @@ export function AskHeroBar() {
 
   return (
     <div ref={ref} aria-hidden={off || undefined} inert={off} className={`mt-8 max-w-[640px] ${off ? "invisible" : ""}`} data-testid="ask-hero" data-off={off ? "" : undefined}>
+      <label htmlFor={`${id}-q`} className="pv-data mb-3 flex items-center gap-2 text-cyan">
+        <SparkIcon className="size-4" />
+        {th("label")}
+      </label>
       <form
         role="search"
         aria-label={th("label")}
@@ -63,12 +67,6 @@ export function AskHeroBar() {
         onPointerEnter={preload}
         className="flex items-center gap-2 rounded-full border border-line-2 bg-surface py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-cyan/60 hover:border-ink-3"
       >
-        <span aria-hidden="true" className="text-cyan">
-          <SparkIcon className="size-5" />
-        </span>
-        <label htmlFor={`${id}-q`} className="sr-only">
-          {th("label")}
-        </label>
         <input
           id={`${id}-q`}
           type="text"
