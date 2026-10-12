@@ -277,3 +277,13 @@ describe("spec-driven development post facts (R5-P11)", () => {
     }
   });
 });
+
+describe("AI Fraud Document Review gallery names its own product (R5-P11)", () => {
+  it("calls the app MII Fraud Detection, never FREDDY (the automotive client's product)", () => {
+    const pods = parsed.success ? parsed.data.floors.labs.pods : [];
+    const assets = pods.find((p) => p.slug === "fraud-review-platform")?.assets ?? [];
+    expect(assets[0]?.alt.en).toMatch(/^MII Fraud Detection home:/);
+    expect(assets[0]?.alt.id).toMatch(/^Beranda MII Fraud Detection:/);
+    for (const a of assets) expect(`${a.alt.en} ${a.alt.id}`).not.toMatch(/FREDDY/i);
+  });
+});
