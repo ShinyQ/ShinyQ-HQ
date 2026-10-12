@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData, GpuTier } from "../types";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
 import type { HallLabels } from "./lobby/hallContent";
@@ -17,8 +19,21 @@ export interface LobbyLabels {
   hall: HallLabels;
 }
 
+/**
+ * The Highlights Hall builds once the visitor is (or rides) on L1 after the intro, and then stays: the
+ * boot, the intro and a deep link that rides on to another floor never pay for its text and geometry.
+ * It stands behind the certification wall, out of the spawn view, so it does not pop in when the intro hands over.
+ */
+function useHallReady(): boolean {
+  const want = useHQStore((s) => s.phase !== "boot" && s.phase !== "intro" && (s.ride?.to ?? s.floor) === "L1");
+  const [ready, setReady] = useState(want);
+  if (want && !ready) setReady(true);
+  return ready;
+}
+
 /** L1 Lobby (appendix 01 section 2), generated from content. */
 export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: LobbyLabels; tier: GpuTier }) {
+  const hall = useHallReady();
   return (
     <group name="lobby">
       <Lanes packets={tier === "full" ? 28 : 12} />
@@ -27,7 +42,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
       <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
       <MissionKiosk missions={data.missions} labels={labels.kiosk} />
-      <HighlightsHall data={data} labels={labels.hall} tier={tier} />
+      {hall && <HighlightsHall data={data} labels={labels.hall} tier={tier} />}
     </group>
   );
 }
