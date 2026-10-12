@@ -638,6 +638,22 @@ async function settleFloor(page: Page, v: Viewport) {
   } else await page.waitForTimeout(8000);
 }
 
+/**
+ * Chromium refuses one capture taller than its texture limit (about 16k px: /journey at 1440 wide, Home
+ * at 2560), so tall pages are written in 8000 px slices (`-part1.png`, `-part2.png`, ...).
+ */
+async function fullPageShot(page: Page, base: string, width: number) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  const slice = 8000;
+  if (height <= slice) {
+    await page.screenshot({ path: `${base}.png`, fullPage: true, animations: "disabled" });
+    return;
+  }
+  for (let y = 0, part = 1; y < height; y += slice, part += 1) {
+    await page.screenshot({ path: `${base}-part${part}.png`, fullPage: true, animations: "disabled", clip: { x: 0, y, width, height: Math.min(slice, height - y) } });
+  }
+}
+
 const cvDrawCalls = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls);
 
 function recordCvMetric(entry: Record<string, unknown>) {
@@ -663,7 +679,7 @@ test.describe("CV refresh captures", () => {
         await tab.goto(`${path}?tier=static`, { waitUntil: "networkidle" });
         await tab.evaluate(() => document.fonts.ready);
         await expect(tab.locator("h1").first()).toBeVisible();
-        await tab.screenshot({ path: `${CV_SHOT_DIR}/page-${name}-${size}.png`, fullPage: true, animations: "disabled" });
+        await fullPageShot(tab, `${CV_SHOT_DIR}/page-${name}-${size}`, v.width);
         await context.close();
       });
     }
