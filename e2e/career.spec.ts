@@ -121,7 +121,7 @@ test.describe("Career Road (L2)", () => {
     await expect(page.getByTestId("walk-bar")).toBeVisible();
     await expect(page.getByTestId("walk-counter")).toContainText(/Stop 1 of \d+/);
     await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", "L2:prologue-2016");
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -186,6 +186,8 @@ test.describe("Career Archive on touch", () => {
 
   test("a horizontal swipe scrubs forward and back through the years", async ({ page }) => {
     const errors = collectErrors(page);
+    // Rover's L2 floor line would cover the swipe's start point on a phone.
+    await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L2"])));
     await openJourney(page);
     await waitForPhase(page, "explore");
     // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot

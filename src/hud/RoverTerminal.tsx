@@ -9,15 +9,6 @@ export const TERMINAL_SEEN_KEY = "hq:terminal-seen";
 const CHAR_MS = 12;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
-/** True until the terminal has been shown once on this device (auto-open on the first visit). */
-export function shouldAutoOpenTerminal(): boolean {
-  try {
-    return localStorage.getItem(TERMINAL_SEEN_KEY) === null;
-  } catch {
-    return false;
-  }
-}
-
 export function markTerminalSeen() {
   try {
     localStorage.setItem(TERMINAL_SEEN_KEY, "1");
@@ -58,6 +49,15 @@ export interface RoverTerminalProps {
   ask?: boolean;
   /** The "ask me anything" option: the caller closes the terminal and opens the Ask dock. */
   onAsk?: () => void;
+  /** Options after the missions, before "explore on my own" (3D only: replay the tutorial, hints). */
+  extras?: readonly TerminalExtra[];
+}
+
+export interface TerminalExtra {
+  /** Single lowercase key that picks it (not a digit and not `a`). */
+  key: string;
+  label: string;
+  onSelect: () => void;
 }
 
 /**
@@ -88,7 +88,7 @@ interface PanelProps extends Omit<RoverTerminalProps, "open" | "reducedMotion"> 
   animate: boolean;
 }
 
-function TerminalPanel({ locale, missions, onRun, onClose, now, className, animate, ask = false, onAsk }: PanelProps) {
+function TerminalPanel({ locale, missions, onRun, onClose, now, className, animate, ask = false, onAsk, extras = [] }: PanelProps) {
   const t = useTranslations("hud.terminal");
   const tAsk = useTranslations("ask.terminal");
   const id = useId();
@@ -101,7 +101,8 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
   const panelRef = useRef<HTMLDivElement>(null);
   const typing = typed < total;
   const askOffset = ask ? 1 : 0;
-  const optionCount = askOffset + missions.length + 1;
+  const extraOffset = askOffset + missions.length;
+  const optionCount = extraOffset + extras.length + 1;
 
   useEffect(() => {
     if (!animate) return;
@@ -135,8 +136,10 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
   const choose = (index: number) => {
     if (ask && index === 0) return enterAsk();
     const mission = index - askOffset;
-    if (mission >= missions.length) onClose();
-    else onRun(missions[mission].id);
+    if (mission < missions.length) return onRun(missions[mission].id);
+    const extra = index - extraOffset;
+    if (extra < extras.length) return extras[extra].onSelect();
+    onClose();
   };
 
   const focusables = () => [...(panelRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), [tabindex='0']") ?? [])];
@@ -148,6 +151,12 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
     if (ask && key.toLowerCase() === "a") {
       event.preventDefault();
       enterAsk();
+      return;
+    }
+    const extra = extras.findIndex((option) => option.key === key.toLowerCase());
+    if (extra >= 0) {
+      event.preventDefault();
+      choose(extraOffset + extra);
       return;
     }
     if (/^[1-9]$/.test(key)) {
@@ -262,10 +271,11 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
           aria-activedescendant={`${id}-opt-${active}`}
           className="mx-3 mb-3 max-h-[50vh] overflow-y-auto rounded-[10px] border border-terminal-fg/25 bg-black/40 p-1 outline-none focus-visible:ring-1 focus-visible:ring-terminal-fg/60 sm:max-h-none"
         >
-          {[...(ask ? [tAsk("option")] : []), ...missions.map((m) => m.label[locale]), t("driveMyself")].map((label, index) => {
+          {[...(ask ? [tAsk("option")] : []), ...missions.map((m) => m.label[locale]), ...extras.map((option) => option.label), t("driveMyself")].map((label, index) => {
             const selected = index === active;
             const mission = index - askOffset;
-            const key = ask && index === 0 ? "a" : mission < missions.length ? String(mission + 1) : "esc";
+            const extra = index - extraOffset;
+            const key = ask && index === 0 ? "a" : mission < missions.length ? String(mission + 1) : extra < extras.length ? extras[extra].key : "esc";
             return (
               <li
                 key={key}

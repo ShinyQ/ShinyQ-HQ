@@ -36,7 +36,10 @@ async function expectNoSeriousViolations(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+  await page.addInitScript(() => {
+    localStorage.setItem("hq:terminal-seen", "1");
+    localStorage.setItem("hq:onboarded", "done");
+  });
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 

@@ -13,6 +13,7 @@ import { careerLayoutInput } from "../floors/career/layout";
 import { libraryLayoutInput } from "../floors/library/model";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
+import { HintProbe } from "../hints/HintProbe";
 import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
@@ -70,6 +71,7 @@ export function Scene({
       <directionalLight color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
       <InteractLayer layouts={layouts} data={interactData} tier={tier} />
+      <HintProbe />
       <Rover tier={tier} />
       <TeleportBeam />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />

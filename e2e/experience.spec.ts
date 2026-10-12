@@ -45,7 +45,10 @@ async function trackPeaks(page: Page) {
 test.describe("boot and intro", () => {
   test("the boot and the intro play in full once per session; nothing skips them", async ({ page }) => {
     const errors = collectErrors(page);
-    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const boot = page.getByTestId("boot");
@@ -80,6 +83,7 @@ test.describe("boot and intro", () => {
     const page = await context.newPage();
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));
     });
     await page.goto("/en?tier=lite");
@@ -118,7 +122,10 @@ test.describe("boot and intro", () => {
   });
 
   test("a floor deep link plays the intro in the Lobby, then rides to its floor", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
     await page.goto("/en/library?tier=lite");
     await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
@@ -133,7 +140,10 @@ test.describe("boot and intro", () => {
   test("reduced motion holds a still intro of the same length", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     const page = await context.newPage();
-    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
@@ -529,15 +539,14 @@ test.describe("missions in 3D", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the terminal opens after the intro on the first visit", async ({ page }) => {
+  test("the first visit gets Rover's tour after the intro, not the Ask Rover terminal", async ({ page }) => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
-    await page.waitForTimeout(1200);
-    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
     await expect(start).not.toHaveAttribute("aria-disabled", "true");
     await start.click();
-    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("dialog-box")).toHaveAttribute("data-dialog", "onboarding", { timeout: 30_000 });
+    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
   });
 
   test("the 3D HUD has no serious accessibility violations", async ({ page }) => {

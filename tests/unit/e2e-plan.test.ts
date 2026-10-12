@@ -3,13 +3,19 @@ import { ALL_SPECS, assignShard, parseShard, SMOKE_SPECS, specsForChanges } from
 import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
+  it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["experience", "onboarding", "walk"]);
+    expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["experience", "onboarding", "walk"]);
+    expect(specsForChanges(["src/hud/walk/WalkLayer.tsx"]).specs).toEqual(["hud", "missions", "onboarding", "walk"]);
+    expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
+  });
   it("maps point-and-go code to the interact spec and the specs that click targets", () => {
     expect(specsForChanges(["src/experience/interact/registry.ts"]).specs).toEqual(["career", "experience", "interact", "pads"]);
     expect(specsForChanges(["src/hud/InteractStatus.tsx"]).specs).toEqual(["career", "experience", "interact", "pads"]);
     expect(specsForChanges(["e2e/interact.spec.ts"]).specs).toEqual(["interact"]);
   });
   it("maps the 3D gate, its tier probe and the landing's Enter button to the gate specs", () => {
-    expect(specsForChanges(["src/experience/gate-tier.ts"]).specs).toEqual(["boot-first", "experience"]);
+    expect(specsForChanges(["src/experience/gate-tier.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/components/page/EnterHqButton.tsx"]).specs).toEqual(["boot-first", "experience", "pageview"]);
   });
 
@@ -17,11 +23,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "walk"]);
-    expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience"]);
-    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience"]);
-    expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience"]);
+    expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
+    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
+    expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/Controls.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "missions"]);
-    expect(specsForChanges(["src/hud/walk/WalkBar.tsx"]).specs).toEqual(["hud", "missions", "walk"]);
+    expect(specsForChanges(["src/hud/walk/WalkBar.tsx"]).specs).toEqual(["hud", "missions", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
     expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
     expect(specsForChanges(["src/content/room-views/roof.ts"]).specs).toEqual(["library-roof", "roof"]);

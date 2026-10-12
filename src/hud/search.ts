@@ -8,6 +8,8 @@ const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
   "toggle-language": ["language", "bahasa", "english", "indonesia", "inggris"],
   "toggle-sound": ["sound", "audio", "mute", "suara"],
   "quick-view": ["quick", "summary", "ringkas", "overview"],
+  "replay-tutorial": ["tutorial", "tour", "onboarding", "help", "guide", "replay", "panduan", "bantuan", "ulang"],
+  "toggle-hints": ["hints", "hint", "bubbles", "tips", "petunjuk"],
 };
 
 const RESULT_GROUPS = ["missions", "rooms", "years", "actions"] as const;

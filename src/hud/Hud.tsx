@@ -9,6 +9,13 @@ import { useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
+// Rover's dialog rides in the 3D chunk (itself lazy): a second dynamic import here made Turbopack
+// regroup shared modules into Page View chunks (+7 KB JS on every page, over the Lighthouse budget).
+import DialogLayer from "./dialog/DialogLayer";
+import { HintLayer } from "./dialog/HintLayer";
+import { OnboardingLayer } from "./dialog/OnboardingLayer";
+import { firstName } from "./dialog/onboarding";
+import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
@@ -101,6 +108,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const [walking, setWalking] = useState(false);
   const [bottomSlot, setBottomSlot] = useState<HTMLDivElement | null>(null);
   const askOpen = useAskPanelOpen();
+  const speaking = useDialog((v) => v.line !== null);
   // The room drawer and the Ask panel cover the bottom band (sheets) or the right side (side panels):
   // the Walk HUD then docks beside the side panel or goes under the top controls. Otherwise its pills
   // join the bottom band, and its card sits above the band (coarse) or at the bottom (fine pointers).
@@ -138,7 +146,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
             right={explorable ? <ViewControls /> : null}
           >
             <InteractStatus coarse={coarse} />
-            {explorable && !walking && <HintBar coarse={coarse} mobile={mobile} />}
+            {explorable && !walking && !speaking && <HintBar coarse={coarse} mobile={mobile} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />
         </>
@@ -153,6 +161,9 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
         onActive={setWalking}
       />
       <FloorAnnouncer data={data} />
+      <OnboardingLayer data={data} />
+      <HintLayer suppressed={walking} name={firstName(data.profile.name)} />
+      {speaking && <DialogLayer />}
       <PadPicker data={data} />
     </div>
   );

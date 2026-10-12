@@ -72,7 +72,7 @@ test.describe("bottom band", () => {
       await waitForHQ(page);
       await waitForPhase(page, "explore");
       await waitForSceneLive(page);
-      await page.getByTestId("walk-prompt").getByRole("button", { name: en.walk.explore }).click();
+      await page.getByTestId("dialog-choices").getByRole("button", { name: en.walk.explore }).click();
       const launcher = page.getByTestId("walk-launcher");
       await expect(launcher.getByRole("button", { name: new RegExp(en.walk.projects.start) })).toBeVisible();
       const ask = page.locator("[data-testid='ask-pill']:visible");

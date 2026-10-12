@@ -403,3 +403,14 @@
     transform: translateY(8px) scale(0.98);
   }
 }
+
+/* Rover dialog box and hint bubble (src/hud/dialog): a pixel-style double frame, like a handheld RPG text box. */
+.hq-dialog {
+  border: 2px solid var(--color-ink);
+  border-radius: 6px;
+  background: rgb(10 10 18 / 0.96);
+  box-shadow:
+    0 0 0 2px var(--color-void),
+    0 0 0 4px rgb(34 211 238 / 0.55),
+    0 12px 32px rgb(0 0 0 / 0.5);
+}

@@ -12,19 +12,24 @@ import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/expe
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
 import { CommandPalette } from "./CommandPalette";
+import { useHintsOn, useTutorialAvailable } from "./dialog/hooks";
+import { hintsOn, setHintsOn } from "./dialog/storage";
+import { replayTutorial } from "./dialog/tutorial";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
 import type { HudIndex } from "./index-data";
 import { useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
-import { RoverTerminal, markTerminalSeen } from "./RoverTerminal";
+import { RoverTerminal, markTerminalSeen, type TerminalExtra } from "./RoverTerminal";
 import { buildPaletteEntries } from "./search";
 import { orderTerminalMissions } from "./terminal";
 
 const VISITS_KEY = "hq:visits";
 const MIN_TOAST_MS = 2400;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view"];
+/** Only while the 3D HUD is open (its OnboardingLayer hosts the replay). */
+const TUTORIAL_ACTIONS: readonly PaletteActionId[] = ["replay-tutorial", "toggle-hints"];
 
 export interface MissionHudProps {
   locale: Locale;
@@ -71,6 +76,9 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const [toast, setToast] = useState<{ text: string; ms: number; id: number } | null>(null);
   // Ask the HQ: the status is fetched on idle by the dock, or now when the terminal or the palette opens.
   const askEnabled = isAskEnabled(useAskStatus());
+  const tutorial = useTutorialAvailable();
+  const hints = useHintsOn();
+  const tMenu = useTranslations("dialog.menu");
 
   const loadAskStatus = useCallback(() => {
     void requestAskStatus();
@@ -141,7 +149,27 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     if (settled) document.documentElement.setAttribute("data-hydrated", "");
   }, [settled]);
 
-  const entries = useMemo(() => (index ? buildPaletteEntries(index, STATIC_ACTIONS) : []), [index]);
+  const entries = useMemo(
+    () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS) : []),
+    [index, tutorial],
+  );
+  const extras = useMemo<TerminalExtra[]>(
+    () =>
+      tutorial
+        ? [
+            {
+              key: "r",
+              label: tMenu("replay"),
+              onSelect: () => {
+                setTerminalOpen(false);
+                replayTutorial();
+              },
+            },
+            { key: "h", label: hints ? tMenu("hintsOn") : tMenu("hintsOff"), onSelect: () => setHintsOn(!hints) },
+          ]
+        : [],
+    [tutorial, hints, tMenu],
+  );
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions, visit) : []), [index, visit]);
 
   // Visit counter, HUD commands and global shortcuts.
@@ -222,6 +250,15 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
       case "toggle-sound":
         audio.toggleMuted();
         return;
+      case "replay-tutorial":
+        replayTutorial();
+        return;
+      case "toggle-hints": {
+        const next = !hintsOn();
+        setHintsOn(next);
+        say(next ? tMenu("hintsOn") : tMenu("hintsOff"));
+        return;
+      }
     }
   };
 
@@ -258,6 +295,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         locale={locale}
         missions={terminalMissions}
         ask={askEnabled}
+        extras={extras}
         onAsk={() => {
           setTerminalOpen(false);
           openAsk(undefined, { source: "terminal" });

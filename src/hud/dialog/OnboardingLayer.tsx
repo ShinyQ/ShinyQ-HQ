@@ -1,0 +1,121 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MissionStep } from "@/content/schema";
+import { extraItems } from "@/experience/hints/source";
+import { isContinuing, onContinuationChange } from "@/experience/introContinue";
+import { runMissionSteps } from "@/experience/missions/bridge";
+import { roverRuntime } from "@/experience/rover/runtime";
+import type { ExperienceData } from "@/experience/types";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { firstName, highlightsTarget, runOnboarding, waitForRoverMove, type OnboardingCopy, type OnboardingVariant } from "./onboarding";
+import { markOnboarded, onboarded } from "./storage";
+import { cancelAllDialogs, say } from "./store";
+import { registerTutorial } from "./tutorial";
+
+/** Pause after the intro hands over (or a deep link arrives) before Rover speaks. */
+export const START_DELAY_MS = 600;
+
+/**
+ * Starts the first-session tour once per browser: in the Lobby right after the boot and intro
+ * (full), or after a deep link has ridden on to its floor or room and the drawer is closed (short).
+ * Replaces the old first-visit Rover Terminal auto-open. Also the host of "Replay the tutorial".
+ */
+export function OnboardingLayer({ data }: { data: ExperienceData }) {
+  const t = useTranslations("dialog.onboarding");
+  const coarse = useHQStore((s) => s.device.coarse);
+  const ready = useHQStore((s) => s.phase === "explore" && !s.ride);
+  const [continuing, setContinuing] = useState(false);
+  const deepLinked = useRef(false);
+  const running = useRef(false);
+  const name = firstName(data.profile.name);
+
+  // The deep link target is set in Experience's layout effect, after this component rendered: sync on mount.
+  useEffect(() => {
+    const sync = () => {
+      const now = isContinuing();
+      if (now) deepLinked.current = true;
+      setContinuing(now);
+    };
+    sync();
+    return onContinuationChange(sync);
+  }, []);
+
+  const run = useCallback(
+    async (variant: OnboardingVariant, replay: boolean) => {
+      if (running.current) return;
+      running.current = true;
+      const copy: OnboardingCopy = {
+        welcome: t("welcome", { name }),
+        start: t("start"),
+        skip: t("skip"),
+        skipped: t("skipped"),
+        moveFine: t("moveFine"),
+        moveCoarse: t("moveCoarse"),
+        pointGoFine: t("pointGoFine"),
+        pointGoCoarse: t("pointGoCoarse"),
+        moved: t("moved"),
+        highlights: t("highlights", { name }),
+        showMe: t("showMe"),
+        later: t("later"),
+        elevator: t("elevator"),
+        askRover: t("askRover"),
+        askAi: t("askAi", { name }),
+        closing: t("closing"),
+        closingShort: t("closingShort"),
+      };
+      try {
+        const outcome = await runOnboarding({
+          say,
+          copy,
+          coarse,
+          variant,
+          waitForMove: (signal) => waitForRoverMove(getHQStore(), signal),
+          // The hall registers its stations as L1 extras, so they are found from any floor (replay).
+          highlights: () => highlightsTarget(extraItems("L1")),
+          showMe: async (hall) => {
+            const drive: MissionStep = { kind: "drive", to: hall.at };
+            const steps: MissionStep[] = getHQStore().getState().floor === hall.floor ? [drive] : [{ kind: "elevator", floor: hall.floor }, drive];
+            await runMissionSteps("onboarding:highlights", steps);
+          },
+          askAi: () => document.querySelector("[data-testid='hud'] [data-onboard='ask-ai']") !== null,
+        });
+        if (outcome !== "cancelled" && (!replay || !onboarded())) markOnboarded(outcome);
+      } finally {
+        running.current = false;
+      }
+    },
+    [t, name, coarse],
+  );
+
+  // "Replay the tutorial" (Ask Rover, Cmd-K): stop whatever Rover says, then start over in full.
+  useEffect(
+    () =>
+      registerTutorial(() => {
+        cancelAllDialogs();
+        window.setTimeout(() => void run("full", true), 0);
+      }),
+    [run],
+  );
+
+  useEffect(() => {
+    if (!ready || continuing || running.current || onboarded()) return;
+    let timer = 0;
+    const attempt = () => {
+      const s = getHQStore().getState();
+      if (s.phase !== "explore" || onboarded() || running.current) return;
+      // Let an arrival roll-on (FloorLayout.arrival) or a mission drive finish first, so the try-it step starts from rest.
+      const pilot = roverRuntime.autopilot;
+      if (s.mission?.status === "running" || (pilot && pilot.state !== "done")) {
+        timer = window.setTimeout(attempt, START_DELAY_MS);
+        return;
+      }
+      void run(s.floor === "L1" && !deepLinked.current ? "full" : "short", false);
+    };
+    timer = window.setTimeout(attempt, START_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [ready, continuing, run]);
+
+  return null;
+}

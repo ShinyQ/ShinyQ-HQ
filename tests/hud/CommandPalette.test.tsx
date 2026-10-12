@@ -45,6 +45,8 @@ const actionLabels: Record<PaletteActionId, { en: string; id: string }> = {
   "toggle-language": { en: "Baca dalam Bahasa Indonesia", id: "Read in English" },
   "toggle-sound": { en: "Toggle sound", id: "Suara" },
   "quick-view": { en: "Quick view", id: "Tampilan ringkas" },
+  "replay-tutorial": { en: "Replay the tutorial", id: "Putar ulang tutorial" },
+  "toggle-hints": { en: "Turn hints on or off", id: "Nyalakan atau matikan petunjuk" },
 };
 
 const entries = buildPaletteEntries({ missions, rooms, years, actionLabels }, ["view-cv", "copy-email"]);

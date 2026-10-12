@@ -9,7 +9,7 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { getContent } from "@/content/load";
 import type { Locale } from "@/content/schema";
-import { RoverTerminal, markTerminalSeen, shouldAutoOpenTerminal, type RoverTerminalProps } from "@/hud/RoverTerminal";
+import { RoverTerminal, markTerminalSeen, type RoverTerminalProps } from "@/hud/RoverTerminal";
 import { greetingKey, orderTerminalMissions } from "@/hud/terminal";
 
 const missions = orderTerminalMissions(getContent().missions, 0);
@@ -219,9 +219,27 @@ describe("terminal helpers", () => {
     expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(8);
   });
 
-  it("auto-opens only until the terminal was seen", () => {
-    expect(shouldAutoOpenTerminal()).toBe(true);
+  it("records that the terminal was seen", () => {
     markTerminalSeen();
-    expect(shouldAutoOpenTerminal()).toBe(false);
+    expect(localStorage.getItem("hq:terminal-seen")).toBe("1");
+  });
+
+  it("lists extra options after the missions and runs them by key or tap", async () => {
+    const replay = vi.fn();
+    const hints = vi.fn();
+    renderTerminal({
+      extras: [
+        { key: "r", label: "replay the tutorial", onSelect: replay },
+        { key: "h", label: "hints: on", onSelect: hints },
+      ],
+    });
+    const options = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(options.at(-3)).toContain("[r]replay the tutorial");
+    expect(options.at(-2)).toContain("[h]hints: on");
+    expect(options.at(-1)).toContain(en.hud.terminal.driveMyself);
+    await userEvent.keyboard("r");
+    expect(replay).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("option", { name: /hints: on/ }));
+    expect(hints).toHaveBeenCalledTimes(1);
   });
 });

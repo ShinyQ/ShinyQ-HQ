@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { INTRO_KEY, introSeen, lobbyStartPhase, markIntroSeen, type SessionLike } from "@/lib/intro-session";
-import { continuationSteps, endContinuation, introTarget, isContinuing, setIntroTarget, takeIntroTarget } from "@/experience/introContinue";
+import { continuationSteps, endContinuation, introTarget, isContinuing, onContinuationChange, setIntroTarget, takeIntroTarget } from "@/experience/introContinue";
 
 const memory = () => {
   const data = new Map<string, string>();
@@ -73,5 +73,19 @@ describe("intro continuation (deep links play the intro first, then the rover co
     expect(takeIntroTarget()).toBeNull();
     endContinuation();
     expect(isContinuing()).toBe(false);
+  });
+});
+describe("continuation listener", () => {
+  it("tells the onboarding when a deep link starts and stops continuing", () => {
+    const listener = vi.fn();
+    const off = onContinuationChange(listener);
+    setIntroTarget({ floor: "L4" });
+    expect(isContinuing()).toBe(true);
+    takeIntroTarget();
+    endContinuation();
+    expect(isContinuing()).toBe(false);
+    off();
+    setIntroTarget(null);
+    expect(listener).toHaveBeenCalledTimes(3);
   });
 });

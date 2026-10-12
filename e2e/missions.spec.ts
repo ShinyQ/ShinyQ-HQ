@@ -11,7 +11,10 @@ const mission = (id: string) => data.missions.find((entry) => entry.id === id)!;
 
 /** Marks the Rover Terminal as seen so it does not auto-open. */
 async function seenTerminal(page: Page) {
-  await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+  await page.addInitScript(() => {
+    localStorage.setItem("hq:terminal-seen", "1");
+    localStorage.setItem("hq:onboarded", "done");
+  });
 }
 
 async function expectNoSeriousViolations(page: Page) {

@@ -11,9 +11,12 @@ import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { careerWalk, labsWalk, libraryWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { ExperienceData } from "@/experience/types";
+import { FLOOR_LINES, floorIntroLine } from "@/hud/dialog/floorIntro";
+import { useOnboardingSettled } from "@/hud/dialog/hooks";
+import { firstName } from "@/hud/dialog/onboarding";
+import { cancelDialog, say } from "@/hud/dialog/store";
 import { useHQStore } from "@/store/useHQStore";
 import { WalkBar, type WalkPlacement } from "./WalkBar";
-import { WalkPrompt } from "./WalkPrompt";
 
 /** Delay after arriving on a floor before the first-visit prompt shows (the ding and the camera settle). */
 const PROMPT_DELAY_MS = 700;
@@ -71,8 +74,9 @@ export function useWalkState(walk: WalkController | null): WalkState | null {
 }
 
 /**
- * Guided walks in the 3D HUD: one controller per floor with a walk, the first-visit prompt, the
- * Walk HUD, `[` and `]` to step, and manual driving pausing the walk. Legs run as missions through
+ * Guided walks in the 3D HUD: one controller per floor with a walk, the first-visit floor line
+ * (Rover's dialog, ending with the walk choice), the Walk HUD, `[` and `]` to step, and manual
+ * driving pausing the walk. Legs run as missions through
  * the active runner (missions/bridge.ts), so the rover follows the floor's road.
  */
 export function WalkLayer({
@@ -93,6 +97,9 @@ export function WalkLayer({
   onActive?: (active: boolean) => void;
 }) {
   const t = useTranslations("walk");
+  const tFloor = useTranslations("dialog.floor");
+  const name = firstName(data.profile.name);
+  const settled = useOnboardingSettled();
   const definitions = useWalkDefinitions(data);
   const [enabled] = useState<readonly FloorId[]>(() => (typeof window === "undefined" ? WALK_FLOORS : walkFloorsEnabled(WALK_FLOORS, window.location.search)));
   const controllers = useMemo(() => {
@@ -113,12 +120,40 @@ export function WalkLayer({
   const prompting = prompt === floor && !active;
   useEffect(() => onActive?.(active || prompting), [active, prompting, onActive]);
 
-  // First visit to a floor with a walk: offer it once the rover is free to drive.
+  // First visit to a floor with a walk: once the first-session tour is settled and the rover is free, Rover introduces the floor.
   useEffect(() => {
-    if (!walk || !exploring || active || promptSeen(floor)) return;
+    if (!walk || !exploring || active || !settled || !FLOOR_LINES.includes(floor) || promptSeen(floor)) return;
     const timer = window.setTimeout(() => setPrompt(floor), PROMPT_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [walk, exploring, active, floor]);
+  }, [walk, exploring, active, settled, floor]);
+
+  // One prompt, not two: the floor line ends with the walk choice.
+  useEffect(() => {
+    if (!walk || prompt !== floor || active) return;
+    const saved = walk.saved();
+    const resumeIndex = saved && !saved.done && saved.stop ? walk.stops().findIndex((s) => s.id === saved.stop) : -1;
+    const id = `floor:${floor}`;
+    let live = true;
+    void say(
+      floorIntroLine({
+        text: tFloor(floor, { name }),
+        start: t(`${walk.definition.id}.start`),
+        resume: resumeIndex > 0 ? t("resumeAt", { index: resumeIndex + 1 }) : null,
+        explore: t("explore"),
+      }),
+      { id },
+    ).then((result) => {
+      if (!live || result.status === "cancelled") return;
+      markPromptSeen(floor);
+      setPrompt(null);
+      if (result.choice === "start") void walk.start({ restart: true });
+      else if (result.choice === "resume") void walk.start();
+    });
+    return () => {
+      live = false;
+      cancelDialog(id);
+    };
+  }, [walk, prompt, floor, active, name, t, tFloor]);
 
   const closePrompt = () => {
     if (prompt) markPromptSeen(prompt);
@@ -169,27 +204,7 @@ export function WalkLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walk, prompt]);
 
-  if (!walk || !state || hidden) return null;
-  if (prompting) {
-    const saved = walk.saved();
-    const resumeIndex = saved && !saved.done && saved.stop ? walk.stops().findIndex((s) => s.id === saved.stop) : -1;
-    return (
-      <WalkPrompt
-        walkId={walk.definition.id}
-        placement={placement}
-        resumeAt={resumeIndex > 0 ? resumeIndex + 1 : null}
-        onStart={() => {
-          closePrompt();
-          void walk.start({ restart: true });
-        }}
-        onResume={() => {
-          closePrompt();
-          void walk.start();
-        }}
-        onExplore={closePrompt}
-      />
-    );
-  }
+  if (!walk || !state || hidden || prompting) return null;
   return (
     <WalkBar
       walk={walk}

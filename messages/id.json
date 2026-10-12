@@ -391,7 +391,9 @@
       "copyEmail": "Salin email",
       "toggleLanguage": "Read in English",
       "toggleSound": "Aktifkan atau matikan suara",
-      "quickView": "Ringkasan"
+      "quickView": "Ringkasan",
+      "replayTutorial": "Putar ulang tutorial",
+      "toggleHints": "Nyalakan atau matikan petunjuk"
     },
     "status": {
       "running": "Misi aktif: {mission}",
@@ -772,6 +774,72 @@
       "all": "Semua",
       "other": "Lainnya",
       "page": "{page} / {pages}"
+    }
+  },
+  "dialog": {
+    "name": "Rover",
+    "next": "Berikutnya",
+    "continue": "Lanjut",
+    "choices": "Pilihan",
+    "tryIt": "Coba sekarang",
+    "onboarding": {
+      "welcome": "Hai, saya Rover! Selamat datang di HQ {name}. Mau tur singkat cara menjelajah di sini?",
+      "start": "Ajak saya keliling",
+      "skip": "Lewati tutorial",
+      "skipped": "Tidak masalah. Tur ini bisa diputar ulang kapan saja dari Tanya Rover.",
+      "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk boost.",
+      "moveCoarse": "Geser joystick untuk mengemudi. Tahan tombol boost agar lebih cepat.",
+      "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
+      "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
+      "moved": "Mantap, kemudinya lancar!",
+      "highlights": "Highlights Hall di sisi timur merangkum karya terbaik {name}. Mau lihat?",
+      "showMe": "Antar saya ke sana",
+      "later": "Nanti saja",
+      "elevator": "Lift ini menuju semua lantai. Berhenti di pad panggil yang menyala di depannya untuk memilih lantai.",
+      "askRover": "Bingung mau ke mana? Tanya Rover punya perjalanan berpemandu.",
+      "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
+      "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
+      "closingShort": "Itu dasarnya! Tur lengkap bisa diputar ulang dari Tanya Rover kapan saja."
+    },
+    "floor": {
+      "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",
+      "L3": "Selamat datang di Project Roads: proyek produk dan AI di dua sayap yang bertemu dalam satu putaran.",
+      "L4": "Ini Newsroom: tulisan terbaru lebih dulu, lalu riset, model, dan talk.",
+      "RF": "Di atap ini: siapa {name}, ketersediaan, CV, dan cara menghubungi."
+    },
+    "hints": {
+      "bubble": "Petunjuk: {label}",
+      "kind": {
+        "door": "{label}: kemudikan masuk ke pintu untuk membukanya.",
+        "elevator-pad": "Berhenti di atas saya untuk memilih lantai.",
+        "teleporter": "Berhenti di pad ini untuk teleport ke tahun lain.",
+        "station": "{label}: buka untuk melihat lebih dekat.",
+        "kiosk": "{label}: buka untuk memakai kios ini.",
+        "board": "{label}: buka untuk melihat daftar lengkap."
+      },
+      "object": {
+        "highlights": "Highlights Hall: karya terbaik {name} di satu tempat.",
+        "askRover": "Kios Tanya Rover: perjalanan berpemandu keliling HQ.",
+        "cv": "Kios CV: baca atau unduh CV.",
+        "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
+        "research": "Meja Riset: paper lengkap dengan abstrak dan sitasi.",
+        "workshop": "Workshop: proyek sampingan, repo, dan model."
+      },
+      "go": {
+        "open": "Buka",
+        "pickFloor": "Pilih lantai",
+        "pickYear": "Pilih tahun",
+        "askRover": "Tanya Rover",
+        "browse": "Telusuri",
+        "viewCv": "Lihat CV",
+        "go": "Pergi"
+      },
+      "notNow": "Nanti saja"
+    },
+    "menu": {
+      "replay": "putar ulang tutorial",
+      "hintsOn": "petunjuk: aktif",
+      "hintsOff": "petunjuk: mati"
     }
   }
 }

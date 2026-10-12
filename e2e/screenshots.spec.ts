@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import en from "../messages/en.json";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -96,7 +97,10 @@ for (const viewport of VIEWPORTS) {
     test(`${page.name} (HTML) @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
       const tab = await context.newPage();
-      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+      await tab.addInitScript(() => {
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:onboarded", "done");
+      });
       await tab.goto(`${page.path}?tier=static`, { waitUntil: "networkidle" });
       await tab.evaluate(() => document.fonts.ready);
       await expect(tab.locator("h1").first()).toBeVisible();
@@ -200,7 +204,7 @@ for (const viewport of L4_VIEWPORTS) {
     const { context, page } = await open3DAt(browser, viewport, "/en/library");
     // In-world text (troika) builds its glyphs slowly on SwiftShader.
     await page.waitForTimeout(8000);
-    const prompt = page.getByTestId("walk-prompt");
+    const prompt = page.getByTestId("dialog-choices");
     await expect(prompt).toBeVisible();
     await page.screenshot({ path: shot("hq-l4-writing", viewport) });
     await prompt.getByRole("button", { name: "Read my writing" }).click();
@@ -258,7 +262,10 @@ for (const viewport of VIEWPORTS) {
     test(`${overlay.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
       const tab = await context.newPage();
-      await tab.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+      await tab.addInitScript(() => {
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:onboarded", "done");
+      });
       await tab.goto("/en?tier=static", { waitUntil: "networkidle" });
       await tab.evaluate(() => document.fonts.ready);
       await overlay.open(tab);
@@ -338,7 +345,7 @@ test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
       await page.goto("/en/labs?tier=lite&walk=on");
       await waitForHQ(page);
       await waitForPhase(page, "explore");
-      await page.getByTestId("walk-prompt").getByRole("button", { name: "Explore freely" }).click();
+      await page.getByTestId("dialog-choices").getByRole("button", { name: "Explore freely" }).click();
       await expect(page.getByTestId("walk-launcher")).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       // In-world text (troika) builds its glyphs slowly on SwiftShader.
@@ -433,4 +440,79 @@ test.describe("point and go", () => {
     await page.screenshot({ path: "screenshots/hq-point-tap-390x844.png" });
     await context.close();
   });
+});
+
+test.describe("Rover dialog", () => {
+  for (const viewport of VIEWPORTS) {
+    test(`3D onboarding @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      test.setTimeout(240_000);
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: 1,
+        hasTouch: viewport.touch,
+        isMobile: viewport.name === "mobile",
+      });
+      const page = await context.newPage();
+      // The boot and intro already played this session, but this browser was never onboarded.
+      await page.addInitScript(() => {
+        sessionStorage.setItem("hq:intro", "seen");
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:hints", "on");
+      });
+      await page.goto(`/en?tier=${viewport.tier}`);
+      await waitForHQ(page);
+      await waitForPhase(page, "explore");
+      await page.evaluate(() => document.fonts.ready);
+      const box = page.getByTestId("dialog-box");
+      // The full tier compiles its shaders on SwiftShader first, which can hold the main thread (and the typewriter) for a while.
+      await expect(box).toHaveAttribute("data-line", "welcome", { timeout: 30_000 });
+      await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
+      await page.waitForTimeout(1500);
+      await page.screenshot({ path: shot("hq-onboarding-welcome", viewport) });
+
+      /** One click once the line has typed out (a click on a choice line would pick its highlighted choice). */
+      const advance = async () => {
+        await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
+        await box.click();
+      };
+      await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.start }).click();
+      await expect(box).toHaveAttribute("data-line", "move");
+      await advance();
+      await expect(box).toHaveAttribute("data-line", "point-go");
+      await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.continue }).click({ timeout: 20_000 });
+      await expect(box).toHaveAttribute("data-line", "moved");
+      await advance();
+      await expect(box).toHaveAttribute("data-line", /^(highlights|elevator)$/, { timeout: 15_000 });
+      if ((await box.getAttribute("data-line")) === "highlights") {
+        await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.later }).click();
+      }
+      await expect(box).toHaveAttribute("data-line", "elevator");
+      await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: shot("hq-onboarding-spotlight", viewport) });
+      await page.getByTestId("dialog-skip").click();
+      await expect(box).toHaveAttribute("data-line", "skipped");
+      await advance();
+      await expect(box).toHaveCount(0);
+
+      const lift = (await padsOf(page, "L1")).find((p) => p.kind === "elevator")!;
+      await driveTo(page, { x: lift.at.x + 4, z: lift.at.z });
+      await expect(page.getByTestId("hint-bubble")).toBeVisible({ timeout: 15_000 });
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: shot("hq-hint-bubble", viewport) });
+      await context.close();
+    });
+
+    test(`3D floor line @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      test.setTimeout(180_000);
+      const { context, page } = await open3DAt(browser, viewport, "/en/journey");
+      const box = page.getByTestId("dialog-box");
+      await expect(box).toHaveAttribute("data-dialog", "floor:L2", { timeout: 30_000 });
+      await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(3000);
+      await page.screenshot({ path: shot("hq-floor-line", viewport) });
+      await context.close();
+    });
+  }
 });

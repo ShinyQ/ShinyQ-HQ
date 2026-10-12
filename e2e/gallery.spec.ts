@@ -9,7 +9,10 @@ const pod = content.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-ce
 
 test.describe("project galleries and tech logos (static pages)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
   });
 
   test("pod page gallery opens a lightbox with keyboard navigation and focus restore", async ({ page }) => {

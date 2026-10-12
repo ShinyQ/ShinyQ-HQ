@@ -8,11 +8,9 @@ import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
 import { openCv, openPalette, openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
-import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
-import { isContinuing } from "../introContinue";
 import { performInteract } from "../interact/pick";
-import { cancelMission, goToRoom, isAutoOpenClaimed, runMissionSteps } from "../missions/bridge";
+import { cancelMission, goToRoom, runMissionSteps } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
@@ -201,14 +199,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const now = local.now;
     const s = store.getState();
 
-    // Greet once the intro hands control to the visitor.
+    // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {
       roverRuntime.status = labels.hello;
       local.statusUntil = now + 2;
       roverRuntime.hopUntil = now + 0.35;
-      // First visit: the Rover Terminal opens once the intro hands over (appendix 02 section 4), in the
-      // Lobby only: a deep link continues to its floor or room instead.
-      if (isAutoOpenClaimed() && !isContinuing() && shouldAutoOpenTerminal()) window.setTimeout(openTerminal, 400);
     }
     local.prevPhase = s.phase;
 
