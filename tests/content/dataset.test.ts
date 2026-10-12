@@ -221,3 +221,42 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
     expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
   });
 });
+
+describe("vendor management portal (owner request 2026-10-13)", () => {
+  const data = parsed.success ? parsed.data : undefined;
+  const vendor = data?.floors.labs.pods.find((p) => p.slug === "vendor-management-portal");
+  const text = JSON.stringify(vendor ?? {});
+
+  it("is shown as Metrodata work with the employer's name, never a sector label", () => {
+    expect(vendor?.client).toBe("Metrodata");
+    expect(vendor?.timelineRef).toBe("metrodata-2026");
+    expect(vendor?.tagline.en).toMatch(/^eVendor, Metrodata's vendor portal/);
+    expect(vendor?.tagline.id).toContain("portal vendor Metrodata");
+    expect(vendor?.problem.en).toMatch(/^Metrodata needed/);
+    expect(vendor?.problem.id).toMatch(/^Metrodata membutuhkan/);
+    expect(text).not.toMatch(/MII's internal|internal MII|group business unit|Unit bisnis dalam grup/);
+  });
+
+  it("sorts after AI Fraud Document Review among hero pods, so the landing top three stay (coordinator decision)", () => {
+    const fraud = data?.floors.labs.pods.find((p) => p.slug === "fraud-review-platform");
+    expect(vendor?.tier).toBe("hero");
+    expect(vendor!.order).toBeGreaterThan(fraud!.order);
+  });
+
+  it("matches the repository: 51 specs, 21 domains, 109 migrations, six weeks, the measured cookie", () => {
+    expect(text).toContain("51 numbered specs");
+    expect(text).toContain("109 Alembic migrations");
+    expect(text).toContain("109 migrasi Alembic");
+    expect(text).not.toMatch(/\b110\b/);
+    expect(vendor?.results.map((r) => r.value)).toEqual(["6 weeks", "21 domains", "4.5 KB → 2.1 KB"]);
+    expect(vendor?.results[2].context?.en).toContain("4,491 bytes");
+    expect(vendor?.liveUrl).toBeUndefined();
+  });
+});
+
+describe("image-free client pods (owner decision 2026-10-11)", () => {
+  it("keeps SITA and FREDDY without screenshots", () => {
+    const pods = parsed.success ? parsed.data.floors.labs.pods : [];
+    for (const slug of ["mining-coa-assistant", "automotive-fraud-dashboard"]) expect(pods.find((p) => p.slug === slug)?.assets, slug).toEqual([]);
+  });
+});
