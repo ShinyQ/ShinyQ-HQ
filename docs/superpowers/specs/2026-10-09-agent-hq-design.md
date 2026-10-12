@@ -67,8 +67,8 @@ A small tracked rover with a terminal screen for a face, built from primitives.
 | Action | Desktop | Tablet | Mobile |
 |---|---|---|---|
 | Change floor | Mouse wheel, PageUp/PageDown, or click the elevator panel | Vertical swipe or elevator panel | Vertical swipe or elevator panel |
-| Move within a floor | WASD/arrows or click to move | Tap to move, optional joystick | Tap to move. On L2 the camera is on a rail and horizontal swipe travels through time. |
-| Open a room | Drive into the doorway or click the room label | Same, by tap | Same, by tap |
+| Move within a floor | WASD/arrows; click a glowing target to drive there | Joystick; tap a target, then tap again or press Go | Same as tablet. On L2 the camera is on a rail and horizontal swipe travels through time. |
+| Open a room | Drive into the doorway or click the room (point-and-go) | Same, or tap the room twice | Same |
 | Missions | Rover Terminal, ⌘K / `/` | Rover Terminal, search button | Rover Terminal, search button |
 | Skip the game | Quick view button (top right) | Same | Same (menu icon) |
 
