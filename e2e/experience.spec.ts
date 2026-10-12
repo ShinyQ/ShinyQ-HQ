@@ -233,13 +233,13 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
-    // Lobby slab x -24 to 28, z -24 to 18, minus the rover radius.
+    // Lobby slab x -24 to 28, z -21 to 21 (centered on the elevator axis), minus the rover radius.
     expect(rover.x).toBeGreaterThan(-23.01);
     expect(rover.x).toBeLessThan(27.01);
-    expect(rover.z).toBeGreaterThan(-23.01);
-    expect(rover.z).toBeLessThan(17.01);
-    // Never inside the hologram pedestal at (6, -4).
-    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z + 4) > 3.9).toBe(true);
+    expect(rover.z).toBeGreaterThan(-20.01);
+    expect(rover.z).toBeLessThan(20.01);
+    // Never inside the hologram pedestal at (6, 0).
+    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
   });
 
   test("click to move drives to the clicked point", async ({ page }) => {

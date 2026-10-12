@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
+import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT, SHAFT } from "@/experience/config";
 import {
   arcPoint,
   boxesOverlap,
@@ -32,6 +32,21 @@ const COLUMN = new Set(["pedestal", "monogram", "title"]);
 const pairs = (boxes: Box[]) => boxes.flatMap((a, i) => boxes.slice(i + 1).map((b) => [a, b] as const));
 
 describe("Lobby layout", () => {
+  it("centers the plaza circle and the slab on the elevator axis (owner: lurus with the elevator)", () => {
+    const l1 = buildFloorLayouts(8).L1;
+    const axis = SHAFT.z;
+    expect(l1.door.z).toBe(axis);
+    expect(l1.approach.z).toBe(axis);
+    // Lane ring, stats ring and certification arc all center on the hologram.
+    expect(LOBBY.hologram.z).toBe(axis);
+    // The slab and its grid floor center on the bounds (FloorLevel); same 52 x 42 u footprint as before.
+    expect((LOBBY.bounds.minZ + LOBBY.bounds.maxZ) / 2).toBe(axis);
+    expect(LOBBY.bounds.maxZ - LOBBY.bounds.minZ).toBe(42);
+    expect(LOBBY.certWall.z).toBe(axis);
+    // The spawn keeps its place on the default camera diagonal from the plaza.
+    expect({ dx: LOBBY.spawn.x - LOBBY.hologram.x, dz: LOBBY.spawn.z - LOBBY.hologram.z }).toEqual({ dx: 8, dz: 10 });
+  });
+
   it("has no overlapping elements at any stats ring rotation", () => {
     for (const turn of TURNS) {
       const clashes = pairs(lobbyElements(STATS, turn))
