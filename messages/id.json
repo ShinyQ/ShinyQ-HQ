@@ -622,6 +622,16 @@
       "start": "Baca tulisan saya",
       "name": "Tur tulisan"
     },
+    "meet": {
+      "title": "Kenalan dulu?",
+      "body": "Perjalanan singkat terpandu: siapa saya, ketersediaan saya, CV saya, dan cara menghubungi saya. Lewati jika ingin menjelajah atap sendiri.",
+      "start": "Kenalan dengan saya",
+      "name": "Tur perkenalan",
+      "about": "Tentang saya",
+      "availability": "Ketersediaan",
+      "cv": "CV saya",
+      "contact": "Hubungi saya"
+    },
     "explore": "Jelajah bebas",
     "resumeAt": "Lanjutkan di titik {index}",
     "stopOf": "Titik {index} dari {total}",

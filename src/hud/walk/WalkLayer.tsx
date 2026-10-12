@@ -9,7 +9,7 @@ import { cancelMission, registerWalkStarter, runMissionSteps } from "@/experienc
 import { createWalk, markPromptSeen, promptSeen, type WalkController, type WalkDefinition, type WalkState } from "@/experience/missions/walk";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
-import { careerWalk, labsWalk, libraryWalk, walkFloorsEnabled } from "@/experience/missions/walks";
+import { careerWalk, labsWalk, libraryWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import { WalkBar, type WalkPlacement } from "./WalkBar";
@@ -28,6 +28,7 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
   const tc = useTranslations("common");
   const th = useTranslations("hud.career");
   const tl = useTranslations("library");
+  const tContact = useTranslations("contact");
   return useMemo(
     () => ({
       L2: careerWalk(data.career, {
@@ -47,8 +48,12 @@ export function useWalkDefinitions(data: ExperienceData): Partial<Record<FloorId
         },
         buildLibraryLayout(libraryLayoutInput(data.library)),
       ),
+      RF: roofWalk(
+        { roof: data.roof, profile: data.profile },
+        { about: t("meet.about"), availability: t("meet.availability"), cv: t("meet.cv"), cvSub: tContact("cvIntro"), contact: t("meet.contact") },
+      ),
     }),
-    [data.career, data.labs, data.library, t, tc, th, tl],
+    [data.career, data.labs, data.library, data.roof, data.profile, t, tc, th, tl, tContact],
   );
 }
 

@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { MissionStep } from "@/content/schema";
 import type { MissionStatus } from "@/experience/missions/host";
 import { createWalk, filterStops, markPromptSeen, promptSeen, WALK_STORAGE_PREFIX, type WalkDefinition, type WalkHost, type WalkStorage } from "@/experience/missions/walk";
-import { careerWalk, labsWalk, walkFloorsEnabled } from "@/experience/missions/walks";
+import { careerWalk, labsWalk, roofWalk, walkFloorsEnabled } from "@/experience/missions/walks";
 import type { CareerData, LabPod } from "@/experience/types";
+import { WALK_FLOORS } from "@/experience/config";
+import { ROOF_STOPS } from "@/experience/floors/roof/layout";
 
 const memory = (): WalkStorage & { data: Map<string, string> } => {
   const data = new Map<string, string>();
@@ -234,6 +236,24 @@ describe("walk definitions", () => {
     const placedOnly = labsWalk(pods, { wings: { software: "S", ai: "A" }, more: "", moreSub: "" }, new Set(["h1"]));
     expect(placedOnly.stops[0].id).toBe("L3:h1");
     expect(placedOnly.stops).toHaveLength(3);
+  });
+
+  it("meets the owner on the roof: about, availability, the CV, then contact", () => {
+    const walk = roofWalk(
+      {
+        roof: { availability: "Open to talk", email: "me@example.com", channels: [], timezone: "GMT+7", subheadline: "Builds AI." },
+        profile: { name: "N", monogram: "N", headline: "H", role: "Role · Org", location: "Jakarta" },
+      },
+      { about: "About me", availability: "Availability", cv: "My CV", cvSub: "Read it here", contact: "Get in touch" },
+    );
+    expect(walk).toMatchObject({ id: "meet", floor: "RF" });
+    expect(walk.filters).toBeUndefined();
+    expect(walk.stops.map((s) => s.id)).toEqual(["RF:about", "RF:availability", "RF:cv", "RF:contact"]);
+    expect(walk.stops[0]).toEqual({ id: "RF:about", to: ROOF_STOPS.about, title: "About me", subtitle: "Role · Org · Jakarta · GMT+7" });
+    expect(walk.stops[1]).toEqual({ id: "RF:availability", to: ROOF_STOPS.availability, title: "Availability", subtitle: "Open to talk" });
+    expect(walk.stops[2]).toEqual({ id: "RF:cv", to: "RF:cv", room: "RF:cv", title: "My CV", subtitle: "Read it here" });
+    expect(walk.stops[3]).toEqual({ id: "RF:contact", to: "RF:contact", room: "RF:contact", title: "Get in touch", subtitle: "me@example.com" });
+    expect(WALK_FLOORS).toEqual(["L2", "L3", "RF"]);
   });
 
   it("offers walks on ready floors, or everywhere with ?walk=on", () => {

@@ -622,6 +622,16 @@
       "start": "Read my writing",
       "name": "Writing walk"
     },
+    "meet": {
+      "title": "Meet me?",
+      "body": "A short guided drive: who I am, my availability, my CV and how to reach me. Skip it to roam the roof on your own.",
+      "start": "Meet me",
+      "name": "Meet me walk",
+      "about": "About me",
+      "availability": "Availability",
+      "cv": "My CV",
+      "contact": "Get in touch"
+    },
     "explore": "Explore freely",
     "resumeAt": "Resume at stop {index}",
     "stopOf": "Stop {index} of {total}",

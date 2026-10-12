@@ -92,4 +92,36 @@ test.describe("RF roof deck", () => {
     await expectRenderBudget(page);
     expect((await snapshot(page)).drawCalls).toBeLessThan(RF_MAX_DRAW_CALLS);
   });
+
+  test("Meet me: the first visit offers the walk, which visits the about board, the availability, the CV and contact", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openRoof(page, { walk: "on" });
+    const prompt = page.getByTestId("walk-prompt");
+    await expect(prompt.getByRole("heading")).toHaveText(en.walk.meet.title);
+    await prompt.getByRole("button", { name: en.walk.meet.start }).click();
+    const bar = page.getByTestId("walk-bar");
+    await expect(page.getByTestId("walk-counter")).toContainText("Stop 1 of 4");
+    await expect(bar).toHaveAttribute("data-stop", "RF:about");
+    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
+    await expectRoverNear(page, ROOF_STOPS.about);
+    await page.keyboard.press("]");
+    await expect(page.getByTestId("walk-counter")).toContainText("Stop 2 of 4");
+    await expect(bar).toHaveAttribute("data-stop", "RF:availability");
+    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
+    await expectRoverNear(page, ROOF_STOPS.availability);
+    await page.keyboard.press("]");
+    await waitForRoom(page, "RF:cv");
+    await page.keyboard.press("]");
+    await waitForRoom(page, "RF:contact");
+    expect(errors).toEqual([]);
+  });
+
+  test("reduced motion: the roof renders still and inside the budget", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openRoof(page);
+    expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { reducedMotion: boolean } } } }).__hq.store.getState().reducedMotion)).toBe(true);
+    await page.waitForTimeout(1500);
+    await expectRenderBudget(page);
+    expect((await snapshot(page)).drawCalls).toBeLessThan(RF_MAX_DRAW_CALLS);
+  });
 });
