@@ -362,9 +362,13 @@ test.describe("no colored edge stripes", () => {
     await page.keyboard.press("Control+k");
     const palette = page.getByRole("dialog", { name: "Command palette" });
     await expect(palette).toBeVisible();
+    const combo = palette.getByRole("combobox");
+    const first = await combo.getAttribute("aria-activedescendant");
     await page.keyboard.press("ArrowDown");
-    const selected = palette.locator("[role='option'][aria-selected='true']");
+    await expect(combo).not.toHaveAttribute("aria-activedescendant", first ?? "");
+    const selected = palette.locator(`[role='option'][aria-selected='true']`);
     await expect(selected).toHaveCount(1);
+    await expect(selected).toHaveAttribute("id", (await combo.getAttribute("aria-activedescendant"))!);
     const look = await selected.evaluate((el) => {
       const cs = getComputedStyle(el);
       const dot = el.querySelector("[data-accent-dot]");
