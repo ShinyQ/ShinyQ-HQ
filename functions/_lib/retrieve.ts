@@ -1,4 +1,5 @@
 import { indexPack } from "./pack-index";
+import { isPerspectiveQuestion } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 
@@ -7,6 +8,8 @@ export const CONTEXT_CHAR_BUDGET = 6000;
 export const TOP_K = 6;
 /** Chunks every answer gets: identity and the current role (benchmark q01, q11). */
 export const ALWAYS_INCLUDE = ["profile", "now"] as const;
+/** Added after the always-included chunks for questions about Kurniadi's views, so the answer has his principles to cite. */
+export const PERSPECTIVE_INCLUDE = "principles";
 
 /**
  * Intent boosts: a question that names a topic (directly or through a synonym, e.g. "kuliah" for
@@ -25,7 +28,11 @@ const INTENTS: Record<string, (chunk: KnowledgeChunk) => boolean> = {
   now: (c) => c.id === "now",
   stats: (c) => c.type === "stats" || c.type === "live-stats",
   skill: (c) => c.type === "skills",
+  perspective: (c) => c.type === "perspective",
 };
+
+/** Intents that boost less than INTENT_BOOST: every perspective chunk is an opinion, so the question's own words still decide. */
+const INTENT_WEIGHT: Partial<Record<string, number>> = { perspective: 3 };
 
 const K1 = 1.2;
 const B = 0.75;
@@ -49,7 +56,7 @@ export function scoreChunks(pack: KnowledgePack, question: string): { chunk: Kno
       const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
       score += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
     }
-    for (const term of terms) if (INTENTS[term]?.(chunk)) score += INTENT_BOOST;
+    for (const term of terms) if (INTENTS[term]?.(chunk)) score += INTENT_WEIGHT[term] ?? INTENT_BOOST;
     return { chunk, score };
   });
 }
@@ -59,13 +66,14 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
   const ranked = scoreChunks(pack, question)
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
+  const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : [])];
   const picked: KnowledgeChunk[] = [];
-  for (const id of ALWAYS_INCLUDE) {
+  for (const id of always) {
     const chunk = pack.chunks.find((c) => c.id === id);
     if (chunk) picked.push(chunk);
   }
   for (const { chunk } of ranked) {
-    if (picked.length >= TOP_K + ALWAYS_INCLUDE.length) break;
+    if (picked.length >= TOP_K + always.length) break;
     if (!picked.includes(chunk)) picked.push(chunk);
   }
 
