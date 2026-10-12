@@ -724,13 +724,15 @@ test.describe("CV refresh captures", () => {
  */
 const P6_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop-qhd", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
 const p6Shot = (name: string, v: Viewport) => `${process.env.SHOT_DIR ?? "screenshots"}/p6/${name}-${v.width}x${v.height}.png`;
+/** SwiftShader renders these sizes at about 1 fps on a busy machine: fewer frames per check, a longer budget. */
+const SETTLE = { frames: 6, timeout: 300_000 };
 const HIDE_HUD = "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }";
 
 for (const viewport of P6_VIEWPORTS) {
   test(`P6 review poses @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
-    test.setTimeout(420_000);
+    test.setTimeout(1_200_000);
     const { context, page } = await open3D(browser, viewport);
-    await waitForCameraSettle(page);
+    await waitForCameraSettle(page, SETTLE);
     await page.getByTestId("hud-topbar").screenshot({ path: p6Shot("topbar", viewport) });
     const profile =
       viewport.name === "mobile" ? page.getByRole("button", { name: new RegExp(`^${en.hud.profile}:`) }) : page.getByRole("region", { name: en.hud.profile });
@@ -740,13 +742,13 @@ for (const viewport of P6_VIEWPORTS) {
     await page.screenshot({ path: p6Shot("l1-plaza", viewport) });
     const about = stationOf("about");
     await driveTo(page, { x: about.pad.x - about.facing.x * 2.5, z: about.pad.z - about.facing.z * 2.5 });
-    await waitForCameraSettle(page);
+    await waitForCameraSettle(page, SETTLE);
     await page.waitForTimeout(2500);
     await page.screenshot({ path: p6Shot("l1-about", viewport) });
     await hide.evaluate((el) => (el as Element).remove());
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L3"]').click();
     await waitForFloor(page, "L3", 120_000);
-    await waitForCameraSettle(page);
+    await waitForCameraSettle(page, SETTLE);
     await page.addStyleTag({ content: HIDE_HUD });
     await page.waitForTimeout(2500);
     await page.screenshot({ path: p6Shot("l3-arrival", viewport) });
