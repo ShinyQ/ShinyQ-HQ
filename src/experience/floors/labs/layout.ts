@@ -101,8 +101,8 @@ export interface LabsLayout {
   network: RoadNetwork;
   hub: Plaza;
   east: Plaza;
-  /** Where each wing road leaves the hub (signs), and its heading. */
-  signs: Record<Wing, { at: Vec2; heading: Vec2 }>;
+  /** Where each wing road leaves the hub, its heading, and where the floating wing sign stands (5 u further along the road). */
+  signs: Record<Wing, { at: Vec2; heading: Vec2; float: Vec2 }>;
   /** Packet lanes: the data spine between the inner rows and a branch into each inner pod. */
   lanes: [number, number][][];
 }
@@ -215,9 +215,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     const to = { x: L.wingStartX, z: WING_SIDE[wing] * L.wingZ };
     const len = Math.hypot(to.x - hubC.x, to.z - hubC.z);
     const heading = { x: (to.x - hubC.x) / len, z: (to.z - hubC.z) / len };
-    // Just past the hub rim, on the wing road.
+    // Just past the hub rim, on the wing road; the floating sign stands 5 u further along it.
     const r = L.hub.size / 2 + 3;
-    return { at: { x: hubC.x + heading.x * r, z: hubC.z + heading.z * r }, heading };
+    const at = { x: hubC.x + heading.x * r, z: hubC.z + heading.z * r };
+    return { at, heading, float: { x: at.x + heading.x * 5, z: at.z + heading.z * 5 } };
   };
 
   const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));

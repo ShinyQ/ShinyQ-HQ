@@ -1,8 +1,12 @@
 "use client";
 
 import { Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { Vector3, type Group } from "three";
 import type { Wing } from "@/content/schema";
-import type { LabPod } from "../../types";
+import { yawTowards } from "../../fx/facing";
+import type { LabPod, Vec2 } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import { LABS, tourOrder, WING_TINT, type LabsLayout } from "./layout";
 
@@ -18,40 +22,61 @@ export interface HubLabels {
 const WINGS = ["software", "ai"] as const;
 const { board } = LABS;
 const TIER_MARK: Record<LabPod["tier"], string> = { hero: "\u25C6", featured: "\u25C7", listed: "\u00B7" };
-/** Turned toward the default follow camera (it looks along -x, -z). */
-const FACE_CAMERA: [number, number, number] = [0, Math.PI / 4, 0];
+/** Height of the floating wing signs (bottom of the text). */
+const SIGN_Y = 4.2;
+const NO_RAYCAST = () => null;
+/** troika's laid-out text block: [minX, minY, maxX, maxY] in local units. */
+type TextSync = { textRenderInfo?: { blockBounds?: number[] } };
 
-/** Wing names where each wing road leaves the hub: painted along the road and floating above it. */
+/**
+ * A wing name floating above its wing road where it leaves the hub (owner request 2026-10-13: nothing
+ * painted on the floor). It turns to the camera every frame (yaw only, so it stays upright) on a dark
+ * backing, so it reads left to right from any camera yaw and never shows its mirrored back.
+ */
+function WingSign({ at, text, color }: { at: Vec2; text: string; color: string }) {
+  const group = useRef<Group>(null);
+  const world = useMemo(() => new Vector3(), []);
+  const [box, setBox] = useState<number[] | null>(null);
+  useFrame(({ camera }) => {
+    const g = group.current;
+    if (!g) return;
+    g.getWorldPosition(world);
+    g.rotation.y = yawTowards({ x: world.x, z: world.z }, { x: camera.position.x, z: camera.position.z });
+  });
+  return (
+    <group ref={group} position={[at.x, SIGN_Y, at.z]}>
+      {box && (
+        <mesh position={[(box[0] + box[2]) / 2, (box[1] + box[3]) / 2, -0.02]} raycast={NO_RAYCAST}>
+          <planeGeometry args={[box[2] - box[0] + 0.8, box[3] - box[1] + 0.4]} />
+          <meshBasicMaterial color="#05050c" transparent opacity={0.9} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+      <Text
+        font={FONTS.monoBold}
+        fontSize={1}
+        color={color}
+        anchorX="center"
+        anchorY="bottom"
+        whiteSpace="nowrap"
+        renderOrder={1}
+        material-toneMapped={false}
+        onSync={(t: TextSync) => {
+          const b = t.textRenderInfo?.blockBounds;
+          if (b) setBox([b[0], b[1], b[2], b[3]]);
+        }}
+      >
+        {text}
+      </Text>
+    </group>
+  );
+}
+
 function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }) {
   return (
     <group>
-      {WINGS.map((wing) => {
-        const { at, heading } = layout.signs[wing];
-        const angle = Math.atan2(-heading.z, heading.x);
-        return (
-          <group key={wing}>
-            <group position={[at.x, 0.06, at.z]} rotation={[0, angle, 0]}>
-              <Text font={FONTS.monoBold} fontSize={1.1} color={WING_TINT[wing]} anchorX="center" anchorY="middle" rotation={[-Math.PI / 2, 0, 0]} material-toneMapped={false}>
-                {`${labels.wings[wing].toUpperCase()}  \u2192`}
-              </Text>
-            </group>
-            <Text
-              font={FONTS.monoBold}
-              fontSize={0.95}
-              color={WING_TINT[wing]}
-              outlineWidth={0.02}
-              outlineColor="#05050c"
-              anchorX="center"
-              anchorY="bottom"
-              rotation={FACE_CAMERA}
-              position={[at.x + heading.x * 5, 4.2, at.z + heading.z * 5]}
-              material-toneMapped={false}
-            >
-              {labels.wings[wing].toUpperCase()}
-            </Text>
-          </group>
-        );
-      })}
+      {WINGS.map((wing) => (
+        <WingSign key={wing} at={layout.signs[wing].float} text={labels.wings[wing].toUpperCase()} color={WING_TINT[wing]} />
+      ))}
     </group>
   );
 }
@@ -106,7 +131,6 @@ function BoardFace({ wing, list, labels, side }: { wing: Wing; list: readonly La
   );
 }
 
-
 /**
  * Directory boards on the hub rim. Both faces carry the same content: the east face greets the hub
  * and the stop in front of it, the west face the rover arriving from the elevator.
@@ -134,7 +158,7 @@ function DirectoryBoards({ layout, labels, pods }: { layout: LabsLayout; labels:
   );
 }
 
-/** The hub plaza in front of the elevator: wing directory boards and the signs to each wing road. */
+/** The hub plaza in front of the elevator: wing directory boards and the floating signs to each wing road. */
 export function Hub({ layout, labels, pods }: { layout: LabsLayout; labels: HubLabels; pods: readonly LabPod[] }) {
   return (
     <group name="labs-hub">
