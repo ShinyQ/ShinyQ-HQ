@@ -95,16 +95,50 @@ export function normalize(text: string): string {
 const isWordChar = (char: string | undefined) => char !== undefined && /[\p{L}\p{N}]/u.test(char);
 const isWordStart = (text: string, i: number) => i === 0 || (isWordChar(text[i]) && !isWordChar(text[i - 1]));
 
+/** A normalized text and its word starts, computed once per palette entry instead of on every keystroke (perf report D 6.8). */
+interface Prepared {
+  text: string;
+  starts: Uint8Array;
+}
+
+function prepare(text: string): Prepared {
+  const t = normalize(text);
+  const starts = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++) starts[i] = isWordStart(t, i) ? 1 : 0;
+  return { text: t, starts };
+}
+
+interface PreparedEntry {
+  title: Prepared[];
+  keywords: Prepared[];
+  subtitle: Prepared[];
+}
+
+const preparedEntries = new WeakMap<PaletteEntry, PreparedEntry>();
+
+function prepared(entry: PaletteEntry): PreparedEntry {
+  let p = preparedEntries.get(entry);
+  if (!p) {
+    p = { title: texts(entry.title).map(prepare), keywords: entry.keywords.map(prepare), subtitle: texts(entry.subtitle).map(prepare) };
+    preparedEntries.set(entry, p);
+  }
+  return p;
+}
+
 /** Best in-order alignment of `query` inside `text`, or 0. Rewards word starts and runs; penalizes gaps. */
-function subsequenceScore(query: string, text: string): number {
+function subsequenceScore(query: string, { text, starts }: Prepared): number {
   const m = query.length;
   const n = text.length;
   if (m === 0 || m > n) return 0;
+  // No in-order match at all: the alignment below would find none either.
+  let k = 0;
+  for (let j = 0; j < n && k < m; j++) if (text[j] === query[k]) k += 1;
+  if (k < m) return 0;
   const NONE = Number.NEGATIVE_INFINITY;
   // prev[j]: best score with query[0..i-1] matched and query[i-1] at text[j].
   let prev = new Array<number>(n).fill(NONE);
   for (let j = 0; j < n; j++) {
-    if (text[j] === query[0]) prev[j] = 1 + (isWordStart(text, j) ? 2 : 0) - j * 0.05;
+    if (text[j] === query[0]) prev[j] = 1 + (starts[j] ? 2 : 0) - j * 0.05;
   }
   for (let i = 1; i < m; i++) {
     const next = new Array<number>(n).fill(NONE);
@@ -120,7 +154,7 @@ function subsequenceScore(query: string, text: string): number {
         }
       }
       if (text[j] !== query[i]) continue;
-      const base = 1 + (isWordStart(text, j) ? 2 : 0);
+      const base = 1 + (starts[j] ? 2 : 0);
       let score = NONE;
       if (j > 0 && prev[j - 1] !== NONE) score = prev[j - 1] + base + 3;
       if (bestBeforeAt >= 0) {
@@ -137,37 +171,42 @@ function subsequenceScore(query: string, text: string): number {
   return Math.max(1, Math.min(29, (raw / max) * 30));
 }
 
-/**
- * Match quality of one normalized query token against a text. 0 means no match.
- * Tiers: exact 100, prefix 80+, word-start substring 60+, substring 40+, subsequence 1 to 29.
- */
-export function fuzzyScore(query: string, text: string): number {
-  const q = normalize(query);
-  const t = normalize(text);
+/** `fuzzyScore` for a normalized query and a prepared text. */
+function scoreText(q: string, prepared: Prepared): number {
+  const t = prepared.text;
   if (!q || !t) return 0;
   if (q === t) return 100;
   const shortness = q.length / t.length;
   if (t.startsWith(q)) return 80 + shortness * 10;
   const firstAt = t.indexOf(q);
   let at = firstAt;
-  while (at > 0 && !isWordStart(t, at)) at = t.indexOf(q, at + 1);
+  while (at > 0 && !prepared.starts[at]) at = t.indexOf(q, at + 1);
   if (at > 0) return 60 + shortness * 10 - Math.min(at, 50) * 0.05;
   if (firstAt >= 0) return 40 + shortness * 10 - Math.min(firstAt, 50) * 0.05;
-  return subsequenceScore(q, t);
+  return subsequenceScore(q, prepared);
+}
+
+/**
+ * Match quality of one query token against a text. 0 means no match.
+ * Tiers: exact 100, prefix 80+, word-start substring 60+, substring 40+, subsequence 1 to 29.
+ */
+export function fuzzyScore(query: string, text: string): number {
+  return scoreText(normalize(query), prepare(text));
 }
 
 const texts = (value: LocalizedText | undefined) => (value ? [value.en, value.id] : []);
 
+/** Best weighted field score of one normalized token. */
 function tokenScore(entry: PaletteEntry, token: string): number {
+  const p = prepared(entry);
   let best = 0;
-  for (const text of texts(entry.title)) best = Math.max(best, fuzzyScore(token, text) * FIELD_WEIGHT.title);
-  for (const text of entry.keywords) best = Math.max(best, fuzzyScore(token, text) * FIELD_WEIGHT.keywords);
-  for (const text of texts(entry.subtitle)) best = Math.max(best, fuzzyScore(token, text) * FIELD_WEIGHT.subtitle);
+  for (const text of p.title) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.title);
+  for (const text of p.keywords) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.keywords);
+  for (const text of p.subtitle) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.subtitle);
   return best;
 }
 
-/** Sum of token scores; 0 unless every token matches some field (AND). */
-export function scoreEntry(entry: PaletteEntry, tokens: string[]): number {
+function scoreTokens(entry: PaletteEntry, tokens: readonly string[]): number {
   let total = 0;
   for (const token of tokens) {
     const score = tokenScore(entry, token);
@@ -175,6 +214,11 @@ export function scoreEntry(entry: PaletteEntry, tokens: string[]): number {
     total += score;
   }
   return total > 0 ? total + (entry.roomKind ? (KIND_BONUS[entry.roomKind] ?? 0) : 0) : 0;
+}
+
+/** Sum of token scores; 0 unless every token matches some field (AND). */
+export function scoreEntry(entry: PaletteEntry, tokens: string[]): number {
+  return scoreTokens(entry, tokens.map(normalize));
 }
 
 /**
@@ -236,8 +280,9 @@ export function searchPalette(entries: readonly PaletteEntry[], query: string, o
     return groups.filter((group) => group.entries.length > 0);
   }
 
+  const normalized = tokens.map(normalize);
   const scored = pool
-    .map((entry, order) => ({ entry, order, score: scoreEntry(entry, tokens) }))
+    .map((entry, order) => ({ entry, order, score: scoreTokens(entry, normalized) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.order - b.order);
 
