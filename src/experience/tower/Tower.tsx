@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
@@ -47,11 +47,13 @@ function useNeighboursReady(): boolean {
 /**
  * Precompiles a floor's shader programs as soon as its content commits (it sits inside the floor's
  * Suspense boundary, after the floor), so the elevator can wait for them with the doors closed instead
- * of compiling mid-dolly (R5 P6). Before the first frame there is nothing to compile against and the
- * first render compiles anyway, so the floor counts as ready at once.
+ * of compiling mid-dolly (R5 P6). A passive effect on purpose: it runs after the floor's own effects,
+ * which still change program variants (`setColorAt` adds instance colors to the L3 pod glass). Before
+ * the first frame there is nothing to compile against and the first render compiles anyway, so the
+ * floor counts as ready at once.
  */
 function FloorPrep({ floor }: { floor: FloorId }) {
-  useLayoutEffect(() => {
+  useEffect(() => {
     const token = beginFloorPrep(floor);
     void precompileFloor(floor, { timeoutMs: PREPARE_TIMEOUT * 1000 })
       .catch(() => null)
