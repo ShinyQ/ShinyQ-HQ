@@ -221,3 +221,69 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
     expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
   });
 });
+
+describe("vendor management portal (owner request 2026-10-13)", () => {
+  const data = parsed.success ? parsed.data : undefined;
+  const vendor = data?.floors.labs.pods.find((p) => p.slug === "vendor-management-portal");
+  const text = JSON.stringify(vendor ?? {});
+
+  it("is shown as Metrodata work with the employer's name, never a sector label", () => {
+    expect(vendor?.client).toBe("Metrodata");
+    expect(vendor?.timelineRef).toBe("metrodata-2026");
+    expect(vendor?.tagline.en).toMatch(/^eVendor, Metrodata's vendor portal/);
+    expect(vendor?.tagline.id).toContain("portal vendor Metrodata");
+    expect(vendor?.problem.en).toMatch(/^Metrodata needed/);
+    expect(vendor?.problem.id).toMatch(/^Metrodata membutuhkan/);
+    expect(text).not.toMatch(/MII's internal|internal MII|group business unit|Unit bisnis dalam grup/);
+  });
+
+  it("sorts after AI Fraud Document Review among hero pods, so the landing top three stay (coordinator decision)", () => {
+    const fraud = data?.floors.labs.pods.find((p) => p.slug === "fraud-review-platform");
+    expect(vendor?.tier).toBe("hero");
+    expect(vendor!.order).toBeGreaterThan(fraud!.order);
+  });
+
+  it("matches the repository: 51 specs, 21 domains, 109 migrations, six weeks, the measured cookie", () => {
+    expect(text).toContain("51 numbered specs");
+    expect(text).toContain("109 Alembic migrations");
+    expect(text).toContain("109 migrasi Alembic");
+    expect(text).not.toMatch(/\b110\b/);
+    expect(vendor?.results.map((r) => r.value)).toEqual(["6 weeks", "21 domains", "4.5 KB → 2.1 KB"]);
+    expect(vendor?.results[2].context?.en).toContain("4,491 bytes");
+    expect(vendor?.liveUrl).toBeUndefined();
+  });
+});
+
+describe("image-free client pods (owner decision 2026-10-11)", () => {
+  it("keeps SITA and FREDDY without screenshots", () => {
+    const pods = parsed.success ? parsed.data.floors.labs.pods : [];
+    for (const slug of ["mining-coa-assistant", "automotive-fraud-dashboard"]) expect(pods.find((p) => p.slug === slug)?.assets, slug).toEqual([]);
+  });
+});
+
+describe("spec-driven development post facts (R5-P11)", () => {
+  const post = (locale: "en" | "id") =>
+    readFileSync(path.join(process.cwd(), "content", "blog", `spec-driven-development-with-ai-coding-agents.${locale}.mdx`), "utf8");
+
+  it("matches the vendor portal repository and names Metrodata", () => {
+    expect(post("en")).toContain("I opened all 179 pull requests and merged 142 of them.");
+    expect(post("id")).toContain("Saya membuka semua 179 pull request dan me-merge 142 di antaranya.");
+    expect(post("en")).toContain("4 October 2026, for Metrodata.");
+    expect(post("id")).toContain("4 Oktober 2026 untuk Metrodata.");
+    expect(post("en")).toContain("21 backend domains and 109 Alembic migrations.");
+    expect(post("id")).toContain("21 domain backend, dan 109 migrasi Alembic.");
+    for (const locale of ["en", "id"] as const) {
+      expect(post(locale)).not.toMatch(/\b110 (Alembic|migrasi)|business unit in the group|unit bisnis di grup|merged all 179|saya merge sendiri/);
+    }
+  });
+});
+
+describe("AI Fraud Document Review gallery names its own product (R5-P11)", () => {
+  it("calls the app MII Fraud Detection, never FREDDY (the automotive client's product)", () => {
+    const pods = parsed.success ? parsed.data.floors.labs.pods : [];
+    const assets = pods.find((p) => p.slug === "fraud-review-platform")?.assets ?? [];
+    expect(assets[0]?.alt.en).toMatch(/^MII Fraud Detection home:/);
+    expect(assets[0]?.alt.id).toMatch(/^Beranda MII Fraud Detection:/);
+    for (const a of assets) expect(`${a.alt.en} ${a.alt.id}`).not.toMatch(/FREDDY/i);
+  });
+});

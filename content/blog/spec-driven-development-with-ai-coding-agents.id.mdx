@@ -6,11 +6,11 @@ tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-r
 readingTime: "6 min"
 ---
 
-Saya membangun portal manajemen vendor dalam sekitar enam minggu, sebagai satu-satunya engineer di repositori itu. Sebagian besar kode ditulis AI coding agent. Semua 179 pull request saya buka dan saya merge sendiri.
+Saya membangun portal manajemen vendor dalam sekitar enam minggu, sebagai satu-satunya engineer di repositori itu. Sebagian besar kode ditulis AI coding agent. Saya membuka semua 179 pull request dan me-merge 142 di antaranya.
 
 Itu menjelaskan bagaimana pekerjaan ini selesai, sekaligus bagian paling lemah dari prosesnya: tidak ada reviewer manusia kedua.
 
-Proyeknya berjalan dari 21 Agustus sampai 4 Oktober 2026 untuk sebuah unit bisnis di grup. Portal ini menangani onboarding vendor, purchase order, penerimaan barang, invoice dengan verifikasi pajak, dan approval bertingkat. Stack-nya FastAPI, PostgreSQL, dan Next.js, di-deploy ke Azure App Service. Di akhir periode, ada 51 spec bernomor, 21 domain backend, dan 110 migrasi Alembic.
+Proyeknya berjalan dari 21 Agustus sampai 4 Oktober 2026 untuk Metrodata. Portal ini menangani onboarding vendor, purchase order, penerimaan barang, invoice dengan verifikasi pajak, dan approval bertingkat. Stack-nya FastAPI, PostgreSQL, dan Next.js, di-deploy ke Azure App Service. Di akhir periode, ada 51 spec bernomor, 21 domain backend, dan 109 migrasi Alembic.
 
 Produknya tidak punya fitur AI. Saya memakai GitHub Copilot dan Claude untuk implementasi. Saya yang menulis spec, merancang arsitektur, me-review PR, dan memutuskan apa yang masuk. Pembagian kerja ini bergantung pada kejelasan pekerjaan sebelum agent mulai menulis kode. Beberapa bug serius tetap lolos.
 

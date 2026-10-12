@@ -2421,18 +2421,19 @@
         {
           "id": "vendor-management-portal",
           "slug": "vendor-management-portal",
-          "order": 2,
+          "order": 3,
           "tier": "hero",
           "accent": "blue",
           "wing": "software",
+          "client": "Metrodata",
           "timelineRef": "metrodata-2026",
           "title": {
             "en": "Vendor Management Portal",
             "id": "Portal Manajemen Vendor"
           },
           "tagline": {
-            "en": "eVendor, MII's internal vendor portal for purchase orders, invoices, tax checks and approvals, delivered by one engineer in about six weeks.",
-            "id": "eVendor, portal vendor internal MII untuk purchase order, invoice, verifikasi pajak, dan approval, saya kerjakan sendiri dalam sekitar enam minggu."
+            "en": "eVendor, Metrodata's vendor portal for purchase orders, delivery acceptance, invoices, tax checks and approvals, built by one engineer in six weeks.",
+            "id": "eVendor, portal vendor Metrodata untuk purchase order, penerimaan barang, invoice, verifikasi pajak, dan approval, saya bangun sendiri dalam enam minggu."
           },
           "period": {
             "start": "2026-08",
@@ -2443,29 +2444,29 @@
             "id": "Engineer dan operator tunggal, bertanggung jawab atas desain, arahan AI coding agent, review, dan delivery"
           },
           "problem": {
-            "en": "A group business unit needed a purchase-order-based vendor portal covering onboarding, delivery documents, invoices, several tax types and parallel accounting and tax approvals. SAP failures must not disrupt the portal. The product owner provided weekly direction, including a user-approved process revision that changed the workflow.",
-            "id": "Unit bisnis dalam grup membutuhkan portal vendor berbasis purchase order untuk onboarding, dokumen pengiriman, invoice, beberapa jenis pajak, serta approval akuntansi dan pajak secara paralel. Gangguan SAP tidak boleh menghentikan portal. Product owner memberikan arahan mingguan, termasuk revisi proses yang disetujui pengguna dan mengubah alur kerja."
+            "en": "Metrodata needed one vendor portal built around the purchase order: vendor onboarding, delivery acceptance (BAST), invoices with several tax types, and accounting and tax approvals that run in parallel. SAP failures must not stop the portal. The business owner gave weekly direction, including a process revision that users approved mid-project and that moved the whole workflow onto the purchase order.",
+            "id": "Metrodata membutuhkan satu portal vendor yang berpusat pada purchase order: onboarding vendor, penerimaan barang (BAST), invoice dengan beberapa jenis pajak, serta approval akuntansi dan pajak yang berjalan paralel. Gangguan SAP tidak boleh menghentikan portal. Business owner memberikan arahan mingguan, termasuk revisi proses yang disetujui pengguna di tengah proyek dan memindahkan seluruh alur kerja ke purchase order."
           },
           "approach": [
             {
-              "en": "I wrote 51 numbered specs, directed AI coding agents through implementation and reviewed every pull request with CI gates in place.",
-              "id": "Saya menulis 51 spec bernomor, mengarahkan implementasi oleh AI coding agent, dan me-review setiap pull request dengan CI gate."
+              "en": "I wrote 51 numbered specs, directed AI coding agents through the implementation and reviewed every pull request behind CI gates before it merged.",
+              "id": "Saya menulis 51 spec bernomor, mengarahkan implementasi oleh AI coding agent, dan me-review setiap pull request dengan CI gate sebelum di-merge."
             },
             {
-              "en": "I modelled 21 backend domains in FastAPI and PostgreSQL with 110 Alembic migrations, then revised the workflow around purchase orders following a user-approved process change.",
-              "id": "Saya memodelkan 21 domain backend di FastAPI dan PostgreSQL dengan 110 migrasi Alembic, lalu menata alur kerja berbasis purchase order setelah perubahan proses yang disetujui pengguna."
+              "en": "I modelled 21 backend domains in FastAPI and PostgreSQL with 109 Alembic migrations, then rebuilt the workflow around one purchase order workspace shared by vendors and staff after the user-approved process change.",
+              "id": "Saya memodelkan 21 domain backend di FastAPI dan PostgreSQL dengan 109 migrasi Alembic, lalu membangun ulang alur kerja di sekitar satu PO workspace yang dipakai bersama oleh vendor dan staf setelah perubahan proses yang disetujui pengguna."
             },
             {
-              "en": "I isolated SAP behind a provider port with retries, rate limits and a circuit breaker to prevent ERP delays from cascading into the portal. The port currently serves seeded procurement data.",
-              "id": "Saya mengisolasi SAP di balik provider port dengan retry, rate limit, dan circuit breaker agar keterlambatan ERP tidak mengganggu portal. Saat ini, port tersebut masih menyajikan data procurement hasil seed."
+              "en": "I isolated SAP behind a provider port with retries, rate limits and a circuit breaker so ERP delays cannot cascade into the portal. The port and the tax invoice check currently serve seeded data.",
+              "id": "Saya mengisolasi SAP di balik provider port dengan retry, rate limit, dan circuit breaker agar keterlambatan ERP tidak merembet ke portal. Saat ini, port tersebut dan pengecekan faktur pajak masih menyajikan data seed."
             },
             {
               "en": "I implemented Entra ID single sign-on and local Argon2id accounts, re-checking roles on every request. Deployment uses Bicep, VNet integration and Key Vault references.",
               "id": "Saya menerapkan single sign-on Entra ID dan akun lokal Argon2id, dengan pengecekan ulang peran di setiap request. Deployment menggunakan Bicep, integrasi VNet, dan Key Vault reference."
             },
             {
-              "en": "I diagnosed production failures caused by a build step that prevented startup, a sign-in teardown race and a session cookie exceeding browser limits.",
-              "id": "Saya menelusuri kegagalan produksi akibat langkah build yang menghambat startup, race condition saat teardown login, dan cookie sesi yang melebihi batas browser."
+              "en": "I diagnosed production failures: a build step that stopped the app from starting, a sign-in teardown race, and a session cookie that grew past the browser's 4 KB limit and silently broke staff sign-in.",
+              "id": "Saya menelusuri kegagalan produksi: langkah build yang membuat aplikasi gagal start, race condition saat teardown login, dan cookie sesi yang melewati batas 4 KB browser sehingga login staf gagal tanpa pesan."
             }
           ],
           "architecture": {
@@ -2518,8 +2519,8 @@
                 "id": "postgresql",
                 "label": "PostgreSQL",
                 "sublabel": {
-                  "en": "Flexible Server, 110 migrations",
-                  "id": "Flexible Server, 110 migrasi"
+                  "en": "Flexible Server, 109 migrations",
+                  "id": "Flexible Server, 109 migrasi"
                 },
                 "layer": 3,
                 "row": 0,
@@ -2604,22 +2605,22 @@
           },
           "results": [
             {
-              "value": "~6 weeks",
+              "value": "6 weeks",
               "label": {
-                "en": "First commit to deployed portal, delivered as the sole engineer",
+                "en": "First commit to deployed portal, as the sole engineer",
                 "id": "Dari commit pertama hingga portal ter-deploy, dengan saya sebagai engineer tunggal"
               },
               "context": {
-                "en": "Based on repository history from 21 Aug to 4 Oct 2026.",
-                "id": "Berdasarkan riwayat repositori dari 21 Agu hingga 4 Okt 2026."
+                "en": "Repository history from 21 Aug to 4 Oct 2026.",
+                "id": "Riwayat repositori dari 21 Agu hingga 4 Okt 2026."
               },
               "confidence": "verified"
             },
             {
               "value": "21 domains",
               "label": {
-                "en": "Backend domains supported by 110 database migrations and 51 specs",
-                "id": "Domain backend dengan 110 migrasi database dan 51 spec sebagai dasar implementasi"
+                "en": "Backend domains, built on 109 database migrations and 51 numbered specs",
+                "id": "Domain backend, dibangun di atas 109 migrasi database dan 51 spec bernomor"
               },
               "context": {
                 "en": "Counted in the repository. The product itself has no AI features.",
@@ -2628,14 +2629,14 @@
               "confidence": "verified"
             },
             {
-              "value": "4.4 KB → 2.1 KB",
+              "value": "4.5 KB → 2.1 KB",
               "label": {
-                "en": "Session cookie reduction that resolved a production sign-in failure",
-                "id": "Pengurangan ukuran cookie sesi yang mengatasi kegagalan login di produksi"
+                "en": "Session cookie size after the fix that restored staff sign-in in production",
+                "id": "Ukuran cookie sesi setelah perbaikan yang memulihkan login staf di produksi"
               },
               "context": {
-                "en": "Measured during the production fix and recorded in the repository.",
-                "id": "Diukur saat perbaikan produksi dan dicatat di repositori."
+                "en": "Measured against a live backend: 4,491 bytes, over the 4,096-byte browser limit, down to 2,083.",
+                "id": "Diukur terhadap backend live: 4.491 byte, melewati batas browser 4.096 byte, turun menjadi 2.083."
               },
               "confidence": "verified"
             }
@@ -5410,8 +5411,8 @@
             {
               "src": "/media/fraud-review-platform/01-home.webp",
               "alt": {
-                "en": "FREDDY home: cases that need review, verdict mix and a review queue with risk scores; vendor names blurred",
-                "id": "Beranda FREDDY: kasus yang perlu ditinjau, komposisi verdict, dan antrean review dengan skor risiko; nama vendor diburamkan"
+                "en": "MII Fraud Detection home: cases that need review, verdict mix and a review queue with risk scores; vendor names blurred",
+                "id": "Beranda MII Fraud Detection: kasus yang perlu ditinjau, komposisi verdict, dan antrean review dengan skor risiko; nama vendor diburamkan"
               },
               "width": 1600,
               "height": 1000,

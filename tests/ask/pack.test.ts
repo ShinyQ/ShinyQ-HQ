@@ -82,6 +82,15 @@ describe("knowledge pack", () => {
     const other = pack.chunks.find((c) => c.id === "project-vendor-management-portal")!;
     expect(other.text_en).not.toContain("Live site");
   });
+
+  it("frames the vendor portal as Metrodata work with the repository's counts (R5-P11)", () => {
+    const chunk = pack.chunks.find((c) => c.id === "project-vendor-management-portal")!;
+    expect(chunk.text_en).toContain("For: Metrodata.");
+    expect(chunk.text_id).toContain("Untuk: Metrodata.");
+    expect(chunk.text_en).toContain("109 database migrations");
+    expect(chunk.text_en).not.toMatch(/\b110\b|azurewebsites/);
+    expect(pack.orgs).toContain("Metrodata");
+  });
 });
 
 describe("text helpers", () => {
