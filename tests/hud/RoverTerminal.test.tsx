@@ -223,4 +223,23 @@ describe("terminal helpers", () => {
     markTerminalSeen();
     expect(localStorage.getItem("hq:terminal-seen")).toBe("1");
   });
+
+  it("lists extra options after the missions and runs them by key or tap", async () => {
+    const replay = vi.fn();
+    const hints = vi.fn();
+    renderTerminal({
+      extras: [
+        { key: "r", label: "replay the tutorial", onSelect: replay },
+        { key: "h", label: "hints: on", onSelect: hints },
+      ],
+    });
+    const options = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(options.at(-3)).toContain("[r]replay the tutorial");
+    expect(options.at(-2)).toContain("[h]hints: on");
+    expect(options.at(-1)).toContain(en.hud.terminal.driveMyself);
+    await userEvent.keyboard("r");
+    expect(replay).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("option", { name: /hints: on/ }));
+    expect(hints).toHaveBeenCalledTimes(1);
+  });
 });

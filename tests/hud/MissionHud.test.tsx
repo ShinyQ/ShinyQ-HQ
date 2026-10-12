@@ -12,6 +12,8 @@ import { onHudCommand, openAsk, openPalette, openTerminal, type HudCommand } fro
 import { primeHudIndex } from "@/hud/index-client";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
+import { registerTutorial } from "@/hud/dialog/tutorial";
+import { HINTS_KEY, resetFlagMemory } from "@/hud/dialog/storage";
 import { RECENT_KEY } from "@/hud/recent";
 import { TERMINAL_SEEN_KEY } from "@/hud/RoverTerminal";
 
@@ -225,5 +227,38 @@ describe("MissionHud with Ask the HQ", () => {
     expect(screen.getByRole("dialog", { name: "Ask Rover" })).toBeInTheDocument();
     act(() => openAsk("How can I contact him?"));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("MissionHud with the 3D HUD open", () => {
+  it("offers replay and hints in Ask Rover only while the tutorial host is registered", async () => {
+    resetFlagMemory();
+    renderHud();
+    act(() => openTerminal());
+    expect(screen.queryByRole("option", { name: /replay the tutorial/ })).toBeNull();
+    act(() => screen.getByRole("button", { name: en.hud.terminal.close }).click());
+    const replay = vi.fn();
+    let off = () => {};
+    act(() => {
+      off = registerTutorial(replay);
+    });
+    act(() => openTerminal());
+    await userEvent.click(screen.getByRole("option", { name: new RegExp(en.dialog.menu.hintsOn) }));
+    expect(localStorage.getItem(HINTS_KEY)).toBe("off");
+    expect(screen.getByRole("option", { name: new RegExp(en.dialog.menu.hintsOff) })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("option", { name: new RegExp(en.dialog.menu.replay) }));
+    expect(replay).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog", { name: en.hud.terminal.title })).toBeNull();
+    act(() => off());
+  });
+
+  it("finds Replay the tutorial in Cmd-K while the 3D HUD is open", async () => {
+    const replay = vi.fn();
+    const off = registerTutorial(replay);
+    renderHud();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.keyboard("tutorial{Enter}");
+    expect(replay).toHaveBeenCalledTimes(1);
+    off();
   });
 });

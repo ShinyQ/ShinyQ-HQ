@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { collectErrors, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { collectErrors, enterHQ, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Rover's dialog (src/hud/dialog): the first-session onboarding after the boot and intro, its
@@ -69,5 +69,27 @@ test.describe("first-session onboarding", () => {
     await page.waitForTimeout(1500);
     await expect(box(page)).toHaveCount(0);
     expect(errors).toEqual([]);
+  });
+});
+
+test.describe("replay", () => {
+  test("Ask Rover and Cmd-K replay the tour for a returning visitor", async ({ page }) => {
+    await enterHQ(page);
+    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
+    await terminal.getByRole("option", { name: new RegExp(en.dialog.menu.replay) }).click();
+    await expect(terminal).toBeHidden();
+    await expectLine(page, "welcome");
+    await expect(box(page)).toHaveAttribute("data-dialog", "onboarding");
+    await choices(page).getByRole("button", { name: en.dialog.onboarding.skip }).click();
+    await expectLine(page, "skipped");
+    await next(page);
+    await expect(box(page)).toHaveCount(0);
+
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog", { name: "Command palette" });
+    await palette.getByRole("combobox").fill("tutorial");
+    await page.keyboard.press("Enter");
+    await expectLine(page, "welcome");
   });
 });

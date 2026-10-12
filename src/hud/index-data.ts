@@ -26,6 +26,8 @@ const ACTION_KEYS: Record<PaletteActionId, keyof typeof en.hud.actions> = {
   "toggle-language": "toggleLanguage",
   "toggle-sound": "toggleSound",
   "quick-view": "quickView",
+  "replay-tutorial": "replayTutorial",
+  "toggle-hints": "toggleHints",
 };
 
 export function structuralLabels(): StructuralLabels {

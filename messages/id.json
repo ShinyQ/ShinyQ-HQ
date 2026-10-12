@@ -391,7 +391,9 @@
       "copyEmail": "Salin email",
       "toggleLanguage": "Read in English",
       "toggleSound": "Aktifkan atau matikan suara",
-      "quickView": "Ringkasan"
+      "quickView": "Ringkasan",
+      "replayTutorial": "Putar ulang tutorial",
+      "toggleHints": "Nyalakan atau matikan petunjuk"
     },
     "status": {
       "running": "Misi aktif: {mission}",

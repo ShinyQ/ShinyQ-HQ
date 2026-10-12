@@ -391,7 +391,9 @@
       "copyEmail": "Copy email",
       "toggleLanguage": "Baca dalam bahasa Indonesia",
       "toggleSound": "Turn sound on or off",
-      "quickView": "Quick view"
+      "quickView": "Quick view",
+      "replayTutorial": "Replay the tutorial",
+      "toggleHints": "Turn hints on or off"
     },
     "status": {
       "running": "On a mission: {mission}",
