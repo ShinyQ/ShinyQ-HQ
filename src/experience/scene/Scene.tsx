@@ -18,7 +18,7 @@ import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
 import { Director } from "./Director";
-import { renderBudget, sceneSettings } from "./settings";
+import { sceneSettings, type RenderBudget } from "./settings";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
@@ -49,12 +49,14 @@ export function Scene({
   labels,
   held,
   onToggleLang,
+  budget,
 }: {
   data: ExperienceData;
   tier: GpuTier;
   labels: SceneLabels;
   held: RefObject<Set<string>>;
   onToggleLang: () => void;
+  budget: RenderBudget;
 }) {
   const layouts = useMemo(
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
@@ -62,7 +64,6 @@ export function Scene({
   );
   const interactData = useMemo(() => ({ experience: data, labels: labels.interact }), [data, labels.interact]);
   const settings = sceneSettings(tier);
-  const coarse = useHQStore((s) => s.device.coarse);
   return (
     <>
       <color attach="background" args={[settings.fog.color]} />
@@ -80,7 +81,7 @@ export function Scene({
       {tier === "full" && <FloorMotes />}
       {tier === "full" && (
         <Suspense fallback={null}>
-          <Effects multisampling={renderBudget(tier, coarse).multisampling} />
+          <Effects multisampling={budget.multisampling} levels={budget.bloomLevels} />
         </Suspense>
       )}
     </>

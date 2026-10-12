@@ -41,7 +41,11 @@ export interface RenderBudget {
   dpr: [number, number];
   /** MSAA samples of the full-tier EffectComposer (the canvas itself never multisamples). */
   multisampling: number;
+  /** MIP levels of the full tier's mipmap bloom (postprocessing's default, the look the owner signed off). */
+  bloomLevels: number;
 }
+
+export const BLOOM_LEVELS = 8;
 
 /**
  * Pixel budget per tier and device. Fill rate is the main cost on phones and weak GPUs (measured:
@@ -51,6 +55,39 @@ export interface RenderBudget {
  * always run without antialiasing.
  */
 export function renderBudget(tier: GpuTier, coarse: boolean): RenderBudget {
-  if (tier === "full") return coarse ? { dpr: [1, 1.5], multisampling: 0 } : { dpr: [1, 2], multisampling: 4 };
-  return { dpr: coarse ? [1, 1.25] : [1, 1.5], multisampling: 0 };
+  if (tier === "full") return coarse ? { dpr: [1, 1.5], multisampling: 0, bloomLevels: BLOOM_LEVELS } : { dpr: [1, 2], multisampling: 4, bloomLevels: BLOOM_LEVELS };
+  return { dpr: coarse ? [1, 1.25] : [1, 1.5], multisampling: 0, bloomLevels: BLOOM_LEVELS };
+}
+
+/** `?gfx=` debug override (perf measurements and tests): `dpr1.5`, `msaa0|2|4|8`, `bloom1..8`, `monitor-on|off`. */
+export interface GfxOverride {
+  dprMax?: number;
+  multisampling?: number;
+  bloomLevels?: number;
+  monitor?: boolean;
+}
+
+export function parseGfxOverride(search: string): GfxOverride {
+  const raw = new URLSearchParams(search).get("gfx");
+  const out: GfxOverride = {};
+  if (!raw) return out;
+  for (const part of raw.split(",").map((p) => p.trim())) {
+    if (part === "monitor-off") out.monitor = false;
+    else if (part === "monitor-on") out.monitor = true;
+    const m = /^(dpr|msaa|bloom)(\d+(?:\.\d+)?)$/.exec(part);
+    if (!m) continue;
+    const v = Number(m[2]);
+    if (m[1] === "dpr" && v >= 0.5 && v <= 3) out.dprMax = v;
+    if (m[1] === "msaa" && [0, 2, 4, 8].includes(v)) out.multisampling = v;
+    if (m[1] === "bloom" && Number.isInteger(v) && v >= 1 && v <= 8) out.bloomLevels = v;
+  }
+  return out;
+}
+
+export function withOverride(budget: RenderBudget, o: GfxOverride): RenderBudget {
+  return {
+    dpr: o.dprMax === undefined ? budget.dpr : [Math.min(1, o.dprMax), o.dprMax],
+    multisampling: o.multisampling ?? budget.multisampling,
+    bloomLevels: o.bloomLevels ?? budget.bloomLevels,
+  };
 }

@@ -124,6 +124,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["scripts/og-check.ts"]).specs).toEqual(["seo", "static-routes"]);
     expect(specsForChanges(["scripts/og-stills.ts", "scripts/og-before-after.ts"]).specs).toEqual([]);
   });
+
+  it("maps the render pipeline and the tower to the gpu spec", () => {
+    expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
+    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["experience", "gpu"]);
+  });
 });
 
 describe("assignShard", () => {
