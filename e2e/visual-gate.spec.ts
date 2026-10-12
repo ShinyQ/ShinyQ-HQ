@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
-import { driveUntil, frameCount, installVirtualClock, pauseClock, stepFrames, waitForQuiet } from "./vclock";
+import { asReturningVisitor, waitForPhase } from "./hq";
+import { driveUntil, frameCount, installVirtualClock, stepFrames, waitForQuiet } from "./vclock";
 
 /**
  * Screenshot-diff gate for look-preserving GPU work (round 5, P2). Run it only through
@@ -9,6 +9,12 @@ import { driveUntil, frameCount, installVirtualClock, pauseClock, stepFrames, wa
  */
 test.skip(!process.env.VISUAL_GATE, "Run through `bun scripts/visual-gate.ts`");
 test.describe.configure({ mode: "serial", timeout: 300_000 });
+// Base and head are captured on the same machine, so the real GPU keeps the comparison fair and is
+// about 100x faster than SwiftShader at 2880x1800 (full tier: about 1.2 s per frame there). macOS runs
+// on ANGLE Metal; VISUAL_GATE_GPU=swiftshader (or another OS) keeps the suite's SwiftShader.
+if (process.platform === "darwin" && process.env.VISUAL_GATE_GPU !== "swiftshader") {
+  test.use({ launchOptions: { args: ["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] } });
+}
 
 type Device = { name: string; width: number; height: number; dpr: number; tier: "full" | "lite"; touch: boolean; info?: boolean };
 type Pose = { name: string; kind: "settled" | "intro" | "ride"; path: string; to?: string };
@@ -48,6 +54,9 @@ const PROFILES: Record<string, (d: Device, p: Pose) => Limits> = {
   release: (d, p) => (retina(d) ? RETINA_RELEASE : textHeavy(p) ? BLENDED : STRICT),
 };
 const profile = PROFILES[process.env.VISUAL_GATE_PROFILE ?? "strict"] ?? PROFILES.strict;
+/** Every pose is drawn at a fixed frame count from page load (the scene animates even under reduced motion). */
+const SETTLE_FRAME = 600;
+const INTRO_CLICK_FRAME = 600;
 const RIDE_START_FRAME = 1200;
 
 type HQ = { __hq: { store: { getState(): { phase: string; floor: string; ride: { stage: string } | null; goToFloor(f: string): void } }; rover: { drawCalls: number } } };
@@ -64,7 +73,7 @@ async function open(browser: Browser, device: Device, pose: Pose) {
   await page.route("**/api/ask", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ enabled: true, turnstileSiteKey: null, asOf: "2026-10-11", maxLength: 300 }) }),
   );
-  await installVirtualClock(page, { autorun: pose.kind !== "ride" });
+  await installVirtualClock(page, { autorun: false });
   if (pose.kind === "intro") {
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -79,31 +88,38 @@ async function open(browser: Browser, device: Device, pose: Pose) {
   return { context, page };
 }
 
+const live = () => {
+  const w = window as unknown as Partial<HQ>;
+  const s = w.__hq?.store.getState();
+  return Boolean(s && s.phase === "explore" && (w.__hq?.rover.drawCalls ?? 0) > 0 && !document.documentElement.hasAttribute("data-hq-boot"));
+};
+
+/** Steps to exactly `frame` frames since load; fails if the page needed more frames to get there. */
+async function stepTo(page: Page, frame: number) {
+  const frames = await frameCount(page);
+  if (frames > frame) throw new Error(`reached the pose at frame ${frames}, after the fixed frame ${frame}`);
+  await stepFrames(page, frame - frames);
+}
+
 async function settle(page: Page, pose: Pose) {
+  await page.getByTestId("hq").waitFor({ timeout: 120_000 });
   if (pose.kind === "settled") {
-    await waitForHQ(page);
-    await waitForPhase(page, "explore");
-    await waitForSceneLive(page);
-    await pauseClock(page);
+    await driveUntil(page, live, { maxFrames: SETTLE_FRAME, batch: 10 });
     await waitForQuiet(page);
-    await stepFrames(page, 120);
+    await stepTo(page, SETTLE_FRAME);
   } else if (pose.kind === "intro") {
-    await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 60_000 });
+    await driveUntil(page, () => document.querySelector('[data-testid="boot"] button:not([aria-disabled="true"])') !== null, { maxFrames: INTRO_CLICK_FRAME, batch: 10 });
+    await waitForQuiet(page);
+    await stepTo(page, INTRO_CLICK_FRAME);
     await start.click();
     await waitForPhase(page, "intro");
-    await pauseClock(page);
     await waitForQuiet(page);
     await stepFrames(page, 30);
   } else {
-    await driveUntil(page, () => {
-      const w = window as unknown as Partial<HQ>;
-      const s = w.__hq?.store.getState();
-      return Boolean(s && s.phase === "explore" && (w.__hq?.rover.drawCalls ?? 0) > 0 && !document.documentElement.hasAttribute("data-hq-boot"));
-    }, { maxFrames: RIDE_START_FRAME, batch: 30 });
-    const frames = await frameCount(page);
-    if (frames < RIDE_START_FRAME) await stepFrames(page, RIDE_START_FRAME - frames);
+    await driveUntil(page, live, { maxFrames: RIDE_START_FRAME, batch: 30 });
+    await waitForQuiet(page);
+    await stepTo(page, RIDE_START_FRAME);
     await page.evaluate((to) => (window as unknown as HQ).__hq.store.getState().goToFloor(to), pose.to!);
     // The target floor mounts now: give fonts, chunks and troika real time before the dolly.
     await page.waitForTimeout(1000);
