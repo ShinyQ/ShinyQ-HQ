@@ -363,4 +363,29 @@ test.describe("no colored edge stripes", () => {
     await expect(page.getByTestId("ask-dock")).toBeVisible();
     expect(await page.evaluate(findEdgeAccents, "[data-testid='ask-dock']")).toEqual([]);
   });
+
+  test("Cmd-K marks the selected row with a dot and a full outline", async ({ page }) => {
+    await openPage(page, staticTier("/en/journey"));
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog", { name: "Command palette" });
+    await expect(palette).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    const selected = palette.locator("[role='option'][aria-selected='true']");
+    await expect(selected).toHaveCount(1);
+    const look = await selected.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const dot = el.querySelector("[data-accent-dot]");
+      return {
+        sides: new Set([cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor]).size,
+        left: cs.borderLeftWidth,
+        fill: cs.backgroundColor,
+        dot: dot ? getComputedStyle(dot).visibility : "missing",
+      };
+    });
+    expect(look.sides).toBe(1);
+    expect(look.left).toBe("1px");
+    expect(look.fill).not.toBe("rgba(0, 0, 0, 0)");
+    expect(look.dot).toBe("visible");
+    expect(await page.evaluate(findEdgeAccents, "[role='dialog']:has([role='listbox'])")).toEqual([]);
+  });
 });

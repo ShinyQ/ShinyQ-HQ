@@ -12,7 +12,6 @@ const KNOWN = [
   "src/app/pageview.css: css: border-left-color: var(--color-violet);",
   "src/components/certs/CertDialog.tsx: bar: top h-0.5",
   "src/components/certs/Certifications.tsx: bar: top h-0.5",
-  "src/hud/CommandPalette.tsx: class: border-l-2 + border-cyan",
   "src/lib/og.tsx: style: side bar width 10",
 ];
 
