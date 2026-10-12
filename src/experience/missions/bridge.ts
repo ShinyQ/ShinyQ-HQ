@@ -114,7 +114,7 @@ export function onMissionState(listener: (state: MissionState) => void): () => v
   return () => listeners.delete(listener);
 }
 
-/** The 3D experience opens the Rover Terminal itself after the intro, so the page must not. */
+/** Only the 3D Lobby opens the Rover Terminal on its own (Director, after the intro on the first visit); the gate claims it while the tower is open. */
 export function claimAutoOpen(claimed: boolean) {
   autoOpenClaimed = claimed;
 }

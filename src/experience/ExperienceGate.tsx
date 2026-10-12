@@ -95,7 +95,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     else if (tier && view === "page") releaseBootCover("page");
   }, [tier, view]);
 
-  // Claimed synchronously after hydration, before MissionHud's first-visit timer fires.
+  // Lets the Director open the Rover Terminal after the intro only while the tower is open; the Page View never auto-opens it.
   useEffect(() => {
     claimAutoOpen(immersive);
     return () => claimAutoOpen(false);

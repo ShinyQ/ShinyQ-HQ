@@ -210,7 +210,7 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
   - `scripts/defer-scripts.ts` (run by `bun run build`) requests the Next.js chunks only after the first contentful paint.
   - Client props of the locale layout are inlined into every HTML file (RSC payload). Large client data goes into a static file under `/data/` instead: the Glass Drawer content (`/data/rooms/{locale}.json`) and the HUD index (`/data/hud/index.json`, fetched by `MissionHud` after hydration).
   - Always-loaded client islands import only small modules: the Ask status from `src/ask/status.ts` (not the Turnstile and SSE client), certification helpers from `src/content/certs.ts` (the tech logo registry stays in the server-only `cert-views.ts`).
-  - Elements that appear after first paint on their own must not move content: the first-visit Rover Terminal opens only once its missions and the Ask status are known, and its greeting types into reserved space.
+  - Elements that appear after first paint on their own must not move content or cover the landing: the Rover Terminal never opens on its own over the Page View (the 3D Lobby opens it after the intro), and its greeting types into reserved space.
 - Medians at the time of writing (local `lhci autorun`): `/en` and the pod page about 1.58 s, `/en/journey` 1.73 s, `/en/quick` 1.81 s; CLS 0, TBT under 25 ms. Production adds the real TTFB of Cloudflare Pages (simulated at 50 to 500 ms).
 
 ## 9. Headers and redirects
