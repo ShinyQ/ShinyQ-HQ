@@ -5,10 +5,12 @@ import {
   dollyDuration,
   doorsOpen,
   easeInOutCubic,
+  PREPARE_TIMEOUT,
   REDUCED_CUT,
   RIDE_CAP,
   rideCap,
   rideDirection,
+  STAGE_TIME,
   trackFrameDt,
   TYPICAL_FRAME_DT,
   type Ride,
@@ -122,5 +124,48 @@ describe("ride clock", () => {
   it("honours an explicit cap", () => {
     const next = advanceRide(ride({ stage: "moving", t: 0 }), 0.25, { atDoor: true, reduced: false, cap: RIDE_CAP.max });
     expect(next?.t).toBeCloseTo(RIDE_CAP.max);
+  });
+});
+
+describe("destination gate", () => {
+  const closing = ride({ stage: "closing", t: STAGE_TIME.closing - 0.01 });
+  const opts = (ready: boolean) => ({ atDoor: true, reduced: false, ready });
+
+  it("holds the car at closed doors until the destination is ready", () => {
+    let r = advanceRide(closing, 0.02, opts(false))!;
+    expect(r).toMatchObject({ stage: "closing", t: STAGE_TIME.closing });
+    expect(r.held).toBeCloseTo(0.02);
+    expect(doorsOpen(r, "L1", false)).toBe(0);
+    expect(carY(r, false)).toBe(0);
+    r = advanceRide(r, 0.02, opts(false))!;
+    expect(r.held).toBeCloseTo(0.04);
+    r = advanceRide(r, 0.02, opts(true))!;
+    expect(r).toMatchObject({ stage: "moving", t: 0 });
+    expect(r.held).toBeCloseTo(0.04);
+  });
+
+  it("gives up after PREPARE_TIMEOUT of real frame time", () => {
+    let r: Ride | null = closing;
+    let frames = 0;
+    while (r?.stage === "closing" && frames < 100) {
+      r = advanceRide(r, 0.25, opts(false));
+      frames += 1;
+    }
+    expect(r?.stage).toBe("moving");
+    expect(r?.held).toBeGreaterThanOrEqual(PREPARE_TIMEOUT - 1e-9);
+    // 0.25 s frames: six frames of waiting, then the car moves (the wait is not capped like ride time).
+    expect(frames).toBeLessThanOrEqual(8);
+  });
+
+  it("holds reduced motion at the door, before the cut", () => {
+    let r = advanceRide(ride(), 0.02, { atDoor: true, reduced: true, ready: false })!;
+    expect(r.stage).toBe("toDoor");
+    expect(r.held).toBeCloseTo(0.02);
+    r = advanceRide(r, 0.02, { atDoor: true, reduced: true, ready: true })!;
+    expect(r.stage).toBe("moving");
+  });
+
+  it("never holds when the destination is ready (the default)", () => {
+    expect(advanceRide(closing, 0.02, { atDoor: true, reduced: false })).toMatchObject({ stage: "moving", t: 0, held: 0 });
   });
 });
