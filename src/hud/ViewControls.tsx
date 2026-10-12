@@ -15,6 +15,7 @@ export function ViewControls() {
       role="group"
       aria-label={t("label")}
       data-testid="view-controls"
+      data-onboard="view"
       className="glass glass-solid pointer-events-auto flex flex-col items-center gap-0.5 rounded-full p-0.5 sm:flex-row"
     >
       <button type="button" className={button} aria-label={t("rotateLeft")} title={t("rotateLeft")} onClick={() => intents.emit({ type: "orbit", dyaw: -ROTATE_STEP, smooth: true, source: "button" })}>

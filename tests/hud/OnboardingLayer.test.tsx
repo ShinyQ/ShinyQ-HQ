@@ -109,6 +109,11 @@ describe("OnboardingLayer", () => {
       dialog.advance();
       dialog.advance();
     });
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("camera"));
+    await act(async () => {
+      dialog.advance();
+      dialog.advance();
+    });
     await vi.waitFor(() => expect(dialog.view.line?.key).toBe("ask-rover"));
   });
 

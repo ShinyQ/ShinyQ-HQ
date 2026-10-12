@@ -26,6 +26,8 @@ const copy: OnboardingCopy = {
   pointGoFine: "pointGoFine",
   pointGoCoarse: "pointGoCoarse",
   moved: "moved",
+  cameraFine: "cameraFine",
+  cameraCoarse: "cameraCoarse",
   highlights: "highlights",
   showMe: "showMe",
   later: "later",
@@ -86,7 +88,7 @@ describe("runOnboarding", () => {
     const fake = fakeSay({ welcome: { choice: "start" } });
     const outcome = await runOnboarding(deps({ say: fake.say }));
     expect(outcome).toBe("done");
-    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "highlights", "elevator", "ask-rover", "ask-ai", "closing"]);
+    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "highlights", "elevator", "ask-rover", "ask-ai", "closing"]);
     expect(fake.said[0].options).toEqual({ id: ONBOARDING_ID });
     expect(fake.said[1].options).toEqual({ id: ONBOARDING_ID, skip: { label: "skip" } });
     expect(fake.line("welcome").choices?.map((c) => c.id)).toEqual(["start", "skip"]);
@@ -94,6 +96,8 @@ describe("runOnboarding", () => {
     expect(fake.line("ask-rover").spotlight).toBe("ask-rover");
     expect(fake.line("ask-ai").spotlight).toBe("ask-ai");
     expect(fake.line("closing").text).toBe("closing");
+    expect(fake.line("camera").spotlight).toBe("view");
+    expect(fake.line("camera").text).toBe("cameraFine");
   });
 
   it("makes the moving step a try-it line with a Continue fallback", async () => {
@@ -109,6 +113,7 @@ describe("runOnboarding", () => {
     const fake = fakeSay();
     await runOnboarding(deps({ say: fake.say, coarse: true }));
     expect(fake.line("move").text).toBe("moveCoarse");
+    expect(fake.line("camera").text).toBe("cameraCoarse");
     expect(fake.line("point-go").text).toBe("pointGoCoarse");
   });
 
@@ -121,7 +126,7 @@ describe("runOnboarding", () => {
   it("stops when the skip button is pressed mid-tour", async () => {
     const fake = fakeSay({ move: { status: "skipped" } });
     expect(await runOnboarding(deps({ say: fake.say }))).toBe("skipped");
-    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "skipped"]);
+    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "skipped"]);
   });
 
   it("ends quietly when cancelled", async () => {
@@ -151,7 +156,7 @@ describe("runOnboarding", () => {
   it("runs the short tour after a deep link: no Highlights Hall, no elevator", async () => {
     const fake = fakeSay();
     await runOnboarding(deps({ say: fake.say, variant: "short" }));
-    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "ask-rover", "ask-ai", "closing"]);
+    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "ask-rover", "ask-ai", "closing"]);
     expect(fake.line("closing").text).toBe("closingShort");
   });
 

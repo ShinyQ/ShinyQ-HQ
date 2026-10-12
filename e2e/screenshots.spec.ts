@@ -518,6 +518,8 @@ test.describe("Rover dialog", () => {
       await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.continue }).click({ timeout: 20_000 });
       await expect(box).toHaveAttribute("data-line", "moved");
       await advance();
+      await expect(box).toHaveAttribute("data-line", "camera");
+      await advance();
       await expect(box).toHaveAttribute("data-line", /^(highlights|elevator)$/, { timeout: 15_000 });
       if ((await box.getAttribute("data-line")) === "highlights") {
         await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.later }).click();
