@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, padsOf, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import { heroPod } from "./routes";
 
 /** Opt-in (SCREENSHOTS=1): captures PR screenshots into screenshots/. WebGL runs on SwiftShader. */
@@ -247,4 +247,63 @@ for (const viewport of VIEWPORTS) {
       await context.close();
     });
   }
+}
+
+const FLOOR_THUMBS = [
+  { id: "L1", path: "/en" },
+  { id: "L2", path: "/en/journey" },
+  { id: "L3", path: "/en/labs" },
+  { id: "L4", path: "/en/library" },
+  { id: "RF", path: "/en/contact" },
+] as const;
+
+/** Elevator picker thumbnails: each floor from its start spot with the HUD hidden (`bun run floor:thumbs` converts them to public/floors/*.webp). */
+for (const floor of FLOOR_THUMBS) {
+  test(`floor thumbnail ${floor.id}`, async ({ browser }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    await page.goto(`${floor.path}?tier=full&walk=off`);
+    await waitForHQ(page);
+    // The Lobby plays the intro; skip it when the button exists (a later intro may have no Skip button).
+    if (floor.id === "L1") await page.getByRole("button", { name: /Skip intro/ }).click({ timeout: 10_000 }).catch(() => {});
+    await waitForPhase(page, "explore");
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({ content: "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }" });
+    // The full tier renders through the bloom composer: give the floor time to mount and settle.
+    await page.waitForTimeout(8000);
+    await page.screenshot({ path: `screenshots/floor-thumbs/${floor.id}.png` });
+    await context.close();
+  });
+}
+
+for (const viewport of VIEWPORTS) {
+  test(`3D pad pickers @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test.setTimeout(240_000);
+    const { context, page } = await open3DAt(browser, viewport, "/en/journey");
+    const pads = await padsOf(page, "L2");
+    const lift = pads.find((p) => p.kind === "elevator")!;
+    const teleport = pads.find((p) => p.kind === "teleport")!;
+    const picker = page.getByTestId("pad-picker");
+
+    await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    await driveTo(page, lift.at);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: shot("hq-pad-floors", viewport) });
+    await page.keyboard.press("Escape");
+
+    await driveTo(page, teleport.at);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: shot("hq-pad-years", viewport) });
+    await page.keyboard.press("Escape");
+    await expect(picker).toHaveCount(0);
+
+    // The rover parked on the 2019 teleporter, with the pad glow and the floating icons.
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: shot("hq-pad-teleporter", viewport) });
+    await context.close();
+  });
 }

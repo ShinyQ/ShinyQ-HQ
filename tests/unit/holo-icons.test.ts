@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arc, CAREER_ICONS, CAREER_TONE, iconMesh, iconPath } from "@/experience/fx/holoIcons";
+import { arc, CAREER_ICONS, CAREER_TONE, iconMesh, iconPath, PAD_ICONS, PAD_TONE } from "@/experience/fx/holoIcons";
 
 describe("career type icons", () => {
   it("has line art for every type inside the 24 x 24 grid", () => {
@@ -36,5 +36,21 @@ describe("career type icons", () => {
     const xs = flat.positions.filter((_, i) => i % 3 === 0);
     expect(Math.max(...xs.map(Math.abs))).toBeLessThan(1.2);
     expect(new Set(flat.positions.filter((_, i) => i % 3 === 2))).toEqual(new Set([0]));
+  });
+
+  it("has pad icons (elevator, teleporter) inside the 24 x 24 grid, each with its own tone", () => {
+    expect(Object.keys(PAD_ICONS).sort()).toEqual(["elevator", "teleport"]);
+    for (const strokes of Object.values(PAD_ICONS)) {
+      expect(strokes.length).toBeGreaterThan(1);
+      for (const s of strokes)
+        for (const [x, y] of s.points) {
+          expect(x).toBeGreaterThanOrEqual(0);
+          expect(x).toBeLessThanOrEqual(24);
+          expect(y).toBeGreaterThanOrEqual(0);
+          expect(y).toBeLessThanOrEqual(24);
+        }
+    }
+    expect(PAD_TONE).toEqual({ elevator: "#22d3ee", teleport: "#f472b6" });
+    expect(iconMesh(PAD_ICONS.teleport, { size: 1.4 }).positions.length).toBeGreaterThan(0);
   });
 });

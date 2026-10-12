@@ -1,6 +1,8 @@
-import type { DoorTrigger, Rect, Vec2 } from "../types";
+import type { DoorTrigger, PadTrigger, Rect, Vec2 } from "../types";
 import { distanceToRect } from "./collision";
+import { padHalf } from "./doors";
 import { buildNavGrid, isWalkable, type NavGrid } from "./navgrid";
+import { PAD } from "./pads";
 import { inPlaza, projectOnSegment, ROAD, roadSegments, type RoadNetwork } from "./road";
 
 /**
@@ -14,6 +16,9 @@ import { inPlaza, projectOnSegment, ROAD, roadSegments, type RoadNetwork } from 
  * - every door has a spur from the road (or a plaza) ending on its pad;
  * - no door is reachable only through a gap narrower than 6 u: floor that is 6 u wide (a rover
  *   circle of 3 u) connects the start to within 4 u of every pad.
+ * - floor pads (elevator call pads, L2 teleporters, `padViolations`) sit inside the slab, keep the
+ *   rover radius clear of obstacles, never overlap a door pad or a spur, stay off a road's driving
+ *   width except at a dead end (the elevator approach) and are reachable through 6 u wide floor.
  */
 
 export interface SpaceInput {
@@ -23,6 +28,8 @@ export interface SpaceInput {
   network: RoadNetwork;
   /** Where visitors arrive (the elevator approach). */
   start: Vec2;
+  /** Floor pads; when present the pad rules run too. */
+  pads?: readonly PadTrigger[];
 }
 
 export interface SpaceRules {
@@ -42,7 +49,22 @@ export const SPACE_RULES: SpaceRules = {
   spurClear: 1,
 };
 
-export type SpaceRule = "road-width" | "plaza-size" | "road-blocked" | "spur-blocked" | "obstacle-gap" | "bounds-gap" | "door-spur" | "spur-detached" | "door-gap";
+export type SpaceRule =
+  | "road-width"
+  | "plaza-size"
+  | "road-blocked"
+  | "spur-blocked"
+  | "obstacle-gap"
+  | "bounds-gap"
+  | "door-spur"
+  | "spur-detached"
+  | "door-gap"
+  | "pad-bounds"
+  | "pad-blocked"
+  | "pad-door"
+  | "pad-spur"
+  | "pad-road"
+  | "pad-gap";
 
 export interface SpaceViolation {
   rule: SpaceRule;
@@ -168,6 +190,19 @@ export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RUL
     if (!spur || Math.hypot(spur.to.x - door.at.x, spur.to.z - door.at.z) > 0.5) out.push({ rule: "door-spur", detail: `door ${door.room} has no spur ending on its pad` });
   }
 
+  const { startOk, reachable } = reachFrom(input, rules);
+  if (!startOk) out.push({ rule: "door-gap", detail: `start (${fmt(input.start.x)}, ${fmt(input.start.z)}) has no 6 u wide floor around it` });
+  else
+    for (const door of doors) {
+      if (!reachable(door.at)) out.push({ rule: "door-gap", detail: `door ${door.room} is only reachable through a gap narrower than ${rules.clear} u` });
+    }
+
+  if (input.pads) out.push(...padViolations({ ...input, pads: input.pads }, rules));
+  return out;
+}
+
+/** Wide floor (rules.clear) flooded from the start, and whether it comes within `rules.doorReach` of a point. */
+function reachFrom(input: Pick<SpaceInput, "bounds" | "obstacles" | "start">, rules: SpaceRules): { startOk: boolean; reachable: (p: Vec2) => boolean } {
   const grid = wideGrid(input, rules.clear);
   const reach = flood(grid, input.start);
   const reachable = (p: Vec2) => {
@@ -183,12 +218,54 @@ export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RUL
     }
     return false;
   };
-  if (!isWalkable(grid, input.start) && !reach.some(Boolean)) out.push({ rule: "door-gap", detail: `start (${fmt(input.start.x)}, ${fmt(input.start.z)}) has no 6 u wide floor around it` });
-  else
-    for (const door of doors) {
-      if (!reachable(door.at)) out.push({ rule: "door-gap", detail: `door ${door.room} is only reachable through a gap narrower than ${rules.clear} u` });
-    }
+  return { startOk: isWalkable(grid, input.start) || reach.some(Boolean), reachable };
+}
 
+/** What the pad rules need: floors without a road kit (L1, L4, RF) pass no network. */
+export interface PadSpaceInput {
+  bounds: Rect;
+  obstacles: readonly Rect[];
+  doors: readonly DoorTrigger[];
+  network?: RoadNetwork;
+  start: Vec2;
+  pads: readonly PadTrigger[];
+}
+
+/** Distance from `p` to a door's trigger pad (0 inside it). */
+function distanceToDoorPad(door: DoorTrigger, p: Vec2): number {
+  const { along, across } = padHalf(door);
+  const f = door.facing ?? { x: 0, z: 1 };
+  const dx = p.x - door.at.x;
+  const dz = p.z - door.at.z;
+  const a = Math.abs(dx * f.x + dz * f.z) - along;
+  const c = Math.abs(dx * f.z - dz * f.x) - across;
+  return Math.hypot(Math.max(0, a), Math.max(0, c));
+}
+
+/** Every violated pad rule (empty when every pad sits on open, reachable floor away from roads, doors and spurs). */
+export function padViolations(input: PadSpaceInput, rules: SpaceRules = SPACE_RULES): SpaceViolation[] {
+  const out: SpaceViolation[] = [];
+  const { bounds, obstacles, doors, network, pads } = input;
+  const { startOk, reachable } = reachFrom(input, rules);
+  for (const pad of pads) {
+    const r = pad.radius ?? PAD.radius;
+    const p = pad.at;
+    if (p.x - r < bounds.minX - EPS || p.x + r > bounds.maxX + EPS || p.z - r < bounds.minZ - EPS || p.z + r > bounds.maxZ + EPS)
+      out.push({ rule: "pad-bounds", detail: `pad ${pad.id} at (${fmt(p.x)}, ${fmt(p.z)}) leaves the slab` });
+    const hit = obstacles.find((o) => distanceToRect(p, o) < r + rules.spurClear - EPS);
+    if (hit) out.push({ rule: "pad-blocked", detail: `pad ${pad.id} is closer than ${fmt(r + rules.spurClear)} u to obstacle ${rectLabel(hit)}` });
+    const door = doors.find((d) => distanceToDoorPad(d, p) < r - EPS);
+    if (door) out.push({ rule: "pad-door", detail: `pad ${pad.id} overlaps the door pad of ${door.room}` });
+    const spur = network?.spurs.find((s) => projectOnSegment(p, s.from, s.to).distance < r + (s.width ?? ROAD.spurWidth) / 2 - EPS);
+    if (spur) out.push({ rule: "pad-spur", detail: `pad ${pad.id} overlaps the spur to ${spur.room}` });
+    for (const road of network?.roads ?? []) {
+      const near = roadSegments(road).some(([a, b]) => projectOnSegment(p, a, b).distance < road.width / 2 + r - EPS);
+      const ends = road.closed ? [] : [road.points[0], road.points[road.points.length - 1]];
+      const deadEnd = ends.some((e) => Math.hypot(e.x - p.x, e.z - p.z) <= r + EPS);
+      if (near && !deadEnd) out.push({ rule: "pad-road", detail: `pad ${pad.id} at (${fmt(p.x)}, ${fmt(p.z)}) sits on the driving width of road ${road.id}` });
+    }
+    if (!startOk || !reachable(p)) out.push({ rule: "pad-gap", detail: `pad ${pad.id} is only reachable through a gap narrower than ${rules.clear} u` });
+  }
   return out;
 }
 

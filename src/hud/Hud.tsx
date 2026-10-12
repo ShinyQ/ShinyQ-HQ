@@ -13,6 +13,7 @@ import { drawerLayout } from "./drawer/layout";
 import { HologramOverlay } from "./HologramOverlay";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
+import { BeamFade, PadPicker } from "./pads/PadPicker";
 import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
 import { ViewControls } from "./ViewControls";
@@ -113,6 +114,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   return (
     <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
       <CutFade />
+      <BeamFade />
       {phase === "boot" ? (
         <BootOverlay name={data.profile.name} monogram={data.profile.monogram} />
       ) : phase === "hologram" ? (
@@ -134,6 +136,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
       {/* Mounted in every phase so a walk keeps its state through the hologram view. */}
       <WalkLayer data={data} placement={walkPlacement} coarse={coarse} hidden={phase === "boot" || phase === "intro" || phase === "hologram"} onActive={setWalking} />
       <FloorAnnouncer data={data} />
+      <PadPicker data={data} />
     </div>
   );
 }

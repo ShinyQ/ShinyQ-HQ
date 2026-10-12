@@ -11,6 +11,7 @@ import { roverRuntime } from "../rover/runtime";
 import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
 import { ProximityGlow } from "../fx/ProximityGlow";
+import { PadGlow } from "../fx/PadGlow";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -78,6 +79,7 @@ export function FloorLevel({
       <group ref={content}>
         {near && <GridFloor width={w} depth={d} center={center} />}
         {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}
+        {near && layout.pads && <PadGlow pads={layout.pads} floorY={y} interactive={interactive} />}
         {children}
       </group>
     </group>

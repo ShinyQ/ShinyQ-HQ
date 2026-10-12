@@ -7,6 +7,7 @@ import { CameraDirector } from "../camera/CameraDirector";
 import { buildFloorLayouts, floorY } from "../config";
 import { allGlassMaterials } from "../fx/geometry";
 import { Motes } from "../fx/Motes";
+import { TeleportBeam } from "../fx/TeleportBeam";
 import { useUniformTime } from "../fx/useUniformTime";
 import { careerLayoutInput } from "../floors/career/layout";
 import { Rover } from "../rover/Rover";
@@ -60,6 +61,7 @@ export function Scene({
       <directionalLight color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
       <Rover tier={tier} />
+      <TeleportBeam />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
       <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} layouts={layouts} />
       <GlassClock />

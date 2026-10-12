@@ -3,6 +3,7 @@ import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { LIBRARY_DOORS, libraryObstacles } from "./floors/library/layout";
 import { ROOF_DOORS, roofObstacles } from "./floors/roof/layout";
+import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
 /** Tower constants from spec appendix 01 section 1. */
@@ -127,13 +128,27 @@ function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec
 function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
   if (!extras.career) return standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 });
   const road = buildCareerRoad(extras.career);
-  return { ...standard("L2", road.bounds, road.obstacles), doors: road.doors, scrubStops: road.stops, road: road.network };
+  return { ...standard("L2", road.bounds, road.obstacles), doors: road.doors, scrubStops: road.stops, road: road.network, pads: road.pads };
+}
+
+/**
+ * Elevator pad icon yaw per floor: toward the L2 rail camera (+z), elsewhere east, where the follow
+ * camera sits when the rover drives up to the shaft.
+ */
+const ELEVATOR_PAD_FACE: Record<FloorId, number> = { L1: Math.PI / 2, L2: 0, L3: Math.PI / 2, L4: Math.PI / 2, RF: Math.PI / 2 };
+
+/**
+ * Every floor gets the elevator call pad on its approach (3 u in front of the shaft door, so it follows
+ * the door constants), ahead of the floor's own pads (the L2 year teleporters).
+ */
+function withElevatorPad(layout: FloorLayout): FloorLayout {
+  return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(layout.pads ?? [])] };
 }
 
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, kiosk } = LOBBY;
-  return {
+  const layouts: Record<FloorId, FloorLayout> = {
     L1: standard(
       "L1",
       LOBBY.bounds,
@@ -152,4 +167,5 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
     L4: { ...standard("L4", { minX: -24, maxX: 24, minZ: -16, maxZ: 16 }, libraryObstacles(), { x: 4, z: 3.5 }), doors: LIBRARY_DOORS },
     RF: { ...standard("RF", { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, roofObstacles(), { x: 4, z: 12 }), doors: ROOF_DOORS },
   };
+  return Object.fromEntries(FLOOR_IDS.map((id) => [id, withElevatorPad(layouts[id])])) as Record<FloorId, FloorLayout>;
 }

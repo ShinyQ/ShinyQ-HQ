@@ -401,6 +401,21 @@
       "L3": "Work",
       "L4": "Writing",
       "RF": "About"
+    },
+    "pads": {
+      "floorTitle": "Take the elevator",
+      "floorHint": "Pick a floor: arrows to move, Enter to ride, Esc to close.",
+      "yearTitle": "Teleport to a year",
+      "yearHint": "Pick a year: arrows to move, Enter to beam there, Esc to close.",
+      "close": "Close",
+      "here": "You are here",
+      "floorDesc": {
+        "L1": "Profile, stats, skills and certifications",
+        "L2": "The Career Road: one plaza per year",
+        "L3": "Product and AI engineering projects",
+        "L4": "Blog posts, research papers and talks",
+        "RF": "Contact channels and the CV"
+      }
     }
   },
   "drawer": {
