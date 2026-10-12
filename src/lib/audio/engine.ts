@@ -199,7 +199,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   const engine: AudioEngine = {
     play(name: SoundName) {
       if (silent()) return;
-      if (name === "click" && !allowClick()) return;
+      if ((name === "click" || name === "blip") && !allowClick()) return;
       const context = ensureContext();
       if (!context || !master) return;
       resume();

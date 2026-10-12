@@ -125,6 +125,20 @@ export function scheduleClick(ctx: BaseAudioContext, destination: AudioNode, whe
   source.stop(when + duration + 0.005);
 }
 
+/** Dialog text blip: a soft 30 ms square tick, like a handheld RPG text box (one per 3 typed characters). */
+export function scheduleBlip(ctx: BaseAudioContext, destination: AudioNode, when: number): void {
+  const end = when + 0.03;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(880, when);
+  envelope(gain, when, 0.04, 0.002, end);
+  osc.connect(gain).connect(destination);
+  cleanupOnEnded(osc, [osc, gain]);
+  osc.start(when);
+  osc.stop(end + 0.005);
+}
+
 export type OneShot = (ctx: BaseAudioContext, destination: AudioNode, when: number) => void;
 
 export const ONE_SHOTS: Record<SoundName, OneShot> = {
@@ -132,6 +146,7 @@ export const ONE_SHOTS: Record<SoundName, OneShot> = {
   ding: scheduleDing,
   whoosh: scheduleWhoosh,
   click: scheduleClick,
+  blip: scheduleBlip,
 };
 
 export interface LoopVoice {

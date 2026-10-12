@@ -1,4 +1,4 @@
-export type SoundName = "beep" | "ding" | "whoosh" | "click";
+export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip";
 
 export interface AudioEngine {
   /** Plays a one-shot sound. No-op while muted or when Web Audio is unavailable. */

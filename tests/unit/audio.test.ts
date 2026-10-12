@@ -345,7 +345,7 @@ describe("audio engine: paused outside the 3D view", () => {
 });
 
 describe("audio engine: one-shots", () => {
-  it.each(["beep", "ding", "whoosh", "click"] as const)("%s starts and stops its sources", (name) => {
+  it.each(["beep", "ding", "whoosh", "click", "blip"] as const)("%s starts and stops its sources", (name) => {
     const { engine, ctx } = setup();
     engine.setMuted(false);
     const before = ctx().sources.length;
@@ -394,6 +394,17 @@ describe("audio engine: one-shots", () => {
     clock.t = 1001;
     engine.play("click");
     expect(ctx().bufferSources.length - before).toBe(21);
+  });
+
+  it("rate limits dialog blips together with key clicks", () => {
+    const { engine, ctx, clock } = setup();
+    engine.setMuted(false);
+    const before = ctx().oscillators.length;
+    for (let i = 0; i < 21; i++) {
+      clock.t = i * 40;
+      engine.play("blip");
+    }
+    expect(ctx().oscillators.length - before).toBe(20);
   });
 });
 
