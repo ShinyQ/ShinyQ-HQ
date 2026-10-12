@@ -301,3 +301,127 @@ export async function railScreenPoint(page: Page, p: { x: number; z: number }) {
   const ndc = { x: dot(d, r) / (dot(d, f) * t * (width / height)), y: dot(d, u) / (dot(d, f) * t) };
   return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
 }
+
+/** A point-and-go target as read from `window.__hq.interact` (current floor). */
+export interface InteractSnapshot {
+  id: string;
+  kind: string;
+  label: string;
+  at: { x: number; z: number };
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  action: { type: string; room?: string; year?: number; command?: string };
+}
+
+type ScreenPoint = { x: number; y: number };
+
+type InteractWindow = Window & {
+  __hq: {
+    interact: {
+      items: InteractSnapshot[];
+      highlight: number;
+      project: ((p: { x: number; y: number; z: number }) => ScreenPoint | null) | null;
+      screenOf: (id: string, lift?: number) => ScreenPoint | null;
+    };
+    rover: { x: number; y: number; z: number; cameraForward: { x: number; z: number } };
+    store: { getState: () => { hover: { item: { id: string }; via: string } | null } };
+  };
+};
+
+/** CSS px kept clear of the HUD on a desktop viewport (top bar and profile card, bottom band, elevator panel). */
+export const DESKTOP_SAFE = { top: 200, bottom: 200, side: 140 };
+/** The same on a 390 x 844 phone (two top rows, the bottom band with the joystick). */
+export const PHONE_SAFE = { top: 190, bottom: 320, side: 70 };
+
+export interface TargetQuery {
+  kinds: string[];
+  safe?: { top: number; bottom: number; side: number };
+  /** Skip targets whose approach point is closer than this to the rover (u). */
+  minDistance?: number;
+}
+
+/** The current floor's targets. */
+export async function interactablesOf(page: Page): Promise<InteractSnapshot[]> {
+  return page.evaluate(() =>
+    (window as unknown as InteractWindow).__hq.interact.items.map(({ id, kind, label, at, bounds, action }) => ({ id, kind, label, at, bounds, action })),
+  );
+}
+
+/**
+ * The target of `kinds` nearest to the rover whose pick volume shows on the bare canvas inside `safe`,
+ * at least 100 px from the rover on screen (a click on the rover opens Ask Rover). Fails when none shows.
+ */
+export async function visibleTarget(page: Page, { kinds, safe = DESKTOP_SAFE, minDistance = 0 }: TargetQuery): Promise<InteractSnapshot> {
+  const found = await page.evaluate(
+    ({ kinds, safe, minDistance }) => {
+      const { interact, rover } = (window as unknown as InteractWindow).__hq;
+      if (!interact.project) return null;
+      const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const hits = interact.items
+        .map((i) => ({ i, d: Math.hypot(i.at.x - rover.x, i.at.z - rover.z), p: interact.screenOf(i.id) }))
+        .filter(({ i, d }) => kinds.includes(i.kind) && d >= minDistance)
+        .filter(({ p }) => p !== null && p.x > safe.side && p.x < w - safe.side && p.y > safe.top && p.y < h - safe.bottom)
+        .filter(({ p }) => document.elementFromPoint(p!.x, p!.y)?.tagName === "CANVAS")
+        .filter(({ p }) => !self || Math.hypot(p!.x - self.x, p!.y - self.y) > 100)
+        .sort((a, b) => a.d - b.d);
+      const hit = hits[0]?.i;
+      return hit ? { id: hit.id, kind: hit.kind, label: hit.label, at: hit.at, bounds: hit.bounds, action: hit.action } : null;
+    },
+    { kinds, safe, minDistance },
+  );
+  if (!found) throw new Error(`No ${kinds.join(" or ")} target on screen`);
+  return found;
+}
+
+/** Screen position (CSS px) of a target's pick volume near its top, so the rover in front of it never takes the click. */
+export async function targetPoint(page: Page, id: string, lift = 0.85): Promise<ScreenPoint> {
+  const point = await page.evaluate(({ id, lift }) => (window as unknown as InteractWindow).__hq.interact.screenOf(id, lift), { id, lift });
+  if (!point) throw new Error(`${id} is not on screen`);
+  return point;
+}
+
+/** The store's point-and-go target: `{ id, via }` or null. */
+export async function hoveredTarget(page: Page): Promise<{ id: string; via: string } | null> {
+  return page.evaluate(() => {
+    const hover = (window as unknown as InteractWindow).__hq.store.getState().hover;
+    return hover ? { id: hover.item.id, via: hover.via } : null;
+  });
+}
+
+/** Moves the mouse onto a target and waits until it is the hovered one. */
+export async function hoverTarget(page: Page, id: string): Promise<ScreenPoint> {
+  const point = await targetPoint(page, id);
+  await page.mouse.move(point.x, point.y, { steps: 4 });
+  await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "pointer" });
+  return point;
+}
+
+/** Screen position of open floor near the rover, toward the camera: no target covers it and no HUD sits over it. */
+export async function emptyFloorPoint(page: Page): Promise<ScreenPoint> {
+  const point = await page.evaluate(() => {
+    const { interact, rover } = (window as unknown as InteractWindow).__hq;
+    if (!interact.project) return null;
+    const f = rover.cameraForward;
+    const len = Math.hypot(f.x, f.z) || 1;
+    const back = { x: -f.x / len, z: -f.z / len };
+    const right = { x: -back.z, z: back.x };
+    for (const d of [2.5, 4, 6]) {
+      for (const side of [0, 2, -2]) {
+        const x = rover.x + back.x * d + right.x * side;
+        const z = rover.z + back.z * d + right.z * side;
+        if (interact.items.some((i) => x >= i.bounds.minX && x <= i.bounds.maxX && z >= i.bounds.minZ && z <= i.bounds.maxZ)) continue;
+        const p = interact.project({ x, y: rover.y, z });
+        if (p && document.elementFromPoint(p.x, p.y)?.tagName === "CANVAS") return p;
+      }
+    }
+    return null;
+  });
+  if (!point) throw new Error("No open floor between the rover and the camera");
+  return point;
+}
+
+/** Highlight opacity drawn this frame. */
+export async function highlightOf(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as InteractWindow).__hq.interact.highlight);
+}

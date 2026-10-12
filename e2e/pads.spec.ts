@@ -7,7 +7,7 @@ import {
   driveTo,
   expectRenderBudget,
   padsOf,
-  railScreenPoint,
+  targetPoint,
   waitForCameraSettle,
   waitForFloor,
   waitForFrames,
@@ -135,7 +135,7 @@ test.describe("pad pickers", () => {
     expect(errors).toEqual([]);
   });
 
-  test("a click on a teleporter opens the year picker without driving, and a pick beams the rover to that plaza", async ({ page }) => {
+  test("a click on a teleporter drives there and opens the year picker, and a pick beams the rover to that plaza", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page);
     await waitForCameraSettle(page);
@@ -143,11 +143,13 @@ test.describe("pad pickers", () => {
     const first = teleports[0];
     const target = teleports[4];
     const before = await roverAt(page);
-    await page.getByTestId("hq-world").click({ position: await railScreenPoint(page, first.at) });
+    const pad = await targetPoint(page, `L2:teleporter:${first.year}`);
+    await page.mouse.click(pad.x, pad.y);
     const dialog = page.getByRole("dialog", { name: en.hud.pads.yearTitle });
-    await expect(dialog).toBeVisible();
-    const still = await roverAt(page);
-    expect(Math.hypot(still.x - before.x, still.z - before.z)).toBeLessThan(0.5);
+    await expect(dialog).toBeVisible({ timeout: 60_000 });
+    const parked = await roverAt(page);
+    expect(Math.hypot(parked.x - before.x, parked.z - before.z)).toBeGreaterThan(1);
+    expect(Math.hypot(parked.x - first.at.x, parked.z - first.at.z)).toBeLessThan(1.4);
     await expect(dialog.locator("[data-option]")).toHaveCount(teleports.length);
     await expect(dialog.locator(`[data-option="${first.year}"]`)).toHaveAttribute("aria-current", "true");
     await expect(dialog.locator(`[data-option="${first.year}"]`)).toContainText(en.hud.career.prologue);

@@ -23,6 +23,7 @@ import { onMissionState, register3DHost, runMissionSteps } from "./missions/brid
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
+import { interactRuntime } from "./interact/runtime";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { renderBudget, sceneSettings } from "./scene/settings";
 import { floorOf } from "./missions/rooms";
@@ -98,7 +99,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition], layouts };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
@@ -279,6 +280,26 @@ export default function Experience({
         availability: t("world.availability"),
       },
       rover: { hello: t("statusHello") },
+      interact: {
+        elevator: t("pads.floorTitle"),
+        // A string, so next-intl does not format the year as a number ("2,021").
+        teleporter: (year: number) => t("interact.teleporter", { year: String(year) }),
+        kiosk: t("launcher.askRover"),
+        board: (wing: string) => t("interact.board", { wing }),
+        archive: t("interact.archive"),
+        rooms: {
+          profile: t("rooms.profile"),
+          stats: t("rooms.stats"),
+          skills: t("rooms.skills"),
+          certifications: t("rooms.certifications"),
+          workshop: t("rooms.workshop"),
+          publications: t("rooms.publications"),
+          talks: t("rooms.talks"),
+          contact: t("rooms.contact"),
+          cv: t("rooms.cv"),
+          research: t("rooms.research"),
+        },
+      },
     }),
     [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk],
   );

@@ -290,10 +290,13 @@ export function Rover({ tier }: { tier: GpuTier }) {
     e.stopPropagation();
     intents.emit({ type: "terminal" });
   };
+  // A click on the rover opens Ask Rover, so a target behind it must not light up. The over handler makes
+  // the rover hover-tracked, which lets its stopPropagation clear the hover of objects behind it.
+  const stopHover = (e: ThreeEvent<PointerEvent>) => e.stopPropagation();
 
   return (
     <>
-      <group ref={root} name="rover" onClick={onClick}>
+      <group ref={root} name="rover" onClick={onClick} onPointerOver={stopHover} onPointerMove={stopHover}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
           <circleGeometry args={[1, 24]} />
           <meshBasicMaterial transparent depthWrite={false}>
