@@ -8,6 +8,14 @@ test.describe.configure({ timeout: 150_000 });
 
 const BLOG_POST = "the-sun-the-moon-and-the-dark-sea";
 
+/** The autopilot target the Director is driving to (a door pad), read from the shared rover runtime. */
+async function autopilotPoint(page: Page) {
+  return page.evaluate(() => {
+    const r = (window as unknown as { __hq: { rover: { autopilot: { point: { x: number; z: number } } | null } } }).__hq.rover.autopilot;
+    return r?.point ?? null;
+  });
+}
+
 async function runMission(page: Page, missionId: string) {
   const label = content.missions.find((mission) => mission.id === missionId)!.label.en;
   await page.getByTestId("hud").getByRole("button", { name: "Missions" }).click();
@@ -198,7 +206,7 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(drawer.locator("strong", { hasText: "Kurniadi Ahmad Wijaya" }).first()).toBeVisible();
     await expect(drawer.getByRole("link", { name: /DOI 10\.1109\/icaibda53487/ })).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
     await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
-    await expectRoverNear(page, { x: 22.2, z: -7 });
+    await expectRoverNear(page, (await autopilotPoint(page))!);
     await drawer.getByRole("button", { name: /Indonesian Digital Wallet/ }).click();
     const paper = page.getByRole("dialog", { name: /Indonesian Digital Wallet/ });
     await expect(paper.getByTestId("paper-abstract")).toBeVisible();

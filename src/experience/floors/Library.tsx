@@ -1,49 +1,39 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import { AdditiveBlending, type Mesh } from "three";
-import { getHQStore } from "@/store/useHQStore";
-import { COLORS } from "../config";
-import { LaneStrip } from "../fx/LaneStrip";
-import type { LibraryData } from "../types";
-import { LIBRARY, LIBRARY_LANES } from "./library/layout";
-import { BlogShelves, type ShelfLabels } from "./library/BlogShelves";
-import { Lectern, PublicationsShelf, ResearchShelf, TalksStage, type ShowcaseLabels } from "./library/Showcase";
+import { Suspense, useCallback, useMemo } from "react";
+import type { RoomId } from "@/content/schema";
+import { openPaperFor } from "@/hud/drawer/paper";
+import { useHQStore } from "@/store/useHQStore";
+import { FLOOR_COLOR } from "../config";
+import { RoadMarkings } from "../fx/RoadMarkings";
+import { goToRoom } from "../missions/bridge";
+import type { ExperienceData, GpuTier } from "../types";
+import { NewsroomDecor as PickedDecor } from "./library/decor/NewsroomDecor";
+import { buildLibraryLayout } from "./library/layout";
+import { libraryLayoutInput, type LibraryZone } from "./library/model";
 
-export type LibraryLabels = ShelfLabels & ShowcaseLabels;
-
-/** A slow light sweep along the research plates (the DOI shimmer), one additive plane. */
-function ResearchShimmer() {
-  const ref = useRef<Mesh>(null);
-  const { x, z, w, d } = LIBRARY.research;
-  useFrame((state) => {
-    if (!ref.current) return;
-    const reduced = getHQStore().getState().reducedMotion;
-    const p = reduced ? 0.5 : ((state.clock.elapsedTime * 0.18) % 1.4) / 1.2;
-    ref.current.position.z = z - d / 2 + p * d;
-    ref.current.visible = p <= 1;
-  });
-  return (
-    <mesh ref={ref} position={[x + w / 2 + 0.06, 1.6, z]} rotation={[0, Math.PI / 2, 0]} raycast={() => null}>
-      <planeGeometry args={[0.5, 2.6]} />
-      <meshBasicMaterial color={COLORS.cyan} transparent opacity={0.22} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
-    </mesh>
-  );
+export interface LibraryLabels {
+  /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
+  zones: Record<LibraryZone, string>;
 }
 
-/** L4 Library (appendix 01 section 5), generated from content. */
-export function Library({ library, labels }: { library: LibraryData; labels: LibraryLabels }) {
-  const featured = library.posts.find((p) => !p.url);
+/**
+ * L4 Writing (walkable floors plan, part 3), generated from content: the owner's pick of the three
+ * concepts. Stations open their drawer through `goToRoom` (drive to the door, then open); paper
+ * holograms open the paper preview modal.
+ */
+export function Library({ data, labels, tier }: { data: ExperienceData; labels: LibraryLabels; tier: GpuTier }) {
+  const layout = useMemo(() => buildLibraryLayout(libraryLayoutInput(data.library)), [data.library]);
+  const reducedMotion = useHQStore((s) => s.reducedMotion);
+  const onStation = useCallback((room: RoomId) => goToRoom(room), []);
+  const onPaper = useCallback((id: string) => void openPaperFor(data.locale, id), [data.locale]);
   return (
     <group name="library">
-      <LaneStrip paths={LIBRARY_LANES} />
-      <BlogShelves posts={library.posts} labels={labels} />
-      <Lectern post={featured} labels={labels} />
-      <ResearchShelf research={library.research} labels={labels} />
-      <ResearchShimmer />
-      <PublicationsShelf publications={library.models} labels={labels} />
-      <TalksStage talks={library.talks} labels={labels} />
+      <RoadMarkings network={layout.network} color={FLOOR_COLOR.L4} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} />
+      {/* Text loads fonts asynchronously; the decor waits for them as one piece. */}
+      <Suspense fallback={null}>
+        <PickedDecor layout={layout} library={data.library} tier={tier} reducedMotion={reducedMotion} zones={labels.zones} onStation={onStation} onPaper={onPaper} />
+      </Suspense>
     </group>
   );
 }

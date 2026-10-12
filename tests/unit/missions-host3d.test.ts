@@ -3,7 +3,6 @@ import type { StateStorage } from "zustand/middleware";
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { isAutoOpenClaimed, claimAutoOpen, register3DHost, registerWalkStarter, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
-import { LIBRARY_STOPS, postStop } from "@/experience/floors/library/layout";
 import { ROOF_STOPS } from "@/experience/floors/roof/layout";
 import { create3DHost, roomTarget, type RoverChannel } from "@/experience/missions/host3d";
 import type { RoomInfo } from "@/experience/missions/rooms";
@@ -38,9 +37,12 @@ const ROOMS: RoomInfo[] = [
   room({ id: "RF:cv", floor: "RF", kind: "roof", path: "/cv" }),
 ];
 const byId = (id: string) => ROOMS.find((r) => r.id === id);
+const post = (slug: string, date: string, external = false) => ({ slug, date, tags: [], external });
 const layouts = buildFloorLayouts(8, {
   labs: [{ id: "voice-ai", slug: "voice-ai", title: "Voice AI", tier: "hero", wing: "ai", accent: "violet", hologram: "waveform", order: 0, hasHologramView: true, hasGallery: true }],
+  library: { posts: [post("newest", "2026-10-01"), post("medium-post", "2022-02-28", true), post("oldest", "2020-12-31")], research: 1, models: 1, talks: 1 },
 });
+const l4Door = (id: string) => layouts.L4.doors!.find((d) => d.room === id)!.at;
 const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 const signal = () => new AbortController().signal;
 
@@ -84,19 +86,24 @@ describe("roomTarget", () => {
   });
 
   it("falls back near the floor label", () => {
-    const p = roomTarget(undefined, "L4:unknown", layouts, years);
-    expect(p).toEqual({ x: layouts.L4.approach.x + 7, z: layouts.L4.approach.z - 3 });
+    const p = roomTarget(undefined, "L2:unknown", layouts, years);
+    expect(p).toEqual({ x: layouts.L2.approach.x + 7, z: layouts.L2.approach.z - 3 });
   });
 
-  it("drives to the post's spine using the catalog's post order", () => {
-    expect(roomTarget(byId("L4:newest"), "L4:newest", layouts, years, ROOMS)).toEqual(postStop(0, 3));
-    expect(roomTarget(byId("L4:oldest"), "L4:oldest", layouts, years, ROOMS)).toEqual(postStop(2, 3));
-    expect(roomTarget(byId("L4:medium-post"), "L4:medium-post", layouts, years, ROOMS)).toEqual(postStop(1, 3));
+  it("stops at the floor's list stop for an L4 room without a door (posts on the archive board)", () => {
+    expect(layouts.L4.listStop).toBeDefined();
+    expect(roomTarget(undefined, "L4:archived-post", layouts, years)).toEqual(layouts.L4.listStop);
   });
 
-  it("stops at the publications shelf, the talks stage, the comms terminals and the CV kiosk (their doors)", () => {
-    expect(roomTarget(byId("L4:publications"), "L4:publications", layouts, years, ROOMS)).toEqual(LIBRARY_STOPS.publications);
-    expect(roomTarget(byId("L4:talks"), "L4:talks", layouts, years, ROOMS)).toEqual(LIBRARY_STOPS.talks);
+  it("drives to every post's own door on L4, hosted or on Medium", () => {
+    expect(roomTarget(byId("L4:newest"), "L4:newest", layouts, years)).toEqual(l4Door("L4:newest"));
+    expect(roomTarget(byId("L4:oldest"), "L4:oldest", layouts, years)).toEqual(l4Door("L4:oldest"));
+    expect(roomTarget(byId("L4:medium-post"), "L4:medium-post", layouts, years)).toEqual(l4Door("L4:medium-post"));
+  });
+
+  it("stops at the models and talks stations, the comms terminals and the CV kiosk (their doors)", () => {
+    expect(roomTarget(byId("L4:publications"), "L4:publications", layouts, years)).toEqual(l4Door("L4:publications"));
+    expect(roomTarget(byId("L4:talks"), "L4:talks", layouts, years)).toEqual(l4Door("L4:talks"));
     expect(roomTarget(byId("RF:contact"), "RF:contact", layouts, years)).toEqual(ROOF_STOPS.contact);
     expect(roomTarget(undefined, "RF:cv", layouts, years)).toEqual(ROOF_STOPS.cv);
   });
@@ -176,10 +183,10 @@ describe("3D mission host", () => {
     expect(rover.autopilot?.point).toEqual(ROOF_STOPS.contact);
   });
 
-  it("drives to a post's spine through the host", async () => {
+  it("drives to a post's door through the host", async () => {
     const { rover, host } = setup();
     await host.driveTo("L4:oldest", { signal: signal(), missionId: "m" });
-    expect(rover.autopilot?.point).toEqual(postStop(2, 3));
+    expect(rover.autopilot?.point).toEqual(l4Door("L4:oldest"));
   });
 
   it("says text in the visitor's locale and opens the palette", async () => {

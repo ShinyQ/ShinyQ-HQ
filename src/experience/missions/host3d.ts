@@ -2,7 +2,6 @@ import type { FloorId, RoomId } from "@/content/schema";
 import type { HQStore } from "@/store/useHQStore";
 import { LOBBY, READY_FLOORS } from "../config";
 import { directoryStop } from "../floors/labs/layout";
-import { postStop } from "../floors/library/layout";
 import type { FloorLayout, Vec2 } from "../types";
 import { startWalk, type HostDeps } from "./bridge";
 import type { MissionHost, StepContext } from "./host";
@@ -42,17 +41,10 @@ const LOBBY_STOPS: Record<string, Vec2> = {
 
 /**
  * Where `drive` takes the rover. Rooms with a door trigger stop in its zone (every floor); Lobby
- * rooms have real stops; L3 listed items stop at their wing directory; L4 posts stop in front of their
- * spine (slot from `rooms`, the catalog); placeholder floors use the spot their phase will build on,
- * or a point near the floor label.
+ * rooms have real stops; L3 listed items stop at their wing directory; rooms without a door on a floor
+ * with a `listStop` (L4 posts on the archive board) stop there; anything else stops near the floor label.
  */
-export function roomTarget(
-  room: RoomInfo | undefined,
-  id: RoomId,
-  layouts: Record<FloorId, FloorLayout>,
-  years: readonly number[],
-  rooms: readonly RoomInfo[] = [],
-): Vec2 {
+export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Record<FloorId, FloorLayout>, years: readonly number[]): Vec2 {
   const floor = floorOf(id);
   const layout = layouts[floor];
   const door = layout.doors?.find((d) => d.room === id);
@@ -65,13 +57,7 @@ export function roomTarget(
     return index >= 0 ? { x: -20 + 14 * index + 7, z: 0 } : fallback;
   }
   if (floor === "L3" && room?.wing) return directoryStop(room.wing);
-  if (floor === "L4" && room?.kind === "post") {
-    // Spines have no door trigger: the slot comes from the catalog's post order (same as the shelves).
-    const posts = rooms.filter((r) => r.kind === "post");
-    const index = posts.findIndex((r) => r.id === id);
-    if (index >= 0) return postStop(index, posts.length);
-  }
-  return fallback;
+  return layout.listStop ?? fallback;
 }
 
 function untilAborted(ms: number, signal: AbortSignal): Promise<void> {
@@ -122,7 +108,7 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
       // Driving to another spot leaves the open room (appendix 02: room to explore on drive away).
       const phase = store.getState().phase;
       if (phase === "room" || phase === "hologram") store.getState().closeRoom();
-      const point = typeof target === "string" ? roomTarget(byId.get(target), target, layouts, years, deps.rooms) : target;
+      const point = typeof target === "string" ? roomTarget(byId.get(target), target, layouts, years) : target;
       const request: AutopilotRequest = { point, state: "pending" };
       rover.autopilot = request;
       await waitUntil(() => request.state === "done" || rover.autopilot !== request, ctx.signal);
