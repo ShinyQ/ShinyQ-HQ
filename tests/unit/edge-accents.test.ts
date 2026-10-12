@@ -3,13 +3,10 @@ import { scanCss, scanFile, scanTree } from "../helpers/edge-accents";
 
 /**
  * Ratchet for R5 P10 (owner, 2026-10-13: "I dont like the left side border colored or top colored"):
- * the colored edge stripes still in `src`. Each P10 task deletes the entry it fixes; any new stripe,
- * or an entry whose stripe is gone, fails. The OG left bar belongs to P9 (cinematic OG redesign):
- * whichever of P9 and P10 merges second deletes that entry.
+ * colored edge stripes allowed in `src`. Empty: every stripe is gone (P9 removed the OG left bar).
+ * Any new stripe fails; mark state with a dot or icon chip and `hq-glow` instead (AGENTS.md "Styling").
  */
-const KNOWN = [
-  "src/lib/og.tsx: style: side bar width 10",
-];
+const KNOWN: string[] = [];
 
 const ids = (list: { id: string }[]) => list.map((e) => e.id).sort();
 
