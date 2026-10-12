@@ -4,6 +4,7 @@ import { getLibrary, getProfile } from "./load";
 import type { Locale, Publication } from "./schema";
 import { publicationDate } from "./selectors";
 import { formatYearMonth } from "@/lib/format";
+import { paperPages, paperPdfPath } from "@/lib/papers";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
@@ -29,6 +30,13 @@ export function buildPaperPreview(pub: Publication, locale: Locale): PaperPrevie
     url: pub.url,
     pdf: pub.pdf,
     code: pub.code,
+    document: pub.document && {
+      file: pub.document.file,
+      pdf: paperPdfPath(pub.document.file),
+      version: pub.document.version,
+      ...(pub.document.notice ? { notice: pub.document.notice } : {}),
+      pageCount: paperPages(pub.document.file).length,
+    },
     scholar: scholarSearchUrl(pub.title),
     citationCount:
       pub.citations !== undefined && metrics

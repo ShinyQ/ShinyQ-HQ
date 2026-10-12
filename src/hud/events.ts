@@ -20,8 +20,8 @@ export type HudCommand =
   | { type: "ask"; q?: string; topic?: AskTopic; source?: AskEntry }
   /** The in-site CV viewer modal (page images of the owner's PDF), see `DialogHost`. */
   | { type: "cv" }
-  /** Paper preview modal (abstract, citations, DOI and Scholar links), see `DialogHost`. */
-  | { type: "paper"; paper: PaperPreview }
+  /** Paper preview modal (abstract, citations, DOI and Scholar links), see `DialogHost`; `read` opens the paper reader (self-hosted PDF) at once. */
+  | { type: "paper"; paper: PaperPreview; read?: boolean }
   /** Certification preview card (issuer, dates, credential ID, "Open credential"), see `DialogHost`. */
   | { type: "cert"; cert: CertView }
   /** Page View to the 3D tower (the landing's "Enter the 3D HQ"), handled by `ExperienceGate` like Back to 3D. */
@@ -34,7 +34,7 @@ export function sendHudCommand(command: HudCommand) {
 export const openPalette = (filter?: PaletteFilter) => sendHudCommand({ type: "palette", filter });
 export const openTerminal = () => sendHudCommand({ type: "terminal" });
 export const openCv = () => sendHudCommand({ type: "cv" });
-export const openPaper = (paper: PaperPreview) => sendHudCommand({ type: "paper", paper });
+export const openPaper = (paper: PaperPreview, options: { read?: boolean } = {}) => sendHudCommand({ type: "paper", paper, ...options });
 export const openCert = (cert: CertView) => sendHudCommand({ type: "cert", cert });
 export const enterHq = () => sendHudCommand({ type: "enter3d" });
 export const openAsk = (q?: string, options: { topic?: AskTopic; source?: AskEntry } = {}) => sendHudCommand({ type: "ask", q, ...options });

@@ -194,6 +194,7 @@
     "pdf": "PDF",
     "code": "Kode sumber",
     "preview": "Abstrak dan sitasi",
+    "read": "Baca makalah",
     "citations": "{count} sitasi di {source}, per {date}",
     "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
     "profiles": "Profil riset"
@@ -260,7 +261,21 @@
     "publisher": "Halaman publikasi",
     "pdf": "PDF",
     "code": "Kode sumber",
-    "external": "terbuka di tab baru"
+    "external": "terbuka di tab baru",
+    "read": "Baca makalah",
+    "readHint": "{count, plural, other {# halaman}}, PDF di situs ini",
+    "back": "Abstrak dan sitasi",
+    "reader": "Kontrol pembaca makalah",
+    "pagesRegion": "Halaman makalah",
+    "pageAlt": "{title}, halaman {page} dari {total}",
+    "version": {
+      "manuscript": "Naskah penulis",
+      "redacted": "Data pribadi disamarkan",
+      "published": "Versi terbit"
+    },
+    "published": "Versi terbit",
+    "ieeeNotice": "© {year} IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works.",
+    "noticeLabel": "Catatan penerbit"
   },
   "notFound": {
     "title": "Ruang tidak ditemukan",

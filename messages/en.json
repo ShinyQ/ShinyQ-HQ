@@ -194,6 +194,7 @@
     "pdf": "PDF",
     "code": "Source code",
     "preview": "Abstract and citation",
+    "read": "Read the paper",
     "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
     "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
     "profiles": "Research profiles"
@@ -260,7 +261,21 @@
     "publisher": "Publication page",
     "pdf": "PDF",
     "code": "Source code",
-    "external": "opens in a new tab"
+    "external": "opens in a new tab",
+    "read": "Read the paper",
+    "readHint": "{count, plural, one {# page} other {# pages}}, PDF on this site",
+    "back": "Abstract and citation",
+    "reader": "Paper reader controls",
+    "pagesRegion": "Paper pages",
+    "pageAlt": "{title}, page {page} of {total}",
+    "version": {
+      "manuscript": "Authors' manuscript",
+      "redacted": "Personal data redacted",
+      "published": "Published version"
+    },
+    "published": "Published version",
+    "ieeeNotice": "© {year} IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works.",
+    "noticeLabel": "Publisher notice"
   },
   "notFound": {
     "title": "Room not found",

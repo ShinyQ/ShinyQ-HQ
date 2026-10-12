@@ -302,6 +302,10 @@ function drafts({ content, facts, posts = {}, products }: PackSources): Draft[] 
         pub.authors && label("Authors", "Penulis", pub.authors.join(", ")),
         pub.citations !== undefined && label("Citations", "Sitasi", String(pub.citations)),
         loc(pub.summary),
+        pub.document && {
+          en: `The full text can be read on the site (${pub.document.version === "manuscript" ? "authors' manuscript" : pub.document.version === "redacted" ? "personal data redacted" : "published version"}).`,
+          id: `Teks lengkapnya bisa dibaca di situs ini (${pub.document.version === "manuscript" ? "naskah penulis" : pub.document.version === "redacted" ? "data pribadi disamarkan" : "versi terbit"}).`,
+        },
       ]),
     });
   }

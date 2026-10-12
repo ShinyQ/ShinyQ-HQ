@@ -6,6 +6,7 @@ import { publicationDate, researchPublications } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { ExternalLink } from "./ExternalLink";
+import { PaperReadLink } from "./paper/PaperReadLink";
 import { PaperTrigger } from "./paper/PaperTrigger";
 
 /** Post title link: hosted posts open their page, Medium posts open in a new tab. */
@@ -133,7 +134,8 @@ export async function TalkList({ talks, locale }: { talks: readonly Talk[]; loca
 
 /**
  * Research: the citation metrics (with their source and date), then papers and the thesis with
- * authors (the owner highlighted), venue, summary, DOI, PDF and code links, then research profiles.
+ * authors (the owner highlighted), venue, summary, "Read the paper" (self-hosted PDF), DOI, PDF and
+ * code links, then research profiles.
  */
 export async function ResearchList({
   publications,
@@ -200,6 +202,11 @@ export async function ResearchList({
                 <PaperTrigger paper={preview} className={linkClass} testId="paper-cite">
                   {t("preview")}
                 </PaperTrigger>
+                {preview.document && (
+                  <PaperReadLink paper={preview} className={linkClass}>
+                    {t("read")}
+                  </PaperReadLink>
+                )}
                 {pub.doi && (
                   <ExternalLink href={`https://doi.org/${pub.doi}`} srHint={tc("external")} className={linkClass}>
                     {t("doi")} {pub.doi}
