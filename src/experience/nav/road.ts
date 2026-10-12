@@ -361,6 +361,15 @@ export function pathBetween(net: RoadNetwork, a: Vec2, b: Vec2, graph: RoadGraph
  * the rover first reaches the road with the navgrid, then follows the road, then leaves it for
  * the target. Short hops go straight. Falls back to `findPath` when the network has no route.
  */
+/** Whether an autopilot drive follows the floor's road: always when it has one, unless `roadZone` limits it to drives into or out of that zone. */
+export function routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect }, from: Vec2, to: Vec2): boolean {
+  if (!layout.road) return false;
+  const z = layout.roadZone;
+  if (!z) return true;
+  const inside = (p: Vec2) => p.x >= z.minX && p.x <= z.maxX && p.z >= z.minZ && p.z <= z.maxZ;
+  return inside(from) || inside(to);
+}
+
 export function roadRoute(net: RoadNetwork, grid: NavGrid, from: Vec2, to: Vec2, graph?: RoadGraph): Vec2[] | null {
   if (dist(from, to) < ROAD.shortcut && segmentWalkable(grid, from, to)) return [to];
   const road = pathBetween(net, from, to, graph);

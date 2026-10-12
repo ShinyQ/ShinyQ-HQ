@@ -2,6 +2,7 @@ import type { FloorId } from "@/content/schema";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
+import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
@@ -87,7 +88,8 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
  * tests/unit/lobby-layout.test.ts.
  */
 export const LOBBY = {
-  bounds: { minX: -24, maxX: 28, minZ: -21, maxZ: 21 },
+  /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
+  bounds: { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 },
   /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
   spawn: { x: 14, z: 10 },
   hologram: { x: 6, z: 0, radius: 3 },
@@ -156,17 +158,25 @@ function withElevatorPad(layout: FloorLayout): FloorLayout {
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, kiosk } = LOBBY;
   const layouts: Record<FloorId, FloorLayout> = {
-    L1: standard(
-      "L1",
-      LOBBY.bounds,
-      [
-        rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
-        rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
-        rect(certWall.x, certWall.z, certWall.w, certWall.d),
-        rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
-      ],
-      LOBBY.spawn,
-    ),
+    L1: {
+      ...standard(
+        "L1",
+        LOBBY.bounds,
+        [
+          rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
+          rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
+          rect(certWall.x, certWall.z, certWall.w, certWall.d),
+          rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
+          ...HALL_LAYOUT.obstacles,
+        ],
+        LOBBY.spawn,
+      ),
+      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera zones.
+      doors: HALL_LAYOUT.doors,
+      road: HALL_LAYOUT.network,
+      roadZone: HALL_LAYOUT.zone,
+      viewZones: HALL_LAYOUT.viewZones,
+    },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).
     L3: buildLabsLayout(extras.labs ?? []).floor,

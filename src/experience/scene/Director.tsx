@@ -15,7 +15,7 @@ import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
-import { buildRoadGraph, roadRoute, type RoadGraph } from "../nav/road";
+import { buildRoadGraph, roadRoute, routeUsesRoad, type RoadGraph } from "../nav/road";
 import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
@@ -55,11 +55,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
     return out;
   }, [layouts]);
-  /** Autopilot route: along the floor's road when it has one (walkable floors), else the navgrid. */
+  /** Autopilot route: along the floor's road when it has one (walkable floors; on L1 only into or out of the hall), else the navgrid. */
   const autopilotPath = useCallback(
     (floor: FloorId, from: Vec2, to: Vec2) => {
-      const road = layouts[floor].road;
-      return road ? roadRoute(road, grids[floor], from, to, roads[floor]) : findPath(grids[floor], from, to);
+      const layout = layouts[floor];
+      return routeUsesRoad(layout, from, to) ? roadRoute(layout.road!, grids[floor], from, to, roads[floor]) : findPath(grids[floor], from, to);
     },
     [layouts, grids, roads],
   );

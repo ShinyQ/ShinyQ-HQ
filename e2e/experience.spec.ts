@@ -243,9 +243,9 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
-    // Lobby slab x -24 to 28, z -21 to 21 (centered on the elevator axis), minus the rover radius.
+    // Lobby slab x -24 to 64 (the Highlights Hall east of x = 28), z -21 to 21, minus the rover radius.
     expect(rover.x).toBeGreaterThan(-23.01);
-    expect(rover.x).toBeLessThan(27.01);
+    expect(rover.x).toBeLessThan(63.01);
     expect(rover.z).toBeGreaterThan(-20.01);
     expect(rover.z).toBeLessThan(20.01);
     // Never inside the hologram pedestal at (6, 0).

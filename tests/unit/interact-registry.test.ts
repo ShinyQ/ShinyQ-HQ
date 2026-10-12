@@ -74,7 +74,8 @@ describe("interactablesFor on the real content", () => {
   });
 
   it("turns every door into a target that drives to the door pad and opens its room", () => {
-    for (const floor of FLOOR_IDS) {
+    // L1 doors are the Highlights Hall stations: the hall registers them itself (registerExtraInteractables), not the built-ins.
+    for (const floor of FLOOR_IDS.filter((f) => f !== "L1")) {
       for (const door of layouts[floor].doors ?? []) {
         const kind = floor === "RF" ? "station" : "door";
         const item = find(floor, `${floor}:${kind}:${door.room.slice(3)}`);

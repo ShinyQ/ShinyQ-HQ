@@ -57,6 +57,11 @@ export interface FloorLayout {
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */
   road?: RoadNetwork;
+  /**
+   * Limits `road` to drives that start or end inside this rect (L1: the Highlights Hall east of the
+   * certification wall); other drives on the floor use the navgrid. Unset: every drive follows the road.
+   */
+  roadZone?: Rect;
   /** After an elevator ride the rover rolls on to this point (along the road); a mission or input takes over at once. */
   arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
