@@ -10,6 +10,7 @@ import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
+import { introSeen, lobbyStartPhase, markIntroSeen } from "@/lib/intro-session";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
@@ -17,7 +18,8 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
-import { onMissionState, register3DHost } from "./missions/bridge";
+import { continuationSteps, endContinuation, introTarget, isContinuing, setIntroTarget, takeIntroTarget } from "./introContinue";
+import { onMissionState, register3DHost, runMissionSteps } from "./missions/bridge";
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
@@ -37,13 +39,17 @@ function readDevice() {
 let started = false;
 
 export interface ExperienceStart {
-  /** Floor of the route the tower mounts on (`/labs` is L3); skips boot and intro. */
+  /** Floor of the route the tower mounts on (`/labs` is L3); after the session's first intro the rover rides there. */
   startFloor?: FloorId;
   /** Room of the route (`/labs/[slug]`): opens its drawer, or its hologram with `?view=architecture`. */
   startRoom?: RoomId;
 }
 
-/** One-time session start: tier, locale, device, and the first phase (boot, intro or resume). */
+/**
+ * Session start: tier, locale, device, and the first phase. The first 3D load of a browser session
+ * plays the boot and the intro in the Lobby on every route (nothing skips them); a deep link or a
+ * language switch then continues to its floor or room (`introContinue.ts`). Later loads open straight in.
+ */
 function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor, startRoom }: ExperienceStart) {
   const store = getHQStore();
   const s = store.getState();
@@ -62,7 +68,17 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     getHQStore().getState().openRoom(startRoom);
     if (parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture") getHQStore().getState().openHologram();
   };
-  if (started) {
+  const first = !started;
+  started = true;
+  const resume = first ? takeResume() : null;
+  const intro = !introSeen();
+  if (intro) {
+    const architecture = parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture";
+    setIntroTarget(introTarget({ resumeFloor: resume?.floor, startFloor, startRoom, ready: READY_FLOORS, architecture }));
+    if (getHQStore().getState().activeRoom) getHQStore().getState().closeRoom();
+    place("L1", layouts.L1.spawn);
+    s.setPhase(lobbyStartPhase(false));
+  } else if (!first) {
     // Re-entering 3D on another route (page view, then "Explore in 3D"): start where that route is.
     const target = startFloor && READY_FLOORS.includes(startFloor) ? startFloor : "L1";
     const now = getHQStore().getState();
@@ -71,18 +87,16 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
       openStartRoom();
     }
     return;
-  }
-  started = true;
-  const resume = takeResume();
-  if (resume) {
+  } else if (resume) {
     place(resume.floor, { x: resume.x, z: resume.z });
   } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
     place(startFloor, doorOf(startFloor, startRoom) ?? layouts[startFloor].spawn);
   } else {
-    s.setPhase(s.firstVisit ? "boot" : "intro");
+    s.setPhase(lobbyStartPhase(true));
   }
   // Deep link (or a language switch on a room URL): open the room on the floor the rover is on.
-  openStartRoom();
+  if (!intro) openStartRoom();
+  if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition], layouts };
 }
@@ -160,6 +174,24 @@ export default function Experience({
     };
   }, []);
 
+  // The intro played to its end: later 3D loads in this session open straight in. A deep link then
+  // continues to its floor or room as an ad hoc mission (manual input cancels it like any mission).
+  useEffect(
+    () =>
+      getHQStore().subscribe((s, prev) => {
+        if (prev.phase !== "intro" || s.phase !== "explore") return;
+        markIntroSeen();
+        const target = takeIntroTarget();
+        if (!target) return;
+        void runMissionSteps("intro:continue", continuationSteps(target))
+          .then((status) => {
+            if (status === "done" && target.architecture) getHQStore().getState().openHologram();
+          })
+          .finally(endContinuation);
+      }),
+    [],
+  );
+
   // The audio engine owns the sound setting (localStorage "hq:sound", on unless the visitor muted);
   // the store mirrors it. Sound only plays while the 3D view is open: the first gesture in the HQ starts
   // it, and leaving for the Page View pauses it without changing the setting.
@@ -196,6 +228,8 @@ export default function Experience({
     const store = getHQStore();
     const sync = () => {
       const s = store.getState();
+      // A deep link keeps its URL through the boot and the intro; the continuation rewrites it on arrival.
+      if ((s.phase === "boot" || s.phase === "intro") && isContinuing()) return;
       const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
       const room = s.activeRoom && floorOf(s.activeRoom) === s.floor ? s.activeRoom : null;
       const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });

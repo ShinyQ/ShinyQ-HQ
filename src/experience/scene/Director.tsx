@@ -10,6 +10,7 @@ import { openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { shouldAutoOpenTerminal } from "@/hud/RoverTerminal";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
+import { isContinuing } from "../introContinue";
 import { cancelMission, isAutoOpenClaimed } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
@@ -136,8 +137,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           s.requestElevator(intent.to);
           break;
         case "cancel":
-          if (s.phase === "intro") s.finishIntro();
-          else if (s.ride?.stage === "toDoor") {
+          // Esc never skips the boot or the intro (owner decision); it stops elevator drives and click-to-move.
+          if (s.phase === "boot" || s.phase === "intro") break;
+          if (s.ride?.stage === "toDoor") {
             s.cancelRide();
             controller?.clearPath();
             local.blockedUntil = local.now + BLOCKED_FACE_S;
@@ -190,8 +192,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.status = labels.hello;
       local.statusUntil = now + 2;
       roverRuntime.hopUntil = now + 0.35;
-      // First visit: the Rover Terminal opens once the intro hands over (appendix 02 section 4).
-      if (isAutoOpenClaimed() && shouldAutoOpenTerminal()) window.setTimeout(openTerminal, 400);
+      // First visit: the Rover Terminal opens once the intro hands over (appendix 02 section 4), in the
+      // Lobby only: a deep link continues to its floor or room instead.
+      if (isAutoOpenClaimed() && !isContinuing() && shouldAutoOpenTerminal()) window.setTimeout(openTerminal, 400);
     }
     local.prevPhase = s.phase;
 

@@ -116,11 +116,38 @@ describe("3D mission host", () => {
     expect(store.getState()).toMatchObject({ floor: "L3", ride: null });
   });
 
-  it("finishes the intro before a mission rides the elevator", async () => {
-    const { store, host } = setup();
+  /** A host whose frame loop ends the intro on the third frame (the camera's job), recording phases. */
+  function introSetup() {
+    const store = createHQStore(memory());
     store.getState().setPhase("intro");
+    const rover: RoverChannel = { autopilot: null, cancelFlash: false };
+    const deps: HostDeps = { locale: "en", rooms: ROOMS, navigate: vi.fn(), say: vi.fn(), openPalette: vi.fn() };
+    const phases: string[] = [];
+    const tick = async () => {
+      const s = store.getState();
+      phases.push(s.phase);
+      if (phases.length === 3 && s.phase === "intro") s.finishIntro();
+      if (s.ride) s.arriveFloor(s.ride.to);
+      if (rover.autopilot) rover.autopilot.state = "done";
+    };
+    return { store, phases, host: create3DHost(deps, { store, rover, layouts, years, tick }) };
+  }
+
+  it("waits for the intro to end before a mission rides the elevator (nothing skips it)", async () => {
+    const { store, phases, host } = introSetup();
     await host.elevator("L2", { signal: signal(), missionId: "m" });
-    expect(store.getState().floor).toBe("L2");
+    expect(phases.slice(0, 3)).toEqual(["intro", "intro", "intro"]);
+    expect(store.getState()).toMatchObject({ floor: "L2", phase: "explore" });
+  });
+
+  it("opens a room and drives only after the intro", async () => {
+    const { store, phases, host } = introSetup();
+    await host.openRoom("L1:skills", undefined, { signal: signal(), missionId: "m" });
+    expect(phases.slice(0, 3)).toEqual(["intro", "intro", "intro"]);
+    expect(store.getState()).toMatchObject({ phase: "room", activeRoom: "L1:skills" });
+    const second = introSetup();
+    await second.host.driveTo({ x: 5, z: 5 }, { signal: signal(), missionId: "m" });
+    expect(second.phases.slice(0, 3)).toEqual(["intro", "intro", "intro"]);
   });
 
   it("requests an autopilot drive and resolves when it is done", async () => {

@@ -66,8 +66,8 @@ test.describe("L3 Labs in 3D", () => {
     expect(errors).toEqual([]);
   });
 
-  test("a deep link opens L3 at the pod with the drawer, skipping boot and intro", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("hq:terminal-seen", "1"));
+  test("a deep link in a session that saw the intro opens L3 at the pod with the drawer", async ({ page }) => {
+    await asReturningVisitor(page);
     await page.goto(`/en/labs/${heroPod.slug}?tier=lite`);
     await waitForHQ(page);
     await waitForRoom(page, `L3:${heroPod.slug}`, 30_000);

@@ -41,14 +41,13 @@ async function swipe(page: Page, points: { x: number; y: number }[]) {
 }
 
 test.describe("Career Road (L2)", () => {
-  test("/journey starts on L2 without the intro and D drives forward through the years", async ({ page }) => {
+  test("/journey starts on L2 once the intro played this session, and D drives forward through the years", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page);
     await waitForPhase(page, "explore");
     const start = await snapshot(page);
     expect(start.floor).toBe("L2");
     expect(start.rover.x).toBeLessThan(-18);
-    await expect(page.getByRole("button", { name: /Skip intro/ })).toHaveCount(0);
     await expect(page.getByTestId("floor-announcer")).toContainText("L2");
     expect(new URL(page.url()).pathname).toBe("/en/journey");
 

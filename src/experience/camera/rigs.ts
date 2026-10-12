@@ -123,6 +123,11 @@ export function introPose(cls: ViewportClass, t: number, end: CameraPose): Camer
   };
 }
 
+/** Reduced motion: one still exterior shot (the end of the orbit) held for the whole intro, then a cut to the follow camera. */
+export function reducedIntroPose(cls: ViewportClass, end: CameraPose): CameraPose {
+  return introPose(cls, INTRO_ORBIT, end);
+}
+
 /** Exponential smoothing factor for a critically damped follow with the given half-life. */
 export function springFactor(dt: number, halfLife = SPRING_HALF_LIFE): number {
   return 1 - Math.pow(2, -dt / halfLife);

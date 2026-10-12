@@ -19,11 +19,15 @@ type HQWindow = Window & {
   };
 };
 
-/** Marks the visitor as returning, so the boot overlay is skipped and only the intro plays. */
+/**
+ * Marks the visitor as returning in this browser session: the boot and the intro already played
+ * (`hq:intro`), so any route opens straight in. Nothing can skip them any more.
+ */
 export async function asReturningVisitor(page: Page) {
   await page.addInitScript(() => {
     // The Rover Terminal auto-opens once per browser; tests open it explicitly.
     localStorage.setItem("hq:terminal-seen", "1");
+    sessionStorage.setItem("hq:intro", "seen");
     if (!localStorage.getItem("hq:v1")) {
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));
     }
@@ -144,13 +148,13 @@ export async function waitForFloor(page: Page, floor: string, timeout = 45_000) 
   );
 }
 
-/** Opens /en (or `path`) as a returning visitor, skips the intro and waits for explore. */
+/** Opens /en (or `path`) as a returning visitor (intro already played this session) and waits until input is handled. */
 export async function enterHQ(page: Page, { path = "/en", tier = "lite" }: { path?: string; tier?: string } = {}) {
   await asReturningVisitor(page);
   await page.goto(`${path}?tier=${tier}`);
   await waitForHQ(page);
-  await page.getByRole("button", { name: /Skip intro|Lewati intro/ }).click();
   await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
 }
 
 /** Waits until the rover has moved at least `distance` from `from`. */

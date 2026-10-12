@@ -59,21 +59,6 @@ function FloorNotice({ data, mobile }: { data: ExperienceData; mobile: boolean }
   );
 }
 
-function IntroSkip() {
-  const t = useTranslations("hud");
-  const finishIntro = useHQStore((s) => s.finishIntro);
-  return (
-    <button
-      type="button"
-      onClick={finishIntro}
-      className="glass glass-solid pointer-events-auto absolute bottom-20 left-1/2 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink"
-    >
-      {t("skipIntro")}
-      <kbd className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">Esc</kbd>
-    </button>
-  );
-}
-
 function FloorAnnouncer({ data }: { data: ExperienceData }) {
   const t = useTranslations("hud");
   const floor = useHQStore((s) => s.floor);
@@ -127,7 +112,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
           {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && (walking || phase === "room")} />}
-          {phase === "intro" ? <IntroSkip /> : phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
+          {phase !== "intro" && phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
           {coarse && phase !== "intro" && <Joystick />}
           <DrawerHost locale={data.locale} />
           {phase !== "intro" && phase !== "room" && <ViewControls />}

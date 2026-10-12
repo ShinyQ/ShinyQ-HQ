@@ -85,13 +85,20 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
   const waitUntil = async (done: () => boolean, signal: AbortSignal) => {
     while (!signal.aborted && !done()) await tick();
   };
+  /** The boot and the intro always play in full: a mission started meanwhile waits (owner decision). */
+  const afterIntro = (signal: AbortSignal) =>
+    waitUntil(() => {
+      const phase = store.getState().phase;
+      return phase !== "boot" && phase !== "intro";
+    }, signal);
 
   return {
     isStatic: false,
 
     async elevator(floor, ctx: StepContext) {
+      await afterIntro(ctx.signal);
+      if (ctx.signal.aborted) return;
       const s = store.getState();
-      if (s.phase === "boot" || s.phase === "intro") s.finishIntro();
       // Leaving for another floor closes the open room (the hologram view blocks the elevator).
       if (s.phase === "room" || s.phase === "hologram") s.closeRoom();
       if (store.getState().floor === floor && !store.getState().ride) return;
@@ -105,6 +112,8 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
     },
 
     async driveTo(target, ctx) {
+      await afterIntro(ctx.signal);
+      if (ctx.signal.aborted) return;
       // Driving to another spot leaves the open room (appendix 02: room to explore on drive away).
       const phase = store.getState().phase;
       if (phase === "room" || phase === "hologram") store.getState().closeRoom();
@@ -114,7 +123,9 @@ export function create3DHost(deps: HostDeps, world: World3D): MissionHost {
       await waitUntil(() => request.state === "done" || rover.autopilot !== request, ctx.signal);
     },
 
-    async openRoom(id, tab) {
+    async openRoom(id, tab, ctx) {
+      await afterIntro(ctx.signal);
+      if (ctx.signal.aborted) return;
       const room = byId.get(id);
       // Built floors open the Glass Drawer in 3D; floors without 3D content open the room page.
       if (READY_FLOORS.includes(room?.floor ?? floorOf(id))) {

@@ -80,7 +80,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   { test: /^src\/experience\/camera\//, specs: ["experience", "career"] },
-  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts)$|^src\/lib\/(boot-first|gpu-tier)\.ts$|^src\/components\/BootCover\.tsx$/, specs: ["boot-first", "experience"] },
+  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },
 

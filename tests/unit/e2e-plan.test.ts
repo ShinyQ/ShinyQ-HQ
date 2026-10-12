@@ -13,6 +13,9 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
     expect(specsForChanges(["src/experience/floors/roof/Comms.tsx"]).specs).toEqual(["library-roof"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "walk"]);
+    expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience"]);
+    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience"]);
+    expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience"]);
   });
 
   it("maps static pages and content", () => {

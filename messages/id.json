@@ -307,7 +307,6 @@
     "bootLine5": "[ ok ] lift siap",
     "bootLine6": "rover siap ^_^",
     "bootStart": "Nyalakan rover",
-    "skipIntro": "Lewati intro",
     "staticNotice": "3D tidak tersedia. Tampilan halaman dibuka.",
     "kioskTitle": "rover@hq:~$ ./missions",
     "kioskHint": "Pilih kios atau rover untuk memilih misi",

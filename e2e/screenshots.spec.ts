@@ -37,13 +37,12 @@ async function open3D(browser: Browser, v: Viewport) {
   await asReturningVisitor(page);
   await page.goto(`/en?tier=${v.tier}`);
   await waitForHQ(page);
-  await page.getByRole("button", { name: /Skip intro/ }).click();
   await waitForPhase(page, "explore");
   await page.evaluate(() => document.fonts.ready);
   return { context, page };
 }
 
-/** Deep links a floor route (no intro). */
+/** Deep links a floor route (the intro already played this session). */
 async function open3DAt(browser: Browser, v: Viewport, path: string) {
   const context = await browser.newContext({
     viewport: { width: v.width, height: v.height },

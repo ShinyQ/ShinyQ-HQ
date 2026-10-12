@@ -14,7 +14,7 @@ export interface Resume {
   at: number;
 }
 
-/** Reloads the page in the other language and resumes on the same floor without boot or intro. */
+/** Reloads the page in the other language and resumes on the same floor (no boot or intro once they played this session). */
 export function switchLocale(target: Locale) {
   const s = getHQStore().getState();
   try {
@@ -26,7 +26,7 @@ export function switchLocale(target: Locale) {
   }
   s.setLocale(target);
   const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
-  // A full load re-initializes next-intl with the other locale's messages; the resume record skips boot and intro.
+  // A full load re-initializes next-intl with the other locale's messages; the resume record puts the rover back (after the boot and intro if this session has not seen them).
   // The open room (if it has its own page on this floor) survives the switch; its route reopens it.
   const room = s.activeRoom && s.activeRoom.startsWith(`${floor}:`) ? s.activeRoom : null;
   const path = `${serializeHQUrl({ locale: target, floor, activeRoom: room, view: null })}${window.location.search}`;
