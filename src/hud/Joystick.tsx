@@ -6,7 +6,7 @@ import { setJoystick } from "@/experience/input/joystick";
 
 const RADIUS = 60;
 
-/** Virtual joystick for coarse pointers: bottom-left, 120 px, 12% dead zone (appendix 03 section 3). */
+/** Virtual joystick for coarse pointers: left of the bottom band, 120 px, 12% dead zone (appendix 03 section 3). */
 export function Joystick() {
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
@@ -54,7 +54,7 @@ export function Joystick() {
       }}
       onPointerUp={release}
       onPointerCancel={release}
-      className="glass glass-solid pointer-events-auto absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-5 size-[120px] touch-none rounded-full"
+      className="glass glass-solid pointer-events-auto relative size-[120px] shrink-0 touch-none rounded-full"
     >
       <span
         aria-hidden="true"

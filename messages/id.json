@@ -293,7 +293,7 @@
     "menu": "Menu",
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Gerak: klik lantai · Putar: seret atau Q/E · Lantai: scroll atau PgUp/PgDn",
-    "hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Putar: seret · Lantai: geser ke atas atau bawah",
+    "hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Turbo: tahan tombol turbo · Putar: seret · Lantai: geser ke atas atau bawah",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "joystick": "Joystick rover",
@@ -426,7 +426,8 @@
         "L4": "Artikel blog, makalah riset dan talk",
         "RF": "Kanal kontak dan CV"
       }
-    }
+    },
+    "boost": "Turbo"
   },
   "drawer": {
     "label": "Detail ruang",

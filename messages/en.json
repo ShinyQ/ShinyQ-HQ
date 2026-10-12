@@ -293,7 +293,7 @@
     "menu": "Menu",
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Move: click floor · Rotate: drag or Q/E · Floors: scroll or PgUp/PgDn",
-    "hintCoarse": "Move: tap floor · Drive: joystick · Rotate: drag · Floors: swipe up or down",
+    "hintCoarse": "Move: tap floor · Drive: joystick · Boost: hold the boost button · Rotate: drag · Floors: swipe up or down",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "joystick": "Rover joystick",
@@ -426,7 +426,8 @@
         "L4": "Blog posts, research papers and talks",
         "RF": "Contact channels and the CV"
       }
-    }
+    },
+    "boost": "Boost"
   },
   "drawer": {
     "label": "Room details",
