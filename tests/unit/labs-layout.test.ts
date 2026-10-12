@@ -3,6 +3,9 @@ import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER, SHAFT } from "@/experience/config";
+import { careerLayoutInput } from "@/experience/floors/career/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { chevronMarks } from "@/experience/nav/roadGeometry";
 import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE } from "@/experience/floors/labs/layout";
 import { labsWalk } from "@/experience/missions/walks";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -98,6 +101,22 @@ describe("L3 Project Roads layout", () => {
     const empty = buildLabsLayout([]);
     expectSpaceRules({ bounds: empty.floor.bounds, obstacles: empty.floor.obstacles, doors: empty.floor.doors ?? [], network: empty.network, start: empty.floor.approach });
     expect(empty.east.center.x).toBe(LABS.wingStartX + LABS.east + LABS.margin);
+  });
+
+  it("paints no chevrons on L3 (owner request 2026-10-13) while every other walkable floor keeps them", () => {
+    const experience = buildExperienceData("en", FLOOR_NAMES);
+    const layouts = buildFloorLayouts(experience.years.length, {
+      labs: experience.labs.pods,
+      career: careerLayoutInput(experience.career),
+      library: libraryLayoutInput(experience.library),
+    });
+    expect(network.chevrons).toBe(false);
+    expect(layouts.L3.road?.chevrons).toBe(false);
+    expect(chevronMarks(layouts.L3.road!, 5)).toEqual([]);
+    for (const id of ["L1", "L2", "L4", "RF"] as const) {
+      expect(layouts[id].road?.chevrons, id).toBeUndefined();
+      expect(chevronMarks(layouts[id].road!, 5).length, id).toBeGreaterThan(0);
+    }
   });
 
   it("puts the Product Engineering wing north (z < 0) and the AI Engineering wing south (z > 0)", () => {

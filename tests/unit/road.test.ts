@@ -164,6 +164,11 @@ describe("road mesh data", () => {
     expect(marks.some((m) => Math.abs(m.x - 30) < 8)).toBe(false);
   });
 
+  it("draws no chevrons on a network that turns them off, and the same ones when it says so explicitly", () => {
+    expect(chevronMarks({ ...STRAIGHT, chevrons: false }, 4)).toEqual([]);
+    expect(chevronMarks({ ...STRAIGHT, chevrons: true }, 4)).toEqual(chevronMarks(STRAIGHT, 4));
+  });
+
   it("dashes polylines and keeps edges out of plazas", () => {
     const d = dashes([v(0, 0), v(10, 0)], 1, 1);
     expect(d).toHaveLength(5);

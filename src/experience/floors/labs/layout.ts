@@ -207,7 +207,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     width: L.spurWidth,
     color: WING_TINT[p.pod.wing],
   }));
-  const network: RoadNetwork = { roads: [lead, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs };
+  // No floor arrows on L3 (owner request 2026-10-13): the wing roads, signs and directory guide the way.
+  const network: RoadNetwork = { roads: [lead, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs, chevrons: false };
 
   const boards = { software: directoryBoard("software"), ai: directoryBoard("ai") };
   const sign = (wing: Wing) => {

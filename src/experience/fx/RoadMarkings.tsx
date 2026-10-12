@@ -67,8 +67,9 @@ export interface RoadMarkingsProps {
 /**
  * Road markings for a walkable floor: the road, plaza and spur fill (one mesh), colored spur stubs
  * at the doors (one mesh), dashed edge lines (one line geometry) and forward chevrons (one instanced
- * mesh) with a pulse running forward. The lite tier and reduced motion drop the pulse; the lite
- * tier also drops the edge glow (no additive blending, dimmer lines).
+ * mesh) with a pulse running forward. A network with `chevrons: false` (L3) draws no chevrons and
+ * saves that draw call. The lite tier and reduced motion drop the pulse; the lite tier also drops the
+ * edge glow (no additive blending, dimmer lines).
  */
 export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = "#e5e7eb", chevronSpacing = 4, fillOpacity }: RoadMarkingsProps) {
   const full = tier === "full";
