@@ -33,6 +33,14 @@ id = "52fa119d49f641078dbecbb12aad4ccb"
 binding = "ASK_EVENTS"
 dataset = "ask_events"
 
+# Workers Analytics Engine dataset for the anonymous performance beacon (functions/api/rum.ts,
+# appendix 06 section 4): one point per sampled 3D session, no IP, no user agent, coarse buckets only.
+# blobs [version, tier, path, fps50, fps10, explore], doubles [contextLost, bootTimeout, 1], index tier.
+# Created on the first write; query it with the Analytics Engine SQL API (docs/deploy.md section 12).
+[[analytics_engine_datasets]]
+binding = "PERF_EVENTS"
+dataset = "perf_events"
+
 # Optional Workers rate limiting binding (8 requests per 60 s per visitor hash). Pages support is
 # still rolling out, so it stays off; the Function falls back to its in-memory and KV limiters.
 # Uncomment once `wrangler pages deploy` accepts it.
@@ -60,3 +68,6 @@ TURNSTILE_SITE_KEY = "0x4AAAAAAFTVgnlNQl3EZH4k"
 ASK_ALLOWED_ORIGINS = "https://kurniadi.pages.dev,https://kurniadi.dev"
 # Global model calls per day (second layer under the AI Gateway rate limit).
 ASK_DAILY_CAP = "600"
+# Kill switch of the performance beacon (/api/rum). Anything but "true" drops every point (204).
+# On since round 5 (owner approval 2026-10-13).
+RUM_ENABLED = "true"

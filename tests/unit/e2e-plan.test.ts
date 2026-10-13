@@ -76,6 +76,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "lifecycle", "missions"]);
   });
 
+  it("runs no e2e for the RUM Function", () => {
+    expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
+  });
+
   it("runs a changed spec itself and skips docs and unit tests", () => {
     expect(specsForChanges(["e2e/career.spec.ts", "docs/deploy.md", "tests/unit/rover.test.ts"]).specs).toEqual(["career"]);
     expect(specsForChanges(["AGENTS.md"]).specs).toEqual([]);

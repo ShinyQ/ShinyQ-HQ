@@ -50,6 +50,8 @@ export interface Observed {
   status?: { code: number; enabled?: boolean; asOf?: string };
   page?: { code: number; html: string };
   cache?: Record<string, string | null>;
+  /** `GET /api/rum`: the beacon Function only accepts POST, so 405 proves it is deployed. */
+  rum?: { code: number };
 }
 
 /** Problems with what production serves; empty when it matches. */
@@ -66,6 +68,7 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
     if (expected.beacon && !hasBeacon) problems.push("/en has no Web Analytics beacon");
   }
   if (observed.cache) problems.push(...cacheProblems(observed.cache));
+  if (observed.rum?.code !== 405) problems.push(`GET /api/rum returned HTTP ${observed.rum?.code ?? "none"}, expected 405 (the performance beacon Function is missing)`);
   return problems;
 }
 
@@ -103,6 +106,12 @@ async function observe(site: string): Promise<Observed> {
       observed.cache[sample] = null;
     }
   }
+  try {
+    const r = await fetch(`${site}/api/rum`, { cache: "no-store" });
+    observed.rum = { code: r.status };
+  } catch {
+    // Reported as no response.
+  }
   return observed;
 }
 
@@ -115,7 +124,7 @@ async function main() {
   const site = (flag("--site") ?? process.env.SITE_URL ?? "https://kurniadi.pages.dev").replace(/\/+$/, "");
   const deadline = Date.now() + (Number(flag("--timeout")) || 180) * 1000;
   const expected = expectedFromCheckout();
-  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}.`);
+  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}, /api/rum deployed.`);
   let problems: string[] = [];
   while (true) {
     problems = smokeProblems(expected, await observe(site));

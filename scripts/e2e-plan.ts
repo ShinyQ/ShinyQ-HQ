@@ -62,6 +62,8 @@ export const RULES: Rule[] = [
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-|measure-delivery|shot-diff|ci-status)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
+  // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
+  { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },

@@ -84,8 +84,17 @@ export interface AskEnv {
   ASK_RL?: RateLimitBinding;
 }
 
-export interface PagesContext {
+/** Bindings of the performance beacon Function (functions/api/rum.ts, appendix 06 section 4). */
+export interface RumEnv {
+  /** Kill switch: anything but "true" drops every point (still 204, so clients never retry). */
+  RUM_ENABLED?: string;
+  /** Site origins, shared with Ask the HQ. */
+  ASK_ALLOWED_ORIGINS?: string;
+  PERF_EVENTS?: AnalyticsEngineDataset;
+}
+
+export interface PagesContext<E = AskEnv> {
   request: Request;
-  env: AskEnv;
+  env: E;
   waitUntil(promise: Promise<unknown>): void;
 }
