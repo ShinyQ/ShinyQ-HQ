@@ -133,7 +133,8 @@ gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optiona
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit (and Workers KV Storage Read) for the hq-stats Worker job (section 13) |
+| `CF_EVAL_TOKEN` | Yes, for evals and the visit stats | Account Analytics Read: Ask evals and reports, and the hq-stats Worker's runtime secret `WA_TOKEN` (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
 | `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it |
 
@@ -158,6 +159,7 @@ gh variable set CF_PREVIEWS --body true                        # optional: turn 
 | `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
 | `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
+| `STATS_WORKER_DEPLOY` | Optional | `false` skips the hq-stats Worker job in `deploy.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
 
 Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
 
@@ -257,6 +259,9 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `kurniadi.dev`) |
 | Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
 | Analytics Engine | `perf_events` | Anonymous performance beacon, one point per sampled 3D session (created on first write) |
+| Analytics Engine | `visit_events` | Public visit stats beacon, one point per page lifetime (created on first write) |
+| KV | `STATS_KV` | Public visit stats: daily ledger `stats:days:v1` and snapshot `stats:v1` |
+| Worker | `hq-stats` | Public visit stats Cron Worker (`0 1 * * *` UTC, no route), `workers/stats/` |
 | Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
@@ -275,3 +280,18 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_
 ```
 
 Multiply by 4 for an estimate of 3D sessions (25% sampling). Other useful groupings: `blob3` (load path), `blob6` (time to explore), `SUM(double1)` (context losses), `SUM(double2)` (boot timeouts). `CF_EVAL_TOKEN` needs Account Analytics Read, like the Ask content-gap report.
+
+## 13. Public visit stats (hq-stats)
+
+Pipeline and contract: appendix 06 section 4.1 and [`workers/stats/README.md`](../workers/stats/README.md). Pieces:
+
+- `POST /api/visit` (`functions/api/visit.ts`) writes one point per page lifetime to Analytics Engine `visit_events` (binding `VISIT_EVENTS`).
+- The Cron Worker `hq-stats` (`workers/stats/`, cron `0 1 * * *` UTC) reads Web Analytics (GraphQL) and Analytics Engine (`ask_events`, `visit_events`) and writes KV `STATS_KV`: the daily ledger `stats:days:v1` and the snapshot `stats:v1`.
+- `GET /api/stats` (`functions/api/stats.ts`) serves the snapshot (204 until the first one exists).
+- Kill switch: `STATS_ENABLED = "false"` in `wrangler.toml`, then deploy.
+
+Deploy: `deploy.yml` job "hq-stats Worker" runs after the Pages deploy. It proves `CF_EVAL_TOKEN` can read Web Analytics and Analytics Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise) and that `CLOUDFLARE_API_TOKEN` can see Workers scripts and the KV namespace (`... deploy`), then deploys with `cloudflare/wrangler-action` and sets the Worker secrets `WA_TOKEN` (from `CF_EVAL_TOKEN`) and `WA_ACCOUNT_ID` (from `CLOUDFLARE_ACCOUNT_ID`). Pull requests that touch the Worker run the same checks plus a bundle dry run (`.github/workflows/stats-worker.yml`).
+
+If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** (and Workers KV Storage Read) to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler@4 deploy` and set both secrets with `bunx wrangler@4 secret put WA_TOKEN` and `bunx wrangler@4 secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+
+Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler@4 auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
