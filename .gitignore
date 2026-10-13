@@ -30,3 +30,7 @@ ask-eval-report*.md
 
 # Local screenshot-diff baselines (Playwright toMatchSnapshot), never committed.
 /e2e/*-snapshots/
+# Perf lane: one JSON per measurement (CI uploads it), the main build for before/after runs, local look snapshots
+/perf-report/
+/out-main/
+e2e/perf/*-snapshots/

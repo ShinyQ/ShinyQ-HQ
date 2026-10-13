@@ -1,5 +1,6 @@
 import type { Ref } from "react";
 import { splitBootLine } from "@/lib/boot-first";
+import { HEADLINE_TIMING_ID } from "@/lib/perf-marks";
 import { PageViewIcon } from "./PageViewIcon";
 
 /** Who the owner is, shown on the boot card at first paint (owner decision, round 5). */
@@ -44,6 +45,9 @@ export interface BootCardProps {
  * There is no skip: the boot and the intro always play in full (owner decision). "Page view" leaves
  * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
  */
+// Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
+const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
+
 export function BootCard({ startRef, ...p }: BootCardProps) {
   // On the cover only the owner block and the Page view link are for assistive tech; the log is decoration.
   const deco = p.placeholder ? true : undefined;
@@ -55,7 +59,7 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       <p className="mt-3 font-mono text-sm text-cyan" aria-hidden={deco}>
         {p.monogram}
       </p>
-      <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco}>
+      <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>
       {p.who && (

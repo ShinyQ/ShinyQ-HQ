@@ -72,6 +72,9 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
             {t("source")}
           </ExternalLink>
         </div>
+        <p className="pv-small mt-3 max-w-[72ch]" data-testid="footer-privacy">
+          {t("privacy")}
+        </p>
       </div>
     </footer>
   );

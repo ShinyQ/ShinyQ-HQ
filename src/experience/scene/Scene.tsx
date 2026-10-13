@@ -21,6 +21,7 @@ import { Director } from "./Director";
 import { ProgramWarmup } from "./ProgramWarmup";
 import { QualityController } from "./QualityController";
 import { sceneSettings, type GfxOverride, type RenderBudget } from "./settings";
+import { RenderCounter } from "../perf/RenderCounter";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
@@ -71,6 +72,7 @@ export const Scene = memo(function Scene({
   const coarse = useHQStore((s) => s.device.coarse);
   return (
     <>
+      <RenderCounter />
       <color attach="background" args={[settings.fog.color]} />
       <fog attach="fog" args={[settings.fog.color, settings.fog.near, settings.fog.far]} />
       <hemisphereLight args={settings.hemisphere} />

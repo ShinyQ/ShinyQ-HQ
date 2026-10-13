@@ -30,6 +30,7 @@ export const ALL_SPECS = [
   "onboarding",
   "pads",
   "pageview",
+  "perf-probes",
   "ride",
   "roof",
   "seo",
@@ -53,12 +54,16 @@ interface Rule {
 export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
   { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
-  { test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },
+  { test: /^e2e\/(hq|routes|budgets)\.ts$/, specs: "all" },
   { test: /^e2e\/(screenshots|pageview-visual|camera-visual|visual-gate|delivery-visual)\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
+  // Perf lane (PERF=1): `bun run e2e:perf` and the CI `3D perf gates` job run it, never the regular suite.
+  { test: /^e2e\/perf\//, specs: [] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-gpu|measure-delivery|shot-diff)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-|measure-delivery|shot-diff|ci-status)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
+  // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
+  { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },
@@ -130,6 +135,8 @@ export const RULES: Rule[] = [
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
   { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
   { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
+  // Measurement in the 3D view: render counters, the ?perf=1 overlay, timeline marks, the RUM probe.
+  { test: /^src\/experience\/perf\/|^src\/lib\/(perf-marks\.ts|rum\/)/, specs: ["perf-probes", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$|^src\/hud\/BootOverlay\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   // The Page view glyph: the boot card link and the HUD top bar button.
   { test: /^src\/components\/PageViewIcon\.tsx$/, specs: ["boot-first", "hud", "experience"] },

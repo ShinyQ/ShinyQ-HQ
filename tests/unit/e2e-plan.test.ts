@@ -10,6 +10,20 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
+
+  it("keeps the perf lane out of the regular suite and treats the budgets as shared infrastructure", () => {
+    expect(specsForChanges(["e2e/perf/look.spec.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/perf/baseline.json"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/budgets.ts"]).specs).toBe("all");
+    expect(specsForChanges(["scripts/perf-summary.ts", "scripts/perf-base.sh", "scripts/ci-status.ts"]).specs).toEqual([]);
+  });
+
+  it("maps measurement code to the perf probes spec and the 3D experience", () => {
+    expect(specsForChanges(["src/experience/perf/PerfOverlay.tsx"]).specs).toEqual(["experience", "perf-probes"]);
+    expect(specsForChanges(["src/lib/perf-marks.ts"]).specs).toEqual(["experience", "perf-probes"]);
+    expect(specsForChanges(["e2e/perf-probes.spec.ts"]).specs).toEqual(["perf-probes"]);
+  });
+
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
     expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
@@ -60,6 +74,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
     expect(specsForChanges(["content/ask/suggestions.json"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "lifecycle", "missions"]);
+  });
+
+  it("runs no e2e for the RUM Function", () => {
+    expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {

@@ -10,6 +10,8 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
+    // The main build for before/after perf runs (E2E_DIR=out-main).
+    "out-main/**",
     "build/**",
     "next-env.d.ts",
     // Static design mockups and their generator.

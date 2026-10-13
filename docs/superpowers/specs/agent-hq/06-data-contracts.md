@@ -147,4 +147,30 @@ The store updates the URL with `history.pushState` (room open/close) or `replace
 
 ## 4. Analytics
 
-Cloudflare Web Analytics (cookieless). It records page views, including SPA route changes made with the History API, so room and floor URLs act as events. No custom event API or third-party scripts are used.
+Three channels, all Cloudflare or first party, none with cookies, identifiers or a consent banner (amended 2026-10-13, owner approval of the performance beacon):
+
+1. **Cloudflare Web Analytics** (production builds only). It records page views, including SPA route changes made with the History API, so room and floor URLs act as events, plus Core Web Vitals per path.
+2. **Ask the HQ events**: Analytics Engine dataset `ask_events`, written by `functions/api/ask.ts` (design: `docs/superpowers/specs/2026-10-11-ask-hq-design.md`).
+3. **Performance beacon (RUM)**: 25% of 3D sessions send one data point per browser session with `navigator.sendBeacon` to the same-origin Pages Function `POST /api/rum`, which writes it to the Analytics Engine dataset `perf_events` (binding `PERF_EVENTS`). The CSP is unchanged (`connect-src 'self'`). Contract: `src/lib/rum/protocol.ts`; client: `src/experience/perf/`; Function: `functions/api/rum.ts`.
+
+| Field | Values | Analytics Engine |
+|---|---|---|
+| `v` | `1` | blob1 |
+| `tier` | `full`, `lite` | blob2, index1 |
+| `path` | `cover` (game-first boot cover), `enter` (Enter the 3D HQ from the Page View), `deeplink` (a floor or room route) | blob3 |
+| `fps50`, `fps10` | median and 10th percentile FPS over up to 600 visible frames from 2 s after explore: `na`, `lt15`, `15-24`, `25-29`, `30-44`, `45-54`, `55+` | blob4, blob5 |
+| `explore` | navigation start to the first interactive phase: `na`, `lt3s`, `3-5s`, `5-8s`, `8-12s`, `12-20s`, `20s+` | blob6 |
+| `lost` | 1 when the WebGL context was lost | double1 |
+| `timeout` | 1 when the 8 s boot timeout revealed the page | double2 |
+| count | always 1 | double3 |
+
+The beacon leaves on the first of: tab hidden, page left, 3D view closed (Page View), WebGL context lost. The Function accepts only that exact object (at most 512 bytes, same Origin, `RUM_ENABLED = "true"`), answers 204 and caps points per isolate and minute.
+
+### Privacy note
+
+- No cookies, identifiers, IP address, user agent, renderer string, URL or free text: every field is one of the fixed values above, and the Function reads no other header into the point.
+- Sampling is decided once per browser session (`sessionStorage["hq:rum"]`); at most one point per session.
+- Never sampled: browser automation (`navigator.webdriver`), Do Not Track, Global Privacy Control, and every visit that never opens the 3D view (Page View, static tier, crawlers). `?rum=0` opts a session out; `?rum=1` forces it (preview checks), except under Do Not Track or Global Privacy Control, which always win.
+- Retention: Analytics Engine keeps points for 3 months (Cloudflare limit), then drops them.
+- Kill switch: `RUM_ENABLED` in `wrangler.toml` (anything but `"true"` drops every point).
+- Visitors see the same promise in one footer line (`footer.privacy`, EN and ID).

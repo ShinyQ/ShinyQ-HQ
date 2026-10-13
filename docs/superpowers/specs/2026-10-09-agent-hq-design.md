@@ -161,7 +161,7 @@ All nine owner decisions were resolved on 2026-10-09 and are recorded in [append
 | Content | JSON plus MDX, zod validation at build time (enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk) |
 | i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
 | Audio | Web Audio API wrapper, lazy-loaded, on by default (owner decision; starts on the first gesture) |
-| Analytics | Cloudflare Web Analytics (cookieless) |
+| Analytics | Cloudflare Web Analytics (cookieless) plus an anonymous, sampled performance beacon to Analytics Engine `perf_events` (appendix 06 section 4) |
 | CV PDF | The owner's own PDF, committed as-is at `public/cv/` (one English file for both locales; owner decision, Oct 10, 2026) |
 | Testing | Vitest (unit), Playwright (e2e and visual at 3 viewports) |
 | Package manager | Bun |
@@ -270,7 +270,7 @@ Rules:
 | Positioning | AI and Software Engineer (the CV's order since 2026-10-13), equal billing (no cloud vendor in the title) |
 | Language | Bilingual EN / ID with a HUD toggle; English default |
 | Sound | Ambient sound and UI blips, on by default from the first gesture, toggle persists |
-| Analytics | Cloudflare Web Analytics, cookieless, no consent banner |
+| Analytics | Cloudflare Web Analytics, cookieless, no consent banner; anonymous sampled performance beacon (appendix 06 section 4, owner approval 2026-10-13) |
 | Domain | Launch on `kurniadi.pages.dev`; repoint `kurniadi.dev` DNS later |
 | CV | The owner's PDF served as-is (one file, English), replacing the earlier build-time export from site data |
 | Availability | Roof beacon: "Open to interesting software and AI engineering conversations" |

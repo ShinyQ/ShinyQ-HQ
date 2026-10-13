@@ -28,7 +28,7 @@ gh workflow run deploy.yml --ref main -f sha=<commit on main> -f reason="why"
 gh run watch
 ```
 
-Or Actions > Deploy > Run workflow. `deploy.yml` checks that the commit is on `main`, builds it twice (without the beacon for the 4 e2e shards, with `CF_BEACON_TOKEN` for production), rebuilds the Ask knowledge pack in the deploy job, runs `wrangler pages deploy out --branch=main`, then `scripts/deploy-smoke.ts`: `GET /api/ask` must be enabled with the pack date of that commit, and `/en` must return 200 with the commit's live contributions number and the beacon. It retries for up to 5 minutes while the production alias switches. Any failure opens (or comments on) the `deploy-failed` issue; production keeps serving the previous deployment.
+Or Actions > Deploy > Run workflow. `deploy.yml` checks that the commit is on `main`, then `Reuse the CI result` (`scripts/ci-status.ts`) looks for CI's `Build, CV and e2e` check on that commit: green means no e2e rerun; still running means it waits (up to 40 minutes, for as long as a CI run on the commit is unfinished); red fails the deploy. A commit without its own CI run (the weekly facts merge, made with `GITHUB_TOKEN`) reuses a green CI run on a commit with the same tree (the facts PR CI tested). With no CI result at all (no CI run registered on the commit after a 3-minute grace), or with `-f rerun_e2e=true`, it builds without the beacon and runs the 4 e2e shards first, as before. It builds with `CF_BEACON_TOKEN` for production, rebuilds the Ask knowledge pack in the deploy job, runs `wrangler pages deploy out --branch=main`, then `scripts/deploy-smoke.ts`: `GET /api/ask` must be enabled with the pack date of that commit, `GET /api/rum` must answer 405 (the beacon Function only accepts POST), and `/en` must return 200 with the commit's live contributions number and the beacon. It retries for up to 5 minutes while the production alias switches. Any failure opens (or comments on) the `deploy-failed` issue; production keeps serving the previous deployment.
 
 ## Automatic deploy after the weekly facts refresh
 
@@ -206,6 +206,7 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 - Pages: a warm-up run of `/en?lhci-warmup=1` (never asserted; it absorbs the cold first Chrome and server run that used to spike `/en` TBT), then `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device). Assertions live in one `assertMatrix` entry for URLs without a query string.
 - Budgets (tighter than appendix 08 since the October 2026 performance pass): LCP under 2000 ms, CLS under 0.01, TBT under 200 ms (error level, median run); transfer bytes per page at most 60 KB of fonts, 80 KB of HTML, 20 KB of CSS and 240 KB of JavaScript (error level); performance score at least 0.9, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
+- Per-chunk diff: after the run, `scripts/perf-base.sh` downloads `lighthouse-reports` of the last green `main` push run and `bun scripts/perf-summary.ts lhci` writes "Page View JavaScript per chunk" to the job summary: total per page, share of the 240 KB budget (a warning at 90%), and the chunks added or removed against main (names are content hashes, so a changed chunk shows as one removed and one added row). The 3D side (3D JS after the gate, floors, peaks, memory) is in the `Build, CV and e2e` job summary, from the `3D perf gates` job (appendix 08 section 2).
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
 - Blocking: a failed error-level budget fails `Lighthouse CI`, and the aggregate `Build, CV and e2e` job (the required check) needs it, so a PR cannot merge over budget. Branch rules may also list `Lighthouse CI` directly.
 - LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint, so the bytes of the HTML, the CSS and the preloaded fonts decide it (the text paints before any JavaScript runs). Keep these measures when changing fonts, the layout or the build:
@@ -255,7 +256,22 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | AI Gateway | `shinyq-hq` | Ask model calls (cache, logs, rate limit) |
 | Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `kurniadi.dev`) |
 | Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
+| Analytics Engine | `perf_events` | Anonymous performance beacon, one point per sampled 3D session (created on first write) |
 | Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
 | API tokens | `shinyq-hq Pages deploy` (`CLOUDFLARE_API_TOKEN`), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | All expire 2027-01-09; rotate before then (`docs/ask-runbook.md`) |
+
+## 12. Performance beacon (RUM)
+
+`functions/api/rum.ts` (`POST /api/rum`) writes one point per sampled 3D session (25%, once per browser session) to the Analytics Engine dataset `perf_events` (binding `PERF_EVENTS` in `wrangler.toml`). Fields, buckets and the privacy note: appendix 06 section 4. Kill switch: set `RUM_ENABLED = "false"` in `wrangler.toml` and deploy; the Function then answers 204 and writes nothing.
+
+Check a deploy by hand: open `https://kurniadi.pages.dev/en?rum=1` in a normal browser (with Do Not Track and Global Privacy Control off), enter the tower, wait for explore, switch tabs; a `POST /api/rum` with status 204 appears in DevTools > Network. Points show up in SQL within a few minutes:
+
+```sh
+curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" \
+  -H "Authorization: Bearer $CF_EVAL_TOKEN" \
+  --data "SELECT blob2 AS tier, blob4 AS fps50, SUM(_sample_interval) AS points FROM perf_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY tier, fps50 ORDER BY tier, fps50 FORMAT JSON"
+```
+
+Multiply by 4 for an estimate of 3D sessions (25% sampling). Other useful groupings: `blob3` (load path), `blob6` (time to explore), `SUM(double1)` (context losses), `SUM(double2)` (boot timeouts). `CF_EVAL_TOKEN` needs Account Analytics Read, like the Ask content-gap report.

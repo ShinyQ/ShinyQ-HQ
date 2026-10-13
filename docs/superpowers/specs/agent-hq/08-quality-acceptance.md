@@ -14,21 +14,30 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 
 ## 2. Performance budgets
 
-| Metric | Budget | Measured by |
-|---|---|---|
-| LCP (`/en`, mobile 4G, mid-range) | < 2.5 s | Lighthouse CI |
-| CLS | < 0.05 | Lighthouse CI |
-| TBT | < 300 ms | Lighthouse CI |
-| Initial JS (gzip, before 3D) | < 350 KB | `@next/bundle-analyzer` check in CI |
-| 3D chunk (gzip) | < 600 KB | Same |
-| Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite); rendering is capped at 60 fps on high-refresh displays (no idle cap) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 ≤ 18 ms), the runtime safety net in the field |
-| Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
-| Boost effects | At most 3 extra draw calls while boosting (trail, streaks, sparks), 0 when not boosting; idle frames identical to no boost; no shader compiled on the first boost; reduced motion shows none | `e2e/boost.spec.ts` (`__hq.rover.boostFx`, `trail`, `streaks`, `sparks`, `boostFov`, `boostPitch`) |
-| Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
-| Client chunks | Contain no zod or content loader (`_zod`, `readFileSync`, `site-content`) | Post-build gate `scripts/check-client-chunks.ts` (part of `bun run build`) |
-| Troika font cuts | At most 64 KB in total, every in-world character covered | `tests/content/troika-fonts.test.ts` |
-| Bytes before the first 3D frame (game-first `/en`, lite) | Only the HTML, CSS, page fonts, initial JS and the 3D chunks; no Page View images, link prefetch or room data | `e2e/boot-first.spec.ts` quiet boot |
-| Memory | No growth after 10 Lobby to Roof round trips and 5 Page View toggles | `e2e/memory.spec.ts`: `renderer.info` geometries, textures and `programs.length` equal their baseline (three has no material count), JS heap growth < 2 MB |
+CI budgets are authoritative (owner decision 2026-10-13). Where a CI gate exists, its number is the budget; the "Spec ceiling" column is only the outer limit a CI number may never be raised past. A budget changes only with an owner note in the PR that needs it. The numbers live in `lighthouserc.json` (Page View) and `e2e/budgets.ts` (3D). Only deterministic counters and bytes are gated; time-based 3D numbers are trends or real-device checks, because SwiftShader timing says nothing about a GPU.
+
+| Metric | CI gate (authoritative) | Spec ceiling | Measured by |
+|---|---|---|---|
+| LCP, Page View (`/en`, `/en/quick`, `/en/journey`, a pod page) | < 2,000 ms (median of 3) | 2.5 s | Lighthouse CI, simulated mobile 4G |
+| CLS | < 0.01 | 0.05 | Lighthouse CI |
+| TBT | < 200 ms | 300 ms | Lighthouse CI |
+| Page View transfer per page | JS 240 KB (245,760 B), CSS 20 KB, fonts 60 KB, HTML 80 KB; warn at 90% | JS 350 KB | Lighthouse CI `resource-summary`; per-chunk diff against main in the job summary |
+| 3D JS after the gate (gzip), lite and full | < 450 KB each | 600 KB | `e2e/perf/bytes-3d.spec.ts`: transfer sizes after the 3D gate minus the Page View's scripts; fonts, JSON and CSS reported |
+| Scene draw calls per floor, settled, both tiers | < 150; L1 <= 125, RF <= 79 | 150 | `expectRenderBudget`: worst frame over at least 20 frames and 1.2 s |
+| Post-processing passes (full tier) | <= 20 | 20 | same, counted apart from scene calls |
+| Scene draw calls at peaks: boot plus intro, every elevator ride, hover, boosting | < 150 | 150 | `e2e/perf/peaks.spec.ts` and `e2e/gpu.spec.ts`, every frame of the window |
+| Triangles per frame | < 30,000 | 30,000 | `expectRenderBudget` |
+| Shader programs per floor, both tiers | <= baseline + 2 (`e2e/perf/baseline.json`) | none | `e2e/perf/floors.spec.ts` |
+| Memory after 10 Lobby to Roof round trips and 5 Page View toggles | geometries, textures and `programs.length` back to their baseline (delta 0); JS heap growth < 2 MB | no growth | `e2e/memory.spec.ts` (P3) on `renderer.info` (three.js has no material count) |
+| Frame rate | none (not measurable in CI) | >= 55 fps desktop full, >= 30 fps mid-range phone lite; rendering is capped at 60 fps on high-refresh displays (no idle cap) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 <= 18 ms) and the `?perf=1` overlay before a release; the runtime safety net and the RUM beacon FPS buckets (appendix 06 section 4) in the field |
+| Game-first timeline: cover paint, headline, first frame, intro end, first drawer | trend only (nightly artifact) | headline < 1.5 s and first frame < 6 s on the P1 profile | `.github/workflows/perf-nightly.yml` (`e2e/perf/timeline.spec.ts`) |
+| Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | same | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` shows the last ride in the overlay and logs one line per ride |
+| Boost effects | At most 3 extra draw calls while boosting (trail, streaks, sparks), 0 when not boosting; idle frames identical to no boost; no shader compiled on the first boost; reduced motion shows none | same | `e2e/boost.spec.ts` (`__hq.rover.boostFx`, `trail`, `streaks`, `sparks`, `boostFov`, `boostPitch`) |
+| Client chunks | Contain no zod or content loader (`_zod`, `readFileSync`, `site-content`) | same | Post-build gate `scripts/check-client-chunks.ts` (part of `bun run build`) |
+| Troika font cuts | At most 64 KB in total, every in-world character covered | same | `tests/content/troika-fonts.test.ts` |
+| Bytes before the first 3D frame (game-first `/en`, lite) | Only the HTML, CSS, page fonts, initial JS and the 3D chunks; no Page View images, link prefetch or room data | same | `e2e/boot-first.spec.ts` quiet boot |
+
+Known over budget (expected failures in `KNOWN_OVER`, `e2e/perf/peaks.spec.ts`; remove an id as soon as its test passes): the triangle peak of two elevator rides, since P2 (main bef59b7) shows a ride's target floor and every floor within one floor gap under the car (`tower/visibility.ts`). `lite ride-L3-L2`: 124 scene calls, 31,306 triangles. `full ride-L2-L1`: 116 scene calls plus 17 post passes, 34,045 triangles. Scene calls and post passes are in budget in both.
 
 ## 3. Test strategy
 
@@ -40,7 +49,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | E2E | Playwright | Boot and intro skip, each mission end to end, ⌘K to a pod, elevator via wheel and panel, deep link to a pod, hologram view, README toggle, language switch, Quick view, static tier fallback (`?tier=static`) |
 | Visual | Playwright screenshots | Lobby, L2 corridor, L3 with drawer, hologram, Roof, Quick view at 1440×900, 1024×1366 and 390×844 (WebGL via SwiftShader in CI) |
 | Accessibility | axe-core in Playwright | Zero serious/critical violations on static pages and HUD overlays |
-| Performance | Lighthouse CI | A warm-up run of `/en?lhci-warmup=1`, then budgets on `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center` (3 runs each). The warm-up URL is excluded from assertions. CI budgets in `lighthouserc.json` are authoritative. |
+| Performance | Lighthouse CI (a warm-up run of `/en?lhci-warmup=1` first, never asserted); Playwright perf lane (`bun run e2e:perf`, CI job `3D perf gates`); nightly timeline; `?perf=1` and RUM for real devices | Budgets in section 2 on `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center` (3 runs each) and every 3D floor on both tiers. CI budgets (`lighthouserc.json`, `e2e/budgets.ts`) are authoritative. |
 
 ## 4. Acceptance criteria per build phase
 
