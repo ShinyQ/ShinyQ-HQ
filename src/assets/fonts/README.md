@@ -27,3 +27,7 @@ python3 -c "from fontTools.ttLib import TTFont; from fontTools.varLib import ins
 
 3. Subset the narrowed files into this folder: `scripts/subset-fonts.sh <scratch-folder>` (expects `inter-latin-wght400-800.woff2`, `jetbrains-mono-latin-wght400-700.woff2` and `archivo-latin-wdth72-92-wght600-800.woff2` there).
 4. Update the file name, `weight` and `declarations` in `src/app/fonts.ts` and the table above.
+
+## In-world (troika) fonts
+
+Troika (3D text) cannot read WOFF2, so the 3D chunk loads its own WOFF cuts. Sources live in `troika/` (the `@fontsource` latin cuts of Inter 400 and 800 and JetBrains Mono 400 and 700, plus a JetBrains Mono 700 symbols cut for arrows and shapes). `bun scripts/troika-fonts.ts` (fonttools 4.x) subsets them to the Latin set in `scripts/troika-glyphs.ts` (the symbols cut to the symbols the 3D text uses), keeps only the OpenType features troika applies (kern, liga, rlig, ccmp and the Arabic and Indic forms), drops hinting (SDF text ignores it) and writes `public/fonts/3d/<name>.<hash>.woff` plus `src/experience/troika-fonts.json`. About 58 KB for all five (139 KB before). `tests/content/troika-fonts.test.ts` fails when content, messages or 3D source use a character no cut covers (rerun the script) or when the cuts exceed 64 KB.

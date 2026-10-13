@@ -63,7 +63,7 @@ Blur: translucent `.glass` panels (64% fill) blur the canvas behind them on fine
 | `terminal` | JetBrains Mono 400 | 13 / 20 | Rover terminal, README view |
 | `metric` | Inter 800 | 28 / 32 | Metric tiles |
 
-Fonts are self-hosted (`next/font`), subset to Latin, `font-display: swap`. In-world 3D text uses drei `Text` (troika) with the same font files.
+Fonts are self-hosted (`next/font`), subset to Latin, `font-display: swap`. In-world 3D text uses drei `Text` (troika), which cannot read WOFF2: it loads separate WOFF cuts of Inter and JetBrains Mono, subset to the in-world characters and served under content-hashed names (about 58 KB, `src/assets/fonts/README.md`).
 
 ## 4. Motion
 

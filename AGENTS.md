@@ -41,7 +41,7 @@ wrangler.toml                   Pages bindings and vars for /api/ask (source of 
 messages/{en,id}.json           UI strings (next-intl)
 public/brand/                   committed brand assets (KAW monogram)
 src/assets/fonts/               self-hosted page fonts for next/font/local (src/app/fonts.ts): cuts narrowed to the used axes, characters and features (scripts/subset-fonts.sh), see its README
-public/fonts/                   Inter + JetBrains Mono woff for in-world troika Text (OFL); jetbrains-mono-symbols-700 is the troika fallback (arrows, shapes) so nothing loads from a CDN
+public/fonts/3d/                in-world troika fonts: subset WOFF cuts under content-hashed names (bun scripts/troika-fonts.ts from src/assets/fonts/troika/, manifest src/experience/troika-fonts.json); the symbols cut is the troika fallback (arrows, shapes) so nothing loads from a CDN. LICENSE files stay in public/fonts/
 public/tech/                    tech logos (svg/webp, see its README for sources), resolved by src/content/tech.ts
 public/logos/                   company and school logos (TimelineEntry.logo), 128 px webp
 public/media/<pod-slug>/        pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide)
@@ -56,6 +56,7 @@ scripts/
   defer-scripts.ts              post-build (part of `build`): swaps the Next.js chunk tags in out/**/*.html for one loader that requests them after first contentful paint (LCP)
   check-client-chunks.ts        post-build (part of `build`): fails when zod (`_zod`), `readFileSync` or `site-content` appears in out/_next/static/chunks
   subset-fonts.sh               subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); tests/content/fonts.test.ts checks coverage
+  troika-fonts.ts, troika-glyphs.ts  subset the in-world fonts (fonttools) to the characters 3D text uses; tests/content/troika-fonts.test.ts checks coverage
   validate-fragment.ts          schema + safety check for content files
   title-case.ts                 lists content titles not in Title Case; `--write` fixes site-content.json and the MDX frontmatter
   pdf-pages.ts                  shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts
