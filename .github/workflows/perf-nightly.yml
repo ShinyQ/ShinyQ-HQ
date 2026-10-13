@@ -1,0 +1,63 @@
+name: Perf timeline
+
+# Nightly game-first timeline (round 5 P4, REPORT SP2): the path real WebGL2 visitors take, which
+# Lighthouse never sees. Cold cache, navigator.webdriver hidden, three throttling profiles, marks for
+# cover paint, headline, first frame, intro end, explore and first drawer. Trend only: it never blocks
+# anything, and SwiftShader numbers are compared night to night, never to real devices.
+# Artifact `perf-timeline` (90 days); the job summary shows the previous night in brackets.
+
+on:
+  schedule:
+    # 21:00 UTC is 04:00 in Jakarta, after the screenshots run (19:30 UTC).
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: perf-timeline
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # Downloads the previous night's artifact for the trend column.
+  actions: read
+
+env:
+  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  timeline:
+    name: Game-first timeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          playwright: "true"
+      - uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+      - run: bun run build
+      - name: Timeline (cold cache, throttled, one worker)
+        # Trend only: a slow or failed run must not hide the others' numbers.
+        continue-on-error: true
+        run: bun run e2e:timeline
+      - name: Previous night
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash scripts/perf-base.sh perf-timeline base-timeline perf-nightly.yml
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: bun scripts/perf-summary.ts timeline --head perf-report --base base-timeline
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: perf-timeline
+          path: perf-report/
+          retention-days: 90
+          if-no-files-found: ignore
