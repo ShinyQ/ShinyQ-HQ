@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
-import { coverImage } from "@/content/media";
+import { CARD_SIZES, coverImage, imageSrcSet } from "@/content/media";
 import { podAttrs } from "@/content/pageview";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
@@ -42,10 +42,12 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
         <div className="pv-shot">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={size === "lead" ? cover.src : cover.thumb}
+            src={cover.src}
+            srcSet={imageSrcSet(cover)}
+            sizes={size === "lead" ? "(min-width: 1024px) 760px, 100vw" : size === "pair" ? "(min-width: 768px) 50vw, 100vw" : CARD_SIZES}
             alt={cover.alt}
-            width={size === "lead" ? cover.width : 480}
-            height={size === "lead" ? cover.height : 300}
+            width={cover.width}
+            height={cover.height}
             loading={size === "lead" ? "eager" : "lazy"}
             decoding="async"
             className={size === "pair" ? "aspect-[16/8]" : "aspect-[16/10]"}
@@ -70,7 +72,7 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
         </Link>
       </h3>
       <p className="pv-body">{pod.tagline[locale]}</p>
-      <div className="mt-auto flex flex-col gap-4">
+      <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
         {size === "lead" && first && (
           <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">

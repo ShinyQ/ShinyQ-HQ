@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
-import { toGalleryImages } from "@/content/media";
+import { CARD_SIZES, imageSrcSet, toGalleryImages } from "@/content/media";
 import { clientLabel } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
@@ -31,8 +31,8 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={cover.src}
-          srcSet={`${cover.thumb} 480w, ${cover.src} ${cover.width}w`}
-          sizes="(min-width: 1024px) 480px, (min-width: 768px) 50vw, 100vw"
+          srcSet={imageSrcSet(cover)}
+          sizes={CARD_SIZES}
           alt={cover.alt}
           width={cover.width}
           height={cover.height}
@@ -65,7 +65,7 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
         </Link>
       </h3>
       <p className="pv-body">{pod.tagline[locale]}</p>
-      <div className="mt-auto flex flex-col gap-4">
+      <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
         {result && (
           <p className="pv-small">

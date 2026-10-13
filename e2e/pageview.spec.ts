@@ -392,6 +392,21 @@ for (const viewport of [
   });
 }
 
+for (const v of [
+  { viewport: { width: 1440, height: 900 }, dpr: 2 },
+  { viewport: { width: 390, height: 844 }, dpr: 3 },
+]) {
+  test(`project images are sharp at ${v.viewport.width}x${v.viewport.height}@${v.dpr}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: v.viewport, deviceScaleFactor: v.dpr });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    for (const img of await page.locator("#work [data-feature-pod] .pv-shot img").all()) await expectSharp(img);
+    await openPage(page, staticTier("/en/labs"));
+    for (const img of await page.locator("#key-projects .pv-shot img").all()) await expectSharp(img);
+    await context.close();
+  });
+}
+
 /** Stand-in for the public sites so the suite never depends on the network. */
 const LIVE_SITE = /^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//;
 
