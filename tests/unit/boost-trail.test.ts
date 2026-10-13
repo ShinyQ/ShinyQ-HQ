@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MAX_FRAME_DT } from "@/experience/rover/controller";
 import { BOOST_TRAIL, rearCorners, TRAIL_JUMP, TrailBuffer, trailIndices, trailVertexCount, writeTrail, type TrailSample } from "@/experience/fx/boostTrail";
 
 const sample = (x: number, z: number, t: number, y = 0): TrailSample => rearCorners(x, y, z, 0, t, { lx: 0, lz: 0, rx: 0, rz: 0, y: 0, t: 0 });
@@ -35,6 +36,10 @@ describe("trail ring buffer", () => {
     buf.push(sample(0, 6, 0.3, 8), 0.25);
     expect(buf.count).toBe(1);
     expect(buf.at(0).y).toBeCloseTo(8 + BOOST_TRAIL.lampY);
+  });
+
+  it("never resets on a legitimate step: boost top speed over the longest frame", () => {
+    expect(TRAIL_JUMP).toBeGreaterThan(18 * MAX_FRAME_DT);
   });
 
   it("places the two samples at the rear wheels, turned with the heading", () => {

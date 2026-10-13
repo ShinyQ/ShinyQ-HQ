@@ -32,8 +32,11 @@ export const BOOST_TRAIL = {
   tail: [0xa7 / 255, 0x8b / 255, 0xfa / 255] as const,
 };
 
-/** A larger step between samples is a teleport or an elevator ride: the trail starts over. */
-export const TRAIL_JUMP = 3;
+/**
+ * A larger step between samples is a teleport: the trail starts over. Above the farthest legitimate
+ * step, boost top speed (18 u/s) times the longest simulated frame (`MAX_FRAME_DT`, 0.25 s) = 4.5 u.
+ */
+export const TRAIL_JUMP = 5;
 
 export const emptySample = (): TrailSample => ({ lx: 0, lz: 0, rx: 0, rz: 0, y: 0, t: 0 });
 

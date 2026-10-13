@@ -93,6 +93,7 @@ export function BoostFx({ tier }: { tier: GpuTier }) {
         depthWrite: false,
         blending: AdditiveBlending,
         toneMapped: false,
+        side: DoubleSide,
       }),
     [],
   );
