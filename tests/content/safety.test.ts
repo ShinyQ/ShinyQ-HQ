@@ -48,7 +48,7 @@ describe("public-safety lint", () => {
     expect(hits).toEqual([]);
   });
 
-  it("publishes no photo (C5)", () => {
+  it("publishes no photo in content (C5 revised: only the owner portrait, in public/brand and public/og-assets)", () => {
     expect(content.profile.photo).toBeUndefined();
     expect(JSON.stringify(content)).not.toMatch(/portrait|pas[ -]?photo/i);
   });

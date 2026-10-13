@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { openPage } from "./hq";
 import { findEdgeAccents } from "./edge-audit";
 import cvManifest from "../content/generated/cv-pages.json";
@@ -281,6 +281,43 @@ test("landing: the hero name is still the LCP element on a phone", async ({ brow
   await expect.poll(() => page.evaluate(() => (window as unknown as { __lcp: string }).__lcp)).toBe("hero-title");
   await context.close();
 });
+
+/**
+ * The chosen image source is at least as wide as its rendered width times the device pixel ratio.
+ * `naturalWidth` of a `srcset` image is density-corrected (CSS pixels), so the source's own pixel width is
+ * read from a plain image of `currentSrc` (cached, no second request).
+ */
+async function expectSharp(img: Locator) {
+  await img.scrollIntoViewIfNeeded();
+  await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+  const r = await img.evaluate(async (el: HTMLImageElement) => {
+    const source = new Image();
+    source.src = el.currentSrc;
+    await source.decode();
+    return { natural: source.naturalWidth, rendered: el.getBoundingClientRect().width, dpr: devicePixelRatio, src: el.currentSrc };
+  });
+  expect(r.natural, r.src).toBeGreaterThanOrEqual(Math.floor(r.rendered * r.dpr));
+}
+
+for (const v of [
+  { viewport: { width: 1440, height: 900 }, dpr: 2 },
+  { viewport: { width: 390, height: 844 }, dpr: 3 },
+]) {
+  test(`portrait beside the name and on About at ${v.viewport.width}x${v.viewport.height}@${v.dpr}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: v.viewport, deviceScaleFactor: v.dpr });
+    const page = await context.newPage();
+    for (const url of ["/en", "/en/contact"]) {
+      await openPage(page, staticTier(url));
+      const img = page.locator("main").getByTestId("portrait");
+      await expect(img).toHaveAttribute("alt", data.profile.name);
+      await expect(img).toBeVisible();
+      const round = await img.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius) >= el.getBoundingClientRect().width / 2 - 1);
+      expect(round, url).toBe(true);
+      await expectSharp(img);
+    }
+    await context.close();
+  });
+}
 
 test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
   await openPage(page, staticTier("/en"));

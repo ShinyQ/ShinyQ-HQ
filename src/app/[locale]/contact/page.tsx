@@ -7,6 +7,7 @@ import { Marker, SectionSplit } from "@/components/page/Layout";
 import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { PerspectiveList } from "@/components/page/Perspectives";
+import { Portrait } from "@/components/page/Portrait";
 import { getContent, getPerspectives, getProfile, getRoof, getSkills } from "@/content/load";
 import { perspectiveLinks } from "@/content/perspectives";
 import { formatYearMonth } from "@/lib/format";
@@ -53,7 +54,10 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
           <p className="pv-data mb-5">
             <Marker accent="blue">RF · {tf("RF")}</Marker>
           </p>
-          <h1 className="pv-d-l">{ta("title")}</h1>
+          <div className="flex items-center gap-4 sm:gap-5">
+            <Portrait name={profile.name} size={112} sizes="(min-width: 640px) 112px, 80px" className="size-20 sm:size-28" />
+            <h1 className="pv-d-l">{ta("title")}</h1>
+          </div>
           <p className="pv-lead mt-6">{lead}</p>
           {rest && <p className="pv-body mt-4">{rest}</p>}
         </div>

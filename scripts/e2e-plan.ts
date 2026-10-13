@@ -149,6 +149,7 @@ export const RULES: Rule[] = [
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
   { test: /^public\/_(headers|redirects)$|^scripts\/(serve-static|root-redirect)\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^public\/brand\/|^src\/lib\/brand-photo\.ts$|^src\/components\/page\/Portrait\.tsx$/, specs: ["pageview", "seo", "static-routes", "hud", "highlights"] },
   // Full-screen panels that pause the canvas (data-hq-cover).
   { test: /^src\/components\/(Modal|Lightbox)\.tsx$/, specs: ["gallery", "lifecycle", "pageview"] },
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
