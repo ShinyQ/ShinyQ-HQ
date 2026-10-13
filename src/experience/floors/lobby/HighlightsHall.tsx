@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Object3D, type Texture } from "three";
+import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { neonColor } from "../../fx/materials";
@@ -15,13 +15,12 @@ import { precompileObject } from "../../scene/precompile";
 import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
-import { PulseRings } from "../roof/kit";
-import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, SHOT_CELL, shotQuadBuffers, type HallAtlas, type HallLabels } from "./hallContent";
-import { GateCurtain, GateSign, PortalGlow, PortraitHolo, StatTiles } from "./HallFx";
-import { ABOUT, aboutFace, contactBeacon, hallLights, statTiles } from "./hallGallery";
+import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, SHOT_CELL, type HallAtlas, type HallLabels } from "./hallContent";
+import { GateCurtain, GateSign, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
+import { aboutFace, contactBeacon, hallLights, statTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
-import { HallLights } from "./HallLights";
+import { lightInstances, panelInstances, ringInstances } from "./hallStage";
 import { hallLineBuffer, hallShapes, portraitRing, solidBuffers, type HallShapes } from "./hallSolids";
 import { HIGHLIGHT_STAT_COUNT } from "./stations";
 
@@ -73,34 +72,6 @@ function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
   }, [key, enabled]);
   return texture;
 }
-
-/** The three project screenshots on their monoliths as one mesh over the canvas atlas (dark until it loads). */
-function ShotWall({ thumbs, atlas, texture }: { thumbs: readonly string[]; atlas: HallAtlas; texture: Texture | null }) {
-  const geometry = useMemo(() => {
-    const { positions, uvs, indices } = shotQuadBuffers(hallShots(thumbs.length), atlas.cells);
-    const g = new BufferGeometry();
-    g.setAttribute("position", new BufferAttribute(positions, 3));
-    g.setAttribute("uv", new BufferAttribute(uvs, 2));
-    g.setIndex(new BufferAttribute(indices, 1));
-    g.computeBoundingSphere();
-    return g;
-  }, [atlas, thumbs.length]);
-  useDispose(geometry);
-  if (!thumbs.length) return null;
-  // Black screens until the atlas loads; a map from the start keeps the program the same (precompiled with the hall).
-  return (
-    <mesh geometry={geometry} raycast={() => null}>
-      <meshBasicMaterial map={texture ?? DARK} color={texture ? "#ffffff" : "#0b1020"} toneMapped={false} />
-    </mesh>
-  );
-}
-
-/** One placeholder map shared by every mount (never disposed: 1 x 1 pixel). */
-const DARK = (() => {
-  const t = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  t.needsUpdate = true;
-  return t;
-})();
 
 /** Every gallery solid in one mesh (boxes and round prisms), lit like the rest of the Lobby. */
 function HallSolids({ shapes }: { shapes: HallShapes }) {
@@ -230,8 +201,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const shapes = useMemo(() => hallShapes(projectCount), [projectCount]);
   const texts = useMemo(() => hallTexts(data, labels, FONTS), [data, labels]);
   const tiles = useMemo(() => statTiles(Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length)), [data.stats.length]);
-  const lights = useMemo(() => hallLights(tier, projectCount), [tier, projectCount]);
-  const pulses = useMemo(() => contactBeacon().pulses.map((p) => ({ ...p, color: HALL.tone.contact })), []);
+  const lights = useMemo(() => lightInstances(hallLights(tier, projectCount), tier), [tier, projectCount]);
+  const rings = useMemo(() => ringInstances(contactBeacon().pulses, HALL.tone.contact, tier), [tier]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
   const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);
   const [load, setLoad] = useState(false);
@@ -239,11 +210,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     if (!load && shouldLoadShots(getHQStore().getState().floor, roverRuntime.x)) setLoad(true);
   });
   const texture = useHallAtlas(atlas, load);
-  const photo = useMemo(() => {
-    const cell = atlas.cells[atlas.cells.length - 1];
-    const q = hallPhoto(thumbs.length);
-    return { center: q.center, cell: [cell.x / atlas.width, 0, (cell.x + cell.w) / atlas.width, 1] as [number, number, number, number] };
-  }, [atlas, thumbs.length]);
+  const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
+  const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
   return (
     <HallReady>
@@ -252,12 +220,10 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <HallView>
         <HallSolids shapes={shapes} />
         <HallLines shapes={shapes} tier={tier} />
-        <HallLights lights={lights} tier={tier} />
-        <StatTiles tiles={tiles} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.tile} />
-        <PortraitHolo center={photo.center} yaw={aboutFace().yaw} radius={ABOUT.disc.r} map={texture} cell={photo.cell} tier={tier} />
-        <ShotWall thumbs={thumbs} atlas={atlas} texture={texture} />
-        <PortalGlow tier={tier} />
-        <PulseRings sources={pulses} radius={0.5} grow={5} speed={0.45} tier={tier} reducedMotion={reducedMotion} />
+        <StageLights instances={lights} tier={tier} reducedMotion={reducedMotion} />
+        <StagePanels instances={panels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.tile} />
+        <StagePortal tier={tier} reducedMotion={reducedMotion} />
+        <StageRings instances={rings} tier={tier} reducedMotion={reducedMotion} />
         <GateCurtain tier={tier} reducedMotion={reducedMotion} />
         {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
         <Suspense fallback={null}>
