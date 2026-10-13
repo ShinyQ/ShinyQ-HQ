@@ -142,8 +142,10 @@ export interface RoomView {
   gallery: RoomImage[];
   /** Locale-less route of the full page ("Full case study"). */
   page?: string;
-  /** External page (posts hosted elsewhere). */
+  /** External page (posts hosted elsewhere, Workshop projects and repos). */
   external?: string;
+  /** Footer label for `external` (locale-resolved); posts keep "Read post". */
+  externalLabel?: string;
   /** Pods with a public live site (R4-J): "Visit live site" in the footer, new tab. Already allowlisted. */
   live?: string;
   /** Related room on another floor ("See the case study on L3", "See it on L2"). */
