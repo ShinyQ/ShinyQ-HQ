@@ -65,20 +65,45 @@ test.describe("3D top bar", () => {
   }
 });
 
-test("Indonesian at 1024 px: the wider Page view keeps the one-row bar clear of the profile card", async ({ browser }) => {
-  const { context, page } = await newPage(browser, { width: 1024, height: 768, touch: false });
-  await enterHQ(page, { path: "/id" });
-  const hud = page.getByTestId("hud");
-  await expect(hud.getByTestId("page-view")).toHaveAccessibleName(id.hud.pageView);
-  // The bar settles once fonts and the profile photo have loaded: poll instead of measuring the first layout.
-  const measure = async () => ({ bar: await box(hud.getByTestId("hud-topbar")), card: await box(hud.getByRole("region", { name: id.hud.profile })) });
-  await expect.poll(async () => {
-    const { bar, card } = await measure();
-    return overlaps(bar, card);
-  }).toBe(false);
-  const { bar } = await measure();
-  expect(bar.x + bar.width).toBeLessThanOrEqual(1024);
-  await context.close();
+/**
+ * The search chip reads "⌘K" on Apple platforms and "Ctrl K" elsewhere (about 30 px wider), so the
+ * platform is forced here instead of depending on the runner OS. Indonesian has the widest labels.
+ */
+const PLATFORMS = [
+  { name: "Mac", platform: "MacIntel", chip: "⌘K" },
+  { name: "Windows and Linux", platform: "Win32", chip: "Ctrl K" },
+] as const;
+const LOCALES = [
+  { locale: "en", messages: en },
+  { locale: "id", messages: id },
+] as const;
+
+test.describe("one-row top bar at 1024 px", () => {
+  for (const os of PLATFORMS) {
+    for (const { locale, messages } of LOCALES) {
+      test(`${locale} on ${os.name}: the bar stays clear of the profile card`, async ({ browser }) => {
+        const { context, page } = await newPage(browser, { width: 1024, height: 768, touch: false });
+        await page.addInitScript((platform) => Object.defineProperty(Navigator.prototype, "platform", { get: () => platform, configurable: true }), os.platform);
+        await enterHQ(page, { path: `/${locale}` });
+        const hud = page.getByTestId("hud");
+        await expect(hud.getByTestId("page-view")).toHaveAccessibleName(messages.hud.pageView);
+        const search = hud.getByRole("button", { name: messages.hud.launcher.searchShortcut.replace("{shortcut}", os.chip) });
+        await expect(search).toBeVisible();
+        // The bar settles once fonts, the Ask pill and the profile photo have loaded: poll instead of measuring the first layout.
+        await expect(hud.locator("[data-testid='ask-pill']:visible")).toBeVisible({ timeout: 15_000 });
+        const measure = async () => ({ bar: await box(hud.getByTestId("hud-topbar")), card: await box(hud.getByRole("region", { name: messages.hud.profile })) });
+        await expect.poll(async () => {
+          const { bar, card } = await measure();
+          return overlaps(bar, card);
+        }).toBe(false);
+        const { bar } = await measure();
+        expect(bar.x + bar.width).toBeLessThanOrEqual(1024);
+        // The chip shows on Apple platforms; "Ctrl K" hides at this width, the search button stays.
+        await expect(search.locator("kbd")).toBeVisible({ visible: os.chip === "⌘K" });
+        await context.close();
+      });
+    }
+  }
 });
 
 test.describe("profile photo badge", () => {

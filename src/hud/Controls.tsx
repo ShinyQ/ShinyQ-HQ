@@ -94,13 +94,14 @@ function ViewActions({ onExit }: { onExit: () => void }) {
 
 /**
  * Desktop and tablet top-right controls (appendix 04 section 2): one row from 1024 px; below that,
- * Page view and Ask AI get their own row under the bar.
+ * Page view and Ask AI get their own row under the bar. From 1024 to 1099 px the "Ctrl K" chip hides
+ * (`compactShortcut`) so the row clears the profile card in Indonesian on Windows and Linux.
  */
 export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
   return (
     <div className="pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2 lg:flex-row lg:items-center" data-testid="hud-topbar">
       <div className="flex items-center gap-2">
-        <HudLaunchers buttonClassName={launcher} labelClassName="sr-only md:not-sr-only" />
+        <HudLaunchers buttonClassName={launcher} labelClassName="sr-only md:not-sr-only" compactShortcut />
         <LangToggle onToggleLang={onToggleLang} />
         <SoundToggle />
       </div>
