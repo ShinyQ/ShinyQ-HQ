@@ -1,6 +1,6 @@
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { isPublicLiveUrl } from "./live-links";
-import type { Locale, Pod, Publication, Tier, TimelineEntry } from "./schema";
+import type { Locale, Pod, Publication, SkillGroup, Tier, TimelineEntry } from "./schema";
 
 /** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */
 export function clientLabel(client: Pod["client"], locale: Locale): string | undefined {
@@ -107,4 +107,15 @@ export function publicationDate(p: Publication, locale: Locale): string {
 /** Papers and the thesis, newest first. */
 export function researchPublications(publications: readonly Publication[]): Publication[] {
   return publications.filter((p) => isResearch(p.kind)).sort((a, b) => (b.date ?? String(b.year)).localeCompare(a.date ?? String(a.year)));
+}
+
+/**
+ * Skill groups on the L1 skills wall, in column order (40 u wall, 10 u columns, appendix 01). The
+ * CV has seven groups; the wall shows these four with the accents it always had (cyan, violet,
+ * blue, amber), and the skills drawer, Page View and Ask list every group.
+ */
+export const SKILLS_WALL_GROUPS = ["backend", "ai", "azure", "devops"] as const satisfies readonly SkillGroup["id"][];
+
+export function wallSkillGroups(groups: readonly SkillGroup[]): SkillGroup[] {
+  return SKILLS_WALL_GROUPS.flatMap((id) => groups.filter((g) => g.id === id));
 }

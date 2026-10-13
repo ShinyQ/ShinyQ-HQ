@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as a **Software Engineer and AI Engineer** (platform-neutral title, revised 2026-10-11: Azure, AWS and VPS hosting appear in stacks and project details, never in the title): a backend and full-stack foundation (2019 to 2025: e-commerce, payments, fintech, SaaS) and enterprise AI platforms (2026), presented as one continuous craft with equal billing.
+Replace a conventional, outdated portfolio with an explorable 3D world that feels like a game while still letting any visitor get the facts quickly. The site positions the owner as an **AI and Software Engineer** (the CV's order since 2026-10-13; platform-neutral title, revised 2026-10-11: Azure, AWS and VPS hosting appear in stacks and project details, never in the title): a backend and full-stack foundation (2019 to 2025: e-commerce, payments, fintech, SaaS) and enterprise AI platforms (2026), presented as one continuous craft with equal billing.
 
 ### Success criteria
 
@@ -267,7 +267,7 @@ Rules:
 
 | Topic | Decision |
 |---|---|
-| Positioning | Software Engineer and AI Engineer, equal billing (no cloud vendor in the title) |
+| Positioning | AI and Software Engineer (the CV's order since 2026-10-13), equal billing (no cloud vendor in the title) |
 | Language | Bilingual EN / ID with a HUD toggle; English default |
 | Sound | Ambient sound and UI blips, on by default from the first gesture, toggle persists |
 | Analytics | Cloudflare Web Analytics, cookieless, no consent banner |

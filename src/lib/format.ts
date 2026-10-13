@@ -9,9 +9,10 @@ export function intlLocale(locale: Locale): string {
   return INTL_LOCALE[locale];
 }
 
-/** "2024-06" -> "Jun 2024" (en) or "Jun 2024" (id); "2026-10" -> "Oct 2026" / "Okt 2026". */
+/** "2024-06" -> "Jun 2024" (en) or "Jun 2024" (id); "2026-10" -> "Oct 2026" / "Okt 2026"; a year alone ("2024") stays as it is. */
 export function formatYearMonth(value: string, locale: Locale): string {
   if (value === "present") return PRESENT[locale];
+  if (/^\d{4}$/.test(value)) return value;
   const [year, month] = value.split("-").map(Number);
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], { month: "short", year: "numeric", timeZone: "UTC" })
     .format(new Date(Date.UTC(year, month - 1, 1)))

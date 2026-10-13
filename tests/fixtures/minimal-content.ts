@@ -58,7 +58,7 @@ export function makeContent(): SiteContent {
       principles: [{ id: "spec-first", title: lt("Spec first"), text: lt("Specs") }],
     },
     stats: ["a", "b", "c", "d"].map((id) => ({ id, value: "1", label: lt(id), source: "test", confidence: "verified" as const })),
-    skills: [{ id: "software", label: lt("Software"), items: ["Go"] }],
+    skills: [{ id: "backend", label: lt("Backend"), items: ["Go"] }],
     certifications: [],
     awards: [],
     floors: {

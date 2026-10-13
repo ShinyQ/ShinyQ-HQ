@@ -34,7 +34,7 @@ interface SiteContent {
 interface Profile {
   name: string;                          // "Kurniadi Ahmad Wijaya"
   handle: string;                        // "ShinyQ"
-  headline: LocalizedText;               // Software Engineer and AI Engineer
+  headline: LocalizedText;               // AI and Software Engineer (the CV's order, 2026-10-13)
   location: LocalizedText;
   bio: LocalizedText;                    // 2 to 3 sentences
   howIWork: LocalizedText;
@@ -43,10 +43,10 @@ interface Profile {
 
 interface Stat { id: string; value: string; label: LocalizedText; source: string; confidence: Confidence; }
 
-interface SkillGroup { id: "software" | "ai" | "cloud" | "data"; label: LocalizedText; items: string[]; }
+interface SkillGroup { id: "ai" | "azure" | "languages" | "backend" | "frontend" | "data" | "devops"; label: LocalizedText; items: string[]; } // the CV's taxonomy, CV order (2026-10-13)
 
 interface Certification {
-  id: string; name: string; issuer: string; issued: YearMonth;
+  id: string; name: string; issuer: string; issued: YearMonth | Year; // Year ("2024") only when the CV gives no month
   credentialUrl?: string; status: "earned" | "in-progress";
 }
 

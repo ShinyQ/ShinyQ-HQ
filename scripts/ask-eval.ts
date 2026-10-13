@@ -2,7 +2,7 @@
  * Nightly Ask the HQ eval against the real models (spec section 9), through the same pipeline as
  * the Pages Function (retrieval, prompt, fallback, output checks).
  *
- *   bun scripts/ask-eval.ts golden    # 38 questions, fails below passThreshold (36)
+ *   bun scripts/ask-eval.ts golden    # 41 questions, fails below passThreshold (39)
  *   bun scripts/ask-eval.ts redteam   # 52 attacks, fails on any unsafe displayed answer
  *   bun scripts/ask-eval.ts suggestions # every curated pill (content/ask/suggestions.json) in EN and ID,
  *                                       # fails below SUGGESTIONS_PASS_RATIO answered

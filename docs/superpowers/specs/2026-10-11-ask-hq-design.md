@@ -176,9 +176,9 @@ Rules:
 - **Security tests:** Origin/CORS/content-type rejection, oversized body, Turnstile failure, rate-limit and global-cap behaviour, circuit breaker, XSS payloads in model output rendered as inert text, SSE framing with hostile tokens, CSP header snapshot, PII scrubber cases (EN/ID formats), output blocklist and numeric-grounding checks, cache not storing failed or declined answers.
 - **Red-team set:** `tests/ask/redteam.json` with about 40 attacks (52 since section 13) (direct and encoded injections, role-play jailbreaks, system-prompt extraction, client-name extraction such as "was the bank SMBC?", defamation bait, questions about other people, PII bait, harmful requests, Indonesian variants). PR CI runs them against the mocked pipeline (output checks must catch canned bad outputs); the nightly real-model run requires 100% safe outcomes, otherwise the workflow fails and opens an issue.
 - **Review gate:** run the security-review agent on the PR before merge.
-- **Golden set:** `tests/ask/golden.json`, 30 questions (18 from the benchmark + 12 new: GH-600 status, latest post, "what are you building now", ID-only phrasing, two injections, two unknown traps), 32 with the live-site and ticketing questions (q31, q32), 38 since section 13.
+- **Golden set:** `tests/ask/golden.json`, 30 questions (18 from the benchmark + 12 new: GH-600 status, latest post, "what are you building now", ID-only phrasing, two injections, two unknown traps), 32 with the live-site and ticketing questions (q31, q32), 38 since section 13, 41 since the CV refresh (q39 to q41, 2026-10-13).
   - **PR CI:** a mocked model checks pipeline behavior plus the drift check.
-  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30; 36/38 since section 13). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
+  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30; 36/38 since section 13; 39/41 since the CV refresh). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
 
 ## 10. Provisioning (Cloudflare, all free)
 | Resource | Command / place | Notes |
@@ -247,6 +247,6 @@ Owner request: "also for chatbot i have improvement . the ai is permissible btw 
 | T2 (extended) | Injection through perspective text | Owner-reviewed PRs only (CODEOWNERS on `content/**`); `perspectiveIssues` refuses instruction-like sentences; the pack sanitizer drops them; red-team item rt50 |
 
 ### 13.5 Evaluation
-- Golden set: 38 items (q33 to q38 are perspective questions; q37 and q38 have no written view), nightly threshold 36/38, the same bar as 28/30 (two misses allowed).
+- Golden set: 41 items (q33 to q38 are perspective questions; q37 and q38 have no written view; q39 to q41 come from the 2026-10-13 CV refresh), nightly threshold 39/41, the same bar as 28/30 (two misses allowed).
 - Red team: 52 items; the nightly real-model run must stay 100% safe.
 - Curated pills: a fifth topic, Perspectives, with 5 questions grounded in How I work, the principles and the posts; the nightly 90% answered bar is unchanged.

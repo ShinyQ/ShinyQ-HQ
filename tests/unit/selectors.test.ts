@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getPods } from "@/content/load";
-import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, podLiveLink, sortTimeline, type PodRank } from "@/content/selectors";
+import { getPods, getSkills } from "@/content/load";
+import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, podLiveLink, SKILLS_WALL_GROUPS, sortTimeline, wallSkillGroups, type PodRank } from "@/content/selectors";
 import type { Asset } from "@/content/schema";
 import { makeEntry, makePod } from "../fixtures/minimal-content";
 
@@ -90,5 +90,18 @@ describe("podLiveLink (R4-J)", () => {
 
   it("finds exactly the two MII Microsoft sites in the dataset", () => {
     expect(getPods().filter((p) => podLiveLink(p)).map((p) => p.slug).sort()).toEqual(["ai-solutions-assistant", "solutions-marketing-site"]);
+  });
+});
+
+describe("wallSkillGroups (L1 skills wall)", () => {
+  it("puts four CV groups on the wall in column order, each short enough for a 10 u column", () => {
+    expect(SKILLS_WALL_GROUPS).toEqual(["backend", "ai", "azure", "devops"]);
+    const wall = wallSkillGroups(getSkills());
+    expect(wall.map((g) => g.id)).toEqual(["backend", "ai", "azure", "devops"]);
+    expect(Math.max(...wall.map((g) => g.items.length))).toBeLessThanOrEqual(12);
+  });
+
+  it("skips a wall group the content does not have", () => {
+    expect(wallSkillGroups([{ id: "ai", label: { en: "AI and LLM", id: "AI dan LLM" }, items: ["RAG"] }]).map((g) => g.id)).toEqual(["ai"]);
   });
 });

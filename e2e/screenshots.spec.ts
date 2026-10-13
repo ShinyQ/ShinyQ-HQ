@@ -1,6 +1,6 @@
-import { mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForCameraSettle, waitForHQ, waitForPhase, waitForRoom } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
@@ -599,3 +599,119 @@ for (const floor of FLOOR_THUMBS) {
     await context.close();
   });
 }
+
+/**
+ * Round 5 CV refresh review captures: the Page View pages that carry CV facts (full page), the L1
+ * skills wall and an RF control pose at the round 5 sizes, reduced motion so 3D frames compare.
+ * SHOT_DIR picks the folder (before and after runs); metrics.jsonl records draw calls per pose.
+ *   SCREENSHOTS=1 SHOT_DIR=screenshots/r5-p5/before E2E_PORT=4434 bunx playwright test e2e/screenshots.spec.ts -g "CV refresh" --workers=1
+ */
+const CV_SHOT_DIR = process.env.SHOT_DIR ?? "screenshots/r5-p5";
+const CV_VIEWPORTS: readonly Viewport[] = [
+  { name: "desktop", width: 1440, height: 900, tier: "full", touch: false },
+  { name: "desktop", width: 2560, height: 1440, tier: "full", touch: false },
+  { name: "mobile", width: 390, height: 844, tier: "lite", touch: true },
+];
+const CV_PAGE_PATHS = ["/en", "/en/contact", "/en/cv", "/en/journey"] as const;
+
+async function open3DStill(browser: Browser, v: Viewport, path: string) {
+  const context = await browser.newContext({
+    viewport: { width: v.width, height: v.height },
+    deviceScaleFactor: 1,
+    hasTouch: v.touch,
+    isMobile: v.name === "mobile",
+    reducedMotion: "reduce",
+  });
+  const page = await context.newPage();
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=${v.tier}`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await page.evaluate(() => document.fonts.ready);
+  return { context, page };
+}
+
+/** Floor content mounts behind Suspense: lite waits until it draws; full (one composer pass) waits a fixed time. */
+async function settleFloor(page: Page, v: Viewport) {
+  if (v.tier === "lite") {
+    await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 35, null, { timeout: 90_000 });
+  } else await page.waitForTimeout(8000);
+}
+
+/**
+ * Chromium refuses one capture taller than its texture limit (about 16k px: /journey at 1440 wide, Home
+ * at 2560), so tall pages are written in 8000 px slices (`-part1.png`, `-part2.png`, ...).
+ */
+async function fullPageShot(page: Page, base: string, width: number) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  const slice = 8000;
+  if (height <= slice) {
+    await page.screenshot({ path: `${base}.png`, fullPage: true, animations: "disabled" });
+    return;
+  }
+  for (let y = 0, part = 1; y < height; y += slice, part += 1) {
+    await page.screenshot({ path: `${base}-part${part}.png`, fullPage: true, animations: "disabled", clip: { x: 0, y, width, height: Math.min(slice, height - y) } });
+  }
+}
+
+const cvDrawCalls = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls);
+
+function recordCvMetric(entry: Record<string, unknown>) {
+  mkdirSync(CV_SHOT_DIR, { recursive: true });
+  appendFileSync(`${CV_SHOT_DIR}/metrics.jsonl`, `${JSON.stringify(entry)}\n`);
+}
+
+test.describe("CV refresh captures", () => {
+  for (const v of CV_VIEWPORTS) {
+    const size = `${v.width}x${v.height}`;
+    // SwiftShader renders 2560x1440 at a few frames per second; drives take longer in wall time.
+    const budget = v.width > 2000 ? 600_000 : 240_000;
+
+    for (const path of CV_PAGE_PATHS) {
+      const name = path === "/en" ? "home" : path.slice(4);
+      test(`CV refresh page ${name} @ ${size}`, async ({ browser }) => {
+        const context = await browser.newContext({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+        const tab = await context.newPage();
+        await tab.addInitScript(() => {
+          localStorage.setItem("hq:terminal-seen", "1");
+          localStorage.setItem("hq:onboarded", "done");
+        });
+        await tab.goto(`${path}?tier=static`, { waitUntil: "networkidle" });
+        await tab.evaluate(() => document.fonts.ready);
+        await expect(tab.locator("h1").first()).toBeVisible();
+        await fullPageShot(tab, `${CV_SHOT_DIR}/page-${name}-${size}`, v.width);
+        await context.close();
+      });
+    }
+
+    test(`CV refresh 3D L1 skills wall @ ${size}`, async ({ browser }) => {
+      test.setTimeout(budget);
+      const { context, page } = await open3DStill(browser, v, "/en");
+      await settleFloor(page, v);
+      await page.getByRole("button", { name: /Open search/ }).click();
+      await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
+      await page.keyboard.type("Skills wall");
+      await page.keyboard.press("Enter");
+      await waitForRoom(page, "L1:skills", budget - 60_000);
+      await page.keyboard.press("Escape");
+      await waitForPhase(page, "explore", 60_000);
+      await waitForCameraSettle(page, { timeout: 120_000 });
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(3000);
+      recordCvMetric({ view: "l1-skills-wall", size, tier: v.tier, drawCalls: await cvDrawCalls(page) });
+      await page.screenshot({ path: `${CV_SHOT_DIR}/3d-l1-skills-wall-${size}.png` });
+      await context.close();
+    });
+
+    test(`CV refresh 3D RF control @ ${size}`, async ({ browser }) => {
+      test.setTimeout(budget);
+      const { context, page } = await open3DStill(browser, v, "/en/contact");
+      await settleFloor(page, v);
+      await waitForCameraSettle(page, { timeout: 120_000 });
+      await page.waitForTimeout(3000);
+      recordCvMetric({ view: "rf-control", size, tier: v.tier, drawCalls: await cvDrawCalls(page) });
+      await page.screenshot({ path: `${CV_SHOT_DIR}/3d-rf-control-${size}.png` });
+      await context.close();
+    });
+  }
+});

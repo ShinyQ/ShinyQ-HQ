@@ -14,11 +14,12 @@ import { LogoQuads } from "./LogoQuads";
 const { itemSize: ITEM_SIZE, itemLine: ITEM_LINE, icon: ICON, iconGap: ICON_GAP, labelSize: LABEL_SIZE, labelLine: LABEL_LINE, labelTracking: LABEL_TRACKING } = SKILLS_TEXT;
 const COLUMN_PAD = SKILLS_PAD.column;
 
+// Keyed by the wall groups (`SKILLS_WALL_GROUPS`): the same four colors left to right as before the CV refresh.
 const GROUP_ACCENT: Record<string, string> = {
-  software: COLORS.cyan,
+  backend: COLORS.cyan,
   ai: COLORS.violet,
-  cloud: "#60a5fa",
-  data: COLORS.amber,
+  azure: "#60a5fa",
+  devops: COLORS.amber,
 };
 
 /** Skill groups on a long glass wall north of the hologram, facing the plaza. */

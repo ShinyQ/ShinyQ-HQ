@@ -33,7 +33,7 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("k6", "k6"),
   svg("docker", "Docker", ["docker compose"]),
   webp("jenkins", "Jenkins"),
-  webp("aws", "AWS", ["amazon web services", "aws s3", "aws lambda", "aws ec2", "aws websocket apis"]),
+  webp("aws", "AWS", ["amazon web services", "aws s3", "aws lambda", "aws ec2", "aws websocket apis", "aws api gateway websocket"]),
   svg("bun", "Bun"),
   svg("sequelize", "Sequelize"),
   svg("socketio", "Socket.IO"),
@@ -180,6 +180,12 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "nessus api",
   "entra id",
   "microsoft entra id",
+  "rag",
+  "hybrid/vector search",
+  "prompt shields",
+  "java",
+  "nuxt",
+  "mongodb",
 ]);
 
 /** Lowercases, drops parentheticals and trailing version numbers ("Next.js 14" to "next.js"). */

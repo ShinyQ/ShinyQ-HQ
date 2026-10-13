@@ -2,7 +2,7 @@ import type { Certification } from "@/content/schema";
 
 /**
  * Scale fixture for the certification layouts (unit tests and the dev-only /{locale}/dev/certs route).
- * The first 7 entries mirror content/site-content.json; the other 23 are FICTIONAL placeholders that
+ * The first 8 entries mirror content/site-content.json; the other 22 are FICTIONAL placeholders that
  * only exercise the layouts at 30 certifications. Never import this into shipped pages.
  */
 const real: Certification[] = [
@@ -13,6 +13,7 @@ const real: Certification[] = [
   { id: "hackerrank-problem-solving-basic", name: "Problem Solving (Basic)", issuer: "HackerRank", issued: "2021-02", credentialUrl: "https://example.com/credential/hackerrank", status: "earned" },
   { id: "associate-data-scientist-microcredential", name: "Microcredential: Associate Data Scientist", issuer: "IARC x APTIKOM", issued: "2021-12", status: "earned" },
   { id: "digital-talent-machine-learning", name: "Digital Talent Scholarship: Machine Learning (160 hours)", issuer: "Kominfo x IBM", issued: "2021-07", status: "earned" },
+  { id: "toefl-itp", name: "TOEFL ITP (score 547)", issuer: "ETS", issued: "2024", status: "expired" },
 ];
 
 type Row = [id: string, code: string, name: string, issuer: string, issued: string, status?: Certification["status"]];
@@ -38,7 +39,6 @@ const fictional: Row[] = [
   ["aif-c01", "AIF-C01", "AWS Certified AI Practitioner", "AWS", "2025-09"],
   ["mla-c01", "MLA-C01", "AWS Certified Machine Learning Engineer: Associate", "AWS", "2026-10", "in-progress"],
   ["gcp-ace", "ACE", "Google Cloud Associate Cloud Engineer", "Google Cloud", "2023-06", "expired"],
-  ["gcp-pmle", "PMLE", "Google Cloud Professional Machine Learning Engineer", "Google Cloud", "2025-12"],
   ["hackerrank-python-basic", "", "Python (Basic)", "HackerRank", "2021-03"],
 ];
 
@@ -58,5 +58,5 @@ export const CERT_FIXTURE: Certification[] = [
   })),
 ];
 
-/** `n` 7 is the live-like list; larger counts add fictional entries. */
+/** `n` 8 is the live-like list; larger counts add fictional entries. */
 export const certFixture = (n: number) => CERT_FIXTURE.slice(0, Math.max(0, Math.min(n, CERT_FIXTURE.length)));

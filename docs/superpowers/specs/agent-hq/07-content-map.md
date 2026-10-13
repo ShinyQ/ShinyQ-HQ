@@ -6,7 +6,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 
 ## 1. Positioning
 
-- **Headline:** Software Engineer and AI Engineer (revised 2026-10-11: no "(Azure)"; the owner has also shipped on VPS hosting and AWS, so cloud vendors stay in stacks and project details). Newest CV wording: "Software & AI Agent Specialist".
+- **Headline:** AI and Software Engineer (revised 2026-10-13 to the CV's order; revised 2026-10-11: no "(Azure)"; the owner has also shipped on VPS hosting and AWS, so cloud vendors stay in stacks and project details). Newest CV wording: "Software & AI Agent Specialist".
 - **Sub-headline:** "I build software and AI on Azure that survives contact with real users."
 - **Story arc:** from 2019 backend and full-stack work (e-commerce, payments, fintech, SaaS), through a digital bank, to designing and operating enterprise AI platforms on Azure in 2026, delivered with spec-driven, AI-agent-orchestrated engineering.
 
@@ -16,8 +16,8 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 |---|---|
 | Profile hologram | Name, headline, location (Jakarta, GMT+7), current role "Technical Consultant, Software & AI" (employer naming pending C2) |
 | Stats ring (6) | Shipping software since 2019 · 800+ PRs merged in 2026 · 7,350 GitHub contributions in the last 365 days (agent-assisted, human-reviewed) · 3 Microsoft certifications · 20 competition placings, 7 first places · 10× faster voice-agent interruption (controlled A/B) |
-| Skills wall | Software Engineering (Go, Node.js/Express, Spring Boot, Laravel, Python/FastAPI, Next.js/TypeScript, PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, Elasticsearch) · AI Engineering (Azure OpenAI incl. Realtime, Microsoft Agent Framework, Azure AI Foundry, RAG with AI Search, Document Intelligence, LLM evaluation) · Cloud and DevOps (Container Apps, App Service, Functions, Cosmos DB, Service Bus, Key Vault, Entra ID, Bicep, GitHub Actions, Docker, AWS) · Data (Microsoft Fabric, IndoBERT/NLP, forecasting) |
-| Certifications wall | AI-103 Azure AI Apps and Agents Developer Associate (Sep 2026) · AI-901 Azure AI Fundamentals (May 2026) · AZ-900 Azure Fundamentals (May 2026) · GH-600 (scheduled 12 Oct 2026, shown as "in progress") · HackerRank Problem Solving · Associate Data Scientist microcredential · Digital Talent ML (160 h). TOEFL (expired) is not shown. |
+| Skills wall | The CV's taxonomy (2026-10-13): AI and LLM (Microsoft Agent Framework, LangGraph, LangChain, Azure OpenAI incl. Realtime, RAG, Hybrid/Vector Search, Prompt Shields, LLM evaluation, Hugging Face) · Azure (AI Foundry, AI Search, Cosmos DB, Document Intelligence, Container Apps, App Service, Functions, Service Bus, Key Vault, Managed Identity, Microsoft Fabric, Monitor) · Languages (Python, TypeScript, JavaScript, Go, Java, PHP) · Backend (FastAPI, Spring Boot, Express.js, Gin, Echo, Laravel, Flask, Django) · Frontend (Next.js, React, Vue, Nuxt, Tailwind CSS) · Data and messaging (PostgreSQL, MySQL, MongoDB, Redis, Kafka, RabbitMQ, Elasticsearch) · DevOps (Docker, Bicep, GitHub Actions, Jenkins, AWS, LiveKit, k6, SonarQube, Sentry). The 3D wall shows Backend, AI and LLM, Azure and DevOps |
+| Certifications wall | AI-103 Azure AI Apps and Agents Developer Associate (Sep 2026) · AI-901 Azure AI Fundamentals (May 2026) · AZ-900 Azure Fundamentals (May 2026) · GH-600 (scheduled 12 Oct 2026, shown as "in progress") · HackerRank Problem Solving · Associate Data Scientist microcredential · Digital Talent ML (160 h) · TOEFL ITP, score 547 (2024, shown as expired, no credential link; added 2026-10-13 because the CV lists it). |
 
 ## 3. L2 Career Archive (2019 to 2026)
 
@@ -30,8 +30,8 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | 2021 | Internships (backend; backend and AI; IT developer) · Research: e-wallet aspect sentiment (CNN-LSTM), COVID-19 forecasting · Certification desk 2021 · Trophy case 2021 |
 | 2022 | Backend Engineer, MNC Asia Holding (links to pod) · Contract software engineer · Sentiboard thesis and IndoBERT model · Campus and community (AI lecturer assistant, hackathon judge) · Trophy case 2022 |
 | 2023 | Graduated BSc (GPA 3.88) · Full Stack Developer, Jatis (links to pod) · Freelance: vulnerability-scanning automation (links to pod) · Freelance: event-tech backend, Singapore (links to pod) |
-| 2024 | Software Engineer, Jenius / SMBC Indonesia (Jun 2024 to Dec 2025, links to pod) · Master of Management Technology (ITS) starts · Side projects: crypto tracker, S&P 500 optimizer |
-| 2025 | Freelance: premium event ticketing (links to pod) · Freelance: Serupa event ticketing platform (links to pod) · Freelance: event ticket marketplace backend (links to pod) · Freelance: digital products e-commerce · RAG-LLM thesis prototype · Portfolio v1 |
+| 2024 | Software Engineer, Jenius / SMBC Indonesia (Jun 2024 to Dec 2025, links to pod) · Side projects: crypto tracker, S&P 500 optimizer |
+| 2025 | Freelance: premium event ticketing (links to pod) · Freelance: Serupa event ticketing platform (links to pod) · Freelance: event ticket marketplace backend (links to pod) · Freelance: digital products e-commerce · Portfolio v1 |
 | 2026 | Technical Consultant, Software & AI (Feb 2026 to present, links to the Labs) · Certification desk 2026 · Hackathons: partner AI hackathon entry, Agentic AI hackathon (both "entry submitted", see C1) · Upcoming: regional Codex hackathon |
 
 **Workshop annex** (end of corridor): side projects (JagaRupa, CalorIQ, DevLens, AI Jury Council, certification trainers, Sentiboard, e-wallet sentiment, S&P 500 optimizer, crypto tracker, real-estate cluster map, alumni and counseling platforms, Pola.ai upcoming) and a wall of ~20 public repositories plus 3 Hugging Face models.
@@ -63,7 +63,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | hero | AI Fraud Document Review | False positives 90.9% to 36.4% on gold sets (offline); hybrid engine shipped in shadow mode |
 | featured | AI CV Screening, Made Reliable | ~45% LLM failure rate eliminated; first test suite and CI-gated evaluation |
 | featured | Bank Statement Analyzer PoC | ~20% faster pipeline, accuracy unchanged |
-| featured | Full-Stack AI App Accelerator | Baseline for 8 client repositories across 5 engagements |
+| featured | Full-Stack AI App Accelerator | Adopted across 10+ client projects (CV, 2026-10-13); byte-level lineage measured on 8 client repositories |
 | featured | Forecasting on Microsoft Fabric | 21 s stall diagnosed as capacity throttling, ~1 s after the fix |
 | featured | MII Microsoft AI Portfolio and Assistant: portfolio site, multi-agent RAG assistant, /dashboard Studio (live link, R4-J) | Prompt tokens -23%, model calls per turn 3 to 2 |
 | featured | Spec-Driven, Agent-Orchestrated Delivery | How the work is delivered: specs in, parallel agents, human review gates |
@@ -97,10 +97,11 @@ These override anything above that conflicts with them.
 | C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). |
 | C2 | Current role wording | "Technical Consultant, Software & AI" at "Metrodata (PT Mitra Integrasi Informatika)", Feb 2026 to present |
 | C3 | Client names | **Revised 2026-10-10:** client companies of the owner's employers are **never named** on the site (text, alt text, slugs, metadata, OG cards, JSON-LD, search, room views, 3D labels); use sector labels ("a national digital bank", "an automotive manufacturer", "a national bakery brand", "a coal mining group", "a regional lender", "an insurer"). Employers stay named (Jenius (SMBC Indonesia) only for the 2024 to 2025 job). **Product names are allowed**, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck as Deck Studio inside MII Cowork, MII AI Ticketing, MII AI Dashboard Template); client products (ATLAS, FREDDY) keep a sector label. The owner's CV PDF is used as-is. Supersedes the earlier "Allowed" decision. |
-| C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 6, 2026), with no confidence label on the site (revised 2026-10-11: the owner removed every Verified / Self-reported / Strongly inferred label and the "Self-reported in my CV" notes; `confidence` stays in the dataset for internal review only). No money amounts. |
+| C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 13, 2026), with no confidence label on the site (revised 2026-10-11: the owner removed every Verified / Self-reported / Strongly inferred label and the "Self-reported in my CV" notes; `confidence` stays in the dataset for internal review only). No money amounts. |
 | C5 | Photo | **No photo.** Use the "KAW" monogram hologram in the world and on the contact card. |
 | C6 | Jenius | "Software Engineer", Jun 2024 to Dec 2025 |
 | C7 | Master's degree | **Do not show** (remove the 2024 education room, the MSc thesis publication and the RAG-LLM thesis prototype room) |
 | C8 | Freelance clients | **Named** (e.g. TEMMPAT, DariOrdal, Serupa, Jublia, BSSN, Shumi), unless they are also clients of an employer (then C3 applies) |
 | C9 | JagaRupa | Personal side project, **shown** in the Workshop annex (not as an employer project; no hackathon result) |
 | C10 | Gallery exclusions | **Revised 2026-10-13:** SITA (`mining-coa-assistant`) and FREDDY (`automotive-fraud-dashboard`) stay text only, no screenshots (owner, 2026-10-11). The vendor portal (eVendor) is no longer excluded: it is Metrodata's own portal and may show a gallery from the live app with vendor and people names, emails, phone numbers, money and amounts, tax IDs, bank accounts, document numbers, Azure hostnames and tenant names blurred. |
+| C11 | CV refresh (2026-10-13) | The new CV is the source of truth for CV-derived facts (dates, numbers, roles, skills, education, headline order, certifications); every site fact that differed was updated and listed in the round 5 P5 PR. Facts with stronger evidence that the CV does not contradict stay (TEMMPAT stack from the repository, official credential names, the measured 541 reviewed PRs). `tests/content/cv-facts.test.ts` pairs CV markers with site values |

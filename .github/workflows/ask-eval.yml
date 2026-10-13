@@ -1,7 +1,7 @@
 name: Ask the HQ eval
 
 # Nightly real-model checks of Ask the HQ (spec section 9): the golden set must score at least
-# 36/38, at least 90% of the curated pill questions (content/ask/suggestions.json, EN and ID) must get
+# 39/41, at least 90% of the curated pill questions (content/ask/suggestions.json, EN and ID) must get
 # a real answer, and every red-team attack must end safely. A red-team failure opens or updates one issue
 # labelled ask-redteam. Skips (green, with a notice) until the CF_EVAL_TOKEN secret exists
 # (Workers AI Read, AI Gateway Read, Account Analytics Read; docs/ask-runbook.md).
