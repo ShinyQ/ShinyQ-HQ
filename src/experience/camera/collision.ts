@@ -17,21 +17,38 @@ export const CAMERA_CLEARANCE = {
   radius: 0.35,
 } as const;
 
+/** A column taller than `CAMERA_CLEARANCE.obstacle` (for example the L3 directory wall), blocking up to `h` above the floor. */
+export interface TallObstacle extends Rect {
+  h: number;
+}
+
 export interface CameraWorld {
   obstacles: readonly Rect[];
   bounds: Rect;
   floorY: number;
+  /** Columns that block the camera up to their own height. */
+  tall?: readonly TallObstacle[];
 }
+
+/** Height (above the floor) up to which anything in `w` can block the camera. */
+function blockHeight(w: CameraWorld): number {
+  let h: number = CAMERA_CLEARANCE.obstacle;
+  for (const t of w.tall ?? []) h = Math.max(h, t.h);
+  return h;
+}
+
+const inside = (x: number, z: number, o: Rect, r: number) => x > o.minX - r && x < o.maxX + r && z > o.minZ - r && z < o.maxZ + r;
 
 export function cameraBlocked(p: Vec3, w: CameraWorld): boolean {
   const h = p[1] - w.floorY;
   if (h < CAMERA_CLEARANCE.ground) return true;
-  if (h >= CAMERA_CLEARANCE.obstacle) return false;
   const [x, , z] = p;
+  const r = CAMERA_CLEARANCE.radius;
+  if (w.tall?.some((t) => h < t.h && inside(x, z, t, r))) return true;
+  if (h >= CAMERA_CLEARANCE.obstacle) return false;
   const b = w.bounds;
   if (h < CAMERA_CLEARANCE.edge && (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ)) return true;
-  const r = CAMERA_CLEARANCE.radius;
-  return w.obstacles.some((o) => x > o.minX - r && x < o.maxX + r && z > o.minZ - r && z < o.maxZ + r);
+  return w.obstacles.some((o) => inside(x, z, o, r));
 }
 
 const STEPS = 32;
@@ -55,7 +72,7 @@ function startParam(target: Vec3, camera: Vec3, from: Vec3): number {
  * enough, when nothing blocks the ray, or when the ray already starts blocked.
  */
 export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target): Vec3 {
-  if (camera[1] - w.floorY >= CAMERA_CLEARANCE.obstacle) return camera;
+  if (camera[1] - w.floorY >= blockHeight(w)) return camera;
   const t0 = startParam(target, camera, from);
   if (cameraBlocked(lerp3(target, camera, t0), w)) return camera;
   let free = t0;

@@ -45,6 +45,17 @@ describe("camera collision", () => {
     expect(clampCamera([6, 1, 0], cam, world)).toBe(cam);
   });
 
+  it("blocks a low camera behind a tall wall up to the wall's height", () => {
+    const tall: CameraWorld = { ...world, tall: [{ minX: -12, maxX: -11, minZ: -4, maxZ: 4, h: 9.5 }] };
+    expect(cameraBlocked([-11.5, 6, 0], tall)).toBe(true);
+    expect(cameraBlocked([-11.5, 9.6, 0], tall)).toBe(false);
+    const out = clampCamera([-2, 1, 0], [-18, 6, 0], tall, [0, 1, 0]);
+    expect(out[0]).toBeGreaterThan(-11 + CAMERA_CLEARANCE.radius - 0.2);
+    expect(cameraBlocked(out, tall)).toBe(false);
+    const high: Vec3 = [-18, 12, 0];
+    expect(clampCamera([-2, 1, 0], high, tall)).toBe(high);
+  });
+
   it("leaves the default follow and L2 cameras alone on every floor", () => {
     const layouts = buildFloorLayouts(8);
     for (const layout of Object.values(layouts)) {
