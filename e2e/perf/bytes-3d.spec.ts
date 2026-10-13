@@ -54,7 +54,9 @@ for (const tier of ["lite", "full"] as const) {
   test(`3D JS after the gate stays under ${BYTES_3D_BUDGET.failAt / 1024} KB gzip (${tier})`, async ({ browser }) => {
     const pageView = await browser.newContext();
     const pv = await pageView.newPage();
-    const pageViewTransfers = await recordTransfers(pv, () => openPage(pv, "/en?tier=static"));
+    // Longer quiet window: the Page View loads some chunks on idle (Ask status, HUD index), which a starved
+    // CPU can delay past 3 s; any it missed would count as 3D bytes.
+    const pageViewTransfers = await recordTransfers(pv, () => openPage(pv, "/en?tier=static"), 6000);
     await pageView.close();
 
     const context = await browser.newContext();
