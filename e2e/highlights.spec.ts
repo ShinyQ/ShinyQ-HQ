@@ -297,10 +297,9 @@ test.describe("Highlights Hall", () => {
     const response = await (await request).response();
     expect(response?.status()).toBe(200);
     await waitForCameraSettle(page);
-    await expectRenderBudget(page);
-    const { drawCalls, triangles } = await snapshot(page);
-    console.log(`L1 lite at the About me station: ${drawCalls} calls, ${triangles} triangles`);
-    expect(drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+    const peaks = await expectRenderBudget(page);
+    console.log(`L1 lite at the About me station: ${peaks.sceneCalls} scene calls + ${peaks.postCalls} post passes, ${peaks.triangles} triangles`);
+    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
