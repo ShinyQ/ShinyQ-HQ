@@ -3,7 +3,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ACESFilmicToneMapping, type Material, type Scene as ThreeScene, type WebGLRenderer } from "three";
 import { useTranslations } from "next-intl";
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { withView } from "@/hud/drawer/urlSync";
@@ -33,6 +33,10 @@ import { renderStats, resetPeaks } from "./perf/renderStats";
 import { perfOverlayOn } from "./perf/lines";
 import { usePerfMarks } from "./perf/usePerfMarks";
 import { decideRum, rumPath } from "./perf/rumDecision";
+// Static on purpose: a dynamic import inside the 3D chunk makes Turbopack regroup shared modules into the
+// Page View bundle (+7 KB on /en). They only mount with `?perf=1` or in a sampled RUM session.
+import PerfOverlay, { PerfProbe } from "./perf/PerfOverlay";
+import RumProbe from "./perf/RumProbe";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
@@ -52,11 +56,6 @@ import { sceneProbes } from "./fx/probes";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
-// `?perf=1` only: without the flag nothing of the overlay is downloaded or run.
-const PerfOverlay = lazy(() => import("./perf/PerfOverlay"));
-const PerfProbe = lazy(() => import("./perf/PerfOverlay").then((m) => ({ default: m.PerfProbe })));
-// Sampled sessions only (25%, decided once per browser session): unsampled sessions never download the probe.
-const RumProbe = lazy(() => import("./perf/RumProbe"));
 
 function readDevice() {
   const w = window.innerWidth;
@@ -453,16 +452,8 @@ export default function Experience({
             <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
             <FirstFrame onFrame={onFirstFrame} />
             <FrameLoop />
-            {perf && (
-              <Suspense fallback={null}>
-                <PerfProbe />
-              </Suspense>
-            )}
-            {rum && (
-              <Suspense fallback={null}>
-                <RumProbe tier={tier === "full" ? "full" : "lite"} path={rum} />
-              </Suspense>
-            )}
+            {perf && <PerfProbe />}
+            {rum && <RumProbe tier={tier === "full" ? "full" : "lite"} path={rum} />}
           </Canvas>
         </CanvasBoundary>
       </div>
@@ -470,11 +461,7 @@ export default function Experience({
         {t("canvasDescription")}
       </p>
       <Hud data={data} onExit={onExit} onToggleLang={toggleLang} />
-      {perf && (
-        <Suspense fallback={null}>
-          <PerfOverlay />
-        </Suspense>
-      )}
+      {perf && <PerfOverlay />}
     </div>
   );
 }

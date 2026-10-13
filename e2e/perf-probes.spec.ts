@@ -71,7 +71,7 @@ test("a sampled session sends one coarse beacon when the page is left", async ({
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
-  // The probe is a lazy chunk: keep leaving until it is mounted and has sent.
+  // Keep leaving until the probe has mounted and sent.
   await expect
     .poll(
       async () => {
