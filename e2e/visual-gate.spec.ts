@@ -85,6 +85,8 @@ async function open(browser: Browser, device: Device, pose: Pose) {
   } else {
     await asReturningVisitor(page);
   }
+  // The Ask teaser runs on real-time timers: it must never decide what a capture shows.
+  await page.addInitScript(() => sessionStorage.setItem("hq:ask-teaser", "1"));
   await page.goto(`${pose.path}?tier=${device.tier}`);
   return { context, page };
 }

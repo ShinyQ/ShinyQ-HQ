@@ -7,7 +7,7 @@
  *   --head     ref to compare (default: the working tree, built here unless --no-build)
  *   --self     compares the base with itself (noise floor of the harness)
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const args = process.argv.slice(2);
@@ -67,11 +67,14 @@ async function serve(dir: string) {
 
 function capture(label: string, update: boolean) {
   const cmd = ["bunx", "playwright", "test", "e2e/visual-gate.spec.ts", "--workers=1", "--reporter=list"];
-  if (update) cmd.push("--update-snapshots");
+  // "all": the default ("changed") keeps an older baseline that differs only within the threshold.
+  if (update) cmd.push("--update-snapshots=all");
   if (grep) cmd.push("-g", grep);
   return run(cmd, root, { VISUAL_GATE: "1", VISUAL_GATE_PROFILE: profile, VISUAL_GATE_LABEL: label, E2E_PORT: String(PORT), CI: "" });
 }
 
+// Baselines always come from this run's base build.
+if (!grep) rmSync(path.join(root, "e2e", "visual-gate.spec.ts-snapshots"), { recursive: true, force: true });
 const baseServer = await serve(baseBuild.out);
 const updated = capture("base", true);
 baseServer.kill();
