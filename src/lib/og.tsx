@@ -70,17 +70,20 @@ function loadFonts() {
 const FILL = { position: "absolute", left: 0, top: 0, width: W, height: H, display: "flex" } as const;
 
 /** How far the floor still moves right behind side-text layouts, so the scene sits beside the text. */
-const STILL_SHIFT = { home: 300, page: 160, project: 160, post: 0 } as const;
+const STILL_SHIFT = { home: 300, page: 160, project: 300, post: 0 } as const;
 
 function backdrop(card: OgCard, still: string, accent: string) {
   const fromBelow = card.layout === "post";
-  // A project without a screenshot runs its text across the card, so the scrim reaches further.
-  const wideText = card.layout === "project" && !card.shot;
+  // Project cards sit on the L3 still, whose wing boards and floor names are text: the scrim keeps the
+  // text column near opaque (up to the screenshot frame at x 676, or across the card without one).
+  const project = card.layout === "project";
   const scrim = fromBelow
     ? "linear-gradient(0deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.88) 45%, rgba(5,5,12,0.35) 100%)"
-    : wideText
-      ? "linear-gradient(90deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.94) 55%, rgba(5,5,12,0.7) 78%, rgba(5,5,12,0.3) 100%)"
-      : "linear-gradient(90deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.9) 40%, rgba(5,5,12,0.5) 64%, rgba(5,5,12,0.12) 100%)";
+    : project && !card.shot
+      ? "linear-gradient(90deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.95) 72%, rgba(5,5,12,0.8) 88%, rgba(5,5,12,0.55) 100%)"
+      : project
+        ? "linear-gradient(90deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.95) 50%, rgba(5,5,12,0.75) 58%, rgba(5,5,12,0.3) 100%)"
+        : "linear-gradient(90deg, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.9) 40%, rgba(5,5,12,0.5) 64%, rgba(5,5,12,0.12) 100%)";
   return (
     <div style={FILL}>
       <img alt="" src={still} width={W} height={H} style={{ position: "absolute", left: STILL_SHIFT[card.layout], top: 0, width: W, height: H, objectFit: "cover" }} />
