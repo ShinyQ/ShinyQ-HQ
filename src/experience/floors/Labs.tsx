@@ -11,6 +11,7 @@ import { buildLabsLayout, LABS } from "./labs/layout";
 import { PacketLanes } from "./labs/PacketLanes";
 import { Pods } from "./labs/Pods";
 import { Reactor, Waterfalls } from "./labs/ReactorCore";
+import { ReactorHighlights } from "./labs/ReactorHighlights";
 
 export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count"> & {
   /** Tech Reactor ring names (`labs.reactor.rings`). */
@@ -24,6 +25,7 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
   const layout = useMemo(() => buildLabsLayout(data.labs.pods), [data.labs.pods]);
   // Stable labels: the wall's BatchedText re-packs whenever its label list changes.
   const hubLabels = useMemo(() => ({ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }), [data.labs.wings, labels]);
+  const reactorLabels = useMemo(() => ({ rings: labels.rings, uses: labels.uses }), [labels]);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const t = tier === "full" ? "full" : "lite";
   return (
@@ -35,7 +37,8 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
       <Pods placed={layout.placed} tier={t} />
-      <Reactor center={layout.reactor.center} />
+      <Reactor center={layout.reactor.center} labels={reactorLabels} />
+      <ReactorHighlights layout={layout} />
       <Waterfalls bounds={layout.floor.bounds} />
       <Suspense fallback={null}>
         <HologramStage placed={layout.placed} locale={data.locale} tier={t} />

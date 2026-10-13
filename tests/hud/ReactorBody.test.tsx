@@ -74,7 +74,7 @@ describe("Tech Reactor drawer", () => {
     expect(getHQStore().getState().reactor.ring).toBe("azure");
     const top = azure.techs[0];
     await userEvent.click(within(within(drawer).getByTestId("reactor-techs")).getAllByRole("button")[0]);
-    expect(getHQStore().getState().reactor.tech).toEqual({ slug: top.slug, name: top.name, count: top.pods.length, pods: top.pods });
+    expect(getHQStore().getState().reactor.tech).toEqual({ slug: top.slug, name: top.name, ring: "azure", count: top.pods.length, pods: top.pods });
     expect(within(drawer).getByTestId("reactor-uses")).toHaveTextContent(`${top.pods.length} projects use ${top.name}`);
     const projects = within(drawer).getAllByTestId("reactor-project");
     expect(projects.map((b) => b.dataset.pod)).toEqual(top.pods);

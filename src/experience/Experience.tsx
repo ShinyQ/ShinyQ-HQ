@@ -6,6 +6,9 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
+import { loadRoomViews } from "@/hud/drawer/data";
+import { createReactorHashSync } from "./floors/labs/reactorUrl";
+import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
@@ -326,7 +329,8 @@ export default function Experience({
       // A deep link keeps its URL through the boot and the intro; the continuation rewrites it on arrival.
       if ((s.phase === "boot" || s.phase === "intro") && isContinuing()) return;
       const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
-      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor ? s.activeRoom : null;
+      // The Tech Reactor has no route of its own (it keeps /labs and its hash).
+      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM ? s.activeRoom : null;
       const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });
       const url = withView(path, window.location.search, room && s.phase === "hologram" ? "architecture" : null);
       if (`${window.location.pathname}${window.location.search}` !== url) window.history.replaceState(window.history.state, "", url);
@@ -338,13 +342,23 @@ export default function Experience({
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts and the L1 Highlights Hall stations keep the floor URL.
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts, the L1 Highlights Hall stations and the L3 Tech Reactor keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
-    return (room: RoomId) => !isHighlightRoom(room) && (!room.startsWith("L4:") || hosted.has(room));
+    // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync).
+    return (room: RoomId) => !isHighlightRoom(room) && room !== REACTOR_ROOM && (!room.startsWith("L4:") || hosted.has(room));
   }, [data.library.posts]);
   useRoomUrlSync(data.locale, hasPage);
+  // Tech Reactor pick in the hash (`#labs-tech=<slug>`), after the floor and room URL writes above.
+  useEffect(
+    () =>
+      createReactorHashSync({
+        store: getHQStore(),
+        env: { history: window.history, location: window.location, load: () => loadRoomViews(data.locale).then((views) => views[REACTOR_ROOM]?.reactor) },
+      }),
+    [data.locale],
+  );
 
   const labels: SceneLabels = useMemo(
     () => ({

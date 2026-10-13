@@ -95,7 +95,7 @@ export function ReactorBody({ view }: RoomBodyProps) {
                 <button
                   type="button"
                   aria-pressed={on}
-                  onClick={() => (on ? store().clearReactorTech() : store().selectReactorTech({ slug: tech.slug, name: tech.name, count: tech.pods.length, pods: tech.pods }, ring.id))}
+                  onClick={() => (on ? store().clearReactorTech() : store().selectReactorTech({ slug: tech.slug, name: tech.name, ring: ring.id, count: tech.pods.length, pods: tech.pods }))}
                   className="glass glass-solid hq-glow flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-ink"
                   data-tech={tech.slug}
                 >

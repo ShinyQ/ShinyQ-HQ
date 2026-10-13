@@ -1,9 +1,13 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
-import { CylinderGeometry, Object3D, PlaneGeometry, RingGeometry, type InstancedMesh } from "three";
-import { useHQStore } from "@/store/useHQStore";
+import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Color, CylinderGeometry, Object3D, PlaneGeometry, RingGeometry, type InstancedMesh } from "three";
+import type { ReactorRingId } from "@/content/tech-rings";
+import { getHQStore, useHQStore, type ReactorTech } from "@/store/useHQStore";
+import { FloatingSigns } from "../../fx/FloatingSign";
+import { signPlate, wrapSign, type SignSpec } from "../../fx/signLayout";
+import { FONTS } from "../../tower/primitives";
 import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
 import { HoloMesh } from "../../fx/HoloMesh";
 import { neonColor } from "../../fx/materials";
@@ -13,21 +17,54 @@ import { useUniformTime } from "../../fx/useUniformTime";
 import type { Rect, Vec2 } from "../../types";
 import { WING_TINT } from "./layout";
 import { REACTOR, reactorSpin, waterfallPanels, WATERFALL } from "./reactor";
+import { COUNT_SIGN_Y, SURPRISE_SPIN, TECH_RINGS } from "./techReactor";
 
 const NO_RAYCAST = () => null;
 const CORE_COLOR = "#67e8f9";
 /** The floor ring around the core's base (one more instance of the orbit ring mesh). */
 const BASE_RING = { r: 2.4, y: 0.06 } as const;
+/** Ring label type size and the gap between a ring and its label plate. */
+const LABEL = { font: 0.5, gap: 0.4 } as const;
+const COUNT_FONT = 0.7;
+/** Ring brightness: selected ring, other rings while a tech is picked, every ring otherwise. */
+const RING_LEVEL = { on: 2.2, off: 0.45, idle: 1 } as const;
+
+export interface ReactorLabels {
+  rings: Record<ReactorRingId, string>;
+  uses: (count: number, tech: string) => string;
+}
 
 /**
- * L3 "Reactor core" in the east plaza (spectacle round): a glowing column with bands rising through it
- * and orbit rings above the rover, in two draw calls (the column, and every ring plus the floor ring in
- * one instanced mesh). The packet-lane spine runs into its west face. Lite shows fewer rings; reduced
- * motion stops the spin and the flow. Both use the shared holo shader (`fx/holoFx.ts`).
+ * Ring labels beside their rings, alternating north and south of the column so they never cover the
+ * core from the wing roads or the reactor stop (both look along x), plus "N projects use X" above
+ * the core while a tech is picked. One `FloatingSigns` group: two draw calls.
  */
-export function Reactor({ center }: { center: Vec2 }) {
+export function reactorSigns(labels: ReactorLabels, tech: ReactorTech | null): SignSpec[] {
+  const signs: SignSpec[] = TECH_RINGS.map((ring, i) => {
+    const text = labels.rings[ring.id].toUpperCase();
+    const { w } = signPlate({ text, fontSize: LABEL.font });
+    const side = i % 2 === 0 ? -1 : 1;
+    return { text, x: 0, y: ring.y, z: side * (ring.r + LABEL.gap + w / 2), color: ring.color, fontSize: LABEL.font, font: FONTS.monoBold };
+  });
+  if (tech) {
+    const ring = TECH_RINGS.find((r) => r.id === tech.ring);
+    signs.push({ text: wrapSign(labels.uses(tech.count, tech.name), 28), x: 0, y: COUNT_SIGN_Y, z: 0, color: ring?.color ?? CORE_COLOR, fontSize: COUNT_FONT, font: FONTS.monoBold });
+  }
+  return signs;
+}
+
+/**
+ * L3 Tech Reactor core in the east plaza (design 2026-10-14, section 2; the spectacle round's core): a
+ * glowing column with six tech rings orbiting it (DevOps at the bottom up to AI at the top) and a floor
+ * ring, in two draw calls (the column, and every ring in one instanced mesh), plus the ring labels and
+ * the count sign (two more). The rings are point-and-go targets (`L3:station:reactor-<ring>`); while a
+ * tech is picked its ring burns bright and the others dim. Surprise me spins the rings fast for a moment.
+ * Lite drops the floor ring; reduced motion stops every spin and flow. Shared holo shader (`fx/holoFx.ts`).
+ */
+export function Reactor({ center, labels }: { center: Vec2; labels: ReactorLabels }) {
   const tier = useHQStore((s) => s.tier);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
+  const tech = useHQStore((s) => s.reactor.tech);
   const full = tier === "full";
   const column = useMemo(() => new CylinderGeometry(REACTOR.radius * 0.8, REACTOR.radius, REACTOR.height, 32, 1, true), []);
   useDispose(column);
@@ -40,21 +77,41 @@ export function Reactor({ center }: { center: Vec2 }) {
   const materials = useMemo(() => [coreMat, ringMat], [coreMat, ringMat]);
   useUniformTime(materials);
 
-  const rings = useMemo(() => REACTOR.rings.slice(0, full ? REACTOR.rings.length : REACTOR.liteRings), [full]);
-  const count = rings.length + 1;
+  // Lite keeps all six rings (they are the selectors) and drops the floor ring.
+  const count = TECH_RINGS.length + (full ? 1 : 0);
   const mesh = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
   const angle = useRef(0);
+  const burst = useRef({ until: 0, seen: getHQStore().getState().reactor.spin });
   // Instance colors exist from creation, so the floor's precompile builds the instanced-color program.
   const colors = useMemo(
-    () => new Float32Array([...rings.flatMap((_, i) => neonColor(i % 2 ? WING_TINT.ai : WING_TINT.software, 1, "lite").toArray()), ...neonColor(CORE_COLOR, 1, "lite").toArray()]),
-    [rings],
+    () => new Float32Array([...TECH_RINGS.flatMap((r) => new Color(r.color).toArray()), ...(full ? new Color(CORE_COLOR).toArray() : [])]),
+    [full],
   );
-  useFrame((_, dt) => {
+  // Brightness per ring for the current pick (applied without remounting the mesh).
+  useEffect(() => {
+    const m = mesh.current;
+    if (!m?.instanceColor) return;
+    const c = new Color();
+    TECH_RINGS.forEach((r, i) => {
+      const level = !tech ? RING_LEVEL.idle : r.id === tech.ring ? RING_LEVEL.on : RING_LEVEL.off;
+      m.setColorAt(i, c.set(r.color).multiplyScalar(level));
+    });
+    m.instanceColor.needsUpdate = true;
+  }, [tech, count]);
+
+  useFrame(({ clock }, dt) => {
     const m = mesh.current;
     if (!m) return;
-    angle.current += reactorSpin(reducedMotion) * Math.min(dt, 0.1);
-    rings.forEach((ring, i) => {
+    const b = burst.current;
+    const spin = getHQStore().getState().reactor.spin;
+    if (spin !== b.seen) {
+      b.seen = spin;
+      b.until = clock.elapsedTime + SURPRISE_SPIN.ms / 1000;
+    }
+    const boost = clock.elapsedTime < b.until ? SURPRISE_SPIN.boost : 1;
+    angle.current += reactorSpin(reducedMotion) * boost * Math.min(dt, 0.1);
+    TECH_RINGS.forEach((ring, i) => {
       dummy.position.set(0, ring.y, 0);
       // Lie flat (ring geometry faces +z), tilt, then spin about the column; alternate directions.
       dummy.rotation.set(-Math.PI / 2 + ring.tilt, (i % 2 ? -1 : 1) * angle.current, 0, "YXZ");
@@ -62,14 +119,17 @@ export function Reactor({ center }: { center: Vec2 }) {
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
     });
-    dummy.position.set(0, BASE_RING.y, 0);
-    dummy.rotation.set(-Math.PI / 2, angle.current * 0.5, 0, "YXZ");
-    dummy.scale.setScalar(BASE_RING.r);
-    dummy.updateMatrix();
-    m.setMatrixAt(rings.length, dummy.matrix);
+    if (full) {
+      dummy.position.set(0, BASE_RING.y, 0);
+      dummy.rotation.set(-Math.PI / 2, angle.current * 0.5, 0, "YXZ");
+      dummy.scale.setScalar(BASE_RING.r);
+      dummy.updateMatrix();
+      m.setMatrixAt(TECH_RINGS.length, dummy.matrix);
+    }
     m.instanceMatrix.needsUpdate = true;
     sceneProbes.spectacle["reactor.spin"] = angle.current;
     sceneProbes.spectacle["reactor.time"] = coreMat.uniforms.uTime.value;
+    sceneProbes.reactor.boost = boost;
   });
   useEffect(
     () => () => {
@@ -78,6 +138,7 @@ export function Reactor({ center }: { center: Vec2 }) {
     },
     [],
   );
+  const signs = useMemo(() => reactorSigns(labels, tech), [labels, tech]);
 
   return (
     <group name="labs-reactor" position={[center.x, 0, center.z]}>
@@ -85,6 +146,9 @@ export function Reactor({ center }: { center: Vec2 }) {
       <instancedMesh key={count} ref={mesh} args={[ringGeo, ringMat, count]} frustumCulled={false} raycast={NO_RAYCAST}>
         <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
       </instancedMesh>
+      <Suspense fallback={null}>
+        <FloatingSigns signs={signs} name="labs-reactor-signs" tier={tier} />
+      </Suspense>
     </group>
   );
 }

@@ -1,4 +1,6 @@
-import type { Accent, RoomId } from "@/content/schema";
+import type { Accent } from "@/content/schema";
+import type { RoomReactor } from "@/content/room-views/types";
+import type { ReactorTech } from "@/store/useHQStore";
 import type { ReactorRingId } from "@/content/tech-rings";
 import type { Vec2 } from "../../types";
 import type { LabsLayout, PlacedPod } from "./layout";
@@ -10,7 +12,7 @@ import { REACTOR } from "./reactor";
  * click opens the "Tech Reactor" drawer on that ring, a tech pick lights the pods that use it and the
  * roads to them. Pure (no React or three): Vitest runs it in node.
  */
-export const REACTOR_ROOM: RoomId = "L3:reactor";
+export { REACTOR_ROOM, TECH_HASH, techFromHash, techHash } from "./techHash";
 
 export interface TechRing {
   id: ReactorRingId;
@@ -115,20 +117,13 @@ export function podAt(placed: readonly PlacedPod[], at: Vec2): string | null {
   return null;
 }
 
-/** Deep link: `#labs-tech=<slug>` on the L3 floor URL. */
-export const TECH_HASH = "labs-tech";
-const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-export function techFromHash(hash: string): string | null {
-  const raw = hash.replace(/^#/, "");
-  const prefix = `${TECH_HASH}=`;
-  if (!raw.startsWith(prefix)) return null;
-  const slug = decodeURIComponent(raw.slice(prefix.length));
-  return SLUG.test(slug) ? slug : null;
-}
-
-export function techHash(slug: string | null): string {
-  return slug ? `#${TECH_HASH}=${slug}` : "";
+/** The drawer's tech entry for a slug, as the store's pick (deep link, Cmd-K); null when unknown. */
+export function techFromView(reactor: RoomReactor | undefined, slug: string): ReactorTech | null {
+  for (const ring of reactor?.rings ?? []) {
+    const tech = ring.techs.find((t) => t.slug === slug);
+    if (tech) return { slug: tech.slug, name: tech.name, ring: ring.id, count: tech.pods.length, pods: tech.pods };
+  }
+  return null;
 }
 
 const round = (v: number) => Math.round(v * 1e6) / 1e6;

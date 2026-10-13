@@ -13,8 +13,10 @@ import {
   surprisePod,
   TECH_RINGS,
   techFromHash,
+  techFromView,
   techHash,
 } from "@/experience/floors/labs/techReactor";
+import { buildRoomViews } from "@/content/room-views";
 import { onNetwork } from "@/experience/nav/road";
 import { distanceToRect } from "@/experience/nav/collision";
 
@@ -103,5 +105,15 @@ describe("tech reactor model", () => {
     expect(techFromHash("#highlights-about")).toBeNull();
     expect(techFromHash("#labs-tech=Bad Slug!")).toBeNull();
     expect(techFromHash("")).toBeNull();
+    expect(techFromHash("#labs-tech=%E0%A4%A")).toBeNull();
+  });
+
+  it("resolves a slug to the store's pick from the drawer view", () => {
+    const reactor = buildRoomViews("en")["L3:reactor"].reactor;
+    const tech = techFromView(reactor, "azure-openai")!;
+    expect(tech).toMatchObject({ slug: "azure-openai", name: "Azure OpenAI", ring: "ai" });
+    expect(tech.count).toBe(tech.pods.length);
+    expect(techFromView(reactor, "nope")).toBeNull();
+    expect(techFromView(undefined, "azure-openai")).toBeNull();
   });
 });

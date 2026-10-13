@@ -15,6 +15,8 @@ export const sceneProbes = {
   signs: {} as Record<string, { text: string; facing: number }[]>,
   /** Spectacle effects (L2 horizon, L3 reactor and waterfalls): their shader clock and the reactor ring angle; frozen under reduced motion. */
   spectacle: {} as Record<string, number>,
+  /** L3 Tech Reactor: the picked tech, its lit (docked) pods, glowing road segments, the last Surprise me target and the ring spin boost. */
+  reactor: { tech: null as string | null, lit: [] as string[], roads: 0, surprise: null as string | null, boost: 1 },
   /** Texts drawn flat on a floor right now (spectacle round: there should be none, `flatTexts`). */
   flatText: (): string[] => (renderProbe.scene ? flatTexts(renderProbe.scene) : []),
   hallGate: { sweeps: 0, active: false },

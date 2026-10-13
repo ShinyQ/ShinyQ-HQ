@@ -53,6 +53,7 @@ export type ElevatorTarget = "up" | "down" | FloorId;
 export interface ReactorTech {
   slug: string;
   name: string;
+  ring: ReactorRingId;
   /** Projects using it (docked and listed). */
   count: number;
   pods: string[];
@@ -143,8 +144,8 @@ export interface HQState {
   setHover: (hover: HoverState | null) => void;
   setPointHint: (on: boolean) => void;
   setReactorRing: (ring: ReactorRingId) => void;
-  /** Selects a tech, optionally switching the drawer to its ring. */
-  selectReactorTech: (tech: ReactorTech, ring?: ReactorRingId) => void;
+  /** Selects a tech and switches the drawer to its ring. */
+  selectReactorTech: (tech: ReactorTech) => void;
   clearReactorTech: () => void;
   spinReactor: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
@@ -290,7 +291,7 @@ export function createHQStore(storage?: StateStorage) {
         setReactorRing: (ring) => {
           if (get().reactor.ring !== ring) set({ reactor: { ...get().reactor, ring } });
         },
-        selectReactorTech: (tech, ring) => set({ reactor: { ...get().reactor, tech, ring: ring ?? get().reactor.ring } }),
+        selectReactorTech: (tech) => set({ reactor: { ...get().reactor, tech, ring: tech.ring } }),
         clearReactorTech: () => {
           if (get().reactor.tech) set({ reactor: { ...get().reactor, tech: null } });
         },

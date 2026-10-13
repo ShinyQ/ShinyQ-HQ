@@ -248,14 +248,14 @@ describe("HQ store", () => {
 });
 
 describe("Tech Reactor slice", () => {
-  const azure = { slug: "azure-openai", name: "Azure OpenAI", count: 2, pods: ["a", "b"] };
+  const azure = { slug: "azure-openai", name: "Azure OpenAI", ring: "azure" as const, count: 2, pods: ["a", "b"] };
 
   it("starts on the AI ring with nothing selected", () => {
     expect(store.getState().reactor).toEqual({ ring: "ai", tech: null, spin: 0 });
   });
 
   it("selects a tech (switching the ring) and clears it", () => {
-    store.getState().selectReactorTech(azure, "azure");
+    store.getState().selectReactorTech(azure);
     expect(store.getState().reactor).toMatchObject({ ring: "azure", tech: azure });
     store.getState().setReactorRing("data");
     expect(store.getState().reactor).toMatchObject({ ring: "data", tech: azure });
