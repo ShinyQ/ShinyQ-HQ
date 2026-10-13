@@ -125,7 +125,7 @@ Owner decisions of 2026-10-09 (see appendix 07, section 7):
 
 ### 3.3 Content model
 
-One file, `content/site-content.json` (all user-facing text localized as `{ en, id }`), validated at build time by zod schemas in `src/content/schema.ts`. Top-level shape:
+One file, `content/site-content.json` (all user-facing text localized as `{ en, id }`), validated at build time by zod schemas in `src/content/schema.ts` (enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk). Top-level shape:
 
 ```ts
 {
@@ -158,7 +158,7 @@ All nine owner decisions were resolved on 2026-10-09 and are recorded in [append
 | 3D | three.js via React Three Fiber, `@react-three/drei`, `@react-three/postprocessing` (bloom, desktop only) |
 | State | zustand store |
 | Styling | Tailwind CSS for the HUD and all HTML pages |
-| Content | JSON plus MDX, zod validation at build time |
+| Content | JSON plus MDX, zod validation at build time (enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk) |
 | i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
 | Audio | Web Audio API wrapper, lazy-loaded, on by default (owner decision; starts on the first gesture) |
 | Analytics | Cloudflare Web Analytics (cookieless) |

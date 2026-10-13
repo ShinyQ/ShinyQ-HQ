@@ -1,4 +1,5 @@
-import { LOCALES, type FloorId, type Locale, type RoomId } from "@/content/schema";
+import { LOCALES } from "@/content/locales";
+import type { FloorId, Locale, RoomId } from "@/content/schema";
 
 export type HQView = "architecture" | null;
 

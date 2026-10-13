@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts",
-    "build:web": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts",
+    "build": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts && bun scripts/check-client-chunks.ts",
+    "build:web": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts && bun scripts/check-client-chunks.ts",
     "serve": "bun scripts/serve-static.ts",
     "typecheck": "bun scripts/build-knowledge.ts && next typegen && tsc --noEmit",
     "lint": "eslint",

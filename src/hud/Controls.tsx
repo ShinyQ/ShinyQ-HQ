@@ -2,7 +2,8 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
-import { LOCALES, type Locale } from "@/content/schema";
+import { LOCALES } from "@/content/locales";
+import type { Locale } from "@/content/schema";
 import { useAudio } from "@/lib/audio";
 import { AskPill } from "./ask/AskPill";
 import { HudLaunchers } from "./HudLaunchers";
