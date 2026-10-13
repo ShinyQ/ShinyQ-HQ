@@ -29,12 +29,13 @@ Footprint: 88 × 42 u, x from -24 to 64 and z from -21 to 21 (the plaza ends at 
 | Skills wall | (6, -18.5) | 40 × 1, at least 8.5 u tall on a 0.35 u glowing plinth; `skillsWallLayout` measures headings (they may wrap; every column reserves the same heading lines) and grows the wall so the longest column ends 1.8 u above its base | Four of the CV's seven skill groups, Backend, AI and LLM, Azure, DevOps (`wallSkillGroups`; 10 u per column, items at 0.4 u, at most 12 items per column so the wall stays at or under 9.85 u); the skills drawer lists all seven |
 | Certifications wall | Footprint (25, 0) | 2.4 × 18, height 6.2 | Curved holo-wall on an arc of radius 19.6 around the hologram, every badge facing the plaza (`CERT_WALL` in `floors/lobby/layout.ts`). Issuer tabs (All, issuers with 2 or more, Other), up to 12 badges per page in two rows (earned newest first, then in progress, then expired), a pager past 12; the panel sizes to the All tab's first page. A badge opens the shared certification preview card. |
 | Ask Rover kiosk | (2, 19.3), touching the south edge | 2 × 3.4 | Diegetic mirror of Ask Rover: body, stand and screen as one unit square to the grid, facing east (`floors/lobby/kiosk.ts`); lines never wrap |
-| Highlights Hall lead road | (14, 15) to (36, 15), 8 u wide | | Passes the certification wall's south end; floor sign "Highlights Hall" |
-| Highlights Hall plaza | (46, 3) | 24 × 26 | Open floor; spurs to the four stations |
-| About me station | x 32 to 42, z -21 to -18 | 10 × 3 | Name, headline, the first four stats, the one-line intro; room `L1:highlights-about` |
-| Top projects station | x 48 to 64, z -21 to -18 | 16 × 3 | The landing's three featured projects with screenshots; room `L1:highlights-projects` |
-| Work experience station | x 61 to 64, z -8 to 10 | 3 × 18 | Employment and Freelance columns, newest first; room `L1:highlights-experience` |
-| Contact station | x 40 to 54, z 18 to 21 | 14 × 3 | Availability, email, channels, CV hint; room `L1:highlights-contact` |
+| Highlights Hall lead road | (14, 15) to (36, 15), 8 u wide | | Passes the certification wall's south end; nothing written on the floor |
+| Gateway arch | x 32.4 to 33.6; pillars z 9.4 to 10.6 and 19.8 to 21 | 1.2 × 11.6, 7.4 tall | The rover drives under the 1 u lintel; floating "Highlights Hall" sign (`hall.hall`) turns to the camera; a light curtain sweeps once per session (`hq:hall-gate`), never under reduced motion |
+| Highlights Hall plaza | (46, 3) | 24 × 26 | Open floor; spurs to the four stations; light fountain at the center (light only, the rover drives through it) |
+| About me station | x 32 to 42, z -21 to -18 | 10 × 3 | Round holo pedestal (r 1.5); the portrait as a hologram disc, name and headline above it, the first four stats on tiles in an arc, the one-line intro in front of the column; room `L1:highlights-about` |
+| Top projects station | x 48 to 64, z -21 to -18 | 16 × 3 | Three monolith screens (4.9 × 7.6) in a shallow arc with the landing's three featured projects; room `L1:highlights-projects` |
+| Work experience station | x 61 to 64, z -8 to 10 | 3 × 18 | Lit arch: Employment and Freelance columns on the two pillars, newest first, the title on the lintel, an amber glow in the opening in front of the door pad; room `L1:highlights-experience` |
+| Contact station | x 40 to 54, z 18 to 21 | 14 × 3 | Signal beacon (lattice mast, 9.5 tall, pulsing rings) and a floating card: availability, email, channels, CV hint; room `L1:highlights-contact` |
 | Elevator door | (-24, 0) | | |
 
 Lanes: one ring lane around the hologram (radius 12) and spurs leaving the ring outward to the kiosk, both walls and the elevator.
