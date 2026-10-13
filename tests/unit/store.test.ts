@@ -246,3 +246,29 @@ describe("HQ store", () => {
     expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id", motion: "system" });
   });
 });
+
+describe("Tech Reactor slice", () => {
+  const azure = { slug: "azure-openai", name: "Azure OpenAI", count: 2, pods: ["a", "b"] };
+
+  it("starts on the AI ring with nothing selected", () => {
+    expect(store.getState().reactor).toEqual({ ring: "ai", tech: null, spin: 0 });
+  });
+
+  it("selects a tech (switching the ring) and clears it", () => {
+    store.getState().selectReactorTech(azure, "azure");
+    expect(store.getState().reactor).toMatchObject({ ring: "azure", tech: azure });
+    store.getState().setReactorRing("data");
+    expect(store.getState().reactor).toMatchObject({ ring: "data", tech: azure });
+    store.getState().clearReactorTech();
+    expect(store.getState().reactor.tech).toBeNull();
+    expect(store.getState().reactor.ring).toBe("data");
+  });
+
+  it("counts Surprise me spins and never persists", () => {
+    store.getState().spinReactor();
+    store.getState().spinReactor();
+    expect(store.getState().reactor.spin).toBe(2);
+    store.getState().selectReactorTech(azure);
+    expect(storage.data.get(STORE_KEY) ?? "").not.toContain("azure-openai");
+  });
+});

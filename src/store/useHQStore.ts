@@ -8,6 +8,7 @@ import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
+import type { ReactorRingId } from "@/content/tech-rings";
 import { applyMotionAttr, isMotionPref, resolveReducedMotion, type MotionPref } from "@/lib/motion";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { skipUnchanged } from "./persist-storage";
@@ -48,6 +49,24 @@ export interface DeviceState {
 
 export type ElevatorTarget = "up" | "down" | FloorId;
 
+/** The L3 Tech Reactor pick: a tech and the pods (slugs, site order) that use it. */
+export interface ReactorTech {
+  slug: string;
+  name: string;
+  /** Projects using it (docked and listed). */
+  count: number;
+  pods: string[];
+}
+
+export interface ReactorState {
+  /** Ring shown in the Tech Reactor drawer. */
+  ring: ReactorRingId;
+  /** Selected tech: its pods light up on L3 (`#labs-tech=<slug>`). */
+  tech: ReactorTech | null;
+  /** Surprise me counter: each bump spins the rings once and drives to a random pod. */
+  spin: number;
+}
+
 /** Runtime store (appendix 06 section 2, plus the documented Phase 1 additions). */
 export interface HQState {
   phase: Phase;
@@ -81,6 +100,8 @@ export interface HQState {
   hover: HoverState | null;
   /** The one-time "click a glowing object" hint is showing (`interact/missed.ts`). Not persisted. */
   pointHint: boolean;
+  /** L3 Tech Reactor: ring, selected tech and the Surprise me counter. Not persisted (the URL hash carries the tech). */
+  reactor: ReactorState;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -121,6 +142,11 @@ export interface HQState {
   /** Sets the point-and-go target; a repeat of the same target and source is ignored (pointer moves fire often). */
   setHover: (hover: HoverState | null) => void;
   setPointHint: (on: boolean) => void;
+  setReactorRing: (ring: ReactorRingId) => void;
+  /** Selects a tech, optionally switching the drawer to its ring. */
+  selectReactorTech: (tech: ReactorTech, ring?: ReactorRingId) => void;
+  clearReactorTech: () => void;
+  spinReactor: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number }) => void;
 }
@@ -181,6 +207,7 @@ export function createHQStore(storage?: StateStorage) {
         beam: null,
         hover: null,
         pointHint: false,
+        reactor: { ring: "ai", tech: null, spin: 0 },
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -260,6 +287,14 @@ export function createHQStore(storage?: StateStorage) {
           set({ hover });
         },
         setPointHint: (pointHint) => set({ pointHint }),
+        setReactorRing: (ring) => {
+          if (get().reactor.ring !== ring) set({ reactor: { ...get().reactor, ring } });
+        },
+        selectReactorTech: (tech, ring) => set({ reactor: { ...get().reactor, tech, ring: ring ?? get().reactor.ring } }),
+        clearReactorTech: () => {
+          if (get().reactor.tech) set({ reactor: { ...get().reactor, tech: null } });
+        },
+        spinReactor: () => set({ reactor: { ...get().reactor, spin: get().reactor.spin + 1 } }),
         resume: (floor, at) =>
           set({
             floor,
