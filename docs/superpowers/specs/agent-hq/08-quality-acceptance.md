@@ -25,7 +25,7 @@ CI budgets are authoritative (owner decision 2026-10-13). Where a CI gate exists
 | 3D JS after the gate (gzip), lite and full | < 450 KB each | 600 KB | `e2e/perf/bytes-3d.spec.ts`: transfer sizes after the 3D gate minus the Page View's scripts; fonts, JSON and CSS reported |
 | Scene draw calls per floor, settled, both tiers | < 150; L1 <= 125, RF <= 79 | 150 | `expectRenderBudget`: worst frame over at least 20 frames and 1.2 s |
 | Post-processing passes (full tier) | <= 20 | 20 | same, counted apart from scene calls |
-| Scene draw calls at peaks: boot plus intro, every elevator ride, hover | < 150 | 150 | `e2e/perf/peaks.spec.ts` and `e2e/gpu.spec.ts`, every frame of the window |
+| Scene draw calls at peaks: boot plus intro, every elevator ride, hover, boosting | < 150 | 150 | `e2e/perf/peaks.spec.ts` and `e2e/gpu.spec.ts`, every frame of the window |
 | Triangles per frame | < 30,000 | 30,000 | `expectRenderBudget` |
 | Shader programs per floor, both tiers | <= baseline + 2 (`e2e/perf/baseline.json`) | none | `e2e/perf/floors.spec.ts` |
 | Memory after 10 Lobby to Roof round trips and 5 Page View toggles | geometries, textures and `programs.length` back to their baseline (delta 0); JS heap growth < 2 MB | no growth | `e2e/memory.spec.ts` (P3) on `renderer.info` (three.js has no material count) |

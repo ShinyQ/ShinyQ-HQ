@@ -38,7 +38,7 @@ type Tier = "lite" | "full";
 const KNOWN_OVER = new Set<string>(["lite ride-L3-L2", "full ride-L2-L1"]);
 
 function ratchet(id: string) {
-  test.fail(KNOWN_OVER.has(id), `${id} is over budget until P2 lands; remove it from KNOWN_OVER when this passes`);
+  test.fail(KNOWN_OVER.has(id), `${id} is over budget on main (see KNOWN_OVER); remove it from KNOWN_OVER when this passes`);
 }
 
 /** Resets the peaks, runs the window, then checks and records every frame's worst. */
@@ -80,6 +80,25 @@ for (const tier of ["lite", "full"] as const) {
     await measure(page, tier, "hover", async () => {
       await hoverTarget(page, target.id);
       await waitForFrames(page, 20, 600);
+    });
+  });
+}
+
+for (const tier of ["lite", "full"] as const) {
+  test(`boosting stays under the scene budget (${tier})`, async ({ page }) => {
+    ratchet(`${tier} boost`);
+    await enterHQ(page, { tier });
+    await waitForCameraSettle(page);
+    // The busiest floor at its busiest spot, plus the boost effects (trail, streaks, sparks: 3 calls).
+    await measure(page, tier, "boost", async () => {
+      await page.keyboard.down("Shift");
+      await page.keyboard.down("s");
+      await expect
+        .poll(() => page.evaluate(() => (window as unknown as { __hq: { rover: { boostFx: number } } }).__hq.rover.boostFx), { timeout: 30_000 })
+        .toBe(3);
+      await waitForFrames(page, 20, 600);
+      await page.keyboard.up("s");
+      await page.keyboard.up("Shift");
     });
   });
 }
