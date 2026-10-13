@@ -1,4 +1,5 @@
 import type { TallObstacle } from "../../camera/collision";
+import type { SignSpec } from "../../fx/signLayout";
 import type { GpuTier, Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
 import { gatePillars, HALL, stationOf } from "./hallLayout";
@@ -209,6 +210,12 @@ export function gateCrossed(prev: Vec2, next: Vec2): boolean {
   const t = (o.x - prev.x) / (next.x - prev.x);
   const z = prev.z + (next.z - prev.z) * t;
   return z > o.minZ && z < o.maxZ;
+}
+
+/** The floating "HIGHLIGHTS HALL" sign above the gateway arch's lintel (`FloatingSigns`, mono bold by default; `hall.hall` from messages). */
+export function gateSign(text: string): SignSpec {
+  const o = gateOpening();
+  return { text: text.toUpperCase(), x: HALL.gate.x, y: HALL.gate.signY, z: (o.minZ + o.maxZ) / 2, color: HALL.tone.about, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
 export const FOUNTAIN = { x: 46, z: 3, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;

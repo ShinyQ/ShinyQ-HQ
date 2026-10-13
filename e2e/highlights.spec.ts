@@ -320,6 +320,13 @@ test.describe("Highlights Hall", () => {
     await driveTo(page, { x: gate.x + 8, z });
     await expectRoverNear(page, { x: gate.x + 8, z });
     await expect.poll(() => gateSweeps(page)).toEqual({ sweeps: 1, active: false });
+    // The hall's name floats on the arch (FloatingSigns) and nothing lies on the floor.
+    const probes = await page.evaluate(() => {
+      const p = (window as unknown as { __hq: { probes: { flatText(): string[]; signs: Record<string, { text: string; facing: number }[]> } } }).__hq.probes;
+      return { flat: p.flatText(), sign: p.signs["hall-gate-sign"] ?? [] };
+    });
+    expect(probes.flat).toEqual([]);
+    expect(probes.sign.map((s) => s.text)).toEqual([en.hall.hall.toUpperCase()]);
     // Out and back in: the sweep belongs to the first pass of the browser session.
     await driveTo(page, { x: gate.x - 7, z });
     await driveTo(page, { x: gate.x + 8, z });

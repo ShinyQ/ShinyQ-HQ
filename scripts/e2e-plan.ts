@@ -98,7 +98,7 @@ export const RULES: Rule[] = [
 
   // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.
   {
-    test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|hallGallery|hallSolids|gateSweep|HighlightsHall|HallFx|HallLights|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
+    test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|hallGallery|hallSolids|hallStage|gateSweep|HighlightsHall|HallFx|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
     specs: ["experience", "highlights", "walk"],
   },
 

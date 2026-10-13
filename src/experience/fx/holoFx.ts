@@ -1,4 +1,4 @@
-import { AdditiveBlending, Color, DoubleSide, NormalBlending, ShaderMaterial, Vector2, Vector4 } from "three";
+import { AdditiveBlending, Color, DataTexture, DoubleSide, NormalBlending, ShaderMaterial, Vector2, Vector4 } from "three";
 
 /**
  * One shader for the spectacle effects (floating sign plates, the L2 horizon, the L3 reactor and data
@@ -28,14 +28,24 @@ export const HOLO_MODE = {
   ring: 7,
   /** Glow strip on the floor: edges and a pulse running along uv.x. */
   strip: 8,
+  /**
+   * Highlights Hall stage effects (L1 gallery): the kind comes per instance from `aStage.x` (`STAGE_KIND`
+   * in floors/lobby/hallStage.ts: stage lights, light curtain and portal, stat tiles, atlas images and the
+   * portrait hologram, pulse rings), so the hall shares this program instead of adding its own. Only this
+   * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
+   */
+  stage: 9,
 } as const;
 
 export type HoloMode = (typeof HOLO_MODE)[keyof typeof HOLO_MODE];
 
-export const HOLO_VS = `attribute float aAlpha;
+export const HOLO_VS = `attribute float aAlpha; attribute vec4 aStage; attribute vec4 aStage2; attribute vec4 aStageUv;
+uniform int uMode; uniform float uTime; uniform vec2 uCenter; uniform float uSpin; uniform float uDrift; uniform float uPulse;
 varying vec2 vUv; varying vec3 vW; varying vec3 vL; varying vec3 vTint; varying vec2 vSize; varying float vSeed; varying float vAlpha; varying float vDist;
+varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal;
 void main(){
   vUv = uv; vL = position; vTint = vec3(1.); vSeed = 0.; vAlpha = 1.; vSize = vec2(1.);
+  vStage = vec4(0., 1., 0., 1.); vMapUv = uv; vLocal = vec2(0.);
   mat4 inst = mat4(1.);
 #ifdef USE_INSTANCING
   inst = instanceMatrix; vSeed = float(gl_InstanceID); vAlpha = aAlpha;
@@ -45,6 +55,38 @@ void main(){
   vTint = instanceColor;
 #endif
   vec4 w = modelMatrix * inst * vec4(position, 1.);
+  if (uMode == 9) {
+    // Stage: instanceMatrix holds the instance's position and yaw (scale 1); the shape comes from aStage.
+    float kind = aStage.x;
+    vec3 base = inst[3].xyz;
+    mat3 rot = mat3(inst);
+    vec3 local;
+    vStage = vec4(kind, aStage2.w, 0., 1.);
+    if (kind < 2.5) {
+      float t = position.y + .5;
+      float h = aStage.y * mix(1., .8 + .2 * sin(uTime * 1.2 + aStage2.z * 6.2832), aStage2.x);
+      float r = mix(aStage.z, aStage.w, t);
+      if (aStage2.x > .5) {
+        float a = uTime * uSpin; vec2 d = base.xz - uCenter; float c = cos(a); float s = sin(a);
+        base.xz = uCenter + vec2(d.x * c + d.y * s, -d.x * s + d.y * c);
+      }
+      local = vec3(position.x * r, t * h, position.z * r);
+      w = modelMatrix * vec4(base + local, 1.);
+      vec3 n = normalize(mat3(modelMatrix) * vec3(position.x, 0., position.z));
+      vStage.z = t;
+      vStage.w = abs(dot(n, normalize(cameraPosition - w.xyz)));
+    } else if (kind > 7.5) {
+      float k = mix(.35, fract(uTime * aStage.z + aStage2.z), uPulse);
+      vStage.z = k;
+      w = modelMatrix * vec4(base + position * (1. + k * aStage.y), 1.);
+    } else {
+      float lift = (kind > 4.5 && kind < 5.5) ? uDrift * .08 * sin(uTime * .6 + aStage2.z) : 0.;
+      local = vec3(position.x * aStage.y, position.y * aStage.z + lift, 0.);
+      vLocal = (position.xy + .5) * aStage.yz; vSize = aStage.yz;
+      vMapUv = vec2(mix(aStageUv.x, aStageUv.z, uv.x), mix(aStageUv.y, aStageUv.w, uv.y));
+      w = modelMatrix * vec4(base + rot * local, 1.);
+    }
+  }
   vW = w.xyz;
   vec4 mv = viewMatrix * w;
   vDist = -mv.z;
@@ -52,7 +94,9 @@ void main(){
 }`;
 
 export const HOLO_FS = `uniform vec3 uColor; uniform float uOpacity; uniform float uTime; uniform vec2 uFade; uniform int uMode; uniform vec4 uParams;
+uniform sampler2D uMap; uniform float uLoaded; uniform float uProgress; uniform float uFlicker; uniform float uPulse; uniform vec3 uFill;
 varying vec2 vUv; varying vec3 vW; varying vec3 vL; varying vec3 vTint; varying vec2 vSize; varying float vSeed; varying float vAlpha; varying float vDist;
+varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal;
 float hash(float n){ return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
 float band(float x, float w){ return 1. - smoothstep(0., w, abs(x)); }
 void main(){
@@ -121,12 +165,48 @@ void main(){
     float dash = smoothstep(0.35, 0.5, abs(fract(ang * uParams.x + uTime * 0.08 * (mod(vSeed, 2.) * 2. - 1.)) - 0.5) * 2.);
     col = c * (0.35 + dash * 1.2);
     a = 0.25 + dash * 0.65;
-  } else {
+  } else if (uMode == 8) {
     float y = abs(vUv.y - 0.5) * 2.;
     float edge = smoothstep(0.6, 0.95, y);
     float pulse = band(fract(vUv.x - uTime * 0.12 - hash(vSeed) ) - 0.5, 0.12);
     col = c * (edge * 1.2 + pulse * 1.2 + 0.1);
     a = edge * 0.7 + pulse * 0.6 + 0.06;
+  } else {
+    // Stage (HOLO_MODE.stage): vStage = (kind, alpha, t or ring growth, view edge).
+    float kind = vStage.x;
+    col = c; a = vStage.y;
+    if (kind < .5) {
+      a *= (1. - vStage.z) * smoothstep(0., .08, vStage.z + .04) * smoothstep(.05, .7, vStage.w);
+    } else if (kind < 1.5) {
+      a *= mix(1., .35, vStage.z) * smoothstep(1., .8, vStage.z) * smoothstep(.05, .7, vStage.w);
+    } else if (kind < 2.5) {
+      float p = smoothstep(0., 1., vStage.z);
+      a *= p * p;
+    } else if (kind < 4.5) {
+      float edge = smoothstep(0., .06, vUv.x) * smoothstep(1., .94, vUv.x);
+      float lines = .75 + .25 * sin((vUv.y - uTime * .05) * 120.);
+      float k = kind < 3.5 ? exp(-pow((vUv.y - (1. - uProgress)) * 9., 2.)) * .9 + (1. - uProgress) * .18 : .06 + .3 * pow(1. - vUv.y, 1.6);
+      a *= k * lines * edge;
+    } else if (kind < 5.5) {
+      vec2 d2 = min(vLocal, vSize - vLocal);
+      float d = min(d2.x, d2.y);
+      float line = 1. - smoothstep(.025, .05, d);
+      float glow = (1. - smoothstep(.05, .3, d)) * .25;
+      col = mix(uFill + c * glow, c, line);
+    } else if (kind < 7.5) {
+      vec3 img = uLoaded > .5 ? texture2D(uMap, vMapUv).rgb : uFill;
+      if (kind > 6.5) {
+        vec2 disc = vUv * 2. - 1.;
+        float r = length(disc);
+        if (r > 1.) discard;
+        float scan = .86 + .14 * sin(disc.y * 90. - uTime * 2.);
+        float flick = 1. - uFlicker * .08 * step(.93, fract(sin(floor(uTime * 9.) * 43.7) * 4375.85));
+        img = mix(img, img * c, .35) * scan * flick + c * smoothstep(.8, 1., r) * .21;
+      }
+      col = img;
+    } else {
+      a *= (1. - vStage.z) * mix(.6, 1., uPulse) * .8;
+    }
   }
   gl_FragColor = vec4(col, a * uOpacity * fade);
 #include <tonemapping_fragment>
@@ -147,6 +227,13 @@ export interface HoloMaterialOptions {
   depthWrite?: boolean;
 }
 
+/** A 1 x 1 white map: the stage mode's sampler is always bound (`uLoaded` 0 draws `uFill` instead). */
+export const BLANK_MAP = (() => {
+  const t = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+  t.needsUpdate = true;
+  return t;
+})();
+
 /** A material for one effect; every material shares the `HOLO_VS`/`HOLO_FS` program. */
 export function createHoloMaterial(o: HoloMaterialOptions): ShaderMaterial {
   const additive = o.additive ?? o.mode !== HOLO_MODE.plate;
@@ -159,6 +246,16 @@ export function createHoloMaterial(o: HoloMaterialOptions): ShaderMaterial {
       uTime: { value: 0 },
       uFade: { value: new Vector2(o.fade?.[0] ?? 0, o.fade?.[1] ?? 0) },
       uParams: { value: new Vector4(...(o.params ?? [0, 0, 0, 0])) },
+      // Stage mode only (the L1 Highlights Hall); every material carries them so the program stays one.
+      uCenter: { value: new Vector2() },
+      uSpin: { value: 0 },
+      uDrift: { value: 0 },
+      uPulse: { value: 1 },
+      uProgress: { value: 0 },
+      uFlicker: { value: 0 },
+      uLoaded: { value: 0 },
+      uMap: { value: BLANK_MAP },
+      uFill: { value: new Color("#0b1020") },
     },
     vertexShader: HOLO_VS,
     fragmentShader: HOLO_FS,

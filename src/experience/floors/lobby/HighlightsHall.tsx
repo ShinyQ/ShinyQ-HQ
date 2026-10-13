@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
+import { FloatingSigns } from "../../fx/FloatingSign";
 import { neonColor } from "../../fx/materials";
 import { RoadMarkings } from "../../fx/RoadMarkings";
 import { useDispose } from "../../fx/useDispose";
@@ -16,8 +17,8 @@ import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, SHOT_CELL, type HallAtlas, type HallLabels } from "./hallContent";
-import { GateCurtain, GateSign, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
-import { aboutFace, contactBeacon, hallLights, statTiles } from "./hallGallery";
+import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
+import { aboutFace, contactBeacon, gateSign, hallLights, statTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
 import { lightInstances, panelInstances, ringInstances } from "./hallStage";
@@ -213,6 +214,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
   const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
+  const gateSigns = useMemo(() => [gateSign(labels.hall)], [labels.hall]);
   return (
     <HallReady>
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
@@ -230,9 +232,9 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
           <BatchedLabels ref={labelBatch} labels={texts.labels} name="highlights-labels" />
         </Suspense>
       </HallView>
-      {/* The sign turns to the camera, so it can reach past HALL_BOUNDS; its own meshes are frustum culled. */}
+      {/* The floating gateway sign (shared FloatingSigns: holo plate plus batched text) turns to the camera, so it stays outside HallView. */}
       <Suspense fallback={null}>
-        <GateSign text={labels.hall} tier={tier} />
+        <FloatingSigns signs={gateSigns} name="hall-gate-sign" tier={tier} />
       </Suspense>
     </HallReady>
   );

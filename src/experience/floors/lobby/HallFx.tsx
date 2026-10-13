@@ -1,119 +1,98 @@
 "use client";
 
-import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState, type RefObject } from "react";
-import {
-  AdditiveBlending,
-  BufferGeometry,
-  Color,
-  CylinderGeometry,
-  DataTexture,
-  DoubleSide,
-  InstancedBufferAttribute,
-  InstancedBufferGeometry,
-  NormalBlending,
-  PlaneGeometry,
-  RingGeometry,
-  ShaderMaterial,
-  Vector2,
-  Vector3,
-  type Group,
-  type Mesh,
-  type Texture,
-} from "three";
+import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import { CylinderGeometry, InstancedBufferAttribute, Object3D, PlaneGeometry, RingGeometry, type BufferGeometry, type InstancedMesh, type ShaderMaterial, type Texture } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import type { BatchedLabelsHandle } from "../../fx/BatchedLabels";
-import { yawTowards } from "../../fx/facing";
-import { neonColor } from "../../fx/materials";
+import { BLANK_MAP, createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
 import { sceneProbes } from "../../fx/probes";
 import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
-import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { gateSwept, markGateSwept, sweepProgress } from "./gateSweep";
-import { FOUNTAIN, gateCrossed, gateOpening } from "./hallGallery";
-import { HALL } from "./hallLayout";
-import { curtainInstance, portalInstance, stageAttributes, STAGE_FS, STAGE_KIND, STAGE_VS, type StageInstance } from "./hallStage";
+import { FOUNTAIN, gateCrossed } from "./hallGallery";
+import { curtainInstance, portalInstance, stageAttributes, type StageInstance } from "./hallStage";
 
 const NO_RAYCAST = () => null;
 
-// ---------------------------------------------------------------- One stage shader for every hall effect
-
-export interface StageMaterialOptions {
-  additive: boolean;
-  /** Plates, screenshots and the portrait write depth (they read as solid). */
-  depthWrite?: boolean;
-  map?: Texture | null;
-}
-
-/** A 1 x 1 placeholder, so the map sampler is bound before the atlas loads (`uLoaded` 0 draws the fill color). */
-const BLANK = (() => {
-  const t = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  t.needsUpdate = true;
-  return t;
-})();
-
 /**
- * A material on the hall's one stage program (`hallStage.ts`): every option here is GL state or a
- * uniform value, never a program key (same source, double sided, transparent, tone mapped), so all
- * hall effects compile to one program per output color space.
+ * A holo material in the stage mode (`HOLO_MODE.stage`): every option is GL state or a uniform value, so
+ * all hall effects share the one holo program with the floating signs and the other floors' spectacle.
  */
-export function createStageMaterial(o: StageMaterialOptions): ShaderMaterial {
-  return new ShaderMaterial({
-    name: "hall-stage",
-    uniforms: {
-      uTime: { value: 0 },
-      uCenter: { value: new Vector2(FOUNTAIN.x, FOUNTAIN.z) },
-      uSpin: { value: FOUNTAIN.spin },
-      uDrift: { value: 0 },
-      uPulse: { value: 1 },
-      uProgress: { value: 0 },
-      uFlicker: { value: 0 },
-      uLoaded: { value: o.map ? 1 : 0 },
-      uMap: { value: o.map ?? BLANK },
-      uFill: { value: new Color("#0b1020") },
-    },
-    vertexShader: STAGE_VS,
-    fragmentShader: STAGE_FS,
-    transparent: true,
-    depthWrite: o.depthWrite ?? false,
-    side: DoubleSide,
-    blending: o.additive ? AdditiveBlending : NormalBlending,
-  });
-}
-
-/** Instanced geometry over a base shape with the stage attributes (`stageAttributes`). */
-function useStageGeometry(base: () => BufferGeometry, instances: readonly StageInstance[]) {
-  const geometry = useMemo(() => {
-    const unit = base();
-    const g = new InstancedBufferGeometry();
-    g.index = unit.index;
-    for (const name of ["position", "normal", "uv"]) g.setAttribute(name, unit.getAttribute(name));
-    for (const [name, array] of Object.entries(stageAttributes(instances))) g.setAttribute(name, new InstancedBufferAttribute(array, 4));
-    g.instanceCount = instances.length;
-    return g;
-    // `base` is a stable module-level factory.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [instances]);
-  useDispose(geometry);
-  return geometry;
+export function createStageMaterial(o: { additive: boolean; depthWrite?: boolean }): ShaderMaterial {
+  const m = createHoloMaterial({ mode: HOLO_MODE.stage, additive: o.additive, depthWrite: o.depthWrite ?? false });
+  m.uniforms.uCenter.value.set(FOUNTAIN.x, FOUNTAIN.z);
+  m.uniforms.uSpin.value = FOUNTAIN.spin;
+  return m;
 }
 
 const cylinder = () => new CylinderGeometry(1, 1, 1, 20, 1, true);
 const square = () => new PlaneGeometry(1, 1);
 const ring = () => new RingGeometry(0.5, 0.62, 40).rotateX(-Math.PI / 2);
 
-/** Per-frame uniforms of a stage mesh: `uTime` (frozen when `animate` is off) and anything `extra` sets. */
-function useStageFrame(animate: boolean, extra?: (u: ShaderMaterial["uniforms"], dt: number, mesh: Mesh) => void) {
-  const mesh = useRef<Mesh>(null);
+/**
+ * One instanced draw of stage effects over a base shape: the instance matrix holds each instance's
+ * position and yaw, the instance color its tint, `aStage*` its kind and shape. `frame` runs every frame
+ * with the uniforms (`uTime` advances only while `animate`). Never frustum culled (the base geometry's
+ * bounds do not cover the instances; `HallView` hides the hall out of view) and never raycast.
+ */
+function StageMesh({
+  base,
+  instances,
+  additive,
+  depthWrite,
+  animate,
+  frame,
+  name,
+  visible = true,
+}: {
+  base: () => BufferGeometry;
+  instances: readonly StageInstance[];
+  additive: boolean;
+  depthWrite?: boolean;
+  animate: boolean;
+  frame?: (u: ShaderMaterial["uniforms"], dt: number, mesh: InstancedMesh) => void;
+  name: string;
+  visible?: boolean;
+}) {
+  const attributes = useMemo(() => stageAttributes(instances), [instances]);
+  const geometry = useMemo(() => {
+    const g = base();
+    g.setAttribute("aStage", new InstancedBufferAttribute(attributes.aStage, 4));
+    g.setAttribute("aStage2", new InstancedBufferAttribute(attributes.aStage2, 4));
+    g.setAttribute("aStageUv", new InstancedBufferAttribute(attributes.aStageUv, 4));
+    return g;
+  }, [base, attributes]);
+  useDispose(geometry);
+  const material = useMemo(() => createStageMaterial({ additive, depthWrite }), [additive, depthWrite]);
+  useDispose(material);
+  const mesh = useRef<InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const m = mesh.current;
+    if (!m) return;
+    const o = new Object3D();
+    instances.forEach((inst, i) => {
+      o.position.set(...inst.at);
+      o.rotation.set(0, inst.yaw, 0);
+      o.updateMatrix();
+      m.setMatrixAt(i, o.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  }, [instances, geometry, material]);
   useFrame((_, dt) => {
-    const u = (mesh.current?.material as ShaderMaterial | undefined)?.uniforms;
-    if (!u) return;
+    const m = mesh.current;
+    if (!m) return;
+    const u = (m.material as ShaderMaterial).uniforms;
     if (animate) u.uTime.value += Math.min(dt, 0.1);
-    extra?.(u, dt, mesh.current!);
+    frame?.(u, dt, m);
   });
-  return mesh;
+  if (!instances.length) return null;
+  return (
+    <instancedMesh key={instances.length} ref={mesh} name={name} args={[geometry, material, instances.length]} visible={visible} frustumCulled={false} raycast={NO_RAYCAST}>
+      <instancedBufferAttribute attach="instanceColor" args={[attributes.color, 3]} />
+    </instancedMesh>
+  );
 }
 
 /**
@@ -121,31 +100,18 @@ function useStageFrame(animate: boolean, extra?: (u: ShaderMaterial["uniforms"],
  * glow pools. Additive on the full tier, normal blending on lite; reduced motion freezes the fountain.
  */
 export function StageLights({ instances, tier, reducedMotion }: { instances: readonly StageInstance[]; tier: GpuTier; reducedMotion: boolean }) {
-  const geometry = useStageGeometry(cylinder, instances);
-  const material = useMemo(() => createStageMaterial({ additive: tier === "full" }), [tier]);
-  useDispose(material);
-  const mesh = useStageFrame(!reducedMotion);
-  // The unit geometry's bounds do not cover the instances: never frustum culled (HallView hides the hall out of view).
-  return <mesh ref={mesh} name="hall-lights" geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />;
+  return <StageMesh name="hall-lights" base={cylinder} instances={instances} additive={tier === "full"} animate={!reducedMotion} />;
 }
 
 /** The beacon's pulse rings (one draw call); reduced motion holds them at a third of their growth. */
 export function StageRings({ instances, tier, reducedMotion }: { instances: readonly StageInstance[]; tier: GpuTier; reducedMotion: boolean }) {
-  const geometry = useStageGeometry(ring, instances);
-  const material = useMemo(() => createStageMaterial({ additive: tier === "full" }), [tier]);
-  useDispose(material);
-  const mesh = useStageFrame(!reducedMotion, (u) => (u.uPulse.value = reducedMotion ? 0 : 1));
-  return <mesh ref={mesh} name="hall-rings" geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />;
+  return <StageMesh name="hall-rings" base={ring} instances={instances} additive={tier === "full"} animate={!reducedMotion} frame={(u) => (u.uPulse.value = reducedMotion ? 0 : 1)} />;
 }
 
 /** The work experience arch's lit opening: a still band of amber light, slow scanlines on the full tier. */
 export function StagePortal({ tier, reducedMotion }: { tier: GpuTier; reducedMotion: boolean }) {
   const instances = useMemo(() => [portalInstance(tier)], [tier]);
-  const geometry = useStageGeometry(square, instances);
-  const material = useMemo(() => createStageMaterial({ additive: tier === "full" }), [tier]);
-  useDispose(material);
-  const mesh = useStageFrame(tier === "full" && !reducedMotion);
-  return <mesh ref={mesh} name="hall-portal" geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />;
+  return <StageMesh name="hall-portal" base={square} instances={instances} additive={tier === "full"} animate={tier === "full" && !reducedMotion} />;
 }
 
 /** Stat tile drift in floor units at time `t` (matches the stage shader), so the tile texts move with their plates. */
@@ -160,14 +126,11 @@ export function tileDrift(t: number, phase: number): number {
  * scanlines run and it flickers softly; lite and reduced motion hold everything still.
  */
 export function StagePanels({ instances, phases, map, tier, reducedMotion, labels, tile }: { instances: readonly StageInstance[]; phases: readonly number[]; map: Texture | null; tier: GpuTier; reducedMotion: boolean; labels: RefObject<BatchedLabelsHandle | null>; tile: readonly number[] }) {
-  const geometry = useStageGeometry(square, instances);
-  const material = useMemo(() => createStageMaterial({ additive: false, depthWrite: true }), []);
-  useDispose(material);
   const animate = tier === "full" && !reducedMotion;
   // Rest heights of the batch members this frame loop moves (reset when the batch rebuilds).
   const base = useRef<{ members: readonly unknown[]; ys: number[] } | null>(null);
-  const mesh = useStageFrame(animate, (u) => {
-    u.uMap.value = map ?? BLANK;
+  const frame = (u: ShaderMaterial["uniforms"]) => {
+    u.uMap.value = map ?? BLANK_MAP;
     u.uLoaded.value = map ? 1 : 0;
     u.uDrift.value = animate ? 1 : 0;
     u.uFlicker.value = animate ? 1 : 0;
@@ -180,8 +143,8 @@ export function StagePanels({ instances, phases, map, tier, reducedMotion, label
       const k = tile[i];
       if (k >= 0) m.position.y = ys[i] + (animate ? tileDrift(t, phases[k]) : 0);
     });
-  });
-  return <mesh ref={mesh} name="hall-panels" geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />;
+  };
+  return <StageMesh name="hall-panels" base={square} instances={instances} additive={false} depthWrite animate={animate} frame={frame} />;
 }
 
 /**
@@ -191,11 +154,8 @@ export function StagePanels({ instances, phases, map, tier, reducedMotion, label
  */
 export function GateCurtain({ tier, reducedMotion }: { tier: GpuTier; reducedMotion: boolean }) {
   const instances = useMemo(() => [curtainInstance(tier)], [tier]);
-  const geometry = useStageGeometry(square, instances);
-  const material = useMemo(() => createStageMaterial({ additive: tier === "full" }), [tier]);
-  useDispose(material);
   const state = useRef<{ prev: Vec2 | null; t: number | null }>({ prev: null, t: null });
-  const mesh = useStageFrame(true, (u, dt, m) => {
+  const frame = (u: ShaderMaterial["uniforms"], dt: number, m: InstancedMesh) => {
     const s = state.current;
     const onL1 = getHQStore().getState().floor === "L1";
     const now = { x: roverRuntime.x, z: roverRuntime.z };
@@ -214,68 +174,6 @@ export function GateCurtain({ tier, reducedMotion }: { tier: GpuTier; reducedMot
     const active = s.t !== null;
     sceneProbes.hallGate.active = active;
     m.visible = active;
-  });
-  return <mesh ref={mesh} name="hall-gate-curtain" geometry={geometry} material={material} visible={false} frustumCulled={false} raycast={NO_RAYCAST} />;
-}
-
-// ---------------------------------------------------------------- Gateway sign
-
-/** troika's laid-out text block: [minX, minY, maxX, maxY] in local units. */
-type TextSync = { textRenderInfo?: { blockBounds?: number[] } };
-
-/** The sign's plate in its own frame: a stage tile (dark fill, neon rim) around the text block. */
-export function signPlate(box: readonly number[], tier: GpuTier): StageInstance {
-  const w = box[2] - box[0] + 0.8;
-  const h = box[3] - box[1] + 0.4;
-  const line = neonColor(HALL.tone.about, 1.4, tier);
-  return { p: [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2, -0.02, STAGE_KIND.tile], s: [w, h, 0, 0], r: [1, 0, 0, 0], c: [line.r, line.g, line.b, 1], u: [0, 0, 1, 1] };
-}
-
-function SignPlate({ box, tier }: { box: readonly number[]; tier: GpuTier }) {
-  const instances = useMemo(() => [signPlate(box, tier)], [box, tier]);
-  const geometry = useStageGeometry(square, instances);
-  const material = useMemo(() => createStageMaterial({ additive: false, depthWrite: false }), []);
-  useDispose(material);
-  return <mesh geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />;
-}
-
-/**
- * "HIGHLIGHTS HALL" floating above the gateway arch (owner request 2026-10-13: no words on the floor),
- * in the style of the L3 wing signs: it turns to the camera every frame (yaw only, never mirrored) on a
- * dark plate with a neon rim in the hall's accent (the stage shader's tile).
- */
-export function GateSign({ text, tier }: { text: string; tier: GpuTier }) {
-  const g = HALL.gate;
-  const o = gateOpening();
-  const group = useRef<Group>(null);
-  const world = useMemo(() => new Vector3(), []);
-  const [box, setBox] = useState<number[] | null>(null);
-  useFrame(({ camera }) => {
-    const grp = group.current;
-    if (!grp) return;
-    grp.getWorldPosition(world);
-    grp.rotation.y = yawTowards({ x: world.x, z: world.z }, { x: camera.position.x, z: camera.position.z });
-  });
-  return (
-    <group ref={group} name="hall-gate-sign" position={[g.x, g.signY, (o.minZ + o.maxZ) / 2]}>
-      {box && <SignPlate box={box} tier={tier} />}
-      <Text
-        font={FONTS.monoBold}
-        fontSize={0.75}
-        color={HALL.tone.about}
-        anchorX="center"
-        anchorY="bottom"
-        letterSpacing={0.08}
-        whiteSpace="nowrap"
-        renderOrder={1}
-        material-toneMapped={false}
-        onSync={(t: TextSync) => {
-          const b = t.textRenderInfo?.blockBounds;
-          if (b && (!box || b.some((v, i) => Math.abs(v - box[i]) > 1e-4))) setBox([b[0], b[1], b[2], b[3]]);
-        }}
-      >
-        {text.toUpperCase()}
-      </Text>
-    </group>
-  );
+  };
+  return <StageMesh name="hall-gate-curtain" base={square} instances={instances} additive={tier === "full"} animate frame={frame} visible={false} />;
 }
