@@ -127,12 +127,12 @@
     },
     {
       "id": "microsoft-certifications",
-      "value": "3",
+      "value": "4",
       "label": {
-        "en": "Microsoft certifications: AI-103, AI-901, AZ-900",
-        "id": "Sertifikasi Microsoft: AI-103, AI-901, AZ-900"
+        "en": "Microsoft and GitHub certifications: GH-600, AI-103, AI-901, AZ-900",
+        "id": "Sertifikasi Microsoft dan GitHub: GH-600, AI-103, AI-901, AZ-900"
       },
-      "source": "Microsoft credential records listed with credential IDs on LinkedIn",
+      "source": "Microsoft Learn credential records (AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13)",
       "confidence": "verified"
     },
     {
@@ -308,10 +308,13 @@
     {
       "id": "gh-600",
       "code": "GH-600",
-      "name": "Developing in Agentic AI Systems",
+      "name": "GitHub Certified: Agentic AI Developer",
       "issuer": "GitHub",
       "issued": "2026-10",
-      "status": "in-progress"
+      "credentialUrl": "https://learn.microsoft.com/api/credentials/share/en-us/KurniadiAhmadWijaya-0298/6BB32EB2B28BD602?sharingId=813CCE48E6426863",
+      "credentialId": "6BB32EB2B28BD602",
+      "status": "earned",
+      "expires": "2027-10"
     },
     {
       "id": "hackerrank-problem-solving-basic",
@@ -1957,8 +1960,8 @@
           "start": "2026-05",
           "end": "2026-10",
           "summary": {
-            "en": "I earned three Microsoft certifications in five months and am preparing for the GitHub agentic AI exam.",
-            "id": "Saya meraih tiga sertifikasi Microsoft dalam lima bulan dan sedang mempersiapkan ujian GitHub tentang agentic AI."
+            "en": "I earned three Microsoft certifications and the GitHub agentic AI developer certification between May and October 2026.",
+            "id": "Saya meraih tiga sertifikasi Microsoft dan sertifikasi GitHub untuk agentic AI developer antara Mei dan Oktober 2026."
           },
           "highlights": [
             {
@@ -1974,8 +1977,8 @@
               "id": "Azure AI Apps and Agents Developer Associate (AI-103), diraih pada September 2026"
             },
             {
-              "en": "GitHub GH-600, Developing in Agentic AI Systems: in progress",
-              "id": "GitHub GH-600, Developing in Agentic AI Systems: sedang berjalan"
+              "en": "GitHub Certified: Agentic AI Developer (GH-600), October 2026",
+              "id": "GitHub Certified: Agentic AI Developer (GH-600), diraih pada Oktober 2026"
             }
           ],
           "stack": [

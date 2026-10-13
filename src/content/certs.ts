@@ -111,9 +111,9 @@ export function matchesCertFilter(cert: Pick<CertLike, "code" | "name" | "issuer
   return `${cert.code ?? ""} ${cert.name} ${cert.issuer}`.toLowerCase().includes(needle);
 }
 
-/** Display name without the issuer's program prefix ("Microsoft Certified: Azure Fundamentals" to "Azure Fundamentals"). */
+/** Display name without the issuer's program prefix ("Microsoft Certified: Azure Fundamentals" to "Azure Fundamentals", "GitHub Certified: Agentic AI Developer" to "Agentic AI Developer"). */
 export function shortCertName(name: string): string {
-  return name.replace(/^(Microsoft Certified|AWS Certified|Google Cloud Certified)\s*:?\s*/i, "").trim() || name;
+  return name.replace(/^(Microsoft Certified|GitHub Certified|AWS Certified|Google Cloud Certified)\s*:?\s*/i, "").trim() || name;
 }
 
 /** Page View shows the filter bar from this many certifications on. */

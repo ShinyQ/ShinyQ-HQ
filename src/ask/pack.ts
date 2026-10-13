@@ -181,8 +181,8 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
     keywords: ["certification", "microsoft", "azure", ...content.certifications.flatMap((c) => (c.code ? [c.code.toLowerCase()] : []))],
     text: join(
       content.certifications.map((c) => ({
-        en: `${c.name}${c.code ? ` (${c.code})` : ""} by ${c.issuer}, ${c.status === "earned" ? `earned ${c.issued}` : c.status === "expired" ? `earned ${c.issued}, expired${c.expires ? ` ${c.expires}` : ""}` : `in progress, planned ${c.issued}`}.`,
-        id: `${c.name}${c.code ? ` (${c.code})` : ""} dari ${c.issuer}, ${c.status === "earned" ? `diraih ${c.issued}` : c.status === "expired" ? `diraih ${c.issued}, kedaluwarsa${c.expires ? ` ${c.expires}` : ""}` : `sedang berjalan, direncanakan ${c.issued}`}.`,
+        en: `${c.name}${c.code ? ` (${c.code})` : ""} by ${c.issuer}, ${c.status === "earned" ? `earned ${c.issued}${c.expires ? `, valid until ${c.expires}` : ""}` : c.status === "expired" ? `earned ${c.issued}, expired${c.expires ? ` ${c.expires}` : ""}` : `in progress, planned ${c.issued}`}.`,
+        id: `${c.name}${c.code ? ` (${c.code})` : ""} dari ${c.issuer}, ${c.status === "earned" ? `diraih ${c.issued}${c.expires ? `, berlaku hingga ${c.expires}` : ""}` : c.status === "expired" ? `diraih ${c.issued}, kedaluwarsa${c.expires ? ` ${c.expires}` : ""}` : `sedang berjalan, direncanakan ${c.issued}`}.`,
       })),
     ),
   });
