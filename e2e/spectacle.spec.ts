@@ -137,7 +137,8 @@ test("reduced motion: the reactor, waterfalls and the L2 horizon stand still", a
   expect(await read()).toEqual(before);
 
   await enterFloorRoute(page, "/en/journey");
-  await expect.poll(async () => (await read())["horizon.time"]).toBeDefined();
+  // The Horizon mounts with the Career Road, a few seconds after the first frame on a CI runner.
+  await expect.poll(async () => (await read())["horizon.time"], { timeout: 30_000 }).toBeDefined();
   const l2 = await read();
   await waitForFrames(page, 30, 500);
   expect((await read())["horizon.time"]).toBe(l2["horizon.time"]);
