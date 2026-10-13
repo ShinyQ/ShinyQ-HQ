@@ -24,8 +24,11 @@ export const WORKSHOP = {
   /** Stops lie this far inside a plaza edge (the rover's radius plus a margin from the docked piece). */
   stopInset: 1,
   console: { w: 5, d: 1.2, h: 1.1, screenW: 4.4, screenH: 1.7, screenTilt: 0.5 },
-  /** The Return pad (F1, `FloorLayout.returnPad`) sits this far east of the console, on the stop line. */
-  returnPad: { dx: 5.5, dz: -0.2 },
+  /**
+   * The Return pad (F1, `FloorLayout.returnPad`) sits this far west of the console, on the stop line: its
+   * floating "Back to elevator" sign stays clear of the WORKSHOP sign over the gateway east of the console.
+   */
+  returnPad: { dx: -5.5, dz: -0.2 },
   gateway: { post: 0.6, height: 4.8, beam: 0.5 },
   bench: { w: 2.2, d: 1.2, h: 0.9, group: 5, gap: ROAD.minClear, inset: 4 },
   /** The road ends this far before the window (the Horizon deck). */

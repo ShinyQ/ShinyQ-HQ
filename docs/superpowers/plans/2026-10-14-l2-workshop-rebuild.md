@@ -25,7 +25,7 @@
 | Link | x 331 to 341, S-curve back to z 0 (unchanged) |
 | Forecourt plaza | x 341 to 359, z -9 to 9 (`CAREER_ROAD.forecourt` 18 x 18) |
 | Time console | north of the forecourt, 5 x 1.2 u at z about -11.1, screen facing +z (rail camera); stop at z -8 |
-| Return pad (F1) | beside the console, 5.5 u east, z -8.2 (`forecourt.returnPad`) |
+| Return pad (F1) | beside the console, 5.5 u west, z -8.2 (`workshop.returnPad`; west so its sign clears the WORKSHOP sign) |
 | Gateway arch | x = Workshop start (359), posts at z +-5, WORKSHOP floating sign above |
 | Workshop plaza | x 359 to 398, z -9 to 9 (`WORKSHOP.plaza`: 18 deep, length from the bench span, at least 34) |
 | Repo skyline | north of the Workshop, plinth 18 x 3.6 u (10 columns x 2 rows, 1.8 u pitch), bars 1.5 u square, height `0.8 + 7.2 * ln(1 + stars) / ln(1 + max)`; stops at z -8 |
