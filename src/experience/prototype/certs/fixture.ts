@@ -9,7 +9,7 @@ const real: Certification[] = [
   { id: "ai-103", code: "AI-103", name: "Microsoft Certified: Azure AI Apps and Agents Developer Associate", issuer: "Microsoft", issued: "2026-09", credentialUrl: "https://example.com/credential/ai-103", status: "earned" },
   { id: "ai-901", code: "AI-901", name: "Microsoft Certified: Azure AI Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/ai-901", status: "earned" },
   { id: "az-900", code: "AZ-900", name: "Microsoft Certified: Azure Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/az-900", status: "earned" },
-  { id: "gh-600", code: "GH-600", name: "Developing in Agentic AI Systems", issuer: "GitHub", issued: "2026-10", status: "in-progress" },
+  { id: "gh-600", code: "GH-600", name: "GitHub Certified: Agentic AI Developer", issuer: "GitHub", issued: "2026-10", credentialUrl: "https://example.com/credential/gh-600", status: "earned", expires: "2027-10" },
   { id: "hackerrank-problem-solving-basic", name: "Problem Solving (Basic)", issuer: "HackerRank", issued: "2021-02", credentialUrl: "https://example.com/credential/hackerrank", status: "earned" },
   { id: "associate-data-scientist-microcredential", name: "Microcredential: Associate Data Scientist", issuer: "IARC x APTIKOM", issued: "2021-12", status: "earned" },
   { id: "digital-talent-machine-learning", name: "Digital Talent Scholarship: Machine Learning (160 hours)", issuer: "Kominfo x IBM", issued: "2021-07", status: "earned" },

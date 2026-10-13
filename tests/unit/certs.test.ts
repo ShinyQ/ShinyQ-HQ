@@ -21,14 +21,14 @@ describe("certification helpers", () => {
       expect(rank[a.status] <= rank[b.status], `${a.id} before ${b.id}`).toBe(true);
       if (a.status === b.status) expect(a.issued >= b.issued, `${a.id} before ${b.id}`).toBe(true);
     }
-    expect(sorted[0].id).toBe("ai-103");
+    expect(sorted[0].id).toBe("gh-600");
     expect(sorted.at(-1)?.status).toBe("expired");
   });
 
   it("features pinned certs first, then the newest earned with an exam code", () => {
-    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["ai-103", "ai-901", "az-900"]);
+    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["gh-600", "ai-103", "ai-901"]);
     const pinned = CERT_FIXTURE.map((c) => (c.id === "gh-900" ? { ...c, featured: true } : c));
-    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["gh-900", "ai-103", "az-204"]);
+    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["gh-900", "gh-600", "ai-103"]);
     expect(featuredCertifications(CERT_FIXTURE.filter((c) => !c.code))).toHaveLength(3);
     expect(featuredCertifications(CERT_FIXTURE).every((c) => c.status === "earned")).toBe(true);
   });
@@ -85,13 +85,15 @@ describe("certification helpers", () => {
   it("drops program prefixes from display names", () => {
     expect(shortCertName("Microsoft Certified: Azure Fundamentals")).toBe("Azure Fundamentals");
     expect(shortCertName("AWS Certified Cloud Practitioner")).toBe("Cloud Practitioner");
+    expect(shortCertName("GitHub Certified: Agentic AI Developer")).toBe("Agentic AI Developer");
     expect(shortCertName("GitHub Copilot")).toBe("GitHub Copilot");
   });
 
   it("builds locale-resolved views without confidence or verified labels", () => {
     const en = toCertViews(CERT_FIXTURE, "en");
     const id = toCertViews(CERT_FIXTURE, "id");
-    expect(en[0]).toMatchObject({ id: "ai-103", short: "Azure AI Apps and Agents Developer Associate", logo: "/tech/microsoft.svg", issuedLabel: "Sep 2026" });
+    expect(en[0]).toMatchObject({ id: "gh-600", short: "Agentic AI Developer", logo: "/tech/github.svg", issuedLabel: "Oct 2026", expiresLabel: "Oct 2027" });
+    expect(en.find((c) => c.id === "ai-103")).toMatchObject({ short: "Azure AI Apps and Agents Developer Associate", logo: "/tech/microsoft.svg", issuedLabel: "Sep 2026" });
     expect(id.find((c) => c.id === "az-305")?.issuedLabel).toBe("Okt 2026");
     expect(en.find((c) => c.id === "dp-203")).toMatchObject({ status: "expired", expires: "2024-04" });
     expect(JSON.stringify(en)).not.toMatch(/verified/i);
