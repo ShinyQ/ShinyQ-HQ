@@ -1,0 +1,51 @@
+import { expect, test } from "@playwright/test";
+import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
+import { enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
+import baseline from "./baseline.json";
+import { waitForStablePrograms, writePerfEntry } from "./helpers";
+
+/**
+ * Settled render budget and shader programs on every floor and both tiers (appendix 08 section 2).
+ * Programs must stay within the committed baseline plus PROGRAM_HEADROOM: a material created per
+ * frame or per item shows up here long before it shows up as jank. After an intended material change
+ * (or a precompile change), regenerate the baseline:
+ *
+ *   E2E_PORT=4433 bun run e2e:perf e2e/perf/floors.spec.ts
+ *   bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json
+ *
+ * and say why in the PR.
+ */
+test.describe.configure({ timeout: 150_000 });
+
+const FLOORS = [
+  { floor: "L1", path: "/en" },
+  { floor: "L2", path: "/en/journey" },
+  { floor: "L3", path: "/en/labs" },
+  { floor: "L4", path: "/en/library" },
+  { floor: "RF", path: "/en/contact" },
+] as const;
+
+const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
+
+for (const tier of ["lite", "full"] as const) {
+  for (const { floor, path } of FLOORS) {
+    test(`${floor} ${tier}: settled draw calls and shader programs`, async ({ page }) => {
+      await enterFloorRoute(page, path, { tier });
+      await waitForCameraSettle(page);
+      const programs = await waitForStablePrograms(page);
+      const peaks = await expectRenderBudget(page);
+      const gpu = await readGpuCounters(page);
+      writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
+      console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs, ${gpu.geometries} geometries, ${gpu.textures} textures`);
+
+      if (tier === "lite") expect(peaks.postCalls, "lite has no composer").toBe(0);
+      else expect(peaks.postCalls, "the full tier composer must render").toBeGreaterThan(0);
+      const cap = FLOOR_SCENE_CAPS[floor];
+      if (cap !== undefined) expect(peaks.sceneCalls).toBeLessThanOrEqual(cap);
+
+      const base = PROGRAMS[tier]?.[floor];
+      expect(base, `no shader program baseline for ${tier} ${floor}: run "bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json"`).toBeDefined();
+      expect(programs, `${programs} programs vs baseline ${base} + ${PROGRAM_HEADROOM}`).toBeLessThanOrEqual(base! + PROGRAM_HEADROOM);
+    });
+  }
+}
