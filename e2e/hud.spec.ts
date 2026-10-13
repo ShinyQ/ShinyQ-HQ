@@ -70,9 +70,13 @@ test("Indonesian at 1024 px: the wider Page view keeps the one-row bar clear of 
   await enterHQ(page, { path: "/id" });
   const hud = page.getByTestId("hud");
   await expect(hud.getByTestId("page-view")).toHaveAccessibleName(id.hud.pageView);
-  const bar = await box(hud.getByTestId("hud-topbar"));
-  const card = await box(hud.getByRole("region", { name: id.hud.profile }));
-  expect(overlaps(bar, card)).toBe(false);
+  // The bar settles once fonts and the profile photo have loaded: poll instead of measuring the first layout.
+  const measure = async () => ({ bar: await box(hud.getByTestId("hud-topbar")), card: await box(hud.getByRole("region", { name: id.hud.profile })) });
+  await expect.poll(async () => {
+    const { bar, card } = await measure();
+    return overlaps(bar, card);
+  }).toBe(false);
+  const { bar } = await measure();
   expect(bar.x + bar.width).toBeLessThanOrEqual(1024);
   await context.close();
 });
