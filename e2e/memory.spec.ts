@@ -6,8 +6,9 @@ import { enterHQ, waitForFloor, waitForFrames, waitForHQ, waitForSceneLive } fro
  * the renderer's geometries, textures and shader programs at their baseline. Reduced motion makes
  * every ride a 150 ms cut; a warm-up tour first builds what exists once by design (programs, the
  * troika glyph atlas, the Highlights Hall). three counts a geometry or program only once it has been
- * drawn, and where the rover (and so the camera) ends up on L1 depends on whether the trip started
- * from a settled Lobby, so the baseline is read after one trip shaped like the measured ones.
+ * drawn, so what the camera saw decides the counts: every trip calls the elevator the moment the
+ * rover arrives, and the baseline is read after one trip shaped like the measured ones (a ride drops
+ * the roll-on drive of the floor it leaves, so the rover always stops at the L1 approach).
  */
 interface Counts {
   geometries: number;

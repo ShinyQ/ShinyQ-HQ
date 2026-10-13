@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, waitForFloor } from "./hq";
+import { enterHQ, waitForFloor, waitForFrames } from "./hq";
 
 /**
  * Elevator ride smoothness (R5 P6, owner report from a Windows PC): long frames pause the ride
@@ -97,4 +97,38 @@ test("the car waits for the new floor with the doors closed, then compiles nothi
   expect(last!.timedOut).toBe(false);
   expect(last!.programs).toBe(0);
   expect(last!.distinctY).toBeGreaterThanOrEqual(12);
+});
+
+test("a ride called the moment the rover arrives drops the old floor's roll-on drive", async ({ page }) => {
+  test.slow();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await enterHQ(page);
+  await rideTo(page, "L4", 180_000);
+  type Pose = { x: number; z: number; autopilot: { state: string } | null };
+  type Win = Window & {
+    __hq: {
+      store: { getState: () => { floor: string; ride: unknown; goToFloor: (f: string) => void }; subscribe: (fn: (s: { floor: string; ride: unknown }) => void) => () => void };
+      rover: Pose;
+      layouts: Record<string, { approach: { x: number; z: number } }>;
+    };
+  };
+  // RF rolls the rover on to its spawn after the ride. Calling the elevator in the store update of
+  // the arrival (before the Director's next frame) leaves that roll-on pending during the ride back.
+  await page.evaluate(() => {
+    const hq = (window as unknown as Win).__hq;
+    const stop = hq.store.subscribe((s) => {
+      if (s.floor !== "RF" || s.ride) return;
+      stop();
+      hq.store.getState().goToFloor("L1");
+    });
+    hq.store.getState().goToFloor("RF");
+  });
+  await waitForFloor(page, "L1", 180_000);
+  await waitForFrames(page, 30);
+  const { pose, approach } = await page.evaluate(() => {
+    const hq = (window as unknown as Win).__hq;
+    return { pose: { x: hq.rover.x, z: hq.rover.z, state: hq.rover.autopilot?.state ?? null }, approach: hq.layouts.L1.approach };
+  });
+  expect(pose.state === null || pose.state === "done").toBe(true);
+  expect(Math.hypot(pose.x - approach.x, pose.z - approach.z)).toBeLessThan(0.05);
 });

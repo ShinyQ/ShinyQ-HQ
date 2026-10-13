@@ -6,7 +6,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { MeshBasicMaterial, type Group } from "three";
 import type { FloorId } from "@/content/schema";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_COLOR, floorY, SHAFT, SHAFT_EAST_FACE, SLAB_THICKNESS } from "../config";
+import { COLORS, FLOOR_COLOR, FLOOR_IDS, floorY, SHAFT, SHAFT_EAST_FACE, SLAB_THICKNESS } from "../config";
 import { rimGeometry } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
 import type { FloorLayout } from "../types";
@@ -74,11 +74,16 @@ function Doors({ floor }: { floor: FloorId }) {
   );
 }
 
-/** Floor code above each landing door, lit on the current floor. */
-function Indicator({ floor }: { floor: FloorId }) {
+/**
+ * Floor code above each landing door, lit on the current floor. Every floor keeps its code mounted and
+ * shows it only while the floor is near: it is typeset once at load instead of during a ride, so whether
+ * three has uploaded it never depends on how far the typesetting got while the camera passed by.
+ */
+function Indicator({ floor, visible }: { floor: FloorId; visible: boolean }) {
   const current = useHQStore((s) => s.floor === floor);
   return (
     <Text
+      visible={visible}
       font={FONTS.monoBold}
       fontSize={0.55}
       letterSpacing={0.1}
@@ -114,12 +119,14 @@ export function ElevatorShaft({ layouts, near }: { layouts: Record<FloorId, Floo
       {near.map((id) => (
         <group key={id}>
           <Doors floor={id} />
-          <Suspense fallback={null}>
-            <Indicator floor={id} />
-          </Suspense>
           <Bridge layout={layouts[id]} />
         </group>
       ))}
+      <Suspense fallback={null}>
+        {FLOOR_IDS.map((id) => (
+          <Indicator key={id} floor={id} visible={near.includes(id)} />
+        ))}
+      </Suspense>
     </group>
   );
 }

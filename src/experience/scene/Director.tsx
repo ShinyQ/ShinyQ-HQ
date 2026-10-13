@@ -308,7 +308,14 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           controller.clearPath();
           local.blockedUntil = now + BLOCKED_FACE_S;
         } else {
-          if (ride.t === 0 && !controller.autopilot) controller.clearPath();
+          if (ride.t === 0) {
+            // A drive still running on the floor being left (the arrival roll-on of a floor called
+            // again at once) ends here: its point is in that floor's coordinates.
+            if (roverRuntime.autopilot && roverRuntime.autopilot.state !== "done") {
+              roverRuntime.autopilot = null;
+              controller.clearPath();
+            } else if (!controller.autopilot) controller.clearPath();
+          }
           const d = Math.hypot(controller.pose.x - from.approach.x, controller.pose.z - from.approach.z);
           atDoor = d < 0.8;
           if (!atDoor && !controller.following) {
