@@ -15,6 +15,7 @@ import { RIDE_CAP } from "../tower/elevator";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
+import { boostView } from "./boostView";
 import { clampCamera, type CameraWorld, type TallObstacle } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
@@ -84,6 +85,8 @@ export function CameraDirector({
     shift: { x: 0, y: 0 },
     /** Reduced motion: cut (no glide) from the still intro shot to the follow camera on the next frame. */
     cut: false,
+    /** Boost response this frame: FOV kick (degrees) and follow distance factor. */
+    boost: { fovKick: 0, pull: 1 },
   });
 
   useEffect(
@@ -144,6 +147,10 @@ export function CameraDirector({
     let desired: CameraPose;
     let snap = false;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
+    // Boost: widen and pull back a little (third person), a smaller FOV kick in first person; never under reduced motion.
+    boostView(roverRuntime.boost, orbit.blend, !s.reducedMotion && !focus && rig !== "intro", l.boost);
+    roverRuntime.boostFov = l.boost.fovKick;
+    roverRuntime.boostPull = l.boost.pull;
     if (focus) {
       desired = focus;
       snap = s.reducedMotion;
@@ -164,13 +171,13 @@ export function CameraDirector({
         }
       }
     } else if (rail) {
-      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
+      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
     } else {
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const f = roverRuntime.cameraForward;
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
+      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
     }
     // A low third-person camera stays above the floor, on the slab and out of obstacles: pulled in along its view ray. High poses never move.
     if (world && !focus && rig !== "intro") desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget) };
@@ -213,6 +220,7 @@ export function CameraDirector({
       fov = mixed.fov;
       if (easeBlend(orbit.blend) >= 0.5) forward = look;
     }
+    fov += l.boost.fovKick;
     camera.position.copy(l.outPos);
     camera.lookAt(l.outTarget);
     const near = fp ? FIRST_PERSON.near : CAMERA_NEAR;
