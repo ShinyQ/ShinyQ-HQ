@@ -1,8 +1,8 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, SRGBColorSpace, type Group, type Texture } from "three";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Texture } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { neonColor } from "../../fx/materials";
@@ -159,6 +159,33 @@ function usePrecompiled(group: RefObject<Group | null>): boolean {
   return ready;
 }
 
+/** Floor-local bounds of everything the hall draws (shapes, lights up to the spotlight apexes, the gate sign). */
+const HALL_BOUNDS = new Box3(new Vector3(HALL.zone.minX - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL.zone.maxZ + 1));
+
+/**
+ * Hides the whole hall while its bounds are outside the view: the instanced lights, tiles and rings
+ * cannot be frustum culled per mesh (their geometry bounds do not cover the instances), so without this
+ * they would cost draw calls from the Lobby spawn, where the hall is behind the camera.
+ */
+function HallView({ children }: { children: ReactNode }) {
+  const group = useRef<Group>(null);
+  const tmp = useMemo(() => ({ box: new Box3(), frustum: new Frustum(), m: new Matrix4() }), []);
+  useFrame(({ camera }) => {
+    const g = group.current;
+    if (!g?.parent) return;
+    const { box, frustum, m } = tmp;
+    g.parent.updateWorldMatrix(true, false);
+    box.copy(HALL_BOUNDS).applyMatrix4(g.parent.matrixWorld);
+    frustum.setFromProjectionMatrix(m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    g.visible = frustum.intersectsBox(box);
+  });
+  return (
+    <group ref={group} name="highlights-hall-view">
+      {children}
+    </group>
+  );
+}
+
 /**
  * L1 Highlights Hall gallery (spectacle round, Part 2): the gateway arch with its floating sign and
  * one-shot light curtain, the four station shapes (pedestal, monoliths, lit arch, beacon), the light
@@ -194,22 +221,24 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const ready = usePrecompiled(group);
   return (
     <group ref={group} name="highlights-hall" visible={ready}>
-      {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. */}
+      {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
       <RoadMarkings network={HALL_LAYOUT.network} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
-      <HallSolids shapes={shapes} />
-      <HallLines shapes={shapes} tier={tier} />
-      <HallLights lights={lights} tier={tier} />
-      <StatTiles tiles={tiles} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.tile} />
-      <PortraitHolo center={photo.center} yaw={aboutFace().yaw} radius={ABOUT.disc.r} map={texture} cell={photo.cell} tier={tier} />
-      <ShotWall thumbs={thumbs} atlas={atlas} texture={texture} />
-      <PortalGlow tier={tier} />
-      <PulseRings sources={pulses} radius={0.5} grow={5} speed={0.45} tier={tier} reducedMotion={reducedMotion} />
-      <GateCurtain tier={tier} reducedMotion={reducedMotion} />
-      {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
-      <Suspense fallback={null}>
-        <BatchedLabels ref={labelBatch} labels={texts.labels} name="highlights-labels" />
-        <GateSign text={labels.hall} tier={tier} />
-      </Suspense>
+      <HallView>
+        <HallSolids shapes={shapes} />
+        <HallLines shapes={shapes} tier={tier} />
+        <HallLights lights={lights} tier={tier} />
+        <StatTiles tiles={tiles} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.tile} />
+        <PortraitHolo center={photo.center} yaw={aboutFace().yaw} radius={ABOUT.disc.r} map={texture} cell={photo.cell} tier={tier} />
+        <ShotWall thumbs={thumbs} atlas={atlas} texture={texture} />
+        <PortalGlow tier={tier} />
+        <PulseRings sources={pulses} radius={0.5} grow={5} speed={0.45} tier={tier} reducedMotion={reducedMotion} />
+        <GateCurtain tier={tier} reducedMotion={reducedMotion} />
+        {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
+        <Suspense fallback={null}>
+          <BatchedLabels ref={labelBatch} labels={texts.labels} name="highlights-labels" />
+          <GateSign text={labels.hall} tier={tier} />
+        </Suspense>
+      </HallView>
     </group>
   );
 }
