@@ -10,7 +10,7 @@ import { VisitsPanel } from "@/components/stats/VisitsPanel";
 import { STATS_FIXTURE } from "@/lib/visits/contract";
 import { __setStatsForTests } from "@/lib/visits/store";
 
-const chips = { "work-best": "What are his best software projects?", "ai-voice": "How does the voice AI contact center work?", "work-stack": "Which backend stack does he use most?" };
+const chips = { "work-best": "What are his best software projects?", "ai-agents": "How does he use AI coding agents?", "career-now": "What is he working on now?" };
 const floors = { L1: "Home", L2: "Journey", L3: "Work", L4: "Writing", RF: "About" } as const;
 
 function renderPanel(locale: "en" | "id" = "en") {
@@ -45,7 +45,7 @@ describe("VisitsPanel", () => {
     expect(scope).toHaveTextContent(en.stats.source);
     expect(scope).toHaveTextContent(en.stats.updated);
     expect(screen.queryByTestId("visits-delayed")).toBeNull();
-    expect(screen.getByText("1,240")).toBeInTheDocument();
+    expect(screen.getByText("340")).toBeInTheDocument();
     expect(screen.getByText("Work · L3")).toBeInTheDocument();
   });
 
@@ -57,18 +57,18 @@ describe("VisitsPanel", () => {
     expect(within(topic).getAllByRole("radio")).toHaveLength(4);
     expect(within(period).getAllByRole("radio")).toHaveLength(2);
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Last 30 days, topic All: 1,240 visits from 10 countries, 318 questions.");
+    expect(status).toHaveTextContent("Last 30 days, topic All: 340 visits from 9 countries, 64 questions.");
 
     await userEvent.click(within(topic).getByRole("radio", { name: "All" }));
     await userEvent.keyboard("{ArrowRight}");
     expect(within(topic).getByRole("radio", { name: "Work" })).toBeChecked();
-    expect(status).toHaveTextContent("topic Work: 1,240 visits from 10 countries, 120 questions.");
+    expect(status).toHaveTextContent("topic Work: 340 visits from 9 countries, 21 questions.");
     const list = screen.getByTestId("visits-chips");
-    expect(within(list).getAllByRole("listitem").map((li) => li.getAttribute("data-chip"))).toEqual(["work-best", "work-stack"]);
+    expect(within(list).getAllByRole("listitem").map((li) => li.getAttribute("data-chip"))).toEqual(["work-best"]);
 
     await userEvent.click(within(period).getByRole("radio", { name: "Since launch" }));
-    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Since Oct 1, 2026");
-    expect(status).toHaveTextContent("Since launch, topic Work: 12.5 thousand visits from 17 countries, 1,100 questions.");
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Since Oct 11, 2026");
+    expect(status).toHaveTextContent("Since launch, topic Work: 520 visits from 10 countries, 33 questions.");
   });
 
   it("lists country names in the table, never a number per country", async () => {
@@ -76,18 +76,18 @@ describe("VisitsPanel", () => {
     renderPanel();
     await userEvent.click(screen.getByText(en.stats.table.open));
     const rows = within(screen.getByTestId("visits-table")).getAllByRole("row").slice(1);
-    expect(rows).toHaveLength(10);
+    expect(rows).toHaveLength(9);
     expect(rows.map((r) => r.textContent)).toContain("IndonesiaID");
     expect(rows.every((r) => !/\d/.test(r.textContent ?? ""))).toBe(true);
-    expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(10);
+    expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(9);
   });
 
   it("notes a delayed snapshot and speaks Indonesian", () => {
     __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "delayed" });
     renderPanel("id");
-    expect(screen.getByTestId("visits-delayed")).toHaveTextContent("Tertunda: terakhir diperbarui 13 Okt 2026");
+    expect(screen.getByTestId("visits-delayed")).toHaveTextContent("Tertunda: terakhir diperbarui 14 Nov 2026");
     expect(screen.getByTestId("visits-scope")).toHaveTextContent(id.stats.window.d30);
-    expect(screen.getByText("1.240")).toBeInTheDocument();
+    expect(screen.getByText("340")).toBeInTheDocument();
   });
 });
 

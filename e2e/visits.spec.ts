@@ -47,15 +47,15 @@ test.describe("Visits on the Classic site", () => {
     await expect(section.getByTestId("visits-scope")).toContainText(en.stats.source);
     await expect(section.getByTestId("visits-scope")).toContainText(en.stats.updated);
     const status = section.getByTestId("visits-status");
-    await expect(status).toContainText("topic All: 1,240 visits from 10 countries");
+    await expect(status).toContainText("topic All: 340 visits from 9 countries");
     await section.getByRole("group", { name: en.stats.topicLegend }).getByText("AI", { exact: true }).click();
     await expect(status).toContainText("topic AI:");
     await expect(panel).toHaveAttribute("data-topic", "ai");
     await section.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.all).click();
-    await expect(status).toContainText("Since launch, topic AI: 12.5 thousand visits from 17 countries");
-    await expect(section.getByTestId("visits-map").locator("[data-country]")).toHaveCount(17);
+    await expect(status).toContainText("Since launch, topic AI: 520 visits from 10 countries");
+    await expect(section.getByTestId("visits-map").locator("[data-country]")).toHaveCount(10);
     await section.getByText(en.stats.table.open).click();
-    await expect(section.getByTestId("visits-table").locator("tbody tr")).toHaveCount(17);
+    await expect(section.getByTestId("visits-table").locator("tbody tr")).toHaveCount(10);
     const axe = await new AxeBuilder({ page }).include("#visits").analyze();
     expect(axe.violations).toEqual([]);
     expect(errors).toEqual([]);
@@ -79,7 +79,7 @@ test.describe("Visits on the Classic site", () => {
     await mockStats(page);
     await openPage(page, "/id?tier=static");
     const item = page.locator('#stats .hx-tick-track:not([aria-hidden]) [data-stat="visits"]');
-    await expect(item).toContainText("1.240");
+    await expect(item).toContainText("340");
     await expect(item).toContainText(id.stats.tile);
     await expect(item.getByRole("link")).toHaveAttribute("href", "/id/contact#visits");
   });
@@ -102,7 +102,7 @@ test.describe("RF Visitor Observatory", () => {
     const errors = collectErrors(page);
     await mockStats(page);
     await openRoof(page);
-    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(10);
+    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
     const point = await targetPoint(page, "RF:station:visits");
     await page.mouse.click(point.x, point.y);
     await waitForRoom(page, "RF:visits");
@@ -144,7 +144,7 @@ test.describe("RF Visitor Observatory", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await mockStats(page);
     await openRoof(page);
-    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(10);
+    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
     const before = await spectacle(page, "observatory");
     await waitForFrames(page, 30, 500);
     expect(await spectacle(page, "observatory")).toBe(before);

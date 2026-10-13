@@ -53,12 +53,12 @@ describe("Visitor Observatory parts", () => {
     const text = rows.map((r) => r.text);
     expect(text).toEqual([
       "VISITOR OBSERVATORY",
-      "about 1,240",
+      "about 340",
       "visits, last 30 days",
-      "about 12.5K since launch",
-      "10 countries · 318 questions asked",
+      "about 520 since launch",
+      "9 countries · 64 questions asked",
       "most explored: Work",
-      "3D 59% · Classic 41%",
+      "3D 68% · Classic 32%",
       "Cloudflare Web Analytics, sampled estimates",
       "Updated daily",
     ]);

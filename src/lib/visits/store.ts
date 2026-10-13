@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { parseStatsSnapshot, type StatsSnapshotV1 } from "./contract";
+import { parseStatsSnapshot, STATS_ENDPOINT, type StatsSnapshotV1 } from "./contract";
 import { freshness, type Freshness } from "./model";
 
 /**
@@ -8,7 +8,7 @@ import { freshness, type Freshness } from "./model";
  * with the contract and its age. A 204, an error, an invalid body or a snapshot older than 7 days all
  * end in `hidden`, so every surface hides together.
  */
-export const STATS_PATH = "/api/stats";
+export const STATS_PATH = STATS_ENDPOINT;
 
 export type StatsFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
