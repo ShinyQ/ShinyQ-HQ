@@ -41,8 +41,16 @@ export const HALL = {
   panel: { h: 6, plinth: 0.35, depth: 0.3 },
   /** The passage behind the cert wall: the camera turns to look into the hall. */
   entry: { minX: 28, maxX: 36, minZ: 11, maxZ: 19 },
-  /** Floor sign on the lead road. */
-  sign: { x: 22, z: 15 },
+  /**
+   * Gateway arch over the lead road where it enters the plaza (gallery rebuild, October 2026): two
+   * pillars (the south one touches the slab edge, the north one stays 6 u clear of the cert wall), a
+   * lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor).
+   */
+  gate: { x: 33, depth: 1.2, north: { minZ: 9.4, maxZ: 10.6 }, south: { minZ: 19.8, maxZ: 21 }, h: 7.4, lintel: 1, signY: 8.1 },
+  /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
+  zoom: { about: 1, projects: 1.45, experience: 1.5, contact: 1.27 },
+  /** Height of each station's shape (point-and-go pick volume, camera collision). */
+  height: { about: 6.4, projects: 7.6, experience: 7.4, contact: 9.6 },
   /** Screenshots load once the rover is east of here on L1. */
   lazyX: 18,
 } as const;
@@ -110,8 +118,18 @@ function stationZone(s: HallStation): ViewZone {
     },
     // The default camera looks along (-1, -1): turning by (face yaw - PI/4) puts it on the plaza side.
     yaw: s.yaw - Math.PI / 4,
-    zoom: clamp(s.width / 11, 1, 1.5),
+    zoom: HALL.zoom[s.station],
   };
+}
+
+/** The gateway arch pillars (obstacles; the opening between them carries the lead road). */
+export function gatePillars(): Rect[] {
+  const g = HALL.gate;
+  const x = { minX: g.x - g.depth / 2, maxX: g.x + g.depth / 2 };
+  return [
+    { ...x, ...g.north },
+    { ...x, ...g.south },
+  ];
 }
 
 export function buildHighlightsHall(): HighlightsHallLayout {
@@ -126,7 +144,7 @@ export function buildHighlightsHall(): HighlightsHallLayout {
     stations,
     network: { roads: [lead], plazas: [plaza], spurs },
     doors: stations.map((s) => ({ room: s.room, at: s.pad, facing: s.facing })),
-    obstacles: stations.map((s) => s.rect),
+    obstacles: [...stations.map((s) => s.rect), ...gatePillars()],
     viewZones: [{ id: "L1:highlights-entry", area: { ...HALL.entry }, yaw: -Math.PI / 2, zoom: 1.3 }, ...stations.map(stationZone)],
     zone: { ...HALL.zone },
   };

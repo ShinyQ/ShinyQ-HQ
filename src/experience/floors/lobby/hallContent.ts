@@ -1,16 +1,17 @@
 import { CAREER_TONE } from "../../fx/holoIcons";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { ExperienceData, Vec2 } from "../../types";
-import type { Box } from "../roof/solids";
 import { podLiveLink } from "@/content/selectors";
-import { HALL, stationOf, type HallStation } from "./hallLayout";
+import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, onFace, SHOT, statTiles, type Face } from "./hallGallery";
+import { HALL } from "./hallLayout";
 import { experienceRows, HIGHLIGHT_STAT_COUNT, type HighlightStation } from "./stations";
 import { brandPhotoSrc } from "@/lib/brand-photo";
 
 /**
- * Pure scenery data for the Highlights Hall: every solid in one merged mesh (plus its edges), every
- * text in one troika BatchedText, the three screenshots and the owner's portrait in one atlas quad mesh. Positions are
- * floor-local; panel coordinates are `u` along the face (the reader's right) and the height `y`.
+ * Pure scenery data for the Highlights Hall gallery: every text on the station shapes (`hallGallery.ts`)
+ * in one troika BatchedText, the three screenshots on the monoliths and the owner's portrait (the About me
+ * hologram disc) from one atlas. Positions are floor-local; face coordinates are `u` along the face
+ * (the reader's right) and the height `y`.
  */
 
 export interface HallLabels {
@@ -23,7 +24,7 @@ export interface HallLabels {
   /** "+{count} more in the drawer" */
   more: (count: number) => string;
   cvHint: string;
-  /** Floor sign on the passage. */
+  /** The floating sign on the gateway arch. */
   hall: string;
   /** "Visit live site" (`common.visitLive`, R4-J): tag under a project screenshot that has a live link. */
   visitLive: string;
@@ -42,129 +43,99 @@ export type HallInput = Pick<ExperienceData, "profile" | "stats" | "roof" | "car
 
 /** Roles per experience column in 3D; the drawer lists every one. */
 export const HALL_ROWS = 6;
-const STAT_U = [-3.6, -1.2, 1.2, 3.6] as const;
-const TILE = { y: 2.9, w: 2.2, h: 1.8 } as const;
-const SHOT_U = [-5.2, 0, 5.2] as const;
 /** Experience rows: the first org line and the step between rows (org plus role and period). */
-const ROLE = { top: 4.45, step: 0.6 } as const;
-export const SHOT = { y: 3.55, w: 4.6, h: 2.875 } as const;
+const ROLE = { top: 5.0, step: 0.6 } as const;
+export { SHOT };
 /** Atlas cell per screenshot (16:10), smaller on the lite tier. */
 export const SHOT_CELL = { full: { w: 480, h: 300 }, lite: { w: 320, h: 200 } } as const;
-/**
- * The owner's portrait on the About me panel (owner decision 2026-10-13): `u` along the face, center height,
- * square side. Its frame lines up with the left stat tile and keeps 0.2 u clear of the tiles and the panel top.
- */
-export const PHOTO = { u: -3.8, y: 4.9, size: 1.6 } as const;
+/** The owner's portrait (owner decision 2026-10-13), drawn as the About me hologram disc. */
 export const PHOTO_SRC = brandPhotoSrc(320);
 /** The light studio backdrop would bloom on the full tier; drawn slightly darker it reads like the screenshots. */
 export const PHOTO_BRIGHTNESS = 0.85;
-/** Left edge of the About text block (eyebrow, name, headline), right of the portrait frame. */
-const ABOUT_TEXT_U = -2.2;
-/** How far in front of the panel face tiles, screenshots and text sit (no z-fighting). */
-const OUT = { tile: 0.03, shot: 0.07, text: 0.1 } as const;
+/** How far in front of a face screenshots and text sit (no z-fighting). */
+const OUT = { shot: 0.03, text: 0.08 } as const;
 const INK = { title: "#f8fafc", body: "#cbd5e1", cyan: "#22d3ee" } as const;
 
-/** A point on a station face: `u` along it (the reader's right), at height `y`, `out` toward the plaza. */
-export function onPanel(s: HallStation, u: number, y: number, out: number = OUT.text): [number, number, number] {
-  return [s.front.x + s.right.x * u - s.facing.x * out, y, s.front.z + s.right.z * u - s.facing.z * out];
+/** Every hall text for one `BatchedLabels`; `tile[i]` is the stat tile label `i` rides with (it drifts with it), or -1. */
+export interface HallTexts {
+  labels: BatchedLabel[];
+  tile: number[];
 }
 
-/** A thin box on a station face (stat tile, screenshot frame), `w` along the face. */
-function faceBox(s: HallStation, u: number, yCenter: number, w: number, h: number, depth = 0.06): Box {
-  const [x, , z] = onPanel(s, u, 0, OUT.tile);
-  const along = Math.abs(s.right.x) > 0.5;
-  return { x, z, y: yCenter - h / 2, w: along ? w : depth, d: along ? depth : w, h };
-}
-
-/** Plinths, panels, the four stat tiles, the portrait frame and one frame per screenshot. */
-export function hallSolids(projectCount: number): Box[] {
-  const P = HALL.panel;
-  const out: Box[] = [];
-  for (const name of ["about", "projects", "experience", "contact"] as const) {
-    const s = stationOf(name);
-    const r = s.rect;
-    out.push({ x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, y: 0, w: r.maxX - r.minX, d: r.maxZ - r.minZ, h: P.plinth });
-    const along = Math.abs(s.right.x) > 0.5;
-    out.push({
-      x: s.front.x + (s.facing.x * P.depth) / 2,
-      z: s.front.z + (s.facing.z * P.depth) / 2,
-      y: P.plinth,
-      w: along ? s.width : P.depth,
-      d: along ? P.depth : s.width,
-      h: P.h - P.plinth,
-    });
-  }
-  const about = stationOf("about");
-  for (const u of STAT_U) out.push(faceBox(about, u, TILE.y, TILE.w, TILE.h));
-  // The portrait's frame: its edges are the hall's neon lines (MergedEdges), like the stat tiles.
-  out.push(faceBox(about, PHOTO.u, PHOTO.y, PHOTO.size + 0.2, PHOTO.size + 0.2));
-  const projects = stationOf("projects");
-  for (const u of SHOT_U.slice(0, projectCount)) out.push(faceBox(projects, u, SHOT.y, SHOT.w + 0.2, SHOT.h + 0.2));
-  return out;
-}
-
-/** Every hall text (station faces plus the floor sign), for one `BatchedLabels`. */
-export function hallLabels(input: HallInput, labels: HallLabels, fonts: HallFonts): BatchedLabel[] {
+/** Every hall text on the station shapes, for one `BatchedLabels`. The gateway sign floats on its own (`GateSign`). */
+export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts): HallTexts {
   const out: BatchedLabel[] = [];
-  const add = (s: HallStation, u: number, y: number, text: string, font: string, fontSize: number, color: string, extra: Partial<BatchedLabel> = {}) => {
-    if (text.trim()) out.push({ text, position: onPanel(s, u, y), yaw: s.yaw, font, fontSize, color, textAlign: "center", ...extra });
+  const tile: number[] = [];
+  const add = (f: Face, u: number, y: number, text: string, font: string, fontSize: number, color: string, extra: Partial<BatchedLabel> = {}, d: number = OUT.text, tileIndex = -1) => {
+    if (!text.trim()) return;
+    out.push({ text, position: onFace(f, u, y, d), yaw: f.yaw, font, fontSize, color, textAlign: "center", ...extra });
+    tile.push(tileIndex);
   };
-  const eyebrow = (s: HallStation, n: number, title: string) =>
-    add(s, 0, 5.55, `0${n} · ${title.toUpperCase()}`, fonts.mono, 0.2, HALL.tone[s.station], { letterSpacing: 0.12, maxWidth: s.width - 1 });
+  const eyebrow = (f: Face, y: number, n: number, title: string, tone: string, maxWidth: number, fontSize = 0.2) =>
+    add(f, 0, y, `0${n} · ${title.toUpperCase()}`, fonts.mono, fontSize, tone, { letterSpacing: 0.12, maxWidth });
 
-  const about = stationOf("about");
-  // Portrait on the left (PHOTO), the text block left-aligned beside it.
-  const block = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: about.width / 2 - ABOUT_TEXT_U - 0.3 };
-  add(about, ABOUT_TEXT_U, 5.55, `01 · ${labels.about.toUpperCase()}`, fonts.mono, 0.2, HALL.tone.about, { letterSpacing: 0.12, ...block });
-  add(about, ABOUT_TEXT_U, 4.95, input.profile.name, fonts.sansBold, 0.52, INK.title, block);
-  add(about, ABOUT_TEXT_U, 4.55, input.profile.headline, fonts.sans, 0.28, INK.cyan, { ...block, anchorY: "top", lineHeight: 1.2 });
-  input.stats.slice(0, HIGHLIGHT_STAT_COUNT).forEach((stat, i) => {
-    add(about, STAT_U[i], TILE.y + 0.55, stat.value, fonts.sansBold, 0.5, INK.title, { maxWidth: TILE.w - 0.2 });
-    add(about, STAT_U[i], TILE.y + 0.15, stat.label, fonts.sans, 0.14, INK.body, { anchorY: "top", maxWidth: TILE.w - 0.2, lineHeight: 1.2 });
+  // 01 About me: eyebrow, name and headline over the portrait hologram, stat tiles in an arc, the motto in front of the column.
+  const about = aboutFace();
+  const A = ABOUT.text;
+  eyebrow(about, A.eyebrow, 1, labels.about, HALL.tone.about, 9);
+  add(about, 0, A.name, input.profile.name, fonts.sansBold, 0.52, INK.title, { maxWidth: 9 });
+  add(about, 0, A.headline, input.profile.headline, fonts.sans, 0.28, INK.cyan, { maxWidth: 9 });
+  statTiles(Math.min(HIGHLIGHT_STAT_COUNT, input.stats.length)).forEach((t, i) => {
+    const stat = input.stats[i];
+    add(t.face, 0, t.y + 0.5, stat.value, fonts.sansBold, 0.5, INK.title, { maxWidth: t.w - 0.2 }, OUT.text, i);
+    add(t.face, 0, t.y + 0.12, stat.label, fonts.sans, 0.14, INK.body, { anchorY: "top", maxWidth: t.w - 0.2, lineHeight: 1.2 }, OUT.text, i);
   });
-  add(about, 0, 1.3, input.roof.subheadline, fonts.sans, 0.24, INK.body, { maxWidth: about.width - 0.6 });
+  add(about, 0, A.motto, input.roof.subheadline, fonts.sans, 0.24, INK.body, { maxWidth: 9 }, ABOUT.column.r + 0.15);
 
-  const projects = stationOf("projects");
-  eyebrow(projects, 2, labels.projects);
-  input.highlights.projects.slice(0, SHOT_U.length).forEach((p, i) => {
-    add(projects, SHOT_U[i], 1.75, p.title, fonts.sansBold, 0.24, INK.title, { maxWidth: SHOT.w });
-    add(projects, SHOT_U[i], 1.35, input.labs.wings[p.wing].toUpperCase(), fonts.mono, 0.14, HALL.tone.projects, { letterSpacing: 0.1, maxWidth: SHOT.w });
+  // 02 Top projects: one monolith per project, the title, wing and live tag under its screen.
+  const list = monoliths(Math.min(MONOLITH.u.length, input.highlights.projects.length));
+  if (list.length) eyebrow(list[Math.floor(list.length / 2)].face, 6.75, 2, labels.projects, HALL.tone.projects, MONOLITH.w - 0.4, 0.22);
+  input.highlights.projects.slice(0, list.length).forEach((p, i) => {
+    const f = list[i].face;
+    add(f, 0, 2.65, p.title, fonts.sansBold, 0.26, INK.title, { maxWidth: SHOT.w });
+    add(f, 0, 2.2, input.labs.wings[p.wing].toUpperCase(), fonts.mono, 0.15, HALL.tone.projects, { letterSpacing: 0.1, maxWidth: SHOT.w });
     // Live sites (R4-J) come from the L3 payload through the guarded selector; the link itself lives in the drawer.
     if (podLiveLink(input.labs.pods.find((pod) => pod.slug === p.slug) ?? {})) {
-      add(projects, SHOT_U[i], 0.95, labels.visitLive.toUpperCase(), fonts.mono, 0.13, INK.cyan, { letterSpacing: 0.1, maxWidth: SHOT.w });
+      add(f, 0, 1.8, labels.visitLive.toUpperCase(), fonts.mono, 0.14, INK.cyan, { letterSpacing: 0.1, maxWidth: SHOT.w });
     }
   });
 
-  const experience = stationOf("experience");
-  eyebrow(experience, 3, labels.experience);
+  // 03 Work experience: the title on the lintel, Employment and Freelance on the two pillars.
+  const arch = experienceArch();
+  eyebrow(arch.face, ARCH.h + ARCH.lintel / 2, 3, labels.experience, HALL.tone.experience, 2 * ARCH.pillar.to - 1, 0.3);
   const rows = experienceRows(input.career);
   const columns = [
-    { u: -4.4, title: labels.employment, list: rows.employment, tone: CAREER_TONE.job },
-    { u: 4.4, title: labels.freelance, list: rows.freelance, tone: CAREER_TONE.freelance },
+    { ...arch.columns[0], title: labels.employment, list: rows.employment, tone: CAREER_TONE.job },
+    { ...arch.columns[1], title: labels.freelance, list: rows.freelance, tone: CAREER_TONE.freelance },
   ];
   for (const col of columns) {
-    const left = col.u - 3.9;
-    const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: 7.8 };
-    add(experience, col.u, 5.0, col.title.toUpperCase(), fonts.mono, 0.24, col.tone, { letterSpacing: 0.12, maxWidth: 7.8 });
+    const width = col.w - 0.6;
+    const left = col.u - width / 2;
+    const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: width };
+    add(arch.face, col.u, 5.6, col.title.toUpperCase(), fonts.mono, 0.24, col.tone, { letterSpacing: 0.12, maxWidth: width });
     col.list.slice(0, HALL_ROWS).forEach((e, i) => {
       const y = ROLE.top - i * ROLE.step;
-      add(experience, left, y, e.org, fonts.sansBold, 0.26, INK.title, row);
-      add(experience, left, y - 0.3, `${e.role} · ${e.period}`, fonts.sans, 0.17, INK.body, row);
+      add(arch.face, left, y, e.org, fonts.sansBold, 0.26, INK.title, row);
+      add(arch.face, left, y - 0.3, `${e.role} · ${e.period}`, fonts.sans, 0.17, INK.body, row);
     });
     const hidden = col.list.length - HALL_ROWS;
-    if (hidden > 0) add(experience, left, ROLE.top - HALL_ROWS * ROLE.step, labels.more(hidden), fonts.mono, 0.16, col.tone, row);
+    if (hidden > 0) add(arch.face, left, ROLE.top - HALL_ROWS * ROLE.step, labels.more(hidden), fonts.mono, 0.16, col.tone, row);
   }
 
-  const contact = stationOf("contact");
-  eyebrow(contact, 4, labels.contact);
-  add(contact, 0, 4.85, input.roof.availability, fonts.sansBold, 0.36, INK.title, { maxWidth: contact.width - 1 });
-  add(contact, 0, 3.9, input.roof.email, fonts.mono, 0.42, INK.cyan, { maxWidth: contact.width - 1 });
-  add(contact, 0, 3.0, input.roof.channels.map((c) => c.label).join(" · "), fonts.sans, 0.22, INK.body, { maxWidth: contact.width - 1 });
-  add(contact, 0, 2.2, labels.cvHint, fonts.mono, 0.18, HALL.tone.contact, { maxWidth: contact.width - 1 });
+  // 04 Contact: the card floating beside the beacon.
+  const card = contactBeacon().card.face;
+  const w = BEACON.card.w - 0.6;
+  eyebrow(card, 5.35, 4, labels.contact, HALL.tone.contact, w);
+  add(card, 0, 4.75, input.roof.availability, fonts.sansBold, 0.36, INK.title, { maxWidth: w });
+  add(card, 0, 3.95, input.roof.email, fonts.mono, 0.42, INK.cyan, { maxWidth: w });
+  add(card, 0, 3.15, input.roof.channels.map((c) => c.label).join(" · "), fonts.sans, 0.22, INK.body, { maxWidth: w });
+  add(card, 0, 2.4, labels.cvHint, fonts.mono, 0.18, HALL.tone.contact, { maxWidth: w });
+  return { labels: out, tile };
+}
 
-  // Floor sign on the passage, flat on the road, read from the plaza side.
-  out.push({ text: labels.hall.toUpperCase(), position: [HALL.sign.x, 0.03, HALL.sign.z], yaw: 0, tilt: Math.PI / 2, font: fonts.monoBold, fontSize: 0.9, color: HALL.tone.about, letterSpacing: 0.1 });
-  return out;
+/** The hall texts alone (see `hallTexts`). */
+export function hallLabels(input: HallInput, labels: HallLabels, fonts: HallFonts): BatchedLabel[] {
+  return hallTexts(input, labels, fonts).labels;
 }
 
 export interface ShotQuad {
@@ -176,16 +147,16 @@ export interface ShotQuad {
   h: number;
 }
 
-/** One quad per project screenshot on the projects panel. */
+/** One quad per project screenshot, on its monolith. */
 export function hallShots(count: number): ShotQuad[] {
-  const s = stationOf("projects");
-  return SHOT_U.slice(0, count).map((u, index) => ({ index, center: onPanel(s, u, SHOT.y, OUT.shot), right: s.right, w: SHOT.w, h: SHOT.h }));
+  return monoliths(count).map((m, index) => ({ index, center: onFace(m.face, 0, SHOT.y, OUT.shot), right: m.face.right, w: SHOT.w, h: SHOT.h }));
 }
 
-/** The portrait quad on the About me panel; `index` is its atlas cell (after the screenshots). */
+/** The portrait hologram disc over the About me pedestal (the square around the disc); `index` is its atlas cell (after the screenshots). */
 export function hallPhoto(index: number): ShotQuad {
-  const s = stationOf("about");
-  return { index, center: onPanel(s, PHOTO.u, PHOTO.y, OUT.shot), right: s.right, w: PHOTO.size, h: PHOTO.size };
+  const f = aboutFace();
+  const size = ABOUT.disc.r * 2;
+  return { index, center: onFace(f, 0, ABOUT.disc.y, 0), right: f.right, w: size, h: size };
 }
 
 /** One cell of the hall atlas: an image drawn with cover fit at `x` (px), over the full atlas height. */

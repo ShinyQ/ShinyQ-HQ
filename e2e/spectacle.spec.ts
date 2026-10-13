@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 import { collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
-import en from "../messages/en.json";
 
 /**
  * Spectacle round, Session B (docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md):
@@ -37,11 +36,10 @@ async function rotateCamera(page: Page, key: "q" | "e", ms: number) {
   await waitForCameraSettle(page);
 }
 
-/** No troika text lies flat on the floor (the L1 hall sign belongs to the Highlights Hall rebuild). */
+/** No troika text lies flat on the floor (the L1 hall sign floats on the gateway arch since the gallery rebuild). */
 async function expectNoFlatText(page: Page) {
-  const allowed = new Set([en.hall.hall.toUpperCase()]);
   const flat = await page.evaluate(() => (window as unknown as SpectacleWindow).__hq.probes.flatText());
-  expect(flat.filter((t) => !allowed.has(t))).toEqual([]);
+  expect(flat).toEqual([]);
 }
 
 for (const [floor, path, group, min] of [
@@ -139,7 +137,8 @@ test("reduced motion: the reactor, waterfalls and the L2 horizon stand still", a
   expect(await read()).toEqual(before);
 
   await enterFloorRoute(page, "/en/journey");
-  await expect.poll(async () => (await read())["horizon.time"]).toBeDefined();
+  // The Horizon mounts with the Career Road, a few seconds after the first frame on a CI runner.
+  await expect.poll(async () => (await read())["horizon.time"], { timeout: 30_000 }).toBeDefined();
   const l2 = await read();
   await waitForFrames(page, 30, 500);
   expect((await read())["horizon.time"]).toBe(l2["horizon.time"]);

@@ -10,8 +10,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = join(__dirname, "../../src/experience");
-/** Dev-only routes (never in the export) and the L1 hall sign, which the Highlights Hall rebuild (Session A) turns into its gateway arch sign. */
-const ALLOWED = new Set(["floors/lobby/hallContent.ts"]);
+/** Dev-only routes (never in the export). */
 const SKIP_DIRS = new Set(["prototype"]);
 
 function files(dir: string): string[] {
@@ -47,7 +46,6 @@ export function flatTextOffenders(root = ROOT): string[] {
   const out: string[] = [];
   for (const path of files(root)) {
     const rel = relative(root, path);
-    if (ALLOWED.has(rel)) continue;
     const source = readFileSync(path, "utf8");
     if (textTags(source).some((tag) => FLAT_ROTATION.test(tag))) out.push(`${rel}: <Text> rotated flat`);
     if (FLAT_TILT.test(source)) out.push(`${rel}: label tilted flat`);

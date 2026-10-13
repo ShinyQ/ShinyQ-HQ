@@ -31,7 +31,7 @@ export function highlightsInteractables(hall: HighlightsHallLayout, labels: Reco
       label: labels[s.station],
       at: { x: s.pad.x, z: s.pad.z },
       bounds: stationBounds(s),
-      height: HALL.panel.h,
+      height: HALL.height[s.station],
       action: { type: "open-room", room: s.room },
     }),
   );
