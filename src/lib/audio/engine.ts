@@ -52,8 +52,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const listeners = new Set<() => void>();
   let muted = readMuted();
-  /** Paused while the 3D view is closed (Page View): silent without touching the stored preference. */
-  let paused = false;
+  /** Paused while the 3D view is closed (Page View, static tier): silent without touching the stored preference. */
+  let paused = deps.paused ?? true;
   let disposed = false;
   let unavailable = false;
   let ctx: AudioContext | null = null;

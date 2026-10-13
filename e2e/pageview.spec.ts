@@ -403,3 +403,23 @@ test.describe("no colored edge stripes", () => {
     expect(await page.evaluate(findEdgeAccents, "[data-testid='cert-dialog']")).toEqual([]);
   });
 });
+
+test("the Page View stays silent: clicks and the CV dialog create no AudioContext", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __audioContexts: number; AudioContext: typeof AudioContext };
+    w.__audioContexts = 0;
+    const Original = w.AudioContext;
+    w.AudioContext = class extends Original {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        w.__audioContexts++;
+      }
+    };
+  });
+  await openPage(page, staticTier("/en/quick"));
+  await page.locator("main h1").first().click();
+  await page.locator('main a[href="/en/cv"]').first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
+});

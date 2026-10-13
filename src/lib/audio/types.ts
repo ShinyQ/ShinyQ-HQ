@@ -24,4 +24,6 @@ export interface AudioEngineDeps {
   doc: Pick<Document, "visibilityState" | "addEventListener" | "removeEventListener"> | null;
   /** Milliseconds, used for the key click rate limit. */
   now: () => number;
+  /** Start state of the Page View pause; true unless a test drives the 3D state directly. `Experience` unpauses on mount. */
+  paused: boolean;
 }

@@ -38,7 +38,7 @@ import { audio, useAudio } from "@/lib/audio";
 
 - **On by default.** A missing or invalid `hq:sound` value means on; only a stored `"off"` (the visitor muted) keeps it muted. The default is not written to storage; `setMuted` writes `"on"` / `"off"`.
 - **Lazy init and first gesture.** No `AudioContext` exists until it is needed. Browser autoplay policy keeps any context suspended until a user activation, so while unmuted the engine listens (capture) for `pointerdown`, `pointerup`, `keydown`, `touchend` and `click` (on touch screens activation comes at the end of a tap, not `touchstart`). The first one creates the context, starts the ambient hum and resumes it; the listeners stay until the context really runs. The engine is created when `Experience` mounts, so the Boot rover button or the first click, tap or key in the HQ starts the sound. Sounds requested before that gesture may be silent; this is expected.
-- **Paused outside 3D.** `setPaused(true)` fades out and suspends like a mute but keeps the setting; `Experience` pauses on unmount (Page View) and unpauses on mount. The static tier never creates the engine.
+- **Paused outside 3D.** The engine starts paused, so the Page View and the static tier never create a context, even after a click or a dialog sound. `Experience` unpauses on mount and pauses again on unmount; `setPaused(true)` fades out and suspends like a mute but keeps the setting.
 - **Muting** fades the master bus (ambient and rumble included) over about 100 ms, then suspends the context. `play` is a no-op while muted; `setRumble` only remembers the speed.
 - **Tab visibility.** Hidden suspends the context; visible resumes it only when unmuted.
 
