@@ -160,7 +160,7 @@ export const BEACON = {
     { y: 5.8, w: 1.2 },
     { y: 7.8, w: 0.9 },
   ],
-  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, z: 19.2 },
+  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, z: 18.35 },
 } as const;
 
 export interface ContactBeacon {
