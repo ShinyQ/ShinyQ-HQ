@@ -166,7 +166,7 @@ describe("Ask dock chat", () => {
     const questions = within(panel).getByTestId("ask-topic-questions");
     expect(within(questions).getAllByRole("listitem").length).toBeGreaterThanOrEqual(4);
     await userEvent.click(within(questions).getByRole("button", { name: "How does the voice AI contact center work?" }));
-    expect(askMock.ask).toHaveBeenCalledWith(expect.objectContaining({ q: "How does the voice AI contact center work?", source: "pill" }));
+    expect(askMock.ask).toHaveBeenCalledWith(expect.objectContaining({ q: "How does the voice AI contact center work?", source: "pill", chip: "ai-voice" }));
     const followUps = await within(panel).findByTestId("ask-followups");
     expect(within(followUps).getByRole("button", { name: "What latency did the voice agent reach?" })).toBeInTheDocument();
     await userEvent.click(within(followUps).getByRole("button", { name: "What latency did the voice agent reach?" }));
@@ -195,6 +195,7 @@ describe("Ask dock chat", () => {
     expect(askMock.ask).not.toHaveBeenCalled();
     await userEvent.type(input, " today{Enter}");
     expect(askMock.ask).toHaveBeenCalledWith(expect.objectContaining({ q: "How can I contact him? today", source: "dock" }));
+    expect(askMock.ask.mock.calls.at(-1)?.[0]).not.toHaveProperty("chip");
   });
 
   it("shows the rate limit as a system message", async () => {

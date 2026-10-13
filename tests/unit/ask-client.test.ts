@@ -108,6 +108,16 @@ describe("askQuestion", () => {
     expect(bodyOf(d.fetch.mock.calls[0])).toMatchObject({ q: "Where did he work?", locale: "en", source: "followup" });
   });
 
+  it("sends a curated chip id only when given and short", async () => {
+    const d = deps([sse([frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-01" })]), sse([frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-01" })]), sse([frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-01" })])]);
+    await askQuestion({ q: "What are his best software projects?", locale: "en", source: "pill", chip: "work-best", onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[0])).toMatchObject({ source: "pill", chip: "work-best" });
+    await askQuestion({ q: "Typed?", locale: "en", onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[1])).not.toHaveProperty("chip");
+    await askQuestion({ q: "Typed?", locale: "en", chip: "x".repeat(65), onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[2])).not.toHaveProperty("chip");
+  });
+
   it("reports a stream that ends without a done frame", async () => {
     const d = deps([sse([frame({ delta: "half" })])]);
     expect(await askQuestion({ q: "hi there", locale: "en", onDelta: () => {} }, d)).toEqual({ error: "stream" });

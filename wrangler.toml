@@ -27,7 +27,8 @@ binding = "ASK_KV"
 id = "52fa119d49f641078dbecbb12aad4ccb"
 
 # Workers Analytics Engine dataset for anonymized ask events (no IP, no raw text):
-# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason], doubles [latencyMs, 1].
+# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip],
+# doubles [latencyMs, 1]. topic (blob8) and chip (blob9) feed the public visit stats (workers/stats/).
 # The dataset is created on the first write; scripts/content-gap.ts reads it through the SQL API.
 [[analytics_engine_datasets]]
 binding = "ASK_EVENTS"

@@ -51,7 +51,7 @@ describe("stats snapshot protocol", () => {
     ["an unknown topic key", (s) => ((s.asks.d30.topics as Record<string, number>).food = 1)],
     ["a chip with an unknown topic", (s) => ((s.asks.all.chips[0] as { topic: string }).topic = "food")],
     ["a chip with markup in its id", (s) => (s.asks.all.chips[0].id = "<b>x</b>")],
-    ["an extra chip key", (s) => ((s.asks.all.chips[0] as Record<string, unknown>).text = "hello")],
+    ["an extra chip key", (s) => ((s.asks.all.chips[0] as unknown as Record<string, unknown>).text = "hello")],
     ["a non-ISO updatedAt", (s) => (s.updatedAt = "yesterday")],
     ["a non-date since", (s) => (s.since = "2026-10-11T00:00:00Z")],
     ["an extra mode key", (s) => ((s.mode.d30 as Record<string, number>).vr = 1)],
