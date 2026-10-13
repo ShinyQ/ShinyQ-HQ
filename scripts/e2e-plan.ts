@@ -129,6 +129,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
   { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof", "visits"] },
+  // Generated geo data (Natural Earth): covered by unit tests and the visits spec through its output.
+  { test: /^scripts\/visits-geo\.ts$/, specs: [] },
   // Public visit stats (S2): the shared model, store, panel and placements, the RF observatory and the L1 tile.
   {
     test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/roof\/(VisitsStation\.tsx|observatory\.ts|visitsRoom\.ts)$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
