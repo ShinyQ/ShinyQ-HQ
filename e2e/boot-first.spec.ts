@@ -171,7 +171,11 @@ for (const visitor of ["first", "returning"] as const) {
     if (visitor === "returning") await expect.poll(async () => (await timings(page)).some((t) => t.path.startsWith("/data/rooms/")), { timeout: 60_000 }).toBe(true);
     const all: Timing[] = await timings(page);
     const before = all.filter((t) => t.start < released!).map((t) => t.path);
-    expect(before.filter((p) => /^\/(media|tech|logos|floors)\//.test(p) || p.startsWith("/brand/kurniadi"))).toEqual([]);
+    // The 3D HUD's own images (the profile card's owner photo, P6) belong to the first frame; only Page View images count.
+    const hudImages = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLImageElement>("[data-testid='hq'] img")].map((img) => new URL(img.currentSrc || img.src).pathname),
+    );
+    expect(before.filter((p) => !hudImages.includes(p) && (/^\/(media|tech|logos|floors)\//.test(p) || p.startsWith("/brand/kurniadi")))).toEqual([]);
     expect(before.filter((p) => p.endsWith(".txt"))).toEqual([]);
     expect(before.filter((p) => p.startsWith("/data/rooms/"))).toEqual([]);
     // Troika fonts never compete with the 3D JavaScript: they start after the last chunk before the frame finished.
