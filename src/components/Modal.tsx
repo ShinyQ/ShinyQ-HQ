@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 const FOCUSABLE = "button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -33,7 +33,9 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId, she
     close.current = onClose;
   });
 
-  useEffect(() => {
+  // A layout effect, so Esc and focus work from the first painted frame: pickers open from the frame
+  // loop (not a discrete event), and React may defer a passive effect past a slow WebGL frame.
+  useLayoutEffect(() => {
     const target = panel.current?.querySelector<HTMLElement>("[data-autofocus]") ?? panel.current;
     target?.focus({ preventScroll: true });
     const { overflow } = document.body.style;

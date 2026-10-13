@@ -79,6 +79,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     door: { room: null } as DoorLatch,
     /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */
     pad: { room: null } as DoorLatch<string>,
+    /** Pickers the pad latch has opened; point-and-go skips its own open when the latch got there first. */
+    padOpens: 0,
     /**
      * Room opened since the last frame. A drawer can open and close again between two frames (a
      * quick Esc on a slow device), so the door latch learns about opens from the store, not the phase.
@@ -131,14 +133,23 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
             s.cancelRide();
             controller?.clearPath();
           }
+          // The drive ends with the rover stopping on the pad, so the pad latch may open the same picker
+          // before this promise resolves; opening it again would undo an Esc pressed in between.
+          const padOpensBefore = local.padOpens;
           void performInteract(intent.item, {
             rover: () => (local.controller ? { x: local.controller.pose.x, z: local.controller.pose.z } : { x: roverRuntime.x, z: roverRuntime.z }),
             goToRoom,
             runSteps: runMissionSteps,
             openPicker: (picker) => {
+              if (local.padOpens !== padOpensBefore) return;
               if (store.getState().phase === "room") store.getState().closeRoom();
               store.getState().openPicker(picker);
-              if (store.getState().picker) audio.play("beep");
+              if (!store.getState().picker) return;
+              audio.play("beep");
+              // The picker consumes the pad under the rover now, not on the next frame: an Esc before
+              // that frame would otherwise let the latch open it again.
+              const pose = local.controller?.pose ?? roverRuntime;
+              local.pad = primedPadLatch(layouts[store.getState().floor].pads, pose);
             },
             command: (command) => {
               if (command.type === "terminal") intents.emit({ type: "terminal" });
@@ -378,6 +389,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       speed: controller.pose.speed,
     });
     if (padHit) {
+      local.padOpens++;
       live.openPicker(pickerFor(padHit));
       audio.play("beep");
     }
