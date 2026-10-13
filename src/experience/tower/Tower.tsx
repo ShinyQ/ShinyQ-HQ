@@ -10,6 +10,7 @@ import { Library, type LibraryLabels } from "../floors/Library";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import { Roof, type RoofLabels } from "../floors/Roof";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
+import { useWarmingFloor } from "../scene/warmState";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
@@ -88,7 +89,10 @@ export function Tower({
   const target = useHQStore((s) => s.ride?.to ?? null);
   const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
   const neighbours = useNeighboursReady();
-  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
+  const warming = useWarmingFloor();
+  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0, warming);
+  // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
+  const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
 
   return (
@@ -116,7 +120,7 @@ export function Tower({
           </FloorLevel>
         );
       })}
-      <ElevatorShaft layouts={layouts} near={near} />
+      <ElevatorShaft layouts={layouts} near={shaftNear} />
       <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />
     </group>
   );

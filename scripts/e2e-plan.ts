@@ -17,6 +17,7 @@ export const ALL_SPECS = [
   "drawer-solid",
   "experience",
   "gallery",
+  "gpu",
   "highlights",
   "hud",
   "interact",
@@ -50,9 +51,9 @@ export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
   { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
   { test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },
-  { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$|^e2e\/camera-visual\.spec\.ts$/, specs: [] },
+  { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$|^e2e\/camera-visual\.spec\.ts$|^e2e\/visual-gate\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-gpu)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   { test: /^functions\//, specs: ["ask"] },
@@ -100,13 +101,17 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
-  { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride"] },
-  // Elevator ride smoothness (R5 P6): the ride clock, floor preparation, precompile and troika sync tracking.
-  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts)$|text-config\.ts$)/, specs: ["ride", "experience"] },
+  { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu"] },
+  // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
+  // content visibility, precompile and troika sync tracking.
+  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu"] },
+  { test: /^src\/experience\/text-config\.ts$/, specs: ["ride", "experience"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
+  // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
+  { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },
 

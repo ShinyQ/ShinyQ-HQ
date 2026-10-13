@@ -4,8 +4,8 @@ import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
-    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "ride"]);
-    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "gpu", "ride"]);
+    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "gpu", "ride"]);
     expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
@@ -82,7 +82,7 @@ describe("specsForChanges", () => {
 
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
-      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts")
+      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts" && f !== "visual-gate.spec.ts")
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());
@@ -98,7 +98,14 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
-    expect(specsForChanges(["src/experience/fx/Readable.tsx", "src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
+  });
+
+  it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {
+    expect(specsForChanges(["e2e/visual-gate.spec.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["e2e/vclock.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["scripts/visual-gate.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["scripts/perf-gpu.ts"]).specs).toEqual([]);
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
@@ -116,6 +123,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["public/og-assets/floor-L1.jpg"]).specs).toEqual(["seo", "static-routes"]);
     expect(specsForChanges(["scripts/og-check.ts"]).specs).toEqual(["seo", "static-routes"]);
     expect(specsForChanges(["scripts/og-stills.ts", "scripts/og-before-after.ts"]).specs).toEqual([]);
+  });
+
+  it("maps the render pipeline and the tower to the gpu spec", () => {
+    expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
+    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
   });
 });
 

@@ -3,7 +3,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ACESFilmicToneMapping } from "three";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { withView } from "@/hud/drawer/urlSync";
@@ -27,7 +27,11 @@ import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
-import { renderBudget, sceneSettings } from "./scene/settings";
+import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
+import { programPins } from "./scene/programPins";
+import { qualityHandle, qualityStore } from "./scene/qualityStore";
+import { renderProbe } from "./scene/renderProbe";
+import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -39,6 +43,10 @@ function readDevice() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   return { viewport: viewportClass(w, h), camera: cameraClass(w, h), coarse: window.matchMedia(COARSE_QUERY).matches };
+}
+
+function readScreen() {
+  return { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio || 1 };
 }
 
 let started = false;
@@ -106,7 +114,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep, probes: sceneProbes };
+  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep, probes: sceneProbes, render: renderProbe, quality: qualityHandle };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
@@ -142,7 +150,22 @@ export default function Experience({
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
   const coarse = useHQStore((s) => s.device.coarse);
-  const budget = renderBudget(tier, coarse);
+  const gfx = useMemo(() => parseGfxOverride(window.location.search), []);
+  const budget = useMemo(() => withOverride(renderBudget(tier, coarse, readScreen()), gfx), [tier, coarse, gfx]);
+  // The safety net (QualityController) publishes the exact DPR; R3F resets the canvas to this prop on re-render, so it must follow.
+  const appliedDpr = useSyncExternalStore(qualityStore.subscribe, () => qualityStore.applied()?.dpr ?? null, () => null);
+  useEffect(
+    () => () => {
+      renderProbe.gl = null;
+      renderProbe.scene = null;
+      renderProbe.camera = null;
+      renderProbe.rendered = false;
+      // A new canvas is a new WebGL context: pins and warm floors belong to the old one.
+      programPins.clear();
+      resetWarm();
+    },
+    [],
+  );
 
   const layouts = useMemo(
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
@@ -340,10 +363,13 @@ export default function Experience({
     <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
         <Canvas
-          dpr={budget.dpr}
+          dpr={appliedDpr ?? budget.dpr}
           gl={{ antialias: false, powerPreference: "high-performance" }}
           camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
-          onCreated={({ gl }) => {
+          onCreated={({ gl, scene, camera }) => {
+            renderProbe.gl = gl;
+            renderProbe.scene = scene;
+            renderProbe.camera = camera;
             gl.toneMapping = ACESFilmicToneMapping;
             gl.toneMappingExposure = sceneSettings(tier).exposure;
             const canvas = gl.domElement;
@@ -361,7 +387,7 @@ export default function Experience({
           aria-describedby="hq-desc"
           onPointerMissed={onWorldMissed}
         >
-          <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} />
+          <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
           <FirstFrame onFrame={onFirstFrame} />
         </Canvas>
       </div>

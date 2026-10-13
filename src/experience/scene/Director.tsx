@@ -29,6 +29,7 @@ import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt,
 import { destinationReady, ridePrep } from "../tower/ridePrep";
 import { finishRideStats, formatRideSummary, startRideStats, stepRideStats, type RideStats } from "../tower/rideStats";
 import type { FloorLayout, Vec2 } from "../types";
+import { renderProbe } from "./renderProbe";
 
 const BLOCKED_FACE_S = 0.6;
 const ARRIVED_FACE_S = 1.4;
@@ -234,6 +235,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.frameCalls = info.render.calls;
     local.frameTriangles = info.render.triangles;
     info.reset();
+    renderProbe.record(local.frameCalls, local.frameTriangles);
 
     // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {

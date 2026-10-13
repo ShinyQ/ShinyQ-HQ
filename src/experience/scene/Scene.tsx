@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useMemo, type RefObject } from "react";
+import { lazy, memo, Suspense, useMemo, type RefObject } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import "../text-config";
 import { CameraDirector } from "../camera/CameraDirector";
@@ -18,7 +18,9 @@ import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
 import { Director } from "./Director";
-import { renderBudget, sceneSettings } from "./settings";
+import { ProgramWarmup } from "./ProgramWarmup";
+import { QualityController } from "./QualityController";
+import { sceneSettings, type GfxOverride, type RenderBudget } from "./settings";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
@@ -43,18 +45,22 @@ export interface SceneLabels extends TowerLabels {
   interact: InteractLabels;
 }
 
-export function Scene({
+export const Scene = memo(function Scene({
   data,
   tier,
   labels,
   held,
   onToggleLang,
+  budget,
+  gfx,
 }: {
   data: ExperienceData;
   tier: GpuTier;
   labels: SceneLabels;
   held: RefObject<Set<string>>;
   onToggleLang: () => void;
+  budget: RenderBudget;
+  gfx: GfxOverride;
 }) {
   const layouts = useMemo(
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
@@ -77,12 +83,14 @@ export function Scene({
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
       <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} layouts={layouts} />
       <GlassClock />
+      <QualityController tier={tier} coarse={coarse} gfx={gfx} />
+      <ProgramWarmup tier={tier} />
       {tier === "full" && <FloorMotes />}
       {tier === "full" && (
         <Suspense fallback={null}>
-          <Effects multisampling={renderBudget(tier, coarse).multisampling} />
+          <Effects multisampling={budget.multisampling} levels={budget.bloomLevels} />
         </Suspense>
       )}
     </>
   );
-}
+});
