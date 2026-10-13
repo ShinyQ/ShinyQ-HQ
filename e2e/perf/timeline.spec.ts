@@ -32,7 +32,7 @@ async function throttle(page: Page, profile: (typeof PROFILES)[keyof typeof PROF
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: profile.cpu });
 }
 
-/** Element Timing for the boot card headline (P1 sets `elementtiming="hq-headline"`); null until then. */
+/** Element Timing for the boot card title (`elementtiming="hq-headline"`, `HEADLINE_TIMING_ID`). */
 async function observeHeadline(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { __headline?: number };

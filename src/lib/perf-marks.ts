@@ -3,6 +3,9 @@
  * (time to explore). The names are a contract with the timeline spec; each mark is written once per
  * page load. Cheap, no imports: the boot-first head script repeats the `hq:boot-release` name inline.
  */
+/** Element Timing identifier on the boot card title (`elementtiming`): the timeline's headline column. */
+export const HEADLINE_TIMING_ID = "hq-headline";
+
 export const PERF_MARKS = {
   /** The boot cover came off; detail: ready, page, static or timeout. */
   bootRelease: "hq:boot-release",
