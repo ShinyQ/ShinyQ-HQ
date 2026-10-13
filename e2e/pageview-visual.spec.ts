@@ -97,8 +97,13 @@ const ASK_ON = JSON.stringify({ enabled: true, turnstileSiteKey: null, asOf: "20
 type HQ = { __hq: { store: { getState: () => { openRoom: (room: string) => void } } } };
 
 async function openStatic(page: Page, path: string) {
+  // The Ask entry points (launcher, About CTA) appear once `GET /api/ask` answers on idle: wait for it, so
+  // before and after hold the same state.
+  const status = page.waitForResponse((r) => r.url().endsWith("/api/ask") && r.request().method() === "GET", { timeout: 60_000 });
   await page.goto(`${path}?tier=static`, { waitUntil: "networkidle" });
-  await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached", timeout: 60_000 });
+  await status;
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   // Lazy images load before the capture, so before and after hold the same pixels.
   await page.evaluate(async () => {
     for (const img of document.querySelectorAll("img")) img.loading = "eager";
@@ -260,13 +265,16 @@ test.describe("P10 accent stripes", () => {
   test("P10 diff", async ({ page }) => {
     test.skip(P10 !== "diff", "capture run");
     test.setTimeout(900_000);
-    const rows = await diffShotDirs(page, "screenshots/p10/before", "screenshots/p10/after", "screenshots/p10/diff", { tolerance: 24, pad: 24 });
+    // P10_PAIR=a:b diffs two other capture sets (for example after:after2 to measure run-to-run noise).
+    const [from, to] = (process.env.P10_PAIR ?? "before:after").split(":");
+    const out = from === "before" && to === "after" ? "screenshots/p10/diff" : `screenshots/p10/diff-${from}-${to}`;
+    const rows = await diffShotDirs(page, `screenshots/p10/${from}`, `screenshots/p10/${to}`, out, { tolerance: 24, pad: 24 });
     const table = [
       "| Shot | Size | Changed px | Outside edited elements | Ratio |",
       "|---|---|---|---|---|",
       ...rows.map((r) => `| ${r.name} | ${r.sizeMismatch ?? `${r.width}x${r.height}`} | ${r.changed} | ${r.outside} | ${(r.ratio * 100).toFixed(3)}% |`),
     ];
-    writeFileSync("screenshots/p10/diff/report.md", `${table.join("\n")}\n`);
+    writeFileSync(`${out}/report.md`, `${table.join("\n")}\n`);
     expect(rows.length).toBeGreaterThan(0);
     for (const r of rows) {
       expect(r.sizeMismatch, `${r.name} changed size (layout shift)`).toBeUndefined();

@@ -157,7 +157,8 @@ export async function diffShotDirs(page: Page, beforeDir: string, afterDir: stri
       changed: r.changed,
       outside: r.outside,
       ratio: r.outside < 0 ? 1 : r.outside / (r.width * r.height),
-      expected: regions.length > 0,
+      // Only regions that intersect the image count (a full-page capture stops at MAX_HEIGHT).
+      expected: regions.some((b) => b.x < r.width && b.y < r.height && b.x + b.w > 0 && b.y + b.h > 0),
       ...(r.sizeMismatch ? { sizeMismatch: r.sizeMismatch } : {}),
     });
   }
