@@ -37,7 +37,7 @@ export function storedMotion(raw: string | null): "full" | "reduced" | null {
   try {
     const m = raw ? JSON.parse(raw).state.motion : null;
     return m === "full" || m === "reduced" ? m : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }

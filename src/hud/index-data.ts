@@ -28,6 +28,9 @@ const ACTION_KEYS: Record<PaletteActionId, keyof typeof en.hud.actions> = {
   "quick-view": "quickView",
   "replay-tutorial": "replayTutorial",
   "toggle-hints": "toggleHints",
+  "motion-system": "motionSystem",
+  "motion-full": "motionFull",
+  "motion-reduced": "motionReduced",
 };
 
 export function structuralLabels(): StructuralLabels {

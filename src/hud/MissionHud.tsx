@@ -11,6 +11,8 @@ import { createMissionRunner, type MissionRunner } from "@/experience/missions/r
 import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { audio } from "@/lib/audio";
+import type { MotionPref } from "@/lib/motion";
+import { getHQStore } from "@/store/useHQStore";
 import { CommandPalette } from "./CommandPalette";
 import { useHintsOn, useTutorialAvailable } from "./dialog/hooks";
 import { hintsOn, setHintsOn } from "./dialog/storage";
@@ -27,7 +29,8 @@ import { orderTerminalMissions } from "./terminal";
 
 const VISITS_KEY = "hq:visits";
 const MIN_TOAST_MS = 2400;
-const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view"];
+const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view", "motion-system", "motion-full", "motion-reduced"];
+const MOTION_ACTIONS: Partial<Record<PaletteActionId, MotionPref>> = { "motion-system": "system", "motion-full": "full", "motion-reduced": "reduced" };
 /** Only while the 3D HUD is open (its OnboardingLayer hosts the replay). */
 const TUTORIAL_ACTIONS: readonly PaletteActionId[] = ["replay-tutorial", "toggle-hints"];
 
@@ -259,6 +262,12 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         say(next ? tMenu("hintsOn") : tMenu("hintsOff"));
         return;
       }
+      case "motion-system":
+      case "motion-full":
+      case "motion-reduced":
+        getHQStore().getState().setMotion(MOTION_ACTIONS[action]!);
+        if (index) say(index.actionLabels[action][locale]);
+        return;
     }
   };
 

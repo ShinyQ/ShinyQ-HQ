@@ -306,6 +306,13 @@
     "back3dHint": "Return to the tower in 3D. Press 3.",
     "language": "Language",
     "sound": "Sound",
+    "motion": {
+      "label": "Motion",
+      "system": "System",
+      "full": "Full",
+      "reduced": "Reduced",
+      "note": "System follows the reduced motion setting of your device."
+    },
     "menu": "Menu",
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
@@ -397,7 +404,10 @@
       "toggleSound": "Turn sound on or off",
       "quickView": "Quick view",
       "replayTutorial": "Replay the tutorial",
-      "toggleHints": "Turn hints on or off"
+      "toggleHints": "Turn hints on or off",
+      "motionSystem": "Motion: follow the system",
+      "motionFull": "Motion: full",
+      "motionReduced": "Motion: reduced"
     },
     "status": {
       "running": "On a mission: {mission}",
@@ -861,6 +871,13 @@
         "go": "Go"
       },
       "notNow": "Not now"
+    },
+    "motion": {
+      "ask": "Animations are reduced by your system settings. Turn on full motion?",
+      "full": "Full motion",
+      "keep": "Keep reduced",
+      "on": "Full motion is on. Change it any time with Motion at the top.",
+      "kept": "Okay, motion stays reduced. Change it any time with Motion at the top."
     },
     "menu": {
       "replay": "replay the tutorial",

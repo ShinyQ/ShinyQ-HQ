@@ -36,6 +36,8 @@ stateDiagram-v2
 
 ## 2. Transition rules
 
+"Reduced motion" below means the effective flag: `prefers-reduced-motion` under the default Motion setting (System), or the visitor's Full or Reduced override from the HUD Motion control and Cmd-K (AGENTS.md, "Motion setting").
+
 | From → To | Visual | Duration | Reduced motion |
 |---|---|---|---|
 | boot → intro | Boot lines type out (max 6 lines), then a CRT-off flash; first 3D load of each browser session, any route. The boot card shows the owner's name, headline, motto and current role (server-rendered, visible at first paint) and a small "Page view" link that leaves the 3D view; Boot rover is still required and the intro still plays in full (owner decision, round 5) | 1.2 s, never skipped | Same pace (revealing lines is not motion) |

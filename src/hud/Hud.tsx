@@ -13,6 +13,7 @@ import { BootOverlay } from "./BootOverlay";
 // regroup shared modules into Page View chunks (+7 KB JS on every page, over the Lighthouse budget).
 import DialogLayer from "./dialog/DialogLayer";
 import { HintLayer } from "./dialog/HintLayer";
+import { MotionHintLayer } from "./dialog/MotionHintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
 import { firstName } from "./dialog/onboarding";
 import { useDialog } from "./dialog/store";
@@ -165,6 +166,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
       />
       <FloorAnnouncer data={data} />
       <OnboardingLayer data={data} />
+      <MotionHintLayer />
       <HintLayer suppressed={walking} name={firstName(data.profile.name)} />
       {speaking && <DialogLayer />}
       <PadPicker data={data} />

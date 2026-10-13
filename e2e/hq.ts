@@ -51,6 +51,8 @@ export async function asReturningVisitor(page: Page) {
     // The first-session tour already ran; "!" hint bubbles off so they never cover a click target.
     localStorage.setItem("hq:onboarded", "done");
     localStorage.setItem("hq:hints", "off");
+    // The one-time "your system reduces motion" line (MotionHintLayer) was answered too.
+    localStorage.setItem("hq:motion-hint", "seen");
     sessionStorage.setItem("hq:intro", "seen");
     if (!localStorage.getItem("hq:v1")) {
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));

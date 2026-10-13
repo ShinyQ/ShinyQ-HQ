@@ -306,6 +306,13 @@
     "back3dHint": "Kembali ke menara dalam 3D. Tekan 3.",
     "language": "Bahasa",
     "sound": "Suara",
+    "motion": {
+      "label": "Gerak",
+      "system": "Sistem",
+      "full": "Penuh",
+      "reduced": "Dikurangi",
+      "note": "Sistem mengikuti pengaturan kurangi gerakan di perangkat."
+    },
     "menu": "Menu",
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
@@ -397,7 +404,10 @@
       "toggleSound": "Aktifkan atau matikan suara",
       "quickView": "Ringkasan",
       "replayTutorial": "Putar ulang tutorial",
-      "toggleHints": "Nyalakan atau matikan petunjuk"
+      "toggleHints": "Nyalakan atau matikan petunjuk",
+      "motionSystem": "Gerak: ikuti sistem",
+      "motionFull": "Gerak: penuh",
+      "motionReduced": "Gerak: dikurangi"
     },
     "status": {
       "running": "Misi aktif: {mission}",
@@ -861,6 +871,13 @@
         "go": "Pergi"
       },
       "notNow": "Nanti saja"
+    },
+    "motion": {
+      "ask": "Animasi dikurangi oleh pengaturan sistem. Nyalakan gerak penuh?",
+      "full": "Gerak penuh",
+      "keep": "Tetap dikurangi",
+      "on": "Gerak penuh aktif. Ubah kapan saja lewat Gerak di bagian atas.",
+      "kept": "Oke, gerak tetap dikurangi. Ubah kapan saja lewat Gerak di bagian atas."
     },
     "menu": {
       "replay": "putar ulang tutorial",

@@ -124,7 +124,7 @@ interface HQState {
 }
 ```
 
-Actions: `setPhase`, `goToFloor`, `openRoom`, `closeRoom`, `startMission`, `cancelMission`, `markVisited`, `setLocale`, `toggleSound`, `setTier`. Only `visited`, `firstVisit`, `locale` and `sound` persist (`localStorage`, key `hq:v1`).
+Actions: `setPhase`, `goToFloor`, `openRoom`, `closeRoom`, `startMission`, `cancelMission`, `markVisited`, `setLocale`, `toggleSound`, `setTier`. Only `visited`, `firstVisit`, `locale`, `motion` and `sound` persist (`localStorage`, key `hq:v1`, version 2 since `motion`, the Motion setting `system | full | reduced`, was added; `reducedMotion` is resolved from it and the OS flag, AGENTS.md "Motion setting").
 
 Update rate (round 5): per-frame state (rover pose, ride and beam progress) lives in runtime objects mutated in `useFrame`; the store mirrors the rover at most every 100 ms and only when a value changed (tolerance 1e-4), and stores the ride and the beam only when a stage starts or ends. `persist` writes `localStorage` only when a persisted key changed; `sound` is persisted by the audio engine (`localStorage["hq:sound"]`), not by the store.
 

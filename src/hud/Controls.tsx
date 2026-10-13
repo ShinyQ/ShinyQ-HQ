@@ -8,6 +8,7 @@ import type { Locale } from "@/content/schema";
 import { useAudio } from "@/lib/audio";
 import { AskPill } from "./ask/AskPill";
 import { HudLaunchers } from "./HudLaunchers";
+import { MotionChoices, MotionMenu } from "./MotionControl";
 
 function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
   const t = useTranslations("hud");
@@ -84,13 +85,14 @@ export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleL
         <HudLaunchers buttonClassName={launcher} labelClassName="sr-only md:not-sr-only" compactShortcut />
         <LangToggle onToggleLang={onToggleLang} />
         <SoundToggle />
+        <MotionMenu />
       </div>
       <ViewActions onExit={onExit} />
     </div>
   );
 }
 
-/** Phones: Ask Rover, search and the menu (language, sound) on the first row; Page view and Ask AI on the second. */
+/** Phones: Ask Rover, search and the menu (language, sound, motion) on the first row; Classic site and Ask AI on the second. */
 export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
   const t = useTranslations("hud");
   const [open, setOpen] = useState(false);
@@ -114,9 +116,10 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
       </div>
       <ViewActions onExit={onExit} />
       {open && (
-        <div id={id} className="glass glass-solid flex w-56 flex-col gap-2 p-3">
+        <div id={id} className="glass glass-solid flex w-64 flex-col gap-2 p-3">
           <LangToggle onToggleLang={onToggleLang} />
           <SoundToggle withLabel />
+          <MotionChoices />
         </div>
       )}
     </div>

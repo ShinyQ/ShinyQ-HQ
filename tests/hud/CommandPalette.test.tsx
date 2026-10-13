@@ -47,6 +47,9 @@ const actionLabels: Record<PaletteActionId, { en: string; id: string }> = {
   "quick-view": { en: "Quick view", id: "Tampilan ringkas" },
   "replay-tutorial": { en: "Replay the tutorial", id: "Putar ulang tutorial" },
   "toggle-hints": { en: "Turn hints on or off", id: "Nyalakan atau matikan petunjuk" },
+  "motion-system": { en: "Motion: follow the system", id: "Gerak: ikuti sistem" },
+  "motion-full": { en: "Motion: full", id: "Gerak: penuh" },
+  "motion-reduced": { en: "Motion: reduced", id: "Gerak: dikurangi" },
 };
 
 const entries = buildPaletteEntries({ missions, rooms, years, actionLabels }, ["view-cv", "copy-email"]);
