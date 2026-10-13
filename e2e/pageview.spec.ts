@@ -3,6 +3,7 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { openPage } from "./hq";
+import { findEdgeAccents } from "./edge-audit";
 import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
@@ -325,4 +326,80 @@ test("Perspectives: an entry opens from the anchor Ask cites and passes axe", as
   await expect(entry).toHaveAttribute("open", "");
   await expect(entry).toContainText(first.answer.en);
   await expectNoSeriousViolations(page);
+});
+
+/** R5 P10 (owner, 2026-10-13): no colored left or top edge stripe; a dot or icon chip plus an outline glow instead. */
+const QUOTE_POST = "/id/blog/the-sun-the-moon-and-the-dark-sea";
+
+
+test.describe("no colored edge stripes", () => {
+  test("Page View templates, the case study table of contents and a post with quotes", async ({ page }) => {
+    test.setTimeout(120_000);
+    expect(content.floors.library.posts.some((p) => QUOTE_POST.endsWith(`/${p.slug}`))).toBe(true);
+    for (const path of [...TEMPLATES, QUOTE_POST]) {
+      await openPage(page, staticTier(path));
+      if (path === `/en/labs/${heroPod.slug}`) {
+        await page.evaluate(() => {
+          const el = document.getElementById("approach")!;
+          window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 200);
+        });
+        await expect(page.locator(".pv-toc a[aria-current='true']")).toHaveCount(1);
+      }
+      expect(await page.evaluate(findEdgeAccents, "body"), path).toEqual([]);
+    }
+  });
+
+  test("the Ask dock", async ({ page }) => {
+    await page.route("**/api/ask", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ASK_ON) }));
+    await openPage(page, staticTier("/en/labs"));
+    await page.getByTestId("ask-launcher").click();
+    await expect(page.getByTestId("ask-dock")).toBeVisible();
+    expect(await page.evaluate(findEdgeAccents, "[data-testid='ask-dock']")).toEqual([]);
+  });
+
+  test("Cmd-K marks the selected row with a dot and a full outline", async ({ page }) => {
+    await openPage(page, staticTier("/en/journey"));
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog", { name: "Command palette" });
+    await expect(palette).toBeVisible();
+    const combo = palette.getByRole("combobox");
+    const first = await combo.getAttribute("aria-activedescendant");
+    await page.keyboard.press("ArrowDown");
+    await expect(combo).not.toHaveAttribute("aria-activedescendant", first ?? "");
+    const selected = palette.locator(`[role='option'][aria-selected='true']`);
+    await expect(selected).toHaveCount(1);
+    await expect(selected).toHaveAttribute("id", (await combo.getAttribute("aria-activedescendant"))!);
+    const look = await selected.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const dot = el.querySelector("[data-accent-dot]");
+      return {
+        sides: new Set([cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor]).size,
+        left: cs.borderLeftWidth,
+        fill: cs.backgroundColor,
+        dot: dot ? getComputedStyle(dot).visibility : "missing",
+      };
+    });
+    expect(look.sides).toBe(1);
+    expect(look.left).toBe("1px");
+    expect(look.fill).not.toBe("rgba(0, 0, 0, 0)");
+    expect(look.dot).toBe("visible");
+    expect(await page.evaluate(findEdgeAccents, "[role='dialog']:has([role='listbox'])")).toEqual([]);
+  });
+
+  test("certification cards glow on hover and the preview card has no top rule", async ({ page }) => {
+    await openPage(page, staticTier("/en"));
+    const card = page.locator("#certifications .card[data-cert-open]").first();
+    await card.hover();
+    await expect
+      .poll(() =>
+        card.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return cs.boxShadow !== "none" && cs.borderTopColor === cs.borderLeftColor && cs.borderLeftColor === cs.borderRightColor;
+        }),
+      )
+      .toBe(true);
+    await card.click();
+    await expect(page.getByTestId("cert-dialog")).toBeVisible();
+    expect(await page.evaluate(findEdgeAccents, "[data-testid='cert-dialog']")).toEqual([]);
+  });
 });

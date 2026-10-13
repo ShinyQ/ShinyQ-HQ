@@ -30,6 +30,8 @@ Three directions were prototyped at 7 and 30 certifications (A: badge gallery by
 
 Cards and rows are buttons (`aria-haspopup="dialog"`, 44 px targets). The shared `Modal` traps focus, closes on Esc or backdrop click, becomes a full-screen sheet on phones, and `DialogHost` returns focus to the opener; its `aria-modal` pauses 3D input. The dialog chunk preloads on the first hover or focus of the list. Filters announce "Showing X of Y" politely. The wall uses instanced badge bodies and glows, one line mesh for outlines and one atlas mesh for logos (about 30 to 55 draw calls at any count); glow easing snaps under reduced motion. Page View ships one small island; rows stay server-rendered.
 
+Featured cards keep the neutral card hairline and light up with `hq-glow` on hover and keyboard focus; neither the cards nor the preview card carry a colored top rule (R5 P10, owner decision 2026-10-13). The preview's status color lives in the status chip next to its label.
+
 ## Tests
 
-`tests/unit/certs.test.ts` (helpers against the live data and the 30-entry fixture), the certification wall block in `tests/unit/lobby-layout.test.ts` (footprint, no overlaps, paging, facing), `e2e/pageview.spec.ts` (preview card, keyboard, no frame, axe, Indonesian strings) and `e2e/experience.spec.ts` (preview over the tower holds the world keys).
+`tests/hud/CertDialog.test.tsx` (no top rule, status chip per status), `tests/unit/certs.test.ts` (helpers against the live data and the 30-entry fixture), the certification wall block in `tests/unit/lobby-layout.test.ts` (footprint, no overlaps, paging, facing), `e2e/pageview.spec.ts` (preview card, keyboard, no frame, axe, Indonesian strings) and `e2e/experience.spec.ts` (preview over the tower holds the world keys).

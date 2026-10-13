@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslations } from "next-intl";
+import { AccentDot } from "@/components/AccentDot";
 import type { FloorId, Locale, RoomId } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
 import type { PaletteEntry, PaletteGroup } from "./palette-types";
@@ -242,10 +243,11 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
                         if (!selected) setActiveIndex(index);
                       }}
                       onClick={() => select(entry)}
-                      className={`flex min-h-11 cursor-pointer items-center gap-3 border-l-2 px-4 py-2 motion-safe:transition-colors ${
-                        selected ? "border-cyan bg-cyan/10" : "border-transparent"
+                      className={`group mx-2 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-2 py-[7px] motion-safe:transition-[background-color,border-color,box-shadow] ${
+                        selected ? "border-cyan/60 bg-cyan/10 shadow-[0_0_16px_-6px_var(--color-cyan)]" : "border-transparent"
                       }`}
                     >
+                      <AccentDot tone={selected ? "cyan" : "line"} glow={selected} className={selected ? "" : "invisible group-hover:visible"} />
                       <span className="min-w-0 flex-1">
                         <span className={`block truncate ${selected ? "text-ink" : "text-ink-2"}`}>{titleOf(entry)}</span>
                         {subtitle ? <span className="block truncate text-sm text-ink-3">{subtitle}</span> : null}

@@ -332,8 +332,10 @@ h1, h2, h3, h4, p { margin: 0; }
 .badge.self { color: var(--amber); }
 .case-body { margin-top: 24px; }
 .toc { position: sticky; top: 96px; padding-top: 64px; }
-.toc a { display: flex; align-items: center; min-height: 36px; color: var(--ink-3); font-size: 14px; border-left: 1px solid var(--line); padding-left: 14px; }
-.toc a[aria-current="true"] { color: var(--ink); border-left-color: var(--violet); }
+.toc a { display: flex; align-items: center; gap: 10px; min-height: 36px; color: var(--ink-3); font-size: 14px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; }
+.toc a::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 999px; background: var(--line-2); }
+.toc a[aria-current="true"] { color: var(--ink); border-color: rgb(167 139 250 / 0.45); box-shadow: 0 0 20px -8px var(--violet); }
+.toc a[aria-current="true"]::before { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
 .toc .aside-block { margin-top: 40px; }
 .chapter { padding-top: 64px; }
 .chapter > .h2 { margin-bottom: 20px; }

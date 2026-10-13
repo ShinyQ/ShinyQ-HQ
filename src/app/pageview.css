@@ -380,18 +380,33 @@
     background: var(--color-void);
   }
 
-  /* Case study table of contents */
+  /* Case study table of contents: a dot per section; the current one glows violet inside a full hairline (R5 P10, no edge rule). */
   .pv-toc a {
     display: flex;
     align-items: center;
+    gap: 10px;
     min-height: 36px;
-    padding-left: 14px;
-    border-left: 1px solid var(--color-line);
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
     font-size: 14px;
     color: var(--color-ink-3);
     transition:
       color 150ms var(--ease-standard),
-      border-color 150ms var(--ease-standard);
+      border-color 150ms var(--ease-standard),
+      box-shadow 150ms var(--ease-standard);
+  }
+
+  .pv-toc a::before {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-line-2);
+    transition:
+      background-color 150ms var(--ease-standard),
+      box-shadow 150ms var(--ease-standard);
   }
 
   .pv-toc a:hover {
@@ -400,7 +415,13 @@
 
   .pv-toc a[aria-current="true"] {
     color: var(--color-ink);
-    border-left-color: var(--color-violet);
+    border-color: rgb(167 139 250 / 0.45);
+    box-shadow: 0 0 20px -8px var(--color-violet);
+  }
+
+  .pv-toc a[aria-current="true"]::before {
+    background: var(--color-violet);
+    box-shadow: 0 0 8px var(--color-violet);
   }
 
   .pv-tags {

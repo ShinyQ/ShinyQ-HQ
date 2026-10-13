@@ -118,6 +118,26 @@ describe("CommandPalette", () => {
     expect(input()).toHaveAttribute("aria-activedescendant", first);
   });
 
+  it("marks the selected row with a glowing dot and a full outline, never a left stripe (R5 P10)", async () => {
+    const { user } = setup();
+    await user.keyboard("{ArrowDown}");
+    const selected = activeOption()!;
+    expect(selected).toHaveAttribute("aria-selected", "true");
+    expect(selected.className).not.toMatch(/(^|\s)border-[lst](-\d+)?(\s|$)/);
+    expect(selected).toHaveClass("border", "border-cyan/60", "bg-cyan/10");
+    const dot = selected.querySelector("[data-accent-dot]");
+    expect(dot).toHaveAttribute("data-accent-dot", "cyan");
+    expect(dot).toHaveClass("hq-dot-glow");
+    expect(dot).not.toHaveClass("invisible");
+    // Idle rows keep the dot's slot (alignment) but hide it until the row is hovered or selected.
+    for (const other of screen.getAllByRole("option").filter((o) => o !== selected)) {
+      expect(other).toHaveClass("group", "border", "border-transparent");
+      const idle = other.querySelector("[data-accent-dot]");
+      expect(idle).toHaveClass("invisible", "group-hover:visible");
+      expect(idle).not.toHaveClass("hq-dot-glow");
+    }
+  });
+
   it("jumps between groups with Tab and Shift+Tab while focus stays in the input", async () => {
     const { user } = setup({ recent: ["RF:contact"] });
     await user.keyboard("{Tab}");

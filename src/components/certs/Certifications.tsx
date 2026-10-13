@@ -14,9 +14,8 @@ function FeaturedCard({ cert, details }: { cert: CertView; details: string }) {
       type="button"
       data-cert-open={cert.id}
       aria-haspopup="dialog"
-      className="card relative flex h-full min-h-[200px] w-full flex-col overflow-hidden p-5 text-left transition hover:border-line-2 hover:bg-surface-2"
+      className="card hq-glow relative flex h-full min-h-[200px] w-full flex-col overflow-hidden p-5 text-left hover:bg-surface-2"
     >
-      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-cyan/70" />
       <span className="flex items-center gap-2">
         <IssuerMark cert={cert} size={20} />
         <span className="pv-data">{cert.issuer}</span>

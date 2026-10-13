@@ -29,6 +29,12 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 All HUD text must meet WCAG AA contrast against `glass.bg`.
 
+### Markers, selection and edges (R5 P10, owner decision 2026-10-13)
+
+- Color marks state, category and selection only as a dot or icon chip next to the label (`AccentDot`: 6 px, 8 px in panel bars, a soft halo for the current or selected item) and as a full-outline glow on hover, keyboard focus, current and selected states (`hq-glow`: the whole hairline at 50% of the accent plus `0 0 24px -8px` of the accent).
+- Never a colored left or top edge on a card, row, panel or dialog: no one-sided colored border, no thin bar on an edge, no inset edge shadow. Cards keep one uniform neutral hairline (`line`).
+- Neutral structural rules (`line`, `line-2`, `glass.border`) and bottom tab indicators stay. In the 3D tower the L1 stats tiles mark their accent with a glowing dot beside the value instead of a top line; the other in-world neon edges are full outlines and part of the look.
+
 ## 2. Materials and lighting
 
 | Item | Spec |
