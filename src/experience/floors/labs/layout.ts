@@ -3,13 +3,14 @@ import { comparePods } from "@/content/selectors";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
+import { reactorRect, REACTOR, ringEntry, ringPoints } from "./reactor";
 
 /**
  * L3 Project Roads (walkable floors plan, part 2; consolidated in round 5, owner request 2026-10-13).
  * The global elevator shaft stays at x = -28, so a short lead road runs from its door into a round hub
  * plaza. The `software` wing road (north, z < 0) and the `ai` wing road (south, z > 0) leave the hub
- * and run east; each turns `tail` past its last pod into the east plaza, so the floor is one loop
- * without dead ends or empty road ends. Where the wing roads fork stands the wing directory wall: two
+ * and run east; each turns `tail` past its last pod into the east plaza and ends on the ring road
+ * around the reactor core there, so the floor is one loop without dead ends or empty road ends. Where the wing roads fork stands the wing directory wall: two
  * panels facing the arrival camera. Hero and featured pods dock on both sides of their wing road in
  * site order (`comparePods`: gallery pods nearest the hub), one `slot` each, so both wings stay mirror
  * images whatever their tiers; each pod has a forecourt and a spur to its door, at least 6 u apart.
@@ -46,8 +47,8 @@ export const LABS = {
   spurWidth: 4,
   /** Road past the far edge of a wing's last pod before it turns into the east plaza: half the road plus a forecourt. */
   tail: 7,
-  /** Diameter of the east plaza where the wing roads meet. */
-  east: 18,
+  /** Diameter of the east plaza where the wing roads meet: room for the ring road around the reactor core. */
+  east: 22,
   /**
    * Wing directory wall where the wing roads fork: two touching double-sided panels (software north),
    * thin along x, their west faces toward the arrival camera. `z` is each panel's |z| center, `d` its width along z.
@@ -112,8 +113,10 @@ export interface LabsLayout {
   east: Plaza;
   /** Where each wing road leaves the hub, its heading, and where the floating wing sign stands (5 u further along the road). */
   signs: Record<Wing, { at: Vec2; heading: Vec2; float: Vec2 }>;
-  /** Packet lanes: the data spine between the inner rows and a branch into each inner pod. */
+  /** Packet lanes: the data spine between the inner rows (into the reactor core) and a branch into each inner pod. */
   lanes: [number, number][][];
+  /** The reactor core in the middle of the east plaza (`reactor.ts`): its footprint is an obstacle the ring road drives around. */
+  reactor: { center: Vec2; rect: Rect };
 }
 
 const rect = (c: Vec2, w: number, d: number): Rect => ({ minX: c.x - w / 2, maxX: c.x + w / 2, minZ: c.z - d / 2, maxZ: c.z + d / 2 });
@@ -203,16 +206,20 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   // and a margin past the point where the wing roads start.
   const turnX = (wing: Wing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail);
   const loopEnd: Vec2 = { x: Math.max(turnX("software"), turnX("ai")), z: 0 };
+  // The wing roads end on the ring road around the reactor core (spectacle round), never at its center.
   const wingRoad = (wing: Wing): Road => {
     const z = WING_SIDE[wing] * L.wingZ;
-    return { id: wing, points: [hubC, { x: L.wingStartX, z }, { x: turnX(wing), z }, loopEnd], width: L.road };
+    const turn = { x: turnX(wing), z };
+    return { id: wing, points: [hubC, { x: L.wingStartX, z }, turn, ringEntry(loopEnd, turn)], width: L.road };
   };
+  const ring: Road = { id: "east-ring", points: ringPoints(loopEnd), width: L.road, closed: true };
+  const core = reactorRect(loopEnd);
   const lead: Road = { id: "lead", points: [L.approach, hubC], width: L.road };
   // A short stub from the hub toward the directory wall, ending half a road width before it: the
   // arrival spot and both panel stops lie on it, so a click on a panel drives straight there instead
   // of out onto a wing road and back (roadRoute only shortcuts hops under ROAD.shortcut).
   const stub: Road = { id: "directory", points: [hubC, { x: L.board.x - L.board.w / 2 - half, z: 0 }], width: L.road };
-  const east: Plaza = { id: "east", center: loopEnd, w: L.east, d: L.east, round: true };
+  const east: Plaza = { id: "east", center: loopEnd, w: L.east, d: L.east, round: true, core: REACTOR.half };
   const spurs: Spur[] = placed.map((p) => ({
     room: p.room,
     from: { x: p.door.x, z: WING_SIDE[p.pod.wing] * L.wingZ },
@@ -221,7 +228,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     color: WING_TINT[p.pod.wing],
   }));
   // No floor arrows on L3 (owner request 2026-10-13): the wing roads, signs and directory guide the way.
-  const network: RoadNetwork = { roads: [lead, stub, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs, chevrons: false };
+  const network: RoadNetwork = { roads: [lead, stub, wingRoad("software"), wingRoad("ai"), ring], plazas: [hub, east], spurs, chevrons: false };
 
   const boards = { software: directoryBoard("software"), ai: directoryBoard("ai") };
   const sign = (wing: Wing) => {
@@ -255,13 +262,13 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       yaw: p.facing > 0 ? 0 : Math.PI / 2,
     })),
   ];
-  const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai)];
+  const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai), core];
   const extentZ = Math.max(L.wingZ + half, ...placed.map((p) => Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))));
   const bounds: Rect = { minX: L.slabMinX, maxX: loopEnd.x + L.east / 2 + L.margin, minZ: -(extentZ + L.margin), maxZ: extentZ + L.margin };
 
-  // Data spine between the inner rows (just east of the directory wall to the east plaza rim) with a branch into each inner pod's back wall.
+  // Data spine between the inner rows (just east of the directory wall into the reactor core's west face) with a branch into each inner pod's back wall.
   const spineFrom = Math.max(hubC.x + L.hub.size / 2, L.board.x + L.board.w / 2) + 1;
-  const spineTo = loopEnd.x - L.east / 2 - 1;
+  const spineTo = core.minX;
   const lanes: [number, number][][] =
     spineTo > spineFrom
       ? [
@@ -287,6 +294,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       door: L.door,
       approach: L.approach,
       obstacles,
+      // The directory wall (9.5 u) and the reactor core block a low camera up to their own height.
+      tall: [...[boards.software, boards.ai].map((b) => ({ ...bare(b), h: L.board.h })), { ...core, h: REACTOR.height }],
       spawn: L.overview,
       arrival: L.overview,
       accent: L.accent,
@@ -302,5 +311,6 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     east,
     signs: { software: sign("software"), ai: sign("ai") },
     lanes,
+    reactor: { center: loopEnd, rect: core },
   };
 }

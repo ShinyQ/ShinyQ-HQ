@@ -47,6 +47,8 @@ export interface FloorLayout {
   /** Where the rover parks to call the elevator (3 u in front of the door). */
   approach: Vec2;
   obstacles: Rect[];
+  /** Columns taller than the camera clearance (the L3 directory wall and reactor core): they block a low camera up to their own height (`h`). */
+  tall?: (Rect & { h: number })[];
   spawn: Vec2;
   accent: string;
   /** Door triggers checked by the Director every frame (generic for every floor). */

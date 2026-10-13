@@ -7,6 +7,7 @@ import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { chevronMarks } from "@/experience/nav/roadGeometry";
 import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE } from "@/experience/floors/labs/layout";
+import { REACTOR, ringEntry } from "@/experience/floors/labs/reactor";
 import { HINT } from "@/experience/hints/select";
 import { labsWalk } from "@/experience/missions/walks";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -57,8 +58,9 @@ describe("L3 Project Roads layout", () => {
     const south = network.roads.find((r) => r.id === "ai")!;
     expect(north.points[0]).toEqual(layout.hub.center);
     expect(south.points[0]).toEqual(layout.hub.center);
-    expect(north.points.at(-1)).toEqual(layout.east.center);
-    expect(south.points.at(-1)).toEqual(layout.east.center);
+    // They end on the ring road around the reactor core in the east plaza (spectacle round), due north and south of it.
+    expect(north.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z - REACTOR.ring });
+    expect(south.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z + REACTOR.ring });
     expect(Math.min(layout.east.w, layout.east.d)).toBeGreaterThanOrEqual(16);
     // No dead ends: the far end of each wing is reachable along the road both ways round the loop.
     const path = pathBetween(network, { x: north.points[2].x, z: north.points[2].z }, { x: south.points[2].x, z: south.points[2].z });
@@ -75,7 +77,7 @@ describe("L3 Project Roads layout", () => {
       // From the last door to the turn is at most half a hero pod plus the tail.
       const lastDoor = Math.max(...docked.map((p) => p.door.x));
       expect(road.points[2].x - lastDoor, wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
-      expect(road.points.at(-1)).toEqual(layout.east.center);
+      expect(road.points.at(-1)).toEqual(ringEntry(layout.east.center, road.points[2]));
     }
     // The east plaza sits on the later of the two turns, on the axis between the wings.
     const turns = network.roads.filter((r) => r.id === "software" || r.id === "ai").map((r) => r.points[2].x);
@@ -99,7 +101,8 @@ describe("L3 Project Roads layout", () => {
     const aiEdge = Math.max(...lopsided.placed.filter((p) => p.pod.wing === "ai").map((p) => p.rect.maxX));
     expect(ai.points[2].x).toBe(aiEdge + LABS.tail);
     expect(ai.points[2].x).toBeLessThan(software.points[2].x);
-    expect(ai.points.at(-1)).toEqual(lopsided.east.center);
+    expect(ai.points.at(-1)).toEqual(ringEntry(lopsided.east.center, ai.points[2]));
+    expect(Math.hypot(ai.points.at(-1)!.x - lopsided.east.center.x, ai.points.at(-1)!.z - lopsided.east.center.z)).toBeCloseTo(REACTOR.ring);
     const empty = buildLabsLayout([]);
     expectSpaceRules({ bounds: empty.floor.bounds, obstacles: empty.floor.obstacles, doors: empty.floor.doors ?? [], network: empty.network, start: empty.floor.approach });
     expect(empty.east.center.x).toBe(LABS.wingStartX + LABS.east + LABS.margin);
@@ -241,10 +244,11 @@ describe("L3 Project Roads layout", () => {
     }
   });
 
-  it("starts the packet spine east of the directory wall, so no lane runs under it", () => {
+  it("starts the packet spine east of the directory wall, so no lane runs under it, and feeds the reactor core", () => {
     const [spine] = layout.lanes;
     expect(spine[0]).toEqual([LABS.board.x + LABS.board.w / 2 + 1, 0]);
-    expect(spine[1][0]).toBe(layout.east.center.x - LABS.east / 2 - 1);
+    // It runs on into the reactor core's west face (the core is fed by the packet lanes).
+    expect(spine[1]).toEqual([layout.reactor.rect.minX, 0]);
   });
 
   it("stands the directory wall where the wing roads fork, its panels facing west with walkable stops that turn the camera to them", () => {

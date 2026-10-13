@@ -41,6 +41,11 @@ export interface Plaza {
   w: number;
   d: number;
   round?: boolean;
+  /**
+   * Half size of an obstacle standing on the plaza center (the L3 reactor core): routes never join the
+   * road through the center; the plaza's own roads (a ring) drive around it.
+   */
+  core?: number;
 }
 
 /** A short branch from a road (or plaza) to a door pad. `to` is the door trigger center (`DoorTrigger.at`). */
@@ -173,7 +178,8 @@ const MERGE = 0.05;
 /**
  * Builds the routing graph. Roads join where a road's end point lies on another road (T junctions,
  * loops closing onto a hub road) or where two roads share a vertex. Spurs attach to the nearest road
- * (or the plaza that contains their start). Plaza centers attach to their road.
+ * (or the plaza that contains their start). Plaza centers attach to their road, unless an obstacle
+ * stands there (`Plaza.core`).
  */
 export function buildRoadGraph(net: RoadNetwork): RoadGraph {
   const nodes: Vec2[] = [];
@@ -230,6 +236,7 @@ export function buildRoadGraph(net: RoadNetwork): RoadGraph {
   // Plazas: their center joins the road through its projection.
   const plazaLinks: [Vec2, Vec2][] = [];
   for (const pl of net.plazas) {
+    if (pl.core) continue;
     const near = nearestRoad(pl.center, Math.max(pl.w, pl.d) / 2);
     if (!near) continue;
     attach[near.index].push({ s: near.pr.s, p: near.pr.point });
