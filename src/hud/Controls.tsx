@@ -116,7 +116,7 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
       </div>
       <ViewActions onExit={onExit} />
       {open && (
-        <div id={id} className="glass glass-solid flex w-64 flex-col gap-2 p-3">
+        <div id={id} className="glass glass-solid relative z-20 flex w-64 flex-col gap-2 p-3">
           <LangToggle onToggleLang={onToggleLang} />
           <SoundToggle withLabel />
           <MotionChoices />
