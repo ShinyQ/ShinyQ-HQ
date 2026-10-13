@@ -94,7 +94,7 @@ export function YearGates({
   // Signposts and floor digits fade with distance like the room labels (the floor runs about 390 u).
   const signposts = useMemo(() => signpostSet(years, roomsLabel), [years, roomsLabel]);
   const signpostBatch = useRef<BatchedLabelsHandle>(null);
-  useMemberFade(signpostBatch, signposts.xs);
+  useMemberFade(signpostBatch, signposts);
   const floorXs = useMemo(() => years.map((y) => y.plaza.center.x), [years]);
   const floorBase = useMemo(() => years.map(() => FLOOR_DIGITS_OPACITY), [years]);
   const fade = useLabelFade(floorXs, floorBase);

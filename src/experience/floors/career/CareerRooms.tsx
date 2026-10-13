@@ -2,7 +2,7 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
@@ -10,10 +10,12 @@ import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels"
 import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
 import { Readable } from "../../fx/Readable";
 import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
+import { sceneProbes } from "../../fx/probes";
+import { readableFlip } from "../../fx/readableFlip";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType, GpuTier } from "../../types";
-import { roomLabelSet } from "./labels";
+import { roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
 const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
@@ -188,16 +190,40 @@ export function useLabelFade(xs: readonly number[], base?: readonly number[]) {
   };
 }
 
-/** The distance fade for members of a `BatchedLabels` (the batch packs each member's opacities every frame). */
-export function useMemberFade(handle: RefObject<BatchedLabelsHandle | null>, xs: readonly number[]) {
-  useFrame(() => {
+/**
+ * Per-frame upkeep for the members of a career `BatchedLabels`: the distance fade (the batch packs each
+ * member's opacities every frame) and the camera-behind turn of `Readable` (round 5, the camera orbits
+ * 360 degrees): a member turns half a turn around its pivot, with the same side test and hysteresis.
+ */
+export function useMemberFade(handle: RefObject<BatchedLabelsHandle | null>, set: LabelSet) {
+  const flipped = useRef<boolean[]>([]);
+  useEffect(
+    () => () => {
+      sceneProbes.flippedSigns -= flipped.current.filter(Boolean).length;
+      flipped.current = [];
+    },
+    [set],
+  );
+  useFrame(({ camera }) => {
     const members = handle.current?.members;
-    if (!members || members.length !== xs.length) return;
-    xs.forEach((x, i) => {
-      const k = labelFade(x - roverRuntime.x);
+    if (!members || members.length !== set.labels.length) return;
+    set.labels.forEach((label, i) => {
+      const member = members[i];
+      const k = labelFade(set.xs[i] - roverRuntime.x);
       const opacity = k > 0.01 ? k : 0;
-      members[i].fillOpacity = opacity;
-      members[i].outlineOpacity = opacity;
+      member.fillOpacity = opacity;
+      member.outlineOpacity = opacity;
+      const [px, pz] = set.pivots[i];
+      const was = flipped.current[i] ?? false;
+      const next = readableFlip(was, label.yaw ?? 0, { x: px, z: pz }, { x: camera.position.x, z: camera.position.z });
+      if (next === was) return;
+      flipped.current[i] = next;
+      sceneProbes.flippedSigns += next ? 1 : -1;
+      const [x, y, z] = label.position;
+      member.position.set(next ? 2 * px - x : x, y, next ? 2 * pz - z : z);
+      member.rotation.set(label.tilt ? -label.tilt : 0, (label.yaw ?? 0) + (next ? Math.PI : 0), 0, "YXZ");
+      const text = next ? (set.flippedText?.[i] ?? label.text) : label.text;
+      if (member.text !== text) member.text = text;
     });
   });
 }
@@ -229,7 +255,7 @@ export function CareerRooms({
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
   const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
-  useMemberFade(labelBatch, roomLabels.xs);
+  useMemberFade(labelBatch, roomLabels);
 
   return (
     <group name="career-rooms">

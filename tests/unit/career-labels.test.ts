@@ -10,6 +10,9 @@ const entry = (slug: string): CareerEntryView => ({ slug, type: "job", role: "En
 it("builds one outlined, tilted label per room that has an entry, in room order", () => {
   const set = roomLabelSet([room("a", 10), room("b", 30), room("c", 50)], new Map([["a", entry("a")], ["c", entry("c")]]));
   expect(set.xs).toEqual([10, 50]);
+  // Room labels turn around their own spot, like the Readable wrapper they replace.
+  expect(set.pivots).toEqual([[10, 6], [50, 6]]);
+  expect(set.flippedText).toBeUndefined();
   expect(set.labels).toHaveLength(2);
   expect(set.labels[0]).toMatchObject({
     text: "Engineer\nAcme \u00B7 2024",
@@ -31,6 +34,8 @@ it("builds one signpost per year gate, in front of the arch", () => {
   const years = [{ year: 2021, rooms: [1, 2, 3], arch: { center: { x: 5, z: 0 } } }] as unknown as CareerRoadLayout["years"];
   const set = signpostSet(years, (n) => `${n} rooms`);
   expect(set.xs).toEqual([5]);
+  expect(set.pivots).toEqual([[5, 0]]);
+  expect(set.flippedText).toEqual(["\u2190 2021 \u00B7 3 rooms"]);
   expect(set.labels[0]).toMatchObject({
     text: "2021 \u00B7 3 rooms \u2192",
     position: [5, CAREER_ROAD.archHeight - 0.2, CAREER_ROAD.width / 2 + 1.4],
