@@ -135,8 +135,10 @@ export interface Chevron {
 /**
  * Forward chevrons every `spacing` u along each road's centerline. Chevrons inside plazas are
  * skipped (plazas are open floor), and so is the first half spacing so arrows never sit on a junction.
+ * A network with `chevrons: false` gets none.
  */
 export function chevronMarks(net: RoadNetwork, spacing = 4): Chevron[] {
+  if (net.chevrons === false) return [];
   const out: Chevron[] = [];
   for (const road of net.roads) {
     const total = roadLength(road);

@@ -58,6 +58,8 @@ export interface RoadNetwork {
   roads: Road[];
   plazas: Plaza[];
   spurs: Spur[];
+  /** Forward chevrons on the roads (default true). L3 turns them off (owner request 2026-10-13). */
+  chevrons?: boolean;
 }
 
 export interface Projection {

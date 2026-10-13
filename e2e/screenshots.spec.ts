@@ -1,6 +1,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom } from "./hq";
+import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
@@ -754,4 +755,93 @@ for (const viewport of P6_VIEWPORTS) {
     await page.screenshot({ path: p6Shot("l3-arrival", viewport) });
     await context.close();
   });
+}
+
+/**
+ * Round 5 P8 (L3 consolidation). `r5-p8 L3 review`: owner review captures of L3 (arrival, the end of each
+ * wing road looking east, the Product Engineering directory stop) with draw calls and triangles per pose.
+ * `r5-p8 unchanged`: the diff gate for floors P8 must not change (L1, L2, L4, RF arrivals, reduced motion so
+ * nothing spins or pulses); write the baselines on the Task 1 commit with --update-snapshots, compare later.
+ * P8_PHASE=before|after picks the output folder under screenshots/r5-p8/.
+ */
+const P8_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
+const P8_PHASE = process.env.P8_PHASE === "after" ? "after" : "before";
+/** Per-wait budget: SwiftShader at 2560x1440 on the full tier is slow, more so on a busy machine. */
+const P8_WAIT = 180_000;
+const p8Shot = (name: string, v: Viewport) => `screenshots/r5-p8/${P8_PHASE}/${name}-${v.width}x${v.height}.png`;
+
+async function p8Open(browser: Browser, v: Viewport, path: string, reducedMotion: "reduce" | "no-preference") {
+  const context = await browser.newContext({
+    viewport: { width: v.width, height: v.height },
+    deviceScaleFactor: 1,
+    hasTouch: v.touch,
+    isMobile: v.name === "mobile",
+    reducedMotion,
+  });
+  const page = await context.newPage();
+  await asReturningVisitor(page);
+  await page.goto(`${path}?tier=${v.tier}&walk=off`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await page.evaluate(() => document.fonts.ready);
+  await waitForCameraSettle(page, { timeout: P8_WAIT });
+  await page.waitForTimeout(1500);
+  return { context, page };
+}
+
+async function p8Metrics(page: Page, name: string, v: Viewport) {
+  const { drawCalls, triangles } = await snapshot(page);
+  const file = `screenshots/r5-p8/${P8_PHASE}/metrics.jsonl`;
+  mkdirSync(dirname(file), { recursive: true });
+  appendFileSync(file, `${JSON.stringify({ name, viewport: `${v.width}x${v.height}`, tier: v.tier, drawCalls, triangles })}\n`);
+}
+
+type RoadsWindow = Window & { __hq: { layouts: { L3: { road: { roads: { id: string; points: { x: number; z: number }[] }[] } } } } };
+
+/** Drives along a wing road to 14 u before its turn, then turns the camera to look east at the road end (reset, then three 45 degree steps left). */
+async function p8WingEnd(page: Page, wing: "software" | "ai") {
+  const end = await page.evaluate((id) => (window as unknown as RoadsWindow).__hq.layouts.L3.road.roads.find((r) => r.id === id)!.points[2], wing);
+  await driveTo(page, { x: end.x - 14, z: end.z }, P8_WAIT);
+  await page.getByRole("button", { name: en.hud.view.reset }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
+  await waitForCameraSettle(page, { timeout: P8_WAIT });
+  await page.waitForTimeout(1000);
+}
+
+for (const v of P8_VIEWPORTS) {
+  test(`r5-p8 L3 review @ ${v.width}x${v.height}`, async ({ browser }) => {
+    test.setTimeout(P8_WAIT * 6);
+    const { context, page } = await p8Open(browser, v, "/en/labs", "no-preference");
+    await page.screenshot({ path: p8Shot("l3-arrival", v) });
+    await p8Metrics(page, "l3-arrival", v);
+    for (const wing of ["software", "ai"] as const) {
+      await p8WingEnd(page, wing);
+      await page.screenshot({ path: p8Shot(`l3-end-${wing}`, v) });
+      await p8Metrics(page, `l3-end-${wing}`, v);
+    }
+    const board = (await interactablesOf(page)).find((i) => i.id === "L3:board:software")!;
+    await driveTo(page, board.at, P8_WAIT);
+    await waitForCameraSettle(page, { timeout: P8_WAIT });
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: p8Shot("l3-board-software", v) });
+    await p8Metrics(page, "l3-board-software", v);
+    await context.close();
+  });
+
+  for (const floor of [
+    { id: "L1", path: "/en" },
+    { id: "L2", path: "/en/journey" },
+    { id: "L4", path: "/en/library" },
+    { id: "RF", path: "/en/contact" },
+  ] as const) {
+    test(`r5-p8 unchanged ${floor.id} @ ${v.width}x${v.height}`, async ({ browser }) => {
+      test.setTimeout(P8_WAIT * 3);
+      const { context, page } = await p8Open(browser, v, floor.path, "reduce");
+      await p8Metrics(page, `unchanged-${floor.id}`, v);
+      // Gate: at most 1% of pixels may differ by more than the per-pixel threshold 0.2 (SwiftShader noise floor, checked in Task 1 Step 7).
+      expect(await page.screenshot()).toMatchSnapshot(`r5-p8-${floor.id}-${v.width}x${v.height}.png`, { maxDiffPixelRatio: 0.01, threshold: 0.2 });
+      await context.close();
+    });
+  }
 }
