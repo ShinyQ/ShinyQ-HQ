@@ -351,10 +351,13 @@ export default function Experience({
   // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts, the L1 Highlights Hall stations and the L3 Tech Reactor keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
+    // On L2 only career entries have /journey/{slug}; the Workshop and its bench and repo rooms keep /journey.
+    const career = new Set(data.career.years.flatMap((y) => y.entries.map((e) => `L2:${e.slug}`)));
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
     // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync).
-    return (room: RoomId) => !isHighlightRoom(room) && room !== REACTOR_ROOM && (!room.startsWith("L4:") || hosted.has(room));
-  }, [data.library.posts]);
+    return (room: RoomId) =>
+      !isHighlightRoom(room) && room !== REACTOR_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+  }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Tech Reactor pick in the hash (`#labs-tech=<slug>`), after the floor and room URL writes above.
   useEffect(
@@ -414,8 +417,10 @@ export default function Experience({
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
         repos: t("career.repos"),
-        models: t("career.models"),
         window: t("career.window"),
+        console: t("interact.console"),
+        back: t("pads.back"),
+        stars: (count: number) => t("career.stars", { count }),
         rooms: (count: number) => t("career.rooms", { count }),
       },
       library: {
@@ -451,6 +456,7 @@ export default function Experience({
         returnPad: t("interact.returnPad"),
         // A string, so next-intl does not format the year as a number ("2,021").
         teleporter: (year: number) => t("interact.teleporter", { year: String(year) }),
+        console: t("interact.console"),
         kiosk: t("launcher.askRover"),
         board: (wing: string) => t("interact.board", { wing }),
         archive: t("interact.archive"),

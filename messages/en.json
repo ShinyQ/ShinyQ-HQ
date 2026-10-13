@@ -445,11 +445,11 @@
       "prologue": "Prologue",
       "workshop": "Workshop annex",
       "repos": "Public repositories",
-      "models": "Hugging Face models",
       "window": "L3 Labs above",
       "scrubHint": "Years: swipe left to advance, right to go back",
       "rooms": "{count, plural, one {# room} other {# rooms}}",
-      "here": "You are here"
+      "here": "You are here",
+      "stars": "{count, plural, one {# star} other {# stars}}"
     },
     "world": {
       "lectern": "Reading desk",
@@ -485,7 +485,11 @@
         "L3": "Product and AI engineering projects",
         "L4": "Blog posts, research papers and talks",
         "RF": "Contact channels and the CV"
-      }
+      },
+      "consoleTitle": "Time console",
+      "consoleHint": "Pick a year to beam there, or go back to the elevator. Esc closes.",
+      "back": "Back to elevator",
+      "backDetail": "Beam to the elevator call pad at the start of the road"
     },
     "boost": "Boost",
     "interact": {
@@ -497,7 +501,8 @@
       "liveTap": "{label} selected. Tap it again or use the Go button.",
       "go": "Go to {label}",
       "hintFine": "Click a glowing object to go there.",
-      "hintCoarse": "Tap a glowing object, then tap it again to go there."
+      "hintCoarse": "Tap a glowing object, then tap it again to go there.",
+      "console": "Time console"
     }
   },
   "drawer": {
@@ -566,7 +571,14 @@
       "copyEmail": "Copy email",
       "copied": "Email copied ^_^",
       "copyFailed": "Could not copy email. Contact me at {email}.",
-      "writtenIn": "Available in {languages} only"
+      "writtenIn": "Available in {languages} only",
+      "sideProject": "Side project",
+      "liveDemo": "Live demo",
+      "repository": "Repository",
+      "openProject": "Open project",
+      "viewRepo": "View on GitHub",
+      "starOne": "1 star",
+      "stars": "{count} stars"
     },
     "directory": "Directory",
     "signSoftware": "Product Engineering",
@@ -886,7 +898,8 @@
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
-        "workshop": "The Workshop: side projects, repos and models."
+        "workshop": "The Workshop: side projects, repos and models.",
+        "timeConsole": "The time console: beam to any year, or back to the elevator."
       },
       "go": {
         "open": "Open",
