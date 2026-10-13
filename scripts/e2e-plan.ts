@@ -37,6 +37,7 @@ export const ALL_SPECS = [
   "seo",
   "spectacle",
   "static-routes",
+  "visit",
   "walk",
 ] as const;
 
@@ -66,6 +67,10 @@ export const RULES: Rule[] = [
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
   { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
+  // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client
+  // beacon and the opt-out aware Web Analytics guard run on every page.
+  { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats|askStats))\.ts$|^workers\/|^scripts\/stats-/, specs: [] },
+  { test: /^src\/lib\/stats\/|^src\/components\/(VisitBeacon|Analytics)\.tsx$/, specs: ["visit", "pageview"] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },
