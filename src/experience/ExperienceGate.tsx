@@ -62,7 +62,30 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     }
     setView("3d");
   }, []);
+  // Page View from the HUD, or from the boot card's "Page view" link (cover or overlay).
+  const toPage = useCallback(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, "page");
+    } catch {
+      // Ignore storage errors; the view still switches.
+    }
+    setView("page");
+    // Hand focus to the page content; the Back to 3D button is the first stop on Tab.
+    window.requestAnimationFrame(() => document.getElementById("main")?.focus({ preventScroll: true }));
+  }, []);
   const immersive = tier !== null && tier !== "static" && view === "3d";
+
+  // The boot card's "Page view" is a real `?view=page` link (works before hydration); once hydrated, switch without a reload.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!(e.target instanceof Element) || !e.target.closest("[data-hq-page-link]")) return;
+      e.preventDefault();
+      toPage();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [toPage]);
 
   // The boot cover hides the page until 3D draws its first frame; reveal the page when 3D is off.
   useEffect(() => {
@@ -141,16 +164,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
       startRoom={startRoom ?? hashRoom}
       onFirstFrame={onFirstFrame}
       onCrash={onCrash}
-      onExit={() => {
-        try {
-          sessionStorage.setItem(VIEW_KEY, "page");
-        } catch {
-          // Ignore storage errors; the view still switches.
-        }
-        setView("page");
-        // Hand focus to the page content; the Back to 3D button is the first stop on Tab.
-        window.requestAnimationFrame(() => document.getElementById("main")?.focus({ preventScroll: true }));
-      }}
+      onExit={toPage}
     />,
     document.body,
   );

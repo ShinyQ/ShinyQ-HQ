@@ -79,6 +79,21 @@ export function canOffer3D(i: Offer3DInput): boolean {
 }
 
 /**
+ * `?view=page` is the boot card's "Page view" link (a real link, so it works before hydration): the
+ * head script stores the Page View choice and drops the parameter. Returns the search without it, or
+ * null when it is absent. Self-contained (no imports, no closures) for toString().
+ */
+export function takePageViewParam(search: string): string | null {
+  if (!/[?&]view=page(&|$)/.test(search)) return null;
+  const rest = search
+    .replace(/^\?/, "")
+    .split("&")
+    .filter((part) => part !== "view=page")
+    .join("&");
+  return rest ? "?" + rest : "";
+}
+
+/**
  * Inline head script: sets data-hq-boot before first paint and arms a safety timeout. Right after
  * the first paint (before hydration) it probes WebGL once and stores the result in
  * `window.__hqProbe` for the gate (readTierInputs). Without WebGL2 or on a software renderer it
@@ -87,6 +102,7 @@ export function canOffer3D(i: Offer3DInput): boolean {
  */
 export function bootFirstScript(): string {
   return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
+var q=(${takePageViewParam.toString()})(location.search);if(q!==null){s="page";try{sessionStorage.setItem("hq:view","page")}catch(e){}try{history.replaceState(history.state,"",location.pathname+q+location.hash)}catch(e){}}
 var c=navigator.connection,d=document.documentElement,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
 var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:w,saveData:sd,bot:b,probe:p});

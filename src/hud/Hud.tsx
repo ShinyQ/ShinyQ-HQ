@@ -122,7 +122,10 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
       <CutFade />
       <BeamFade />
       {phase === "boot" ? (
-        <BootOverlay name={data.profile.name} monogram={data.profile.monogram} />
+        <BootOverlay
+          monogram={data.profile.monogram}
+          who={{ name: data.profile.name, headline: data.profile.headline, motto: data.profile.motto, role: data.profile.role }}
+        />
       ) : phase === "hologram" ? (
         // The hologram view owns the screen: only its own controls show.
         <HologramOverlay locale={data.locale} />

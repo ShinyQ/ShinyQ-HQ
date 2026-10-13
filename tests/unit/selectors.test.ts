@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getPods, getSkills } from "@/content/load";
-import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, podLiveLink, SKILLS_WALL_GROUPS, sortTimeline, wallSkillGroups, type PodRank } from "@/content/selectors";
+import { adjacent, comparePods, groupEntriesByYear, orderPods, podHasGallery, podLiveLink, roleLine, SKILLS_WALL_GROUPS, sortTimeline, wallSkillGroups, type PodRank } from "@/content/selectors";
 import type { Asset } from "@/content/schema";
 import { makeEntry, makePod } from "../fixtures/minimal-content";
 
@@ -103,5 +103,11 @@ describe("wallSkillGroups (L1 skills wall)", () => {
 
   it("skips a wall group the content does not have", () => {
     expect(wallSkillGroups([{ id: "ai", label: { en: "AI and LLM", id: "AI dan LLM" }, items: ["RAG"] }]).map((g) => g.id)).toEqual(["ai"]);
+  });
+});
+
+describe("roleLine", () => {
+  it("joins the role title and the organization", () => {
+    expect(roleLine({ title: { en: "Technical Consultant", id: "Konsultan Teknis" }, org: "Metrodata" }, "id")).toBe("Konsultan Teknis · Metrodata");
   });
 });

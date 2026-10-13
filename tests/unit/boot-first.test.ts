@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bootFirstScript, canOffer3D, isBotLike, shouldBootFirst, splitBootLine, type BootFirstInput } from "@/lib/boot-first";
+import { bootFirstScript, canOffer3D, isBotLike, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
 
@@ -24,6 +24,8 @@ function runScript(input: ScriptInput) {
   const timers: { fn: () => void; ms: number }[] = [];
   const frames: (() => void)[] = [];
   const win: { __hqProbe?: unknown } = {};
+  const replaced: string[] = [];
+  const history = { state: null, replaceState: (_state: unknown, _title: string, url: string) => replaced.push(url) };
   const documentElement = {
     setAttribute: (k: string, v: string) => attrs.set(k, v),
     hasAttribute: (k: string) => attrs.has(k),
@@ -33,9 +35,9 @@ function runScript(input: ScriptInput) {
     ? { RENDERER: 1, getExtension: (n: string) => (n === "WEBGL_debug_renderer_info" ? { UNMASKED_RENDERER_WEBGL: 2 } : null), getParameter: () => input.gl!.renderer }
     : null;
   const document = { documentElement, createElement: () => ({ getContext: () => gl }) };
-  const run = new Function("location", "sessionStorage", "navigator", "document", "WebGL2RenderingContext", "setTimeout", "requestAnimationFrame", "window", bootFirstScript());
+  const run = new Function("location", "sessionStorage", "navigator", "document", "WebGL2RenderingContext", "setTimeout", "requestAnimationFrame", "window", "history", bootFirstScript());
   run(
-    { pathname: input.path, search: input.search ?? "" },
+    { pathname: input.path, search: input.search ?? "", hash: "" },
     { getItem: (k: string) => session.get(k) ?? null, setItem: (k: string, v: string) => session.set(k, v) },
     { connection: input.saveData ? { saveData: true } : undefined, userAgent: input.ua ?? "Mozilla/5.0", webdriver: input.webdriver },
     document,
@@ -43,13 +45,14 @@ function runScript(input: ScriptInput) {
     (fn: () => void, ms: number) => timers.push({ fn, ms }),
     (fn: () => void) => frames.push(fn),
     win,
+    history,
   );
   /** Runs the first animation frame and the probe it schedules. */
   const paint = () => {
     frames.splice(0).forEach((f) => f());
     timers.filter((t) => t.ms === 0).forEach((t) => t.fn());
   };
-  return { attrs, timers, session, win, paint };
+  return { attrs, timers, session, win, paint, replaced };
 }
 
 describe("shouldBootFirst", () => {
@@ -233,5 +236,28 @@ describe("isBotLike", () => {
   it("inlines into the head script without TS syntax", () => {
     expect(bootFirstScript()).toContain("webdriver");
     expect(() => new Function(isBotLike.toString())).not.toThrow();
+  });
+});
+
+describe("takePageViewParam", () => {
+  it("removes only view=page and keeps other parameters", () => {
+    expect(takePageViewParam("?view=page")).toBe("");
+    expect(takePageViewParam("?tier=lite&view=page")).toBe("?tier=lite");
+    expect(takePageViewParam("?view=page&walk=off")).toBe("?walk=off");
+  });
+
+  it("ignores other views and empty queries", () => {
+    expect(takePageViewParam("?view=architecture")).toBeNull();
+    expect(takePageViewParam("")).toBeNull();
+  });
+});
+
+describe("bootFirstScript ?view=page", () => {
+  it("stores the Page View, skips the boot and cleans the URL", () => {
+    const r = runScript({ path: "/en", search: "?view=page" });
+    expect(r.attrs.has("data-hq-boot")).toBe(false);
+    expect(r.attrs.get("data-hq-3d")).toBe("1");
+    expect(r.session.get("hq:view")).toBe("page");
+    expect(r.replaced).toEqual(["/en"]);
   });
 });

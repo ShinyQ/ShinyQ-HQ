@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { asHumanBrowser, asReturningVisitor, collectErrors, waitForHQ } from "./hq";
+import data from "../content/site-content.json";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 90_000 });
@@ -196,4 +197,47 @@ test("quiet boot: the timeout release shows the skipped page without layout shif
   await page.locator("#work").scrollIntoViewIfNeeded();
   await expect.poll(() => page.locator("#work img").first().evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBe(0);
+});
+
+test("boot card: who the owner is at first paint, and Page view works before any JavaScript", async ({ page }) => {
+  await asHumanBrowser(page);
+  await page.route("**/_next/static/chunks/**/*.js", (route) => route.abort());
+  await page.goto("/en?tier=lite", { waitUntil: "domcontentloaded" });
+  const cover = page.getByTestId("boot-cover");
+  const who = cover.getByTestId("boot-who");
+  await expect(who).toBeVisible();
+  for (const text of [data.profile.name, data.profile.headline.en, data.profile.subheadline.en, data.profile.currentRole.org]) await expect(who).toContainText(text);
+  await cover.getByRole("link", { name: en.hud.pageView }).click();
+  await expect(page).toHaveURL(/\/en$/);
+  expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
+  await expect(page.locator("#site-shell")).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBe("page");
+});
+
+test("boot card: the overlay keeps the card in place, Boot rover stays required, Page view leaves 3D without a reload", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.addInitScript(() => {
+    const w = window as unknown as { __cls: number };
+    w.__cls = 0;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) w.__cls += e.value;
+    }).observe({ type: "layout-shift", buffered: true });
+  });
+  await page.goto("/en?tier=lite", { waitUntil: "commit" });
+  const coverCard = page.getByTestId("boot-cover").locator(".hq-boot-card");
+  await expect(coverCard).toBeVisible();
+  const coverBox = (await coverCard.boundingBox())!;
+  await expect(page.getByTestId("boot")).toBeVisible({ timeout: 60_000 });
+  const overlayBox = (await page.getByTestId("boot").locator(".hq-boot-card").boundingBox())!;
+  for (const k of ["x", "y", "width", "height"] as const) expect(Math.abs(overlayBox[k] - coverBox[k]), k).toBeLessThanOrEqual(1);
+  await page.waitForTimeout(1500); // proves the intro never starts without the Boot rover click
+  expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { phase: string } } } }).__hq.store.getState().phase)).toBe("boot");
+  await page.evaluate(() => ((window as unknown as { __sameDocument: boolean }).__sameDocument = true));
+  await page.getByTestId("boot").getByRole("link", { name: en.hud.pageView }).click();
+  await expect(page.getByTestId("hq")).toHaveCount(0);
+  await expect(page.locator("#site-shell")).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
+  expect(page.url()).toMatch(/\/en\?tier=lite$/);
+  expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBe(0);
+  expect(errors).toEqual([]);
 });
