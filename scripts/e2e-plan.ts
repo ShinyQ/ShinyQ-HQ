@@ -148,7 +148,7 @@ export const RULES: Rule[] = [
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
-  { test: /^public\/_(headers|redirects)$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^public\/_(headers|redirects)$|^scripts\/(serve-static|root-redirect)\.ts$/, specs: ["deploy", "static-routes"] },
   // Full-screen panels that pause the canvas (data-hq-cover).
   { test: /^src\/components\/(Modal|Lightbox)\.tsx$/, specs: ["gallery", "lifecycle", "pageview"] },
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },

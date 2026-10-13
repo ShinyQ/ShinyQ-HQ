@@ -17,6 +17,10 @@ function block(pattern: string): string[] {
 const cacheOf = (pattern: string) => block(pattern).filter((l) => l.startsWith("Cache-Control:"));
 
 describe("cache rules for unhashed public assets", () => {
+  it("announces the language alternates of / over HTTP", () => {
+    expect(block("/")).toEqual(['Link: </en>; rel="alternate"; hreflang="en", </id>; rel="alternate"; hreflang="id", </en>; rel="alternate"; hreflang="x-default"']);
+  });
+
   it("cache each prefix as planned", () => {
     expect(cacheOf("/fonts/*")).toEqual(["Cache-Control: public, max-age=31536000, immutable"]);
     expect(cacheOf("/tech/*")).toEqual(["Cache-Control: public, max-age=604800, stale-while-revalidate=86400"]);

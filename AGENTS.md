@@ -54,6 +54,7 @@ public/_headers, _redirects     Cloudflare Pages headers (CSP, caching, same-ori
 scripts/
   serve-static.ts               serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, Lighthouse)
   defer-scripts.ts              post-build (part of `build`): swaps the Next.js chunk tags in out/**/*.html for one loader that requests them after first contentful paint (LCP)
+  root-redirect.ts              post-build (part of `build`): copies the `/` language redirect (`#hq-root-redirect`) to the top of <head> in out/index.html, so it runs before the stylesheet (`__hqRedirect` guard)
   check-client-chunks.ts        post-build (part of `build`): fails when zod (`_zod`), `readFileSync` or `site-content` appears in out/_next/static/chunks
   subset-fonts.sh               subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); tests/content/fonts.test.ts checks coverage
   troika-fonts.ts, troika-glyphs.ts  subset the in-world fonts (fonttools) to the characters 3D text uses; tests/content/troika-fonts.test.ts checks coverage
@@ -187,7 +188,7 @@ e2e/                            Playwright: static routes, Page View (pageview.s
 
 ## i18n
 
-- Locales `en` (default) and `id`, always prefixed. `/` is a static page that redirects using `localStorage["hq:locale"]`, then `navigator.language`.
+- Locales `en` (default) and `id`, always prefixed. `/` is a static page that redirects using `localStorage["hq:locale"]`, then `navigator.language`; `scripts/root-redirect.ts` (part of `build`) copies the redirect above the stylesheet in `out/index.html`, and `public/_headers` sends hreflang `Link` alternates for `/`.
 - In server components call `assertLocale((await params).locale)` then `setRequestLocale(locale)`, and use `getTranslations({ locale, namespace })`.
 - Use `Link` from `@/i18n/navigation` for internal links (it adds the locale prefix). Dates go through `src/lib/format.ts` (`formatYearMonth`, `formatPeriod`, `formatDate`); ranges are written "X to Y" / "X hingga Y", never with dashes.
 - Metadata: every `generateMetadata` returns `seoMetadata(locale, path)` from `src/lib/seo.ts` (titles lead with the owner's name, descriptions are 140 to 160 characters: a lead from content or the `seo` messages plus the longest closing line from `seo.more.<page>` or the case-study facts that fits, so they adapt when the headline, the motto or a tagline changes; the role comes from `profile.headline`; `tests/unit/seo-copy.test.ts` checks every page in both locales). It goes through `pageMetadata` (`src/lib/site.ts`: canonical, `hreflang`, Open Graph, Twitter, `title.absolute`). A page that sets `openGraph` replaces the parent's, so never build metadata by hand. Pages render `<JsonLd data={pageJsonLd(locale, path)} />` for their BreadcrumbList (and the pod or post item). Share cards: `ogImagePath(...)`, 1200x630 JPEG at most 300 KB (satori PNG re-encoded with sharp at build time); backgrounds are committed floor stills (`bun run og:stills`, re-run after a large floor change), never WebGL at build; no edge stripes (an accent dot chip and a full-outline glow instead).

@@ -12,6 +12,10 @@
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
 
+# "/" is a static language redirect: announce the alternates to crawlers over HTTP too.
+/
+  Link: </en>; rel="alternate"; hreflang="en", </id>; rel="alternate"; hreflang="id", </en>; rel="alternate"; hreflang="x-default"
+
 # Hashed build assets (JS, CSS, self-hosted next/font files) never change.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable

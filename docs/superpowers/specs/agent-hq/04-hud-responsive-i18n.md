@@ -45,7 +45,7 @@ Input type is detected separately with `matchMedia("(pointer: coarse)")` and upd
 | Topic | Decision |
 |---|---|
 | Locales | `en` (default) and `id` |
-| Routing | Locale prefix: `/en/...` and `/id/...`. `/` redirects by `navigator.language` (static redirect page), with the choice remembered in `localStorage`. |
+| Routing | Locale prefix: `/en/...` and `/id/...`. `/` redirects by `navigator.language` (static redirect page), with the choice remembered in `localStorage`. The redirect runs before the stylesheet loads (post-build hoist) and `/` sends hreflang alternates as an HTTP `Link` header. |
 | Library | `next-intl` (works with static export using `generateStaticParams` per locale) |
 | UI strings | `messages/en.json` and `messages/id.json`, including rover terminal lines, faces captions, hints and mission labels |
 | Content | Every user-facing text field in `site-content.json` is `LocalizedText = { en: string; id: string }`. Build fails if any `id` value is missing, unless the field is marked `untranslated: true`. |
