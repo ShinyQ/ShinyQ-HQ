@@ -46,6 +46,7 @@ const rover = (page: Page) =>
     return { x: r.x, z: r.z, heading: r.heading };
   });
 const approach = (page: Page, floor: string) => page.evaluate((f) => (window as unknown as FastWindow).__hq.layouts[f].approach, floor);
+/** Beams wait on rendered frames; a 300 u jump mounts new L2 plazas, which takes a few seconds on SwiftShader under load. */
 const beam = (page: Page) => page.evaluate(() => (window as unknown as FastWindow).__hq.store.getState().beam);
 
 /** Puts the rover at `to` with a test beam (the way pads.spec.ts teleports), then waits for the beam to end. */
@@ -54,7 +55,7 @@ async function placeRover(page: Page, to: { x: number; z: number }) {
     const w = window as unknown as FastWindow;
     w.__hq.store.getState().setBeam({ pad: "teleport:test", from: { x: w.__hq.rover.x, z: w.__hq.rover.z }, to: p, heading: Math.PI / 2, t: 0, jumped: false });
   }, to);
-  await expect.poll(() => beam(page)).toBeNull();
+  await expect.poll(() => beam(page), { timeout: 30_000 }).toBeNull();
   await waitForFrames(page, 5);
 }
 
@@ -99,7 +100,7 @@ test.describe("fast return on the Career Road (L2)", () => {
     const record = await recordRide(page);
 
     await driveTo(page, back.at);
-    await expect.poll(() => beam(page)).toBeNull();
+    await expect.poll(() => beam(page), { timeout: 30_000 }).toBeNull();
     const { beams } = await record();
     expect(beams.some((b) => b.pad === "elevator:L2" && b.stage === null)).toBe(true);
     const lift = await approach(page, "L2");
@@ -169,7 +170,7 @@ test.describe("fast return on Project Roads (L3)", () => {
     const point = await targetPoint(page, item.id);
     await page.mouse.click(point.x, point.y);
     await expect.poll(async () => (await record()).beams.some((b) => b.pad === "elevator:L3"), { timeout: 60_000 }).toBe(true);
-    await expect.poll(() => beam(page)).toBeNull();
+    await expect.poll(() => beam(page), { timeout: 30_000 }).toBeNull();
     const lift = await approach(page, "L3");
     const at = await rover(page);
     expect(Math.hypot(at.x - lift.x, at.z - lift.z)).toBeLessThan(0.5);
