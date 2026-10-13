@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { bootFirstScript, canOffer3D, isBotLike, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
@@ -112,6 +112,15 @@ describe("canOffer3D", () => {
 });
 
 describe("bootFirstScript", () => {
+  afterEach(() => performance.clearMarks());
+
+  it("marks the boot release with its reason for the timeline", () => {
+    const { timers } = runScript({ path: "/en" });
+    timers.find((t) => t.ms === 8000)!.fn();
+    const mark = performance.getEntriesByName("hq:boot-release", "mark")[0] as PerformanceMark | undefined;
+    expect(mark?.detail).toBe("timeout");
+  });
+
   it("is valid JS that sets the attribute on a gated route", () => {
     expect(runScript({ path: "/en" }).attrs.get("data-hq-boot")).toBe("1");
   });

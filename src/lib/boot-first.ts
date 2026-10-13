@@ -4,6 +4,7 @@
  * canvas renders its first frame (or the gate falls back to the page).
  */
 import { SOFTWARE_RENDERER } from "./gpu-tier";
+import { markOnce, PERF_MARKS } from "./perf-marks";
 
 export const BOOT_ATTR = "data-hq-boot";
 export const BOOT_RELEASED_ATTR = "data-hq-boot-released";
@@ -107,7 +108,7 @@ var c=navigator.connection,d=document.documentElement,w=typeof WebGL2RenderingCo
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
 var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:w,saveData:sd,bot:b,probe:p});
 if(!on)return;d.setAttribute("${BOOT_ATTR}","1");
-var off=function(r){if(d.hasAttribute("${BOOT_ATTR}")){d.removeAttribute("${BOOT_ATTR}");d.setAttribute("${BOOT_RELEASED_ATTR}",r)}};
+var off=function(r){if(d.hasAttribute("${BOOT_ATTR}")){d.removeAttribute("${BOOT_ATTR}");d.setAttribute("${BOOT_RELEASED_ATTR}",r);try{performance.mark("${PERF_MARKS.bootRelease}",{detail:r})}catch(e){}}};
 setTimeout(function(){off("timeout")},${BOOT_TIMEOUT_MS});
 requestAnimationFrame(function(){setTimeout(function(){var r={webgl2:false,renderer:""};try{var g=document.createElement("canvas").getContext("webgl2");if(g){r.webgl2=true;var x=g.getExtension("WEBGL_debug_renderer_info");r.renderer=String(g.getParameter(x?x.UNMASKED_RENDERER_WEBGL:g.RENDERER));var l=g.getExtension("WEBGL_lose_context");if(l)l.loseContext()}}catch(e){}
 window.__hqProbe=r;if(/[?&]tier=/.test(location.search))return;if(!r.webgl2||/${SOFTWARE_RENDERER.source}/i.test(r.renderer)){try{sessionStorage.setItem("${PROBE_KEY}","static")}catch(e){}off("static")}},0)});}catch(e){}})();`;
@@ -125,6 +126,7 @@ export function releaseBootCover(reason: BootReleaseReason): void {
   if (!d.hasAttribute(BOOT_ATTR)) return;
   d.removeAttribute(BOOT_ATTR);
   d.setAttribute(BOOT_RELEASED_ATTR, reason);
+  markOnce(PERF_MARKS.bootRelease, reason);
 }
 
 /** Boot log lines carry an "[ ok ]" marker in the copy; the cover and overlay color it apart. */

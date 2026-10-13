@@ -27,6 +27,7 @@ import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
 import { renderStats } from "../perf/renderStats";
+import { perfOverlayOn } from "../perf/lines";
 import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt, TYPICAL_FRAME_DT } from "../tower/elevator";
 import { destinationReady, ridePrep } from "../tower/ridePrep";
 import { beamNow, clearBeam, clearRide, keepBeam, keepRide, rideNow } from "../tower/rideClock";
@@ -86,8 +87,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     typicalDt: TYPICAL_FRAME_DT,
     /** Measurements of the running ride (`window.__hq.ridePrep.lastRide` once it ends). */
     rideStats: null as RideStats | null,
-    /** `?perf=1`: log every ride's summary to the console (owner check on real devices). */
-    perf: typeof window !== "undefined" && new URLSearchParams(window.location.search).get("perf") === "1",
+    /** `?perf=1` (`perfOverlayOn`, shared with the overlay): log every ride's summary to the console (owner check on real devices). */
+    perf: typeof window !== "undefined" && perfOverlayOn(window.location.search),
     prevPhase: "",
     door: { room: null } as DoorLatch,
     /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */

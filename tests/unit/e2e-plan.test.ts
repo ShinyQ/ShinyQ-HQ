@@ -18,6 +18,12 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["scripts/perf-summary.ts", "scripts/perf-base.sh", "scripts/ci-status.ts"]).specs).toEqual([]);
   });
 
+  it("maps measurement code to the perf probes spec and the 3D experience", () => {
+    expect(specsForChanges(["src/experience/perf/PerfOverlay.tsx"]).specs).toEqual(["experience", "perf-probes"]);
+    expect(specsForChanges(["src/lib/perf-marks.ts"]).specs).toEqual(["experience", "perf-probes"]);
+    expect(specsForChanges(["e2e/perf-probes.spec.ts"]).specs).toEqual(["perf-probes"]);
+  });
+
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
     expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);

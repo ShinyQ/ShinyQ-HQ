@@ -3,13 +3,14 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ACESFilmicToneMapping, type Material, type Scene as ThreeScene, type WebGLRenderer } from "three";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
+import { markOnce, PERF_MARKS } from "@/lib/perf-marks";
 import { introSeen, lobbyStartPhase, markIntroSeen } from "@/lib/intro-session";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
@@ -28,6 +29,8 @@ import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { beamNow, rideNow } from "./tower/rideClock";
 import { renderStats, resetPeaks } from "./perf/renderStats";
+import { perfOverlayOn } from "./perf/lines";
+import { usePerfMarks } from "./perf/usePerfMarks";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
@@ -46,6 +49,10 @@ import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
 
 const COARSE_QUERY = "(pointer: coarse)";
+
+// `?perf=1` only: without the flag nothing of the overlay is downloaded or run.
+const PerfOverlay = lazy(() => import("./perf/PerfOverlay"));
+const PerfProbe = lazy(() => import("./perf/PerfOverlay").then((m) => ({ default: m.PerfProbe })));
 
 function readDevice() {
   const w = window.innerWidth;
@@ -151,6 +158,7 @@ function FirstFrame({ onFrame }: { onFrame?: () => void }) {
     ticks.current += 1;
     if (ticks.current === 2) {
       markFirstFrame();
+      markOnce(PERF_MARKS.firstFrame);
       onFrame?.();
     }
   });
@@ -196,6 +204,8 @@ export default function Experience({
     },
     [],
   );
+  usePerfMarks();
+  const [perf] = useState(() => perfOverlayOn(window.location.search));
 
   const layouts = useMemo(
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
@@ -438,6 +448,11 @@ export default function Experience({
             <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
             <FirstFrame onFrame={onFirstFrame} />
             <FrameLoop />
+            {perf && (
+              <Suspense fallback={null}>
+                <PerfProbe />
+              </Suspense>
+            )}
           </Canvas>
         </CanvasBoundary>
       </div>
@@ -445,6 +460,11 @@ export default function Experience({
         {t("canvasDescription")}
       </p>
       <Hud data={data} onExit={onExit} onToggleLang={toggleLang} />
+      {perf && (
+        <Suspense fallback={null}>
+          <PerfOverlay />
+        </Suspense>
+      )}
     </div>
   );
 }
