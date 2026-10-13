@@ -42,6 +42,7 @@ export const ALL_SPECS = [
   "visit",
   "visits",
   "walk",
+  "workshop",
 ] as const;
 
 export type Spec = (typeof ALL_SPECS)[number];
@@ -97,7 +98,7 @@ export const RULES: Rule[] = [
   // Fast return (F1): Express Return pads, the 25 u rule and the beam into the car.
   { test: /^src\/experience\/nav\/fastReturn\.ts$|^src\/experience\/fx\/ReturnPadSign\.tsx$/, specs: ["fast-return", "pads", "ride", "experience"] },
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
-  { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "fast-return", "experience"] },
+  { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "fast-return", "experience", "workshop"] },
   // Point-and-go: the registry, pick logic, the hit layer and its HUD status (pads and career rooms are clicked through it).
   { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career", "fast-return"] },
 
@@ -124,7 +125,7 @@ export const RULES: Rule[] = [
   // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view.
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs"] },
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return", "reactor"] },
-  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return"] },
+  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).

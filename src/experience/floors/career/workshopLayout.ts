@@ -13,12 +13,12 @@ import { SKYLINE, skylineBars, skylineShape, type SkylineBar, type WorkshopRepo 
  *   (a backdrop, tallest bars behind), one workbench per side project docked on its south edge in two
  *   groups of touching benches, and the Horizon deck at the road's end in front of the window.
  *
- * Every piece keeps the space rules: obstacles touch or keep 6 u (the gateway posts sit 7 u in z from
- * the bench and skyline rows), stops lie on the plazas, and nothing stands on the road.
+ * Every piece keeps the space rules: obstacles touch or keep 6 u (the benches start 4 u past the gateway posts and 5 u further south;
+ * the skyline starts well clear of them), stops lie on the plazas, and nothing stands on the road.
  */
 export const WORKSHOP = {
   forecourt: { w: 18, d: 18 },
-  plaza: { minW: 34, d: 22 },
+  plaza: { minW: 34, d: 18 },
   /** Gap between a plaza edge and what is docked on it (the console, the benches, the skyline plinth). */
   apron: 1.5,
   /** Stops lie this far inside a plaza edge (the rover's radius plus a margin from the docked piece). */
@@ -27,7 +27,7 @@ export const WORKSHOP = {
   /** The Return pad (F1, `FloorLayout.returnPad`) sits this far east of the console, on the stop line. */
   returnPad: { dx: 5.5, dz: -0.2 },
   gateway: { post: 0.6, height: 4.8, beam: 0.5 },
-  bench: { w: 2.2, d: 1.2, h: 0.9, group: 5, gap: ROAD.minClear, inset: 1 },
+  bench: { w: 2.2, d: 1.2, h: 0.9, group: 5, gap: ROAD.minClear, inset: 4 },
   /** The road ends this far before the window (the Horizon deck). */
   deck: 4,
 } as const;
