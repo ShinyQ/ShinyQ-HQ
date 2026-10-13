@@ -224,6 +224,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           // L2 year teleporters: beam to the chosen plaza's pad. Any drive (autopilot, scrub) ends here.
           const pad = layouts[s.floor].pads?.find((p) => p.id === intent.pad);
           if (!controller || !pad || s.phase !== "explore" || s.ride || s.beam) break;
+          // The L2 time console's "Back to elevator": the same beam as a Return pad (fast return).
+          if (pad.kind === "elevator") {
+            beamHome(s, controller, layouts[s.floor]);
+            break;
+          }
           controller.clearPath();
           roverRuntime.target = null;
           roverRuntime.autopilot = null;

@@ -17,11 +17,6 @@ describe("teleport beam", () => {
     });
   });
 
-  it("faces the car when it beams to the elevator call pad (the L2 time console)", () => {
-    const lift: PadTrigger = { id: "elevator:L2", kind: "elevator", at: { x: -21, z: 0 }, face: 0 };
-    expect(startBeam({ x: 350, z: -8 }, lift)).toMatchObject({ pad: "elevator:L2", to: { x: -21, z: 0 }, heading: -Math.PI / 2 });
-  });
-
   it("rises, jumps once, then fades and ends", () => {
     let step = advanceBeam(startBeam({ x: 0, z: 0 }, target), BEAM.out - 0.05, false);
     expect(step.jump).toBe(false);

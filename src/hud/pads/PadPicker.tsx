@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
+import { AccentDot } from "@/components/AccentDot";
 import { Modal } from "@/components/Modal";
 import type { FloorId } from "@/content/schema";
 import { intents } from "@/experience/input/intents";
@@ -79,6 +80,7 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={o.thumb} alt="" width={96} height={54} loading="lazy" decoding="async" className="h-[54px] w-24 shrink-0 rounded-md border border-line object-cover" />
               )}
+              {o.tone && <AccentDot tone={o.tone} size="md" className="shrink-0" />}
               <span className="min-w-0 flex-1">
                 {o.eyebrow && <span className="label block truncate text-ink-3">{o.eyebrow}</span>}
                 <span className="block text-sm font-semibold text-ink">{o.title}</span>

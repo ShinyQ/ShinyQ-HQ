@@ -3,6 +3,7 @@ import { buildCareerData } from "@/content/experience";
 import { getPublicRepos, getSideProjects } from "@/content/load";
 import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
 import { zoneAt } from "@/experience/camera/orbit";
+import { buildFloorLayouts } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { benchGroups, WORKSHOP } from "@/experience/floors/career/workshopLayout";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -22,7 +23,7 @@ const lastEnd = last.center.x + last.w / 2;
 const plazaRect = (p: { center: Vec2; w: number; d: number }): Rect => ({ minX: p.center.x - p.w / 2, maxX: p.center.x + p.w / 2, minZ: p.center.z - p.d / 2, maxZ: p.center.z + p.d / 2 });
 const within = (p: Vec2, r: Rect) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
 /** F1's Return pad, placed where the Workshop wants it (beside the console). */
-const returnPad: PadTrigger = { id: "return:L2", kind: "elevator", at: w.returnPad, face: 0 };
+const returnPad: PadTrigger = { id: "return:L2", kind: "return", at: w.returnPad, face: 0 };
 
 describe("L2 Workshop: forecourt", () => {
   it("follows the last year plaza one link later, on the road's center line", () => {
@@ -39,6 +40,13 @@ describe("L2 Workshop: forecourt", () => {
     expect(w.console.center.x).toBe(c.forecourt.center.x);
     expect(within(w.console.stop, fc)).toBe(true);
     expect(distanceToRect(w.console.stop, w.console.rect)).toBeGreaterThan(1.5);
+  });
+
+  it("places F1's Return pad (`return:L2`) beside the console", () => {
+    expect(c.returnPad).toEqual(w.returnPad);
+    const layouts = buildFloorLayouts(c.years.length, { career: careerLayoutInput(buildCareerData("en")) });
+    expect(layouts.L2.returnPad).toEqual(w.returnPad);
+    expect(layouts.L2.pads!.find((p) => p.id === "return:L2")!.at).toEqual(w.returnPad);
   });
 
   it("keeps the Return pad beside the console, off the road, clear of the console stop", () => {

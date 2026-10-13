@@ -29,7 +29,9 @@ describe("pad picker options", () => {
     const career = buildCareerData("en");
     const options = consoleOptions(career, (n) => `${n} rooms`, "Prologue", { title: "Back to elevator", detail: "Beam" });
     expect(options.map((o) => o.id)).toEqual([BACK_TO_ELEVATOR, ...career.years.map((y) => String(y.year))]);
-    expect(options[0]).toMatchObject({ title: "Back to elevator", detail: "Beam", current: false });
+    expect(options[0]).toMatchObject({ title: "Back to elevator", detail: "Beam", current: false, tone: "green" });
+    // Years in the teleporters' pink, Back to elevator in the Return pad's green.
+    expect(options.slice(1).every((o) => o.tone === "pink")).toBe(true);
     expect(options.some((o) => o.current)).toBe(false);
   });
 

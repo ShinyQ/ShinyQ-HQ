@@ -3,6 +3,7 @@ import { signPlate, type SignSpec } from "../../fx/signLayout";
 import type { BatchedLabel } from "../../fx/labelProps";
 import { FONTS } from "../../tower/primitives";
 import type { CareerEntryView } from "../../types";
+import { PAD_TONE } from "../../fx/holoIcons";
 import { monoWidth } from "../../fx/readableFlip";
 import { CAREER_ROAD, type CareerRoadLayout, type CareerRoom } from "./layout";
 import { SKYLINE, skylineLanguages, topBars } from "./skyline";
@@ -164,11 +165,11 @@ export interface WorkshopTextInput {
   legend: boolean;
 }
 
-/** The console's year list: rows of `yearsPerRow` years, then the arrow to the elevator. */
-export function consoleScreenText(years: readonly number[], back: string): string {
+/** The console's year list: rows of `yearsPerRow` years (pink like the year teleporters). */
+export function consoleYearsText(years: readonly number[]): string {
   const rows: string[] = [];
   for (let i = 0; i < years.length; i += WORKSHOP_SCENE.yearsPerRow) rows.push(years.slice(i, i + WORKSHOP_SCENE.yearsPerRow).join("  "));
-  return [...rows, `\u2192 ${back}`].join("\n");
+  return rows.join("\n");
 }
 
 /**
@@ -220,19 +221,18 @@ export function workshopLabelSet(w: WorkshopLayout, input: WorkshopTextInput): L
       [bar.x, bar.z],
     );
   }
+  // The console screen: the years in the teleporters' pink, then "Back to elevator" in the Return pad's green.
   const c = w.console;
+  const z = c.center.z + S.screen.d / 2 + S.lift;
+  const lineH = 0.24 * 1.45;
+  const rows = Math.ceil(input.years.length / S.yearsPerRow);
+  const top = S.screen.y + ((rows + 1) * lineH) / 2;
   add(
-    {
-      text: consoleScreenText(input.years, input.back),
-      position: [c.center.x, S.screen.y, c.center.z + S.screen.d / 2 + S.lift],
-      font: FONTS.mono,
-      fontSize: 0.24,
-      lineHeight: 1.45,
-      textAlign: "center",
-      anchorX: "center",
-      anchorY: "middle",
-      color: COLORS.amber,
-    },
+    { text: consoleYearsText(input.years), position: [c.center.x, top, z], font: FONTS.mono, fontSize: 0.24, lineHeight: 1.45, textAlign: "center", anchorX: "center", anchorY: "top", color: PAD_TONE.teleport },
+    [c.center.x, c.center.z],
+  );
+  add(
+    { text: `\u2192 ${input.back}`, position: [c.center.x, top - rows * lineH, z], font: FONTS.mono, fontSize: 0.24, anchorX: "center", anchorY: "top", color: PAD_TONE.return },
     [c.center.x, c.center.z],
   );
   if (input.legend && w.skyline.bars.length > 0) {
