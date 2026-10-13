@@ -146,7 +146,8 @@ test("the safety net steps down on sustained slow frames, at most twice a minute
   await expect.poll(async () => (await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).multisampling, { timeout: 10_000 }).toBe(0);
   expect((await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).bloomLevels).toBe(8);
   await expect.poll(async () => (await quality(page)).level, { timeout: 30_000 }).toBe(2);
-  expect((await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).bloomLevels).toBe(6);
+  // The controller applies a new level on its next frame.
+  await expect.poll(async () => (await page.evaluate(() => (window as unknown as GpuWindow).__hq.render.graphics!())).bloomLevels, { timeout: 10_000 }).toBe(6);
   const snap = await quality(page);
   expect(snap.flips).toBeLessThanOrEqual(2);
   await page.evaluate(() => (window as unknown as QualityWindow).__hq.quality.simulate(null));
