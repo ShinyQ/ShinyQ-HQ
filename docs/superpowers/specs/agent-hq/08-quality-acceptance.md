@@ -23,6 +23,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | 3D chunk (gzip) | < 600 KB | Same |
 | Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 ≤ 18 ms), the runtime safety net in the field |
 | Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
+| Boost effects | At most 3 extra draw calls while boosting (trail, streaks, sparks), 0 when not boosting; idle frames identical to no boost; no shader compiled on the first boost; reduced motion shows none | `e2e/boost.spec.ts` (`__hq.rover.boostFx`, `trail`, `streaks`, `sparks`, `boostFov`, `boostPitch`) |
 | Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
 | Memory | No growth after 10 floor round-trips | Disposal test (geometry/material counts return to baseline) |
 
@@ -73,4 +74,5 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 ### Phase 6: polish and launch
 - Performance budgets and the accessibility check pass in CI. Sound works and is on by default (owner decision, appendix 05 section 5), starting on the first gesture; a mute persists.
 - The README easter egg works. SEO metadata, `hreflang`, the sitemap and OG images exist. Round 5 (P9): every page's title contains the owner's name (section pages at most 60 characters, home at most 95), every description is 140 to 160 characters (EN and ID), every page has a canonical, hreflang en/id/x-default and a 1200x630 JPEG share card of at most 300 KB with no edge stripes, and every page except home has a BreadcrumbList (`bun run og:check`, `tests/unit/seo-copy.test.ts`).
+- Boost (round 5, owner pick): holding Shift (or the touch boost toggle while the joystick drives) shows twin path-following trails, speed streaks and wheel sparks, squats and leans the body and widens the camera; release clears every effect and the camera returns; reduced motion shows none of it; a tap on the touch boost button sets `aria-pressed="true"`, the next clears it, and a floor change resets it (`e2e/boost.spec.ts` at 390x844 and 820x1180).
 - Production deploys to `kurniadi.pages.dev`. The old site's `/cv.pdf` path redirects to the new CV.

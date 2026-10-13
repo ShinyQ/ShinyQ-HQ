@@ -36,7 +36,7 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 |---|---|---|
 | Max speed (manual) | 9 u/s | 8 u/s |
 | Max speed (autopilot) | 12 u/s | 12 u/s |
-| Max speed (boost: hold Shift or the boost button, manual driving only) | 18 u/s | 16 u/s |
+| Max speed (boost: hold Shift, or toggle the touch boost button; manual driving only) | 18 u/s | 16 u/s |
 | Acceleration while boosting | 36 u/s² | 36 u/s² |
 | Acceleration | 18 u/s² | 18 u/s² |
 | Braking | 26 u/s² | 26 u/s² |
@@ -45,6 +45,13 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 | Body tilt into turns | up to 8° | up to 8° |
 
 - Keyboard steering is camera-relative (W = away from the camera).
+- Boost feel (owner pick, October 2026: "Full package: path-following light trails, rover leans and squats, camera widens and pulls back, speed streaks, wheel sparks"). All of it follows the eased boost level (`roverRuntime.boost`) and is off on normal driving:
+  - Twin light trails from the two rear wheels, built from a ring buffer of the positions the rover actually drove through (`fx/boostTrail.ts`), so they curve exactly along the path; camera-facing ribbons, cyan at the rover to violet at the tail, fading with age and length (full: 40 samples, 0.6 s; lite: 20 samples, 0.35 s).
+  - Body: critically damped springs (`rover/bodyDynamics.ts`) squat the nose up (at most 3.5°) as the boost kicks in and under boosted acceleration, dip it (at most 2.5°) when braking out of a boost, and add up to 3° of lean with yaw rate times speed on top of the base tilt; a tiny high-frequency buzz at boost top speed on the full tier only.
+  - Camera (`camera/boostView.ts`): third person widens the FOV by 7° and pulls the follow distance back by 8% (before the collision clamp, so collision still wins); first person gets a 3° kick only. No shake.
+  - Speed streaks: faint lines in clip space rushing outward at the screen edges, outside a clear center ellipse (rover and HUD center); 28 on full, 14 fainter on lite.
+  - Wheel sparks: pooled amber sparks kicked back from the rear wheels, more on hard turns at speed (at most 48 on full, 16 on lite).
+  - Reduced motion: none of it (no trail, as before). Budget: three meshes in `fx/BoostFx.tsx`, one draw call each, invisible (0 draw calls) unless boosting; their programs compile and pin once at mount through `precompileObject` (`scene/precompile.ts`), so the first boost compiles nothing.
 - Point-and-go (owner request, October 2026; replaces click and tap to move): hovering a glowing target (door, elevator call pad, L2 teleporter, station, kiosk, board) highlights it with its name; a click (on touch: a first tap selects, a second tap or the Go chip goes) drives the rover along the road (`roadRoute`, with A* on the navgrid for the legs off the road) and runs the target's action on arrival. A click or tap on empty floor never moves the rover. Targets come from one registry (`src/experience/interact/registry.ts`).
 - Collision: circle versus inflated AABBs, resolved by sliding along walls.
 - Door triggers: a 2 × 2 u zone in front of each room door. Entering it opens the room, except while autopilot is heading to a different target.
@@ -102,7 +109,7 @@ Every device input maps to an **intent**. Floors and the HUD only consume intent
 | `toggle` | `sound`, `lang`, `readme` | HUD buttons, keys `m`, `l`, `t` |
 
 - Gestures inside HUD panels never reach the world (pointer capture at the panel root).
-- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a hold-to-boost button beside it (above it on phones). Keyboards boost with Shift. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
+- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a boost toggle beside it (above it on phones; owner request, October 2026): one tap turns boost on (`aria-pressed="true"`, lit cyan with a glowing dot), the next turns it off, and a floor change, an elevator ride, Page view or a reload reset it (never persisted). Boost still applies only while the joystick drives. Keyboards hold Shift to boost. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
 - Held keys emit `move` every frame, with no dependency on OS key repeat.
 - A press becomes a drag only after it travels past the threshold (6 px mouse or pen, 8 px touch). A shorter press stays a click or tap (it picks a target, or does nothing on empty floor); a longer one only rotates.
 - Keyboard shortcuts are ignored while focus is in a text input (palette search).

@@ -7,7 +7,7 @@ export function setJoystick(x: number, y: number, active: boolean) {
   joystick.active = active;
 }
 
-/** The hold-to-boost button beside the joystick (released on pointer up, cancel or unmount). */
+/** The boost toggle beside the joystick: on with one tap, off with the next, a floor change, a ride or unmount. */
 export function setBoost(on: boolean) {
   joystick.boost = on;
 }

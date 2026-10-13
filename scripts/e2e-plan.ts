@@ -10,6 +10,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 /** Every spec in the default (non-screenshot) suite. */
 export const ALL_SPECS = [
   "ask",
+  "boost",
   "boot-first",
   "camera",
   "career",
@@ -100,6 +101,11 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
+  // Boost (owner pick: trails, body lean and squat, camera kick, streaks, sparks; the touch toggle).
+  {
+    test: /^src\/experience\/fx\/(BoostFx\.tsx|boostConfig\.ts|boostTrail\.ts|sparks\.ts|streaks\.ts)$|^src\/experience\/rover\/(boost|bodyDynamics)\.ts$|^src\/experience\/camera\/boostView\.ts$|^src\/hud\/BoostButton\.tsx$/,
+    specs: ["boost", "experience", "hud", "gpu"],
+  },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
   { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
