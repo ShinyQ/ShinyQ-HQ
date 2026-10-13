@@ -7,6 +7,7 @@ import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { getGlassMaterial } from "../../fx/geometry";
 import { neonColor } from "../../fx/materials";
+import { useDispose } from "../../fx/useDispose";
 import { COLORS, LOBBY } from "../../config";
 import { FONTS, FloorLine } from "../../tower/primitives";
 import { HOLOGRAM } from "./layout";
@@ -34,6 +35,8 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
   const haloColors = useMemo(() => [neonColor(COLORS.green, 2, tier), neonColor(COLORS.cyan, 2, tier)], [tier]);
   const outer = useMemo(() => hexGeometry(HOLOGRAM.hexRadius), []);
   const inner = useMemo(() => hexGeometry(1.8), []);
+  useDispose(outer);
+  useDispose(inner);
   const ring = useMemo(() => circle(3.05), []);
   const { x, z, radius } = LOBBY.hologram;
 

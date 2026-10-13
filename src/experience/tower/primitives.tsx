@@ -5,6 +5,7 @@ import { BoxGeometry, BufferGeometry, EdgesGeometry, Float32BufferAttribute } fr
 import { useHQStore } from "@/store/useHQStore";
 import { getGlassMaterial, glassSidesGeometry, rimGeometry, rimThickness } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
+import { useDispose } from "../fx/useDispose";
 
 export const FONTS = {
   sans: "/fonts/inter-latin-400-normal.woff",
@@ -114,6 +115,7 @@ export function FloorLine({ points, color, opacity = 0.7, closed = false }: { po
     g.setAttribute("position", new Float32BufferAttribute(pts, 3));
     return g;
   }, [points, closed]);
+  useDispose(geometry);
   return (
     <lineSegments geometry={geometry}>
       <lineBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} />

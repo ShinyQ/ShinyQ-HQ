@@ -16,6 +16,7 @@ import { registerFloorContent } from "./floorRegistry";
 import { floorContentVisible } from "./near";
 import { floorReady } from "./ridePrep";
 import { contentVisible } from "./visibility";
+import { useDispose } from "../fx/useDispose";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -41,6 +42,7 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
   const slab = useRef<Group>(null);
   const center = useMemo<[number, number]>(() => [cx, cz], [cx, cz]);
   const edges = useMemo(() => new EdgesGeometry(new BoxGeometry(w, SLAB_THICKNESS, d)), [w, d]);
+  useDispose(edges);
 
   useFrame(() => {
     const { phase, ride } = getHQStore().getState();

@@ -25,7 +25,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
 | Boost effects | At most 3 extra draw calls while boosting (trail, streaks, sparks), 0 when not boosting; idle frames identical to no boost; no shader compiled on the first boost; reduced motion shows none | `e2e/boost.spec.ts` (`__hq.rover.boostFx`, `trail`, `streaks`, `sparks`, `boostFov`, `boostPitch`) |
 | Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
-| Memory | No growth after 10 floor round-trips | Disposal test (geometry/material counts return to baseline) |
+| Memory | No growth after 10 Lobby to Roof round trips and 5 Page View toggles | `e2e/memory.spec.ts`: `renderer.info` geometries, textures and `programs.length` equal their baseline (three has no material count), JS heap growth < 2 MB |
 
 ## 3. Test strategy
 

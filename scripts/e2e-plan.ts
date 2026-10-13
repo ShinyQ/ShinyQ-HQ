@@ -24,6 +24,7 @@ export const ALL_SPECS = [
   "interact",
   "labs",
   "library-roof",
+  "memory",
   "missions",
   "onboarding",
   "pads",
@@ -90,6 +91,9 @@ export const RULES: Rule[] = [
     test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|HighlightsHall|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
     specs: ["experience", "highlights", "walk"],
   },
+
+  // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
+  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/memoryProbe\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },

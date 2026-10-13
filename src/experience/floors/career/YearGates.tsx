@@ -10,6 +10,7 @@ import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels"
 import { neonColor } from "../../fx/materials";
 import { Readable } from "../../fx/Readable";
 import { RoadMarkings } from "../../fx/RoadMarkings";
+import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
@@ -72,6 +73,7 @@ export function YearGates({
     g.setAttribute("position", new Float32BufferAttribute(pts, 3));
     return g;
   }, [years, H]);
+  useDispose(arches);
 
   const neon = useMemo(() => neonColor(accent, 2, tier), [accent, tier]);
   const digits = useRef<(Mesh | null)[]>([]);

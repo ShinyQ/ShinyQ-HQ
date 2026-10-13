@@ -5,6 +5,7 @@ import { useMemo, useRef } from "react";
 import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { FLOOR_COLOR } from "../../config";
+import { useDispose } from "../../fx/useDispose";
 import type { GpuTier } from "../../types";
 import { mulberry32 } from "./solids";
 
@@ -40,6 +41,8 @@ function cloudGeometry(count: number) {
 export function Sky({ tier }: { tier: GpuTier }) {
   const stars = useMemo(() => starGeometry(tier === "full" ? 900 : 500), [tier]);
   const clouds = useMemo(() => cloudGeometry(tier === "full" ? 260 : 120), [tier]);
+  useDispose(stars);
+  useDispose(clouds);
   const drift = useRef<Group>(null);
 
   useFrame((_, dt) => {

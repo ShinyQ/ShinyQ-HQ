@@ -24,6 +24,7 @@ import { COLORS, ROVER } from "../config";
 import { boostFxConfig } from "../fx/boostConfig";
 import { BoostFx } from "../fx/BoostFx";
 import { neonColor } from "../fx/materials";
+import { useDispose } from "../fx/useDispose";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
 import { BOOST } from "./boost";
@@ -105,6 +106,7 @@ export function Rover({ tier }: { tier: GpuTier }) {
     g.setAttribute("position", new Float32BufferAttribute([0, 0, 0, 0, -0.32, 0, 0.5, -0.16, 0], 3));
     return g;
   }, []);
+  useDispose(pennant);
 
   const local = useRef({
     lastKey: "",

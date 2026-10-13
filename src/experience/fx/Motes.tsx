@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { AdditiveBlending, BufferGeometry, Float32BufferAttribute, type Points } from "three";
+import { useDispose } from "./useDispose";
 
 /** Ambient dust motes from the prototype: drifting additive points over the current floor (full tier only). */
 export function Motes({ count = 260, area = 50, height = 6, center = [0, 0, 0] }: { count?: number; area?: number; height?: number; center?: [number, number, number] }) {
@@ -21,6 +22,7 @@ export function Motes({ count = 260, area = 50, height = 6, center = [0, 0, 0] }
     g.setAttribute("position", new Float32BufferAttribute(pos, 3));
     return g;
   }, [count, area, height]);
+  useDispose(geometry);
   useFrame((_, dt) => {
     if (points.current) points.current.rotation.y += Math.min(dt, 0.1) * 0.01;
   });

@@ -27,6 +27,7 @@ import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
+import { memoryCounts, trackRenderer } from "./scene/memoryProbe";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
 import { programPins } from "./scene/programPins";
 import { qualityHandle, qualityStore } from "./scene/qualityStore";
@@ -114,7 +115,18 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep, probes: sceneProbes, render: renderProbe, quality: qualityHandle };
+  (window as unknown as { __hq?: unknown }).__hq = {
+    store,
+    rover: roverRuntime,
+    camera: () => [...roverRuntime.cameraPosition],
+    layouts,
+    interact: interactRuntime,
+    memory: memoryCounts,
+    ridePrep,
+    probes: sceneProbes,
+    render: renderProbe,
+    quality: qualityHandle,
+  };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
@@ -189,6 +201,9 @@ export default function Experience({
       delete html.dataset.hq;
     };
   }, []);
+
+  // The memory probe must not read a renderer that unmounted with this canvas.
+  useEffect(() => () => trackRenderer(null), []);
 
   useEffect(() => {
     const store = getHQStore();
@@ -372,6 +387,7 @@ export default function Experience({
             renderProbe.camera = camera;
             gl.toneMapping = ACESFilmicToneMapping;
             gl.toneMappingExposure = sceneSettings(tier).exposure;
+            trackRenderer(gl);
             const canvas = gl.domElement;
             canvas.addEventListener("webglcontextlost", (event) => {
               event.preventDefault();
