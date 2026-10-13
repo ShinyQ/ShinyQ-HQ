@@ -27,12 +27,12 @@
 | Time console | north of the forecourt, 5 x 1.2 u at z about -11.1, screen facing +z (rail camera); stop at z -8 |
 | Return pad (F1) | beside the console, 5.5 u east, z -8.2 (`forecourt.returnPad`) |
 | Gateway arch | x = Workshop start (359), posts at z +-5, WORKSHOP floating sign above |
-| Workshop plaza | x 359 to 395, z -11 to 11 (`CAREER_ROAD.workshop` w from the bench span, at least 34) |
-| Repo skyline | north of the Workshop, plinth 20 x 4 u (10 columns x 2 rows, 2 u pitch), bars 1.6 u square, height `0.8 + 7.2 * ln(1 + stars) / ln(1 + max)`; stops at z -10 |
-| Workbenches | south of the Workshop, two groups of 5 touching 2.2 u benches 6 u apart, starting 1 u past the gateway; stops at z 10 |
+| Workshop plaza | x 359 to 398, z -9 to 9 (`WORKSHOP.plaza`: 18 deep, length from the bench span, at least 34) |
+| Repo skyline | north of the Workshop, plinth 18 x 3.6 u (10 columns x 2 rows, 1.8 u pitch), bars 1.5 u square, height `0.8 + 7.2 * ln(1 + stars) / ln(1 + max)`; stops at z -8 |
+| Workbenches | south of the Workshop, two groups of 5 touching 2.2 u benches 6 u apart, starting 4 u past the gateway; stops at z 8 |
 | Horizon deck | road end 4 u before the window; #87 window, bridge, skyline and sunrise unchanged |
 
-Obstacles keep 6 u from each other (z gaps of 7.2 u between the gateway posts and the bench and skyline rows) and from the window end of the slab.
+Obstacles keep 6 u from each other (the benches start 4 u past the gateway posts and 5 u further south: 6.4 u) and from the window end of the slab (7 u). Executed decisions: the plaza went from 22 to 18 u deep after the first captures (the benches sat under the HUD pill); the bench and repo rooms stay out of the Cmd-K catalog (they pushed pods down in search; the Workshop room's keywords already list them).
 
 ---
 
@@ -58,10 +58,10 @@ Obstacles keep 6 u from each other (z gaps of 7.2 u between the gateway posts an
 
 **Files:**
 - Create: `src/content/workshop.ts`
-- Modify: `src/content/room-views/career.ts`, `src/experience/missions/rooms.ts`, `src/experience/missions/host3d.ts` (`roomTarget` reads `layout.roomStops`), `src/experience/Experience.tsx` (`hasPage`: only career entries have an L2 page), `messages/{en,id}.json`
+- Modify: `src/content/room-views/career.ts`, `src/content/room-views/types.ts` (`externalLabel`), `src/hud/drawer/RoomDrawer.tsx`, `src/experience/missions/host3d.ts` (`roomTarget` reads `layout.roomStops`), `src/experience/Experience.tsx` (`hasPage`: only career entries have an L2 page), `messages/{en,id}.json`
 - Test: `tests/unit/room-views.test.ts`, `tests/unit/missions-host3d.test.ts`
 
-- [ ] Failing tests: one view per side project and per repo (title, summary or description, language and stars meta, external link, prev and next chains), catalog rooms exist, `roomTarget` returns the bench, repo and gateway stops.
+- [ ] Failing tests: one view per side project and per repo (title, summary or description, language and stars meta, external link, prev and next chains), `roomTarget` returns the bench, repo and gateway stops.
 - [ ] Implement, run, commit `feat(l2): side project and repo drawers`.
 
 ### Task 3: Point-and-go, console picker, hints

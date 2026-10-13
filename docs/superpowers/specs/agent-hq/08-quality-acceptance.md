@@ -78,7 +78,8 @@ Highlights Hall gallery (spectacle round, `docs/superpowers/specs/2026-10-13-spe
 ### Phase 3: Career Archive
 - The corridor is generated from `careerArchive.entries` grouped by year, with year gates and alternating rooms.
 - The rail camera works, and horizontal swipe scrubs through time on touch. Year rooms open the drawer with correct content.
-- The Workshop annex lists side projects and public repos.
+- The Workshop lists side projects and public repos: one bench per side project and one skyline bar per repo, each opening its own drawer (F3, `e2e/workshop.spec.ts`).
+- L2 Workshop (F3): the time console teleports to any year plaza and back to the elevator; the forecourt routes reach the console, the gateway, every bench and every bar (`tests/unit/career-workshop.test.ts`, space rules with the Return pad); the skyline height is a log scale of stars and the color follows the language (`tests/unit/career-skyline.test.ts`). Budgets at the Workshop: no more scene calls than the old annex (measured: 71 to 56 on full at 1440 × 900, 61 to 46 on lite at 390 × 844), triangles under 30k at every peak, programs within the perf baseline + 2. Reduced motion: the console's jump is the fade cut and nothing in the Workshop animates (the icons' sway stops, the Horizon clock holds).
 
 ### Phase 4: Labs
 - Both wings are generated from data (`wing`, `tier`, `order`): hero rows plus featured grids, with the correct holograms. Listed items appear in the wing directory and ⌘K.

@@ -113,7 +113,9 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 | Metric tiles | 1 to 3 tiles, each with the value, the label and the context (e.g. "controlled A/B, n=4") |
 | Actions | One footer row: "Full case study" (route link) plus "View architecture" (hero pods only); prev/next and close live in the bar |
 | Focus | Focus moves into the drawer on open and returns to the canvas on close. Esc closes it. |
-| URL | Opening updates the URL with `history.pushState`. Closing restores the floor URL. |
+| URL | Opening updates the URL with `history.pushState`. Closing restores the floor URL. Rooms without a page of their own keep the floor URL (the L1 Highlights Hall stations, L4 shelves and Medium posts, and the L2 Workshop rooms). |
+| Workshop rooms (L2, F3) | The Workshop overview (`L2:workshop`, the gateway), one single-pane drawer per side project (`L2:side-<id>`: summary, year, stack, live demo and repository links, footer "Open project" or "View on GitHub") and per public repo (`L2:repo-<slug>`: description, language, stars, footer "View on GitHub", new tab with `rel="noopener noreferrer"`), each chained prev/next in content order. They open from point-and-go on a bench or a skyline bar (the rover drives to its stop first), are not in the Cmd-K catalog (the Workshop overview's keywords list every project and repo) and keep `/journey`. |
+| Time console (L2, F3) | A point-and-go station (`L2:station:time-console`, action `console-picker`) that drives to the console stop and opens the pad picker in its `console` form: "Back to elevator" first, then every year plaza (none current). A year beams to its teleporter pad (`teleport:<year>`), Back to elevator to the elevator call pad facing the car (`elevator:L2`); both reuse the teleport beam (the 150 ms fade cut under reduced motion) and leave the target pad latched, so no picker opens on landing. |
 
 ## 7. Hologram view
 
