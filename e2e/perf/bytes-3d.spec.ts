@@ -1,0 +1,91 @@
+import { expect, test, type Page, type Response } from "@playwright/test";
+import { chunkName, kb, sum, type ChunkMap } from "../../scripts/perf-report";
+import { BYTES_3D_BUDGET } from "../budgets";
+import { asReturningVisitor, openPage, waitForHQ, waitForPhase, waitForSceneLive } from "../hq";
+import { writePerfEntry } from "./helpers";
+
+/**
+ * 3D bytes gate (SP6, appendix 08 section 2): the JavaScript a visitor downloads after the 3D gate,
+ * gzip as served (scripts/serve-static.ts gzips like Cloudflare), on both tiers. Two cold contexts:
+ * the Page View (`?tier=static`) and the 3D view until the scene runs and the network is quiet. Every
+ * response the Page View did not fetch is 3D-path bytes: scripts are gated, fonts, JSON, CSS and
+ * images are reported. Fails at 450 KB (spec ceiling 600 KB).
+ */
+test.describe.configure({ timeout: 150_000 });
+
+interface Transfer {
+  path: string;
+  type: string;
+  bytes: number;
+}
+
+/** Playwright resource types to report keys. */
+const KIND: Record<string, string> = { script: "js", stylesheet: "css", font: "font", fetch: "json", xhr: "json", image: "image" };
+
+/** Same-origin responses with their encoded body size, from `load` until no response arrived for `quietMs`. */
+async function recordTransfers(page: Page, load: () => Promise<unknown>, quietMs = 3000, timeout = 60_000): Promise<Transfer[]> {
+  const pending: Promise<Transfer | null>[] = [];
+  let last = Date.now();
+  const onResponse = (response: Response) => {
+    last = Date.now();
+    const url = new URL(response.url());
+    if (url.hostname !== "127.0.0.1") return;
+    const request = response.request();
+    pending.push(
+      request.sizes().then(
+        (sizes) => ({ path: url.pathname, type: request.resourceType(), bytes: sizes.responseBodySize }),
+        () => null,
+      ),
+    );
+  };
+  page.on("response", onResponse);
+  await load();
+  const deadline = Date.now() + timeout;
+  // Proving that nothing more arrives is the one place a timed wait belongs (AGENTS.md, writing 3D tests).
+  while (Date.now() - last < quietMs) {
+    if (Date.now() > deadline) throw new Error(`the network never went quiet for ${quietMs} ms`);
+    await page.waitForTimeout(250);
+  }
+  page.off("response", onResponse);
+  return (await Promise.all(pending)).filter((t): t is Transfer => t !== null);
+}
+
+for (const tier of ["lite", "full"] as const) {
+  test(`3D JS after the gate stays under ${BYTES_3D_BUDGET.failAt / 1024} KB gzip (${tier})`, async ({ browser }) => {
+    const pageView = await browser.newContext();
+    const pv = await pageView.newPage();
+    const pageViewTransfers = await recordTransfers(pv, () => openPage(pv, "/en?tier=static"));
+    await pageView.close();
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await asReturningVisitor(page);
+    const transfers = await recordTransfers(page, async () => {
+      await page.goto(`/en?tier=${tier}`);
+      await waitForHQ(page);
+      await waitForPhase(page, "explore");
+      await waitForSceneLive(page);
+    });
+    // null on a build without the counters (a main build in a before/after run).
+    const postPasses = await page.evaluate(() => (window as unknown as { __hq: { perf?: { stats: { postCalls: number } } } }).__hq.perf?.stats.postCalls ?? null);
+    await context.close();
+
+    const seen = new Set(pageViewTransfers.map((t) => t.path));
+    const js: ChunkMap = {};
+    const other: ChunkMap = {};
+    for (const t of transfers) {
+      if (seen.has(t.path)) continue;
+      // troika fetches its fonts with XHR, so the file name tells fonts apart from JSON.
+      const kind = /\.(woff2?|ttf|otf)$/.test(t.path) ? "font" : (KIND[t.type] ?? "other");
+      if (kind === "js") js[chunkName(t.path)] = (js[chunkName(t.path)] ?? 0) + t.bytes;
+      else other[kind] = (other[kind] ?? 0) + t.bytes;
+    }
+    writePerfEntry({ kind: "bytes3d", tier, js, other });
+    const total = sum(js);
+    console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
+
+    if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
+    expect(total, "no 3D JavaScript measured: did the gate load the 3D chunk?").toBeGreaterThan(BYTES_3D_BUDGET.minExpected);
+    expect(total, `3D JS ${kb(total)} is over the ${kb(BYTES_3D_BUDGET.failAt)} CI budget (spec ceiling ${kb(BYTES_3D_BUDGET.spec)})`).toBeLessThan(BYTES_3D_BUDGET.failAt);
+  });
+}
