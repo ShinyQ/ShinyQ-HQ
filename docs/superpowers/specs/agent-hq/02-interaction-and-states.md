@@ -16,7 +16,8 @@ stateDiagram-v2
   explore --> palette: Cmd-K or "/"
   palette --> autopilot: mission or room chosen
   palette --> explore: Esc
-  explore --> elevator: elevator panel / call pad / PgUp PgDn / swipe
+  explore --> elevator: elevator panel / call pad / PgUp PgDn / swipe (more than 25 u from the call pad: beam into the car first)
+  explore --> explore: Express Return pad (beam to the elevator call pad)
   elevator --> explore: arrived
   explore --> autopilot: click a room label (far away)
   autopilot --> explore: any manual input (cancel)
@@ -43,10 +44,14 @@ stateDiagram-v2
 | boot → intro | Boot lines type out (max 6 lines), then a CRT-off flash; first 3D load of each browser session, any route. The boot card shows the owner's name, headline, motto and current role (server-rendered, visible at first paint) and a small "Classic site" link (formerly "Page view") that leaves the 3D view; Boot rover is still required and the intro still plays in full (owner decision, round 5) | 1.2 s, never skipped | Same pace (revealing lines is not motion) |
 | intro → explore | Exterior orbit and fly-in (see appendix 01); first 3D load of each browser session, any route | 2.5 s, never skipped | A still exterior shot for the same 2.5 s, then a cut |
 | explore → elevator → explore | Rover drives to the door, doors close, the car waits with closed doors until the destination floor is built, compiled and typeset (at most 1.5 s, first visits only), camera dollies vertically, doors open. A long frame pauses the ride (each frame adds at most 1/30 s of ride time at 60 fps, 1/20 s on steadily slow devices) instead of skipping it | Drive time + 1.3 s of door stages + 0.8 s dolly (+ up to 1.5 s wait on a first visit) | 150 ms fade cut (the same wait happens at the door) |
+| explore → elevator, far (fast return, owner decision 2026-10-14) | More than 25 u (straight line) from the floor's elevator call pad, the rover beams onto the pad facing the car instead of driving (0.3 s rise over the rover, jump with a camera cut, 0.3 s fade over the pad, green column), and the ride boards on the jump frame; the rest of the ride is unchanged. Applies to every trigger, since all go through `requestElevator`: the elevator panel, PgUp/PgDn, swipes, the call pad picker, Cmd-K and mission `elevator` steps | 0.6 s instead of the drive | 150 ms fade cut, then the ride's cut |
+| explore → explore (Express Return pad) | Stopping on a floor's Return pad (`return:<floor>`, L2 annex forecourt and L3 east plaza today) or point-and-go to it beams the rover onto the elevator call pad, facing the car; the call pad stays quiet (no floor picker) until the rover leaves it | 0.6 s | 150 ms fade cut |
 | autopilot step | Rover follows the navgrid path at autopilot speed | Distance-based | Same, but no camera sway |
 | → room | Rover plants its flag, the room hologram brightens, the drawer slides in | 300 ms | Instant drawer |
 | room → hologram | Camera flies into the pod, the world dims to 25%, the diagram assembles node by node | 900 ms | Diagram appears instantly |
 | any → static | Notice toast "Switched to lite view" | | |
+
+Fast return and missions: a beam inside a ride is part of the ride, so mission `elevator` steps (guided trips, tours, deep link continuations) keep running and only arrive sooner. A manual floor change cancels a running mission and pauses a walk, as before. The Return pad uses the pad latch, which never fires while a mission or walk drives, so tours never beam by accident. Esc does nothing during any beam; manual driving input is ignored until it lands.
 
 ## 3. Missions
 
