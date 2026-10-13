@@ -440,7 +440,7 @@ export default function Experience({
               const canvas = gl.domElement;
               canvas.addEventListener("webglcontextlost", (event) => {
                 event.preventDefault();
-                // Unmounting (Page view) also loses the context on purpose; only a canvas that is still on
+                // Unmounting (Classic site) also loses the context on purpose; only a canvas that is still on
                 // the page has really crashed. The gate remounts once, then shows the static page.
                 window.setTimeout(() => {
                   if (canvas.isConnected) onCrash();

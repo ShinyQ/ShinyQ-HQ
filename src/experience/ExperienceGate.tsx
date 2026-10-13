@@ -62,7 +62,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     }
     setView("3d");
   }, []);
-  // Page View from the HUD, or from the boot card's "Page view" link (cover or overlay).
+  // Page View from the HUD, or from the boot card's "Classic site" link (cover or overlay).
   const toPage = useCallback(() => {
     try {
       sessionStorage.setItem(VIEW_KEY, "page");
@@ -75,7 +75,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   }, []);
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
-  // The boot card's "Page view" is a real `?view=page` link (works before hydration); once hydrated, switch without a reload.
+  // The boot card's "Classic site" is a real `?view=page` link (works before hydration); once hydrated, switch without a reload.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -171,7 +171,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
 }
 
 /**
- * Page view's way back: a fixed, solid cyan button in the bottom-right corner, visible without
+ * Classic site's way back: a fixed, solid cyan button in the bottom-right corner, visible without
  * scrolling on every viewport. It is the first focusable element in <main>, and the `3` key
  * triggers it too.
  */

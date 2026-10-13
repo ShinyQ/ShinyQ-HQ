@@ -4,7 +4,7 @@ import id from "../messages/id.json";
 import { asReturningVisitor, enterHQ, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
- * 3D HUD layout (owner round R3-B): the top bar (no Quick view, a highlighted Page view with Ask AI
+ * 3D HUD layout (owner round R3-B): the top bar (no Quick view, a highlighted Classic site with Ask AI
  * on its right), the bottom band (hint and walk pill at the bottom, clear of the joystick, boost and
  * view controls) and the room drawer footer (cross-floor link right of the primary action).
  */
@@ -37,7 +37,7 @@ const TOP_BAR = [
 
 test.describe("3D top bar", () => {
   for (const vp of TOP_BAR) {
-    test(`${vp.name}: no Quick view, a highlighted Page view and Ask AI on its right`, async ({ browser }) => {
+    test(`${vp.name}: no Quick view, a highlighted Classic site and Ask AI on its right`, async ({ browser }) => {
       const { context, page } = await newPage(browser, vp);
       await enterHQ(page);
       const hud = page.getByTestId("hud");

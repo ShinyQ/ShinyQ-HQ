@@ -83,7 +83,7 @@ export function canOffer3D(i: Offer3DInput): boolean {
 }
 
 /**
- * `?view=page` is the boot card's "Page view" link (a real link, so it works before hydration): the
+ * `?view=page` is the boot card's "Classic site" link (a real link, so it works before hydration): the
  * head script stores the Page View choice and drops the parameter. Returns the search without it, or
  * null when it is absent. Self-contained (no imports, no closures) for toString().
  */

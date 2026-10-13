@@ -55,11 +55,11 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
 }
 
 const launcher = "glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
-/** Page view is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
+/** Classic site is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
 const primary =
   "inline-flex min-h-11 items-center gap-2 rounded-full bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
 
-/** Page view (highlighted, document icon on the left) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
+/** Classic site (highlighted, document icon on the left) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
 function ViewActions({ onExit }: { onExit: () => void }) {
   const t = useTranslations("hud");
   return (
@@ -75,7 +75,7 @@ function ViewActions({ onExit }: { onExit: () => void }) {
 
 /**
  * Desktop and tablet top-right controls (appendix 04 section 2): one row from 1024 px; below that,
- * Page view and Ask AI get their own row under the bar. From 1024 to 1099 px the "Ctrl K" chip hides
+ * Classic site and Ask AI get their own row under the bar. From 1024 to 1099 px the "Ctrl K" chip hides
  * (`compactShortcut`) so the row clears the profile card in Indonesian on Windows and Linux.
  */
 export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {

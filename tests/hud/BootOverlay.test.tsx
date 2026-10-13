@@ -60,7 +60,7 @@ describe("BootOverlay", () => {
     expect(start).not.toHaveAttribute("aria-disabled");
   });
 
-  it("names the owner and offers a Page view link that works without JavaScript", () => {
+  it("names the owner and offers a Classic site link that works without JavaScript", () => {
     renderOverlay();
     const block = screen.getByTestId("boot-who");
     for (const text of [who.name, who.headline, who.motto, who.role]) expect(block).toHaveTextContent(text);

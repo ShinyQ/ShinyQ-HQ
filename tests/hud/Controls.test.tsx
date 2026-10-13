@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 describe("3D top bar", () => {
-  it("has no Quick view, a primary Page view and Ask AI right after it, at the end", async () => {
+  it("has no Quick view, a primary Classic site and Ask AI right after it, at the end", async () => {
     const onExit = vi.fn();
     render(
       <Wrap>
@@ -97,7 +97,7 @@ describe("3D top bar", () => {
     expect(screen.queryByTestId("motion-popover")).toBeNull();
   });
 
-  it("phones: Page view and Ask AI get their own row; the menu holds language, sound and motion", async () => {
+  it("phones: Classic site and Ask AI get their own row; the menu holds language, sound and motion", async () => {
     render(
       <Wrap>
         <MobileMenu onExit={vi.fn()} onToggleLang={vi.fn()} />

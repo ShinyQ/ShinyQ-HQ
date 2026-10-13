@@ -73,7 +73,7 @@ describe("shouldBootFirst", () => {
     }
   });
 
-  it("respects tier=static, stored page view, missing WebGL2 and saveData", () => {
+  it("respects tier=static, stored classic site, missing WebGL2 and saveData", () => {
     expect(shouldBootFirst({ ...base, search: "?tier=static" })).toBe(false);
     expect(shouldBootFirst({ ...base, search: "?x=1&tier=static" })).toBe(false);
     expect(shouldBootFirst({ ...base, storedView: "page" })).toBe(false);

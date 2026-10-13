@@ -82,7 +82,7 @@
     "certsTitle": "Sertifikasi",
     "howTitle": "Cara saya bekerja",
     "directoryTitle": "Direktori gedung",
-    "directoryIntro": "Pilih lantai yang ingin dijelajahi. Setiap lantai juga tersedia dalam tampilan halaman.",
+    "directoryIntro": "Pilih lantai yang ingin dijelajahi. Setiap lantai juga punya halaman di situs klasik.",
     "storyTitle": "Latar belakang saya",
     "seeWork": "Lihat karya",
     "selectedWork": "Karya pilihan",
@@ -294,13 +294,13 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
-    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan sepenuhnya, serta R dan F untuk memiringkannya; tekan 0 untuk mengatur ulang. Scroll, cubit, atau tekan + dan - untuk zoom; zoom sampai paling dekat untuk melihat lewat mata rover, dengan WASD menyetir ke arah pandangan, lalu zoom keluar untuk kembali. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, pad panggilnya, atau PageUp dan PageDown. Tampilan halaman menampilkan portofolio sebagai halaman.",
+    "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan sepenuhnya, serta R dan F untuk memiringkannya; tekan 0 untuk mengatur ulang. Scroll, cubit, atau tekan + dan - untuk zoom; zoom sampai paling dekat untuk melihat lewat mata rover, dengan WASD menyetir ke arah pandangan, lalu zoom keluar untuk kembali. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, pad panggilnya, atau PageUp dan PageDown. Situs klasik menampilkan portofolio sebagai situs biasa.",
     "floor": "Lantai",
     "elevator": "Lift",
     "goToFloor": "Ke {floor}, {label} ({name})",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
-    "pageView": "Tampilan halaman",
-    "pageViewHint": "Tampilkan halaman ini tanpa menara 3D",
+    "pageView": "Situs klasik",
+    "pageViewHint": "Buka halaman ini sebagai situs klasik, tanpa menara 3D",
     "explore3d": "Jelajahi dalam 3D",
     "back3d": "Kembali ke 3D",
     "back3dHint": "Kembali ke menara dalam 3D. Tekan 3.",
@@ -330,11 +330,11 @@
     "bootLine6": "rover siap ^_^",
     "bootStart": "Nyalakan rover",
     "retry3d": "Coba 3D lagi",
-    "staticNotice": "3D tidak tersedia. Tampilan halaman dibuka.",
+    "staticNotice": "3D tidak tersedia. Situs klasik dibuka.",
     "kioskTitle": "rover@hq:~$ ./ask-rover",
     "kioskHint": "Pilih kios atau rover untuk membuka Tanya Rover",
     "constructionLabel": "Sedang dibangun",
-    "constructionHint": "Buka lantai ini dalam tampilan halaman",
+    "constructionHint": "Buka lantai ini di situs klasik",
     "statusHello": "halo!",
     "rooms": {
       "profile": "Hologram profil",
@@ -744,7 +744,7 @@
       "close": "Tutup",
       "prompt": "Tampilkan tawaran lagi",
       "sheet": "Chip 2D",
-      "sheetTitle": "Ikon tipe sebagai chip Page View"
+      "sheetTitle": "Ikon tipe sebagai chip situs klasik"
     },
     "protoLibrary": {
       "title": "Konsep lantai tulisan",

@@ -82,7 +82,7 @@
     "certsTitle": "Certifications",
     "howTitle": "How I work",
     "directoryTitle": "Tower directory",
-    "directoryIntro": "Choose a floor to explore. Every floor also has a page view.",
+    "directoryIntro": "Choose a floor to explore. Every floor also has a page on the classic site.",
     "storyTitle": "My background",
     "seeWork": "See the work",
     "selectedWork": "Selected work",
@@ -294,13 +294,13 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom; zoom all the way in to see through the rover's eyes, where WASD drives where you look, and zoom out to return. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, its call pads or PageUp and PageDown to change floors. Page view shows the portfolio as a page.",
+    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom; zoom all the way in to see through the rover's eyes, where WASD drives where you look, and zoom out to return. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, its call pads or PageUp and PageDown to change floors. Classic site shows the portfolio as a regular website.",
     "floor": "Floor",
     "elevator": "Elevator",
     "goToFloor": "Go to {floor}, {label} ({name})",
     "currentFloor": "Current floor: {floor}, {name}",
-    "pageView": "Page view",
-    "pageViewHint": "Show this page without the 3D tower",
+    "pageView": "Classic site",
+    "pageViewHint": "Open this page as a classic website, without the 3D tower",
     "explore3d": "Explore in 3D",
     "back3d": "Back to 3D",
     "back3dHint": "Return to the tower in 3D. Press 3.",
@@ -330,11 +330,11 @@
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
     "retry3d": "Retry 3D",
-    "staticNotice": "3D is unavailable. Showing page view.",
+    "staticNotice": "3D is unavailable. Showing the classic site.",
     "kioskTitle": "rover@hq:~$ ./ask-rover",
     "kioskHint": "Select the kiosk or the rover to open Ask Rover",
     "constructionLabel": "Under construction",
-    "constructionHint": "Open this floor in page view",
+    "constructionHint": "Open this floor on the classic site",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",
@@ -744,7 +744,7 @@
       "close": "Close",
       "prompt": "Show the prompt again",
       "sheet": "2D chips",
-      "sheetTitle": "Type icons as Page View chips"
+      "sheetTitle": "Type icons as classic site chips"
     },
     "protoLibrary": {
       "title": "Writing floor concepts",

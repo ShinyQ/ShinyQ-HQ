@@ -11,7 +11,7 @@ import { getHQStore } from "@/store/useHQStore";
  * still hold Shift). It toggles on pointer down, so a second finger works while the first drives the
  * joystick, and ignores the click that follows. Boost only applies while driving by hand (`boostOn`),
  * so the rover still stops when the joystick is released. A floor change, an elevator ride and unmount
- * (Page view, the hologram, reload) turn it off; it is never persisted.
+ * (Classic site, the hologram, reload) turn it off; it is never persisted.
  */
 export function BoostButton() {
   const t = useTranslations("hud");

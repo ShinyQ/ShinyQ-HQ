@@ -61,7 +61,7 @@ export async function asReturningVisitor(page: Page) {
 }
 
 /**
- * Playwright sets navigator.webdriver, which the gate treats as bot-like (page view, no 3D) unless the
+ * Playwright sets navigator.webdriver, which the gate treats as bot-like (the classic site, no 3D) unless the
  * URL forces `?tier=lite|full`. Tests of real auto-detection (software renderer, no WebGL) hide it.
  */
 export async function asHumanBrowser(page: Page) {

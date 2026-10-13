@@ -91,7 +91,7 @@ export const FORBIDDEN_OUTPUT = [
 /** Capitalized words that are fine mid-sentence even when the site never uses them. */
 const COMMON_CAPS = new Set(
   [
-    "i i'm i've i'd yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shinyq hq ai page view work journey writing about contact",
+    "i i'm i've i'd yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shinyq hq ai page view classic site situs klasik work journey writing about contact",
     // Dates in the pack are YYYY-MM, so answers spell out month and day names.
     "january february march april may june july august september october november december jan feb mar apr jun jul aug sep sept oct nov dec",
     "januari februari maret mei juni juli agustus oktober desember agu okt des",
