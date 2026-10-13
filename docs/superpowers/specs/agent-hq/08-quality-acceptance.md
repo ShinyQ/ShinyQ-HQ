@@ -6,7 +6,7 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 | Tier | Requirement | Experience |
 |---|---|---|
-| `full` | WebGL2, not a low-end GPU (detect-gpu tier ≥ 2), not coarse pointer with `deviceMemory < 4` | Everything, including bloom and point lights |
+| `full` | WebGL2, fine pointer, not a low-memory or low-core device (local heuristic, `src/lib/gpu-tier.ts`) | Everything, including bloom; DPR up to 2 within an 8.3 MP pixel budget, composer MSAA 4 below DPR 1.5; a runtime safety net steps DPR, then MSAA, then bloom on sustained drops (at most 2 changes per minute) |
 | `lite` | WebGL2 available, lower tier or mobile | No bloom, no point lights, fewer particles, DPR ≤ 1.5 |
 | `static` | No WebGL2, tier 0, `saveData`, or a WebGL error | HTML pages only (same content and missions as links) |
 
@@ -21,8 +21,8 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | TBT | < 300 ms | Lighthouse CI |
 | Initial JS (gzip, before 3D) | < 350 KB | `@next/bundle-analyzer` check in CI |
 | 3D chunk (gzip) | < 600 KB | Same |
-| Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite) | Manual check plus a Playwright perf probe that samples `requestAnimationFrame` deltas |
-| Draw calls per floor | < 150 | `renderer.info` assertion in a dev-only test |
+| Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 ≤ 18 ms), the runtime safety net in the field |
+| Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
 | Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
 | Memory | No growth after 10 floor round-trips | Disposal test (geometry/material counts return to baseline) |
 

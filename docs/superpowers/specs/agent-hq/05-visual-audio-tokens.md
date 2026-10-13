@@ -40,13 +40,14 @@ All HUD text must meet WCAG AA contrast against `glass.bg`.
 | Item | Spec |
 |---|---|
 | Room edges | `LineSegments` with `LineBasicMaterial`, color = accent, opacity 0.95 |
-| Room walls | `MeshBasicMaterial`, accent color, opacity 0.05, `depthWrite: false` |
+| Room walls | Glass `ShaderMaterial` (fresnel, top band, scanline), accent color, `transparent`, `depthWrite: false`, `DoubleSide`, shared per color and opacity; full-tier fills scaled x0.4 (linear composer blending) |
 | Room floors | Accent color, opacity 0.08 |
-| Holograms | Emissive `MeshStandardMaterial`, `emissiveIntensity` 1.6 (full tier) or 1.0 (lite) |
-| Lights | 1 hemisphere light (`#c7d2fe` / `#05050c`, 0.6), 1 directional (0.4, no shadows), per-room point lights only on hero pods (full tier) |
+| Holograms | `MeshBasicMaterial`, `toneMapped: false`, neon colors pushed above 1.0 on the full tier so bloom picks them up |
+| Lights | 1 hemisphere light, 1 directional (no shadows), 1 rover point light on the full tier |
 | Shadows | Blob decals only, no shadow maps |
-| Bloom (full tier) | threshold 0.2, strength 0.9, radius 0.6, mipmap blur |
-| Fog | `FogExp2`, color `bg.void`, density 0.012 |
+| Bloom (full tier) | threshold 0.6, intensity 0.9, radius 0.45, mipmap blur with 8 levels; the runtime safety net lowers levels only together with the DPR (same on-screen glow), and by 2 more only as its last step |
+| Anti-aliasing | The canvas never multisamples. Full tier: composer MSAA 4 below DPR 1.5, none from DPR 1.5 up (the screen antialiases). Lite: none |
+| Fog | Linear, color `bg.void`, per camera rig: follow 38 to 80, rail 40 to 95, intro 90 to 200 |
 
 ## 3. Typography
 
