@@ -128,6 +128,30 @@ describe("MissionHud on static pages", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("shows a tech's projects on the Classic site Work page from Cmd-K", async () => {
+    renderHud();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.keyboard("show projects using fastapi{Enter}");
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/labs?stack=FastAPI#all-projects"));
+  });
+
+  it("picks the tech and rides to the Tech Reactor from Cmd-K in the 3D tower", async () => {
+    const { getHQStore } = await import("@/store/useHQStore");
+    getHQStore().getState().clearReactorTech();
+    document.documentElement.dataset.hq = "3d";
+    try {
+      renderHud();
+      await userEvent.keyboard("{Control>}k{/Control}");
+      await userEvent.keyboard("show projects using fastapi{Enter}");
+      await vi.waitFor(() => expect(getHQStore().getState().reactor.tech?.slug).toBe("fastapi"));
+      expect(getHQStore().getState().reactor.ring).toBe("backend");
+      expect(nav.push).not.toHaveBeenCalledWith(expect.stringContaining("stack="));
+    } finally {
+      delete document.documentElement.dataset.hq;
+      getHQStore().getState().clearReactorTech();
+    }
+  });
+
   it("runs a mission from the terminal", async () => {
     renderHud();
     act(() => openTerminal());

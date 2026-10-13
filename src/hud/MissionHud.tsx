@@ -10,6 +10,7 @@ import { roomFromPath } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionRunner } from "@/experience/missions/runner";
 import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
+import { REACTOR_ROOM } from "@/experience/floors/labs/techHash";
 import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
@@ -294,6 +295,19 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         setPaletteOpen(false);
         openAsk(target.q, { source: "palette" });
         return;
+      case "tech": {
+        const tech = index?.techs.find((t) => t.slug === target.slug);
+        if (!tech) return;
+        // In the 3D tower: pick the tech (its pods light up) and ride to the Tech Reactor. On the
+        // Classic site: the Work page filtered by that stack.
+        if (document.documentElement.hasAttribute("data-hq")) {
+          getHQStore().getState().selectReactorTech({ slug: tech.slug, name: tech.name, ring: tech.ring, count: tech.pods.length, pods: tech.pods });
+          void runner.goTo(REACTOR_ROOM);
+        } else {
+          router.push(`/${locale}/labs?stack=${encodeURIComponent(tech.name)}#all-projects`);
+        }
+        return;
+      }
     }
   };
 

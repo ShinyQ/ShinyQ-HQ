@@ -11,6 +11,8 @@ export type PaletteTarget =
   | { type: "room"; id: RoomId }
   | { type: "year"; year: number; room: RoomId; path: string }
   | { type: "action"; id: PaletteActionId }
+  /** L3 Tech Reactor: pick a tech (its pods light up) and ride to the reactor. */
+  | { type: "tech"; slug: string }
   /** Ask the HQ with the typed question (the row exists only while the feature is enabled). */
   | { type: "ask"; q: string };
 

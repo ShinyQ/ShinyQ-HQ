@@ -15,6 +15,8 @@ const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
   "motion-reduced": ["motion", "animation", "reduce", "reduced motion", "accessibility", "gerak", "animasi", "kurangi", "dikurangi"],
 };
 
+const TECH_KEYWORDS = ["tech", "stack", "reactor", "teknologi", "reaktor"];
+
 const RESULT_GROUPS = ["missions", "rooms", "years", "actions"] as const;
 /** Same cap as the server (`ASK_MAX_QUESTION` in src/ask/protocol.ts). */
 const ASK_MAX = 300;
@@ -30,7 +32,7 @@ const FIELD_WEIGHT = { title: 3, keywords: 1.5, subtitle: 1 } as const;
 const KIND_BONUS: Partial<Record<NonNullable<PaletteEntry["roomKind"]>, number>> = { pod: 0.5, post: 0.25 };
 
 export function buildPaletteEntries(
-  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels">,
+  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs">>,
   actions: readonly PaletteActionId[],
 ): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
@@ -79,6 +81,18 @@ export function buildPaletteEntries(
       title: index.actionLabels[id],
       keywords: ACTION_KEYWORDS[id],
       target: { type: "action", id },
+    });
+  }
+
+  // Tech Reactor rows ("Show projects using Azure OpenAI"): actions, so they only show for a query.
+  for (const tech of index.techs ?? []) {
+    entries.push({
+      key: `tech:${tech.slug}`,
+      group: "actions",
+      title: tech.title,
+      floor: "L3",
+      keywords: [tech.name, ...TECH_KEYWORDS],
+      target: { type: "tech", slug: tech.slug },
     });
   }
 
@@ -203,7 +217,9 @@ const texts = (value: LocalizedText | undefined) => (value ? [value.en, value.id
 function tokenScore(entry: PaletteEntry, token: string): number {
   const p = prepared(entry);
   let best = 0;
-  for (const text of p.title) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.title);
+  // Tech Reactor rows weigh their title like keywords, so a bare tech name still opens a project first.
+  const titleWeight = entry.target.type === "tech" ? FIELD_WEIGHT.keywords : FIELD_WEIGHT.title;
+  for (const text of p.title) best = Math.max(best, scoreText(token, text) * titleWeight);
   for (const text of p.keywords) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.keywords);
   for (const text of p.subtitle) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.subtitle);
   return best;
