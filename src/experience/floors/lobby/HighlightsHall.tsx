@@ -1,8 +1,8 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Texture } from "three";
+import { useFrame } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, DataTexture, Frustum, Matrix4, SRGBColorSpace, Vector3, type Group, type Object3D, type Texture } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { neonColor } from "../../fx/materials";
@@ -10,7 +10,9 @@ import { RoadMarkings } from "../../fx/RoadMarkings";
 import { useDispose } from "../../fx/useDispose";
 import { registerExtraInteractables } from "../../interact/registry";
 import { roverRuntime } from "../../rover/runtime";
+import { sceneTarget } from "../../scene/postHandle";
 import { precompileObject } from "../../scene/precompile";
+import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { PulseRings } from "../roof/kit";
@@ -138,25 +140,35 @@ function HallLines({ shapes, tier }: { shapes: HallShapes; tier: GpuTier }) {
 
 /**
  * Compiles (and pins) every program of the hall before it shows (P2's precompile API), so nothing
- * compiles on arrival: the hall mounts hidden behind the certification wall after the intro.
+ * compiles on arrival. Like BoostFx it waits until the scene has drawn into its final target (the full
+ * tier's composer input), and shows every child for the synchronous compile call: three skips hidden
+ * objects, and the curtain and an out-of-view hall are hidden.
  */
-function usePrecompiled(group: RefObject<Group | null>): boolean {
-  const { gl, camera, scene } = useThree();
+function HallReady({ children }: { children: ReactNode }) {
+  const group = useRef<Group>(null);
+  const tier = useHQStore((s) => s.tier);
   const [ready, setReady] = useState(false);
-  useEffect(() => {
+  const started = useRef(false);
+  useFrame((state) => {
     const g = group.current;
-    if (!g) return;
-    let live = true;
-    void precompileObject(gl, g, camera, scene)
-      .catch(() => null)
-      .finally(() => {
-        if (live) setReady(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [group, gl, camera, scene]);
-  return ready;
+    if (started.current || !g || !renderProbe.rendered || (tier === "full" && sceneTarget() === null)) return;
+    started.current = true;
+    const hidden: Object3D[] = [];
+    g.traverse((o) => {
+      if (!o.visible) {
+        hidden.push(o);
+        o.visible = true;
+      }
+    });
+    const done = precompileObject(state.gl, g, state.camera, state.scene);
+    for (const o of hidden) o.visible = false;
+    void done.catch(() => null).finally(() => setReady(true));
+  });
+  return (
+    <group ref={group} name="highlights-hall" visible={ready}>
+      {children}
+    </group>
+  );
 }
 
 /**
@@ -233,10 +245,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     return { center: q.center, cell: [cell.x / atlas.width, 0, (cell.x + cell.w) / atlas.width, 1] as [number, number, number, number] };
   }, [atlas, thumbs.length]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
-  const group = useRef<Group>(null);
-  const ready = usePrecompiled(group);
   return (
-    <group ref={group} name="highlights-hall" visible={ready}>
+    <HallReady>
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
       <RoadMarkings network={HALL_LAYOUT.network} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView>
@@ -258,6 +268,6 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <Suspense fallback={null}>
         <GateSign text={labels.hall} tier={tier} />
       </Suspense>
-    </group>
+    </HallReady>
   );
 }
