@@ -183,7 +183,7 @@ describe("hq-stats run", () => {
     const e = env();
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher(String(input), init));
     try {
-      await worker.scheduled({ cron: "0 1 * * *", scheduledTime: AT("2026-10-14") }, e, { waitUntil: () => {} });
+      await worker.scheduled({ cron: "0 1 * * *", scheduledTime: AT("2026-10-14") }, e);
     } finally {
       spy.mockRestore();
     }
