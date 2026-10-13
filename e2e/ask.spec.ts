@@ -105,7 +105,7 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
   await expect(thread(page)).toContainText(`Here is markup: ${HOSTILE} and text.`);
   await expect(thread(page)).toContainText(AS_OF_LINE);
   await expect(thread(page).locator("img")).toHaveCount(0);
-  expect(api.bodies()[0]).toEqual({ q: "How does the voice AI contact center work?", locale: "en", source: "pill" });
+  expect(api.bodies()[0]).toEqual({ q: "How does the voice AI contact center work?", locale: "en", source: "pill", chip: "ai-voice" });
 
   const followUps = dock(page).getByTestId("ask-followups");
   await expect(followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true })).toBeVisible();
@@ -257,7 +257,7 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
     execution: "execute",
     appearance: "interaction-only",
   });
-  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill" });
+  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill", chip: "contact-reach" });
   expect(errors).toEqual([]);
 });
 
@@ -289,7 +289,7 @@ test("Cmd-K Ask row sends the question to the dock", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(palette).toBeHidden();
   await expect(thread(page)).toContainText("Kurniadi is building AI agents.");
-  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", source: "palette" });
+  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", source: "palette", chip: "contact-reach" });
 });
 
 test("3D: the top-right pill opens the dock over the tower, and typing does not drive the rover", async ({ page }) => {
@@ -324,7 +324,7 @@ test("Perspectives topic: a cited answer links to its written source on About", 
   await dock(page).getByTestId("ask-topics").getByRole("button", { name: "Perspectives" }).click();
   await dock(page).getByRole("button", { name: "What are his coding principles?", exact: true }).click();
   await expect(thread(page)).toContainText("owns every merge decision");
-  expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill" });
+  expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill", chip: "persp-principles" });
   const link = thread(page).getByTestId("ask-cite");
   await expect(link).toHaveText("Read on this site: How I work on the About page");
   await link.click();
