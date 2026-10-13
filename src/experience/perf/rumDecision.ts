@@ -19,17 +19,18 @@ export interface RumDecisionInput {
 export type RumDecision = "on" | "off" | "sent";
 
 /**
- * Once per browser session: never again after the beacon was sent; `?rum=1` forces it on (preview
- * checks, tests) and `?rum=0` off; then the stored decision; automation and privacy signals are off;
- * otherwise RUM_RATE of sessions.
+ * Once per browser session: never again after the beacon was sent; Do Not Track and Global Privacy
+ * Control always win; `?rum=1` forces it on (preview checks, tests, also under automation) and `?rum=0`
+ * off; then the stored decision; automation is off; otherwise RUM_RATE of sessions.
  */
 export function rumDecision(i: RumDecisionInput): RumDecision {
   if (i.stored === "sent") return "sent";
+  if (i.privacySignal) return "off";
   const forced = /[?&]rum=([01])(&|$)/.exec(i.search)?.[1];
   if (forced === "1") return "on";
   if (forced === "0") return "off";
   if (i.stored === "on" || i.stored === "off") return i.stored;
-  if (i.webdriver || i.privacySignal) return "off";
+  if (i.webdriver) return "off";
   return i.random < RUM_RATE ? "on" : "off";
 }
 

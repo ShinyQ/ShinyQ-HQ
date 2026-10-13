@@ -16,12 +16,17 @@ describe("RUM sampling", () => {
     expect(rumDecision({ ...base, stored: "sent", search: "?rum=1" })).toBe("sent");
   });
 
-  it("never samples automation or visitors with Do Not Track or Global Privacy Control, unless forced", () => {
+  it("never samples automation (unless forced) or visitors with Do Not Track or Global Privacy Control", () => {
     expect(rumDecision({ ...base, webdriver: true })).toBe("off");
     expect(rumDecision({ ...base, privacySignal: true })).toBe("off");
     expect(rumDecision({ ...base, webdriver: true, search: "?tier=lite&rum=1" })).toBe("on");
     expect(rumDecision({ ...base, search: "?rum=0" })).toBe("off");
     expect(rumDecision({ ...base, search: "?rum=10" })).toBe("on");
+  });
+
+  it("lets Do Not Track and Global Privacy Control win over ?rum=1 and a stored decision", () => {
+    expect(rumDecision({ ...base, privacySignal: true, search: "?rum=1" })).toBe("off");
+    expect(rumDecision({ ...base, privacySignal: true, stored: "on" })).toBe("off");
   });
 
   it("names the load path coarsely", () => {
