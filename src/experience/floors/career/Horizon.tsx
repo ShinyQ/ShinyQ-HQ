@@ -2,10 +2,11 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
-import { BoxGeometry, CylinderGeometry, FrontSide, Object3D, PlaneGeometry, type Material } from "three";
+import { BoxGeometry, CylinderGeometry, Object3D, PlaneGeometry, type Material } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { floorY } from "../../config";
 import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
+import { HoloMesh } from "../../fx/HoloMesh";
 import { neonColor } from "../../fx/materials";
 import { sceneProbes } from "../../fx/probes";
 import { useDispose } from "../../fx/useDispose";
@@ -59,7 +60,7 @@ export function Horizon({ layout }: { layout: CareerRoadLayout }) {
   const mats = useMemo(
     () => ({
       bridge: createHoloMaterial({ mode: HOLO_MODE.flow, color: neonColor(BRIDGE, 1.8, tier), params: [HORIZON.bridge.dashes, 0, 0, 0] }),
-      skyline: createHoloMaterial({ mode: HOLO_MODE.skyline, color: neonColor("#ffffff", 1.4, tier), opacity: full ? 0.5 : 0.42, params: [base, TOWER_FADE, 0, 0], side: FrontSide, fade: [260, 620] }),
+      skyline: createHoloMaterial({ mode: HOLO_MODE.skyline, color: neonColor("#ffffff", 1.4, tier), opacity: full ? 0.5 : 0.42, params: [base, TOWER_FADE, 0, 0], fade: [260, 620] }),
       glow: createHoloMaterial({ mode: HOLO_MODE.glow, color: neonColor(SUNRISE, 1.1, tier), opacity: full ? 0.6 : 0.45 }),
       strips: createHoloMaterial({ mode: HOLO_MODE.strip, color: neonColor(BRIDGE, 1.6, tier), opacity: full ? 0.9 : 0.7 }),
       pillar: createHoloMaterial({ mode: HOLO_MODE.pillar, color: neonColor(ORIGIN, 1.8, tier), opacity: full ? 1 : 0.8 }),
@@ -108,11 +109,11 @@ export function Horizon({ layout }: { layout: CareerRoadLayout }) {
   const bridgeLength = h.bridge.maxX - h.bridge.minX;
   return (
     <group name="career-horizon">
-      <mesh geometry={plane} material={mats.bridge} position={[(h.bridge.minX + h.bridge.maxX) / 2, 0.03, 0]} scale={[bridgeLength, 1, h.bridge.maxZ - h.bridge.minZ]} raycast={NO_RAYCAST} />
+      <HoloMesh name="career-bridge" geometry={plane} material={mats.bridge} position={[(h.bridge.minX + h.bridge.maxX) / 2, 0.03, 0]} scale={[bridgeLength, 1, h.bridge.maxZ - h.bridge.minZ]} />
       <InstancedSet name="career-skyline" set={towers} material={mats.skyline} />
-      <mesh geometry={glowPlane} material={mats.glow} position={[h.glow.x, h.glow.y, h.glow.z]} rotation={[0, -Math.PI / 2, 0]} scale={[h.glow.w, h.glow.h, 1]} raycast={NO_RAYCAST} />
+      <HoloMesh name="career-sunrise" geometry={glowPlane} material={mats.glow} position={[h.glow.x, h.glow.y, h.glow.z]} rotation={[0, -Math.PI / 2, 0]} scale={[h.glow.w, h.glow.h, 1]} />
       <InstancedSet name="career-corner-strips" set={strips} material={mats.strips} />
-      <mesh geometry={pillar} material={mats.pillar} position={[h.pillar.at.x, h.pillar.height / 2, h.pillar.at.z]} raycast={NO_RAYCAST} />
+      <HoloMesh name="career-origin" geometry={pillar} material={mats.pillar} position={[h.pillar.at.x, h.pillar.height / 2, h.pillar.at.z]} />
     </group>
   );
 }

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SIGN_PAD, signFacing, signFacingDot, signPlate } from "@/experience/fx/signLayout";
 import { createHoloMaterial, HOLO_FS, HOLO_MODE, HOLO_VS } from "@/experience/fx/holoFx";
@@ -38,6 +40,14 @@ describe("holo fx shader", () => {
     expect(a.fog).toBe(false);
     expect(b.uniforms.uFade.value.toArray()).toEqual([10, 40]);
     expect(HOLO_VS).toContain("USE_INSTANCING");
+  });
+
+  it("draws holo materials only on instanced meshes, so they compile to one program", () => {
+    for (const file of ["fx/FloatingSign.tsx", "fx/HoloMesh.tsx", "floors/career/Horizon.tsx", "floors/labs/ReactorCore.tsx"]) {
+      const source = readFileSync(join(__dirname, "../../src/experience", file), "utf8");
+      expect(source, file).not.toMatch(/<mesh[\s>]/);
+      expect(source, file).toMatch(/instancedMesh/);
+    }
   });
 
   it("never contains an em dash", () => {

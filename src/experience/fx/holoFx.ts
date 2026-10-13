@@ -1,4 +1,4 @@
-import { AdditiveBlending, Color, DoubleSide, FrontSide, NormalBlending, ShaderMaterial, Vector2, Vector4, type Side } from "three";
+import { AdditiveBlending, Color, DoubleSide, NormalBlending, ShaderMaterial, Vector2, Vector4 } from "three";
 
 /**
  * One shader for the spectacle effects (floating sign plates, the L2 horizon, the L3 reactor and data
@@ -6,7 +6,8 @@ import { AdditiveBlending, Color, DoubleSide, FrontSide, NormalBlending, ShaderM
  * instead of adding one per effect. Fog exempt with its own distance fade (`uFade`, near and far in u;
  * far 0 turns it off), so distant pieces read from the rail camera. Animated through `uTime` (frozen
  * under reduced motion by `useUniformTime`). Always a `ShaderMaterial`, so the ride cull never trusts
- * its bounds. Instanced meshes tint each instance with `instanceColor`; plates read `aAlpha`.
+ * its bounds. Draw it on instanced meshes with an instance color only (`HoloMesh` for a single one), so
+ * it compiles to exactly one program; plates read `aAlpha`.
  */
 export const HOLO_MODE = {
   /** Dark sign backing with a neon rim (instance scale = plate size). */
@@ -142,7 +143,6 @@ export interface HoloMaterialOptions {
   fade?: [number, number];
   /** Mode parameters (see `HOLO_MODE`). */
   params?: [number, number, number, number];
-  side?: Side;
   /** Draw order hint for transparent passes. */
   depthWrite?: boolean;
 }
@@ -165,7 +165,8 @@ export function createHoloMaterial(o: HoloMaterialOptions): ShaderMaterial {
     transparent: true,
     depthWrite: o.depthWrite ?? false,
     blending: additive ? AdditiveBlending : NormalBlending,
-    side: o.side ?? (o.mode === HOLO_MODE.plate ? FrontSide : DoubleSide),
+    // One program for every effect: always double sided (plates face the camera anyway) and always instanced (`HoloMesh` for single meshes).
+    side: DoubleSide,
     toneMapped: false,
     fog: false,
   });

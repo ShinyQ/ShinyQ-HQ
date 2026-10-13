@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { CylinderGeometry, Object3D, PlaneGeometry, RingGeometry, type InstancedMesh } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
+import { HoloMesh } from "../../fx/HoloMesh";
 import { neonColor } from "../../fx/materials";
 import { sceneProbes } from "../../fx/probes";
 import { useDispose } from "../../fx/useDispose";
@@ -80,7 +81,7 @@ export function Reactor({ center }: { center: Vec2 }) {
 
   return (
     <group name="labs-reactor" position={[center.x, 0, center.z]}>
-      <mesh geometry={column} material={coreMat} position={[0, REACTOR.height / 2, 0]} raycast={NO_RAYCAST} />
+      <HoloMesh name="labs-reactor-core" geometry={column} material={coreMat} position={[0, REACTOR.height / 2, 0]} />
       <instancedMesh key={count} ref={mesh} args={[ringGeo, ringMat, count]} frustumCulled={false} raycast={NO_RAYCAST}>
         <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
       </instancedMesh>
