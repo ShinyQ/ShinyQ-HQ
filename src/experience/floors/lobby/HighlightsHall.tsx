@@ -11,38 +11,40 @@ import { roverRuntime } from "../../rover/runtime";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { MergedBoxes, MergedEdges } from "../roof/kit";
-import { coverCrop, hallLabels, hallShots, hallSolids, SHOT_CELL, shotQuadBuffers, type HallLabels } from "./hallContent";
+import { coverCrop, hallAtlas, hallLabels, hallPhoto, hallShots, hallSolids, SHOT_CELL, shotQuadBuffers, type HallAtlas, type HallLabels } from "./hallContent";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
 
-/** Draws the cover thumbnails into one canvas row (cover fit); a failed image leaves its cell dark. */
-function useShotAtlas(srcs: readonly string[], cell: { w: number; h: number }, enabled: boolean) {
+/** Draws the atlas cells into one canvas row (cover fit, per-cell brightness); a failed image leaves its cell dark. */
+function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
   const [texture, setTexture] = useState<CanvasTexture | null>(null);
-  const key = srcs.join("|");
+  const key = `${atlas.width}x${atlas.height}|${atlas.cells.map((c) => c.src).join("|")}`;
   useEffect(() => {
-    if (!enabled || srcs.length === 0) return;
+    if (!enabled || atlas.cells.length === 0) return;
     let cancelled = false;
     let built: CanvasTexture | null = null;
     const canvas = document.createElement("canvas");
-    canvas.width = cell.w * srcs.length;
-    canvas.height = cell.h;
+    canvas.width = atlas.width;
+    canvas.height = atlas.height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.fillStyle = "#0b1020";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     Promise.all(
-      srcs.map(
-        (src, i) =>
+      atlas.cells.map(
+        (cell) =>
           new Promise<void>((resolve) => {
             const img = new Image();
             img.decoding = "async";
             img.onload = () => {
               const { sx, sy, sw, sh } = coverCrop(img.naturalWidth, img.naturalHeight, cell.w, cell.h);
-              ctx.drawImage(img, sx, sy, sw, sh, i * cell.w, 0, cell.w, cell.h);
+              ctx.filter = cell.brightness === 1 ? "none" : `brightness(${cell.brightness})`;
+              ctx.drawImage(img, sx, sy, sw, sh, cell.x, 0, cell.w, cell.h);
+              ctx.filter = "none";
               resolve();
             };
             img.onerror = () => resolve();
-            img.src = src;
+            img.src = cell.src;
           }),
       ),
     ).then(() => {
@@ -56,28 +58,29 @@ function useShotAtlas(srcs: readonly string[], cell: { w: number; h: number }, e
       cancelled = true;
       built?.dispose();
     };
-    // `key` captures srcs.
+    // `key` captures the atlas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, cell.w, cell.h, enabled]);
+  }, [key, enabled]);
   return texture;
 }
 
-/** The three project screenshots as one mesh over a canvas atlas, loaded once the rover heads for the hall. */
+/** The three project screenshots and the owner's portrait as one mesh over a canvas atlas, loaded once the rover heads for the hall. */
 function ShotWall({ thumbs, tier }: { thumbs: readonly string[]; tier: GpuTier }) {
   const [load, setLoad] = useState(false);
   useFrame(() => {
     if (!load && shouldLoadShots(getHQStore().getState().floor, roverRuntime.x)) setLoad(true);
   });
-  const texture = useShotAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"], load);
+  const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);
+  const texture = useHallAtlas(atlas, load);
   const geometry = useMemo(() => {
-    const { positions, uvs, indices } = shotQuadBuffers(hallShots(thumbs.length), thumbs.length);
+    const { positions, uvs, indices } = shotQuadBuffers([...hallShots(thumbs.length), hallPhoto(thumbs.length)], atlas.cells);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("uv", new BufferAttribute(uvs, 2));
     g.setIndex(new BufferAttribute(indices, 1));
     g.computeBoundingSphere();
     return g;
-  }, [thumbs.length]);
+  }, [atlas, thumbs.length]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
   return (
@@ -89,7 +92,7 @@ function ShotWall({ thumbs, tier }: { thumbs: readonly string[]; tier: GpuTier }
 
 /**
  * L1 Highlights Hall: road markings (passage, plaza, spurs), every solid in one mesh plus one edge
- * mesh, every text in one BatchedText and the screenshots in one lazy atlas mesh. Clicks go through the
+ * mesh, every text in one BatchedText and the screenshots and the owner's portrait in one lazy atlas mesh. Clicks go through the
  * point-and-go registry (`hallInteract.ts`, registered below), not through meshes here. Static: nothing animates, so reduced motion needs no case.
  */
 export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; labels: HallLabels; tier: GpuTier }) {

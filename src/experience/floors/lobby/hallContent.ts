@@ -5,10 +5,11 @@ import type { Box } from "../roof/solids";
 import { podLiveLink } from "@/content/selectors";
 import { HALL, stationOf, type HallStation } from "./hallLayout";
 import { experienceRows, HIGHLIGHT_STAT_COUNT, type HighlightStation } from "./stations";
+import { brandPhotoSrc } from "@/lib/brand-photo";
 
 /**
  * Pure scenery data for the Highlights Hall: every solid in one merged mesh (plus its edges), every
- * text in one troika BatchedText, the three screenshots in one atlas quad mesh. Positions are
+ * text in one troika BatchedText, the three screenshots and the owner's portrait in one atlas quad mesh. Positions are
  * floor-local; panel coordinates are `u` along the face (the reader's right) and the height `y`.
  */
 
@@ -49,6 +50,16 @@ const ROLE = { top: 4.45, step: 0.6 } as const;
 export const SHOT = { y: 3.55, w: 4.6, h: 2.875 } as const;
 /** Atlas cell per screenshot (16:10), smaller on the lite tier. */
 export const SHOT_CELL = { full: { w: 480, h: 300 }, lite: { w: 320, h: 200 } } as const;
+/**
+ * The owner's portrait on the About me panel (owner decision 2026-10-13): `u` along the face, center height,
+ * square side. Its frame lines up with the left stat tile and keeps 0.2 u clear of the tiles and the panel top.
+ */
+export const PHOTO = { u: -3.8, y: 4.9, size: 1.6 } as const;
+export const PHOTO_SRC = brandPhotoSrc(320);
+/** The light studio backdrop would bloom on the full tier; drawn slightly darker it reads like the screenshots. */
+export const PHOTO_BRIGHTNESS = 0.85;
+/** Left edge of the About text block (eyebrow, name, headline), right of the portrait frame. */
+const ABOUT_TEXT_U = -2.2;
 /** How far in front of the panel face tiles, screenshots and text sit (no z-fighting). */
 const OUT = { tile: 0.03, shot: 0.07, text: 0.1 } as const;
 const INK = { title: "#f8fafc", body: "#cbd5e1", cyan: "#22d3ee" } as const;
@@ -65,7 +76,7 @@ function faceBox(s: HallStation, u: number, yCenter: number, w: number, h: numbe
   return { x, z, y: yCenter - h / 2, w: along ? w : depth, d: along ? depth : w, h };
 }
 
-/** Plinths, panels, the four stat tiles and one frame per screenshot. */
+/** Plinths, panels, the four stat tiles, the portrait frame and one frame per screenshot. */
 export function hallSolids(projectCount: number): Box[] {
   const P = HALL.panel;
   const out: Box[] = [];
@@ -85,6 +96,8 @@ export function hallSolids(projectCount: number): Box[] {
   }
   const about = stationOf("about");
   for (const u of STAT_U) out.push(faceBox(about, u, TILE.y, TILE.w, TILE.h));
+  // The portrait's frame: its edges are the hall's neon lines (MergedEdges), like the stat tiles.
+  out.push(faceBox(about, PHOTO.u, PHOTO.y, PHOTO.size + 0.2, PHOTO.size + 0.2));
   const projects = stationOf("projects");
   for (const u of SHOT_U.slice(0, projectCount)) out.push(faceBox(projects, u, SHOT.y, SHOT.w + 0.2, SHOT.h + 0.2));
   return out;
@@ -100,9 +113,11 @@ export function hallLabels(input: HallInput, labels: HallLabels, fonts: HallFont
     add(s, 0, 5.55, `0${n} · ${title.toUpperCase()}`, fonts.mono, 0.2, HALL.tone[s.station], { letterSpacing: 0.12, maxWidth: s.width - 1 });
 
   const about = stationOf("about");
-  eyebrow(about, 1, labels.about);
-  add(about, 0, 4.9, input.profile.name, fonts.sansBold, 0.6, INK.title, { maxWidth: about.width - 0.6 });
-  add(about, 0, 4.25, input.profile.headline, fonts.sans, 0.3, INK.cyan, { maxWidth: about.width - 0.6 });
+  // Portrait on the left (PHOTO), the text block left-aligned beside it.
+  const block = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: about.width / 2 - ABOUT_TEXT_U - 0.3 };
+  add(about, ABOUT_TEXT_U, 5.55, `01 · ${labels.about.toUpperCase()}`, fonts.mono, 0.2, HALL.tone.about, { letterSpacing: 0.12, ...block });
+  add(about, ABOUT_TEXT_U, 4.95, input.profile.name, fonts.sansBold, 0.52, INK.title, block);
+  add(about, ABOUT_TEXT_U, 4.55, input.profile.headline, fonts.sans, 0.28, INK.cyan, { ...block, anchorY: "top", lineHeight: 1.2 });
   input.stats.slice(0, HIGHLIGHT_STAT_COUNT).forEach((stat, i) => {
     add(about, STAT_U[i], TILE.y + 0.55, stat.value, fonts.sansBold, 0.5, INK.title, { maxWidth: TILE.w - 0.2 });
     add(about, STAT_U[i], TILE.y + 0.15, stat.label, fonts.sans, 0.14, INK.body, { anchorY: "top", maxWidth: TILE.w - 0.2, lineHeight: 1.2 });
@@ -167,8 +182,38 @@ export function hallShots(count: number): ShotQuad[] {
   return SHOT_U.slice(0, count).map((u, index) => ({ index, center: onPanel(s, u, SHOT.y, OUT.shot), right: s.right, w: SHOT.w, h: SHOT.h }));
 }
 
-/** Positions, uvs and indices for the screenshot quads over a one-row atlas of `count` cells (one draw call). */
-export function shotQuadBuffers(quads: readonly ShotQuad[], count: number) {
+/** The portrait quad on the About me panel; `index` is its atlas cell (after the screenshots). */
+export function hallPhoto(index: number): ShotQuad {
+  const s = stationOf("about");
+  return { index, center: onPanel(s, PHOTO.u, PHOTO.y, OUT.shot), right: s.right, w: PHOTO.size, h: PHOTO.size };
+}
+
+/** One cell of the hall atlas: an image drawn with cover fit at `x` (px), over the full atlas height. */
+export interface AtlasCell {
+  src: string;
+  x: number;
+  w: number;
+  h: number;
+  /** Canvas brightness filter for this cell (1 keeps the image as is). */
+  brightness: number;
+}
+
+export interface HallAtlas {
+  cells: AtlasCell[];
+  width: number;
+  height: number;
+}
+
+/** The project screenshots (16:10 cells) and then the portrait (a square cell) in one row: one texture, one draw call. */
+export function hallAtlas(thumbs: readonly string[], cell: { w: number; h: number }): HallAtlas {
+  const cells: AtlasCell[] = thumbs.map((src, i) => ({ src, x: i * cell.w, w: cell.w, h: cell.h, brightness: 1 }));
+  cells.push({ src: PHOTO_SRC, x: thumbs.length * cell.w, w: cell.h, h: cell.h, brightness: PHOTO_BRIGHTNESS });
+  return { cells, width: thumbs.length * cell.w + cell.h, height: cell.h };
+}
+
+/** Positions, uvs and indices for the screenshot and portrait quads over a one-row atlas (one draw call). */
+export function shotQuadBuffers(quads: readonly ShotQuad[], cells: readonly AtlasCell[]) {
+  const width = Math.max(1, ...cells.map((c) => c.x + c.w));
   const positions = new Float32Array(quads.length * 12);
   const uvs = new Float32Array(quads.length * 8);
   const indices = new Uint16Array(quads.length * 6);
@@ -178,8 +223,9 @@ export function shotQuadBuffers(quads: readonly ShotQuad[], count: number) {
     const hy = q.h / 2;
     const [x, y, z] = q.center;
     positions.set([x - hx, y - hy, z - hz, x + hx, y - hy, z + hz, x + hx, y + hy, z + hz, x - hx, y + hy, z - hz], i * 12);
-    const u0 = q.index / count;
-    const u1 = (q.index + 1) / count;
+    const cell = cells[q.index];
+    const u0 = cell.x / width;
+    const u1 = (cell.x + cell.w) / width;
     uvs.set([u0, 0, u1, 0, u1, 1, u0, 1], i * 8);
     const b = i * 4;
     indices.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6);

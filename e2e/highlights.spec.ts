@@ -291,6 +291,19 @@ test.describe("Highlights Hall", () => {
     });
   }
 
+  test("the About me station shows the owner's portrait in its neon frame, loaded with the hall", async ({ page }) => {
+    await enterHQ(page);
+    const request = page.waitForRequest((r) => r.url().endsWith("/brand/kurniadi-photo-320.webp"), { timeout: 90_000 });
+    await faceStation(page, "about");
+    const response = await (await request).response();
+    expect(response?.status()).toBe(200);
+    await waitForCameraSettle(page);
+    await expectRenderBudget(page);
+    const { drawCalls, triangles } = await snapshot(page);
+    console.log(`L1 lite at the About me station: ${drawCalls} calls, ${triangles} triangles`);
+    expect(drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+  });
+
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await enterHQ(page);

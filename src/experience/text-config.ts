@@ -1,4 +1,5 @@
-import { configureTextBuilder, GlyphsGeometry } from "troika-three-text";
+import { BatchedText, configureTextBuilder, GlyphsGeometry, Text } from "troika-three-text";
+import { trackTextSync } from "./tower/textSync";
 
 /**
  * Typeset in-world text on the main thread. The default worker loads blob: scripts, which the
@@ -10,6 +11,9 @@ import { configureTextBuilder, GlyphsGeometry } from "troika-three-text";
  * a fallback that covers them troika fetches font data from a CDN, which the CSP blocks.
  */
 configureTextBuilder({ useWorker: false, defaultFontURL: "/fonts/jetbrains-mono-symbols-700.woff" });
+
+/** Count typesetting per floor so the elevator waits for it with the doors closed (tower/textSync.ts, R5 P6). */
+trackTextSync(Text.prototype, BatchedText.prototype);
 
 /**
  * Until its first (async) typesetting finishes, a troika glyph geometry keeps three's

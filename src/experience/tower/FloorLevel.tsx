@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { floorY, SLAB_THICKNESS } from "../config";
@@ -10,6 +10,9 @@ import type { FloorLayout } from "../types";
 import { GridFloor } from "../fx/GridFloor";
 import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
+import { registerFloorContent } from "./floorRegistry";
+import { floorContentVisible } from "./near";
+import { floorReady } from "./ridePrep";
 
 const SLAB_COLOR = "#07070f";
 const SOLID = 1;
@@ -38,15 +41,20 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     const { phase, ride } = getHQStore().getState();
     const exterior = phase === "boot" || phase === "intro";
     const above = !exterior && y > roverRuntime.y + 0.5;
-    // Content under the current slab is hidden by it, so skip drawing it unless the elevator is moving.
-    const below = !exterior && !ride && y < roverRuntime.y - 0.5;
     if (fill.current) {
       fill.current.opacity = above ? GHOST : SOLID;
       fill.current.depthWrite = !above;
     }
     if (edge.current) edge.current.opacity = above ? 0.16 : 0.95;
-    if (content.current) content.current.visible = !above && !below;
+    // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
+    // still compiling waits for the car to move (tower/near.ts).
+    if (content.current) content.current.visible = floorContentVisible({ floorY: y, roverY: roverRuntime.y, exterior, ride, ready: floorReady(layout.id) });
   });
+
+  useEffect(() => {
+    registerFloorContent(layout.id, content.current);
+    return () => registerFloorContent(layout.id, null);
+  }, [layout.id]);
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>

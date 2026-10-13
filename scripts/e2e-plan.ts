@@ -25,6 +25,7 @@ export const ALL_SPECS = [
   "onboarding",
   "pads",
   "pageview",
+  "ride",
   "roof",
   "seo",
   "static-routes",
@@ -97,7 +98,9 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
-  { test: /^src\/experience\/camera\//, specs: ["experience", "career"] },
+  // Elevator ride smoothness (R5 P6): the ride clock, floor preparation, precompile and troika sync tracking.
+  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts)$|text-config\.ts$)/, specs: ["ride", "experience"] },
+  { test: /^src\/experience\/camera\//, specs: ["experience", "career", "ride"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },

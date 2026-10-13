@@ -23,6 +23,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | 3D chunk (gzip) | < 600 KB | Same |
 | Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite) | Manual check plus a Playwright perf probe that samples `requestAnimationFrame` deltas |
 | Draw calls per floor | < 150 | `renderer.info` assertion in a dev-only test |
+| Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
 | Memory | No growth after 10 floor round-trips | Disposal test (geometry/material counts return to baseline) |
 
 ## 3. Test strategy

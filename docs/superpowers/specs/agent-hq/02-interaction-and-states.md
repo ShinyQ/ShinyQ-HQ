@@ -40,7 +40,7 @@ stateDiagram-v2
 |---|---|---|---|
 | boot → intro | Boot lines type out (max 6 lines), then a CRT-off flash; first 3D load of each browser session, any route | 1.2 s, never skipped | Same pace (revealing lines is not motion) |
 | intro → explore | Exterior orbit and fly-in (see appendix 01); first 3D load of each browser session, any route | 2.5 s, never skipped | A still exterior shot for the same 2.5 s, then a cut |
-| explore → elevator → explore | Rover drives to the door, doors close, camera dollies vertically, doors open | Drive time + 0.8 s dolly | 150 ms fade cut |
+| explore → elevator → explore | Rover drives to the door, doors close, the car waits with closed doors until the destination floor is built, compiled and typeset (at most 1.5 s, first visits only), camera dollies vertically, doors open. A long frame pauses the ride (each frame adds at most 1/30 s of ride time at 60 fps, 1/20 s on steadily slow devices) instead of skipping it | Drive time + 1.3 s of door stages + 0.8 s dolly (+ up to 1.5 s wait on a first visit) | 150 ms fade cut (the same wait happens at the door) |
 | autopilot step | Rover follows the navgrid path at autopilot speed | Distance-based | Same, but no camera sway |
 | → room | Rover plants its flag, the room hologram brightens, the drawer slides in | 300 ms | Instant drawer |
 | room → hologram | Camera flies into the pod, the world dims to 25%, the diagram assembles node by node | 900 ms | Diagram appears instantly |

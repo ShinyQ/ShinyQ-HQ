@@ -55,7 +55,7 @@ The screen is a 128 × 96 `CanvasTexture`, redrawn only when the face or text ch
 |---|---|---|---|---|
 | Follow (3/4 iso-ish) | L1, L3, L4, RF | FOV 40°, offset (16, 18, 16), aiming 6 u ahead of the rover (pulled back from 38° / (14, 15, 14) so the re-spaced Lobby plaza fits) | FOV 42°, offset (16, 18, 16) | FOV 50°, offset (18, 24, 18) |
 | Rail (side view) | L2 | FOV 40°, camera at (roverX, 13, 24), looking at (roverX + 4, 0, 0); yaw around the rover limited to ±35° | FOV 45°, (roverX, 15, 28) | FOV 55°, (roverX, 18, 34) |
-| Elevator dolly | Floor change | Tweens the rig's y by `FLOOR_GAP` per floor, easeInOutCubic, 0.8 s | Same | Same |
+| Elevator dolly | Floor change | Tweens the rig's y by `FLOOR_GAP` per floor, easeInOutCubic, 0.8 s of ride time; each frame adds at most `rideCap` (1/30 s at 60 fps, up to 1/20 s on steadily slow devices), so stalls pause the dolly and the camera spring uses the same cap during rides | Same | Same |
 | Hologram fly-in | Hero pods | 9 u in front of the pod stage at eye height 4 u, FOV 35° | FOV 42° | FOV 50° |
 | Intro orbit | Boot | Radius 70 u around the tower, 120°, 2.5 s | Radius 80 u | Radius 90 u |
 

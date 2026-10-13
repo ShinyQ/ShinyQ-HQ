@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
+import id from "../messages/id.json";
 import { asReturningVisitor, enterHQ, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
@@ -49,10 +50,44 @@ test.describe("3D top bar", () => {
       expect(await pageView.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(34, 211, 238)");
       const p = await box(pageView);
       const a = await box(ask);
+      // The icon sits at the left of the label, inside the button.
+      const icon = await box(pageView.getByTestId("page-view-icon"));
+      expect(icon.x).toBeGreaterThanOrEqual(p.x);
+      expect(icon.x + icon.width).toBeLessThan(p.x + p.width / 2);
+      await expect(pageView).toHaveAccessibleName(en.hud.pageView);
+      await page.getByTestId("hud-topbar").screenshot({ path: test.info().outputPath(`topbar-${vp.name}.png`) });
       expect(a.x).toBeGreaterThanOrEqual(p.x + p.width);
       expect(Math.abs(a.y + a.height / 2 - (p.y + p.height / 2))).toBeLessThan(4);
       // Ask AI is the last control on the right edge.
       expect(vp.width - (a.x + a.width)).toBeLessThanOrEqual(24);
+      await context.close();
+    });
+  }
+});
+
+test("Indonesian at 1024 px: the wider Page view keeps the one-row bar clear of the profile card", async ({ browser }) => {
+  const { context, page } = await newPage(browser, { width: 1024, height: 768, touch: false });
+  await enterHQ(page, { path: "/id" });
+  const hud = page.getByTestId("hud");
+  await expect(hud.getByTestId("page-view")).toHaveAccessibleName(id.hud.pageView);
+  const bar = await box(hud.getByTestId("hud-topbar"));
+  const card = await box(hud.getByRole("region", { name: id.hud.profile }));
+  expect(overlaps(bar, card)).toBe(false);
+  expect(bar.x + bar.width).toBeLessThanOrEqual(1024);
+  await context.close();
+});
+
+test.describe("profile photo badge", () => {
+  for (const vp of TOP_BAR) {
+    test(`${vp.name}: the profile card shows the owner's round photo`, async ({ browser }) => {
+      const { context, page } = await newPage(browser, vp);
+      await enterHQ(page);
+      const img = page.getByTestId("hud").getByTestId("profile-photo").locator("img");
+      await expect(img).toBeVisible();
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+      const b = await box(img);
+      expect(Math.abs(b.width - b.height)).toBeLessThan(1);
+      expect(await img.evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe("0px");
       await context.close();
     });
   }
