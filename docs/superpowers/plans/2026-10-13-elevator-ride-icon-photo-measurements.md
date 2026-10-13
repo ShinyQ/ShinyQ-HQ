@@ -13,12 +13,20 @@ Method: `E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts` (lite tier, SwiftS
 - Every floor (`lastRide` per ride, L1 to L2 to L4 to RF to L3 to L1): 16 to 19 dolly frames, 16 to 19 car heights, biggest jump 15 to 17% of the trip, 0 shaders compiled while moving on every ride.
 - Found on the way: the L3 pod glass (`instancedMesh` with `setColorAt` in a passive effect) gained `instanceColor` after a layout-effect precompile and linked a new program mid-dolly; `FloorPrep` now precompiles in a passive effect, after the floor's own effects.
 
+CI (isolated 4 vCPU runner, run 38326848152):
+
+- Ride L1 to L3 at 6x CPU throttle: 20 dolly frames, 20 car heights, biggest jump 15% of the trip, longest frame 320 ms, waited 0 s, 0 shaders compiled while moving, 6.3 s in total.
+- Ride L1 to L3 unthrottled: 21 dolly frames, 21 car heights, biggest jump 15%, 0 shaders compiled while moving.
+
 ## L1 draw calls (Highlights Hall)
 
-| Spot | Before (main CI, f61fbba) lite / full | After (local) lite / full |
+| Spot | Before (main CI, f61fbba) lite / full | After (PR CI) lite / full |
 |---|---|---|
 | spawn | 115 / 134 | 115 / 134 |
 | (20, 15) | 114 / 133 | 114 / 133 |
+| (34, 13) | 62 / 81 | 62 / 81 |
+| projects pad (56, -16.9) | 40 / 58 | 40 / 58 |
+| experience pad (59.9, 1) | 40 / 58 | 40 / 58 |
 | About me station | not measured | 47 (lite) |
 
 The portrait shares the screenshot atlas mesh and its frame joins the merged solids: no new draw call (+12 triangles for the frame box).
