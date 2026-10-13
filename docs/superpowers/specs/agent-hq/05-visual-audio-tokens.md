@@ -91,6 +91,5 @@ Reduced motion disables camera sway, idle rotations above 0.2 rad/s, particles a
 | Key click | Terminal typing | < 30 ms | Max 20 per second |
 
 - On by default (owner decision, 2026-10-10; this spec said muted by default before). Browsers block autoplay, so the AudioContext and the ambient hum start on the first user gesture in the HQ (the Boot rover button or the first click, tap or key). The toggle (HUD, `m` key) persists the visitor's choice in `localStorage["hq:sound"]`; a stored mute is always respected. The ambient hum stays low (gain 0.04). Sound plays only while the 3D view is open: the static tier and the Page View are silent.
-- Audio files load lazily on the first unmute. Total budget under 300 KB (Opus/WebM with an AAC fallback).
-- Sounds are original or CC0, with sources listed in `public/audio/CREDITS.md`.
+- All sounds are synthesized (Web Audio, `src/lib/audio`), no audio files; the engine starts paused, so the Page View and the static tier never create an AudioContext.
 - Implemented with the Web Audio API through a small wrapper (no heavy dependency). Audio is suspended when the tab is hidden.

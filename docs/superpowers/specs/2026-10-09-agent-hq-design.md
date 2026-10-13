@@ -11,7 +11,7 @@ Replace a conventional, outdated portfolio with an explorable 3D world that feel
 
 ### Success criteria
 
-1. A first-time visitor understands who the owner is and what he builds in under 10 seconds, without playing.
+1. A first-time visitor understands who the owner is and what he builds in under 10 seconds, without playing. On the game-first path the boot card shows the owner's name, headline, motto and role at first paint.
 2. A recruiter can reach any project, the CV or contact details in under 30 seconds (through missions, ⌘K or Quick view).
 3. It plays smoothly on desktop, tablet and mobile (target 60 fps on desktop and 30+ fps on mid-range phones), with a graceful fallback on weak devices.
 4. Every piece of content is also reachable as a normal, indexable HTML page.
@@ -173,7 +173,7 @@ All routes are prefixed with the locale (`/en/...`, `/id/...`); `/` redirects by
 
 | Route | Purpose |
 |---|---|
-| `/` | Tower experience (spawn in L1) plus a server-rendered summary for SEO |
+| `/` | Static language redirect page (hreflang alternates); the tower (spawn in L1) and the server-rendered summary live at `/{locale}` |
 | `/labs` and `/labs/[slug]` | Labs overview and pod case studies (both wings); with 3D it opens L3 at that pod with the drawer open |
 | `/journey` and `/journey/[slug]` | Career timeline and entries (L2) |
 | `/library` and `/blog/[slug]` | Blog and publications (L4) |
