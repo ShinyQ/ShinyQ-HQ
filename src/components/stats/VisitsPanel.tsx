@@ -85,11 +85,10 @@ export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, 
 
   return (
     <div className="grid gap-8" data-testid="visits-panel" data-period={period} data-topic={topic}>
-      <p className="pv-data flex flex-wrap gap-x-3 gap-y-1 text-ink-3" data-testid="visits-scope">
+      {/* Window, source and cadence on every stat block (owner rule); gaps, not dots, so a wrapped line never starts with a separator. */}
+      <p className="pv-data flex flex-wrap gap-x-5 gap-y-1 text-ink-3" data-testid="visits-scope">
         <span>{windowText}</span>
-        <span aria-hidden="true">·</span>
         <span>{t("source")}</span>
-        <span aria-hidden="true">·</span>
         <span>{t("updated")}</span>
         {stats.freshness === "delayed" && (
           <span className="text-amber" data-testid="visits-delayed">
