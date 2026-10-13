@@ -44,7 +44,10 @@ test.describe("project galleries and tech logos (static pages)", () => {
     await expect(page.locator("#stack img[src^='/tech/']").first()).toBeVisible();
     await openPage(page, "/en/labs?tier=static");
     const card = page.locator("article", { has: page.getByRole("link", { name: pod.title.en, exact: true }) });
-    await expect(card.locator(`img[src='${pod.assets[0].src.replace(".webp", ".thumb.webp")}']`)).toBeVisible();
+    // Responsive cover: the thumb is the smallest srcset candidate, the full file the src fallback.
+    const cover = card.locator(`img[src='${pod.assets[0].src}']`);
+    await expect(cover).toBeVisible();
+    await expect(cover).toHaveAttribute("srcset", new RegExp(`^${pod.assets[0].src.replace(".webp", ".thumb.webp")} 480w`));
     await openPage(page, "/en/journey/jenius-2024?tier=static");
     await expect(page.getByRole("img", { name: "Jenius logo" })).toBeVisible();
   });

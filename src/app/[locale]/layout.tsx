@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getContent, getProfile } from "@/content/load";
+import { roleLine } from "@/content/selectors";
 import { AskDock } from "@/hud/ask/AskDock";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
@@ -57,7 +58,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <script dangerouslySetInnerHTML={{ __html: bootFirstScript() }} />
       </head>
       <body>
-        <BootCover locale={locale} name={profile.name} monogram={profile.monogram} />
+        <BootCover
+          locale={locale}
+          monogram={profile.monogram}
+          who={{ name: profile.name, headline: profile.headline[locale], motto: profile.subheadline[locale], role: roleLine(profile.currentRole, locale) }}
+        />
         <NextIntlClientProvider>
           {/* The 3D overlay marks this shell inert while it is open (see ExperienceGate). */}
           <div id="site-shell" className="flex min-h-screen flex-col">

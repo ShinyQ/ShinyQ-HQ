@@ -183,6 +183,7 @@ function setup(stored?: string): Setup {
     storage,
     doc: doc as unknown as AudioEngineDeps["doc"],
     now: () => clock.t,
+    paused: false,
   });
   return {
     engine,
@@ -341,6 +342,24 @@ describe("audio engine: paused outside the 3D view", () => {
     engine.setPaused(false);
     expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, expect.any(Number), expect.any(Number));
     expect(storage.setItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("audio engine: paused until the 3D view opens", () => {
+  it("starts paused: no context from gestures or one-shots on the Page View", () => {
+    const storage = new FakeStorage();
+    const doc = new FakeDoc();
+    const createContext = vi.fn(() => new FakeAudioContext() as unknown as AudioContext);
+    const engine = createAudioEngine({ createContext, storage, doc: doc as unknown as AudioEngineDeps["doc"], now: () => 0 });
+    expect(engine.isPaused()).toBe(true);
+    expect(engine.isMuted()).toBe(false);
+    doc.fire("pointerdown");
+    engine.play("click");
+    engine.setRumble(5);
+    expect(createContext).not.toHaveBeenCalled();
+    engine.setPaused(false);
+    doc.fire("pointerdown");
+    expect(createContext).toHaveBeenCalledTimes(1);
   });
 });
 

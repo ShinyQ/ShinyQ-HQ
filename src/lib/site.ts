@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { LOCALES, type Locale } from "@/content/schema";
+import { LOCALES } from "@/content/locales";
+import type { Locale } from "@/content/schema";
 
 const DEFAULT_SITE_URL = "https://kurniadi.pages.dev";
 

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { BootCard } from "@/components/BootCard";
+import { BootCard, type BootWho } from "@/components/BootCard";
 import { bootCoverUsed } from "@/lib/boot-first";
 import { useHQStore } from "@/store/useHQStore";
 
@@ -15,10 +15,10 @@ const LINE_MS = 180;
  * the SSR boot cover (BootCard); when the cover was shown, its log already played, so the overlay
  * starts with every line visible and the handoff does not restart the animation.
  */
-export function BootOverlay({ name, monogram }: { name: string; monogram: string }) {
+export function BootOverlay({ monogram, who }: { monogram: string; who: BootWho }) {
   const t = useTranslations("hud");
   const setPhase = useHQStore((s) => s.setPhase);
-  const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name }), t("bootLine5"), t("bootLine6")];
+  const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name: who.name }), t("bootLine5"), t("bootLine6")];
   const [typed, setTyped] = useState(() => (bootCoverUsed() ? lines.length : 0));
   const ready = typed >= lines.length;
   const start = useRef<HTMLButtonElement>(null);
@@ -49,6 +49,8 @@ export function BootOverlay({ name, monogram }: { name: string; monogram: string
         lines={lines}
         shown={typed}
         startLabel={t("bootStart")}
+        who={who}
+        pageView={{ href: "?view=page", label: t("pageView"), hint: t("pageViewHint") }}
         startDisabled={!ready}
         startRef={start}
         onStart={() => {

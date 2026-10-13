@@ -22,7 +22,7 @@ import {
   getYears,
 } from "./load";
 import type { FloorId, Locale } from "./schema";
-import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, wallSkillGroups } from "./selectors";
+import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
 import { getTechLogo } from "./tech";
 
 /** L3 pods in site order (`orderPods`) with only what the 3D floor draws (the drawer loads full content separately). */
@@ -90,7 +90,8 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
       name: profile.name,
       monogram: profile.monogram,
       headline: profile.headline[locale],
-      role: `${profile.currentRole.title[locale]} · ${profile.currentRole.org}`,
+      role: roleLine(profile.currentRole, locale),
+      motto: profile.subheadline[locale],
       location: profile.location[locale],
     },
     stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),

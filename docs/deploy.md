@@ -203,7 +203,7 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 ## 8. Lighthouse CI
 
 - Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every PR and push. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
-- Pages: `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device).
+- Pages: a warm-up run of `/en?lhci-warmup=1` (never asserted; it absorbs the cold first Chrome and server run that used to spike `/en` TBT), then `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device). Assertions live in one `assertMatrix` entry for URLs without a query string.
 - Budgets (tighter than appendix 08 since the October 2026 performance pass): LCP under 2000 ms, CLS under 0.01, TBT under 200 ms (error level, median run); transfer bytes per page at most 60 KB of fonts, 80 KB of HTML, 20 KB of CSS and 240 KB of JavaScript (error level); performance score at least 0.9, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
@@ -215,7 +215,7 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
   - Always-loaded client islands import only small modules: the Ask status from `src/ask/status.ts` (not the Turnstile and SSE client), certification helpers from `src/content/certs.ts` (the tech logo registry stays in the server-only `cert-views.ts`).
   - The landing's motion is CSS only and compositor only (`src/app/landing.css`): the backdrop has no image or text, so the `h1` stays the LCP element; featured images load lazily below the first screen; "Enter the 3D HQ" is shown by `html[data-hq-3d]` from the head script, never by client state, so it cannot shift the layout.
   - Elements that appear after first paint on their own must not move content or cover the landing: the Rover Terminal never opens on its own over the Page View (the 3D Lobby opens it after the intro), and its greeting types into reserved space.
-- Medians at the time of writing (local `lhci autorun`): `/en` and the pod page about 1.58 s, `/en/journey` 1.73 s, `/en/quick` 1.81 s; CLS 0, TBT under 25 ms. Production adds the real TTFB of Cloudflare Pages (simulated at 50 to 500 ms).
+- Medians at the time of writing (round 5 P1, local `lhci collect` with the warm-up URL, 3 runs, 2026-10-13): LCP `/en` 1.81 s, `/en/quick` 1.81 s, `/en/journey` 1.67 s, the pod page 1.66 s; CLS 0; TBT 38 to 61 ms; script transfer 204 to 207 KB. Production adds the real TTFB of Cloudflare Pages (simulated at 50 to 500 ms).
 
 ## 9. Headers and redirects
 
@@ -226,7 +226,8 @@ Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages re
 - `/*`: security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`) and a Content-Security-Policy. `script-src` needs `'unsafe-inline'` because the static export inlines Next.js hydration data, the root language redirect script and JSON-LD. `blob:` is allowed for workers and media used by WebGL and audio.
 - `/_next/static/*`: one year, `immutable` (file names are content hashed; this also covers the self-hosted `next/font` files).
 - `/cv/*`: the CV PDF and its page images (`/cv/pages/*.webp`, shown by the in-site CV viewer; nothing frames the PDF any more). The rule, kept from the former iframe preview, detaches the site-wide `Content-Security-Policy` and `X-Frame-Options` (`! Header`) and sets `frame-ancestors 'self'` and `SAMEORIGIN` instead: same-origin framing only. The site CSP allows it with `frame-src 'self'` and keeps `object-src 'none'`.
-- `/brand/*`: one week. `/cv/*`: one hour, so a replaced CV shows up quickly. `/og/*`: one day for Open Graph images emitted under `/og/`. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
+- Caching of unhashed files: `/brand/*` one week; `/fonts/*` one year `immutable` (troika cuts are content-hashed, Task 4 of round 5 P1); `/tech/*` one week plus `stale-while-revalidate` one day; `/media/*`, `/floors/*`, `/logos/*` one day plus `stale-while-revalidate` one week; `/cv/*` one hour and `/papers/*` one day, both `must-revalidate` so a replaced CV or paper never shows stale; `/og/*` one day. Two rules must never both set `Cache-Control` for one file (Cloudflare joins the values; `tests/unit/cache-headers.test.ts`). `scripts/deploy-smoke.ts` checks one file per prefix after each deploy. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
+- `/`: `Link` hreflang alternates (en, id, x-default).
 - HTML keeps the Cloudflare default (revalidated on every request), so a new deploy is visible at once.
 
 `public/_redirects`:

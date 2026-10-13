@@ -8,8 +8,8 @@
       "id": "AI dan Software Engineer"
     },
     "subheadline": {
-      "en": "I build and operate software and AI applications in production.",
-      "id": "Saya membangun dan mengoperasikan aplikasi software dan AI di production."
+      "en": "Production-grade AI and software for banking, fintech and enterprise.",
+      "id": "AI dan software kelas production untuk perbankan, fintech, dan enterprise."
     },
     "currentRole": {
       "title": {
@@ -2494,7 +2494,7 @@
           },
           "tagline": {
             "en": "eVendor, Metrodata's vendor portal for purchase orders, delivery acceptance, invoices, tax checks and approvals, built by one engineer in six weeks.",
-            "id": "eVendor, portal vendor Metrodata untuk purchase order, penerimaan barang, invoice, verifikasi pajak, dan approval, saya bangun sendiri dalam enam minggu."
+            "id": "eVendor, portal vendor Metrodata untuk purchase order, penerimaan barang, invoice, verifikasi pajak, dan approval, dikerjakan oleh satu engineer dalam enam minggu."
           },
           "period": {
             "start": "2026-08",
@@ -4347,7 +4347,7 @@
           },
           "tagline": {
             "en": "Backend modules for catalog, cart, orders and CRM, developed with an agency team in a TypeScript monorepo.",
-            "id": "Modul backend untuk katalog, keranjang, pesanan, dan CRM, saya kembangkan bersama tim agensi dalam monorepo TypeScript."
+            "id": "Modul backend untuk katalog, keranjang, pesanan, dan CRM, dikembangkan bersama tim agensi dalam monorepo TypeScript."
           },
           "period": {
             "start": "2025-11",

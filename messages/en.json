@@ -99,7 +99,6 @@
     "moreWork": "More key projects",
     "featuredShots": "{count, plural, one {# screenshot} other {# screenshots}}",
     "hero": {
-      "welcome": "Welcome to {site}",
       "enter3d": "Enter the 3D HQ",
       "enter3dHint": "Drive a rover through the five-floor tower"
     },

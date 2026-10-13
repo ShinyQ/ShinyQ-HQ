@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Locale, RoomId } from "@/content/schema";
 import type { RoomViews } from "@/content/room-views/types";
+import { afterFirstFrameIdle } from "@/experience/boot-signals";
 import { READY_FLOORS } from "@/experience/config";
 import { VIEW_KEY } from "@/experience/ExperienceGate";
 import { goToRoom } from "@/experience/missions/bridge";
@@ -29,10 +30,11 @@ export function useDrawerLayout() {
   );
 }
 
-/** Room views for the locale, loaded once (null until ready, "error" when the fetch failed). */
-export function useRoomViews(locale: Locale): RoomViews | null | "error" {
+/** Room views for the locale, loaded once when `wanted` (null until ready, "error" when the fetch failed). */
+export function useRoomViews(locale: Locale, wanted = true): RoomViews | null | "error" {
   const [views, setViews] = useState<RoomViews | null | "error">(null);
   useEffect(() => {
+    if (!wanted) return;
     let live = true;
     loadRoomViews(locale).then(
       (v) => live && setViews(v),
@@ -41,8 +43,15 @@ export function useRoomViews(locale: Locale): RoomViews | null | "error" {
     return () => {
       live = false;
     };
-  }, [locale]);
+  }, [locale, wanted]);
   return views;
+}
+
+/** True once the first 3D frame rendered and the main thread went idle (quiet boot, REPORT SP3). */
+function useAfterFirstFrameIdle(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => afterFirstFrameIdle(() => setReady(true)), []);
+  return ready;
 }
 
 /** Mirrors the open room in the URL while the tower is open (mounted by Experience, outside the HUD phases). */
@@ -79,9 +88,11 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   const readme = useHQStore((s) => s.readme);
   const layout = useDrawerLayout();
   const askOpen = useAskPanelOpen();
-  const views = useRoomViews(locale);
-  const returnFocus = useRef<HTMLElement | null>(null);
   const open = Boolean(activeRoom) && phase === "room";
+  const idle = useAfterFirstFrameIdle();
+  // Room data waits for the first frame and an idle moment, unless a room opens first (deep links).
+  const views = useRoomViews(locale, open || idle);
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   // Whoosh on open and close; focus returns to the world when the drawer closes.
   useEffect(() => {

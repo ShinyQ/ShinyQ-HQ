@@ -19,8 +19,9 @@ next-env.d.ts
 content/.safety-blocklist.local.txt
 content/_fragments/
 /screenshots/
-# Lighthouse CI reports
+# Lighthouse CI reports (and the round 5 P1 baseline, scripts/measure-delivery.ts)
 .lighthouseci/
+/.lighthouseci-before/
 # Ask the HQ knowledge pack and safety lists (bun scripts/build-knowledge.ts); the safety list can hold private terms
 functions/_generated/
 .dev.vars

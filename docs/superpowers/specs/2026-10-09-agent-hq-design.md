@@ -11,7 +11,7 @@ Replace a conventional, outdated portfolio with an explorable 3D world that feel
 
 ### Success criteria
 
-1. A first-time visitor understands who the owner is and what he builds in under 10 seconds, without playing.
+1. A first-time visitor understands who the owner is and what he builds in under 10 seconds, without playing. On the game-first path the boot card shows the owner's name, headline, motto and role at first paint.
 2. A recruiter can reach any project, the CV or contact details in under 30 seconds (through missions, ⌘K or Quick view).
 3. It plays smoothly on desktop, tablet and mobile (target 60 fps on desktop and 30+ fps on mid-range phones), with a graceful fallback on weak devices.
 4. Every piece of content is also reachable as a normal, indexable HTML page.
@@ -125,7 +125,7 @@ Owner decisions of 2026-10-09 (see appendix 07, section 7):
 
 ### 3.3 Content model
 
-One file, `content/site-content.json` (all user-facing text localized as `{ en, id }`), validated at build time by zod schemas in `src/content/schema.ts`. Top-level shape:
+One file, `content/site-content.json` (all user-facing text localized as `{ en, id }`), validated at build time by zod schemas in `src/content/schema.ts` (enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk). Top-level shape:
 
 ```ts
 {
@@ -158,7 +158,7 @@ All nine owner decisions were resolved on 2026-10-09 and are recorded in [append
 | 3D | three.js via React Three Fiber, `@react-three/drei`, `@react-three/postprocessing` (bloom, desktop only) |
 | State | zustand store |
 | Styling | Tailwind CSS for the HUD and all HTML pages |
-| Content | JSON plus MDX, zod validation at build time |
+| Content | JSON plus MDX, zod validation at build time (enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk) |
 | i18n | `next-intl`, locales `en` and `id`, locale-prefixed static routes |
 | Audio | Web Audio API wrapper, lazy-loaded, on by default (owner decision; starts on the first gesture) |
 | Analytics | Cloudflare Web Analytics (cookieless) |
@@ -173,7 +173,7 @@ All routes are prefixed with the locale (`/en/...`, `/id/...`); `/` redirects by
 
 | Route | Purpose |
 |---|---|
-| `/` | Tower experience (spawn in L1) plus a server-rendered summary for SEO |
+| `/` | Static language redirect page (hreflang alternates); the tower (spawn in L1) and the server-rendered summary live at `/{locale}` |
 | `/labs` and `/labs/[slug]` | Labs overview and pod case studies (both wings); with 3D it opens L3 at that pod with the drawer open |
 | `/journey` and `/journey/[slug]` | Career timeline and entries (L2) |
 | `/library` and `/blog/[slug]` | Blog and publications (L4) |

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { openPage } from "./hq";
 import { findEdgeAccents } from "./edge-audit";
 import cvManifest from "../content/generated/cv-pages.json";
@@ -247,6 +247,78 @@ for (const viewport of [
   });
 }
 
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 1999, height: 1129 },
+  { width: 834, height: 1112 },
+  { width: 390, height: 844 },
+]) {
+  test(`landing hero at ${viewport.width}x${viewport.height}: no eyebrow, a one-step smaller name, the motto`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    const hero = page.locator("section[aria-labelledby='hero-title']");
+    await expect(hero).not.toContainText(/Welcome to/i);
+    await expect(hero.getByText(data.profile.subheadline.en)).toBeVisible();
+    // clamp(44px, 8vw, 112px): vw is the layout viewport width (window.innerWidth).
+    const { size, expected } = await page.locator("#hero-title").evaluate((el) => ({ size: parseFloat(getComputedStyle(el).fontSize), expected: Math.min(112, Math.max(44, window.innerWidth * 0.08)) }));
+    expect(Math.abs(size - expected)).toBeLessThanOrEqual(0.5);
+    await context.close();
+  });
+}
+
+test("landing: the hero name is still the LCP element on a phone", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 412, height: 823 }, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    const w = window as unknown as { __lcp: string };
+    new PerformanceObserver((list) => {
+      const last = list.getEntries().at(-1) as unknown as { element?: Element };
+      w.__lcp = last?.element?.id || last?.element?.tagName || "";
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+  });
+  await openPage(page, staticTier("/en"));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __lcp: string }).__lcp)).toBe("hero-title");
+  await context.close();
+});
+
+/**
+ * The chosen image source is at least as wide as its rendered width times the device pixel ratio.
+ * `naturalWidth` of a `srcset` image is density-corrected (CSS pixels), so the source's own pixel width is
+ * read from a plain image of `currentSrc` (cached, no second request).
+ */
+async function expectSharp(img: Locator) {
+  await img.scrollIntoViewIfNeeded();
+  await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+  const r = await img.evaluate(async (el: HTMLImageElement) => {
+    const source = new Image();
+    source.src = el.currentSrc;
+    await source.decode();
+    return { natural: source.naturalWidth, rendered: el.getBoundingClientRect().width, dpr: devicePixelRatio, src: el.currentSrc };
+  });
+  expect(r.natural, r.src).toBeGreaterThanOrEqual(Math.floor(r.rendered * r.dpr));
+}
+
+for (const v of [
+  { viewport: { width: 1440, height: 900 }, dpr: 2 },
+  { viewport: { width: 390, height: 844 }, dpr: 3 },
+]) {
+  test(`portrait beside the name and on About at ${v.viewport.width}x${v.viewport.height}@${v.dpr}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: v.viewport, deviceScaleFactor: v.dpr });
+    const page = await context.newPage();
+    for (const url of ["/en", "/en/contact"]) {
+      await openPage(page, staticTier(url));
+      const img = page.locator("main").getByTestId("portrait");
+      await expect(img).toHaveAttribute("alt", data.profile.name);
+      await expect(img).toBeVisible();
+      const round = await img.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius) >= el.getBoundingClientRect().width / 2 - 1);
+      expect(round, url).toBe(true);
+      await expectSharp(img);
+    }
+    await context.close();
+  });
+}
+
 test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const cards = page.locator("#work [data-feature-pod]");
@@ -263,6 +335,77 @@ test("landing: three featured projects with their screenshots, the stats ticker,
   for (const stat of data.stats) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
   await expect(page.getByTestId("enter-hq")).toBeHidden();
 });
+
+const columnsFor = (width: number) => (width >= 1024 ? 3 : width >= 768 ? 2 : 1);
+
+/**
+ * Cards in a grid: same top and bottom within each row, same width, and with two or more columns the same
+ * height everywhere. A single phone column keeps each card's own height (equal rows there only add blank space).
+ */
+async function expectAlignedGrid(page: Page, selector: string, columns: number) {
+  const boxes = await page.locator(selector).evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top + scrollY, bottom: r.bottom + scrollY, width: r.width };
+    }),
+  );
+  expect(boxes.length).toBeGreaterThan(0);
+  for (let i = 0; i < boxes.length; i += columns) {
+    const row = boxes.slice(i, i + columns);
+    for (const b of row) {
+      expect(Math.abs(b.top - row[0].top), `${selector} row ${i / columns} top`).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.bottom - row[0].bottom), `${selector} row ${i / columns} bottom`).toBeLessThanOrEqual(1);
+    }
+  }
+  for (const b of boxes) {
+    expect(Math.abs(b.width - boxes[0].width), `${selector} width`).toBeLessThanOrEqual(1);
+    if (columns > 1) expect(Math.abs(b.bottom - b.top - (boxes[0].bottom - boxes[0].top)), `${selector} height`).toBeLessThanOrEqual(1);
+  }
+}
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 1999, height: 1129 },
+  { width: 834, height: 1112 },
+  { width: 390, height: 844 },
+]) {
+  test(`landing: featured cards line up with their screenshots at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    // Below the first screen, so lazy images never compete with the hero for LCP.
+    expect(await page.locator("#work").evaluate((el) => el.getBoundingClientRect().top >= window.innerHeight - 1)).toBe(true);
+    await expectAlignedGrid(page, "#work [data-feature-pod]", columnsFor(viewport.width));
+    for (const card of await page.locator("#work [data-feature-pod]").all()) {
+      const cover = card.locator(".pv-shot img");
+      await cover.scrollIntoViewIfNeeded();
+      await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
+    // "More key projects" rows span the full list width (no side gap).
+    const rows = await page
+      .locator("#work .pv-rows > li")
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width / el.parentElement!.getBoundingClientRect().width));
+    for (const ratio of rows) expect(ratio).toBeGreaterThan(0.99);
+    await page.goto(staticTier("/en/labs"));
+    await expectAlignedGrid(page, "#key-projects li[data-pod]", columnsFor(viewport.width));
+    await context.close();
+  });
+}
+
+for (const v of [
+  { viewport: { width: 1440, height: 900 }, dpr: 2 },
+  { viewport: { width: 390, height: 844 }, dpr: 3 },
+]) {
+  test(`project images are sharp at ${v.viewport.width}x${v.viewport.height}@${v.dpr}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: v.viewport, deviceScaleFactor: v.dpr });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    for (const img of await page.locator("#work [data-feature-pod] .pv-shot img").all()) await expectSharp(img);
+    await openPage(page, staticTier("/en/labs"));
+    for (const img of await page.locator("#key-projects .pv-shot img").all()) await expectSharp(img);
+    await context.close();
+  });
+}
 
 /** Stand-in for the public sites so the suite never depends on the network. */
 const LIVE_SITE = /^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//;
@@ -402,4 +545,24 @@ test.describe("no colored edge stripes", () => {
     await expect(page.getByTestId("cert-dialog")).toBeVisible();
     expect(await page.evaluate(findEdgeAccents, "[data-testid='cert-dialog']")).toEqual([]);
   });
+});
+
+test("the Page View stays silent: clicks and the CV dialog create no AudioContext", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __audioContexts: number; AudioContext: typeof AudioContext };
+    w.__audioContexts = 0;
+    const Original = w.AudioContext;
+    w.AudioContext = class extends Original {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        w.__audioContexts++;
+      }
+    };
+  });
+  await openPage(page, staticTier("/en/quick"));
+  await page.locator("main h1").first().click();
+  await page.locator('main a[href="/en/cv"]').first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
 });

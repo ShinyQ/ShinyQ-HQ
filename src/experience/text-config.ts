@@ -1,5 +1,6 @@
 import { BatchedText, configureTextBuilder, GlyphsGeometry, Text } from "troika-three-text";
 import { trackTextSync } from "./tower/textSync";
+import troikaFonts from "./troika-fonts.json";
 
 /**
  * Typeset in-world text on the main thread. The default worker loads blob: scripts, which the
@@ -10,7 +11,7 @@ import { trackTextSync } from "./tower/textSync";
  * latin subsets lack arrows and geometric shapes (for example the Labs tier marks), and without
  * a fallback that covers them troika fetches font data from a CDN, which the CSP blocks.
  */
-configureTextBuilder({ useWorker: false, defaultFontURL: "/fonts/jetbrains-mono-symbols-700.woff" });
+configureTextBuilder({ useWorker: false, defaultFontURL: troikaFonts.symbols });
 
 /** Count typesetting per floor so the elevator waits for it with the doors closed (tower/textSync.ts, R5 P6). */
 trackTextSync(Text.prototype, BatchedText.prototype);

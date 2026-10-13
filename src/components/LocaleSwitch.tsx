@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { LOCALES } from "@/content/schema";
+import { LOCALES } from "@/content/locales";
 import { usePathname } from "@/i18n/navigation";
 
 const STORAGE_KEY = "hq:locale";

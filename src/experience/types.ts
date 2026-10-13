@@ -135,7 +135,7 @@ export type RoverFace = "idle" | "blink" | "driving" | "autopilot" | "thinking" 
 /** Serializable, locale-resolved data the 3D chunk needs (built on the server). */
 export interface ExperienceData {
   locale: "en" | "id";
-  profile: { name: string; monogram: string; headline: string; role: string; location: string };
+  profile: { name: string; monogram: string; headline: string; role: string; location: string; motto?: string };
   stats: { id: string; value: string; label: string }[];
   /** `logos[i]` is the tech logo path for `items[i]` (null renders text only). */
   skills: { id: string; label: string; items: string[]; logos: (string | null)[] }[];

@@ -54,9 +54,9 @@ export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
   { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
   { test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },
-  { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$|^e2e\/camera-visual\.spec\.ts$|^e2e\/visual-gate\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
+  { test: /^e2e\/(screenshots|pageview-visual|camera-visual|visual-gate|delivery-visual)\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-gpu)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after|visual-gate|perf-gpu|measure-delivery|shot-diff)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   { test: /^functions\//, specs: ["ask"] },
@@ -120,15 +120,19 @@ export const RULES: Rule[] = [
   },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
   { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu"] },
+  { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
   { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu"] },
-  { test: /^src\/experience\/text-config\.ts$/, specs: ["ride", "experience"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
+  // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
+  { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
   { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
-  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
+  { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$|^src\/hud\/BootOverlay\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
+  // The Page view glyph: the boot card link and the HUD top bar button.
+  { test: /^src\/components\/PageViewIcon\.tsx$/, specs: ["boot-first", "hud", "experience"] },
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
@@ -144,13 +148,15 @@ export const RULES: Rule[] = [
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
-  { test: /^public\/_(headers|redirects)$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^public\/_(headers|redirects)$|^scripts\/(serve-static|root-redirect)\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^public\/brand\/|^src\/lib\/brand-photo\.ts$|^src\/components\/page\/Portrait\.tsx$/, specs: ["pageview", "seo", "static-routes", "hud", "highlights"] },
   // Full-screen panels that pause the canvas (data-hq-cover).
   { test: /^src\/components\/(Modal|Lightbox)\.tsx$/, specs: ["gallery", "lifecycle", "pageview"] },
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
   { test: /^src\/(app|components)\/|^src\/content\/pageview\.ts$/, specs: ["pageview", "static-routes", "gallery"] },
   { test: /^src\/i18n\//, specs: ["static-routes", "experience"] },
-  { test: /^src\/lib\/(audio\/|url-sync|viewport|reduced-motion)/, specs: ["experience"] },
+  { test: /^src\/lib\/audio\//, specs: ["experience", "pageview"] },
+  { test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },
   { test: /^src\/lib\//, specs: ["static-routes", "pageview"] },
   { test: /^(content|messages)\/|^src\/content\//, specs: ["static-routes", "pageview", "seo"] },
   { test: /^public\//, specs: ["static-routes"] },

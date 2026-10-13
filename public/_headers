@@ -12,12 +12,34 @@
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
 
+# "/" is a static language redirect: announce the alternates to crawlers over HTTP too.
+/
+  Link: </en>; rel="alternate"; hreflang="en", </id>; rel="alternate"; hreflang="id", </en>; rel="alternate"; hreflang="x-default"
+
 # Hashed build assets (JS, CSS, self-hosted next/font files) never change.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
 /brand/*
   Cache-Control: public, max-age=604800
+
+# In-world (troika) fonts: content-hashed names (scripts/troika-fonts.ts), so they never change.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Unhashed images. Tech logos rarely change; gallery images, floor thumbnails and company logos can be
+# replaced under the same name, so they revalidate after a day and are served stale while revalidating.
+/tech/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/media/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/floors/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/logos/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 # The CV PDF is previewed in an iframe on /{locale}/cv: allow same-origin framing for it only.
 # "!" detaches the headers set by /* above (Cloudflare Pages would otherwise join both values).
@@ -27,14 +49,14 @@
   ! X-Frame-Options
   Content-Security-Policy: frame-ancestors 'self'
   X-Frame-Options: SAMEORIGIN
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=3600, must-revalidate
 
 # Self-hosted paper PDFs and their page images (paper reader). The site CSP is detached so the
 # browser PDF viewer opens them in a new tab; they are never framed.
 /papers/*
   ! Content-Security-Policy
   Content-Security-Policy: frame-ancestors 'none'
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=86400, must-revalidate
 
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*

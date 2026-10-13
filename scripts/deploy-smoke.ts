@@ -12,6 +12,33 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
+import troikaFonts from "../src/experience/troika-fonts.json";
+import cvPages from "../content/generated/cv-pages.json";
+
+/** Cache rules from public/_headers that production must serve (round 5 P1). */
+export const CACHE_RULES: readonly { prefix: string; value: string }[] = [
+  { prefix: "/fonts/3d/", value: "public, max-age=31536000, immutable" },
+  { prefix: "/tech/", value: "public, max-age=604800, stale-while-revalidate=86400" },
+  { prefix: "/media/", value: "public, max-age=86400, stale-while-revalidate=604800" },
+  { prefix: "/floors/", value: "public, max-age=86400, stale-while-revalidate=604800" },
+  { prefix: "/cv/pages/", value: "public, max-age=3600, must-revalidate" },
+];
+
+export function cacheProblems(observed: Record<string, string | null>): string[] {
+  const problems: string[] = [];
+  for (const [url, value] of Object.entries(observed)) {
+    const rule = CACHE_RULES.find((r) => url.startsWith(r.prefix));
+    if (rule && value !== rule.value) problems.push(`${url} Cache-Control is ${value ?? "missing"}, expected ${rule.value}`);
+  }
+  return problems;
+}
+
+/** One file per cached prefix, read from the checkout that was deployed. */
+export function cacheSamples(root = process.cwd()): string[] {
+  const content = JSON.parse(readFileSync(path.join(root, "content", "site-content.json"), "utf8")) as { floors: { labs: { pods: { assets: { src: string }[] }[] } } };
+  const cover = content.floors.labs.pods.find((p) => p.assets.length > 0)!.assets[0].src;
+  return [troikaFonts.sans, "/tech/docker.svg", cover, "/floors/L1.webp", cvPages.pages[0].src];
+}
 
 export interface Expected {
   asOf: string;
@@ -22,6 +49,7 @@ export interface Expected {
 export interface Observed {
   status?: { code: number; enabled?: boolean; asOf?: string };
   page?: { code: number; html: string };
+  cache?: Record<string, string | null>;
 }
 
 /** Problems with what production serves; empty when it matches. */
@@ -37,6 +65,7 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
     const hasBeacon = p.html.includes("static.cloudflareinsights.com/beacon.min.js");
     if (expected.beacon && !hasBeacon) problems.push("/en has no Web Analytics beacon");
   }
+  if (observed.cache) problems.push(...cacheProblems(observed.cache));
   return problems;
 }
 
@@ -64,6 +93,15 @@ async function observe(site: string): Promise<Observed> {
     observed.page = { code: r.status, html: await r.text() };
   } catch {
     // Reported as no response.
+  }
+  observed.cache = {};
+  for (const sample of cacheSamples()) {
+    try {
+      const r = await fetch(`${site}${sample}`, { method: "HEAD", cache: "no-store" });
+      observed.cache[sample] = r.ok ? r.headers.get("cache-control") : `HTTP ${r.status}`;
+    } catch {
+      observed.cache[sample] = null;
+    }
   }
   return observed;
 }

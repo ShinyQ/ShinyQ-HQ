@@ -7,7 +7,7 @@ const SCREENSHOTS = Boolean(process.env.SCREENSHOTS);
 const SHARD = process.env.E2E_SHARD;
 
 /** Screenshot specs only run with SCREENSHOTS=1 (nightly workflow, `bun run screenshots`). */
-const SCREENSHOT_SPECS = ["**/screenshots.spec.ts", "**/pageview-visual.spec.ts"];
+const SCREENSHOT_SPECS = ["**/screenshots.spec.ts", "**/pageview-visual.spec.ts", "**/delivery-visual.spec.ts"];
 
 function reporter(): ReporterDescription[] {
   if (SHARD) return [["list"], ["blob", { fileName: `report-${SHARD.replace("/", "-of-")}.zip` }]];

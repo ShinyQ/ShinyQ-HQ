@@ -2,10 +2,10 @@ import { getTranslations } from "next-intl/server";
 import { getProfile } from "@/content/load";
 import type { Locale } from "@/content/schema";
 import { HudLaunchers } from "@/hud/HudLaunchers";
-import { Link } from "@/i18n/navigation";
 import { FLOOR_ACCENT } from "@/lib/accent";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { NavLink } from "./NavLink";
+import { QuietLink } from "./QuietLink";
 
 /** Primary sections, in reading order; each one is a floor of the tower. */
 export const PRIMARY_NAV = [
@@ -28,7 +28,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
         {t("skip")}
       </a>
       <div className="pv-wrap flex h-[60px] items-center gap-2 lg:h-[68px] lg:gap-6">
-        <Link href="/" className="mr-auto flex min-h-11 min-w-0 items-center gap-3">
+        <QuietLink href="/" className="mr-auto flex min-h-11 min-w-0 items-center gap-3">
           <span
             aria-hidden="true"
             className="grid size-[34px] shrink-0 place-items-center rounded-lg border border-line-2 font-display text-[13px] font-extrabold tracking-[0.02em] [font-stretch:75%]"
@@ -40,7 +40,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
             <span className="hidden font-mono text-[11px] leading-[14px] tracking-[0.04em] text-ink-3 sm:block">{tm("siteName")}</span>
           </span>
           <span className="sr-only">: {t("backToHq")}</span>
-        </Link>
+        </QuietLink>
         <nav aria-label={t("label")} className="hidden lg:block">
           <ul className="flex gap-1">
             {PRIMARY_NAV.map((item) => (

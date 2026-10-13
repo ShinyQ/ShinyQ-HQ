@@ -40,6 +40,7 @@ import { renderProbe } from "./scene/renderProbe";
 import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
 import { floorOf } from "./missions/rooms";
+import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
 
@@ -139,13 +140,16 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   };
 }
 
-/** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
+/** Marks the first frame (boot signals) and calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
 function FirstFrame({ onFrame }: { onFrame?: () => void }) {
   const ticks = useRef(0);
   useFrame(() => {
-    if (!onFrame || ticks.current > 1) return;
+    if (ticks.current > 1) return;
     ticks.current += 1;
-    if (ticks.current === 2) onFrame();
+    if (ticks.current === 2) {
+      markFirstFrame();
+      onFrame?.();
+    }
   });
   return null;
 }
@@ -272,6 +276,7 @@ export default function Experience({
       off();
       audio.setRumble(0);
       audio.setPaused(true);
+      resetFirstFrame();
     };
   }, []);
 

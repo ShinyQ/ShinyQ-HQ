@@ -349,10 +349,12 @@
     background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
   }
   /* Also while the HQ is open (Experience sets html[data-hq]): the page never paints under the
-     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. */
+     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. content-visibility
+     skips its layout too, so lazy images and link prefetches of the hidden page never start (quiet boot). */
   html[data-hq-boot] #site-shell,
   html[data-hq] #site-shell {
     visibility: hidden;
+    content-visibility: hidden;
   }
   .hq-boot-backdrop {
     background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.35), rgb(5 5 12 / 0.8) 70%);
@@ -366,6 +368,26 @@
     border-radius: 16px;
     background: rgb(5 5 12 / 0.6);
     box-shadow: 0 0 60px -20px rgb(99 102 241 / 0.6);
+  }
+  .hq-boot-who {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-line);
+  }
+  .hq-boot-page {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--color-ink-2);
+    text-decoration: underline;
+    text-decoration-color: rgb(34 211 238 / 0.5);
+    text-underline-offset: 4px;
+  }
+  .hq-boot-page:hover,
+  .hq-boot-page:focus-visible {
+    color: var(--color-ink);
   }
   .hq-boot-log {
     font: 12px/1.8 var(--font-mono);

@@ -6,7 +6,7 @@ describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
     expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "gpu", "ride"]);
     expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "gpu", "ride"]);
-    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
@@ -82,7 +82,7 @@ describe("specsForChanges", () => {
 
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
-      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts" && f !== "visual-gate.spec.ts")
+      .filter((f) => f.endsWith(".spec.ts") && !["screenshots.spec.ts", "pageview-visual.spec.ts", "camera-visual.spec.ts", "visual-gate.spec.ts", "delivery-visual.spec.ts"].includes(f))
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());

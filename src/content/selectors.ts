@@ -1,6 +1,6 @@
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { isPublicLiveUrl } from "./live-links";
-import type { Locale, Pod, Publication, SkillGroup, Tier, TimelineEntry } from "./schema";
+import type { Locale, LocalizedText, Pod, Publication, SkillGroup, Tier, TimelineEntry } from "./schema";
 
 /** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */
 export function clientLabel(client: Pod["client"], locale: Locale): string | undefined {
@@ -118,4 +118,9 @@ export const SKILLS_WALL_GROUPS = ["backend", "ai", "azure", "devops"] as const 
 
 export function wallSkillGroups(groups: readonly SkillGroup[]): SkillGroup[] {
   return SKILLS_WALL_GROUPS.flatMap((id) => groups.filter((g) => g.id === id));
+}
+
+/** "Technical Consultant, Software & AI · Metrodata (...)": the current role line on the boot card and in the 3D profile card. */
+export function roleLine(role: { title: LocalizedText; org: string }, locale: Locale): string {
+  return `${role.title[locale]} · ${role.org}`;
 }

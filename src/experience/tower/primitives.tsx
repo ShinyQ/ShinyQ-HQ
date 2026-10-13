@@ -6,12 +6,14 @@ import { useHQStore } from "@/store/useHQStore";
 import { getGlassMaterial, glassSidesGeometry, rimGeometry, rimThickness } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
 import { useDispose } from "../fx/useDispose";
+import troikaFonts from "../troika-fonts.json";
 
+/** In-world fonts: subset, content-hashed WOFFs written by scripts/troika-fonts.ts (cached for a year). */
 export const FONTS = {
-  sans: "/fonts/inter-latin-400-normal.woff",
-  sansBold: "/fonts/inter-latin-800-normal.woff",
-  mono: "/fonts/jetbrains-mono-latin-400-normal.woff",
-  monoBold: "/fonts/jetbrains-mono-latin-700-normal.woff",
+  sans: troikaFonts.sans,
+  sansBold: troikaFonts.sansBold,
+  mono: troikaFonts.mono,
+  monoBold: troikaFonts.monoBold,
 } as const;
 
 type V3 = [number, number, number];

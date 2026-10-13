@@ -1,5 +1,21 @@
 import type { Ref } from "react";
 import { splitBootLine } from "@/lib/boot-first";
+import { PageViewIcon } from "./PageViewIcon";
+
+/** Who the owner is, shown on the boot card at first paint (owner decision, round 5). */
+export interface BootWho {
+  name: string;
+  headline: string;
+  motto?: string;
+  role: string;
+}
+
+/** The small "Page view" link: a real `?view=page` link (works before hydration, see takePageViewParam). */
+export interface BootPageLink {
+  href: string;
+  label: string;
+  hint: string;
+}
 
 export interface BootCardProps {
   eyebrow: string;
@@ -18,22 +34,39 @@ export interface BootCardProps {
   startRef?: Ref<HTMLButtonElement>;
   /** Render the button invisible (cover): same layout as the overlay, nothing to click or focus. */
   placeholder?: boolean;
+  who?: BootWho;
+  pageView?: BootPageLink;
 }
 
 /**
  * The boot card shared by the SSR boot cover and the 3D boot overlay, so the handoff from one to
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
- * There is no skip: the boot and the intro always play in full (owner decision).
+ * There is no skip: the boot and the intro always play in full (owner decision). "Page view" leaves
+ * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
  */
 export function BootCard({ startRef, ...p }: BootCardProps) {
+  // On the cover only the owner block and the Page view link are for assistive tech; the log is decoration.
+  const deco = p.placeholder ? true : undefined;
   return (
     <div className="hq-boot-card">
-      <p className="eyebrow">{p.eyebrow}</p>
-      <p className="mt-3 font-mono text-sm text-cyan">{p.monogram}</p>
-      <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink">
+      <p className="eyebrow" aria-hidden={deco}>
+        {p.eyebrow}
+      </p>
+      <p className="mt-3 font-mono text-sm text-cyan" aria-hidden={deco}>
+        {p.monogram}
+      </p>
+      <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco}>
         {p.title}
       </p>
-      <ol className="hq-boot-log mt-5">
+      {p.who && (
+        <div className="hq-boot-who" data-testid="boot-who">
+          <p className="text-lg leading-6 font-bold text-ink">{p.who.name}</p>
+          <p className="text-sm font-semibold text-cyan">{p.who.headline}</p>
+          {p.who.motto && <p className="mt-1 text-sm leading-5 text-ink-2">{p.who.motto}</p>}
+          <p className="mt-1 font-mono text-xs leading-5 text-ink-3">{p.who.role}</p>
+        </div>
+      )}
+      <ol className="hq-boot-log mt-5" aria-hidden={deco}>
         {p.lines.map((line, i) => {
           const { ok, text } = splitBootLine(line);
           return (
@@ -48,8 +81,8 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
           );
         })}
       </ol>
-      <div className="hq-boot-bar" />
-      <div className={`mt-6 flex flex-wrap gap-3 ${p.placeholder ? "invisible" : ""}`}>
+      <div className="hq-boot-bar" aria-hidden="true" />
+      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
         <button
           ref={startRef}
           type="button"
@@ -58,10 +91,16 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
           tabIndex={p.placeholder ? -1 : undefined}
           className={`inline-flex min-h-11 items-center rounded-xl bg-[#6366f1] px-6 py-3 font-semibold text-white shadow-[0_0_30px_rgba(99,102,241,.55)] transition hover:bg-[#6366f1]/85 ${
             p.startDisabled ? "cursor-wait opacity-70" : ""
-          }`}
+          } ${p.placeholder ? "invisible" : ""}`}
         >
           {p.startLabel}
         </button>
+        {p.pageView && (
+          <a href={p.pageView.href} title={p.pageView.hint} data-hq-page-link="" className="hq-boot-page">
+            <PageViewIcon size={16} />
+            {p.pageView.label}
+          </a>
+        )}
       </div>
     </div>
   );

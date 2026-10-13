@@ -46,6 +46,14 @@ test("root redirects by browser language", async ({ browser }) => {
   await en.close();
 });
 
+test("root: the language redirect runs before the stylesheet; hreflang alternates stay", async ({ request }) => {
+  const html = await (await request.get("/")).text();
+  const hoisted = html.indexOf("data-hq-hoisted");
+  expect(hoisted).toBeGreaterThan(-1);
+  expect(hoisted).toBeLessThan(html.indexOf('rel="stylesheet"'));
+  for (const lang of ["en", "id", "x-default"]) expect(html).toMatch(new RegExp(`hreflang="${lang}"`, "i"));
+});
+
 test("unknown routes return the 404 page", async ({ page }) => {
   const response = await page.goto("/en/labs/does-not-exist");
   expect(response?.status()).toBe(404);

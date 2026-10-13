@@ -17,9 +17,6 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/labs">):
   return seoMetadata(assertLocale((await params).locale), "/labs");
 }
 
-/** Alternating 7/5 and 5/7 column spans for the key projects grid. */
-const SPANS = ["lg:col-span-7", "lg:col-span-5", "lg:col-span-5", "lg:col-span-7"];
-
 export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) {
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
@@ -56,9 +53,9 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
       <WorkIndex pods={all.map(({ wing, stack }) => ({ wing, stack }))}>
         <div data-pod-block>
           <SectionWide id="key-projects" title={tw("keyProjects")} className="!pt-14">
-            <ul className="grid gap-x-6 gap-y-14 lg:grid-cols-12">
-              {heroes.map((pod, i) => (
-                <li key={pod.id} {...podAttrs(pod)} className={SPANS[i % SPANS.length]}>
+            <ul className="grid gap-x-6 gap-y-14 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3">
+              {heroes.map((pod) => (
+                <li key={pod.id} {...podAttrs(pod)} className="min-w-0">
                   <WorkFeature pod={pod} locale={locale} size="grid" />
                 </li>
               ))}

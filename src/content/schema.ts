@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { liveUrlProblem } from "./live-links";
+import { LOCALES } from "./locales";
 
 /**
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
@@ -10,8 +11,7 @@ import { liveUrlProblem } from "./live-links";
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema).
  */
 
-export const LOCALES = ["en", "id"] as const;
-export const DEFAULT_LOCALE = "en";
+export { DEFAULT_LOCALE, LOCALES } from "./locales";
 export const LocaleSchema = z.enum(LOCALES);
 
 const nonEmpty = z.string().trim().min(1);

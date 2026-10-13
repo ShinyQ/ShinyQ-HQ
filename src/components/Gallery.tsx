@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { GalleryImage } from "@/content/media";
+import { imageSrcSet, type GalleryImage } from "@/content/media";
 import { Lightbox } from "./Lightbox";
 
 export interface GalleryProps {
@@ -59,6 +59,8 @@ export function Gallery({ images, label, layout = "grid" }: GalleryProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={mosaic && i === 0 ? image.src : image.thumb}
+                srcSet={imageSrcSet(image)}
+                sizes={layout === "strip" ? "224px" : mosaic && i === 0 ? "(min-width: 640px) 66vw, 100vw" : "(min-width: 640px) 33vw, 50vw"}
                 alt=""
                 width={480}
                 height={Math.round((480 * image.height) / image.width)}
