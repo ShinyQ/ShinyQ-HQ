@@ -35,7 +35,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const roof = getRoof();
   const pods = getPods();
   const featured = pickFeaturedPods(pods);
-  const [lead, ...side] = featured;
   const featuredIds = new Set(featured.map((pod) => pod.id));
   const more = pods.filter((pod) => pod.tier === "hero" && !featuredIds.has(pod.id));
   const latest = getTimeline()
@@ -72,18 +71,13 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       />
 
       <SectionWide id="work" title={t("selectedWork")} more={{ href: "/labs", label: t("allProjects", { count: pods.length }) }}>
-        <div className="grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-12">
-          {lead && (
-            <div className="md:col-span-2 lg:col-span-7 lg:row-span-2">
-              <FeaturedProject pod={lead} locale={locale} lead />
-            </div>
-          )}
-          {side.map((pod) => (
-            <div key={pod.id} className="lg:col-span-5">
+        <ul className="grid gap-x-6 gap-y-10 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3" data-testid="featured-grid">
+          {featured.map((pod) => (
+            <li key={pod.id} className="min-w-0">
               <FeaturedProject pod={pod} locale={locale} />
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
         {more.length > 0 && (
           <>
             <h3 className="pv-data mt-16">{t("moreWork")}</h3>

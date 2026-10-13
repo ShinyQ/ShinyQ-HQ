@@ -70,23 +70,25 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
         </Link>
       </h3>
       <p className="pv-body">{pod.tagline[locale]}</p>
-      <PodLiveCta pod={pod} locale={locale} />
-      {size === "lead" && first && (
-        <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
-          {[first, second].filter(Boolean).map((r) => (
-            <div key={r!.value}>
-              <dt className="pv-num text-[28px]">{r!.value}</dt>
-              <dd className="mt-1 text-sm leading-5 text-ink-2">{r!.label[locale]}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-      {size === "pair" && first && (
-        <p className="pv-small">
-          <span className="pv-num text-[20px]">{first.value}</span> {first.label[locale]}
-        </p>
-      )}
-      {size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}
+      <div className="mt-auto flex flex-col gap-4">
+        <PodLiveCta pod={pod} locale={locale} />
+        {size === "lead" && first && (
+          <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
+            {[first, second].filter(Boolean).map((r) => (
+              <div key={r!.value}>
+                <dt className="pv-num text-[28px]">{r!.value}</dt>
+                <dd className="mt-1 text-sm leading-5 text-ink-2">{r!.label[locale]}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {size === "pair" && first && (
+          <p className="pv-small">
+            <span className="pv-num text-[20px]">{first.value}</span> {first.label[locale]}
+          </p>
+        )}
+        {size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}
+      </div>
     </article>
   );
 }

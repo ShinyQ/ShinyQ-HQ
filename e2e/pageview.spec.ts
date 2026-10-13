@@ -336,6 +336,62 @@ test("landing: three featured projects with their screenshots, the stats ticker,
   await expect(page.getByTestId("enter-hq")).toBeHidden();
 });
 
+const columnsFor = (width: number) => (width >= 1024 ? 3 : width >= 768 ? 2 : 1);
+
+/**
+ * Cards in a grid: same top and bottom within each row, same width, and with two or more columns the same
+ * height everywhere. A single phone column keeps each card's own height (equal rows there only add blank space).
+ */
+async function expectAlignedGrid(page: Page, selector: string, columns: number) {
+  const boxes = await page.locator(selector).evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top + scrollY, bottom: r.bottom + scrollY, width: r.width };
+    }),
+  );
+  expect(boxes.length).toBeGreaterThan(0);
+  for (let i = 0; i < boxes.length; i += columns) {
+    const row = boxes.slice(i, i + columns);
+    for (const b of row) {
+      expect(Math.abs(b.top - row[0].top), `${selector} row ${i / columns} top`).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.bottom - row[0].bottom), `${selector} row ${i / columns} bottom`).toBeLessThanOrEqual(1);
+    }
+  }
+  for (const b of boxes) {
+    expect(Math.abs(b.width - boxes[0].width), `${selector} width`).toBeLessThanOrEqual(1);
+    if (columns > 1) expect(Math.abs(b.bottom - b.top - (boxes[0].bottom - boxes[0].top)), `${selector} height`).toBeLessThanOrEqual(1);
+  }
+}
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 1999, height: 1129 },
+  { width: 834, height: 1112 },
+  { width: 390, height: 844 },
+]) {
+  test(`landing: featured cards line up with their screenshots at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    // Below the first screen, so lazy images never compete with the hero for LCP.
+    expect(await page.locator("#work").evaluate((el) => el.getBoundingClientRect().top >= window.innerHeight - 1)).toBe(true);
+    await expectAlignedGrid(page, "#work [data-feature-pod]", columnsFor(viewport.width));
+    for (const card of await page.locator("#work [data-feature-pod]").all()) {
+      const cover = card.locator(".pv-shot img");
+      await cover.scrollIntoViewIfNeeded();
+      await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
+    // "More key projects" rows span the full list width (no side gap).
+    const rows = await page
+      .locator("#work .pv-rows > li")
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width / el.parentElement!.getBoundingClientRect().width));
+    for (const ratio of rows) expect(ratio).toBeGreaterThan(0.99);
+    await page.goto(staticTier("/en/labs"));
+    await expectAlignedGrid(page, "#key-projects li[data-pod]", columnsFor(viewport.width));
+    await context.close();
+  });
+}
+
 /** Stand-in for the public sites so the suite never depends on the network. */
 const LIVE_SITE = /^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//;
 
