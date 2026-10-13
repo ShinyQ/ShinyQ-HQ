@@ -8,7 +8,6 @@ const CHIPS = new Map<string, StatsTopic>([
   ["ai-voice", "ai"],
 ]);
 const noWa: WaRows = { days: [], countries: [], paths: [] };
-const noAe: AeRows = { asks: [], visits: [] };
 
 function day(date: string, patch: Partial<DayRollup> = {}): DayRollup {
   return { date, visits: 0, pageViews: 0, countries: [], floors: {}, mode: { threeD: 0, classic: 0 }, asks: { total: 0, topics: {}, chips: {} }, ...patch };

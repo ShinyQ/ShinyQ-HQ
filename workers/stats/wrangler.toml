@@ -1,0 +1,34 @@
+# hq-stats: the public visit stats Cron Worker (runbook: workers/stats/README.md).
+#
+# Deployed by .github/workflows/deploy.yml (cloudflare/wrangler-action) from this folder; it has its own
+# config, separate from the Pages project in the repo root. Scheduled handler only: no fetch handler, no
+# route, no workers.dev or preview URL, so nothing on it is reachable from the internet.
+#
+# Secrets never live here. deploy.yml sets them from GitHub secrets on every deploy:
+#   WA_TOKEN       read-only Account Analytics token (GitHub secret CF_EVAL_TOKEN)
+#   WA_ACCOUNT_ID  Cloudflare account id (GitHub secret CLOUDFLARE_ACCOUNT_ID; kept out of the public repo)
+
+name = "hq-stats"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+preview_urls = false
+
+# Daily at 01:00 UTC: finalizes the previous complete UTC day (and catches up any missed days).
+[triggers]
+crons = ["0 1 * * *"]
+
+# Same namespace as the Pages project's STATS_KV binding (wrangler.toml in the repo root): the ledger
+# `stats:days:v1` and the public snapshot `stats:v1`. KV namespace IDs are not secret.
+[[kv_namespaces]]
+binding = "STATS_KV"
+id = "88fb27f910f44e6393b8fd495d6a2c4f"
+
+[vars]
+# Web Analytics site of the production site (not the public beacon token; useless without an API token).
+WA_SITE_TAG = "4134db56168b4eb58d19fc1ead78b131"
+# Production hosts only: local dev and e2e traffic (127.0.0.1) and previews share the siteTag.
+WA_HOSTS = "kurniadi.pages.dev,kurniadi.dev"
+
+[observability]
+enabled = true
