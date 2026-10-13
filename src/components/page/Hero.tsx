@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { getProfile } from "@/content/load";
 import type { Locale } from "@/content/schema";
-import { Link } from "@/i18n/navigation";
+import { QuietLink } from "../QuietLink";
 import { AskHeroBar } from "./AskEntry";
 import { EnterHqButton } from "./EnterHqButton";
 
@@ -40,9 +40,9 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
           <p className="pv-lead mt-1 text-ink-2">{profile.subheadline[locale]}</p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
-            <Link href="/labs" className="pv-btn pv-btn-ghost">
+            <QuietLink href="/labs" className="pv-btn pv-btn-ghost">
               {t("seeWork")}
-            </Link>
+            </QuietLink>
           </div>
           <AskHeroBar />
         </div>

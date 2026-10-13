@@ -349,10 +349,12 @@
     background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
   }
   /* Also while the HQ is open (Experience sets html[data-hq]): the page never paints under the
-     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. */
+     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. content-visibility
+     skips its layout too, so lazy images and link prefetches of the hidden page never start (quiet boot). */
   html[data-hq-boot] #site-shell,
   html[data-hq] #site-shell {
     visibility: hidden;
+    content-visibility: hidden;
   }
   .hq-boot-backdrop {
     background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.35), rgb(5 5 12 / 0.8) 70%);

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Accent, Locale, Stat } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
+import { QuietLink } from "../QuietLink";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import type { CareerType } from "@/experience/types";
@@ -28,10 +29,10 @@ export interface Crumb {
 
 export function CrumbLink({ crumb }: { crumb: Crumb }) {
   return (
-    <Link href={crumb.href} className="inline-flex min-h-11 items-center gap-2 text-sm text-ink-2 transition hover:text-ink">
+    <QuietLink href={crumb.href} className="inline-flex min-h-11 items-center gap-2 text-sm text-ink-2 transition hover:text-ink">
       <span aria-hidden="true">←</span>
       {crumb.label}
-    </Link>
+    </QuietLink>
   );
 }
 
