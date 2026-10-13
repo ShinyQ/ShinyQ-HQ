@@ -1,11 +1,12 @@
-import { Box3, Matrix4, type BufferAttribute, type BufferGeometry, type Camera, type InterleavedBufferAttribute, type Material, type Object3D, type Scene } from "three";
-import { inSlabShadow, type SlabRect, type Vec3 } from "./slabShadow";
+import { Box3, Frustum, Matrix4, Vector3, type BufferAttribute, type BufferGeometry, type Camera, type InterleavedBufferAttribute, type Material, type Object3D, type Scene } from "three";
+import { clipBoxToFrustum, inSlabShadow, type FrustumLike, type SlabRect, type Vec3 } from "./slabShadow";
 
 /**
  * Ride cull (R5 follow-up to P4): while the elevator runs, a floor below the rover can draw under a
  * slab that is still solid (the car parked at the floor above, or the target several floors down), so
  * it costs triangles the camera never sees. Right before the scene renders, every drawable of such a
- * floor whose world bounds lie in a solid slab's shadow (`inSlabShadow`) is hidden for that render only
+ * floor whose world bounds, clipped to the view frustum, lie in a solid slab's shadow (`inSlabShadow`)
+ * or entirely outside the frustum is hidden for that render only
  * and shown again right after (`installRideCull`, mounted by `RideCullHooks.tsx`), so no component
  * ever sees the change. Geometry decides, so a hidden mesh cannot reach a pixel: what the ride shows
  * (the grid, the road strip and pad glows seen under a slab's edge or through the glass shaft) still
@@ -136,6 +137,21 @@ function triangles(object: Drawable): number {
   return Math.floor(count / 3) * (Number.isFinite(instances) ? instances : 1);
 }
 
+const projScreen = new Matrix4();
+const ndcToWorld = new Matrix4();
+const frustum = new Frustum();
+const corner = new Vector3();
+
+/** The camera's view frustum as plain planes and corners (`clipBoxToFrustum`). */
+export function frustumOf(camera: Camera): FrustumLike {
+  projScreen.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  frustum.setFromProjectionMatrix(projScreen);
+  ndcToWorld.copy(projScreen).invert();
+  const corners: Vec3[] = [];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) corners.push(corner.set(x, y, z).applyMatrix4(ndcToWorld).toArray() as Vec3);
+  return { planes: frustum.planes.map((p) => ({ normal: p.normal.toArray() as Vec3, constant: p.constant })), corners };
+}
+
 /**
  * Hides, for this render, every cullable drawable of a visible floor that lies in the shadow of a solid
  * slab above it. Call `restoreCulled()` after the render. Returns the number of drawables hidden.
@@ -145,6 +161,7 @@ export function cullUnderSlabs(camera: Camera, floors: readonly CullFloor[]): nu
   const eye = camera.matrixWorld.elements;
   const eyeAt: Vec3 = [eye[12], eye[13], eye[14]];
   const slabs = floors.map((f) => solidSlab(f.slab));
+  let view: FrustumLike | null = null;
   let tris = 0;
   for (const floor of floors) {
     const content = floor.content;
@@ -163,7 +180,12 @@ export function cullUnderSlabs(camera: Camera, floors: readonly CullFloor[]): nu
       }
       if (!cullable(object)) continue;
       const box = worldBounds(object);
-      if (!box || !occluders.some((slab) => inSlabShadow(eyeAt, slab, box))) continue;
+      if (!box) continue;
+      // Only the part in view matters: a road-long batch reaching past the slab's far edge is still
+      // hidden when that far end is off screen.
+      view ??= frustumOf(camera);
+      const seen = clipBoxToFrustum(box, view);
+      if (seen && !occluders.some((slab) => inSlabShadow(eyeAt, slab, seen))) continue;
       object.visible = false;
       hidden.push(object);
       tris += triangles(object as Drawable);

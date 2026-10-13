@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { boxCorners, inSlabShadow, type Box3Like, type SlabRect, type Vec3 } from "@/experience/tower/slabShadow";
+import { PerspectiveCamera } from "three";
+import { frustumOf } from "@/experience/tower/rideCull";
+import { boxCorners, clipBoxToFrustum, inSlabShadow, type Box3Like, type SlabRect, type Vec3 } from "@/experience/tower/slabShadow";
 
 // The L2 slab (y 14) over the Lobby (y 0): 40 x 20 u, top at 14, 0.4 u thick.
 const SLAB: SlabRect = { minX: -20, maxX: 20, minZ: -10, maxZ: 10, top: 14, bottom: 13.6 };
@@ -77,5 +79,59 @@ describe("boxCorners", () => {
     expect(new Set(corners.map((c) => c.join(","))).size).toBe(8);
     expect(corners).toContainEqual([0, 1, 2]);
     expect(corners).toContainEqual([3, 4, 5]);
+  });
+});
+
+describe("clipBoxToFrustum", () => {
+  // A camera at (0, 30, 20) looking at the origin, 60 degrees vertical, 16:9, far 200.
+  const cam = new PerspectiveCamera(60, 16 / 9, 0.5, 200);
+  cam.position.set(0, 30, 20);
+  cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld(true);
+  const view = frustumOf(cam);
+  const inside = (p: Vec3) => view.planes.every((pl) => pl.normal[0] * p[0] + pl.normal[1] * p[1] + pl.normal[2] * p[2] + pl.constant >= 0);
+
+  it("returns the box when it is entirely in view and null when it is entirely out", () => {
+    const b = box([-1, 0, -1], [1, 1, 1]);
+    expect(clipBoxToFrustum(b, view)).toEqual(b);
+    expect(clipBoxToFrustum(box([500, 0, 500], [510, 1, 510]), view)).toBeNull();
+    expect(clipBoxToFrustum(box([-1, 0, 100], [1, 1, 110]), view)).toBeNull();
+  });
+
+  it("bounds every sampled point of the box in view, and hugs them", () => {
+    // A road-long strip: only its near part is in view.
+    const b = box([-300, 0, -4], [300, 6, 4]);
+    const clipped = clipBoxToFrustum(b, view)!;
+    expect(clipped).not.toBeNull();
+    const min: Vec3 = [Infinity, Infinity, Infinity];
+    const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+    const n = 120;
+    for (let i = 0; i <= n; i++)
+      for (let j = 0; j <= 6; j++)
+        for (let k = 0; k <= 8; k++) {
+          const p: Vec3 = [-300 + (600 * i) / n, j, -4 + k];
+          if (!inside(p)) continue;
+          for (let a = 0; a < 3; a++) {
+            min[a] = Math.min(min[a], p[a]);
+            max[a] = Math.max(max[a], p[a]);
+          }
+          for (let a = 0; a < 3; a++) {
+            expect(p[a]).toBeGreaterThanOrEqual(clipped.min[a] - 1e-6);
+            expect(p[a]).toBeLessThanOrEqual(clipped.max[a] + 1e-6);
+          }
+        }
+    // Within one sampling step (5 u in x) of the sampled extent.
+    expect(clipped.max[0] - max[0]).toBeLessThan(5.01);
+    expect(min[0] - clipped.min[0]).toBeLessThan(5.01);
+    expect(clipped.max[0] - clipped.min[0]).toBeLessThan(200);
+  });
+
+  it("handles a frustum that starts inside the box", () => {
+    const b = box([-1000, -1000, -1000], [1000, 1000, 1000]);
+    const clipped = clipBoxToFrustum(b, view)!;
+    for (const c of view.corners) for (let a = 0; a < 3; a++) {
+      expect(c[a]).toBeGreaterThanOrEqual(clipped.min[a] - 1e-6);
+      expect(c[a]).toBeLessThanOrEqual(clipped.max[a] + 1e-6);
+    }
   });
 });

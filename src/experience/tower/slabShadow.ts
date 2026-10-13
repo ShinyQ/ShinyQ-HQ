@@ -58,3 +58,79 @@ export function inSlabShadow(eye: Vec3, slab: SlabRect, box: Box3Like, margin = 
   }
   return true;
 }
+
+/** A plane with the inside where `normal . p + constant >= 0` (three's `Plane` convention). */
+export interface PlaneLike {
+  normal: Vec3;
+  constant: number;
+}
+
+/**
+ * A view frustum: its 6 inward planes and its 8 corners, indexed like `boxCorners` by NDC bits
+ * (`x * 4 + y * 2 + z`, 0 for -1 and 1 for +1), so corners one bit apart share an edge.
+ */
+export interface FrustumLike {
+  planes: readonly PlaneLike[];
+  corners: readonly Vec3[];
+}
+
+/** Corner pairs one index bit apart: the 12 edges of a box or a frustum. */
+const EDGES: [number, number][] = [];
+for (let a = 0; a < 8; a++) for (const bit of [1, 2, 4]) if (!(a & bit)) EDGES.push([a, a | bit]);
+
+const dot = (n: Vec3, p: Vec3) => n[0] * p[0] + n[1] * p[1] + n[2] * p[2];
+const lerp = (p: Vec3, q: Vec3, t: number): Vec3 => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+
+/**
+ * Bounds of the part of `box` inside the frustum, or null when no part is. Exact for the vertex set:
+ * a vertex of the intersection of two convex polyhedra is a vertex of one inside the other, or where an
+ * edge of one crosses a face of the other. A small tolerance only makes the bounds larger.
+ */
+export function clipBoxToFrustum(box: Box3Like, frustum: FrustumLike, tolerance = 1e-3): Box3Like | null {
+  if (!usable(box)) return null;
+  const inFrustum = (p: Vec3) => frustum.planes.every((plane) => dot(plane.normal, p) + plane.constant >= -tolerance);
+  const inBox = (p: Vec3) => p.every((v, i) => v >= box.min[i] - tolerance && v <= box.max[i] + tolerance);
+  const points: Vec3[] = [];
+  const corners = boxCorners(box);
+  for (const c of corners) if (inFrustum(c)) points.push(c);
+  for (const c of frustum.corners) if (inBox(c)) points.push(c);
+  for (const [a, b] of EDGES) {
+    const p = corners[a];
+    const q = corners[b];
+    for (const plane of frustum.planes) {
+      const dp = dot(plane.normal, p) + plane.constant;
+      const dq = dot(plane.normal, q) + plane.constant;
+      if ((dp < 0) === (dq < 0) || dp === dq) continue;
+      const r = lerp(p, q, dp / (dp - dq));
+      if (inFrustum(r)) points.push(r);
+    }
+  }
+  for (const [a, b] of EDGES) {
+    const p = frustum.corners[a];
+    const q = frustum.corners[b];
+    for (let axis = 0; axis < 3; axis++) {
+      for (const value of [box.min[axis], box.max[axis]]) {
+        const dp = p[axis] - value;
+        const dq = q[axis] - value;
+        if ((dp < 0) === (dq < 0) || dp === dq) continue;
+        const r = lerp(p, q, dp / (dp - dq));
+        if (inBox(r) && inFrustum(r)) points.push(r);
+      }
+    }
+  }
+  if (!points.length) return null;
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of points) {
+    for (let i = 0; i < 3; i++) {
+      min[i] = Math.min(min[i], p[i]);
+      max[i] = Math.max(max[i], p[i]);
+    }
+  }
+  // Never grow past the box itself (the tolerance can push a crossing slightly out).
+  for (let i = 0; i < 3; i++) {
+    min[i] = Math.max(min[i], box.min[i]);
+    max[i] = Math.min(max[i], box.max[i]);
+  }
+  return { min, max };
+}

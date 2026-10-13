@@ -20,9 +20,11 @@ function box(x: number, z: number, material: Material = new MeshBasicMaterial(),
   return mesh;
 }
 
-function camera(x: number, y: number, z: number) {
-  const cam = new PerspectiveCamera();
+/** A wide camera looking at `target` (default: the lower floor's middle). */
+function camera(x: number, y: number, z: number, target: [number, number, number] = [0, 0, 0]) {
+  const cam = new PerspectiveCamera(90, 1, 0.5, 600);
   cam.position.set(x, y, z);
+  cam.lookAt(...target);
   cam.updateMatrixWorld(true);
   return cam;
 }
@@ -66,8 +68,32 @@ describe("cullUnderSlabs", () => {
     const edge = box(-19, 0);
     lower.content.add(edge);
     update(scene);
-    expect(cullUnderSlabs(camera(-45, 24, 0), floors)).toBe(0);
+    expect(cullUnderSlabs(camera(-45, 24, 0, [-19, 0, 0]), floors)).toBe(0);
     expect(edge.visible).toBe(true);
+  });
+
+  it("hides a mesh under a slab that is entirely off screen, and judges a long one by its part in view", () => {
+    const { lower, scene, floors } = tower();
+    // Looking north-west from the east end: a box under the far south-west corner is off screen.
+    const offscreen = box(-15, 9, new MeshBasicMaterial(), 1);
+    // A strip from x -5 to 300: past the slab's east edge only where the camera does not look.
+    const strip = new Mesh(new BoxGeometry(305, 1, 2), new MeshBasicMaterial());
+    strip.position.set(147.5, 0.5, 0);
+    lower.content.add(offscreen, strip);
+    update(scene);
+    const narrow = new PerspectiveCamera(30, 1, 0.5, 600);
+    narrow.position.set(0, 40, 0);
+    narrow.lookAt(-5, 0, -8);
+    narrow.updateMatrixWorld(true);
+    expect(cullUnderSlabs(narrow, floors)).toBe(2);
+    restoreCulled();
+    // Looking east along the strip, its far end is in view past the slab: it stays.
+    const east = new PerspectiveCamera(60, 1, 0.5, 600);
+    east.position.set(0, 40, 0);
+    east.lookAt(60, 0, 0);
+    east.updateMatrixWorld(true);
+    cullUnderSlabs(east, floors);
+    expect(strip.visible).toBe(true);
   });
 
   it("needs a solid slab: a ghost or a slab without depth writes hides nothing", () => {
@@ -145,7 +171,7 @@ describe("cullUnderSlabs", () => {
     const position = mesh.geometry.attributes.position;
     for (let i = 0; i < position.count; i++) position.setX(i, position.getX(i) + 60);
     position.needsUpdate = true;
-    expect(cullUnderSlabs(camera(0, 36, 10), floors)).toBe(0);
+    expect(cullUnderSlabs(camera(0, 36, 10, [40, 0, 0]), floors)).toBe(0);
   });
 
   it("keeps troika text typesetting on schedule while hidden", () => {
