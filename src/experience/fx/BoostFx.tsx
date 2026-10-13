@@ -17,14 +17,15 @@ import {
   ShaderMaterial,
   Vector3,
   type Group,
-  type WebGLRenderer,
-  type WebGLRenderTarget,
 } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { ROVER } from "../config";
 import { BOOST } from "../rover/boost";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
+import { sceneTarget } from "../scene/postHandle";
+import { precompileObject } from "../scene/precompile";
+import { renderProbe } from "../scene/renderProbe";
 import type { GpuTier } from "../types";
 import { boostFxConfig, fxActive } from "./boostConfig";
 import { emptySample, rearCorners, TrailBuffer, trailIndices, trailVertexCount, writeTrail } from "./boostTrail";
@@ -36,22 +37,11 @@ const SPARK_COOL = new Color("#f59e0b");
 const STREAK_COLOR = "#cffafe";
 
 /**
- * Render target of the scene pass (lite: the canvas, null; full: the composer's input buffer), recorded
- * by the rover from a mesh that draws every frame (`recordBoostTarget`), so the boost programs compile
- * where they will draw.
- */
-const warmup = { target: undefined as WebGLRenderTarget | null | undefined };
-
-export function recordBoostTarget(renderer: WebGLRenderer) {
-  if (warmup.target === undefined) warmup.target = renderer.getRenderTarget() as WebGLRenderTarget | null;
-}
-
-/**
  * Boost effects (owner pick, October 2026): twin light trails that follow the driven path, speed
  * streaks at the screen edges and wheel sparks. Three meshes, one draw call each, all invisible (no
  * draw call) unless the boost level is above `BOOST.trailMin` (sparks: while one is alive). Their
- * programs compile once at mount, hidden, into the scene pass target, so the first boost never
- * compiles a shader. Reduced motion and the tier gate everything through `boostFxConfig`.
+ * programs compile and pin once the scene has drawn (`precompileObject` from scene/precompile.ts, into the
+ * scene pass target), while hidden, so the first boost never compiles a shader. Reduced motion and the tier gate everything through `boostFxConfig`.
  */
 export function BoostFx({ tier }: { tier: GpuTier }) {
   const group = useRef<Group>(null);
@@ -136,7 +126,6 @@ export function BoostFx({ tier }: { tier: GpuTier }) {
 
   // A new tier (or a remount) compiles again into the current scene pass target.
   useEffect(() => {
-    warmup.target = undefined;
     local.current.warm = false;
   }, [tier]);
 
@@ -154,16 +143,14 @@ export function BoostFx({ tier }: { tier: GpuTier }) {
     if (l.pool.max !== maxSparks) l.pool = new SparkPool(maxSparks);
     l.now += dt;
 
-    // Compile the three programs once, hidden, into the scene pass target.
-    if (!l.warm && warmup.target !== undefined && group.current) {
-      const previous = state.gl.getRenderTarget();
-      state.gl.setRenderTarget(warmup.target);
-      try {
-        state.gl.compile(group.current, state.camera, state.scene);
-      } finally {
-        state.gl.setRenderTarget(previous);
-      }
+    // Compile and pin the three programs once, after the scene has drawn into its final target (full: the
+    // lazily loaded composer's input buffer). three's compile skips hidden objects, so the meshes are
+    // visible only for the synchronous compile call (precompileObject compiles before its first await).
+    if (!l.warm && renderProbe.rendered && (tier !== "full" || sceneTarget() !== null) && group.current) {
       l.warm = true;
+      trailMesh.visible = streakMesh.visible = sparkMesh.visible = true;
+      void precompileObject(state.gl, group.current, state.camera, state.scene);
+      trailMesh.visible = streakMesh.visible = sparkMesh.visible = false;
     }
 
     const level = r.boost;

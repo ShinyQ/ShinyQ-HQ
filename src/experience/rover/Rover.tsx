@@ -22,7 +22,7 @@ import { getHQStore } from "@/store/useHQStore";
 import { roverOpacity } from "../camera/firstPerson";
 import { COLORS, ROVER } from "../config";
 import { boostFxConfig } from "../fx/boostConfig";
-import { BoostFx, recordBoostTarget } from "../fx/BoostFx";
+import { BoostFx } from "../fx/BoostFx";
 import { neonColor } from "../fx/materials";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
@@ -133,16 +133,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
   useLayoutEffect(() => {
     if (body.current) fadeMaterials.current = prepareFade(body.current);
   }, [tier]);
-
-  // The ring draws every frame: it tells the boost effects which target the scene pass renders into.
-  useLayoutEffect(() => {
-    const mesh = ring.current;
-    if (!mesh) return;
-    mesh.onBeforeRender = (renderer) => recordBoostTarget(renderer);
-    return () => {
-      mesh.onBeforeRender = () => {};
-    };
-  }, []);
 
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);

@@ -77,6 +77,24 @@ test.describe("boost effects on keyboards", () => {
     expect(errors).toEqual([]);
   });
 
+  for (const tier of ["full", "lite"]) {
+    test(`the first boost compiles no new shader program (${tier} tier)`, async ({ page }) => {
+      await enterHQ(page, { tier });
+      await waitForCameraSettle(page);
+      const names = () => page.evaluate(() => (window as unknown as { __hq: { render: { programNames(): string[] } } }).__hq.render.programNames());
+      const before = new Set(await names());
+      const fx = await trackFx(page);
+      await page.keyboard.down("Shift");
+      await page.keyboard.down("s");
+      await expect.poll(async () => (await fx()).sparks, { timeout: 30_000 }).toBeGreaterThan(0);
+      expect((await fx()).boostFx).toBe(3);
+      await page.keyboard.up("s");
+      await page.keyboard.up("Shift");
+      const added = (await names()).filter((n) => !before.has(n));
+      expect(added, added.join(", ")).toEqual([]);
+    });
+  }
+
   test("reduced motion boosts without trails, streaks, sparks, camera kick or squat", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     const page = await context.newPage();

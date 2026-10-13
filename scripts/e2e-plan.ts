@@ -104,7 +104,7 @@ export const RULES: Rule[] = [
   // Boost (owner pick: trails, body lean and squat, camera kick, streaks, sparks; the touch toggle).
   {
     test: /^src\/experience\/fx\/(BoostFx\.tsx|boostConfig\.ts|boostTrail\.ts|sparks\.ts|streaks\.ts)$|^src\/experience\/rover\/(boost|bodyDynamics)\.ts$|^src\/experience\/camera\/boostView\.ts$|^src\/hud\/BoostButton\.tsx$/,
-    specs: ["boost", "experience", "hud"],
+    specs: ["boost", "experience", "hud", "gpu"],
   },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
   { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu"] },
