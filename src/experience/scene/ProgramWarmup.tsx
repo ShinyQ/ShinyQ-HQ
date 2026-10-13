@@ -8,8 +8,12 @@ import { FLOOR_ROOT, getFloorContent } from "../tower/floorRegistry";
 import { precompileFloor, precompileScene } from "./precompile";
 import { isFloorWarm, warmingFloor, warmQueue } from "./warmState";
 
-/** Tiers that mount the other floors hidden during boot (Task 11 Step 8 may narrow this to full after SP9 on phones). */
-export const STAGED_WARM_TIERS: readonly GpuTier[] = ["full", "lite"];
+/**
+ * Tiers that mount the other floors hidden during boot. Full only (P2 plan Task 11 Step 8): on the lite
+ * phone profile (390x844@3, 4x CPU) the staged mounts raised boot's longest task from 323 to 417 ms, over
+ * the 200 ms rule; lite floors compile as they mount (the tower's FloorPrep) and before a ride moves.
+ */
+export const STAGED_WARM_TIERS: readonly GpuTier[] = ["full"];
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 /** Frames to wait for a warmed floor's main group (its Suspense content: fonts, textures). */
