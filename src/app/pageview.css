@@ -454,9 +454,9 @@
     color: var(--color-ink-2);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .pv-shot img,
-    .pv-feature:hover .pv-shot img {
+  .pv-shot img,
+  .pv-feature:hover .pv-shot img {
+    @variant motion-reduce {
       transform: none;
       transition: none;
     }

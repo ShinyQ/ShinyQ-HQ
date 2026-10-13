@@ -3,6 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { Locale, Mission } from "@/content/schema";
+import { resolveReducedMotion } from "@/lib/motion";
+import { useHQStore } from "@/store/useHQStore";
 import { greetingKey } from "./terminal";
 
 export const TERMINAL_SEEN_KEY = "hq:terminal-seen";
@@ -23,12 +25,15 @@ function subscribeReducedMotion(onChange: () => void) {
   return () => query?.removeEventListener("change", onChange);
 }
 
+/** `prefers-reduced-motion`, unless the visitor's Motion setting (store `motion`) overrides it. */
 export function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
+  const motion = useHQStore((s) => s.motion);
+  const system = useSyncExternalStore(
     subscribeReducedMotion,
     () => window.matchMedia?.(REDUCED_MOTION).matches ?? false,
     () => false,
   );
+  return resolveReducedMotion(motion, system);
 }
 
 export interface RoverTerminalProps {
@@ -41,7 +46,7 @@ export interface RoverTerminalProps {
   onClose: () => void;
   /** Overrides the clock for the greeting (tests, previews). */
   now?: Date;
-  /** Overrides `prefers-reduced-motion`. */
+  /** Overrides `prefers-reduced-motion` and the Motion setting. */
   reducedMotion?: boolean;
   /** Positioning override, e.g. to anchor next to the rover in 3D. */
   className?: string;
