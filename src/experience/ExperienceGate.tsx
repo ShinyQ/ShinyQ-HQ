@@ -9,7 +9,7 @@ import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
-import { afterFailure, manualRetry, RECOVERY_START, settled, whenVisible, type Recovery } from "./recovery";
+import type { Recovery } from "./recovery";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { FloorId, RoomId } from "@/content/schema";
 import type { ExperienceData } from "./types";
@@ -38,6 +38,8 @@ function readView(): "3d" | "page" {
  * of the server-rendered page. Static tier, page view and server render all
  * leave the HTML page untouched.
  */
+const loadRecovery = () => import("./recovery");
+
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
@@ -45,10 +47,11 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   // `/{locale}#highlights-<station>` opens that Highlights Hall station (read once on the client; never on floor or room routes).
   const [hashRoom] = useState<RoomId | undefined>(() => (typeof window === "undefined" ? undefined : gateStartRoom(startFloor, undefined, window.location.hash)));
   // WebGL context loss or a crash: one automatic remount on a fresh canvas, then the static page with "Retry 3D".
-  const [recovery, setRecovery] = useState<Recovery>(RECOVERY_START);
+  // The state machine loads on the first crash only, so it stays out of every page's initial JS.
+  const [recovery, setRecovery] = useState<Recovery>({ failures: 0, status: "ok" });
   const [mount, setMount] = useState(0);
-  const onCrash = useCallback(() => setRecovery(afterFailure), []);
-  const retry3D = useCallback(() => setRecovery(manualRetry), []);
+  const onCrash = useCallback(() => void loadRecovery().then((r) => setRecovery(r.afterFailure)), []);
+  const retry3D = useCallback(() => void loadRecovery().then((r) => setRecovery(r.manualRetry)), []);
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
   const back3D = useCallback(() => {
@@ -80,11 +83,20 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     }
     if (recovery.status !== "retrying" || !detectedTier || detectedTier === "static") return;
     // Remount once the tab is visible again (iOS drops background contexts), on a fresh canvas.
-    return whenVisible(() => {
-      getHQStore().getState().recover(detectedTier);
-      setMount((m) => m + 1);
-      setRecovery(settled);
+    let live = true;
+    let cancel: (() => void) | undefined;
+    void loadRecovery().then((r) => {
+      if (!live) return;
+      cancel = r.whenVisible(() => {
+        getHQStore().getState().recover(detectedTier);
+        setMount((m) => m + 1);
+        setRecovery(r.settled);
+      });
     });
+    return () => {
+      live = false;
+      cancel?.();
+    };
   }, [recovery.status, detectedTier]);
 
   // The landing's "Enter the 3D HQ" (EnterHqButton) asks for the tower the same way Back to 3D does.
