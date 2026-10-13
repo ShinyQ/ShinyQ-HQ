@@ -8,6 +8,7 @@ import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
+import { skipUnchanged } from "./persist-storage";
 
 export type Phase =
   | "boot"
@@ -113,6 +114,22 @@ export interface HQState {
 }
 
 export const STORE_KEY = "hq:v1";
+
+/** Keys the store persists (appendix 06 section 2); `sound` is persisted by the audio engine. */
+type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale">;
+
+/** Mirror tolerance for rover numbers (world units, radians, u/s): far below anything a reader shows. */
+export const POSE_EPSILON = 1e-4;
+
+/** True when `patch` would not change the mirrored rover (the Director's 10 Hz sync while it is parked). */
+export function sameRover(current: RoverState, patch: Partial<RoverState>): boolean {
+  for (const key of Object.keys(patch) as (keyof RoverState)[]) {
+    const a = current[key];
+    const b = patch[key];
+    if (typeof a === "number" && typeof b === "number" ? Math.abs(a - b) > POSE_EPSILON : a !== b) return false;
+  }
+  return true;
+}
 const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal", "hologram"];
 
 /** Spawn at the Lobby spawn point, turned toward the default follow camera so the face greets the visitor. */
@@ -199,7 +216,10 @@ export function createHQStore(storage?: StateStorage) {
         setLocale: (locale) => set({ locale }),
         toggleSound: () => set({ sound: !get().sound }),
         setTier: (tier) => set(tier === "static" ? { tier, phase: "static", ride: null } : { tier }),
-        setRover: (rover) => set({ rover: { ...get().rover, ...rover } }),
+        setRover: (rover) => {
+          const current = get().rover;
+          if (!sameRover(current, rover)) set({ rover: { ...current, ...rover } });
+        },
         setDevice: (device) => set({ device: { ...get().device, ...device } }),
         setReducedMotion: (reducedMotion) => set({ reducedMotion }),
         notify: (notice) => set({ notice }),
@@ -228,9 +248,9 @@ export function createHQStore(storage?: StateStorage) {
       {
         name: STORE_KEY,
         version: 1,
-        storage: createJSONStorage(() => storage ?? localStorage),
+        storage: skipUnchanged(createJSONStorage<Persisted>(() => storage ?? localStorage)),
         // `sound` is owned and persisted by the audio engine (localStorage "hq:sound"); the store mirrors it.
-        partialize: ({ visited, firstVisit, locale }) => ({ visited, firstVisit, locale }),
+        partialize: ({ visited, firstVisit, locale }): Persisted => ({ visited, firstVisit, locale }),
       },
     ),
   );

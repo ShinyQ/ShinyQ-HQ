@@ -127,7 +127,7 @@ export const RULES: Rule[] = [
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
-  { test: /^src\/store\//, specs: ["experience"] },
+  { test: /^src\/store\//, specs: ["experience", "lifecycle"] },
 
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle"] },

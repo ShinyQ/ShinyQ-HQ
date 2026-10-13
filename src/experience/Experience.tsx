@@ -25,6 +25,7 @@ import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
+import { beamNow, rideNow } from "./tower/rideClock";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
@@ -130,6 +131,10 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     render: renderProbe,
     quality: qualityHandle,
     frames: () => framePacer.frames,
+    motion: () => {
+      const live = store.getState();
+      return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };
+    },
   };
 }
 

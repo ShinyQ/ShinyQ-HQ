@@ -13,6 +13,8 @@ export type RideSummaryLike = { held: number; timedOut: boolean; programs: numbe
 type RideWindow = Window & {
   __hq: {
     store: { getState: () => { ride: { stage: string } | null } };
+    /** Live ride progress (R5 P3): the store's ride changes only on stage changes. */
+    motion?: () => { ride: { stage: string } | null };
     rover: { y: number };
     ridePrep?: { lastRide: RideSummaryLike | null };
   };
@@ -24,7 +26,7 @@ async function sampleCar(page: Page) {
     const w = window as unknown as RideWindow;
     w.__rideSamples = [];
     const tick = () => {
-      const ride = w.__hq.store.getState().ride;
+      const ride = w.__hq.motion ? w.__hq.motion().ride : w.__hq.store.getState().ride;
       w.__rideSamples.push({ stage: ride?.stage ?? null, y: w.__hq.rover.y, t: performance.now() });
       if (w.__rideSamples.length < 50_000) requestAnimationFrame(tick);
     };

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { StateStorage } from "zustand/middleware";
 import { createHQStore, STORE_KEY, type HQStore } from "@/store/useHQStore";
 import type { Interactable } from "@/experience/interact/registry";
+import type { RoomId } from "@/content/schema";
 
 function memoryStorage(): StateStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -202,5 +203,38 @@ describe("HQ store", () => {
     expect(store.getState().pointHint).toBe(true);
     store.getState().setHover({ item, via: "tap" });
     expect(storage.data.get(STORE_KEY) ?? "").not.toMatch(/hover|pointHint|L3:door:demo/);
+  });
+
+  it("ignores a rover patch that matches the mirror (the 10 Hz sync while parked)", () => {
+    let sets = 0;
+    store.subscribe(() => (sets += 1));
+    const { x, z, heading } = store.getState().rover;
+    store.getState().setRover({ x, z, heading, speed: 0, face: "idle", status: undefined });
+    store.getState().setRover({ x: x + 5e-5 });
+    expect(sets).toBe(0);
+    store.getState().setRover({ x: x + 0.01 });
+    store.getState().setRover({ status: "to L2" });
+    expect(sets).toBe(2);
+  });
+
+  it("writes localStorage only when visited, firstVisit or locale change", () => {
+    const counted = memoryStorage();
+    let writes = 0;
+    const write = counted.setItem;
+    counted.setItem = (key, value) => {
+      writes += 1;
+      return write(key, value);
+    };
+    const st = createHQStore(counted);
+    st.getState().setPhase("explore");
+    const base = writes;
+    for (let i = 1; i <= 20; i++) st.getState().setRover({ x: i });
+    st.getState().setDevice({ coarse: true });
+    st.getState().setHover(null);
+    expect(writes).toBe(base);
+    st.getState().markVisited("L3:a" as RoomId);
+    st.getState().setLocale("id");
+    expect(writes).toBe(base + 2);
+    expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id" });
   });
 });

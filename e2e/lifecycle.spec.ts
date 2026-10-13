@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, enterHQ, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, waitForCameraSettle, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
 import { heroPod } from "./routes";
 
 /**
@@ -139,5 +139,85 @@ test.describe("rendering pauses while an opaque panel covers the canvas", () => 
     await openHud(page, "palette");
     await expect(page.getByRole("dialog").last()).toBeVisible();
     await expectDrawing(page);
+  });
+});
+
+/** Counts writes of the persisted store key (works on any build). */
+async function countPersistWrites(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __persistWrites: number };
+    w.__persistWrites = 0;
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (this: Storage, key: string, value: string) {
+      if (key === "hq:v1") w.__persistWrites += 1;
+      return setItem.call(this, key, value);
+    };
+  });
+}
+
+type StoreWindow = Window & {
+  __persistWrites: number;
+  __hq: {
+    store: {
+      subscribe: (listener: (s: { ride: { stage: string } | null }) => void) => () => void;
+      getState: () => { goToFloor: (floor: string) => void };
+    };
+  };
+};
+
+test.describe("store writes", () => {
+  test("a parked rover writes neither the store nor localStorage", async ({ page }) => {
+    await countPersistWrites(page);
+    await enterHQ(page);
+    await waitForCameraSettle(page);
+    const result = await page.evaluate(
+      () =>
+        new Promise<{ sets: number; writes: number }>((resolve) => {
+          const w = window as unknown as StoreWindow;
+          let sets = 0;
+          const off = w.__hq.store.subscribe(() => {
+            sets += 1;
+          });
+          const writes = w.__persistWrites;
+          setTimeout(() => {
+            off();
+            resolve({ sets, writes: w.__persistWrites - writes });
+          }, 3000);
+        }),
+    );
+    test.info().annotations.push({ type: "measure", description: `parked 3 s: ${result.sets} store sets, ${result.writes} hq:v1 writes` });
+    expect(result.writes).toBe(0);
+    expect(result.sets).toBeLessThanOrEqual(2);
+  });
+
+  test("an elevator ride writes the store per stage, not per frame", async ({ page }) => {
+    // The rover first drives to the shaft on SwiftShader.
+    test.setTimeout(120_000);
+    await countPersistWrites(page);
+    await enterHQ(page);
+    const result = await page.evaluate(
+      () =>
+        new Promise<{ sets: number; writes: number }>((resolve) => {
+          const w = window as unknown as StoreWindow;
+          let sets = 0;
+          let riding = false;
+          let writes = 0;
+          const off = w.__hq.store.subscribe((s) => {
+            if (s.ride && s.ride.stage !== "toDoor" && !riding) {
+              riding = true;
+              writes = w.__persistWrites;
+            }
+            if (riding) sets += 1;
+            if (riding && !s.ride) {
+              off();
+              resolve({ sets, writes: w.__persistWrites - writes });
+            }
+          });
+          w.__hq.store.getState().goToFloor("L2");
+        }),
+    );
+    test.info().annotations.push({ type: "measure", description: `one L1 to L2 ride from boarding to arrival: ${result.sets} store sets, ${result.writes} hq:v1 writes` });
+    expect(result.sets).toBeLessThanOrEqual(30);
+    expect(result.writes).toBe(0);
   });
 });

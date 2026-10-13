@@ -11,6 +11,7 @@ import { rimGeometry } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
 import type { FloorLayout } from "../types";
 import { carY, doorsOpen } from "./elevator";
+import { rideNow } from "./rideClock";
 import { BoxEdges, FONTS, GlassBox } from "./primitives";
 
 const TOP = floorY("RF") + 8;
@@ -36,7 +37,7 @@ function Car() {
   );
   useFrame((_, dt) => {
     const s = getHQStore().getState();
-    if (ref.current) ref.current.position.y = s.ride ? carY(s.ride, s.reducedMotion) : floorY(s.floor);
+    if (ref.current) ref.current.position.y = s.ride ? carY(rideNow(s.ride), s.reducedMotion) : floorY(s.floor);
     // Light bands ride with the car and flare while it moves.
     setOpacity(band, s.ride ? 1 : 0.3, dt);
   });
@@ -56,7 +57,7 @@ function Doors({ floor }: { floor: FloorId }) {
   const right = useRef<Group>(null);
   useFrame(() => {
     const s = getHQStore().getState();
-    const open = doorsOpen(s.ride, floor, s.reducedMotion);
+    const open = doorsOpen(s.ride ? rideNow(s.ride) : null, floor, s.reducedMotion);
     if (left.current) left.current.position.z = -DOOR_W / 2 - open * DOOR_W;
     if (right.current) right.current.position.z = DOOR_W / 2 + open * DOOR_W;
   });
