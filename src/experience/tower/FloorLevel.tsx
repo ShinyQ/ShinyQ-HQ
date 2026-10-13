@@ -12,7 +12,6 @@ import { GridFloor } from "../fx/GridFloor";
 import { sceneProbes } from "../fx/probes";
 import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
-import { precompileFloor } from "../scene/precompile";
 import { registerFloorContent } from "./floorRegistry";
 import { floorContentVisible } from "./near";
 import { floorReady } from "./ridePrep";
@@ -69,17 +68,6 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     registerFloorContent(layout.id, content.current);
     return () => registerFloorContent(layout.id, null);
   }, [layout.id]);
-
-  // Hidden neighbours compile their programs on idle, before a ride makes them visible (REPORT F5.6).
-  useEffect(() => {
-    if (!near) return;
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(() => void precompileFloor(layout.id), { timeout: 1000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const timer = window.setTimeout(() => void precompileFloor(layout.id), 200);
-    return () => window.clearTimeout(timer);
-  }, [near, layout.id]);
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>

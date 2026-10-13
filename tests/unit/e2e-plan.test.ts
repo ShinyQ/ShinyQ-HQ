@@ -4,8 +4,8 @@ import { readdirSync } from "node:fs";
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
-    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "ride"]);
-    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "gpu", "ride"]);
+    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "gpu", "ride"]);
     expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
@@ -98,7 +98,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
-    expect(specsForChanges(["src/experience/fx/Readable.tsx", "src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
   });
 
   it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {
@@ -127,7 +127,7 @@ describe("specsForChanges", () => {
 
   it("maps the render pipeline and the tower to the gpu spec", () => {
     expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
-    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["experience", "gpu"]);
+    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
   });
 });
 

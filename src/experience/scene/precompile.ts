@@ -67,11 +67,16 @@ export async function precompileObject(gl: WebGLRenderer, object: Object3D, came
   return { materials: materials.size, programsBefore, programsAfter: gl.info.programs?.length ?? 0, pinned, ms: Math.round(performance.now() - start), parallel, timedOut: !ready };
 }
 
-/** Precompiles a floor's mounted content (see the P6 contract in the P2 plan). Null without a renderer or content. */
+/**
+ * Precompiles a floor's mounted content (see the P6 contract in the P2 plan). Null without a renderer or
+ * content, and before the scene has drawn once: the first render compiles anyway, and until then the
+ * full tier's composer may not exist yet, so there is no target to compile for (P6's FloorPrep then
+ * counts the floor as ready).
+ */
 export async function precompileFloor(id: FloorId, options: Omit<PrecompileOptions, "target"> = {}): Promise<FloorPrecompileReport | null> {
   const { gl, camera, scene } = renderProbe;
   const content = getFloorContent(id);
-  if (!gl || !camera || !scene || !content) return null;
+  if (!gl || !camera || !scene || !content || !renderProbe.rendered) return null;
   const contentMounted = Boolean(content.getObjectByName(FLOOR_ROOT[id]));
   const report = await precompileObject(gl, content, camera, scene, options);
   if (contentMounted && !report.timedOut) markWarm(id);
@@ -81,6 +86,6 @@ export async function precompileFloor(id: FloorId, options: Omit<PrecompileOptio
 /** Precompiles everything mounted now (boot: the Lobby, hidden neighbours, rover, HUD-in-world). */
 export async function precompileScene(options: Omit<PrecompileOptions, "target"> = {}): Promise<PrecompileReport | null> {
   const { gl, camera, scene } = renderProbe;
-  if (!gl || !camera || !scene) return null;
+  if (!gl || !camera || !scene || !renderProbe.rendered) return null;
   return precompileObject(gl, scene, camera, scene, options);
 }

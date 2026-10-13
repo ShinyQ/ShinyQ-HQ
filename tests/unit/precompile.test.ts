@@ -14,6 +14,7 @@ afterEach(() => {
   renderProbe.gl = null;
   renderProbe.scene = null;
   renderProbe.camera = null;
+  renderProbe.rendered = false;
 });
 
 it("compiles for the given target, restores the previous one and pins", async () => {
@@ -40,11 +41,26 @@ it("gives up waiting after the timeout (programs keep compiling in the driver)",
   expect(report.pinned).toBe(0);
 });
 
+it("waits for the scene's first drawn frame (the first render compiles anyway)", async () => {
+  renderProbe.gl = fakeRenderer() as unknown as WebGLRenderer;
+  renderProbe.scene = {} as never;
+  renderProbe.camera = {} as never;
+  const content = new Group();
+  content.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
+  registerFloorContent("L3", content);
+  expect(await precompileFloor("L3")).toBeNull();
+  renderProbe.record(0, 0);
+  expect(await precompileFloor("L3")).toBeNull();
+  renderProbe.record(12, 400);
+  expect(await precompileFloor("L3")).toMatchObject({ floor: "L3", materials: 1 });
+});
+
 it("marks a floor warm only when its main content was mounted", async () => {
   const gl = fakeRenderer();
   renderProbe.gl = gl as unknown as WebGLRenderer;
   renderProbe.scene = {} as never;
   renderProbe.camera = {} as never;
+  renderProbe.rendered = true;
   expect(await precompileFloor("L3")).toBeNull();
   const content = new Group();
   content.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));

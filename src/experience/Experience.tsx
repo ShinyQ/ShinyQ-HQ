@@ -159,6 +159,7 @@ export default function Experience({
       renderProbe.gl = null;
       renderProbe.scene = null;
       renderProbe.camera = null;
+      renderProbe.rendered = false;
       // A new canvas is a new WebGL context: pins and warm floors belong to the old one.
       programPins.clear();
       resetWarm();

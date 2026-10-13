@@ -22,8 +22,11 @@ export const renderProbe = {
   peakTriangles: 0,
   /** Frames recorded since `resetPeak`. */
   frames: 0,
+  /** The scene has drawn at least once on this canvas (before that, a precompile has no target to match). */
+  rendered: false,
   record(calls: number, triangles: number): void {
     this.frames += 1;
+    if (calls > 0) this.rendered = true;
     if (calls > this.peakCalls) this.peakCalls = calls;
     if (triangles > this.peakTriangles) this.peakTriangles = triangles;
   },

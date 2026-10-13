@@ -6,7 +6,7 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { GpuTier } from "../types";
 import { FLOOR_ROOT, getFloorContent } from "../tower/floorRegistry";
 import { precompileFloor, precompileScene } from "./precompile";
-import { warmingFloor, warmQueue } from "./warmState";
+import { isFloorWarm, warmingFloor, warmQueue } from "./warmState";
 
 /** Tiers that mount the other floors hidden during boot (Task 11 Step 8 may narrow this to full after SP9 on phones). */
 export const STAGED_WARM_TIERS: readonly GpuTier[] = ["full", "lite"];
@@ -42,7 +42,8 @@ export function ProgramWarmup({ tier }: { tier: GpuTier }) {
         // Let React commit the floor (and its Suspense children) before compiling.
         for (let i = 0; i < 3 || (i < MOUNT_FRAMES && !getFloorContent(id)?.getObjectByName(FLOOR_ROOT[id])); i++) await nextFrame();
         if (cancelled || getHQStore().getState().phase !== "boot") break;
-        await precompileFloor(id, { timeoutMs: 3000 });
+        // The tower's FloorPrep may have warmed it already (it compiles every floor as it mounts).
+        if (!isFloorWarm(id)) await precompileFloor(id, { timeoutMs: 3000 });
       }
       warmingFloor.set(null);
     })();
