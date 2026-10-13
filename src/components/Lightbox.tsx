@@ -111,6 +111,7 @@ export function Lightbox({ images, index, onIndexChange, onClose }: LightboxProp
       aria-modal="true"
       aria-labelledby={titleId}
       data-testid="lightbox"
+      data-hq-cover=""
       className="fixed inset-0 z-[60] flex flex-col bg-void/95 text-ink backdrop-blur-sm"
       onKeyDown={trapTab}
     >

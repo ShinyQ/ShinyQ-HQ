@@ -84,6 +84,7 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId, she
         tabIndex={-1}
         data-testid={testId}
         data-sheet={sheet ? "bottom" : undefined}
+        data-hq-cover=""
         onKeyDown={onKeyDown}
         className={`glass glass-solid relative flex w-full flex-col overflow-hidden shadow-[0_0_64px_-16px_rgb(0_0_0/0.9)] outline-none sm:max-h-[min(92dvh,1100px)] sm:rounded-2xl sm:border ${
           sheet ? "max-h-[85dvh] rounded-t-2xl rounded-b-none border-t" : "h-full rounded-none border-0"

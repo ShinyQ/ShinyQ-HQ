@@ -88,7 +88,7 @@ Missions are data: `{ id, label, floor, targetRoomId, path? }`. Running a missio
 
 ### 2.6 Room experience
 
-- **Glass Drawer (default for every room).** A right side panel on desktop (≥ 900 px) and a bottom sheet on tablet portrait and mobile. Tabs: Overview, Architecture, Results, Stack. It shows big metric tiles, a short "what I did" list, prev/next room navigation and a link to the full case-study page. The 3D pod stays visible and animated behind it.
+- **Glass Drawer (default for every room).** A right side panel on desktop (≥ 900 px) and a bottom sheet on tablet portrait and mobile. Tabs: Overview, Architecture, Results, Stack. It shows big metric tiles, a short "what I did" list, prev/next room navigation and a link to the full case-study page. The 3D pod stays visible and animated behind it. Rendering pauses only while an opaque panel hides more than 90% of the canvas (the 92% sheet, the full-screen phone palette and modals, the lightbox); the side panel and the 55% sheet keep the pod animated.
 - **Hologram view (hero pods only, 3 per wing).** A "View architecture" button flies the camera into the pod and dims the world. The architecture diagram assembles as an in-world hologram (nodes and edges from data) with animated packets, and metric cards float alongside. Arrow keys or swipe move between hero pods.
 - **Rover README (easter egg).** Pressing `t` in any room shows the same content as a terminal `cat README.md` view: an ASCII architecture diagram, bar-chart results and keyboard shortcuts.
 

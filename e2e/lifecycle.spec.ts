@@ -1,5 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, waitForFrames } from "./hq";
+import { expect, test, type Browser, type Page } from "@playwright/test";
+import { asReturningVisitor, enterHQ, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
+import { heroPod } from "./routes";
 
 /**
  * Round 5 P3 lifecycle: the paced frame loop, pauses under covering panels, store write rates and
@@ -53,6 +54,90 @@ test.describe("paced frame loop", () => {
     const before = await frames();
     await waitForFrames(page, 30);
     expect(await frames()).toBeGreaterThan(before + 5);
+    await expectDrawing(page);
+  });
+});
+
+/** Draw calls over `ms` of wall time: only for proving that the canvas stays idle. */
+async function drawsOver(page: Page, ms: number) {
+  const before = await draws(page);
+  await page.waitForTimeout(ms);
+  return (await draws(page)) - before;
+}
+
+const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true };
+
+async function phonePage(browser: Browser) {
+  const context = await browser.newContext(PHONE);
+  return { context, page: await context.newPage() };
+}
+
+const POD_ROUTE = `/en/labs/${heroPod.slug}`;
+
+/** A pod deep link opens its drawer at once (phase "room"), so wait for the scene, not for "explore". */
+async function openPodRoute(page: Page) {
+  await asReturningVisitor(page);
+  await page.goto(`${POD_ROUTE}?tier=lite`);
+  await waitForHQ(page);
+  await waitForSceneLive(page);
+}
+const openHud = (page: Page, type: string) => page.evaluate((t) => window.dispatchEvent(new CustomEvent("hq:hud", { detail: { type: t } })), type);
+const sheetPercent = async (page: Page) => Math.round((((await page.getByTestId("room-drawer").boundingBox())?.height ?? 0) / 844) * 100);
+
+test.describe("rendering pauses while an opaque panel covers the canvas", () => {
+  test("phone: the full-screen palette pauses the world, closing it resumes", async ({ browser }) => {
+    const { context, page } = await phonePage(browser);
+    await countDraws(page);
+    await enterHQ(page);
+    await expectDrawing(page);
+    await openHud(page, "palette");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await waitForFrames(page, 3);
+    expect(await drawsOver(page, 1000)).toBe(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expectDrawing(page);
+    await context.close();
+  });
+
+  test("phone: the full-screen CV viewer pauses the world", async ({ browser }) => {
+    const { context, page } = await phonePage(browser);
+    await countDraws(page);
+    await enterHQ(page);
+    await openHud(page, "cv");
+    await expect(page.getByTestId("cv-dialog")).toBeVisible();
+    await waitForFrames(page, 3);
+    expect(await drawsOver(page, 1000)).toBe(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("cv-dialog")).toBeHidden();
+    await expectDrawing(page);
+    await context.close();
+  });
+
+  test("phone: the world animates behind the 55% sheet and pauses at the 92% snap", async ({ browser }) => {
+    const { context, page } = await phonePage(browser);
+    await countDraws(page);
+    await openPodRoute(page);
+    await expect(page.getByTestId("room-drawer")).toBeVisible({ timeout: 90_000 });
+    await expect.poll(() => sheetPercent(page)).toBe(55);
+    await expectDrawing(page);
+    await page.getByTestId("sheet-handle").click();
+    await expect.poll(() => sheetPercent(page)).toBe(92);
+    await waitForFrames(page, 3);
+    expect(await drawsOver(page, 1000)).toBe(0);
+    await page.getByTestId("sheet-handle").click();
+    await expect.poll(() => sheetPercent(page)).toBe(55);
+    await expectDrawing(page);
+    await context.close();
+  });
+
+  test("desktop: the side drawer and the palette keep the world animated", async ({ page }) => {
+    await countDraws(page);
+    await openPodRoute(page);
+    await expect(page.getByTestId("room-drawer")).toBeVisible({ timeout: 90_000 });
+    await expectDrawing(page);
+    await openHud(page, "palette");
+    await expect(page.getByRole("dialog").last()).toBeVisible();
     await expectDrawing(page);
   });
 });
