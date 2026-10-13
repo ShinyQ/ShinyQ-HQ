@@ -39,6 +39,12 @@ describe("chunks", () => {
     expect(pagesFromLhrs([a, b, c])).toEqual({ "/en": { "a.js": 1010, "b.js": 500 }, "/en/quick": { "a.js": 990 } });
   });
 
+  it("skips the Lighthouse warm-up run (a URL with a query string, never asserted)", () => {
+    const warm = lhr("/en?lhci-warmup=1", [{ url: "/_next/static/chunks/big.js", resourceType: "Script", transferSize: 9000 }]);
+    const en = lhr("/en", [{ url: "/_next/static/chunks/a.js", resourceType: "Script", transferSize: 1000 }]);
+    expect(pagesFromLhrs([warm, en])).toEqual({ "/en": { "a.js": 1000 } });
+  });
+
   it("diffs chunks against main and reports the budget share", () => {
     const s = renderChunkDiff("/en", { "a.js": 2048, "c.js": 1024 }, { "a.js": 2048, "b.js": 512 }, 4096);
     expect(s.markdown).toContain("Total 3.0 KB, 75% of 4.0 KB, main 2.5 KB, +0.5 KB.");

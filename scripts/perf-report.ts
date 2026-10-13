@@ -96,7 +96,10 @@ export function pagesFromLhrs(lhrs: readonly LhrLike[]): Record<string, ChunkMap
   const pages: Record<string, ChunkMap> = {};
   for (const lhr of lhrs) {
     if (!lhr.requestedUrl) continue;
-    const page = new URL(lhr.requestedUrl).pathname;
+    const url = new URL(lhr.requestedUrl);
+    // The warm-up run (`/en?lhci-warmup=1`) is never asserted (lighthouserc.json matches `^[^?]+$`).
+    if (url.search) continue;
+    const page = url.pathname;
     const merged = (pages[page] ??= {});
     for (const [name, bytes] of Object.entries(lhrScripts(lhr))) merged[name] = Math.max(merged[name] ?? 0, bytes);
   }
