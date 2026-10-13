@@ -1076,7 +1076,7 @@
     },
     "optOut": "Jangan hitung kunjungan saya",
     "optOutHint": "Hanya disimpan di browser ini. Do Not Track dan Global Privacy Control juga dihormati.",
-    "tile": "kunjungan, 30 hari terakhir",
+    "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
     "openObservatory": "Observatorium Pengunjung di Atap",
     "panel": {
       "visits30": "kunjungan, 30 hari terakhir",

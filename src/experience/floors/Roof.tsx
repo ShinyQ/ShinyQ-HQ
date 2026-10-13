@@ -8,6 +8,7 @@ import type { RoofLabels } from "./roof/kit";
 import { buildRoofLayout, ROOF_DECK, roofActive } from "./roof/layout";
 import { SignalGarden as Scenery } from "./roof/SignalGarden";
 import { Sky } from "./roof/Sky";
+import { VisitsStation } from "./roof/VisitsStation";
 
 export type { RoofLabels };
 
@@ -23,6 +24,7 @@ export function Roof({ data, labels, tier }: { data: ExperienceData; labels: Roo
       {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
       <Suspense fallback={null}>
         <Scenery layout={layout} roof={data.roof} profile={data.profile} labels={labels} tier={tier} reducedMotion={reducedMotion} active={active} />
+        <VisitsStation layout={layout} labels={labels.observatory} locale={data.locale} tier={tier} reducedMotion={reducedMotion} active={active === "visits"} />
       </Suspense>
     </group>
   );

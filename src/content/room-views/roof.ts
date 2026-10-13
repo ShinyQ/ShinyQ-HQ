@@ -1,6 +1,7 @@
 import { getContact, getProfile, getRoof } from "../load";
 import type { Locale } from "../schema";
 import { cvPdfPath } from "@/lib/cv";
+import { visitsLabels } from "@/lib/visits/labels";
 import { chain, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomLinkItem, RoomView } from "./types";
 
@@ -28,7 +29,7 @@ export function cvItems(locale: Locale): RoomLinkItem[] {
   ];
 }
 
-/** RF roof deck: the comms station and the CV kiosk. `RoofBody` (hud/drawer/RoofBody.tsx) renders both. */
+/** RF roof deck: the comms station and the CV kiosk (`RoofBody`), and the Visitor Observatory (`VisitsBody`). */
 export function buildRoofViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const roof = getRoof();
@@ -52,6 +53,16 @@ export function buildRoofViews(locale: Locale): RoomView[] {
       accent: "blue",
       sections: [{ title: m.drawer.rooms.downloads, items: cvItems(locale) }],
       page: "/cv",
+    }),
+    // Visitor Observatory: public visit stats, fetched by the drawer (`VisitsBody`), never baked into this file.
+    single({
+      id: roomId("RF", "visits"),
+      kind: "visits",
+      title: m.hud.rooms.visits,
+      subtitle: m.stats.intro,
+      accent: "violet",
+      page: "/contact#visits",
+      visits: visitsLabels(locale),
     }),
   ]);
 }

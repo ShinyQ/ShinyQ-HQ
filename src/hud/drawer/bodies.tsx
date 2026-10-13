@@ -6,6 +6,7 @@ import { HighlightsBody } from "./HighlightsBody";
 import { ReactorBody } from "./ReactorBody";
 import { ResearchBody } from "./ResearchBody";
 import { RoofBody } from "./RoofBody";
+import { VisitsBody } from "./VisitsBody";
 
 export interface RoomBodyProps {
   view: RoomView;
@@ -22,4 +23,5 @@ export const ROOM_BODIES: Partial<Record<RoomKind, ComponentType<RoomBodyProps>>
   reactor: ReactorBody,
   research: ResearchBody,
   roof: RoofBody,
+  visits: VisitsBody,
 };

@@ -58,6 +58,7 @@ import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
 import { rideCullStats } from "./tower/rideCull";
+import { useStatsAfterFirstFrame } from "./visits3d";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -197,6 +198,9 @@ export default function Experience({
   const tReactor = useTranslations("labs.reactor");
   // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
   const [startHash] = useState(() => window.location.hash);
+  const tStats = useTranslations("stats");
+  // Public visit stats (RF Visitor Observatory, the L1 ring tile, the RF:visits drawer): one fetch after the first frame.
+  useStatsAfterFirstFrame();
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -376,6 +380,7 @@ export default function Experience({
       placeholder: { construction: t("constructionLabel"), hint: t("constructionHint") },
       lobby: {
         skillsTitle: tHome("skillsTitle"),
+        visitsTile: tStats("tile"),
         certs: { title: tHome("certsTitle"), all: tCerts("wall.all"), other: tCerts("wall.other"), inProgress: tCerts("status.in-progress"), expired: tCerts("status.expired") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
         hall: {
@@ -423,6 +428,21 @@ export default function Experience({
         cvHint: t("world.cvHint"),
         about: t("world.about"),
         availability: t("world.availability"),
+        observatory: {
+          title: tStats("observatory"),
+          offline: tStats("offline"),
+          approx: (n: string) => tStats("approx", { n }),
+          visits30: tStats("panel.visits30"),
+          visitsAll: tStats("panel.visitsAll"),
+          countries: tStats("panel.countries"),
+          questions: tStats("panel.questions"),
+          topFloor: (floor: string) => tStats("panel.topFloor", { floor }),
+          split: (threeD: number, classic: number) => tStats("panel.split", { threeD: String(threeD), classic: String(classic) }),
+          source: tStats("source"),
+          updated: tStats("updated"),
+          delayed: (date: string) => tStats("delayed", { date }),
+          floors: { L1: t("floorLabel.L1"), L2: t("floorLabel.L2"), L3: t("floorLabel.L3"), L4: t("floorLabel.L4"), RF: t("floorLabel.RF") },
+        },
       },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
@@ -450,11 +470,12 @@ export default function Experience({
           highlightsExperience: t("rooms.highlightsExperience"),
           highlightsContact: t("rooms.highlightsContact"),
           reactor: t("rooms.reactor"),
+          visits: t("rooms.visits"),
         },
         reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats],
   );
 
   return (

@@ -8,7 +8,7 @@ import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/t
 import { kioskStop } from "../floors/lobby/kiosk";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
-import { buildRoofLayout } from "../floors/roof/layout";
+import { buildRoofLayout, ROOF_DECK } from "../floors/roof/layout";
 import { roomTarget } from "../missions/host3d";
 import type { StructuralRoom } from "../missions/rooms";
 import { padHalf } from "../nav/doors";
@@ -91,6 +91,7 @@ const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "RF:contact": "contact",
   "RF:cv": "cv",
   [REACTOR_ROOM]: "reactor",
+  "RF:visits": "visits",
 };
 
 type Footprint = { rect: Rect; height: number };
@@ -291,6 +292,7 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
       const rooms = new Map<RoomId, Footprint>([
         ["RF:contact", { rect: bare(roof.comms), height: 4 }],
         ["RF:cv", { rect: bare(roof.cv), height: 3.6 }],
+        ["RF:visits", { rect: bare(roof.visits), height: ROOF_DECK.visitsHeight }],
       ]);
       return [...pads, ...doorItems(floor, layouts, data, rooms)];
     }

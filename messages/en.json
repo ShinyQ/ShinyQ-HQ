@@ -1076,7 +1076,7 @@
     },
     "optOut": "Don't count my visits",
     "optOutHint": "Stored only in this browser. Do Not Track and Global Privacy Control are honoured too.",
-    "tile": "visits, last 30 days",
+    "tile": "visits in the last 30 days (estimate)",
     "openObservatory": "Visitor Observatory on the Roof",
     "panel": {
       "visits30": "visits, last 30 days",

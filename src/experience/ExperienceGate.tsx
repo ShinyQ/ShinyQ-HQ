@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { gateStartRoom } from "./floors/lobby/stations";
+import { visitsRoomFromHash } from "./floors/roof/visitsRoom";
 import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import type { Recovery } from "./recovery";
@@ -44,8 +45,11 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
-  // `/{locale}#highlights-<station>` opens that Highlights Hall station (read once on the client; never on floor or room routes).
-  const [hashRoom] = useState<RoomId | undefined>(() => (typeof window === "undefined" ? undefined : gateStartRoom(startFloor, undefined, window.location.hash)));
+  // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}/contact#visits` the Visitor
+  // Observatory (read once on the client; never on other floor or room routes).
+  const [hashRoom] = useState<RoomId | undefined>(() =>
+    typeof window === "undefined" ? undefined : (gateStartRoom(startFloor, undefined, window.location.hash) ?? visitsRoomFromHash(startFloor, window.location.hash) ?? undefined),
+  );
   // WebGL context loss or a crash: one automatic remount on a fresh canvas, then the static page with "Retry 3D".
   // The state machine loads on the first crash only, so it stays out of every page's initial JS.
   const [recovery, setRecovery] = useState<Recovery>({ failures: 0, status: "ok" });

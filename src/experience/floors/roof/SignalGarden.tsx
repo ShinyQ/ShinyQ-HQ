@@ -13,6 +13,7 @@ import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { aboutCard, CHANNEL_TONE, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
 import { ROOF_DECK, type RoofActive } from "./layout";
+import { observatoryParts } from "./observatory";
 import { latticeSegments, roofDetail, scatter, type Box } from "./solids";
 
 const mid = (a: number, b: number) => (a + b) / 2;
@@ -24,6 +25,12 @@ const SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
 const DRONE = { radius: 3.4, height: 9, speed: 0.35 } as const;
 
 type V3 = [number, number, number];
+type DroneTarget = Exclude<RoofActive, null>;
+const DRONE_CARGO: Record<DroneTarget, { icon: keyof typeof ROOF_ICONS; color: string }> = {
+  contact: { icon: "email", color: ROOF_BLUE },
+  cv: { icon: "cv", color: ROOF_CYAN },
+  visits: { icon: "globe", color: ROOF_VIOLET },
+};
 
 /** The lattice antenna mast on the plaza (one line draw call). */
 function Mast({ at, tier }: { at: Vec2; tier: GpuTier }) {
@@ -96,7 +103,7 @@ const DRONE_ICON = [{ x: 0, y: 1.9, z: 0, face: SIGN_YAW }];
  * open, lifts off and hovers over that station carrying the email or the CV icon. Reduced motion
  * parks it east of the mast and moves it without easing.
  */
-function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; targets: Record<"contact" | "cv", V3>; active: RoofActive; tier: GpuTier; reducedMotion: boolean }) {
+function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; targets: Record<DroneTarget, V3>; active: RoofActive; tier: GpuTier; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
   const rotors = useRef<InstancedMesh>(null);
   const angle = useRef(0);
@@ -129,7 +136,7 @@ function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; tar
         <circleGeometry args={[0.62, 20]} />
         <meshBasicMaterial color={ROOF_BLUE} transparent opacity={0.45} depthWrite={false} side={DoubleSide} toneMapped={false} />
       </instancedMesh>
-      {active && <HoloIcon strokes={active === "cv" ? ROOF_ICONS.cv : ROOF_ICONS.email} instances={DRONE_ICON} color={active === "cv" ? ROOF_CYAN : ROOF_BLUE} size={1.4} tier={tier} reducedMotion={reducedMotion} />}
+      {active && <HoloIcon strokes={ROOF_ICONS[DRONE_CARGO[active].icon]} instances={DRONE_ICON} color={DRONE_CARGO[active].color} size={1.4} tier={tier} reducedMotion={reducedMotion} />}
     </group>
   );
 }
@@ -146,6 +153,7 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
   const detail = roofDetail(tier);
   const scene = useMemo(() => {
     const { centerpiece: cp, comms, cv, about } = layout;
+    const observatory = observatoryParts(layout);
     const c = cp.center;
     const commsX = mid(comms.minX, comms.maxX);
     const commsZ = mid(comms.minZ, comms.maxZ);
@@ -168,6 +176,8 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { x: cv.minX + 3.4, y: 1.3, z: cvZ, w: 0.2, h: 2.2, d: 4 },
       { x: aboutX, y: 0, z: about.maxZ - 0.6, w: 7.6, h: 3.4, d: 0.4 },
       { x: aboutX, y: 0, z: about.minZ + 0.9, w: 5, h: 0.5, d: 1.2 },
+      // The Visitor Observatory's plinth, globe pedestal and panel post (its globe and panel: VisitsStation).
+      ...observatory.solids,
     ];
     const mastRings: PulseSource[] = [0, 1 / 3, 2 / 3].map((phase) => ({ x: c.x, y: MAST_HEIGHT + 0.6, z: c.z, color: ROOF_BLUE, phase }));
     const channelRings: PulseSource[] = layout.channelSlots.map((s, i) => ({ x: s.x, y: ringY(i), z: s.z, color: CHANNEL_TONE[roof.channels[i]?.id ?? "googleScholar"] }));
@@ -203,7 +213,8 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       cv: [{ x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2 }],
       about: [{ x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI }],
     };
-    const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
+    const { globe } = observatory;
+    const droneTargets: Record<DroneTarget, V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ], visits: [globe.x - 2.6, globe.y + globe.r + 1.6, globe.z + 1.4] };
     return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
   const sending = active === "contact";
