@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
+import type { ReactorRingId } from "@/content/tech-rings";
 import { useHQStore } from "@/store/useHQStore";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
@@ -11,7 +12,12 @@ import { PacketLanes } from "./labs/PacketLanes";
 import { Pods } from "./labs/Pods";
 import { Reactor, Waterfalls } from "./labs/ReactorCore";
 
-export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count">;
+export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count"> & {
+  /** Tech Reactor ring names (`labs.reactor.rings`). */
+  rings: Record<ReactorRingId, string>;
+  /** "N projects use X" (`labs.reactor.uses`). */
+  uses: (count: number, tech: string) => string;
+};
 
 /** L3 Project Roads (walkable floors plan, part 2), generated from the pods in content. */
 export function Labs({ data, labels, tier }: { data: ExperienceData; labels: LabsLabels; tier: GpuTier }) {

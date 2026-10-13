@@ -49,6 +49,7 @@ import { qualityHandle, qualityStore } from "./scene/qualityStore";
 import { renderProbe } from "./scene/renderProbe";
 import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
+import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -190,6 +191,7 @@ export default function Experience({
   const tContact = useTranslations("contact");
   const tWalk = useTranslations("walk");
   const tHall = useTranslations("hall");
+  const tReactor = useTranslations("labs.reactor");
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -371,7 +373,13 @@ export default function Experience({
           hall: tHall("hall"),
         },
       },
-      labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
+      labs: {
+        directory: tDrawer("directory"),
+        open: tWalk("boardOpen"),
+        count: (count: number) => tWalk("boardCount", { count }),
+        rings: Object.fromEntries(REACTOR_RINGS.map((ring) => [ring, tReactor(`rings.${ring}`)])) as Record<ReactorRingId, string>,
+        uses: (count: number, tech: string) => tReactor("uses", { count, tech }),
+      },
       career: {
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
@@ -416,10 +424,12 @@ export default function Experience({
           highlightsProjects: t("rooms.highlightsProjects"),
           highlightsExperience: t("rooms.highlightsExperience"),
           highlightsContact: t("rooms.highlightsContact"),
+          reactor: t("rooms.reactor"),
         },
+        reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor],
   );
 
   return (

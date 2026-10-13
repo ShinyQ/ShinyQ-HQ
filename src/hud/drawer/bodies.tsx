@@ -3,6 +3,7 @@ import type { Locale } from "@/content/schema";
 import type { RoomView } from "@/content/room-views/types";
 import type { RoomKind } from "@/experience/missions/rooms";
 import { HighlightsBody } from "./HighlightsBody";
+import { ReactorBody } from "./ReactorBody";
 import { ResearchBody } from "./ResearchBody";
 import { RoofBody } from "./RoofBody";
 
@@ -18,6 +19,7 @@ export interface RoomBodyProps {
  */
 export const ROOM_BODIES: Partial<Record<RoomKind, ComponentType<RoomBodyProps>>> = {
   highlights: HighlightsBody,
+  reactor: ReactorBody,
   research: ResearchBody,
   roof: RoofBody,
 };

@@ -2,6 +2,7 @@ import type { Accent, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
 import type { PaperPreview } from "../citation";
+import type { ReactorRingId } from "../tech-rings";
 
 /**
  * Glass Drawer content contract. One `RoomView` per room, locale-resolved and serializable, built on
@@ -99,6 +100,21 @@ export interface RoomCard {
   live?: string;
 }
 
+/** One tech on a Tech Reactor ring: its pods (slugs in site order) are the projects that use it. */
+export interface RoomReactorTech {
+  slug: string;
+  name: string;
+  logo?: string;
+  pods: string[];
+}
+
+/** L3 Tech Reactor drawer (`ReactorBody`): six rings of techs from the build-time tech index. */
+export interface RoomReactor {
+  rings: { id: ReactorRingId; label: string; accent: Accent; techs: RoomReactorTech[] }[];
+  /** Every pod a tech lists: title, wing label, and whether it is docked on the floor (listed pods sit on the directory). */
+  pods: Record<string, { title: string; wing: string; docked: boolean }>;
+}
+
 export interface RoomView {
   id: RoomId;
   floor: FloorId;
@@ -141,6 +157,8 @@ export interface RoomView {
   research?: { items: RoomResearchItem[]; self: string; profiles: RoomLinkItem[]; metrics?: string };
   /** Highlights Hall: cards that ride to their room (`HighlightsBody`). */
   cards?: RoomCard[];
+  /** L3 Tech Reactor: rings, techs and project counts (`ReactorBody`). */
+  reactor?: RoomReactor;
 }
 
 export type RoomViews = Record<RoomId, RoomView>;

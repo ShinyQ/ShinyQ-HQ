@@ -1,7 +1,10 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
+import type { ReactorRingId } from "@/content/tech-rings";
 import { LOBBY } from "../config";
 import { buildCareerRoad, careerLayoutInput, REPO_WALL } from "../floors/career/layout";
 import { buildLabsLayout, LABS, type LabsLayout } from "../floors/labs/layout";
+import { REACTOR } from "../floors/labs/reactor";
+import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
 import { kioskStop } from "../floors/lobby/kiosk";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
@@ -38,8 +41,10 @@ export interface Interactable {
   at: Vec2;
   /** Hover and click footprint, floor-local x/z. */
   bounds: Rect;
-  /** Pick volume height (u); also places the floating label. Defaults per kind (`PICK_HEIGHT` in pick.ts). */
+  /** Pick volume height (u), the top of the volume; also places the floating label. Defaults per kind (`PICK_HEIGHT` in pick.ts). */
   height?: number;
+  /** Bottom of the pick volume (u above the floor, default 0): stacked targets such as the Tech Reactor rings. */
+  base?: number;
   action: InteractAction;
 }
 
@@ -53,6 +58,8 @@ export interface InteractLabels {
   board: (wing: string) => string;
   archive: string;
   rooms: Record<StructuralRoom, string>;
+  /** L3 Tech Reactor ring targets ("Tech Reactor: Azure"). */
+  reactorRing: (ring: ReactorRingId) => string;
 }
 
 export interface InteractData {
@@ -83,6 +90,7 @@ const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "L4:talks": "talks",
   "RF:contact": "contact",
   "RF:cv": "cv",
+  [REACTOR_ROOM]: "reactor",
 };
 
 type Footprint = { rect: Rect; height: number };
@@ -215,6 +223,30 @@ function labsBoards(labs: LabsLayout, data: InteractData): Interactable[] {
   });
 }
 
+/**
+ * The Tech Reactor rings (design 2026-10-14): one stacked band of the core per ring, from the floor up to
+ * the top ring, each wide enough to cover its ring. The rover drives to the reactor stop, then the drawer
+ * opens on that ring (`reactor:<ring>` command).
+ */
+function reactorRings(labs: LabsLayout, data: InteractData): Interactable[] {
+  const center = labs.reactor.center;
+  const at = reactorStop(center);
+  return ringBands().map(({ id, base, top }) => {
+    const r = Math.max(REACTOR.half, ringById(id).r);
+    return {
+      id: `L3:station:reactor-${id}`,
+      floor: "L3",
+      kind: "station",
+      label: data.labels.reactorRing(id),
+      at: { x: at.x, z: at.z },
+      bounds: rectAround(center, r * 2, r * 2),
+      base,
+      height: top,
+      action: { type: "command", command: `reactor:${id}` },
+    } satisfies Interactable;
+  });
+}
+
 function archiveBoard(library: LibraryLayout, data: InteractData): Interactable[] {
   if (!library.board) return [];
   return [
@@ -247,7 +279,7 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     case "L3": {
       const labs = buildLabsLayout(experience.labs.pods);
       const rooms = new Map<RoomId, Footprint>(labs.placed.map((p) => [p.room, { rect: bare(p.rect), height: LABS.wallHeight }]));
-      return [...pads, ...doorItems(floor, layouts, data, rooms), ...labsBoards(labs, data)];
+      return [...pads, ...doorItems(floor, layouts, data, rooms), ...labsBoards(labs, data), ...reactorRings(labs, data)];
     }
     case "L4": {
       const library = buildLibraryLayout(libraryLayoutInput(experience.library));

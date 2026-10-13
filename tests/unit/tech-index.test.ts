@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getPods, getSkills } from "@/content/load";
+import { getPods, getSkills, getTechIndex } from "@/content/load";
 import type { SkillGroup } from "@/content/schema";
 import { normalizeTech } from "@/content/tech";
-import { buildTechIndex, getTechIndex, ringOf, techKey, techSlug } from "@/content/tech-index";
+import { buildTechIndex, ringOf, techKey, techSlug } from "@/content/tech-index";
 import { EXTRA_RING, MISC_TECH, REACTOR_RINGS, TECH_ALIASES } from "@/content/tech-rings";
 
 const skills = getSkills();

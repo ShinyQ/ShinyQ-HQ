@@ -166,6 +166,29 @@
       "data": "Data",
       "human": "Manusia",
       "external": "Eksternal"
+    },
+    "reactor": {
+      "title": "Reaktor Teknologi",
+      "subtitle": "Pilih teknologi untuk menyalakan setiap proyek yang memakainya.",
+      "rings": {
+        "ai": "AI dan LLM",
+        "azure": "Azure",
+        "backend": "Backend",
+        "frontend": "Frontend",
+        "data": "Data",
+        "devops": "DevOps"
+      },
+      "ringsLabel": "Kelompok teknologi",
+      "techsLabel": "Teknologi di {ring}",
+      "count": "{count} proyek",
+      "uses": "{count} proyek memakai {tech}",
+      "projects": "Proyek yang memakai {tech}",
+      "clear": "Hapus pilihan",
+      "surprise": "Kejutkan saya",
+      "directory": "Di direktori sayap",
+      "show": "Tampilkan proyek yang memakai {tech}",
+      "ringTarget": "Reaktor Teknologi: {ring}",
+      "selected": "Dipilih: {tech}"
     }
   },
   "library": {
@@ -350,7 +373,8 @@
       "highlightsAbout": "Sorotan: tentang saya",
       "highlightsProjects": "Sorotan: proyek unggulan",
       "highlightsExperience": "Sorotan: pengalaman kerja",
-      "highlightsContact": "Sorotan: kontak"
+      "highlightsContact": "Sorotan: kontak",
+      "reactor": "Reaktor Teknologi"
     },
     "launcher": {
       "search": "Cari",

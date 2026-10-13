@@ -1,4 +1,3 @@
-import { getPods, getSkills } from "./load";
 import type { Pod, SkillGroup } from "./schema";
 import { normalizeTech } from "./tech";
 import { EXTRA_RING, GROUP_RING, LANGUAGE_RING, MISC_TECH, REACTOR_RINGS, TECH_ALIASES, type ReactorRingId } from "./tech-rings";
@@ -88,12 +87,4 @@ export function buildTechIndex(pods: readonly Pick<Pod, "slug" | "stack">[], ski
     })),
     misc: [...misc],
   };
-}
-
-let cached: TechIndex | null = null;
-
-/** The index for the dataset (server only: it reads the content; client code imports types only). */
-export function getTechIndex(): TechIndex {
-  cached ??= buildTechIndex(getPods(), getSkills());
-  return cached;
 }

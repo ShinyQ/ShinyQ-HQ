@@ -11,6 +11,7 @@ import { roadZAt, scrubTarget } from "../floors/career/layout";
 import { openCv, openPalette, openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
+import { REACTOR_ROOM } from "../floors/labs/techReactor";
 import { performInteract } from "../interact/pick";
 import { cancelMission, goToRoom, runMissionSteps } from "../missions/bridge";
 import { joystick } from "../input/joystick";
@@ -186,7 +187,10 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
             command: (command) => {
               if (command.type === "terminal") intents.emit({ type: "terminal" });
               else if (command.type === "palette") openPalette(command.filter);
-              else openCv();
+              else if (command.type === "reactor") {
+                store.getState().setReactorRing(command.ring);
+                store.getState().openRoom(REACTOR_ROOM);
+              } else openCv();
             },
             beamHome: () => {
               if (local.padOpens !== padOpensBefore || !local.controller) return;
