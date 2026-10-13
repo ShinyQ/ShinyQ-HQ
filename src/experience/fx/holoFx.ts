@@ -11,7 +11,7 @@ import { AdditiveBlending, Color, DoubleSide, FrontSide, NormalBlending, ShaderM
 export const HOLO_MODE = {
   /** Dark sign backing with a neon rim (instance scale = plate size). */
   plate: 0,
-  /** Holographic tower: glowing edges, window grid, fading toward its base (`uParams.x` = base y). */
+  /** Holographic tower: glowing edges, window grid (instance scale = tower size), fading toward its base (`uParams.x` = world base y, `uParams.y` = fade height). */
   skyline: 1,
   /** Radial sunrise glow with a horizon band. */
   glow: 2,
@@ -65,9 +65,9 @@ void main(){
     col = mix(vec3(0.02, 0.02, 0.047), c, rim);
     a = mix(0.9, 1., rim) * vAlpha;
   } else if (uMode == 1) {
-    vec2 px = vUv * vec2(uParams.z, uParams.w);
-    vec2 e = min(vUv, 1. - vUv) * vec2(uParams.z, uParams.w);
-    float edge = 1. - smoothstep(0.25, 0.9, min(e.x, e.y));
+    vec2 px = vUv * vSize;
+    vec2 e = min(vUv, 1. - vUv) * vSize;
+    float edge = 1. - smoothstep(0.5, 1.6, min(e.x, e.y));
     vec2 cell = floor(px / vec2(2.2, 2.6));
     vec2 f = fract(px / vec2(2.2, 2.6));
     float win = step(0.35, f.x) * step(f.x, 0.75) * step(0.4, f.y) * step(f.y, 0.7) * step(0.55, hash(cell.x * 13. + cell.y * 7. + vSeed * 3.));
@@ -101,7 +101,7 @@ void main(){
     float cols = uParams.x;
     float k = floor(vUv.x * cols);
     float speed = 0.35 + 0.5 * hash(k + vSeed * 17.);
-    float s = fract((1. - vUv.y) * uParams.y + uTime * speed + hash(k * 3.1 + vSeed));
+    float s = fract((1. - vUv.y) * uParams.y - uTime * speed + hash(k * 3.1 + vSeed));
     float drop = smoothstep(0.82, 1., s) * step(0.3, hash(k * 1.7 + vSeed * 5.));
     float lane = band(fract(vUv.x * cols) - 0.5, 0.35);
     float down = smoothstep(0., 0.85, vUv.y);

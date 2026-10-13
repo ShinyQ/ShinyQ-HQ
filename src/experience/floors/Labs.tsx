@@ -9,6 +9,7 @@ import { Hub, type HubLabels } from "./labs/Hub";
 import { buildLabsLayout, LABS } from "./labs/layout";
 import { PacketLanes } from "./labs/PacketLanes";
 import { Pods } from "./labs/Pods";
+import { Reactor, Waterfalls } from "./labs/ReactorCore";
 
 export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count">;
 
@@ -28,6 +29,8 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
       <Pods placed={layout.placed} tier={t} />
+      <Reactor center={layout.reactor.center} />
+      <Waterfalls bounds={layout.floor.bounds} />
       <Suspense fallback={null}>
         <HologramStage placed={layout.placed} locale={data.locale} tier={t} />
       </Suspense>

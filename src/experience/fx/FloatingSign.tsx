@@ -58,7 +58,8 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
   useDispose(material);
   const dummy = useMemo(() => new Object3D(), []);
   const origin = useMemo(() => new Vector3(), []);
-  const colorsSet = useRef<InstancedMesh | null>(null);
+  // Instance colors exist from creation, so the floor's precompile builds the instanced-color program.
+  const colors = useMemo(() => new Float32Array(signs.flatMap((s) => neonColor(s.color, 1.5, tier).toArray())), [signs, tier]);
 
   useEffect(
     () => () => {
@@ -71,11 +72,6 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
     const g = group.current;
     const mesh = plates.current;
     if (!g || !mesh) return;
-    if (colorsSet.current !== mesh) {
-      signs.forEach((s, i) => mesh.setColorAt(i, neonColor(s.color, 1.5, tier)));
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      colorsSet.current = mesh;
-    }
     const alphas = mesh.geometry.getAttribute("aAlpha") as InstancedBufferAttribute;
     g.getWorldPosition(origin);
     const cam = { x: camera.position.x, z: camera.position.z };
@@ -109,7 +105,9 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
   if (!signs.length) return null;
   return (
     <group ref={group} name={name}>
-      <instancedMesh ref={plates} args={[geometry, material, signs.length]} frustumCulled={false} raycast={NO_RAYCAST} renderOrder={1} />
+      <instancedMesh key={signs.length} ref={plates} args={[geometry, material, signs.length]} frustumCulled={false} raycast={NO_RAYCAST} renderOrder={1}>
+        <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
+      </instancedMesh>
       <BatchedLabels ref={batch} labels={labels} name={`${name}-text`} renderOrder={2} exactColors />
     </group>
   );
