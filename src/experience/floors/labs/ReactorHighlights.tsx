@@ -17,8 +17,8 @@ import { BEACON, litPods, podAt, roadGlow, surprisePod } from "./techReactor";
 
 const NO_RAYCAST = () => null;
 /** Glow strip widths: wing road runs and spurs. */
-const STRIP = { road: 3, spur: 2, y: 0.06 } as const;
-const STRIP_COLOR = "#e9d5ff";
+const STRIP = { road: 2.4, spur: 1.6, y: 0.06 } as const;
+const STRIP_COLOR = "#c4b5fd";
 const HIDDEN = new Object3D();
 HIDDEN.scale.setScalar(0);
 HIDDEN.updateMatrix();
@@ -29,42 +29,61 @@ function useLit(placed: readonly PlacedPod[]): PlacedPod[] {
 }
 
 /**
- * Pod beacons for the picked tech: a light curtain hugging each lit pod and rising into a beacon that
- * fades toward the top (holo `pillar`), every pod in one instanced draw. Mounted from the start with
- * no visible instances, so it never compiles a new program (it shares the reactor's). Lite keeps it
- * low; reduced motion freezes the streaks.
+ * Pod highlights for the picked tech (holo `pillar`): a low glow curtain hugging each lit pod's walls and a
+ * thin beacon rising from its middle that reads across the floor, every pod in one instanced draw
+ * (curtains first, then beacons). Mounted from the start with no visible instances, so it never compiles
+ * a new program (it shares the reactor's). Lite draws the beacons only, shorter; reduced motion freezes
+ * the streaks.
  */
 function PodBeacons({ placed }: { placed: readonly PlacedPod[] }) {
   const tier = useHQStore((s) => s.tier);
   const full = tier === "full";
   const lit = useLit(placed);
   const mesh = useRef<InstancedMesh>(null);
-  const geometry = useMemo(() => new CylinderGeometry(1, 1, 1, 32, 1, true).translate(0, 0.5, 0), []);
+  const geometry = useMemo(() => new CylinderGeometry(1, 1, 1, 24, 1, true).translate(0, 0.5, 0), []);
   useDispose(geometry);
-  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.pillar, color: neonColor("#ffffff", 1.8, tier), opacity: full ? 1 : 0.85 }), [tier, full]);
+  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.pillar, color: neonColor("#ffffff", 1.6, tier), opacity: full ? 1 : 0.85 }), [tier, full]);
   useDispose(material);
   const materials = useMemo(() => [material], [material]);
   useUniformTime(materials);
-  const count = Math.max(1, placed.length);
-  const colors = useMemo(() => new Float32Array(Array.from({ length: count }, (_, i) => new Color(placed[i] ? ACCENT_HEX[placed[i].pod.accent] : "#ffffff").toArray()).flat()), [placed, count]);
+  const n = Math.max(1, placed.length);
+  const count = n * 2;
+  // Curtains glow at half strength in the pod accent; beacons at full strength.
+  const colors = useMemo(
+    () =>
+      new Float32Array(
+        Array.from({ length: count }, (_, i) => {
+          const pod = placed[i % n];
+          return new Color(pod ? ACCENT_HEX[pod.pod.accent] : "#ffffff").multiplyScalar(i < n ? 0.5 : 1).toArray();
+        }).flat(),
+      ),
+    [placed, n, count],
+  );
 
   useEffect(() => {
     const m = mesh.current;
     if (!m) return;
     const on = new Set(lit.map((p) => p.room));
     const dummy = new Object3D();
-    const height = full ? BEACON.full : BEACON.lite;
     placed.forEach((p, i) => {
-      if (!on.has(p.room)) return m.setMatrixAt(i, HIDDEN.matrix);
-      dummy.position.set(p.center.x, 0, p.center.z);
-      dummy.scale.set(p.width / 2 + BEACON.inset, height, p.depth / 2 + BEACON.inset);
-      dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
+      const shown = on.has(p.room);
+      if (shown && full) {
+        dummy.position.set(p.center.x, 0, p.center.z);
+        dummy.scale.set(p.width / 2 + BEACON.inset, BEACON.glow, p.depth / 2 + BEACON.inset);
+        dummy.updateMatrix();
+        m.setMatrixAt(i, dummy.matrix);
+      } else m.setMatrixAt(i, HIDDEN.matrix);
+      if (shown) {
+        dummy.position.set(p.center.x, 0, p.center.z);
+        dummy.scale.set(BEACON.radius, full ? BEACON.full : BEACON.lite, BEACON.radius);
+        dummy.updateMatrix();
+        m.setMatrixAt(n + i, dummy.matrix);
+      } else m.setMatrixAt(n + i, HIDDEN.matrix);
     });
     m.instanceMatrix.needsUpdate = true;
     m.computeBoundingSphere();
     m.visible = lit.length > 0;
-  }, [lit, placed, full]);
+  }, [lit, placed, full, n]);
 
   return (
     <instancedMesh key={count} ref={mesh} name="labs-reactor-beacons" args={[geometry, material, count]} visible={false} raycast={NO_RAYCAST}>
@@ -83,7 +102,7 @@ function RoadGlow({ layout }: { layout: LabsLayout }) {
   const mesh = useRef<InstancedMesh>(null);
   const geometry = useMemo(() => new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), []);
   useDispose(geometry);
-  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.strip, color: neonColor(STRIP_COLOR, 1.6, tier), opacity: tier === "full" ? 0.9 : 0.75 }), [tier]);
+  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.strip, color: neonColor(STRIP_COLOR, 1.2, tier), opacity: tier === "full" ? 0.45 : 0.5 }), [tier]);
   useDispose(material);
   const materials = useMemo(() => [material], [material]);
   useUniformTime(materials);

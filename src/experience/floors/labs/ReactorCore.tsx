@@ -27,7 +27,7 @@ const BASE_RING = { r: 2.4, y: 0.06 } as const;
 const LABEL = { font: 0.5, gap: 0.4 } as const;
 const COUNT_FONT = 0.7;
 /** Ring brightness: selected ring, other rings while a tech is picked, every ring otherwise. */
-const RING_LEVEL = { on: 2.2, off: 0.45, idle: 1 } as const;
+const RING_LEVEL = { on: 2.6, off: 0.18, idle: 1 } as const;
 
 export interface ReactorLabels {
   rings: Record<ReactorRingId, string>;

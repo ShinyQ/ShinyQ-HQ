@@ -42,9 +42,12 @@ export const ringById = (id: ReactorRingId): TechRing => TECH_RINGS.find((r) => 
 /** Surprise me: the rings spin this many times faster for `ms` (still under reduced motion). */
 export const SURPRISE_SPIN = { boost: 6, ms: 1200 } as const;
 /** Height of the "N projects use X" sign (plate middle), above the top ring and under the L4 slab. */
-export const COUNT_SIGN_Y = 12.3;
-/** Pod beacons: light curtain height on the full and lite tiers. */
-export const BEACON = { full: 9, lite: 4, inset: 0.8 } as const;
+export const COUNT_SIGN_Y = 12.6;
+/**
+ * Pod highlights: a low glow curtain around each lit pod (`glow` tall, `inset` outside its walls, full
+ * tier only) and a thin beacon rising from it (`radius`, `full` or `lite` tall), both in one instanced draw.
+ */
+export const BEACON = { full: 11, lite: 7, radius: 0.55, glow: 3.2, inset: 0.6 } as const;
 
 /** Where the rover parks for the reactor: the ring road's east point, looking west over the core to both wings. */
 export function reactorStop(center: Vec2): Vec2 {

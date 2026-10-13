@@ -16,9 +16,23 @@ function setup(hash = "", floor: "L1" | "L3" = "L3") {
       location.hash = i >= 0 ? url.slice(i) : "";
     }),
   };
-  const env: ReactorUrlEnv = { history, location, load: async () => reactor, defer: (fn) => fn() };
+  const pop = new Set<() => void>();
+  const env: ReactorUrlEnv = {
+    history,
+    location,
+    load: async () => reactor,
+    defer: (fn) => fn(),
+    onPopState: (listener) => {
+      pop.add(listener);
+      return () => pop.delete(listener);
+    },
+  };
   const dispose = createReactorHashSync({ store, env });
-  return { store, location, history, dispose };
+  const back = () => {
+    location.hash = "";
+    pop.forEach((l) => l());
+  };
+  return { store, location, history, dispose, back };
 }
 
 const azure = { slug: "azure-openai", name: "Azure OpenAI", ring: "ai" as const, count: 1, pods: ["x"] };
@@ -46,6 +60,13 @@ describe("Tech Reactor hash", () => {
     store.getState().selectReactorTech(azure);
     location.hash = "";
     store.getState().openRoom("L3:reactor");
+    expect(location.hash).toBe("#labs-tech=azure-openai");
+  });
+
+  it("restores the hash after back (closing a room returns to the floor entry)", () => {
+    const { store, location, back } = setup();
+    store.getState().selectReactorTech(azure);
+    back();
     expect(location.hash).toBe("#labs-tech=azure-openai");
   });
 

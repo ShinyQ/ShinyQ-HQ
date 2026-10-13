@@ -195,6 +195,8 @@ export default function Experience({
   const tWalk = useTranslations("walk");
   const tHall = useTranslations("hall");
   const tReactor = useTranslations("labs.reactor");
+  // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
+  const [startHash] = useState(() => window.location.hash);
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -355,9 +357,18 @@ export default function Experience({
     () =>
       createReactorHashSync({
         store: getHQStore(),
-        env: { history: window.history, location: window.location, load: () => loadRoomViews(data.locale).then((views) => views[REACTOR_ROOM]?.reactor) },
+        env: {
+          history: window.history,
+          location: window.location,
+          initialHash: startHash,
+          load: () => loadRoomViews(data.locale).then((views) => views[REACTOR_ROOM]?.reactor),
+          onPopState: (listener) => {
+            window.addEventListener("popstate", listener);
+            return () => window.removeEventListener("popstate", listener);
+          },
+        },
       }),
-    [data.locale],
+    [data.locale, startHash],
   );
 
   const labels: SceneLabels = useMemo(

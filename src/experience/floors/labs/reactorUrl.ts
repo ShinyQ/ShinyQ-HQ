@@ -17,6 +17,10 @@ export interface ReactorUrlEnv {
   load: () => Promise<RoomReactor | undefined>;
   /** Defers a write until other store listeners (room and floor URL sync) have written theirs. */
   defer?: (fn: () => void) => void;
+  /** The hash the page loaded with (read before any URL sync could rewrite it); `location.hash` otherwise. */
+  initialHash?: string;
+  /** Back and forward (closing a room goes back to the floor entry, which has no hash). */
+  onPopState?: (listener: () => void) => () => void;
 }
 
 /**
@@ -28,7 +32,7 @@ export interface ReactorUrlEnv {
 export function createReactorHashSync({ store, env }: { store: ReactorUrlStore; env: ReactorUrlEnv }): () => void {
   let live = true;
   const defer = env.defer ?? ((fn: () => void) => queueMicrotask(fn));
-  const wanted = techFromHash(env.location.hash);
+  const wanted = techFromHash(env.initialHash ?? env.location.hash);
   if (wanted && store.getState().reactor.tech?.slug !== wanted) {
     env.load().then(
       (reactor) => {
@@ -52,8 +56,10 @@ export function createReactorHashSync({ store, env }: { store: ReactorUrlStore; 
   const off = store.subscribe((s, prev) => {
     if (s.reactor.tech !== prev.reactor.tech || s.floor !== prev.floor || s.phase !== prev.phase) defer(write);
   });
+  const offPop = env.onPopState?.(() => defer(write));
   return () => {
     live = false;
     off();
+    offPop?.();
   };
 }
