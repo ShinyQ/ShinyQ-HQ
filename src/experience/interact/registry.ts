@@ -1,7 +1,10 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { LOBBY } from "../config";
-import { buildCareerRoad, careerLayoutInput, REPO_WALL } from "../floors/career/layout";
+import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
+import { buildCareerRoad, careerLayoutInput, type CareerRoadLayout } from "../floors/career/layout";
+import { SKYLINE } from "../floors/career/skyline";
+import { WORKSHOP } from "../floors/career/workshopLayout";
 import { buildLabsLayout, LABS, type LabsLayout } from "../floors/labs/layout";
 import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
@@ -28,6 +31,8 @@ export type InteractAction =
   | { type: "teleport-picker"; year: number }
   /** Express Return pad (fast return): beam to the floor's elevator call pad. */
   | { type: "return-beam" }
+  /** L2 time console: every year plaza plus Back to elevator. */
+  | { type: "console-picker" }
   | { type: "command"; command: string };
 
 export interface Interactable {
@@ -54,6 +59,8 @@ export interface InteractLabels {
   /** Express Return pads: "Back to elevator" (`hud.interact.returnPad`). */
   returnPad: string;
   teleporter: (year: number) => string;
+  /** L2 time console (`hud.interact.console`). */
+  console: string;
   kiosk: string;
   board: (wing: string) => string;
   archive: string;
@@ -75,6 +82,9 @@ const CAREER_ROOM_HEIGHT = 2.4;
 /** L4 stations (blog plinths are low, so their volume reaches their billboard titles). */
 const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6 };
 const KIOSK_HEIGHT = 3.4;
+/** L2 Workshop: bench card tops and the console screen top (`WorkshopAnnex`). */
+export const BENCH_TOP = 3.1;
+export const CONSOLE_TOP = 2.9;
 const PROFILE_HEIGHT = 7;
 const ARCHIVE_HEIGHT = 4;
 /** Door items without a known room footprint keep a plain door-pad volume this tall. */
@@ -84,7 +94,7 @@ const DOOR_HEIGHT = 2.6;
 const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "L1:profile": "profile",
   "L1:skills": "skills",
-  "L2:workshop": "workshop",
+  [WORKSHOP_ROOM]: "workshop",
   "L4:research": "research",
   "L4:publications": "publications",
   "L4:talks": "talks",
@@ -264,6 +274,63 @@ function archiveBoard(library: LibraryLayout, data: InteractData): Interactable[
   ];
 }
 
+/**
+ * L2 Workshop (F3): the gateway (Workshop overview), the time console (year picker), one target per
+ * bench (its side project drawer) and per skyline bar (its repo drawer). Stops come from the layout.
+ */
+function workshopItems(road: CareerRoadLayout, data: InteractData): Interactable[] {
+  const w = road.workshop;
+  const projects = new Map(data.experience.career.sideProjects.map((p) => [p.id, p.title]));
+  const gate = union(w.gateway.rects[0], w.gateway.rects[1]);
+  const half = SKYLINE.bar / 2;
+  return [
+    {
+      id: "L2:station:workshop",
+      floor: "L2",
+      kind: "station",
+      label: data.labels.rooms.workshop,
+      at: { ...w.gateway.stop },
+      bounds: gate,
+      height: WORKSHOP.gateway.height + WORKSHOP.gateway.beam,
+      action: { type: "open-room", room: WORKSHOP_ROOM },
+    },
+    {
+      id: "L2:station:time-console",
+      floor: "L2",
+      kind: "station",
+      label: data.labels.console,
+      at: { ...w.console.stop },
+      bounds: bare(w.console.rect),
+      height: CONSOLE_TOP,
+      action: { type: "console-picker" },
+    },
+    ...w.benches.map(
+      (b): Interactable => ({
+        id: `L2:station:bench-${b.id}`,
+        floor: "L2",
+        kind: "station",
+        label: projects.get(b.id) ?? b.id,
+        at: { ...b.stop },
+        bounds: bare(b.rect),
+        height: BENCH_TOP,
+        action: { type: "open-room", room: sideProjectRoom(b.id) },
+      }),
+    ),
+    ...w.skyline.bars.map(
+      (bar, i): Interactable => ({
+        id: `L2:station:repo-${bar.slug}`,
+        floor: "L2",
+        kind: "station",
+        label: bar.name,
+        at: { ...w.skyline.stops[i] },
+        bounds: { minX: bar.x - half, maxX: bar.x + half, minZ: bar.z - half, maxZ: bar.z + half },
+        height: bar.h + SKYLINE.plinth,
+        action: { type: "open-room", room: repoRoom(bar.slug) },
+      }),
+    ),
+  ];
+}
+
 /** Built-in targets of one floor, in order: pads, doors and stations, then floor extras (L1 kiosk, boards). */
 export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: InteractData): Interactable[] {
   const pads = (layouts[floor].pads ?? []).map((pad) => padItem(floor, pad, data.labels));
@@ -274,8 +341,7 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     case "L2": {
       const road = buildCareerRoad(careerLayoutInput(experience.career));
       const rooms = new Map<RoomId, Footprint>(road.rooms.map((r) => [r.id, { rect: rectAround(r.center, r.w, r.d), height: CAREER_ROOM_HEIGHT }]));
-      rooms.set(road.workshop.room, { rect: bare(road.workshop.wall), height: REPO_WALL.height });
-      return [...pads, ...doorItems(floor, layouts, data, rooms)];
+      return [...pads, ...doorItems(floor, layouts, data, rooms), ...workshopItems(road, data)];
     }
     case "L3": {
       const labs = buildLabsLayout(experience.labs.pods);

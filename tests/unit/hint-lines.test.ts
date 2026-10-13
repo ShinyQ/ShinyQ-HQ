@@ -31,7 +31,8 @@ describe("hint lines", () => {
       "RF:station:cv": "cv",
       "RF:station:contact": "contact",
       "L4:door:research": "research",
-      "L2:door:workshop": "workshop",
+      "L2:station:workshop": "workshop",
+      "L2:station:time-console": "timeConsole",
     });
     expect(hintObjectKey(item({ id: "RF:station:cv", floor: "RF", action: { type: "open-room", room: "RF:cv" } }))).toBe("cv");
     expect(hintObjectKey(item({ id: "L1:kiosk:ask-rover", kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");
@@ -43,6 +44,7 @@ describe("hint lines", () => {
     expect(hintGoKey(item({ id: "L1:pad:elevator", kind: "elevator-pad", action: { type: "elevator-picker" } }))).toBe("pickFloor");
     expect(hintGoKey(item({ id: "L2:teleporter:2021", kind: "teleporter", action: { type: "teleport-picker", year: 2021 } }))).toBe("pickYear");
     expect(hintGoKey(item({ id: "L2:pad:return", kind: "return-pad", action: { type: "return-beam" } }))).toBe("toElevator");
+    expect(hintGoKey(item({ id: "L2:station:time-console", kind: "station", action: { type: "console-picker" } }))).toBe("pickYear");
     expect(hintGoKey(item({ kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:pods" } }))).toBe("browse");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:posts" } }))).toBe("browse");

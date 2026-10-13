@@ -51,7 +51,7 @@ describe("specsForChanges", () => {
   it("maps floor code to its spec", () => {
     expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "reactor", "spectacle", "walk"]);
     expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "reactor"]);
-    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle"]);
+    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "spectacle", "walk"]);
@@ -131,12 +131,12 @@ describe("specsForChanges", () => {
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {
-    expect(specsForChanges(["src/experience/nav/pads.ts"]).specs).toEqual(["experience", "fast-return", "pads"]);
-    expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "fast-return", "pads"]);
+    expect(specsForChanges(["src/experience/nav/pads.ts"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
+    expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/fastReturn.ts"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
     expect(specsForChanges(["src/experience/fx/ReturnPadSign.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
-    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["experience", "fast-return", "pads"]);
-    expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "fast-return", "pads"]);
+    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
+    expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads", "walk"]);
     expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);
   });

@@ -145,7 +145,17 @@ function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec
 function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
   if (!extras.career) return standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 });
   const road = buildCareerRoad(extras.career);
-  return { ...standard("L2", road.bounds, road.obstacles), doors: road.doors, scrubStops: road.stops, road: road.network, pads: road.pads, returnPad: road.returnPad };
+  return {
+    ...standard("L2", road.bounds, road.obstacles),
+    doors: road.doors,
+    scrubStops: road.stops,
+    road: road.network,
+    pads: road.pads,
+    returnPad: road.returnPad,
+    stops: road.roomStops,
+    tall: road.tall,
+    viewZones: road.viewZones,
+  };
 }
 
 /**

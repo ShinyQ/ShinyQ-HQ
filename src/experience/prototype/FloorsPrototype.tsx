@@ -257,12 +257,10 @@ function CareerDecor({
           })}
         </group>
       ))}
-      <Tile rect={road.workshop.wall} color={accent} opacity={0.6} />
-      <mesh position={[(road.workshop.wall.minX + road.workshop.wall.maxX) / 2, 2.5, (road.workshop.wall.minZ + road.workshop.wall.maxZ) / 2]}>
-        <boxGeometry args={[road.workshop.wall.maxX - road.workshop.wall.minX, 5, 0.6]} />
-        <meshStandardMaterial color="#111827" emissive={accent} emissiveIntensity={0.25} transparent opacity={0.8} />
-      </mesh>
-      <Label position={[road.annex.center.x, 6.2, road.workshop.wall.maxZ]} title={labels.workshop} color={accent} />
+      {road.workshop.obstacles.map((r, i) => (
+        <Tile key={i} rect={r} color={accent} opacity={0.6} />
+      ))}
+      <Label position={[road.workshop.gateway.x, 6.2, 0]} title={labels.workshop} color={accent} />
     </group>
   );
 }

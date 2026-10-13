@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { getContact, getContent, getPods, getProfile, getStats, getTimeline } from "@/content/load";
+import { getContact, getContent, getPods, getProfile, getPublicRepos, getSideProjects, getStats, getTimeline } from "@/content/load";
 import { highlightEntries } from "@/content/highlights";
 import { pickFeaturedPods } from "@/content/pageview";
 import { buildRoomViews } from "@/content/room-views";
 import { podView } from "@/content/room-views/labs";
 import { LOCALES } from "@/content/schema";
 import { podLiveLink } from "@/content/selectors";
+import { repoRoom, repoSlug, sideProjectRoom } from "@/content/workshop";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
 import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import { makePod } from "../fixtures/minimal-content";
 
 const catalog = buildRoomCatalog(getContent(), structuralLabels());
@@ -87,6 +89,36 @@ describe("room views (Glass Drawer content)", () => {
     expect(views["L2:jenius-2024"].link?.room).toBe("L3:digital-banking-integrations");
     expect(views["L2:prologue-2016"].meta).toContain("Prologue");
     expect(views["L2:workshop"].sections.find((s) => s.title === "Hugging Face models")?.items).toHaveLength(3);
+  });
+
+  it("gives every Workshop bench and skyline bar its own drawer, chained in order, with its external link", () => {
+    for (const locale of LOCALES) {
+      const views = buildRoomViews(locale);
+      const m = locale === "en" ? en : id;
+      const projects = getSideProjects();
+      projects.forEach((p, i) => {
+        const view = views[sideProjectRoom(p.id)];
+        expect(view.kind).toBe("workshop");
+        expect(view.title).toBe(p.title);
+        expect(view.subtitle).toBe(p.summary[locale]);
+        expect(view.stack.map((s) => s.name)).toEqual(p.stack);
+        expect(view.external).toBe(p.url ?? p.repo);
+        if (view.external) expect(view.externalLabel).toBe(p.url ? m.drawer.rooms.openProject : m.drawer.rooms.viewRepo);
+        expect(view.prev).toBe(i > 0 ? sideProjectRoom(projects[i - 1].id) : undefined);
+        expect(view.page).toBe("/journey#workshop");
+      });
+      const repos = getPublicRepos();
+      repos.forEach((r, i) => {
+        const view = views[repoRoom(repoSlug(r.name))];
+        expect(view.title).toBe(r.name);
+        expect(view.subtitle).toBe(r.description[locale]);
+        expect(view.meta[0]).toBe(r.language);
+        expect(view.meta[1]).toContain(String(r.stars));
+        expect(view.external).toBe(r.url);
+        expect(view.externalLabel).toBe(m.drawer.rooms.viewRepo);
+        expect(view.next).toBe(i < repos.length - 1 ? repoRoom(repoSlug(repos[i + 1].name)) : undefined);
+      });
+    }
   });
 
   it("resolves the locale", () => {

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { getSideProjects, getYears } from "@/content/load";
+import { buildCareerData } from "@/content/experience";
+import { getYears } from "@/content/load";
 import { buildFloorLayouts } from "@/experience/config";
 import {
-  BENCH,
   buildCareerRoad,
   CAREER_ROAD,
+  careerLayoutInput,
   labelFade,
   LABEL_FADE,
   placeAt,
   plazaLength,
   roadZAt,
   scrubTarget,
-  WORKSHOP_ROOM,
 } from "@/experience/floors/career/layout";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -27,13 +27,14 @@ const year = (y: number, types: CareerType[]) => ({ year: y, entries: types.map(
 
 const SAMPLE: CareerLayoutInput = {
   years: [year(2019, ["milestone", "award", "job", "freelance", "education"]), year(2020, ["job"]), year(2021, ["award", "job"])],
-  benches: 5,
+  sideProjects: ["a", "b", "c", "d", "e"],
+  repos: [
+    { slug: "one", name: "One", language: "Python", stars: 4 },
+    { slug: "two", name: "Two", language: "TypeScript", stars: 0 },
+  ],
 };
 
-const real: CareerLayoutInput = {
-  years: getYears().map(({ year, entries }) => ({ year, entries: entries.map((e) => ({ slug: e.slug, type: e.type })) })),
-  benches: getSideProjects().length,
-};
+const real: CareerLayoutInput = careerLayoutInput(buildCareerData("en"));
 
 const inside = (r: Rect, outer: Rect) => r.minX >= outer.minX && r.maxX <= outer.maxX && r.minZ >= outer.minZ && r.maxZ <= outer.maxZ;
 const roomRect = (r: { center: { x: number; z: number }; w: number; d: number }): Rect => ({
@@ -89,8 +90,8 @@ describe("buildCareerRoad", () => {
       const door = c.doors.find((d) => d.room === room.id)!;
       expect(door.facing).toEqual({ x: 0, z: room.side });
     }
-    expect(c.doors).toHaveLength(c.rooms.length + 1);
-    expect(c.doors.at(-1)!.room).toBe(WORKSHOP_ROOM);
+    // The Workshop rooms have stops instead of doors (point-and-go targets open them).
+    expect(c.doors).toHaveLength(c.rooms.length);
   });
 
   it("gives every room a spur in its type color and keeps pads off the road", () => {
@@ -109,19 +110,18 @@ describe("buildCareerRoad", () => {
     }
   });
 
-  it("fits every room, the annex and its benches on the slab, with the window at the far end", () => {
+  it("fits every room, the Workshop and its benches and skyline on the slab, with the window at the far end", () => {
     for (const room of c.rooms) expect(inside(roomRect(room), c.bounds)).toBe(true);
     expect(c.windowX).toBe(c.bounds.maxX);
     expect(c.annex.center.x + c.annex.w / 2).toBe(c.bounds.maxX);
     expect(c.bounds.minX).toBe(-24);
     expect(c.workshop.benches).toHaveLength(5);
-    for (const b of c.workshop.benches) expect(b.z).toBeGreaterThanOrEqual(BENCH.rows[0]);
-    expect(c.workshop.at.z).toBeLessThan(0);
-    expect(c.workshop.at.z).toBeGreaterThan(c.workshop.wall.maxZ);
+    expect(c.workshop.skyline.bars).toHaveLength(2);
+    for (const r of c.workshop.obstacles) expect(inside(r, c.bounds)).toBe(true);
   });
 
-  it("lists scrub stops at plaza centers and the annex", () => {
-    expect(c.stops).toEqual([...c.years.map((y) => y.plaza.center.x), c.annex.center.x]);
+  it("lists scrub stops at plaza centers, the forecourt and the Workshop", () => {
+    expect(c.stops).toEqual([...c.years.map((y) => y.plaza.center.x), c.forecourt.center.x, c.annex.center.x]);
   });
 
   it("passes the space rules, teleporter pads included", () => {
@@ -176,6 +176,9 @@ describe("the real Career Road", () => {
     expect(layouts.L2.obstacles).toEqual(c.obstacles);
     expect(layouts.L2.scrubStops).toEqual(c.stops);
     expect(layouts.L2.bounds).toEqual(c.bounds);
+    expect(layouts.L2.stops).toEqual(c.roomStops);
+    expect(layouts.L2.tall).toEqual(c.tall);
+    expect(layouts.L2.viewZones).toEqual(c.viewZones);
   });
 });
 
@@ -187,7 +190,8 @@ describe("placeAt", () => {
     expect(placeAt(c, c.years[1].arch.center.x + 0.1)).toBe(2020);
     expect(placeAt(c, c.years[2].plaza.center.x)).toBe(2021);
     expect(placeAt(c, c.annex.center.x)).toBe("workshop");
-    expect(placeAt({ years: [], annex: c.annex }, 0)).toBeNull();
+    expect(placeAt(c, c.forecourt.center.x - c.forecourt.w / 2)).toBe("workshop");
+    expect(placeAt({ years: [], forecourt: c.forecourt }, 0)).toBeNull();
   });
 });
 

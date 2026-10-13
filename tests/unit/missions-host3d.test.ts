@@ -64,12 +64,20 @@ function setup() {
 
 describe("roomTarget", () => {
   it("drives to the door zone of an L2 corridor room", () => {
-    const career = { years: [{ year: 2024, entries: [{ slug: "jenius-2024", type: "job" as const }] }], benches: 2 };
+    const career = {
+      years: [{ year: 2024, entries: [{ slug: "jenius-2024", type: "job" as const }] }],
+      sideProjects: ["alpha", "beta"],
+      repos: [{ slug: "tool", name: "Tool", language: "Python", stars: 3 }],
+    };
     const built = buildFloorLayouts(1, { career });
     const door = built.L2.doors!.find((d) => d.room === "L2:jenius-2024")!;
     expect(roomTarget(undefined, "L2:jenius-2024", built, [2024])).toEqual(door.at);
-    expect(roomTarget(undefined, "L2:workshop", built, [2024])).toEqual(built.L2.doors!.at(-1)!.at);
-    expect(built.L2.scrubStops).toHaveLength(2);
+    // The Workshop rooms have no door: the gateway, each bench and each skyline bar have a stop.
+    expect(roomTarget(undefined, "L2:workshop", built, [2024])).toEqual(built.L2.stops!["L2:workshop"]);
+    expect(roomTarget(undefined, "L2:side-beta", built, [2024])).toEqual(built.L2.stops!["L2:side-beta"]);
+    expect(roomTarget(undefined, "L2:repo-tool", built, [2024])).toEqual(built.L2.stops!["L2:repo-tool"]);
+    expect(built.L2.stops!["L2:side-alpha"]).not.toEqual(built.L2.stops!["L2:side-beta"]);
+    expect(built.L2.scrubStops).toHaveLength(3);
   });
 
   it("stops in front of Lobby elements", () => {

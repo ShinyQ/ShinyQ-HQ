@@ -11,7 +11,8 @@ export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "RF:station:cv": "cv",
   "RF:station:contact": "contact",
   "L4:door:research": "research",
-  "L2:door:workshop": "workshop",
+  "L2:station:workshop": "workshop",
+  "L2:station:time-console": "timeConsole",
 };
 
 export function hintObjectKey(item: Pick<Interactable, "id">): string | null {
@@ -29,6 +30,7 @@ export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
     case "elevator-picker":
       return "pickFloor";
     case "teleport-picker":
+    case "console-picker":
       return "pickYear";
     case "return-beam":
       return "toElevator";

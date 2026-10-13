@@ -190,7 +190,6 @@ describe("walk definitions", () => {
     ],
     sideProjects: [],
     repos: [],
-    models: [],
   };
   const types = { job: "Employment", freelance: "Freelance", education: "Education", award: "Awards", milestone: "Milestone" };
 

@@ -4,7 +4,7 @@ import id from "../../messages/id.json";
 import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
-import { careerLayoutInput } from "@/experience/floors/career/layout";
+import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
 import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
 import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
@@ -29,6 +29,7 @@ function labelsFrom(m: Messages): InteractLabels {
     elevator: m.hud.pads.floorTitle,
     returnPad: m.hud.interact.returnPad,
     teleporter: (year) => m.hud.interact.teleporter.replace("{year}", String(year)),
+    console: m.hud.interact.console,
     kiosk: m.hud.launcher.askRover,
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
     archive: m.hud.interact.archive,
@@ -139,11 +140,36 @@ describe("interactablesFor on the real content", () => {
     expect(find("L4", "L4:door:research")?.label).toBe(en.hud.rooms.research);
     const entry = experience.career.years[0].entries[0];
     expect(find("L2", `L2:door:${entry.slug}`)?.label).toContain(entry.role);
-    expect(find("L2", "L2:door:workshop")?.label).toBe(en.hud.rooms.workshop);
+    expect(find("L2", "L2:station:workshop")?.label).toBe(en.hud.rooms.workshop);
     expect(find("RF", "RF:station:contact")?.label).toBe(en.hud.rooms.contact);
     expect(find("RF", "RF:station:cv")?.label).toBe(en.hud.rooms.cv);
     expect(find("RF", "RF:station:visits")?.label).toBe(en.hud.rooms.visits);
     expect(find("RF", "RF:station:visits")?.action).toEqual({ type: "open-room", room: "RF:visits" });
+  });
+
+  it("adds the L2 Workshop: gateway, time console, one target per bench and per skyline bar", () => {
+    const career = buildCareerRoad(careerLayoutInput(experience.career));
+    const gateway = find("L2", "L2:station:workshop")!;
+    expect(gateway.action).toEqual({ type: "open-room", room: "L2:workshop" });
+    expect(gateway.at).toEqual(roomTarget(undefined, "L2:workshop", layouts, experience.years));
+    const consoleItem = find("L2", "L2:station:time-console")!;
+    expect(consoleItem.label).toBe(en.hud.interact.console);
+    expect(consoleItem.action).toEqual({ type: "console-picker" });
+    expect(consoleItem.at).toEqual(career.workshop.console.stop);
+    for (const p of experience.career.sideProjects) {
+      const bench = find("L2", `L2:station:bench-${p.id}`)!;
+      expect(bench.label).toBe(p.title);
+      expect(bench.action).toEqual({ type: "open-room", room: `L2:side-${p.id}` });
+      expect(bench.at).toEqual(roomTarget(undefined, `L2:side-${p.id}`, layouts, experience.years));
+    }
+    for (const r of experience.career.repos) {
+      const bar = find("L2", `L2:station:repo-${r.slug}`)!;
+      expect(bar.label).toBe(r.name);
+      expect(bar.action).toEqual({ type: "open-room", room: `L2:repo-${r.slug}` });
+      expect(bar.at).toEqual(roomTarget(undefined, `L2:repo-${r.slug}`, layouts, experience.years));
+    }
+    // Unique ids across the floor.
+    expect(new Set(items.L2.map((i) => i.id)).size).toBe(items.L2.length);
   });
 
   it("adds the L1 profile hologram, skills wall and Ask Rover kiosk", () => {

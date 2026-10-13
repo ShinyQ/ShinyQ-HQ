@@ -232,6 +232,14 @@ describe("performInteract", () => {
     expect(d.beamHome).toHaveBeenCalledTimes(1);
   });
 
+  it("drives to the time console stop, then opens the console picker", async () => {
+    const consoleItem: Interactable = { ...teleporter, id: "L2:station:time-console", kind: "station", at: { x: 350, z: -8 }, action: { type: "console-picker" } };
+    const d = deps();
+    await performInteract(consoleItem, d);
+    expect(d.runSteps).toHaveBeenCalledWith("interact:L2:station:time-console", [{ kind: "drive", to: { x: 350, z: -8 } }]);
+    expect(d.openPicker).toHaveBeenCalledWith({ kind: "console" });
+  });
+
   it("does nothing more when the drive is cancelled by manual input", async () => {
     const d = deps({ runSteps: vi.fn(async () => "cancelled" as const) });
     await expect(performInteract(teleporter, d)).resolves.toBe("cancelled");

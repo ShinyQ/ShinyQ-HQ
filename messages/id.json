@@ -445,11 +445,11 @@
       "prologue": "Prolog",
       "workshop": "Ruang workshop",
       "repos": "Repositori publik",
-      "models": "Model Hugging Face",
       "window": "Labs di lantai L3",
       "scrubHint": "Tahun: geser ke kiri untuk maju, ke kanan untuk kembali",
       "rooms": "{count} ruang",
-      "here": "Anda di sini"
+      "here": "Anda di sini",
+      "stars": "{count} bintang"
     },
     "world": {
       "lectern": "Meja baca",
@@ -485,7 +485,11 @@
         "L3": "Proyek product engineering dan AI engineering",
         "L4": "Artikel blog, makalah riset dan talk",
         "RF": "Kanal kontak dan CV"
-      }
+      },
+      "consoleTitle": "Konsol waktu",
+      "consoleHint": "Pilih tahun untuk pindah ke sana, atau kembali ke lift. Esc untuk menutup.",
+      "back": "Kembali ke lift",
+      "backDetail": "Pindah ke pad panggil lift di awal jalan"
     },
     "boost": "Turbo",
     "interact": {
@@ -497,7 +501,8 @@
       "liveTap": "{label} dipilih. Ketuk sekali lagi atau gunakan tombol Pergi.",
       "go": "Pergi ke {label}",
       "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
-      "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana."
+      "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
+      "console": "Konsol waktu"
     }
   },
   "drawer": {
@@ -566,7 +571,14 @@
       "copyEmail": "Salin email",
       "copied": "Email tersalin ^_^",
       "copyFailed": "Email gagal disalin. Hubungi saya di {email}.",
-      "writtenIn": "Hanya tersedia dalam {languages}"
+      "writtenIn": "Hanya tersedia dalam {languages}",
+      "sideProject": "Proyek sampingan",
+      "liveDemo": "Demo langsung",
+      "repository": "Repositori",
+      "openProject": "Buka proyek",
+      "viewRepo": "Lihat di GitHub",
+      "starOne": "1 bintang",
+      "stars": "{count} bintang"
     },
     "directory": "Direktori",
     "signSoftware": "Product Engineering",
@@ -886,7 +898,8 @@
         "cv": "Kios CV: baca atau unduh CV.",
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: paper lengkap dengan abstrak dan sitasi.",
-        "workshop": "Workshop: proyek sampingan, repo, dan model."
+        "workshop": "Workshop: proyek sampingan, repo, dan model.",
+        "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift."
       },
       "go": {
         "open": "Buka",

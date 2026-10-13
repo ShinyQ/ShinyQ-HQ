@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCareerData } from "@/content/experience";
-import { floorOptions, floorThumb, nextIndex, yearOptions } from "@/hud/pads/picker";
+import { BACK_TO_ELEVATOR, consoleOptions, floorOptions, floorThumb, nextIndex, yearOptions } from "@/hud/pads/picker";
 
 describe("pad picker options", () => {
   it("lists the floors top-down like the elevator panel, with labels, descriptions and thumbnails", () => {
@@ -23,6 +23,16 @@ describe("pad picker options", () => {
     const early = first.entries.find((e) => e.prologue);
     expect(options[0].eyebrow).toBe(early ? `Prologue \u00B7 ${early.period}` : undefined);
     expect(options.slice(1).every((o) => o.eyebrow === undefined)).toBe(true);
+  });
+
+  it("lists Back to elevator first on the time console, then every year with none marked current", () => {
+    const career = buildCareerData("en");
+    const options = consoleOptions(career, (n) => `${n} rooms`, "Prologue", { title: "Back to elevator", detail: "Beam" });
+    expect(options.map((o) => o.id)).toEqual([BACK_TO_ELEVATOR, ...career.years.map((y) => String(y.year))]);
+    expect(options[0]).toMatchObject({ title: "Back to elevator", detail: "Beam", current: false, tone: "green" });
+    // Years in the teleporters' pink, Back to elevator in the Return pad's green.
+    expect(options.slice(1).every((o) => o.tone === "pink")).toBe(true);
+    expect(options.some((o) => o.current)).toBe(false);
   });
 
   it("moves the roving focus with the arrows (wrapping), Home and End", () => {

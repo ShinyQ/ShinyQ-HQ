@@ -623,7 +623,7 @@ export function RoomDrawer({
               rel="noopener noreferrer"
               className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
             >
-              {t("external")}
+              {view.externalLabel ?? t("external")}
               <span className="sr-only"> ({tc("external")})</span>
             </a>
           )}

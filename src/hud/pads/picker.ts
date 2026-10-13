@@ -12,6 +12,8 @@ export interface PickerOption {
   eyebrow?: string;
   /** Preview image (floors only). */
   thumb?: string;
+  /** Dot in the pad's color (time console: pink years like the teleporters, green Back to elevator like the Return pad). */
+  tone?: "pink" | "green";
   current: boolean;
 }
 
@@ -36,6 +38,17 @@ export function yearOptions(career: CareerData, current: number, rooms: (count: 
       current: year === current,
     };
   });
+}
+
+/** The id of the time console's "Back to elevator" row. */
+export const BACK_TO_ELEVATOR = "elevator";
+
+/** The L2 time console: "Back to elevator" first, then every year plaza (none is current: the console stands past them). */
+export function consoleOptions(career: CareerData, rooms: (count: number) => string, prologue: string, back: { title: string; detail: string }): PickerOption[] {
+  return [
+    { id: BACK_TO_ELEVATOR, eyebrow: "L2", title: back.title, detail: back.detail, current: false, tone: "green" },
+    ...yearOptions(career, Number.NaN, rooms, prologue).map((o) => ({ ...o, tone: "pink" as const })),
+  ];
 }
 
 /** Roving focus in a picker list: arrows move one step (wrapping), Home and End jump; other keys return null. */

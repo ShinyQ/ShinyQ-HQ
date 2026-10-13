@@ -1,9 +1,14 @@
 import type { RoomId } from "@/content/schema";
+import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
+import type { ViewZone } from "../../camera/orbit";
 import { CAREER_TONE } from "../../fx/holoIcons";
 import { DOOR_SIZE } from "../../nav/doors";
 import { teleportPadId } from "../../nav/pads";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { CareerData, CareerLayoutInput, CareerType, DoorTrigger, PadTrigger, Rect, Vec2 } from "../../types";
+import { buildWorkshop, type WorkshopLayout } from "./workshopLayout";
+
+export { WORKSHOP_ROOM };
 
 /**
  * L2 Career Road (walkable floors plan, Part 2). Pure: no React or three. One road runs forward in
@@ -12,7 +17,8 @@ import type { CareerData, CareerLayoutInput, CareerType, DoorTrigger, PadTrigger
  * behind another), doors facing the road through a spur and a 2 u apron. The meander shifts every
  * other plaza in z and joins them with S-curves while x keeps increasing, so the rail camera and
  * swipe scrubbing keep working. An arch with the year and a signpost stands on the link before each
- * plaza; the annex (benches, repo wall, the window to L3) closes the road.
+ * plaza; the Workshop (`workshopLayout.ts`: a forecourt with the time console, then the Workshop with
+ * its benches, repo skyline and the Horizon deck at the window) closes the road.
  */
 
 export type RoadStyle = "straight" | "meander";
@@ -41,7 +47,6 @@ export const CAREER_ROAD = {
   pedestal: 2,
   /** Meander amplitude (z shift of every other plaza; owner pick: 7 u). */
   meander: 7,
-  annex: { w: 22, d: 18 },
   archPost: 0.6,
   archHeight: 4.8,
   /** Slab margin behind the outermost room (keeps 6 u between pedestals and the slab edge). */
@@ -55,11 +60,6 @@ export const CAREER_ROAD = {
 
 export const ROOM_W: Record<CareerType, number> = { job: 9, freelance: 9, education: 9, milestone: 9, award: 6 };
 
-/** Side-project benches in the annex: rows of touching benches (one long workbench), 6 u apart. */
-export const BENCH = { w: 2.4, d: 1, rows: [7, 14] } as const;
-export const REPO_WALL = { thickness: 0.6, inset: 3, height: 5 } as const;
-
-export const WORKSHOP_ROOM: RoomId = "L2:workshop";
 
 export interface CareerRoom {
   id: RoomId;
@@ -95,17 +95,25 @@ export interface CareerRoadLayout {
   network: RoadNetwork;
   years: CareerYear[];
   rooms: CareerRoom[];
+  /** Open plaza before the Workshop: the time console and the Return pad. */
+  forecourt: Plaza;
+  /** The Workshop plaza (benches, repo skyline, the Horizon deck). */
   annex: Plaza;
-  workshop: { room: RoomId; at: Vec2; wall: Rect; benches: Vec2[] };
+  workshop: WorkshopLayout & { room: RoomId };
+  /** Where `drive` stops for the Workshop rooms, which have no door (`FloorLayout.stops`). */
+  roomStops: Partial<Record<RoomId, Vec2>>;
+  /** Camera collision columns (gateway posts, repo skyline) and camera zones (console, Horizon deck). */
+  tall: (Rect & { h: number })[];
+  viewZones: ViewZone[];
   /** Glass window at the far end, looking up at L3. */
   windowX: number;
   obstacles: Rect[];
   doors: DoorTrigger[];
   /** One teleporter pad per year plaza (FloorLayout.pads; the elevator pad is added by buildFloorLayouts). */
   pads: PadTrigger[];
-  /** Express Return pad (fast return): in the forecourt in front of the annex. */
+  /** Express Return pad (fast return, F1): beside the time console in the Workshop forecourt. */
   returnPad: Vec2;
-  /** Scrub stops along x: plaza centers, then the annex. */
+  /** Scrub stops along x: plaza centers, then the forecourt and the Workshop. */
   stops: number[];
   approach: Vec2;
   door: Vec2;
@@ -115,7 +123,8 @@ export interface CareerRoadLayout {
 export function careerLayoutInput(career: CareerData): CareerLayoutInput {
   return {
     years: career.years.map(({ year, entries }) => ({ year, entries: entries.map(({ slug, type }) => ({ slug, type })) })),
-    benches: career.sideProjects.length,
+    sideProjects: career.sideProjects.map((p) => p.id),
+    repos: career.repos,
   };
 }
 
@@ -199,78 +208,61 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     x += length + C.link;
   });
 
-  // Annex at the road's end, back on the center line; the Workshop door on its north edge.
+  // The forecourt and the Workshop at the road's end, back on the center line.
   const annexStart = x;
-  const annexX = annexStart + C.annex.w / 2;
+  const workshop = buildWorkshop(annexStart, { benches: input.sideProjects, repos: input.repos });
   const tail = points[points.length - 1];
   if (Math.abs(tail.z) > 1e-6) points.push(...sCurve(tail, { x: annexStart, z: 0 }));
   else points.push({ x: annexStart, z: 0 });
-  points.push({ x: annexStart + C.annex.w - 4, z: 0 });
-  const annex: Plaza = { id: "annex", center: { x: annexX, z: 0 }, w: C.annex.w, d: C.annex.d };
-  const wallZ = -C.annex.d / 2 - C.apron;
-  const wall: Rect = { minX: annexStart + REPO_WALL.inset, maxX: annexStart + C.annex.w, minZ: wallZ - REPO_WALL.thickness, maxZ: wallZ };
-  const workshopAt: Vec2 = { x: annexX, z: wallZ + DOOR_SIZE / 2 + 0.2 };
-
-  // Benches south of the road: rows of touching benches (obstacles touch or keep 6 u apart).
-  const count = Math.max(0, input.benches);
-  const cols = Math.max(1, Math.ceil(count / BENCH.rows.length));
-  // Centered in the annex, but at least 6 u clear of the window end of the slab.
-  const benchX = Math.min(annexX, annexStart + C.annex.w - ROAD.minClear - (cols * BENCH.w) / 2);
-  const benches: Vec2[] = Array.from({ length: count }, (_, i) => ({
-    x: benchX + ((i % cols) - (cols - 1) / 2) * BENCH.w,
-    z: BENCH.rows[Math.floor(i / cols)],
-  }));
-  const benchRows: Rect[] = BENCH.rows
-    .map((z, row) => {
-      const n = Math.min(cols, Math.max(0, count - row * cols));
-      return n > 0 ? rect({ x: benchX - ((cols - n) * BENCH.w) / 2, z }, n * BENCH.w, BENCH.d) : null;
-    })
-    .filter((r): r is Rect => r !== null);
+  points.push({ x: workshop.roadEnd, z: 0 });
 
   const plazaOf = new Map(years.map((y) => [y.year, y.plaza]));
-  const spurs: Spur[] = [
-    ...rooms.map((r) => ({ room: r.id, from: { x: r.at.x, z: plazaOf.get(r.year)!.center.z }, to: r.at, color: CAREER_TONE[r.type] })),
-    { room: WORKSHOP_ROOM, from: { x: annexX, z: 0 }, to: workshopAt, color: CAREER_TONE.award },
-  ];
+  const spurs: Spur[] = rooms.map((r) => ({ room: r.id, from: { x: r.at.x, z: plazaOf.get(r.year)!.center.z }, to: r.at, color: CAREER_TONE[r.type] }));
   const road: Road = { id: "career", points, width: C.width };
 
   const archPosts: Rect[] = years.flatMap((y) => y.arch.posts.map((p) => rect(p, C.archPost, C.archPost)));
-  const obstacles: Rect[] = [...rooms.map((r) => rect(r.center, C.pedestal, C.pedestal)), ...archPosts, wall, ...benchRows];
+  const obstacles: Rect[] = [...rooms.map((r) => rect(r.center, C.pedestal, C.pedestal)), ...archPosts, ...workshop.obstacles];
 
-  const benchEdge = benchRows.reduce((m, r) => Math.max(m, r.maxZ + ROAD.minClear), 0);
-  const outer = Math.max(Math.abs(wall.minZ) + ROAD.minClear, benchEdge, ...rooms.map((r) => Math.abs(r.center.z) + r.d / 2 + C.margin));
-  const bounds: Rect = { minX: C.slabMinX, maxX: annexStart + C.annex.w, minZ: -outer, maxZ: outer };
-  const doors: DoorTrigger[] = [
-    ...rooms.map((r) => ({ room: r.id, at: r.at, facing: { x: 0, z: r.side } })),
-    { room: WORKSHOP_ROOM, at: workshopAt, facing: { x: 0, z: -1 } },
-  ];
+  const docked = workshop.obstacles.reduce((m, r) => Math.max(m, Math.abs(r.minZ), Math.abs(r.maxZ)), 0) + ROAD.minClear;
+  const outer = Math.max(docked, ...rooms.map((r) => Math.abs(r.center.z) + r.d / 2 + C.margin));
+  const bounds: Rect = { minX: C.slabMinX, maxX: workshop.windowX, minZ: -outer, maxZ: outer };
+  const doors: DoorTrigger[] = rooms.map((r) => ({ room: r.id, at: r.at, facing: { x: 0, z: r.side } }));
   // Icons face the rail camera (+z), like the room icons.
   const pads: PadTrigger[] = years.map((y) => ({ id: teleportPadId(y.year), kind: "teleport", at: y.teleport, year: y.year, face: 0 }));
+  const roomStops: Partial<Record<RoomId, Vec2>> = { [WORKSHOP_ROOM]: workshop.gateway.stop };
+  for (const b of workshop.benches) roomStops[sideProjectRoom(b.id)] = b.stop;
+  workshop.skyline.bars.forEach((bar, i) => {
+    roomStops[repoRoom(bar.slug)] = workshop.skyline.stops[i];
+  });
 
   return {
     style,
     bounds,
-    network: { roads: [road], plazas: [...years.map((y) => y.plaza), annex], spurs },
+    network: { roads: [road], plazas: [...years.map((y) => y.plaza), workshop.forecourt, workshop.plaza], spurs },
     years,
     rooms,
-    annex,
-    workshop: { room: WORKSHOP_ROOM, at: workshopAt, wall, benches },
+    forecourt: workshop.forecourt,
+    annex: workshop.plaza,
+    workshop: { ...workshop, room: WORKSHOP_ROOM },
+    roomStops,
+    tall: workshop.tall,
+    viewZones: workshop.viewZones,
     windowX: bounds.maxX,
     obstacles,
     doors,
     pads,
-    // Fast return (F1): the forecourt south of the curve into the annex, clear of the road, rooms and benches.
-    returnPad: { x: annexStart - 5, z: 8 },
-    stops: [...years.map((y) => y.plaza.center.x), annexX],
+    // Fast return (F1): beside the time console, on its stop line, clear of the road (`workshopLayout.ts`).
+    returnPad: workshop.returnPad,
+    stops: [...years.map((y) => y.plaza.center.x), ...workshop.stops],
     approach: C.approach,
     door: C.door,
   };
 }
 
-/** Where the rover is along the road, for the "You are here" chip: a year (from its arch on), or the annex. */
-export function placeAt(layout: Pick<CareerRoadLayout, "years" | "annex">, x: number): number | "workshop" | null {
+/** Where the rover is along the road, for the "You are here" chip: a year (from its arch on), or the Workshop (from its forecourt on). */
+export function placeAt(layout: Pick<CareerRoadLayout, "years" | "forecourt">, x: number): number | "workshop" | null {
   if (layout.years.length === 0) return null;
-  if (x >= layout.annex.center.x - layout.annex.w / 2 - CAREER_ROAD.link / 2) return "workshop";
+  if (x >= layout.forecourt.center.x - layout.forecourt.w / 2 - CAREER_ROAD.link / 2) return "workshop";
   let year = layout.years[0].year;
   for (const y of layout.years) if (x >= y.arch.center.x) year = y.year;
   return year;

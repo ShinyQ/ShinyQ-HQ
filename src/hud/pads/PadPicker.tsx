@@ -2,13 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
+import { AccentDot } from "@/components/AccentDot";
 import { Modal } from "@/components/Modal";
 import type { FloorId } from "@/content/schema";
 import { intents } from "@/experience/input/intents";
-import { teleportPadId } from "@/experience/nav/pads";
+import { elevatorPadId, teleportPadId } from "@/experience/nav/pads";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
-import { floorOptions, nextIndex, yearOptions, type PickerOption } from "./picker";
+import { BACK_TO_ELEVATOR, consoleOptions, floorOptions, nextIndex, yearOptions, type PickerOption } from "./picker";
 
 /** Keyboard focus returns to the 3D world (where the rover's keys live) once a picker closes. */
 function restoreWorldFocus() {
@@ -79,6 +80,7 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={o.thumb} alt="" width={96} height={54} loading="lazy" decoding="async" className="h-[54px] w-24 shrink-0 rounded-md border border-line object-cover" />
               )}
+              {o.tone && <AccentDot tone={o.tone} size="md" className="shrink-0" />}
               <span className="min-w-0 flex-1">
                 {o.eyebrow && <span className="label block truncate text-ink-3">{o.eyebrow}</span>}
                 <span className="block text-sm font-semibold text-ink">{o.title}</span>
@@ -95,7 +97,7 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
 
 /**
  * Floor pad pickers (owner request): the floor list for the elevator call pad, the year list for the
- * L2 teleporters. Opened through `store.picker` (the Director, or a click on a pad); a floor rides the
+ * L2 teleporters, and the L2 time console (every year plus Back to elevator, F3). Opened through `store.picker` (the Director, or a click on a pad); a floor rides the
  * elevator with the same intent as the right-side panel, a year beams the rover to that plaza's pad.
  */
 export function PadPicker({ data }: { data: ExperienceData }) {
@@ -125,6 +127,20 @@ export function PadPicker({ data }: { data: ExperienceData }) {
         onPick={(id) => {
           close();
           if (id !== floor) intents.emit({ type: "elevator", to: id as FloorId });
+        }}
+      />
+    );
+  }
+  if (picker.kind === "console") {
+    return (
+      <PickerList
+        title={t("pads.consoleTitle")}
+        hint={t("pads.consoleHint")}
+        options={consoleOptions(data.career, (count) => t("career.rooms", { count }), t("career.prologue"), { title: t("pads.back"), detail: t("pads.backDetail") })}
+        onClose={close}
+        onPick={(id) => {
+          close();
+          intents.emit({ type: "teleport", pad: id === BACK_TO_ELEVATOR ? elevatorPadId("L2") : teleportPadId(Number(id)) });
         }}
       />
     );
