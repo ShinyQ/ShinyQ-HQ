@@ -1,0 +1,55 @@
+name: Stats Worker check
+
+# Pull request check for the public visit stats Worker (workers/stats/, hq-stats). It proves the two
+# tokens the production deploy relies on, without deploying anything:
+#   - CF_EVAL_TOKEN can read Web Analytics and Analytics Engine (the Worker's runtime secret WA_TOKEN);
+#   - CLOUDFLARE_API_TOKEN can see Workers scripts and the STATS_KV namespace (deploy permissions);
+# then bundles the Worker with `wrangler deploy --dry-run`. Not a required check. The deploy itself runs
+# in deploy.yml (job "hq-stats Worker"). Runbook: workers/stats/README.md.
+
+on:
+  pull_request:
+    paths:
+      - "workers/stats/**"
+      - "src/lib/stats/**"
+      - "scripts/stats-token-check.ts"
+      - ".github/workflows/stats-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stats-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: hq-stats tokens and bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Bundle the Worker (dry run)
+        working-directory: workers/stats
+        run: bunx wrangler@4 deploy --dry-run --outdir "$RUNNER_TEMP/hq-stats"
+      - name: Secrets available
+        id: gate
+        env:
+          HAS: ${{ secrets.CF_EVAL_TOKEN != '' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          echo "enabled=$HAS" >> "$GITHUB_OUTPUT"
+          if [ "$HAS" != "true" ]; then echo "::notice::Cloudflare secrets are not available (fork or unset); skipping the token checks."; fi
+      - name: Analytics token (CF_EVAL_TOKEN) can read Web Analytics and Analytics Engine
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          STATS_ANALYTICS_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+        run: bun scripts/stats-token-check.ts analytics
+      - name: Deploy token (CLOUDFLARE_API_TOKEN) can deploy Workers
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bun scripts/stats-token-check.ts deploy

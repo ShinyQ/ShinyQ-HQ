@@ -1,7 +1,7 @@
 name: Deploy
 
-# Production deploy of the static export and the Pages Functions (Ask the HQ, the performance beacon)
-# to Cloudflare Pages.
+# Production deploy of the static export and the Pages Functions (Ask the HQ, the performance beacon,
+# the public visit stats) to Cloudflare Pages, then the hq-stats Cron Worker (workers/stats/).
 #
 # Runs only when dispatched, never on a push to main:
 #   - by refresh-facts.yml after it merged a weekly live-facts PR (sha = the merge commit), unless
@@ -13,8 +13,9 @@ name: Deploy
 # Only without any CI result, or with the `rerun_e2e` input, does it build without the analytics beacon
 # and run the 4 e2e shards itself. It deploys the production build (with the beacon) with
 # --branch=main, smoke-checks production (scripts/deploy-smoke.ts) and opens a `deploy-failed` issue on
-# failure. Needs the CLOUDFLARE_API_TOKEN (Pages Edit only) and CLOUDFLARE_ACCOUNT_ID secrets and the
-# CF_PAGES_PROJECT variable; skips the upload with a notice while any is missing. docs/deploy.md.
+# failure. Needs the CLOUDFLARE_API_TOKEN (Pages Edit; Workers Scripts Edit for the hq-stats Worker) and
+# CLOUDFLARE_ACCOUNT_ID secrets and the CF_PAGES_PROJECT variable; skips the upload with a notice while
+# any is missing. The Worker job also needs CF_EVAL_TOKEN (Account Analytics Read). docs/deploy.md.
 
 on:
   workflow_dispatch:
@@ -238,10 +239,74 @@ jobs:
             echo "- Production: $NEXT_PUBLIC_SITE_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  stats-worker:
+    name: hq-stats Worker
+    runs-on: ubuntu-latest
+    needs: [resolve, deploy]
+    # After the site deployed. Public visit stats: proves CF_EVAL_TOKEN can read Web Analytics first (fails
+    # loudly otherwise), then deploys workers/stats and sets its secrets from GitHub secrets. The repository
+    # variable STATS_WORKER_DEPLOY = "false" skips it (for example while the deploy token lacks Workers
+    # permissions and the Worker was deployed by hand, workers/stats/README.md).
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check configuration
+        id: gate
+        env:
+          HAS: ${{ secrets.CF_EVAL_TOKEN != '' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          SKIP: ${{ vars.STATS_WORKER_DEPLOY == 'false' }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::STATS_WORKER_DEPLOY is false; the hq-stats Worker is not deployed by this run."
+          elif [ "$HAS" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CF_EVAL_TOKEN, CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping the hq-stats Worker."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Analytics token can read Web Analytics and Analytics Engine
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          STATS_ANALYTICS_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+        run: bun scripts/stats-token-check.ts analytics
+      - name: Deploy token can deploy Workers
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bun scripts/stats-token-check.ts deploy
+      - name: Deploy hq-stats and set its secrets
+        if: steps.gate.outputs.enabled == 'true'
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        env:
+          WA_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          WA_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/stats
+          wranglerVersion: "4.150.0"
+          packageManager: npm
+          quiet: true
+          command: deploy
+          secrets: |
+            WA_TOKEN
+            WA_ACCOUNT_ID
+
   report:
     name: Report a failed deploy
     runs-on: ubuntu-latest
-    needs: [resolve, verify, site, e2e, deploy]
+    needs: [resolve, verify, site, e2e, deploy, stats-worker]
     if: ${{ failure() }}
     permissions:
       issues: write
