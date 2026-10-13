@@ -70,7 +70,7 @@ void main(){
     float edge = 1. - smoothstep(0.5, 1.6, min(e.x, e.y));
     vec2 cell = floor(px / vec2(2.2, 2.6));
     vec2 f = fract(px / vec2(2.2, 2.6));
-    float win = step(0.35, f.x) * step(f.x, 0.75) * step(0.4, f.y) * step(f.y, 0.7) * step(0.55, hash(cell.x * 13. + cell.y * 7. + vSeed * 3.));
+    float win = step(0.35, f.x) * step(f.x, 0.75) * step(0.4, f.y) * step(f.y, 0.7) * step(0.72, hash(cell.x * 13. + cell.y * 7. + vSeed * 3.));
     float flick = 0.75 + 0.25 * sin(uTime * 0.7 + hash(vSeed) * 6.28);
     float base = smoothstep(uParams.x, uParams.x + uParams.y, vW.y);
     col = c * (edge * 1.1 + win * 0.55 * flick + 0.05);
@@ -81,8 +81,8 @@ void main(){
     float core = exp(-r * r * 6.);
     float halo = exp(-r * r * 1.6);
     float horizon = band(p.y + 0.02, 0.03) * (1. - smoothstep(0.2, 0.5, abs(p.x)));
-    col = mix(c, vec3(1., 0.85, 0.6) * length(c), core) * (halo * 0.8 + core * 1.2) + c * horizon * 1.4;
-    a = clamp(halo * 0.7 + core + horizon, 0., 1.) * step(-0.02, p.y + 0.5 * core);
+    col = mix(c, vec3(1., 0.8, 0.55) * length(c) * 0.6, core) * (halo * 0.5 + core * 0.6) + c * horizon;
+    a = clamp(halo * 0.45 + core * 0.6 + horizon * 0.8, 0., 1.) * step(-0.02, p.y + 0.5 * core);
   } else if (uMode == 3) {
     float y = abs(vUv.y - 0.5) * 2.;
     float edge = smoothstep(0.78, 0.95, y);
@@ -102,18 +102,19 @@ void main(){
     float k = floor(vUv.x * cols);
     float speed = 0.35 + 0.5 * hash(k + vSeed * 17.);
     float s = fract((1. - vUv.y) * uParams.y - uTime * speed + hash(k * 3.1 + vSeed));
-    float drop = smoothstep(0.82, 1., s) * step(0.3, hash(k * 1.7 + vSeed * 5.));
-    float lane = band(fract(vUv.x * cols) - 0.5, 0.35);
-    float down = smoothstep(0., 0.85, vUv.y);
-    col = c * (drop * lane * 1.6 + 0.06);
-    a = (drop * lane * 0.9 + 0.05) * down;
+    float drop = smoothstep(0.55, 1., s) * step(0.25, hash(k * 1.7 + vSeed * 5.));
+    float lane = band(fract(vUv.x * cols) - 0.5, 0.3);
+    float lip = smoothstep(0.9, 1., vUv.y);
+    float down = smoothstep(0., 0.9, vUv.y);
+    col = c * (drop * lane * 1.8 + lane * 0.15 + lip * 0.8);
+    a = (drop * lane + lane * 0.08 + lip * 0.6) * down;
   } else if (uMode == 6) {
     float b = fract(vUv.y * 6. - uTime * 0.25);
     float bands = smoothstep(0.7, 1., b) + 0.5 * band(vUv.y - 0.5, 0.5);
     float seam = 0.6 + 0.4 * sin(vUv.x * 6.2832 * 3. + uTime * 0.4);
     float top = 1. - smoothstep(0.7, 1., vUv.y);
-    col = c * (bands * 1.2 * seam + 0.35);
-    a = (bands * 0.7 + 0.3) * top;
+    col = c * (bands * 1.4 * seam + 0.5);
+    a = (bands * 0.8 + 0.4) * top;
   } else if (uMode == 7) {
     float ang = atan(vL.y, vL.x) / 6.2832 + 0.5;
     float dash = smoothstep(0.35, 0.5, abs(fract(ang * uParams.x + uTime * 0.08 * (mod(vSeed, 2.) * 2. - 1.)) - 0.5) * 2.);

@@ -12,9 +12,9 @@ import type { Rect, Vec2 } from "../../types";
 export const HORIZON = {
   bridge: { length: 80, width: 4, dashes: 30 },
   /** Skyline towers on an arc around the window end: angle from +x (rad, -z is north), radius from the window. */
-  skyline: { count: 36, liteCount: 20, from: -1.45, to: 1.0, near: 110, far: 270, base: -150, top: [-30, 18] as const, width: [9, 20] as const },
+  skyline: { count: 36, liteCount: 20, from: -1.45, to: 1.0, near: 200, far: 400, base: -80, top: [-55, -8] as const, tallest: 10, width: [12, 30] as const },
   /** Sunrise glow: a plane facing the tower, its horizon band at `y`. */
-  glow: { distance: 360, y: -12, w: 620, h: 300 },
+  glow: { distance: 430, y: -130, w: 560, h: 260 },
   /** Corner strips: width, and their z rows in the north-east and south-east corners. */
   strips: { width: 0.45, ne: [-26.5, -22.5, -18.5], se: [18.5, 22.5, 26.5], liteRows: 2, inset: 1 },
   /** Origin light pillar west of the first plaza. */
@@ -66,7 +66,7 @@ export function buildHorizon(layout: Pick<CareerRoadLayout, "windowX" | "annex" 
     const r = sky.near + (sky.far - sky.near) * (i % 2 ? 0.25 + 0.75 * rand(i, 2) : rand(i, 3) * 0.6);
     const w = sky.width[0] + (sky.width[1] - sky.width[0]) * rand(i, 4);
     const tallest = i % 5 === 2;
-    const top = tallest ? sky.top[1] : sky.top[0] + (sky.top[1] - sky.top[0]) * 0.7 * rand(i, 5);
+    const top = tallest ? sky.tallest : sky.top[0] + (sky.top[1] - sky.top[0]) * rand(i, 5);
     return { x: wx + Math.cos(a) * r, z: Math.sin(a) * r, w, d: w * (0.7 + 0.3 * rand(i, 6)), top };
   });
   const strip = (rows: readonly number[], fromX: number): Strip[] =>

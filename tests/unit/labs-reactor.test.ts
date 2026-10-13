@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { ROVER } from "@/experience/config";
+import { ROVER, ROVER_HEIGHT } from "@/experience/config";
 import { buildLabsLayout, LABS } from "@/experience/floors/labs/layout";
 import { REACTOR, reactorRect, reactorSpin, ringPoints, waterfallPanels, WATERFALL } from "@/experience/floors/labs/reactor";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -88,6 +88,15 @@ describe("L3 reactor core", () => {
       expect(route, `${from.x},${from.z} to ${to.x},${to.z}`).not.toBeNull();
       expect(minDistance(along(from, route!), reactor.rect)).toBeGreaterThanOrEqual(ROVER.radius - 1e-6);
     }
+  });
+
+  it("keeps the orbit rings above the rover wherever they reach over the ring road", () => {
+    const inner = REACTOR.ring * Math.cos(Math.PI / REACTOR.segments) - LABS.road / 2;
+    for (const ring of REACTOR.rings) {
+      if (ring.r <= inner) continue;
+      expect(ring.y - ring.r * Math.sin(Math.abs(ring.tilt))).toBeGreaterThan(ROVER_HEIGHT + 0.4);
+    }
+    expect(Math.max(...REACTOR.rings.map((r) => r.y + r.r))).toBeLessThan(REACTOR.height + 2);
   });
 
   it("stands still under reduced motion", () => {

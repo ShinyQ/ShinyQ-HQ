@@ -19,7 +19,7 @@ const BRIDGE = "#fbbf24";
 const SUNRISE = "#fb923c";
 const ORIGIN = "#fde68a";
 /** Towers fade out over this height above their base (world units). */
-const TOWER_FADE = 110;
+const TOWER_FADE = 45;
 
 /** One instanced mesh from a geometry, its per-instance matrices and colors, set at creation (so the floor precompile sees the final program). */
 function useInstanced(geometry: BoxGeometry | PlaneGeometry, matrices: Object3D[], colors: string[]) {
@@ -59,8 +59,8 @@ export function Horizon({ layout }: { layout: CareerRoadLayout }) {
   const mats = useMemo(
     () => ({
       bridge: createHoloMaterial({ mode: HOLO_MODE.flow, color: neonColor(BRIDGE, 1.8, tier), params: [HORIZON.bridge.dashes, 0, 0, 0] }),
-      skyline: createHoloMaterial({ mode: HOLO_MODE.skyline, color: neonColor("#ffffff", 1.4, tier), opacity: full ? 0.9 : 0.75, params: [base, TOWER_FADE, 0, 0], side: FrontSide }),
-      glow: createHoloMaterial({ mode: HOLO_MODE.glow, color: neonColor(SUNRISE, 1.3, tier), opacity: full ? 0.85 : 0.6 }),
+      skyline: createHoloMaterial({ mode: HOLO_MODE.skyline, color: neonColor("#ffffff", 1.4, tier), opacity: full ? 0.5 : 0.42, params: [base, TOWER_FADE, 0, 0], side: FrontSide, fade: [260, 620] }),
+      glow: createHoloMaterial({ mode: HOLO_MODE.glow, color: neonColor(SUNRISE, 1.1, tier), opacity: full ? 0.6 : 0.45 }),
       strips: createHoloMaterial({ mode: HOLO_MODE.strip, color: neonColor(BRIDGE, 1.6, tier), opacity: full ? 0.9 : 0.7 }),
       pillar: createHoloMaterial({ mode: HOLO_MODE.pillar, color: neonColor(ORIGIN, 1.8, tier), opacity: full ? 1 : 0.8 }),
     }),

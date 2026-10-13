@@ -30,11 +30,11 @@ export function Reactor({ center }: { center: Vec2 }) {
   const full = tier === "full";
   const column = useMemo(() => new CylinderGeometry(REACTOR.radius * 0.8, REACTOR.radius, REACTOR.height, 32, 1, true), []);
   useDispose(column);
-  const ringGeo = useMemo(() => new RingGeometry(0.9, 1, 64, 1), []);
+  const ringGeo = useMemo(() => new RingGeometry(0.86, 1, 64, 1), []);
   useDispose(ringGeo);
-  const coreMat = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.core, color: neonColor(CORE_COLOR, 1.8, tier), opacity: full ? 0.95 : 0.8 }), [tier, full]);
+  const coreMat = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.core, color: neonColor(CORE_COLOR, 2.2, tier), opacity: full ? 0.95 : 0.8 }), [tier, full]);
   useDispose(coreMat);
-  const ringMat = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.ring, color: neonColor("#ffffff", 1.6, tier), opacity: full ? 1 : 0.85, params: [12, 0, 0, 0] }), [tier, full]);
+  const ringMat = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.ring, color: neonColor("#ffffff", 2, tier), opacity: full ? 1 : 0.9, params: [12, 0, 0, 0] }), [tier, full]);
   useDispose(ringMat);
   const materials = useMemo(() => [coreMat, ringMat], [coreMat, ringMat]);
   useUniformTime(materials);
@@ -105,7 +105,7 @@ export function Waterfalls({ bounds }: { bounds: Rect }) {
   }, []);
   useDispose(geometry);
   const material = useMemo(
-    () => createHoloMaterial({ mode: HOLO_MODE.fall, color: neonColor("#ffffff", 1.7, tier), opacity: lite ? 0.75 : 1, params: [18, 2.2, 0, 0] }),
+    () => createHoloMaterial({ mode: HOLO_MODE.fall, color: neonColor("#ffffff", 1.7, tier), opacity: lite ? 0.75 : 1, params: [26, 3, 0, 0] }),
     [tier, lite],
   );
   useDispose(material);

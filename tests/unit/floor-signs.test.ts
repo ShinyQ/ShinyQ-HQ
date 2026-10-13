@@ -21,18 +21,20 @@ const zones = { blog: "Blog", research: "Research", models: "Models and datasets
 describe("L2 floating year markers (they used to be painted on the plazas)", () => {
   const signs = yearMarkerSigns(career.years, FLOOR_COLOR.L2);
 
-  it("floats one big year in the floor accent over each plaza's south edge", () => {
+  it("floats one big year in the floor accent behind each plaza's north room row, never between the rail camera and the road", () => {
     expect(signs.map((s) => s.text)).toEqual(career.years.map((y) => String(y.year)));
     signs.forEach((s, i) => {
       const y = career.years[i];
       expect(s.x).toBe(y.plaza.center.x);
-      expect(s.z).toBe(y.plaza.center.z + CAREER_ROAD.plazaDepth / 2);
+      expect(s.z).toBe(y.plaza.center.z - CAREER_ROAD.plazaDepth / 2 - CAREER_ROAD.apron - CAREER_ROAD.roomDepth - YEAR_MARKER.behind);
+      // Behind every north room of its year (the rail camera looks north from the south).
+      for (const room of career.rooms.filter((r) => r.year === y.year && r.side < 0)) expect(s.z).toBeLessThan(room.center.z - room.d / 2);
+      // Over the slab.
+      expect(s.z).toBeGreaterThan(career.bounds.minZ);
       expect(s.color).toBe(FLOOR_COLOR.L2);
       expect(s.fontSize).toBe(YEAR_MARKER.fontSize);
       expect(s.fadeX).toBe(y.plaza.center.x);
-      // The plate's bottom edge clears the room labels (4.7 u) and the arch.
       expect(s.y - signPlate(s).h / 2).toBeCloseTo(YEAR_MARKER.bottom);
-      expect(YEAR_MARKER.bottom).toBeGreaterThan(CAREER_ROAD.archHeight);
     });
   });
 });

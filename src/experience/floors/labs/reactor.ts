@@ -20,9 +20,9 @@ export const REACTOR = {
   radius: 1.25,
   /** Orbit rings: height, radius, tilt (rad); all above the rover and the follow camera's usual height. */
   rings: [
-    { y: 4.4, r: 2.6, tilt: 0.35 },
-    { y: 6.6, r: 3.3, tilt: -0.25 },
-    { y: 8.8, r: 2.2, tilt: 0.5 },
+    { y: 4.2, r: 2.9, tilt: 0.3 },
+    { y: 6.4, r: 3.6, tilt: -0.22 },
+    { y: 8.8, r: 2.4, tilt: 0.45 },
   ],
   /** Rings shown on the lite tier. */
   liteRings: 2,
