@@ -89,3 +89,7 @@
 - [ ] Captures before and after (1440x900 full, 2560x1440 full, 390x844 lite), arch drive frames, calls and triangles table.
 - [ ] Docs: README hall paragraph, AGENTS.md (hall section, `hq:hall-gate`), spec 01 (L1 hall), spec 08 (hall budget line).
 - [ ] `bun run verify:quick`, push, open the PR, get the four required checks green.
+
+## Revision (after #87 merged)
+
+Owner budget review: at most +2 shader programs per tier. `HallLights` and the separate hall shaders are gone: every hall effect is an instance kind of the shared holo program's `stage` mode (`fx/holoFx.ts`, instances from `floors/lobby/hallStage.ts`), the gateway sign uses `FloatingSigns`, and the tall columns live in `FloorLayout.tall`. Measured: +1 program per tier on L1.
