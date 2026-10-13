@@ -26,7 +26,7 @@ type Point = { x: number; z: number };
 type Item = { id: string; at: Point; action: { type: string; room?: string } };
 type WorkshopWindow = Window & {
   __hq: {
-    layouts: Record<string, { pads?: { id: string; at: Point; year?: number }[]; roomStops?: Record<string, Point>; scrubStops?: number[] }>;
+    layouts: Record<string, { pads?: { id: string; at: Point; year?: number }[]; stops?: Record<string, Point>; scrubStops?: number[] }>;
     interact: { items: Item[] };
     rover: { x: number; z: number; heading: number };
     store: { getState: () => { picker: { kind: string } | null; beam: unknown; openPicker: (p: { kind: "console" }) => void; activeRoom: string | null } };
