@@ -8,11 +8,11 @@ import {
   pathBetween,
   projectOnRoad,
   roadLength,
-  roadRoute,
   routeUsesRoad,
   sampleRoad,
   type RoadNetwork,
 } from "@/experience/nav/road";
+import { roadRoute } from "@/experience/nav/roadRoute";
 import { chevronMarks, dashes, miterNormals, networkFill, offsetLine, roadEdges, spurStub } from "@/experience/nav/roadGeometry";
 import { rectGap, spaceViolations } from "@/experience/nav/space";
 import type { DoorTrigger, Rect, Vec2 } from "@/experience/types";

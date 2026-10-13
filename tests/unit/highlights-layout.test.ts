@@ -6,7 +6,8 @@ import { HALL, HALL_LAYOUT, shouldLoadShots, stationOf } from "@/experience/floo
 import { HIGHLIGHT_STATIONS, highlightRoom } from "@/experience/floors/lobby/stations";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
-import { buildRoadGraph, roadRoute, routeUsesRoad } from "@/experience/nav/road";
+import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
+import { roadRoute } from "@/experience/nav/roadRoute";
 import { spaceViolations } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";
 

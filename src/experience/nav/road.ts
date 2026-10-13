@@ -1,6 +1,5 @@
 import type { RoomId } from "@/content/schema";
 import type { Rect, Vec2 } from "../types";
-import { findPath, segmentWalkable, type NavGrid } from "./navgrid";
 
 /**
  * Road kit for walkable floors (L2 Career Road, L3 Project Roads). Pure: no React or three, so
@@ -358,11 +357,6 @@ export function pathBetween(net: RoadNetwork, a: Vec2, b: Vec2, graph: RoadGraph
   return out;
 }
 
-/**
- * Autopilot route on a floor with a road network: off the road (inside a room or a plaza corner)
- * the rover first reaches the road with the navgrid, then follows the road, then leaves it for
- * the target. Short hops go straight. Falls back to `findPath` when the network has no route.
- */
 /** Whether an autopilot drive follows the floor's road: always when it has one, unless `roadZone` limits it to drives into or out of that zone. */
 export function routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect }, from: Vec2, to: Vec2): boolean {
   if (!layout.road) return false;
@@ -370,22 +364,4 @@ export function routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect }, f
   if (!z) return true;
   const inside = (p: Vec2) => p.x >= z.minX && p.x <= z.maxX && p.z >= z.minZ && p.z <= z.maxZ;
   return inside(from) || inside(to);
-}
-
-export function roadRoute(net: RoadNetwork, grid: NavGrid, from: Vec2, to: Vec2, graph?: RoadGraph): Vec2[] | null {
-  if (dist(from, to) < ROAD.shortcut && segmentWalkable(grid, from, to)) return [to];
-  const road = pathBetween(net, from, to, graph);
-  if (!road?.length) return findPath(grid, from, to);
-  const out: Vec2[] = [];
-  let cursor = from;
-  for (const p of road) {
-    if (segmentWalkable(grid, cursor, p)) out.push(p);
-    else {
-      const leg = findPath(grid, cursor, p);
-      if (!leg?.length) return findPath(grid, from, to);
-      out.push(...leg);
-    }
-    cursor = out[out.length - 1];
-  }
-  return out;
 }

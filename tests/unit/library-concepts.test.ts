@@ -14,7 +14,8 @@ import {
 import { distanceToRect } from "@/experience/nav/collision";
 import { doorAt, onPad } from "@/experience/nav/doors";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
-import { pathBetween, roadRoute } from "@/experience/nav/road";
+import { pathBetween } from "@/experience/nav/road";
+import { roadRoute } from "@/experience/nav/roadRoute";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
 import { expectSpaceRules } from "../helpers/space";
