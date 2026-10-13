@@ -114,14 +114,16 @@ Walkable floor on the road kit (walkable floors plan, part 3). Accent: white `#e
 
 ## 6. Floor RF: Roof (Comms)
 
-Footprint: 40 × 40 u, open sky (stars and slow-moving particle clouds). Accent: blue `#60a5fa`.
+Footprint: the deck runs x -20 to 22, z -20 to 20 (`ROOF_DECK` in `src/experience/floors/roof/layout.ts`, the source of truth), open sky. Accent: blue `#60a5fa`. A road leads east from the elevator into a round 20 u plaza at (2, 0).
 
 | Element | Position | Function |
 |---|---|---|
-| Beacon antenna | (0, -6) | Pulsing light. Shows the availability message on a holographic ribbon. |
-| Comms terminals | Arc at radius 10 in front of the beacon | Email (copy and mailto), LinkedIn, GitHub, Hugging Face |
-| CV kiosk | (10, 6) | Download the CV PDF, or open `/cv` |
-| Elevator door | (-20, 0) | |
+| Lattice mast with the availability sign | Plaza center (2, 0) | The availability as a large neon sign facing the spawn camera; a courier drone patrols the mast |
+| Comms station (`RF:contact`) | x -4 to 8, z -20 to -14 | Email (copy and mailto) and every contact channel, one antenna per channel |
+| CV kiosk (`RF:cv`) | x 16 to 22, z -3 to 3 | Opens the CV viewer, or the PDF |
+| About board | x -8 to 0, z 16 to 20 | Name, headline, role, location and timezone |
+| Visitor Observatory (`RF:visits`) | x 14 to 22, z -20 to -14 (north-east corner, flush with the slab edges); door pad at (18, -12.9) facing north, spur from the plaza at (11, -4) | Public visit stats (owner plan "Public visit stats, Layer 1"): a hologram globe (land dots, one glowing dot per country with visits, never a number per country) and a floating panel (visits in the last 30 complete days and since launch, countries, questions asked, the most explored floor, 3D vs Classic, the source and "Updated daily"). The drawer adds the Topic and Period radio groups and "Don't count my visits". The globe column (7.4 u) is a camera collision column (`FloorLayout.tall`); it turns slowly, faster while the room is open, and holds Indonesia toward the plaza under reduced motion. Hidden or stale stats leave the land only and "Stats offline". |
+| Elevator door | (-20, 0) | The call pad keeps x -20 to -12, z -4 to 4 free |
 
 ## 7. Exterior and intro
 

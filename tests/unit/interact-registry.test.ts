@@ -142,6 +142,8 @@ describe("interactablesFor on the real content", () => {
     expect(find("L2", "L2:door:workshop")?.label).toBe(en.hud.rooms.workshop);
     expect(find("RF", "RF:station:contact")?.label).toBe(en.hud.rooms.contact);
     expect(find("RF", "RF:station:cv")?.label).toBe(en.hud.rooms.cv);
+    expect(find("RF", "RF:station:visits")?.label).toBe(en.hud.rooms.visits);
+    expect(find("RF", "RF:station:visits")?.action).toEqual({ type: "open-room", room: "RF:visits" });
   });
 
   it("adds the L1 profile hologram, skills wall and Ask Rover kiosk", () => {

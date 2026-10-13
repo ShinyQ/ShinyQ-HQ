@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData, GpuTier } from "../types";
+import { sceneProbes } from "../fx/probes";
+import { useRingStats } from "../visits3d";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
 import type { HallLabels } from "./lobby/hallContent";
 import { HighlightsHall } from "./lobby/HighlightsHall";
@@ -14,6 +16,8 @@ import { StatsRing } from "./lobby/StatsRing";
 
 export interface LobbyLabels {
   skillsTitle: string;
+  /** The live visits tile on the stats ring (`stats.tile`). */
+  visitsTile: string;
   certs: CertLabels;
   kiosk: KioskLabels;
   hall: HallLabels;
@@ -34,11 +38,15 @@ function useHallReady(): boolean {
 /** L1 Lobby (appendix 01 section 2), generated from content. */
 export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: LobbyLabels; tier: GpuTier }) {
   const hall = useHallReady();
+  const stats = useRingStats(data.stats, data.locale, labels.visitsTile);
+  useEffect(() => {
+    sceneProbes.spectacle.ringTiles = stats.length;
+  }, [stats.length]);
   return (
     <group name="lobby">
       <Lanes packets={tier === "full" ? 28 : 12} />
       <ProfileHologram name={data.profile.name} monogram={data.profile.monogram} headline={data.profile.headline} />
-      <StatsRing stats={data.stats} />
+      <StatsRing key={stats.length} stats={stats} />
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
       <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
       <MissionKiosk missions={data.missions} labels={labels.kiosk} />

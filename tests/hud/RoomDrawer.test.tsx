@@ -240,7 +240,7 @@ describe("RoomDrawer", () => {
       if (!seen || (view.link && !seen.link)) byKind.set(view.kind, view);
     }
     expect([...byKind.keys()]).toEqual(expect.arrayContaining(["lobby", "highlights", "career", "pod", "post", "research", "roof"]));
-    expect([...byKind.values()].filter((v) => v.link).map((v) => v.kind).sort()).toEqual(["career", "highlights", "pod"]);
+    expect([...byKind.values()].filter((v) => v.link).map((v) => v.kind).sort()).toEqual(["career", "highlights", "lobby", "pod"]);
     for (const view of byKind.values()) {
       const { unmount } = render(<Harness view={view} />);
       const footer = screen.queryByTestId("drawer-footer");

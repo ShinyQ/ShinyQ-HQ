@@ -2,7 +2,7 @@ import { AdditiveBlending, Color, DataTexture, DoubleSide, NormalBlending, Shade
 
 /**
  * One shader for the spectacle effects (floating sign plates, the L2 horizon, the L3 reactor and data
- * waterfalls): `uMode` picks the pattern, so every effect shares one program (two with instancing)
+ * waterfalls, the RF observatory globe): `uMode` picks the pattern, so every effect shares one program (two with instancing)
  * instead of adding one per effect. Fog exempt with its own distance fade (`uFade`, near and far in u;
  * far 0 turns it off), so distant pieces read from the rail camera. Animated through `uTime` (frozen
  * under reduced motion by `useUniformTime`). Always a `ShaderMaterial`, so the ride cull never trusts
@@ -35,6 +35,10 @@ export const HOLO_MODE = {
    * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
    */
   stage: 9,
+  /** Hologram globe body (RF Visitor Observatory): a fresnel rim around the mesh origin and faint latitude lines. */
+  globe: 10,
+  /** Round dot on a quad (globe land and country dots): dimmed where it faces away from the mesh origin's viewer (`uParams.y` = back alpha), pulsing by `uParams.x`. */
+  dot: 11,
 } as const;
 
 export type HoloMode = (typeof HOLO_MODE)[keyof typeof HOLO_MODE];
@@ -42,7 +46,7 @@ export type HoloMode = (typeof HOLO_MODE)[keyof typeof HOLO_MODE];
 export const HOLO_VS = `attribute float aAlpha; attribute vec4 aStage; attribute vec4 aStage2; attribute vec4 aStageUv;
 uniform int uMode; uniform float uTime; uniform vec2 uCenter; uniform float uSpin; uniform float uDrift; uniform float uPulse;
 varying vec2 vUv; varying vec3 vW; varying vec3 vL; varying vec3 vTint; varying vec2 vSize; varying float vSeed; varying float vAlpha; varying float vDist;
-varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal;
+varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal; varying vec3 vC;
 void main(){
   vUv = uv; vL = position; vTint = vec3(1.); vSeed = 0.; vAlpha = 1.; vSize = vec2(1.);
   vStage = vec4(0., 1., 0., 1.); vMapUv = uv; vLocal = vec2(0.);
@@ -88,6 +92,7 @@ void main(){
     }
   }
   vW = w.xyz;
+  vC = (modelMatrix * vec4(0., 0., 0., 1.)).xyz;
   vec4 mv = viewMatrix * w;
   vDist = -mv.z;
   gl_Position = projectionMatrix * mv;
@@ -96,7 +101,7 @@ void main(){
 export const HOLO_FS = `uniform vec3 uColor; uniform float uOpacity; uniform float uTime; uniform vec2 uFade; uniform int uMode; uniform vec4 uParams;
 uniform sampler2D uMap; uniform float uLoaded; uniform float uProgress; uniform float uFlicker; uniform float uPulse; uniform vec3 uFill;
 varying vec2 vUv; varying vec3 vW; varying vec3 vL; varying vec3 vTint; varying vec2 vSize; varying float vSeed; varying float vAlpha; varying float vDist;
-varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal;
+varying vec4 vStage; varying vec2 vMapUv; varying vec2 vLocal; varying vec3 vC;
 float hash(float n){ return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
 float band(float x, float w){ return 1. - smoothstep(0., w, abs(x)); }
 void main(){
@@ -171,7 +176,7 @@ void main(){
     float pulse = band(fract(vUv.x - uTime * 0.12 - hash(vSeed) ) - 0.5, 0.12);
     col = c * (edge * 1.2 + pulse * 1.2 + 0.1);
     a = edge * 0.7 + pulse * 0.6 + 0.06;
-  } else {
+  } else if (uMode == 9) {
     // Stage (HOLO_MODE.stage): vStage = (kind, alpha, t or ring growth, view edge).
     float kind = vStage.x;
     col = c; a = vStage.y;
@@ -207,6 +212,22 @@ void main(){
     } else {
       a *= (1. - vStage.z) * mix(.6, 1., uPulse) * .8;
     }
+  } else if (uMode == 10) {
+    vec3 n = normalize(vW - vC);
+    float f = 1. - abs(dot(n, normalize(cameraPosition - vW)));
+    float rim = f * f * f;
+    float lat = fract(asin(clamp(n.y, -1., 1.)) * 1.9099 + 0.5) - 0.5;
+    float grid = band(lat, 0.04) * 0.3;
+    col = c * (rim * 1.4 + grid + 0.05);
+    a = rim * 0.8 + grid * 0.6 + 0.05;
+  } else {
+    float r = length(vUv - 0.5) * 2.;
+    float d = 1. - smoothstep(0.5, 1., r);
+    float core = 1. - smoothstep(0., 0.45, r);
+    float front = smoothstep(-0.2, 0.3, dot(normalize(vW - vC), normalize(cameraPosition - vW)));
+    float pulse = 1. + uParams.x * 0.4 * sin(uTime * 2.2 + vSeed * 1.7);
+    col = c * (d * 0.7 + core * 0.8) * pulse;
+    a = d * mix(uParams.y, 1., front);
   }
   gl_FragColor = vec4(col, a * uOpacity * fade);
 #include <tonemapping_fragment>

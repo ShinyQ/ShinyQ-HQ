@@ -3,7 +3,7 @@ import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/con
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
 import type { PaletteFilter } from "./host";
 
-export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "roof";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "roof" | "visits";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -52,7 +52,8 @@ export type StructuralRoom =
   | "highlightsProjects"
   | "highlightsExperience"
   | "highlightsContact"
-  | "reactor";
+  | "reactor"
+  | "visits";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
@@ -182,6 +183,17 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
   // RF Roof
   add({ floor: "RF", slug: "contact", kind: "roof", title: labels.contact, subtitle: content.floors.roof.availability, keywords: ["email", "linkedin", "github", "hire"], path: "/contact", floorPath: "/contact", surpriseWeight: 0.5 });
   add({ floor: "RF", slug: "cv", kind: "roof", title: labels.cv, keywords: ["cv", "resume", "pdf"], path: "/cv", floorPath: "/contact#cv", surpriseWeight: 0 });
+  // Public visit stats (owner plan 2026-10-14): the Classic site shows them in the Contact page's "Visits" section.
+  add({
+    floor: "RF",
+    slug: "visits",
+    kind: "visits",
+    title: labels.visits,
+    keywords: ["visits", "kunjungan", "stats", "statistics", "statistik", "analytics", "analitik", "traffic", "countries", "negara", "observatory", "observatorium", "globe"],
+    path: "/contact#visits",
+    floorPath: "/contact#visits",
+    surpriseWeight: 0,
+  });
 
   return rooms;
 }

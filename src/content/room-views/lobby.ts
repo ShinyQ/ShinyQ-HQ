@@ -31,6 +31,8 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       accent: "green",
       metrics: getStats().map((s) => ({ value: s.value, label: s.label[locale] })),
       page: "/#stats",
+      // The ring's live visits tile comes from the public stats: the observatory on the roof shows them in full.
+      link: { room: roomId("RF", "visits"), label: m.stats.openObservatory },
     }),
     single({
       id: roomId("L1", "skills"),

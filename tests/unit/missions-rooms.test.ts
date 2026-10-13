@@ -39,6 +39,9 @@ describe("room catalog", () => {
     expect(roomPath(pod, "overview")).toBe("/labs/voice-ai-contact-center");
     expect(roomPath(byId.get("RF:contact")!)).toBe("/contact");
     expect(roomPath(byId.get("RF:cv")!)).toBe("/cv");
+    expect(roomPath(byId.get("RF:visits")!)).toBe("/contact#visits");
+    expect(byId.get("RF:visits")!.kind).toBe("visits");
+    expect(byId.get("RF:visits")!.keywords).toEqual(expect.arrayContaining(["visits", "kunjungan", "stats"]));
     expect(byId.get("L2:prologue-2016")!.floorPath).toBe("/journey#y2019");
     expect(byId.get("L1:skills")!.path).toBe("/#skills");
   });

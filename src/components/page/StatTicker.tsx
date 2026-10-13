@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Locale, Stat } from "@/content/schema";
 
 export interface StatTickerProps {
@@ -10,6 +11,8 @@ export interface StatTickerProps {
   /** "Updated {date}" from the live facts' `asOf`, already formatted. */
   updated: string;
   pause: string;
+  /** Live items appended to both copies of the track (`copy` is the aria-hidden duplicate): the public visits island. */
+  extra?: (copy: boolean) => ReactNode;
 }
 
 /**
@@ -18,7 +21,7 @@ export interface StatTickerProps {
  * aria-hidden; the native "Pause motion" checkbox stops every hero animation; under reduced motion the
  * copy and the checkbox hide and the first list becomes one still, scrollable row.
  */
-export function StatTicker({ stats, locale, liveIds, title, live, updated, pause }: StatTickerProps) {
+export function StatTicker({ stats, locale, liveIds, title, live, updated, pause, extra }: StatTickerProps) {
   const track = (hidden: boolean) => (
     <ul className="hx-tick-track" aria-hidden={hidden || undefined}>
       {stats.map((stat) => (
@@ -28,6 +31,7 @@ export function StatTicker({ stats, locale, liveIds, title, live, updated, pause
           {liveIds.includes(stat.id) && <span className="pv-data hx-tick-live">{live}</span>}
         </li>
       ))}
+      {extra?.(hidden)}
     </ul>
   );
   return (

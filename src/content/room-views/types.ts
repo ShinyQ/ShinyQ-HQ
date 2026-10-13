@@ -1,3 +1,4 @@
+import type { VisitsLabels } from "@/lib/visits/labels";
 import type { Accent, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
@@ -159,6 +160,8 @@ export interface RoomView {
   cards?: RoomCard[];
   /** L3 Tech Reactor: rings, techs and project counts (`ReactorBody`). */
   reactor?: RoomReactor;
+  /** RF:visits: labels the live stats panel needs (`VisitsBody`); the numbers are fetched on the client. */
+  visits?: VisitsLabels;
 }
 
 export type RoomViews = Record<RoomId, RoomView>;

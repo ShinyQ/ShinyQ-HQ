@@ -33,6 +33,13 @@ describe("holo fx shader", () => {
     const modes = Object.values(HOLO_MODE);
     expect(new Set(modes).size).toBe(modes.length);
     for (const m of modes.slice(0, -1)) expect(HOLO_FS).toContain(`uMode == ${m}`);
+    // Balanced braces and parentheses: a stray one fails the shared program on every floor at once.
+    for (const src of [HOLO_VS, HOLO_FS]) {
+      expect(src.split("{").length).toBe(src.split("}").length);
+      expect(src.split("(").length).toBe(src.split(")").length);
+    }
+    // A branch closed twice at the same depth (the bug this guards against): "  }\n  } else".
+    expect(HOLO_FS).not.toMatch(/\n( +)}\n\1} else/);
     const a = createHoloMaterial({ mode: HOLO_MODE.plate });
     const b = createHoloMaterial({ mode: HOLO_MODE.fall, fade: [10, 40] });
     expect(a.vertexShader).toBe(b.vertexShader);
