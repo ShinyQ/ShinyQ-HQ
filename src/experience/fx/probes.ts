@@ -6,6 +6,7 @@ import { renderProbe } from "../scene/renderProbe";
  * Scene facts for Playwright (`window.__hq.probes`), written by scene components in `useFrame`, never
  * read during render. `flippedSigns`: `Readable` groups turned around because the camera is behind
  * them. `signs`: floating signs (`fx/FloatingSign.tsx`). `ghosts`: floors above the rover whose ghost slab is drawn this frame (none in first person).
+ * `hallGate`: light curtain sweeps of the Highlights Hall gateway arch since load, and whether one runs now.
  */
 export const sceneProbes = {
   flippedSigns: 0,
@@ -16,6 +17,7 @@ export const sceneProbes = {
   spectacle: {} as Record<string, number>,
   /** Texts drawn flat on a floor right now (spectacle round: there should be none, `flatTexts`). */
   flatText: (): string[] => (renderProbe.scene ? flatTexts(renderProbe.scene) : []),
+  hallGate: { sweeps: 0, active: false },
 };
 
 type TextLike = Object3D & { text?: unknown; textRenderInfo?: unknown; _members?: Map<Object3D & { text?: string }, unknown> };

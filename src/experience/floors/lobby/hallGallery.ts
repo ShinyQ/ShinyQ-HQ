@@ -80,7 +80,7 @@ export interface StatTile {
   phase: number;
 }
 
-export function statTiles(count = ABOUT.tiles.u.length): StatTile[] {
+export function statTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
   const face = aboutFace();
   const T = ABOUT.tiles;
   return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: i * 1.7 }));
@@ -97,7 +97,7 @@ export interface Monolith {
   box: Box;
 }
 
-export function monoliths(count = MONOLITH.u.length): Monolith[] {
+export function monoliths(count: number = MONOLITH.u.length): Monolith[] {
   const s = stationOf("projects");
   const out = { x: -s.facing.x, z: -s.facing.z };
   // The middle monolith's center line; the arc bends the outer two toward the plaza.
@@ -238,7 +238,7 @@ const cone = (x: number, z: number, h: number, r0: number, color: string, alpha:
 const pool = (x: number, z: number, r: number, color: string, alpha: number): LightInstance => ({ kind: "pool", x, y: 0.025, z, h: 0, r0: r, r1: 0, color, alpha, spin: 0, phase: 0 });
 
 /** Every spotlight cone, uplight, fountain beam and glow pool of the hall (one instanced draw call). Lite gets fewer fountain beams. */
-export function hallLights(tier: GpuTier, projectCount = 3): LightInstance[] {
+export function hallLights(tier: GpuTier, projectCount: number = 3): LightInstance[] {
   const T = HALL.tone;
   const out: LightInstance[] = [];
   // About me: spotlight, floor pool and the projector beam from the column up to the portrait.
@@ -289,7 +289,7 @@ const rectOfBox = (b: Box): Rect => {
 };
 
 /** Gallery shapes taller than the default camera clearance, for the camera collision (`TALL` in CameraDirector). */
-export function hallTall(projectCount = 3): TallObstacle[] {
+export function hallTall(projectCount: number = 3): TallObstacle[] {
   const g = HALL.gate;
   const arch = experienceArch();
   const b = contactBeacon();

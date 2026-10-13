@@ -2,6 +2,7 @@ import type { FloorId } from "@/content/schema";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
+import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { elevatorPad } from "./nav/pads";
@@ -182,6 +183,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       road: HALL_LAYOUT.network,
       roadZone: HALL_LAYOUT.zone,
       viewZones: HALL_LAYOUT.viewZones,
+      // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact card).
+      tall: hallTall(),
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

@@ -46,7 +46,7 @@ describe("Highlights Hall point-and-go targets", () => {
     expect(items.map((i) => i.id)).toEqual(HIGHLIGHT_STATIONS.map((s) => `L1:station:highlights-${s}`));
     items.forEach((item, i) => {
       const s = HALL_LAYOUT.stations[i];
-      expect(item).toMatchObject({ floor: "L1", kind: "station", label: stationNames[s.station], height: HALL.panel.h, action: { type: "open-room", room: s.room } });
+      expect(item).toMatchObject({ floor: "L1", kind: "station", label: stationNames[s.station], height: HALL.height[s.station], action: { type: "open-room", room: s.room } });
       expect(item.at).toEqual(roomTarget(undefined, s.room, layouts, experience.years));
       // The footprint covers the panel and the door pad, so pointing at either picks the station.
       expect(item.bounds.minX).toBeLessThanOrEqual(Math.min(s.rect.minX, s.pad.x));
