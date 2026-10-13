@@ -37,6 +37,8 @@ CI budgets are authoritative (owner decision 2026-10-13). Where a CI gate exists
 | Troika font cuts | At most 64 KB in total, every in-world character covered | same | `tests/content/troika-fonts.test.ts` |
 | Bytes before the first 3D frame (game-first `/en`, lite) | Only the HTML, CSS, page fonts, initial JS and the 3D chunks; no Page View images, link prefetch or room data | same | `e2e/boot-first.spec.ts` quiet boot |
 
+Known over budget (expected failures in `KNOWN_OVER`, `e2e/perf/peaks.spec.ts`; remove an id as soon as its test passes): the triangle peak of two elevator rides, since P2 (main bef59b7) shows a ride's target floor and every floor within one floor gap under the car (`tower/visibility.ts`). `lite ride-L3-L2`: 124 scene calls, 31,306 triangles. `full ride-L2-L1`: 116 scene calls plus 17 post passes, 34,045 triangles. Scene calls and post passes are in budget in both.
+
 ## 3. Test strategy
 
 | Layer | Tool | What |
