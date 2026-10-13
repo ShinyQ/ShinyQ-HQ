@@ -322,6 +322,7 @@
     "bootLine5": "[ ok ] elevator ready",
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
+    "retry3d": "Retry 3D",
     "staticNotice": "3D is unavailable. Showing page view.",
     "kioskTitle": "rover@hq:~$ ./ask-rover",
     "kioskHint": "Select the kiosk or the rover to open Ask Rover",

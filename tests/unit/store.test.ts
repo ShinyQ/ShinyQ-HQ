@@ -125,6 +125,14 @@ describe("HQ store", () => {
     expect(store.getState()).toMatchObject({ tier: "static", phase: "static" });
   });
 
+  it("recovers from the static tier to explore with the detected tier", () => {
+    store.getState().requestElevator("up");
+    store.getState().setTier("static");
+    expect(store.getState().phase).toBe("static");
+    store.getState().recover("lite");
+    expect(store.getState()).toMatchObject({ tier: "lite", phase: "explore", ride: null, beam: null, picker: null });
+  });
+
   it("persists only visited, firstVisit and locale (the audio engine owns sound)", () => {
     store.getState().toggleSound();
     store.getState().setLocale("id");

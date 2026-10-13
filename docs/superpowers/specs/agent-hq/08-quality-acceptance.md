@@ -8,7 +8,7 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 |---|---|---|
 | `full` | WebGL2, fine pointer, not a low-memory or low-core device (local heuristic, `src/lib/gpu-tier.ts`) | Everything, including bloom; DPR up to 2 within an 8.3 MP pixel budget, composer MSAA 4 below DPR 1.5; a runtime safety net steps DPR, then MSAA, then bloom on sustained drops (at most 2 changes per minute) |
 | `lite` | WebGL2 available, lower tier or mobile | No bloom, no point lights, fewer particles, DPR ≤ 1.5 |
-| `static` | No WebGL2, tier 0, `saveData`, or a WebGL error | HTML pages only (same content and missions as links) |
+| `static` | No WebGL2, tier 0, `saveData`, or a WebGL error that survives one automatic remount (the notice offers Retry 3D) | HTML pages only (same content and missions as links) |
 
 Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS Safari 16.4+; Android Chrome 110+. Visitors can force a tier with `?tier=lite` or `?tier=static`.
 

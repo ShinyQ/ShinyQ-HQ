@@ -98,6 +98,8 @@ export interface HQState {
   setLocale: (locale: Locale) => void;
   toggleSound: () => void;
   setTier: (tier: GpuTier) => void;
+  /** After a WebGL crash, right before the canvas remounts: explore again with the tier the gate detected. */
+  recover: (tier: GpuTier) => void;
   setRover: (rover: Partial<RoverState>) => void;
   setDevice: (device: Partial<DeviceState>) => void;
   setReducedMotion: (reduced: boolean) => void;
@@ -216,6 +218,10 @@ export function createHQStore(storage?: StateStorage) {
         setLocale: (locale) => set({ locale }),
         toggleSound: () => set({ sound: !get().sound }),
         setTier: (tier) => set(tier === "static" ? { tier, phase: "static", ride: null } : { tier }),
+        recover: (tier) => {
+          const { phase } = get();
+          set({ tier, ride: null, beam: null, picker: null, phase: phase === "static" || phase === "elevator" ? "explore" : phase });
+        },
         setRover: (rover) => {
           const current = get().rover;
           if (!sameRover(current, rover)) set({ rover: { ...current, ...rover } });

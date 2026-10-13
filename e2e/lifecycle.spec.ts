@@ -1,6 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { asReturningVisitor, enterHQ, waitForCameraSettle, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
 import { heroPod } from "./routes";
+import en from "../messages/en.json";
 
 /**
  * Round 5 P3 lifecycle: the paced frame loop, pauses under covering panels, store write rates and
@@ -246,5 +247,41 @@ test.describe("no backdrop blur under near-opaque panels", () => {
     const scrim = page.locator("[aria-hidden='true'].bg-void\\/70");
     expect(await scrim.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe("none");
     await context.close();
+  });
+});
+
+async function countHqMounts(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __hqMounts: number };
+    w.__hqMounts = 0;
+    new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) if (node instanceof HTMLElement && node.matches("[data-testid=hq]")) w.__hqMounts += 1;
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  });
+}
+
+const hqMounts = (page: Page) => page.evaluate(() => (window as unknown as { __hqMounts: number }).__hqMounts);
+
+test.describe("WebGL crash recovery", () => {
+  test("a context that cannot be created retries once, then offers Retry 3D without looping", async ({ page }) => {
+    await countHqMounts(page);
+    await page.addInitScript(() => {
+      const getContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+        if (type.startsWith("webgl") && this.closest("[data-testid=hq]")) return null;
+        return (getContext as (...a: unknown[]) => unknown).call(this, type, ...rest);
+      } as typeof getContext;
+    });
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    const notice = page.getByRole("status").filter({ hasText: en.hud.staticNotice });
+    await expect(notice).toBeVisible({ timeout: 30_000 });
+    expect(await hqMounts(page)).toBe(2);
+    await test.info().attach("static notice with Retry 3D (desktop)", { body: await page.screenshot(), contentType: "image/png" });
+    await page.getByTestId("retry-3d").click();
+    await expect.poll(() => hqMounts(page)).toBe(3);
+    await expect(notice).toBeVisible({ timeout: 30_000 });
+    await page.waitForTimeout(2000);
+    expect(await hqMounts(page)).toBe(3);
   });
 });

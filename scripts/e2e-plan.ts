@@ -123,6 +123,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
+  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },

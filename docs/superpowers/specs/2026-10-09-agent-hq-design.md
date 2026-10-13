@@ -224,7 +224,7 @@ Rules:
 
 ### 4.6 Error handling
 
-- A WebGL context loss or crash falls back to the `static` tier with a small notice.
+- A WebGL context loss or crash remounts the 3D view once on a fresh canvas (after the tab is visible again); a second failure falls back to the `static` tier with a small notice and a "Retry 3D" button, which tries once more.
 - Content validation failures fail the build, not runtime.
 - Missing optional assets render placeholders, never broken images. All images are committed or served from stable URLs; no expiring links, which is the failure mode of the current site.
 

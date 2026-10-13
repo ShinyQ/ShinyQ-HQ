@@ -15,6 +15,7 @@ import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { CanvasBoundary } from "./CanvasBoundary";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
@@ -155,9 +156,10 @@ export default function Experience({
   tier,
   onExit,
   onFirstFrame,
+  onCrash,
   startFloor,
   startRoom,
-}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void } & ExperienceStart) {
+}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
@@ -396,38 +398,40 @@ export default function Experience({
   return (
     <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
-        <Canvas
-          dpr={appliedDpr ?? budget.dpr}
-          frameloop="never"
-          gl={{ antialias: false, powerPreference: "high-performance" }}
-          camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
-          onCreated={({ gl, scene, camera }) => {
-            renderProbe.gl = gl;
-            renderProbe.scene = scene;
-            renderProbe.camera = camera;
-            gl.toneMapping = ACESFilmicToneMapping;
-            gl.toneMappingExposure = sceneSettings(tier).exposure;
-            trackRenderer(gl);
-            created.current = { gl, scene };
-            const canvas = gl.domElement;
-            canvas.addEventListener("webglcontextlost", (event) => {
-              event.preventDefault();
-              // Unmounting (Page view) also loses the context on purpose; only a canvas that is
-              // still on the page has really crashed.
-              window.setTimeout(() => {
-                if (canvas.isConnected) getHQStore().getState().setTier("static");
-              }, 0);
-            });
-          }}
-          role="img"
-          aria-label={t("canvasLabel")}
-          aria-describedby="hq-desc"
-          onPointerMissed={onWorldMissed}
-        >
-          <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
-          <FirstFrame onFrame={onFirstFrame} />
-          <FrameLoop />
-        </Canvas>
+        <CanvasBoundary onError={onCrash}>
+          <Canvas
+            dpr={appliedDpr ?? budget.dpr}
+            frameloop="never"
+            gl={{ antialias: false, powerPreference: "high-performance" }}
+            camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
+            onCreated={({ gl, scene, camera }) => {
+              renderProbe.gl = gl;
+              renderProbe.scene = scene;
+              renderProbe.camera = camera;
+              gl.toneMapping = ACESFilmicToneMapping;
+              gl.toneMappingExposure = sceneSettings(tier).exposure;
+              trackRenderer(gl);
+              created.current = { gl, scene };
+              const canvas = gl.domElement;
+              canvas.addEventListener("webglcontextlost", (event) => {
+                event.preventDefault();
+                // Unmounting (Page view) also loses the context on purpose; only a canvas that is still on
+                // the page has really crashed. The gate remounts once, then shows the static page.
+                window.setTimeout(() => {
+                  if (canvas.isConnected) onCrash();
+                }, 0);
+              });
+            }}
+            role="img"
+            aria-label={t("canvasLabel")}
+            aria-describedby="hq-desc"
+            onPointerMissed={onWorldMissed}
+          >
+            <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
+            <FirstFrame onFrame={onFirstFrame} />
+            <FrameLoop />
+          </Canvas>
+        </CanvasBoundary>
       </div>
       <p id="hq-desc" className="sr-only">
         {t("canvasDescription")}
