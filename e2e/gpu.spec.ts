@@ -77,7 +77,8 @@ test("boot warms every floor: first arrivals add at most 2 programs each (full t
   await firstSession(page);
   await expect
     .poll(() => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.warmFloors().sort()), { timeout: 120_000 })
-    .toEqual(["L2", "L3", "L4", "RF"]);
+    // The Lobby is warm too once the tower's FloorPrep (R5 P6) compiled it; the boot warms the other four.
+    .toEqual(expect.arrayContaining(["L2", "L3", "L4", "RF"]));
   await bootRover(page);
   await waitForPhase(page, "explore", 60_000);
   await waitForSceneLive(page);
