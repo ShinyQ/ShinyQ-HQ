@@ -76,11 +76,24 @@ async function ciRunsOn(repo: string, sha: string, token: string): Promise<{ sta
 }
 
 /** The newest successful CI runs (any event) whose commit has the same tree as `sha`. */
+export interface RunOrigin {
+  event: string;
+  head_branch: string | null;
+  head_repository: { full_name: string } | null;
+}
+
+/** CI runs a deploy may reuse by tree: pushes to main and pull requests from this repository's own branches, never forks. */
+export function trustedRun(run: RunOrigin, repo: string): boolean {
+  if (run.head_repository?.full_name !== repo) return false;
+  if (run.event === "push") return run.head_branch === "main";
+  return run.event === "pull_request";
+}
+
 async function runWithSameTree(repo: string, sha: string, token: string): Promise<TestedRun | undefined> {
   const tree = await treeOf(repo, sha, token);
-  const { workflow_runs } = await gh<{ workflow_runs: { head_sha: string; html_url: string }[] }>(`/repos/${repo}/actions/workflows/${CI_WORKFLOW}/runs?status=success&per_page=30`, token);
+  const { workflow_runs } = await gh<{ workflow_runs: (RunOrigin & { head_sha: string; html_url: string })[] }>(`/repos/${repo}/actions/workflows/${CI_WORKFLOW}/runs?status=success&per_page=30`, token);
   const tested: TestedRun[] = [];
-  for (const run of workflow_runs) {
+  for (const run of workflow_runs.filter((r) => trustedRun(r, repo))) {
     const runTree = run.head_sha === sha ? tree : await treeOf(repo, run.head_sha, token).catch(() => "");
     tested.push({ head_sha: run.head_sha, tree: runTree, html_url: run.html_url });
     if (runTree === tree) break;

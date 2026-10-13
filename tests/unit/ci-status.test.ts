@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CI_CHECK, ciRunning, sameTreeRun, verdictFromChecks, type CheckRun } from "../../scripts/ci-status";
+import { CI_CHECK, ciRunning, sameTreeRun, trustedRun, verdictFromChecks, type CheckRun } from "../../scripts/ci-status";
 
 const run = (status: string, conclusion: string | null, url = "https://github.com/o/r/runs/1", name = CI_CHECK): CheckRun => ({ name, status, conclusion, html_url: url });
 
@@ -35,6 +35,16 @@ describe("deploy reuses the CI result", () => {
     ];
     expect(sameTreeRun("t2", runs)?.html_url).toBe("r2");
     expect(sameTreeRun("t3", runs)).toBeUndefined();
+  });
+
+  it("only trusts CI runs of this repository: pushes to main and pull requests from its own branches", () => {
+    const repo = "o/r";
+    expect(trustedRun({ event: "push", head_branch: "main", head_repository: { full_name: repo } }, repo)).toBe(true);
+    expect(trustedRun({ event: "pull_request", head_branch: "chore/facts", head_repository: { full_name: repo } }, repo)).toBe(true);
+    expect(trustedRun({ event: "pull_request", head_branch: "main", head_repository: { full_name: "fork/r" } }, repo)).toBe(false);
+    expect(trustedRun({ event: "push", head_branch: "feature", head_repository: { full_name: repo } }, repo)).toBe(false);
+    expect(trustedRun({ event: "workflow_dispatch", head_branch: "main", head_repository: { full_name: repo } }, repo)).toBe(false);
+    expect(trustedRun({ event: "pull_request", head_branch: "x", head_repository: null }, repo)).toBe(false);
   });
 
   it("waits while a CI run on the commit has not reached the aggregate job", () => {
