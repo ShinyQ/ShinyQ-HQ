@@ -112,19 +112,18 @@ export function Waterfalls({ bounds }: { bounds: Rect }) {
   useDispose(material);
   const materials = useMemo(() => [material], [material]);
   useUniformTime(materials);
-  const mesh = useRef<InstancedMesh>(null);
-  useEffect(() => {
-    const m = mesh.current;
-    if (!m) return;
+  // Matrices exist from creation, so the mesh is frustum culled with bounds that cover every panel.
+  const matrices = useMemo(() => {
     const dummy = new Object3D();
+    const out = new Float32Array(panels.length * 16);
     panels.forEach((p, i) => {
       dummy.position.set((p.a.x + p.b.x) / 2, 0.08, (p.a.z + p.b.z) / 2);
       dummy.rotation.set(0, Math.atan2(p.out.x, p.out.z), 0);
       dummy.scale.set(WATERFALL.length, WATERFALL.drop, 1);
       dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
+      dummy.matrix.toArray(out, i * 16);
     });
-    m.instanceMatrix.needsUpdate = true;
+    return out;
   }, [panels]);
   const colors = useMemo(() => new Float32Array(panels.flatMap((_, i) => neonColor(i % 2 ? WING_TINT.ai : WING_TINT.software, 1, "lite").toArray())), [panels]);
   useFrame(() => {
@@ -137,7 +136,8 @@ export function Waterfalls({ bounds }: { bounds: Rect }) {
     [],
   );
   return (
-    <instancedMesh key={panels.length} ref={mesh} name="labs-waterfalls" args={[geometry, material, panels.length]} frustumCulled={false} raycast={NO_RAYCAST}>
+    <instancedMesh key={panels.length} name="labs-waterfalls" args={[geometry, material, panels.length]} raycast={NO_RAYCAST}>
+      <instancedBufferAttribute attach="instanceMatrix" args={[matrices, 16]} />
       <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
     </instancedMesh>
   );

@@ -120,7 +120,8 @@ export function Horizon({ layout }: { layout: CareerRoadLayout }) {
 
 function InstancedSet({ name, set, material }: { name: string; set: ReturnType<typeof useInstanced>; material: Material }) {
   return (
-    <instancedMesh key={set.count} name={name} args={[set.geometry, material, set.count]} frustumCulled={false} raycast={NO_RAYCAST}>
+    // Frustum culled: the instance matrices exist from creation, so the bounds cover every instance.
+    <instancedMesh key={set.count} name={name} args={[set.geometry, material, set.count]} raycast={NO_RAYCAST}>
       <instancedBufferAttribute attach="instanceMatrix" args={[set.matrix, 16]} />
       <instancedBufferAttribute attach="instanceColor" args={[set.color, 3]} />
     </instancedMesh>
