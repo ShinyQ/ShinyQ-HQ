@@ -55,7 +55,8 @@ export interface AiBinding {
 }
 
 export interface KvNamespace {
-  get(key: string): Promise<string | null>;
+  /** `cacheTtl` (seconds, at least 30) keeps the value cached at the reading location. */
+  get(key: string, options?: { cacheTtl?: number }): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
@@ -91,6 +92,23 @@ export interface RumEnv {
   /** Site origins, shared with Ask the HQ. */
   ASK_ALLOWED_ORIGINS?: string;
   PERF_EVENTS?: AnalyticsEngineDataset;
+}
+
+/** Bindings of the visit beacon Function (functions/api/visit.ts, appendix 06 section 4). */
+export interface VisitEnv {
+  /** Kill switch of the public visit stats: anything but "true" drops every point (still 204). */
+  STATS_ENABLED?: string;
+  /** Site origins, shared with Ask the HQ. */
+  ASK_ALLOWED_ORIGINS?: string;
+  VISIT_EVENTS?: AnalyticsEngineDataset;
+}
+
+/** Bindings of the public stats Function (functions/api/stats.ts). */
+export interface StatsEnv {
+  /** Kill switch: anything but "true" answers 204, so every stats view hides. */
+  STATS_ENABLED?: string;
+  /** KV namespace written by the hq-stats Cron Worker (workers/stats/), read only here. */
+  STATS_KV?: KvNamespace;
 }
 
 export interface PagesContext<E = AskEnv> {
