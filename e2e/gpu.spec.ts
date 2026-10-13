@@ -73,7 +73,7 @@ test("intro and ride draw-call peaks (full tier)", async ({ page }) => {
   for (const [name, value] of Object.entries(peaks)) expect(value, `${name} peak (all render passes)`).toBeLessThan(150);
 });
 
-test("boot warms every floor: first arrivals add at most 2 programs each (full tier)", async ({ page }) => {
+test("boot warms every floor: first arrivals add at most 3 programs each (full tier)", async ({ page }) => {
   await firstSession(page);
   await expect
     .poll(() => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.warmFloors().sort()), { timeout: 120_000 })
@@ -93,7 +93,9 @@ test("boot warms every floor: first arrivals add at most 2 programs each (full t
   }
   report("programs-added", Object.fromEntries(Object.entries(added).map(([k, v]) => [k, v.length])));
   report("programs-added-names", added);
-  for (const [floor, names] of Object.entries(added)) expect(names.length, `${floor}: ${names.join(", ")}`).toBeLessThanOrEqual(2);
+  // At most 3 (plan: never above 4): the composer's EffectMaterial gets a new variant when a ride starts
+  // (postprocessing pass, not floor content; main adds it too), plus at most 2 floor programs.
+  for (const [floor, names] of Object.entries(added)) expect(names.length, `${floor}: ${names.join(", ")}`).toBeLessThanOrEqual(3);
 });
 
 const BUDGET_CASES = [
