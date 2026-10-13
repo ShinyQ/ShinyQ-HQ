@@ -23,7 +23,8 @@ function reporter(): ReporterDescription[] {
 }
 
 export default defineConfig({
-  testDir: "e2e",
+  // The perf lane lists only e2e/perf/, so `bun run e2e:perf <file>` narrows to that file.
+  testDir: PERF ? "e2e/perf" : "e2e",
   // Ignored (not just skipped) so they do not count toward sharding or the test list.
   testIgnore: [...(SCREENSHOTS ? [] : SCREENSHOT_SPECS), ...(PERF ? [] : PERF_SPECS)],
   fullyParallel: true,

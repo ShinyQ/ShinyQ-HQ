@@ -18,7 +18,7 @@
     "e2e:changed": "bun scripts/e2e-changed.ts",
     "e2e:smoke": "bun scripts/e2e-changed.ts --smoke",
     "e2e:shard": "bun scripts/e2e-shard.ts",
-    "e2e:perf": "PERF=1 playwright test e2e/perf --grep-invert \"@nightly|@look\"",
+    "e2e:perf": "PERF=1 playwright test --grep-invert \"@nightly|@look\"",
     "e2e:timeline": "PERF=1 playwright test e2e/perf/timeline.spec.ts --workers=1",
     "e2e:look": "PERF=1 playwright test e2e/perf/look.spec.ts --workers=1",
     "screenshots": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts --workers=1",
