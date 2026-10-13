@@ -10,7 +10,7 @@ import type { BatchedLabel } from "../../fx/labelProps";
 import { neonColor } from "../../fx/materials";
 import { ROAD } from "../../nav/road";
 import { FONTS } from "../../tower/primitives";
-import type { GpuTier, Vec2 } from "../../types";
+import type { GpuTier, Rect, Vec2 } from "../../types";
 import { aboutCard, CHANNEL_TONE, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
 import { ROOF_DECK, type RoofActive } from "./layout";
 import { observatoryParts } from "./observatory";
@@ -64,7 +64,10 @@ function SignGlow({ at, yaw, size, tier, reducedMotion }: { at: V3; yaw: number;
 }
 
 /** Glowing floor lights in the channel hues, flat on the deck (one instanced draw call). */
-function Flowers({ spots, tier }: { spots: readonly Vec2[]; tier: GpuTier }) {
+/** A floor light and its index in the original scatter (its hue and spin), kept when later stations drop lights. */
+type FloorLight = Vec2 & { k: number };
+
+function Flowers({ spots, tier }: { spots: readonly FloorLight[]; tier: GpuTier }) {
   const mesh = useRef<InstancedMesh>(null);
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -74,10 +77,10 @@ function Flowers({ spots, tier }: { spots: readonly Vec2[]; tier: GpuTier }) {
     const tones = Object.values(CHANNEL_TONE);
     spots.forEach((p, i) => {
       o.position.set(p.x, 0.04, p.z);
-      o.rotation.set(-Math.PI / 2, 0, (i * 2.4) % (Math.PI * 2));
+      o.rotation.set(-Math.PI / 2, 0, (p.k * 2.4) % (Math.PI * 2));
       o.updateMatrix();
       m.setMatrixAt(i, o.matrix);
-      m.setColorAt(i, color.set(tones[i % tones.length]));
+      m.setColorAt(i, color.set(tones[p.k % tones.length]));
     });
     m.instanceMatrix.needsUpdate = true;
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
@@ -197,17 +200,33 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
     const pad = layout.callPad;
     const plazaR = layout.plaza.w / 2;
     const near = (p: Vec2, r: { minX: number; maxX: number; minZ: number; maxZ: number }, m: number) => p.x > r.minX - m && p.x < r.maxX + m && p.z > r.minZ - m && p.z < r.maxZ + m;
-    const spots = scatter(
+    // The Visitor Observatory came later: scatter with the rules the deck had before it (so every other
+    // floor light keeps its place, hue and spin, which come from its index), then drop the lights on the
+    // station, its spur and its stop.
+    const visits = layout.visits;
+    const sameRect = (a: Rect, r: Rect) => a.minX === r.minX && a.maxX === r.maxX && a.minZ === r.minZ && a.maxZ === r.maxZ;
+    const visitsSpur = layout.network.spurs.find((sp) => sp.room === "RF:visits");
+    const onSpur = (p: Vec2) => {
+      if (!visitsSpur) return false;
+      const { from: a, to: t } = visitsSpur;
+      const dx = t.x - a.x;
+      const dz = t.z - a.z;
+      const k = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
+      return Math.hypot(p.x - (a.x + dx * k), p.z - (a.z + dz * k)) < (visitsSpur.width ?? ROAD.minWidth) / 2 + 0.5;
+    };
+    const spots: FloorLight[] = scatter(
       detail.flowers,
       { minX: b.minX + 1, maxX: b.maxX - 1, minZ: b.minZ + 1, maxZ: b.maxZ - 1 },
       (p) =>
         near(p, pad, 1) ||
         (p.x < c.x && Math.abs(p.z - c.z) < ROAD.minWidth / 2 + 1) ||
         Math.hypot(p.x - c.x, p.z - c.z) < plazaR + 0.5 ||
-        layout.floor.obstacles.some((o) => near(p, o, 0.5)) ||
-        Object.values(layout.stops).some((s) => Math.hypot(p.x - s.x, p.z - s.z) < 2.5) ||
+        layout.floor.obstacles.some((o) => !sameRect(o, visits) && near(p, o, 0.5)) ||
+        Object.entries(layout.stops).some(([stop, s]) => stop !== "visits" && Math.hypot(p.x - s.x, p.z - s.z) < 2.5) ||
         Math.hypot(p.x - layout.floor.spawn.x, p.z - layout.floor.spawn.z) < 2.5,
-    );
+    )
+      .map((p, k) => ({ ...p, k }))
+      .filter((p) => !near(p, visits, 0.5) && !onSpur(p) && Math.hypot(p.x - layout.stops.visits.x, p.z - layout.stops.visits.z) >= 2.5);
     const icons = {
       email: [{ x: commsX, y: 2.4, z: comms.maxZ - 0.8, face: 0 }],
       cv: [{ x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2 }],
