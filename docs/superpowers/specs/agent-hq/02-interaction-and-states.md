@@ -99,7 +99,7 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 ## 5. Command palette
 
 - **Open:** `⌘K` / `Ctrl+K`, `/`, or the search button in the HUD.
-- **Index:** missions, rooms (all floors), years, actions (`Download CV`, `Copy email`, `Toggle language`, `Toggle sound`, `Quick view`).
+- **Index:** missions, rooms (all floors), years, actions (`Download CV`, `Copy email`, `Toggle language`, `Toggle sound`, `Quick view`), and one "Show projects using X" row per Tech Reactor tech (section 9; shown for a query only, its title weighs like keywords so a bare tech name still opens a project first).
 - **Search:** fuzzy matching over title, tags, stack and year, in both languages. Results are grouped by type with a floor badge. Entry texts are normalized once per index; a keystroke normalizes only the query (budget: p95 under 16 ms per keystroke at 4x CPU, `tests/bench/search.bench.ts`).
 - **Empty query:** shows the missions, then "Recent" (last 3 visited rooms).
 - **Keyboard:** up/down to move, Enter to run, Esc to close, Tab to jump between groups.
@@ -127,3 +127,19 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 
 - Press `t` inside any room (or tap "README" in the drawer's overflow menu) to toggle the terminal view of the same content.
 - The ASCII architecture is generated from the same `architecture` data, using box-drawing characters.
+
+## 9. L3 Tech Reactor (design 2026-10-14, owner approved)
+
+The reactor core in the L3 east plaza is a project filter. Its six tech rings are the CV skill groups (DevOps at the bottom, then Data, Backend, Frontend, Azure, AI and LLM at the top), each with a floating label.
+
+| Action | Result |
+| --- | --- |
+| Click a ring (point-and-go target `L3:station:reactor-<ring>`, a stacked pick band of the core) | The rover drives to the reactor stop (the ring road's east point) and the "Tech Reactor" drawer (room `L3:reactor`, kind `reactor`) opens on that ring |
+| Pick a tech in the drawer (techs listed by project count) | Its docked pods glow with a beacon, the road from the reactor to them glows, other holograms dim, its ring burns bright, "N projects use X" floats above the core, the drawer lists the projects (each rides to its pod; listed pods say "On the wing directory"), the URL gets `#labs-tech=<slug>` |
+| Pick it again, or Clear | Everything returns to normal; the hash goes away |
+| Surprise me | The rings spin fast for 1.2 s (still under reduced motion) and the rover drives to a random pod of the pick (any docked pod without a pick), never the pod it is at |
+| `/{locale}/labs#labs-tech=<slug>` | The gate starts on `L3:reactor` with that tech picked (after the intro on a first visit) |
+| Cmd-K "Show projects using X" | In 3D: picks the tech and rides to the reactor. On the Classic site: `/labs?stack=X#all-projects` |
+
+The pick is store state (`reactor`, not persisted); the hash mirrors it while the rover is on L3 and never touches other hashes.
+
