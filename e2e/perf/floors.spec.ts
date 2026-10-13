@@ -17,7 +17,8 @@ import { waitForStablePrograms, writePerfEntry } from "./helpers";
  * (an async scene precompile, P2, may resolve after the reading), never higher: the baseline holds the
  * highest reading of several runs, and the gate catches growth (a material per frame or per item).
  */
-test.describe.configure({ timeout: 150_000 });
+// Full-tier floors take about 2.5 minutes on a CI runner (SwiftShader); the waits are on state, not time.
+test.describe.configure({ timeout: 300_000 });
 
 const FLOORS = [
   { floor: "L1", path: "/en" },
