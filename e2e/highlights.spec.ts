@@ -274,6 +274,8 @@ test.describe("Highlights Hall", () => {
 
   for (const tier of ["lite", "full"] as const) {
     test(`L1 keeps headroom under the floor budget from the plaza to the hall (${tier})`, async ({ page }) => {
+      // Five spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
+      test.setTimeout(360_000);
       await enterHQ(page, { tier });
       const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("projects").pad, stationOf("experience").pad];
       for (const spot of spots) {
