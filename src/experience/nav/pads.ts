@@ -18,8 +18,11 @@ export const PAD = {
   iconSize: 1.4,
 } as const;
 
-/** What a pad opens: the floor list (elevator) or the year list (L2 teleporter, `from` is its own year). */
-export type PickerRequest = { kind: "floor" } | { kind: "year"; from: number };
+/**
+ * What a pad opens: the floor list (elevator), the year list (L2 teleporter, `from` is its own year), or
+ * the L2 time console (every year plus Back to elevator).
+ */
+export type PickerRequest = { kind: "floor" } | { kind: "year"; from: number } | { kind: "console" };
 
 export const elevatorPadId = (floor: FloorId) => `elevator:${floor}`;
 export const teleportPadId = (year: number) => `teleport:${year}`;

@@ -129,6 +129,7 @@ export async function performInteract(item: Interactable, deps: InteractDeps): P
   if (action.type === "elevator-picker") deps.openPicker({ kind: "floor" });
   else if (action.type === "teleport-picker") deps.openPicker({ kind: "year", from: action.year });
   else if (action.type === "return-beam") deps.beamHome();
+  else if (action.type === "console-picker") deps.openPicker({ kind: "console" });
   else {
     const command = parseCommand(action.command);
     if (command) deps.command(command);

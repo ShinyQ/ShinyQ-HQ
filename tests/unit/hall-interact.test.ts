@@ -23,6 +23,7 @@ const labels: InteractLabels = {
   elevator: en.hud.pads.floorTitle,
   returnPad: en.hud.interact.returnPad,
   teleporter: (year) => en.hud.interact.teleporter.replace("{year}", String(year)),
+  console: en.hud.interact.console,
   kiosk: en.hud.launcher.askRover,
   board: (wing) => en.hud.interact.board.replace("{wing}", wing),
   archive: en.hud.interact.archive,
