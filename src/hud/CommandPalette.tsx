@@ -144,7 +144,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
 
   return (
     <div className="fixed inset-0 z-50">
-      <div aria-hidden="true" className="absolute inset-0 bg-void/70 backdrop-blur-sm" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-void/70 sm:backdrop-blur-sm" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"

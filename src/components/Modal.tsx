@@ -75,7 +75,7 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId, she
       className={`fixed inset-0 z-[60] flex ${sheet ? "items-end" : "items-stretch"} justify-center sm:items-center sm:p-6`}
       data-testid={testId ? `${testId}-root` : undefined}
     >
-      <div aria-hidden="true" className="absolute inset-0 bg-void/80 backdrop-blur-sm" onClick={() => close.current()} />
+      <div aria-hidden="true" className={`absolute inset-0 bg-void/80 ${sheet ? "backdrop-blur-sm" : "sm:backdrop-blur-sm"}`} onClick={() => close.current()} />
       <div
         ref={panel}
         role="dialog"

@@ -112,7 +112,7 @@ export function Lightbox({ images, index, onIndexChange, onClose }: LightboxProp
       aria-labelledby={titleId}
       data-testid="lightbox"
       data-hq-cover=""
-      className="fixed inset-0 z-[60] flex flex-col bg-void/95 text-ink backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex flex-col bg-void/95 text-ink"
       onKeyDown={trapTab}
     >
       <div className="flex items-center justify-between gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))]">

@@ -221,3 +221,30 @@ test.describe("store writes", () => {
     expect(result.writes).toBe(0);
   });
 });
+
+test.describe("no backdrop blur under near-opaque panels", () => {
+  test("desktop: the drawer does not blur the canvas", async ({ page }) => {
+    await openPodRoute(page);
+    const drawer = page.getByTestId("room-drawer");
+    await expect(drawer).toBeVisible({ timeout: 90_000 });
+    expect(await drawer.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe("none");
+  });
+
+  test("desktop: the Rover Terminal does not blur the canvas", async ({ page }) => {
+    await enterHQ(page);
+    await openHud(page, "terminal");
+    const terminal = page.getByRole("dialog").last();
+    await expect(terminal).toBeVisible();
+    expect(await terminal.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe("none");
+  });
+
+  test("phone: the full-screen palette's scrim does not blur", async ({ browser }) => {
+    const { context, page } = await phonePage(browser);
+    await enterHQ(page);
+    await openHud(page, "palette");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const scrim = page.locator("[aria-hidden='true'].bg-void\\/70");
+    expect(await scrim.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe("none");
+    await context.close();
+  });
+});
