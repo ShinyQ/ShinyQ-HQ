@@ -147,10 +147,10 @@ The store updates the URL with `history.pushState` (room open/close) or `replace
 
 ## 4. Analytics
 
-Three channels, all Cloudflare or first party, none with cookies, identifiers or a consent banner (amended 2026-10-13, owner approval of the performance beacon):
+Four channels, all Cloudflare or first party, none with cookies, identifiers or a consent banner (amended 2026-10-13, owner approval of the performance beacon; amended 2026-10-14, owner approval of the public visit stats, channel 4):
 
-1. **Cloudflare Web Analytics** (production builds only). It records page views, including SPA route changes made with the History API, so room and floor URLs act as events, plus Core Web Vitals per path.
-2. **Ask the HQ events**: Analytics Engine dataset `ask_events`, written by `functions/api/ask.ts` (design: `docs/superpowers/specs/2026-10-11-ask-hq-design.md`).
+1. **Cloudflare Web Analytics** (production builds only, never after "Don't count my visits", see 4.1). It records page views, including SPA route changes made with the History API, so room and floor URLs act as events, plus Core Web Vitals per path.
+2. **Ask the HQ events**: Analytics Engine dataset `ask_events`, written by `functions/api/ask.ts` (design: `docs/superpowers/specs/2026-10-11-ask-hq-design.md`). Blobs `[outcome, locale, model source, gap question (unknown only), pack version, reason, entry point, topic, chip]`, doubles `[latencyMs, 1]`. blob8 `topic` (`work`, `ai`, `career`, `contact`, `perspectives` or empty) is the curated chip's topic, else the topic most of the answer's allowlisted tags map to (`topicOfTags` in `functions/_lib/askStats.ts`); blob9 `chip` is a curated question id from `content/ask/suggestions.json`, kept only when the question is that chip's text (`chipFor`). Ids only: the question text never reaches these two fields.
 3. **Performance beacon (RUM)**: 25% of 3D sessions send one data point per browser session with `navigator.sendBeacon` to the same-origin Pages Function `POST /api/rum`, which writes it to the Analytics Engine dataset `perf_events` (binding `PERF_EVENTS`). The CSP is unchanged (`connect-src 'self'`). Contract: `src/lib/rum/protocol.ts`; client: `src/experience/perf/`; Function: `functions/api/rum.ts`.
 
 | Field | Values | Analytics Engine |
@@ -174,3 +174,35 @@ The beacon leaves on the first of: tab hidden, page left, 3D view closed (Page V
 - Retention: Analytics Engine keeps points for 3 months (Cloudflare limit), then drops them.
 - Kill switch: `RUM_ENABLED` in `wrangler.toml` (anything but `"true"` drops every point).
 - Visitors see the same promise in one footer line (`footer.privacy`, EN and ID).
+- "Don't count my visits" (`localStorage["hq:stats-optout"] = "1"`, see 4.1) also turns the performance beacon off.
+
+### 4.1 Public visit stats (Layer 1)
+
+4. **Visit beacon**: one data point per page lifetime, sent with `navigator.sendBeacon` to the same-origin Pages Function `POST /api/visit`, which writes it to the Analytics Engine dataset `visit_events` (binding `VISIT_EVENTS`). Contract: `src/lib/stats/visit.ts`; client: `src/lib/stats/visitClient.ts` (mounted by `src/components/VisitBeacon.tsx` in the locale layout); Function: `functions/api/visit.ts`.
+
+| Field | Values | Analytics Engine |
+|---|---|---|
+| `v` | `1` | blob1 |
+| `mode` | `3d` (the 3D tower was open, `html[data-hq]`), `classic` (the Classic site stayed on screen at least 3 s), `both` | blob2 |
+| count | always 1 | double1 |
+| index | the constant `visit` (never per visitor) | index1 |
+
+The point leaves on the first `pagehide` or tab hide after a mode is known. De-duplication is in memory only (no storage). The Function accepts only that exact object (at most 128 bytes, same Origin, `STATS_ENABLED = "true"`), answers 204 and caps points per isolate and minute (600). It reads no other header.
+
+**Daily rollup**: the Cron Worker `hq-stats` (`workers/stats/`, cron `0 1 * * *` UTC, scheduled handler only, no route) reads Web Analytics through the GraphQL API (`rumPageloadEventsAdaptiveGroups`: visits, page views, countries, paths; siteTag, `bot: 0` and the production hosts only) and Analytics Engine through the SQL API (`ask_events` without Turnstile rejects, `visit_events`), appends one rollup per complete UTC day to the KV ledger `stats:days:v1` (never recomputing a stored day) and writes the public snapshot `stats:v1` to KV `STATS_KV`. `GET /api/stats` (`functions/api/stats.ts`) serves it: `StatsSnapshotV1` in `src/lib/stats/protocol.ts`, periods `d30` (the 30 complete days to the last one) and `all` (since the first rollup day). Paths map to floors with the site's own route parser (`floorOfPath`).
+
+| Snapshot field | Source | Notes |
+|---|---|---|
+| `visits`, `pageViews` | Web Analytics | sampled estimates (steps of 10 at low traffic) |
+| `countries` | Web Analytics | ISO alpha-2 only (no `XX`, no `T1`), alphabetical, no counts (dots only) |
+| `topFloor` | Web Analytics paths | most page views; null without any |
+| `mode` | `visit_events` | page lifetimes per view; `both` counts on both sides; a day whose points exceed `max(30, 3 x page views)` keeps zero (abuse cross-check) |
+| `asks` | `ask_events` | total questions, per topic, per curated chip (ids only) |
+
+Owner decisions (2026-10-13/14): numbers are public with no minimum thresholds; the snapshot updates daily from complete UTC days; countries show as dots only; the label is "visits" ("kunjungan"), never visitors (Web Analytics has no unique visitors).
+
+**Opt-out**: "Don't count my visits" stores `localStorage["hq:stats-optout"] = "1"` (only the visitor's choice; S2 writes it and dispatches `hq:stats-optout`). It stops the visit beacon (checked at start, on the event and again at send), the performance beacon, and the Cloudflare Web Analytics beacon, which `src/components/Analytics.tsx` now injects from an inline guard instead of a static tag (the CSP is unchanged). Do Not Track and Global Privacy Control stop the visit beacon too; automation and crawlers never send (`?visit=1` forces it in tests and previews, `?visit=0` opts out).
+
+**Retention**: `visit_events` and `ask_events` 3 months (Analytics Engine), Web Analytics about 6 months; the KV ledger keeps only daily aggregates (no per-visitor data) for as long as the site runs.
+
+**Kill switch**: `STATS_ENABLED` in `wrangler.toml` (anything but `"true"` drops visit points and makes `/api/stats` answer 204, which hides every stats view).

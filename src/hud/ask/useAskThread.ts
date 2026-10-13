@@ -69,6 +69,7 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
           q: question,
           locale,
           source,
+          ...(curated ? { chip: curated } : {}),
           signal: own.signal,
           onDelta: (delta) => {
             if (controller.current !== own) return;

@@ -171,9 +171,11 @@ describe("Analytics beacon", () => {
     expect(Analytics({ token: "" })).toBeNull();
   });
 
-  it("renders the cookieless Cloudflare beacon with SPA tracking", () => {
+  it("renders the cookieless Cloudflare beacon with SPA tracking behind the opt-out guard", () => {
     const element = Analytics({ token: "0123456789abcdef0123456789abcdef" });
-    expect(element?.props.src).toBe("https://static.cloudflareinsights.com/beacon.min.js");
-    expect(JSON.parse(element?.props["data-cf-beacon"])).toEqual({ token: "0123456789abcdef0123456789abcdef", spa: true });
+    const code: string = element?.props.dangerouslySetInnerHTML.__html;
+    expect(code).toContain('"https://static.cloudflareinsights.com/beacon.min.js"');
+    expect(code).toContain(JSON.stringify(JSON.stringify({ token: "0123456789abcdef0123456789abcdef", spa: true })));
+    expect(code).toContain("hq:stats-optout");
   });
 });

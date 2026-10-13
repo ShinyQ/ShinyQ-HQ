@@ -27,7 +27,8 @@ binding = "ASK_KV"
 id = "52fa119d49f641078dbecbb12aad4ccb"
 
 # Workers Analytics Engine dataset for anonymized ask events (no IP, no raw text):
-# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason], doubles [latencyMs, 1].
+# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip],
+# doubles [latencyMs, 1]. topic (blob8) and chip (blob9) feed the public visit stats (workers/stats/).
 # The dataset is created on the first write; scripts/content-gap.ts reads it through the SQL API.
 [[analytics_engine_datasets]]
 binding = "ASK_EVENTS"
@@ -40,6 +41,20 @@ dataset = "ask_events"
 [[analytics_engine_datasets]]
 binding = "PERF_EVENTS"
 dataset = "perf_events"
+
+# Workers Analytics Engine dataset of the public visit stats beacon (functions/api/visit.ts, appendix 06
+# section 4): one point per page lifetime, no IP, no user agent, no URL. blobs [version, mode (3d, classic,
+# both)], doubles [1], index the constant "visit". Created on the first write; read by the hq-stats Worker.
+[[analytics_engine_datasets]]
+binding = "VISIT_EVENTS"
+dataset = "visit_events"
+
+# KV namespace "STATS_KV": the public visit stats snapshot (`stats:v1`) and the daily ledger
+# (`stats:days:v1`), written once a day by the hq-stats Cron Worker (workers/stats/wrangler.toml binds
+# the same id) and read by GET /api/stats. KV namespace IDs are not secret.
+[[kv_namespaces]]
+binding = "STATS_KV"
+id = "88fb27f910f44e6393b8fd495d6a2c4f"
 
 # Optional Workers rate limiting binding (8 requests per 60 s per visitor hash). Pages support is
 # still rolling out, so it stays off; the Function falls back to its in-memory and KV limiters.
@@ -71,3 +86,7 @@ ASK_DAILY_CAP = "600"
 # Kill switch of the performance beacon (/api/rum). Anything but "true" drops every point (204).
 # On since round 5 (owner approval 2026-10-13).
 RUM_ENABLED = "true"
+# Kill switch of the public visit stats (/api/visit and /api/stats). Anything but "true" drops visit points
+# (204) and makes /api/stats answer 204, which hides every stats view. On since the S1 pipeline (owner
+# approval 2026-10-14).
+STATS_ENABLED = "true"

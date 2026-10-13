@@ -14,6 +14,7 @@ import path from "node:path";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
 import troikaFonts from "../src/experience/troika-fonts.json";
 import cvPages from "../content/generated/cv-pages.json";
+import { parseStatsSnapshot } from "../src/lib/stats/protocol";
 
 /** Cache rules from public/_headers that production must serve (round 5 P1). */
 export const CACHE_RULES: readonly { prefix: string; value: string }[] = [
@@ -52,6 +53,10 @@ export interface Observed {
   cache?: Record<string, string | null>;
   /** `GET /api/rum`: the beacon Function only accepts POST, so 405 proves it is deployed. */
   rum?: { code: number };
+  /** `GET /api/visit`: the visit beacon Function only accepts POST, so 405 proves it is deployed. */
+  visit?: { code: number };
+  /** `GET /api/stats`: 204 (no snapshot yet, or switched off) or 200 with a valid snapshot. */
+  stats?: { code: number; valid?: boolean };
 }
 
 /** Problems with what production serves; empty when it matches. */
@@ -69,6 +74,9 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
   }
   if (observed.cache) problems.push(...cacheProblems(observed.cache));
   if (observed.rum?.code !== 405) problems.push(`GET /api/rum returned HTTP ${observed.rum?.code ?? "none"}, expected 405 (the performance beacon Function is missing)`);
+  if (observed.visit?.code !== 405) problems.push(`GET /api/visit returned HTTP ${observed.visit?.code ?? "none"}, expected 405 (the visit beacon Function is missing)`);
+  const st = observed.stats;
+  if (st?.code === 200 ? !st.valid : st?.code !== 204) problems.push(st?.code === 200 ? "GET /api/stats served a snapshot that fails the contract" : `GET /api/stats returned HTTP ${st?.code ?? "none"}, expected 200 or 204 (the stats Function is missing)`);
   return problems;
 }
 
@@ -112,6 +120,26 @@ async function observe(site: string): Promise<Observed> {
   } catch {
     // Reported as no response.
   }
+  try {
+    const r = await fetch(`${site}/api/visit`, { cache: "no-store" });
+    observed.visit = { code: r.status };
+  } catch {
+    // Reported as no response.
+  }
+  try {
+    const r = await fetch(`${site}/api/stats`, { cache: "no-store" });
+    let valid = false;
+    if (r.status === 200) {
+      try {
+        valid = parseStatsSnapshot(await r.json()) !== null;
+      } catch {
+        valid = false;
+      }
+    }
+    observed.stats = { code: r.status, valid };
+  } catch {
+    // Reported as no response.
+  }
   return observed;
 }
 
@@ -124,7 +152,7 @@ async function main() {
   const site = (flag("--site") ?? process.env.SITE_URL ?? "https://kurniadi.pages.dev").replace(/\/+$/, "");
   const deadline = Date.now() + (Number(flag("--timeout")) || 180) * 1000;
   const expected = expectedFromCheckout();
-  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}, /api/rum deployed.`);
+  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}, /api/rum, /api/visit and /api/stats deployed.`);
   let problems: string[] = [];
   while (true) {
     problems = smokeProblems(expected, await observe(site));

@@ -1,0 +1,88 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { createVisitHandler, resetVisitWindow, VISIT_ISOLATE_CAP } from "../../functions/_lib/visit";
+import type { AnalyticsEngineDataset, VisitEnv } from "../../functions/_lib/types";
+
+const ORIGIN = "https://kurniadi.pages.dev";
+
+function setup(env: Partial<VisitEnv> = {}) {
+  const points: Parameters<AnalyticsEngineDataset["writeDataPoint"]>[0][] = [];
+  const fullEnv: VisitEnv = { STATS_ENABLED: "true", ASK_ALLOWED_ORIGINS: `${ORIGIN},https://kurniadi.dev`, VISIT_EVENTS: { writeDataPoint: (p) => points.push(p) }, ...env };
+  const handler = createVisitHandler({ now: () => Date.UTC(2026, 9, 14, 3, 0, 0) });
+  const post = (body: string, headers: Record<string, string> = {}) =>
+    handler({
+      request: new Request(`${ORIGIN}/api/visit`, {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "text/plain;charset=UTF-8", "User-Agent": "TestAgent/9.9", "CF-Connecting-IP": "203.0.113.9", ...headers },
+        body,
+      }),
+      env: fullEnv,
+      waitUntil: () => undefined,
+    });
+  return { handler, post, points, env: fullEnv };
+}
+
+beforeEach(() => resetVisitWindow());
+
+describe("POST /api/visit", () => {
+  it("writes one allowlisted point and answers 204 without a body", async () => {
+    const { post, points } = setup();
+    const res = await post('{"v":1,"mode":"classic"}');
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(await res.text()).toBe("");
+    expect(points).toEqual([{ blobs: ["1", "classic"], doubles: [1], indexes: ["visit"] }]);
+  });
+
+  it("never stores the IP address or the user agent", async () => {
+    const { post, points } = setup();
+    await post('{"v":1,"mode":"3d"}');
+    const stored = JSON.stringify(points);
+    expect(stored).not.toContain("203.0.113.9");
+    expect(stored).not.toContain("TestAgent");
+  });
+
+  it("answers 405 to anything but POST (the deploy smoke check relies on it)", async () => {
+    const { handler, points, env } = setup();
+    const res = await handler({ request: new Request(`${ORIGIN}/api/visit`), env, waitUntil: () => undefined });
+    expect(res.status).toBe(405);
+    expect(res.headers.get("Allow")).toBe("POST");
+    expect(points).toEqual([]);
+  });
+
+  it("drops every point when the kill switch is off", async () => {
+    for (const STATS_ENABLED of ["false", undefined, "TRUE"]) {
+      const { post, points } = setup({ STATS_ENABLED });
+      expect((await post('{"v":1,"mode":"3d"}')).status).toBe(204);
+      expect(points).toEqual([]);
+    }
+  });
+
+  it("rejects other origins", async () => {
+    const { post, points } = setup();
+    expect((await post('{"v":1,"mode":"3d"}', { Origin: "https://evil.example" })).status).toBe(403);
+    expect(points).toEqual([]);
+  });
+
+  it("rejects bodies over the cap, broken JSON and anything but the exact payload", async () => {
+    const { post, points } = setup();
+    expect((await post(`{"v":1,"mode":"3d","x":"${"a".repeat(200)}"}`)).status).toBe(413);
+    expect((await post("{", {})).status).toBe(400);
+    expect((await post('{"v":1,"mode":"vr"}')).status).toBe(400);
+    expect((await post('{"v":1,"mode":"3d","floor":"L1"}')).status).toBe(400);
+    expect(points).toEqual([]);
+  });
+
+  it("caps points per isolate and minute", async () => {
+    const { post, points } = setup();
+    for (let i = 0; i < VISIT_ISOLATE_CAP; i++) await post('{"v":1,"mode":"3d"}');
+    expect((await post('{"v":1,"mode":"3d"}')).status).toBe(429);
+    expect(points).toHaveLength(VISIT_ISOLATE_CAP);
+  });
+
+  it("never fails when Analytics Engine throws or is unbound", async () => {
+    const throwing = setup({ VISIT_EVENTS: { writeDataPoint: () => { throw new Error("down"); } } });
+    expect((await throwing.post('{"v":1,"mode":"both"}')).status).toBe(204);
+    const unbound = setup({ VISIT_EVENTS: undefined });
+    expect((await unbound.post('{"v":1,"mode":"both"}')).status).toBe(204);
+  });
+});

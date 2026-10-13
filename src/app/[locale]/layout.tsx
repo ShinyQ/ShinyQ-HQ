@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { Analytics } from "@/components/Analytics";
+import { VisitBeacon } from "@/components/VisitBeacon";
 import { BootCover } from "@/components/BootCover";
 import { DialogHost } from "@/components/DialogHost";
 import { JsonLd } from "@/components/JsonLd";
@@ -80,6 +81,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
         <Analytics />
+        <VisitBeacon />
       </body>
     </html>
   );

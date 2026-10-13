@@ -283,7 +283,7 @@
   },
   "footer": {
     "built": "The site runs on one validated dataset.",
-    "privacy": "Privacy: no tracking cookies or IDs. A sample of 3D visits sends anonymous performance ranges (graphics tier, frame rate, load time), never your IP address or browser details.",
+    "privacy": "Privacy: no tracking cookies or IDs. Visits are counted anonymously with Cloudflare (country, pages, 3D or Classic site, and the topic of questions to the AI) to show public totals, and a sample of 3D visits sends performance ranges. Your IP address and browser details are never stored. Do Not Track, Global Privacy Control or \"Don't count my visits\" turn counting off.",
     "source": "View source on GitHub",
     "pages": "Pages",
     "elsewhere": "Elsewhere"

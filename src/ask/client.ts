@@ -239,6 +239,8 @@ export interface AskOptions {
   signal?: AbortSignal;
   /** UI entry point, for analytics. */
   source?: AskEntry;
+  /** Curated question id, for the public stats (the server counts it only when the text matches). */
+  chip?: string;
   /** Called with each sanitized text chunk, in order. */
   onDelta: (text: string) => void;
 }
@@ -282,7 +284,7 @@ function errorFor(status: number, body: AskError | null, response: Response): As
  */
 export async function askQuestion(options: AskOptions, overrides: Partial<AskDeps> = {}): Promise<AskResult> {
   const deps = { ...defaultDeps(), ...overrides };
-  const { q, locale, signal, onDelta, source } = options;
+  const { q, locale, signal, onDelta, source, chip } = options;
   const status = await deps.status();
   if (!isAskEnabled(status)) return { error: "disabled" };
   const siteKey = status.turnstileSiteKey;
@@ -299,7 +301,7 @@ export async function askQuestion(options: AskOptions, overrides: Partial<AskDep
   };
 
   const post = (turnstileToken: string | null) => {
-    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}) };
+    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}), ...(chip && chip.length <= 64 ? { chip } : {}) };
     return deps.fetch(ASK_ENDPOINT, {
       method: "POST",
       credentials: "same-origin",

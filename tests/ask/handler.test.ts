@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
+import { SUGGESTIONS } from "@/ask/suggestions";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
 import { MESSAGES } from "../../functions/_lib/messages";
 import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
@@ -340,6 +341,35 @@ describe("privacy (T10)", () => {
     await (await call({ body: { q: "What are his skills?", locale: "en", source: "<script>" } })).text();
     expect(events[1].blobs?.[6]).toBe("");
     expect((await call({ body: { q: "Hi", locale: "en", source: 3 } })).status).toBe(400);
+  });
+
+  it("appends the question topic (blob8) and the curated chip id (blob9) after the old blobs", async () => {
+    const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
+    const { call, events } = setup();
+    await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
+    expect(events[0].blobs).toHaveLength(9);
+    expect(events[0].blobs?.[6]).toBe("pill");
+    expect(events[0].blobs?.slice(7)).toEqual(["work", "work-best"]);
+  });
+
+  it("derives the topic from the answer tags for typed questions and drops a chip id that does not match", async () => {
+    const { call, events } = setup({ answer: "The voice agent interrupts in about 0.2 seconds." });
+    await (await call({ body: { q: "How does the voice AI contact center work?", locale: "en", chip: "work-best" } })).text();
+    expect(events[0].blobs?.slice(7)).toEqual(["ai", ""]);
+  });
+
+  it("rejects a chip that is not a short string", async () => {
+    const { call } = setup();
+    expect((await call({ body: { q: "Hi", locale: "en", chip: 3 } })).status).toBe(400);
+    expect((await call({ body: { q: "Hi", locale: "en", chip: "x".repeat(65) } })).status).toBe(400);
+  });
+
+  it("logs a Turnstile reject without topic or chip", async () => {
+    const chip = SUGGESTIONS[0];
+    const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
+    expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
+    expect(events[0].blobs?.[0]).toBe("rejected");
+    expect(events[0].blobs?.slice(7)).toEqual(["", ""]);
   });
 });
 

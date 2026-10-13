@@ -96,6 +96,8 @@ export interface AskRequest {
   turnstileToken?: string;
   /** Entry point, for analytics. Unknown values are ignored. */
   source?: AskEntry;
+  /** Curated question id (content/ask/suggestions.json) when the text is that chip's, for the public stats. At most 64 characters. */
+  chip?: string;
 }
 
 /**

@@ -6,10 +6,12 @@ import { scrubPII } from "./pii";
 import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
+import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
+import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
 const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "unsourced"]);
@@ -86,6 +88,8 @@ interface ParsedBody {
   token?: string;
   /** Entry point for analytics; unknown values become "". */
   entry: AskEntry | "";
+  /** Curated chip id the client sent (checked against the question by `chipFor` before it is logged). */
+  chip?: string;
 }
 
 function parseBody(raw: string): ParsedBody | null {
@@ -96,11 +100,12 @@ function parseBody(raw: string): ParsedBody | null {
     return null;
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const { q, locale, turnstileToken, source } = data as Record<string, unknown>;
+  const { q, locale, turnstileToken, source, chip } = data as Record<string, unknown>;
   if (typeof q !== "string" || (locale !== "en" && locale !== "id")) return null;
   if (turnstileToken !== undefined && (typeof turnstileToken !== "string" || turnstileToken.length > 2048)) return null;
   if (source !== undefined && typeof source !== "string") return null;
-  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "" };
+  if (chip !== undefined && (typeof chip !== "string" || chip.length > 64)) return null;
+  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "", ...(chip ? { chip } : {}) };
 }
 
 /** SSE frames are JSON, so a model token can never break the event stream (T6). */
@@ -160,17 +165,21 @@ interface EventData {
   reason?: PipelineReason | AskErrorCode | "";
   /** UI entry point (hero, dock, pill, followup, terminal, palette) or "". */
   entry: AskEntry | "";
+  /** Public visit stats: the question's topic (chip topic, else from the answer tags) and curated chip id, or "". */
+  topic?: StatsTopic | "";
+  chip?: string;
   latencyMs: number;
 }
 
 /**
  * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
- * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point.
+ * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
+ * topic, chip id (the last two feed the public visit stats; appended so older queries keep working).
  */
 function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry],
+      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? ""],
       doubles: [e.latencyMs, 1],
       indexes: [e.outcome],
     });
@@ -233,6 +242,8 @@ export function createAskHandler(deps: HandlerDeps) {
     const question = scrubPII(cleanText(body.q));
     if (!question || question.length > ASK_MAX_QUESTION) return fail(400, "bad_request");
     const locale = detectLocale(question, body.locale);
+    const chip = chipFor(question, body.chip);
+    const stats = (tags: readonly AskTag[]) => ({ topic: chip ? chip.topic : topicOfTags(tags), chip: chip?.id ?? "" });
 
     // 6. Cache (answers that passed every check only; re-checked against the blocklist on read).
     const key = await cacheKey(pack.packVersion, locale, question);
@@ -240,8 +251,8 @@ export function createAskHandler(deps: HandlerDeps) {
       const hit = await env.ASK_KV?.get(key);
             const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
       if (cached && typeof cached.text === "string" && findBlocked(cached.text, safety.blocklist).length === 0) {
-        logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, latencyMs: now() - started });
         const tags = answerTags(retrieve(pack, question, locale).chunks);
+        logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}) }, tags), delay, responseHeaders);
       }
@@ -278,7 +289,7 @@ export function createAskHandler(deps: HandlerDeps) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, latencyMs: now() - started });
+    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), latencyMs: now() - started });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;
