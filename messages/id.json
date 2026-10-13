@@ -374,7 +374,8 @@
       "highlightsProjects": "Sorotan: proyek unggulan",
       "highlightsExperience": "Sorotan: pengalaman kerja",
       "highlightsContact": "Sorotan: kontak",
-      "reactor": "Reaktor Teknologi"
+      "reactor": "Reaktor Teknologi",
+      "visits": "Observatorium Pengunjung"
     },
     "launcher": {
       "search": "Cari",
@@ -1012,6 +1013,78 @@
           "subtitle": "Karier, pendidikan, dan sertifikasi dalam satu PDF"
         }
       }
+    }
+  },
+  "stats": {
+    "title": "Kunjungan",
+    "observatory": "Observatorium Pengunjung",
+    "intro": "Total anonim kunjungan ke situs ini dan pertanyaan ke AI-nya, diperbarui sekali sehari dari hari penuh sebelumnya.",
+    "approx": "sekitar {n}",
+    "window": {
+      "d30": "30 hari penuh terakhir",
+      "all": "Sejak {date}"
+    },
+    "source": "Cloudflare Web Analytics, estimasi sampel",
+    "updated": "Diperbarui setiap hari",
+    "delayed": "Tertunda: terakhir diperbarui {date}",
+    "loading": "Memuat statistik kunjungan",
+    "offline": "Statistik offline",
+    "topicLegend": "Topik",
+    "periodLegend": "Periode",
+    "topics": {
+      "all": "Semua",
+      "work": "Karya",
+      "ai": "AI",
+      "career": "Karier",
+      "contact": "Kontak",
+      "perspectives": "Perspektif"
+    },
+    "periods": {
+      "d30": "30 hari terakhir",
+      "all": "Sejak peluncuran"
+    },
+    "status": "{period}, topik {topic}: {visits} kunjungan dari {countries} negara, {questions} pertanyaan.",
+    "counters": {
+      "visits": "Kunjungan",
+      "countries": "Negara",
+      "questions": "Pertanyaan diajukan",
+      "questionsTopic": "Pertanyaan tentang {topic}",
+      "topFloor": "Lantai paling dijelajahi",
+      "none": "Belum ada"
+    },
+    "split": {
+      "title": "Menara 3D atau situs klasik",
+      "threeD": "Menara 3D",
+      "classic": "Situs klasik",
+      "note": "Kunjungan yang memakai keduanya dihitung di kedua sisi."
+    },
+    "topicsTitle": "Pertanyaan per topik",
+    "topicsNote": "Porsi pertanyaan yang punya topik, diklasifikasikan otomatis dari jawabannya.",
+    "chipsTitle": "Contoh pertanyaan (kurasi)",
+    "chipsNote": "Seberapa sering setiap pertanyaan saran dipilih. Apa yang diketik pengunjung tidak pernah ditampilkan.",
+    "chipCount": "{n} kali dipilih",
+    "noChips": "Belum ada pertanyaan saran yang dipilih untuk topik ini.",
+    "map": {
+      "label": "Peta dunia dengan {n} negara yang disorot",
+      "caption": "Negara dengan minimal satu kunjungan, {window}. Hanya titik, tanpa angka per negara."
+    },
+    "table": {
+      "open": "Lihat sebagai tabel",
+      "caption": "Negara dengan kunjungan, {window}",
+      "country": "Negara",
+      "code": "Kode"
+    },
+    "optOut": "Jangan hitung kunjungan saya",
+    "optOutHint": "Hanya disimpan di browser ini. Do Not Track dan Global Privacy Control juga dihormati.",
+    "tile": "kunjungan, 30 hari terakhir",
+    "openObservatory": "Observatorium Pengunjung di Atap",
+    "panel": {
+      "visits30": "kunjungan, 30 hari terakhir",
+      "visitsAll": "sejak peluncuran",
+      "countries": "negara",
+      "questions": "pertanyaan diajukan",
+      "topFloor": "paling dijelajahi: {floor}",
+      "split": "3D {threeD}% · Klasik {classic}%"
     }
   }
 }

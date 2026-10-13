@@ -15,7 +15,7 @@ export function OptOutToggle({ label, hint, className = "" }: { label: string; h
       <input
         type="checkbox"
         role="switch"
-        className="hq-switch"
+        className="size-4 shrink-0 accent-cyan"
         checked={optedOut}
         onChange={(e) => setOptedOut(e.currentTarget.checked)}
         aria-describedby={hint ? hintId : undefined}
