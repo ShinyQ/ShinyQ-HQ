@@ -98,13 +98,17 @@ export async function precompileFloor(id: FloorId, options: PrecompileOptions = 
   const { gl, camera, target } = probe;
   const start = performance.now();
   const programsBefore = gl.info.programs?.length ?? 0;
+  // Skip the switch when the target is already bound, like P2's `withTarget`.
   const previous = gl.getRenderTarget();
   let materials: Set<Material>;
-  gl.setRenderTarget(target);
-  try {
-    materials = gl.compile(content, camera, scene);
-  } finally {
-    gl.setRenderTarget(previous);
+  if (previous === target) materials = gl.compile(content, camera, scene);
+  else {
+    gl.setRenderTarget(target);
+    try {
+      materials = gl.compile(content, camera, scene);
+    } finally {
+      gl.setRenderTarget(previous);
+    }
   }
   const ready = await waitReady(gl, materials, options.timeoutMs ?? 2000);
   const contentMounted = Boolean(content.getObjectByName(FLOOR_ROOT[id]));
