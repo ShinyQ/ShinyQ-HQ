@@ -133,7 +133,7 @@ gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optiona
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit (and Workers KV Storage Read) for the hq-stats Worker job (section 13) |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) |
 | `CF_EVAL_TOKEN` | Yes, for evals and the visit stats | Account Analytics Read: Ask evals and reports, and the hq-stats Worker's runtime secret `WA_TOKEN` (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
 | `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it |
@@ -290,8 +290,8 @@ Pipeline and contract: appendix 06 section 4.1 and [`workers/stats/README.md`](.
 - `GET /api/stats` (`functions/api/stats.ts`) serves the snapshot (204 until the first one exists).
 - Kill switch: `STATS_ENABLED = "false"` in `wrangler.toml`, then deploy.
 
-Deploy: `deploy.yml` job "hq-stats Worker" runs after the Pages deploy. It proves `CF_EVAL_TOKEN` can read Web Analytics and Analytics Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise) and that `CLOUDFLARE_API_TOKEN` can see Workers scripts and the KV namespace (`... deploy`), then deploys with `cloudflare/wrangler-action` and sets the Worker secrets `WA_TOKEN` (from `CF_EVAL_TOKEN`) and `WA_ACCOUNT_ID` (from `CLOUDFLARE_ACCOUNT_ID`). Pull requests that touch the Worker run the same checks plus a bundle dry run (`.github/workflows/stats-worker.yml`).
+Deploy: `deploy.yml` job "hq-stats Worker" runs after the Pages deploy. It proves `CF_EVAL_TOKEN` can read Web Analytics and Analytics Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise) and that `CLOUDFLARE_API_TOKEN` can see Workers scripts (`... deploy`; the KV namespace check only warns), then deploys with `cloudflare/wrangler-action` and sets the Worker secrets `WA_TOKEN` (from `CF_EVAL_TOKEN`) and `WA_ACCOUNT_ID` (from `CLOUDFLARE_ACCOUNT_ID`). Pull requests that touch the Worker run the same checks plus a bundle dry run (`.github/workflows/stats-worker.yml`).
 
-If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** (and Workers KV Storage Read) to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler@4 deploy` and set both secrets with `bunx wrangler@4 secret put WA_TOKEN` and `bunx wrangler@4 secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler@4 deploy` and set both secrets with `bunx wrangler@4 secret put WA_TOKEN` and `bunx wrangler@4 secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
 
 Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler@4 auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.

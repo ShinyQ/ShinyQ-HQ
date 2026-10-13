@@ -79,7 +79,7 @@ scripts/
   provision-ask.ts              idempotent Cloudflare provisioning (dry run unless --apply)
   refresh-facts.ts, ask-staleness.ts, content-gap.ts, purge-ask-logs.ts   live facts, freshness warning, unanswered-question report, gateway log purge
   deploy-smoke.ts               post-deploy production check (Ask status and pack date, live facts on /en, analytics beacon, /api/rum and /api/visit 405, /api/stats 204 or a valid snapshot)
-  stats-token-check.ts          CI probes before the hq-stats deploy: CF_EVAL_TOKEN reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers and KV (never prints a token)
+  stats-token-check.ts          CI probes before the hq-stats deploy: CF_EVAL_TOKEN reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers (KV advisory; never prints a token)
   stats-dry-run.ts              runs the hq-stats pipeline against production data into an in-memory KV and prints the snapshot (WA_TOKEN, WA_ACCOUNT_ID from the environment)
   capture-dev.ts                owner review captures (dev routes or the served export) at 1440x900, 834x1112 and 390x844 with draw call metrics
 src/

@@ -5,9 +5,9 @@
  *   bun scripts/stats-token-check.ts analytics   STATS_ANALYTICS_TOKEN (CF_EVAL_TOKEN) can read Web
  *                                                Analytics (settings probe of rumPageloadEventsAdaptiveGroups)
  *                                                and Analytics Engine (SQL API)
- *   bun scripts/stats-token-check.ts deploy      CLOUDFLARE_API_TOKEN can see Workers scripts and the
- *                                                STATS_KV namespace (read-only proxies for the Edit rights
- *                                                that `wrangler deploy` needs)
+ *   bun scripts/stats-token-check.ts deploy      CLOUDFLARE_API_TOKEN can see Workers scripts (a read-only
+ *                                                proxy for the Edit right `wrangler deploy` needs; fatal)
+ *                                                and the STATS_KV namespace (advisory warning only)
  *
  * Both need CLOUDFLARE_ACCOUNT_ID. Exit code 1 with a GitHub `::error::` line on failure.
  */
@@ -24,6 +24,8 @@ export const SETTINGS_PROBE = `query Probe($accountTag: string!) {
 export interface CheckResult {
   ok: boolean;
   message: string;
+  /** A failed advisory check prints a warning and does not fail the run. */
+  advisory?: boolean;
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -91,7 +93,9 @@ async function deploy(token: string, account: string): Promise<CheckResult[]> {
     const response = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
     return readRestProbe(response.status, await json(response), permission);
   };
-  return [await get(`/accounts/${account}/workers/scripts`, "Workers Scripts (read)"), await get(`/accounts/${account}/storage/kv/namespaces/${STATS_KV_ID}`, "Workers KV Storage (read)")];
+  // Binding an existing namespace id is part of the script upload, so KV access is advisory only.
+  const kv = await get(`/accounts/${account}/storage/kv/namespaces/${STATS_KV_ID}`, "Workers KV Storage (read)");
+  return [await get(`/accounts/${account}/workers/scripts`, "Workers Scripts (read)"), { ...kv, advisory: true }];
 }
 
 async function main() {
@@ -120,8 +124,8 @@ async function main() {
     console.log("Usage: bun scripts/stats-token-check.ts analytics|deploy");
     process.exit(2);
   }
-  for (const r of results) console.log(r.ok ? r.message : `::error::${r.message}`);
-  process.exit(results.every((r) => r.ok) ? 0 : 1);
+  for (const r of results) console.log(r.ok ? r.message : `${r.advisory ? "::warning::" : "::error::"}${r.message}`);
+  process.exit(results.every((r) => r.ok || r.advisory) ? 0 : 1);
 }
 
 if (import.meta.main) {
