@@ -117,7 +117,7 @@ export function VisitsStation({ layout, labels, locale, tier, reducedMotion, act
         <instancedBufferAttribute attach="instanceMatrix" args={[plateData.matrices, 16]} />
         <instancedBufferAttribute attach="instanceColor" args={[plateData.colors, 3]} />
       </instancedMesh>
-      <BatchedLabels labels={text} name="observatory-labels" renderOrder={2} exactColors />
+      <BatchedLabels labels={text} name="observatory-labels" renderOrder={2} />
     </group>
   );
 }
