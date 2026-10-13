@@ -19,6 +19,24 @@
 /brand/*
   Cache-Control: public, max-age=604800
 
+# In-world (troika) fonts: content-hashed names (scripts/troika-fonts.ts), so they never change.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Unhashed images. Tech logos rarely change; gallery images, floor thumbnails and company logos can be
+# replaced under the same name, so they revalidate after a day and are served stale while revalidating.
+/tech/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/media/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/floors/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/logos/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 # The CV PDF is previewed in an iframe on /{locale}/cv: allow same-origin framing for it only.
 # "!" detaches the headers set by /* above (Cloudflare Pages would otherwise join both values).
 # No default-src here: a restrictive CSP on the PDF response can block the browser PDF viewer.
@@ -27,14 +45,14 @@
   ! X-Frame-Options
   Content-Security-Policy: frame-ancestors 'self'
   X-Frame-Options: SAMEORIGIN
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=3600, must-revalidate
 
 # Self-hosted paper PDFs and their page images (paper reader). The site CSP is detached so the
 # browser PDF viewer opens them in a new tab; they are never framed.
 /papers/*
   ! Content-Security-Policy
   Content-Security-Policy: frame-ancestors 'none'
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=86400, must-revalidate
 
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*
