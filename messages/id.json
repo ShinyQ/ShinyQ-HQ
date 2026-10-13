@@ -99,7 +99,6 @@
     "moreWork": "Proyek utama lainnya",
     "featuredShots": "{count} tangkapan layar",
     "hero": {
-      "welcome": "Selamat datang di {site}",
       "enter3d": "Masuk ke HQ 3D",
       "enter3dHint": "Kemudikan rover menjelajahi gedung lima lantai"
     },

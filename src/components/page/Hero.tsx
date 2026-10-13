@@ -7,13 +7,12 @@ import { AskHeroBar } from "./AskEntry";
 import { EnterHqButton } from "./EnterHqButton";
 
 /**
- * Landing hero: the name over the Neon Grid backdrop (CSS only, src/app/landing.css), the two ways in
- * (Enter the 3D HQ and the Ask AI bar) across the full width, and the stats ticker at the bottom of the
- * first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
+ * Landing hero: the name (no eyebrow), the headline and the motto over the Neon Grid backdrop (CSS only,
+ * src/app/landing.css), the two ways in (Enter the 3D HQ and the Ask AI bar) across the full width, and the
+ * stats ticker at the bottom of the first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
  */
 export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: ReactNode }) {
   const t = await getTranslations({ locale, namespace: "home" });
-  const tm = await getTranslations({ locale, namespace: "meta" });
   const profile = getProfile();
 
   return (
@@ -29,11 +28,7 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
       </div>
       <section aria-labelledby="hero-title" className="pv-wrap hx-main grid flex-1 content-start py-10 sm:py-14 md:pt-16 lg:content-center lg:pt-14">
         <div className="min-w-0">
-          <p className="pv-data hx-eyebrow">
-            <span className="hx-dot" aria-hidden="true" />
-            {t("hero.welcome", { site: tm("siteName") })}
-          </p>
-          <h1 id="hero-title" className="pv-d-xl hx-name mt-6">
+          <h1 id="hero-title" className="pv-d-xl hx-name">
             {profile.name}
           </h1>
           <p className="pv-lead mt-7 font-semibold">{profile.headline[locale]}</p>

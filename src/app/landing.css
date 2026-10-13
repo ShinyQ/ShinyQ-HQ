@@ -96,17 +96,6 @@
     animation-delay: 6.5s;
   }
 
-  .hx-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 14px;
-    border: 1px solid var(--color-line-2);
-    border-radius: 999px;
-    background: rgb(5 5 12 / 0.6);
-    color: var(--color-ink-2);
-  }
-
   .hx-dot {
     width: 8px;
     height: 8px;
@@ -119,7 +108,7 @@
 
   /* The LCP element: static, solid color (no gradient text, no entrance animation). */
   .hx-name {
-    font-size: clamp(48px, 9.6vw, 132px);
+    font-size: clamp(44px, 8vw, 112px);
     line-height: 0.9;
     text-shadow: 0 0 48px rgb(34 211 238 / 0.22);
   }

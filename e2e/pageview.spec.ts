@@ -247,6 +247,41 @@ for (const viewport of [
   });
 }
 
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 1999, height: 1129 },
+  { width: 834, height: 1112 },
+  { width: 390, height: 844 },
+]) {
+  test(`landing hero at ${viewport.width}x${viewport.height}: no eyebrow, a one-step smaller name, the motto`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    await openPage(page, staticTier("/en"));
+    const hero = page.locator("section[aria-labelledby='hero-title']");
+    await expect(hero).not.toContainText(/Welcome to/i);
+    await expect(hero.getByText(data.profile.subheadline.en)).toBeVisible();
+    // clamp(44px, 8vw, 112px): vw is the layout viewport width (window.innerWidth).
+    const { size, expected } = await page.locator("#hero-title").evaluate((el) => ({ size: parseFloat(getComputedStyle(el).fontSize), expected: Math.min(112, Math.max(44, window.innerWidth * 0.08)) }));
+    expect(Math.abs(size - expected)).toBeLessThanOrEqual(0.5);
+    await context.close();
+  });
+}
+
+test("landing: the hero name is still the LCP element on a phone", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 412, height: 823 }, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    const w = window as unknown as { __lcp: string };
+    new PerformanceObserver((list) => {
+      const last = list.getEntries().at(-1) as unknown as { element?: Element };
+      w.__lcp = last?.element?.id || last?.element?.tagName || "";
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+  });
+  await openPage(page, staticTier("/en"));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __lcp: string }).__lcp)).toBe("hero-title");
+  await context.close();
+});
+
 test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const cards = page.locator("#work [data-feature-pod]");
