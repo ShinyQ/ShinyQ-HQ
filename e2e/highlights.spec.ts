@@ -6,6 +6,7 @@ import id from "../messages/id.json";
 import { pickFeaturedPods } from "../src/content/pageview";
 import type { Pod } from "../src/content/schema";
 import { orderPods, podLiveLink } from "../src/content/selectors";
+import { gateOpening } from "../src/experience/floors/lobby/hallGallery";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
 import { HIGHLIGHT_STAT_COUNT, HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "../src/experience/floors/lobby/stations";
 import {
@@ -47,6 +48,11 @@ const NAMES: Record<HighlightStation, string> = {
   experience: en.hud.rooms.highlightsExperience,
   contact: en.hud.rooms.highlightsContact,
 };
+/** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
+async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {
+  return page.evaluate(() => (window as unknown as { __hq: { probes: { hallGate: { sweeps: number; active: boolean } } } }).__hq.probes.hallGate);
+}
+
 /** The station's point-and-go id (Task 11). */
 const target = (station: HighlightStation) => `L1:station:highlights-${station}`;
 
@@ -304,6 +310,24 @@ test.describe("Highlights Hall", () => {
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 
+  test("the rover drives under the gateway arch; its light curtain sweeps on the first pass of the session only", async ({ page }) => {
+    await enterHQ(page);
+    const gate = gateOpening();
+    const z = (gate.minZ + gate.maxZ) / 2;
+    expect((await gateSweeps(page)).sweeps).toBe(0);
+    await driveTo(page, { x: gate.x - 7, z });
+    expect((await gateSweeps(page)).sweeps).toBe(0);
+    await driveTo(page, { x: gate.x + 8, z });
+    await expectRoverNear(page, { x: gate.x + 8, z });
+    await expect.poll(() => gateSweeps(page)).toEqual({ sweeps: 1, active: false });
+    // Out and back in: the sweep belongs to the first pass of the browser session.
+    await driveTo(page, { x: gate.x - 7, z });
+    await driveTo(page, { x: gate.x + 8, z });
+    await waitForFrames(page, 60);
+    expect((await gateSweeps(page)).sweeps).toBe(1);
+    expect(await page.evaluate(() => sessionStorage.getItem("hq:hall-gate"))).toBe("seen");
+  });
+
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await enterHQ(page);
@@ -312,5 +336,7 @@ test.describe("Highlights Hall", () => {
     await waitForCameraSettle(page);
     const peaks = await expectRenderBudget(page);
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+    // The drive passed under the gateway arch: no light curtain under reduced motion.
+    expect(await gateSweeps(page)).toEqual({ sweeps: 0, active: false });
   });
 });

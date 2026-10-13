@@ -159,8 +159,12 @@ function usePrecompiled(group: RefObject<Group | null>): boolean {
   return ready;
 }
 
-/** Floor-local bounds of everything the hall draws (shapes, lights up to the spotlight apexes, the gate sign). */
-const HALL_BOUNDS = new Box3(new Vector3(HALL.zone.minX - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL.zone.maxZ + 1));
+/**
+ * Floor-local bounds of everything inside `HallView` (from the gateway arch east: shapes, lights up to the
+ * spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
+ */
+const HALL_GRID = 6;
+const HALL_BOUNDS = new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL.zone.maxZ + 1));
 
 /**
  * Hides the whole hall while its bounds are outside the view: the instanced lights, tiles and rings
@@ -169,15 +173,27 @@ const HALL_BOUNDS = new Box3(new Vector3(HALL.zone.minX - 1, -0.5, HALL.zone.min
  */
 function HallView({ children }: { children: ReactNode }) {
   const group = useRef<Group>(null);
-  const tmp = useMemo(() => ({ box: new Box3(), frustum: new Frustum(), m: new Matrix4() }), []);
+  const tmp = useMemo(() => ({ box: new Box3(), cell: new Box3(), frustum: new Frustum(), m: new Matrix4() }), []);
   useFrame(({ camera }) => {
     const g = group.current;
     if (!g?.parent) return;
-    const { box, frustum, m } = tmp;
+    const { box, cell, frustum, m } = tmp;
     g.parent.updateWorldMatrix(true, false);
     box.copy(HALL_BOUNDS).applyMatrix4(g.parent.matrixWorld);
     frustum.setFromProjectionMatrix(m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-    g.visible = frustum.intersectsBox(box);
+    // The plane test is conservative: a large box next to a frustum corner passes it. Testing a grid of
+    // smaller cells keeps the hall hidden from the Lobby spawn, where it is behind the camera.
+    const N = HALL_GRID;
+    const dx = (box.max.x - box.min.x) / N;
+    const dz = (box.max.z - box.min.z) / N;
+    let seen = false;
+    for (let i = 0; i < N && !seen; i++)
+      for (let k = 0; k < N && !seen; k++) {
+        cell.min.set(box.min.x + i * dx, box.min.y, box.min.z + k * dz);
+        cell.max.set(cell.min.x + dx, box.max.y, cell.min.z + dz);
+        seen = frustum.intersectsBox(cell);
+      }
+    g.visible = seen;
   });
   return (
     <group ref={group} name="highlights-hall-view">
@@ -236,9 +252,12 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
         <Suspense fallback={null}>
           <BatchedLabels ref={labelBatch} labels={texts.labels} name="highlights-labels" />
-          <GateSign text={labels.hall} tier={tier} />
         </Suspense>
       </HallView>
+      {/* The sign turns to the camera, so it can reach past HALL_BOUNDS; its own meshes are frustum culled. */}
+      <Suspense fallback={null}>
+        <GateSign text={labels.hall} tier={tier} />
+      </Suspense>
     </group>
   );
 }

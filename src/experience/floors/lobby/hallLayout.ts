@@ -47,8 +47,8 @@ export const HALL = {
    * lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor).
    */
   gate: { x: 33, depth: 1.2, north: { minZ: 9.4, maxZ: 10.6 }, south: { minZ: 19.8, maxZ: 21 }, h: 7.4, lintel: 1, signY: 8.1 },
-  /** Station camera zoom: the gallery shapes are taller than the old panels, so the follow camera stands back further. */
-  zoom: { about: 1.15, projects: 1.5, experience: 1.5, contact: 1.35 },
+  /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
+  zoom: { about: 1, projects: 1.45, experience: 1.5, contact: 1.27 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */
   height: { about: 6.4, projects: 7.6, experience: 7.4, contact: 9.6 },
   /** Screenshots load once the rover is east of here on L1. */

@@ -311,7 +311,7 @@ export function GateSign({ text, tier }: { text: string; tier: GpuTier }) {
       )}
       <Text
         font={FONTS.monoBold}
-        fontSize={0.9}
+        fontSize={0.75}
         color={HALL.tone.about}
         anchorX="center"
         anchorY="bottom"
