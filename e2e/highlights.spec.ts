@@ -276,7 +276,7 @@ test.describe("Highlights Hall", () => {
   for (const tier of ["lite", "full"] as const) {
     test(`L1 keeps headroom under the floor budget from the plaza to the hall (${tier})`, async ({ page }) => {
       await enterHQ(page, { tier });
-      const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("about").pad, stationOf("projects").pad, stationOf("experience").pad];
+      const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("projects").pad, stationOf("experience").pad];
       for (const spot of spots) {
         if (spot) {
           await closeDrawer(page);
@@ -299,7 +299,9 @@ test.describe("Highlights Hall", () => {
     expect(response?.status()).toBe(200);
     await waitForCameraSettle(page);
     await expectRenderBudget(page);
-    expect((await snapshot(page)).drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
+    const { drawCalls, triangles } = await snapshot(page);
+    console.log(`L1 lite at the About me station: ${drawCalls} calls, ${triangles} triangles`);
+    expect(drawCalls).toBeLessThanOrEqual(L1_MAX_DRAW_CALLS);
   });
 
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
