@@ -1,14 +1,12 @@
 "use client";
 
-import { Text } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Vector3, type Group } from "three";
+import { useEffect, useMemo } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import { BatchedLabels } from "../../fx/BatchedLabels";
-import { yawTowards } from "../../fx/facing";
+import { FloatingSigns } from "../../fx/FloatingSign";
+import { signPlate, type SignSpec } from "../../fx/signLayout";
 import { neonColor } from "../../fx/materials";
-import type { LabPod, Vec2 } from "../../types";
+import type { LabPod } from "../../types";
 import { FONTS } from "../../tower/primitives";
 import { MergedBoxes } from "../roof/kit";
 import { wallLabels, wallLines, wallSolids, type DirectoryLabels } from "./directory";
@@ -18,63 +16,31 @@ import { LineBatch } from "./lines";
 export type HubLabels = DirectoryLabels;
 
 const WINGS = ["software", "ai"] as const;
-/** Height of the floating wing signs (bottom of the text). */
+/** Height of the floating wing signs (bottom of the plate). */
 const SIGN_Y = 4.2;
 const NO_RAYCAST = () => null;
-/** troika's laid-out text block: [minX, minY, maxX, maxY] in local units. */
-type TextSync = { textRenderInfo?: { blockBounds?: number[] } };
+
+/** Type size of the floating wing signs. */
+const SIGN_FONT = 1;
 
 /**
- * A wing name floating above its wing road where it leaves the hub (owner request 2026-10-13: nothing
- * painted on the floor). It turns to the camera every frame (yaw only, so it stays upright) on a dark
- * backing, so it reads left to right from any camera yaw and never shows its mirrored back.
+ * The wing names floating above each wing road where it leaves the hub (owner request 2026-10-13:
+ * nothing painted on the floor), on the shared `FloatingSigns`: turned to the camera every frame (yaw
+ * only) on a dark plate with a rim in the wing tint, so they read from any camera yaw and never mirror.
  */
-function WingSign({ at, text, color }: { at: Vec2; text: string; color: string }) {
-  const group = useRef<Group>(null);
-  const world = useMemo(() => new Vector3(), []);
-  const [box, setBox] = useState<number[] | null>(null);
-  useFrame(({ camera }) => {
-    const g = group.current;
-    if (!g) return;
-    g.getWorldPosition(world);
-    g.rotation.y = yawTowards({ x: world.x, z: world.z }, { x: camera.position.x, z: camera.position.z });
-  });
-  return (
-    <group ref={group} position={[at.x, SIGN_Y, at.z]}>
-      {box && (
-        <mesh position={[(box[0] + box[2]) / 2, (box[1] + box[3]) / 2, -0.02]} raycast={NO_RAYCAST}>
-          <planeGeometry args={[box[2] - box[0] + 0.8, box[3] - box[1] + 0.4]} />
-          <meshBasicMaterial color="#05050c" transparent opacity={0.9} depthWrite={false} toneMapped={false} />
-        </mesh>
-      )}
-      <Text
-        font={FONTS.monoBold}
-        fontSize={1}
-        color={color}
-        anchorX="center"
-        anchorY="bottom"
-        whiteSpace="nowrap"
-        renderOrder={1}
-        material-toneMapped={false}
-        onSync={(t: TextSync) => {
-          const b = t.textRenderInfo?.blockBounds;
-          if (b) setBox([b[0], b[1], b[2], b[3]]);
-        }}
-      >
-        {text}
-      </Text>
-    </group>
-  );
-}
-
 function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }) {
-  return (
-    <group>
-      {WINGS.map((wing) => (
-        <WingSign key={wing} at={layout.signs[wing].float} text={labels.wings[wing].toUpperCase()} color={WING_TINT[wing]} />
-      ))}
-    </group>
+  const tier = useHQStore((s) => s.tier);
+  const signs = useMemo<SignSpec[]>(
+    () =>
+      WINGS.map((wing) => {
+        const text = labels.wings[wing].toUpperCase();
+        const { h } = signPlate({ text, fontSize: SIGN_FONT });
+        const at = layout.signs[wing].float;
+        return { text, x: at.x, y: SIGN_Y + h / 2, z: at.z, color: WING_TINT[wing], fontSize: SIGN_FONT, font: FONTS.monoBold };
+      }),
+    [layout, labels],
   );
+  return <FloatingSigns signs={signs} name="labs-wing-signs" tier={tier} />;
 }
 
 /**

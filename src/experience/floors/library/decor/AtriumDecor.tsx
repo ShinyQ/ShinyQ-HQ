@@ -1,7 +1,7 @@
 "use client";
 
-import { Text } from "@react-three/drei";
 import { useMemo } from "react";
+import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { FONTS } from "../../../tower/primitives";
 import { ZONE_TONE } from "../model";
 import { faceRoad, ResearchPapers, STATION_HEIGHT, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
@@ -10,7 +10,7 @@ import type { BookInstance } from "./flipBooks";
 
 /**
  * Concept A, "Reading Room": alcoves along the loop, a small open book turning its pages above every
- * post alcove, and a large book over the atrium with the newest post's title under it.
+ * post alcove, and a large book over the atrium with the newest post's title floating under it.
  */
 export function AtriumDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones, onStation } = props;
@@ -23,6 +23,13 @@ export function AtriumDecor(props: DecorProps) {
     ];
   }, [layout]);
   const newest = library.posts.find((p) => !p.url);
+  // The newest title floats under the big book (it used to be written on the atrium floor).
+  const titleSign = useMemo<SignSpec[]>(() => {
+    if (!newest) return [];
+    const text = wrapSign(newest.title, 26);
+    const { h } = signPlate({ text, fontSize: 0.55 });
+    return [{ text, x: layout.centerpiece.x, y: 1.6 + h / 2, z: layout.centerpiece.z + 3, color: ZONE_TONE.blog, fontSize: 0.55, font: FONTS.monoBold }];
+  }, [newest, layout.centerpiece]);
   const shelves = useMemo(() => layout.stations.filter((s) => s.zone !== "blog"), [layout.stations]);
   return (
     <group name="library-atrium">
@@ -30,24 +37,8 @@ export function AtriumDecor(props: DecorProps) {
       <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />
       <ZoneIcons stations={shelves} tier={tier} reducedMotion={reducedMotion} />
       <StationLabels stations={layout.stations} titles={titles} />
-      <ZoneSigns layout={layout} zones={zones} />
+      <ZoneSigns layout={layout} zones={zones} tier={tier} extra={titleSign} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
-      {newest && (
-        <Text
-          font={FONTS.sansBold}
-          fontSize={0.7}
-          maxWidth={12}
-          textAlign="center"
-          anchorX="center"
-          anchorY="top"
-          position={[layout.centerpiece.x, 1.2, layout.centerpiece.z + 3]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          color={ZONE_TONE.blog}
-          material-toneMapped={false}
-        >
-          {newest.title}
-        </Text>
-      )}
     </group>
   );
 }

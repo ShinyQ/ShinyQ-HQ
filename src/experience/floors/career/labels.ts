@@ -1,4 +1,5 @@
 import { COLORS } from "../../config";
+import { signPlate, type SignSpec } from "../../fx/signLayout";
 import type { BatchedLabel } from "../../fx/labelProps";
 import { FONTS } from "../../tower/primitives";
 import type { CareerEntryView } from "../../types";
@@ -65,4 +66,31 @@ export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count
       anchorY: "top",
     })),
   };
+}
+
+/** The floating year marker over each plaza (it used to be painted on the plaza floor): bottom edge height, type size, lean. */
+export const YEAR_MARKER = { bottom: 5.2, fontSize: 3, tilt: 0.55, letterSpacing: 0.06 } as const;
+
+/**
+ * One floating year per plaza, over its south edge (toward the rail camera): big and bright in the floor
+ * accent, high enough to clear the south rooms and below the camera's view of the road and the north
+ * rooms, leaning back toward the rail camera. Fades with distance along the road like the room labels.
+ */
+export function yearMarkerSigns(years: CareerRoadLayout["years"], color: string): SignSpec[] {
+  return years.map((y) => {
+    const text = String(y.year);
+    const { h } = signPlate({ text, fontSize: YEAR_MARKER.fontSize, letterSpacing: YEAR_MARKER.letterSpacing });
+    return {
+      text,
+      x: y.plaza.center.x,
+      y: YEAR_MARKER.bottom + h / 2,
+      z: y.plaza.center.z + y.plaza.d / 2,
+      color,
+      fontSize: YEAR_MARKER.fontSize,
+      letterSpacing: YEAR_MARKER.letterSpacing,
+      font: FONTS.monoBold,
+      tilt: YEAR_MARKER.tilt,
+      fadeX: y.plaza.center.x,
+    };
+  });
 }

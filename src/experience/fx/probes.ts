@@ -3,9 +3,11 @@ import type { FloorId } from "@/content/schema";
 /**
  * Scene facts for Playwright (`window.__hq.probes`), written by scene components in `useFrame`, never
  * read during render. `flippedSigns`: `Readable` groups turned around because the camera is behind
- * them. `ghosts`: floors above the rover whose ghost slab is drawn this frame (none in first person).
+ * them. `signs`: floating signs (`fx/FloatingSign.tsx`). `ghosts`: floors above the rover whose ghost slab is drawn this frame (none in first person).
  */
 export const sceneProbes = {
   flippedSigns: 0,
   ghosts: {} as Partial<Record<FloorId, boolean>>,
+  /** Floating signs drawn this frame per `FloatingSigns` group: text and how square it faces the camera (1 = square, below 0 = its back). */
+  signs: {} as Record<string, { text: string; facing: number }[]>,
 };
