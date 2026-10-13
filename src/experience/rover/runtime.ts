@@ -51,6 +51,18 @@ export const roverRuntime = {
   boost: 0,
   /** Boost trail opacity as drawn this frame (0 when hidden or under reduced motion; test probe). */
   trail: 0,
+  /** Speed streak opacity as drawn this frame (0 when hidden; test probe). */
+  streaks: 0,
+  /** Wheel sparks alive this frame (test probe). */
+  sparks: 0,
+  /** Boost meshes drawn this frame: trail, streaks, sparks (0 to 3; 0 when not boosting). */
+  boostFx: 0,
+  /** Body squat or dip (radians, negative is nose up) and extra lean from the boost (test probes). */
+  boostPitch: 0,
+  boostRoll: 0,
+  /** Camera FOV kick (degrees) and follow distance factor from the boost (test probes). */
+  boostFov: 0,
+  boostPull: 1,
   /** Most recent draw call count (dev probe for the per-floor budget). */
   drawCalls: 0,
   /** Most recent triangle count (dev probe for the per-floor budget). */
