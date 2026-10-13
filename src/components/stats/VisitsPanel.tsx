@@ -146,41 +146,47 @@ export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, 
         </details>
       </figure>
 
-      <section className="grid gap-3" aria-labelledby={`${id}-split`} data-testid="visits-split">
-        <h3 id={`${id}-split`} className="label">
-          {t("split.title")}
-        </h3>
-        <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
-          <span className="block h-full bg-cyan" style={{ width: `${v.mode.threeDShare}%` }} />
-          <span className="block h-full bg-violet" style={{ width: `${v.mode.classicShare}%` }} />
-        </div>
-        <p className="pv-small flex flex-wrap justify-between gap-2 text-ink-2">
-          <span>
-            {t("split.threeD")} <span className="pv-num text-ink">{v.mode.threeDShare}%</span>
-          </span>
-          <span>
-            {t("split.classic")} <span className="pv-num text-ink">{v.mode.classicShare}%</span>
-          </span>
-        </p>
-        <p className="pv-small text-ink-3">{t("split.note")}</p>
-      </section>
+      {v.mode.threeD + v.mode.classic > 0 && (
+        <section className="grid gap-3" aria-labelledby={`${id}-split`} data-testid="visits-split">
+          <h3 id={`${id}-split`} className="label">
+            {t("split.title")}
+          </h3>
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+            <span className="block h-full bg-cyan" style={{ width: `${v.mode.threeDShare}%` }} />
+            <span className="block h-full bg-violet" style={{ width: `${v.mode.classicShare}%` }} />
+          </div>
+          <p className="pv-small flex flex-wrap justify-between gap-2 text-ink-2">
+            <span>
+              {t("split.threeD")} <span className="pv-num text-ink">{v.mode.threeDShare}%</span>
+            </span>
+            <span>
+              {t("split.classic")} <span className="pv-num text-ink">{v.mode.classicShare}%</span>
+            </span>
+          </p>
+          <p className="pv-small text-ink-3">{t("split.note")}</p>
+        </section>
+      )}
 
       <div className={`grid gap-8 ${compact ? "" : "md:grid-cols-2"}`}>
         <section className="grid content-start gap-3" aria-labelledby={`${id}-topics`} data-testid="visits-topics">
           <h3 id={`${id}-topics`} className="label">
             {t("topicsTitle")}
           </h3>
-          <ul className="grid gap-3">
-            {v.asks.topics.map((x) => (
-              <li key={x.topic} className="grid gap-1.5" data-topic={x.topic}>
-                <span className="pv-small flex justify-between gap-3 text-ink-2">
-                  <span>{t(`topics.${x.topic}`)}</span>
-                  <span className="pv-num text-ink">{x.share}%</span>
-                </span>
-                <Bar share={x.share} tone="cyan" />
-              </li>
-            ))}
-          </ul>
+          {v.asks.topics.some((x) => x.n > 0) ? (
+            <ul className="grid gap-3">
+              {v.asks.topics.map((x) => (
+                <li key={x.topic} className="grid gap-1.5" data-topic={x.topic}>
+                  <span className="pv-small flex justify-between gap-3 text-ink-2">
+                    <span>{t(`topics.${x.topic}`)}</span>
+                    <span className="pv-num text-ink">{x.share}%</span>
+                  </span>
+                  <Bar share={x.share} tone="cyan" />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="pv-small text-ink-3">{t("counters.none")}</p>
+          )}
           <p className="pv-small text-ink-3">{t("topicsNote")}</p>
         </section>
 

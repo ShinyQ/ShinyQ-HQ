@@ -90,3 +90,15 @@ describe("VisitsPanel", () => {
     expect(screen.getByText("1.240")).toBeInTheDocument();
   });
 });
+
+describe("VisitsPanel with an early snapshot", () => {
+  it("hides the split without beacon data and says none yet without topics", async () => {
+    const { STATS_FIXTURE_EMPTY } = await import("@/lib/visits/contract");
+    __setStatsForTests({ status: "ready", snapshot: { ...STATS_FIXTURE_EMPTY, visits: { d30: 22, all: 22 }, countries: { d30: ["ID", "US"], all: ["ID", "US"] } }, freshness: "fresh" });
+    renderPanel();
+    expect(screen.queryByTestId("visits-split")).toBeNull();
+    expect(within(screen.getByTestId("visits-topics")).getByText(en.stats.counters.none)).toBeInTheDocument();
+    expect(within(screen.getByTestId("visits-chips")).getByText(en.stats.noChips)).toBeInTheDocument();
+    expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(2);
+  });
+});

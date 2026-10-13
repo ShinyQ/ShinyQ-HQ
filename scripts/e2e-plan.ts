@@ -40,6 +40,7 @@ export const ALL_SPECS = [
   "spectacle",
   "static-routes",
   "visit",
+  "visits",
   "walk",
 ] as const;
 
@@ -127,10 +128,15 @@ export const RULES: Rule[] = [
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
-  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof"] },
+  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof", "visits"] },
+  // Public visit stats (S2): the shared model, store, panel and placements, the RF observatory and the L1 tile.
+  {
+    test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/roof\/(VisitsStation\.tsx|observatory\.ts|visitsRoom\.ts)$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
+    specs: ["visits", "roof", "pageview"],
+  },
   // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
-  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
-  { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
+  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "visits", "walk"] },
+  { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof", "visits"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },

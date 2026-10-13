@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData, GpuTier } from "../types";
+import { sceneProbes } from "../fx/probes";
 import { useRingStats } from "../visits3d";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
 import type { HallLabels } from "./lobby/hallContent";
@@ -38,6 +39,9 @@ function useHallReady(): boolean {
 export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: LobbyLabels; tier: GpuTier }) {
   const hall = useHallReady();
   const stats = useRingStats(data.stats, data.locale, labels.visitsTile);
+  useEffect(() => {
+    sceneProbes.spectacle.ringTiles = stats.length;
+  }, [stats.length]);
   return (
     <group name="lobby">
       <Lanes packets={tier === "full" ? 28 : 12} />
