@@ -40,7 +40,8 @@ const LOBBY_STOPS: Record<string, Vec2> = {
 };
 
 /**
- * Where `drive` takes the rover. Rooms with a door trigger stop in its zone (every floor); Lobby
+ * Where `drive` takes the rover. Rooms with a door trigger stop in its zone (every floor), rooms with
+ * a `stops` entry (the L3 Tech Reactor, the L2 Workshop) at that stop; Lobby
  * rooms have real stops; L3 listed items stop at their wing directory; rooms without a door on a floor
  * with a `listStop` (L4 posts on the archive board) stop there; anything else stops near the floor label.
  */
@@ -55,7 +56,6 @@ export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Reco
   if (floor === "L1") return LOBBY_STOPS[id.slice(3)] ?? fallback;
   if (floor === "L2") {
     const index = room?.year !== undefined ? years.indexOf(room.year) : -1;
-    if (room?.kind === "workshop") return { x: layout.bounds.maxX - 6, z: 0 };
     return index >= 0 ? { x: -20 + 14 * index + 7, z: 0 } : fallback;
   }
   if (floor === "L3" && room?.wing) return directoryStop(room.wing);

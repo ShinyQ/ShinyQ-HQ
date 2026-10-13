@@ -53,7 +53,7 @@ function rand(i: number, k: number): number {
 }
 
 /** Lays out the Horizon and the Origin from the Career Road layout (the window and the annex move with the content). */
-export function buildHorizon(layout: Pick<CareerRoadLayout, "windowX" | "annex" | "bounds" | "workshop">, lite = false): HorizonLayout {
+export function buildHorizon(layout: Pick<CareerRoadLayout, "windowX" | "forecourt" | "bounds">, lite = false): HorizonLayout {
   const H = HORIZON;
   const wx = layout.windowX;
   const half = H.bridge.width / 2;
@@ -71,13 +71,13 @@ export function buildHorizon(layout: Pick<CareerRoadLayout, "windowX" | "annex" 
   });
   const strip = (rows: readonly number[], fromX: number): Strip[] =>
     rows.slice(0, lite ? H.strips.liteRows : rows.length).map((z) => ({ from: { x: fromX, z }, to: { x: wx - H.strips.inset, z }, width: H.strips.width }));
-  const annexMinX = layout.annex.center.x - layout.annex.w / 2;
+  const forecourtMinX = layout.forecourt.center.x - layout.forecourt.w / 2;
   return {
     bridge: { minX: wx, maxX: wx + H.bridge.length, minZ: -half, maxZ: half },
     towers,
     glow: { x: wx + H.glow.distance, y: H.glow.y, z: 0, w: H.glow.w, h: H.glow.h },
-    // North-east: from the repo wall's west end; south-east: from the annex start.
-    strips: [...strip(H.strips.ne, layout.workshop.wall.minX), ...strip(H.strips.se, annexMinX)],
+    // From the forecourt on, beyond the time console and the repo skyline (north-east) and the workbenches (south-east).
+    strips: [...strip(H.strips.ne, forecourtMinX), ...strip(H.strips.se, forecourtMinX)],
     pillar: { at: H.pillar.at, radius: H.pillar.radius, height: H.pillar.height },
   };
 }

@@ -2,6 +2,7 @@ import type { CertView } from "@/content/certs";
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 import type { LibraryLayoutInput } from "./floors/library/model";
 import type { RoadNetwork } from "./nav/road";
+import type { WorkshopRepo } from "./floors/career/skyline";
 import type { ViewZone } from "./camera/orbit";
 
 export type Vec2 = { x: number; z: number };
@@ -75,7 +76,7 @@ export interface FloorLayout {
   viewZones?: ViewZone[];
   /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
   listStop?: Vec2;
-  /** Rooms without a door that have their own stop (L3: the Tech Reactor); checked before `listStop`. */
+  /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars); checked before `listStop`. */
   stops?: Partial<Record<RoomId, Vec2>>;
 }
 
@@ -87,8 +88,10 @@ export type CareerType = "job" | "freelance" | "education" | "award" | "mileston
 /** What the L2 corridor layout needs: entries per year, oldest first (pre-2019 folded into 2019). */
 export interface CareerLayoutInput {
   years: { year: number; entries: { slug: string; type: CareerType }[] }[];
-  /** Side projects shown on Workshop annex benches. */
-  benches: number;
+  /** Side project ids, one Workshop bench each (content order). */
+  sideProjects: string[];
+  /** Public repos for the Workshop skyline. */
+  repos: WorkshopRepo[];
 }
 
 /** One L2 room label (locale-resolved). */
@@ -106,8 +109,7 @@ export interface CareerEntryView {
 export interface CareerData {
   years: { year: number; entries: CareerEntryView[]; awards: number }[];
   sideProjects: { id: string; title: string; year: number | null }[];
-  repos: string[];
-  models: string[];
+  repos: WorkshopRepo[];
 }
 
 export type HologramKind = "waveform" | "shield" | "documents" | "graph" | "chart" | "template" | "pipeline";

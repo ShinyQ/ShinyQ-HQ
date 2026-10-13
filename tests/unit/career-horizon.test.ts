@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getSideProjects, getYears } from "@/content/load";
-import { BENCH, buildCareerRoad } from "@/experience/floors/career/layout";
+import { buildCareerData } from "@/content/experience";
+import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { buildHorizon, HORIZON, stripRect } from "@/experience/floors/career/horizonLayout";
 import { distanceToRect } from "@/experience/nav/collision";
 import { PAD } from "@/experience/nav/pads";
@@ -8,15 +8,13 @@ import { onNetwork } from "@/experience/nav/road";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";
 
-const career = buildCareerRoad({
-  years: getYears().map(({ year, entries }) => ({ year, entries: entries.map((e) => ({ slug: e.slug, type: e.type })) })),
-  benches: getSideProjects().length,
-});
+const career = buildCareerRoad(careerLayoutInput(buildCareerData("en")));
 const full = buildHorizon(career);
 const lite = buildHorizon(career, true);
 const { bounds } = career;
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX && r.maxX <= b.maxX && r.minZ >= b.minZ && r.maxZ <= b.maxZ;
-const benchRects: Rect[] = career.workshop.benches.map((b) => ({ minX: b.x - BENCH.w / 2, maxX: b.x + BENCH.w / 2, minZ: b.z - BENCH.d / 2, maxZ: b.z + BENCH.d / 2 }));
+const benchRects: Rect[] = career.workshop.benches.map((b) => b.rect);
+const docked: Rect[] = [career.workshop.console.rect, career.workshop.skyline.plinth, ...career.workshop.gateway.rects];
 const roomRects: Rect[] = career.rooms.map((r) => ({ minX: r.center.x - r.w / 2, maxX: r.center.x + r.w / 2, minZ: r.center.z - r.d / 2, maxZ: r.center.z + r.d / 2 }));
 
 describe("L2 Horizon (east end)", () => {
@@ -49,18 +47,18 @@ describe("L2 Horizon (east end)", () => {
     expect(full.glow.z).toBe(0);
   });
 
-  it("dresses the empty north-east and south-east corners without touching the wall, benches, rooms or pads", () => {
+  it("dresses the empty north-east and south-east corners without touching the console, skyline, benches, rooms or pads", () => {
     expect(full.strips).toHaveLength(HORIZON.strips.ne.length + HORIZON.strips.se.length);
     expect(lite.strips).toHaveLength(HORIZON.strips.liteRows * 2);
-    const pads = [career.workshop.at, ...career.pads.map((p) => p.at), ...career.doors.map((d) => d.at)];
+    const pads = [career.workshop.returnPad, career.workshop.console.stop, ...career.pads.map((p) => p.at), ...career.doors.map((d) => d.at)];
     for (const s of full.strips) {
       const r = stripRect(s);
       expect(inside(r, bounds)).toBe(true);
-      // East of the annex start, beyond the repo wall's south face (NE) or the last bench row (SE).
-      expect(r.minX).toBeGreaterThanOrEqual(career.annex.center.x - career.annex.w / 2);
-      if (s.from.z < 0) expect(r.maxZ).toBeLessThan(career.workshop.wall.minZ - 2);
+      // East of the forecourt start, beyond the repo skyline (NE) or the workbenches (SE).
+      expect(r.minX).toBeGreaterThanOrEqual(career.forecourt.center.x - career.forecourt.w / 2);
+      if (s.from.z < 0) expect(r.maxZ).toBeLessThan(career.workshop.skyline.plinth.minZ - 2);
       else expect(r.minZ).toBeGreaterThan(Math.max(...benchRects.map((b) => b.maxZ)) + 2);
-      expect(rectGap(r, career.workshop.wall)).toBeGreaterThan(2);
+      for (const d of docked) expect(rectGap(r, d)).toBeGreaterThan(2);
       for (const b of benchRects) expect(rectGap(r, b)).toBeGreaterThan(2);
       for (const room of roomRects) expect(rectGap(r, room)).toBeGreaterThan(2);
       for (const p of pads) expect(distanceToRect(p, r)).toBeGreaterThan(PAD.radius + 1);

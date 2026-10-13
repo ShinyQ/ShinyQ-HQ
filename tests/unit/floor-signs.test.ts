@@ -1,20 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { getSideProjects, getYears } from "@/content/load";
 import { FLOOR_COLOR } from "@/experience/config";
 import { yearMarkerSigns, YEAR_MARKER } from "@/experience/floors/career/labels";
-import { buildCareerRoad, CAREER_ROAD } from "@/experience/floors/career/layout";
+import { buildCareerRoad, CAREER_ROAD, careerLayoutInput } from "@/experience/floors/career/layout";
 import { YEAR_MARK, yearMarkSigns, ZONE_SIGN, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
 import { signPlate } from "@/experience/fx/signLayout";
 import { ROVER_HEIGHT } from "@/experience/config";
 
-const career = buildCareerRoad({
-  years: getYears().map(({ year, entries }) => ({ year, entries: entries.map((e) => ({ slug: e.slug, type: e.type })) })),
-  benches: getSideProjects().length,
-});
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
+const career = buildCareerRoad(careerLayoutInput(data.career));
 const library = buildLibraryLayout(libraryLayoutInput(data.library));
 const zones = { blog: "Blog", research: "Research", models: "Models and datasets", talks: "Talks and workshops" };
 

@@ -9,7 +9,6 @@ import { buildHighlightsData } from "./highlights";
 import {
   getAwards,
   getContent,
-  getLibrary,
   getMissions,
   getPods,
   getPosts,
@@ -24,6 +23,7 @@ import {
 import type { FloorId, Locale } from "./schema";
 import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
 import { getTechLogo } from "./tech";
+import { repoSlug } from "./workshop";
 
 /** L3 pods in site order (`orderPods`) with only what the 3D floor draws (the drawer loads full content separately). */
 export function labPods(locale: Locale): LabPod[] {
@@ -63,10 +63,7 @@ export function buildCareerData(locale: Locale): CareerData {
       awards: awards.get(year) ?? 0,
     })),
     sideProjects: getSideProjects().map((p) => ({ id: p.id, title: p.title, year: p.year ?? null })),
-    repos: getPublicRepos().map((r) => r.name),
-    models: getLibrary()
-      .publications.filter((p) => p.kind === "model")
-      .map((p) => p.title),
+    repos: getPublicRepos().map((r) => ({ slug: repoSlug(r.name), name: r.name, language: r.language, stars: r.stars })),
   };
 }
 

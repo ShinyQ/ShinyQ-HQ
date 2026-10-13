@@ -8,8 +8,8 @@ import { buildNavGrid } from "@/experience/nav/navgrid";
 import { buildRoadGraph, pathBetween } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import type { Rect, Vec2 } from "@/experience/types";
-import { buildCareerRoad } from "@/experience/floors/career/layout";
-import { getSideProjects, getYears } from "@/content/load";
+import { buildCareerData } from "@/content/experience";
+import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const pods = buildExperienceData("en", FLOOR_NAMES).labs.pods;
@@ -129,10 +129,7 @@ describe("L3 data waterfalls", () => {
   });
 
   it("falls clear of the L2 slab below", () => {
-    const career = buildCareerRoad({
-      years: getYears().map(({ year, entries }) => ({ year, entries: entries.map((e) => ({ slug: e.slug, type: e.type })) })),
-      benches: getSideProjects().length,
-    });
+    const career = buildCareerRoad(careerLayoutInput(buildCareerData("en")));
     for (const p of waterfallPanels(floor.bounds)) {
       for (const q of [p.a, p.b]) {
         const over = q.x >= career.bounds.minX && q.x <= career.bounds.maxX && q.z >= career.bounds.minZ && q.z <= career.bounds.maxZ;

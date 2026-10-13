@@ -62,8 +62,11 @@ describe("buildExperienceData", () => {
     const data = buildCareerData("en");
     expect(data.years.reduce((n, y) => n + y.awards, 0)).toBe(getAwards().length);
     expect(data.sideProjects.map((p) => p.id)).toEqual(getSideProjects().map((p) => p.id));
-    expect(data.repos).toHaveLength(getPublicRepos().length);
-    expect(data.models).toHaveLength(3);
+    // The skyline gets every repo with its room slug, language and stars.
+    expect(data.repos.map((r) => r.name)).toEqual(getPublicRepos().map((r) => r.name));
+    expect(data.repos.map((r) => r.stars)).toEqual(getPublicRepos().map((r) => r.stars));
+    expect(data.repos.every((r) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(r.slug))).toBe(true);
+    expect(new Set(data.repos.map((r) => r.slug)).size).toBe(data.repos.length);
   });
 
   it("is serializable", () => {
