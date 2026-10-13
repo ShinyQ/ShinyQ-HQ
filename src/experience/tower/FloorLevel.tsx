@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type MeshBasicMaterial } from "three";
+import { BoxGeometry, EdgesGeometry, type Group, type LineBasicMaterial, type Mesh, type MeshBasicMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { ceilingOpacity } from "../camera/firstPerson";
 import { floorY, SLAB_THICKNESS } from "../config";
@@ -12,7 +12,7 @@ import { GridFloor } from "../fx/GridFloor";
 import { sceneProbes } from "../fx/probes";
 import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
-import { registerFloorContent } from "./floorRegistry";
+import { registerFloorContent, registerFloorSlab } from "./floorRegistry";
 import { floorContentVisible } from "./near";
 import { floorReady } from "./ridePrep";
 import { contentVisible } from "./visibility";
@@ -40,6 +40,7 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
   const edge = useRef<LineBasicMaterial>(null);
   const content = useRef<Group>(null);
   const slab = useRef<Group>(null);
+  const slabFill = useRef<Mesh>(null);
   const center = useMemo<[number, number]>(() => [cx, cz], [cx, cz]);
   const edges = useMemo(() => new EdgesGeometry(new BoxGeometry(w, SLAB_THICKNESS, d)), [w, d]);
   useDispose(edges);
@@ -68,13 +69,17 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
 
   useEffect(() => {
     registerFloorContent(layout.id, content.current);
-    return () => registerFloorContent(layout.id, null);
+    registerFloorSlab(layout.id, slabFill.current);
+    return () => {
+      registerFloorContent(layout.id, null);
+      registerFloorSlab(layout.id, null);
+    };
   }, [layout.id]);
 
   return (
     <group position={[0, y, 0]} name={`floor-${layout.id}`}>
       <group ref={slab}>
-        <mesh position={[cx, -SLAB_THICKNESS / 2, cz]}>
+        <mesh ref={slabFill} position={[cx, -SLAB_THICKNESS / 2, cz]}>
           <boxGeometry args={[w, SLAB_THICKNESS, d]} />
           <meshBasicMaterial ref={fill} color={SLAB_COLOR} transparent opacity={SOLID} />
         </mesh>

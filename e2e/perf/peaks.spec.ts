@@ -30,12 +30,9 @@ type Tier = "lite" | "full";
  * under budget, Playwright reports "expected to fail, but passed" and the id must be removed here. Add
  * only ids measured over budget, with their numbers in the PR.
  */
-// Both are over the 30k triangle budget only since P2 (bef59b7): a ride shows its target floor and every
-// floor within one floor gap under the car (tower/visibility.ts), so the descent draws two floors at once.
-// lite ride-L3-L2: 124 scene calls (in budget), 31306 triangles (209 calls and 32040 triangles before P2).
-// full ride-L2-L1: 116 scene calls + 17 post passes (in budget), 34045 triangles (26237 before P2).
-// Spec 08 section 2 lists them under "Known over budget".
-const KNOWN_OVER = new Set<string>(["lite ride-L3-L2", "full ride-L2-L1"]);
+// Empty: the two rides P4 recorded here (lite ride-L3-L2 at 31306 triangles, full ride-L2-L1 at 34045)
+// are under budget since the ride cull (tower/rideCull.ts) skips meshes hidden under a solid slab.
+const KNOWN_OVER = new Set<string>([]);
 
 function ratchet(id: string) {
   test.fail(KNOWN_OVER.has(id), `${id} is over budget on main (see KNOWN_OVER); remove it from KNOWN_OVER when this passes`);

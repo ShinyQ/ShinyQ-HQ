@@ -53,6 +53,7 @@ import { floorOf } from "./missions/rooms";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
+import { rideCullStats } from "./tower/rideCull";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -141,6 +142,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     memory: memoryCounts,
     ridePrep,
     probes: sceneProbes,
+    // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
+    rideCull: rideCullStats,
     render: renderProbe,
     quality: qualityHandle,
     frames: () => framePacer.frames,

@@ -18,7 +18,8 @@ if (process.platform === "darwin" && process.env.VISUAL_GATE_GPU !== "swiftshade
 }
 
 type Device = { name: string; width: number; height: number; dpr: number; tier: "full" | "lite"; touch: boolean; info?: boolean };
-type Pose = { name: string; kind: "settled" | "intro" | "ride"; path: string; to?: string };
+/** Ride poses capture `after` frames after the ride reaches `stage` (default: 24 frames into the dolly). */
+type Pose = { name: string; kind: "settled" | "intro" | "ride"; path: string; to?: string; stage?: "boarding" | "moving" | "opening"; after?: number };
 type Limits = { threshold: number; maxDiffPixelRatio: number };
 
 const DEVICES: readonly Device[] = [
@@ -38,6 +39,11 @@ const POSES: readonly Pose[] = [
   { name: "intro-still", kind: "intro", path: "/en" },
   { name: "ride-up-l1-l2", kind: "ride", path: "/en", to: "L2" },
   { name: "ride-down-rf-l1", kind: "ride", path: "/en/contact", to: "L1" },
+  // The ride cull (tower/rideCull.ts): parked over the floor below, the first dolly frames and the arrival.
+  { name: "ride-down-l2-l1-board", kind: "ride", path: "/en/journey", to: "L1", stage: "boarding", after: 10 },
+  { name: "ride-down-l2-l1-dolly", kind: "ride", path: "/en/journey", to: "L1", stage: "moving", after: 12 },
+  { name: "ride-down-l3-l2-board", kind: "ride", path: "/en/labs", to: "L2", stage: "boarding", after: 10 },
+  { name: "ride-down-l3-l2-arrive", kind: "ride", path: "/en/labs", to: "L2", stage: "opening", after: 6 },
 ];
 
 const STRICT: Limits = { threshold: 0.1, maxDiffPixelRatio: 0.001 };
@@ -135,8 +141,10 @@ async function settle(page: Page, pose: Pose) {
     // The target floor mounts now: give fonts, chunks and troika real time before the dolly.
     await page.waitForTimeout(1000);
     await waitForQuiet(page);
-    await driveUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", { maxFrames: 1200, batch: 1 });
-    await stepFrames(page, 24);
+    // The check runs in the page, so the wanted stage travels as a window field.
+    await page.evaluate((stage) => ((window as unknown as { __vgStage: string }).__vgStage = stage), pose.stage ?? "moving");
+    await driveUntil(page, () => (window as unknown as HQ & { __vgStage: string }).__hq.store.getState().ride?.stage === (window as unknown as { __vgStage: string }).__vgStage, { maxFrames: 1200, batch: 1 });
+    await stepFrames(page, pose.after ?? 24);
   }
   // Last frames one task at a time: troika repacks a text batch in a promise after its members typeset
   // (a worker), and a real browser runs those between frames, not inside one stepped evaluate.
