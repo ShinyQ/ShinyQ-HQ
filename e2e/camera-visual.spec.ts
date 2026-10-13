@@ -41,7 +41,7 @@ const posesFor = (floor: string): Pose[] => (floor === "L2" ? ["default", "zoome
 
 type Metrics = { drawCalls: number; triangles: number; diffShare?: number };
 
-async function open(browser: Browser, v: Viewport, path: string) {
+async function open(browser: Browser, v: Viewport, path: string, quiet = false) {
   const context = await browser.newContext({
     viewport: { width: v.width, height: v.height },
     deviceScaleFactor: 1,
@@ -51,6 +51,8 @@ async function open(browser: Browser, v: Viewport, path: string) {
   });
   const page = await context.newPage();
   await asReturningVisitor(page);
+  // First-person captures: no first-visit floor line (Rover's box would sit under the fingers of a pinch).
+  if (quiet) await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L1", "L2", "L3", "L4", "RF"])));
   await page.goto(`${path}?tier=${v.tier}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore", WAIT);
@@ -81,6 +83,21 @@ async function capture(page: Page): Promise<{ png: Buffer; metrics: Metrics }> {
     return { drawCalls: r.drawCalls, triangles: r.triangles };
   });
   return { png: await page.screenshot(), metrics };
+}
+
+/** Two-finger pinch out through CDP, centered, clear of the HUD's side columns. */
+async function pinchOpen(page: Page, v: Viewport) {
+  const cdp = await page.context().newCDPSession(page);
+  const y = Math.round(v.height * 0.55);
+  const at = (d: number) => [
+    { x: v.width / 2 - d / 2, y, id: 1 },
+    { x: v.width / 2 + d / 2, y, id: 2 },
+  ];
+  let timestamp = Date.now() / 1000;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at(60), timestamp });
+  for (let i = 1; i <= 10; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: at(60 + 16 * i), timestamp: (timestamp += 0.04) });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: (timestamp += 0.04) });
+  await cdp.detach();
 }
 
 /** Share of pixels that differ by more than DELTA on any channel, decoded in a blank page (no site CSP). */
@@ -145,10 +162,15 @@ for (const v of VIEWPORTS) {
     mkdirSync(out, { recursive: true });
     const all: Record<string, Metrics> = {};
     for (const { floor, path } of FLOORS) {
-      const { context, page } = await open(browser, v, path);
-      await page.mouse.move(v.width / 2, v.height / 2);
-      // From the default zoom the third notch enters first person; later notches are ignored there.
-      for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -120);
+      const { context, page } = await open(browser, v, path, true);
+      if (v.touch) {
+        // Phones pinch (the wheel is a mouse gesture): fingers apart all the way into first person.
+        await pinchOpen(page, v);
+      } else {
+        await page.mouse.move(v.width / 2, v.height / 2);
+        // From the default zoom the third notch enters first person; later notches are ignored there.
+        for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -120);
+      }
       await page.waitForFunction(() => (window as unknown as { __hq: { rover: { cameraBlend: number } } }).__hq.rover.cameraBlend === 1, null, { timeout: WAIT });
       const { png, metrics } = await capture(page);
       await context.close();
