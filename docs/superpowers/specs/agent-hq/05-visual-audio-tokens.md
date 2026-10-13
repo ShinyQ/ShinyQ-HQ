@@ -29,6 +29,8 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 All HUD text must meet WCAG AA contrast against `glass.bg`.
 
+Blur: translucent `.glass` panels (64% fill) blur the canvas behind them on fine pointers only. Panels at least 94% opaque (`.glass-solid`, the terminal, the lightbox) and scrims hidden behind full-screen phone panels use no `backdrop-filter`, because a blur over the live canvas is recomputed every frame.
+
 ### Markers, selection and edges (R5 P10, owner decision 2026-10-13)
 
 - Color marks state, category and selection only as a dot or icon chip next to the label (`AccentDot`: 6 px, 8 px in panel bars, a soft halo for the current or selected item) and as a full-outline glow on hover, keyboard focus, current and selected states (`hq-glow`: the whole hairline at 50% of the accent plus `0 0 24px -8px` of the accent).

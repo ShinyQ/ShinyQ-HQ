@@ -18,7 +18,8 @@ import { distanceToRect } from "@/experience/nav/collision";
 import { DOOR_SIZE } from "@/experience/nav/doors";
 import { PAD } from "@/experience/nav/pads";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
-import { onNetwork, pathBetween, roadRoute } from "@/experience/nav/road";
+import { onNetwork, pathBetween } from "@/experience/nav/road";
+import { roadRoute } from "@/experience/nav/roadRoute";
 import type { CareerLayoutInput, CareerType, Rect } from "@/experience/types";
 import { expectSpaceRules } from "../helpers/space";
 

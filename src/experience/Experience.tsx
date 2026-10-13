@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ACESFilmicToneMapping } from "three";
+import { ACESFilmicToneMapping, type Material, type Scene as ThreeScene, type WebGLRenderer } from "three";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
@@ -15,6 +15,7 @@ import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { CanvasBoundary } from "./CanvasBoundary";
 import { buildFloorLayouts, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
@@ -25,8 +26,13 @@ import { useInputSources } from "./input/useInputSources";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
+import { beamNow, rideNow } from "./tower/rideClock";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
+import { FrameLoop } from "./scene/FrameLoop";
+import { framePacer } from "./scene/framePacer";
+import { memoryCounts, trackRenderer } from "./scene/memoryProbe";
+import { releaseSharedResources } from "./scene/sharedResources";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
 import { programPins } from "./scene/programPins";
 import { qualityHandle, qualityStore } from "./scene/qualityStore";
@@ -114,7 +120,23 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   if (!intro) openStartRoom();
   if (!first) return;
   // Test and debugging handle (read-only use from Playwright).
-  (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep, probes: sceneProbes, render: renderProbe, quality: qualityHandle };
+  (window as unknown as { __hq?: unknown }).__hq = {
+    store,
+    rover: roverRuntime,
+    camera: () => [...roverRuntime.cameraPosition],
+    layouts,
+    interact: interactRuntime,
+    memory: memoryCounts,
+    ridePrep,
+    probes: sceneProbes,
+    render: renderProbe,
+    quality: qualityHandle,
+    frames: () => framePacer.frames,
+    motion: () => {
+      const live = store.getState();
+      return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };
+    },
+  };
 }
 
 /** Calls `onFrame` once the canvas has rendered a frame (the second loop tick, after the first draw). */
@@ -134,9 +156,10 @@ export default function Experience({
   tier,
   onExit,
   onFirstFrame,
+  onCrash,
   startFloor,
   startRoom,
-}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void } & ExperienceStart) {
+}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
@@ -189,6 +212,19 @@ export default function Experience({
       delete html.dataset.hq;
     };
   }, []);
+
+  // The memory probe must not read a renderer that unmounted with this canvas, and shared materials
+  // and textures must not keep it alive (React runs this cleanup before the canvas empties its scene).
+  const created = useRef<{ gl: WebGLRenderer; scene: ThreeScene } | null>(null);
+  useEffect(
+    () => () => {
+      const canvas = created.current;
+      created.current = null;
+      if (canvas) releaseSharedResources(canvas.scene, { uniformsOf: (m: Material) => (canvas.gl.properties.get(m) as { uniforms?: Record<string, { value?: unknown }> }).uniforms });
+      trackRenderer(null);
+    },
+    [],
+  );
 
   useEffect(() => {
     const store = getHQStore();
@@ -362,34 +398,40 @@ export default function Experience({
   return (
     <div className="fixed inset-0 z-[35] overflow-hidden bg-void text-ink" data-testid="hq" data-tier={tier}>
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
-        <Canvas
-          dpr={appliedDpr ?? budget.dpr}
-          gl={{ antialias: false, powerPreference: "high-performance" }}
-          camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
-          onCreated={({ gl, scene, camera }) => {
-            renderProbe.gl = gl;
-            renderProbe.scene = scene;
-            renderProbe.camera = camera;
-            gl.toneMapping = ACESFilmicToneMapping;
-            gl.toneMappingExposure = sceneSettings(tier).exposure;
-            const canvas = gl.domElement;
-            canvas.addEventListener("webglcontextlost", (event) => {
-              event.preventDefault();
-              // Unmounting (Page view) also loses the context on purpose; only a canvas that is
-              // still on the page has really crashed.
-              window.setTimeout(() => {
-                if (canvas.isConnected) getHQStore().getState().setTier("static");
-              }, 0);
-            });
-          }}
-          role="img"
-          aria-label={t("canvasLabel")}
-          aria-describedby="hq-desc"
-          onPointerMissed={onWorldMissed}
-        >
-          <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
-          <FirstFrame onFrame={onFirstFrame} />
-        </Canvas>
+        <CanvasBoundary onError={onCrash}>
+          <Canvas
+            dpr={appliedDpr ?? budget.dpr}
+            frameloop="never"
+            gl={{ antialias: false, powerPreference: "high-performance" }}
+            camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
+            onCreated={({ gl, scene, camera }) => {
+              renderProbe.gl = gl;
+              renderProbe.scene = scene;
+              renderProbe.camera = camera;
+              gl.toneMapping = ACESFilmicToneMapping;
+              gl.toneMappingExposure = sceneSettings(tier).exposure;
+              trackRenderer(gl);
+              created.current = { gl, scene };
+              const canvas = gl.domElement;
+              canvas.addEventListener("webglcontextlost", (event) => {
+                event.preventDefault();
+                // Unmounting (Page view) also loses the context on purpose; only a canvas that is still on
+                // the page has really crashed. The gate remounts once, then shows the static page.
+                window.setTimeout(() => {
+                  if (canvas.isConnected) onCrash();
+                }, 0);
+              });
+            }}
+            role="img"
+            aria-label={t("canvasLabel")}
+            aria-describedby="hq-desc"
+            onPointerMissed={onWorldMissed}
+          >
+            <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
+            <FirstFrame onFrame={onFirstFrame} />
+            <FrameLoop />
+          </Canvas>
+        </CanvasBoundary>
       </div>
       <p id="hq-desc" className="sr-only">
         {t("canvasDescription")}

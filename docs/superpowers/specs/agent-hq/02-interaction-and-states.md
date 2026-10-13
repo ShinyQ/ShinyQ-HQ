@@ -93,7 +93,7 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 
 - **Open:** `⌘K` / `Ctrl+K`, `/`, or the search button in the HUD.
 - **Index:** missions, rooms (all floors), years, actions (`Download CV`, `Copy email`, `Toggle language`, `Toggle sound`, `Quick view`).
-- **Search:** fuzzy matching over title, tags, stack and year, in both languages. Results are grouped by type with a floor badge.
+- **Search:** fuzzy matching over title, tags, stack and year, in both languages. Results are grouped by type with a floor badge. Entry texts are normalized once per index; a keystroke normalizes only the query (budget: p95 under 16 ms per keystroke at 4x CPU, `tests/bench/search.bench.ts`).
 - **Empty query:** shows the missions, then "Recent" (last 3 visited rooms).
 - **Keyboard:** up/down to move, Enter to run, Esc to close, Tab to jump between groups.
 

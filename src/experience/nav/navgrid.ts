@@ -11,16 +11,9 @@ export interface NavGrid {
   walkable: Uint8Array;
 }
 
-const DIRS = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-  [1, 1],
-  [1, -1],
-  [-1, 1],
-  [-1, -1],
-] as const;
+/** Neighbour offsets: 4 orthogonal, then 4 diagonal. A* visits them in this order, which fixes its tie-breaking. */
+const DI = [1, -1, 0, 0, 1, 1, -1, -1];
+const DJ = [0, 0, 1, -1, 1, -1, 1, -1];
 
 /**
  * Builds the per-floor grid from the slab bounds and obstacles inflated by the rover radius. Each
@@ -79,34 +72,99 @@ export function isWalkable(g: NavGrid, p: Vec2): boolean {
   return idx !== null && g.walkable[idx] === 1;
 }
 
-function* neighbors(g: NavGrid, idx: number): Generator<[number, number]> {
-  const i = idx % g.cols;
-  const j = Math.floor(idx / g.cols);
-  for (const [di, dj] of DIRS) {
-    const ni = i + di;
-    const nj = j + dj;
-    if (ni < 0 || nj < 0 || ni >= g.cols || nj >= g.rows) continue;
-    const n = nj * g.cols + ni;
-    if (!g.walkable[n]) continue;
-    // No corner cutting: a diagonal needs both orthogonal neighbours open.
-    if (di !== 0 && dj !== 0 && (!g.walkable[j * g.cols + ni] || !g.walkable[nj * g.cols + i])) continue;
-    yield [n, di !== 0 && dj !== 0 ? Math.SQRT2 : 1];
-  }
+/** Neighbour `d` (0 to 7) of cell (i, j), or -1 when it is off the grid, blocked, or a diagonal that would cut a corner. */
+function neighbor(g: NavGrid, i: number, j: number, d: number): number {
+  const ni = i + DI[d];
+  const nj = j + DJ[d];
+  if (ni < 0 || nj < 0 || ni >= g.cols || nj >= g.rows) return -1;
+  const n = nj * g.cols + ni;
+  if (!g.walkable[n]) return -1;
+  if (d >= 4 && (!g.walkable[j * g.cols + ni] || !g.walkable[nj * g.cols + i])) return -1;
+  return n;
 }
 
+/** Work done by the last `findPath` call (unit tests and benches): A* pops and cells looked at while snapping. */
+export const pathStats = { expanded: 0, scanned: 0 };
+
+const components = new WeakMap<NavGrid, Int32Array>();
+
+/**
+ * Connected region of every cell (-1 when blocked), labelled once per grid: reachability becomes a
+ * lookup instead of a whole-grid flood on every `findPath` (perf report D 6.3). Grids never change
+ * after `buildNavGrid`.
+ */
+export function componentsOf(g: NavGrid): Int32Array {
+  const cached = components.get(g);
+  if (cached) return cached;
+  const labels = new Int32Array(g.walkable.length).fill(-1);
+  const queue = new Int32Array(g.walkable.length);
+  let label = 0;
+  for (let seed = 0; seed < labels.length; seed++) {
+    if (!g.walkable[seed] || labels[seed] !== -1) continue;
+    let head = 0;
+    let tail = 0;
+    labels[seed] = label;
+    queue[tail++] = seed;
+    while (head < tail) {
+      const idx = queue[head++];
+      const i = idx % g.cols;
+      const j = (idx - i) / g.cols;
+      for (let d = 0; d < 8; d++) {
+        const n = neighbor(g, i, j, d);
+        if (n >= 0 && labels[n] === -1) {
+          labels[n] = label;
+          queue[tail++] = n;
+        }
+      }
+    }
+    label += 1;
+  }
+  components.set(g, labels);
+  return labels;
+}
+
+/**
+ * Nearest allowed cell center to `p` (ties: the lowest index, as a full scan in index order would
+ * pick). Searches square rings around `p`'s cell and stops once a ring cannot hold a closer cell.
+ */
 function nearestCell(g: NavGrid, p: Vec2, allowed: (idx: number) => boolean): number | null {
-  let best: number | null = null;
+  const u = (p.x - g.minX) / g.cell - 0.5;
+  const v = (p.z - g.minZ) / g.cell - 0.5;
+  const bi = Math.min(g.cols - 1, Math.max(0, Math.round(u)));
+  const bj = Math.min(g.rows - 1, Math.max(0, Math.round(v)));
+  // Every cell on ring r is at least (r - off) cells from p (Chebyshev, so also Euclidean).
+  const off = Math.max(Math.abs(bi - u), Math.abs(bj - v));
+  const maxR = Math.max(bi, g.cols - 1 - bi, bj, g.rows - 1 - bj);
+  let best = -1;
   let bestD = Infinity;
-  for (let idx = 0; idx < g.walkable.length; idx++) {
-    if (!allowed(idx)) continue;
+  const consider = (i: number, j: number) => {
+    pathStats.scanned += 1;
+    const idx = j * g.cols + i;
+    if (!allowed(idx)) return;
     const c = center(g, idx);
     const d = (c.x - p.x) ** 2 + (c.z - p.z) ** 2;
-    if (d < bestD) {
+    if (d < bestD || (d === bestD && idx < best)) {
       bestD = d;
       best = idx;
     }
+  };
+  for (let r = 0; r <= maxR; r++) {
+    const reach = (r - off) * g.cell;
+    if (best >= 0 && reach > 0 && reach * reach > bestD * (1 + 1e-12) + 1e-12) break;
+    const i0 = bi - r;
+    const i1 = bi + r;
+    const j0 = bj - r;
+    const j1 = bj + r;
+    for (let i = Math.max(0, i0); i <= Math.min(g.cols - 1, i1); i++) {
+      if (j0 >= 0) consider(i, j0);
+      if (r > 0 && j1 < g.rows) consider(i, j1);
+    }
+    for (let j = Math.max(0, j0 + 1); j <= Math.min(g.rows - 1, j1 - 1); j++) {
+      if (i0 >= 0) consider(i0, j);
+      if (r > 0 && i1 < g.cols) consider(i1, j);
+    }
   }
-  return best;
+  return best < 0 ? null : best;
 }
 
 /** Nearest walkable point to `p` (the point itself when it is walkable). */
@@ -116,52 +174,64 @@ export function nearestWalkable(g: NavGrid, p: Vec2): Vec2 | null {
   return idx === null ? null : center(g, idx);
 }
 
-function flood(g: NavGrid, start: number): Uint8Array {
-  const seen = new Uint8Array(g.walkable.length);
-  const queue = [start];
-  seen[start] = 1;
-  for (let q = 0; q < queue.length; q++) {
-    for (const [n] of neighbors(g, queue[q])) {
-      if (!seen[n]) {
-        seen[n] = 1;
-        queue.push(n);
-      }
-    }
-  }
-  return seen;
-}
-
+/** Binary min-heap of (f, cell) on typed arrays; the same sift order as the tuple heap it replaces, so A* breaks ties the same way. */
 class MinHeap {
-  private items: [number, number][] = [];
-  get size() {
-    return this.items.length;
-  }
-  push(item: [number, number]) {
-    const a = this.items;
-    a.push(item);
-    let i = a.length - 1;
+  private f = new Float64Array(256);
+  private id = new Int32Array(256);
+  size = 0;
+  /** Priority of the item the last `pop` returned. */
+  topF = 0;
+
+  push(f: number, id: number) {
+    if (this.size === this.f.length) {
+      const nf = new Float64Array(this.size * 2);
+      nf.set(this.f);
+      this.f = nf;
+      const ni = new Int32Array(this.size * 2);
+      ni.set(this.id);
+      this.id = ni;
+    }
+    const F = this.f;
+    const I = this.id;
+    let i = this.size++;
+    F[i] = f;
+    I[i] = id;
     while (i > 0) {
       const p = (i - 1) >> 1;
-      if (a[p][0] <= a[i][0]) break;
-      [a[p], a[i]] = [a[i], a[p]];
+      if (F[p] <= F[i]) break;
+      const tf = F[p];
+      F[p] = F[i];
+      F[i] = tf;
+      const ti = I[p];
+      I[p] = I[i];
+      I[i] = ti;
       i = p;
     }
   }
-  pop(): [number, number] | undefined {
-    const a = this.items;
-    const top = a[0];
-    const last = a.pop();
-    if (a.length && last) {
-      a[0] = last;
+
+  pop(): number {
+    const F = this.f;
+    const I = this.id;
+    this.topF = F[0];
+    const top = I[0];
+    this.size -= 1;
+    if (this.size > 0) {
+      F[0] = F[this.size];
+      I[0] = I[this.size];
       let i = 0;
       for (;;) {
         const l = 2 * i + 1;
         const r = l + 1;
         let m = i;
-        if (l < a.length && a[l][0] < a[m][0]) m = l;
-        if (r < a.length && a[r][0] < a[m][0]) m = r;
+        if (l < this.size && F[l] < F[m]) m = l;
+        if (r < this.size && F[r] < F[m]) m = r;
         if (m === i) break;
-        [a[m], a[i]] = [a[i], a[m]];
+        const tf = F[m];
+        F[m] = F[i];
+        F[i] = tf;
+        const ti = I[m];
+        I[m] = I[i];
+        I[i] = ti;
         i = m;
       }
     }
@@ -170,36 +240,45 @@ class MinHeap {
 }
 
 function aStar(g: NavGrid, start: number, goal: number): number[] | null {
-  const gc = (idx: number) => [idx % g.cols, Math.floor(idx / g.cols)] as const;
-  const [gx, gz] = gc(goal);
+  const cols = g.cols;
+  const gx = goal % cols;
+  const gz = Math.floor(goal / cols);
   const h = (idx: number) => {
-    const [x, z] = gc(idx);
-    const dx = Math.abs(x - gx);
-    const dz = Math.abs(z - gz);
+    const dx = Math.abs((idx % cols) - gx);
+    const dz = Math.abs(Math.floor(idx / cols) - gz);
     return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
   };
   const cost = new Float64Array(g.walkable.length).fill(Infinity);
   const from = new Int32Array(g.walkable.length).fill(-1);
   const open = new MinHeap();
   cost[start] = 0;
-  open.push([h(start), start]);
+  open.push(h(start), start);
   while (open.size) {
-    const [f, cur] = open.pop()!;
+    const cur = open.pop();
+    const f = open.topF;
+    pathStats.expanded += 1;
     if (cur === goal) break;
     if (f - h(cur) > cost[cur] + 1e-9) continue;
-    for (const [n, step] of neighbors(g, cur)) {
-      const c = cost[cur] + step;
+    const i = cur % cols;
+    const j = (cur - i) / cols;
+    for (let d = 0; d < 8; d++) {
+      const n = neighbor(g, i, j, d);
+      if (n < 0) continue;
+      const c = cost[cur] + (d >= 4 ? Math.SQRT2 : 1);
       if (c < cost[n]) {
         cost[n] = c;
         from[n] = cur;
-        open.push([c + h(n), n]);
+        open.push(c + h(n), n);
       }
     }
   }
   if (!Number.isFinite(cost[goal])) return null;
-  const path = [goal];
-  while (path[0] !== start) path.unshift(from[path[0]]);
-  return path;
+  const path: number[] = [];
+  for (let c = goal; ; c = from[c]) {
+    path.push(c);
+    if (c === start) break;
+  }
+  return path.reverse();
 }
 
 /** Whether the straight segment from `a` to `b` stays on walkable cells (sampled every 0.25 u). */
@@ -219,13 +298,16 @@ export function segmentWalkable(g: NavGrid, a: Vec2, b: Vec2): boolean {
  * excluding `from`, or null when the start has no walkable cell at all.
  */
 export function findPath(g: NavGrid, from: Vec2, to: Vec2): Vec2[] | null {
+  pathStats.expanded = 0;
+  pathStats.scanned = 0;
   const rawStart = cellIndex(g, from);
   const start = rawStart !== null && g.walkable[rawStart] ? rawStart : nearestCell(g, from, (i) => g.walkable[i] === 1);
   if (start === null) return null;
-  const reachable = flood(g, start);
+  const labels = componentsOf(g);
+  const region = labels[start];
   const targetCell = cellIndex(g, to);
-  const exact = targetCell !== null && reachable[targetCell] === 1;
-  const goal = exact ? targetCell : nearestCell(g, to, (i) => reachable[i] === 1);
+  const exact = targetCell !== null && labels[targetCell] === region;
+  const goal = exact ? targetCell : nearestCell(g, to, (i) => labels[i] === region);
   if (goal === null) return null;
   const cells = aStar(g, start, goal);
   if (!cells) return null;

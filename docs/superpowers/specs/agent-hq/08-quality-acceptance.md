@@ -8,7 +8,7 @@ Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 |---|---|---|
 | `full` | WebGL2, fine pointer, not a low-memory or low-core device (local heuristic, `src/lib/gpu-tier.ts`) | Everything, including bloom; DPR up to 2 within an 8.3 MP pixel budget, composer MSAA 4 below DPR 1.5; a runtime safety net steps DPR, then MSAA, then bloom on sustained drops (at most 2 changes per minute) |
 | `lite` | WebGL2 available, lower tier or mobile | No bloom, no point lights, fewer particles, DPR ≤ 1.5 |
-| `static` | No WebGL2, tier 0, `saveData`, or a WebGL error | HTML pages only (same content and missions as links) |
+| `static` | No WebGL2, tier 0, `saveData`, or a WebGL error that survives one automatic remount (the notice offers Retry 3D) | HTML pages only (same content and missions as links) |
 
 Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS Safari 16.4+; Android Chrome 110+. Visitors can force a tier with `?tier=lite` or `?tier=static`.
 
@@ -21,11 +21,11 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | TBT | < 300 ms | Lighthouse CI |
 | Initial JS (gzip, before 3D) | < 350 KB | `@next/bundle-analyzer` check in CI |
 | 3D chunk (gzip) | < 600 KB | Same |
-| Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 ≤ 18 ms), the runtime safety net in the field |
+| Frame rate | ≥ 55 fps desktop (full), ≥ 30 fps mid-range phone (lite); rendering is capped at 60 fps on high-refresh displays (no idle cap) | `scripts/perf-gpu.ts sp4` on real GPUs (frame p95 ≤ 18 ms), the runtime safety net in the field |
 | Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
 | Boost effects | At most 3 extra draw calls while boosting (trail, streaks, sparks), 0 when not boosting; idle frames identical to no boost; no shader compiled on the first boost; reduced motion shows none | `e2e/boost.spec.ts` (`__hq.rover.boostFx`, `trail`, `streaks`, `sparks`, `boostFov`, `boostPitch`) |
 | Elevator dolly | At least 12 distinct car heights and no jump above 25% of the trip, even under a 6x CPU throttle; no shader compiled while the car moves | `e2e/ride.spec.ts` (car height sampled every frame, `window.__hq.ridePrep.lastRide`); on real devices `?perf=1` logs one line per ride |
-| Memory | No growth after 10 floor round-trips | Disposal test (geometry/material counts return to baseline) |
+| Memory | No growth after 10 Lobby to Roof round trips and 5 Page View toggles | `e2e/memory.spec.ts`: `renderer.info` geometries, textures and `programs.length` equal their baseline (three has no material count), JS heap growth < 2 MB |
 
 ## 3. Test strategy
 

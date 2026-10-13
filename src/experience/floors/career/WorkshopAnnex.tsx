@@ -6,6 +6,7 @@ import { BoxGeometry, BufferGeometry, Float32BufferAttribute, type InstancedMesh
 import { COLORS, FLOOR_GAP, FLOOR_COLOR } from "../../config";
 import { monoWidth } from "../../fx/readableFlip";
 import { Readable } from "../../fx/Readable";
+import { useDispose } from "../../fx/useDispose";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import type { CareerData, Rect } from "../../types";
 import { BENCH, REPO_WALL, type CareerRoadLayout } from "./layout";
@@ -24,6 +25,7 @@ const WINDOW_H = 9;
 function Benches({ spots }: { spots: CareerRoadLayout["workshop"]["benches"] }) {
   const ref = useRef<InstancedMesh>(null);
   const geometry = useMemo(() => new BoxGeometry(BENCH.w, BENCH_H, BENCH.d), []);
+  useDispose(geometry);
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
@@ -82,6 +84,7 @@ export function WorkshopAnnex({ layout, career, labs, labels }: { layout: Career
     g.setAttribute("position", new Float32BufferAttribute(pts, 3));
     return g;
   }, [d, windowX, labs.maxX, labs.maxZ]);
+  useDispose(sight);
 
   return (
     <group name="workshop-annex">

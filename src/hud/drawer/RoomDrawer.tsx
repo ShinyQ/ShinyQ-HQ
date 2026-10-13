@@ -476,6 +476,7 @@ export function RoomDrawer({
       data-layout={layout}
       data-room={view.id}
       data-condensed={condensed ? "true" : undefined}
+      data-hq-cover=""
       className={`glass glass-solid pointer-events-auto absolute z-20 flex flex-col overflow-hidden shadow-[0_0_48px_-12px_rgb(0_0_0/0.8)] outline-none ${placement}`}
       style={layout === "sheet" ? { height: `${Math.round(sheet.fraction * 100)}dvh` } : undefined}
     >

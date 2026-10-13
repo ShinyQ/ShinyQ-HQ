@@ -443,15 +443,38 @@ test.describe("tiers and views", () => {
     expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBeNull();
   });
 
-  test("a real WebGL context loss falls back to the static page", async ({ page }) => {
-    await enterHQ(page);
-    await page.evaluate(() => {
-      const canvas = document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas");
-      canvas?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+  test("a WebGL context loss remounts the 3D view once, then shows the static page with Retry 3D", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __hqMounts: number };
+      w.__hqMounts = 0;
+      // Init scripts run before the parser creates <html>, so observe the document itself.
+      new MutationObserver((records) => {
+        // The 3D host can arrive inside a wrapper, so count it in every added subtree.
+        for (const record of records)
+          for (const node of record.addedNodes)
+            if (node instanceof HTMLElement) w.__hqMounts += (node.matches("[data-testid=hq]") ? 1 : 0) + node.querySelectorAll("[data-testid=hq]").length;
+      }).observe(document, { childList: true, subtree: true });
     });
+    await enterHQ(page);
+    const mounts = () => page.evaluate(() => (window as unknown as { __hqMounts: number }).__hqMounts);
+    const loseContext = () =>
+      page.evaluate(() => {
+        document.querySelector<HTMLCanvasElement>("[data-testid=hq] canvas")?.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+      });
+    expect(await mounts()).toBe(1);
+    await loseContext();
+    await expect.poll(mounts, { timeout: 20_000 }).toBe(2);
+    await waitForHQ(page);
+    await page.locator("[data-testid=hq] canvas").waitFor();
+    await waitForFrames(page, 10);
+    await loseContext();
     await expect(page.getByRole("status").filter({ hasText: en.hud.staticNotice })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
+    await page.getByTestId("retry-3d").click();
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    expect(await mounts()).toBe(3);
   });
 
   test("static tier shows no Back to 3D button", async ({ page }) => {

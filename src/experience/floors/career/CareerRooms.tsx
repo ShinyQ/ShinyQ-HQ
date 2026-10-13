@@ -12,6 +12,7 @@ import { Readable } from "../../fx/Readable";
 import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
 import { sceneProbes } from "../../fx/probes";
 import { readableFlip } from "../../fx/readableFlip";
+import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, CareerType, GpuTier } from "../../types";
@@ -64,6 +65,8 @@ function Pads({ rooms, tier }: { rooms: CareerRoom[]; tier: GpuTier }) {
   const pedestals = useRef<InstancedMesh>(null);
   const plane = useMemo(() => new BoxGeometry(1, 0.04, 1), []);
   const pedestal = useMemo(() => new CylinderGeometry(0.95, 1.05, 0.55, 6), []);
+  useDispose(plane);
+  useDispose(pedestal);
 
   useLayoutEffect(() => {
     const color = new Color();
@@ -143,6 +146,7 @@ function Frames({ rooms }: { rooms: CareerRoom[] }) {
     g.setAttribute("color", new Float32BufferAttribute(colors, 3));
     return g;
   }, [rooms]);
+  useDispose(geometry);
   return (
     <lineSegments geometry={geometry} raycast={() => null}>
       <lineBasicMaterial vertexColors transparent opacity={0.7} toneMapped={false} />

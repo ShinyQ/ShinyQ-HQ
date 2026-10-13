@@ -134,6 +134,9 @@
    */
   .glass-solid {
     background: rgb(10 10 18 / 0.94);
+    /* 94% opaque: blurring the live canvas behind it costs GPU every frame for 6% show-through (perf report 9.1). */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   @media (pointer: coarse) {

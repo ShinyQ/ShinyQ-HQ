@@ -9,7 +9,8 @@ import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
-import { useHQStore } from "@/store/useHQStore";
+import type { Recovery } from "./recovery";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { FloorId, RoomId } from "@/content/schema";
 import type { ExperienceData } from "./types";
 
@@ -37,12 +38,20 @@ function readView(): "3d" | "page" {
  * of the server-rendered page. Static tier, page view and server render all
  * leave the HTML page untouched.
  */
+const loadRecovery = () => import("./recovery");
+
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
   // `/{locale}#highlights-<station>` opens that Highlights Hall station (read once on the client; never on floor or room routes).
   const [hashRoom] = useState<RoomId | undefined>(() => (typeof window === "undefined" ? undefined : gateStartRoom(startFloor, undefined, window.location.hash)));
+  // WebGL context loss or a crash: one automatic remount on a fresh canvas, then the static page with "Retry 3D".
+  // The state machine loads on the first crash only, so it stays out of every page's initial JS.
+  const [recovery, setRecovery] = useState<Recovery>({ failures: 0, status: "ok" });
+  const [mount, setMount] = useState(0);
+  const onCrash = useCallback(() => void loadRecovery().then((r) => setRecovery(r.afterFailure)), []);
+  const retry3D = useCallback(() => void loadRecovery().then((r) => setRecovery(r.manualRetry)), []);
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
   const back3D = useCallback(() => {
@@ -67,6 +76,29 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     return () => claimAutoOpen(false);
   }, [immersive]);
 
+  useEffect(() => {
+    if (recovery.status === "failed") {
+      getHQStore().getState().setTier("static");
+      return;
+    }
+    if (recovery.status !== "retrying" || !detectedTier || detectedTier === "static") return;
+    // Remount once the tab is visible again (iOS drops background contexts), on a fresh canvas.
+    let live = true;
+    let cancel: (() => void) | undefined;
+    void loadRecovery().then((r) => {
+      if (!live) return;
+      cancel = r.whenVisible(() => {
+        getHQStore().getState().recover(detectedTier);
+        setMount((m) => m + 1);
+        setRecovery(r.settled);
+      });
+    });
+    return () => {
+      live = false;
+      cancel?.();
+    };
+  }, [recovery.status, detectedTier]);
+
   // The landing's "Enter the 3D HQ" (EnterHqButton) asks for the tower the same way Back to 3D does.
   useEffect(
     () =>
@@ -78,11 +110,22 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
 
   if (!tier) return null;
 
+  // Between a crash and the remount: cover the page so the HTML does not flash under the dead canvas.
+  if (recovery.status === "retrying") return createPortal(<div aria-hidden="true" className="fixed inset-0 z-[35] bg-void" />, document.body);
+
   if (lost) {
     return (
-      <p role="status" className="glass no-print fixed right-4 bottom-4 z-40 px-4 py-3 text-sm text-ink">
-        {t("staticNotice")}
-      </p>
+      <div role="status" className="glass no-print fixed right-4 bottom-4 z-40 flex items-center gap-3 px-4 py-3 text-sm text-ink">
+        <span>{t("staticNotice")}</span>
+        <button
+          type="button"
+          onClick={retry3D}
+          data-testid="retry-3d"
+          className="min-h-11 shrink-0 rounded-full bg-cyan px-4 font-semibold text-void transition hover:bg-cyan/85 focus-visible:outline-offset-4"
+        >
+          {t("retry3d")}
+        </button>
+      </div>
     );
   }
   if (tier === "static") return null;
@@ -91,11 +134,13 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
 
   return createPortal(
     <Experience
+      key={mount}
       data={data}
       tier={tier}
       startFloor={startFloor}
       startRoom={startRoom ?? hashRoom}
       onFirstFrame={onFirstFrame}
+      onCrash={onCrash}
       onExit={() => {
         try {
           sessionStorage.setItem(VIEW_KEY, "page");

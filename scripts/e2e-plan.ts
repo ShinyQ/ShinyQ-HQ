@@ -24,6 +24,8 @@ export const ALL_SPECS = [
   "interact",
   "labs",
   "library-roof",
+  "lifecycle",
+  "memory",
   "missions",
   "onboarding",
   "pads",
@@ -74,6 +76,7 @@ export const RULES: Rule[] = [
 
   // Guided walks and the road kit (autopilot follows roads once a floor has one).
   { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud", "onboarding"] },
+  { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions", "walk"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
@@ -89,6 +92,15 @@ export const RULES: Rule[] = [
     test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|HighlightsHall|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
     specs: ["experience", "highlights", "walk"],
   },
+
+  // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
+  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/(memoryProbe|sharedResources)\.ts)$/, specs: ["experience", "memory"] },
+  // Floor mounting also decides renderer memory; the tower and FloorLevel keep their camera, ride and gpu specs.
+  { test: /^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "gpu", "memory", "ride"] },
+  { test: /^src\/experience\/tower\/(Tower|near)\.tsx?$/, specs: ["experience", "gpu", "memory", "ride"] },
+  // Frame loop, cover pauses, crash recovery and the ride/beam clock (round 5).
+  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
+  { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
@@ -115,15 +127,16 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
+  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
-  { test: /^src\/store\//, specs: ["experience"] },
+  { test: /^src\/store\//, specs: ["experience", "lifecycle"] },
 
   // HUD over the canvas.
-  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud"] },
-  { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid"] },
+  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle"] },
+  { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.
   { test: /^src\/app\/globals\.css$/, specs: ["drawer-solid", "pageview", "static-routes"] },
@@ -132,6 +145,8 @@ export const RULES: Rule[] = [
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
   { test: /^public\/_(headers|redirects)$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
+  // Full-screen panels that pause the canvas (data-hq-cover).
+  { test: /^src\/components\/(Modal|Lightbox)\.tsx$/, specs: ["gallery", "lifecycle", "pageview"] },
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
   { test: /^src\/(app|components)\/|^src\/content\/pageview\.ts$/, specs: ["pageview", "static-routes", "gallery"] },
   { test: /^src\/i18n\//, specs: ["static-routes", "experience"] },

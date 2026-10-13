@@ -59,7 +59,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/page/AskEntry.tsx"]).specs).toEqual(["ask", "pageview"]);
     expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
     expect(specsForChanges(["content/ask/suggestions.json"]).specs).toEqual(["ask"]);
-    expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "missions"]);
+    expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "lifecycle", "missions"]);
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {
@@ -127,7 +127,7 @@ describe("specsForChanges", () => {
 
   it("maps the render pipeline and the tower to the gpu spec", () => {
     expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
-    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
+    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "memory", "ride"]);
   });
 });
 

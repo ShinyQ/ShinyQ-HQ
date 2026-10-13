@@ -7,6 +7,7 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { floorY } from "../config";
 import { PAD } from "../nav/pads";
 import { beamGlow } from "../nav/teleport";
+import { beamNow } from "../tower/rideClock";
 import { PAD_TONE } from "./holoIcons";
 import { neonColor } from "./materials";
 
@@ -32,7 +33,7 @@ export function TeleportBeam() {
     const m = ref.current;
     if (!m) return;
     const s = getHQStore().getState();
-    const glow = beamGlow(s.beam, s.reducedMotion);
+    const glow = beamGlow(s.beam ? beamNow(s.beam) : null, s.reducedMotion);
     m.visible = glow !== null && glow.level > 0.01;
     if (!glow) return;
     const level = Math.max(0.01, glow.level);

@@ -17,7 +17,8 @@ import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
-import { buildRoadGraph, roadRoute, routeUsesRoad, type RoadGraph } from "../nav/road";
+import { buildRoadGraph, routeUsesRoad, type RoadGraph } from "../nav/road";
+import { roadRoute } from "../nav/roadRoute";
 import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
@@ -27,6 +28,7 @@ import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
 import { advanceRide, carY, rideCap, rideDirection, stageProgress, trackFrameDt, TYPICAL_FRAME_DT } from "../tower/elevator";
 import { destinationReady, ridePrep } from "../tower/ridePrep";
+import { beamNow, clearBeam, clearRide, keepBeam, keepRide, rideNow } from "../tower/rideClock";
 import { finishRideStats, formatRideSummary, startRideStats, stepRideStats, type RideStats } from "../tower/rideStats";
 import type { FloorLayout, Vec2 } from "../types";
 import { renderProbe } from "./renderProbe";
@@ -273,12 +275,18 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     // Teleport beam (L2): the rover holds still while the beam rises, jumps to the target pad (the camera
     // cuts with it), then the beam fades. Reduced motion makes it a 150 ms fade cut (BeamFade in the HUD).
     if (s.beam) {
-      const step = advanceBeam(s.beam, dt, s.reducedMotion);
+      const beam = beamNow(s.beam);
+      const step = advanceBeam(beam, dt, s.reducedMotion);
       if (step.jump) {
-        controller.teleport(s.beam.to, s.beam.heading);
+        controller.teleport(beam.to, beam.heading);
         roverRuntime.cameraSnap = true;
       }
-      s.setBeam(step.beam);
+      // Progress stays in the motion clock; the store changes when the rover jumps and when the beam ends.
+      if (step.beam && !step.jump) keepBeam(s.beam, step.beam);
+      else {
+        clearBeam();
+        s.setBeam(step.beam);
+      }
     }
     const canDrive = !s.beam && (s.phase === "explore" || (s.phase === "elevator" && s.ride?.stage === "toDoor"));
     const manual = canDrive && move ? cameraRelative(move, roverRuntime.cameraForward) : null;
@@ -295,8 +303,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const driveTuning = boostTuning(tuning, boosting);
 
     let y = floorY(s.floor);
-    const ride = s.ride;
-    if (ride) {
+    const stored = s.ride;
+    const ride = stored ? rideNow(stored) : null;
+    if (ride && stored) {
       const from = layouts[ride.from];
       const to = layouts[ride.to];
       const p = stageProgress(ride, s.reducedMotion);
@@ -308,7 +317,14 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           controller.clearPath();
           local.blockedUntil = now + BLOCKED_FACE_S;
         } else {
-          if (ride.t === 0 && !controller.autopilot) controller.clearPath();
+          if (ride.t === 0) {
+            // A drive still running on the floor being left (the arrival roll-on of a floor called
+            // again at once) ends here: its point is in that floor's coordinates.
+            if (roverRuntime.autopilot && roverRuntime.autopilot.state !== "done") {
+              roverRuntime.autopilot = null;
+              controller.clearPath();
+            } else if (!controller.autopilot) controller.clearPath();
+          }
           const d = Math.hypot(controller.pose.x - from.approach.x, controller.pose.z - from.approach.z);
           atDoor = d < 0.8;
           if (!atDoor && !controller.following) {
@@ -339,8 +355,13 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           ready: destinationReady(ride.to),
           cap: rideCap(local.typicalDt),
         });
-        if (next) s.setRide(next);
-        else {
+        // Progress within a stage stays in the motion clock; the store changes when a stage starts or the ride ends.
+        if (next && next.stage === ride.stage) keepRide(stored, next);
+        else if (next) {
+          clearRide();
+          s.setRide(next);
+        } else {
+          clearRide();
           controller.teleport(to.approach, Math.PI / 2);
           // The rover steps out onto the new floor's elevator pad: it stays quiet until the rover leaves it.
           local.pad = primedPadLatch(to.pads, to.approach);
