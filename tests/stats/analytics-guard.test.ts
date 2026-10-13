@@ -6,7 +6,6 @@ import { STATS_OPTOUT_KEY } from "@/lib/stats/optout";
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
 function run() {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   new Function(cfBeaconScript(TOKEN))();
   return document.querySelector<HTMLScriptElement>('script[src="https://static.cloudflareinsights.com/beacon.min.js"]');
 }
