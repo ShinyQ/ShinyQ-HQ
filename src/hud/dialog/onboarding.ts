@@ -37,6 +37,8 @@ export interface OnboardingCopy {
   pointGoFine: string;
   pointGoCoarse: string;
   moved: string;
+  cameraFine: string;
+  cameraCoarse: string;
   highlights: string;
   showMe: string;
   later: string;
@@ -121,12 +123,13 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
 
   // 2. Moving: keys or joystick and boost, then point-and-go (there is no click-the-floor driving any
   // more: desktop points and clicks a glowing object, touch taps it twice or uses its Go chip); waits
-  // until the rover moves, whichever way.
+  // until the rover moves, whichever way. Then the camera (round 5): look around, zoom, first person.
   result = await d.say(
     [
       { key: "move", text: d.coarse ? copy.moveCoarse : copy.moveFine },
       { key: "point-go", text: d.coarse ? copy.pointGoCoarse : copy.pointGoFine, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
       { key: "moved", text: copy.moved, face: "arrived" },
+      { key: "camera", text: d.coarse ? copy.cameraCoarse : copy.cameraFine, spotlight: "view" },
     ],
     tour,
   );

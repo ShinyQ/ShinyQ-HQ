@@ -3,7 +3,8 @@ import type { Vec2, ViewportClass } from "../types";
 import { easeInOutCubic } from "../tower/elevator";
 
 export type Vec3 = [number, number, number];
-export type RigKind = "intro" | "follow" | "rail" | "focus";
+/** `first` is only a fog key (first person); `selectRig` never returns it. */
+export type RigKind = "intro" | "follow" | "rail" | "focus" | "first";
 
 export interface CameraPose {
   position: Vec3;
@@ -40,8 +41,11 @@ export const INTRO_DURATION = INTRO_ORBIT + INTRO_FLY;
 export const TOWER_CENTER: Vec3 = [0, 28, 0];
 
 export const SPRING_HALF_LIFE = 0.18;
-/** Absolute elevation limits for the follow camera (17 to 72 degrees). */
-export const PITCH_LIMITS = [0.3, 1.25] as const;
+/**
+ * Absolute elevation limits for third-person cameras (owner request, round 5): from just above the
+ * floor (about 3 degrees) to near top-down (about 83 degrees). Never under the floor.
+ */
+export const PITCH_LIMITS = [0.06, 1.45] as const;
 
 export function selectRig(phase: string, floor: FloorId): RigKind {
   if (phase === "boot" || phase === "intro") return "intro";
@@ -49,11 +53,10 @@ export function selectRig(phase: string, floor: FloorId): RigKind {
 }
 
 /**
- * Follow camera orbiting `target`. `yaw` (unbounded) turns the default offset around the vertical
- * axis; `pitch` raises or lowers it from the default elevation, within PITCH_LIMITS.
+ * Spherical orbit offset: `yaw` (unbounded) turns `offset` around the vertical axis; `pitch` raises or
+ * lowers it from its own elevation, clamped to PITCH_LIMITS. Exactly `offset` at yaw 0 and pitch 0.
  */
-export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
-  const { fov, offset } = FOLLOW[cls];
+export function orbitOffset(offset: Vec3, yaw: number, pitch: number): Vec3 {
   const [ox, oy, oz] = offset;
   const ground = Math.hypot(ox, oz);
   const base = Math.atan2(oy, ground);
@@ -64,13 +67,42 @@ export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, 
   const vertical = elevation === base ? oy : radius * Math.sin(elevation);
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
-  const rx = (ox * c + oz * s) * horizontal;
-  const rz = (-ox * s + oz * c) * horizontal;
+  return [(ox * c + oz * s) * horizontal, vertical, (-ox * s + oz * c) * horizontal];
+}
+
+/** Follow camera orbiting `target` (see `orbitOffset`). */
+export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
+  const { fov, offset } = FOLLOW[cls];
+  const [rx, ry, rz] = orbitOffset(offset, yaw, pitch);
   return {
-    position: [target[0] + rx * zoom, target[1] + vertical * zoom, target[2] + rz * zoom],
+    position: [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom],
     target,
     fov,
   };
+}
+
+/** Default elevation of a rig's camera above its target, radians. */
+export function baseElevation(cls: ViewportClass, rig: "follow" | "rail"): number {
+  if (rig === "rail") return Math.atan2(RAIL[cls].y, RAIL[cls].z);
+  const [ox, oy, oz] = FOLLOW[cls].offset;
+  return Math.atan2(oy, Math.hypot(ox, oz));
+}
+
+/** Pitch offsets (from the rig's default elevation) that keep its camera inside PITCH_LIMITS. */
+export function pitchRange(cls: ViewportClass, rig: "follow" | "rail"): [number, number] {
+  const base = baseElevation(cls, rig);
+  return [PITCH_LIMITS[0] - base, PITCH_LIMITS[1] - base];
+}
+
+/** Horizontal forward of the follow camera at `yaw` (the same as `forwardOf(followPose(...))`). */
+export function followForward(cls: ViewportClass, yaw: number): Vec2 {
+  const [ox, , oz] = FOLLOW[cls].offset;
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  const x = -(ox * c + oz * s);
+  const z = -(-ox * s + oz * c);
+  const len = Math.hypot(x, z) || 1;
+  return { x: x / len, z: z / len };
 }
 
 /** Half width of the L2 road: inside it the rail keeps the spec pose. */
@@ -83,17 +115,30 @@ export function railShift(roverZ: number): number {
 }
 
 /**
- * Side-on rail camera for the L2 road; `yaw` (already clamped) swings it around the rover. `axisZ`
- * is the road's z at the rover (the Career Road meanders), so the rail follows the road's curves.
+ * L2 camera (round 5: a full orbit). At yaw 0 and pitch 0 it is the spec's side view, looking at
+ * (roverX + 4, floor, road). `yaw` (unbounded) swings the camera and its look-ahead around the rover;
+ * `pitch` tilts it within PITCH_LIMITS. `axisZ` is the road's z at the rover (the Career Road
+ * meanders), so the camera follows the road's curves.
  */
-export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0, axisZ = 0): CameraPose {
+export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0, axisZ = 0, pitch = 0): CameraPose {
   const { fov, y, z } = RAIL[cls];
   const shift = axisZ + railShift(roverZ - axisZ);
+  const [ox, oy, oz] = orbitOffset([0, y, z], yaw, pitch);
   return {
-    position: [roverX + Math.sin(yaw) * z * zoom, floorY + y * zoom, Math.cos(yaw) * z * zoom + shift],
-    target: [roverX + RAIL_LOOK_AHEAD, floorY, shift],
+    position: [roverX + ox * zoom, floorY + oy * zoom, shift + oz * zoom],
+    target: [roverX + RAIL_LOOK_AHEAD * Math.cos(yaw), floorY, shift - RAIL_LOOK_AHEAD * Math.sin(yaw)],
     fov,
   };
+}
+
+/** Steering forward on L2: straight away from the camera, so W drives into the view and D along the road at yaw 0. */
+export function railForward(yaw: number): Vec2 {
+  return { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+}
+
+/** A horizontal swipe on L2 moves toward the side of the screen it pulls from; turned around, the road runs the other way. */
+export function scrubSign(railYaw: number): 1 | -1 {
+  return Math.cos(railYaw) < 0 ? -1 : 1;
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;

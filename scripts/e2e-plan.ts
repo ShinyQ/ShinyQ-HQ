@@ -11,6 +11,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 export const ALL_SPECS = [
   "ask",
   "boot-first",
+  "camera",
   "career",
   "deploy",
   "drawer-solid",
@@ -49,7 +50,7 @@ export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
   { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
   { test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },
-  { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$/, specs: [] },
+  { test: /^e2e\/screenshots\.spec\.ts$|^e2e\/pageview-visual\.spec\.ts$|^e2e\/camera-visual\.spec\.ts$/, specs: [] },
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|og-before-after)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
@@ -79,7 +80,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career"] },
 
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
-  { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk"] },
+  { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk", "camera"] },
 
   // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.
   {
@@ -98,9 +99,13 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
+  // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
+  { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride"] },
   // Elevator ride smoothness (R5 P6): the ride clock, floor preparation, precompile and troika sync tracking.
   { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts)$|text-config\.ts$)/, specs: ["ride", "experience"] },
-  { test: /^src\/experience\/camera\//, specs: ["experience", "career", "ride"] },
+  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
+  // Round 5 camera work: input, the rover body fade and the view buttons.
+  { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience"] },

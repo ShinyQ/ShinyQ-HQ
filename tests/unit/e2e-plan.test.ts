@@ -7,12 +7,12 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "ride"]);
     expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "ride"]);
     expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
-    expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
-    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["experience", "onboarding", "walk"]);
-    expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["experience", "onboarding", "walk"]);
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
+    expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
     expect(specsForChanges(["src/hud/walk/WalkLayer.tsx"]).specs).toEqual(["hud", "missions", "onboarding", "walk"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
   });
@@ -82,10 +82,23 @@ describe("specsForChanges", () => {
 
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
-      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts")
+      .filter((f) => f.endsWith(".spec.ts") && f !== "screenshots.spec.ts" && f !== "pageview-visual.spec.ts" && f !== "camera-visual.spec.ts")
       .map((f) => f.replace(/\.spec\.ts$/, ""))
       .sort();
     expect(onDisk).toEqual([...ALL_SPECS].sort());
+  });
+
+  it("never runs the opt-in camera look gate from e2e:changed", () => {
+    expect(specsForChanges(["e2e/camera-visual.spec.ts"]).specs).toEqual([]);
+  });
+
+  it("maps the camera, its input, the rover fade and the view buttons to the camera spec", () => {
+    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["camera", "career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/input/useInputSources.ts"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
+    expect(specsForChanges(["src/experience/fx/Readable.tsx", "src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
   });
 
   it("maps floor pads, their pickers and thumbnails to the pads spec", () => {

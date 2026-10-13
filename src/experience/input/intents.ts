@@ -91,6 +91,9 @@ export interface KeyContext {
   inControl?: boolean;
 }
 
+/** One `+` press zooms in by this factor; `-` zooms out by its inverse. */
+export const KEY_ZOOM_IN = 0.8;
+
 /** Maps a discrete key press to an intent. Movement keys are polled separately. */
 export function keyToIntent(key: string, ctx: KeyContext = {}): Intent | null {
   if (ctx.inText) return null;
@@ -114,38 +117,18 @@ export function keyToIntent(key: string, ctx: KeyContext = {}): Intent | null {
       return { type: "toggle", what: "readme" };
     case "enter":
       return ctx.inControl ? null : { type: "terminal" };
+    case "+":
+    case "=":
+      return { type: "zoom", factor: KEY_ZOOM_IN };
+    case "-":
+    case "_":
+      return { type: "zoom", factor: 1 / KEY_ZOOM_IN };
     case "0":
     case "home":
       return { type: "view", action: "reset" };
     default:
       return null;
   }
-}
-
-/**
- * Turns a stream of wheel deltas into at most one elevator step per gesture.
- * A gesture ends after `gapMs` without wheel events, which absorbs trackpad momentum.
- */
-export function createWheelGate({ threshold = 40, cooldownMs = 700, gapMs = 220 } = {}) {
-  let acc = 0;
-  let last = -Infinity;
-  let lastFire = -Infinity;
-  let firedThisGesture = false;
-  return (deltaY: number, now: number): "up" | "down" | null => {
-    if (now - last > gapMs) {
-      acc = 0;
-      firedThisGesture = false;
-    }
-    last = now;
-    if (firedThisGesture) return null;
-    acc += deltaY;
-    if (Math.abs(acc) < threshold || now - lastFire < cooldownMs) return null;
-    const dir = acc < 0 ? "up" : "down";
-    acc = 0;
-    lastFire = now;
-    firedThisGesture = true;
-    return dir;
-  };
 }
 
 export type Swipe = { kind: "tap" } | { kind: "elevator"; dir: "up" | "down" } | { kind: "scrub"; dx: number };
@@ -186,6 +169,27 @@ export function rotateAxisFromKeys(held: Iterable<string>): number {
   return Math.sign(axis) * (fast ? 2 : 1);
 }
 
+const PITCH_KEYS: Record<string, number> = { r: -1, f: 1 };
+
+export function isPitchKey(key: string): boolean {
+  return key.toLowerCase() in PITCH_KEYS;
+}
+
+/**
+ * Held R/F as a tilt axis with the sign of a vertical drag: R tilts the view up (-1), F down (+1).
+ * Shift doubles the speed.
+ */
+export function pitchAxisFromKeys(held: Iterable<string>): number {
+  let axis = 0;
+  let fast = false;
+  for (const key of held) {
+    const k = key.toLowerCase();
+    axis += PITCH_KEYS[k] ?? 0;
+    if (k === "shift") fast = true;
+  }
+  return Math.sign(axis) * (fast ? 2 : 1);
+}
+
 /** Pixels a pointer must travel before a press becomes a drag (below it, it is a click or tap). */
 export const DRAG_THRESHOLD = { mouse: 6, pen: 6, touch: 8 } as const;
 
@@ -194,18 +198,32 @@ export function exceedsDragThreshold(dx: number, dy: number, pointerType: string
   return Math.hypot(dx, dy) > limit;
 }
 
-export type WheelKind = "zoom" | "rotate" | "elevator" | null;
+export type WheelKind = "zoom" | "rotate" | null;
 
 /**
- * Splits wheel input: pinch on a trackpad arrives as ctrl+wheel (zoom), a horizontal two-finger
- * swipe (or shift+wheel) is deltaX (rotate), and vertical scrolling stays the elevator.
+ * Splits wheel input (owner request, round 5): vertical scrolling and a trackpad pinch (ctrl+wheel)
+ * zoom the camera; a horizontal two-finger swipe (or shift+wheel) rotates. The wheel never changes
+ * floors (PageUp/PageDown, the elevator panel and the call pads do).
  */
 export function classifyWheel({ dx, dy, ctrl }: { dx: number; dy: number; ctrl: boolean }): WheelKind {
   if (ctrl) return dy !== 0 ? "zoom" : null;
   const ax = Math.abs(dx);
   const ay = Math.abs(dy);
   if (ax === 0 && ay === 0) return null;
-  return ax > ay ? "rotate" : "elevator";
+  return ax > ay ? "rotate" : "zoom";
+}
+
+/** Zoom speed per wheel pixel (the old pinch rate), and the largest step one event may take. */
+export const WHEEL_ZOOM = 0.002;
+const WHEEL_MAX_PX = 240;
+/** Pixels per line and per page for `WheelEvent.deltaMode` 1 and 2 (Firefox mouse wheels). */
+const WHEEL_LINE_PX = 33;
+const WHEEL_PAGE_PX = 800;
+
+/** Zoom factor for one wheel event: scrolling down (positive deltaY) zooms out (factor above 1). */
+export function wheelZoomFactor(deltaY: number, deltaMode = 0): number {
+  const px = deltaMode === 1 ? deltaY * WHEEL_LINE_PX : deltaMode === 2 ? deltaY * WHEEL_PAGE_PX : deltaY;
+  return Math.exp(Math.max(-WHEEL_MAX_PX, Math.min(WHEEL_MAX_PX, px)) * WHEEL_ZOOM);
 }
 
 type Point = { x: number; y: number };

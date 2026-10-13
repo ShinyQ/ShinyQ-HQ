@@ -56,6 +56,8 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
         pointGoFine: t("pointGoFine"),
         pointGoCoarse: t("pointGoCoarse"),
         moved: t("moved"),
+        cameraFine: t("cameraFine"),
+        cameraCoarse: t("cameraCoarse"),
         highlights: t("highlights", { name }),
         showMe: t("showMe"),
         later: t("later"),

@@ -11,12 +11,17 @@ export interface SceneSettings {
 
 const FOG_COLOR = "#0a0a0f";
 
-/** Linear fog range per camera rig: the prototype's 38 to 80 on follow, tighter on the L2 rail, far for the exterior intro. */
+/**
+ * Linear fog range per camera rig: the prototype's 38 to 80 on follow, tighter on the L2 rail, far for
+ * the exterior intro. First person (round 5) keeps about the same visible distance around the rover as
+ * the follow camera, measured from the rover's eyes instead of 29 u behind it.
+ */
 const FOG_RANGE: Record<RigKind, [number, number]> = {
   follow: [38, 80],
   focus: [38, 80],
   rail: [40, 95],
   intro: [90, 200],
+  first: [14, 64],
 };
 
 /** Lighting, fog, tone mapping and bloom (prototype values, docs/prototypes/README.md). Bloom is full tier only. */

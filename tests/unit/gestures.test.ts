@@ -4,11 +4,15 @@ import {
   classifyWheel,
   DRAG_THRESHOLD,
   exceedsDragThreshold,
+  isPitchKey,
   isRotateKey,
+  KEY_ZOOM_IN,
   keyToIntent,
   pinchFactor,
+  pitchAxisFromKeys,
   rotateAxisFromKeys,
   twistDelta,
+  wheelZoomFactor,
 } from "@/experience/input/intents";
 
 describe("tap versus drag", () => {
@@ -34,9 +38,9 @@ describe("tap versus drag", () => {
 });
 
 describe("wheel and trackpad", () => {
-  it("routes vertical scrolling to the elevator", () => {
-    expect(classifyWheel({ dx: 0, dy: 120, ctrl: false })).toBe("elevator");
-    expect(classifyWheel({ dx: 3, dy: -40, ctrl: false })).toBe("elevator");
+  it("zooms on vertical scrolling instead of changing floors", () => {
+    expect(classifyWheel({ dx: 0, dy: 120, ctrl: false })).toBe("zoom");
+    expect(classifyWheel({ dx: 3, dy: -40, ctrl: false })).toBe("zoom");
   });
 
   it("routes horizontal two-finger swipes (deltaX) to rotation", () => {
@@ -48,6 +52,16 @@ describe("wheel and trackpad", () => {
     expect(classifyWheel({ dx: 0, dy: -8, ctrl: true })).toBe("zoom");
     expect(classifyWheel({ dx: 30, dy: 0, ctrl: true })).toBeNull();
     expect(classifyWheel({ dx: 0, dy: 0, ctrl: false })).toBeNull();
+  });
+
+  it("turns wheel deltas into zoom factors: down zooms out, flicks are capped, lines and pages scale", () => {
+    expect(wheelZoomFactor(100)).toBeCloseTo(Math.exp(0.2));
+    expect(wheelZoomFactor(-100)).toBeCloseTo(Math.exp(-0.2));
+    expect(wheelZoomFactor(0)).toBe(1);
+    expect(wheelZoomFactor(5000)).toBeCloseTo(wheelZoomFactor(240));
+    expect(wheelZoomFactor(-5000)).toBeCloseTo(wheelZoomFactor(-240));
+    expect(wheelZoomFactor(3, 1)).toBeCloseTo(wheelZoomFactor(99));
+    expect(wheelZoomFactor(1, 2)).toBeCloseTo(wheelZoomFactor(240));
   });
 });
 
@@ -88,5 +102,24 @@ describe("rotation keys", () => {
     expect(keyToIntent("0")).toEqual({ type: "view", action: "reset" });
     expect(keyToIntent("Home")).toEqual({ type: "view", action: "reset" });
     expect(keyToIntent("Home", { inText: true })).toBeNull();
+  });
+
+  it("maps + and - to zoom steps, never in text fields", () => {
+    expect(keyToIntent("+")).toEqual({ type: "zoom", factor: KEY_ZOOM_IN });
+    expect(keyToIntent("=")).toEqual({ type: "zoom", factor: KEY_ZOOM_IN });
+    expect(keyToIntent("-")).toEqual({ type: "zoom", factor: 1 / KEY_ZOOM_IN });
+    expect(keyToIntent("_")).toEqual({ type: "zoom", factor: 1 / KEY_ZOOM_IN });
+    expect(keyToIntent("-", { inText: true })).toBeNull();
+    expect(keyToIntent("=", { meta: true })).toBeNull();
+  });
+
+  it("reads held R and F as a tilt axis (R up, F down, Shift doubles)", () => {
+    expect(isPitchKey("R")).toBe(true);
+    expect(isPitchKey("q")).toBe(false);
+    expect(pitchAxisFromKeys(["r"])).toBe(-1);
+    expect(pitchAxisFromKeys(["f"])).toBe(1);
+    expect(pitchAxisFromKeys(["f", "shift"])).toBe(2);
+    expect(pitchAxisFromKeys(["r", "f"])).toBe(0);
+    expect(pitchAxisFromKeys(["w"])).toBe(0);
   });
 });

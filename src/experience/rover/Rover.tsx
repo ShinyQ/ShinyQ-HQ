@@ -2,7 +2,7 @@
 
 import { RoundedBox } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -10,6 +10,7 @@ import {
   type CanvasTexture,
   DoubleSide,
   Float32BufferAttribute,
+  type Material,
   Object3D,
   SRGBColorSpace,
   type Group,
@@ -18,6 +19,7 @@ import {
   type MeshBasicMaterial,
 } from "three";
 import { getHQStore } from "@/store/useHQStore";
+import { roverOpacity } from "../camera/firstPerson";
 import { COLORS } from "../config";
 import { neonColor } from "../fx/materials";
 import { intents } from "../input/intents";
@@ -26,6 +28,7 @@ import { BOOST } from "./boost";
 import { MAX_FRAME_DT } from "./controller";
 import { faceFrame } from "./faces";
 import { drawBlob, drawFace, FACE_H, FACE_W } from "./faceTexture";
+import { prepareFade, setFadeOpacity } from "./fade";
 import { roverRuntime } from "./runtime";
 
 const WHEEL_R = 0.2;
@@ -92,6 +95,7 @@ export function Rover({ tier }: { tier: GpuTier }) {
   const glow = useRef<Mesh>(null);
   const ring = useRef<Mesh>(null);
   const trail = useRef<Mesh>(null);
+  const fadeMaterials = useRef<Material[]>([]);
   const [glowTexture] = useState(makeGlowTexture);
   const [trailTexture] = useState(makeTrailTexture);
   const neon = useMemo(
@@ -141,6 +145,11 @@ export function Rover({ tier }: { tier: GpuTier }) {
     });
   }, []);
 
+  // Hashed alpha goes on before the first compile, so the first-person fade never recompiles a shader.
+  useLayoutEffect(() => {
+    if (body.current) fadeMaterials.current = prepareFade(body.current);
+  }, [tier]);
+
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);
     const t = state.clock.elapsedTime;
@@ -152,6 +161,10 @@ export function Rover({ tier }: { tier: GpuTier }) {
     root.current.position.set(r.x, r.y, r.z);
     // The hologram view frames a pod's diagram; the rover would stand between it and the camera.
     root.current.visible = getHQStore().getState().phase !== "hologram";
+    // First person (round 5): the body fades out as the camera glides into its eyes, then hides (fewer draw calls).
+    const opacity = roverOpacity(r.cameraBlend);
+    body.current.visible = opacity > 0.01;
+    setFadeOpacity(fadeMaterials.current, opacity);
     root.current.rotation.y = r.heading;
     body.current.rotation.z = r.tilt;
     const hop = t < r.hopUntil && !reduced ? Math.sin(((r.hopUntil - t) / 0.35) * Math.PI) * 0.3 : 0;
@@ -259,12 +272,17 @@ export function Rover({ tier }: { tier: GpuTier }) {
   });
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
+    // In first person the camera sits inside the rover: clicks go to the targets in front of it.
+    if (roverRuntime.cameraBlend > 0.5) return;
     e.stopPropagation();
     intents.emit({ type: "terminal" });
   };
   // A click on the rover opens Ask Rover, so a target behind it must not light up. The over handler makes
   // the rover hover-tracked, which lets its stopPropagation clear the hover of objects behind it.
-  const stopHover = (e: ThreeEvent<PointerEvent>) => e.stopPropagation();
+  const stopHover = (e: ThreeEvent<PointerEvent>) => {
+    if (roverRuntime.cameraBlend > 0.5) return;
+    e.stopPropagation();
+  };
 
   return (
     <>

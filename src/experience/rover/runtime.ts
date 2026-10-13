@@ -25,8 +25,20 @@ export const roverRuntime = {
   cameraForward: { x: -1, z: -1 } as Vec2,
   /** Follow-camera yaw offset from the default angle (debug and test probe). */
   cameraYaw: 0,
-  /** L2 rail yaw (limited to RAIL_MAX_YAW). */
+  /** L2 yaw offset from the side view, radians, unbounded (round 5). */
   cameraRailYaw: 0,
+  /** The view the visitor chose: "first" after zooming in past the closest third-person distance. */
+  cameraMode: "third" as "third" | "first",
+  /** Drawn blend from third (0) to first person (1); 0 while autopilot, rides, rooms or the hologram hold third person. */
+  cameraBlend: 0,
+  /** Third-person zoom, 0.6 to 1.5 (test probe). */
+  cameraZoom: 1,
+  /** First-person look elevation, radians (test probe). */
+  cameraLook: 0,
+  /** Elevation of the drawn camera above its target, radians (test probe). */
+  cameraElevation: 0,
+  /** The rover follows a path (autopilot, scrub, mission leg, elevator approach); set by the Director. */
+  driving: false,
   /** Current camera position (debug and test probe). */
   cameraPosition: [0, 0, 0] as [number, number, number],
   /** Set by the Director when a teleport moves the rover: the camera cuts to it on the next frame instead of gliding. */

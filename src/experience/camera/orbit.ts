@@ -1,26 +1,41 @@
 import type { FloorId } from "@/content/schema";
 import { LOBBY } from "../config";
 import type { Rect, Vec2 } from "../types";
-import { springFactor } from "./rigs";
+import { FIRST_PERSON } from "./firstPerson";
+import { pitchRange, springFactor } from "./rigs";
 
 /**
- * Horizontal orbit state for the follow rig (appendix 03 section 2): unbounded yaw around the
- * rover, a small tilt (about 9 degrees either way), clamped zoom, eased steps and reset, and a
- * gentle auto-face toward walls that user rotation cancels.
- * Pure TypeScript so it can be unit tested.
+ * Orbit state for the cameras (appendix 03 section 2; owner request, round 5): unbounded yaw around the
+ * rover on every floor (L2 keeps its own yaw, so it opens on its side view), pitch from just above the
+ * floor to near top-down (the active rig's `pitchRange`), clamped zoom, eased steps and reset, a gentle
+ * auto-face toward walls that user rotation cancels, and first person after zooming in past the closest
+ * distance. Pure TypeScript so it can be unit tested.
  */
 export interface OrbitState {
   /** Yaw offset from the default follow angle, radians, unbounded. */
   yaw: number;
   yawTarget: number;
-  /** Pitch offset from the rig's default elevation, radians. */
+  /** Pitch offset from the rig's default elevation, radians, within [pitchMin, pitchMax]. */
   pitch: number;
   pitchTarget: number;
   zoom: number;
   zoomTarget: number;
-  /** Limited yaw for the L2 rail camera. */
+  /** L2 yaw offset from the side view, radians, unbounded. */
   railYaw: number;
   railYawTarget: number;
+  /** Pitch offsets the active rig allows (`pitchRange`), set by CameraDirector every frame. */
+  pitchMin: number;
+  pitchMax: number;
+  /** The view the visitor chose: true after zooming in past the closest third-person distance. */
+  firstPerson: boolean;
+  /** First-person look elevation, radians (0 level, negative looks down), within FIRST_PERSON.pitch. */
+  look: number;
+  /** 0 third person to 1 first person, as drawn; eases toward the chosen view unless it is held. */
+  blend: number;
+  /** Zoom pushed against a limit (product of factors); crossing enterPush or exitPush switches the view. */
+  push: number;
+  /** Seconds since the last zoom input; the push resets after FIRST_PERSON.pushIdle. */
+  pushIdle: number;
   /** True while easing toward the targets (steps, reset, auto-face). */
   easing: boolean;
   /** View zone the rover is in, if any. */
@@ -31,12 +46,11 @@ export interface OrbitState {
   zoneZoom: number | null;
 }
 
-/** Tilt allowed around the default elevation (owner decision: left/right free, up/down a little). */
-export const PITCH_RANGE = [-0.16, 0.16] as const;
 export const ZOOM_RANGE = [0.6, 1.5] as const;
-export const RAIL_MAX_YAW = (35 * Math.PI) / 180;
-/** Q/E rotation speed (Shift doubles it). */
+/** Q/E rotation speed (Shift doubles it), radians per second. */
 export const KEY_ROTATE_SPEED = 1.7;
+/** R/F tilt speed (Shift doubles it), radians per second. */
+export const KEY_PITCH_SPEED = 0.9;
 /** One press of an on-screen rotate button. */
 export const ROTATE_STEP = Math.PI / 4;
 const EASE_HALF_LIFE = 0.14;
@@ -47,6 +61,7 @@ export const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 export const nearestAngle = (target: number, current: number) => current + wrapPi(target - current);
 
 export function createOrbitState(): OrbitState {
+  const [pitchMin, pitchMax] = pitchRange("desktop", "follow");
   return {
     yaw: 0,
     yawTarget: 0,
@@ -56,6 +71,13 @@ export function createOrbitState(): OrbitState {
     zoomTarget: 1,
     railYaw: 0,
     railYawTarget: 0,
+    pitchMin,
+    pitchMax,
+    firstPerson: false,
+    look: FIRST_PERSON.look,
+    blend: 0,
+    push: 1,
+    pushIdle: 0,
     easing: false,
     zone: null,
     suppressedZone: null,
@@ -63,17 +85,34 @@ export function createOrbitState(): OrbitState {
   };
 }
 
-/** Direct manipulation (drag, twist, trackpad, held keys): applies immediately and cancels easing. */
+/** Sets the active rig's pitch range (CameraDirector, every frame) and keeps the pitch inside it. */
+export function setPitchRange(s: OrbitState, [lo, hi]: readonly [number, number]): void {
+  if (s.pitchMin === lo && s.pitchMax === hi) return;
+  s.pitchMin = lo;
+  s.pitchMax = hi;
+  s.pitch = clamp(s.pitch, lo, hi);
+  s.pitchTarget = clamp(s.pitchTarget, lo, hi);
+}
+
+/**
+ * Direct manipulation (drag, twist, trackpad, held keys): applies immediately and cancels easing. In
+ * first person `dpitch` moves the look instead (a downward drag looks down, like it tilts the
+ * third-person view down).
+ */
 export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): void {
   if (rail) {
-    s.railYaw = clamp(s.railYaw + dyaw, -RAIL_MAX_YAW, RAIL_MAX_YAW);
+    s.railYaw += dyaw;
     s.railYawTarget = s.railYaw;
   } else {
     s.yaw += dyaw;
     s.yawTarget = s.yaw;
   }
-  s.pitch = clamp(s.pitch + dpitch, PITCH_RANGE[0], PITCH_RANGE[1]);
-  s.pitchTarget = s.pitch;
+  if (s.firstPerson) {
+    s.look = clamp(s.look - dpitch, FIRST_PERSON.pitch[0], FIRST_PERSON.pitch[1]);
+  } else {
+    s.pitch = clamp(s.pitch + dpitch, s.pitchMin, s.pitchMax);
+    s.pitchTarget = s.pitch;
+  }
   s.zoomTarget = s.zoom;
   s.easing = false;
   if (s.zone) s.suppressedZone = s.zone;
@@ -82,7 +121,7 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
 /** Eased step (on-screen buttons). */
 export function rotateStep(s: OrbitState, direction: number, rail = false): void {
   if (rail) {
-    s.railYawTarget = clamp(s.railYawTarget + direction * ROTATE_STEP, -RAIL_MAX_YAW, RAIL_MAX_YAW);
+    s.railYawTarget = (s.easing ? s.railYawTarget : s.railYaw) + direction * ROTATE_STEP;
   } else {
     s.yawTarget = (s.easing ? s.yawTarget : s.yaw) + direction * ROTATE_STEP;
   }
@@ -90,21 +129,49 @@ export function rotateStep(s: OrbitState, direction: number, rail = false): void
   if (s.zone) s.suppressedZone = s.zone;
 }
 
-/** Eases back to the default angle, pitch and zoom (the nearest full turn, never a long spin). */
+/** Eases back to the default angle, pitch and zoom (the nearest full turn, never a long spin) and leaves first person. */
 export function resetView(s: OrbitState): void {
   s.yawTarget = s.yaw - wrapPi(s.yaw);
   s.pitchTarget = 0;
   s.zoomTarget = 1;
-  s.railYawTarget = 0;
+  s.railYawTarget = s.railYaw - wrapPi(s.railYaw);
   s.zoneZoom = null;
+  s.firstPerson = false;
+  s.push = 1;
   s.easing = true;
   if (s.zone) s.suppressedZone = s.zone;
 }
 
-export function zoomBy(s: OrbitState, factor: number): void {
-  s.zoom = clamp(s.zoom * factor, ZOOM_RANGE[0], ZOOM_RANGE[1]);
+/**
+ * Zoom input. In third person it scales the zoom within ZOOM_RANGE; zooming further in at the closest
+ * distance pushes, and a push of FIRST_PERSON.enterPush enters first person (only when `allowFirst`).
+ * In first person zooming in does nothing, and zooming out by FIRST_PERSON.exitPush returns to third
+ * person at the closest distance.
+ */
+export function zoomBy(s: OrbitState, factor: number, allowFirst = true): void {
+  s.pushIdle = 0;
+  if (s.firstPerson) {
+    s.push = factor > 1 ? Math.max(1, s.push) * factor : 1;
+    if (s.push >= FIRST_PERSON.exitPush) {
+      s.firstPerson = false;
+      s.push = 1;
+    }
+    return;
+  }
+  const want = s.zoom * factor;
+  s.zoom = clamp(want, ZOOM_RANGE[0], ZOOM_RANGE[1]);
   s.zoomTarget = s.zoom;
   s.zoneZoom = null;
+  if (allowFirst && want < ZOOM_RANGE[0]) {
+    s.push = Math.min(1, s.push) * (want / ZOOM_RANGE[0]);
+    if (s.push <= FIRST_PERSON.enterPush) {
+      s.firstPerson = true;
+      s.push = 1;
+      s.look = FIRST_PERSON.look;
+    }
+  } else {
+    s.push = 1;
+  }
 }
 
 /** A floor area where the camera turns to face something (a wall) when the rover walks in. */
@@ -151,7 +218,8 @@ export function zoneAt(floor: FloorId, p: Vec2, extra: readonly ViewZone[] = [])
 
 /**
  * Tracks the zone the rover is in. Entering a zone eases the camera to face its feature, unless
- * reduced motion is on or the visitor already rotated by hand inside it. Leaving clears the block.
+ * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
+ * Leaving clears the block.
  */
 export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean): void {
   const id = zone?.id ?? null;
@@ -166,7 +234,7 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
     }
     return;
   }
-  if (reduced || s.suppressedZone === zone.id) return;
+  if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
   s.yawTarget = nearestAngle(zone.yaw, s.yaw);
   s.pitchTarget = 0;
   if (zone.zoom) {
@@ -176,8 +244,18 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
   s.easing = true;
 }
 
-/** Advances easing. Reduced motion jumps straight to the targets. */
-export function stepOrbit(s: OrbitState, dt: number, reduced: boolean): void {
+/**
+ * Advances the first-person blend (toward the chosen view, or toward third person while `hold`; a cut
+ * under reduced motion), forgets an idle zoom push, and advances easing (reduced motion jumps).
+ */
+export function stepOrbit(s: OrbitState, dt: number, reduced: boolean, hold = false): void {
+  s.pushIdle += dt;
+  if (s.pushIdle > FIRST_PERSON.pushIdle) s.push = 1;
+  const goal = s.firstPerson && !hold ? 1 : 0;
+  if (s.blend !== goal) {
+    const step = reduced ? 1 : dt / FIRST_PERSON.glide;
+    s.blend = goal > s.blend ? Math.min(goal, s.blend + step) : Math.max(goal, s.blend - step);
+  }
   if (!s.easing) return;
   const k = reduced ? 1 : springFactor(dt, EASE_HALF_LIFE);
   s.yaw += (s.yawTarget - s.yaw) * k;

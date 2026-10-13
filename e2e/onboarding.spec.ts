@@ -212,6 +212,9 @@ test.describe("every step of the tour", () => {
 
     await expectLine(page, "moved");
     await next(page);
+    await expectLine(page, "camera");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "view");
+    await next(page);
 
     // The Highlights Hall on L1 east (its stations register once the hall mounts after the intro).
     await expectLine(page, "highlights");
@@ -247,6 +250,8 @@ test.describe("every step of the tour", () => {
     await driveABit(page);
     await expectLine(page, "moved");
     await next(page);
+    await expectLine(page, "camera");
+    await next(page);
     await expectLine(page, "highlights");
     await choices(page).getByRole("button", { name: en.dialog.onboarding.showMe }).click();
     // The drive ends on the first station's door pad, which opens its drawer; Rover waits behind it.
@@ -272,6 +277,8 @@ test.describe("every step of the tour", () => {
     // The fallback: Continue appears after 12 s without driving.
     await choices(page).getByRole("button", { name: en.dialog.continue }).click({ timeout: 20_000 });
     await expectLine(page, "moved");
+    await next(page);
+    await expectLine(page, "camera");
     await next(page);
     await expectLine(page, "ask-rover");
     await next(page);
@@ -314,6 +321,8 @@ test.describe("reduced motion", () => {
     await expectLine(page, "point-go");
     await driveABit(page);
     await expectLine(page, "moved");
+    await page.keyboard.press("Enter");
+    await expectLine(page, "camera");
     await page.keyboard.press("Enter");
     await expectLine(page, "highlights");
     await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();

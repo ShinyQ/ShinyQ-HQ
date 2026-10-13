@@ -7,6 +7,7 @@ import { BufferGeometry, Float32BufferAttribute, type Mesh } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
 import { neonColor } from "../../fx/materials";
+import { Readable } from "../../fx/Readable";
 import { RoadMarkings } from "../../fx/RoadMarkings";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS } from "../../tower/primitives";
@@ -38,7 +39,7 @@ function boxEdges(pts: number[], a: Vec2, b: Vec2, y0: number, y1: number, half:
  * The Career Road itself: road, plaza and spur markings (RoadMarkings), a neon arch over the road
  * before every year plaza with the year in large digits and a signpost ("2021 · 8 rooms"), and the
  * year written on the plaza floor. All arches share one line geometry; crossing an arch pulses its
- * year once (not under reduced motion).
+ * year once (not under reduced motion). Texts turn around when the camera is behind them (`Readable`).
  */
 export function YearGates({
   layout,
@@ -101,71 +102,68 @@ export function YearGates({
         <lineBasicMaterial color={neon} transparent opacity={0.9} toneMapped={false} />
       </lineSegments>
       {years.map((y, i) => (
-        <group key={y.year} position={[y.arch.center.x, 0, y.arch.center.z]}>
+        <Readable key={y.year} position={[y.arch.center.x, 0, y.arch.center.z]}>
+          {(flipped) => (
+            <>
+              <Text
+                ref={(node: Mesh | null) => {
+                  digits.current[i] = node;
+                }}
+                font={FONTS.monoBold}
+                fontSize={2.2}
+                letterSpacing={0.04}
+                color={accent}
+                anchorX="center"
+                anchorY="bottom"
+                position={[0, H + BAR + 0.3, 0]}
+                material-toneMapped={false}
+              >
+                {String(y.year)}
+              </Text>
+              <Text
+                ref={fade(2 * i)}
+                font={FONTS.mono}
+                fontSize={0.42}
+                letterSpacing={0.06}
+                color={COLORS.white}
+                outlineWidth={0.03}
+                outlineColor={COLORS.void}
+                anchorX="center"
+                anchorY="top"
+                position={[0, H - 0.2, CAREER_ROAD.width / 2 + 1.4]}
+              >
+                {/* The arrow points into the plaza (+x), which is on the viewer's left when the sign is seen from behind. */}
+                {flipped ? `\u2190 ${y.year} \u00B7 ${roomsLabel(y.rooms.length)}` : `${y.year} \u00B7 ${roomsLabel(y.rooms.length)} \u2192`}
+              </Text>
+            </>
+          )}
+        </Readable>
+      ))}
+      {years.map((y, i) => (
+        <Readable key={`floor-${y.year}`} position={[y.plaza.center.x, 0.04, y.plaza.center.z]}>
           <Text
-            ref={(node: Mesh | null) => {
-              digits.current[i] = node;
-            }}
+            ref={fade(2 * i + 1)}
             font={FONTS.monoBold}
-            fontSize={2.2}
-            letterSpacing={0.04}
+            fontSize={5}
+            letterSpacing={0.06}
             color={accent}
+            fillOpacity={FLOOR_DIGITS_OPACITY}
             anchorX="center"
-            anchorY="bottom"
-            position={[0, H + BAR + 0.3, 0]}
+            anchorY="middle"
+            rotation={[-Math.PI / 2, 0, 0]}
             material-toneMapped={false}
+            raycast={() => null}
           >
             {String(y.year)}
           </Text>
-          <Text
-            ref={fade(2 * i)}
-            font={FONTS.mono}
-            fontSize={0.42}
-            letterSpacing={0.06}
-            color={COLORS.white}
-            outlineWidth={0.03}
-            outlineColor={COLORS.void}
-            anchorX="center"
-            anchorY="top"
-            position={[0, H - 0.2, CAREER_ROAD.width / 2 + 1.4]}
-          >
-            {`${y.year} \u00B7 ${roomsLabel(y.rooms.length)} \u2192`}
-          </Text>
-        </group>
-      ))}
-      {years.map((y, i) => (
-        <Text
-          key={`floor-${y.year}`}
-          ref={fade(2 * i + 1)}
-          font={FONTS.monoBold}
-          fontSize={5}
-          letterSpacing={0.06}
-          color={accent}
-          fillOpacity={FLOOR_DIGITS_OPACITY}
-          anchorX="center"
-          anchorY="middle"
-          position={[y.plaza.center.x, 0.04, y.plaza.center.z]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          material-toneMapped={false}
-          raycast={() => null}
-        >
-          {String(y.year)}
-        </Text>
+        </Readable>
       ))}
       {prologue && years[0] && (
-        <Text
-          font={FONTS.mono}
-          fontSize={0.4}
-          letterSpacing={0.08}
-          color={COLORS.white}
-          anchorX="center"
-          anchorY="top"
-          position={[years[0].arch.center.x, H - 1, years[0].arch.center.z + CAREER_ROAD.width / 2 + 1.4]}
-          maxWidth={14}
-          textAlign="center"
-        >
-          {prologue}
-        </Text>
+        <Readable position={[years[0].arch.center.x, H - 1, years[0].arch.center.z + CAREER_ROAD.width / 2 + 1.4]} pivot={[years[0].arch.center.x, years[0].arch.center.z]}>
+          <Text font={FONTS.mono} fontSize={0.4} letterSpacing={0.08} color={COLORS.white} anchorX="center" anchorY="top" maxWidth={14} textAlign="center">
+            {prologue}
+          </Text>
+        </Readable>
       )}
     </group>
   );
