@@ -6,7 +6,7 @@ describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
     expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "gpu", "ride"]);
     expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "gpu", "ride"]);
-    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["experience", "ride"]);
+    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
