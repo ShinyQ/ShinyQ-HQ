@@ -1,6 +1,6 @@
 # Page View revamp: editorial Neon Grid (design spec)
 
-Sub-project C of the 2026-10-10 polish plan. Scope: the HTML site under `src/app/[locale]/**` and `src/components/**`, shown on the static tier and after "Page view" in the 3D HQ. Mockups: `docs/design/pageview/` (generated from `content/site-content.json` by `gen-mockups.ts`; screenshots in `screenshots/`).
+Sub-project C of the 2026-10-10 polish plan. Scope: the HTML site under `src/app/[locale]/**` and `src/components/**`, shown on the static tier and after "Classic site" (formerly "Page view") in the 3D HQ. Visitors read this site as the **Classic site** (ID **Situs klasik**, owner decision October 2026); "Page View" stays its internal name. Mockups: `docs/design/pageview/` (generated from `content/site-content.json` by `gen-mockups.ts`; screenshots in `screenshots/`).
 
 Owner request: "for the Page View its looks so AI and need full revamp on the design so its structured more in UX and more good in design".
 
