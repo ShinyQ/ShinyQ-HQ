@@ -11,6 +11,7 @@ import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
 import { audio } from "@/lib/audio";
 import { markOnce, PERF_MARKS } from "@/lib/perf-marks";
+import { bootCoverUsed } from "@/lib/boot-first";
 import { introSeen, lobbyStartPhase, markIntroSeen } from "@/lib/intro-session";
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion";
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
@@ -31,6 +32,7 @@ import { beamNow, rideNow } from "./tower/rideClock";
 import { renderStats, resetPeaks } from "./perf/renderStats";
 import { perfOverlayOn } from "./perf/lines";
 import { usePerfMarks } from "./perf/usePerfMarks";
+import { decideRum, rumPath } from "./perf/rumDecision";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
@@ -53,6 +55,8 @@ const COARSE_QUERY = "(pointer: coarse)";
 // `?perf=1` only: without the flag nothing of the overlay is downloaded or run.
 const PerfOverlay = lazy(() => import("./perf/PerfOverlay"));
 const PerfProbe = lazy(() => import("./perf/PerfOverlay").then((m) => ({ default: m.PerfProbe })));
+// Sampled sessions only (25%, decided once per browser session): unsampled sessions never download the probe.
+const RumProbe = lazy(() => import("./perf/RumProbe"));
 
 function readDevice() {
   const w = window.innerWidth;
@@ -206,6 +210,7 @@ export default function Experience({
   );
   usePerfMarks();
   const [perf] = useState(() => perfOverlayOn(window.location.search));
+  const [rum] = useState(() => (decideRum() ? rumPath({ startFloor, startRoom, coverUsed: bootCoverUsed() }) : null));
 
   const layouts = useMemo(
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
@@ -451,6 +456,11 @@ export default function Experience({
             {perf && (
               <Suspense fallback={null}>
                 <PerfProbe />
+              </Suspense>
+            )}
+            {rum && (
+              <Suspense fallback={null}>
+                <RumProbe tier={tier === "full" ? "full" : "lite"} path={rum} />
               </Suspense>
             )}
           </Canvas>
