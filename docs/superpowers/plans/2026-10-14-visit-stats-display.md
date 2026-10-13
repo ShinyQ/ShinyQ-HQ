@@ -44,7 +44,7 @@
 | `src/experience/fx/holoFx.ts` | Two new modes (`globe`, `dot`) and the `vC` center varying |
 | `src/experience/floors/Lobby.tsx`, `floors/Roof.tsx` | Live visits tile; station mount |
 | `src/experience/visits3d.ts` | `StatsLoader` (fetch after first frame) and the L1 tile builder |
-| `src/experience/missions/rooms.ts`, `content/room-views/roof.ts`, `lobby.ts`, `interact/registry.ts`, `missions/walks.ts`, `hud/drawer/bodies.tsx`, `hud/drawer/VisitsBody.tsx` | Room `RF:visits`: catalog (Cmd-K), view, point-and-go, walk stop, drawer body |
+| `src/experience/missions/rooms.ts`, `content/room-views/roof.ts`, `lobby.ts`, `interact/registry.ts`, `hud/drawer/bodies.tsx`, `hud/drawer/VisitsBody.tsx` | Room `RF:visits`: catalog (Cmd-K), view, point-and-go, drawer body (the "Meet me" walk stays about the owner: no stop added) |
 | `src/experience/ExperienceGate.tsx` | `/{locale}/contact#visits` deep link |
 | `src/components/page/StatTicker.tsx`, `src/app/[locale]/page.tsx`, `contact/page.tsx`, `src/components/SiteFooter.tsx` | Classic placements |
 
@@ -112,7 +112,7 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 
 ### Task 6: Room `RF:visits` (catalog, Cmd-K, deep link, drawer, walk)
 
-**Files:** Modify `missions/rooms.ts` (`StructuralRoom` "visits", `RoomKind` "visits", catalog entry with keywords visits/kunjungan/stats/statistik/analytics), `Experience.tsx` and test label maps, `content/room-views/roof.ts` (view with `visits` payload: chip and floor labels), `room-views/types.ts` (`RoomView.visits?`), `room-views/lobby.ts` (L1:stats `link` to RF:visits), `hud/drawer/bodies.tsx` + new `VisitsBody.tsx` (panel compact plus `OptOutToggle`), `ExperienceGate.tsx` (+ pure `visitsRoomFromHash` in `floors/roof/visitsRoom.ts`), `missions/walks.ts` (roof walk stop after contact), `messages` `hud.rooms.visits`, `walk` copy; Tests `tests/unit/missions-rooms.test.ts`, `room-views` test, `walks` test.
+**Files:** Modify `missions/rooms.ts` (`StructuralRoom` "visits", `RoomKind` "visits", catalog entry with keywords visits/kunjungan/stats/statistik/analytics), `Experience.tsx` and test label maps, `content/room-views/roof.ts` (view with `visits` payload: chip and floor labels), `room-views/types.ts` (`RoomView.visits?`), `room-views/lobby.ts` (L1:stats `link` to RF:visits), `hud/drawer/bodies.tsx` + new `VisitsBody.tsx` (panel compact plus `OptOutToggle`), `ExperienceGate.tsx` (+ pure `visitsRoomFromHash` in `floors/roof/visitsRoom.ts`), `messages` `hud.rooms.visits`, `walk` copy; Tests `tests/unit/missions-rooms.test.ts`, `room-views` test, `walks` test.
 
 - [ ] Commit `feat(stats): RF:visits room, drawer body, deep link and Cmd-K entry`.
 
