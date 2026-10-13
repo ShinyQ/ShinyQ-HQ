@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ACESFilmicToneMapping } from "three";
+import { ACESFilmicToneMapping, type Material, type Scene as ThreeScene, type WebGLRenderer } from "three";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
@@ -28,6 +28,7 @@ import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { memoryCounts, trackRenderer } from "./scene/memoryProbe";
+import { releaseSharedResources } from "./scene/sharedResources";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
 import { programPins } from "./scene/programPins";
 import { qualityHandle, qualityStore } from "./scene/qualityStore";
@@ -202,8 +203,18 @@ export default function Experience({
     };
   }, []);
 
-  // The memory probe must not read a renderer that unmounted with this canvas.
-  useEffect(() => () => trackRenderer(null), []);
+  // The memory probe must not read a renderer that unmounted with this canvas, and shared materials
+  // and textures must not keep it alive (React runs this cleanup before the canvas empties its scene).
+  const created = useRef<{ gl: WebGLRenderer; scene: ThreeScene } | null>(null);
+  useEffect(
+    () => () => {
+      const canvas = created.current;
+      created.current = null;
+      if (canvas) releaseSharedResources(canvas.scene, { uniformsOf: (m: Material) => (canvas.gl.properties.get(m) as { uniforms?: Record<string, { value?: unknown }> }).uniforms });
+      trackRenderer(null);
+    },
+    [],
+  );
 
   useEffect(() => {
     const store = getHQStore();
@@ -388,6 +399,7 @@ export default function Experience({
             gl.toneMapping = ACESFilmicToneMapping;
             gl.toneMappingExposure = sceneSettings(tier).exposure;
             trackRenderer(gl);
+            created.current = { gl, scene };
             const canvas = gl.domElement;
             canvas.addEventListener("webglcontextlost", (event) => {
               event.preventDefault();

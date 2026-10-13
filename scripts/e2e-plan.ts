@@ -93,7 +93,7 @@ export const RULES: Rule[] = [
   },
 
   // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
-  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/memoryProbe\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
+  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/(memoryProbe|sharedResources)\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
