@@ -5,9 +5,12 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Quaternion, Vector3, type InstancedMesh } from "three";
 import type { RoomId } from "@/content/schema";
+import { FloatingSigns } from "../../../fx/FloatingSign";
 import { HoloIcon, type HoloIconInstance } from "../../../fx/HoloIcon";
 import { LIBRARY_ICONS } from "../../../fx/holoIcons";
 import { createInstancedGlassMaterial, neonColor } from "../../../fx/materials";
+import type { SignSpec } from "../../../fx/signLayout";
+import { zoneSignSpecs } from "./signs";
 import { useUniformTime } from "../../../fx/useUniformTime";
 import { FONTS, tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
@@ -160,33 +163,13 @@ export function StationLabels({ stations, titles, y = 5.2 }: { stations: readonl
   );
 }
 
-/** Zone names written on the floor where each zone's road starts, reading along the road. */
-export function ZoneSigns({ layout, zones }: { layout: LibraryLayout; zones: Record<LibraryZone, string> }) {
-  const present = LIBRARY_ZONES.filter((z) => layout.stations.some((s) => s.zone === z));
-  return (
-    <group name="library-signs">
-      {present.map((zone) => {
-        const { at, heading } = layout.signs[zone];
-        return (
-          <Text
-            key={zone}
-            font={FONTS.monoBold}
-            fontSize={0.8}
-            letterSpacing={0.12}
-            color={ZONE_TONE[zone]}
-            fillOpacity={0.75}
-            anchorX="center"
-            anchorY="middle"
-            position={[at.x, 0.05, at.z]}
-            rotation={[-Math.PI / 2, 0, Math.atan2(-heading.z, heading.x)]}
-            material-toneMapped={false}
-          >
-            {zones[zone].toUpperCase()}
-          </Text>
-        );
-      })}
-    </group>
-  );
+/**
+ * Zone names floating where each zone's road starts (spectacle round: no words on the floor), plus any
+ * concept signs (`extra`, such as the newsroom's timeline years), all in one `FloatingSigns` group.
+ */
+export function ZoneSigns({ layout, zones, tier, extra }: { layout: LibraryLayout; zones: Record<LibraryZone, string>; tier: GpuTier; extra?: readonly SignSpec[] }) {
+  const signs = useMemo(() => [...zoneSignSpecs(layout, zones), ...(extra ?? [])], [layout, zones, extra]);
+  return <FloatingSigns signs={signs} name="library-signs" tier={tier} />;
 }
 
 /** Paper plates inside the Research station (one instanced mesh): a click opens that paper's preview. */

@@ -8,7 +8,6 @@ import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore, type HQState } from "@/store/useHQStore";
 import { floorY } from "../config";
 import { roadZAt } from "../floors/career/layout";
-import { directoryBoard, LABS } from "../floors/labs/layout";
 import { intents, pitchAxisFromKeys, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { RIDE_CAP } from "../tower/elevator";
@@ -16,7 +15,7 @@ import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
 import { boostView } from "./boostView";
-import { clampCamera, type CameraWorld, type TallObstacle } from "./collision";
+import { clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
@@ -45,14 +44,6 @@ function holdThirdPerson(s: HQState): boolean {
 }
 
 const toVec3 = (v: Vector3): Vec3 => [v.x, v.y, v.z];
-
-/** Obstacles taller than the default camera clearance, per floor: the L3 directory wall (9.5 u) where the wing roads fork. */
-const TALL: Partial<Record<FloorId, TallObstacle[]>> = {
-  L3: (["software", "ai"] as const).map((wing) => {
-    const { minX, maxX, minZ, maxZ } = directoryBoard(wing);
-    return { minX, maxX, minZ, maxZ, h: LABS.board.h };
-  }),
-};
 
 /**
  * Applies the active camera rig every frame with critically damped smoothing. The camera turns all the
@@ -142,7 +133,7 @@ export function CameraDirector({
 
     // Camera collision works against the current floor; rides cross floors, so it rests during them.
     const layout = layouts && !s.ride ? layouts[s.floor] : undefined;
-    const world: CameraWorld | null = layout ? { obstacles: layout.obstacles, bounds: layout.bounds, floorY: floorY(s.floor), tall: TALL[s.floor] } : null;
+    const world: CameraWorld | null = layout ? { obstacles: layout.obstacles, bounds: layout.bounds, floorY: floorY(s.floor), tall: layout.tall } : null;
 
     let desired: CameraPose;
     let snap = false;

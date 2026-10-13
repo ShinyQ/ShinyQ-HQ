@@ -5,6 +5,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { useWarmingFloor } from "../scene/warmState";
 import type { CareerData, Rect } from "../types";
 import { CareerRooms } from "./career/CareerRooms";
+import { Horizon } from "./career/Horizon";
 import { buildCareerRoad, careerLayoutInput } from "./career/layout";
 import { WorkshopAnnex, type WorkshopLabels } from "./career/WorkshopAnnex";
 import { YearGates } from "./career/YearGates";
@@ -42,6 +43,7 @@ export function CareerArchive({ career, labs, labels }: { career: CareerData; la
       <YearGates layout={layout} prologue={prologue} roomsLabel={labels.rooms} tier={tier} reducedMotion={reducedMotion} />
       <CareerRooms rooms={layout.rooms} entries={entries} trophies={trophies} tier={tier} reducedMotion={reducedMotion} />
       <WorkshopAnnex layout={layout} career={career} labs={labs} labels={labels} />
+      <Horizon layout={layout} />
     </group>
   );
 }

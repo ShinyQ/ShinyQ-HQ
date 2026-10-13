@@ -35,6 +35,7 @@ export const ALL_SPECS = [
   "ride",
   "roof",
   "seo",
+  "spectacle",
   "static-routes",
   "walk",
 ] as const;
@@ -111,10 +112,12 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
   // 3D floors.
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
-  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle"] },
+  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
+  // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
+  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof"] },
   // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
   { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
@@ -127,7 +130,7 @@ export const RULES: Rule[] = [
     specs: ["boost", "experience", "hud", "gpu"],
   },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
-  { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu"] },
+  { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu", "spectacle"] },
   { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.

@@ -49,9 +49,11 @@ describe("specsForChanges", () => {
   });
 
   it("maps floor code to its spec", () => {
-    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "walk"]);
-    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "walk"]);
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["gallery", "labs", "spectacle", "walk"]);
+    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "pads", "spectacle"]);
+    expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-roof", "spectacle"]);
+    expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-roof", "spectacle"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "spectacle", "walk"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
@@ -117,7 +119,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
-    expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
+    expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride", "spectacle"]);
   });
 
   it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {

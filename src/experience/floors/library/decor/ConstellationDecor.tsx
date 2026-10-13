@@ -147,7 +147,7 @@ export function ConstellationDecor(props: DecorProps) {
       <Core at={layout.centerpiece} tier={tier} reducedMotion={reducedMotion} />
       <ZoneIcons stations={shelves} tier={tier} reducedMotion={reducedMotion} />
       <StationLabels stations={layout.stations} titles={titles} y={posts.length ? 4.6 : 5.2} />
-      <ZoneSigns layout={layout} zones={zones} />
+      <ZoneSigns layout={layout} zones={zones} tier={tier} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
     </group>
   );

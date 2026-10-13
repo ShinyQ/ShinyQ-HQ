@@ -11,6 +11,7 @@ import { ZONE_TONE } from "../model";
 import { FlipBooks } from "./BookHolograms";
 import { ResearchPapers, STATION_HEIGHT, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
 import { stageBook } from "./flipBooks";
+import { yearMarkSigns } from "./signs";
 
 /** Ticker speed (u/s) and the gap between headlines. */
 const TICKER = { speed: 2.4, separator: "   \u25c6   " } as const;
@@ -75,6 +76,7 @@ export function NewsroomDecor(props: DecorProps) {
   }, [wall]);
   useEffect(() => () => frame?.dispose(), [frame]);
   const neon = useMemo(() => neonColor("#ffffff", 1.5, tier), [tier]);
+  const yearSigns = useMemo(() => yearMarkSigns(layout.extras.years ?? []), [layout.extras.years]);
 
   return (
     <group name="library-newsroom">
@@ -82,7 +84,7 @@ export function NewsroomDecor(props: DecorProps) {
       <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
       <StationLabels stations={others} titles={titles} />
-      <ZoneSigns layout={layout} zones={zones} />
+      <ZoneSigns layout={layout} zones={zones} tier={tier} extra={yearSigns} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
       {wall && frame && (
         <group name="headline-wall">
@@ -126,22 +128,6 @@ export function NewsroomDecor(props: DecorProps) {
           <meshBasicMaterial color={ZONE_TONE.blog} transparent opacity={tier === "full" ? 0.07 : 0.05} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
         </mesh>
       )}
-      {(layout.extras.years ?? []).map((mark) => (
-        <Text
-          key={mark.year}
-          font={FONTS.monoBold}
-          fontSize={1.6}
-          color={ZONE_TONE.blog}
-          fillOpacity={0.55}
-          anchorX="center"
-          anchorY="middle"
-          position={[mark.at.x, 0.05, mark.at.z]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          material-toneMapped={false}
-        >
-          {mark.year}
-        </Text>
-      ))}
     </group>
   );
 }
