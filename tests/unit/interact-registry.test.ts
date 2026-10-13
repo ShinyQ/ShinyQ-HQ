@@ -27,6 +27,7 @@ const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF
 function labelsFrom(m: Messages): InteractLabels {
   return {
     elevator: m.hud.pads.floorTitle,
+    returnPad: m.hud.interact.returnPad,
     teleporter: (year) => m.hud.interact.teleporter.replace("{year}", String(year)),
     kiosk: m.hud.launcher.askRover,
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
@@ -60,6 +61,20 @@ describe("interactablesFor on the real content", () => {
       expect(first.at).toEqual(layouts[floor].approach);
       expect(first.label).toBe(en.hud.pads.floorTitle);
     }
+  });
+
+  it("adds the Express Return pad on L2 and L3 right after the elevator pad, and it beams home", () => {
+    for (const floor of ["L2", "L3"] as const) {
+      const back = items[floor][1];
+      expect(back.id, floor).toBe(`${floor}:pad:return`);
+      expect(back.kind).toBe("return-pad");
+      expect(back.label).toBe("Back to elevator");
+      expect(back.action).toEqual({ type: "return-beam" });
+      expect(back.at).toEqual(layouts[floor].returnPad);
+    }
+    for (const floor of ["L1", "L4", "RF"] as const) expect(items[floor].some((i) => i.kind === "return-pad"), floor).toBe(false);
+    const idItems = setup("id").items;
+    expect(idItems.L2.find((i) => i.kind === "return-pad")?.label).toBe("Kembali ke lift");
   });
 
   it("adds one teleporter per year on L2 that opens the year picker from its own year", () => {

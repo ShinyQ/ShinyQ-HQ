@@ -21,6 +21,7 @@ const layouts = buildFloorLayouts(experience.years.length, {
 });
 const labels: InteractLabels = {
   elevator: en.hud.pads.floorTitle,
+  returnPad: en.hud.interact.returnPad,
   teleporter: (year) => en.hud.interact.teleporter.replace("{year}", String(year)),
   kiosk: en.hud.launcher.askRover,
   board: (wing) => en.hud.interact.board.replace("{wing}", wing),

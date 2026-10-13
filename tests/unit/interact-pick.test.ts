@@ -48,6 +48,16 @@ const teleporter: Interactable = {
   bounds: { minX: 38.5, maxX: 41.5, minZ: 5, maxZ: 8 },
   action: { type: "teleport-picker", year: 2021 },
 };
+const back: Interactable = {
+  ...lift,
+  id: "L2:pad:return",
+  floor: "L2",
+  kind: "return-pad",
+  label: "Back to elevator",
+  at: { x: 336, z: 8 },
+  bounds: { minX: 334.6, maxX: 337.4, minZ: 6.6, maxZ: 9.4 },
+  action: { type: "return-beam" },
+};
 const board: Interactable = { ...pod, id: "L3:board:software", kind: "board", label: "Product Engineering directory", at: { x: -10.7, z: -9.5 }, action: { type: "command", command: "palette:pods" } };
 
 function deps(over: Partial<InteractDeps> = {}): InteractDeps {
@@ -57,6 +67,7 @@ function deps(over: Partial<InteractDeps> = {}): InteractDeps {
     runSteps: vi.fn(async () => "done" as const),
     openPicker: vi.fn(),
     command: vi.fn(),
+    beamHome: vi.fn(),
     ...over,
   };
 }
@@ -73,6 +84,7 @@ describe("pick volumes", () => {
   it("floats the name tag over the approach point, above the icon on pads", () => {
     expect(labelAnchor(pod)).toEqual([pod.at.x, LABEL_HEIGHT, pod.at.z]);
     expect(labelAnchor(lift)).toEqual([lift.at.x, LABEL_PAD_HEIGHT, lift.at.z]);
+    expect(labelAnchor(back)).toEqual([back.at.x, LABEL_PAD_HEIGHT, back.at.z]);
     expect(LABEL_PAD_HEIGHT).toBeGreaterThan(LABEL_HEIGHT);
   });
 });
@@ -157,6 +169,7 @@ describe("reach", () => {
   it("counts the whole pad as arrived, and a short radius elsewhere", () => {
     expect(reach(lift)).toBe(PAD.radius);
     expect(reach(teleporter)).toBe(PAD.radius);
+    expect(reach(back)).toBe(PAD.radius);
     expect(reach(board)).toBe(REACH.point);
   });
 });
@@ -187,6 +200,27 @@ describe("performInteract", () => {
     await expect(performInteract(teleporter, d)).resolves.toBe("done");
     expect(d.runSteps).not.toHaveBeenCalled();
     expect(d.openPicker).toHaveBeenCalledWith({ kind: "year", from: 2021 });
+  });
+
+  it("drives onto a Return pad, then beams home once", async () => {
+    const order: string[] = [];
+    const d = deps({
+      runSteps: vi.fn(async (id: string) => {
+        order.push(`drive ${id}`);
+        return "done" as const;
+      }),
+      beamHome: vi.fn(() => void order.push("beam")),
+    });
+    await expect(performInteract(back, d)).resolves.toBe("done");
+    expect(order).toEqual(["drive interact:L2:pad:return", "beam"]);
+    expect(d.openPicker).not.toHaveBeenCalled();
+  });
+
+  it("beams home at once when the rover already stands on the Return pad", async () => {
+    const d = deps({ rover: () => ({ x: 336.5, z: 8.5 }) });
+    await performInteract(back, d);
+    expect(d.runSteps).not.toHaveBeenCalled();
+    expect(d.beamHome).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing more when the drive is cancelled by manual input", async () => {

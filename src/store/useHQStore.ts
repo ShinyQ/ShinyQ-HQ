@@ -75,7 +75,7 @@ export interface HQState {
   readme: boolean;
   /** Floor pad picker over the world: floors (elevator call pad) or years (L2 teleporter). */
   picker: PickerRequest | null;
-  /** L2 teleport beam in progress, advanced by the Director. */
+  /** Beam in progress (L2 year teleports, Express Return pads, far floor changes into the car), advanced by the Director. */
   beam: Beam | null;
   /** Point-and-go: the target under the mouse (`via: "pointer"`) or picked by a first tap (`via: "tap"`). Not persisted. */
   hover: HoverState | null;

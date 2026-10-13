@@ -3,7 +3,9 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { distanceToElevator, FAST_RETURN } from "@/experience/nav/fastReturn";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
+import { PAD } from "@/experience/nav/pads";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
 
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
@@ -40,6 +42,26 @@ describe("floor pads in the real layouts", () => {
       const l = layouts[id];
       expectSpaceRules({ bounds: l.bounds, obstacles: l.obstacles, doors: l.doors ?? [], network: l.road!, start: l.approach, pads: l.pads });
     }
+  });
+
+  it("adds one Express Return pad on L2 and L3, right after the elevator pad, far from the elevator", () => {
+    for (const id of ["L2", "L3"] as const) {
+      const l = layouts[id];
+      const returns = (l.pads ?? []).filter((p) => p.kind === "return");
+      expect(returns.map((p) => p.id), id).toEqual([`return:${id}`]);
+      expect(l.pads?.[1]?.id, id).toBe(`return:${id}`);
+      expect(returns[0].at, id).toEqual(l.returnPad);
+      expect(distanceToElevator(returns[0].at, l), id).toBeGreaterThan(FAST_RETURN.beamDistance);
+    }
+    for (const id of ["L1", "L4", "RF"] as const) expect(layouts[id].pads?.some((p) => p.kind === "return"), id).toBe(false);
+  });
+
+  it("keeps the L3 Return pad off the reactor ring road", () => {
+    const l = layouts.L3;
+    const ring = l.road!.roads.find((r) => r.id === "east-ring")!;
+    const center = l.road!.plazas.find((p) => p.id === "east")!.center;
+    const outer = Math.max(...ring.points.map((p) => Math.hypot(p.x - center.x, p.z - center.z))) + ring.width / 2;
+    expect(Math.hypot(l.returnPad!.x - center.x, l.returnPad!.z - center.z)).toBeGreaterThan(outer + PAD.radius);
   });
 
   it("keeps the placeholder corridor (no career data) with its elevator pad", () => {

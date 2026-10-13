@@ -20,12 +20,12 @@ export interface DoorTrigger {
   facing?: Vec2;
 }
 
-/** Floor pad kinds: the elevator call pad (every floor) and the L2 year teleporter. */
-export type PadKind = "elevator" | "teleport";
+/** Floor pad kinds: the elevator call pad (every floor), the L2 year teleporter and the Express Return pad (`FloorLayout.returnPad`). */
+export type PadKind = "elevator" | "teleport" | "return";
 
 /** A glowing floor pad the rover parks on (or the visitor clicks) to open a picker. Not an obstacle. */
 export interface PadTrigger {
-  /** `elevator:<FloorId>` or `teleport:<year>`, unique per floor. */
+  /** `elevator:<FloorId>`, `teleport:<year>` or `return:<FloorId>`, unique per floor. */
   id: string;
   kind: PadKind;
   /** Center of the pad (floor-local). */
@@ -53,8 +53,13 @@ export interface FloorLayout {
   accent: string;
   /** Door triggers checked by the Director every frame (generic for every floor). */
   doors?: DoorTrigger[];
-  /** Floor pads (elevator call pad on every floor, L2 year teleporters), checked by the Director every frame. */
+  /** Floor pads (elevator call pad on every floor, L2 year teleporters, the Return pad), checked by the Director every frame. */
   pads?: PadTrigger[];
+  /**
+   * Express Return pad (fast return, `nav/fastReturn.ts`): `buildFloorLayouts` adds a `return:<floor>`
+   * pad here that beams the rover to the elevator call pad. Set by floors with a far end (L2, L3).
+   */
+  returnPad?: Vec2;
   /** Rail floors: x positions a horizontal swipe snaps to (L2 year segments and the annex). */
   scrubStops?: number[];
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, walks, rides) follows them (`roadRoute`). */

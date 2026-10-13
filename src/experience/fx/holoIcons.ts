@@ -172,10 +172,12 @@ export const PAD_ICONS: Record<PadKind, Stroke[]> = {
   elevator: [shut([4, 3], [20, 3], [20, 21], [4, 21]), open([12, 3], [12, 21]), open([6, 10], [8, 7], [10, 10]), open([14, 14], [16, 17], [18, 14])],
   // Teleporter: three beams rising from a pad ring.
   teleport: [shut(...ring(12, 19, 8, 3)), open([8, 18], [8, 5]), open([12, 16], [12, 2]), open([16, 18], [16, 5])],
+  // Express Return: an arrow running into closed lift doors.
+  return: [shut([12, 4], [21, 4], [21, 20], [12, 20]), open([16.5, 4], [16.5, 20]), open([2, 12], [10, 12]), open([6.5, 8.5], [10, 12], [6.5, 15.5])],
 };
 
-/** Pad neon tones: the values of COLORS.cyan and COLORS.pink, kept as literals because config.ts imports the career layout, which imports this module. */
-export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6" };
+/** Pad neon tones: the values of COLORS.cyan, COLORS.pink and COLORS.green (fast return), kept as literals because config.ts imports the career layout, which imports this module. */
+export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6", return: "#34d399" };
 
 /** L4 zone icons in the same "Neon line" style: open book, paper, model cube, presentation screen. */
 export const LIBRARY_ICONS: Record<LibraryZone, Stroke[]> = {

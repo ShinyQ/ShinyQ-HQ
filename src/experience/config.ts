@@ -4,6 +4,7 @@ import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
+import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
 import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
@@ -143,7 +144,7 @@ function standard(id: FloorId, bounds: Rect, obstacles: Rect[] = [], spawn?: Vec
 function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
   if (!extras.career) return standard("L2", { minX: -24, maxX: corridorEnd(yearCount), minZ: -14, maxZ: 14 });
   const road = buildCareerRoad(extras.career);
-  return { ...standard("L2", road.bounds, road.obstacles), doors: road.doors, scrubStops: road.stops, road: road.network, pads: road.pads };
+  return { ...standard("L2", road.bounds, road.obstacles), doors: road.doors, scrubStops: road.stops, road: road.network, pads: road.pads, returnPad: road.returnPad };
 }
 
 /**
@@ -152,12 +153,17 @@ function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
  */
 const ELEVATOR_PAD_FACE: Record<FloorId, number> = { L1: Math.PI / 2, L2: 0, L3: Math.PI / 2, L4: Math.PI / 2, RF: Math.PI / 2 };
 
+/** Return pad icon yaw: toward the L2 rail camera (+z), elsewhere west, where the follow camera sits when the rover heads east to a floor's far end. */
+const RETURN_PAD_FACE: Record<FloorId, number> = { L1: -Math.PI / 2, L2: 0, L3: -Math.PI / 2, L4: -Math.PI / 2, RF: -Math.PI / 2 };
+
 /**
  * Every floor gets the elevator call pad on its approach (3 u in front of the shaft door, so it follows
- * the door constants), ahead of the floor's own pads (the L2 year teleporters).
+ * the door constants), then its Express Return pad when the layout sets `returnPad` (fast return), then
+ * the floor's own pads (the L2 year teleporters).
  */
-function withElevatorPad(layout: FloorLayout): FloorLayout {
-  return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(layout.pads ?? [])] };
+function withFloorPads(layout: FloorLayout): FloorLayout {
+  const back = returnPad(layout, RETURN_PAD_FACE[layout.id]);
+  return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(back ? [back] : []), ...(layout.pads ?? [])] };
 }
 
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
@@ -191,5 +197,5 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
     // RF roof deck: lead road, round plaza, comms and CV stations, free call pad (RF revamp plan).
     RF: buildRoofLayout().floor,
   };
-  return Object.fromEntries(FLOOR_IDS.map((id) => [id, withElevatorPad(layouts[id])])) as Record<FloorId, FloorLayout>;
+  return Object.fromEntries(FLOOR_IDS.map((id) => [id, withFloorPads(layouts[id])])) as Record<FloorId, FloorLayout>;
 }

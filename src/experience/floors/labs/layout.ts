@@ -302,6 +302,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       doors,
       road: network,
       viewZones,
+      // Fast return (F1): south-east of the reactor core, outside the ring road's driving width.
+      returnPad: { x: loopEnd.x + 10, z: 9 },
     },
     placed,
     directory,
