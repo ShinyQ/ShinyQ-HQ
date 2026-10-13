@@ -9,7 +9,8 @@ type Graphics = { pixelRatio: number; multisampling: number | null; bloomLevels:
 type RenderHandle = { resetPeak(): void; peakCalls: number; peakTriangles: number; programs(): number; programNames(): string[]; graphics?(): Graphics; warmFloors(): string[] };
 type GpuWindow = { __hq: { store: { getState(): { goToFloor(f: string): void } }; render: RenderHandle } };
 
-test.describe.configure({ timeout: 240_000 });
+// Four elevator rides on SwiftShader at 1440x900 take minutes on a busy runner.
+test.describe.configure({ timeout: 600_000 });
 test.use({ viewport: { width: 1440, height: 900 } });
 
 async function firstSession(page: Page, tier = "full") {
