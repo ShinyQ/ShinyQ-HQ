@@ -4,6 +4,7 @@ import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 import { reactorRect, REACTOR, ringEntry, ringPoints } from "./reactor";
+import { REACTOR_ROOM, reactorStop } from "./techReactor";
 
 /**
  * L3 Project Roads (walkable floors plan, part 2; consolidated in round 5, owner request 2026-10-13).
@@ -95,6 +96,10 @@ export interface PlacedPod {
 const VIEW_ZONE_DEPTH = 2;
 /** Follow camera yaw that puts the camera west of the rover, looking east along the floor. */
 const LOOK_EAST = (-3 * Math.PI) / 4;
+/** Follow camera yaw that puts the camera east of the rover, looking west along the floor. */
+const LOOK_WEST = Math.PI / 4;
+/** Camera zoom at the Tech Reactor stop: the core in front, both wing roads beside it. */
+const REACTOR_ZOOM = 1.3;
 
 export interface DirectoryBoard extends Rect {
   center: Vec2;
@@ -253,6 +258,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     // east, so the directory wall fills the middle of the frame with both wing roads beside it and the
     // shaft behind the camera. The zone lies between the wing roads, so driving them never triggers it.
     { id: "L3:overview", area: { minX: L.overview.x - 4, maxX: L.overview.x + 1, minZ: -4, maxZ: 4 }, yaw: LOOK_EAST, zoom: L.overviewZoom },
+    // Tech Reactor stop on the ring road's east point: the camera stands east of the rover and looks west
+    // over the core, so the lit pods and roads of both wings fill the frame beside it.
+    { id: REACTOR_ROOM, area: { minX: reactorStop(loopEnd).x - 2, maxX: reactorStop(loopEnd).x + 2, minZ: -2, maxZ: 2 }, yaw: LOOK_WEST, zoom: REACTOR_ZOOM },
     // At a door the camera looks at the pod front at 45 degrees: from the south-east (the default) for
     // pods facing south, from the north-east for pods facing north, so a pod never sits between the
     // camera and the rover.
@@ -304,6 +312,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       viewZones,
       // Fast return (F1): south-east of the reactor core, outside the ring road's driving width.
       returnPad: { x: loopEnd.x + 10, z: 9 },
+      stops: { [REACTOR_ROOM]: reactorStop(loopEnd) },
     },
     placed,
     directory,

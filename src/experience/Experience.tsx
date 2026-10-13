@@ -94,7 +94,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     roverRuntime.x = at.x;
     roverRuntime.z = at.z;
   };
-  const doorOf = (floor: FloorId, room?: RoomId) => (room ? layouts[floor].doors?.find((d) => d.room === room)?.at : undefined);
+  const doorOf = (floor: FloorId, room?: RoomId) => (room ? (layouts[floor].doors?.find((d) => d.room === room)?.at ?? layouts[floor].stops?.[room]) : undefined);
   const openStartRoom = () => {
     if (!startRoom || floorOf(startRoom) !== getHQStore().getState().floor) return;
     getHQStore().getState().openRoom(startRoom);
