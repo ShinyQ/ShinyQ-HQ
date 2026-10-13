@@ -61,7 +61,7 @@ export function Horizon({ layout }: { layout: CareerRoadLayout }) {
     () => ({
       bridge: createHoloMaterial({ mode: HOLO_MODE.flow, color: neonColor(BRIDGE, 1.8, tier), params: [HORIZON.bridge.dashes, 0, 0, 0] }),
       skyline: createHoloMaterial({ mode: HOLO_MODE.skyline, color: neonColor("#ffffff", 1.4, tier), opacity: full ? 0.5 : 0.42, params: [base, TOWER_FADE, 0, 0], fade: [260, 620] }),
-      glow: createHoloMaterial({ mode: HOLO_MODE.glow, color: neonColor(SUNRISE, 1.1, tier), opacity: full ? 0.6 : 0.45 }),
+      glow: createHoloMaterial({ mode: HOLO_MODE.glow, color: neonColor(SUNRISE, 1.1, tier), opacity: full ? 0.45 : 0.35 }),
       strips: createHoloMaterial({ mode: HOLO_MODE.strip, color: neonColor(BRIDGE, 1.6, tier), opacity: full ? 0.9 : 0.7 }),
       pillar: createHoloMaterial({ mode: HOLO_MODE.pillar, color: neonColor(ORIGIN, 1.8, tier), opacity: full ? 1 : 0.8 }),
     }),
