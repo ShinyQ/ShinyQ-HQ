@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { REPO_URL } from "@/lib/site";
 import { CvButton } from "./cv/CvButton";
 import { ExternalLink } from "./ExternalLink";
+import { OptOutToggle } from "./stats/OptOutToggle";
 import { PRIMARY_NAV } from "./SiteHeader";
 
 const linkClass = "inline-flex min-h-10 items-center gap-1 text-sm text-ink-2 transition hover:text-ink";
@@ -13,6 +14,7 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "footer" });
   const tn = await getTranslations({ locale, namespace: "nav" });
   const tc = await getTranslations({ locale, namespace: "common" });
+  const ts = await getTranslations({ locale, namespace: "stats" });
   const contact = getContact();
   const profile = getProfile();
   const elsewhere = [
@@ -75,6 +77,7 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
         <p className="pv-small mt-3 max-w-[72ch]" data-testid="footer-privacy">
           {t("privacy")}
         </p>
+        <OptOutToggle label={ts("optOut")} hint={ts("optOutHint")} className="pv-small mt-1 text-ink-2" />
       </div>
     </footer>
   );

@@ -31,6 +31,6 @@ describe("requestStats", () => {
     ["bad JSON", async () => new Response("<html>", { status: 200 }), updated],
     ["a network error", async () => Promise.reject(new TypeError("offline")), updated],
   ])("hides on %s", async (_, fetcher, now) => {
-    expect(await requestStats(fetcher as typeof fetch, () => now)).toEqual({ status: "hidden", snapshot: null, freshness: "hidden" });
+    expect(await requestStats(fetcher, () => now)).toEqual({ status: "hidden", snapshot: null, freshness: "hidden" });
   });
 });

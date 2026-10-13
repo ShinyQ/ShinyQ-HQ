@@ -8,6 +8,7 @@ import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { PerspectiveList } from "@/components/page/Perspectives";
 import { Portrait } from "@/components/page/Portrait";
+import { VisitsSection } from "@/components/stats/VisitsSection";
 import { getContent, getPerspectives, getProfile, getRoof, getSkills } from "@/content/load";
 import { perspectiveLinks } from "@/content/perspectives";
 import { formatYearMonth } from "@/lib/format";
@@ -97,6 +98,8 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
           <AskCta />
         </SectionSplit>
       </AskOnly>
+
+      <VisitsSection locale={locale} />
 
       <SectionSplit id="cv" title={t("cvTitle")} intro={t("cvIntro")}>
         <ul className="flex flex-wrap items-center gap-3">

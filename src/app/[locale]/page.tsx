@@ -6,6 +6,7 @@ import { FeaturedProject } from "@/components/page/Featured";
 import { HomeHero } from "@/components/page/Hero";
 import { SectionSplit, SectionWide } from "@/components/page/Layout";
 import { StatTicker } from "@/components/page/StatTicker";
+import { TickerVisits } from "@/components/stats/TickerVisits";
 import { TimelineRow } from "@/components/page/Timeline";
 import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
@@ -31,6 +32,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const tf = await getTranslations({ locale, namespace: "floors" });
   const tj = await getTranslations({ locale, namespace: "journey" });
   const tl = await getTranslations({ locale, namespace: "library" });
+  const ts = await getTranslations({ locale, namespace: "stats" });
+  const visitsScope = `${ts("window.d30")} · ${ts("source")} · ${ts("updated")}`;
   const profile = getProfile();
   const roof = getRoof();
   const pods = getPods();
@@ -66,6 +69,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             live={t("ticker.live")}
             updated={t("ticker.updated", { date: formatDate(getDynamicFacts().asOf, locale) })}
             pause={t("ticker.pause")}
+            extra={(copy) => <TickerVisits locale={locale} label={ts("tile")} live={t("ticker.live")} scope={visitsScope} copy={copy} />}
           />
         }
       />

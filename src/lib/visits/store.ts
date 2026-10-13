@@ -10,6 +10,8 @@ import { freshness, type Freshness } from "./model";
  */
 export const STATS_PATH = "/api/stats";
 
+export type StatsFetcher = (input: string, init?: RequestInit) => Promise<Response>;
+
 export type StatsStatus = "idle" | "loading" | "ready" | "hidden";
 
 export interface StatsState {
@@ -43,7 +45,7 @@ export function subscribeStats(listener: () => void): () => void {
   };
 }
 
-async function load(fetcher: typeof fetch, now: () => number): Promise<StatsState> {
+async function load(fetcher: StatsFetcher, now: () => number): Promise<StatsState> {
   try {
     const res = await fetcher(STATS_PATH, { headers: { accept: "application/json" }, credentials: "omit" });
     if (res.status !== 200) return set(HIDDEN);
@@ -56,7 +58,7 @@ async function load(fetcher: typeof fetch, now: () => number): Promise<StatsStat
 }
 
 /** Starts the one fetch of this page (later calls share it). */
-export function requestStats(fetcher: typeof fetch = (...args) => fetch(...args), now: () => number = Date.now): Promise<StatsState> {
+export function requestStats(fetcher: StatsFetcher = (input, init) => fetch(input, init), now: () => number = Date.now): Promise<StatsState> {
   if (!pending) {
     set({ ...state, status: "loading" });
     pending = load(fetcher, now);
