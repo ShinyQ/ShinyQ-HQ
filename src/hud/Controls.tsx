@@ -8,6 +8,7 @@ import type { Locale } from "@/content/schema";
 import { useAudio } from "@/lib/audio";
 import { AskPill } from "./ask/AskPill";
 import { HudLaunchers } from "./HudLaunchers";
+import { MotionChoices, MotionMenu } from "./MotionControl";
 
 function LangToggle({ onToggleLang }: { onToggleLang: () => void }) {
   const t = useTranslations("hud");
@@ -54,11 +55,11 @@ function SoundToggle({ withLabel = false }: { withLabel?: boolean }) {
 }
 
 const launcher = "glass glass-solid inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink";
-/** Page view is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
+/** Classic site is the one primary control of the 3D HUD (solid cyan, like Back to 3D in the Page View). */
 const primary =
   "inline-flex min-h-11 items-center gap-2 rounded-full bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
 
-/** Page view (highlighted, document icon on the left) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
+/** Classic site (highlighted, document icon on the left) with Ask AI on its right, the far right of the HUD. Quick view lives only in the Page View. */
 function ViewActions({ onExit }: { onExit: () => void }) {
   const t = useTranslations("hud");
   return (
@@ -74,7 +75,7 @@ function ViewActions({ onExit }: { onExit: () => void }) {
 
 /**
  * Desktop and tablet top-right controls (appendix 04 section 2): one row from 1024 px; below that,
- * Page view and Ask AI get their own row under the bar. From 1024 to 1099 px the "Ctrl K" chip hides
+ * Classic site and Ask AI get their own row under the bar. From 1024 to 1099 px the "Ctrl K" chip hides
  * (`compactShortcut`) so the row clears the profile card in Indonesian on Windows and Linux.
  */
 export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
@@ -84,13 +85,14 @@ export function TopBar({ onExit, onToggleLang }: { onExit: () => void; onToggleL
         <HudLaunchers buttonClassName={launcher} labelClassName="sr-only md:not-sr-only" compactShortcut />
         <LangToggle onToggleLang={onToggleLang} />
         <SoundToggle />
+        <MotionMenu />
       </div>
       <ViewActions onExit={onExit} />
     </div>
   );
 }
 
-/** Phones: Ask Rover, search and the menu (language, sound) on the first row; Page view and Ask AI on the second. */
+/** Phones: Ask Rover, search and the menu (language, sound, motion) on the first row; Classic site and Ask AI on the second. */
 export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onToggleLang: () => void }) {
   const t = useTranslations("hud");
   const [open, setOpen] = useState(false);
@@ -114,9 +116,10 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
       </div>
       <ViewActions onExit={onExit} />
       {open && (
-        <div id={id} className="glass glass-solid flex w-56 flex-col gap-2 p-3">
+        <div id={id} className="glass glass-solid relative z-20 flex w-64 flex-col gap-2 p-3">
           <LangToggle onToggleLang={onToggleLang} />
           <SoundToggle withLabel />
+          <MotionChoices />
         </div>
       )}
     </div>

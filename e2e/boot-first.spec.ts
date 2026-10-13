@@ -45,7 +45,7 @@ test("3D-capable visit never shows the Page View before the HQ", async ({ page }
   expect(errors).toEqual([]);
 });
 
-test("static tier and stored page view show the page immediately", async ({ page }) => {
+test("static tier and stored classic site show the page immediately", async ({ page }) => {
   await page.goto("/en?tier=static", { waitUntil: "domcontentloaded" });
   expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
   await expect(page.locator("#site-shell")).toBeVisible();
@@ -203,7 +203,7 @@ test("quiet boot: the timeout release shows the skipped page without layout shif
   expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBe(0);
 });
 
-test("boot card: who the owner is at first paint, and Page view works before any JavaScript", async ({ page }) => {
+test("boot card: who the owner is at first paint, and Classic site works before any JavaScript", async ({ page }) => {
   await asHumanBrowser(page);
   await page.route("**/_next/static/chunks/**/*.js", (route) => route.abort());
   await page.goto("/en?tier=lite", { waitUntil: "domcontentloaded" });
@@ -218,7 +218,7 @@ test("boot card: who the owner is at first paint, and Page view works before any
   expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBe("page");
 });
 
-test("boot card: the overlay keeps the card in place, Boot rover stays required, Page view leaves 3D without a reload", async ({ page }) => {
+test("boot card: the overlay keeps the card in place, Boot rover stays required, Classic site leaves 3D without a reload", async ({ page }) => {
   const errors = collectErrors(page);
   await page.addInitScript(() => {
     const w = window as unknown as { __cls: number };

@@ -27,6 +27,7 @@ export const ALL_SPECS = [
   "lifecycle",
   "memory",
   "missions",
+  "motion",
   "onboarding",
   "pads",
   "pageview",
@@ -90,6 +91,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career"] },
 
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
+  // Motion setting: the preference, its HUD control and the one-time hint.
+  { test: /^src\/lib\/(motion|reduced-motion)\.ts$|^src\/hud\/(MotionControl\.tsx|dialog\/MotionHintLayer\.tsx)$/, specs: ["motion", "hud", "ride", "onboarding"] },
   { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk", "camera"] },
 
   // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.
@@ -143,7 +146,7 @@ export const RULES: Rule[] = [
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
-  { test: /^src\/store\//, specs: ["experience", "lifecycle"] },
+  { test: /^src\/store\//, specs: ["experience", "lifecycle", "motion"] },
 
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle"] },

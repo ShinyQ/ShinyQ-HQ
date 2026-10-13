@@ -9,7 +9,7 @@ export interface MemoryCounts {
 
 let renderer: WebGLRenderer | null = null;
 
-/** The canvas registers its renderer on creation and clears it on unmount (Page view, crash remount). */
+/** The canvas registers its renderer on creation and clears it on unmount (Classic site, crash remount). */
 export function trackRenderer(gl: WebGLRenderer | null): void {
   renderer = gl;
 }

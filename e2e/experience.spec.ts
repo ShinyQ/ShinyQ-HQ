@@ -386,10 +386,10 @@ test.describe("tiers and views", () => {
     await expect(page.getByTestId("hq")).toHaveCount(0);
   });
 
-  test("page view shows a prominent Back to 3D button right away", async ({ page }) => {
+  test("the classic site shows a prominent Back to 3D button right away", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await enterHQ(page);
-    await page.getByRole("button", { name: "Page view" }).click();
+    await page.getByRole("button", { name: "Classic site" }).click();
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("#site-shell")).not.toHaveAttribute("inert", "");
     const back = page.getByRole("button", { name: "Back to 3D" });
@@ -411,17 +411,17 @@ test.describe("tiers and views", () => {
     await waitForHQ(page);
   });
 
-  test("the 3 key returns from page view", async ({ page }) => {
+  test("the 3 key returns from the classic site", async ({ page }) => {
     await enterHQ(page);
-    await page.getByRole("button", { name: "Page view" }).click();
+    await page.getByRole("button", { name: "Classic site" }).click();
     await expect(page.getByRole("button", { name: "Back to 3D" })).toBeVisible({ timeout: 20_000 });
     await page.keyboard.press("3");
     await waitForHQ(page);
   });
 
-  test("the landing's Enter the 3D HQ opens the tower from page view", async ({ page }) => {
+  test("the landing's Enter the 3D HQ opens the tower from the classic site", async ({ page }) => {
     await enterHQ(page);
-    await page.getByRole("button", { name: "Page view" }).click();
+    await page.getByRole("button", { name: "Classic site" }).click();
     await expect(page.getByTestId("hq")).toHaveCount(0, { timeout: 20_000 });
     const enter = page.getByRole("link", { name: en.home.hero.enter3d });
     await expect(enter).toBeVisible();

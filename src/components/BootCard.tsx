@@ -11,7 +11,7 @@ export interface BootWho {
   role: string;
 }
 
-/** The small "Page view" link: a real `?view=page` link (works before hydration, see takePageViewParam). */
+/** The small "Classic site" link: a real `?view=page` link (works before hydration, see takePageViewParam). */
 export interface BootPageLink {
   href: string;
   label: string;
@@ -42,14 +42,14 @@ export interface BootCardProps {
 /**
  * The boot card shared by the SSR boot cover and the 3D boot overlay, so the handoff from one to
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
- * There is no skip: the boot and the intro always play in full (owner decision). "Page view" leaves
+ * There is no skip: the boot and the intro always play in full (owner decision). "Classic site" leaves
  * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
  */
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
 
 export function BootCard({ startRef, ...p }: BootCardProps) {
-  // On the cover only the owner block and the Page view link are for assistive tech; the log is decoration.
+  // On the cover only the owner block and the Classic site link are for assistive tech; the log is decoration.
   const deco = p.placeholder ? true : undefined;
   return (
     <div className="hq-boot-card">

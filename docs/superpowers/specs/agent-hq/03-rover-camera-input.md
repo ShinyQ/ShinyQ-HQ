@@ -109,7 +109,7 @@ Every device input maps to an **intent**. Floors and the HUD only consume intent
 | `toggle` | `sound`, `lang`, `readme` | HUD buttons, keys `m`, `l`, `t` |
 
 - Gestures inside HUD panels never reach the world (pointer capture at the panel root).
-- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a boost toggle beside it (above it on phones; owner request, October 2026): one tap turns boost on (`aria-pressed="true"`, lit cyan with a glowing dot), the next turns it off, and a floor change, an elevator ride, Page view or a reload reset it (never persisted). Boost still applies only while the joystick drives. Keyboards hold Shift to boost. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
+- The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a boost toggle beside it (above it on phones; owner request, October 2026): one tap turns boost on (`aria-pressed="true"`, lit cyan with a glowing dot), the next turns it off, and a floor change, an elevator ride, Classic site or a reload reset it (never persisted). Boost still applies only while the joystick drives. Keyboards hold Shift to boost. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
 - Held keys emit `move` every frame, with no dependency on OS key repeat.
 - A press becomes a drag only after it travels past the threshold (6 px mouse or pen, 8 px touch). A shorter press stays a click or tap (it picks a target, or does nothing on empty floor); a longer one only rotates.
 - Keyboard shortcuts are ignored while focus is in a text input (palette search).

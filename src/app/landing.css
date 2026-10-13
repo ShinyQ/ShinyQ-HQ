@@ -2,7 +2,7 @@
   Landing layer: the cinematic first screen of the Page View home (src/components/page/Hero.tsx).
   Motion is CSS only and compositor only (transform, opacity): no JavaScript, and the backdrop holds no
   image or text, so it is never an LCP candidate. Every animation starts after 0.5 s with its first
-  keyframe as the still frame. prefers-reduced-motion and the "Pause motion" checkbox stop it.
+  keyframe as the still frame. Reduced motion (the OS setting or the Motion override) and the "Pause motion" checkbox stop it.
 */
 @layer components {
   /* First screen: the header is 60 px plus the 49 px tab row below lg, 68 px from lg. */
@@ -327,28 +327,35 @@
     animation-play-state: paused;
   }
 
-  /* Reduced motion: a still frame and the stats wrapped in rows (no scroll region). The global rule only shortens
-     durations, which would make infinite loops jump, so the names are removed here. */
-  @media (prefers-reduced-motion: reduce) {
-    .hx-glow,
-    .hx-ground-grid,
-    .hx-dot,
-    .hx-tick-track {
+  /* Reduced motion (the OS setting or the Motion override, see globals.css): a still frame and the stats wrapped in
+     rows (no scroll region). The global rule only shortens durations, which would make infinite loops jump, so the
+     names are removed here. */
+  .hx-glow,
+  .hx-ground-grid,
+  .hx-dot,
+  .hx-tick-track {
+    @variant motion-reduce {
       animation: none;
     }
+  }
 
-    .hx-packet,
-    .hx-pause,
-    .hx-tick-track[aria-hidden="true"] {
+  .hx-packet,
+  .hx-pause,
+  .hx-tick-track[aria-hidden="true"] {
+    @variant motion-reduce {
       display: none;
     }
+  }
 
-    .hx-tick-view {
+  .hx-tick-view {
+    @variant motion-reduce {
       overflow: visible;
       mask-image: none;
     }
+  }
 
-    .hx-tick-track {
+  .hx-tick-track {
+    @variant motion-reduce {
       flex-wrap: wrap;
       min-width: 0;
       column-gap: 32px;

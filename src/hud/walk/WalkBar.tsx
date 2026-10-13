@@ -9,7 +9,7 @@ import type { WalkController, WalkState } from "@/experience/missions/walk";
 export type WalkPlacement = "top" | "bottom" | "bottom-raised" | "dock";
 
 const CARD: Record<WalkPlacement, string> = {
-  // Phones: under both top rows (menu, then Page view and Ask AI). Tablets: under the Page view row, right of the profile card.
+  // Phones: under both top rows (menu, then Classic site and Ask AI). Tablets: under the Classic site row, right of the profile card.
   top: "top-[116px] left-3 right-3 sm:top-[124px] sm:left-auto sm:right-4 sm:w-[min(480px,calc(100%-290px))]",
   bottom: "bottom-4 left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
   // Coarse pointers keep the joystick in the bottom-left corner.

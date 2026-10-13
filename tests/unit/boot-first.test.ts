@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { bootFirstScript, canOffer3D, isBotLike, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
+import { bootFirstScript, canOffer3D, isBotLike, MOTION_STORE_KEY, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
+import { STORE_KEY } from "@/store/useHQStore";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
 
@@ -14,6 +15,8 @@ interface ScriptInput {
   webdriver?: boolean;
   /** What canvas.getContext("webgl2") reports in the post-paint probe. */
   gl?: { renderer: string } | null;
+  /** localStorage entries (the persisted store `hq:v1`). */
+  local?: Record<string, string>;
 }
 
 function runScript(input: ScriptInput) {
@@ -35,7 +38,8 @@ function runScript(input: ScriptInput) {
     ? { RENDERER: 1, getExtension: (n: string) => (n === "WEBGL_debug_renderer_info" ? { UNMASKED_RENDERER_WEBGL: 2 } : null), getParameter: () => input.gl!.renderer }
     : null;
   const document = { documentElement, createElement: () => ({ getContext: () => gl }) };
-  const run = new Function("location", "sessionStorage", "navigator", "document", "WebGL2RenderingContext", "setTimeout", "requestAnimationFrame", "window", "history", bootFirstScript());
+  const local = new Map<string, string>(Object.entries(input.local ?? {}));
+  const run = new Function("location", "sessionStorage", "navigator", "document", "WebGL2RenderingContext", "setTimeout", "requestAnimationFrame", "window", "history", "localStorage", bootFirstScript());
   run(
     { pathname: input.path, search: input.search ?? "", hash: "" },
     { getItem: (k: string) => session.get(k) ?? null, setItem: (k: string, v: string) => session.set(k, v) },
@@ -46,6 +50,7 @@ function runScript(input: ScriptInput) {
     (fn: () => void) => frames.push(fn),
     win,
     history,
+    { getItem: (k: string) => local.get(k) ?? null },
   );
   /** Runs the first animation frame and the probe it schedules. */
   const paint = () => {
@@ -68,7 +73,7 @@ describe("shouldBootFirst", () => {
     }
   });
 
-  it("respects tier=static, stored page view, missing WebGL2 and saveData", () => {
+  it("respects tier=static, stored classic site, missing WebGL2 and saveData", () => {
     expect(shouldBootFirst({ ...base, search: "?tier=static" })).toBe(false);
     expect(shouldBootFirst({ ...base, search: "?x=1&tier=static" })).toBe(false);
     expect(shouldBootFirst({ ...base, storedView: "page" })).toBe(false);
@@ -268,5 +273,27 @@ describe("bootFirstScript ?view=page", () => {
     expect(r.attrs.get("data-hq-3d")).toBe("1");
     expect(r.session.get("hq:view")).toBe("page");
     expect(r.replaced).toEqual(["/en"]);
+  });
+});
+
+describe("bootFirstScript motion override", () => {
+  const stored = (motion: string) => ({ [STORE_KEY]: JSON.stringify({ state: { visited: [], firstVisit: false, locale: "en", motion }, version: 2 }) });
+
+  it("reads the persisted store key", () => {
+    expect(MOTION_STORE_KEY).toBe(STORE_KEY);
+  });
+
+  it("sets html[data-motion] before first paint on every page, booting or not", () => {
+    expect(runScript({ path: "/en", local: stored("full") }).attrs.get("data-motion")).toBe("full");
+    expect(runScript({ path: "/en/blog/x", local: stored("reduced") }).attrs.get("data-motion")).toBe("reduced");
+    expect(runScript({ path: "/en", search: "?tier=static", local: stored("reduced") }).attrs.get("data-motion")).toBe("reduced");
+  });
+
+  it("leaves it unset under System, without storage or on garbage", () => {
+    expect(runScript({ path: "/en", local: stored("system") }).attrs.has("data-motion")).toBe(false);
+    expect(runScript({ path: "/en" }).attrs.has("data-motion")).toBe(false);
+    const r = runScript({ path: "/en", local: { [STORE_KEY]: "{oops" } });
+    expect(r.attrs.has("data-motion")).toBe(false);
+    expect(r.attrs.get("data-hq-boot")).toBe("1");
   });
 });

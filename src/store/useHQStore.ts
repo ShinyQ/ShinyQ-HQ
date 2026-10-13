@@ -8,6 +8,8 @@ import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
+import { applyMotionAttr, isMotionPref, resolveReducedMotion, type MotionPref } from "@/lib/motion";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { skipUnchanged } from "./persist-storage";
 
 export type Phase =
@@ -62,7 +64,12 @@ export interface HQState {
   // Additions
   ride: Ride | null;
   device: DeviceState;
+  /** Effective reduced motion: `resolveReducedMotion(motion, systemReducedMotion)`. Every 3D consumer reads this. */
   reducedMotion: boolean;
+  /** Visitor preference (HUD Motion control, Cmd-K): System follows the OS, Full and Reduced override it. Persisted. */
+  motion: MotionPref;
+  /** `prefers-reduced-motion: reduce` as the OS reports it. */
+  systemReducedMotion: boolean;
   notice: string | null;
   /** README easter egg: the drawer shows the terminal view of the room (Phase 4). */
   readme: boolean;
@@ -102,7 +109,10 @@ export interface HQState {
   recover: (tier: GpuTier) => void;
   setRover: (rover: Partial<RoverState>) => void;
   setDevice: (device: Partial<DeviceState>) => void;
-  setReducedMotion: (reduced: boolean) => void;
+  /** Records the OS flag (`prefers-reduced-motion`) and re-resolves `reducedMotion`. */
+  setReducedMotion: (systemReduced: boolean) => void;
+  /** Sets the Motion preference, re-resolves `reducedMotion` and mirrors it on `html[data-motion]`. */
+  setMotion: (motion: MotionPref) => void;
   notify: (notice: string | null) => void;
   /** Opens a pad picker; only while exploring, with no ride and no beam running. */
   openPicker: (picker: PickerRequest) => void;
@@ -117,8 +127,10 @@ export interface HQState {
 
 export const STORE_KEY = "hq:v1";
 
-/** Keys the store persists (appendix 06 section 2); `sound` is persisted by the audio engine. */
-type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale">;
+/** Keys the store persists (appendix 06 section 2, plus `motion`); `sound` is persisted by the audio engine. */
+type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale" | "motion">;
+/** Version 2 added `motion` (version 1 payloads migrate to System). */
+export const STORE_VERSION = 2;
 
 /** Mirror tolerance for rover numbers (world units, radians, u/s): far below anything a reader shows. */
 export const POSE_EPSILON = 1e-4;
@@ -160,7 +172,9 @@ export function createHQStore(storage?: StateStorage) {
         firstVisit: true,
         ride: null,
         device: { viewport: "desktop", camera: "desktop", coarse: false },
-        reducedMotion: false,
+        reducedMotion: prefersReducedMotion(),
+        motion: "system",
+        systemReducedMotion: prefersReducedMotion(),
         notice: null,
         readme: false,
         picker: null,
@@ -227,7 +241,11 @@ export function createHQStore(storage?: StateStorage) {
           if (!sameRover(current, rover)) set({ rover: { ...current, ...rover } });
         },
         setDevice: (device) => set({ device: { ...get().device, ...device } }),
-        setReducedMotion: (reducedMotion) => set({ reducedMotion }),
+        setReducedMotion: (systemReducedMotion) => set({ systemReducedMotion, reducedMotion: resolveReducedMotion(get().motion, systemReducedMotion) }),
+        setMotion: (motion) => {
+          set({ motion, reducedMotion: resolveReducedMotion(motion, get().systemReducedMotion) });
+          applyMotionAttr(motion);
+        },
         notify: (notice) => set({ notice }),
         openPicker: (picker) => {
           const { phase, ride, beam } = get();
@@ -253,10 +271,16 @@ export function createHQStore(storage?: StateStorage) {
       }),
       {
         name: STORE_KEY,
-        version: 1,
+        version: STORE_VERSION,
         storage: skipUnchanged(createJSONStorage<Persisted>(() => storage ?? localStorage)),
         // `sound` is owned and persisted by the audio engine (localStorage "hq:sound"); the store mirrors it.
-        partialize: ({ visited, firstVisit, locale }): Persisted => ({ visited, firstVisit, locale }),
+        partialize: ({ visited, firstVisit, locale, motion }): Persisted => ({ visited, firstVisit, locale, motion }),
+        migrate: (persisted, version): Persisted => (version < 2 ? { ...(persisted as Persisted), motion: "system" } : (persisted as Persisted)),
+        merge: (persisted, current) => {
+          const saved = (persisted ?? {}) as Partial<Persisted>;
+          const motion = isMotionPref(saved.motion) ? saved.motion : "system";
+          return { ...current, ...saved, motion, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
+        },
       },
     ),
   );

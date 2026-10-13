@@ -10,7 +10,7 @@ const MAX_LINE = 110;
 describe("Rover dialog copy", () => {
   it("keeps every spoken line short enough for three rows on a phone", () => {
     for (const messages of [en, id]) {
-      const spoken = [messages.dialog.onboarding, messages.dialog.floor, messages.dialog.hints.kind, messages.dialog.hints.object];
+      const spoken = [messages.dialog.onboarding, messages.dialog.floor, messages.dialog.hints.kind, messages.dialog.hints.object, messages.dialog.motion];
       for (const group of spoken) {
         for (const { path, value } of collectStrings(group)) {
           expect(value.length, path).toBeLessThanOrEqual(MAX_LINE);

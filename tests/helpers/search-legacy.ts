@@ -3,7 +3,8 @@ import type { LocalizedText, RoomId } from "@/content/schema";
 import type { HudIndex } from "@/hud/index-data";
 import type { PaletteActionId, PaletteEntry, PaletteGroup, PaletteSearchOptions } from "@/hud/palette-types";
 
-const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
+// Typed Partial since the Motion actions (October 2026) were added after the freeze; logic unchanged.
+const ACTION_KEYWORDS: Partial<Record<PaletteActionId, string[]>> = {
   "view-cv": ["cv", "resume", "pdf", "view", "lihat", "curriculum vitae"],
   "copy-email": ["email", "contact", "mail", "copy", "salin", "kontak"],
   "toggle-language": ["language", "bahasa", "english", "indonesia", "inggris"],
@@ -75,7 +76,7 @@ export function buildPaletteEntries(
       key: `action:${id}`,
       group: "actions",
       title: index.actionLabels[id],
-      keywords: ACTION_KEYWORDS[id],
+      keywords: ACTION_KEYWORDS[id] ?? [],
       target: { type: "action", id },
     });
   }

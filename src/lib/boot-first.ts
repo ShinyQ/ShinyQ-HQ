@@ -4,6 +4,7 @@
  * canvas renders its first frame (or the gate falls back to the page).
  */
 import { SOFTWARE_RENDERER } from "./gpu-tier";
+import { MOTION_ATTR, storedMotion } from "./motion";
 import { markOnce, PERF_MARKS } from "./perf-marks";
 
 export const BOOT_ATTR = "data-hq-boot";
@@ -11,6 +12,8 @@ export const BOOT_RELEASED_ATTR = "data-hq-boot-released";
 export const BOOT_TIMEOUT_MS = 8000;
 /** sessionStorage key: "static" once the gate auto-detected the static tier (software renderer). */
 export const PROBE_KEY = "hq:probe";
+/** The persisted HQ store (`STORE_KEY` in src/store/useHQStore.ts); its `motion` drives html[data-motion]. */
+export const MOTION_STORE_KEY = "hq:v1";
 
 /** Set on <html> before first paint wherever 3D could run; the landing shows "Enter the 3D HQ" only then. */
 export const OFFER_3D_ATTR = "data-hq-3d";
@@ -80,7 +83,7 @@ export function canOffer3D(i: Offer3DInput): boolean {
 }
 
 /**
- * `?view=page` is the boot card's "Page view" link (a real link, so it works before hydration): the
+ * `?view=page` is the boot card's "Classic site" link (a real link, so it works before hydration): the
  * head script stores the Page View choice and drops the parameter. Returns the search without it, or
  * null when it is absent. Self-contained (no imports, no closures) for toString().
  */
@@ -99,12 +102,14 @@ export function takePageViewParam(search: string): string | null {
  * the first paint (before hydration) it probes WebGL once and stores the result in
  * `window.__hqProbe` for the gate (readTierInputs). Without WebGL2 or on a software renderer it
  * releases the cover at once and remembers the verdict for the session, unless `?tier=` forces one.
- * It also sets html[data-hq-3d] (canOffer3D) on every page, before first paint.
+ * It also sets html[data-hq-3d] (canOffer3D) and html[data-motion] (the visitor's Motion override,
+ * storedMotion) on every page, before first paint.
  */
 export function bootFirstScript(): string {
   return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
 var q=(${takePageViewParam.toString()})(location.search);if(q!==null){s="page";try{sessionStorage.setItem("hq:view","page")}catch(e){}try{history.replaceState(history.state,"",location.pathname+q+location.hash)}catch(e){}}
-var c=navigator.connection,d=document.documentElement,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
+var d=document.documentElement;try{var m=(${storedMotion.toString()})(localStorage.getItem("${MOTION_STORE_KEY}"));if(m)d.setAttribute("${MOTION_ATTR}",m)}catch(e){}
+var c=navigator.connection,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
 var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:w,saveData:sd,bot:b,probe:p});
 if(!on)return;d.setAttribute("${BOOT_ATTR}","1");

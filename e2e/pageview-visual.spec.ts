@@ -58,7 +58,7 @@ const LANDING_VIEWPORTS = [
 for (const v of LANDING_VIEWPORTS) {
   test(`Landing at ${v.width}x${v.height}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "no-preference" });
-    // Page view stored for the session: the gate stays on the page (no 3D chunk) but the tier is lite.
+    // Classic site stored for the session: the gate stays on the page (no 3D chunk) but the tier is lite.
     await context.addInitScript(() => sessionStorage.setItem("hq:view", "page"));
     const page = await context.newPage();
     await page.route("**/api/ask", (route) =>

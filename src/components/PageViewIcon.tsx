@@ -1,4 +1,4 @@
-/** Document glyph left of "Page view" (owner request): the portfolio as a page. Same stroke style as the HUD icons. */
+/** Document glyph left of "Classic site" (owner request): the portfolio as a page. Same stroke style as the HUD icons. */
 export function PageViewIcon({ size = 18, testId }: { size?: number; testId?: string }) {
   return (
     <svg
