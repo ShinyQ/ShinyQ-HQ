@@ -127,7 +127,7 @@ describe("specsForChanges", () => {
 
   it("maps the render pipeline and the tower to the gpu spec", () => {
     expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
-    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride"]);
+    expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "memory", "ride"]);
   });
 });
 

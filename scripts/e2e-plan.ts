@@ -94,9 +94,13 @@ export const RULES: Rule[] = [
   },
 
   // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
-  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/(memoryProbe|sharedResources)\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
+  { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/(memoryProbe|sharedResources)\.ts)$/, specs: ["experience", "memory"] },
+  // Floor mounting also decides renderer memory; the tower and FloorLevel keep their camera, ride and gpu specs.
+  { test: /^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "gpu", "memory", "ride"] },
+  { test: /^src\/experience\/tower\/(Tower|near)\.tsx?$/, specs: ["experience", "gpu", "memory", "ride"] },
   // Frame loop, cover pauses, crash recovery and the ride/beam clock (round 5).
-  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts|tower\/rideClock\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
+  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
+  { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },
