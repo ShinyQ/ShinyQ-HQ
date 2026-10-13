@@ -38,7 +38,8 @@ describe("holo fx shader", () => {
       expect(src.split("{").length).toBe(src.split("}").length);
       expect(src.split("(").length).toBe(src.split(")").length);
     }
-    expect(HOLO_FS).not.toMatch(/}\s*}\s*else/);
+    // A branch closed twice at the same depth (the bug this guards against): "  }\n  } else".
+    expect(HOLO_FS).not.toMatch(/\n( +)}\n\1} else/);
     const a = createHoloMaterial({ mode: HOLO_MODE.plate });
     const b = createHoloMaterial({ mode: HOLO_MODE.fall, fade: [10, 40] });
     expect(a.vertexShader).toBe(b.vertexShader);
