@@ -17,6 +17,7 @@ export const ALL_SPECS = [
   "deploy",
   "drawer-solid",
   "experience",
+  "fast-return",
   "gallery",
   "gpu",
   "highlights",
@@ -86,10 +87,12 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions", "walk"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
+  // Fast return (F1): Express Return pads, the 25 u rule and the beam into the car.
+  { test: /^src\/experience\/nav\/fastReturn\.ts$|^src\/experience\/fx\/ReturnPadSign\.tsx$/, specs: ["fast-return", "pads", "ride", "experience"] },
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
-  { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "experience"] },
+  { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "fast-return", "experience"] },
   // Point-and-go: the registry, pick logic, the hit layer and its HUD status (pads and career rooms are clicked through it).
-  { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career"] },
+  { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career", "fast-return"] },
 
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
   // Motion setting: the preference, its HUD control and the one-time hint.
@@ -112,8 +115,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
   // 3D floors.
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle"] },
-  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return"] },
+  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
@@ -134,7 +137,7 @@ export const RULES: Rule[] = [
   { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
-  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu"] },
+  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
