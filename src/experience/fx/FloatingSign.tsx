@@ -24,7 +24,7 @@ const TEXT_LIFT = 0.03;
  * mode: a dark fill with a neon rim in the sign color) and every text in one `BatchedLabels`. Each
  * frame every sign turns to the camera (yaw only, `signFacing`), so it reads left to right from any
  * camera yaw and never shows its back, and fades with the rover's distance along x when it has a
- * `fadeX` (L2). `name` keys the `__hq.probes.signs` entry e2e reads. Not raycast: clickable signs are
+ * `fadeX` (L2); with every sign faded out the group draws nothing. `name` keys the `__hq.probes.signs` entry e2e reads. Not raycast: clickable signs are
  * point-and-go targets (interact/registry.ts).
  */
 export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[]; name: string; tier: GpuTier }) {
@@ -77,6 +77,7 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
     const cam = { x: camera.position.x, z: camera.position.z };
     const members = batch.current?.members;
     const probe: { text: string; facing: number }[] = [];
+    let any = false;
     signs.forEach((s, i) => {
       const at = { x: origin.x + s.x, z: origin.z + s.z };
       const yaw = signFacing(at, cam);
@@ -95,10 +96,16 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
         member.translateZ(TEXT_LIFT);
         member.fillOpacity = shown ? k * (s.opacity ?? 1) : 0;
       }
-      if (shown) probe.push({ text: s.text, facing: signFacingDot(yaw, at, cam) });
+      if (shown) {
+        any = true;
+        probe.push({ text: s.text, facing: signFacingDot(yaw, at, cam) });
+      }
     });
     mesh.instanceMatrix.needsUpdate = true;
     alphas.needsUpdate = true;
+    // Every sign faded out (L2 far from its plazas): skip both draw calls.
+    mesh.visible = any;
+    if (batch.current) batch.current.batch.visible = any;
     sceneProbes.signs[name] = probe;
   });
 
