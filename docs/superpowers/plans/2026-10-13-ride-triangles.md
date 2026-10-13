@@ -28,14 +28,20 @@ Per-frame attribution (scratch spec, `renderBufferDirect` hooked per draw) shows
 
 Rendering each mesh alone over the frame without its floor (real GPU, depth test, changed pixels) shows the floor under a parked slab is partly visible from the west-side ride camera (up to 74k px of L2 under L3, 169k px of L1 under L2, through the glass shaft and under the slab's west edge), so hiding whole floors would change the look. But the visible part is only the grid plane, road strip, pad glows and a few rings near the shaft; every heavy mesh (room labels 8k, door glows 4.4k, lobby tori, label batches) adds 0 px. Hence a per-mesh cull.
 
+## Changes made during execution
+
+- The whole-box shadow test alone did not cull L2 under L3: L2's road-long batches (room labels, door glows) reach past L3's east edge. Their far end is off screen, so each box is first clipped to the view frustum (`clipBoxToFrustum` in `slabShadow.ts`, exact vertex enumeration of the convex intersection, then its bounds) and a box with no part in view is culled outright.
+- The lite L3 to L2 peak (31,306) was the first frame after arrival: the store's ride is already null while FloorLevel's visibility still holds it (one-frame useFrame order, also on main). The cull therefore runs on every render outside boot and intro; in explore no floor below the rover is visible, so it finds nothing.
+- The hook install moved into `rideCull.ts` (`installRideCull`): the React compiler lint forbids mutating the scene returned by `useThree` inside the component.
+
 ## File Structure
 
 - Create `src/experience/tower/slabShadow.ts`: pure geometry (`inSlabShadow`, `boxCorners`), no three import.
 - Create `src/experience/tower/rideCull.ts`: three side. `cullUnderSlabs(scene, camera, input)` decides and hides, `restoreCulled()` restores; cached world bounds per object (position and instance matrix versions); `rideCullStats` probe.
-- Create `src/experience/tower/RideCull.tsx`: mounts the scene hooks (chains any existing hooks), active only while `store.ride` is set and not in the exterior.
+- Create `src/experience/tower/RideCullHooks.tsx` (not `RideCull.tsx`: macOS file systems are case-insensitive and `rideCull.ts` exists): mounts `installRideCull` on the scene, active outside boot and intro.
 - Modify `src/experience/tower/floorRegistry.ts`: `registerFloorSlab` / `getFloorSlab` (the fill mesh FloorLevel draws).
 - Modify `src/experience/tower/FloorLevel.tsx`: register the slab fill mesh.
-- Modify `src/experience/tower/Tower.tsx`: mount `<RideCull layouts={layouts} />`.
+- Modify `src/experience/tower/Tower.tsx`: mount `<RideCull />`.
 - Modify `src/experience/Experience.tsx`: expose `rideCull` stats on `window.__hq.probes`.
 - Test `tests/unit/slab-shadow.test.ts`, `tests/unit/ride-cull.test.ts`.
 - Modify `e2e/perf/peaks.spec.ts` (drop `KNOWN_OVER` ids), `e2e/visual-gate.spec.ts` (ride poses for both rides at parked and dolly frames), `docs/superpowers/specs/agent-hq/08-quality-acceptance.md`, `AGENTS.md` (3D experience notes), `README.md` only if it lists the known-over entries.
