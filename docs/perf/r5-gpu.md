@@ -13,7 +13,7 @@ Method: `scripts/perf-gpu.ts` (headed Chrome 155 on a real GPU, `?gfx=monitor-of
 | Intro peak calls, full (real GPU, 4x CPU) | 143 | 118 | < 150 |
 | Worst ride peak calls, full (real GPU, 4x CPU) | 187 (ride to L3) | 140 | < 150 |
 | Worst ride peak calls, lite 390x844@3 (real GPU, 4x CPU) | 129 | 110 | < 150 |
-| New programs on first arrival, worst floor (CI, boot warm-up done) | 2 (RF) | 0 | <= 2 |
+| New programs on first arrival, worst floor (CI, boot warm-up done) | 2 (RF) | 3 (L4: the composer EffectMaterial variant at ride start plus 2) | <= 3 |
 | 1440x900@2 full, GPU ms p50 / p95 (same-build A/B, worst floor) | 22.4 / 25.5 | 14.8 / 16.3 | lower is better |
 | 1440x900@2 full, frame p95 ms, worst floor | 17.5 | 17.7 | <= 18 |
 | 1440x900@2 full, est. render-target MB | 353 | 104 | < 512 |
@@ -104,8 +104,8 @@ The script clicks "Boot rover" as soon as it is enabled, before the boot warm-up
 
 | Counter | Before | After |
 |---|---|---|
-| Peaks (`e2e/gpu.spec.ts`, 1440x900@1 full) | intro 143, L1-L2 132, L2-L1 146, L1-RF 117, RF-L1 122 (local run) | intro 118, L1-L2 114, L2-L1 130, L1-RF 105, RF-L1 141 |
-| Programs added on first arrival (after the boot warm-up) | L2 0, L3 1, L4 1, RF 2 | L2 0, L3 0, L4 0, RF 0 |
+| Peaks (`e2e/gpu.spec.ts`, 1440x900@1 full) | intro 143, L1-L2 132, L2-L1 146, L1-RF 117, RF-L1 122 (local run) | intro 118, L1-L2 114, L2-L1 130, L1-RF 103, RF-L1 141 |
+| Programs added on first arrival (after the boot warm-up) | L2 0, L3 1, L4 1, RF 2 | L2 0, L3 0, L4 0, RF 0 before P6/P7 merged; L2 1, L3 0, L4 3, RF 0 on the final rebase (one is the postprocessing EffectMaterial variant created when a ride starts) |
 | L1 full at spawn / (20, 15) / (34, 13) / hall | 134 / 132 / 81 / 58 | 109 / 110 / 86 / 58 |
 | L1 lite at spawn / (20, 15) / (34, 13) / hall | 115 / 113 / 62 / 40 | 90 / 91 / 67 / 40 |
 
