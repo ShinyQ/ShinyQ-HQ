@@ -13,7 +13,9 @@ import { waitForStablePrograms, writePerfEntry } from "./helpers";
  *   E2E_PORT=4433 bun run e2e:perf e2e/perf/floors.spec.ts
  *   bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json
  *
- * and say why in the PR.
+ * and say why in the PR. Lite counts repeat exactly. Full-tier counts can come in lower on some runs
+ * (an async scene precompile, P2, may resolve after the reading), never higher: the baseline holds the
+ * highest reading of several runs, and the gate catches growth (a material per frame or per item).
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -36,7 +38,9 @@ for (const tier of ["lite", "full"] as const) {
       const peaks = await expectRenderBudget(page);
       const gpu = await readGpuCounters(page);
       writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
-      console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs, ${gpu.geometries} geometries, ${gpu.textures} textures`);
+      // Floors P2's precompile has warmed (programs pinned): explains a program count that differs between runs.
+      const warm = await page.evaluate(() => (window as unknown as { __hq: { render?: { warmFloors(): string[] } } }).__hq.render?.warmFloors().sort().join(",") ?? "");
+      console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
 
       if (tier === "lite") expect(peaks.postCalls, "lite has no composer").toBe(0);
       else expect(peaks.postCalls, "the full tier composer must render").toBeGreaterThan(0);
