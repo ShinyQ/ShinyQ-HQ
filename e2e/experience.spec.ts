@@ -447,9 +447,13 @@ test.describe("tiers and views", () => {
     await page.addInitScript(() => {
       const w = window as unknown as { __hqMounts: number };
       w.__hqMounts = 0;
+      // Init scripts run before the parser creates <html>, so observe the document itself.
       new MutationObserver((records) => {
-        for (const record of records) for (const node of record.addedNodes) if (node instanceof HTMLElement && node.matches("[data-testid=hq]")) w.__hqMounts += 1;
-      }).observe(document.documentElement, { childList: true, subtree: true });
+        // The 3D host can arrive inside a wrapper, so count it in every added subtree.
+        for (const record of records)
+          for (const node of record.addedNodes)
+            if (node instanceof HTMLElement) w.__hqMounts += (node.matches("[data-testid=hq]") ? 1 : 0) + node.querySelectorAll("[data-testid=hq]").length;
+      }).observe(document, { childList: true, subtree: true });
     });
     await enterHQ(page);
     const mounts = () => page.evaluate(() => (window as unknown as { __hqMounts: number }).__hqMounts);
