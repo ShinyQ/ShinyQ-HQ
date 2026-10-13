@@ -37,7 +37,7 @@ Supported browsers: latest 2 versions of Chrome, Edge, Firefox and Safari; iOS S
 | E2E | Playwright | Boot and intro skip, each mission end to end, ⌘K to a pod, elevator via wheel and panel, deep link to a pod, hologram view, README toggle, language switch, Quick view, static tier fallback (`?tier=static`) |
 | Visual | Playwright screenshots | Lobby, L2 corridor, L3 with drawer, hologram, Roof, Quick view at 1440×900, 1024×1366 and 390×844 (WebGL via SwiftShader in CI) |
 | Accessibility | axe-core in Playwright | Zero serious/critical violations on static pages and HUD overlays |
-| Performance | Lighthouse CI | Budgets above on `/en`, `/en/quick`, `/en/labs/{hero}` |
+| Performance | Lighthouse CI | A warm-up run of `/en?lhci-warmup=1`, then budgets on `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center` (3 runs each). The warm-up URL is excluded from assertions. CI budgets in `lighthouserc.json` are authoritative. |
 
 ## 4. Acceptance criteria per build phase
 
