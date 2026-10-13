@@ -283,6 +283,7 @@
   },
   "footer": {
     "built": "Situs ini berjalan di atas satu dataset yang tervalidasi.",
+    "privacy": "Privasi: tanpa cookie atau ID pelacak. Sebagian kunjungan 3D mengirim rentang performa anonim (tier grafis, frame rate, waktu muat), tidak pernah alamat IP atau detail browser Anda.",
     "source": "Lihat kode sumber di GitHub",
     "pages": "Halaman",
     "elsewhere": "Tautan lain"

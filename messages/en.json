@@ -283,6 +283,7 @@
   },
   "footer": {
     "built": "The site runs on one validated dataset.",
+    "privacy": "Privacy: no tracking cookies or IDs. A sample of 3D visits sends anonymous performance ranges (graphics tier, frame rate, load time), never your IP address or browser details.",
     "source": "View source on GitHub",
     "pages": "Pages",
     "elsewhere": "Elsewhere"
