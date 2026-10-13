@@ -20,7 +20,7 @@ describe("hint lines", () => {
     for (const messages of [en, id]) {
       for (const kind of HINT_KINDS) expect(messages.dialog.hints.kind[kind], kind).toBeTruthy();
       for (const key of Object.values(HINT_OBJECTS)) expect(messages.dialog.hints.object[key as keyof typeof en.dialog.hints.object], key).toBeTruthy();
-      for (const key of ["open", "pickFloor", "pickYear", "askRover", "browse", "viewCv", "go"] as const) expect(messages.dialog.hints.go[key], key).toBeTruthy();
+      for (const key of ["open", "pickFloor", "pickYear", "toElevator", "askRover", "browse", "viewCv", "go"] as const) expect(messages.dialog.hints.go[key], key).toBeTruthy();
     }
   });
 
@@ -42,6 +42,7 @@ describe("hint lines", () => {
     expect(hintGoKey(item({}))).toBe("open");
     expect(hintGoKey(item({ id: "L1:pad:elevator", kind: "elevator-pad", action: { type: "elevator-picker" } }))).toBe("pickFloor");
     expect(hintGoKey(item({ id: "L2:teleporter:2021", kind: "teleporter", action: { type: "teleport-picker", year: 2021 } }))).toBe("pickYear");
+    expect(hintGoKey(item({ id: "L2:pad:return", kind: "return-pad", action: { type: "return-beam" } }))).toBe("toElevator");
     expect(hintGoKey(item({ kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:pods" } }))).toBe("browse");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:posts" } }))).toBe("browse");

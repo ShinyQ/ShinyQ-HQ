@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { WebGLRenderer } from "three";
 import type { FloorId, RoomId } from "@/content/schema";
-import { getHQStore } from "@/store/useHQStore";
+import { getHQStore, type HQState } from "@/store/useHQStore";
 import { scrubSign } from "../camera/rigs";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
@@ -15,6 +15,7 @@ import { performInteract } from "../interact/pick";
 import { cancelMission, goToRoom, runMissionSteps } from "../missions/bridge";
 import { joystick } from "../input/joystick";
 import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
+import { distanceToElevator, elevatorBeam, shouldBeamToCar } from "../nav/fastReturn";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
 import { buildRoadGraph, routeUsesRoad, type RoadGraph } from "../nav/road";
@@ -42,6 +43,20 @@ const STORE_SYNC_S = 0.1;
 const lerp2 = (a: Vec2, b: Vec2, t: number): Vec2 => ({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
 /** Shader programs three has linked so far (grows when a material needs a new program). */
 const programCount = (gl: WebGLRenderer) => gl.info.programs?.length ?? 0;
+
+/**
+ * Fast return (Express Return pads): beams the rover onto the floor's elevator call pad, facing the car.
+ * Only while exploring with no ride, beam or picker; any drive (autopilot, scrub, point-and-go) ends here.
+ */
+function beamHome(s: HQState, controller: RoverController, layout: FloorLayout): boolean {
+  if (s.phase !== "explore" || s.ride || s.beam || s.picker) return false;
+  controller.clearPath();
+  roverRuntime.target = null;
+  roverRuntime.autopilot = null;
+  s.setBeam(elevatorBeam(controller.pose, layout));
+  audio.play("whoosh");
+  return true;
+}
 
 export interface DirectorProps {
   layouts: Record<FloorId, FloorLayout>;
@@ -93,8 +108,10 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     door: { room: null } as DoorLatch,
     /** Floor pads (elevator call pad, L2 teleporters) run the door latch with pad ids. */
     pad: { room: null } as DoorLatch<string>,
-    /** Pickers the pad latch has opened; point-and-go skips its own open when the latch got there first. */
+    /** Pickers (and Return beams) the pad latch has started; point-and-go skips its own action when the latch got there first. */
     padOpens: 0,
+    /** The running ride already decided between driving to the door and beaming into the car (fast return). */
+    boardChecked: false,
     /**
      * Room opened since the last frame. A drawer can open and close again between two frames (a
      * quick Esc on a slow device), so the door latch learns about opens from the store, not the phase.
@@ -171,6 +188,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
               else if (command.type === "palette") openPalette(command.filter);
               else openCv();
             },
+            beamHome: () => {
+              if (local.padOpens !== padOpensBefore || !local.controller) return;
+              const live = store.getState();
+              beamHome(live, local.controller, layouts[live.floor]);
+            },
           });
           break;
         }
@@ -180,6 +202,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         case "cancel":
           // Esc never skips the boot or the intro (owner decision); it stops elevator drives and scrub drives.
           if (s.phase === "boot" || s.phase === "intro") break;
+          // A beam (teleport, Return pad, into the car) always lands; Esc does not cut it short.
+          if (s.beam) break;
           if (s.ride?.stage === "toDoor") {
             s.cancelRide();
             controller?.clearPath();
@@ -228,7 +252,10 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.now = three.clock.elapsedTime;
     const now = local.now;
     const s = store.getState();
-    if (!s.ride) local.rideStats = null;
+    if (!s.ride) {
+      local.rideStats = null;
+      local.boardChecked = false;
+    }
     // Whole-frame totals of the last frame (every render pass), from RenderCounter (runs first each frame).
     renderProbe.record(renderStats.sceneCalls + renderStats.postCalls, renderStats.triangles);
 
@@ -265,8 +292,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     local.pendingMove = null;
     if (move && s.mission?.status === "running") cancelMission();
 
-    // Teleport beam (L2): the rover holds still while the beam rises, jumps to the target pad (the camera
-    // cuts with it), then the beam fades. Reduced motion makes it a 150 ms fade cut (BeamFade in the HUD).
+    // Beams (L2 year teleports, Return pads, far floor changes into the car): the rover holds still while
+    // the beam rises, jumps to the target pad (the camera cuts with it), then the beam fades. Reduced
+    // motion makes it a 150 ms fade cut (BeamFade in the HUD).
     if (s.beam) {
       const beam = beamNow(s.beam);
       const step = advanceBeam(beam, dt, s.reducedMotion);
@@ -304,7 +332,11 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       const p = stageProgress(ride, s.reducedMotion);
       let atDoor = false;
       if (ride.stage === "toDoor") {
-        if (manual) {
+        if (s.beam) {
+          // Fast return: beaming into the car. The rover holds still; the jump lands it on the call pad,
+          // so the ride boards on the jump frame (a year teleport still running keeps the ride waiting).
+          atDoor = distanceToElevator(controller.pose, from) < 0.8;
+        } else if (manual) {
           // Manual input cancels the autopilot drive to the elevator.
           s.cancelRide();
           controller.clearPath();
@@ -318,15 +350,30 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
               controller.clearPath();
             } else if (!controller.autopilot) controller.clearPath();
           }
-          const d = Math.hypot(controller.pose.x - from.approach.x, controller.pose.z - from.approach.z);
-          atDoor = d < 0.8;
-          if (!atDoor && !controller.following) {
-            const path = autopilotPath(ride.from, controller.pose, from.approach);
-            if (path?.length) controller.setPath(path, true);
-            else atDoor = true;
+          // Fast return (owner decision): farther than FAST_RETURN.beamDistance from the call pad, every
+          // floor change (panel, keys, swipe, pad picker, Cmd-K, missions) beams into the car instead of driving.
+          let beaming = false;
+          if (!local.boardChecked) {
+            local.boardChecked = true;
+            if (shouldBeamToCar(controller.pose, from)) {
+              controller.clearPath();
+              roverRuntime.target = null;
+              s.setBeam(elevatorBeam(controller.pose, from));
+              audio.play("whoosh");
+              beaming = true;
+            }
           }
-          const result = controller.step(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from });
-          if (result.arrived) atDoor = true;
+          if (!beaming) {
+            const d = distanceToElevator(controller.pose, from);
+            atDoor = d < 0.8;
+            if (!atDoor && !controller.following) {
+              const path = autopilotPath(ride.from, controller.pose, from.approach);
+              if (path?.length) controller.setPath(path, true);
+              else atDoor = true;
+            }
+            const result = controller.step(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from });
+            if (result.arrived) atDoor = true;
+          }
         }
       } else if (ride.stage === "boarding") {
         controller.teleport(lerp2(from.approach, CAR, p), -Math.PI / 2);
@@ -436,8 +483,12 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     });
     if (padHit) {
       local.padOpens++;
-      live.openPicker(pickerFor(padHit));
-      audio.play("beep");
+      // Express Return pads beam to the elevator call pad; the others open their picker.
+      if (padHit.kind === "return") beamHome(live, controller, layouts[live.floor]);
+      else {
+        live.openPicker(pickerFor(padHit));
+        audio.play("beep");
+      }
     }
 
     const pose = controller.pose;

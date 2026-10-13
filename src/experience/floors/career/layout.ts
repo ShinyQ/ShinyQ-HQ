@@ -103,6 +103,8 @@ export interface CareerRoadLayout {
   doors: DoorTrigger[];
   /** One teleporter pad per year plaza (FloorLayout.pads; the elevator pad is added by buildFloorLayouts). */
   pads: PadTrigger[];
+  /** Express Return pad (fast return): in the forecourt in front of the annex. */
+  returnPad: Vec2;
   /** Scrub stops along x: plaza centers, then the annex. */
   stops: number[];
   approach: Vec2;
@@ -257,6 +259,8 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     obstacles,
     doors,
     pads,
+    // Fast return (F1): the forecourt south of the curve into the annex, clear of the road, rooms and benches.
+    returnPad: { x: annexStart - 5, z: 8 },
     stops: [...years.map((y) => y.plaza.center.x), annexX],
     approach: C.approach,
     door: C.door,

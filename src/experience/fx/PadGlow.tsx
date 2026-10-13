@@ -13,7 +13,7 @@ import { PAD_ICONS, PAD_TONE } from "./holoIcons";
 import { neonColor } from "./materials";
 import { proximityLevel } from "./proximity";
 
-const KINDS: readonly PadKind[] = ["elevator", "teleport"];
+const KINDS: readonly PadKind[] = ["elevator", "teleport", "return"];
 const IDLE = 0.25;
 
 /** Unit pad (radius 1, scaled per instance): a dim fill disc, a bright rim and an inner ring, with per-vertex brightness. */
@@ -34,9 +34,10 @@ function padGeometry() {
 }
 
 /**
- * Floor pads (elevator call pad, L2 year teleporters): one instanced additive disc for every pad on the
+ * Floor pads (elevator call pad, L2 year teleporters, Express Return pads): one instanced additive disc for every pad on the
  * floor, brightening as the rover gets close, plus a floating neon icon per pad kind. Clicks go through
- * point-and-go (interact/registry.ts): the rover drives onto the pad, then the picker opens.
+ * point-and-go (interact/registry.ts): the rover drives onto the pad, then the picker opens (a Return
+ * pad beams the rover to the elevator call pad instead).
  */
 export function PadGlow({ pads, floorY }: { pads: PadTrigger[]; floorY: number }) {
   const mesh = useRef<InstancedMesh>(null);

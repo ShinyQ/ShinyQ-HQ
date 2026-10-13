@@ -465,6 +465,7 @@
     "boost": "Turbo",
     "interact": {
       "teleporter": "Teleporter {year}",
+      "returnPad": "Kembali ke lift",
       "board": "Direktori {wing}",
       "archive": "Arsip tulisan",
       "live": "{label}. Klik untuk menuju ke sana.",
@@ -849,6 +850,7 @@
         "door": "{label}: kemudikan masuk ke pintu untuk membukanya.",
         "elevator-pad": "Berhenti di atas saya untuk memilih lantai.",
         "teleporter": "Berhenti di pad ini untuk teleport ke tahun lain.",
+        "return-pad": "Berhenti di sini untuk kembali ke lift dalam sekejap.",
         "station": "{label}: buka untuk melihat lebih dekat.",
         "kiosk": "{label}: buka untuk memakai kios ini.",
         "board": "{label}: buka untuk melihat daftar lengkap."
@@ -865,6 +867,7 @@
         "open": "Buka",
         "pickFloor": "Pilih lantai",
         "pickYear": "Pilih tahun",
+        "toElevator": "Ke lift",
         "askRover": "Tanya Rover",
         "browse": "Telusuri",
         "viewCv": "Lihat CV",

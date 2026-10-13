@@ -17,16 +17,18 @@ import type { DoorTrigger, ExperienceData, FloorLayouts, PadTrigger, Rect, Vec2 
  * there. Derived from the floor layouts and the locale-resolved ExperienceData, so the scene, the HUD,
  * the autopilot and the tests agree. Pure: no React, no three.
  */
-export type InteractKind = "door" | "elevator-pad" | "teleporter" | "station" | "kiosk" | "board";
+export type InteractKind = "door" | "elevator-pad" | "return-pad" | "teleporter" | "station" | "kiosk" | "board";
 
 export type InteractAction =
   | { type: "open-room"; room: RoomId }
   | { type: "elevator-picker" }
   | { type: "teleport-picker"; year: number }
+  /** Express Return pad (fast return): beam to the floor's elevator call pad. */
+  | { type: "return-beam" }
   | { type: "command"; command: string };
 
 export interface Interactable {
-  /** Stable: `${floor}:${short kind}:${key}`, e.g. "L3:door:voice-ai-contact-center", "L1:pad:elevator", "L2:teleporter:2021". */
+  /** Stable: `${floor}:${short kind}:${key}`, e.g. "L3:door:voice-ai-contact-center", "L1:pad:elevator", "L2:pad:return", "L2:teleporter:2021". */
   id: string;
   floor: FloorId;
   kind: InteractKind;
@@ -44,6 +46,8 @@ export interface Interactable {
 /** UI labels for targets without a content title (`hud.pads.floorTitle`, `hud.interact.*`, `hud.launcher.askRover`, `hud.rooms`). */
 export interface InteractLabels {
   elevator: string;
+  /** Express Return pads: "Back to elevator" (`hud.interact.returnPad`). */
+  returnPad: string;
   teleporter: (year: number) => string;
   kiosk: string;
   board: (wing: string) => string;
@@ -127,6 +131,9 @@ function padItem(floor: FloorId, pad: PadTrigger, labels: InteractLabels): Inter
   const at = { x: pad.at.x, z: pad.at.z };
   if (pad.kind === "teleport" && pad.year !== undefined) {
     return { id: `${floor}:teleporter:${pad.year}`, floor, kind: "teleporter", label: labels.teleporter(pad.year), at, bounds, height: PAD_HEIGHT, action: { type: "teleport-picker", year: pad.year } };
+  }
+  if (pad.kind === "return") {
+    return { id: `${floor}:pad:return`, floor, kind: "return-pad", label: labels.returnPad, at, bounds, height: PAD_HEIGHT, action: { type: "return-beam" } };
   }
   return { id: `${floor}:pad:elevator`, floor, kind: "elevator-pad", label: labels.elevator, at, bounds, height: PAD_HEIGHT, action: { type: "elevator-picker" } };
 }

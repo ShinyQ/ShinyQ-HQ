@@ -465,6 +465,7 @@
     "boost": "Boost",
     "interact": {
       "teleporter": "Teleporter {year}",
+      "returnPad": "Back to elevator",
       "board": "{wing} directory",
       "archive": "Post archive",
       "live": "{label}. Click to go there.",
@@ -849,6 +850,7 @@
         "door": "{label}: drive into the door to open it.",
         "elevator-pad": "Step on me to pick a floor.",
         "teleporter": "Stop on this pad to beam to another year.",
+        "return-pad": "Stop on me to beam back to the elevator.",
         "station": "{label}: open it for a closer look.",
         "kiosk": "{label}: open it to use the kiosk.",
         "board": "{label}: open it to see the full list."
@@ -865,6 +867,7 @@
         "open": "Open",
         "pickFloor": "Pick a floor",
         "pickYear": "Pick a year",
+        "toElevator": "To the elevator",
         "askRover": "Ask Rover",
         "browse": "Browse",
         "viewCv": "View CV",

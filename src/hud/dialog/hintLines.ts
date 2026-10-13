@@ -2,7 +2,7 @@ import type { Interactable } from "@/experience/hints/source";
 import type { DialogLine } from "./engine";
 
 /** Every point-and-go kind has a generic line (`dialog.hints.kind.<kind>`, with the target's `{label}`). */
-export const HINT_KINDS = ["door", "elevator-pad", "teleporter", "station", "kiosk", "board"] as const satisfies readonly Interactable["kind"][];
+export const HINT_KINDS = ["door", "elevator-pad", "return-pad", "teleporter", "station", "kiosk", "board"] as const satisfies readonly Interactable["kind"][];
 
 /** Targets with their own line (`dialog.hints.object.<key>`), by exact registry id (r4-i ids; r4-g for the hall). */
 export const HINT_OBJECTS: Readonly<Record<string, string>> = {
@@ -18,7 +18,7 @@ export function hintObjectKey(item: Pick<Interactable, "id">): string | null {
   return HINT_OBJECTS[item.id] ?? null;
 }
 
-export type HintGoKey = "open" | "pickFloor" | "pickYear" | "askRover" | "browse" | "viewCv" | "go";
+export type HintGoKey = "open" | "pickFloor" | "pickYear" | "toElevator" | "askRover" | "browse" | "viewCv" | "go";
 
 /** Label key of the Go choice (`dialog.hints.go.<key>`), named after what point-and-go will do on arrival. */
 export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
@@ -30,6 +30,8 @@ export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
       return "pickFloor";
     case "teleport-picker":
       return "pickYear";
+    case "return-beam":
+      return "toElevator";
     case "command":
       if (action.command === "terminal") return "askRover";
       if (action.command === "cv") return "viewCv";

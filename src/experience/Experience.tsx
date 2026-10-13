@@ -392,8 +392,10 @@ export default function Experience({
         availability: t("world.availability"),
       },
       rover: { hello: t("statusHello") },
+      returnPad: t("interact.returnPad"),
       interact: {
         elevator: t("pads.floorTitle"),
+        returnPad: t("interact.returnPad"),
         // A string, so next-intl does not format the year as a number ("2,021").
         teleporter: (year: number) => t("interact.teleporter", { year: String(year) }),
         kiosk: t("launcher.askRover"),

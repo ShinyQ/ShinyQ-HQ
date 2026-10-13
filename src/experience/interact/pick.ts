@@ -11,7 +11,7 @@ import type { InteractKind, Interactable } from "./registry";
  */
 
 /** Height (u) of a pick volume when the registry entry gives none. */
-export const PICK_HEIGHT: Record<InteractKind, number> = { door: 2.6, "elevator-pad": 2.9, teleporter: 2.9, station: 4, kiosk: 3.4, board: 7 };
+export const PICK_HEIGHT: Record<InteractKind, number> = { door: 2.6, "elevator-pad": 2.9, "return-pad": 2.9, teleporter: 2.9, station: 4, kiosk: 3.4, board: 7 };
 /**
  * The floating name tag stands over the destination ring (the approach point), this high above the floor:
  * in-world titles sit over the objects themselves, so the tag never doubles or covers them. Pads lift it
@@ -36,7 +36,7 @@ export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind"
 
 /** Where the floating name tag stands (floor-local): over the approach point, where the rover will stop. */
 export function labelAnchor(item: Pick<Interactable, "at" | "kind">): [number, number, number] {
-  const pad = item.kind === "elevator-pad" || item.kind === "teleporter";
+  const pad = item.kind === "elevator-pad" || item.kind === "return-pad" || item.kind === "teleporter";
   return [item.at.x, pad ? LABEL_PAD_HEIGHT : LABEL_HEIGHT, item.at.z];
 }
 
@@ -99,11 +99,13 @@ export interface InteractDeps {
   runSteps: (id: string, steps: readonly MissionStep[]) => Promise<MissionStatus>;
   openPicker: (picker: PickerRequest) => void;
   command: (command: InteractCommand) => void;
+  /** Express Return pads: beam to the floor's elevator call pad (`elevatorBeam` in nav/fastReturn.ts). */
+  beamHome: () => void;
 }
 
 export function reach(item: Pick<Interactable, "action">): number {
-  const picker = item.action.type === "elevator-picker" || item.action.type === "teleport-picker";
-  return picker ? REACH.pad : REACH.point;
+  const pad = item.action.type === "elevator-picker" || item.action.type === "teleport-picker" || item.action.type === "return-beam";
+  return pad ? REACH.pad : REACH.point;
 }
 
 /**
@@ -123,6 +125,7 @@ export async function performInteract(item: Interactable, deps: InteractDeps): P
   }
   if (action.type === "elevator-picker") deps.openPicker({ kind: "floor" });
   else if (action.type === "teleport-picker") deps.openPicker({ kind: "year", from: action.year });
+  else if (action.type === "return-beam") deps.beamHome();
   else {
     const command = parseCommand(action.command);
     if (command) deps.command(command);

@@ -38,8 +38,8 @@ describe("career type icons", () => {
     expect(new Set(flat.positions.filter((_, i) => i % 3 === 2))).toEqual(new Set([0]));
   });
 
-  it("has pad icons (elevator, teleporter) inside the 24 x 24 grid, each with its own tone", () => {
-    expect(Object.keys(PAD_ICONS).sort()).toEqual(["elevator", "teleport"]);
+  it("has pad icons (elevator, teleporter, Return) inside the 24 x 24 grid, each with its own tone", () => {
+    expect(Object.keys(PAD_ICONS).sort()).toEqual(["elevator", "return", "teleport"]);
     for (const strokes of Object.values(PAD_ICONS)) {
       expect(strokes.length).toBeGreaterThan(1);
       for (const s of strokes)
@@ -50,7 +50,8 @@ describe("career type icons", () => {
           expect(y).toBeLessThanOrEqual(24);
         }
     }
-    expect(PAD_TONE).toEqual({ elevator: "#22d3ee", teleport: "#f472b6" });
+    expect(PAD_TONE).toEqual({ elevator: "#22d3ee", teleport: "#f472b6", return: "#34d399" });
+    expect(new Set(Object.values(PAD_TONE)).size).toBe(Object.keys(PAD_TONE).length);
     expect(iconMesh(PAD_ICONS.teleport, { size: 1.4 }).positions.length).toBeGreaterThan(0);
   });
 });

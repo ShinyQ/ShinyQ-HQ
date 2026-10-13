@@ -9,19 +9,19 @@ import type { PadTrigger, Vec2 } from "../types";
 export const BEAM = { out: 0.3, in: 0.3 } as const;
 
 export interface Beam {
-  /** Target pad id (`teleport:<year>`). */
+  /** Target pad id: `teleport:<year>` (L2 year teleporters) or `elevator:<floor>` (fast return, `fastReturn.ts`). */
   pad: string;
   from: Vec2;
   to: Vec2;
-  /** Heading after the jump: east, forward in time along the Career Road. */
+  /** Heading after the jump: east (forward in time along the Career Road) for year teleports, toward the car for fast return. */
   heading: number;
   /** Seconds since the beam started. */
   t: number;
   jumped: boolean;
 }
 
-export function startBeam(from: Vec2, pad: PadTrigger): Beam {
-  return { pad: pad.id, from: { x: from.x, z: from.z }, to: { x: pad.at.x, z: pad.at.z }, heading: Math.PI / 2, t: 0, jumped: false };
+export function startBeam(from: Vec2, pad: PadTrigger, heading = Math.PI / 2): Beam {
+  return { pad: pad.id, from: { x: from.x, z: from.z }, to: { x: pad.at.x, z: pad.at.z }, heading, t: 0, jumped: false };
 }
 
 export function beamDuration(reduced: boolean): number {

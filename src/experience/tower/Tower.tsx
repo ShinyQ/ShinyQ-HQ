@@ -13,6 +13,7 @@ import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { RideCull } from "./RideCullHooks";
+import { ReturnPadSign } from "../fx/ReturnPadSign";
 import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
 import type { PlaceholderLabels } from "./PlaceholderFloor";
@@ -28,6 +29,8 @@ export interface TowerLabels {
   career: CareerLabels;
   library: LibraryLabels;
   roof: RoofLabels;
+  /** "Back to elevator": the sign over Express Return pads (`hud.interact.returnPad`). */
+  returnPad: string;
 }
 
 const FRAME_TOP = floorY("RF") + 10;
@@ -115,6 +118,7 @@ export function Tower({
                 ) : (
                   <Roof data={data} labels={labels.roof} tier={tier} />
                 )}
+                {layouts[id].returnPad && <ReturnPadSign at={layouts[id].returnPad} label={labels.returnPad} tier={tier} />}
                 <FloorPrep floor={id} />
               </Suspense>
             )}
