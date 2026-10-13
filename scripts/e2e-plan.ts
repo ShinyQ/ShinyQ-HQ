@@ -24,6 +24,7 @@ export const ALL_SPECS = [
   "interact",
   "labs",
   "library-roof",
+  "lifecycle",
   "memory",
   "missions",
   "onboarding",
@@ -94,6 +95,8 @@ export const RULES: Rule[] = [
 
   // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
   { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/(memoryProbe|sharedResources)\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
+  // Frame loop, cover pauses, crash recovery and the ride/beam clock (round 5).
+  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts|tower\/rideClock\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
 
   // 3D floors.
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk"] },

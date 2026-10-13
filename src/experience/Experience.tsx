@@ -27,6 +27,8 @@ import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
+import { FrameLoop } from "./scene/FrameLoop";
+import { framePacer } from "./scene/framePacer";
 import { memoryCounts, trackRenderer } from "./scene/memoryProbe";
 import { releaseSharedResources } from "./scene/sharedResources";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
@@ -127,6 +129,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     probes: sceneProbes,
     render: renderProbe,
     quality: qualityHandle,
+    frames: () => framePacer.frames,
   };
 }
 
@@ -390,6 +393,7 @@ export default function Experience({
       <div ref={world} tabIndex={-1} className="absolute inset-0 touch-none outline-none select-none" data-testid="hq-world">
         <Canvas
           dpr={appliedDpr ?? budget.dpr}
+          frameloop="never"
           gl={{ antialias: false, powerPreference: "high-performance" }}
           camera={{ fov: 40, near: 0.5, far: 600, position: [60, 50, 60] }}
           onCreated={({ gl, scene, camera }) => {
@@ -417,6 +421,7 @@ export default function Experience({
         >
           <Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} gfx={gfx} />
           <FirstFrame onFrame={onFirstFrame} />
+          <FrameLoop />
         </Canvas>
       </div>
       <p id="hq-desc" className="sr-only">
