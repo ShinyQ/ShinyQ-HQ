@@ -1066,11 +1066,11 @@
     "noChips": "No suggested question picked for this topic yet.",
     "map": {
       "label": "World map with {n} highlighted countries",
-      "caption": "Countries with at least one visit, {window}. Dots only, no numbers per country."
+      "caption": "{window}: countries with at least one visit. Dots only, no numbers per country."
     },
     "table": {
       "open": "View as table",
-      "caption": "Countries with visits, {window}",
+      "caption": "{window}: countries with visits",
       "country": "Country",
       "code": "Code"
     },

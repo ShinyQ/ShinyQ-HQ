@@ -192,11 +192,11 @@ export function observatoryText(parts: ObservatoryParts, state: ObservatoryState
 const STYLE: readonly { font: string; size: number; color: string; spacing?: number }[] = [
   { font: FONTS.monoBold, size: 0.2, color: OBSERVATORY.colors.rim, spacing: 0.14 },
   { font: FONTS.sansBold, size: 0.56, color: "#f5f3ff" },
-  { font: FONTS.sans, size: 0.19, color: "#ddd6fe" },
-  { font: FONTS.sans, size: 0.2, color: "#e0e7ff" },
-  { font: FONTS.sans, size: 0.19, color: "#e0e7ff" },
-  { font: FONTS.sans, size: 0.19, color: "#e0e7ff" },
-  { font: FONTS.mono, size: 0.16, color: "#cffafe" },
-  { font: FONTS.mono, size: 0.12, color: "#a1a1aa" },
-  { font: FONTS.mono, size: 0.12, color: "#a1a1aa" },
+  { font: FONTS.sans, size: 0.21, color: "#ddd6fe" },
+  { font: FONTS.sans, size: 0.22, color: "#e0e7ff" },
+  { font: FONTS.sans, size: 0.21, color: "#e0e7ff" },
+  { font: FONTS.sans, size: 0.21, color: "#e0e7ff" },
+  { font: FONTS.mono, size: 0.17, color: "#cffafe" },
+  { font: FONTS.mono, size: 0.135, color: "#a1a1aa" },
+  { font: FONTS.mono, size: 0.135, color: "#a1a1aa" },
 ];

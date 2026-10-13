@@ -1066,11 +1066,11 @@
     "noChips": "Belum ada pertanyaan saran yang dipilih untuk topik ini.",
     "map": {
       "label": "Peta dunia dengan {n} negara yang disorot",
-      "caption": "Negara dengan minimal satu kunjungan, {window}. Hanya titik, tanpa angka per negara."
+      "caption": "{window}: negara dengan minimal satu kunjungan. Hanya titik, tanpa angka per negara."
     },
     "table": {
       "open": "Lihat sebagai tabel",
-      "caption": "Negara dengan kunjungan, {window}",
+      "caption": "{window}: negara dengan kunjungan",
       "country": "Negara",
       "code": "Kode"
     },
