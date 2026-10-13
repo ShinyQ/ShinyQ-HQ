@@ -14,7 +14,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # PR runs replace each other; main keeps every run, because deploy.yml reuses the result per commit.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
