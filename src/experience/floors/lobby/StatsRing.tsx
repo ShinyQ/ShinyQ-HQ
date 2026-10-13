@@ -13,7 +13,7 @@ import { roverRuntime } from "../../rover/runtime";
 import { COLORS, LOBBY } from "../../config";
 import type { ExperienceData } from "../../types";
 import { FONTS } from "../../tower/primitives";
-import { backToFront, composeTile, DOT_OFFSET, DOT_RADIUS, LABEL_OFFSET, TILE_H, TILE_W, TILE_Y, tileBase, VALUE_OFFSET, writeEdges } from "./statsRingLayout";
+import { backToFront, composeTile, DOT_OFFSET, DOT_RADIUS, LABEL_OFFSET, RING_BOUNDS, TILE_H, TILE_W, TILE_Y, tileBase, VALUE_OFFSET, writeEdges } from "./statsRingLayout";
 
 const ACCENTS = [COLORS.green, COLORS.cyan, COLORS.violet, COLORS.amber, COLORS.pink, "#60a5fa"];
 const COUNT_SECONDS = 0.9;
@@ -66,6 +66,8 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
       for (let k = 0; k < 24; k++) colors.set([c.r, c.g, c.b], i * 72 + k * 3);
     }
     g.setAttribute("color", new BufferAttribute(colors, 3));
+    // Fixed bounds for the whole ring: the vertices move every frame, the ring never leaves this sphere.
+    g.boundingSphere = RING_BOUNDS.clone();
     return g;
   }, [n, tier]);
   useEffect(() => () => edges.dispose(), [edges]);
@@ -74,6 +76,10 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
     frame.current.shown = valueLabels.map((l) => l.text);
     frame.current.done = false;
   }, [valueLabels]);
+
+  useLayoutEffect(() => {
+    for (const mesh of [plates.current, glows.current]) if (mesh) mesh.boundingSphere = RING_BOUNDS.clone();
+  }, []);
 
   useLayoutEffect(() => {
     const g = glows.current;
@@ -169,15 +175,15 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
   return (
     <group position={[LOBBY.hologram.x, 0, LOBBY.hologram.z]} name="stats-ring">
       <group ref={ring}>
-        <instancedMesh ref={plates} args={[undefined, undefined, n]} frustumCulled={false} renderOrder={-3}>
+        <instancedMesh ref={plates} args={[undefined, undefined, n]} renderOrder={-3}>
           <planeGeometry args={[TILE_W, TILE_H]} />
           <meshBasicMaterial color="#0f0f19" transparent opacity={0.86} />
         </instancedMesh>
-        <lineSegments geometry={edges} frustumCulled={false} renderOrder={-2}>
+        <lineSegments geometry={edges} renderOrder={-2}>
           <lineBasicMaterial vertexColors transparent opacity={0.9} toneMapped={false} />
         </lineSegments>
         {/* Glowing accent dot beside each value (R5 P10: never a colored top edge). */}
-        <instancedMesh ref={glows} args={[undefined, undefined, n]} frustumCulled={false}>
+        <instancedMesh ref={glows} args={[undefined, undefined, n]}>
           <circleGeometry args={[DOT_RADIUS, 20]} />
           <meshBasicMaterial toneMapped={false} />
         </instancedMesh>

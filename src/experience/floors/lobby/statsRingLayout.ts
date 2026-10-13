@@ -1,4 +1,4 @@
-import { Matrix4, Quaternion, Vector3 } from "three";
+import { Matrix4, Quaternion, Sphere, Vector3 } from "three";
 import { LOBBY } from "../../config";
 
 export const { w: TILE_W, h: TILE_H, y: TILE_Y, stagger: TILE_STAGGER } = LOBBY.statsTile;
@@ -57,3 +57,9 @@ const size = new Vector3();
 export function composeTile(out: Matrix4, x: number, y: number, z: number, facing: Quaternion, scale: number): Matrix4 {
   return out.compose(position.set(x, y, z), facing, size.setScalar(scale < 0.01 ? 0 : scale));
 }
+
+/**
+ * Bounds of the whole ring in ring space (any turn, the bob and the lift over the rover), so the
+ * instanced plates, glows and edges are culled when the ring is off-screen, like the old tiles were.
+ */
+export const RING_BOUNDS = new Sphere(new Vector3(0, TILE_Y + TILE_STAGGER / 2, 0), LOBBY.statsRadius + Math.hypot(TILE_W, TILE_H));

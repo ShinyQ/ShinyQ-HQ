@@ -1,7 +1,7 @@
 import { Matrix4, Quaternion, Vector3 } from "three";
 import { expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
-import { backToFront, boxEdgeVertices, composeTile, TILE_EDGES, TILE_H, TILE_STAGGER, TILE_W, TILE_Y, tileBase, writeEdges } from "@/experience/floors/lobby/statsRingLayout";
+import { backToFront, boxEdgeVertices, RING_BOUNDS, composeTile, TILE_EDGES, TILE_H, TILE_STAGGER, TILE_W, TILE_Y, tileBase, writeEdges } from "@/experience/floors/lobby/statsRingLayout";
 
 it("places tiles on the ring like the old billboards (first at 45 degrees, odd tiles staggered up)", () => {
   const [x, y, z] = tileBase(0, 6);
@@ -43,4 +43,21 @@ it("collapses a tile that has shrunk away (the old `visible = scale > 0.01`)", (
   expect(new Vector3().setFromMatrixPosition(m).toArray()).toEqual([1, 2, 3]);
   expect(TILE_W).toBe(LOBBY.statsTile.w);
   expect(TILE_H).toBe(LOBBY.statsTile.h);
+});
+
+it("bounds every tile of the turning, bobbing, lifting ring, so off-screen tiles are culled like before", () => {
+  for (let i = 0; i < 6; i++) {
+    for (const yaw of [0, 1, 2, 3, 4, 5, 6]) {
+      const [x, y, z] = tileBase(i, 6);
+      const turned = new Vector3(x, y, z).applyAxisAngle(new Vector3(0, 1, 0), yaw);
+      for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        // Billboarded corners reach at most half the tile diagonal from the center; lift 0.15, bob 0.15.
+        const reach = Math.hypot(TILE_W / 2, TILE_H / 2);
+        for (const lift of [-0.15, 0.3]) {
+          const corner = turned.clone().add(new Vector3(dx * reach, dy * reach + lift, 0));
+          expect(RING_BOUNDS.containsPoint(corner)).toBe(true);
+        }
+      }
+    }
+  }
 });
