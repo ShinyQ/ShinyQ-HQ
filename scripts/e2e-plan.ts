@@ -33,6 +33,7 @@ export const ALL_SPECS = [
   "pads",
   "pageview",
   "perf-probes",
+  "reactor",
   "ride",
   "roof",
   "seo",
@@ -119,8 +120,9 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
   { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
-  // 3D floors.
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return"] },
+  // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view.
+  { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return", "reactor"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },

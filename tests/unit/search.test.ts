@@ -15,12 +15,13 @@ describe("buildPaletteEntries", () => {
     expect(entries.filter((e) => e.group === "missions").map((e) => e.key)).toEqual(index.missions.map((m) => `mission:${m.id}`));
     expect(entries.filter((e) => e.group === "rooms")).toHaveLength(index.rooms.length);
     expect(entries.filter((e) => e.group === "years")).toHaveLength(index.years.length);
-    expect(entries.filter((e) => e.group === "actions").map((e) => e.key)).toEqual([
+    expect(entries.filter((e) => e.group === "actions" && e.target.type === "action").map((e) => e.key)).toEqual([
       "action:view-cv",
       "action:copy-email",
       "action:toggle-language",
       "action:quick-view",
     ]);
+    expect(entries.filter((e) => e.target.type === "tech")).toHaveLength(index.techs.length);
     expect(new Set(entries.map((e) => e.key)).size).toBe(entries.length);
   });
 
@@ -60,11 +61,21 @@ describe("searchPalette", () => {
 
   it('returns rooms using FastAPI for "fastapi", a pod first', () => {
     const groups = searchPalette(entries, "fastapi");
-    expect(groups.map((g) => g.id)).toEqual(["rooms"]);
+    // Rooms first; the Tech Reactor row ("Show projects using FastAPI") follows under actions.
+    expect(groups.map((g) => g.id)).toEqual(["rooms", "actions"]);
+    expect(keys(groups, "actions")).toEqual(["tech:fastapi"]);
     const rooms = group(groups, "rooms");
     expect(rooms.length).toBeGreaterThan(0);
     expect(rooms[0].roomKind).toBe("pod");
     for (const room of rooms) expect(room.keywords.some((k) => normalize(k).includes("fastapi"))).toBe(true);
+  });
+
+  it("finds the Tech Reactor row first for a show query, in both languages", () => {
+    const show = searchPalette(entries, "show projects using azure openai");
+    expect(show[0].entries[0].key).toBe("tech:azure-openai");
+    expect(show[0].entries[0].title).toEqual({ en: "Show projects using Azure OpenAI", id: "Tampilkan proyek yang memakai Azure OpenAI" });
+    expect(searchPalette(entries, "tampilkan proyek next.js")[0].entries[0].key).toBe("tech:next-js");
+    expect(searchPalette(entries, "")).not.toContainEqual(expect.objectContaining({ id: "actions" }));
   });
 
   it('tolerates a subsequence typo: "vcai" finds the voice pod', () => {

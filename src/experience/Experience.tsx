@@ -6,6 +6,9 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
+import { loadRoomViews } from "@/hud/drawer/data";
+import { createReactorHashSync } from "./floors/labs/reactorUrl";
+import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
@@ -49,6 +52,7 @@ import { qualityHandle, qualityStore } from "./scene/qualityStore";
 import { renderProbe } from "./scene/renderProbe";
 import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
+import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -94,7 +98,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     roverRuntime.x = at.x;
     roverRuntime.z = at.z;
   };
-  const doorOf = (floor: FloorId, room?: RoomId) => (room ? layouts[floor].doors?.find((d) => d.room === room)?.at : undefined);
+  const doorOf = (floor: FloorId, room?: RoomId) => (room ? (layouts[floor].doors?.find((d) => d.room === room)?.at ?? layouts[floor].stops?.[room]) : undefined);
   const openStartRoom = () => {
     if (!startRoom || floorOf(startRoom) !== getHQStore().getState().floor) return;
     getHQStore().getState().openRoom(startRoom);
@@ -190,6 +194,9 @@ export default function Experience({
   const tContact = useTranslations("contact");
   const tWalk = useTranslations("walk");
   const tHall = useTranslations("hall");
+  const tReactor = useTranslations("labs.reactor");
+  // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
+  const [startHash] = useState(() => window.location.hash);
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
   const toggleLang = useCallback(() => switchLocale(data.locale === "en" ? "id" : "en"), [data.locale]);
@@ -324,7 +331,8 @@ export default function Experience({
       // A deep link keeps its URL through the boot and the intro; the continuation rewrites it on arrival.
       if ((s.phase === "boot" || s.phase === "intro") && isContinuing()) return;
       const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
-      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor ? s.activeRoom : null;
+      // The Tech Reactor has no route of its own (it keeps /labs and its hash).
+      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM ? s.activeRoom : null;
       const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });
       const url = withView(path, window.location.search, room && s.phase === "hologram" ? "architecture" : null);
       if (`${window.location.pathname}${window.location.search}` !== url) window.history.replaceState(window.history.state, "", url);
@@ -336,13 +344,32 @@ export default function Experience({
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts and the L1 Highlights Hall stations keep the floor URL.
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts, the L1 Highlights Hall stations and the L3 Tech Reactor keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
-    return (room: RoomId) => !isHighlightRoom(room) && (!room.startsWith("L4:") || hosted.has(room));
+    // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync).
+    return (room: RoomId) => !isHighlightRoom(room) && room !== REACTOR_ROOM && (!room.startsWith("L4:") || hosted.has(room));
   }, [data.library.posts]);
   useRoomUrlSync(data.locale, hasPage);
+  // Tech Reactor pick in the hash (`#labs-tech=<slug>`), after the floor and room URL writes above.
+  useEffect(
+    () =>
+      createReactorHashSync({
+        store: getHQStore(),
+        env: {
+          history: window.history,
+          location: window.location,
+          initialHash: startHash,
+          load: () => loadRoomViews(data.locale).then((views) => views[REACTOR_ROOM]?.reactor),
+          onPopState: (listener) => {
+            window.addEventListener("popstate", listener);
+            return () => window.removeEventListener("popstate", listener);
+          },
+        },
+      }),
+    [data.locale, startHash],
+  );
 
   const labels: SceneLabels = useMemo(
     () => ({
@@ -371,7 +398,13 @@ export default function Experience({
           hall: tHall("hall"),
         },
       },
-      labs: { directory: tDrawer("directory"), open: tWalk("boardOpen"), count: (count: number) => tWalk("boardCount", { count }) },
+      labs: {
+        directory: tDrawer("directory"),
+        open: tWalk("boardOpen"),
+        count: (count: number) => tWalk("boardCount", { count }),
+        rings: Object.fromEntries(REACTOR_RINGS.map((ring) => [ring, tReactor(`rings.${ring}`)])) as Record<ReactorRingId, string>,
+        uses: (count: number, tech: string) => tReactor("uses", { count, tech }),
+      },
       career: {
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
@@ -416,10 +449,12 @@ export default function Experience({
           highlightsProjects: t("rooms.highlightsProjects"),
           highlightsExperience: t("rooms.highlightsExperience"),
           highlightsContact: t("rooms.highlightsContact"),
+          reactor: t("rooms.reactor"),
         },
+        reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor],
   );
 
   return (

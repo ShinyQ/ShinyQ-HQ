@@ -27,6 +27,8 @@ export const ACCENT_HEX: Record<Accent, string> = {
 
 const H = LABS.wallHeight;
 const IDLE_SPIN = 0.4;
+/** Hologram brightness of pods outside a Tech Reactor pick. */
+const DIMMED = 0.3;
 
 
 /** Pod rooms: glass walls (one instanced mesh), neon edges, door markers, forecourts and hero stages (one line batch). */
@@ -134,12 +136,15 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     const l = local.current;
     // Holograms near the rover wake up: brighter (0.6 to 1) and faster (0.4 to 0.9 rad/s).
     const onFloor = Math.abs(roverRuntime.y - floorY("L3")) < 0.5;
+    // A Tech Reactor pick dims the holograms of pods outside it (`reactor.tech`).
+    const picked = getHQStore().getState().reactor.tech?.pods;
     let recolor = false;
     placed.forEach((p, i) => {
       const d = onFloor ? Math.hypot(roverRuntime.x - p.center.x, roverRuntime.z - p.center.z) - Math.max(p.width, p.depth) / 2 : Infinity;
       const near = Math.min(1, Math.max(0, (6 - d) / 4.5));
       if (!reduced) l.angles[i] += dt * (IDLE_SPIN + 0.5 * near);
-      const level = Math.round((0.6 + 0.4 * near) * 50) / 50;
+      const dim = picked && !picked.includes(p.pod.slug) ? DIMMED : 1;
+      const level = Math.round((0.6 + 0.4 * near) * dim * 50) / 50;
       if (level !== l.levels[i]) {
         l.levels[i] = level;
         recolor = true;

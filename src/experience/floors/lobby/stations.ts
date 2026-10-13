@@ -1,5 +1,6 @@
 import type { FloorId, RoomId } from "@/content/schema";
 import type { CareerData, CareerEntryView } from "../../types";
+import { REACTOR_ROOM, techFromHash } from "../labs/techHash";
 
 /**
  * L1 Highlights Hall stations (owner request, October 2026): a short walk-through gallery east of the
@@ -32,8 +33,12 @@ export function experienceRows(career: CareerData): { employment: CareerEntryVie
   return { employment: newest.filter((e) => e.type === "job"), freelance: newest.filter((e) => e.type === "freelance") };
 }
 
-/** The room a gated page starts on: its own room, else (only on `/{locale}`, which has no start floor) a `#highlights-<station>` hash. */
+/**
+ * The room a gated page starts on: its own room, else a hash room: `#highlights-<station>` on
+ * `/{locale}` (no start floor) and the Tech Reactor for `#labs-tech=<slug>` on `/{locale}/labs`.
+ */
 export function gateStartRoom(startFloor: FloorId | undefined, startRoom: RoomId | undefined, hash: string): RoomId | undefined {
-  if (startRoom || startFloor) return startRoom;
+  if (startRoom) return startRoom;
+  if (startFloor) return startFloor === "L3" && techFromHash(hash) ? REACTOR_ROOM : undefined;
   return highlightsRoomFromHash(hash) ?? undefined;
 }

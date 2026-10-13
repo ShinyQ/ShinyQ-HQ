@@ -28,6 +28,6 @@ export const interactRuntime = {
     const item = interactRuntime.items.find((i) => i.id === id);
     if (!item || !interactRuntime.project) return null;
     const { center, size } = pickVolume(item);
-    return interactRuntime.project({ x: center[0] + (fx - 0.5) * size[0], y: interactRuntime.floorY + size[1] * lift, z: center[2] + (fz - 0.5) * size[2] });
+    return interactRuntime.project({ x: center[0] + (fx - 0.5) * size[0], y: interactRuntime.floorY + center[1] - size[1] / 2 + size[1] * lift, z: center[2] + (fz - 0.5) * size[2] });
   },
 };

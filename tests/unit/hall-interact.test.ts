@@ -27,6 +27,7 @@ const labels: InteractLabels = {
   board: (wing) => en.hud.interact.board.replace("{wing}", wing),
   archive: en.hud.interact.archive,
   rooms: en.hud.rooms,
+  reactorRing: (ring) => en.labs.reactor.rings[ring],
 };
 const data: InteractData = { experience, labels };
 const stationNames = {

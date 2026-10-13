@@ -33,6 +33,7 @@ function labelsFrom(m: Messages): InteractLabels {
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
     archive: m.hud.interact.archive,
     rooms: m.hud.rooms,
+    reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
   };
 }
 
@@ -241,5 +242,39 @@ describe("registerExtraInteractables", () => {
 
   it("refuses items that belong to another floor", () => {
     expect(() => registerExtraInteractables("L3", [hall])).toThrow(/L1:station:highlights-demo/);
+  });
+});
+
+describe("Tech Reactor rings", () => {
+  const rings = items.L3.filter((i) => i.id.startsWith("L3:station:reactor-"));
+  const labs = buildLabsLayout(experience.labs.pods);
+
+  it("stacks one target per ring over the core, from the floor up, each opening the drawer on its ring", () => {
+    expect(rings.map((r) => r.id)).toEqual(["devops", "data", "backend", "frontend", "azure", "ai"].map((r) => `L3:station:reactor-${r}`));
+    expect(rings[0].base).toBe(0);
+    rings.forEach((r, i) => {
+      expect(r.kind).toBe("station");
+      expect(r.action).toEqual({ type: "command", command: `reactor:${r.id.slice("L3:station:reactor-".length)}` });
+      expect(r.height!).toBeGreaterThan(r.base!);
+      if (i > 0) expect(r.base).toBe(rings[i - 1].height);
+      const c = labs.reactor.center;
+      expect((r.bounds.minX + r.bounds.maxX) / 2).toBeCloseTo(c.x);
+      expect((r.bounds.minZ + r.bounds.maxZ) / 2).toBeCloseTo(c.z);
+      expect(r.at).toEqual(layouts.L3.stops?.["L3:reactor"]);
+    });
+    expect(rings.find((r) => r.id.endsWith("azure"))?.label).toBe("Tech Reactor: Azure");
+  });
+
+  it("drives to the reactor stop for the reactor room, on walkable floor", () => {
+    const stop = roomTarget(undefined, "L3:reactor", layouts, experience.years);
+    expect(stop).toEqual(layouts.L3.stops?.["L3:reactor"]);
+    const grid = buildNavGrid(layouts.L3, ROVER.radius);
+    const near = nearestWalkable(grid, stop);
+    expect(Math.hypot(near!.x - stop.x, near!.z - stop.z)).toBeLessThan(0.5);
+  });
+
+  it("speaks Indonesian", () => {
+    const idItems = setup("id").items.L3;
+    expect(idItems.find((i) => i.id === "L3:station:reactor-ai")?.label).toBe("Reaktor Teknologi: AI dan LLM");
   });
 });

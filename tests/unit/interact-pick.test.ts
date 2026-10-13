@@ -77,6 +77,10 @@ describe("pick volumes", () => {
     expect(pickVolume(pod)).toEqual({ center: [10, 1.3, 6.5], size: [8, 2.6, 7] });
   });
 
+  it("lifts stacked targets off the floor from their base", () => {
+    expect(pickVolume({ ...pod, base: 4, height: 6 })).toEqual({ center: [10, 5, 6.5], size: [8, 2, 7] });
+  });
+
   it("falls back to the kind's height", () => {
     expect(pickVolume(lift).size[1]).toBe(PICK_HEIGHT["elevator-pad"]);
   });
@@ -156,6 +160,11 @@ describe("parseCommand", () => {
     expect(parseCommand("palette:pods")).toEqual({ type: "palette", filter: "pods" });
     expect(parseCommand("palette:posts")).toEqual({ type: "palette", filter: "posts" });
     expect(parseCommand("palette:rooms")).toEqual({ type: "palette", filter: "rooms" });
+  });
+
+  it("opens the Tech Reactor on a ring", () => {
+    expect(parseCommand("reactor:azure")).toEqual({ type: "reactor", ring: "azure" });
+    expect(parseCommand("reactor:nope")).toBeNull();
   });
 
   it("ignores anything else", () => {

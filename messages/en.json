@@ -166,6 +166,29 @@
       "data": "Data",
       "human": "Human",
       "external": "External"
+    },
+    "reactor": {
+      "title": "Tech Reactor",
+      "subtitle": "Pick a tech to light every project that uses it.",
+      "rings": {
+        "ai": "AI and LLM",
+        "azure": "Azure",
+        "backend": "Backend",
+        "frontend": "Frontend",
+        "data": "Data",
+        "devops": "DevOps"
+      },
+      "ringsLabel": "Tech groups",
+      "techsLabel": "Techs in {ring}",
+      "count": "{count, plural, =1 {# project} other {# projects}}",
+      "uses": "{count, plural, =1 {1 project uses {tech}} other {# projects use {tech}}}",
+      "projects": "Projects using {tech}",
+      "clear": "Clear",
+      "surprise": "Surprise me",
+      "directory": "On the wing directory",
+      "show": "Show projects using {tech}",
+      "ringTarget": "Tech Reactor: {ring}",
+      "selected": "Selected: {tech}"
     }
   },
   "library": {
@@ -350,7 +373,8 @@
       "highlightsAbout": "Highlights: about me",
       "highlightsProjects": "Highlights: top projects",
       "highlightsExperience": "Highlights: work experience",
-      "highlightsContact": "Highlights: contact"
+      "highlightsContact": "Highlights: contact",
+      "reactor": "Tech Reactor"
     },
     "launcher": {
       "search": "Search",

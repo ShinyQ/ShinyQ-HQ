@@ -49,6 +49,8 @@ export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Reco
   const layout = layouts[floor];
   const door = layout.doors?.find((d) => d.room === id);
   if (door) return door.at;
+  const stop = layout.stops?.[id];
+  if (stop) return stop;
   const fallback = { x: layout.approach.x + 7, z: layout.approach.z - 3 };
   if (floor === "L1") return LOBBY_STOPS[id.slice(3)] ?? fallback;
   if (floor === "L2") {

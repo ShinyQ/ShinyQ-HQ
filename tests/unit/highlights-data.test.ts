@@ -75,6 +75,11 @@ describe("Highlights rooms", () => {
   it("starts the landing on a station from its hash, and never overrides a floor or room route", () => {
     expect(gateStartRoom(undefined, undefined, "#highlights-projects")).toBe("L1:highlights-projects");
     expect(gateStartRoom(undefined, undefined, "#work")).toBeUndefined();
+    // The Tech Reactor deep link only on the L3 floor route.
+    expect(gateStartRoom("L3", undefined, "#labs-tech=azure-openai")).toBe("L3:reactor");
+    expect(gateStartRoom("L3", undefined, "#all-projects")).toBeUndefined();
+    expect(gateStartRoom("L2", undefined, "#labs-tech=azure-openai")).toBeUndefined();
+    expect(gateStartRoom("L3", "L3:voice-ai-contact-center", "#labs-tech=azure-openai")).toBe("L3:voice-ai-contact-center");
     expect(gateStartRoom("L3", undefined, "#highlights")).toBeUndefined();
     expect(gateStartRoom(undefined, "L3:x", "#highlights")).toBe("L3:x");
   });

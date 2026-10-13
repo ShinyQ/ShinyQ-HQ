@@ -1,4 +1,5 @@
 import type { MissionStep, RoomId } from "@/content/schema";
+import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { DRAG_THRESHOLD } from "../input/intents";
 import type { MissionStatus, PaletteFilter } from "../missions/host";
 import { PAD, type PickerRequest } from "../nav/pads";
@@ -27,11 +28,12 @@ export interface PickVolume {
   size: [number, number, number];
 }
 
-/** The box the pointer hits: the footprint, standing on the floor, `height` tall. */
-export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind">): PickVolume {
-  const h = item.height ?? PICK_HEIGHT[item.kind];
+/** The box the pointer hits: the footprint from `base` (the floor by default) up to `height`. */
+export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind" | "base">): PickVolume {
+  const top = item.height ?? PICK_HEIGHT[item.kind];
+  const base = Math.min(item.base ?? 0, top);
   const { minX, maxX, minZ, maxZ } = item.bounds;
-  return { center: [(minX + maxX) / 2, h / 2, (minZ + maxZ) / 2], size: [maxX - minX, h, maxZ - minZ] };
+  return { center: [(minX + maxX) / 2, (base + top) / 2, (minZ + maxZ) / 2], size: [maxX - minX, top - base, maxZ - minZ] };
 }
 
 /** Where the floating name tag stands (floor-local): over the approach point, where the rover will stop. */
@@ -77,16 +79,17 @@ export function highlightOpacity(t: number, reducedMotion: boolean): number {
   return reducedMotion ? 0.9 : 0.65 + 0.25 * Math.sin(t * 4);
 }
 
-export type InteractCommand = { type: "terminal" } | { type: "palette"; filter: PaletteFilter } | { type: "cv" };
+export type InteractCommand = { type: "terminal" } | { type: "palette"; filter: PaletteFilter } | { type: "cv" } | { type: "reactor"; ring: ReactorRingId };
 
 const PALETTE_FILTERS: readonly PaletteFilter[] = ["pods", "rooms", "posts"];
 
-/** `"terminal"`, `"cv"` or `"palette:<pods|rooms|posts>"`; anything else is null. */
+/** `"terminal"`, `"cv"`, `"palette:<pods|rooms|posts>"` or `"reactor:<ring>"` (Tech Reactor drawer on a ring); anything else is null. */
 export function parseCommand(command: string): InteractCommand | null {
   if (command === "terminal") return { type: "terminal" };
   if (command === "cv") return { type: "cv" };
   const [head, filter] = command.split(":");
   if (head === "palette" && PALETTE_FILTERS.includes(filter as PaletteFilter)) return { type: "palette", filter: filter as PaletteFilter };
+  if (head === "reactor" && (REACTOR_RINGS as readonly string[]).includes(filter)) return { type: "reactor", ring: filter as ReactorRingId };
   return null;
 }
 

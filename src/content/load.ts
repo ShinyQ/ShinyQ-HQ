@@ -5,6 +5,7 @@ import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
 import { publishedPerspectives } from "./perspectives";
 import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
+import { buildTechIndex, type TechIndex } from "./tech-index";
 
 let cached: SiteContent | undefined;
 
@@ -61,6 +62,14 @@ export function getStats(): Stat[] {
   return cachedStats;
 }
 export const getSkills = () => getContent().skills;
+
+let cachedTechIndex: TechIndex | undefined;
+
+/** L3 Tech Reactor index (`buildTechIndex`): every pod tech on its ring with the pods that use it, built at build time. */
+export function getTechIndex(): TechIndex {
+  cachedTechIndex ??= buildTechIndex(getPods(), getSkills());
+  return cachedTechIndex;
+}
 export const getCertifications = () => getContent().certifications;
 export const getAwards = () => [...getContent().awards].sort((a, b) => b.date.localeCompare(a.date));
 export const getContact = () => getContent().floors.roof.contact;

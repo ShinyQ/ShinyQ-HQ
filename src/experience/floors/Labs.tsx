@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
+import type { ReactorRingId } from "@/content/tech-rings";
 import { useHQStore } from "@/store/useHQStore";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
@@ -10,14 +11,21 @@ import { buildLabsLayout, LABS } from "./labs/layout";
 import { PacketLanes } from "./labs/PacketLanes";
 import { Pods } from "./labs/Pods";
 import { Reactor, Waterfalls } from "./labs/ReactorCore";
+import { ReactorHighlights } from "./labs/ReactorHighlights";
 
-export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count">;
+export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count"> & {
+  /** Tech Reactor ring names (`labs.reactor.rings`). */
+  rings: Record<ReactorRingId, string>;
+  /** "N projects use X" (`labs.reactor.uses`). */
+  uses: (count: number, tech: string) => string;
+};
 
 /** L3 Project Roads (walkable floors plan, part 2), generated from the pods in content. */
 export function Labs({ data, labels, tier }: { data: ExperienceData; labels: LabsLabels; tier: GpuTier }) {
   const layout = useMemo(() => buildLabsLayout(data.labs.pods), [data.labs.pods]);
   // Stable labels: the wall's BatchedText re-packs whenever its label list changes.
   const hubLabels = useMemo(() => ({ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }), [data.labs.wings, labels]);
+  const reactorLabels = useMemo(() => ({ rings: labels.rings, uses: labels.uses }), [labels]);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const t = tier === "full" ? "full" : "lite";
   return (
@@ -29,7 +37,8 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
       <Pods placed={layout.placed} tier={t} />
-      <Reactor center={layout.reactor.center} />
+      <Reactor center={layout.reactor.center} labels={reactorLabels} />
+      <ReactorHighlights layout={layout} />
       <Waterfalls bounds={layout.floor.bounds} />
       <Suspense fallback={null}>
         <HologramStage placed={layout.placed} locale={data.locale} tier={t} />

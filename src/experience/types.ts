@@ -75,6 +75,8 @@ export interface FloorLayout {
   viewZones?: ViewZone[];
   /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
   listStop?: Vec2;
+  /** Rooms without a door that have their own stop (L3: the Tech Reactor); checked before `listStop`. */
+  stops?: Partial<Record<RoomId, Vec2>>;
 }
 
 /** Every floor's layout, as built by `buildFloorLayouts`. */
