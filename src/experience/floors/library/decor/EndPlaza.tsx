@@ -9,7 +9,7 @@ import { FloatingSigns } from "../../../fx/FloatingSign";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
 import { neonColor } from "../../../fx/materials";
 import { sceneProbes } from "../../../fx/probes";
-import { wrapSign, type SignSpec } from "../../../fx/signLayout";
+import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { useDispose } from "../../../fx/useDispose";
 import { useUniformTime } from "../../../fx/useUniformTime";
 import { FONTS } from "../../../tower/primitives";
@@ -17,6 +17,7 @@ import type { GpuTier, LibraryData, LibraryTopic } from "../../../types";
 import { LineBatch } from "../../labs/lines";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryLayout } from "../model";
+import { useEndSignPlacement } from "./useEndSignPlacement";
 import { CONSTELLATION, constellationSpin, orbitAt, orbSlots, topicLinks, topicPickOf, type OrbSlot } from "../topics";
 
 const NO_RAYCAST = () => null;
@@ -29,17 +30,18 @@ const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
 const LINK_COLOR = "#a5f3fc";
-const LABEL_FONT = 0.34;
 const COUNT_FONT = 0.62;
+/** Bottom of the monument's plate column (u above the floor). */
+const MONUMENT_BASE = 0.7;
 
 export const orbTone = (i: number) => ORB_TONES[i % ORB_TONES.length];
 
 export interface EndPlazaLabels {
   /** "N pieces on X". */
   pieces: (count: number, topic: string) => string;
-  /** Monument lines: the two numbers with their names and the source line ("Google Scholar, as of Oct 2026"); null without metrics. */
+  /** Monument lines: the two numbers with their names and the source line ("Google Scholar · as of Oct 2026"); null without metrics. */
   monument: { citations: string; citationsLabel: string; hIndex: string; hIndexLabel: string; source: string } | null;
-  /** "Post archive" with its count. */
+  /** "Post archive". */
   archive: string;
 }
 
@@ -47,43 +49,91 @@ function setCursor(value: string) {
   document.body.style.cursor = value;
 }
 
+/** What each end-plaza sign is, for the screen-space placement (`placeLabels`). */
+export interface EndSignMeta {
+  kind: "topic" | "count" | "monument" | "archive";
+  /** Topic slug (topic labels). */
+  slug?: string;
+  /** Piece count (topic labels): bigger topics win a contested spot. */
+  count?: number;
+  /** The picked topic's label: always shown. */
+  picked?: boolean;
+}
+
+/** Topic label type size, and the picked topic's. */
+const LABEL = { font: 0.34, picked: 0.44 } as const;
+/** Gap between the monument's stacked plates (u). */
+const MONUMENT_GAP = 0.5;
+
+/** Stacks plates bottom up from `base` (plate middles), `gap` apart. */
+function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignSpec[] {
+  let y = base;
+  return [...specs].reverse().map((spec) => {
+    const { h } = signPlate(spec);
+    const out = { ...spec, y: y + h / 2 };
+    y += h + MONUMENT_GAP;
+    return out;
+  }).reverse();
+}
+
 /**
- * Every sign of the end plaza in one `FloatingSigns` group (two draw calls): the topic labels riding the
- * orbit above their orbs, "N pieces on X" over the cloud while a topic is picked, the monument's numbers
- * and source line, and the archive board's name. Positions are relative to the plaza center.
+ * Every sign of the end plaza in one `FloatingSigns` group (two draw calls), with what each one is: the
+ * topic labels riding the orbit above their orbs (the picked one larger, the others dimmed), "N pieces
+ * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
+ * they never cross from any camera yaw) and the archive board's name. Positions are relative to the
+ * plaza center. Which of them show each frame is decided on screen (`placeLabels`).
  */
-export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTopic[], slots: readonly OrbSlot[], labels: EndPlazaLabels, pick: TopicPick | null): SignSpec[] {
+export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTopic[], slots: readonly OrbSlot[], labels: EndPlazaLabels, pick: TopicPick | null): { signs: SignSpec[]; meta: EndSignMeta[] } {
   const end = layout.end!;
-  const signs: SignSpec[] = slots.map((slot, i) => ({
-    text: topics[i].label,
-    x: slot.x,
-    y: slot.y + slot.size + CONSTELLATION.labelLift,
-    z: slot.z,
-    color: pick && pick.slug !== topics[i].slug ? "#8b8b94" : orbTone(i),
-    fontSize: LABEL_FONT,
-    font: FONTS.monoBold,
-    orbit: true,
-  }));
+  const signs: SignSpec[] = [];
+  const meta: EndSignMeta[] = [];
+  slots.forEach((slot, i) => {
+    const picked = pick?.slug === topics[i].slug;
+    signs.push({
+      text: topics[i].label,
+      x: slot.x,
+      y: slot.y + slot.size + CONSTELLATION.labelLift,
+      z: slot.z,
+      color: pick && !picked ? "#8b8b94" : orbTone(i),
+      fontSize: picked ? LABEL.picked : LABEL.font,
+      font: FONTS.monoBold,
+      opacity: pick && !picked ? 0.6 : 1,
+      orbit: true,
+    });
+    meta.push({ kind: "topic", slug: topics[i].slug, count: topics[i].count, picked });
+  });
   if (pick) {
     const i = topics.findIndex((t) => t.slug === pick.slug);
     signs.push({ text: wrapSign(labels.pieces(pick.count, pick.name), 26), x: 0, y: CONSTELLATION.countY, z: 0, color: i >= 0 ? orbTone(i) : "#f4f4f5", fontSize: COUNT_FONT, font: FONTS.monoBold });
+    meta.push({ kind: "count" });
   }
   const m = end.monument;
   if (m && labels.monument) {
-    const x = m.center.x - end.center.x;
-    const z = m.center.z - end.center.z + 1.2;
-    const top = NEWSROOM.end.monument.h;
     const L = labels.monument;
-    signs.push(
-      { text: L.citations, x: x - 1.5, y: top - 1.1, z, color: MONUMENT_COLOR, fontSize: 1.1, font: FONTS.monoBold },
-      { text: L.citationsLabel.toUpperCase(), x: x - 1.5, y: top - 2.4, z, color: "#f4f4f5", fontSize: 0.34, font: FONTS.monoBold },
-      { text: L.hIndex, x: x + 1.5, y: top - 1.1, z, color: MONUMENT_COLOR, fontSize: 1.1, font: FONTS.monoBold },
-      { text: L.hIndexLabel.toUpperCase(), x: x + 1.5, y: top - 2.4, z, color: "#f4f4f5", fontSize: 0.34, font: FONTS.monoBold },
-      { text: L.source, x, y: top - 3.4, z, color: "#c4b5fd", fontSize: 0.3, font: FONTS.monoBold },
+    const x = m.center.x - end.center.x;
+    // Just in front of the monument's plaza face.
+    const z = m.center.z - end.center.z + (m.rect.maxZ - m.rect.minZ) / 2 + 0.45;
+    const plate = (text: string, color: string, fontSize: number) => ({ text, x, z, color, fontSize, font: FONTS.monoBold });
+    const column = stackColumn(
+      [
+        plate(L.citations, MONUMENT_COLOR, 0.7),
+        plate(L.citationsLabel.toUpperCase(), "#f4f4f5", 0.32),
+        plate(L.hIndex, MONUMENT_COLOR, 0.7),
+        plate(L.hIndexLabel.toUpperCase(), "#f4f4f5", 0.32),
+        plate(L.source, "#c4b5fd", 0.28),
+      ],
+      MONUMENT_BASE,
     );
+    for (const spec of column) {
+      signs.push(spec);
+      meta.push({ kind: "monument" });
+    }
   }
-  if (layout.board) signs.push({ text: labels.archive, x: layout.board.center.x - end.center.x - 0.6, y: NEWSROOM.board.h - 0.6, z: layout.board.center.z - end.center.z, color: "#22d3ee", fontSize: 0.4, font: FONTS.monoBold });
-  return signs;
+  if (layout.board) {
+    signs.push({ text: labels.archive, x: layout.board.center.x - end.center.x - 0.6, y: NEWSROOM.board.h - 0.6, z: layout.board.center.z - end.center.z, color: "#22d3ee", fontSize: 0.4, font: FONTS.monoBold });
+    meta.push({ kind: "archive" });
+  }
+  return { signs, meta };
 }
 
 /**
@@ -208,13 +258,16 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
     else store.selectTopic(topicPickOf(topic));
   };
 
-  const signs = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick), [layout, topics, slots, labels, pick]);
+  const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick), [layout, topics, slots, labels, pick]);
+  const hovered = useRef<string | null>(null);
+  const root = useRef<Group>(null);
+  const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion });
   useEffect(() => {
     sceneProbes.topics.monument = end.monument && labels.monument ? [labels.monument.citations, labels.monument.hIndex, labels.monument.source] : null;
   }, [end.monument, labels.monument]);
 
   return (
-    <group name="library-end" position={[end.center.x, 0, end.center.z]}>
+    <group ref={root} name="library-end" position={[end.center.x, 0, end.center.z]}>
       <instancedMesh key={`columns-${columns.count}`} name="library-end-columns" args={[columnGeo, columnMat, columns.count]} raycast={NO_RAYCAST}>
         <instancedBufferAttribute attach="instanceMatrix" args={[columns.matrices, 16]} />
         <instancedBufferAttribute attach="instanceColor" args={[columns.colors, 3]} />
@@ -227,8 +280,15 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
           args={[orbGeo, orbMat, orbCount]}
           frustumCulled={false}
           onClick={onClick}
-          onPointerOver={() => setCursor("pointer")}
-          onPointerOut={() => setCursor("")}
+          onPointerOver={(e) => {
+            setCursor("pointer");
+            // A hovered orb's label wins a contested spot (the rest show by priority).
+            hovered.current = e.instanceId === undefined ? null : (topics[e.instanceId % n]?.slug ?? null);
+          }}
+          onPointerOut={() => {
+            setCursor("");
+            hovered.current = null;
+          }}
         >
           <instancedBufferAttribute attach="instanceColor" args={[orbColors, 3]} />
         </instancedMesh>
@@ -241,7 +301,7 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
           </lineSegments>
         </group>
       )}
-      <FloatingSigns signs={signs} name="library-end-signs" tier={tier} orbit={angle} />
+      <FloatingSigns signs={signs} name="library-end-signs" tier={tier} orbit={angle} visibility={visibility} />
     </group>
   );
 }

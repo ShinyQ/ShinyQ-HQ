@@ -87,3 +87,34 @@ describe("Topic Constellation (pure)", () => {
     expect(topicPickOf(topic("voice-ai"))).toEqual({ slug: "voice-ai", name: "Voice AI", count: 1, rooms: ["L4:making-a-voice-agent-interruptible"] });
   });
 });
+
+describe("end plaza signs", () => {
+  it("stacks the monument plates in one column with clear gaps, under one source line", async () => {
+    const { endPlazaSigns } = await import("@/experience/floors/library/decor/EndPlaza");
+    const { signPlate } = await import("@/experience/fx/signLayout");
+    const labels = {
+      pieces: (count: number, topic: string) => `${count} pieces on ${topic}`,
+      monument: { citations: "13", citationsLabel: "Citations", hIndex: "2", hIndexLabel: "h-index", source: "Google Scholar · as of Oct 2026" },
+      archive: "Post archive",
+    };
+    const slots = orbSlots(topics);
+    const { signs, meta } = endPlazaSigns(layout, topics, slots, labels, topicPickOf(topic("voice-ai")));
+    const monument = signs.filter((_, i) => meta[i].kind === "monument");
+    expect(monument.map((s) => s.text)).toEqual(["13", "CITATIONS", "2", "H-INDEX", "Google Scholar · as of Oct 2026"]);
+    expect(new Set(monument.map((s) => `${s.x},${s.z}`)).size).toBe(1);
+    for (let i = 1; i < monument.length; i++) {
+      const above = monument[i - 1];
+      const below = monument[i];
+      expect(above.y - signPlate(above).h / 2).toBeGreaterThan(below.y + signPlate(below).h / 2);
+    }
+    // The headline floats above every topic label, and the picked label is the larger one.
+    const count = signs[meta.findIndex((m) => m.kind === "count")];
+    const tops = signs.filter((_, i) => meta[i].kind === "topic").map((s) => s.y + signPlate(s).h / 2);
+    expect(count.y - signPlate(count).h / 2).toBeGreaterThan(Math.max(...tops));
+    const voice = signs[meta.findIndex((m) => m.slug === "voice-ai")];
+    const other = signs[meta.findIndex((m) => m.slug === "case-study")];
+    expect(voice.fontSize).toBeGreaterThan(other.fontSize);
+    expect(other.opacity).toBeLessThan(1);
+    expect(meta.find((m) => m.slug === "voice-ai")?.picked).toBe(true);
+  });
+});

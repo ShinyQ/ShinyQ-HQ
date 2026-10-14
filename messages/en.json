@@ -256,7 +256,7 @@
         "target": "Research metrics",
         "citations": "Citations",
         "hIndex": "h-index",
-        "asOf": "{source}, as of {date}"
+        "asOf": "{source} · as of {date}"
       }
     }
   },

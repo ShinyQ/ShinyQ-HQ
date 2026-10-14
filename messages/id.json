@@ -256,7 +256,7 @@
         "target": "Metrik riset",
         "citations": "Sitasi",
         "hIndex": "h-index",
-        "asOf": "{source}, per {date}"
+        "asOf": "{source} · per {date}"
       }
     }
   },

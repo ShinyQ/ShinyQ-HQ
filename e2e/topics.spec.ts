@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
+import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
 import {
   asReturningVisitor,
   chooseMotion,
@@ -27,10 +28,11 @@ import {
  */
 test.describe.configure({ timeout: 180_000 });
 
-type Topics = { topic: string | null; lit: string[]; roads: number; orbit: number; orbs: { slug: string; x: number; y: number; z: number }[]; monument: string[] | null };
+type Box = { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] };
+type Topics = { topic: string | null; lit: string[]; roads: number; orbit: number; orbs: { slug: string; x: number; y: number; z: number }[]; monument: string[] | null; labels: Box[] };
 type TW = Window & {
   __hq: {
-    store: { getState: () => Record<string, unknown> & { topics: { topic: { slug: string } | null }; openRoom: (r: string) => void; beam: unknown; activeRoom: string | null } };
+    store: { getState: () => Record<string, unknown> & { topics: { topic: { slug: string } | null }; openRoom: (r: string) => void; selectTopic: (t: unknown) => void; beam: unknown; activeRoom: string | null } };
     probes: { topics: Topics; signs: Record<string, { text: string }[]> };
     layouts: Record<string, { stops?: Record<string, { x: number; z: number }>; approach: { x: number; z: number } }>;
     interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
@@ -71,13 +73,17 @@ test("picking a topic in the drawer lights its stations, glows their roads and f
   await expect.poll(() => probe(page)).toMatchObject({ topic: "sentiment-analysis", lit: sentiment.rooms });
   // The timeline run back to the westmost lit desk plus a spur per lit desk.
   expect((await probe(page)).roads).toBe(sentiment.rooms.length + 1);
+  // The headline shows where the plaza is on screen: from the plaza approach.
+  await page.keyboard.press("Escape");
+  await waitForPhase(page, "explore");
+  const stop = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:topics"]);
+  await driveTo(page, { x: stop.x - 6, z: 0 });
+  await waitForCameraSettle(page);
   await expect.poll(() => signs(page)).toContain(`${sentiment.items.length} pieces on Sentiment analysis`);
   await expect.poll(() => page.evaluate(() => location.hash)).toBe("#library-topic=sentiment-analysis");
   await expectRenderBudget(page);
 
   // The hash survives closing the drawer; Clear turns everything off.
-  await page.keyboard.press("Escape");
-  await waitForPhase(page, "explore");
   await expect.poll(() => page.evaluate(() => location.hash)).toBe("#library-topic=sentiment-analysis");
   await openTopics(page);
   await page.getByTestId("topics-clear").click();
@@ -163,12 +169,14 @@ test("Cmd-K on the Classic site opens the Writing page filtered by the topic", a
 
 test("the research monument shows the metrics with their date and opens the Research desk", async ({ page }) => {
   await enterFloorRoute(page, "/en/library");
+  const monument = await page.evaluate(() => (window as unknown as { __hq: { interact: { items: { id: string; at: { x: number; z: number } }[] } } }).__hq.interact.items.find((i) => i.id === "L4:station:metrics")!.at);
+  await driveTo(page, monument);
+  await waitForCameraSettle(page);
   const metrics = await probe(page);
-  expect(metrics.monument).toEqual(["13", "2", "Google Scholar, as of Oct 2026"].map((s, i) => (i < 2 ? expect.stringMatching(/^\d+$/) : s)));
+  expect(metrics.monument).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/), expect.stringMatching(/^Google Scholar · as of [A-Z][a-z]{2} \d{4}$/)]);
   const texts = await signs(page);
   expect(texts).toContain(en.library.topics.monument.citations.toUpperCase());
   expect(texts.some((t) => /as of [A-Z][a-z]{2} \d{4}$/.test(t))).toBe(true);
-  const monument = await page.evaluate(() => (window as unknown as { __hq: { interact: { items: { id: string; at: { x: number; z: number } }[] } } }).__hq.interact.items.find((i) => i.id === "L4:station:metrics")!.at);
   await driveTo(page, { x: monument.x, z: monument.z + 4 });
   await waitForCameraSettle(page);
   const item = await visibleTarget(page, { kinds: ["station"] });
@@ -206,3 +214,61 @@ test("reduced motion holds the orbit still, a pick included", async ({ page }) =
   await waitForFrames(page, 30);
   expect((await probe(page)).orbit).toBe(before);
 });
+
+/** Pairs of shown end-plaza signs whose projected plates (screen quads) overlap by more than 2% of the smaller one. */
+async function labelCollisions(page: Page) {
+  const boxes = await page.evaluate(() => (window as unknown as TW).__hq.probes.topics.labels);
+  const hits: string[] = [];
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const b = boxes[j];
+      if (polygonOverlap(a.quad, b.quad) > 0.02 * Math.min(polygonArea(a.quad), polygonArea(b.quad))) hits.push(`${a.text} x ${b.text}`);
+    }
+  return { boxes, hits };
+}
+
+for (const device of [
+  { id: "desktop", use: { viewport: { width: 1440, height: 900 } } },
+  { id: "phone", use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
+]) {
+  test.describe(`end plaza labels (${device.id})`, () => {
+    test.use(device.use);
+    test("never overlap on screen from the approach, the camera zones and while orbiting, a pick included", async ({ page }) => {
+      test.setTimeout(300_000);
+      await enterFloorRoute(page, "/en/library");
+      const { stop, end } = await page.evaluate(() => {
+        const hq = (window as unknown as TW).__hq;
+        return { stop: hq.layouts.L4.stops!["L4:topics"], end: { x: hq.layouts.L4.stops!["L4:topics"].x + 6.5, z: 0 } };
+      });
+      const monument = await page.evaluate(() => (window as unknown as { __hq: { interact: { items: { id: string; at: { x: number; z: number } }[] } } }).__hq.interact.items.find((i) => i.id === "L4:station:metrics")!.at);
+      const voice = await topicOf(page, "case-study");
+      const check = async (pose: string) => {
+        await waitForCameraSettle(page);
+        await waitForFrames(page, 30);
+        const { boxes, hits } = await labelCollisions(page);
+        expect(hits, `${device.id} ${pose}: ${boxes.length} shown`).toEqual([]);
+        return boxes;
+      };
+      // The plaza approach: the default follow camera heading east.
+      await driveTo(page, { x: end.x - 20, z: 0 });
+      await driveTo(page, { x: end.x - 12, z: 0 });
+      await check("approach");
+      // The constellation stop (camera zone looking east), then a pick.
+      await driveTo(page, stop);
+      const idle = await check("constellation");
+      expect(idle.filter((b) => b.kind === "topic").length).toBeGreaterThanOrEqual(device.id === "phone" ? 3 : 4);
+      await page.evaluate((t) => (window as unknown as TW).__hq.store.getState().selectTopic({ slug: t.slug, name: t.label, count: t.items.length, rooms: t.rooms }), voice);
+      const picked = await check("constellation, picked");
+      expect(picked.some((b) => b.kind === "topic" && b.text === "Case studies")).toBe(true);
+      expect(picked.some((b) => b.kind === "count")).toBe(true);
+      // Orbiting the camera around the rover.
+      for (let i = 0; i < 3; i++) await page.keyboard.press("q");
+      await check("orbit");
+      // The monument stop (camera zone looking north): every plate shows, nothing covers them.
+      await driveTo(page, monument);
+      const atMonument = await check("monument");
+      expect(atMonument.filter((b) => b.kind === "monument")).toHaveLength(5);
+    });
+  });
+}

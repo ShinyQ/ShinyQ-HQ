@@ -32,12 +32,15 @@ export function FloatingSigns({
   name,
   tier,
   orbit,
+  visibility,
 }: {
   signs: readonly SignSpec[];
   name: string;
   tier: GpuTier;
   /** Orbit angle (rad) for signs marked `orbit` (the L4 topic labels ride the constellation). */
   orbit?: { readonly current: number };
+  /** Per-sign opacity multiplier, 0 to 1, written by the caller every frame (the L4 label placement); missing entries count as 1. */
+  visibility?: { readonly current: ArrayLike<number> };
 }) {
   const group = useRef<Group>(null);
   const plates = useRef<InstancedMesh>(null);
@@ -94,7 +97,7 @@ export function FloatingSigns({
       const local = s.orbit && angle ? orbitXZ(s.x, s.z, angle) : { x: s.x, z: s.z };
       const at = { x: origin.x + local.x, z: origin.z + local.z };
       const yaw = signFacing(at, cam);
-      const k = s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x);
+      const k = (s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x)) * (visibility?.current[i] ?? 1);
       const shown = k > 0.01;
       dummy.position.set(local.x, s.y, local.z);
       dummy.rotation.set(-(s.tilt ?? 0), yaw, 0, "YXZ");

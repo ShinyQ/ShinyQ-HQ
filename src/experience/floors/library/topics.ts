@@ -74,7 +74,7 @@ export const CONSTELLATION = {
   /** Orbit speed (rad/s); still under reduced motion. */
   spin: 0.08,
   /** Height of the "N pieces on X" sign, above the cloud. */
-  countY: 12.2,
+  countY: 12.6,
   /** Label lift above an orb. */
   labelLift: 0.75,
 } as const;
