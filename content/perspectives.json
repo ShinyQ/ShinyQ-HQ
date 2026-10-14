@@ -4,7 +4,7 @@
   "entries": [
     {
       "id": "coding-principles",
-      "question": { "en": "What are your core engineering principles?", "id": "Apa prinsip engineering utama Anda?" },
+      "question": { "en": "What are your core engineering principles?", "id": "Apa prinsip utama dalam pekerjaan engineering?" },
       "answer": {
         "en": "Five rules guide most of my work: define the spec first, delegate implementation but own the review, evaluate before release, design for recovery, and report metrics with their context. They come from building software and AI applications that run in production, where a plausible change and a correct change are not the same thing.",
         "id": "Ada lima aturan yang memandu sebagian besar pekerjaan saya: tetapkan spec terlebih dahulu, delegasikan implementasi tetapi tetap pegang review, evaluasi sebelum rilis, rancang agar bisa pulih, dan laporkan metrik beserta konteksnya. Aturan ini lahir dari membangun aplikasi software dan AI yang berjalan di production, tempat perubahan yang tampak masuk akal belum tentu benar."
@@ -14,7 +14,7 @@
     },
     {
       "id": "spec-before-code",
-      "question": { "en": "Why do you write a spec before any code?", "id": "Mengapa Anda menulis spec sebelum menulis kode?" },
+      "question": { "en": "Why do you write a spec before any code?", "id": "Kenapa spec ditulis sebelum kode?" },
       "answer": {
         "en": "Agents write plausible code quickly, but an agent cannot tell me whether an approval engine matches the business process. So I define what correct means first: a numbered spec with acceptance criteria, plus a constitution with the rules every agent follows. Fixing a contradiction in a document costs an afternoon; fixing it after it becomes a migration costs far more.",
         "id": "Agent menulis kode yang tampak masuk akal dengan cepat, tetapi agent tidak bisa memastikan sebuah approval engine sesuai dengan proses bisnisnya. Karena itu saya menetapkan arti benar terlebih dahulu: spec bernomor dengan acceptance criteria, ditambah constitution berisi aturan yang diikuti setiap agent. Memperbaiki kontradiksi di dokumen hanya butuh satu sore; memperbaikinya setelah menjadi migration jauh lebih mahal."
@@ -25,7 +25,7 @@
     },
     {
       "id": "ai-coding-agents",
-      "question": { "en": "How do you work with AI coding agents?", "id": "Bagaimana Anda bekerja dengan AI coding agent?" },
+      "question": { "en": "How do you work with AI coding agents?", "id": "Bagaimana alur kerja bersama AI coding agent?" },
       "answer": {
         "en": "I give agents a numbered spec, and they implement much of the code in parallel, each in its own git worktree. I stay responsible for the design, the review, verification in a deployed environment and the merge decision. What I carry between projects is not the idea of letting agents write code. It is making the work explicit enough to review, and checking that the tests really ran before I trust a green result.",
         "id": "Saya memberi agent spec bernomor, lalu agent mengerjakan sebagian besar kode secara paralel, masing-masing di git worktree sendiri. Saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan keputusan merge. Yang saya bawa ke proyek berikutnya bukan sekadar membiarkan agent menulis kode, melainkan membuat pekerjaan cukup eksplisit untuk di-review dan memastikan test benar-benar berjalan sebelum saya memercayai hasil hijau."
@@ -39,7 +39,7 @@
     },
     {
       "id": "code-review",
-      "question": { "en": "What do you look for in a code review, especially when an agent wrote the code?", "id": "Apa yang Anda periksa saat code review, terutama jika kodenya ditulis agent?" },
+      "question": { "en": "What do you look for in a code review, especially when an agent wrote the code?", "id": "Apa yang diperiksa saat code review, terutama pada kode yang ditulis agent?" },
       "answer": {
         "en": "I review against the spec: does the change meet its acceptance criteria and the architecture rules, and did the checks actually run? A skipped test tier can look exactly like a passed one, so I look at what CI really executed. For authentication, approvals and payment flows, I now want a second human reviewer, not only me.",
         "id": "Saya me-review berdasarkan spec: apakah perubahan memenuhi acceptance criteria dan aturan arsitektur, dan apakah pengecekannya benar-benar berjalan? Test tier yang dilewati bisa terlihat persis seperti yang lulus, jadi saya melihat apa yang benar-benar dijalankan CI. Untuk alur autentikasi, approval, dan pembayaran, kini saya ingin ada reviewer manusia kedua, bukan hanya saya."
@@ -50,7 +50,7 @@
     },
     {
       "id": "testing-approach",
-      "question": { "en": "How do you approach testing?", "id": "Bagaimana pendekatan Anda terhadap testing?" },
+      "question": { "en": "How do you approach testing?", "id": "Bagaimana cara merancang testing?" },
       "answer": {
         "en": "CI should fail closed: a test tier that is skipped must fail the build, not pass it. I prefer production-shaped fixtures, because a tiny fake token once hid a session cookie that broke as soon as it carried real permissions. When a bug comes from a real failure, I turn the exact error into a regression test, so nobody can simplify the fix away later.",
         "id": "CI harus fail closed: test tier yang dilewati harus menggagalkan build, bukan meloloskannya. Saya lebih memilih fixture yang menyerupai production, karena token palsu yang sangat pendek pernah menyembunyikan cookie sesi yang langsung rusak begitu membawa permission sungguhan. Jika bug berasal dari kegagalan nyata, saya mengubah error persisnya menjadi regression test agar perbaikannya tidak hilang saat kode disederhanakan nanti."
@@ -64,7 +64,7 @@
     },
     {
       "id": "evaluation-gates",
-      "question": { "en": "How do you decide whether an AI change is ready to release?", "id": "Bagaimana Anda memutuskan apakah perubahan AI siap dirilis?" },
+      "question": { "en": "How do you decide whether an AI change is ready to release?", "id": "Kapan perubahan AI dianggap siap dirilis?" },
       "answer": {
         "en": "I write the release gates before I run the evaluation: labelled gold sets, separate development and held-out sets, and the metrics that matter for the risk, such as high-risk recall next to the false-positive rate. If a change fails a gate, it does not become the decision maker, even when another number looks better. That is why our more precise fraud engine went to shadow mode instead.",
         "id": "Saya menulis release gate sebelum menjalankan evaluasi: gold set berlabel, set development dan held-out yang terpisah, serta metrik yang relevan dengan risikonya, misalnya recall untuk kasus high-risk di samping false-positive rate. Jika perubahan gagal di salah satu gate, perubahan itu tidak menjadi pengambil keputusan, meskipun angka lain terlihat lebih baik. Karena itulah fraud engine kami yang lebih presisi masuk ke shadow mode."
@@ -78,10 +78,10 @@
     },
     {
       "id": "negative-results",
-      "question": { "en": "What do you do when an experiment does not work?", "id": "Apa yang Anda lakukan jika sebuah eksperimen tidak berhasil?" },
+      "question": { "en": "What do you do when an experiment does not work?", "id": "Apa yang dilakukan saat eksperimen tidak berhasil?" },
       "answer": {
         "en": "I record the negative result and leave the change switched off. In our voice agent work, two later fixes did not reduce how often the agent talked over callers, so I reported that instead of calling the problem fixed. I also deleted the rejected switches rather than leaving them dormant in the codebase.",
-        "id": "Saya mencatat hasil negatifnya dan membiarkan perubahan itu tetap nonaktif. Dalam pengerjaan voice agent kami, dua perbaikan berikutnya tidak mengurangi seberapa sering agent memotong pembicaraan penelepon, jadi saya melaporkannya apa adanya alih-alih menyebut masalahnya sudah selesai. Switch yang ditolak juga saya hapus, bukan dibiarkan tidur di codebase."
+        "id": "Saya mencatat hasil negatifnya dan membiarkan perubahan itu tetap nonaktif. Dalam pengerjaan voice agent kami, dua perbaikan berikutnya tidak mengurangi seberapa sering agent memotong pembicaraan penelepon, jadi saya melaporkannya apa adanya alih-alih menyebut masalahnya sudah selesai. Switch yang ditolak juga saya hapus, bukan dibiarkan tidak terpakai di codebase."
       },
       "tags": ["evaluation", "voice-ai"],
       "asOf": "2026-10",
@@ -103,7 +103,7 @@
     },
     {
       "id": "shadow-mode",
-      "question": { "en": "When do you use shadow mode?", "id": "Kapan Anda menggunakan shadow mode?" },
+      "question": { "en": "When do you use shadow mode?", "id": "Kapan shadow mode digunakan?" },
       "answer": {
         "en": "When a new system is better on some metrics but fails a gate I set in advance. In shadow mode it runs beside the live pipeline on real data and stores its output, while users still see the current system's result. That lets me learn from production without asking users to pay for the trade-off. Isolation is not accuracy, though, so promotion still needs the gates to pass.",
         "id": "Saat sistem baru lebih baik di beberapa metrik tetapi gagal di gate yang sudah saya tetapkan sebelumnya. Dalam shadow mode, sistem itu berjalan di samping pipeline live dengan data nyata dan menyimpan output-nya, sementara pengguna tetap melihat hasil dari sistem yang sekarang. Dengan begitu saya bisa belajar dari production tanpa membebani pengguna dengan trade-off-nya. Namun terisolasi bukan berarti akurat, jadi promosi tetap harus lolos semua gate."
@@ -114,10 +114,10 @@
     },
     {
       "id": "llm-reliability",
-      "question": { "en": "How do you make LLM features reliable in production?", "id": "Bagaimana Anda membuat fitur LLM andal di production?" },
+      "question": { "en": "How do you make LLM features reliable in production?", "id": "Bagaimana menjaga fitur LLM tetap andal di production?" },
       "answer": {
         "en": "I start from the actual error strings, not the failure percentage, because two different messages usually mean two different bugs. Then I layer the fix: structured output mode, explicit token and time limits, defensive parsing, and bounded retries that count every attempt. Reasoning effort is a budget setting too, not only a quality setting.",
-        "id": "Saya mulai dari error string yang sebenarnya, bukan dari persentase kegagalan, karena dua pesan yang berbeda biasanya berarti dua bug yang berbeda. Lalu perbaikannya saya susun berlapis: mode structured output, batas token dan waktu yang eksplisit, parsing yang defensif, dan retry terbatas yang menghitung setiap percobaan. Reasoning effort juga merupakan pengaturan anggaran, bukan hanya pengaturan kualitas."
+        "id": "Saya mulai dari pesan error yang muncul, bukan dari persentase kegagalan, karena dua pesan yang berbeda biasanya berarti dua bug yang berbeda. Lalu perbaikannya saya susun berlapis: mode structured output, batas token dan waktu yang eksplisit, parsing yang defensif, dan retry terbatas yang menghitung setiap percobaan. Reasoning effort juga merupakan pengaturan anggaran, bukan hanya pengaturan kualitas."
       },
       "tags": ["reliability", "llm", "testing"],
       "asOf": "2026-10",
@@ -142,7 +142,7 @@
     },
     {
       "id": "production-ownership",
-      "question": { "en": "What does owning production mean to you?", "id": "Apa arti bertanggung jawab atas production bagi Anda?" },
+      "question": { "en": "What does owning production mean to you?", "id": "Apa arti bertanggung jawab atas sistem production?" },
       "answer": {
         "en": "A merged pull request is not the end. I verify changes in a deployed environment, plan for failures with a recovery path, and watch what real deployments expose, because they catch defects that gold sets miss. I no longer call sign-in done until a smoke test passes against the real identity provider.",
         "id": "Pull request yang sudah di-merge bukan akhir pekerjaan. Saya memverifikasi perubahan di environment yang sudah di-deploy, menyiapkan jalur pemulihan untuk kegagalan, dan memperhatikan apa yang terungkap dari deployment nyata, karena di sanalah muncul defect yang terlewat oleh gold set. Saya tidak lagi menganggap fitur sign-in selesai sebelum smoke test lolos terhadap identity provider yang sebenarnya."
@@ -156,10 +156,10 @@
     },
     {
       "id": "preferred-tools",
-      "question": { "en": "Which tools do you prefer, and why?", "id": "Tool apa yang Anda sukai, dan mengapa?" },
+      "question": { "en": "Which tools do you prefer, and why?", "id": "Tool apa yang menjadi pilihan, dan kenapa?" },
       "answer": {
-        "en": "For delivery: GitHub Copilot, Claude Code and Codex for implementation, GitHub Spec Kit with versioned constitutions for specs and agent rules, and CI gates in GitHub Actions. My recent backends use Python with FastAPI, PostgreSQL and Next.js; I chose PostgreSQL over Cosmos DB when a domain needed relational integrity. I build AI applications on Azure. I prefer tools that keep the work explicit enough to review.",
-        "id": "Untuk delivery: GitHub Copilot, Claude Code, dan Codex untuk implementasi, GitHub Spec Kit dengan constitution berversi untuk spec dan aturan agent, serta CI gate di GitHub Actions. Backend saya belakangan ini memakai Python dengan FastAPI, PostgreSQL, dan Next.js; saya memilih PostgreSQL alih-alih Cosmos DB saat domainnya membutuhkan integritas relasional. Aplikasi AI saya bangun di Azure. Saya memilih tool yang membuat pekerjaan cukup eksplisit untuk di-review."
+        "en": "For delivery: GitHub Copilot, Claude Code and Codex for implementation, GitHub Spec Kit with versioned constitutions for specs and agent rules, and CI gates in GitHub Actions. Recent projects use Python with FastAPI and PostgreSQL for the backend, and Next.js for the frontend; I chose PostgreSQL over Cosmos DB when a domain needed relational integrity. I build AI applications on Azure. I prefer tools that keep the work explicit enough to review.",
+        "id": "Untuk delivery: GitHub Copilot, Claude Code, dan Codex untuk implementasi, GitHub Spec Kit dengan constitution berversi untuk spec dan aturan agent, serta CI gate di GitHub Actions. Saya memakai Python, FastAPI, dan PostgreSQL untuk backend, serta Next.js untuk frontend; saya memilih PostgreSQL alih-alih Cosmos DB saat domainnya membutuhkan integritas relasional. Aplikasi AI saya bangun di Azure. Saya memilih tool yang membuat pekerjaan cukup jelas untuk di-review."
       },
       "tags": ["tools", "ai-agents"],
       "asOf": "2026-10",
@@ -170,7 +170,7 @@
     },
     {
       "id": "learning-advice",
-      "question": { "en": "What advice would you give someone starting out in software or AI engineering?", "id": "Apa saran Anda untuk orang yang baru memulai di software atau AI engineering?" },
+      "question": { "en": "What advice would you give someone starting out in software or AI engineering?", "id": "Apa saran untuk yang baru mulai di software atau AI engineering?" },
       "answer": {
         "en": "Build real things early and measure them honestly. I learned by building: Android apps in a vocational school lab, competitions from chatbots to capture-the-flag, and part-time backend work while I studied. The habits I would pass on are reading the actual error before changing anything, and writing down what would prove you wrong before you run the test.",
         "id": "Bangun hal nyata sejak awal dan ukur hasilnya dengan jujur. Saya belajar dengan membangun: aplikasi Android di lab SMK, kompetisi mulai dari chatbot hingga capture-the-flag, dan pekerjaan backend paruh waktu selama kuliah. Kebiasaan yang ingin saya wariskan adalah membaca error yang sebenarnya sebelum mengubah apa pun, dan menuliskan apa yang akan membuktikan kita salah sebelum menjalankan test."
@@ -184,7 +184,7 @@
     },
     {
       "id": "changing-requirements",
-      "question": { "en": "How do you work with clients and product owners when requirements change?", "id": "Bagaimana Anda bekerja dengan klien dan product owner saat kebutuhan berubah?" },
+      "question": { "en": "How do you work with clients and product owners when requirements change?", "id": "Bagaimana bekerja dengan klien dan product owner saat kebutuhan berubah?" },
       "answer": {
         "en": "I turn the change into a new numbered spec first, so everyone sees a document diff before a code diff. When a revised business process moved our vendor portal from delivery documents to purchase orders, the new specs showed which acceptance criteria were superseded, and agents got bounded tasks against them. Each spec that replaces earlier work should also say which code to delete.",
         "id": "Saya menuangkan perubahan itu ke spec bernomor yang baru terlebih dahulu, sehingga semua orang melihat perubahan dokumen sebelum perubahan kode. Ketika proses bisnis yang direvisi memindahkan pusat portal vendor kami dari dokumen penerimaan barang ke purchase order, spec baru menunjukkan acceptance criteria mana yang digantikan, dan agent mendapat tugas yang jelas batasnya. Setiap spec yang menggantikan pekerjaan sebelumnya juga harus menyebutkan kode mana yang perlu dihapus."

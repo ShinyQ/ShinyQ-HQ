@@ -216,7 +216,7 @@ describe("perspectives and principles in the pack", () => {
     const chunk = byId(built, "perspective-spec-before-code")!;
     expect(chunk).toMatchObject({ type: "perspective", url: "/blog/spec-driven-development-with-ai-coding-agents", updatedAt: "2026-10" });
     expect(chunk.text_en.startsWith(`Kurniadi's written view "Why do you write a spec before any code?":`)).toBe(true);
-    expect(chunk.text_id.startsWith(`Pandangan tertulis Kurniadi "Mengapa Anda menulis spec sebelum menulis kode?":`)).toBe(true);
+    expect(chunk.text_id.startsWith(`Pandangan tertulis Kurniadi "Kenapa spec ditulis sebelum kode?":`)).toBe(true);
     expect(chunk.keywords).toEqual(expect.arrayContaining(["perspective", "spec-driven-development"]));
     expect(chunkTags(chunk)).toContain("perspectives");
   });
