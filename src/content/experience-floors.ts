@@ -1,5 +1,7 @@
 import type { LibraryData, RoofData } from "@/experience/types";
-import { getLibrary, getPosts, getProfile, getRoof } from "./load";
+import { getLibrary, getPosts, getProfile, getRoof, getTopicIndex } from "./load";
+import { messages } from "./room-views/shared";
+import { topicRooms } from "./topic-index";
 import type { Locale } from "./schema";
 import { isResearch } from "./selectors";
 
@@ -27,6 +29,7 @@ export function buildLibraryData(locale: Locale): LibraryData {
     talks: [...library.talks]
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((t) => ({ id: t.id, title: t.title[locale], event: t.event, date: t.date, role: t.role })),
+    topics: getTopicIndex().topics.map((t) => ({ slug: t.slug, label: messages(locale).library.topics.names[t.slug], count: t.items.length, rooms: topicRooms(t) })),
   };
 }
 

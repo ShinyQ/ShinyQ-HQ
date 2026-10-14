@@ -22,6 +22,7 @@ describe("buildPaletteEntries", () => {
       "action:quick-view",
     ]);
     expect(entries.filter((e) => e.target.type === "tech")).toHaveLength(index.techs.length);
+    expect(entries.filter((e) => e.target.type === "topic")).toHaveLength(index.topics.length);
     expect(new Set(entries.map((e) => e.key)).size).toBe(entries.length);
   });
 
@@ -76,6 +77,15 @@ describe("searchPalette", () => {
     expect(show[0].entries[0].title).toEqual({ en: "Show projects using Azure OpenAI", id: "Tampilkan proyek yang memakai Azure OpenAI" });
     expect(searchPalette(entries, "tampilkan proyek next.js")[0].entries[0].key).toBe("tech:next-js");
     expect(searchPalette(entries, "")).not.toContainEqual(expect.objectContaining({ id: "actions" }));
+  });
+
+  it("finds the Topic Constellation row first for a writing query, in both languages", () => {
+    const show = searchPalette(entries, "show writing about voice ai");
+    expect(show[0].entries[0].key).toBe("topic:voice-ai");
+    expect(show[0].entries[0].title).toEqual({ en: "Show writing about Voice AI", id: "Tampilkan tulisan tentang Voice AI" });
+    expect(show[0].entries[0].floor).toBe("L4");
+    expect(searchPalette(entries, "tampilkan tulisan analisis sentimen")[0].entries[0].key).toBe("topic:sentiment-analysis");
+    expect(searchPalette(entries, "").flatMap((g) => g.entries).some((e) => e.target.type === "topic")).toBe(false);
   });
 
   it('tolerates a subsequence typo: "vcai" finds the voice pod', () => {

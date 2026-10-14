@@ -188,6 +188,18 @@ export interface LibraryData {
   /** Models and datasets (the models shelf, room `L4:publications`). */
   models: { id: string; title: string; kind: "model" | "dataset"; venue: string | null; year: number }[];
   talks: { id: string; title: string; event: string; date: string; role: "speaker" | "author" | "trainer" }[];
+  /** Topic Constellation (build-time topic index, `TOPICS` order): label for this locale, item count and the L4 rooms it lights. */
+  topics: LibraryTopic[];
+}
+
+/** One topic of the L4 Topic Constellation. */
+export interface LibraryTopic {
+  slug: string;
+  label: string;
+  /** Posts, papers, models and talks on the topic. */
+  count: number;
+  /** Rooms the topic lights: post stations and the Research, Models and Talks desks (distinct, item order). */
+  rooms: RoomId[];
 }
 
 /** RF payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/roof.ts`). */

@@ -1,11 +1,12 @@
 import { createTranslator } from "next-intl";
-import { getContact, getLibrary, getPosts, getProfile } from "../load";
+import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "../load";
 import { buildPaperPreview } from "../papers";
 import type { Locale } from "../schema";
 import { isResearch, publicationDate, researchPublications } from "../selectors";
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { chain, chipLogos, fill, linkLogo, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
+import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
 
 /** L4 Library (Phase 5a): posts (hosted ones link their /blog page, Medium ones open externally), the research shelf, the models shelf and the talks stage. */
 export function buildLibraryViews(locale: Locale): RoomView[] {
@@ -97,5 +98,31 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       page: "/library#talks",
     }),
   ];
-  return chain([...posts, ...shelves]);
+  return [...chain([...posts, ...shelves]), topicsView(locale)];
+}
+
+/** L4 Topic Constellation (`L4:topics`): every topic with its pieces (posts, papers, models, talks) and their rooms. */
+export function topicsView(locale: Locale): RoomView {
+  const m = messages(locale);
+  const library = getLibrary();
+  const titles = new Map<string, string>([
+    ...library.posts.map((p) => [p.slug, p.title[locale]] as const),
+    ...library.publications.map((p) => [p.id, p.title] as const),
+    ...library.talks.map((t) => [t.id, t.title[locale]] as const),
+  ]);
+  return single({
+    id: TOPICS_ROOM,
+    kind: "topics",
+    title: m.library.topics.title,
+    subtitle: m.library.topics.subtitle,
+    accent: "cyan",
+    page: "/library#topics",
+    topics: {
+      topics: getTopicIndex().topics.map((t) => ({
+        slug: t.slug,
+        label: m.library.topics.names[t.slug],
+        items: t.items.map((i) => ({ room: i.room, title: titles.get(i.id) ?? i.id, kind: i.kind })),
+      })),
+    },
+  });
 }

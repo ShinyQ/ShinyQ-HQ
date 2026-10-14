@@ -1,13 +1,14 @@
 import { createHash } from "node:crypto";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
-import type { LocalizedText, Mission, SiteContent, Wing } from "@/content/schema";
+import type { LocalizedText, Mission, RoomId, SiteContent, Wing } from "@/content/schema";
 import type { PaletteActionId } from "./palette-types";
 import { buildRoomCatalog, buildYears, type RoomInfo, type StructuralLabels, type StructuralRoom, type YearInfo } from "@/experience/missions/rooms";
 import { buildTechIndex } from "@/content/tech-index";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { orderPods, podHasGallery } from "@/content/selectors";
 import { buildLabsLayout, LABS_WINGS } from "@/experience/floors/labs/layout";
+import { buildTopicIndex, topicRooms } from "@/content/topic-index";
 
 /** A Cmd-K "Show projects using X" row: the Tech Reactor pick it makes. */
 export interface HudTech {
@@ -37,6 +38,17 @@ const WING_KEYWORDS: Record<Wing, string[]> = {
   data: ["data", "ml", "machine learning", "data science", "nlp", "forecasting", "sentiment", "analytics", "sains data"],
 };
 
+/** A Cmd-K "Show writing about X" row: the Topic Constellation pick it makes. */
+export interface HudTopic {
+  slug: string;
+  label: LocalizedText;
+  count: number;
+  /** L4 rooms the topic lights. */
+  rooms: RoomId[];
+  /** "Show writing about X" in both languages. */
+  title: LocalizedText;
+}
+
 /**
  * Serializable data the client HUD needs. Built on the server so zod and the full dataset stay out of the
  * client bundle, and served as a static file (`/data/hud/index.json`, see src/hud/index-client.ts) so it
@@ -54,6 +66,8 @@ export interface HudIndex {
   techs: HudTech[];
   /** L3 wings with pods, for the Cmd-K "<wing> projects" rows. */
   wings: HudWing[];
+  /** L4 Topic Constellation topics (build-time topic index), for the Cmd-K "Show writing about X" rows. */
+  topics: HudTopic[];
 }
 
 const ACTION_KEYS: Record<PaletteActionId, keyof typeof en.hud.actions> = {
@@ -104,6 +118,16 @@ export function buildHudIndex(content: SiteContent): HudIndex {
     ) as Record<PaletteActionId, LocalizedText>,
     techs,
     wings,
+    topics: buildTopicIndex(content.floors.library).topics.map((t) => {
+      const label = { en: en.library.topics.names[t.slug], id: id.library.topics.names[t.slug] };
+      return {
+        slug: t.slug,
+        label,
+        count: t.items.length,
+        rooms: topicRooms(t),
+        title: { en: en.library.topics.show.replace("{topic}", label.en), id: id.library.topics.show.replace("{topic}", label.id) },
+      };
+    }),
   };
 }
 

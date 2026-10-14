@@ -478,6 +478,7 @@ export default function Experience({
           highlightsExperience: t("rooms.highlightsExperience"),
           highlightsContact: t("rooms.highlightsContact"),
           reactor: t("rooms.reactor"),
+          topics: t("rooms.topics"),
           visits: t("rooms.visits"),
           ops: t("rooms.ops"),
         },

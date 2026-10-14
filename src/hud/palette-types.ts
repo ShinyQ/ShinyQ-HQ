@@ -15,6 +15,8 @@ export type PaletteTarget =
   | { type: "tech"; slug: string }
   /** An L3 wing: its directory panel in the 3D tower, the Work page filtered by it on the Classic site. */
   | { type: "wing"; wing: Wing }
+  /** L4 Topic Constellation: pick a topic (its pieces light up) and ride to the constellation. */
+  | { type: "topic"; slug: string }
   /** Ask the HQ with the typed question (the row exists only while the feature is enabled). */
   | { type: "ask"; q: string };
 
