@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import {
   asReturningVisitor,
+  chooseMotion,
   collectErrors,
   driveTo,
   enterFloorRoute,
@@ -88,7 +89,7 @@ test("picking a topic in the drawer lights its stations, glows their roads and f
 
 test("an orb click picks its topic and a second click clears it; the pedestal opens the drawer", async ({ page }) => {
   // Reduced motion holds the orbit, so the orb stays under the pointer.
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "reduced");
   await enterFloorRoute(page, "/en/library");
   const stop = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:topics"]);
   await driveTo(page, stop);
@@ -196,7 +197,7 @@ test("the Express Return pad by the constellation beams the rover to the elevato
 });
 
 test("reduced motion holds the orbit still, a pick included", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "reduced");
   await enterFloorRoute(page, "/en/library");
   await expect.poll(async () => (await page.evaluate(() => (window as unknown as TW).__hq.probes.topics.orbs.length))).toBeGreaterThan(0);
   const before = (await probe(page)).orbit;
