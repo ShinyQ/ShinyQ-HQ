@@ -154,8 +154,8 @@ jobs:
           name: site
           path: out
       - name: Playwright e2e (shard ${{ matrix.shard }}/4)
-        # Round-robin test list (scripts/e2e-shard.ts); keep the total in sync with the matrix.
-        # e2e/deploy.spec.ts repeats the out/ scan with the private list.
+        # Duration-balanced test list (scripts/e2e-shard.ts, e2e/durations.json); keep the total in sync
+        # with the matrix and with deploy.yml. e2e/deploy.spec.ts repeats the out/ scan with the private list.
         env:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run e2e:shard ${{ matrix.shard }}/4
@@ -190,7 +190,9 @@ jobs:
           name: site
           path: out
       - name: 3D perf gates (shard ${{ matrix.shard }}/2)
-        run: bun run e2e:perf --shard=${{ matrix.shard }}/2
+        # Same duration-balanced split as the e2e shards (perf lane timings in e2e/durations.json), not
+        # Playwright's contiguous --shard, which put all four slow full-tier floors into shard 1.
+        run: bun run e2e:perf:shard ${{ matrix.shard }}/2
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
