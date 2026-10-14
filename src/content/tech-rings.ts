@@ -53,6 +53,7 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   "microsoft 365 copilot": "ai",
   "github copilot": "ai",
   "claude code": "ai",
+  codex: "ai",
   "github spec kit": "ai",
   // Azure
   "entra id": "azure",

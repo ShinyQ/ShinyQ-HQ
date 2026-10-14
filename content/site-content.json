@@ -33,8 +33,8 @@
       "id": "Saya mulai belajar pengembangan Android di lab SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, lewat proyek dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan praktik Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan me-review hasilnya sebelum merge. Saya membangun voice agent yang bisa disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menebak. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
-      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot and Claude Code implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
-      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot dan Claude Code mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik."
+      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
+      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot, Claude Code, dan Codex mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik."
     },
     "principles": [
       {
@@ -6812,7 +6812,7 @@
               },
               {
                 "id": "agents",
-                "label": "Copilot and Claude Code agents",
+                "label": "Copilot, Claude Code and Codex agents",
                 "sublabel": {
                   "en": "Parallel worktrees",
                   "id": "Worktree paralel"
@@ -6894,6 +6894,7 @@
             "GitHub Spec Kit",
             "GitHub Copilot",
             "Claude Code",
+            "Codex",
             "GitHub Actions"
           ],
           "hologram": "graph",

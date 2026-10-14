@@ -152,6 +152,8 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "datatables",
   "ckeditor",
   "openai",
+  // OpenAI marks are not in Simple Icons and have no reusable licence, so Codex stays a text chip.
+  "codex",
   "semgrep",
   "bandit",
   "osv-scanner",
