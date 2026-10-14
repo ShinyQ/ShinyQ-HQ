@@ -1,6 +1,6 @@
 import type { FloorId } from "@/content/schema";
 import { LOBBY } from "../config";
-import type { Rect, Vec2 } from "../types";
+import type { Rect, Vec2, ViewportClass } from "../types";
 import { FIRST_PERSON } from "./firstPerson";
 export { yawLooking } from "./look";
 import { pitchRange, springFactor } from "./rigs";
@@ -183,6 +183,14 @@ export interface ViewZone {
   yaw: number;
   /** Optional zoom so a wide feature fits the view. */
   zoom?: number;
+  /** Another yaw or zoom for a camera class (a phone frames a tall view where a desktop frames a wide one). */
+  classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number }>>;
+}
+
+/** The yaw and zoom a zone asks for on a camera class. */
+export function zoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zoom: number | undefined } {
+  const own = cls ? zone.classView?.[cls] : undefined;
+  return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom };
 }
 
 /**
@@ -215,12 +223,13 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
  * Applies a zone at once (no easing), as an initial state: the session spawn starts in its zone's view,
  * so the intro ends on that view and a deep link opens on it. Also under reduced motion (nothing moves).
  */
-export function primeZone(s: OrbitState, zone: ViewZone | null): void {
+export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass): void {
+  const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined };
   s.zone = zone?.id ?? null;
   s.suppressedZone = null;
-  s.yaw = s.yawTarget = zone?.yaw ?? 0;
-  s.zoom = s.zoomTarget = zone?.zoom ?? 1;
-  s.zoneZoom = zone?.zoom ?? null;
+  s.yaw = s.yawTarget = view.yaw;
+  s.zoom = s.zoomTarget = view.zoom ?? 1;
+  s.zoneZoom = view.zoom ?? null;
   s.pitch = s.pitchTarget = 0;
   s.easing = false;
 }
@@ -236,7 +245,7 @@ export function zoneAt(floor: FloorId, p: Vec2, extra: readonly ViewZone[] = [])
  * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
  * Leaving clears the block.
  */
-export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean): void {
+export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass): void {
   const id = zone?.id ?? null;
   if (id === s.zone) return;
   s.zone = id;
@@ -250,11 +259,12 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
     return;
   }
   if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
-  s.yawTarget = nearestAngle(zone.yaw, s.yaw);
+  const view = zoneView(zone, cls);
+  s.yawTarget = nearestAngle(view.yaw, s.yaw);
   s.pitchTarget = 0;
-  if (zone.zoom) {
-    s.zoomTarget = zone.zoom;
-    s.zoneZoom = zone.zoom;
+  if (view.zoom) {
+    s.zoomTarget = view.zoom;
+    s.zoneZoom = view.zoom;
   }
   s.easing = true;
 }

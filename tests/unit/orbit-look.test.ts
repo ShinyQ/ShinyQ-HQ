@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createOrbitState, primeZone, updateZone, yawLooking, type ViewZone } from "@/experience/camera/orbit";
+import { createOrbitState, primeZone, updateZone, yawLooking, zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW, orbitOffset } from "@/experience/camera/rigs";
 
 const unit = (x: number, z: number) => {
@@ -48,5 +48,27 @@ describe("primeZone", () => {
     const s = createOrbitState();
     primeZone(s, null);
     expect(s).toMatchObject({ zone: null, yaw: 0, zoom: 1, easing: false });
+  });
+});
+
+describe("per camera class views", () => {
+  const zone: ViewZone = { id: "L1:kiosk", area: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 }, yaw: 2, zoom: 1.5, classView: { mobile: { yaw: 1.4, zoom: 1.75 } } };
+
+  it("uses the class view where one is set, the zone's own elsewhere", () => {
+    expect(zoneView(zone, "mobile")).toEqual({ yaw: 1.4, zoom: 1.75 });
+    expect(zoneView(zone, "desktop")).toEqual({ yaw: 2, zoom: 1.5 });
+    expect(zoneView({ ...zone, zoom: undefined, classView: undefined }, "tablet")).toEqual({ yaw: 2, zoom: undefined });
+  });
+
+  it("primes and eases to the class view", () => {
+    const a = createOrbitState();
+    primeZone(a, zone, "mobile");
+    expect(a).toMatchObject({ yaw: 1.4, zoom: 1.75 });
+    const b = createOrbitState();
+    updateZone(b, zone, false, "mobile");
+    expect(b).toMatchObject({ yawTarget: 1.4, zoomTarget: 1.75, easing: true });
+    const c = createOrbitState();
+    updateZone(c, zone, false);
+    expect(c).toMatchObject({ yawTarget: 2, zoomTarget: 1.5 });
   });
 });

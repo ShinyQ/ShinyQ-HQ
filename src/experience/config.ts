@@ -230,7 +230,7 @@ export function kioskRect(): Rect {
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
-  const observatory = lobbyObservatory({ rect: o, kiosk: LOBBY.kiosk, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis, approach: standard("L1", LOBBY.bounds).approach });
+  const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis, approach: standard("L1", LOBBY.bounds).approach });
   const layouts: Record<FloorId, FloorLayout> = {
     L1: {
       ...standard(

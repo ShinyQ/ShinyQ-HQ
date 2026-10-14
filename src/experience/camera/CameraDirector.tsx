@@ -19,7 +19,7 @@ import { clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
+import { createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
@@ -122,7 +122,10 @@ export function CameraDirector({
     const axis = exploring ? rotateAxisFromKeys(keys) : 0;
     const tilt = exploring ? pitchAxisFromKeys(keys) : 0;
     if (axis || tilt) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, tilt * KEY_PITCH_SPEED * dt, rail);
-    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), s.reducedMotion);
+    // The session spawn (the kiosk stop), a deep link's door and the rover in the boot and intro start in their
+    // zone's view at once: the intro flies into that view and the first frame shows it, with no turn afterwards.
+    if (!l.ready || s.phase === "boot" || s.phase === "intro") primeZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), cls);
+    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), s.reducedMotion, cls);
     stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s));
     roverRuntime.cameraYaw = orbit.yaw;
     roverRuntime.cameraRailYaw = orbit.railYaw;
@@ -146,7 +149,11 @@ export function CameraDirector({
       desired = focus;
       snap = s.reducedMotion;
     } else if (rig === "intro") {
-      const end = followPose(cls, roverTarget);
+      // The follow pose the intro hands over to: the primed spawn view, its look-ahead and the screen's offset scale.
+      const ahead = FOLLOW_LOOK_AHEAD[cls];
+      const f = followForward(cls, orbit.yaw);
+      const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
+      const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
       snap = true;
       if (s.phase === "boot") {
         l.introStart = null;

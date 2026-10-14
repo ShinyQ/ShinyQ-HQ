@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
-import { zoneAt } from "@/experience/camera/orbit";
+import { zoneAt, zoneView } from "@/experience/camera/orbit";
+import { followPose } from "@/experience/camera/rigs";
+import { SHAFT_EAST_FACE } from "@/experience/config";
 import { kioskBounds, kioskFacing } from "@/experience/floors/lobby/kiosk";
 import { globeInstances, OBSERVATORY, observatoryPanelYaw, observatoryParts, observatoryText, type ObservatoryLabels } from "@/experience/floors/lobby/observatory";
 import { OLD_VISITS_ROOM, VISITS_ROOM, visitsRoomFromHash } from "@/experience/floors/lobby/visitsRoom";
@@ -126,6 +128,38 @@ describe("Visitor Observatory in the Lobby (owner decision 2026-10-14)", () => {
     // The hologram plaza, the skills wall and the certification wall keep their own views.
     expect(zoneAt("L1", { x: LOBBY.hologram.x + 10, z: LOBBY.hologram.z }, zones)).toBeNull();
     expect(zoneAt("L1", { x: LOBBY.skillsWall.x, z: LOBBY.skillsWall.z + 2.6 }, zones)?.id).toBe("L1:skills");
+  });
+});
+
+describe("Lobby views around the observatory", () => {
+  const zones = l1.viewZones ?? [];
+  const oc = { x: (o.minX + o.maxX) / 2, z: (o.minZ + o.maxZ) / 2 };
+  /** Horizontal angle (radians) between the camera's view and the direction from the camera to `p`. */
+  const offAxis = (cls: "desktop" | "mobile", at: { x: number; z: number }, p: { x: number; z: number }) => {
+    const zone = zoneAt("L1", at, zones)!;
+    const { yaw, zoom } = zoneView(zone, cls);
+    const pose = followPose(cls, [at.x, 1, at.z], yaw, zoom ?? 1);
+    const [cx, , cz] = pose.position;
+    const look = Math.atan2(at.z - cz, at.x - cx);
+    const to = Math.atan2(p.z - cz, p.x - cx);
+    return { angle: Math.abs(Math.atan2(Math.sin(to - look), Math.cos(to - look))), camera: { x: cx, z: cz } };
+  };
+
+  it("frames the observatory ahead right after the elevator, from east of the glass shaft", () => {
+    for (const cls of ["desktop", "mobile"] as const) {
+      const { angle, camera } = offAxis(cls, l1.approach, oc);
+      expect(angle, cls).toBeLessThan(0.1);
+      expect(camera.x, cls).toBeGreaterThan(SHAFT_EAST_FACE);
+    }
+    // The kiosk stands in the wide frame too (desktop half angle about 30 degrees).
+    expect(offAxis("desktop", l1.approach, LOBBY.kiosk).angle).toBeLessThan(0.45);
+  });
+
+  it("starts the session on a view of the rover at the kiosk with the observatory behind it", () => {
+    for (const cls of ["desktop", "mobile"] as const) {
+      expect(offAxis(cls, l1.spawn, LOBBY.kiosk).angle, cls).toBeLessThan(cls === "mobile" ? 0.05 : 0.45);
+      expect(offAxis(cls, l1.spawn, oc).angle, cls).toBeLessThan(cls === "mobile" ? 0.05 : 0.45);
+    }
   });
 });
 
