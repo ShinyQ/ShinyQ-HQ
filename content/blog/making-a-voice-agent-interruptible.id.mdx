@@ -1,7 +1,7 @@
 ---
 title: "Cara Kami Membuat Voice Agent Bisa Diinterupsi"
 date: "2026-10-09"
-excerpt: "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol mencatat sekitar 0,2 detik, dengan n=4 panggilan per arm. Eksperimen cut-off berikutnya justru tidak menunjukkan perbaikan."
+excerpt: "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol pada harness mencatat sekitar 0,2 detik, dengan n=4 panggilan di masing-masing jalur. Eksperimen cut-off berikutnya tidak menunjukkan perbaikan."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
@@ -10,7 +10,7 @@ Penelepon sudah menyela, tetapi voice agent kami masih butuh sekitar dua detik u
 
 Saya memimpin pengembangan voice agent realtime untuk contact center ini di Metrodata. Ada dua bug barge-in yang saya perbaiki. Pada jalur pencarian knowledge, A/B terkontrol kemudian mencatat sekitar 0,2 detik.
 
-Sampelnya hanya n=4 panggilan per arm. Hasil itu menunjukkan perbedaan pada jalur yang diuji, bukan berarti masalah turn-taking sudah selesai. Eksperimen berikutnya malah tidak berhasil menurunkan tingkat cut-off di lingkungan live.
+Pengujian ini hanya memakai n=4 panggilan untuk masing-masing jalur. Hasil itu menunjukkan perbedaan pada jalur yang diuji, bukan berarti masalah turn-taking sudah selesai. Eksperimen berikutnya malah tidak berhasil menurunkan tingkat cut-off di lingkungan live.
 
 ## Apa arti barge-in untuk agent speech-to-speech
 
@@ -69,7 +69,7 @@ Receive loop sekarang tetap mendengarkan selama pencarian berjalan. Saat terjadi
 
 Saya ingin membandingkan jalur kode, bukan dua environment yang berbeda. Voice evaluation harness kami sudah punya media emulator yang memasukkan rekaman audio penelepon ke backend seperti panggilan sungguhan, golden question set, dan LLM judge terkalibrasi untuk menilai kualitas jawaban. Saya menambahkan A/B jalur lama dan baru, dengan legacy adapter untuk menjalankan jalur lama.
 
-Model deployment, search index, dan audio penelepon sama untuk kedua arm. Pengujian utama berjalan dari runner sekali pakai di Azure Container Instances agar jaringan laptop saya tidak memengaruhi hasil. Run dari laptop hanya disimpan sebagai lampiran.
+Kedua jalur memakai model deployment, search index, dan audio penelepon yang sama. Pengujian utama berjalan dari runner sekali pakai di Azure Container Instances agar jaringan laptop saya tidak memengaruhi hasil. Run dari laptop hanya disimpan sebagai lampiran.
 
 Hasil pada giliran yang memakai knowledge base:
 
@@ -77,7 +77,7 @@ Hasil pada giliran yang memakai knowledge base:
 - Latency barge-in pada jalur baru: 93 sampai 220 ms.
 - Jalur baru menjawab pertanyaan knowledge di 4 dari 4 panggilan. Jalur lama mengalihkan ke manusia di 4 dari 4 panggilan.
 
-Dengan n=4 panggilan per arm, selisih sekitar sepuluh kali lipat terlihat berulang. Sampel ini tetap tidak cukup untuk menghitung persentil atau confidence interval.
+Dengan n=4 panggilan di masing-masing jalur, selisih sekitar sepuluh kali lipat terlihat berulang. Sampel ini tetap tidak cukup untuk menghitung persentil atau confidence interval.
 
 Ini panggilan dari harness di runner eksperimen, bukan traffic pelanggan. Saya tidak punya angka barge-in dari produksi untuk dikutip. Cakupannya juga hanya knowledge turn, bukan percakapan biasa.
 
@@ -97,7 +97,7 @@ Rangkaian eksperimen itu juga menguji acknowledgement clip saat pencarian knowle
 
 Beberapa hari sebelumnya, pengujian lain dengan verdict yang ditetapkan di awal menolak dua usulan perubahan default latency, baik masing-masing maupun gabungan keduanya. Default tetap seperti semula.
 
-Tidak ada eksperimen yang ditolak atau blocked itu yang dinyalakan. Lever yang ditolak eksperimen cut-off kemudian saya hapus dari codebase, bukan saya biarkan sebagai switch yang tidak dipakai.
+Tidak ada eksperimen yang ditolak atau blocked itu yang dinyalakan. Saya kemudian menghapus switch yang ditolak dalam eksperimen cut-off, bukan membiarkannya tidak terpakai di codebase.
 
 ## Yang akan saya cek lebih dulu
 

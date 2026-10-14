@@ -6,6 +6,7 @@ import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, validatePack } from "@/ask/pack";
 import { isAskCite } from "@/ask/protocol";
 import { getContent, getPerspectivesFile } from "@/content/load";
+import { listBlogFiles } from "@/content/blog";
 import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
 import en from "../../messages/en.json";
@@ -288,6 +289,27 @@ describe("pack budget with the Data and ML pods (runbook deviation 8, 2026-10-14
 
   it("keeps one lead paragraph of each hosted post", () => {
     expect(POST_LEAD_PARAGRAPHS).toBe(1);
+    for (const { slug, locale, file } of listBlogFiles()) {
+      const post = getContent().floors.library.posts.find((entry) => entry.slug === slug)!;
+      const chunk = byId(pack, `post-${slug}`)!;
+      const intro = locale === "en" ? `Post "${post.title.en}" (${post.date}).` : `Tulisan "${post.title.id}" (${post.date}).`;
+      const expected = sanitizePackText(`${intro} ${post.excerpt[locale]} ${leadParagraphs(readFileSync(file, "utf8"), 1)}`);
+      expect(chunk[locale === "en" ? "text_en" : "text_id"], `${slug}/${locale}`).toBe(expected);
+    }
+  });
+
+  it("keeps measurement limits in the compressed engineering-story summaries", () => {
+    const voice = byId(pack, "post-making-a-voice-agent-interruptible")!;
+    const llm = byId(pack, "post-45-percent-of-our-llm-calls-failed")!;
+    const fraud = byId(pack, "post-why-the-better-fraud-engine-shipped-in-shadow-mode")!;
+    for (const locale of ["text_en", "text_id"] as const) {
+      expect(voice[locale]).toContain("n=4");
+      expect(voice[locale]).toMatch(/harness/i);
+      expect(llm[locale]).toContain("22");
+      expect(llm[locale]).toMatch(/45%/);
+      expect(fraud[locale]).toMatch(/offline|pengembangan|development/i);
+      expect(fraud[locale]).toMatch(/high.?risk|berisiko tinggi/i);
+    }
   });
 
   it("names the Data and ML wing in data project chunks", () => {

@@ -8738,8 +8738,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested the old and new paths: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.",
-            "id": "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol mencatat sekitar 0,2 detik, dengan n=4 panggilan per arm. Eksperimen cut-off berikutnya justru tidak menunjukkan perbaikan."
+            "en": "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested both paths in a controlled harness: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.",
+            "id": "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol pada harness mencatat sekitar 0,2 detik, dengan n=4 panggilan di masing-masing jalur. Eksperimen cut-off berikutnya tidak menunjukkan perbaikan."
           }
         },
         {

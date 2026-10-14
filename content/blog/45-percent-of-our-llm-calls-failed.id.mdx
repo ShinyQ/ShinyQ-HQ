@@ -14,7 +14,7 @@ Persentase itu menunjukkan seberapa sering pipeline gagal, tetapi tidak menjelas
 
 ## Hasilnya hilang di mana?
 
-Platform ini membantu recruiter melakukan screening CV. Recruiter membuat job post, sistem mengekstrak requirement rubric berbobot, lalu LLM mengevaluasi setiap kandidat terhadap lowongan itu. Output-nya JSON terstruktur berisi fit score, bukti, dan alasan tertulis. Sekarang recruiter yang mengambil keputusan; AI menyediakan bukti.
+Platform ini membantu recruiter melakukan screening CV. Recruiter membuat job post, sistem mengekstrak requirement rubric berbobot, lalu LLM mengevaluasi setiap kandidat terhadap lowongan itu. Output-nya JSON terstruktur berisi fit score, bukti, dan alasan tertulis. Keputusan tetap di tangan recruiter; AI menyediakan bukti.
 
 Setiap evaluasi berjalan sebagai activity Azure Durable Functions yang memanggil reasoning model di Azure AI Foundry lewat Responses API.
 
@@ -58,7 +58,7 @@ Saya berhenti menebak-nebak prompt dan memetakan tiap error ke penyebabnya. Kare
 3. **Reasoning effort medium.** Saya menurunkannya dari high supaya lebih sedikit budget dipakai hidden reasoning sebelum jawaban dimulai.
 4. **Quote-aware JSON extractor.** Fence stripping berbasis pattern saya ganti dengan extractor yang menyeimbangkan kurung kurawal sambil melacak posisi di dalam string. Kurung kurawal di quoted value tidak lagi mengakhiri objek terlalu cepat.
 5. **Escape control character hanya di dalam string.** Raw newline dan tab di-escape di dalam string value. Di antara token, keduanya dibiarkan karena merupakan whitespace yang valid.
-6. **Retry terbatas, usage tetap tercatat.** Maksimal tiga percobaan per panggilan. Penggunaan token dijumlahkan dari semua percobaan agar retry tetap masuk usage accounting. Setelah percobaan ketiga gagal, error di-re-raise supaya retry policy Durable Functions bisa mengambil alih.
+6. **Retry terbatas, usage tetap tercatat.** Maksimal tiga percobaan per panggilan. Penggunaan token dijumlahkan dari semua percobaan agar penggunaan saat retry tetap tercatat. Setelah percobaan ketiga gagal, error diteruskan kembali (re-raise) supaya retry policy Durable Functions bisa mengambil alih.
 7. **Instruksi prompt yang konsisten.** Saya menghapus contoh ber-fence dari prompt yang melarang fence.
 
 Lapisan 5 kira-kira seperti ini. Ini ilustrasi generik, bukan kode produksi:
@@ -83,7 +83,7 @@ def escape_controls(raw: str) -> str:
 
 Bagian pentingnya adalah `in_str`. Kalau semua newline diganti, whitespace yang valid di antara key ikut berubah. Melacak tanda kutip dan escape membuat perbaikan tetap terbatas pada string value.
 
-JSON mode mengurangi kegagalan, tetapi defensive parsing tetap diperlukan. Quote-aware extractor dan retry terbatas menangani sisanya. Pencatatan retry juga harus jujur: jumlahkan token setiap percobaan, batasi percobaannya, lalu re-raise error agar lapisan berikutnya bisa menentukan tindakan.
+JSON mode mengurangi kegagalan, tetapi defensive parsing tetap diperlukan. Quote-aware extractor dan retry terbatas menangani sisanya. Pencatatan retry juga harus jujur: jumlahkan token setiap percobaan, batasi percobaannya, lalu teruskan error agar lapisan berikutnya bisa menentukan tindakan.
 
 ## Mengubah kegagalan menjadi test
 

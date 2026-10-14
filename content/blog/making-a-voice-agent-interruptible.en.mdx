@@ -1,7 +1,7 @@
 ---
 title: "How We Made a Voice Agent Interruptible"
 date: "2026-10-09"
-excerpt: "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested the old and new paths: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things."
+excerpt: "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested both paths in a controlled harness: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
@@ -20,9 +20,9 @@ A Python FastAPI backend bridges the media channel to the model. It also runs to
 
 Barge-in means the caller starts talking while the agent is speaking, or about to speak. Handling it takes more than cancelling a response:
 
-1. Stops the audio the caller is hearing.
-2. Stops generating the rest of the answer.
-3. Makes its own memory of the conversation match what the caller actually heard.
+1. Stop the audio the caller is hearing.
+2. Stop generating the rest of the answer.
+3. Make the agent's memory of the conversation match what the caller actually heard.
 
 The third step is easy to miss. Suppose the model generated a whole paragraph, but the caller heard only half of it. Unless you correct the conversation history, the next answer assumes the caller heard the rest.
 

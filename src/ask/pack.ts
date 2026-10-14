@@ -7,6 +7,8 @@ import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 
 /**
  * Builds the Ask the HQ knowledge pack (spec section 4) from public site content only: never the
@@ -54,8 +56,8 @@ const WING_NAME: Record<Pod["wing"], Bi> = { software: both("Product Engineering
 const WING_SHORT: Record<Pod["wing"], string> = { software: "software", ai: "AI", data: "data and ML" };
 /** Retrieval words for pods with a public live site (R4-J). The hostname itself never enters the pack: Ask output checks block Azure hostnames. */
 const LIVE_KEYWORDS = ["live", "site", "sites", "website", "websites", "situs"];
-/** Section title of How I work on About (messages `home.howTitle`), quoted in the pack so answers can cite it. */
-const HOW_TITLE = { en: "How I work", id: "Cara saya bekerja" } as const;
+/** The actual About section title, quoted in the pack so answers cite the same source. */
+const HOW_TITLE = { en: en.home.howTitle, id: id.home.howTitle };
 const join = (parts: (Bi | string | undefined | false)[], sep = " "): Bi => {
   const list = parts.filter((p): p is Bi | string => Boolean(p)).map((p) => (typeof p === "string" ? both(p) : p));
   return {
