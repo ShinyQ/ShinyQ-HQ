@@ -11,6 +11,7 @@ import { createMissionRunner, type MissionRunner } from "@/experience/missions/r
 import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { REACTOR_ROOM } from "@/experience/floors/labs/techHash";
+import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
 import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
@@ -329,6 +330,19 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
           ]);
         } else {
           router.push(`/${locale}/labs?wing=${target.wing}#all-projects`);
+        }
+        return;
+      }
+      case "topic": {
+        const topic = index?.topics.find((t) => t.slug === target.slug);
+        if (!topic) return;
+        // In the 3D tower: pick the topic (its stations light up) and ride to the Topic Constellation. On
+        // the Classic site: the Writing page filtered by that topic.
+        if (document.documentElement.hasAttribute("data-hq")) {
+          getHQStore().getState().selectTopic({ slug: topic.slug, name: topic.label[locale], count: topic.count, rooms: topic.rooms });
+          void runner.goTo(TOPICS_ROOM);
+        } else {
+          router.push(`/${locale}/library?topic=${topic.slug}#topics`);
         }
         return;
       }
