@@ -24,9 +24,7 @@ describe("Highlights Hall layout", () => {
   });
 
   it("passes the space rules with the real Lobby; only the skills wall, which predates them, sits near the slab edge", () => {
-    const [, skills, , kiosk] = l1.obstacles;
-    // Task 3 moved the kiosk to touch the south edge, clear of the passage road.
-    expect(kiosk.maxZ).toBe(l1.bounds.maxZ);
+    const [, skills] = l1.obstacles;
     const violations = spaceViolations({ bounds: l1.bounds, obstacles: l1.obstacles, doors: l1.doors!, network: l1.road!, start: l1.approach, pads: l1.pads });
     expect(violations.map((v) => `${v.rule}: ${v.detail}`)).toEqual([
       `bounds-gap: 2.00 u between ${label(skills)} and the slab edge`,

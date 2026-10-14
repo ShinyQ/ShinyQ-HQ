@@ -10,7 +10,7 @@ import { OPS } from "../floors/labs/ops";
 import { OPS_ROOM } from "../floors/labs/opsHash";
 import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
-import { kioskStop } from "../floors/lobby/kiosk";
+import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
 import { NEWSROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
@@ -186,7 +186,7 @@ function doorItems(floor: FloorId, layouts: FloorLayouts, data: InteractData, ro
 }
 
 function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
-  const { hologram, skillsWall, kiosk } = LOBBY;
+  const { hologram, skillsWall } = LOBBY;
   const stop = (room: RoomId) => {
     const at = roomTarget(undefined, room, layouts, data.experience.years);
     return { x: at.x, z: at.z };
@@ -219,7 +219,7 @@ function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
       label: data.labels.kiosk,
       // Centered in front of the screen (floors/lobby/kiosk.ts), so the rover stops facing it.
       at: kioskStop(),
-      bounds: rectAround(kiosk, kiosk.w, kiosk.d),
+      bounds: kioskBounds(),
       height: KIOSK_HEIGHT,
       action: { type: "command", command: "terminal" },
     },

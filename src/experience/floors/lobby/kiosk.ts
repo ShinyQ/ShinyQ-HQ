@@ -1,14 +1,16 @@
-import { LOBBY } from "../../config";
-import type { Vec2 } from "../../types";
+import { kioskRect, LOBBY } from "../../config";
+import type { Rect, Vec2 } from "../../types";
 
 /**
- * Ask Rover kiosk (owner review, October 2026: "the line is not straight"). Body, stand and screen are
- * one unit turned by one yaw, square to the floor grid and facing east, where the default follow camera
- * sits; the screen is centered on the body and every text line sits on one baseline. Pure.
+ * Ask Rover kiosk. Body, stand and screen are one unit turned by one yaw (owner review, October 2026:
+ * "the line is not straight"; every text line sits on one baseline). Owner review 2026-10-14 ("the rover
+ * kiosk not straight line into the circle"): the kiosk stands on the kiosk axis (`LOBBY.kioskAxis`, from
+ * the hologram toward the Visitor Observatory) facing the hologram, its lane spoke runs straight along the
+ * axis from the ring into its front, and the session spawn is its stop. Pure.
  */
 export const KIOSK = {
-  /** Square to the grid, facing +x. */
-  yaw: Math.PI / 2,
+  /** Faces the hologram along the kiosk axis (config). */
+  yaw: LOBBY.kiosk.yaw,
   body: { h: 1.2 },
   stand: { w: 0.4, d: 0.4, h: 0.35 },
   /** Leans back by `tilt` (radians) around its local x; `pad` is the text inset. */
@@ -17,12 +19,19 @@ export const KIOSK = {
   font: { max: 0.12, min: 0.09, advance: 0.6 },
   /** Mission lines on screen at once (it scrolls one line every 2.2 s). */
   visible: 5,
-  /** The rover stops this far in front of the screen (point-and-go `L1:kiosk:ask-rover`). */
-  stopGap: 2.5,
+  /** The rover stops this far in front of the screen (point-and-go `L1:kiosk:ask-rover`, the session spawn). */
+  stopGap: LOBBY.kiosk.stopGap,
+  /** The lane spoke ends this far in front of the kiosk front. */
+  laneGap: 0.4,
 } as const;
 
+/** Unit direction from the hologram to the observatory: the kiosk, its spoke and the spawn lie on it. */
+export const KIOSK_AXIS: Vec2 = LOBBY.kioskAxis;
+/** Rover heading at the session spawn: facing the kiosk screen. */
+export const SPAWN_HEADING: number = LOBBY.spawnHeading;
+
 type V3 = [number, number, number];
-type Footprint = { x: number; z: number; w: number; d: number };
+type Footprint = { x: number; z: number; depth: number; width: number };
 
 export interface KioskParts {
   /** The whole kiosk: one group at the footprint center, turned by `KIOSK.yaw`. Everything below is group-local. */
@@ -34,33 +43,42 @@ export interface KioskParts {
   screen: { position: V3; w: number; h: number; tilt: number; yaw: 0 };
 }
 
-const snap = (v: number) => Math.round(v * 1e9) / 1e9 + 0;
-
-/** Unit direction the screen faces (floor plane). */
+/** Unit direction the screen faces (floor plane): toward the hologram. */
 export function kioskFacing(): Vec2 {
-  return { x: snap(Math.sin(KIOSK.yaw)), z: snap(Math.cos(KIOSK.yaw)) };
+  return { x: Math.sin(KIOSK.yaw), z: Math.cos(KIOSK.yaw) };
 }
 
-/** Body, stand and screen in the kiosk group's local space, from the world footprint `LOBBY.kiosk`. */
+/** Body, stand and the screen in the kiosk group's local space, from the footprint `LOBBY.kiosk`. */
 export function kioskParts(k: Footprint = LOBBY.kiosk): KioskParts {
-  const f = kioskFacing();
-  const depth = Math.abs(f.x) * k.w + Math.abs(f.z) * k.d;
-  const across = Math.abs(f.x) * k.d + Math.abs(f.z) * k.w;
   const standTop = KIOSK.body.h + KIOSK.stand.h;
   const halfDrop = (KIOSK.screen.h / 2) * Math.cos(KIOSK.screen.tilt);
   return {
     group: { position: [k.x, 0, k.z], yaw: KIOSK.yaw },
-    body: { size: [across, KIOSK.body.h, depth], position: [0, KIOSK.body.h / 2, 0] },
+    body: { size: [k.width, KIOSK.body.h, k.depth], position: [0, KIOSK.body.h / 2, 0] },
     stand: { size: [KIOSK.stand.w, KIOSK.stand.h, KIOSK.stand.d], position: [0, KIOSK.body.h + KIOSK.stand.h / 2, 0] },
-    screen: { position: [0, standTop + halfDrop, 0], w: across, h: KIOSK.screen.h, tilt: KIOSK.screen.tilt, yaw: 0 },
+    screen: { position: [0, standTop + halfDrop, 0], w: k.width, h: KIOSK.screen.h, tilt: KIOSK.screen.tilt, yaw: 0 },
   };
 }
 
-/** Where the rover stops for the kiosk: centered in front of the screen. */
-export function kioskStop(k: Footprint = LOBBY.kiosk): Vec2 {
+/** A point `d` in front of the kiosk center along its facing. */
+function ahead(d: number, k: Footprint = LOBBY.kiosk): Vec2 {
   const f = kioskFacing();
-  const half = (Math.abs(f.x) * k.w + Math.abs(f.z) * k.d) / 2;
-  return { x: snap(k.x + f.x * (half + KIOSK.stopGap)), z: snap(k.z + f.z * (half + KIOSK.stopGap)) };
+  return { x: k.x + f.x * d, z: k.z + f.z * d };
+}
+
+/** Where the rover stops for the kiosk: centered in front of the screen (also the session spawn). */
+export function kioskStop(k: Footprint = LOBBY.kiosk): Vec2 {
+  return ahead(k.depth / 2 + KIOSK.stopGap, k);
+}
+
+/** Where the kiosk lane spoke ends: `KIOSK.laneGap` in front of the kiosk front, on the kiosk axis. */
+export function kioskLaneEnd(k: Footprint = LOBBY.kiosk): Vec2 {
+  return ahead(k.depth / 2 + KIOSK.laneGap, k);
+}
+
+/** Axis-aligned bounds of the turned footprint (the obstacle and the point-and-go pick volume). */
+export function kioskBounds(): Rect {
+  return kioskRect();
 }
 
 /** Shortens a line to `max` characters with ASCII dots (the kiosk font always has them). */

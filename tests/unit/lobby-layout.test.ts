@@ -44,8 +44,8 @@ describe("Lobby layout", () => {
     expect((LOBBY.bounds.minZ + LOBBY.bounds.maxZ) / 2).toBe(axis);
     expect(LOBBY.bounds.maxZ - LOBBY.bounds.minZ).toBe(42);
     expect(LOBBY.certWall.z).toBe(axis);
-    // The spawn keeps its place on the default camera diagonal from the plaza.
-    expect({ dx: LOBBY.spawn.x - LOBBY.hologram.x, dz: LOBBY.spawn.z - LOBBY.hologram.z }).toEqual({ dx: 8, dz: 10 });
+    // The spawn stands in front of the Ask Rover kiosk on the kiosk axis (owner 2026-10-14; tests/unit/kiosk.test.ts).
+    expect(Math.hypot(LOBBY.spawn.x - LOBBY.hologram.x, LOBBY.spawn.z - LOBBY.hologram.z)).toBeGreaterThan(LOBBY.laneRadius + ROVER.radius);
   });
 
   it("has no overlapping elements at any stats ring rotation", () => {
@@ -82,10 +82,14 @@ describe("Lobby layout", () => {
 
   it("leaves a walkway of at least 4 u between the ring and each wall", () => {
     const boxes = lobbyElements(STATS);
-    for (const name of ["skills-wall", "cert-wall", "kiosk"]) {
+    for (const name of ["skills-wall", "cert-wall", "observatory"]) {
       const { near } = radialSpan(boxes.find((b) => b.name === name)!);
       expect(near - RING.outer, name).toBeGreaterThanOrEqual(4);
     }
+    // The kiosk faces the hologram on a radial line: its front (the screen leans 0.3 u) is its nearest point.
+    const k = LOBBY.kiosk;
+    const kioskNear = Math.hypot(k.x - LOBBY.hologram.x, k.z - LOBBY.hologram.z) - k.depth / 2 - 0.3;
+    expect(kioskNear - RING.outer, "kiosk").toBeGreaterThanOrEqual(4);
   });
 
   it("keeps every element on the slab and the ring walkable", () => {

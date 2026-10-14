@@ -190,8 +190,8 @@ export function sameRover(current: RoverState, patch: Partial<RoverState>): bool
 }
 const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal", "hologram"];
 
-/** Spawn at the Lobby spawn point, turned toward the default follow camera so the face greets the visitor. */
-export const initialRover: RoverState = { x: LOBBY.spawn.x, z: LOBBY.spawn.z, heading: Math.PI / 4, speed: 0, face: "idle" };
+/** Spawn at the Lobby spawn point (the kiosk stop), facing the Ask Rover screen (owner 2026-10-14). */
+export const initialRover: RoverState = { x: LOBBY.spawn.x, z: LOBBY.spawn.z, heading: LOBBY.spawnHeading, speed: 0, face: "idle" };
 
 function resolveTarget(base: FloorId, target: ElevatorTarget): FloorId | undefined {
   if (target === "up") return FLOOR_IDS[floorIndex(base) + 1];

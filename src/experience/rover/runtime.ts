@@ -10,7 +10,7 @@ export const roverRuntime = {
   x: LOBBY.spawn.x as number,
   y: 0,
   z: LOBBY.spawn.z as number,
-  heading: Math.PI / 4,
+  heading: LOBBY.spawnHeading as number,
   speed: 0,
   tilt: 0,
   face: "idle" as RoverFace,
