@@ -322,8 +322,10 @@
     }
   }
 
-  /* "Pause motion" (a native checkbox in the ticker) stops every hero animation. */
-  .hx:has(.hx-pause-box:checked) :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track) {
+  /* "Pause motion" (a native checkbox in the ticker) stops every hero animation. Automation and crawlers
+     (html[data-hq-still], ambientStill in src/lib/boot-first.ts) get the same still frame. */
+  .hx:has(.hx-pause-box:checked) :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track),
+  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track) {
     animation-play-state: paused;
   }
 
