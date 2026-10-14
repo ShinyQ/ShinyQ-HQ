@@ -16,14 +16,12 @@ import { RideCull } from "./RideCullHooks";
 import { ReturnPadSign } from "../fx/ReturnPadSign";
 import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
-import type { PlaceholderLabels } from "./PlaceholderFloor";
 import { BoxEdges } from "./primitives";
 import { precompileFloor } from "../scene/precompile";
 import { beginFloorPrep, endFloorPrep, finishFloorPrep } from "./ridePrep";
 import { PREPARE_TIMEOUT } from "./elevator";
 
 export interface TowerLabels {
-  placeholder: PlaceholderLabels;
   lobby: LobbyLabels;
   labs: LabsLabels;
   career: CareerLabels;
