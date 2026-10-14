@@ -272,3 +272,21 @@ describe("Tech Reactor slice", () => {
     expect(storage.data.get(STORE_KEY) ?? "").not.toContain("azure-openai");
   });
 });
+
+describe("Topic Constellation slice", () => {
+  const voice = { slug: "voice-ai", name: "Voice AI", count: 1, rooms: ["L4:making-a-voice-agent-interruptible" as const] };
+
+  it("starts with nothing selected, selects and clears a topic, never persists", () => {
+    expect(store.getState().topics).toEqual({ topic: null });
+    store.getState().selectTopic(voice);
+    expect(store.getState().topics.topic).toEqual(voice);
+    const before = store.getState().topics;
+    store.getState().clearTopic();
+    expect(store.getState().topics.topic).toBeNull();
+    store.getState().clearTopic();
+    expect(store.getState().topics).not.toBe(before);
+    store.getState().selectTopic(voice);
+    expect(storage.data.get(STORE_KEY) ?? "").not.toContain("voice-ai");
+    store.getState().clearTopic();
+  });
+});

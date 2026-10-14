@@ -68,6 +68,16 @@ export interface ReactorState {
   spin: number;
 }
 
+/** The L4 Topic Constellation pick: a topic and the L4 rooms its pieces live in. */
+export interface TopicPick {
+  slug: string;
+  /** Label in the tower's locale. */
+  name: string;
+  /** Posts, papers, models and talks on the topic. */
+  count: number;
+  rooms: RoomId[];
+}
+
 /** Runtime store (appendix 06 section 2, plus the documented Phase 1 additions). */
 export interface HQState {
   phase: Phase;
@@ -103,6 +113,8 @@ export interface HQState {
   pointHint: boolean;
   /** L3 Tech Reactor: ring, selected tech and the Surprise me counter. Not persisted (the URL hash carries the tech). */
   reactor: ReactorState;
+  /** L4 Topic Constellation: the selected topic. Not persisted (the URL hash carries it). */
+  topics: { topic: TopicPick | null };
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -148,6 +160,8 @@ export interface HQState {
   selectReactorTech: (tech: ReactorTech) => void;
   clearReactorTech: () => void;
   spinReactor: () => void;
+  selectTopic: (topic: TopicPick) => void;
+  clearTopic: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number }) => void;
 }
@@ -212,6 +226,7 @@ export function createHQStore(storage?: StateStorage) {
         hover: null,
         pointHint: false,
         reactor: { ring: "ai", tech: null, spin: 0 },
+        topics: { topic: null },
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -299,6 +314,10 @@ export function createHQStore(storage?: StateStorage) {
           if (get().reactor.tech) set({ reactor: { ...get().reactor, tech: null } });
         },
         spinReactor: () => set({ reactor: { ...get().reactor, spin: get().reactor.spin + 1 } }),
+        selectTopic: (topic) => set({ topics: { topic } }),
+        clearTopic: () => {
+          if (get().topics.topic) set({ topics: { topic: null } });
+        },
         resume: (floor, at) =>
           set({
             floor,

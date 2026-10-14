@@ -79,14 +79,27 @@ export function highlightOpacity(t: number, reducedMotion: boolean): number {
   return reducedMotion ? 0.9 : 0.65 + 0.25 * Math.sin(t * 4);
 }
 
-export type InteractCommand = { type: "terminal" } | { type: "palette"; filter: PaletteFilter } | { type: "cv" } | { type: "reactor"; ring: ReactorRingId };
+export type InteractCommand =
+  | { type: "terminal" }
+  | { type: "palette"; filter: PaletteFilter }
+  | { type: "cv" }
+  | { type: "reactor"; ring: ReactorRingId }
+  /** Opens a room's drawer where the rover stands (the L4 research monument opens the Research desk). */
+  | { type: "open"; room: RoomId };
 
 const PALETTE_FILTERS: readonly PaletteFilter[] = ["pods", "rooms", "posts"];
 
-/** `"terminal"`, `"cv"`, `"palette:<pods|rooms|posts>"` or `"reactor:<ring>"` (Tech Reactor drawer on a ring); anything else is null. */
+const OPEN_ROOM = /^open:((?:L1|L2|L3|L4|RF):[a-z0-9-]+)$/;
+
+/**
+ * `"terminal"`, `"cv"`, `"palette:<pods|rooms|posts>"`, `"reactor:<ring>"` (Tech Reactor drawer on a ring)
+ * or `"open:<room id>"` (that room's drawer in place); anything else is null.
+ */
 export function parseCommand(command: string): InteractCommand | null {
   if (command === "terminal") return { type: "terminal" };
   if (command === "cv") return { type: "cv" };
+  const open = OPEN_ROOM.exec(command);
+  if (open) return { type: "open", room: open[1] as RoomId };
   const [head, filter] = command.split(":");
   if (head === "palette" && PALETTE_FILTERS.includes(filter as PaletteFilter)) return { type: "palette", filter: filter as PaletteFilter };
   if (head === "reactor" && (REACTOR_RINGS as readonly string[]).includes(filter)) return { type: "reactor", ring: filter as ReactorRingId };

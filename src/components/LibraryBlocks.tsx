@@ -1,13 +1,20 @@
 import { getTranslations } from "next-intl/server";
 import { Fragment } from "react";
 import type { Contact, Locale, PostRef, Publication, ResearchMetrics, Talk } from "@/content/schema";
+import { getTopicIndex } from "@/content/load";
 import { buildPaperPreview } from "@/content/papers";
+import { topicsOfItem } from "@/content/topic-index";
 import { publicationDate, researchPublications } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { formatDate, formatYearMonth } from "@/lib/format";
 import { ExternalLink } from "./ExternalLink";
 import { PaperReadLink } from "./paper/PaperReadLink";
 import { PaperTrigger } from "./paper/PaperTrigger";
+
+/** Row attributes for the Writing page topic filter (`TopicFilter`): the item's topics, space separated. */
+function topicAttrs(id: string) {
+  return { "data-topic-row": "", "data-topics": topicsOfItem(getTopicIndex(), id).join(" ") };
+}
 
 /** Post title link: hosted posts open their page, Medium posts open in a new tab. */
 async function PostTitle({ post, locale, className }: { post: PostRef; locale: Locale; className: string }) {
@@ -39,7 +46,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
   return (
     <div>
       {lead && first && (
-        <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]">
+        <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]" {...topicAttrs(first.slug)}>
           <p className="pv-data flex flex-wrap gap-x-4">
             <span>{formatDate(first.date, locale)}</span>
             <PostMeta post={first} locale={locale} />
@@ -60,7 +67,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
       )}
       <ul className={`pv-rows pv-rows-closed ${lead ? "mt-6" : ""}`}>
         {rows.map((post) => (
-          <li key={post.slug} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[120px_minmax(0,1fr)_100px] md:py-6">
+          <li key={post.slug} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[120px_minmax(0,1fr)_100px] md:py-6" {...topicAttrs(post.slug)}>
             <p className="pv-data md:pt-1.5">{formatDate(post.date, locale)}</p>
             <div className="min-w-0">
               <h3 className="pv-h3 pv-row-title">
@@ -90,7 +97,7 @@ export async function PublicationList({ publications, locale }: { publications: 
   return (
     <ul className="pv-rows pv-rows-closed">
       {sorted.map((pub) => (
-        <li key={pub.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[70px_minmax(0,1fr)]">
+        <li key={pub.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[70px_minmax(0,1fr)]" {...topicAttrs(pub.id)}>
           <p className="pv-data md:pt-1">{pub.year}</p>
           <div className="min-w-0">
             <p className="font-semibold text-ink">
@@ -119,7 +126,7 @@ export async function TalkList({ talks, locale }: { talks: readonly Talk[]; loca
   return (
     <ul className="pv-rows pv-rows-closed">
       {sorted.map((talk) => (
-        <li key={talk.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[90px_minmax(0,1fr)_100px]">
+        <li key={talk.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[90px_minmax(0,1fr)_100px]" {...topicAttrs(talk.id)}>
           <p className="pv-data md:pt-1">{formatYearMonth(talk.date, locale)}</p>
           <div className="min-w-0">
             <p className="font-semibold text-ink">{talk.title[locale]}</p>
@@ -176,7 +183,7 @@ export async function ResearchList({
       )}
       <ul className="pv-rows pv-rows-closed">
         {researchPublications(publications).map((pub) => ({ pub, preview: buildPaperPreview(pub, locale) })).map(({ pub, preview }) => (
-          <li key={pub.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[110px_minmax(0,1fr)] md:py-6" data-testid="research-row">
+          <li key={pub.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[110px_minmax(0,1fr)] md:py-6" data-testid="research-row" {...topicAttrs(pub.id)}>
             <p className="pv-data md:pt-1">
               {t(`kind.${pub.kind}`)}
               <span className="mt-1 block">{publicationDate(pub, locale)}</span>

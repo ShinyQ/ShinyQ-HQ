@@ -7,8 +7,7 @@ import { AccentDot } from "@/components/AccentDot";
 import { goToRoom } from "@/experience/missions/bridge";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { RoomBodyProps } from "./bodies";
-
-const ACTION = "glass glass-solid hq-glow inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold text-ink";
+import { FILTER_ACTION as ACTION, FilterOption, FilterPiece } from "./filterParts";
 
 /** The selected tech: "N projects use X", its projects (each rides to its pod), Clear. */
 function Selection({ reactor }: { reactor: RoomReactor }) {
@@ -27,16 +26,12 @@ function Selection({ reactor }: { reactor: RoomReactor }) {
           if (!pod) return null;
           return (
             <li key={slug}>
-              <button
-                type="button"
+              <FilterPiece
+                title={pod.title}
+                meta={pod.docked ? pod.wing : `${pod.wing} · ${t("directory")}`}
                 onClick={() => goToRoom(`L3:${slug}` as RoomId)}
-                className="glass glass-solid hq-glow flex min-h-11 w-full flex-col justify-center px-3 py-1.5 text-left"
-                data-testid="reactor-project"
-                data-pod={slug}
-              >
-                <span className="text-sm font-semibold text-ink">{pod.title}</span>
-                <span className="label text-ink-3">{pod.docked ? pod.wing : `${pod.wing} · ${t("directory")}`}</span>
-              </button>
+                data={{ "data-testid": "reactor-project", "data-pod": slug }}
+              />
             </li>
           );
         })}
@@ -92,22 +87,20 @@ export function ReactorBody({ view }: RoomBodyProps) {
             const on = tech.slug === selected;
             return (
               <li key={tech.slug}>
-                <button
-                  type="button"
-                  aria-pressed={on}
+                <FilterOption
+                  on={on}
+                  accent={ring.accent}
+                  label={tech.name}
+                  count={t("count", { count: tech.pods.length })}
+                  icon={
+                    tech.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={tech.logo} alt="" width={18} height={18} loading="lazy" decoding="async" className="size-[18px] shrink-0 object-contain" />
+                    ) : undefined
+                  }
                   onClick={() => (on ? store().clearReactorTech() : store().selectReactorTech({ slug: tech.slug, name: tech.name, ring: ring.id, count: tech.pods.length, pods: tech.pods }))}
-                  className="glass glass-solid hq-glow flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm text-ink"
-                  data-tech={tech.slug}
-                >
-                  {tech.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={tech.logo} alt="" width={18} height={18} loading="lazy" decoding="async" className="size-[18px] shrink-0 object-contain" />
-                  ) : (
-                    <AccentDot tone={on ? ring.accent : "line"} glow={on} className="mx-1.5" />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">{tech.name}</span>
-                  <span className="label shrink-0 text-ink-3">{t("count", { count: tech.pods.length })}</span>
-                </button>
+                  data={{ "data-tech": tech.slug }}
+                />
               </li>
             );
           })}

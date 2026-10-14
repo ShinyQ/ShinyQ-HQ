@@ -195,7 +195,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
               else if (command.type === "reactor") {
                 store.getState().setReactorRing(command.ring);
                 store.getState().openRoom(REACTOR_ROOM);
-              } else openCv();
+              } else if (command.type === "open") store.getState().openRoom(command.room);
+              else openCv();
             },
             beamHome: () => {
               if (local.padOpens !== padOpensBefore || !local.controller) return;

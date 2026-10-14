@@ -27,6 +27,15 @@ export interface SignSpec {
   fadeX?: number;
   /** Fill opacity of the text (1 by default). */
   opacity?: number;
+  /** Rides the group's orbit (`FloatingSigns` `orbit`): x and z turn about the group origin by the orbit angle (the L4 topic labels). */
+  orbit?: boolean;
+}
+
+/** `x`, `z` turned about the origin by `angle` (three's yaw: positive turns counterclockwise seen from above). */
+export function orbitXZ(x: number, z: number, angle: number): { x: number; z: number } {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return { x: x * c + z * s, z: -x * s + z * c };
 }
 
 /** Plate padding around the text block, in font sizes. */

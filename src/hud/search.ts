@@ -16,6 +16,7 @@ const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
 };
 
 const TECH_KEYWORDS = ["tech", "stack", "reactor", "teknologi", "reaktor"];
+const TOPIC_KEYWORDS = ["topic", "topics", "writing", "posts", "topik", "tulisan", "constellation", "konstelasi"];
 
 const RESULT_GROUPS = ["missions", "rooms", "years", "actions"] as const;
 /** Same cap as the server (`ASK_MAX_QUESTION` in src/ask/protocol.ts). */
@@ -32,7 +33,7 @@ const FIELD_WEIGHT = { title: 3, keywords: 1.5, subtitle: 1 } as const;
 const KIND_BONUS: Partial<Record<NonNullable<PaletteEntry["roomKind"]>, number>> = { pod: 0.5, post: 0.25 };
 
 export function buildPaletteEntries(
-  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs" | "wings">>,
+  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs" | "wings" | "topics">>,
   actions: readonly PaletteActionId[],
 ): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
@@ -105,6 +106,18 @@ export function buildPaletteEntries(
       floor: "L3",
       keywords: wing.keywords,
       target: { type: "wing", wing: wing.wing },
+    });
+  }
+
+  // Topic Constellation rows ("Show writing about Voice AI"): actions too, so they only show for a query.
+  for (const topic of index.topics ?? []) {
+    entries.push({
+      key: `topic:${topic.slug}`,
+      group: "actions",
+      title: topic.title,
+      floor: "L4",
+      keywords: [topic.label.en, topic.label.id, ...TOPIC_KEYWORDS],
+      target: { type: "topic", slug: topic.slug },
     });
   }
 
@@ -229,8 +242,8 @@ const texts = (value: LocalizedText | undefined) => (value ? [value.en, value.id
 function tokenScore(entry: PaletteEntry, token: string): number {
   const p = prepared(entry);
   let best = 0;
-  // Tech Reactor rows weigh their title like keywords, so a bare tech name still opens a project first.
-  const titleWeight = entry.target.type === "tech" ? FIELD_WEIGHT.keywords : FIELD_WEIGHT.title;
+  // Tech Reactor and topic rows weigh their title like keywords, so a bare name still opens a project or post first.
+  const titleWeight = entry.target.type === "tech" || entry.target.type === "topic" ? FIELD_WEIGHT.keywords : FIELD_WEIGHT.title;
   for (const text of p.title) best = Math.max(best, scoreText(token, text) * titleWeight);
   for (const text of p.keywords) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.keywords);
   for (const text of p.subtitle) best = Math.max(best, scoreText(token, text) * FIELD_WEIGHT.subtitle);

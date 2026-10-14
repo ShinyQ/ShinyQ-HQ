@@ -57,7 +57,9 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof", "spectacle", "walk"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-roof", "spectacle", "topics", "walk"]);
+    expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
+    expect(specsForChanges(["src/experience/fx/FilterHighlights.tsx"]).specs).toEqual(["reactor", "topics"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);

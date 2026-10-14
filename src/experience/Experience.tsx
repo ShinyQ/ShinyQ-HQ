@@ -9,7 +9,10 @@ import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
+import { formatYearMonth } from "@/lib/format";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
+import { TOPICS_ROOM } from "./floors/library/topicHash";
+import { createTopicHashSync } from "./floors/library/topicUrl";
 import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
 import { switchLocale, takeResume } from "@/hud/switchLocale";
@@ -336,8 +339,8 @@ export default function Experience({
       // A deep link keeps its URL through the boot and the intro; the continuation rewrites it on arrival.
       if ((s.phase === "boot" || s.phase === "intro") && isContinuing()) return;
       const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
-      // The Tech Reactor and the Ops Control Room have no route of their own (they keep /labs).
-      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM && s.activeRoom !== OPS_ROOM ? s.activeRoom : null;
+      // The Tech Reactor, the Ops Control Room and the Topic Constellation have no route of their own (they keep the floor URL).
+      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM && s.activeRoom !== OPS_ROOM && s.activeRoom !== TOPICS_ROOM ? s.activeRoom : null;
       const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });
       const url = withView(path, window.location.search, room && s.phase === "hologram" ? "architecture" : null);
       if (`${window.location.pathname}${window.location.search}` !== url) window.history.replaceState(window.history.state, "", url);
@@ -349,7 +352,7 @@ export default function Experience({
   }, [data.locale]);
 
   // Room URLs (drawer open, hologram view, back and forward).
-  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts, the L1 Highlights Hall stations and the L3 Tech Reactor keep the floor URL.
+  // On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts, the Topic Constellation, the L1 Highlights Hall stations and the L3 Tech Reactor keep the floor URL.
   const hasPage = useMemo(() => {
     const hosted = new Set(data.library.posts.filter((p) => !p.url).map((p) => `L4:${p.slug}`));
     // On L2 only career entries have /journey/{slug}; the Workshop and its bench and repo rooms keep /journey.
@@ -361,6 +364,24 @@ export default function Experience({
       !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
+  // Topic Constellation pick in the hash (`#library-topic=<slug>`), like the Tech Reactor below.
+  useEffect(
+    () =>
+      createTopicHashSync({
+        store: getHQStore(),
+        env: {
+          history: window.history,
+          location: window.location,
+          initialHash: startHash,
+          load: () => loadRoomViews(data.locale).then((views) => views[TOPICS_ROOM]?.topics),
+          onPopState: (listener) => {
+            window.addEventListener("popstate", listener);
+            return () => window.removeEventListener("popstate", listener);
+          },
+        },
+      }),
+    [data.locale, startHash],
+  );
   // Tech Reactor pick in the hash (`#labs-tech=<slug>`), after the floor and room URL writes above.
   useEffect(
     () =>
@@ -380,6 +401,7 @@ export default function Experience({
     [data.locale, startHash],
   );
 
+  const metrics = data.library.researchMetrics;
   const labels: SceneLabels = useMemo(
     () => ({
       placeholder: { construction: t("constructionLabel"), hint: t("constructionHint") },
@@ -427,6 +449,19 @@ export default function Experience({
       },
       library: {
         zones: { blog: tLibrary("posts"), research: tLibrary("research"), models: tLibrary("publications"), talks: tLibrary("talks") },
+        end: {
+          pieces: (count: number, topic: string) => tLibrary("topics.pieces", { count, topic }),
+          monument: metrics
+            ? {
+                citations: String(metrics.citations),
+                citationsLabel: tLibrary("topics.monument.citations"),
+                hIndex: String(metrics.hIndex),
+                hIndexLabel: tLibrary("topics.monument.hIndex"),
+                source: tLibrary("topics.monument.asOf", { source: metrics.source, date: formatYearMonth(metrics.asOf, data.locale) }),
+              }
+            : null,
+          archive: t("interact.archive"),
+        },
       },
       roof: {
         comms: t("world.comms"),
@@ -478,13 +513,15 @@ export default function Experience({
           highlightsExperience: t("rooms.highlightsExperience"),
           highlightsContact: t("rooms.highlightsContact"),
           reactor: t("rooms.reactor"),
+          topics: t("rooms.topics"),
           visits: t("rooms.visits"),
           ops: t("rooms.ops"),
         },
         reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
+        metrics: tLibrary("topics.monument.target"),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats, metrics, data.locale],
   );
 
   return (

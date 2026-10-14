@@ -8,7 +8,7 @@ import { roverRuntime } from "../rover/runtime";
 import { FONTS } from "../tower/primitives";
 import type { GpuTier } from "../types";
 import { BatchedLabels, type BatchedLabelsHandle } from "./BatchedLabels";
-import { signFacing, signFacingDot, signPlate, type SignSpec } from "./signLayout";
+import { orbitXZ, signFacing, signFacingDot, signPlate, type SignSpec } from "./signLayout";
 import { createHoloMaterial, HOLO_MODE } from "./holoFx";
 import type { BatchedLabel } from "./labelProps";
 import { neonColor } from "./materials";
@@ -27,7 +27,21 @@ const TEXT_LIFT = 0.03;
  * `fadeX` (L2); with every sign faded out the group draws nothing. `name` keys the `__hq.probes.signs` entry e2e reads. Not raycast: clickable signs are
  * point-and-go targets (interact/registry.ts).
  */
-export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[]; name: string; tier: GpuTier }) {
+export function FloatingSigns({
+  signs,
+  name,
+  tier,
+  orbit,
+  visibility,
+}: {
+  signs: readonly SignSpec[];
+  name: string;
+  tier: GpuTier;
+  /** Orbit angle (rad) for signs marked `orbit` (the L4 topic labels ride the constellation). */
+  orbit?: { readonly current: number };
+  /** Per-sign opacity multiplier, 0 to 1, written by the caller every frame (the L4 label placement); missing entries count as 1. */
+  visibility?: { readonly current: ArrayLike<number> };
+}) {
   const group = useRef<Group>(null);
   const plates = useRef<InstancedMesh>(null);
   const batch = useRef<BatchedLabelsHandle>(null);
@@ -78,12 +92,14 @@ export function FloatingSigns({ signs, name, tier }: { signs: readonly SignSpec[
     const members = batch.current?.members;
     const probe: { text: string; facing: number }[] = [];
     let any = false;
+    const angle = orbit?.current ?? 0;
     signs.forEach((s, i) => {
-      const at = { x: origin.x + s.x, z: origin.z + s.z };
+      const local = s.orbit && angle ? orbitXZ(s.x, s.z, angle) : { x: s.x, z: s.z };
+      const at = { x: origin.x + local.x, z: origin.z + local.z };
       const yaw = signFacing(at, cam);
-      const k = s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x);
+      const k = (s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x)) * (visibility?.current[i] ?? 1);
       const shown = k > 0.01;
-      dummy.position.set(s.x, s.y, s.z);
+      dummy.position.set(local.x, s.y, local.z);
       dummy.rotation.set(-(s.tilt ?? 0), yaw, 0, "YXZ");
       dummy.scale.set(shown ? sizes[i].w : 0, shown ? sizes[i].h : 0, 1);
       dummy.updateMatrix();

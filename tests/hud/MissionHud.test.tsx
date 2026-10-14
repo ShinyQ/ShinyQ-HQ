@@ -152,6 +152,30 @@ describe("MissionHud on static pages", () => {
     }
   });
 
+  it("shows writing about a topic on the Classic site Writing page from Cmd-K", async () => {
+    renderHud();
+    await userEvent.keyboard("{Control>}k{/Control}");
+    await userEvent.keyboard("show writing about voice ai{Enter}");
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/library?topic=voice-ai#topics"));
+  });
+
+  it("picks the topic and rides to the Topic Constellation from Cmd-K in the 3D tower", async () => {
+    const { getHQStore } = await import("@/store/useHQStore");
+    getHQStore().getState().clearTopic();
+    document.documentElement.dataset.hq = "3d";
+    try {
+      renderHud();
+      await userEvent.keyboard("{Control>}k{/Control}");
+      await userEvent.keyboard("show writing about voice ai{Enter}");
+      await vi.waitFor(() => expect(getHQStore().getState().topics.topic?.slug).toBe("voice-ai"));
+      expect(getHQStore().getState().topics.topic).toMatchObject({ name: "Voice AI", count: 1, rooms: ["L4:making-a-voice-agent-interruptible"] });
+      expect(nav.push).not.toHaveBeenCalledWith(expect.stringContaining("topic="));
+    } finally {
+      delete document.documentElement.dataset.hq;
+      getHQStore().getState().clearTopic();
+    }
+  });
+
   it("runs a mission from the terminal", async () => {
     renderHud();
     act(() => openTerminal());

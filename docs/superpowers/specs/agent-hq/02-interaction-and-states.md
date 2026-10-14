@@ -99,7 +99,7 @@ The dossier also proposes 14 story-driven "quests" (for example "Interrupt the v
 ## 5. Command palette
 
 - **Open:** `⌘K` / `Ctrl+K`, `/`, or the search button in the HUD.
-- **Index:** missions, rooms (all floors), years, actions (`Download CV`, `Copy email`, `Toggle language`, `Toggle sound`, `Quick view`), and one "Show projects using X" row per Tech Reactor tech (section 9; shown for a query only, its title weighs like keywords so a bare tech name still opens a project first).
+- **Index:** missions, rooms (all floors), years, actions (`Download CV`, `Copy email`, `Toggle language`, `Toggle sound`, `Quick view`), one "Show projects using X" row per Tech Reactor tech (section 9) and one "Show writing about X" row per Topic Constellation topic (section 10); both show for a query only, and their titles weigh like keywords so a bare name still opens a project or post first.
 - **Search:** fuzzy matching over title, tags, stack and year, in both languages. Results are grouped by type with a floor badge. Entry texts are normalized once per index; a keystroke normalizes only the query (budget: p95 under 16 ms per keystroke at 4x CPU, `tests/bench/search.bench.ts`).
 - **Empty query:** shows the missions, then "Recent" (last 3 visited rooms).
 - **Keyboard:** up/down to move, Enter to run, Esc to close, Tab to jump between groups.
@@ -145,3 +145,18 @@ The reactor core in the L3 east plaza is a project filter. Its six tech rings ar
 
 The pick is store state (`reactor`, not persisted); the hash mirrors it while the rover is on L3 and never touches other hashes.
 
+## 10. L4 Topic Constellation (owner request 2026-10-14)
+
+The end of the L4 timeline holds the Topic Constellation: every topic of the writing (post tags, folded through an explicit map, plus papers, models and talks mapped by id; no new content) as an orb orbiting the pedestal in the end plaza.
+
+| Action | Result |
+| --- | --- |
+| Click an orb | Picks that topic (again: clears it); no drive (the orbs keep their own clicks, like the research paper plates) |
+| Click the pedestal (point-and-go target `L4:station:topics`) | The rover drives to the constellation stop (the ring road's west point) and the "Topic Constellation" drawer opens (room `L4:topics`, kind `topics`) |
+| Pick a topic in the drawer (every topic with its piece count) | Its stations and desks glow with a beacon (the archive board too when an archived post is on it), the timeline from the constellation back to them glows, its orb burns bright and the others dim, "N pieces on X" floats above the cloud, the drawer lists the pieces (each rides to its station or desk), the URL gets `#library-topic=<slug>` |
+| Pick it again, or Clear | Everything returns to normal; the hash goes away |
+| `/{locale}/library#library-topic=<slug>` | The gate starts on `L4:topics` with that topic picked (after the intro on a first visit) |
+| Cmd-K "Show writing about X" | In 3D: picks the topic and rides to the constellation. On the Classic site: `/library?topic=<slug>#topics` (the Writing page topic filter; on that page it filters in place) |
+| Click the research monument (`L4:station:metrics`) | The rover drives in front of it and the Research desk drawer opens in place (command `open:L4:research`) |
+
+The pick is store state (`topics.topic`, not persisted); the hash mirrors it while the rover is on L4 and never touches other hashes (`createFilterHashSync`, shared with the Tech Reactor).

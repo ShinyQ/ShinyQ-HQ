@@ -36,6 +36,7 @@ function labelsFrom(m: Messages): InteractLabels {
     archive: m.hud.interact.archive,
     rooms: m.hud.rooms,
     reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
+    metrics: m.library.topics.monument.target,
   };
 }
 
@@ -66,8 +67,8 @@ describe("interactablesFor on the real content", () => {
     }
   });
 
-  it("adds the Express Return pad on L2 and L3 right after the elevator pad, and it beams home", () => {
-    for (const floor of ["L2", "L3"] as const) {
+  it("adds the Express Return pad on L2, L3 and L4 right after the elevator pad, and it beams home", () => {
+    for (const floor of ["L2", "L3", "L4"] as const) {
       const back = items[floor][1];
       expect(back.id, floor).toBe(`${floor}:pad:return`);
       expect(back.kind).toBe("return-pad");
@@ -75,7 +76,7 @@ describe("interactablesFor on the real content", () => {
       expect(back.action).toEqual({ type: "return-beam" });
       expect(back.at).toEqual(layouts[floor].returnPad);
     }
-    for (const floor of ["L1", "L4", "RF"] as const) expect(items[floor].some((i) => i.kind === "return-pad"), floor).toBe(false);
+    for (const floor of ["L1", "RF"] as const) expect(items[floor].some((i) => i.kind === "return-pad"), floor).toBe(false);
     const idItems = setup("id").items;
     expect(idItems.L2.find((i) => i.kind === "return-pad")?.label).toBe("Kembali ke lift");
   });
@@ -212,6 +213,19 @@ describe("interactablesFor on the real content", () => {
     } else {
       expect(board).toBeUndefined();
     }
+  });
+
+  it("adds the L4 Topic Constellation pedestal and the research monument", () => {
+    const library = buildLibraryLayout(libraryLayoutInput(experience.library));
+    const topics = find("L4", "L4:station:topics")!;
+    expect(topics).toMatchObject({ kind: "station", label: "Topic Constellation", action: { type: "open-room", room: "L4:topics" } });
+    expect(topics.at).toEqual(library.end!.ringStop);
+    expect(topics.bounds).toEqual(library.end!.core);
+    expect(roomTarget(undefined, "L4:topics", layouts, experience.years)).toEqual(library.end!.ringStop);
+    const monument = find("L4", "L4:station:metrics")!;
+    expect(monument).toMatchObject({ kind: "station", label: "Research metrics", action: { type: "command", command: "open:L4:research" } });
+    expect(monument.at).toEqual(library.end!.monument!.stop);
+    expect(setup("id").items.L4.find((i) => i.id === "L4:station:topics")?.label).toBe("Konstelasi Topik");
   });
 
   it("keeps ids unique, footprints on the slab and every approach point on drivable floor", () => {

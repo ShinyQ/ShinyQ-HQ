@@ -4,6 +4,7 @@ import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
 import type { PaperPreview } from "../citation";
 import type { ReactorRingId } from "../tech-rings";
+import type { TopicItemKind } from "../topic-index";
 
 /**
  * Glass Drawer content contract. One `RoomView` per room, locale-resolved and serializable, built on
@@ -116,6 +117,18 @@ export interface RoomReactor {
   pods: Record<string, { title: string; wing: string; docked: boolean }>;
 }
 
+/** One piece on a topic: its room on L4 (a post station or a desk) and its title. */
+export interface RoomTopicItem {
+  room: RoomId;
+  title: string;
+  kind: TopicItemKind;
+}
+
+/** L4 Topic Constellation drawer (`TopicsBody`): every topic from the build-time topic index with its pieces. */
+export interface RoomTopics {
+  topics: { slug: string; label: string; items: RoomTopicItem[] }[];
+}
+
 export interface RoomView {
   id: RoomId;
   floor: FloorId;
@@ -162,6 +175,8 @@ export interface RoomView {
   cards?: RoomCard[];
   /** L3 Tech Reactor: rings, techs and project counts (`ReactorBody`). */
   reactor?: RoomReactor;
+  /** L4 Topic Constellation: topics with their pieces (`TopicsBody`). */
+  topics?: RoomTopics;
   /** RF:visits: labels the live stats panel needs (`VisitsBody`); the numbers are fetched on the client. */
   visits?: VisitsLabels;
   /** L3:ops: the observability section (`OpsBody`); live numbers are fetched on the client. */

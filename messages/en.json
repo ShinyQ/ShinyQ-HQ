@@ -225,7 +225,40 @@
     "read": "Read the paper",
     "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
     "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
-    "profiles": "Research profiles"
+    "profiles": "Research profiles",
+    "topics": {
+      "title": "Topic Constellation",
+      "subtitle": "Topics across the blog, research, models and talks. Pick one to light its pieces on the floor.",
+      "names": {
+        "llm-evaluation": "LLM evaluation",
+        "azure-openai": "Azure OpenAI",
+        "voice-ai": "Voice AI",
+        "llm-reliability": "LLM reliability",
+        "fraud-detection": "Fraud detection",
+        "ai-agents": "AI agents",
+        "sentiment-analysis": "Sentiment analysis",
+        "forecasting": "Forecasting",
+        "teaching": "Teaching and mentoring",
+        "nodejs": "Node.js",
+        "ui-ux": "UI/UX",
+        "case-study": "Case studies",
+        "personal": "Personal"
+      },
+      "listLabel": "Topics",
+      "count": "{count, plural, one {# piece} other {# pieces}}",
+      "pieces": "{count, plural, one {# piece} other {# pieces}} on {topic}",
+      "selection": "Pieces on {topic}",
+      "show": "Show writing about {topic}",
+      "clear": "Clear",
+      "all": "All topics",
+      "filters": "Filter by topic",
+      "monument": {
+        "target": "Research metrics",
+        "citations": "Citations",
+        "hIndex": "h-index",
+        "asOf": "{source} · as of {date}"
+      }
+    }
   },
   "blog": {
     "back": "Back to the Library",
@@ -382,7 +415,8 @@
       "highlightsContact": "Highlights: contact",
       "reactor": "Tech Reactor",
       "visits": "Visitor Observatory",
-      "ops": "Ops Control Room"
+      "ops": "Ops Control Room",
+      "topics": "Topic Constellation"
     },
     "launcher": {
       "search": "Search",

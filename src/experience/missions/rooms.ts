@@ -1,9 +1,10 @@
 import { pickFeaturedPods } from "@/content/pageview";
 import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/content/selectors";
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
+import { TOPICS } from "@/content/topic-map";
 import type { PaletteFilter } from "./host";
 
-export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "roof" | "visits" | "ops";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -53,6 +54,7 @@ export type StructuralRoom =
   | "highlightsExperience"
   | "highlightsContact"
   | "reactor"
+  | "topics"
   | "visits"
   | "ops";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
@@ -192,6 +194,17 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
     surpriseWeight: 0.5,
   });
   add({ floor: "L4", slug: "publications", kind: "shelf", title: labels.publications, keywords: library.publications.filter((p) => !isResearch(p.kind)).flatMap((p) => [p.title, p.kind, String(p.year), p.venue ?? ""]).filter(Boolean), path: "/library#publications", floorPath: "/library#publications", surpriseWeight: 0 });
+  // L4 Topic Constellation: a topic filter over the writing (the static tier shows the Writing page and its topic filter).
+  add({
+    floor: "L4",
+    slug: "topics",
+    kind: "topics",
+    title: labels.topics,
+    keywords: ["topic constellation", "konstelasi topik", "topics", "topik", "tags", "tag", "filter", ...TOPICS.map((t) => t.replace(/-/g, " "))],
+    path: "/library#topics",
+    floorPath: "/library#topics",
+    surpriseWeight: 0,
+  });
   add({ floor: "L4", slug: "talks", kind: "shelf", title: labels.talks, keywords: library.talks.flatMap((t) => [t.title.en, t.title.id, t.event]), path: "/library#talks", floorPath: "/library#talks", surpriseWeight: 0 });
 
   // RF Roof

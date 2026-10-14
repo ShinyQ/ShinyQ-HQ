@@ -22,6 +22,8 @@ export interface LibraryLayoutInput {
   research: number;
   models: number;
   talks: number;
+  /** Research metrics are published (the end plaza's monument shows them). */
+  metrics?: boolean;
 }
 
 export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
@@ -30,6 +32,7 @@ export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
     research: library.research.length,
     models: library.models.length,
     talks: library.talks.length,
+    metrics: Boolean(library.researchMetrics),
   };
 }
 
@@ -98,6 +101,22 @@ export interface LibraryLayout {
   links: [RoomId, RoomId][];
   /** Concept extras the decor reads (headline wall, year marks, nebulae). */
   extras: { wall?: Rect; years?: { year: string; at: Vec2 }[]; nebulae?: Record<LibraryZone, Vec2> };
+  /** The end plaza (newsroom): Topic Constellation, research-metrics monument and Express Return pad. */
+  end?: LibraryEnd | null;
+}
+
+/** The end of the timeline (owner request 2026-10-14): what fills the turnaround plaza. */
+export interface LibraryEnd {
+  /** Plaza center: the Topic Constellation stands here. */
+  center: Vec2;
+  /** The constellation's pedestal footprint (an obstacle the ring road drives around). */
+  core: Rect;
+  /** Where the timeline meets the ring road: the constellation stop (`stops["L4:topics"]`). */
+  ringStop: Vec2;
+  /** Research-metrics monument north of the plaza, with the stop in front of it; null without metrics. */
+  monument: { rect: Rect; center: Vec2; stop: Vec2 } | null;
+  /** Express Return pad (`FloorLayout.returnPad`). */
+  returnPad: Vec2;
 }
 
 export const roomOfPost = (slug: string): RoomId => `L4:${slug}` as RoomId;
@@ -254,6 +273,9 @@ export function libraryFloor(args: {
   network: RoadNetwork;
   spawn: Vec2;
   viewZones?: ViewZone[];
+  returnPad?: Vec2;
+  stops?: FloorLayout["stops"];
+  tall?: FloorLayout["tall"];
 }): FloorLayout {
   return {
     id: "L4",
@@ -267,6 +289,9 @@ export function libraryFloor(args: {
     doors: args.stations.map((s) => ({ room: s.room, at: s.door, facing: s.facing })),
     road: args.network,
     viewZones: [...stationViewZones(args.stations), ...(args.viewZones ?? [])],
+    ...(args.returnPad ? { returnPad: args.returnPad } : {}),
+    ...(args.stops ? { stops: args.stops } : {}),
+    ...(args.tall ? { tall: args.tall } : {}),
   };
 }
 

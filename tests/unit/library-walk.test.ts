@@ -21,6 +21,7 @@ const LIBRARY: LibraryData = {
   researchMetrics: null,
   models: [{ id: "model", title: "Model", kind: "model", venue: "Hugging Face", year: 2024 }],
   talks: [{ id: "talk", title: "Talk", event: "Event", date: "2024-01", role: "speaker" }],
+  topics: [],
 };
 
 const LABELS: LibraryWalkLabels = {

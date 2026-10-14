@@ -225,7 +225,40 @@
     "read": "Baca makalah",
     "citations": "{count} sitasi di {source}, per {date}",
     "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
-    "profiles": "Profil riset"
+    "profiles": "Profil riset",
+    "topics": {
+      "title": "Konstelasi Topik",
+      "subtitle": "Topik di blog, riset, model, dan sesi berbagi. Pilih satu untuk menyalakan karyanya di lantai ini.",
+      "names": {
+        "llm-evaluation": "Evaluasi LLM",
+        "azure-openai": "Azure OpenAI",
+        "voice-ai": "Voice AI",
+        "llm-reliability": "Keandalan LLM",
+        "fraud-detection": "Deteksi fraud",
+        "ai-agents": "AI agent",
+        "sentiment-analysis": "Analisis sentimen",
+        "forecasting": "Peramalan",
+        "teaching": "Mengajar dan mentoring",
+        "nodejs": "Node.js",
+        "ui-ux": "UI/UX",
+        "case-study": "Studi kasus",
+        "personal": "Personal"
+      },
+      "listLabel": "Topik",
+      "count": "{count} karya",
+      "pieces": "{count} karya tentang {topic}",
+      "selection": "Karya tentang {topic}",
+      "show": "Tampilkan tulisan tentang {topic}",
+      "clear": "Hapus pilihan",
+      "all": "Semua topik",
+      "filters": "Filter berdasarkan topik",
+      "monument": {
+        "target": "Metrik riset",
+        "citations": "Sitasi",
+        "hIndex": "h-index",
+        "asOf": "{source} · per {date}"
+      }
+    }
   },
   "blog": {
     "back": "Kembali ke Perpustakaan",
@@ -382,7 +415,8 @@
       "highlightsContact": "Sorotan: kontak",
       "reactor": "Reaktor Teknologi",
       "visits": "Observatorium Pengunjung",
-      "ops": "Ruang Kontrol Ops"
+      "ops": "Ruang Kontrol Ops",
+      "topics": "Konstelasi Topik"
     },
     "launcher": {
       "search": "Cari",

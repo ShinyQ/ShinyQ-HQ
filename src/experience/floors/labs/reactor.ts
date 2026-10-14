@@ -1,3 +1,4 @@
+import { coreRect, ringRoadEntry, ringRoadPoints } from "../../nav/ringRoad";
 import type { Rect, Vec2 } from "../../types";
 
 /**
@@ -37,26 +38,19 @@ export function reactorSpin(reducedMotion: boolean): number {
 
 /** The core's footprint (an obstacle for the navgrid and the camera). */
 export function reactorRect(center: Vec2): Rect {
-  return { minX: center.x - REACTOR.half, maxX: center.x + REACTOR.half, minZ: center.z - REACTOR.half, maxZ: center.z + REACTOR.half };
+  return coreRect(center, REACTOR.half);
 }
 
 /** Closed ring road around the core: `segments` points, vertex 0 due north (-z), clockwise seen from above. */
 export function ringPoints(center: Vec2): Vec2[] {
-  return Array.from({ length: REACTOR.segments }, (_, k) => {
-    const a = (k / REACTOR.segments) * Math.PI * 2;
-    return { x: round(center.x + Math.sin(a) * REACTOR.ring), z: round(center.z - Math.cos(a) * REACTOR.ring) };
-  });
+  return ringRoadPoints(center, REACTOR.ring, REACTOR.segments);
 }
 
 /** Where a road coming from `from` meets the ring: on the ring circle toward `from` (due north or south for a road along x = center.x). */
 export function ringEntry(center: Vec2, from: Vec2): Vec2 {
-  const dx = from.x - center.x;
-  const dz = from.z - center.z;
-  const len = Math.hypot(dx, dz) || 1;
-  return { x: round(center.x + (dx / len) * REACTOR.ring), z: round(center.z + (dz / len) * REACTOR.ring) };
+  return ringRoadEntry(center, from, REACTOR.ring);
 }
 
-const round = (v: number) => Math.round(v * 1e6) / 1e6;
 
 /** A waterfall panel hanging under a slab edge: its top edge runs from `a` to `b` on the slab rim; it falls `drop` u. */
 export interface WaterfallPanel {
