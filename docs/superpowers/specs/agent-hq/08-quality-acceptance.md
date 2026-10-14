@@ -18,7 +18,7 @@ CI budgets are authoritative (owner decision 2026-10-13). Where a CI gate exists
 
 | Metric | CI gate (authoritative) | Spec ceiling | Measured by |
 |---|---|---|---|
-| LCP, Page View (`/en`, `/en/quick`, `/en/journey`, a pod page) | < 2,000 ms (median of 3) | 2.5 s | Lighthouse CI, simulated mobile 4G |
+| LCP, Page View (`/en`, `/id`, `/en/quick`, `/en/journey`, a pod page, `/en/contact`; `/en/cv` warn-only) | < 2,000 ms (median of 3) | 2.5 s | Lighthouse CI, simulated mobile 4G |
 | CLS | < 0.01 | 0.05 | Lighthouse CI |
 | TBT | < 200 ms | 300 ms | Lighthouse CI |
 | Page View transfer per page | JS 240 KB (245,760 B), CSS 20 KB, fonts 60 KB, HTML 80 KB; warn at 90% | JS 350 KB | Lighthouse CI `resource-summary`; per-chunk diff against main in the job summary |
@@ -59,7 +59,7 @@ Highlights Hall gallery (spectacle round, `docs/superpowers/specs/2026-10-13-spe
 | E2E | Playwright | Boot and intro skip, each mission end to end, ⌘K to a pod, elevator via wheel and panel, deep link to a pod, hologram view, README toggle, language switch, Quick view, static tier fallback (`?tier=static`) |
 | Visual | Playwright screenshots | Lobby, L2 corridor, L3 with drawer, hologram, Roof, Quick view at 1440×900, 1024×1366 and 390×844 (WebGL via SwiftShader in CI) |
 | Accessibility | axe-core in Playwright | Zero serious/critical violations on static pages and HUD overlays |
-| Performance | Lighthouse CI (a warm-up run of `/en?lhci-warmup=1` first, never asserted); Playwright perf lane (`bun run e2e:perf`, CI job `3D perf gates`); nightly timeline; `?perf=1` and RUM for real devices | Budgets in section 2 on `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center` (3 runs each) and every 3D floor on both tiers. CI budgets (`lighthouserc.json`, `e2e/budgets.ts`) are authoritative. |
+| Performance | Lighthouse CI (a warm-up run of `/en?lhci-warmup=1` first, never asserted); Playwright perf lane (`bun run e2e:perf`, CI job `3D perf gates`); nightly timeline; `?perf=1` and RUM for real devices | Budgets in section 2 on `/en`, `/id`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, `/en/contact` (3 runs each; `/en/cv` too, warn-only) and every 3D floor on both tiers. CI budgets (`lighthouserc.json`, `e2e/budgets.ts`) are authoritative. |
 
 ## 4. Acceptance criteria per build phase
 
