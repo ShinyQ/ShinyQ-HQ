@@ -50,7 +50,7 @@ function Bar({ share, tone }: { share: number; tone: "cyan" | "violet" }) {
 /**
  * The public visit stats with the owner's two filters (Topic: All, Work, AI, Career; Period: Last 30
  * days, Since launch) as native radio groups and one polite status line. Shared by the Classic Contact
- * section and the RF:visits drawer. Renders nothing when the stats are hidden (invalid, 204 or older
+ * section and the L1:visits drawer. Renders nothing when the stats are hidden (invalid, 204 or older
  * than 7 days) and a "delayed" note after 48 hours.
  */
 export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, footer }: VisitsPanelProps) {

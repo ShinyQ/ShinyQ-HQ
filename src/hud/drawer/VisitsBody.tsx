@@ -8,7 +8,7 @@ import { requestStats, useStats } from "@/lib/visits/store";
 import type { RoomBodyProps } from "./bodies";
 
 /**
- * RF:visits, the Visitor Observatory: the shared visits panel (Topic and Period radio groups, counters,
+ * L1:visits, the Visitor Observatory: the shared visits panel (Topic and Period radio groups, counters,
  * dot map, topic shares, chip counts) in the drawer's narrow layout, then "Don't count my visits". When
  * the stats are hidden (invalid, 204 or older than 7 days) the drawer says so and keeps the switch.
  */

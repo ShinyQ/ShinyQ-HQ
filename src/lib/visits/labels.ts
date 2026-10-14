@@ -7,7 +7,7 @@ import type { StatsFloor } from "./contract";
 /**
  * Build-time labels the visits panel needs beyond its `stats` messages: the curated chip questions
  * (`content/ask/suggestions.json`) and the floor names (`hud.floorLabel`). Built on the server and
- * passed down (Contact page props, the RF:visits room view), so the question bank never ships to the client.
+ * passed down (Contact page props, the L1:visits room view), so the question bank never ships to the client.
  */
 export interface VisitsLabels {
   chipLabels: Record<string, string>;

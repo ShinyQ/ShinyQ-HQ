@@ -171,29 +171,6 @@ function ActiveRing({ rooms }: { rooms: CareerRoom[] }) {
   );
 }
 
-type FadeText = Object3D & { fillOpacity?: number; outlineOpacity?: number };
-
-/**
- * Applies the distance fade to labels at `xs` each frame (troika reads the opacities at render, no
- * re-layout). `base` scales a label's fill opacity (for faint floor text).
- */
-export function useLabelFade(xs: readonly number[], base?: readonly number[]) {
-  const labels = useRef<(FadeText | null)[]>([]);
-  useFrame(() => {
-    xs.forEach((x, i) => {
-      const label = labels.current[i];
-      if (!label) return;
-      const k = labelFade(x - roverRuntime.x);
-      label.visible = k > 0.01;
-      label.fillOpacity = k * (base?.[i] ?? 1);
-      label.outlineOpacity = k;
-    });
-  });
-  return (i: number) => (el: Object3D | null) => {
-    labels.current[i] = el as FadeText | null;
-  };
-}
-
 /**
  * Per-frame upkeep for the members of a career `BatchedLabels`: the distance fade (the batch packs each
  * member's opacities every frame) and the camera-behind turn of `Readable` (round 5, the camera orbits

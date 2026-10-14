@@ -30,8 +30,3 @@ export const RETIRED_SIDE_ROOMS: Readonly<Record<string, RoomId>> = {
 
 /** The room an id stands for today: a retired side project bench resolves to its L3 pod. */
 export const currentRoom = (room: RoomId): RoomId => RETIRED_SIDE_ROOMS[room] ?? room;
-
-/** True for the Workshop overview and its side project and repo rooms. */
-export function isWorkshopRoom(room: string): boolean {
-  return room === WORKSHOP_ROOM || room.startsWith("L2:side-") || room.startsWith("L2:repo-");
-}
