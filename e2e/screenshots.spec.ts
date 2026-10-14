@@ -766,8 +766,9 @@ for (const viewport of P6_VIEWPORTS) {
 /**
  * Round 5 P8 (L3 consolidation). `r5-p8 L3 review`: owner review captures of L3 (arrival, the end of each
  * wing road looking east, the Product Engineering directory stop) with draw calls and triangles per pose.
- * `r5-p8 unchanged`: the diff gate for floors P8 must not change (L1, L2, L4, RF arrivals, reduced motion so
- * nothing spins or pulses); write the baselines on the Task 1 commit with --update-snapshots, compare later.
+ * The former `r5-p8 unchanged` gate (L1, L2, L4, RF must not change during P8) is retired: P8 shipped, its
+ * baselines were local only (never committed, so it failed in CI by construction), and later rounds
+ * changed those floors on purpose. Use `bun scripts/visual-gate.ts` for a before/after diff instead.
  * P8_PHASE=before|after picks the output folder under screenshots/r5-p8/.
  */
 const P8_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
@@ -835,20 +836,4 @@ for (const v of P8_VIEWPORTS) {
     await p8Metrics(page, "l3-board-software", v);
     await context.close();
   });
-
-  for (const floor of [
-    { id: "L1", path: "/en" },
-    { id: "L2", path: "/en/journey" },
-    { id: "L4", path: "/en/library" },
-    { id: "RF", path: "/en/contact" },
-  ] as const) {
-    test(`r5-p8 unchanged ${floor.id} @ ${v.width}x${v.height}`, async ({ browser }) => {
-      test.setTimeout(P8_WAIT * 3);
-      const { context, page } = await p8Open(browser, v, floor.path, "reduce");
-      await p8Metrics(page, `unchanged-${floor.id}`, v);
-      // Gate: at most 1% of pixels may differ by more than the per-pixel threshold 0.2 (SwiftShader noise floor, checked in Task 1 Step 7).
-      expect(await page.screenshot()).toMatchSnapshot(`r5-p8-${floor.id}-${v.width}x${v.height}.png`, { maxDiffPixelRatio: 0.01, threshold: 0.2 });
-      await context.close();
-    });
-  }
 }

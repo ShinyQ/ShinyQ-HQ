@@ -176,7 +176,9 @@ test("the L1 stats ring draws in 5 objects (full tier)", async ({ page }) => {
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
-  expect(await renderables(page, "stats-ring")).toBe(5);
+  // Scene live means the first frames drew, not that every Lobby piece has mounted (its text can still be
+  // loading on a busy CI runner): wait for the ring, and it must then be exactly 5 objects.
+  await expect.poll(() => renderables(page, "stats-ring"), { timeout: 30_000 }).toBe(5);
 });
 
 test("L2 room labels and signposts are batched (full tier)", async ({ page }) => {

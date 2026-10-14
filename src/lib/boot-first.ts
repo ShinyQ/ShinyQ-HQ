@@ -17,6 +17,8 @@ export const MOTION_STORE_KEY = "hq:v1";
 
 /** Set on <html> before first paint wherever 3D could run; the landing shows "Enter the 3D HQ" only then. */
 export const OFFER_3D_ATTR = "data-hq-3d";
+/** Set on <html> before first paint for automation and crawlers: the landing holds its still frame (ambientStill). */
+export const STILL_ATTR = "data-hq-still";
 
 export interface Offer3DInput {
   search: string;
@@ -83,6 +85,19 @@ export function canOffer3D(i: Offer3DInput): boolean {
 }
 
 /**
+ * Whether the landing's ambient motion (the hero backdrop and the stats ticker) holds its still frame,
+ * the frame visitors see with "Pause motion" or reduced motion. True under automation
+ * (`navigator.webdriver`: Playwright, Lighthouse 12) and for crawlers: nobody watches it there, and on a
+ * software compositor (SwiftShader in CI) the infinite animations queue seconds of GPU work that stall
+ * the page's main thread and the next browser call, even after navigating away (13 s at 1999x1129).
+ * `?ambient=on` keeps the motion for a capture or a test that needs it. Self-contained for toString().
+ */
+export function ambientStill(webdriver: boolean | undefined, bot: boolean, search: string): boolean {
+  if (/[?&]ambient=on(&|$)/.test(search)) return false;
+  return webdriver === true || bot;
+}
+
+/**
  * `?view=page` is the boot card's "Classic site" link (a real link, so it works before hydration): the
  * head script stores the Page View choice and drops the parameter. Returns the search without it, or
  * null when it is absent. Self-contained (no imports, no closures) for toString().
@@ -102,8 +117,8 @@ export function takePageViewParam(search: string): string | null {
  * the first paint (before hydration) it probes WebGL once and stores the result in
  * `window.__hqProbe` for the gate (readTierInputs). Without WebGL2 or on a software renderer it
  * releases the cover at once and remembers the verdict for the session, unless `?tier=` forces one.
- * It also sets html[data-hq-3d] (canOffer3D) and html[data-motion] (the visitor's Motion setting,
- * storedMotion: `full` by default, also without storage) on every page, before first paint.
+ * It also sets html[data-hq-3d] (canOffer3D), html[data-hq-still] (ambientStill) and html[data-motion] (the
+ * visitor's Motion setting, storedMotion: `full` by default, also without storage) on every page, before first paint.
  */
 export function bootFirstScript(): string {
   return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
@@ -111,6 +126,7 @@ var q=(${takePageViewParam.toString()})(location.search);if(q!==null){s="page";t
 var d=document.documentElement,ms=null;try{ms=localStorage.getItem("${MOTION_STORE_KEY}")}catch(e){}var m=(${storedMotion.toString()})(ms);if(m)d.setAttribute("${MOTION_ATTR}",m);
 var c=navigator.connection,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
+if((${ambientStill.toString()})(navigator.webdriver,b,location.search))d.setAttribute("${STILL_ATTR}","1");
 var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:w,saveData:sd,bot:b,probe:p});
 if(!on)return;d.setAttribute("${BOOT_ATTR}","1");
 var off=function(r){if(d.hasAttribute("${BOOT_ATTR}")){d.removeAttribute("${BOOT_ATTR}");d.setAttribute("${BOOT_RELEASED_ATTR}",r);try{performance.mark("${PERF_MARKS.bootRelease}",{detail:r})}catch(e){}}};

@@ -57,9 +57,12 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
     return () => cancelAnimationFrame(raf);
   }, [visible]);
 
-  // Choices take focus when they appear and follow the highlight (no trap: Tab leaves).
+  // Choices take focus when they appear and follow the highlight (no trap: Tab leaves), but never from a text
+  // field or another dialog (Cmd-K, the Ask panel): the visitor's typing would land on a choice instead.
   useEffect(() => {
     if (!choiceKey) return;
+    const focused = document.activeElement;
+    if (focused && !box.current?.contains(focused) && focused.closest(`${TEXT_INPUT}, [role='dialog']`)) return;
     box.current?.querySelector<HTMLButtonElement>(`[data-choice-index="${view.active}"]`)?.focus({ preventScroll: true });
   }, [choiceKey, view.active]);
 

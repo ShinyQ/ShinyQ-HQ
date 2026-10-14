@@ -5,18 +5,18 @@ import { startBeam } from "@/experience/nav/teleport";
 
 const lift = { id: "L2" as const, approach: { x: -21, z: 0 } };
 
-describe("the fast return rule (owner decision: beam when more than about 25 u from the elevator)", () => {
+describe("the fast return rule (owner decision: beam when more than 40 u from the elevator (raised from 25 u))", () => {
   it("measures the straight line to the elevator call pad", () => {
     expect(distanceToElevator({ x: -21, z: 0 }, lift)).toBe(0);
     expect(distanceToElevator({ x: -18, z: 4 }, lift)).toBe(5);
   });
 
-  it("drives up to 25 u and beams beyond", () => {
-    expect(FAST_RETURN.beamDistance).toBe(25);
-    expect(shouldBeamToCar({ x: -21 + 24.9, z: 0 }, lift)).toBe(false);
-    expect(shouldBeamToCar({ x: -21 + 25, z: 0 }, lift)).toBe(false);
-    expect(shouldBeamToCar({ x: -21 + 25.1, z: 0 }, lift)).toBe(true);
-    expect(shouldBeamToCar({ x: -21, z: -26 }, lift)).toBe(true);
+  it("drives up to 40 u and beams beyond", () => {
+    expect(FAST_RETURN.beamDistance).toBe(40);
+    expect(shouldBeamToCar({ x: -21 + 39.9, z: 0 }, lift)).toBe(false);
+    expect(shouldBeamToCar({ x: -21 + 40, z: 0 }, lift)).toBe(false);
+    expect(shouldBeamToCar({ x: -21 + 40.1, z: 0 }, lift)).toBe(true);
+    expect(shouldBeamToCar({ x: -21, z: -41 }, lift)).toBe(true);
   });
 });
 

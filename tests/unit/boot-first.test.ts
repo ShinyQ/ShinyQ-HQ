@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { bootFirstScript, canOffer3D, isBotLike, MOTION_STORE_KEY, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
+import { ambientStill, bootFirstScript, canOffer3D, isBotLike, MOTION_STORE_KEY, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
 import { STORE_KEY } from "@/store/useHQStore";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
@@ -138,9 +138,11 @@ describe("bootFirstScript", () => {
     expect(onlyMotion(runScript({ path: "/en", webgl2: false }).attrs)).toBe(true);
     expect(onlyMotion(runScript({ path: "/en", saveData: true }).attrs)).toBe(true);
     expect(runScript({ path: "/en", probe: "static" }).attrs.has("data-hq-boot")).toBe(false);
-    expect(onlyMotion(runScript({ path: "/en", ua: "Chrome-Lighthouse" }).attrs)).toBe(true);
-    expect(onlyMotion(runScript({ path: "/en", ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }).attrs)).toBe(true);
-    expect(onlyMotion(runScript({ path: "/en", webdriver: true }).attrs)).toBe(true);
+    // Bots and automation get the page, the Motion attribute and the still landing flag (ambientStill).
+    const pageOnly = (attrs: Map<string, string>) => [...attrs.keys()].sort().join() === "data-hq-still,data-motion" && attrs.get("data-motion") === "full";
+    expect(pageOnly(runScript({ path: "/en", ua: "Chrome-Lighthouse" }).attrs)).toBe(true);
+    expect(pageOnly(runScript({ path: "/en", ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }).attrs)).toBe(true);
+    expect(pageOnly(runScript({ path: "/en", webdriver: true }).attrs)).toBe(true);
     expect(runScript({ path: "/en", webdriver: true, search: "?tier=lite" }).attrs.get("data-hq-boot")).toBe("1");
   });
 
@@ -303,5 +305,25 @@ describe("bootFirstScript motion override", () => {
 
   it("leaves it unset only under a System the visitor picked", () => {
     expect(runScript({ path: "/en", local: stored("system") }).attrs.has("data-motion")).toBe(false);
+  });
+});
+
+describe("ambient motion under automation (html[data-hq-still])", () => {
+  it("holds the still frame for automation and crawlers, unless ?ambient=on", () => {
+    expect(ambientStill(true, true, "")).toBe(true);
+    // A forced 3D tier is not bot-like, but the static fallback landing must not animate either.
+    expect(ambientStill(true, false, "?tier=lite")).toBe(true);
+    expect(ambientStill(undefined, true, "")).toBe(true);
+    expect(ambientStill(false, false, "")).toBe(false);
+    expect(ambientStill(true, true, "?ambient=on")).toBe(false);
+    expect(ambientStill(true, true, "?tier=static&ambient=on")).toBe(false);
+    expect(() => new Function(ambientStill.toString())).not.toThrow();
+  });
+
+  it("is set by the head script before first paint on every page", () => {
+    expect(runScript({ path: "/en", webdriver: true }).attrs.get("data-hq-still")).toBe("1");
+    expect(runScript({ path: "/en/blog/x", search: "?tier=lite", webdriver: true }).attrs.get("data-hq-still")).toBe("1");
+    expect(runScript({ path: "/en" }).attrs.has("data-hq-still")).toBe(false);
+    expect(runScript({ path: "/en", search: "?ambient=on", webdriver: true }).attrs.has("data-hq-still")).toBe(false);
   });
 });

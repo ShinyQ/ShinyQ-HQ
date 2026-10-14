@@ -258,6 +258,33 @@ test.describe("rover on desktop", () => {
     expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
   });
 
+  test("a drive that starts right after a room opened and closed again (slow frames) still drives", async ({ page }) => {
+    // CI flake in walk.spec.ts (L2 walk, `]` then Esc): on a slow frame the open of one stop, its close and
+    // the next stop's drive all landed before the Director's next frame, and the stale open cut the new path.
+    await enterHQ(page);
+    const target = await page.evaluate(() => {
+      const w = window as unknown as {
+        __hq: {
+          store: { getState: () => { openRoom: (room: string) => void; closeRoom: () => void } };
+          rover: { autopilot: unknown };
+          layouts: Record<string, { approach: { x: number; z: number } }>;
+        };
+      };
+      const point = { x: w.__hq.layouts.L1.approach.x + 6, z: w.__hq.layouts.L1.approach.z };
+      // One task, so no frame runs in between: open, close, then a new autopilot drive.
+      w.__hq.store.getState().openRoom("L1:stats");
+      w.__hq.store.getState().closeRoom();
+      w.__hq.rover.autopilot = { point, state: "pending" };
+      return point;
+    });
+    await page.waitForFunction(() => {
+      const rover = (window as unknown as { __hq: { rover: { autopilot: { state: string } | null; speed: number } } }).__hq.rover;
+      return rover.autopilot?.state === "done" && rover.speed < 0.5;
+    }, null, { timeout: 60_000 });
+    const at = await page.evaluate(() => (window as unknown as { __hq: { rover: { x: number; z: number } } }).__hq.rover);
+    expect(Math.hypot(at.x - target.x, at.z - target.z)).toBeLessThan(1.5);
+  });
+
   test("a click on empty floor does not move the rover", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);

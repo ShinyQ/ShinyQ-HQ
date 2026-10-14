@@ -13,8 +13,8 @@ type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
 type SpectacleWindow = {
   __hq: {
     probes: { signs: Record<string, { text: string; facing: number }[]>; spectacle: Record<string, number>; flatText: () => string[] };
-    layouts: Record<string, { tall?: (Rect & { h: number })[] }>;
-    rover: { x: number; z: number; speed: number; autopilot: { point: { x: number; z: number }; state: string } | null };
+    layouts: Record<string, { tall?: (Rect & { h: number })[]; stops?: Record<string, { x: number; z: number }> }>;
+    rover: { x: number; z: number; speed: number; cameraYaw: number; autopilot: { point: { x: number; z: number }; state: string } | null };
     store: { getState: () => { reducedMotion: boolean } };
   };
 };
@@ -112,18 +112,32 @@ test("L3 reactor core: autopilot across the east plaza drives around it", async 
 });
 
 test("L3 reactor core: point-and-go to a pod beyond it drives around it and opens the pod", async ({ page }) => {
+  // No first-visit floor line: its text box would sit over the middle of the view.
+  await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L3"])));
   await enterFloorRoute(page, "/en/labs");
   const core = await coreRect(page);
-  const cx = (core.minX + core.maxX) / 2;
-  await driveTo(page, { x: cx, z: 6.5 }, 120_000);
-  await page.keyboard.press("0");
+  // The Tech Reactor stop on the ring road's east point has its own view zone: the camera stands east of
+  // the rover and looks west over the core at the pods of both wings. (From the ring's south point the
+  // core and its rings fill the default view, so whether a pod showed depended on where the rover stopped.)
+  const stop = await page.evaluate(() => (window as unknown as SpectacleWindow).__hq.layouts.L3.stops?.["L3:reactor"]);
+  expect(stop).toBeTruthy();
+  await driveTo(page, stop!, 120_000);
+  // Wait on the zone's framing (yaw PI/4, any full turn), not on time.
+  const offZoneYaw = () =>
+    page.evaluate(() => {
+      const d = (window as unknown as SpectacleWindow).__hq.rover.cameraYaw - Math.PI / 4;
+      return Math.abs(Math.atan2(Math.sin(d), Math.cos(d)));
+    });
+  await expect.poll(offZoneYaw, { timeout: 30_000 }).toBeLessThan(0.01);
   await waitForCameraSettle(page);
   const target = await visibleTarget(page, { kinds: ["door"] });
-  const stop = await sampleCore(page, core);
+  // The pod lies beyond the core: the rover is on its east side and every pod docks west of it.
+  expect(target.at.x).toBeLessThan(core.minX);
+  const sample = await sampleCore(page, core);
   const p = await targetPoint(page, target.id);
   await page.mouse.click(p.x, p.y);
   await waitForRoom(page, target.action.room!);
-  expect(await stop()).toBeGreaterThanOrEqual(0.9);
+  expect(await sample()).toBeGreaterThanOrEqual(0.9);
 });
 
 test("reduced motion: the reactor, waterfalls and the L2 horizon stand still", async ({ page }) => {

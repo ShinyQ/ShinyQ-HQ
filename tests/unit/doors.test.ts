@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DOOR_DWELL, DOOR_SLOW, DOOR_SIZE, doorAlong, doorAt, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
+import { DOOR_DWELL, DOOR_SLOW, DOOR_SIZE, doorAlong, doorAt, openEndsPath, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
+import { RoverController } from "@/experience/rover/controller";
 import type { DoorTrigger } from "@/experience/types";
 
 const doors: DoorTrigger[] = [
@@ -147,5 +148,24 @@ describe("a closed room never reopens when the rover reaches its pad", () => {
     stepDoorLatch(latch, null, step({ explore: false, openRoom: "L3:a" }));
     expect(stepDoorLatch(latch, null, step({ speed: 0 }))).toBeNull();
     expect(stepDoorLatch(latch, "L3:a", step({ speed: 0 }))).toBe("L3:a");
+  });
+});
+
+describe("a room open ends the rover's path", () => {
+  it("ends any path while the drawer is open", () => {
+    expect(openEndsPath(true, null, 3)).toBe(true);
+    expect(openEndsPath(true, 2, 3)).toBe(true);
+  });
+
+  it("after a quick open and close, ends only the path that was running when the room opened", () => {
+    const rover = new RoverController({ x: 0, z: 0 });
+    rover.setPath([{ x: 5, z: 0 }]);
+    const openedOn = rover.pathId;
+    expect(openEndsPath(false, openedOn, rover.pathId)).toBe(true);
+    // Slow frames: the room opened, closed again and the next walk stop started its drive before the Director ran.
+    rover.setPath([{ x: 0, z: 9 }], true);
+    expect(rover.pathId).toBe(openedOn + 1);
+    expect(openEndsPath(false, openedOn, rover.pathId)).toBe(false);
+    expect(openEndsPath(false, null, rover.pathId)).toBe(false);
   });
 });

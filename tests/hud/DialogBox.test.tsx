@@ -104,6 +104,20 @@ describe("DialogBox", () => {
     await expect(result).resolves.toEqual({ status: "done", choice: "b" });
   });
 
+  it("never takes focus from a text field or another dialog, so typing in Cmd-K is never stolen", () => {
+    const palette = document.createElement("div");
+    palette.setAttribute("role", "dialog");
+    palette.setAttribute("aria-modal", "true");
+    const input = document.createElement("input");
+    palette.append(input);
+    document.body.append(palette);
+    input.focus();
+    renderBox();
+    act(() => void say({ text: "Pick one", choices: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] }));
+    expect(input).toHaveFocus();
+    palette.remove();
+  });
+
   it("shows the try-it hint, then Continue after the fallback, and the skip button", async () => {
     renderBox();
     let tour: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
