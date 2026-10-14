@@ -18,6 +18,19 @@ export function repoSlug(name: string): string {
 export const sideProjectRoom = (id: string): RoomId => `L2:side-${id}`;
 export const repoRoom = (slug: string): RoomId => `L2:repo-${slug}`;
 
+/**
+ * Side projects that moved to full L3 Data and ML pods (owner decision 2026-10-14): their bench rooms
+ * are gone, and an old `L2:side-<id>` id (history entries, saved links) goes to the pod instead.
+ */
+export const RETIRED_SIDE_ROOMS: Readonly<Record<string, RoomId>> = {
+  "L2:side-sentiboard": "L3:university-sentiment-indobert",
+  "L2:side-ewallet-sentiment": "L3:ifest-2021-sentiment-analysis",
+  "L2:side-sp500-portfolio-optimizer": "L3:stock-allocation-optimizer",
+};
+
+/** The room an id stands for today: a retired side project bench resolves to its L3 pod. */
+export const currentRoom = (room: RoomId): RoomId => RETIRED_SIDE_ROOMS[room] ?? room;
+
 /** True for the Workshop overview and its side project and repo rooms. */
 export function isWorkshopRoom(room: string): boolean {
   return room === WORKSHOP_ROOM || room.startsWith("L2:side-") || room.startsWith("L2:repo-");

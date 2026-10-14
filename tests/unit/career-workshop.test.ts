@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildCareerData } from "@/content/experience";
-import { getPublicRepos, getSideProjects } from "@/content/load";
-import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
+import { getPod, getPods, getPublicRepos, getSideProjects } from "@/content/load";
+import { currentRoom, repoRoom, RETIRED_SIDE_ROOMS, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
 import { zoneAt } from "@/experience/camera/orbit";
 import { buildFloorLayouts } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
@@ -78,6 +78,15 @@ describe("L2 Workshop: gateway, benches, skyline", () => {
     expect(c.windowX - Math.max(...w.benches.map((b) => b.rect.maxX))).toBeGreaterThanOrEqual(6);
   });
 
+  it("centers the bench row under the skyline, so neither end of the Workshop is left empty", () => {
+    const first = Math.min(...w.benches.map((b) => b.rect.minX));
+    const lastX = Math.max(...w.benches.map((b) => b.rect.maxX));
+    expect(first - w.gateway.x).toBeGreaterThanOrEqual(WORKSHOP.bench.inset);
+    expect(Math.abs((first + lastX) / 2 - c.annex.center.x)).toBeLessThanOrEqual(1);
+    // Seven benches no longer stretch the Workshop past its minimum length.
+    expect(c.annex.w).toBe(WORKSHOP.plaza.minW);
+  });
+
   it("docks the 20 repo skyline on the north edge, centered, with a stop in front of every bar", () => {
     expect(w.skyline.bars).toHaveLength(getPublicRepos().length);
     expect(w.skyline.plinth.maxZ).toBeLessThan(plazaRect(c.annex).minZ);
@@ -106,6 +115,26 @@ describe("L2 Workshop: gateway, benches, skyline", () => {
     expect(c.roomStops[WORKSHOP_ROOM]).toEqual(w.gateway.stop);
     for (const b of w.benches) expect(c.roomStops[sideProjectRoom(b.id)]).toEqual(b.stop);
     w.skyline.bars.forEach((bar, i) => expect(c.roomStops[repoRoom(bar.slug)]).toEqual(w.skyline.stops[i]));
+  });
+});
+
+describe("L2 Workshop: no bench for a project with an L3 pod", () => {
+  it("keeps no side project whose repository a pod already links", () => {
+    const podRepos = new Set(getPods().flatMap((p) => p.repos ?? []));
+    for (const p of getSideProjects()) expect(p.repo && podRepos.has(p.repo), p.id).toBeFalsy();
+  });
+
+  it("drops the Sentiboard, e-wallet sentiment and S&P 500 benches and sends their old rooms to the pods", () => {
+    const ids = getSideProjects().map((p) => p.id);
+    for (const [room, pod] of Object.entries(RETIRED_SIDE_ROOMS)) {
+      expect(ids).not.toContain(room.slice("L2:side-".length));
+      expect(c.roomStops[room], room).toBeUndefined();
+      expect(pod.startsWith("L3:")).toBe(true);
+      expect(getPod(pod.slice(3))?.wing, pod).toBe("data");
+      expect(currentRoom(room)).toBe(pod);
+    }
+    expect(Object.keys(RETIRED_SIDE_ROOMS)).toHaveLength(3);
+    expect(currentRoom(sideProjectRoom(ids[0]))).toBe(sideProjectRoom(ids[0]));
   });
 });
 

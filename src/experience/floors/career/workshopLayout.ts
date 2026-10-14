@@ -11,9 +11,10 @@ import { SKYLINE, skylineBars, skylineShape, type SkylineBar, type WorkshopRepo 
  *   camera) and the Return pad beside it;
  * - the Workshop: a gateway arch over the road at its start, the repo skyline docked on its north edge
  *   (a backdrop, tallest bars behind), one workbench per side project docked on its south edge in two
- *   groups of touching benches, and the Horizon deck at the road's end in front of the window.
+ *   groups of touching benches (centered under the skyline), and the Horizon deck at the road's end in
+ *   front of the window.
  *
- * Every piece keeps the space rules: obstacles touch or keep 6 u (the benches start 4 u past the gateway posts and 5 u further south;
+ * Every piece keeps the space rules: obstacles touch or keep 6 u (the benches start at least 4 u past the gateway posts and 5 u further south;
  * the skyline starts well clear of them), stops lie on the plazas, and nothing stands on the road.
  */
 export const WORKSHOP = {
@@ -138,7 +139,11 @@ export function buildWorkshop(start: number, input: WorkshopInput): WorkshopLayo
   const consoleCenter = { x: forecourt.center.x, z: -(F.d / 2 + W.apron + C.d / 2) };
   const consoleStop = { x: consoleCenter.x, z: -F.d / 2 + W.stopInset };
 
-  const benches = benchRow(input.benches, x0 + W.bench.inset, half + W.apron);
+  // The bench row sits centered under the skyline when the plaza is longer than the row needs, never closer than
+  // `inset` to the gateway nor than 6 u (plus a margin) to the window, so fewer benches leave no empty end.
+  const span = benchSpan(input.benches.length);
+  const benchStart = Math.max(W.bench.inset, Math.min((w - span) / 2, w - ROAD.minClear - 1 - span));
+  const benches = benchRow(input.benches, x0 + benchStart, half + W.apron);
 
   const front = -(half + W.apron);
   const bars = skylineBars(input.repos).map((b) => ({ ...b, x: plaza.center.x + b.x, z: front + b.z }));

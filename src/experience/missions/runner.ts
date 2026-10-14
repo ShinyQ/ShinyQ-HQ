@@ -1,5 +1,6 @@
 import type { DrawerTab, Mission, MissionStep, RoomId } from "@/content/schema";
 import type { MissionHost, MissionStatus, StepContext } from "./host";
+import { currentRoom } from "@/content/workshop";
 import { floorOf, type RoomInfo } from "./rooms";
 import { pickSurprise } from "./surprise";
 
@@ -57,7 +58,8 @@ function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   });
 }
 
-function roomSteps(room: RoomId, tab?: DrawerTab): ConcreteStep[] {
+function roomSteps(requested: RoomId, tab?: DrawerTab): ConcreteStep[] {
+  const room = currentRoom(requested);
   return [
     { kind: "elevator", floor: floorOf(room) },
     { kind: "drive", to: room },

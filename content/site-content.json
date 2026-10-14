@@ -9166,56 +9166,6 @@
       "year": 2026
     },
     {
-      "id": "sentiboard",
-      "title": "Sentiboard",
-      "summary": {
-        "en": "For my BSc thesis, I built a Django dashboard that collects university-related posts and tracks sentiment using a fine-tuned IndoBERT model. The model is public on Hugging Face.",
-        "id": "Untuk skripsi S1, saya membangun dashboard Django yang mengumpulkan unggahan tentang kampus dan memantau sentimen menggunakan model IndoBERT hasil fine-tuning. Modelnya tersedia untuk publik di Hugging Face."
-      },
-      "stack": [
-        "Python",
-        "Django",
-        "FastAPI",
-        "IndoBERT",
-        "Hugging Face",
-        "Docker"
-      ],
-      "year": 2023,
-      "url": "https://huggingface.co/ShinyQ/indobert-sentiment-analysis-indonesian-university-reviews",
-      "repo": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App"
-    },
-    {
-      "id": "ewallet-sentiment",
-      "title": "E-Wallet Sentiment Analysis (CNN-LSTM)",
-      "summary": {
-        "en": "I analysed sentiment by aspect in app-store reviews of four Indonesian e-wallets. This model was our selection-phase entry in a data competition my team won; I later co-authored a paper on the work.",
-        "id": "Saya menganalisis sentimen berdasarkan aspek pada ulasan app store empat e-wallet Indonesia. Model ini menjadi karya babak seleksi dalam kompetisi data yang dimenangkan tim saya, lalu saya ikut menulis paper tentang proyek tersebut."
-      },
-      "stack": [
-        "Python",
-        "TensorFlow",
-        "Streamlit"
-      ],
-      "year": 2021,
-      "repo": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet"
-    },
-    {
-      "id": "sp500-portfolio-optimizer",
-      "title": "S&P 500 Portfolio Optimizer",
-      "summary": {
-        "en": "A group-built Streamlit app that uses SLSQP to optimize returns within sector and diversification constraints.",
-        "id": "Aplikasi Streamlit yang dibangun bersama tim, menggunakan SLSQP untuk mengoptimalkan imbal hasil dengan batasan sektor dan diversifikasi."
-      },
-      "stack": [
-        "Python",
-        "SciPy",
-        "Streamlit"
-      ],
-      "year": 2024,
-      "url": "https://stock-optimization-slsqp-group2.streamlit.app/",
-      "repo": "https://github.com/ShinyQ/Streamlit_Stock-Allocation-Optimization-SLSQP"
-    },
-    {
       "id": "crypto-portfolio-tracker",
       "title": "Crypto Portfolio Tracker",
       "summary": {
