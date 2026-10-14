@@ -136,7 +136,8 @@ for (const { tier, from, to } of RIDES) {
     await waitForCameraSettle(page);
     await measure(page, tier, scenario, async () => {
       await page.getByRole("navigation", { name: "Elevator" }).locator(`[data-floor="${to}"]`).click();
-      await waitForFloor(page, to);
+      // A full-tier ride over four floors can outlast the default 45 s on a busy SwiftShader runner (gpu.spec.ts allowed 90 s).
+      await waitForFloor(page, to, 90_000);
     });
   });
 }
