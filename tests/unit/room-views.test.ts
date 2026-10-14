@@ -34,6 +34,21 @@ describe("room views (Glass Drawer content)", () => {
       }
     });
 
+    it(`shows How I run AI in production in the Ops Control Room (${locale})`, () => {
+      const production = getContent().production;
+      const view = views["L3:ops"];
+      expect(view.kind).toBe("ops");
+      expect(view.title).toBe(production.title[locale]);
+      expect(view.page).toBe("/contact#production");
+      expect(view.ops?.points.map((p) => p.lead)).toEqual(production.points.map((p) => p.lead[locale]));
+      expect(view.ops?.intro).toBe(production.intro[locale]);
+      expect(view.ops?.outro).toBe(production.outro[locale]);
+      expect(view.ops?.excerpt?.code).toBe(production.alertExcerpt?.code);
+      expect(view.metrics.map((m) => m.value)).toEqual(production.tiles.map((t) => t.value[locale]));
+      expect(view.cards?.map((c) => c.room)).toEqual(production.caseStudies.map((slug) => `L3:${slug}`));
+      for (const card of view.cards ?? []) expect(views[card.room]?.title).toBe(card.title);
+    });
+
     it(`uses tabs for pods and a single pane elsewhere (${locale})`, () => {
       for (const view of Object.values(views)) {
         expect(view.variant).toBe(view.kind === "pod" ? "tabs" : "single");

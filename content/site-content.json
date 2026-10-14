@@ -94,6 +94,198 @@
       }
     ]
   },
+  "production": {
+    "title": {
+      "en": "How I run AI in production",
+      "id": "Cara saya menjalankan AI di production"
+    },
+    "intro": {
+      "en": "I treat observability as part of the feature, not an afterthought. Every AI service I ship on Azure is instrumented with OpenTelemetry through the Azure Monitor distro, on Python (FastAPI, Functions) and Node (Next.js), across App Service, Functions and Container Apps.",
+      "id": "Bagi saya, observability adalah bagian dari fitur, bukan tambahan di akhir. Setiap layanan AI yang saya rilis di Azure diinstrumentasi dengan OpenTelemetry lewat distro Azure Monitor, di Python (FastAPI, Functions) dan Node (Next.js), pada App Service, Functions, dan Container Apps."
+    },
+    "points": [
+      {
+        "id": "genai-telemetry",
+        "lead": {
+          "en": "LLM telemetry with GenAI conventions.",
+          "id": "Telemetri LLM dengan konvensi GenAI."
+        },
+        "text": {
+          "en": "Each model call records token usage (including reasoning and cached tokens), model, provider and agent, so cost and latency can be traced per feature.",
+          "id": "Setiap panggilan model mencatat pemakaian token (termasuk reasoning dan cached token), model, provider, dan agent, sehingga biaya dan latensi bisa ditelusuri per fitur."
+        }
+      },
+      {
+        "id": "alerts-as-code",
+        "lead": {
+          "en": "Alerts as code.",
+          "id": "Alert sebagai kode."
+        },
+        "text": {
+          "en": "Alert rules, action groups and diagnostic settings live in Bicep next to the app and ship with azd: 44 rules in production today, covering daily and month-to-date spend, reasoning-token spikes, 429 throttling per deployment, judge latency and failed evaluation gates.",
+          "id": "Alert rule, action group, dan diagnostic setting ditulis di Bicep bersama aplikasinya dan dirilis dengan azd: 44 rule aktif di production saat ini, mencakup biaya harian dan bulan berjalan, lonjakan reasoning token, throttling 429 per deployment, latensi judge, dan evaluation gate yang gagal."
+        }
+      },
+      {
+        "id": "telemetry-governance",
+        "lead": {
+          "en": "Telemetry governance.",
+          "id": "Tata kelola telemetri."
+        },
+        "text": {
+          "en": "Personal data is redacted before export, noisy spans are sampled, and ingestion has a daily cap with an alert at 80 percent.",
+          "id": "Data pribadi disamarkan sebelum diekspor, span yang terlalu ramai di-sampling, dan ingestion punya batas harian dengan alert di 80 persen."
+        }
+      },
+      {
+        "id": "self-hosted",
+        "lead": {
+          "en": "Self-hosted when it fits.",
+          "id": "Self-hosted bila cocok."
+        },
+        "text": {
+          "en": "For a ticketing marketplace backend I provisioned Prometheus and Grafana as code, with black-box probes on the public API every 5 seconds plus Postgres, Redis and host metrics.",
+          "id": "Untuk backend marketplace tiket, saya menyiapkan Prometheus dan Grafana sebagai kode, dengan black-box probe ke API publik setiap 5 detik serta metrik Postgres, Redis, dan host."
+        }
+      }
+    ],
+    "outro": {
+      "en": "This site is observed the same way: an anonymous performance beacon, nightly performance runs, and the public visit stats on the roof.",
+      "id": "Situs ini dipantau dengan cara yang sama: beacon performa anonim, uji performa setiap malam, dan statistik kunjungan publik di atap."
+    },
+    "tiles": [
+      {
+        "id": "opentelemetry",
+        "label": {
+          "en": "OpenTelemetry",
+          "id": "OpenTelemetry"
+        },
+        "value": {
+          "en": "100%",
+          "id": "100%"
+        },
+        "detail": {
+          "en": "of surveyed AI services",
+          "id": "layanan AI yang disurvei"
+        },
+        "panel": "traces"
+      },
+      {
+        "id": "alert-rules",
+        "label": {
+          "en": "Alert rules as code",
+          "id": "Alert rule sebagai kode"
+        },
+        "value": {
+          "en": "44",
+          "id": "44"
+        },
+        "detail": {
+          "en": "in production, defined in Bicep across 7 repos",
+          "id": "aktif di production, ditulis di Bicep pada 7 repo"
+        },
+        "panel": "alerts"
+      },
+      {
+        "id": "token-telemetry",
+        "label": {
+          "en": "LLM token telemetry",
+          "id": "Telemetri token LLM"
+        },
+        "value": {
+          "en": "3",
+          "id": "3"
+        },
+        "detail": {
+          "en": "production AI services",
+          "id": "layanan AI di production"
+        },
+        "panel": "metrics"
+      },
+      {
+        "id": "dependency-calls",
+        "label": {
+          "en": "Traced dependency calls",
+          "id": "Dependency call yang ditelusuri"
+        },
+        "value": {
+          "en": "~1.2M",
+          "id": "~1,2 jt"
+        },
+        "detail": {
+          "en": "per month on one queue-based scanner",
+          "id": "per bulan pada satu scanner berbasis antrean"
+        },
+        "panel": "traces"
+      },
+      {
+        "id": "api-probes",
+        "label": {
+          "en": "API probes",
+          "id": "Probe API"
+        },
+        "value": {
+          "en": "10",
+          "id": "10"
+        },
+        "detail": {
+          "en": "public endpoints every 5 s",
+          "id": "endpoint publik setiap 5 detik"
+        },
+        "panel": "metrics"
+      }
+    ],
+    "alerts": [
+      {
+        "en": "Daily and month-to-date spend",
+        "id": "Biaya harian dan bulan berjalan"
+      },
+      {
+        "en": "Reasoning-token spikes",
+        "id": "Lonjakan reasoning token"
+      },
+      {
+        "en": "429 throttling per deployment",
+        "id": "Throttling 429 per deployment"
+      },
+      {
+        "en": "Judge latency",
+        "id": "Latensi judge"
+      },
+      {
+        "en": "Failed evaluation gates",
+        "id": "Evaluation gate yang gagal"
+      }
+    ],
+    "caseStudies": [
+      "ai-code-security-platform",
+      "voice-ai-contact-center",
+      "fraud-review-platform",
+      "azure-ai-operations",
+      "ticket-marketplace-backend"
+    ],
+    "alertExcerpt": {
+      "caption": {
+        "en": "One alert rule as code, masked: Cosmos DB 429 throttling from the AI code security platform. Names are placeholders.",
+        "id": "Satu alert rule sebagai kode, disamarkan: throttling 429 Cosmos DB dari platform keamanan kode AI. Nama diganti placeholder."
+      },
+      "code": "param databaseAccountName string\nparam actionGroupId string\n\n@description('429 responses per 15 minutes that fire the alert.')\nparam throttleThreshold int = 50\n\nresource database 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' existing = {\n  name: databaseAccountName\n}\n\nresource throttling 'Microsoft.Insights/metricAlerts@2026-01-01' = {\n  name: '${databaseAccountName}-throttling'\n  location: 'global'\n  properties: {\n    description: 'Cosmos DB returned 429 TooManyRequests above the threshold in 15 minutes.'\n    severity: 3\n    enabled: true\n    scopes: [database.id]\n    evaluationFrequency: 'PT5M'\n    windowSize: 'PT15M'\n    autoMitigate: true\n    criteria: {\n      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'\n      allOf: [\n        {\n          criterionType: 'StaticThresholdCriterion'\n          name: 'throttled'\n          metricNamespace: 'Microsoft.DocumentDB/databaseAccounts'\n          metricName: 'TotalRequests'\n          dimensions: [{ name: 'StatusCode', operator: 'Include', values: ['429'] }]\n          operator: 'GreaterThan'\n          threshold: throttleThreshold\n          timeAggregation: 'Count'\n        }\n      ]\n    }\n    actions: [{ actionGroupId: actionGroupId }]\n  }\n}"
+    },
+    "dashboard": {
+      "src": "/media/production/01-probe-dashboard.webp",
+      "alt": {
+        "en": "Grafana Blackbox Exporter dashboard: an HTTP probe overview table with every endpoint up and returning 200, above a chart of probe duration per endpoint, all under 65 ms.",
+        "id": "Dasbor Grafana Blackbox Exporter: tabel ringkasan probe HTTP dengan setiap endpoint aktif dan mengembalikan 200, di atas grafik durasi probe per endpoint, semuanya di bawah 65 ms."
+      },
+      "width": 1600,
+      "height": 744,
+      "redacted": true,
+      "caption": {
+        "en": "The Blackbox probe dashboard provisioned for the ticketing marketplace backend, rendered locally from its monitoring config with a demo target and demo traffic. Hosts and routes are placeholders.",
+        "id": "Dasbor probe Blackbox yang disiapkan untuk backend marketplace tiket, dirender lokal dari konfigurasi monitoring-nya dengan target dan trafik demo. Host dan route diganti placeholder."
+      }
+    }
+  },
   "stats": [
     {
       "id": "shipping-since-2019",

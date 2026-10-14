@@ -1,9 +1,10 @@
-import type { AeRows, Fetcher, WaRows } from "./types";
+import type { AeRows, Fetcher, PerfRow, WaRows } from "./types";
 
 /**
  * The two data sources of the hq-stats Worker, read with one read-only Account Analytics token:
  * Web Analytics through the GraphQL API (`rumPageloadEventsAdaptiveGroups`, sampled estimates) and
- * Analytics Engine through the SQL API (`ask_events`, `visit_events`, weighted by `_sample_interval`).
+ * Analytics Engine through the SQL API (`ask_events`, `visit_events`, `perf_events`, weighted by
+ * `_sample_interval`).
  * Queries are fixed: only validated dates, ids and hosts are filled in, never visitor input.
  */
 
@@ -104,12 +105,25 @@ export const asksSql = (start: string, end: string) =>
 export const visitsSql = (start: string, end: string) =>
   `SELECT toDate(timestamp) AS day, blob2 AS mode, SUM(_sample_interval) AS n FROM visit_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, mode FORMAT JSONEachRow`;
 
+/** RUM beacon points (one per sampled 3D session) per day, median FPS bucket (blob4) and explore bucket (blob6). */
+export const perfSql = (start: string, end: string) =>
+  `SELECT toDate(timestamp) AS day, blob4 AS fps50, blob6 AS explore, SUM(_sample_interval) AS n FROM perf_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, fps50, explore FORMAT JSONEachRow`;
+
+const perfRows = (rows: Record<string, unknown>[]): PerfRow[] => rows.map((r) => ({ day: str(r.day), fps50: str(r.fps50), explore: str(r.explore), n: num(r.n) }));
+
+/** Analytics Engine `perf_events` rows only, for the UTC days in [start, end) (the perf backfill of stored days). */
+export async function fetchPerf(cfg: SourceConfig, start: string, end: string, fetcher: Fetcher): Promise<PerfRow[]> {
+  if (!DAY.test(start) || !DAY.test(end)) throw new Error("Analytics Engine: bad date");
+  return perfRows(await sql(cfg, perfSql(start, end), fetcher));
+}
+
 /** Analytics Engine rows for the UTC days in [start, end) (YYYY-MM-DD). Data older than 3 months is gone. */
 export async function fetchAnalyticsEngine(cfg: SourceConfig, start: string, end: string, fetcher: Fetcher): Promise<AeRows> {
   if (!DAY.test(start) || !DAY.test(end)) throw new Error("Analytics Engine: bad date");
-  const [asks, visits] = await Promise.all([sql(cfg, asksSql(start, end), fetcher), sql(cfg, visitsSql(start, end), fetcher)]);
+  const [asks, visits, perf] = await Promise.all([sql(cfg, asksSql(start, end), fetcher), sql(cfg, visitsSql(start, end), fetcher), sql(cfg, perfSql(start, end), fetcher)]);
   return {
     asks: asks.map((r) => ({ day: str(r.day), topic: str(r.topic), chip: str(r.chip), n: num(r.n) })),
     visits: visits.map((r) => ({ day: str(r.day), mode: str(r.mode), n: num(r.n) })),
+    perf: perfRows(perf),
   };
 }

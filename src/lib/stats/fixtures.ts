@@ -55,3 +55,12 @@ export const STATS_FIXTURE_EMPTY: StatsSnapshotV1 = {
     all: { total: 0, topics: { work: 0, ai: 0, career: 0, contact: 0, perspectives: 0 }, chips: [] },
   },
 };
+
+/** STATS_FIXTURE with the optional RUM perf block (sampled 3D sessions, 25% of them). */
+export const STATS_FIXTURE_PERF: StatsSnapshotV1 = {
+  ...STATS_FIXTURE,
+  perf: {
+    d30: { sessions: 84, measured: 80, fps55: 52, explore: "3-5s" },
+    all: { sessions: 121, measured: 115, fps55: 71, explore: "3-5s" },
+  },
+};

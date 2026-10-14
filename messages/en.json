@@ -374,7 +374,8 @@
       "highlightsExperience": "Highlights: work experience",
       "highlightsContact": "Highlights: contact",
       "reactor": "Tech Reactor",
-      "visits": "Visitor Observatory"
+      "visits": "Visitor Observatory",
+      "ops": "Ops Control Room"
     },
     "launcher": {
       "search": "Search",
@@ -892,7 +893,8 @@
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
         "workshop": "The Workshop: side projects, repos and models.",
-        "timeConsole": "The time console: beam to any year, or back to the elevator."
+        "timeConsole": "The time console: beam to any year, or back to the elevator.",
+        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry."
       },
       "go": {
         "open": "Open",
@@ -1091,6 +1093,34 @@
       "questions": "questions asked",
       "topFloor": "most explored: {floor}",
       "split": "3D {threeD}% · Classic {classic}%"
+    }
+  },
+  "production": {
+    "proof": "Proof from production",
+    "cases": "Case studies that prove it",
+    "excerpt": "Alert rule as code (masked)",
+    "screens": {
+      "metrics": "Metrics",
+      "traces": "Traces",
+      "alerts": "Alerts"
+    },
+    "live": {
+      "title": "This site, live",
+      "visits": "Visits, last 30 days",
+      "fps": "3D sessions at 55+ FPS",
+      "explore": "Median time to explore",
+      "nightly": "Nightly performance runs",
+      "sessions": "{count} sampled 3D sessions, last 30 days",
+      "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated daily.",
+      "offline": "Live numbers are offline right now."
+    },
+    "explore": {
+      "lt3s": "under 3 s",
+      "3-5s": "3 to 5 s",
+      "5-8s": "5 to 8 s",
+      "8-12s": "8 to 12 s",
+      "12-20s": "12 to 20 s",
+      "20s+": "20 s or more"
     }
   }
 }

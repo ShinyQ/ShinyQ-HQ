@@ -57,6 +57,8 @@ export function overlayStats(stats: readonly Stat[], facts: DynamicFacts): Stat[
 let cachedStats: Stat[] | undefined;
 
 export const getProfile = () => getContent().profile;
+/** "How I run AI in production": About `#production`, the L3 Ops Control Room and its Ask chunk. */
+export const getProduction = () => getContent().production;
 export function getStats(): Stat[] {
   cachedStats ??= overlayStats(getContent().stats, getDynamicFacts());
   return cachedStats;

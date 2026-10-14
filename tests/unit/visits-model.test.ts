@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseStatsSnapshot, STATS_FIXTURE, STATS_FIXTURE_EMPTY } from "@/lib/visits/contract";
-import { formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, visitsView } from "@/lib/visits/model";
+import { STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
+import { formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, perfView, visitsView } from "@/lib/visits/model";
 
 const HOUR = 3_600_000;
 const at = (iso: string, hours: number) => Date.parse(iso) + hours * HOUR;
@@ -107,5 +108,24 @@ describe("visitsView", () => {
     expect(v.asks.total).toBe(0);
     expect(v.asks.topics).toEqual([{ topic: "ai", n: 0, share: 0 }]);
     expect(v.mode).toEqual({ threeD: 0, classic: 0, threeDShare: 0, classicShare: 0 });
+  });
+});
+
+describe("perfView", () => {
+  it("is null without a perf block", () => {
+    expect(perfView(STATS_FIXTURE, "d30")).toBeNull();
+    expect(perfView(STATS_FIXTURE_EMPTY, "all")).toBeNull();
+  });
+
+  it("reports sessions, the share at 55+ FPS among measured sessions and the median explore bucket", () => {
+    const p = STATS_FIXTURE_PERF.perf!;
+    expect(perfView(STATS_FIXTURE_PERF, "d30")).toEqual({ sessions: p.d30.sessions, fpsShare: p.d30.fps55 / p.d30.measured, explore: p.d30.explore });
+    expect(perfView(STATS_FIXTURE_PERF, "all")).toEqual({ sessions: p.all.sessions, fpsShare: p.all.fps55 / p.all.measured, explore: p.all.explore });
+  });
+
+  it("is null for a period without sessions and has no share without measured sessions", () => {
+    const s = { ...STATS_FIXTURE_PERF, perf: { d30: { sessions: 0, measured: 0, fps55: 0, explore: null }, all: { sessions: 4, measured: 0, fps55: 0, explore: "lt3s" as const } } };
+    expect(perfView(s, "d30")).toBeNull();
+    expect(perfView(s, "all")).toEqual({ sessions: 4, fpsShare: null, explore: "lt3s" });
   });
 });

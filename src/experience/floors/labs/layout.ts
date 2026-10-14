@@ -4,6 +4,8 @@ import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 import { reactorRect, REACTOR, ringEntry, ringPoints } from "./reactor";
+import { OPS, type OpsPlacement } from "./ops";
+import { OPS_ROOM } from "./opsHash";
 import { REACTOR_ROOM, reactorStop } from "./techReactor";
 
 /**
@@ -122,6 +124,8 @@ export interface LabsLayout {
   lanes: [number, number][][];
   /** The reactor core in the middle of the east plaza (`reactor.ts`): its footprint is an obstacle the ring road drives around. */
   reactor: { center: Vec2; rect: Rect };
+  /** The Ops Control Room (`ops.ts`): docked in the AI wing's inner row after its last inner pod, facing the wing road. */
+  ops: OpsPlacement;
 }
 
 const rect = (c: Vec2, w: number, d: number): Rect => ({ minX: c.x - w / 2, maxX: c.x + w / 2, minZ: c.z - d / 2, maxZ: c.z + d / 2 });
@@ -209,7 +213,12 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   // Each wing road turns `tail` past its own last pod; the east plaza sits on the later turn, so a
   // shorter wing cuts across to it instead of running on empty. An empty wing still reaches a plaza
   // and a margin past the point where the wing roads start.
-  const turnX = (wing: Wing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail);
+  // The Ops Control Room docks in the AI wing's inner row, `OPS.gap` past its last inner pod (or where the
+  // inner row starts); the AI road turns at least half a road width past it, so the room always fits.
+  const aiInner = placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX);
+  const opsMinX = aiInner.length ? Math.max(...aiInner) + OPS.gap : L.innerStart;
+  const minTurn: Record<Wing, number> = { software: -Infinity, ai: opsMinX + OPS.w + half };
+  const turnX = (wing: Wing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail, minTurn[wing]);
   const loopEnd: Vec2 = { x: Math.max(turnX("software"), turnX("ai")), z: 0 };
   // The wing roads end on the ring road around the reactor core (spectacle round), never at its center.
   const wingRoad = (wing: Wing): Road => {
@@ -225,13 +234,17 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   // of out onto a wing road and back (roadRoute only shortcuts hops under ROAD.shortcut).
   const stub: Road = { id: "directory", points: [hubC, { x: L.board.x - L.board.w / 2 - half, z: 0 }], width: L.road };
   const east: Plaza = { id: "east", center: loopEnd, w: L.east, d: L.east, round: true, core: REACTOR.half };
-  const spurs: Spur[] = placed.map((p) => ({
-    room: p.room,
-    from: { x: p.door.x, z: WING_SIDE[p.pod.wing] * L.wingZ },
-    to: p.door,
-    width: L.spurWidth,
-    color: WING_TINT[p.pod.wing],
-  }));
+  const ops = opsPlacement(opsMinX);
+  const spurs: Spur[] = [
+    ...placed.map((p) => ({
+      room: p.room,
+      from: { x: p.door.x, z: WING_SIDE[p.pod.wing] * L.wingZ },
+      to: p.door,
+      width: L.spurWidth,
+      color: WING_TINT[p.pod.wing],
+    })),
+    { room: OPS_ROOM, from: { x: ops.door.x, z: WING_SIDE.ai * L.wingZ }, to: ops.door, width: L.spurWidth, color: OPS_TINT },
+  ];
   // No floor arrows on L3 (owner request 2026-10-13): the wing roads, signs and directory guide the way.
   const network: RoadNetwork = { roads: [lead, stub, wingRoad("software"), wingRoad("ai"), ring], plazas: [hub, east], spurs, chevrons: false };
 
@@ -246,7 +259,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     return { at, heading, float: { x: at.x + heading.x * 5, z: at.z + heading.z * 5 } };
   };
 
-  const doors: DoorTrigger[] = placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } }));
+  const doors: DoorTrigger[] = [
+    ...placed.map((p) => ({ room: p.room, at: p.door, facing: { x: 0, z: -p.facing } })),
+    { room: OPS_ROOM, at: ops.door, facing: { x: 0, z: ops.facing } },
+  ];
   const viewZones: ViewZone[] = [
     // Board stops first (they lie just east of the overview zone): the camera stands west of the rover
     // and looks east at the panel, zoomed so the whole panel fits under the HUD top bar.
@@ -269,8 +285,11 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       area: { minX: p.rect.minX, maxX: p.rect.maxX, minZ: p.door.z - VIEW_ZONE_DEPTH, maxZ: p.door.z + VIEW_ZONE_DEPTH },
       yaw: p.facing > 0 ? 0 : Math.PI / 2,
     })),
+    // The Ops Control Room faces the AI wing road like the inner pods: the same 45 degree look at its screens.
+    // Zoomed in a little, so the screens and the live panel read.
+    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM },
   ];
-  const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai), core];
+  const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai), core, ops.rect];
   const extentZ = Math.max(L.wingZ + half, ...placed.map((p) => Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))));
   const bounds: Rect = { minX: L.slabMinX, maxX: loopEnd.x + L.east / 2 + L.margin, minZ: -(extentZ + L.margin), maxZ: extentZ + L.margin };
 
@@ -303,7 +322,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       approach: L.approach,
       obstacles,
       // The directory wall (9.5 u) and the reactor core block a low camera up to their own height.
-      tall: [...[boards.software, boards.ai].map((b) => ({ ...bare(b), h: L.board.h })), { ...core, h: REACTOR.height }],
+      tall: [...[boards.software, boards.ai].map((b) => ({ ...bare(b), h: L.board.h })), { ...core, h: REACTOR.height }, { ...ops.rect, h: OPS.h }],
       spawn: L.overview,
       arrival: L.overview,
       accent: L.accent,
@@ -323,5 +342,28 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     signs: { software: sign("software"), ai: sign("ai") },
     lanes,
     reactor: { center: loopEnd, rect: core },
+    ops,
+  };
+}
+
+/** Camera zoom in the Ops Control Room's door zone. */
+const OPS_ZOOM = 0.85;
+
+/** Road tint of the Ops Control Room spur (monitoring green). */
+export const OPS_TINT = "#34d399";
+
+/** The Ops Control Room on the AI side: inner row, `OPS.w` wide from `minX`, front on the forecourt line like the inner pods. */
+function opsPlacement(minX: number): OpsPlacement {
+  const L = LABS;
+  // Inner side of the AI wing road: toward the software wing (z decreases).
+  const side = -WING_SIDE.ai as -1 | 1;
+  const front = WING_SIDE.ai * L.wingZ + side * (L.road / 2 + L.forecourt);
+  const back = front + side * OPS.d;
+  const center = { x: minX + OPS.w / 2, z: (front + back) / 2 };
+  return {
+    rect: { minX, maxX: minX + OPS.w, minZ: Math.min(front, back), maxZ: Math.max(front, back) },
+    center,
+    door: { x: center.x, z: front - side * L.padInset },
+    facing: side,
   };
 }

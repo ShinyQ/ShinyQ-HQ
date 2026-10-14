@@ -1,7 +1,8 @@
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
+import { OPS_ROOM } from "@/experience/floors/labs/opsHash";
 import { REACTOR_ROOM, ringById } from "@/experience/floors/labs/techReactor";
 import { labPods } from "../experience";
-import { getPods, getTechIndex, getTimelineEntryById } from "../load";
+import { getPod, getPods, getProduction, getTechIndex, getTimelineEntryById } from "../load";
 import { getTechLogo } from "../tech";
 import type { Locale, Pod, Wing } from "../schema";
 import { clientLabel, podLiveLink } from "../selectors";
@@ -81,7 +82,33 @@ export function reactorView(locale: Locale): RoomView {
   });
 }
 
-/** L3 Labs: one tabbed view per pod; prev/next walk the wing in its display order; then the Tech Reactor. */
+/** L3 Ops Control Room: "How I run AI in production", its proof tiles, case studies, dashboard and alert excerpt. */
+export function opsView(locale: Locale): RoomView {
+  const m = messages(locale);
+  const production = getProduction();
+  return single({
+    id: OPS_ROOM,
+    kind: "ops",
+    title: production.title[locale],
+    meta: [m.hud.rooms.ops],
+    accent: "green",
+    page: "/contact#production",
+    metrics: production.tiles.map((t) => ({ value: t.value[locale], label: t.label[locale], context: t.detail[locale] })),
+    cards: production.caseStudies.flatMap((slug) => {
+      const pod = getPod(slug);
+      return pod ? [{ room: roomId("L3", slug), title: pod.title[locale], subtitle: pod.tagline[locale], group: m.common.wing[pod.wing] }] : [];
+    }),
+    gallery: production.dashboard ? galleryOf([production.dashboard], locale) : [],
+    ops: {
+      intro: production.intro[locale],
+      points: production.points.map((p) => ({ lead: p.lead[locale], text: p.text[locale] })),
+      outro: production.outro[locale],
+      ...(production.alertExcerpt ? { excerpt: { caption: production.alertExcerpt.caption[locale], code: production.alertExcerpt.code } } : {}),
+    },
+  });
+}
+
+/** L3 Labs: one tabbed view per pod; prev/next walk the wing in its display order; then the Tech Reactor and the Ops Control Room. */
 export function buildLabsViews(locale: Locale): RoomView[] {
-  return [...(["software", "ai"] as const).flatMap((wing) => chain(getPods(wing).map((pod) => podView(pod, locale)))), reactorView(locale)];
+  return [...(["software", "ai"] as const).flatMap((wing) => chain(getPods(wing).map((pod) => podView(pod, locale)))), reactorView(locale), opsView(locale)];
 }

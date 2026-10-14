@@ -374,7 +374,8 @@
       "highlightsExperience": "Sorotan: pengalaman kerja",
       "highlightsContact": "Sorotan: kontak",
       "reactor": "Reaktor Teknologi",
-      "visits": "Observatorium Pengunjung"
+      "visits": "Observatorium Pengunjung",
+      "ops": "Ruang Kontrol Ops"
     },
     "launcher": {
       "search": "Cari",
@@ -892,7 +893,8 @@
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: paper lengkap dengan abstrak dan sitasi.",
         "workshop": "Workshop: proyek sampingan, repo, dan model.",
-        "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift."
+        "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift.",
+        "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini."
       },
       "go": {
         "open": "Buka",
@@ -1091,6 +1093,34 @@
       "questions": "pertanyaan diajukan",
       "topFloor": "paling dijelajahi: {floor}",
       "split": "3D {threeD}% · Klasik {classic}%"
+    }
+  },
+  "production": {
+    "proof": "Bukti dari production",
+    "cases": "Studi kasus yang membuktikannya",
+    "excerpt": "Alert rule sebagai kode (disamarkan)",
+    "screens": {
+      "metrics": "Metrik",
+      "traces": "Trace",
+      "alerts": "Alert"
+    },
+    "live": {
+      "title": "Situs ini, live",
+      "visits": "Kunjungan, 30 hari terakhir",
+      "fps": "Sesi 3D di 55+ FPS",
+      "explore": "Median waktu hingga siap dijelajahi",
+      "nightly": "Uji performa setiap malam",
+      "sessions": "{count} sesi 3D tersampel, 30 hari terakhir",
+      "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap hari.",
+      "offline": "Angka live sedang tidak tersedia."
+    },
+    "explore": {
+      "lt3s": "di bawah 3 detik",
+      "3-5s": "3 hingga 5 detik",
+      "5-8s": "5 hingga 8 detik",
+      "8-12s": "8 hingga 12 detik",
+      "12-20s": "12 hingga 20 detik",
+      "20s+": "20 detik atau lebih"
     }
   }
 }

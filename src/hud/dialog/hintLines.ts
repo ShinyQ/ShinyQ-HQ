@@ -13,6 +13,7 @@ export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "L4:door:research": "research",
   "L2:station:workshop": "workshop",
   "L2:station:time-console": "timeConsole",
+  "L3:door:ops": "ops",
 };
 
 export function hintObjectKey(item: Pick<Interactable, "id">): string | null {

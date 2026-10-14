@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ASK_TOPICS, suggestionById } from "@/ask/suggestions";
-import { STATS_FIXTURE, STATS_FIXTURE_EMPTY } from "@/lib/stats/fixtures";
-import { isCountryCode, parseStatsSnapshot, STATS_TOPICS, type StatsSnapshotV1 } from "@/lib/stats/protocol";
+import { RUM_TIMES } from "@/lib/rum/protocol";
+import { STATS_FIXTURE, STATS_FIXTURE_EMPTY, STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
+import { isCountryCode, parseStatsSnapshot, STATS_EXPLORE, STATS_TOPICS, type StatsSnapshotV1 } from "@/lib/stats/protocol";
 
 const clone = (): StatsSnapshotV1 => JSON.parse(JSON.stringify(STATS_FIXTURE));
 
@@ -65,5 +66,63 @@ describe("stats snapshot protocol", () => {
 
   it("rejects non-objects", () => {
     for (const value of [null, undefined, 1, "x", [], [STATS_FIXTURE]]) expect(parseStatsSnapshot(value)).toBeNull();
+  });
+});
+
+describe("stats snapshot perf block", () => {
+  const withPerf = (): StatsSnapshotV1 => JSON.parse(JSON.stringify(STATS_FIXTURE_PERF));
+  const withoutPerf = withPerf();
+  delete withoutPerf.perf;
+
+  it("uses the RUM explore buckets without na", () => {
+    expect([...STATS_EXPLORE]).toEqual(RUM_TIMES.filter((t) => t !== "na"));
+  });
+
+  it("parses a snapshot without perf exactly as before", () => {
+    const parsed = parseStatsSnapshot(STATS_FIXTURE);
+    expect(parsed).toEqual(STATS_FIXTURE);
+    expect(parsed && "perf" in parsed).toBe(false);
+  });
+
+  it("keeps a valid perf block and copies it", () => {
+    const parsed = parseStatsSnapshot(withPerf());
+    expect(parsed).toEqual(STATS_FIXTURE_PERF);
+    expect(parsed?.perf).not.toBe(STATS_FIXTURE_PERF.perf);
+    expect(parsed?.perf?.d30).not.toBe(STATS_FIXTURE_PERF.perf?.d30);
+    expect(STATS_FIXTURE_PERF.perf?.d30.fps55).toBeLessThanOrEqual(STATS_FIXTURE_PERF.perf?.d30.measured ?? 0);
+  });
+
+  it("accepts a null explore bucket and zero sessions", () => {
+    const s = withPerf();
+    s.perf!.d30 = { sessions: 0, measured: 0, fps55: 0, explore: null };
+    expect(parseStatsSnapshot(s)?.perf?.d30).toEqual({ sessions: 0, measured: 0, fps55: 0, explore: null });
+  });
+
+  const brokenPerf: [string, (p: Record<string, unknown>) => void][] = [
+    ["fps55 above measured", (p) => ((p.d30 as Record<string, number>).fps55 = 81)],
+    ["measured above sessions", (p) => ((p.all as Record<string, number>).measured = 1000)],
+    ["a negative count", (p) => ((p.d30 as Record<string, number>).sessions = -1)],
+    ["a fractional count", (p) => ((p.d30 as Record<string, number>).fps55 = 1.5)],
+    ["an unknown explore bucket", (p) => ((p.d30 as Record<string, unknown>).explore = "na")],
+    ["an extra perf key", (p) => ((p.d30 as Record<string, unknown>).fps10 = 1)],
+    ["a missing perf key", (p) => delete (p.all as Record<string, unknown>).explore],
+    ["an extra period", (p) => (p.d7 = p.d30)],
+    ["a missing period", (p) => delete p.all],
+  ];
+
+  it.each(brokenPerf)("drops a perf block with %s and keeps the rest", (_, mutate) => {
+    const s = withPerf();
+    mutate(s.perf as unknown as Record<string, unknown>);
+    const parsed = parseStatsSnapshot(s);
+    expect(parsed).toEqual(withoutPerf);
+    expect(parsed && "perf" in parsed).toBe(false);
+  });
+
+  it("drops a perf block that is not an object", () => {
+    for (const perf of [null, 1, "x", []]) expect(parseStatsSnapshot({ ...withPerf(), perf })).toEqual(withoutPerf);
+  });
+
+  it("still rejects other extra keys next to perf", () => {
+    expect(parseStatsSnapshot({ ...withPerf(), extra: 1 })).toBeNull();
   });
 });

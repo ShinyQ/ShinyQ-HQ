@@ -18,10 +18,13 @@ export const STATS_KEY = "stats:v1";
 export const STATS_ENDPOINT = "/api/stats";
 /** At most this many chips in one period (the curated bank has about 40). */
 export const STATS_MAX_CHIPS = 100;
+/** Explore time buckets of the RUM beacon (`RUM_TIMES` in src/lib/rum/protocol.ts without "na"; a test keeps them equal). */
+export const STATS_EXPLORE = ["lt3s", "3-5s", "5-8s", "8-12s", "12-20s", "20s+"] as const;
 
 export type StatsPeriod = (typeof STATS_PERIODS)[number];
 export type StatsTopic = (typeof STATS_TOPICS)[number];
 export type StatsFloor = (typeof STATS_FLOORS)[number];
+export type StatsExplore = (typeof STATS_EXPLORE)[number];
 
 export interface StatsChip {
   /** Curated question id from content/ask/suggestions.json. */
@@ -36,6 +39,21 @@ export interface StatsAsks {
   topics: Record<StatsTopic, number>;
   /** Curated chips asked, sorted by n (desc), then id. */
   chips: StatsChip[];
+}
+
+/**
+ * The site's own 3D performance, from the RUM beacon (`perf_events`, one point per sampled 3D session,
+ * weighted by `_sample_interval`). Invariant: `fps55 <= measured <= sessions`.
+ */
+export interface StatsPerf {
+  /** Sampled 3D sessions. */
+  sessions: number;
+  /** Sessions with a median FPS bucket (not "na"). */
+  measured: number;
+  /** Sessions whose median FPS bucket is "55+". */
+  fps55: number;
+  /** Median explore time bucket among sessions that reached explore; null without any. */
+  explore: StatsExplore | null;
 }
 
 export interface StatsSnapshotV1 {
@@ -54,6 +72,8 @@ export interface StatsSnapshotV1 {
   /** First-party beacon: page lifetimes that used the 3D view and the Classic site (one that used both counts on both sides). */
   mode: Record<StatsPeriod, { threeD: number; classic: number }>;
   asks: Record<StatsPeriod, StatsAsks>;
+  /** Optional (added after launch): absent until the Worker wrote a day with perf data. */
+  perf?: Record<StatsPeriod, StatsPerf>;
 }
 
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
@@ -116,11 +136,23 @@ function readAsks(v: unknown): StatsAsks | null {
   return { total: v.total, topics, chips };
 }
 
-const KEYS = ["v", "updatedAt", "since", "sampled", "visits", "pageViews", "countries", "topFloor", "mode", "asks"] as const;
+function readPerf(v: unknown): StatsPerf | null {
+  if (!exactKeys(v, ["sessions", "measured", "fps55", "explore"])) return null;
+  if (!count(v.sessions) || !count(v.measured) || !count(v.fps55) || v.fps55 > v.measured || v.measured > v.sessions) return null;
+  if (v.explore !== null && !oneOf(STATS_EXPLORE, v.explore)) return null;
+  return { sessions: v.sessions, measured: v.measured, fps55: v.fps55, explore: v.explore };
+}
 
-/** The snapshot when `value` is exactly the contract (no extra keys at any level), else null. Returns a fresh object. */
+const KEYS = ["v", "updatedAt", "since", "sampled", "visits", "pageViews", "countries", "topFloor", "mode", "asks"] as const;
+const KEYS_PERF = [...KEYS, "perf"] as const;
+
+/**
+ * The snapshot when `value` is exactly the contract (no extra keys at any level), else null. Returns a
+ * fresh object. `perf` is optional: an invalid perf block is dropped on its own, so the visit stats keep
+ * working.
+ */
 export function parseStatsSnapshot(value: unknown): StatsSnapshotV1 | null {
-  if (!exactKeys(value, KEYS)) return null;
+  if (!exactKeys(value, KEYS) && !exactKeys(value, KEYS_PERF)) return null;
   if (value.v !== 1 || value.sampled !== true) return null;
   if (typeof value.updatedAt !== "string" || !ISO_TIME.test(value.updatedAt)) return null;
   if (typeof value.since !== "string" || !ISO_DAY.test(value.since)) return null;
@@ -131,6 +163,7 @@ export function parseStatsSnapshot(value: unknown): StatsSnapshotV1 | null {
   const mode = perPeriod(value.mode, readMode);
   const asks = perPeriod(value.asks, readAsks);
   if (!visits || !pageViews || !countries || !floors || !mode || !asks) return null;
+  const perf = "perf" in value ? perPeriod(value.perf, readPerf) : null;
   return {
     v: 1,
     updatedAt: value.updatedAt,
@@ -142,5 +175,6 @@ export function parseStatsSnapshot(value: unknown): StatsSnapshotV1 | null {
     topFloor: { d30: floors.d30.floor, all: floors.all.floor },
     mode,
     asks,
+    ...(perf ? { perf } : {}),
   };
 }

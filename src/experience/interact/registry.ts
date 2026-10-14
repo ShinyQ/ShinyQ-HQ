@@ -6,6 +6,8 @@ import { buildCareerRoad, careerLayoutInput, type CareerRoadLayout } from "../fl
 import { SKYLINE } from "../floors/career/skyline";
 import { WORKSHOP } from "../floors/career/workshopLayout";
 import { buildLabsLayout, LABS, type LabsLayout } from "../floors/labs/layout";
+import { OPS } from "../floors/labs/ops";
+import { OPS_ROOM } from "../floors/labs/opsHash";
 import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
 import { kioskStop } from "../floors/lobby/kiosk";
@@ -102,6 +104,7 @@ const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "RF:cv": "cv",
   [REACTOR_ROOM]: "reactor",
   "RF:visits": "visits",
+  [OPS_ROOM]: "ops",
 };
 
 type Footprint = { rect: Rect; height: number };
@@ -345,7 +348,10 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     }
     case "L3": {
       const labs = buildLabsLayout(experience.labs.pods);
-      const rooms = new Map<RoomId, Footprint>(labs.placed.map((p) => [p.room, { rect: bare(p.rect), height: LABS.wallHeight }]));
+      const rooms = new Map<RoomId, Footprint>([
+        ...labs.placed.map((p): [RoomId, Footprint] => [p.room, { rect: bare(p.rect), height: LABS.wallHeight }]),
+        [OPS_ROOM, { rect: bare(labs.ops.rect), height: OPS.h }],
+      ]);
       return [...pads, ...doorItems(floor, layouts, data, rooms), ...labsBoards(labs, data), ...reactorRings(labs, data)];
     }
     case "L4": {

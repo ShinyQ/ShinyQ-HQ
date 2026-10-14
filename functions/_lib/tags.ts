@@ -26,6 +26,7 @@ const BY_TYPE: Record<KnowledgeChunk["type"], AskTag[]> = {
   repo: ["work", "github"],
   principle: ["perspectives"],
   perspective: ["perspectives"],
+  production: ["ai", "work"],
 };
 
 /** Topic markers matched on a chunk's id and keywords (lowercase). */

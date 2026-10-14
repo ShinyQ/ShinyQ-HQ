@@ -1,5 +1,5 @@
 /**
- * Writes the 1200 px "<name>.w1200.webp" rendition of every pod gallery image wider than 1200 px, so
+ * Writes the 1200 px "<name>.w1200.webp" rendition of every pod gallery image (and the production dashboard) wider than 1200 px, so
  * cards and gallery tiles pick a sharp source on DPR 2 and 3 screens without loading the full file.
  * Idempotent (skips existing files unless --force). Needs cwebp. Usage: bun scripts/media-sizes.ts [--force]
  */
@@ -11,8 +11,11 @@ import { run } from "./pdf-pages";
 
 const force = process.argv.includes("--force");
 let written = 0;
-for (const pod of getContent().floors.labs.pods) {
-  for (const asset of pod.assets.filter((a) => a.width > MID_WIDTH)) {
+const content = getContent();
+// Pod galleries plus the masked dashboard of "How I run AI in production" (About #production, the L3 Ops Control Room).
+const assets = [...content.floors.labs.pods.flatMap((pod) => pod.assets), ...(content.production.dashboard ? [content.production.dashboard] : [])];
+{
+  for (const asset of assets.filter((a) => a.width > MID_WIDTH)) {
     const out = path.join(process.cwd(), "public", midSrc(asset.src));
     if (existsSync(out) && !force) continue;
     const input = path.join(process.cwd(), "public", asset.src);

@@ -42,6 +42,12 @@ describe("room catalog", () => {
     expect(roomPath(byId.get("RF:visits")!)).toBe("/contact#visits");
     expect(byId.get("RF:visits")!.kind).toBe("visits");
     expect(byId.get("RF:visits")!.keywords).toEqual(expect.arrayContaining(["visits", "kunjungan", "stats"]));
+    // The L3 Ops Control Room: the Classic site shows "How I run AI in production" on the About page.
+    const ops = byId.get("L3:ops")!;
+    expect(ops.kind).toBe("ops");
+    expect(roomPath(ops)).toBe("/contact#production");
+    expect(ops.title.en).toBe("Ops Control Room");
+    expect(ops.keywords).toEqual(expect.arrayContaining(["observability", "Grafana", "Application Insights", "OpenTelemetry"]));
     expect(byId.get("L2:prologue-2016")!.floorPath).toBe("/journey#y2019");
     expect(byId.get("L1:skills")!.path).toBe("/#skills");
   });

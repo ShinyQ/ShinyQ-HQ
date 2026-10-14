@@ -20,7 +20,7 @@ export const PACK_MAX_BYTES = 200 * 1024;
  * the lead steps of featured and listed pods so the pack stays under its cap with every
  * perspective approved (runbook deviation 8). Answers get at most 6,000 characters of context anyway.
  */
-export const PACK_APPROACH_STEPS = { hero: Infinity, featured: 2, listed: 1 } as const satisfies Record<Pod["tier"], number>;
+export const PACK_APPROACH_STEPS = { hero: Infinity, featured: 1, listed: 1 } as const satisfies Record<Pod["tier"], number>;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 
 export interface PackSources {
@@ -132,6 +132,26 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       },
       loc(profile.howIWork),
       join(profile.principles.map((p) => ({ en: `"${p.title.en}": ${p.text.en}`, id: `"${p.title.id}": ${p.text.id}` }))),
+    ]),
+  });
+
+  // "How I run AI in production" (owner approved 2026-10-14): the About section and the L3 Ops Control Room.
+  const production = content.production;
+  out.push({
+    id: "production",
+    type: "production",
+    title: production.title.en,
+    url: "/contact#production",
+    keywords: ["observability", "monitoring", "telemetry", "opentelemetry", "grafana", "prometheus", "application insights", "azure monitor", "alerts", "bicep", "production", "ops"],
+    text: join([
+      {
+        en: `Kurniadi, "${production.title.en}" (About page):`,
+        id: `Kurniadi, "${production.title.id}" (halaman About):`,
+      },
+      loc(production.intro),
+      join(production.points.map((p) => ({ en: `${p.lead.en} ${p.text.en}`, id: `${p.lead.id} ${p.text.id}` }))),
+      loc(production.outro),
+      join(production.tiles.map((t) => ({ en: `${t.label.en}: ${t.value.en} ${t.detail.en}.`, id: `${t.label.id}: ${t.value.id} ${t.detail.id}.` }))),
     ]),
   });
 

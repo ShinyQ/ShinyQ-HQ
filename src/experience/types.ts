@@ -1,4 +1,5 @@
 import type { CertView } from "@/content/certs";
+import type { OpsData } from "./floors/labs/ops";
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 import type { LibraryLayoutInput } from "./floors/library/model";
 import type { RoadNetwork } from "./nav/road";
@@ -157,7 +158,7 @@ export interface ExperienceData {
   years: number[];
   roomCount: number;
   /** L3 Labs: pods in site order (`orderPods`: gallery first, then hero, featured, listed, then `order`) and wing labels. */
-  labs: { pods: LabPod[]; wings: Record<Wing, string> };
+  labs: { pods: LabPod[]; wings: Record<Wing, string>; ops: OpsData };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
   career: CareerData;
   library: LibraryData;

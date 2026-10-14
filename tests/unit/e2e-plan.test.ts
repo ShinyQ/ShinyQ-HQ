@@ -49,8 +49,10 @@ describe("specsForChanges", () => {
   });
 
   it("maps floor code to its spec", () => {
-    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "reactor", "spectacle", "walk"]);
-    expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "reactor"]);
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "production", "reactor", "spectacle", "walk"]);
+    expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "production", "reactor"]);
+    expect(specsForChanges(["src/experience/floors/labs/OpsRoom.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
+    expect(specsForChanges(["src/components/page/Production.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);

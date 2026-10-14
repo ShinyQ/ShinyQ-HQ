@@ -321,6 +321,14 @@
       "tags": ["perspectives", "stats"],
       "followUps": ["persp-principles", "ai-voice-latency", "ai-fraud"],
       "expect": ["principles"]
+    },
+    {
+      "id": "ai-observability",
+      "topic": "ai",
+      "q": { "en": "How does he monitor AI in production?", "id": "Bagaimana dia memantau AI di production?" },
+      "tags": ["ai"],
+      "followUps": ["ai-security", "ai-voice", "ai-agents"],
+      "expect": ["production"]
     }
   ]
 }

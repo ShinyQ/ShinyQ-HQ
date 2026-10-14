@@ -1,4 +1,4 @@
-import type { StatsFloor, StatsTopic } from "../../../src/lib/stats/protocol";
+import type { StatsExplore, StatsFloor, StatsTopic } from "../../../src/lib/stats/protocol";
 
 /**
  * Types of the hq-stats Cron Worker. Kept free of Cloudflare type packages on purpose (T12), like
@@ -19,6 +19,19 @@ export interface DayRollup {
   mode: { threeD: number; classic: number; frozen?: true };
   /** Questions asked (not Turnstile rejects); zero topics and unknown chips left out. */
   asks: { total: number; topics: Partial<Record<StatsTopic, number>>; chips: Record<string, number> };
+  /**
+   * RUM beacon (`perf_events`): sampled 3D sessions, those with a median FPS bucket, those at "55+",
+   * and sessions per explore bucket ("na" and zero buckets left out). Missing on days rolled up before
+   * perf existed and older than the Analytics Engine retention (no data).
+   */
+  perf?: DayPerf;
+}
+
+export interface DayPerf {
+  sessions: number;
+  measured: number;
+  fps55: number;
+  explore: Partial<Record<StatsExplore, number>>;
 }
 
 /** KV `stats:days:v1`: every finalized day, oldest first. */
@@ -36,6 +49,14 @@ export interface WaRows {
 export interface AeRows {
   asks: { day: string; topic: string; chip: string; n: number }[];
   visits: { day: string; mode: string; n: number }[];
+  perf: PerfRow[];
+}
+
+export interface PerfRow {
+  day: string;
+  fps50: string;
+  explore: string;
+  n: number;
 }
 
 export interface WorkerKv {

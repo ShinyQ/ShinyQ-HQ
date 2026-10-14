@@ -33,6 +33,7 @@ export const ALL_SPECS = [
   "pads",
   "pageview",
   "perf-probes",
+  "production",
   "reactor",
   "ride",
   "roof",
@@ -122,9 +123,14 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
   { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
-  // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view.
-  { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs"] },
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return", "reactor"] },
+  // "How I run AI in production" (2026-10-14): the L3 Ops Control Room, its drawer body and live panel, and the About section.
+  {
+    test: /^src\/experience\/floors\/labs\/(OpsRoom\.tsx|ops\.ts|opsLive\.ts|opsHash\.ts)$|^src\/hud\/drawer\/OpsBody\.tsx$|^src\/components\/(page\/Production|AlertExcerpt)\.tsx$|^e2e\/production\.spec\.ts$/,
+    specs: ["production", "labs", "pageview"],
+  },
+  // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view (also the Ops Control Room's).
+  { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "production"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },

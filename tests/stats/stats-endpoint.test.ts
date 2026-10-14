@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STATS_FIXTURE } from "@/lib/stats/fixtures";
+import { STATS_FIXTURE, STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
 import { STATS_KEY } from "@/lib/stats/protocol";
 import { createStatsHandler } from "../../functions/_lib/stats";
 import type { KvNamespace, StatsEnv } from "../../functions/_lib/types";
@@ -80,6 +80,12 @@ describe("GET /api/stats", () => {
   it("strips anything the stored value adds beyond the contract", async () => {
     const res = await call({ STATS_ENABLED: "true", STATS_KV: kvWith(JSON.stringify(STATS_FIXTURE)) });
     expect(Object.keys(await res.json()).sort()).toEqual(Object.keys(STATS_FIXTURE).sort());
+  });
+
+  it("serves the perf block intact when the snapshot has one", async () => {
+    const res = await call({ STATS_ENABLED: "true", STATS_KV: kvWith(JSON.stringify(STATS_FIXTURE_PERF)) });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(STATS_FIXTURE_PERF);
   });
 
   it("answers 405 to other methods", async () => {

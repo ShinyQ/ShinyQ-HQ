@@ -3,7 +3,7 @@ import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/con
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
 import type { PaletteFilter } from "./host";
 
-export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "roof" | "visits";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "roof" | "visits" | "ops";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -53,7 +53,8 @@ export type StructuralRoom =
   | "highlightsExperience"
   | "highlightsContact"
   | "reactor"
-  | "visits";
+  | "visits"
+  | "ops";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
@@ -148,6 +149,19 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
 
   // L3 Tech Reactor: the reactor core as a project filter (the static tier shows the Work page and its stack filter).
   add({ floor: "L3", slug: "reactor", kind: "reactor", title: labels.reactor, keywords: ["tech reactor", "reaktor", "stack", "tech", "teknologi", "filter", "AI and LLM", "Azure", "Backend", "Frontend", "Data", "DevOps"], path: "/labs#all-projects", floorPath: "/labs#all-projects", surpriseWeight: 0 });
+
+  // L3 Ops Control Room (owner approved 2026-10-14): "How I run AI in production"; the Classic site shows it on the About page.
+  add({
+    floor: "L3",
+    slug: "ops",
+    kind: "ops",
+    title: labels.ops,
+    subtitle: content.production.title,
+    keywords: ["observability", "observabilitas", "monitoring", "telemetry", "telemetri", "OpenTelemetry", "Grafana", "Prometheus", "Application Insights", "Azure Monitor", "alerts", "alert", "Bicep", "production", "ops", "SRE"],
+    path: "/contact#production",
+    floorPath: "/contact#production",
+    surpriseWeight: 0,
+  });
 
   // L4 Library
   const library = content.floors.library;

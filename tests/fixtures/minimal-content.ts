@@ -57,6 +57,18 @@ export function makeContent(): SiteContent {
       howIWork: lt("How"),
       principles: [{ id: "spec-first", title: lt("Spec first"), text: lt("Specs") }],
     },
+    production: {
+      title: lt("How I run AI in production"),
+      intro: lt("Intro"),
+      points: [
+        { id: "one", lead: lt("One."), text: lt("Text one") },
+        { id: "two", lead: lt("Two."), text: lt("Text two") },
+      ],
+      outro: lt("Outro"),
+      tiles: (["metrics", "traces", "alerts"] as const).map((panel) => ({ id: panel, label: lt(panel), value: lt("1"), detail: lt("detail"), panel })),
+      alerts: [lt("Spend")],
+      caseStudies: ["sample-pod"],
+    },
     stats: ["a", "b", "c", "d"].map((id) => ({ id, value: "1", label: lt(id), source: "test", confidence: "verified" as const })),
     skills: [{ id: "backend", label: lt("Backend"), items: ["Go"] }],
     certifications: [],
