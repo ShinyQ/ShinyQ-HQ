@@ -82,7 +82,7 @@ test("picking a topic in the drawer lights its stations, glows their roads and f
   await page.getByTestId("topics-clear").click();
   await expect.poll(() => probe(page)).toMatchObject({ topic: null, lit: [], roads: 0 });
   await expect.poll(() => page.evaluate(() => location.hash)).toBe("");
-  expect((await signs(page)).some((s) => s.includes("pieces on"))).toBe(false);
+  await expect.poll(async () => (await signs(page)).some((s) => s.includes("pieces on"))).toBe(false);
   expect(errors).toEqual([]);
 });
 
