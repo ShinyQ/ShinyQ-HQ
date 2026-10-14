@@ -13,12 +13,16 @@ import {
   waitForHQ,
   waitForPhase,
 } from "../hq";
+import { RENDER_BUDGET } from "../budgets";
 import { writePerfEntry } from "./helpers";
 
 /**
  * Peak draw calls outside settled spots (appendix 08 section 2, REPORT F5.4 and SP9): boot plus the
  * intro, every elevator ride, and hovering a target. Every rendered frame of the window counts. Rides
- * use the elevator panel (the wheel zooms the camera since round 5).
+ * use the elevator panel (the wheel zooms the camera since round 5). Besides the separate scene, post and
+ * triangle peaks, the worst whole frame (every render pass, `__hq.render.peakCalls`) stays under the scene
+ * budget too: the combined check `e2e/gpu.spec.ts` ran over the full-tier intro and four rides until it
+ * moved here (F3.3), now on every scenario.
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -38,15 +42,20 @@ function ratchet(id: string) {
   test.fail(KNOWN_OVER.has(id), `${id} is over budget on main (see KNOWN_OVER); remove it from KNOWN_OVER when this passes`);
 }
 
+type RenderWindow = { __hq: { render: { resetPeak(): void; peakCalls: number } } };
+
 /** Resets the peaks, runs the window, then checks and records every frame's worst. */
-async function measure(page: Page, tier: Tier, scenario: string, window: () => Promise<void>) {
+async function measure(page: Page, tier: Tier, scenario: string, run: () => Promise<void>) {
   await resetRenderPeaks(page);
-  await window();
+  await page.evaluate(() => (window as unknown as RenderWindow).__hq.render.resetPeak());
+  await run();
   await waitForFrames(page, 5);
   const peaks = await readRenderPeaks(page);
+  const wholeFrame = await page.evaluate(() => (window as unknown as RenderWindow).__hq.render.peakCalls);
   writePerfEntry({ kind: "peak", tier, scenario, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, frames: peaks.frames });
-  console.log(`${tier} ${scenario}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris over ${peaks.frames} frames`);
+  console.log(`${tier} ${scenario}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post (${wholeFrame} in the worst whole frame), ${peaks.triangles} tris over ${peaks.frames} frames`);
   expectPeaksWithinBudget(peaks, `${tier} ${scenario}`);
+  expect(wholeFrame, `${tier} ${scenario} peak (all render passes): ${JSON.stringify(peaks)}`).toBeLessThan(RENDER_BUDGET.sceneCalls);
 }
 
 for (const tier of ["lite", "full"] as const) {
@@ -102,7 +111,10 @@ for (const tier of ["lite", "full"] as const) {
 
 const ROUTE: Record<string, string> = { L1: "/en", L2: "/en/journey", L3: "/en/labs", L4: "/en/library", RF: "/en/contact" };
 
-/** Up one, up several, the longest descent and a descent onto L2 (its road mounts on arrival). */
+/**
+ * Up one, up several, the longest descent and a descent onto L2 (its road mounts on arrival). The full
+ * tier rides the two busiest pairs: L1 and L2 both ways, and L1 to the Roof and back (from gpu.spec.ts).
+ */
 const RIDES: { tier: Tier; from: string; to: string }[] = [
   { tier: "lite", from: "L1", to: "L2" },
   { tier: "lite", from: "L1", to: "L3" },
@@ -112,6 +124,8 @@ const RIDES: { tier: Tier; from: string; to: string }[] = [
   { tier: "lite", from: "L3", to: "L2" },
   { tier: "full", from: "L1", to: "L2" },
   { tier: "full", from: "L2", to: "L1" },
+  { tier: "full", from: "L1", to: "RF" },
+  { tier: "full", from: "RF", to: "L1" },
 ];
 
 for (const { tier, from, to } of RIDES) {

@@ -9,7 +9,8 @@ type Graphics = { pixelRatio: number; multisampling: number | null; bloomLevels:
 type RenderHandle = { resetPeak(): void; peakCalls: number; peakTriangles: number; programs(): number; programNames(): string[]; graphics?(): Graphics; warmFloors(): string[] };
 type GpuWindow = { __hq: { store: { getState(): { goToFloor(f: string): void } }; render: RenderHandle } };
 
-// Four elevator rides on SwiftShader at 1440x900 take minutes on a busy runner.
+// Four elevator rides on SwiftShader at 1440x900 take minutes on a busy runner. The intro and ride
+// draw-call peaks moved to e2e/perf/peaks.spec.ts (perf lane), with the whole-frame check kept there.
 test.describe.configure({ timeout: 600_000 });
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -55,23 +56,6 @@ function report(name: string, value: unknown) {
   test.info().annotations.push({ type: name, description: JSON.stringify(value) });
   console.log(`[gpu] ${name} ${JSON.stringify(value)}`);
 }
-
-test("intro and ride draw-call peaks (full tier)", async ({ page }) => {
-  await firstSession(page);
-  await bootRover(page);
-  await waitForPhase(page, "explore", 60_000);
-  await waitForSceneLive(page);
-  const intro = await counters(page);
-  const rides = {
-    "L1-L2": await ride(page, "L2"),
-    "L2-L1": await ride(page, "L1"),
-    "L1-RF": await ride(page, "RF"),
-    "RF-L1": await ride(page, "L1"),
-  };
-  const peaks = { intro: intro.peakCalls, ...Object.fromEntries(Object.entries(rides).map(([k, v]) => [k, v.peakCalls])) };
-  report("peaks", peaks);
-  for (const [name, value] of Object.entries(peaks)) expect(value, `${name} peak (all render passes)`).toBeLessThan(150);
-});
 
 test("boot warms every floor: first arrivals add at most 3 programs each (full tier)", async ({ page }) => {
   await firstSession(page);
