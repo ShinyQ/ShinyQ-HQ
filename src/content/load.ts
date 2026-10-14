@@ -6,6 +6,7 @@ import { publishedPerspectives } from "./perspectives";
 import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat, type Wing } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 import { buildTechIndex, type TechIndex } from "./tech-index";
+import { buildTopicIndex, type TopicIndex } from "./topic-index";
 
 let cached: SiteContent | undefined;
 
@@ -71,6 +72,14 @@ let cachedTechIndex: TechIndex | undefined;
 export function getTechIndex(): TechIndex {
   cachedTechIndex ??= buildTechIndex(getPods(), getSkills());
   return cachedTechIndex;
+}
+
+let cachedTopicIndex: TopicIndex | undefined;
+
+/** L4 Topic Constellation index (`buildTopicIndex`): every post, paper, model and talk on its topics, built at build time. */
+export function getTopicIndex(): TopicIndex {
+  cachedTopicIndex ??= buildTopicIndex(getContent().floors.library);
+  return cachedTopicIndex;
 }
 export const getCertifications = () => getContent().certifications;
 export const getAwards = () => [...getContent().awards].sort((a, b) => b.date.localeCompare(a.date));
