@@ -210,6 +210,28 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
   ],
 };
 
+/**
+ * The follow yaw (offset from the default angle) whose camera looks along `dir` (floor plane): the default
+ * camera sits along (+1, +1) and looks along (-1, -1), and `orbitOffset` turns it by the yaw.
+ */
+export function yawLooking(dir: Vec2): number {
+  return Math.atan2(dir.z - dir.x, -(dir.x + dir.z));
+}
+
+/**
+ * Applies a zone at once (no easing), as an initial state: the session spawn starts in its zone's view,
+ * so the intro ends on that view and a deep link opens on it. Also under reduced motion (nothing moves).
+ */
+export function primeZone(s: OrbitState, zone: ViewZone | null): void {
+  s.zone = zone?.id ?? null;
+  s.suppressedZone = null;
+  s.yaw = s.yawTarget = zone?.yaw ?? 0;
+  s.zoom = s.zoomTarget = zone?.zoom ?? 1;
+  s.zoneZoom = zone?.zoom ?? null;
+  s.pitch = s.pitchTarget = 0;
+  s.easing = false;
+}
+
 /** The zone the rover is in: static `VIEW_ZONES` first, then the floor layout's own (`FloorLayout.viewZones`). */
 export function zoneAt(floor: FloorId, p: Vec2, extra: readonly ViewZone[] = []): ViewZone | null {
   const inside = (z: ViewZone) => p.x >= z.area.minX && p.x <= z.area.maxX && p.z >= z.area.minZ && p.z <= z.area.maxZ;
