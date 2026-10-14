@@ -3,7 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
-import { distanceToElevator, FAST_RETURN } from "@/experience/nav/fastReturn";
+import { distanceToElevator, FAST_RETURN, shouldBeamToCar } from "@/experience/nav/fastReturn";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { PAD } from "@/experience/nav/pads";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
@@ -54,6 +54,19 @@ describe("floor pads in the real layouts", () => {
       expect(distanceToElevator(returns[0].at, l), id).toBeGreaterThan(FAST_RETURN.beamDistance);
     }
     for (const id of ["L1", "L4", "RF"] as const) expect(layouts[id].pads?.some((p) => p.kind === "return"), id).toBe(false);
+  });
+
+  it("drives from the everyday spots and beams only from the far ends (owner decision: 40 u)", () => {
+    expect(FAST_RETURN.beamDistance).toBe(40);
+    // Drive: the L1 spawn (about 36 u), the L3 overview (29.5 u), the RF and L4 arrival spots.
+    expect(shouldBeamToCar(layouts.L1.spawn, layouts.L1)).toBe(false);
+    expect(distanceToElevator(layouts.L1.spawn, layouts.L1)).toBeGreaterThan(25);
+    for (const id of ["L3", "L4", "RF"] as const) expect(shouldBeamToCar(layouts[id].arrival!, layouts[id]), id).toBe(false);
+    expect(distanceToElevator(layouts.L3.arrival!, layouts.L3)).toBeGreaterThan(25);
+    expect(distanceToElevator(layouts.RF.arrival!, layouts.RF)).toBeGreaterThan(25);
+    // Beam: the L2 annex and the L3 east plaza (their Return pads), and the deep L4 stations.
+    for (const id of ["L2", "L3"] as const) expect(shouldBeamToCar(layouts[id].returnPad!, layouts[id]), id).toBe(true);
+    expect((layouts.L4.doors ?? []).some((d) => shouldBeamToCar(d.at, layouts.L4))).toBe(true);
   });
 
   it("keeps the L3 Return pad off the reactor ring road", () => {

@@ -97,7 +97,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions", "walk"] },
   { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
 
-  // Fast return (F1): Express Return pads, the 25 u rule and the beam into the car.
+  // Fast return (F1): Express Return pads, the 40 u rule and the beam into the car.
   { test: /^src\/experience\/nav\/fastReturn\.ts$|^src\/experience\/fx\/ReturnPadSign\.tsx$/, specs: ["fast-return", "pads", "ride", "experience"] },
   // Floor pads: elevator call pads, L2 year teleporters, the beam, their pickers and thumbnails.
   { test: /^src\/experience\/nav\/(pads|teleport)\.ts$|^src\/experience\/fx\/(PadGlow|TeleportBeam)\.tsx$|^src\/hud\/pads\/|^public\/floors\//, specs: ["pads", "fast-return", "experience", "workshop"] },

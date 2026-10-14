@@ -4,8 +4,9 @@ import { chooseMotion, asReturningVisitor, collectErrors, driveTo, padsOf, targe
 
 /**
  * Fast return (F1, owner decision 2026-10-14: "Beam when far"). Express Return pads beam the rover to
- * its floor's elevator call pad, and a floor change requested more than 25 u from that pad beams the
- * rover into the car before the ride (`src/experience/nav/fastReturn.ts`). Closer, it drives as before.
+ * its floor's elevator call pad, and a floor change requested more than 40 u from that pad beams the
+ * rover into the car before the ride (`src/experience/nav/fastReturn.ts`; owner decision: raised from
+ * 25 u so the L1 spawn, the L3 overview and the RF arrival drive). Closer, it drives as before.
  */
 test.describe.configure({ timeout: 240_000 });
 
@@ -129,7 +130,7 @@ test.describe("fast return on the Career Road (L2)", () => {
     expect(last!.distinctY).toBeGreaterThanOrEqual(12);
   });
 
-  test("within 25 u of the elevator the rover still drives to the door", async ({ page }) => {
+  test("within 40 u of the elevator the rover still drives to the door", async ({ page }) => {
     await openFloor(page, "/en/journey");
     const lift = await approach(page, "L2");
     await driveTo(page, { x: lift.x + 12, z: lift.z });
@@ -155,6 +156,31 @@ test.describe("fast return on the Career Road (L2)", () => {
       await expect(page.getByTestId("beam-fade")).toHaveClass(/opacity-0/);
     });
   });
+});
+
+test.describe("everyday spots within 40 u drive to the elevator (owner decision)", () => {
+  for (const { name, path, floor, to } of [
+    { name: "the L1 spawn (about 36 u)", path: "/en", floor: "L1", to: "L2" },
+    { name: "the L3 overview (29.5 u)", path: "/en/labs", floor: "L3", to: "L4" },
+    { name: "the RF arrival spot (25.9 u)", path: "/en/contact", floor: "RF", to: "L4" },
+  ]) {
+    test(`a floor change from ${name} drives, no beam`, async ({ page }) => {
+      await openFloor(page, path);
+      const lift = await approach(page, floor);
+      const start = await rover(page);
+      const d = Math.hypot(start.x - lift.x, start.z - lift.z);
+      // Farther than the old 25 u rule, within the new 40 u one.
+      expect(d).toBeGreaterThan(25);
+      expect(d).toBeLessThan(40);
+      const record = await recordRide(page);
+      await rideTo(page, to);
+      const { beams, toDoorX } = await record();
+      expect(beams).toEqual([]);
+      // The rover drove: some toDoor frame sits between the start and the call pad.
+      const [lo, hi] = [Math.min(start.x, lift.x), Math.max(start.x, lift.x)];
+      expect(toDoorX.some((x) => x > lo + 1 && x < hi - 1)).toBe(true);
+    });
+  }
 });
 
 test.describe("fast return on Project Roads (L3)", () => {

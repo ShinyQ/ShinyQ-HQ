@@ -18,7 +18,7 @@ import type { Beam } from "./teleport";
  */
 export const FAST_RETURN = {
   /** Farther than this (u, straight line) from the elevator call pad, a floor change beams into the car. */
-  beamDistance: 25,
+  beamDistance: 40,
   /** "Back to elevator" sign: plate center height (u), clear of the pad icon and the point-and-go name tag. */
   signY: 4.4,
   signSize: 0.42,
