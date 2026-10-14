@@ -5,14 +5,15 @@ import { countryPoint, landCells, latLonToVec3 } from "@/lib/visits/geo";
 import { formatCount, type Freshness, type VisitsView } from "@/lib/visits/model";
 import type { BatchedLabel } from "../../fx/labelProps";
 import { FONTS } from "../../tower/primitives";
-import type { GpuTier } from "../../types";
-import type { RoofLayout } from "./layout";
-import type { Box } from "./solids";
+import { LOBBY } from "../../config";
+import type { GpuTier, Rect } from "../../types";
+import type { Box } from "../roof/solids";
 
 /**
- * RF Visitor Observatory (public visit stats, owner plan 2026-10-14), pure parts: where the hologram
- * globe and the floating stats panel stand on the station, their solids, the globe's dot instances and
- * the panel's text rows. Countries are dots only, never numbers. Vitest runs it in node.
+ * L1 Visitor Observatory (public visit stats, owner plan 2026-10-14; moved from the roof to the Lobby's
+ * south-west corner the same day), pure parts: where the hologram globe and the floating stats panel stand
+ * on the station, their solids, the globe's dot instances and the panel's text rows. Countries are dots
+ * only, never numbers. Vitest runs it in node.
  */
 export const OBSERVATORY = {
   globeRadius: 2.2,
@@ -20,12 +21,12 @@ export const OBSERVATORY = {
   globeY: 4.6,
   /** Axial tilt toward the viewer (radians), so the northern hemisphere reads from the plaza. */
   tilt: 0.3,
-  /** Spin (rad/s); faster while RF:visits is open. Still under reduced motion. */
+  /** Spin (rad/s); faster while L1:visits is open. Still under reduced motion. */
   spin: 0.12,
   spinActive: 0.4,
-  /** Longitude turned toward the plaza at rest and under reduced motion: Indonesia, home. */
+  /** Longitude turned toward the viewer at rest and under reduced motion: Indonesia, home. */
   restLon: 118,
-  panel: { w: 4.6, h: 4.2, bottom: 1.2, yaw: -Math.PI / 10 },
+  panel: { w: 4.6, h: 4.2, bottom: 1.2 },
   land: { full: { step: 1, size: 0.115 }, lite: { step: 2, size: 0.15 } },
   countrySize: 0.34,
   colors: { land: "#818cf8", country: "#22d3ee", rim: "#a78bfa", bar3d: "#22d3ee", barClassic: "#a78bfa" },
@@ -39,15 +40,22 @@ export interface ObservatoryParts {
   solids: Box[];
 }
 
-/** The globe stands at the back right of the station, the panel floats front left, both inside its footprint. */
-export function observatoryParts(layout: RoofLayout): ObservatoryParts {
-  const v = layout.visits;
+/**
+ * The panel faces between the spawn view (back along the kiosk axis) and the elevator arrival view (from
+ * the north), so it reads from both; the globe stands behind it at the back (south-west) of the footprint.
+ */
+export function observatoryPanelYaw(axis = LOBBY.kioskAxis): number {
+  return Math.atan2(-axis.x, -axis.z - 1);
+}
+
+/** The globe stands at the back left of the station, the panel floats front right, both inside its footprint. */
+export function observatoryParts(v: Rect = LOBBY.observatory, yaw = observatoryPanelYaw()): ObservatoryParts {
   const r = OBSERVATORY.globeRadius;
-  const globe = { x: v.maxX - r - 0.1, y: OBSERVATORY.globeY, z: v.minZ + r + 0.2, r };
-  const { w, h, bottom, yaw } = OBSERVATORY.panel;
-  const panel = { x: v.minX + 2.6, z: v.maxZ - 1.3, bottom, w, h, yaw };
   const cx = (v.minX + v.maxX) / 2;
   const cz = (v.minZ + v.maxZ) / 2;
+  const globe = { x: cx - 0.6, y: OBSERVATORY.globeY, z: v.maxZ - r - 0.5, r };
+  const { w, h, bottom } = OBSERVATORY.panel;
+  const panel = { x: cx + 0.6, z: v.minZ + 1.5, bottom, w, h, yaw };
   const solids: Box[] = [
     { x: cx, y: 0, z: cz, w: v.maxX - v.minX - 0.4, h: 0.25, d: v.maxZ - v.minZ - 0.4 },
     { x: globe.x, y: 0.25, z: globe.z, w: 1.1, h: 1.7, d: 1.1 },

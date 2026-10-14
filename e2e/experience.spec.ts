@@ -641,13 +641,15 @@ test.describe("free orbit camera", () => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     const before = await snapshot(page);
+    // The session starts on the kiosk spawn view (L1:kiosk), not the default yaw: rotations are relative to it.
+    const start = await currentYaw(page);
     // Drag on empty floor, left of the rover, with the left button.
     await page.mouse.move(300, 600);
     await page.mouse.down();
     for (let i = 1; i <= 10; i++) await page.mouse.move(300 + i * 30, 600);
     await page.mouse.up();
     const yaw = await currentYaw(page);
-    expect(yaw).toBeLessThan(-1);
+    expect(yaw).toBeLessThan(start - 1);
     // Dragging rotated only: the rover did not drive off.
     const after = await snapshot(page);
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
@@ -663,18 +665,19 @@ test.describe("free orbit camera", () => {
     await page.waitForTimeout(2500);
     expect(Math.abs((await currentYaw(page)) - yaw)).toBeGreaterThan(0.5);
     await waitForCameraSettle(page);
-    const start = (await snapshot(page)).rover;
+    const at = (await snapshot(page)).rover;
     const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], minDistance: 3 });
     const point = await targetPoint(page, target.id);
     await page.mouse.click(point.x, point.y);
-    await waitForRoverMove(page, start, 1.5);
+    await waitForRoverMove(page, at, 1.5);
   });
 
   test("trackpad deltaX, Q/E and the reset button", async ({ page }) => {
     await enterHQ(page);
+    const start = await cameraYaw(page);
     await page.mouse.move(640, 400);
     await page.mouse.wheel(300, 0);
-    await expect.poll(() => cameraYaw(page)).toBeLessThan(-0.5);
+    await expect.poll(() => cameraYaw(page)).toBeLessThan(start - 0.5);
     expect((await snapshot(page)).floor).toBe("L1");
 
     // Holding E turns right; holding Q turns left. Each key is held until the camera has turned,
@@ -706,6 +709,7 @@ test.describe("free orbit on touch", () => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
+    const start = await currentYaw(page);
     // A plain tap is not a drag: it selects the target under it (point-and-go) and offers Go; a tap on
     // empty floor clears it again. Neither moves the rover.
     const target = await visibleTarget(page, { kinds: ["elevator-pad", "station", "kiosk"], safe: PHONE_SAFE });
@@ -725,14 +729,15 @@ test.describe("free orbit on touch", () => {
     for (const p of points.slice(1)) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: (timestamp += 0.05) });
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: (timestamp += 0.05) });
     await cdp.detach();
-    expect(await currentYaw(page)).toBeLessThan(-0.8);
+    expect(await currentYaw(page)).toBeLessThan(start - 0.8);
     const after = await snapshot(page);
     expect(after.floor).toBe("L1");
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
 
 
+    const dragged = await currentYaw(page);
     await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
-    await expect.poll(() => cameraYaw(page)).toBeLessThan(-1.2);
+    await expect.poll(() => cameraYaw(page)).toBeLessThan(dragged - 0.4);
   });
 });
 

@@ -24,10 +24,11 @@ describe("Highlights Hall layout", () => {
   });
 
   it("passes the space rules with the real Lobby; only the skills wall, which predates them, sits near the slab edge", () => {
-    const [, skills, , kiosk] = l1.obstacles;
-    // Task 3 moved the kiosk to touch the south edge, clear of the passage road.
-    expect(kiosk.maxZ).toBe(l1.bounds.maxZ);
-    const violations = spaceViolations({ bounds: l1.bounds, obstacles: l1.obstacles, doors: l1.doors!, network: l1.road!, start: l1.approach, pads: l1.pads });
+    const [, skills] = l1.obstacles;
+    // The Visitor Observatory's door (south-west corner) is reached on the navgrid like the rest of the Lobby,
+    // not on the hall road: tests/unit/lobby-observatory.test.ts checks its pad.
+    const hallDoors = l1.doors!.filter((d) => d.room !== "L1:visits");
+    const violations = spaceViolations({ bounds: l1.bounds, obstacles: l1.obstacles, doors: hallDoors, network: l1.road!, start: l1.approach, pads: l1.pads });
     expect(violations.map((v) => `${v.rule}: ${v.detail}`)).toEqual([
       `bounds-gap: 2.00 u between ${label(skills)} and the slab edge`,
     ]);
@@ -40,7 +41,7 @@ describe("Highlights Hall layout", () => {
   });
 
   it("gives every station one door that faces into it, with its pad on open floor 1.1 u in front", () => {
-    expect(l1.doors!.map((d) => d.room)).toEqual(HIGHLIGHT_STATIONS.map(highlightRoom));
+    expect(l1.doors!.map((d) => d.room)).toEqual([...HIGHLIGHT_STATIONS.map(highlightRoom), "L1:visits"]);
     const grid = buildNavGrid(l1, ROVER.radius);
     for (const s of HALL_LAYOUT.stations) {
       const door = l1.doors!.find((d) => d.room === s.room)!;
@@ -76,7 +77,8 @@ describe("Highlights Hall layout", () => {
       expect((s.pad.x - cx) * s.facing.x + (s.pad.z - cz) * s.facing.z).toBeGreaterThan(10);
     }
     expect(zoneAt("L1", { x: 32, z: 15 }, l1.viewZones)?.id).toBe("L1:highlights-entry");
-    expect(zoneAt("L1", LOBBY.spawn, l1.viewZones)).toBeNull();
+    // The spawn (the kiosk stop) has its own view: down the kiosk axis (tests/unit/lobby-observatory.test.ts).
+    expect(zoneAt("L1", LOBBY.spawn, l1.viewZones)?.id).toBe("L1:kiosk");
   });
 
   it("loads the screenshots only once the rover heads for the hall", () => {

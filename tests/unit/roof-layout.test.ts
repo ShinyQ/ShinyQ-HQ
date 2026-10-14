@@ -42,9 +42,7 @@ describe("RF roof deck layout", () => {
     expect(floor.doors).toEqual([
       { room: "RF:contact", at: layout.stops.contact, facing: { x: 0, z: -1 } },
       { room: "RF:cv", at: layout.stops.cv, facing: { x: 1, z: 0 } },
-      { room: "RF:visits", at: layout.stops.visits, facing: { x: 0, z: -1 } },
     ]);
-    expect(distanceToRect(layout.stops.visits, layout.visits)).toBeCloseTo(ROOF_DECK.padInset);
     expect(distanceToRect(layout.stops.contact, layout.comms)).toBeCloseTo(ROOF_DECK.padInset);
     expect(distanceToRect(layout.stops.cv, layout.cv)).toBeCloseTo(ROOF_DECK.padInset);
     const [a, b] = floor.doors!;
@@ -73,7 +71,6 @@ describe("RF roof deck layout", () => {
       ["cv", layout.cv],
       ["about", layout.about],
       ["availability", layout.centerpiece],
-      ["visits", layout.visits],
     ];
     for (const [stop, station] of stations) {
       const p = layout.stops[stop];
@@ -104,29 +101,6 @@ describe("RF roof deck layout", () => {
     expect(zones.find((z) => inside(floor.spawn, z.area))?.id).toBe("RF:overview");
   });
 
-  it("puts the Visitor Observatory in the free north-east corner, flush with the slab edges", () => {
-    const v = layout.visits;
-    const corner = { minX: 12, maxX: 22, minZ: -20, maxZ: -10 };
-    expect(v.minX).toBeGreaterThanOrEqual(corner.minX);
-    expect(v.maxZ).toBeLessThanOrEqual(corner.maxZ);
-    expect(v.maxX).toBe(floor.bounds.maxX);
-    expect(v.minZ).toBe(floor.bounds.minZ);
-    // Its own obstacle, at least 6 u from every other station and clear of the plaza.
-    expect(floor.obstacles).toContainEqual(v);
-    for (const o of [layout.comms, layout.cv, layout.about, layout.centerpiece]) expect(rectGap(o, v)).toBeGreaterThanOrEqual(6);
-    const c = layout.plaza.center;
-    expect(distanceToRect(c, v)).toBeGreaterThan(layout.plaza.w / 2);
-    // The globe column blocks a low camera.
-    expect(floor.tall).toEqual([{ ...v, h: ROOF_DECK.visitsHeight }]);
-    // The spur reaches the pad within 45 degrees of the door's facing, so driving in along it opens the room.
-    const spur = layout.network.spurs.find((s) => s.room === "RF:visits")!;
-    expect(spur.to).toEqual(layout.stops.visits);
-    const dx = spur.to.x - spur.from.x;
-    const dz = spur.to.z - spur.from.z;
-    expect(-dz / Math.hypot(dx, dz)).toBeGreaterThan(Math.cos(Math.PI / 4));
-    expect(Math.hypot(spur.from.x - c.x, spur.from.z - c.z)).toBeLessThan(layout.plaza.w / 2);
-  });
-
   it("spreads the channel anchors across the comms station", () => {
     expect(channelSlots(0)).toEqual([]);
     expect(channelSlots(1)).toEqual([{ x: 2, z: -17 }]);
@@ -142,7 +116,6 @@ describe("RF roof deck layout", () => {
   it("maps the open RF room to the scenery state", () => {
     expect(roofActive("room", "RF:contact")).toBe("contact");
     expect(roofActive("room", "RF:cv")).toBe("cv");
-    expect(roofActive("room", "RF:visits")).toBe("visits");
     expect(roofActive("explore", "RF:contact")).toBeNull();
     expect(roofActive("room", "L4:talks")).toBeNull();
     expect(roofActive("room", null)).toBeNull();
@@ -156,7 +129,7 @@ describe("RF in the tower", () => {
     const { pads, ...rf } = buildFloorLayouts(8).RF;
     expect(rf).toEqual(buildRoofLayout().floor);
     expect(ROOF_STOPS).toEqual(buildRoofLayout().stops);
-    expect(rf.doors?.map((d) => d.at)).toEqual([ROOF_STOPS.contact, ROOF_STOPS.cv, ROOF_STOPS.visits]);
+    expect(rf.doors?.map((d) => d.at)).toEqual([ROOF_STOPS.contact, ROOF_STOPS.cv]);
     // The elevator call pad (added by the tower) sits in the spot the deck keeps free for it.
     expect(pads?.map((p) => p.kind)).toEqual(["elevator"]);
     expect(inside(pads![0].at, layout.callPad)).toBe(true);

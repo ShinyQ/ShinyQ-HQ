@@ -3,7 +3,7 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
-import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
+import { buildFloorLayouts, FLOOR_IDS, LOBBY, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { OPS } from "@/experience/floors/labs/ops";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
@@ -108,7 +108,8 @@ describe("interactablesFor on the real content", () => {
     );
     const withHall = { ...items, L1: interactablesFor("L1", layouts, data) };
     dispose();
-    expect(layouts.L1.doors?.length).toBe(HALL_LAYOUT.stations.length);
+    // Plus the Visitor Observatory's door (lobbyItems, `L1:station:visits`).
+    expect(layouts.L1.doors?.length).toBe(HALL_LAYOUT.stations.length + 1);
     for (const floor of FLOOR_IDS) {
       for (const door of layouts[floor].doors ?? []) {
         const kind = floor === "RF" || floor === "L1" ? "station" : "door";
@@ -154,8 +155,10 @@ describe("interactablesFor on the real content", () => {
     expect(find("L2", "L2:station:workshop")?.label).toBe(en.hud.rooms.workshop);
     expect(find("RF", "RF:station:contact")?.label).toBe(en.hud.rooms.contact);
     expect(find("RF", "RF:station:cv")?.label).toBe(en.hud.rooms.cv);
-    expect(find("RF", "RF:station:visits")?.label).toBe(en.hud.rooms.visits);
-    expect(find("RF", "RF:station:visits")?.action).toEqual({ type: "open-room", room: "RF:visits" });
+    // The Visitor Observatory moved to the Lobby's south-west corner (owner decision 2026-10-14).
+    expect(find("RF", "RF:station:visits")).toBeUndefined();
+    expect(find("L1", "L1:station:visits")?.label).toBe(en.hud.rooms.visits);
+    expect(find("L1", "L1:station:visits")?.action).toEqual({ type: "open-room", room: "L1:visits" });
   });
 
   it("adds the L2 Workshop: gateway, time console, one target per bench and per skyline bar", () => {
@@ -183,8 +186,11 @@ describe("interactablesFor on the real content", () => {
     expect(new Set(items.L2.map((i) => i.id)).size).toBe(items.L2.length);
   });
 
-  it("adds the L1 profile hologram, skills wall and Ask Rover kiosk", () => {
-    expect(items.L1.map((i) => i.id)).toEqual(["L1:pad:elevator", "L1:station:profile", "L1:station:skills", "L1:kiosk:ask-rover"]);
+  it("adds the L1 profile hologram, skills wall, Ask Rover kiosk and Visitor Observatory", () => {
+    expect(items.L1.map((i) => i.id)).toEqual(["L1:pad:elevator", "L1:station:profile", "L1:station:skills", "L1:kiosk:ask-rover", "L1:station:visits"]);
+    const visits = find("L1", "L1:station:visits")!;
+    expect(visits.at).toEqual(layouts.L1.doors!.find((d) => d.room === "L1:visits")!.at);
+    expect(visits.height).toBe(LOBBY.observatory.h);
     expect(find("L1", "L1:station:profile")!.at).toEqual(roomTarget(undefined, "L1:profile", layouts, experience.years));
     expect(find("L1", "L1:station:skills")!.action).toEqual({ type: "open-room", room: "L1:skills" });
     const kiosk = find("L1", "L1:kiosk:ask-rover")!;

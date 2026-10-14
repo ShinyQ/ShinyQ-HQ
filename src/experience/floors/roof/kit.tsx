@@ -20,7 +20,6 @@ import { useUniformTime } from "../../fx/useUniformTime";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier, RoofData } from "../../types";
 import type { RoofActive, RoofLayout } from "./layout";
-import type { ObservatoryLabels } from "./observatory";
 import { boxBuffers, boxEdgeBuffers, type Box } from "./solids";
 
 /** RF accent (FLOOR_COLOR.RF) and the station tints. */
@@ -46,8 +45,6 @@ export interface RoofLabels {
   cvHint: string;
   about: string;
   availability: string;
-  /** The Visitor Observatory panel (`stats.*`). */
-  observatory: ObservatoryLabels;
 }
 
 /** What every roof scenery (concept) gets. */

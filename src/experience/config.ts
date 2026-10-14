@@ -4,6 +4,7 @@ import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
+import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
@@ -89,6 +90,39 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   maxZ: cz + d / 2,
 });
 
+const LOBBY_HOLOGRAM = { x: 6, z: 0, radius: 3 } as const;
+/**
+ * Visitor Observatory footprint (public visit stats, owner decision 2026-10-14): the south-west corner,
+ * flush with the west and south slab edges, between the elevator and the Ask Rover kiosk.
+ */
+const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: 21 } as const;
+/**
+ * The kiosk axis (owner review 2026-10-14: "the rover kiosk not straight line into the circle"): the unit
+ * direction from the hologram to the observatory. The kiosk sits on it facing the hologram, its lane spoke
+ * runs along it from the ring into the kiosk front, and the session spawn stands on it in front of the
+ * screen, so the spawn view looks down one line: hologram, rover, kiosk, observatory.
+ */
+const KIOSK_AXIS: Vec2 = (() => {
+  const dx = (LOBBY_OBSERVATORY.minX + LOBBY_OBSERVATORY.maxX) / 2 - LOBBY_HOLOGRAM.x;
+  const dz = (LOBBY_OBSERVATORY.minZ + LOBBY_OBSERVATORY.maxZ) / 2 - LOBBY_HOLOGRAM.z;
+  const l = Math.hypot(dx, dz);
+  return { x: dx / l, z: dz / l };
+})();
+/** Kiosk center distance from the hologram along the axis, its depth (along the axis) and width (the screen). */
+const KIOSK_RADIUS = 19.2;
+const KIOSK_DEPTH = 2;
+const KIOSK_WIDTH = 3.4;
+/**
+ * The rover stops this far in front of the screen (point-and-go `L1:kiosk:ask-rover`, the session spawn):
+ * 0.5 u more than when the kiosk stood square to the grid, because its obstacle is the axis-aligned box
+ * of the turned footprint, whose corner reaches toward the stop.
+ */
+const KIOSK_STOP_GAP = 3;
+const onAxis = (d: number): Vec2 => ({ x: LOBBY_HOLOGRAM.x + KIOSK_AXIS.x * d, z: LOBBY_HOLOGRAM.z + KIOSK_AXIS.z * d });
+const KIOSK_CENTER = onAxis(KIOSK_RADIUS);
+/** Owner 2026-10-14: "first rover placement should be infront of his kiosk". */
+const LOBBY_SPAWN = onAxis(KIOSK_RADIUS - KIOSK_DEPTH / 2 - KIOSK_STOP_GAP);
+
 /**
  * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on
  * its axis (z = 0, like the door at (-24, 0)), so the lane ring and the slab line up with the
@@ -98,9 +132,11 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
 export const LOBBY = {
   /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
   bounds: { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 },
-  /** On the default camera diagonal from the plaza, so the hologram is centered on arrival. */
-  spawn: { x: 14, z: 10 },
-  hologram: { x: 6, z: 0, radius: 3 },
+  /** Session spawn: the kiosk stop, in front of the Ask Rover screen (floors/lobby/kiosk.ts `kioskStop`). */
+  spawn: LOBBY_SPAWN,
+  /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
+  spawnHeading: Math.atan2(KIOSK_AXIS.x, KIOSK_AXIS.z),
+  hologram: LOBBY_HOLOGRAM,
   /**
    * Name and headline float above the stats tiles and the monogram (both top out at 5.85), low and
    * small enough that the name clears the HUD top bar at 1440 x 900 (tests/unit/lobby-title.test.ts).
@@ -114,8 +150,14 @@ export const LOBBY = {
   skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
   certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
-  /** Ask Rover kiosk footprint (x 1 to 3, z 17.6 to 21): touches the south slab edge; floors/lobby/kiosk.ts turns it to face east. */
-  kiosk: { x: 2, z: 19.3, w: 2, d: 3.4 },
+  /**
+   * Ask Rover kiosk on the kiosk axis, turned to face the hologram (`yaw`, forward is (sin, cos)); `depth`
+   * runs along the axis, `width` across it (the screen). floors/lobby/kiosk.ts builds its parts and bounds.
+   */
+  kiosk: { x: KIOSK_CENTER.x, z: KIOSK_CENTER.z, yaw: Math.atan2(-KIOSK_AXIS.x, -KIOSK_AXIS.z), depth: KIOSK_DEPTH, width: KIOSK_WIDTH, stopGap: KIOSK_STOP_GAP },
+  kioskAxis: KIOSK_AXIS,
+  /** Visitor Observatory (`L1:visits`) footprint; `h` is the globe top, a camera collision column. */
+  observatory: { ...LOBBY_OBSERVATORY, h: 7.4 },
   laneRadius: 12,
 } as const;
 
@@ -177,9 +219,18 @@ function withFloorPads(layout: FloorLayout): FloorLayout {
   return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(back ? [back] : []), ...(layout.pads ?? [])] };
 }
 
+/** Axis-aligned bounds of the turned kiosk footprint (its obstacle and point-and-go bounds). */
+export function kioskRect(): Rect {
+  const { x, z, yaw, depth, width } = LOBBY.kiosk;
+  const fx = Math.abs(Math.sin(yaw));
+  const fz = Math.abs(Math.cos(yaw));
+  return rect(x, z, fx * depth + fz * width, fz * depth + fx * width);
+}
+
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
-  const { hologram, skillsWall, certWall, kiosk } = LOBBY;
+  const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
+  const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis, approach: standard("L1", LOBBY.bounds).approach });
   const layouts: Record<FloorId, FloorLayout> = {
     L1: {
       ...standard(
@@ -189,18 +240,21 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
           rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
           rect(certWall.x, certWall.z, certWall.w, certWall.d),
-          rect(kiosk.x, kiosk.z, kiosk.w, kiosk.d),
+          kioskRect(),
           ...HALL_LAYOUT.obstacles,
+          { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
         ],
         LOBBY.spawn,
       ),
-      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera zones.
-      doors: HALL_LAYOUT.doors,
+      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera
+      // zones; the Visitor Observatory's door and the spawn, arrival and observatory views (floors/lobby/observatoryLayout.ts).
+      doors: [...HALL_LAYOUT.doors, observatory.door],
       road: HALL_LAYOUT.network,
       roadZone: HALL_LAYOUT.zone,
-      viewZones: HALL_LAYOUT.viewZones,
-      // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact card).
-      tall: hallTall(),
+      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones],
+      // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
+      // card) and the observatory globe.
+      tall: [...hallTall(), LOBBY.observatory],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, corridorEnd, floorAt, floorIndex, floorY } from "@/experience/config";
+import { buildFloorLayouts, corridorEnd, floorAt, floorIndex, floorY, LOBBY } from "@/experience/config";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 
 describe("viewport classes", () => {
@@ -35,7 +35,7 @@ describe("tower config", () => {
     expect(layouts.L1.approach).toEqual({ x: -21, z: 0 });
     expect(layouts.RF.door).toEqual({ x: -20, z: 0 });
     expect(layouts.RF.approach).toEqual({ x: -17, z: 0 });
-    expect(layouts.L1.spawn).toEqual({ x: 14, z: 10 });
+    expect(layouts.L1.spawn).toEqual(LOBBY.spawn);
   });
 
   it("sizes the L2 corridor from the year count", () => {

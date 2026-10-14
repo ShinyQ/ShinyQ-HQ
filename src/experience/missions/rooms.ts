@@ -207,20 +207,23 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
   });
   add({ floor: "L4", slug: "talks", kind: "shelf", title: labels.talks, keywords: library.talks.flatMap((t) => [t.title.en, t.title.id, t.event]), path: "/library#talks", floorPath: "/library#talks", surpriseWeight: 0 });
 
-  // RF Roof
-  add({ floor: "RF", slug: "contact", kind: "roof", title: labels.contact, subtitle: content.floors.roof.availability, keywords: ["email", "linkedin", "github", "hire"], path: "/contact", floorPath: "/contact", surpriseWeight: 0.5 });
-  add({ floor: "RF", slug: "cv", kind: "roof", title: labels.cv, keywords: ["cv", "resume", "pdf"], path: "/cv", floorPath: "/contact#cv", surpriseWeight: 0 });
-  // Public visit stats (owner plan 2026-10-14): the Classic site shows them in the Contact page's "Visits" section.
+  // Visitor Observatory (public visit stats, owner decision 2026-10-14: the Lobby's south-west corner; it
+  // was RF:visits before, see roomAliases.ts). The Classic site shows the stats in the Contact page's
+  // "Visits" section, so both paths stay there; in 3D `/{locale}/contact#visits` opens this room on L1.
   add({
-    floor: "RF",
+    floor: "L1",
     slug: "visits",
     kind: "visits",
     title: labels.visits,
-    keywords: ["visits", "kunjungan", "stats", "statistics", "statistik", "analytics", "analitik", "traffic", "countries", "negara", "observatory", "observatorium", "globe"],
+    keywords: ["visits", "kunjungan", "stats", "statistics", "statistik", "analytics", "analitik", "traffic", "countries", "negara", "observatory", "observatorium", "globe", "lobby"],
     path: "/contact#visits",
     floorPath: "/contact#visits",
     surpriseWeight: 0,
   });
+
+  // RF Roof
+  add({ floor: "RF", slug: "contact", kind: "roof", title: labels.contact, subtitle: content.floors.roof.availability, keywords: ["email", "linkedin", "github", "hire"], path: "/contact", floorPath: "/contact", surpriseWeight: 0.5 });
+  add({ floor: "RF", slug: "cv", kind: "roof", title: labels.cv, keywords: ["cv", "resume", "pdf"], path: "/cv", floorPath: "/contact#cv", surpriseWeight: 0 });
 
   return rooms;
 }

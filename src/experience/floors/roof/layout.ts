@@ -15,7 +15,7 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
  * RF roof deck (RF revamp plan). The elevator approach leads east on one road into a round plaza
  * around the centerpiece (telescope, drone cradle or antenna mast, per the picked concept). The
  * stations sit flush with the slab edges, facing the plaza: comms (RF:contact) north, the CV station
- * (RF:cv) east, the about board south-west, the Visitor Observatory (RF:visits) north-east. Pure (no React or three): the floor layout, the scenery
+ * (RF:cv) east, the about board south-west. Pure (no React or three): the floor layout, the scenery
  * and the "Meet me" walk all read it.
  */
 export const ROOF_DECK = {
@@ -30,12 +30,6 @@ export const ROOF_DECK = {
   comms: { minX: -4, maxX: 8, minZ: -20, maxZ: -14 },
   cv: { minX: 16, maxX: 22, minZ: -3, maxZ: 3 },
   about: { minX: -8, maxX: 0, minZ: 16, maxZ: 20 },
-  /** Visitor Observatory (public visit stats, owner plan 2026-10-14): the free north-east corner, flush with the north and east slab edges. */
-  visits: { minX: 14, maxX: 22, minZ: -20, maxZ: -14 },
-  /** Top of the observatory globe: a camera collision column (`FloorLayout.tall`). */
-  visitsHeight: 7.4,
-  /** Where the observatory spur leaves the plaza (inside its rim), so the spur meets the pad within 45 degrees of the door's facing. */
-  visitsSpurFrom: { x: 11, z: -4 },
   /** Station front to door pad center. */
   padInset: 1.1,
   spurWidth: 4,
@@ -53,7 +47,7 @@ export const ROOF_DECK = {
   signYaw: Math.PI / 8,
 } as const;
 
-export type RoofStop = "about" | "availability" | "cv" | "contact" | "visits";
+export type RoofStop = "about" | "availability" | "cv" | "contact";
 
 export interface RoofLayoutInput {
   /** Contact channels on the comms station (`RoofData.channels.length`, 6 today). Only the anchors depend on it. */
@@ -68,8 +62,6 @@ export interface RoofLayout {
   comms: Rect;
   cv: Rect;
   about: Rect;
-  /** The Visitor Observatory (RF:visits): globe and stats panel. */
-  visits: Rect;
   /** Where the rover parks: door pads for the rooms, points for the about board and the availability sign. */
   stops: Record<RoofStop, Vec2>;
   /** One anchor per channel across the comms station (x ascending); the scenery picks the height. */
@@ -77,14 +69,12 @@ export interface RoofLayout {
   callPad: Rect;
 }
 
-/** Which RF room the drawer shows: the scenery "transmits" for contact, "launches" for the CV and spins the globe for the visits. */
-export type RoofActive = "contact" | "cv" | "visits" | null;
-
-const ACTIVE: Record<string, Exclude<RoofActive, null>> = { "RF:contact": "contact", "RF:cv": "cv", "RF:visits": "visits" };
+/** Which RF room the drawer shows: the scenery "transmits" for contact and "launches" for the CV. */
+export type RoofActive = "contact" | "cv" | null;
 
 export function roofActive(phase: string, room: string | null): RoofActive {
-  if (phase !== "room" || !room) return null;
-  return ACTIVE[room] ?? null;
+  if (phase !== "room") return null;
+  return room === "RF:contact" ? "contact" : room === "RF:cv" ? "cv" : null;
 }
 
 const plain = (r: Rect): Rect => ({ minX: r.minX, maxX: r.maxX, minZ: r.minZ, maxZ: r.maxZ });
@@ -111,8 +101,6 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   const comms = plain(D.comms);
   const cv = plain(D.cv);
   const about = plain(D.about);
-  const visits = plain(D.visits);
-  const visitsPad: Vec2 = { x: centerOf(visits).x, z: visits.maxZ + D.padInset };
   const contactPad: Vec2 = { x: centerOf(comms).x, z: comms.maxZ + D.padInset };
   const cvPad: Vec2 = { x: cv.minX - D.padInset, z: centerOf(cv).z };
   const stops: Record<RoofStop, Vec2> = {
@@ -120,19 +108,16 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     availability: { x: D.availability.x, z: D.availability.z },
     cv: cvPad,
     contact: contactPad,
-    visits: visitsPad,
   };
   const lead: Road = { id: "lead", points: [{ x: D.approach.x, z: D.approach.z }, { x: center.x - rim, z: center.z }], width: ROAD.minWidth };
   const spurs: Spur[] = [
     { room: "RF:contact", from: { x: contactPad.x, z: center.z - rim + 1 }, to: contactPad, width: D.spurWidth, color: D.accent },
     { room: "RF:cv", from: { x: center.x + rim - 1, z: cvPad.z }, to: cvPad, width: D.spurWidth, color: "#22d3ee" },
-    { room: "RF:visits", from: { x: D.visitsSpurFrom.x, z: D.visitsSpurFrom.z }, to: visitsPad, width: D.spurWidth, color: "#a78bfa" },
   ];
   const network: RoadNetwork = { roads: [lead], plazas: [plaza], spurs };
   const doors: DoorTrigger[] = [
     { room: "RF:contact", at: contactPad, facing: { x: 0, z: -1 } },
     { room: "RF:cv", at: cvPad, facing: { x: 1, z: 0 } },
-    { room: "RF:visits", at: visitsPad, facing: { x: 0, z: -1 } },
   ];
   const spawn: Vec2 = { x: D.spawn.x, z: D.spawn.z };
   const box = (p: Vec2, r = 2): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
@@ -148,8 +133,6 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     { id: "RF:about", area: { minX: about.minX, maxX: about.maxX, minZ: stops.about.z - 2, maxZ: about.minZ }, yaw: (3 * Math.PI) / 4 },
     // Availability sign on the mast (facing `signYaw`): the overview angle, looking straight at it.
     { id: "RF:availability", area: box(stops.availability, 1.8), yaw: D.overviewYaw },
-    // Visitor Observatory (facing south): the camera south of the rover, looking north at the panel and the globe.
-    { id: "RF:visits", area: { minX: visits.minX, maxX: visits.maxX, minZ: visitsPad.z - 2, maxZ: visitsPad.z + 2 }, yaw: -Math.PI / 4 },
   ];
   return {
     floor: {
@@ -157,8 +140,7 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
       bounds: plain(D.bounds),
       door: { x: D.door.x, z: D.door.z },
       approach: { x: D.approach.x, z: D.approach.z },
-      obstacles: [plain(centerpiece), comms, cv, about, visits],
-      tall: [{ ...visits, h: D.visitsHeight }],
+      obstacles: [plain(centerpiece), comms, cv, about],
       spawn,
       arrival: spawn,
       accent: D.accent,
@@ -172,12 +154,11 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     comms,
     cv,
     about,
-    visits,
     stops,
     channelSlots: channelSlots(channels),
     callPad: plain(D.callPad),
   };
 }
 
-/** Mission and walk stops on the roof (the door pads for RF:contact, RF:cv and RF:visits). */
+/** Mission and walk stops on the roof (the door pads for RF:contact and RF:cv). */
 export const ROOF_STOPS: Record<RoofStop, Vec2> = buildRoofLayout().stops;

@@ -7,6 +7,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { COLORS, LOBBY } from "../../config";
 import { neonColor } from "../../fx/materials";
 import { LaneStrip } from "../../fx/LaneStrip";
+import { kioskLaneEnd } from "./kiosk";
 
 type P = [number, number];
 
@@ -28,7 +29,8 @@ function buildLanes(): P[][] {
   };
   return [
     ring,
-    spoke([LOBBY.kiosk.x + LOBBY.kiosk.w / 2 + 0.4, LOBBY.kiosk.z]),
+    // The kiosk sits on the kiosk axis: its spoke is one straight radial line into the kiosk front.
+    spoke([kioskLaneEnd().x, kioskLaneEnd().z]),
     spoke([LOBBY.skillsWall.x, LOBBY.skillsWall.z + 1.2]),
     spoke([LOBBY.certWall.x - LOBBY.certWall.w / 2 - 0.4, LOBBY.certWall.z]),
     spoke([-21, 0]),

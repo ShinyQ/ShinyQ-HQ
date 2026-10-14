@@ -1,4 +1,5 @@
 import type { DrawerTab, Locale, MissionStep, RoomId, WalkId } from "@/content/schema";
+import { canonicalRoom } from "./roomAliases";
 import type { MissionHost, MissionStatus, PaletteFilter } from "./host";
 import type { RoomInfo } from "./rooms";
 import type { MissionRunner, MissionState } from "./runner";
@@ -78,7 +79,8 @@ export function registerRunner(next: MissionRunner): () => void {
 }
 
 /** Elevator, drive and open for any room through the active runner ("See the case study" links). */
-export function goToRoom(room: RoomId, tab?: DrawerTab) {
+export function goToRoom(id: RoomId, tab?: DrawerTab) {
+  const room = canonicalRoom(id);
   if (runner) void runner.goTo(room, tab);
   else void whenRunner().then((next) => next?.goTo(room, tab));
 }

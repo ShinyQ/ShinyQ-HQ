@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, ShaderMaterial, type Material, type WebGLRenderer } from "three";
-import { cullable, cullUnderSlabs, installRideCull, restoreCulled, rideCullStats, type CullFloor } from "@/experience/tower/rideCull";
+import { cullable, cullUnderSlabs, installRideCull, restoreCulled, rideCullStats, type CullFloor, RIDE_CULL_BOUNDS } from "@/experience/tower/rideCull";
 
 /** A floor at height y: a 40 x 20 slab (top at y, 0.4 thick) and a content group, like FloorLevel. */
 function floorAt(y: number, opts: { slabOpacity?: number; depthWrite?: boolean } = {}) {
@@ -143,6 +143,18 @@ describe("cullUnderSlabs", () => {
     expect(parent.children[0].visible).toBe(false);
     expect(cullable(shader)).toBe(false);
     expect(cullable(onTop)).toBe(false);
+  });
+
+  it("culls a shader material that vouches for its bounds (RIDE_CULL_BOUNDS: no vertex displacement)", () => {
+    const { lower, scene, floors } = tower();
+    const material = new ShaderMaterial();
+    material.userData[RIDE_CULL_BOUNDS] = true;
+    const trusted = box(0, 0, material);
+    lower.content.add(trusted);
+    update(scene);
+    expect(cullable(trusted)).toBe(true);
+    expect(cullUnderSlabs(camera(0, 36, 10), floors)).toBe(1);
+    expect(trusted.visible).toBe(false);
   });
 
   it("bounds an instanced mesh by its instances", () => {

@@ -169,9 +169,11 @@ test.describe("wheel zoom and first person", () => {
     await enterHQ(page);
     await waitForCameraSettle(page);
     expect((await probe(page)).mode).toBe("third");
+    // The session starts on the kiosk spawn view (L1:kiosk, zoomed out): zoom steps are relative to it.
+    const start = (await probe(page)).zoom;
     await page.mouse.move(720, 450);
     await page.mouse.wheel(0, -120);
-    await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(0.9);
+    await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(start * 0.9);
     await page.mouse.wheel(0, 240);
     await expect.poll(async () => (await probe(page)).zoom).toBeGreaterThan(1.1);
     expect((await snapshot(page)).floor).toBe("L1");
@@ -270,6 +272,9 @@ test.describe("wheel zoom and first person", () => {
     await enterHQ(page);
     const lift = (await padsOf(page, "L1")).find((p) => p.kind === "elevator")!;
     await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    // From the default look (the session starts on the kiosk spawn view).
+    await page.keyboard.press("0");
+    await expect.poll(async () => Math.abs(Math.sin((await probe(page)).yaw / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
     await enterFirstPerson(page);
     // One rotate step right looks west (-x), straight at the pad.
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
@@ -294,6 +299,9 @@ test.describe("wheel zoom and first person", () => {
     await waitForSceneLive(page);
     const lift = (await padsOf(page, "L1")).find((p) => p.kind === "elevator")!;
     await driveTo(page, { x: lift.at.x + 4, z: lift.at.z });
+    // From the default look (the session starts on the kiosk spawn view).
+    await page.keyboard.press("0");
+    await expect.poll(async () => Math.abs(Math.sin((await probe(page)).yaw / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
     await enterFirstPerson(page);
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await expect.poll(async () => (await probe(page)).forward.x, { timeout: 15_000 }).toBeLessThan(-0.99);
@@ -362,8 +370,10 @@ test.describe("touch", () => {
   test("pinch zooms, all the way into first person and back out, and never changes floors", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
+    // The session starts on the kiosk spawn view (L1:kiosk, zoomed out): zoom steps are relative to it.
+    const start = (await probe(page)).zoom;
     await pinch(page, 120, 160);
-    await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(0.95);
+    await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(start * 0.95);
     expect((await probe(page)).mode).toBe("third");
     // Fingers stay clear of the elevator panel on the right edge (a finger that lands on it is not a pinch).
     await pinch(page, 60, 220);

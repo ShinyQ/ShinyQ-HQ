@@ -61,7 +61,7 @@ export const CAREER_ICONS: Record<CareerType, Stroke[]> = {
 };
 
 /** Roof station icons (RF revamp), same 24 x 24 line-art grid as the career icons. */
-export type RoofIcon = "email" | "cv" | "about" | "signal" | "globe";
+export type RoofIcon = "email" | "cv" | "about" | "signal";
 
 export const ROOF_ICONS: Record<RoofIcon, Stroke[]> = {
   // Email: envelope with its flap.
@@ -77,8 +77,6 @@ export const ROOF_ICONS: Record<RoofIcon, Stroke[]> = {
     open(...arc(12, 9, 4, -Math.PI * 0.85, -Math.PI * 0.15, 6)),
     open(...arc(12, 9, 7.5, -Math.PI * 0.85, -Math.PI * 0.15, 8)),
   ],
-  // Globe (Visitor Observatory): the outline, the equator and one meridian.
-  globe: [shut(...arc(12, 12, 9, 0, Math.PI * 2, 16).slice(0, -1)), open([3, 12], [21, 12]), shut(...arc(12, 12, 4, 0, Math.PI * 2, 12).map(([x, y]) => [x, 12 + (y - 12) * 2.25] as [number, number]).slice(0, -1))],
 };
 
 /** SVG path data for strokes (`<path d>` with stroke, no fill). */

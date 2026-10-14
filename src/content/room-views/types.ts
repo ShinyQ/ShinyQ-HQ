@@ -177,7 +177,7 @@ export interface RoomView {
   reactor?: RoomReactor;
   /** L4 Topic Constellation: topics with their pieces (`TopicsBody`). */
   topics?: RoomTopics;
-  /** RF:visits: labels the live stats panel needs (`VisitsBody`); the numbers are fetched on the client. */
+  /** L1:visits: labels the live stats panel needs (`VisitsBody`); the numbers are fetched on the client. */
   visits?: VisitsLabels;
   /** L3:ops: the observability section (`OpsBody`); live numbers are fetched on the client. */
   ops?: RoomOps;

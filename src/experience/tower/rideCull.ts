@@ -49,9 +49,17 @@ function isTroika(object: Drawable): boolean {
 }
 
 /**
+ * `material.userData` key a shader material sets when its vertex shader never moves a vertex beyond the
+ * geometry (and instance) bounds, so the ride cull may trust them: today only the L1 Visitor Observatory's
+ * holo globe, dots and panel (holoFx modes `globe`, `dot`, `plate`; the `stage` mode moves vertices).
+ */
+export const RIDE_CULL_BOUNDS = "rideCullBounds";
+
+/**
  * A leaf mesh, line or points whose bounds are trustworthy and that the slab's depth hides: every
  * material depth tests, and none is a shader material (a custom vertex shader may move vertices out of
- * the geometry's bounds; troika text derives from a basic material and keeps its own bounds).
+ * the geometry's bounds; troika text derives from a basic material and keeps its own bounds) unless it
+ * vouches for its bounds (`RIDE_CULL_BOUNDS`).
  */
 export function cullable(object: Object3D): boolean {
   const d = object as Drawable;
@@ -60,7 +68,7 @@ export function cullable(object: Object3D): boolean {
   if ((d as { isSkinnedMesh?: boolean }).isSkinnedMesh || d.geometry.morphAttributes?.position) return false;
   const materials = materialsOf(d);
   if (!materials.length) return false;
-  return materials.every((m) => m.depthTest !== false && !(m as { isShaderMaterial?: boolean }).isShaderMaterial);
+  return materials.every((m) => m.depthTest !== false && (!(m as { isShaderMaterial?: boolean }).isShaderMaterial || m.userData[RIDE_CULL_BOUNDS] === true));
 }
 
 function versionOf(attribute: BufferAttribute | InterleavedBufferAttribute | undefined): number {

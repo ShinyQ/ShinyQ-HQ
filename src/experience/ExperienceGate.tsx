@@ -8,7 +8,7 @@ import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
-import { visitsRoomFromHash } from "./floors/roof/visitsRoom";
+import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
 import { useGateTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import type { Recovery } from "./recovery";
@@ -46,17 +46,18 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
-  // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}/contact#visits` the Visitor
-  // Observatory and `/{locale}/contact#production` the L3 Ops Control Room (read once on the client; never on other
+  // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}#visits` and
+  // `/{locale}/contact#visits` the Visitor Observatory in the Lobby, and `/{locale}/contact#production` the L3 Ops Control Room (read once on the client; never on other
   // floor or room routes).
   const [hashRoom] = useState<RoomId | undefined>(() =>
     typeof window === "undefined"
       ? undefined
       : (gateStartRoom(startFloor, undefined, window.location.hash) ?? visitsRoomFromHash(startFloor, window.location.hash) ?? opsRoomFromHash(startFloor, window.location.hash) ?? undefined),
   );
-  // A hash room on another floor than the route's (the Ops Control Room from /contact#production) starts on its floor.
-  // L1 hash rooms (the Highlights Hall) keep the Lobby start; floor ids are two characters ("L3:ops").
-  const hashFloor = !startRoom && hashRoom && !hashRoom.startsWith("L1:") ? (hashRoom.slice(0, 2) as FloorId) : startFloor;
+  // A hash room on another floor than the route's (the Ops Control Room from /contact#production, the Visitor
+  // Observatory from /contact#visits) starts on its floor. L1 hash rooms start in the Lobby, which has no start
+  // floor; floor ids are two characters ("L3:ops").
+  const hashFloor = !startRoom && hashRoom ? (hashRoom.startsWith("L1:") ? undefined : (hashRoom.slice(0, 2) as FloorId)) : startFloor;
   // WebGL context loss or a crash: one automatic remount on a fresh canvas, then the static page with "Retry 3D".
   // The state machine loads on the first crash only, so it stays out of every page's initial JS.
   const [recovery, setRecovery] = useState<Recovery>({ failures: 0, status: "ok" });

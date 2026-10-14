@@ -2,10 +2,11 @@ import { sortCertifications } from "../certs";
 import { getCertifications, getProfile, getSkills, getStats } from "../load";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
+import { visitsLabels } from "@/lib/visits/labels";
 import { chain, chipLogos, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
-/** L1 Lobby: profile hologram, stats ring, skills wall and certifications wall. */
+/** L1 Lobby: profile hologram, stats ring, skills wall, certifications wall and the Visitor Observatory (`VisitsBody`). */
 export function buildLobbyViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const profile = getProfile();
@@ -31,8 +32,8 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       accent: "green",
       metrics: getStats().map((s) => ({ value: s.value, label: s.label[locale] })),
       page: "/#stats",
-      // The ring's live visits tile comes from the public stats: the observatory on the roof shows them in full.
-      link: { room: roomId("RF", "visits"), label: m.stats.openObservatory },
+      // The ring's live visits tile comes from the public stats: the observatory in the Lobby's south-west corner shows them in full.
+      link: { room: roomId("L1", "visits"), label: m.stats.openObservatory },
     }),
     single({
       id: roomId("L1", "skills"),
@@ -58,6 +59,16 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
         },
       ],
       page: "/#certifications",
+    }),
+    // Visitor Observatory: public visit stats, fetched by the drawer (`VisitsBody`), never baked into this file.
+    single({
+      id: roomId("L1", "visits"),
+      kind: "visits",
+      title: m.hud.rooms.visits,
+      subtitle: m.stats.intro,
+      accent: "violet",
+      page: "/contact#visits",
+      visits: visitsLabels(locale),
     }),
   ]);
 }

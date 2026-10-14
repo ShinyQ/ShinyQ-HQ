@@ -14,11 +14,18 @@ import { neonColor } from "../../fx/materials";
 import { sceneProbes } from "../../fx/probes";
 import { useDispose } from "../../fx/useDispose";
 import { useUniformTime } from "../../fx/useUniformTime";
+import { RIDE_CULL_BOUNDS } from "../../tower/rideCull";
 import type { GpuTier } from "../../types";
-import type { RoofLayout } from "./layout";
+import { MergedBoxes, MergedEdges } from "../roof/kit";
 import { globeInstances, OBSERVATORY, observatoryParts, observatoryPlates, observatoryText, type DotInstances, type ObservatoryLabels } from "./observatory";
 
 const NO_RAYCAST = () => null;
+
+/** The globe, dot and plate modes never move a vertex, so the ride cull may hide them under a solid slab. */
+function boundsSafe(material: ReturnType<typeof createHoloMaterial>) {
+  material.userData[RIDE_CULL_BOUNDS] = true;
+  return material;
+}
 const NONE: readonly string[] = [];
 const Y = new Vector3(0, 1, 0);
 
@@ -34,16 +41,18 @@ function Dots({ data, geometry, material, name }: { data: DotInstances; geometry
 }
 
 /**
- * RF Visitor Observatory (public visit stats): a hologram globe whose land is one instanced dot layer
+ * L1 Visitor Observatory (public visit stats; owner decision 2026-10-14: the Lobby's south-west corner,
+ * between the elevator and the Ask Rover kiosk): a hologram globe whose land is one instanced dot layer
  * and whose visited countries glow as a second (dots only, never numbers), plus a floating panel with the
  * last 30 days, the since-launch total, countries, questions, the most explored floor and the 3D vs
- * Classic split, the source and the cadence. Five draw calls, all on the one holo-fx program plus the
- * label batch. The globe turns slowly (faster while RF:visits is open), and holds Indonesia toward the
- * plaza under reduced motion. Without data it shows the land and "Stats offline".
+ * Classic split, the source and the cadence. Seven draw calls: the plinth and its outline, then five on
+ * the one holo-fx program plus the label batch. The globe turns slowly (faster while L1:visits is open),
+ * and holds Indonesia toward the viewer under reduced motion. Without data it shows the land and "Stats
+ * offline".
  */
-export function VisitsStation({ layout, labels, locale, tier, reducedMotion, active }: { layout: RoofLayout; labels: ObservatoryLabels; locale: Locale; tier: GpuTier; reducedMotion: boolean; active: boolean }) {
+export function VisitsStation({ labels, locale, tier, reducedMotion, active }: { labels: ObservatoryLabels; locale: Locale; tier: GpuTier; reducedMotion: boolean; active: boolean }) {
   const stats = useStats();
-  const parts = useMemo(() => observatoryParts(layout), [layout]);
+  const parts = useMemo(() => observatoryParts(), []);
   const snapshot = stats.status === "ready" ? stats.snapshot : null;
   const view = useMemo(() => (snapshot ? visitsView(snapshot, "d30", "all") : null), [snapshot]);
   const state = useMemo(
@@ -59,11 +68,11 @@ export function VisitsStation({ layout, labels, locale, tier, reducedMotion, act
   useDispose(sphere);
   const dot = useMemo(() => new PlaneGeometry(1, 1), []);
   useDispose(dot);
-  const body = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor(OBSERVATORY.colors.rim, tier === "full" ? 1.3 : 1, tier), opacity: tier === "full" ? 0.9 : 0.75 }), [tier]);
+  const body = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor(OBSERVATORY.colors.rim, tier === "full" ? 1.3 : 1, tier), opacity: tier === "full" ? 0.9 : 0.75 })), [tier]);
   useDispose(body);
-  const land = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.1, tier), params: [0, 0.12, 0, 0] }), [tier]);
+  const land = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.1, tier), params: [0, 0.12, 0, 0] })), [tier]);
   useDispose(land);
-  const lit = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.8, tier), params: [reducedMotion ? 0 : 1, 0.3, 0, 0] }), [tier, reducedMotion]);
+  const lit = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.8, tier), params: [reducedMotion ? 0 : 1, 0.3, 0, 0] })), [tier, reducedMotion]);
   useDispose(lit);
   const timed = useMemo(() => [lit], [lit]);
   useUniformTime(timed);
@@ -76,7 +85,7 @@ export function VisitsStation({ layout, labels, locale, tier, reducedMotion, act
     return g;
   }, []);
   useDispose(plateGeometry);
-  const plateMaterial = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.5, tier) }), [tier]);
+  const plateMaterial = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.5, tier) })), [tier]);
   useDispose(plateMaterial);
   const plateData = useMemo(() => {
     const m = new Matrix4();
@@ -106,6 +115,8 @@ export function VisitsStation({ layout, labels, locale, tier, reducedMotion, act
 
   return (
     <group name="visits-observatory">
+      <MergedBoxes boxes={parts.solids} color="#0b1020" emissive={OBSERVATORY.colors.rim} emissiveIntensity={0.05} />
+      <MergedEdges boxes={parts.solids} color={OBSERVATORY.colors.rim} tier={tier} opacity={0.7} />
       <group position={[globe.x, globe.y, globe.z]} rotation={[OBSERVATORY.tilt, 0, 0]}>
         <HoloMesh geometry={sphere} material={body} name="observatory-globe" />
         <group ref={spin} rotation={[0, (-OBSERVATORY.restLon * Math.PI) / 180, 0]}>

@@ -2,15 +2,15 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
- * home ticker item, the footer opt-out, and the RF Visitor Observatory (station, drawer filters, deep
- * link, Cmd-K, reduced motion, budget) plus the L1 ring tile. `/api/stats` is mocked with the fixture.
+ * home ticker item, the footer opt-out, and the Visitor Observatory in the Lobby's south-west corner
+ * (owner decision 2026-10-14: reached from the elevator arrival, drawer filters, deep links including the
+ * old roof ones, Cmd-K, reduced motion, budget) plus the L1 ring tile. `/api/stats` is mocked with the fixture.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -23,17 +23,27 @@ async function mockStats(page: Page, body: StatsSnapshotV1 | 204 = aged(2)) {
   );
 }
 
-type ProbeWindow = { __hq: { probes: { spectacle: Record<string, number> }; store: { getState: () => { activeRoom: string | null } } } };
+type ProbeWindow = {
+  __hq: {
+    probes: { spectacle: Record<string, number> };
+    store: { getState: () => { activeRoom: string | null; floor: string; openRoom: (room: string) => void } };
+    layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }>;
+  };
+};
 const spectacle = (page: Page, key: string) => page.evaluate((k) => (window as unknown as ProbeWindow).__hq.probes.spectacle[k], key);
 
-async function openRoof(page: Page, hash = "") {
+/** Opens `path` in 3D as a returning visitor; a `#visits` deep link starts in the room, everything else in explore. */
+async function open3D(page: Page, path: string) {
   await asReturningVisitor(page);
-  await page.goto(`/en/contact?tier=lite&walk=off${hash}`);
+  const [route, hash = ""] = path.split("#");
+  await page.goto(`${route}?tier=lite&walk=off${hash ? `#${hash}` : ""}`);
   await waitForHQ(page);
-  // A `#visits` deep link starts in the room; everything else in explore.
   if (!hash) await waitForPhase(page, "explore");
   await waitForSceneLive(page);
 }
+
+const activeRoom = (page: Page) => page.evaluate(() => (window as unknown as ProbeWindow).__hq.store.getState().activeRoom);
+const visitsDoor = (page: Page) => page.evaluate(() => (window as unknown as ProbeWindow).__hq.layouts.L1.doors!.find((d) => d.room === "L1:visits")!.at);
 
 test.describe("Visits on the Classic site", () => {
   test("Contact shows the section: scope line, radios with a live status, the map and the table", async ({ page }) => {
@@ -97,17 +107,23 @@ test.describe("Visits on the Classic site", () => {
   });
 });
 
-test.describe("RF Visitor Observatory", () => {
-  test("point-and-go opens RF:visits; the drawer filters, keeps the opt-out and the globe shows the countries", async ({ page }) => {
+test.describe("Visitor Observatory in the Lobby", () => {
+  test("reached right after the elevator: point-and-go opens L1:visits; the drawer filters, keeps the opt-out and the globe shows the countries", async ({ page }) => {
     const errors = collectErrors(page);
     await mockStats(page);
-    await openRoof(page);
+    await enterFloorRoute(page, "/en/journey");
+    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L1"]').click();
+    await waitForFloor(page, "L1");
+    // The arrival view turns toward the south-west corner (L1:arrival), so the station is on screen.
+    await waitForCameraSettle(page);
     await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
-    const point = await targetPoint(page, "RF:station:visits");
+    const point = await targetPoint(page, "L1:station:visits");
     await page.mouse.click(point.x, point.y);
-    await waitForRoom(page, "RF:visits");
-    const { rover } = await snapshot(page);
-    expect(Math.hypot(rover.x - ROOF_STOPS.visits.x, rover.z - ROOF_STOPS.visits.z)).toBeLessThan(1.5);
+    await waitForRoom(page, "L1:visits");
+    const { rover, floor } = await snapshot(page);
+    expect(floor).toBe("L1");
+    const door = await visitsDoor(page);
+    expect(Math.hypot(rover.x - door.x, rover.z - door.z)).toBeLessThan(1.5);
     const drawer = page.getByTestId("room-drawer");
     await expect(drawer).toContainText(en.hud.rooms.visits);
     const status = drawer.getByTestId("visits-status");
@@ -116,47 +132,75 @@ test.describe("RF Visitor Observatory", () => {
     await expect(status).toContainText("Since launch, topic All");
     await drawer.getByRole("group", { name: en.stats.topicLegend }).getByText("Career", { exact: true }).click();
     await expect(drawer.getByTestId("visits-chips").locator("[data-chip]")).toHaveCount(1);
-    await expect(drawer.getByRole("switch", { name: en.stats.optOut })).toBeVisible();
+    const optOut = drawer.getByRole("switch", { name: en.stats.optOut });
+    await expect(optOut).toBeVisible();
+    await optOut.check();
+    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBe("1");
+    await optOut.uncheck();
+    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBeNull();
     expect(errors).toEqual([]);
   });
 
-  test("/en/contact#visits deep links into the observatory and Cmd-K finds it", async ({ page }) => {
+  test("/en#visits and the old /en/contact#visits deep link open it in the Lobby; Cmd-K finds it", async ({ page }) => {
     await mockStats(page);
-    await openRoof(page, "#visits");
-    await waitForRoom(page, "RF:visits");
+    await open3D(page, "/en/contact#visits");
+    await waitForRoom(page, "L1:visits");
+    expect((await snapshot(page)).floor).toBe("L1");
     await page.keyboard.press("Escape");
-    await expect.poll(() => page.evaluate(() => (window as unknown as ProbeWindow).__hq.store.getState().activeRoom)).toBeNull();
+    await expect.poll(() => activeRoom(page)).toBeNull();
     await page.keyboard.press("Control+k");
     await page.keyboard.type(en.hud.rooms.visits);
     await page.keyboard.press("Enter");
-    await waitForRoom(page, "RF:visits");
+    await waitForRoom(page, "L1:visits");
+  });
+
+  test("/en#visits opens it too", async ({ page }) => {
+    await mockStats(page);
+    await open3D(page, "/en#visits");
+    await waitForRoom(page, "L1:visits");
+  });
+
+  test("old RF:visits ids (a drawer link, a history entry) open the Lobby room", async ({ page }) => {
+    await mockStats(page);
+    await open3D(page, "/en");
+    await page.evaluate(() => (window as unknown as ProbeWindow).__hq.store.getState().openRoom("RF:visits"));
+    await waitForRoom(page, "L1:visits");
+    await page.keyboard.press("Escape");
+    await expect.poll(() => activeRoom(page)).toBeNull();
+    // A history entry written before the move remembers the room under its old id.
+    await page.evaluate(() => {
+      history.replaceState({ ...(history.state ?? {}), hqRoom: "RF:visits" }, "", location.href);
+      history.pushState({ ...(history.state ?? {}), hqRoom: null }, "", location.href);
+      history.back();
+    });
+    await waitForRoom(page, "L1:visits");
   });
 
   test("hidden stats: the station shows the land only and the drawer says offline", async ({ page }) => {
     await mockStats(page, 204);
-    await openRoof(page, "#visits");
-    await waitForRoom(page, "RF:visits");
+    await open3D(page, "/en#visits");
+    await waitForRoom(page, "L1:visits");
     await expect(page.getByTestId("visits-offline")).toHaveText(en.stats.offline);
     expect(await spectacle(page, "observatoryCountries")).toBe(0);
   });
 
-  test("reduced motion holds the globe still; RF stays inside its budget with the station", async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
+  test("reduced motion holds the globe still; L1 stays inside its budget at the station", async ({ page }) => {
     await chooseMotion(page, "system");
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await mockStats(page);
-    await openRoof(page);
+    await open3D(page, "/en");
     await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
     const before = await spectacle(page, "observatory");
     await waitForFrames(page, 30, 500);
     expect(await spectacle(page, "observatory")).toBe(before);
     expect(before).toBe(0);
     const peaks = await expectRenderBudget(page);
-    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.RF);
+    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 
   test("the globe turns with full motion", async ({ page }) => {
     await mockStats(page);
-    await openRoof(page);
+    await open3D(page, "/en");
     await expect.poll(() => spectacle(page, "observatory"), { timeout: 20_000 }).toBeGreaterThan(0);
   });
 });
@@ -166,6 +210,17 @@ test.describe("L1 stats ring", () => {
     await mockStats(page);
     await enterHQ(page);
     await expect.poll(() => spectacle(page, "ringTiles"), { timeout: 20_000 }).toBe(7);
+  });
+
+  test("the stats room links the tile to the observatory in the Lobby", async ({ page }) => {
+    await mockStats(page);
+    await enterHQ(page);
+    await page.evaluate(() => (window as unknown as ProbeWindow).__hq.store.getState().openRoom("L1:stats"));
+    await waitForRoom(page, "L1:stats");
+    const link = page.getByTestId("room-drawer").getByTestId("drawer-cross-link");
+    await expect(link).toContainText(en.stats.openObservatory);
+    await link.click();
+    await waitForRoom(page, "L1:visits");
   });
 
   test("keeps six tiles without stats", async ({ page }) => {

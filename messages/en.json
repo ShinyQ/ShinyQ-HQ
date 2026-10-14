@@ -1120,7 +1120,7 @@
     "optOut": "Don't count my visits",
     "optOutHint": "Stored only in this browser. Do Not Track and Global Privacy Control are honoured too.",
     "tile": "visits in the last 30 days (estimate)",
-    "openObservatory": "Visitor Observatory on the Roof",
+    "openObservatory": "Visitor Observatory in the Lobby",
     "panel": {
       "visits30": "visits, last 30 days",
       "visitsAll": "since launch",

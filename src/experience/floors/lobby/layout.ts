@@ -1,4 +1,4 @@
-import { LOBBY } from "../../config";
+import { kioskRect, LOBBY } from "../../config";
 
 /**
  * Curved certification wall: badges on an arc around the plaza center, each facing it. Two rows of
@@ -172,7 +172,8 @@ const box = (name: string, cx: number, cz: number, hw: number, hd: number, y0: n
  * can face any direction while the camera orbits. `ringTurn` rotates the stats ring.
  */
 export function lobbyElements(statCount: number, ringTurn = 0): Box[] {
-  const { hologram: h, statsTile: t, skillsWall: sw, certWall: cw, kiosk: k } = LOBBY;
+  const { hologram: h, statsTile: t, skillsWall: sw, certWall: cw, kiosk: k, observatory: o } = LOBBY;
+  const kb = kioskRect();
   const out: Box[] = [
     box("pedestal", h.x, h.z, h.radius + 0.2, h.radius + 0.2, 0, 0.62),
     box("monogram", h.x, h.z, HOLOGRAM.hexRadius, HOLOGRAM.hexRadius, 0.62, HOLOGRAM.y + HOLOGRAM.hexRadius + BOB),
@@ -181,8 +182,11 @@ export function lobbyElements(statCount: number, ringTurn = 0): Box[] {
     box("skills-wall", sw.x, sw.z, sw.w / 2, sw.d / 2 + 0.05, 0, sw.h + 0.8),
     // The curved wall's footprint (config) holds the widest panel: see the cert wall layout test.
     box("cert-wall", cw.x, cw.z, cw.w / 2, cw.d / 2, 0, cw.h + 0.8),
-    // Body, stand and the screen centered above them, facing east (floors/lobby/kiosk.ts); the tilt leans it 0.3 u.
-    box("kiosk", k.x, k.z, k.w / 2 + 0.3, k.d / 2, 0, 3.4),
+    // Body, stand and the screen centered above them, turned to face the hologram (floors/lobby/kiosk.ts): the
+    // axis-aligned bounds of the turned footprint, grown by the 0.3 u the tilt leans the screen.
+    box("kiosk", k.x, k.z, (kb.maxX - kb.minX) / 2 + 0.3, (kb.maxZ - kb.minZ) / 2 + 0.3, 0, 3.4),
+    // Visitor Observatory (L1:visits): the plinth, the globe and the floating panel inside its footprint.
+    box("observatory", (o.minX + o.maxX) / 2, (o.minZ + o.maxZ) / 2, (o.maxX - o.minX) / 2, (o.maxZ - o.minZ) / 2, 0, o.h),
     box("elevator-door", -24, 0, 1, 1.6, 0, 3.2),
   ];
   for (let i = 0; i < statCount; i++) {
