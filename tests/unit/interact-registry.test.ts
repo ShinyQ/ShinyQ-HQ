@@ -66,8 +66,8 @@ describe("interactablesFor on the real content", () => {
     }
   });
 
-  it("adds the Express Return pad on L2 and L3 right after the elevator pad, and it beams home", () => {
-    for (const floor of ["L2", "L3"] as const) {
+  it("adds the Express Return pad on L2, L3 and L4 right after the elevator pad, and it beams home", () => {
+    for (const floor of ["L2", "L3", "L4"] as const) {
       const back = items[floor][1];
       expect(back.id, floor).toBe(`${floor}:pad:return`);
       expect(back.kind).toBe("return-pad");
@@ -75,7 +75,7 @@ describe("interactablesFor on the real content", () => {
       expect(back.action).toEqual({ type: "return-beam" });
       expect(back.at).toEqual(layouts[floor].returnPad);
     }
-    for (const floor of ["L1", "L4", "RF"] as const) expect(items[floor].some((i) => i.kind === "return-pad"), floor).toBe(false);
+    for (const floor of ["L1", "RF"] as const) expect(items[floor].some((i) => i.kind === "return-pad"), floor).toBe(false);
     const idItems = setup("id").items;
     expect(idItems.L2.find((i) => i.kind === "return-pad")?.label).toBe("Kembali ke lift");
   });

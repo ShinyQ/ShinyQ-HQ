@@ -21,10 +21,10 @@ describe("L4 Writing floor (the picked concept)", () => {
     expect(layout.concept).toBe(LIBRARY_CONCEPT);
     expect(layout.stations).toEqual(CONCEPT_BUILDERS[LIBRARY_CONCEPT](input).stations);
     const floors = buildFloorLayouts(data.years.length, { library: input });
-    // buildFloorLayouts adds the elevator call pad; it lands inside the spot the concepts keep free.
+    // buildFloorLayouts adds the elevator call pad (inside the spot the concepts keep free) and the Express Return pad.
     const { pads, ...floor } = floors.L4;
     expect(floor).toEqual(layout.floor);
-    expect(pads?.map((p) => p.id)).toEqual(["elevator:L4"]);
+    expect(pads?.map((p) => p.id)).toEqual(["elevator:L4", "return:L4"]);
     const pad = pads![0].at;
     const zone = LIBRARY_FLOOR.padZone;
     expect(pad.x >= zone.minX && pad.x <= zone.maxX && pad.z >= zone.minZ && pad.z <= zone.maxZ).toBe(true);
@@ -36,11 +36,12 @@ describe("L4 Writing floor (the picked concept)", () => {
     expectSpaceRules({ bounds: floor.bounds, obstacles: floor.obstacles, doors: floor.doors ?? [], network, start: floor.approach });
   });
 
-  it("gives every L4 room in the catalog a door, except posts on the archive board", () => {
+  it("gives every L4 room in the catalog a door, except posts on the archive board and the Topic Constellation (its own stop)", () => {
     const catalog = buildRoomCatalog(getContent(), structuralLabels()).filter((r) => r.floor === "L4");
     const doors = new Set((layout.floor.doors ?? []).map((d) => d.room));
     const archived = new Set(layout.archive.map((slug) => `L4:${slug}`));
-    for (const room of catalog) expect(doors.has(room.id) || archived.has(room.id), room.id).toBe(true);
+    for (const room of catalog) expect(doors.has(room.id) || archived.has(room.id) || Boolean(layout.floor.stops?.[room.id]), room.id).toBe(true);
+    expect(layout.floor.stops?.["L4:topics"]).toEqual(layout.end?.ringStop);
   });
 
   it("parks rooms without a door at the archive board, or at the overview spot when every post is docked", () => {

@@ -44,8 +44,8 @@ describe("floor pads in the real layouts", () => {
     }
   });
 
-  it("adds one Express Return pad on L2 and L3, right after the elevator pad, far from the elevator", () => {
-    for (const id of ["L2", "L3"] as const) {
+  it("adds one Express Return pad on L2, L3 and L4, right after the elevator pad, far from the elevator", () => {
+    for (const id of ["L2", "L3", "L4"] as const) {
       const l = layouts[id];
       const returns = (l.pads ?? []).filter((p) => p.kind === "return");
       expect(returns.map((p) => p.id), id).toEqual([`return:${id}`]);
@@ -53,7 +53,7 @@ describe("floor pads in the real layouts", () => {
       expect(returns[0].at, id).toEqual(l.returnPad);
       expect(distanceToElevator(returns[0].at, l), id).toBeGreaterThan(FAST_RETURN.beamDistance);
     }
-    for (const id of ["L1", "L4", "RF"] as const) expect(layouts[id].pads?.some((p) => p.kind === "return"), id).toBe(false);
+    for (const id of ["L1", "RF"] as const) expect(layouts[id].pads?.some((p) => p.kind === "return"), id).toBe(false);
   });
 
   it("drives from the everyday spots and beams only from the far ends (owner decision: 40 u)", () => {

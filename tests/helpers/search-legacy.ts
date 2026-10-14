@@ -163,7 +163,7 @@ const texts = (value: LocalizedText | undefined) => (value ? [value.en, value.id
 function tokenScore(entry: PaletteEntry, token: string): number {
   let best = 0;
   // Same rule as src/hud/search.ts since the Tech Reactor rows (2026-10-14): their title weighs like keywords.
-  const titleWeight = entry.target.type === "tech" ? FIELD_WEIGHT.keywords : FIELD_WEIGHT.title;
+  const titleWeight = entry.target.type === "tech" || entry.target.type === "topic" ? FIELD_WEIGHT.keywords : FIELD_WEIGHT.title;
   for (const text of texts(entry.title)) best = Math.max(best, fuzzyScore(token, text) * titleWeight);
   for (const text of entry.keywords) best = Math.max(best, fuzzyScore(token, text) * FIELD_WEIGHT.keywords);
   for (const text of texts(entry.subtitle)) best = Math.max(best, fuzzyScore(token, text) * FIELD_WEIGHT.subtitle);
