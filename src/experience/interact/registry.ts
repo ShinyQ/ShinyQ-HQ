@@ -11,12 +11,13 @@ import { OPS_ROOM } from "../floors/labs/opsHash";
 import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
 import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
+import { VISITS_ROOM } from "../floors/lobby/visitsRoom";
 import { NEWSROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
 import { TOPICS_ROOM } from "../floors/library/topicHash";
 import { CONSTELLATION } from "../floors/library/topics";
-import { buildRoofLayout, ROOF_DECK } from "../floors/roof/layout";
+import { buildRoofLayout } from "../floors/roof/layout";
 import { roomTarget } from "../missions/host3d";
 import type { StructuralRoom } from "../missions/rooms";
 import { padHalf } from "../nav/doors";
@@ -108,7 +109,7 @@ const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "RF:cv": "cv",
   [REACTOR_ROOM]: "reactor",
   [TOPICS_ROOM]: "topics",
-  "RF:visits": "visits",
+  "L1:visits": "visits",
   [OPS_ROOM]: "ops",
 };
 
@@ -186,7 +187,7 @@ function doorItems(floor: FloorId, layouts: FloorLayouts, data: InteractData, ro
 }
 
 function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
-  const { hologram, skillsWall } = LOBBY;
+  const { hologram, skillsWall, observatory } = LOBBY;
   const stop = (room: RoomId) => {
     const at = roomTarget(undefined, room, layouts, data.experience.years);
     return { x: at.x, z: at.z };
@@ -222,6 +223,17 @@ function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
       bounds: kioskBounds(),
       height: KIOSK_HEIGHT,
       action: { type: "command", command: "terminal" },
+    },
+    {
+      // Visitor Observatory (south-west corner): the rover drives onto its door pad, then the drawer opens.
+      id: "L1:station:visits",
+      floor: "L1",
+      kind: "station",
+      label: data.labels.rooms.visits,
+      at: stop(VISITS_ROOM),
+      bounds: bare(observatory),
+      height: observatory.h,
+      action: { type: "open-room", room: VISITS_ROOM },
     },
   ];
 }
@@ -406,7 +418,6 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
       const rooms = new Map<RoomId, Footprint>([
         ["RF:contact", { rect: bare(roof.comms), height: 4 }],
         ["RF:cv", { rect: bare(roof.cv), height: 3.6 }],
-        ["RF:visits", { rect: bare(roof.visits), height: ROOF_DECK.visitsHeight }],
       ]);
       return [...pads, ...doorItems(floor, layouts, data, rooms)];
     }

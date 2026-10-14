@@ -147,12 +147,14 @@ export const RULES: Rule[] = [
   { test: /^scripts\/visits-geo\.ts$/, specs: [] },
   // Public visit stats (S2): the shared model, store, panel and placements, the RF observatory and the L1 tile.
   {
-    test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/roof\/(VisitsStation\.tsx|observatory\.ts|visitsRoom\.ts)$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
-    specs: ["visits", "roof", "pageview"],
+    test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/lobby\/(VisitsStation\.tsx|observatory\.ts|observatoryLayout\.ts|visitsRoom\.ts)$|experience\/missions\/roomAliases\.ts$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
+    specs: ["visits", "experience", "highlights", "pageview"],
   },
   // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
-  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "visits", "walk"] },
-  { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof", "visits"] },
+  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
+  { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
+  // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
+  { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },

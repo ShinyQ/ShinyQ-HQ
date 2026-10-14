@@ -160,7 +160,7 @@ describe("Highlights Hall gallery: lights and camera", () => {
     expect(tall.length).toBe(2 + 3 + 2 + 2);
     for (const t of tall) expect(t.h).toBeGreaterThan(3.2);
     // The L1 layout carries them (`FloorLayout.tall`), so CameraDirector clamps against them.
-    expect(l1.tall).toEqual(tall);
+    expect(l1.tall).toEqual([...tall, LOBBY.observatory]);
     const world: CameraWorld = { obstacles: l1.obstacles, bounds: l1.bounds, floorY: 0, tall };
     const m = monoliths(3)[1];
     expect(cameraBlocked([m.box.x, 6, m.box.z], world)).toBe(true);

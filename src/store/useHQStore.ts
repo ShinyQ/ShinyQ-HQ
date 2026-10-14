@@ -1,4 +1,5 @@
 import { useStore } from "zustand";
+import { canonicalRoom } from "@/experience/missions/roomAliases";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { createStore } from "zustand/vanilla";
 import type { DrawerTab, FloorId, Locale, RoomId } from "@/content/schema";
@@ -251,7 +252,9 @@ export function createHQStore(storage?: StateStorage) {
           if (ride?.stage === "toDoor") set({ ride: null, phase: "explore" });
         },
         arriveFloor: (floor) => set({ floor, ride: null, phase: "explore" }),
-        openRoom: (room, tab) => {
+        openRoom: (id, tab) => {
+          // Rooms that moved (RF:visits is now L1:visits) open under their current id.
+          const room = canonicalRoom(id);
           get().markVisited(room);
           const same = get().activeRoom === room;
           set({ activeRoom: room, phase: "room", drawerTab: tab ?? (same ? get().drawerTab : "overview"), readme: same && get().readme });

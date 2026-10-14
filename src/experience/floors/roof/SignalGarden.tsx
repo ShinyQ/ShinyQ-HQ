@@ -10,10 +10,9 @@ import type { BatchedLabel } from "../../fx/labelProps";
 import { neonColor } from "../../fx/materials";
 import { ROAD } from "../../nav/road";
 import { FONTS } from "../../tower/primitives";
-import type { GpuTier, Rect, Vec2 } from "../../types";
+import type { GpuTier, Vec2 } from "../../types";
 import { aboutCard, CHANNEL_TONE, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
 import { ROOF_DECK, type RoofActive } from "./layout";
-import { observatoryParts } from "./observatory";
 import { latticeSegments, roofDetail, scatter, type Box } from "./solids";
 
 const mid = (a: number, b: number) => (a + b) / 2;
@@ -25,12 +24,6 @@ const SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
 const DRONE = { radius: 3.4, height: 9, speed: 0.35 } as const;
 
 type V3 = [number, number, number];
-type DroneTarget = Exclude<RoofActive, null>;
-const DRONE_CARGO: Record<DroneTarget, { icon: keyof typeof ROOF_ICONS; color: string }> = {
-  contact: { icon: "email", color: ROOF_BLUE },
-  cv: { icon: "cv", color: ROOF_CYAN },
-  visits: { icon: "globe", color: ROOF_VIOLET },
-};
 
 /** The lattice antenna mast on the plaza (one line draw call). */
 function Mast({ at, tier }: { at: Vec2; tier: GpuTier }) {
@@ -64,10 +57,7 @@ function SignGlow({ at, yaw, size, tier, reducedMotion }: { at: V3; yaw: number;
 }
 
 /** Glowing floor lights in the channel hues, flat on the deck (one instanced draw call). */
-/** A floor light and its index in the original scatter (its hue and spin), kept when later stations drop lights. */
-type FloorLight = Vec2 & { k: number };
-
-function Flowers({ spots, tier }: { spots: readonly FloorLight[]; tier: GpuTier }) {
+function Flowers({ spots, tier }: { spots: readonly Vec2[]; tier: GpuTier }) {
   const mesh = useRef<InstancedMesh>(null);
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -77,10 +67,10 @@ function Flowers({ spots, tier }: { spots: readonly FloorLight[]; tier: GpuTier 
     const tones = Object.values(CHANNEL_TONE);
     spots.forEach((p, i) => {
       o.position.set(p.x, 0.04, p.z);
-      o.rotation.set(-Math.PI / 2, 0, (p.k * 2.4) % (Math.PI * 2));
+      o.rotation.set(-Math.PI / 2, 0, (i * 2.4) % (Math.PI * 2));
       o.updateMatrix();
       m.setMatrixAt(i, o.matrix);
-      m.setColorAt(i, color.set(tones[p.k % tones.length]));
+      m.setColorAt(i, color.set(tones[i % tones.length]));
     });
     m.instanceMatrix.needsUpdate = true;
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
@@ -106,7 +96,7 @@ const DRONE_ICON = [{ x: 0, y: 1.9, z: 0, face: SIGN_YAW }];
  * open, lifts off and hovers over that station carrying the email or the CV icon. Reduced motion
  * parks it east of the mast and moves it without easing.
  */
-function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; targets: Record<DroneTarget, V3>; active: RoofActive; tier: GpuTier; reducedMotion: boolean }) {
+function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; targets: Record<"contact" | "cv", V3>; active: RoofActive; tier: GpuTier; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
   const rotors = useRef<InstancedMesh>(null);
   const angle = useRef(0);
@@ -139,7 +129,7 @@ function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; tar
         <circleGeometry args={[0.62, 20]} />
         <meshBasicMaterial color={ROOF_BLUE} transparent opacity={0.45} depthWrite={false} side={DoubleSide} toneMapped={false} />
       </instancedMesh>
-      {active && <HoloIcon strokes={ROOF_ICONS[DRONE_CARGO[active].icon]} instances={DRONE_ICON} color={DRONE_CARGO[active].color} size={1.4} tier={tier} reducedMotion={reducedMotion} />}
+      {active && <HoloIcon strokes={active === "cv" ? ROOF_ICONS.cv : ROOF_ICONS.email} instances={DRONE_ICON} color={active === "cv" ? ROOF_CYAN : ROOF_BLUE} size={1.4} tier={tier} reducedMotion={reducedMotion} />}
     </group>
   );
 }
@@ -156,7 +146,6 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
   const detail = roofDetail(tier);
   const scene = useMemo(() => {
     const { centerpiece: cp, comms, cv, about } = layout;
-    const observatory = observatoryParts(layout);
     const c = cp.center;
     const commsX = mid(comms.minX, comms.maxX);
     const commsZ = mid(comms.minZ, comms.maxZ);
@@ -179,8 +168,6 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { x: cv.minX + 3.4, y: 1.3, z: cvZ, w: 0.2, h: 2.2, d: 4 },
       { x: aboutX, y: 0, z: about.maxZ - 0.6, w: 7.6, h: 3.4, d: 0.4 },
       { x: aboutX, y: 0, z: about.minZ + 0.9, w: 5, h: 0.5, d: 1.2 },
-      // The Visitor Observatory's plinth, globe pedestal and panel post (its globe and panel: VisitsStation).
-      ...observatory.solids,
     ];
     const mastRings: PulseSource[] = [0, 1 / 3, 2 / 3].map((phase) => ({ x: c.x, y: MAST_HEIGHT + 0.6, z: c.z, color: ROOF_BLUE, phase }));
     const channelRings: PulseSource[] = layout.channelSlots.map((s, i) => ({ x: s.x, y: ringY(i), z: s.z, color: CHANNEL_TONE[roof.channels[i]?.id ?? "googleScholar"] }));
@@ -200,40 +187,23 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
     const pad = layout.callPad;
     const plazaR = layout.plaza.w / 2;
     const near = (p: Vec2, r: { minX: number; maxX: number; minZ: number; maxZ: number }, m: number) => p.x > r.minX - m && p.x < r.maxX + m && p.z > r.minZ - m && p.z < r.maxZ + m;
-    // The Visitor Observatory came later: scatter with the rules the deck had before it (so every other
-    // floor light keeps its place, hue and spin, which come from its index), then drop the lights on the
-    // station, its spur and its stop.
-    const visits = layout.visits;
-    const sameRect = (a: Rect, r: Rect) => a.minX === r.minX && a.maxX === r.maxX && a.minZ === r.minZ && a.maxZ === r.maxZ;
-    const visitsSpur = layout.network.spurs.find((sp) => sp.room === "RF:visits");
-    const onSpur = (p: Vec2) => {
-      if (!visitsSpur) return false;
-      const { from: a, to: t } = visitsSpur;
-      const dx = t.x - a.x;
-      const dz = t.z - a.z;
-      const k = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
-      return Math.hypot(p.x - (a.x + dx * k), p.z - (a.z + dz * k)) < (visitsSpur.width ?? ROAD.minWidth) / 2 + 0.5;
-    };
-    const spots: FloorLight[] = scatter(
+    const spots = scatter(
       detail.flowers,
       { minX: b.minX + 1, maxX: b.maxX - 1, minZ: b.minZ + 1, maxZ: b.maxZ - 1 },
       (p) =>
         near(p, pad, 1) ||
         (p.x < c.x && Math.abs(p.z - c.z) < ROAD.minWidth / 2 + 1) ||
         Math.hypot(p.x - c.x, p.z - c.z) < plazaR + 0.5 ||
-        layout.floor.obstacles.some((o) => !sameRect(o, visits) && near(p, o, 0.5)) ||
-        Object.entries(layout.stops).some(([stop, s]) => stop !== "visits" && Math.hypot(p.x - s.x, p.z - s.z) < 2.5) ||
+        layout.floor.obstacles.some((o) => near(p, o, 0.5)) ||
+        Object.values(layout.stops).some((s) => Math.hypot(p.x - s.x, p.z - s.z) < 2.5) ||
         Math.hypot(p.x - layout.floor.spawn.x, p.z - layout.floor.spawn.z) < 2.5,
-    )
-      .map((p, k) => ({ ...p, k }))
-      .filter((p) => !near(p, visits, 0.5) && !onSpur(p) && Math.hypot(p.x - layout.stops.visits.x, p.z - layout.stops.visits.z) >= 2.5);
+    );
     const icons = {
       email: [{ x: commsX, y: 2.4, z: comms.maxZ - 0.8, face: 0 }],
       cv: [{ x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2 }],
       about: [{ x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI }],
     };
-    const { globe } = observatory;
-    const droneTargets: Record<DroneTarget, V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ], visits: [globe.x - 2.6, globe.y + globe.r + 1.6, globe.z + 1.4] };
+    const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
     return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
   const sending = active === "contact";

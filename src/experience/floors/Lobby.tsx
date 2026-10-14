@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData, GpuTier } from "../types";
 import { sceneProbes } from "../fx/probes";
@@ -10,9 +10,12 @@ import type { HallLabels } from "./lobby/hallContent";
 import { HighlightsHall } from "./lobby/HighlightsHall";
 import { Lanes } from "./lobby/Lanes";
 import { MissionKiosk, type KioskLabels } from "./lobby/MissionKiosk";
+import type { ObservatoryLabels } from "./lobby/observatory";
 import { ProfileHologram } from "./lobby/ProfileHologram";
 import { SkillsWall } from "./lobby/SkillsWall";
 import { StatsRing } from "./lobby/StatsRing";
+import { VISITS_ROOM } from "./lobby/visitsRoom";
+import { VisitsStation } from "./lobby/VisitsStation";
 
 export interface LobbyLabels {
   skillsTitle: string;
@@ -21,6 +24,8 @@ export interface LobbyLabels {
   certs: CertLabels;
   kiosk: KioskLabels;
   hall: HallLabels;
+  /** The Visitor Observatory panel (`stats.*`). */
+  observatory: ObservatoryLabels;
 }
 
 /**
@@ -39,6 +44,8 @@ function useHallReady(): boolean {
 export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: LobbyLabels; tier: GpuTier }) {
   const hall = useHallReady();
   const stats = useRingStats(data.stats, data.locale, labels.visitsTile);
+  const reducedMotion = useHQStore((s) => s.reducedMotion);
+  const observing = useHQStore((s) => s.phase === "room" && s.activeRoom === VISITS_ROOM);
   useEffect(() => {
     sceneProbes.spectacle.ringTiles = stats.length;
   }, [stats.length]);
@@ -50,6 +57,10 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
       <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
       <MissionKiosk missions={data.missions} labels={labels.kiosk} />
+      {/* Text loads fonts asynchronously; keep it from holding back the rest of the Lobby. */}
+      <Suspense fallback={null}>
+        <VisitsStation labels={labels.observatory} locale={data.locale} tier={tier} reducedMotion={reducedMotion} active={observing} />
+      </Suspense>
       {hall && <HighlightsHall data={data} labels={labels.hall} tier={tier} />}
     </group>
   );

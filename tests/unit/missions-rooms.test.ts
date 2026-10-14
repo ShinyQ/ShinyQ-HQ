@@ -39,9 +39,12 @@ describe("room catalog", () => {
     expect(roomPath(pod, "overview")).toBe("/labs/voice-ai-contact-center");
     expect(roomPath(byId.get("RF:contact")!)).toBe("/contact");
     expect(roomPath(byId.get("RF:cv")!)).toBe("/cv");
-    expect(roomPath(byId.get("RF:visits")!)).toBe("/contact#visits");
-    expect(byId.get("RF:visits")!.kind).toBe("visits");
-    expect(byId.get("RF:visits")!.keywords).toEqual(expect.arrayContaining(["visits", "kunjungan", "stats"]));
+    // The Visitor Observatory moved to the Lobby (owner decision 2026-10-14); the Classic site keeps its Contact section.
+    expect(byId.has("RF:visits")).toBe(false);
+    expect(roomPath(byId.get("L1:visits")!)).toBe("/contact#visits");
+    expect(byId.get("L1:visits")!.floorPath).toBe("/contact#visits");
+    expect(byId.get("L1:visits")!.kind).toBe("visits");
+    expect(byId.get("L1:visits")!.keywords).toEqual(expect.arrayContaining(["visits", "kunjungan", "stats"]));
     // The L3 Ops Control Room: the Classic site shows "How I run AI in production" on the About page.
     const ops = byId.get("L3:ops")!;
     expect(ops.kind).toBe("ops");

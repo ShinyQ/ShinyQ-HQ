@@ -2,6 +2,7 @@ import type { FloorId } from "@/content/schema";
 import { LOBBY } from "../config";
 import type { Rect, Vec2 } from "../types";
 import { FIRST_PERSON } from "./firstPerson";
+export { yawLooking } from "./look";
 import { pitchRange, springFactor } from "./rigs";
 
 /**
@@ -209,14 +210,6 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
     },
   ],
 };
-
-/**
- * The follow yaw (offset from the default angle) whose camera looks along `dir` (floor plane): the default
- * camera sits along (+1, +1) and looks along (-1, -1), and `orbitOffset` turns it by the yaw.
- */
-export function yawLooking(dir: Vec2): number {
-  return Math.atan2(dir.z - dir.x, -(dir.x + dir.z));
-}
 
 /**
  * Applies a zone at once (no easing), as an initial state: the session spawn starts in its zone's view,

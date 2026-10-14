@@ -4,6 +4,7 @@ import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
+import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
@@ -228,7 +229,8 @@ export function kioskRect(): Rect {
 
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
-  const { hologram, skillsWall, certWall } = LOBBY;
+  const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
+  const observatory = lobbyObservatory({ rect: o, kiosk: LOBBY.kiosk, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis, approach: standard("L1", LOBBY.bounds).approach });
   const layouts: Record<FloorId, FloorLayout> = {
     L1: {
       ...standard(
@@ -240,16 +242,19 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           rect(certWall.x, certWall.z, certWall.w, certWall.d),
           kioskRect(),
           ...HALL_LAYOUT.obstacles,
+          { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
         ],
         LOBBY.spawn,
       ),
-      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera zones.
-      doors: HALL_LAYOUT.doors,
+      // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera
+      // zones; the Visitor Observatory's door and the spawn, arrival and observatory views (floors/lobby/observatoryLayout.ts).
+      doors: [...HALL_LAYOUT.doors, observatory.door],
       road: HALL_LAYOUT.network,
       roadZone: HALL_LAYOUT.zone,
-      viewZones: HALL_LAYOUT.viewZones,
-      // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact card).
-      tall: hallTall(),
+      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones],
+      // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
+      // card) and the observatory globe.
+      tall: [...hallTall(), LOBBY.observatory],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

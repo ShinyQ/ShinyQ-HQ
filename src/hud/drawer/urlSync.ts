@@ -1,5 +1,5 @@
 import type { FloorId, Locale, RoomId } from "@/content/schema";
-import { currentRoom } from "@/content/workshop";
+import { canonicalRoom } from "@/experience/missions/roomAliases";
 import { parseHQUrl, serializeHQUrl, type HQView } from "@/lib/url-sync";
 
 /** Minimal store surface (the real zustand store satisfies it). */
@@ -120,9 +120,9 @@ export function createRoomUrlSync({
     applying = true;
     try {
       // Rooms without their own route are remembered in the history entry instead of the URL.
-      // A retired side project bench resolves to its L3 pod, which has its own route on another floor, so it is dropped here.
-      const hq = entry()?.hqRoom;
-      const remembered = hq ? currentRoom(hq) : null;
+      // Moved rooms resolve to their current id (canonicalRoom): RF:visits is L1:visits, and a retired side
+      // project bench is its L3 pod, which has its own route on another floor, so it is dropped here.
+      const remembered = canonicalRoom(entry()?.hqRoom ?? null);
       const room =
         parsed.activeRoom && parsed.floor === s.floor ? parsed.activeRoom : remembered && remembered.startsWith(`${s.floor}:`) && !hasPage(remembered) ? remembered : null;
       if (room && room !== s.activeRoom) s.openRoom(room);

@@ -1120,7 +1120,7 @@
     "optOut": "Jangan hitung kunjungan saya",
     "optOutHint": "Hanya disimpan di browser ini. Do Not Track dan Global Privacy Control juga dihormati.",
     "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
-    "openObservatory": "Observatorium Pengunjung di Atap",
+    "openObservatory": "Observatorium Pengunjung di Lobi",
     "panel": {
       "visits30": "kunjungan, 30 hari terakhir",
       "visitsAll": "sejak peluncuran",

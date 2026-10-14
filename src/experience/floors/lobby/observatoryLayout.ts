@@ -1,0 +1,65 @@
+import { yawLooking } from "../../camera/look";
+import type { ViewZone } from "../../camera/orbit";
+import type { DoorTrigger, Rect, Vec2 } from "../../types";
+import { VISITS_ROOM } from "./visitsRoom";
+
+/**
+ * L1 Visitor Observatory and the views around it (owner decision 2026-10-14: "South-west corner of the
+ * lobby, between the elevator and the Ask Rover kiosk: you see it right after stepping out of the
+ * elevator"). Pure, import-light (config.ts reads it, and the store loads config.ts on every page).
+ *
+ * The follow camera keeps one default yaw that looks north-west, so the south-west corner is behind it
+ * at the elevator and at the spawn. Three view zones turn it: the spawn (the kiosk stop) looks down the
+ * kiosk axis at the kiosk with the observatory behind it, the elevator approach looks south-south-east
+ * at the observatory and the kiosk, and the observatory door looks south at the panel and the globe.
+ */
+export const OBSERVATORY_VIEW = {
+  /** Station front to door pad center (like every other station). */
+  padInset: 1.1,
+  /** Spawn view zoom: wide enough for the hologram, the rover, the kiosk and the observatory. */
+  spawnZoom: 1.35,
+  /** Half size of the spawn zone around the kiosk stop. */
+  spawnHalf: 2.5,
+  /** The arrival zone: the elevator approach and its call pad. */
+  arrivalHalf: { x: 2.5, z: 2.5 },
+} as const;
+
+export interface LobbyObservatoryInput {
+  /** The observatory footprint (`LOBBY.observatory`). */
+  rect: Rect;
+  /** The kiosk center, its stop (the session spawn) and the unit kiosk axis (hologram to observatory). */
+  kiosk: Vec2;
+  spawn: Vec2;
+  axis: Vec2;
+  /** The elevator approach (where an elevator ride drops the rover). */
+  approach: Vec2;
+}
+
+export interface LobbyObservatoryLayout {
+  door: DoorTrigger;
+  /** In zone order: the observatory door, the spawn (kiosk), the elevator arrival. */
+  zones: ViewZone[];
+}
+
+const center = (r: Rect): Vec2 => ({ x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2 });
+const unit = (x: number, z: number): Vec2 => {
+  const l = Math.hypot(x, z);
+  return { x: x / l, z: z / l };
+};
+
+export function lobbyObservatory({ rect, kiosk, spawn, axis, approach }: LobbyObservatoryInput): LobbyObservatoryLayout {
+  const c = center(rect);
+  // The door faces into the station from the north (the open floor between the elevator lane and it).
+  const pad: Vec2 = { x: c.x, z: rect.minZ - OBSERVATORY_VIEW.padInset };
+  const door: DoorTrigger = { room: VISITS_ROOM, at: pad, facing: { x: 0, z: 1 } };
+  const s = OBSERVATORY_VIEW.spawnHalf;
+  const a = OBSERVATORY_VIEW.arrivalHalf;
+  // From the elevator: halfway between the observatory and the kiosk, so both stand in the frame.
+  const arrival = unit((c.x + kiosk.x) / 2 - approach.x, (c.z + kiosk.z) / 2 - approach.z);
+  const zones: ViewZone[] = [
+    { id: "L1:visits", area: { minX: rect.minX, maxX: rect.maxX, minZ: pad.z - 2, maxZ: rect.minZ }, yaw: yawLooking({ x: 0, z: 1 }) },
+    { id: "L1:kiosk", area: { minX: spawn.x - s, maxX: spawn.x + s, minZ: spawn.z - s, maxZ: spawn.z + s }, yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoom },
+    { id: "L1:arrival", area: { minX: approach.x - a.x, maxX: approach.x + a.x, minZ: approach.z - a.z, maxZ: approach.z + a.z }, yaw: yawLooking(arrival) },
+  ];
+  return { door, zones };
+}

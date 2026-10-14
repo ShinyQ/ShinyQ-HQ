@@ -63,6 +63,7 @@ import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
 import { rideCullStats } from "./tower/rideCull";
 import { useStatsAfterFirstFrame } from "./visits3d";
+import { VISITS_ROOM } from "./floors/lobby/visitsRoom";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -203,7 +204,7 @@ export default function Experience({
   // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
   const [startHash] = useState(() => window.location.hash);
   const tStats = useTranslations("stats");
-  // Public visit stats (RF Visitor Observatory, the L1 ring tile, the RF:visits drawer): one fetch after the first frame.
+  // Public visit stats (the L1 Visitor Observatory, its ring tile and drawer): one fetch after the first frame.
   useStatsAfterFirstFrame();
   const world = useRef<HTMLDivElement>(null);
   const held = useInputSources(world);
@@ -359,9 +360,9 @@ export default function Experience({
     const career = new Set(data.career.years.flatMap((y) => y.entries.map((e) => `L2:${e.slug}`)));
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
     // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync), and so does the
-    // Ops Control Room (the Classic site shows it on /contact#production).
+    // Ops Control Room (the Classic site shows it on /contact#production) and the Visitor Observatory (/contact#visits).
     return (room: RoomId) =>
-      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Topic Constellation pick in the hash (`#library-topic=<slug>`), like the Tech Reactor below.
@@ -408,6 +409,21 @@ export default function Experience({
       lobby: {
         skillsTitle: tHome("skillsTitle"),
         visitsTile: tStats("tile"),
+        observatory: {
+          title: tStats("observatory"),
+          offline: tStats("offline"),
+          approx: (n: string) => tStats("approx", { n }),
+          visits30: tStats("panel.visits30"),
+          visitsAll: tStats("panel.visitsAll"),
+          countries: tStats("panel.countries"),
+          questions: tStats("panel.questions"),
+          topFloor: (floor: string) => tStats("panel.topFloor", { floor }),
+          split: (threeD: number, classic: number) => tStats("panel.split", { threeD: String(threeD), classic: String(classic) }),
+          source: tStats("source"),
+          updated: tStats("updated"),
+          delayed: (date: string) => tStats("delayed", { date }),
+          floors: { L1: t("floorLabel.L1"), L2: t("floorLabel.L2"), L3: t("floorLabel.L3"), L4: t("floorLabel.L4"), RF: t("floorLabel.RF") },
+        },
         certs: { title: tHome("certsTitle"), all: tCerts("wall.all"), other: tCerts("wall.other"), inProgress: tCerts("status.in-progress"), expired: tCerts("status.expired") },
         kiosk: { title: t("kioskTitle"), hint: t("kioskHint") },
         hall: {
@@ -470,21 +486,6 @@ export default function Experience({
         cvHint: t("world.cvHint"),
         about: t("world.about"),
         availability: t("world.availability"),
-        observatory: {
-          title: tStats("observatory"),
-          offline: tStats("offline"),
-          approx: (n: string) => tStats("approx", { n }),
-          visits30: tStats("panel.visits30"),
-          visitsAll: tStats("panel.visitsAll"),
-          countries: tStats("panel.countries"),
-          questions: tStats("panel.questions"),
-          topFloor: (floor: string) => tStats("panel.topFloor", { floor }),
-          split: (threeD: number, classic: number) => tStats("panel.split", { threeD: String(threeD), classic: String(classic) }),
-          source: tStats("source"),
-          updated: tStats("updated"),
-          delayed: (date: string) => tStats("delayed", { date }),
-          floors: { L1: t("floorLabel.L1"), L2: t("floorLabel.L2"), L3: t("floorLabel.L3"), L4: t("floorLabel.L4"), RF: t("floorLabel.RF") },
-        },
       },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
