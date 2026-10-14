@@ -36,15 +36,16 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
         title={tw("title")}
         lead={t("intro")}
         aside={
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+          <dl className="grid grid-cols-3 gap-3 lg:grid-cols-1">
             {(["ai", "data", "software"] as const).map((wing) => (
-              <div key={wing} className="card p-4">
-                {/* Two lines reserved: "Product Engineering" wraps on phones, and the counts stay aligned. */}
-                <dt className="pv-data min-h-[2lh]">
+              // Three wings: a column each up to tablets, then one row per wing in the narrow aside (count left, name and intro right).
+              <div key={wing} className="card p-4 lg:grid lg:grid-cols-[3.5rem_minmax(0,1fr)] lg:items-center lg:gap-x-4 lg:py-3">
+                {/* Two lines reserved below lg: "Product Engineering" wraps on phones, and the counts stay aligned. */}
+                <dt className="pv-data min-h-[2lh] lg:col-start-2 lg:row-start-1 lg:min-h-0">
                   <Marker accent={WING_ACCENT[wing]}>{tw(`wingShort.${wing}`)}</Marker>
                 </dt>
-                <dd className="pv-num mt-3 text-[36px]">{all.filter((p) => p.wing === wing).length}</dd>
-                <dd className="pv-small mt-1 hidden sm:block">{t(`${wing}Intro`)}</dd>
+                <dd className="pv-num mt-3 text-[36px] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">{all.filter((p) => p.wing === wing).length}</dd>
+                <dd className="pv-small mt-1 hidden sm:block lg:col-start-2 lg:row-start-2">{t(`${wing}Intro`)}</dd>
               </div>
             ))}
           </dl>
