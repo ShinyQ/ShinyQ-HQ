@@ -409,7 +409,6 @@ export default function Experience({
   const metrics = data.library.researchMetrics;
   const labels: SceneLabels = useMemo(
     () => ({
-      placeholder: { construction: t("constructionLabel"), hint: t("constructionHint") },
       lobby: {
         skillsTitle: tHome("skillsTitle"),
         visitsTile: tStats("tile"),

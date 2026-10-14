@@ -395,8 +395,6 @@
     "staticNotice": "3D is unavailable. Showing the classic site.",
     "kioskTitle": "rover@hq:~$ ./ask-rover",
     "kioskHint": "Select the kiosk or the rover to open Ask Rover",
-    "constructionLabel": "Under construction",
-    "constructionHint": "Open this floor on the classic site",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",
