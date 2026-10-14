@@ -12,6 +12,7 @@ import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/expe
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { REACTOR_ROOM } from "@/experience/floors/labs/techHash";
 import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
+import { setSearchParams } from "@/components/page/urlState";
 import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
@@ -341,6 +342,10 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         if (document.documentElement.hasAttribute("data-hq")) {
           getHQStore().getState().selectTopic({ slug: topic.slug, name: topic.label[locale], count: topic.count, rooms: topic.rooms });
           void runner.goTo(TOPICS_ROOM);
+        } else if (window.location.pathname.replace(/\/$/, "") === `/${locale}/library`) {
+          // Already on the Writing page: a soft push would not tell the filter island, so set the param in place.
+          setSearchParams({ topic: topic.slug });
+          document.getElementById("topics")?.scrollIntoView({ block: "start" });
         } else {
           router.push(`/${locale}/library?topic=${topic.slug}#topics`);
         }

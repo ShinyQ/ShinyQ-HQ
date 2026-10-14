@@ -43,7 +43,8 @@ const probe = (page: Page) =>
     const t = (window as unknown as TW).__hq.probes.topics;
     return { topic: t.topic, lit: [...t.lit].sort(), roads: t.roads, orbit: t.orbit, monument: t.monument };
   });
-const signs = (page: Page) => page.evaluate(() => ((window as unknown as TW).__hq.probes.signs["library-end-signs"] ?? []).map((s) => s.text));
+/** Sign texts with line wraps folded to spaces. */
+const signs = (page: Page) => page.evaluate(() => ((window as unknown as TW).__hq.probes.signs["library-end-signs"] ?? []).map((s) => s.text.replace(/\s+/g, " ")));
 
 async function topicOf(page: Page, slug: string) {
   const res = await page.request.get("/data/rooms/en.json");
