@@ -35,7 +35,7 @@ export const HOLO_MODE = {
    * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
    */
   stage: 9,
-  /** Hologram globe body (RF Visitor Observatory): a fresnel rim around the mesh origin and faint latitude lines. */
+  /** Hologram globe body (L1 Visitor Observatory): a fresnel rim around the mesh origin and faint latitude lines. */
   globe: 10,
   /** Round dot on a quad (globe land and country dots): dimmed where it faces away from the mesh origin's viewer (`uParams.y` = back alpha), pulsing by `uParams.x`. */
   dot: 11,

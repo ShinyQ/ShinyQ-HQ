@@ -9,7 +9,7 @@ import { cameraClass } from "@/lib/viewport";
 type V3 = [number, number, number];
 
 /** Screen y (CSS px from the top) of a world point seen through a camera pose. */
-function screenY(pose: CameraPose, p: V3, width: number, height: number): number {
+function screenY(pose: CameraPose, p: V3, height: number): number {
   const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
   const norm = (v: V3): V3 => {
     const l = Math.hypot(...v);
@@ -34,7 +34,7 @@ function spawnPose(width: number, height: number): CameraPose {
 
 describe("Lobby title", () => {
   it("clears the HUD top bar at 1440 x 900 (the bar ends at 76 px)", () => {
-    const top = screenY(spawnPose(1440, 900), [LOBBY.hologram.x, TITLE_TOP, LOBBY.hologram.z], 1440, 900);
+    const top = screenY(spawnPose(1440, 900), [LOBBY.hologram.x, TITLE_TOP, LOBBY.hologram.z], 900);
     expect(top).toBeGreaterThanOrEqual(80);
   });
 
