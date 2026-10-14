@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, enterHQ, waitForFloor, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
+import { GPU_MEMORY_BUDGET } from "./budgets";
+import { chooseMotion, enterHQ, expectNoGpuGrowth, readJsHeapAfterGc, readSettledGpuCounters, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
 
 /**
  * Appendix 08 memory budget (perf report SP8): floor round trips and Page View toggles must leave
@@ -8,48 +9,16 @@ import { chooseMotion, enterHQ, waitForFloor, waitForFrames, waitForHQ, waitForS
  * troika glyph atlas, the Highlights Hall). three counts a geometry or program only once it has been
  * drawn, so what the camera saw decides the counts: every trip calls the elevator the moment the
  * rover arrives, and the baseline is read after one trip shaped like the measured ones (a ride drops
- * the roll-on drive of the floor it leaves, so the rover always stops at the L1 approach).
+ * the roll-on drive of the floor it leaves, so the rover always stops at the L1 approach). The
+ * counts, trips, toggles and heap slack come from GPU_MEMORY_BUDGET (e2e/budgets.ts).
  */
-interface Counts {
-  geometries: number;
-  textures: number;
-  programs: number;
-}
-type MemoryWindow = Window & {
-  __hq: { store: { getState: () => { goToFloor: (floor: string) => void } }; memory: () => Counts | null };
-};
+type MemoryWindow = Window & { __hq: { store: { getState: () => { goToFloor: (floor: string) => void } } } };
 
-const TRIPS = 10;
-const TOGGLES = 5;
-const HEAP_SLACK = 2 * 1024 * 1024;
+const { roundTrips: TRIPS, pageViewToggles: TOGGLES, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
 
 test.describe.configure({ timeout: 600_000 });
 test.use({ reducedMotion: "reduce" });
 test.beforeEach(({ page }) => chooseMotion(page, "system"));
-
-const read = (page: Page) => page.evaluate(() => (window as unknown as MemoryWindow).__hq.memory());
-
-/** Counts once the floor settled: neighbours mount on idle and troika typesets asynchronously, so two equal reads in a row. */
-async function settledCounts(page: Page): Promise<Counts> {
-  let last = "";
-  for (let i = 0; i < 40; i++) {
-    await page.evaluate(() => new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 1000 })));
-    await waitForFrames(page, 10);
-    const now = await read(page);
-    const key = JSON.stringify(now);
-    if (now && key === last) return now;
-    last = key;
-  }
-  throw new Error(`renderer memory never settled, last read ${last}`);
-}
-
-async function heapUsed(page: Page): Promise<number> {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("HeapProfiler.collectGarbage");
-  const { usedSize } = await cdp.send("Runtime.getHeapUsage");
-  await cdp.detach();
-  return usedSize;
-}
 
 async function ride(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as MemoryWindow).__hq.store.getState().goToFloor(f), floor);
@@ -59,21 +28,21 @@ async function ride(page: Page, floor: string) {
 test("10 Lobby to Roof round trips leave renderer memory at its baseline", async ({ page }) => {
   await enterHQ(page);
   for (const floor of ["L2", "L3", "L4", "RF", "L1"]) await ride(page, floor);
-  await settledCounts(page);
+  await readSettledGpuCounters(page);
   await ride(page, "RF");
   await ride(page, "L1");
-  const base = await settledCounts(page);
-  const heapBase = await heapUsed(page);
+  const base = await readSettledGpuCounters(page);
+  const heapBase = await readJsHeapAfterGc(page);
   const perTrip: string[] = [];
   for (let i = 0; i < TRIPS; i++) {
     await ride(page, "RF");
     await ride(page, "L1");
-    perTrip.push(JSON.stringify(await settledCounts(page)));
+    perTrip.push(JSON.stringify(await readSettledGpuCounters(page)));
   }
-  const after = await settledCounts(page);
-  const heapGrowth = (await heapUsed(page)) - heapBase;
+  const after = await readSettledGpuCounters(page);
+  const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;
   test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} trips ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
-  expect(after, `after each trip: ${perTrip.join(" ")}`).toEqual(base);
+  expectNoGpuGrowth(base, after, GPU_MEMORY_BUDGET, `after each trip: ${perTrip.join(" ")}`);
   expect(heapGrowth).toBeLessThan(HEAP_SLACK);
 });
 
@@ -86,12 +55,12 @@ test("5 Page View and 3D toggles leave renderer memory and the JS heap flat", as
     await waitForSceneLive(page);
   };
   await toggle();
-  const base = await settledCounts(page);
-  const heapBase = await heapUsed(page);
+  const base = await readSettledGpuCounters(page);
+  const heapBase = await readJsHeapAfterGc(page);
   for (let i = 1; i < TOGGLES; i++) await toggle();
-  const after = await settledCounts(page);
-  const heapGrowth = (await heapUsed(page)) - heapBase;
+  const after = await readSettledGpuCounters(page);
+  const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;
   test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TOGGLES} toggles ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
-  expect(after).toEqual(base);
+  expectNoGpuGrowth(base, after);
   expect(heapGrowth).toBeLessThan(HEAP_SLACK);
 });

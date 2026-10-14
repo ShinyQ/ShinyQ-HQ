@@ -154,7 +154,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/lib/og-layout.ts"]).specs).toEqual(["seo", "static-routes"]);
     expect(specsForChanges(["public/og-assets/floor-L1.jpg"]).specs).toEqual(["seo", "static-routes"]);
     expect(specsForChanges(["scripts/og-check.ts"]).specs).toEqual(["seo", "static-routes"]);
-    expect(specsForChanges(["scripts/og-stills.ts", "scripts/og-before-after.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["scripts/og-stills.ts"]).specs).toEqual([]);
   });
 
   it("maps the render pipeline and the tower to the gpu spec", () => {
