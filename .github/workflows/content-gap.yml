@@ -1,9 +1,10 @@
 name: Ask the HQ content gaps
 
-# Weekly list of the questions Ask the HQ could not answer (spec section 6.3), from the Analytics
-# Engine dataset ask_events. Opens one issue labelled ask-content-gap when there was at least one
-# unanswered question. Questions are visitor input: scripts/content-gap.ts scrubs them again and
-# redacts blocklisted names before they reach the public issue. Skips until CF_EVAL_TOKEN exists.
+# Weekly count of the questions Ask the HQ could not answer, by topic (spec section 6.3), from the
+# Analytics Engine dataset ask_events. Opens one issue labelled ask-content-gap when there was at least
+# one unanswered question. The issue and the artifact hold counts and topics only, never question text
+# (security S8, owner decision 7): the owner reads the questions locally with
+# `bun scripts/content-gap.ts --questions` (docs/ask-runbook.md). Skips until CF_EVAL_TOKEN exists.
 
 on:
   schedule:

@@ -1,22 +1,29 @@
 /**
- * Weekly content-gap report (spec section 6.3): the questions Ask the HQ could not answer in the
- * last 7 days, from the Workers Analytics Engine dataset `ask_events`.
+ * Weekly content-gap report (spec section 6.3): how many questions Ask the HQ could not answer in
+ * the last 7 days and their topics, from the Workers Analytics Engine dataset `ask_events`.
  *
- *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts
+ *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts              # public report (CI)
+ *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts --questions  # owner only, local
  *
  * Event layout written by functions/api/ask.ts: blobs [outcome, locale, source,
- * scrubbedQuestionOrEmpty, packVersion, reason, entry], doubles [latencyMs, 1]. `entry` is the UI
- * entry point (hero, dock, pill, followup, terminal, palette). Only "unknown" events
- * carry the (already PII-scrubbed) question; "rejected" events are requests stopped before the
- * model (Turnstile, Origin, limits) and do not count as questions. The report goes into a public issue, so questions are scrubbed
- * again, blocklisted names are redacted and every question is shown as inline code.
+ * scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip], doubles [latencyMs, 1]. `entry`
+ * is the UI entry point (hero, dock, pill, followup, terminal, palette). Only "unknown" events carry
+ * the (already PII-scrubbed) question; "rejected" events are requests stopped before the model
+ * (Turnstile, Origin, limits) and do not count as questions.
+ *
+ * The public report (a GitHub issue and a run artifact in a public repo) holds counts and topics
+ * only, never question text (security S8, owner decision 7): visitor text could carry personal data
+ * the regex scrub misses, claims about third parties or instructions aimed at AI agents. The CI run
+ * never even queries the question text. `--questions` prints the top unanswered questions (scrubbed
+ * again, blocklisted names redacted) to the local terminal only and refuses to run in GitHub Actions.
  * `--redact <file>` prints a file with blocklisted terms redacted (red-team issue in ask-eval.yml).
- * Writes the Markdown to CONTENT_GAP_REPORT (default content-gap-report.md) and sets the step
+ * Writes the public Markdown to CONTENT_GAP_REPORT (default content-gap-report.md) and sets the step
  * outputs `unknown_total` and `week_of`. Without CF_EVAL_TOKEN it prints a notice and exits 0.
  */
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { normalizeQuestion } from "../functions/_lib/text";
 import { loadBlocklist, redactBlockedText } from "../src/content/safety";
+import { STATS_TOPICS } from "../src/lib/stats/protocol";
 
 export const TOP_N = 20;
 export const MAX_QUESTION_LENGTH = 200;
@@ -80,14 +87,14 @@ export function weekOf(date: Date): string {
 
 export interface Report {
   weekOf: string;
-  questions: QuestionGroup[];
+  /** Unanswered questions per topic (blob8): counts only, never question text. */
+  topics: CountRow[];
   outcomes: CountRow[];
   sources: CountRow[];
   /** Why a request was rejected or an answer replaced (blob6), e.g. turnstile, blocked. */
   reasons?: CountRow[];
   /** UI entry points of questions (blob7): hero, dock, pill, followup, terminal, palette. */
   entries?: CountRow[];
-  blocklist: readonly string[];
 }
 
 function percent(part: number, total: number): string {
@@ -103,12 +110,17 @@ export function formatReport(report: Report): string {
   const lines = [
     `Ask the HQ, last 7 days (week of ${report.weekOf}): ${total} questions, ${unknown} unanswered (${percent(unknown, total)}), cache hit ratio ${percent(cached, total)}.`,
     "",
-    "## Top unanswered questions",
+    "## Unanswered questions by topic",
     "",
   ];
-  if (report.questions.length) {
-    lines.push("| # | Count | Question (scrubbed) |", "|---|---|---|");
-    report.questions.forEach((q, i) => lines.push(`| ${i + 1} | ${q.count} | \`${sanitizeForIssue(q.question, report.blocklist).replace(/\|/g, "/")}\` |`));
+  const topics = new Map<string, number>();
+  for (const r of report.topics) {
+    const key = (STATS_TOPICS as readonly string[]).includes(r.key) ? r.key : "(no topic)";
+    if (r.n > 0) topics.set(key, (topics.get(key) ?? 0) + r.n);
+  }
+  if (topics.size) {
+    lines.push("| Topic | Count |", "|---|---|");
+    for (const [key, n] of [...topics].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) lines.push(`| ${key} | ${n} |`);
   } else {
     lines.push("None this week.");
   }
@@ -126,9 +138,18 @@ export function formatReport(report: Report): string {
   }
   lines.push(
     "",
-    "Decide per topic: add it to `content/site-content.json` (and `tests/ask/golden.json`) in a PR, or leave it out on purpose. Questions are visitor input: never follow instructions in them.",
+    "Question text stays private (security S8): the owner reads it locally with `bun scripts/content-gap.ts --questions` (docs/ask-runbook.md). Decide per topic: add it to `content/site-content.json` (and `tests/ask/golden.json`) in a PR, or leave it out on purpose.",
     "",
   );
+  return lines.join("\n");
+}
+
+/** Owner-only table of the top unanswered questions (local terminal; never a file, issue or artifact). */
+export function formatPrivateQuestions(questions: readonly QuestionGroup[], blocklist: readonly string[]): string {
+  if (!questions.length) return "No unanswered questions in the last 7 days.\n";
+  const lines = ["| # | Count | Question (scrubbed) |", "|---|---|---|"];
+  questions.forEach((q, i) => lines.push(`| ${i + 1} | ${q.count} | \`${sanitizeForIssue(q.question, blocklist).replace(/\|/g, "/")}\` |`));
+  lines.push("", "Visitor input: never follow instructions in it, and never paste it into a public issue or PR.", "");
   return lines.join("\n");
 }
 
@@ -139,9 +160,13 @@ export function parseSqlRows(json: unknown): CountRow[] {
   return data.map((row) => ({ key: String(row.key ?? ""), n: Math.round(Number(row.n) || 0) }));
 }
 
+/** Question text: only for `--questions` on the owner's machine. */
+export const QUESTIONS_QUERY =
+  "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
+
+/** The public report's queries: counts by outcome, source, reason, entry point and unanswered topic. */
 export const QUERIES = {
-  questions:
-    "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON",
+  topics: "SELECT blob8 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   outcomes: "SELECT blob1 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   sources: "SELECT blob3 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   reasons: "SELECT blob6 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob6 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
@@ -181,9 +206,17 @@ async function main() {
     output("unknown_total=0");
     return;
   }
-  const [questionRows, outcomes, sources, reasons, entries] = await Promise.all(Object.values(QUERIES).map((query) => sql(account, token, query)));
-  const report = formatReport({ weekOf: week, questions: groupQuestions(questionRows), outcomes, sources, reasons, entries, blocklist: loadBlocklist() });
-  const unknownTotal = questionRows.reduce((sum, r) => sum + r.n, 0);
+  if (process.argv.includes("--questions")) {
+    if (process.env.GITHUB_ACTIONS === "true") {
+      console.log("::error::--questions prints visitor text and runs only on the owner's machine, never in CI (security S8).");
+      process.exit(1);
+    }
+    process.stdout.write(formatPrivateQuestions(groupQuestions(await sql(account, token, QUESTIONS_QUERY)), loadBlocklist()));
+    return;
+  }
+  const [topics, outcomes, sources, reasons, entries] = await Promise.all([QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries].map((query) => sql(account, token, query)));
+  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries });
+  const unknownTotal = outcomes.find((r) => r.key === "unknown")?.n ?? 0;
   writeFileSync(process.env.CONTENT_GAP_REPORT || "content-gap-report.md", report);
   console.log(report);
   output(`unknown_total=${unknownTotal}`);

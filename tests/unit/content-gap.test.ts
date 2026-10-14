@@ -1,5 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { formatReport, groupQuestions, parseSqlRows, QUERIES, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
+import { formatPrivateQuestions, formatReport, groupQuestions, parseSqlRows, QUERIES, QUESTIONS_QUERY, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
 
 describe("groupQuestions", () => {
   it("merges spellings by normalized text and keeps the most common one", () => {
@@ -36,10 +37,14 @@ describe("sanitizeForIssue", () => {
 });
 
 describe("report", () => {
-  it("formats totals, cache ratio and a safe table", () => {
+  it("formats totals, cache ratio and unanswered counts by topic, never question text (S8)", () => {
     const md = formatReport({
       weekOf: "2026-10-12",
-      questions: [{ question: "who is @someone | ok", normalized: "x", count: 4 }],
+      topics: [
+        { key: "work", n: 3 },
+        { key: "", n: 1 },
+        { key: "<script>", n: 1 },
+      ],
       outcomes: [
         { key: "answer", n: 6 },
         { key: "unknown", n: 4 },
@@ -51,10 +56,13 @@ describe("report", () => {
         { key: "", n: 3 },
       ],
       reasons: [{ key: "turnstile", n: 3 }],
-      blocklist: [],
     });
     expect(md).toContain("10 questions, 4 unanswered (40%), cache hit ratio 50%");
-    expect(md).toContain("| 1 | 4 | `who is @someone / ok` |");
+    expect(md).toContain("## Unanswered questions by topic");
+    expect(md).toContain("| work | 3 |");
+    expect(md).toContain("| (no topic) | 2 |");
+    expect(md).not.toContain("<script>");
+    expect(md).not.toMatch(/Question \(scrubbed\)/);
     expect(md).toContain("| rejected | 3 | 23% |");
     expect(md).toContain("| turnstile | 3 |");
     expect(md).not.toMatch(/\u2014/);
@@ -63,11 +71,10 @@ describe("report", () => {
   it("lists the UI entry points, keeping only plain keys", () => {
     const md = formatReport({
       weekOf: "2026-10-12",
-      questions: [],
+      topics: [],
       outcomes: [{ key: "answer", n: 10 }],
       sources: [],
       entries: [{ key: "pill", n: 6 }, { key: "hero", n: 3 }, { key: "", n: 1 }, { key: "<x>", n: 0 }],
-      blocklist: [],
     });
     expect(md).toContain("## Entry points");
     expect(md).toContain("| pill | 6 | 60% |");
@@ -76,7 +83,22 @@ describe("report", () => {
   });
 
   it("says so when nothing was unanswered", () => {
-    expect(formatReport({ weekOf: "2026-10-12", questions: [], outcomes: [], sources: [], blocklist: [] })).toContain("None this week.");
+    expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).toContain("None this week.");
+  });
+
+  it("refuses to print question text in GitHub Actions, before any query", () => {
+    const run = spawnSync("bun", ["scripts/content-gap.ts", "--questions"], {
+      encoding: "utf8",
+      env: { ...process.env, GITHUB_ACTIONS: "true", GITHUB_OUTPUT: "", CF_EVAL_TOKEN: "not-a-token", CF_ACCOUNT_ID: "0".repeat(32) },
+    });
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain("never in CI");
+  });
+
+  it("formats the owner-only question table with the second scrub", () => {
+    const md = formatPrivateQuestions([{ question: "who is @someone | ok", normalized: "x", count: 4 }], []);
+    expect(md).toContain("| 1 | 4 | `who is @someone / ok` |");
+    expect(formatPrivateQuestions([], [])).toContain("No unanswered questions");
   });
 
   it("finds the Monday of the week", () => {
@@ -90,7 +112,10 @@ describe("report", () => {
       { key: "", n: 1 },
     ]);
     expect(() => parseSqlRows({})).toThrow();
-    for (const q of Object.values(QUERIES)) expect(q).toMatch(/FROM ask_events WHERE .*INTERVAL '7' DAY/);
-    expect(QUERIES.questions).toContain("blob1 = 'unknown'");
+    for (const q of [...Object.values(QUERIES), QUESTIONS_QUERY]) expect(q).toMatch(/FROM ask_events WHERE .*INTERVAL '7' DAY/);
+    expect(QUESTIONS_QUERY).toContain("blob1 = 'unknown'");
+    // The public report never selects the question text (blob4).
+    for (const q of Object.values(QUERIES)) expect(q).not.toMatch(/blob4/);
+    expect(QUERIES.topics).toContain("blob8 AS key");
   });
 });
