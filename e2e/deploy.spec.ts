@@ -33,7 +33,7 @@ test("Cloudflare Pages _headers and _redirects are exported", () => {
 });
 
 test("the export names no client company or other blocklisted term (C3)", () => {
-  // Every page, RSC payload, sitemap and room data file of out/, against the merged
+  // Every page, RSC payload, script, stylesheet, sitemap and room data file of out/, against the merged
   // blocklist (committed client names plus the private list in CI). Hits name private terms
   // only as "private term #n" (S2), so a failure never prints them.
   expect(existsSync(outDir)).toBe(true);

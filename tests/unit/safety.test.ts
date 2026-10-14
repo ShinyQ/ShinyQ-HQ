@@ -70,14 +70,17 @@ describe("client company names (C3, revised 2026-10-10)", () => {
 });
 
 describe("scanBuildOutput", () => {
-  it("reports text files of the export that name a client, and skips scripts", () => {
+  it("reports every text file of the export that names a client, scripts and styles included (S9), and skips binaries", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "hq-out-"));
     try {
       mkdirSync(path.join(dir, "en", "labs"), { recursive: true });
       writeFileSync(path.join(dir, "en", "labs", "x.html"), "<p>Client: Sari Roti</p>");
       writeFileSync(path.join(dir, "en", "labs.txt"), "Jenius (SMBC Indonesia)");
-      writeFileSync(path.join(dir, "chunk.js"), "Sari Roti");
-      expect(scanBuildOutput(dir, loadBlocklist({}))).toEqual([{ file: path.join("en", "labs", "x.html"), terms: ["Sari Roti"] }]);
+      for (const ext of ["js", "css", "svg", "md"]) writeFileSync(path.join(dir, `chunk.${ext}`), `const pill = "Sari Roti";`);
+      writeFileSync(path.join(dir, "photo.webp"), "Sari Roti");
+      const hits = scanBuildOutput(dir, loadBlocklist({}));
+      expect(hits.map((h) => h.file).sort()).toEqual(["chunk.css", "chunk.js", "chunk.md", "chunk.svg", path.join("en", "labs", "x.html")].sort());
+      expect(hits.every((h) => h.terms.join() === "Sari Roti")).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

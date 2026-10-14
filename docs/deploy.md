@@ -128,7 +128,7 @@ Settings > Secrets and variables > Actions > Secrets, or with `gh`:
 ```sh
 gh secret set CLOUDFLARE_API_TOKEN      # paste the token from step 2
 gh secret set CLOUDFLARE_ACCOUNT_ID     # paste the account id
-gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optional, existing
+gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # required on main and for deploys
 ```
 
 | Secret | Required | Purpose |
@@ -136,7 +136,7 @@ gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # optiona
 | `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) |
 | `CF_EVAL_TOKEN` | Yes, for evals and the visit stats | Account Analytics Read: Ask evals and reports, and the hq-stats Worker's runtime secret `WA_TOKEN` (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
-| `SAFETY_BLOCKLIST` | Optional | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it |
+| `SAFETY_BLOCKLIST` | Yes, on main and for deploys | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests, `scripts/scan-export.ts` (CI build and production build) and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it. Without it, the scan step fails on `main` and in `deploy.yml` (after `SAFETY_BLOCKLIST_GRACE_UNTIL`) and warns on pull requests. Output never prints a private term (`private term #n`). |
 
 ## 4. GitHub repository variables
 
@@ -159,6 +159,7 @@ gh variable set CF_PREVIEWS --body true                        # optional: turn 
 | `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
 | `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
+| `SAFETY_BLOCKLIST_GRACE_UNTIL` | Temporary | `YYYY-MM-DD`: until this day (UTC) a missing `SAFETY_BLOCKLIST` only warns on `main` and in `deploy.yml`; afterwards it fails. Set on 2026-10-14 to `2026-10-21` while the owner adds the secret; delete it once the secret is set (`gh variable delete SAFETY_BLOCKLIST_GRACE_UNTIL`). |
 | `STATS_WORKER_DEPLOY` | Optional | `false` skips the hq-stats Worker job in `deploy.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
 
 Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
