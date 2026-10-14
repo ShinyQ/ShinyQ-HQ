@@ -39,7 +39,7 @@ describe("L3 reactor core", () => {
     expect(floor.obstacles).toContainEqual(reactor.rect);
     expect(floor.tall).toContainEqual({ ...reactor.rect, h: REACTOR.height });
     // The directory wall panels stay in the camera's tall set too.
-    expect(floor.tall?.filter((t) => t.h === LABS.board.h)).toHaveLength(2);
+    expect(floor.tall?.filter((t) => t.h === LABS.board.h)).toHaveLength(Object.keys(layout.boards).length);
     // Under the L4 slab, 14 u up.
     expect(REACTOR.height).toBeLessThan(14);
     expect(layout.east.core).toBe(REACTOR.half);

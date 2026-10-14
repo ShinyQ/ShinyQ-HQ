@@ -15,7 +15,7 @@ import {
   wrapWords,
   type DirectoryLabels,
 } from "@/experience/floors/labs/directory";
-import { directoryBoard, LABS, tourOrder, WING_TINT } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, directoryBoard, LABS, tourOrder, WING_TINT } from "@/experience/floors/labs/layout";
 
 const NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const FONTS = { mono: "/fonts/mono.woff", monoBold: "/fonts/mono-bold.woff", sansBold: "/fonts/sans-bold.woff" };
@@ -128,4 +128,32 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
     }
   });
 
+});
+
+describe("Data and ML directory panel (owner request 2026-10-14)", () => {
+  for (const locale of ["en", "id"] as const) {
+    it(`stands a third panel past the data plaza, amber, listing the data pods (${locale})`, () => {
+      const { pods, labels } = setup(locale);
+      const layout = buildLabsLayout(pods);
+      const data = layout.boards.data!;
+      expect(data).toBeDefined();
+      expect(wallSolids(layout.boards)).toHaveLength(3);
+      expect(wallSolids(layout.boards)[2]).toMatchObject({ x: data.center.x, z: data.center.z, h: LABS.board.h });
+      const lines = wallLines(layout.boards);
+      expect(lines.filter((l) => l.color === WING_TINT.data)).toHaveLength(14);
+      for (const size of ["full", "compact"] as const) {
+        const texts = wallLabels(pods, labels, FONTS, size, layout.boards).filter((l) => Math.abs(l.position[0] - data.center.x) < 1);
+        // Four texts on each face.
+        expect(texts, size).toHaveLength(8);
+        expect(texts[0].text).toBe(fitTitle(labels.wings.data, textWidth()).lines.join("\n"));
+        expect(texts[0].color).toBe(WING_TINT.data);
+        const dataPods = pods.filter((p) => p.wing === "data");
+        const top = tourOrder(dataPods).slice(0, LIST_STYLE[size].entries);
+        expect(texts[2].text.split("\n").filter((l) => Object.values(TIER_MARK).some((m) => l.startsWith(`${m} `)))).toHaveLength(top.length);
+      }
+      // The hub pair is unchanged by the third panel.
+      expect(wallSolids(layout.boards).slice(0, 2)).toEqual(wallSolids());
+      expect(wallLabels(pods, labels, FONTS, "full", layout.boards).slice(0, 16)).toEqual(wallLabels(pods, labels, FONTS));
+    });
+  }
 });

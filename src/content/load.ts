@@ -3,7 +3,7 @@ import factsRaw from "../../content/generated/dynamic-facts.json";
 import perspectivesRaw from "../../content/perspectives.json";
 import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
 import { publishedPerspectives } from "./perspectives";
-import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat } from "./schema";
+import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat, type Wing } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 import { buildTechIndex, type TechIndex } from "./tech-index";
 
@@ -81,7 +81,7 @@ export const getSideProjects = () => getContent().sideProjects;
 export const getPublicRepos = () => [...getContent().publicRepos].sort((a, b) => b.stars - a.stars);
 export const getMissions = () => [...getContent().missions].sort((a, b) => a.order - b.order);
 
-export function getPods(wing?: "software" | "ai") {
+export function getPods(wing?: Wing) {
   const pods = getContent().floors.labs.pods;
   return orderPods(wing ? pods.filter((p) => p.wing === wing) : pods);
 }

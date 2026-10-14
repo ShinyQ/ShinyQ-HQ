@@ -58,3 +58,24 @@ describe("Pod.liveUrl (R4-J)", () => {
     expect(result.error?.issues[0]?.path).toEqual(["liveUrl"]);
   });
 });
+
+describe("Data and ML wing (owner request 2026-10-14)", () => {
+  it("accepts the data wing", () => {
+    expect(PodSchema.safeParse(makePod({ wing: "data" })).success).toBe(true);
+  });
+
+  it("accepts only public github.com/ShinyQ repositories as pod repos", () => {
+    expect(PodSchema.safeParse(makePod({ repos: ["https://github.com/ShinyQ/Python_Kampus-Merdeka-Reports-Crawler"] })).success).toBe(true);
+    for (const repo of ["https://gitlab.com/ShinyQ/x", "https://github.com/someone/x", "http://github.com/ShinyQ/x", "https://github.com/ShinyQ/x/tree/main"]) {
+      expect(PodSchema.safeParse(makePod({ repos: [repo] })).success, repo).toBe(false);
+    }
+  });
+
+  it("rejects a publication link that names no publication", () => {
+    const content = makeContent();
+    content.floors.labs.pods[0] = { ...content.floors.labs.pods[0], publications: ["missing-paper"] };
+    const result = SiteContentSchema.safeParse(content);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["floors", "labs", "pods", 0, "publications", 0]);
+  });
+});

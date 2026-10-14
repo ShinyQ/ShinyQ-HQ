@@ -3,7 +3,7 @@ import type { RoomReactor } from "@/content/room-views/types";
 import type { ReactorTech } from "@/store/useHQStore";
 import type { ReactorRingId } from "@/content/tech-rings";
 import type { Vec2 } from "../../types";
-import type { LabsLayout, PlacedPod } from "./layout";
+import type { HubWing, LabsLayout, PlacedPod } from "./layout";
 import { REACTOR } from "./reactor";
 
 /**
@@ -77,13 +77,21 @@ export interface GlowSegment {
 }
 
 /**
- * Road to the lit pods, from the reactor out: per wing with a lit pod, the leg from the ring road to the
- * wing road's turn, the wing road back to the westmost lit spur, then every lit pod's spur to its door.
+ * Road to the lit pods, from the reactor out: per hub wing with a lit pod, the leg from the ring road to
+ * the wing road's turn, the wing road back to the westmost lit spur, then every lit pod's spur to its
+ * door; on the data road, the run from the ring road out to the farthest lit data spur, then the spurs.
  * Overlaps never double (one run per wing).
  */
 export function roadGlow(layout: LabsLayout, lit: readonly PlacedPod[]): GlowSegment[] {
   const out: GlowSegment[] = [];
-  for (const wing of ["software", "ai"] as const) {
+  const data = lit.filter((p) => p.pod.wing === "data");
+  const dataRoad = layout.network.roads.find((r) => r.id === "data");
+  if (data.length && dataRoad) {
+    const start = dataRoad.points[0];
+    out.push({ a: { ...start }, b: { x: Math.max(...data.map((p) => p.door.x)), z: start.z } });
+    for (const p of data) out.push({ a: { x: p.door.x, z: p.roadZ }, b: { ...p.door } });
+  }
+  for (const wing of ["software", "ai"] as const satisfies readonly HubWing[]) {
     const pods = lit.filter((p) => p.pod.wing === wing);
     if (!pods.length) continue;
     const road = layout.network.roads.find((r) => r.id === wing);

@@ -228,11 +228,11 @@ describe("walk definitions", () => {
       pod("h3", "hero", "software", 1),
       pod("g1", "featured", "software", 5, true),
     ];
-    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering" }, more: "More projects here", moreSub: "" });
+    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
     expect(walk.stops.map((s) => s.id)).toEqual(["L3:g1", "L3:h1", "L3:h3", "L3:h2", "L3:f1", "L3:directory:software", "L3:directory:ai"]);
     expect(walk.stops.at(-1)).toMatchObject({ palette: "pods" });
     expect(walk.stops.at(-1)?.room).toBeUndefined();
-    const placedOnly = labsWalk(pods, { wings: { software: "S", ai: "A" }, more: "", moreSub: "" }, new Set(["h1"]));
+    const placedOnly = labsWalk(pods, { wings: { software: "S", ai: "A", data: "D" }, more: "", moreSub: "" }, new Set(["h1"]));
     expect(placedOnly.stops[0].id).toBe("L3:h1");
     expect(placedOnly.stops).toHaveLength(3);
   });

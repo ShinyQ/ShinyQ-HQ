@@ -79,6 +79,8 @@ export interface FloorLayout {
   listStop?: Vec2;
   /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars); checked before `listStop`. */
   stops?: Partial<Record<RoomId, Vec2>>;
+  /** L3: where `drive` stops for each wing's directory panel (listed pods, the tour's "More projects here"). */
+  directoryStops?: Partial<Record<Wing, Vec2>>;
 }
 
 /** Every floor's layout, as built by `buildFloorLayouts`. */

@@ -34,13 +34,16 @@ export const ConfidenceSchema = z.enum(["verified", "strongly-inferred", "self-r
 export const TierSchema = z.enum(["hero", "featured", "listed"]);
 export const FloorIdSchema = z.enum(["L1", "L2", "L3", "L4", "RF"]);
 export const AccentSchema = z.enum(["violet", "pink", "green", "amber", "cyan", "blue", "white"]);
-export const WingSchema = z.enum(["software", "ai"]);
+/** L3 wings: `software` (north), `ai` (south) and `data` (the Data and ML annex east of the Tech Reactor, owner request 2026-10-14). */
+export const WingSchema = z.enum(["software", "ai", "data"]);
 export const SlugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected kebab-case slug");
 export const RoomIdSchema = z
   .string()
   .regex(/^(L1|L2|L3|L4|RF):[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected FloorId:slug");
 
 const httpsUrl = z.url({ protocol: /^https$/ });
+/** A public repository of the owner on GitHub (repo root only). */
+export const GITHUB_REPO_PATTERN = /^https:\/\/github\.com\/ShinyQ\/[A-Za-z0-9._-]+$/;
 
 export const AssetSchema = z.strictObject({
   src: z.string().startsWith("/", "Asset src must be a path under public/"),
@@ -197,6 +200,10 @@ export const PodSchema = z
     assets: z.array(AssetSchema),
     /** Public live site (R4-J): https, site root only, host in `PUBLIC_LIVE_HOSTS`. Read it through `podLiveLink`. */
     liveUrl: httpsUrl.optional(),
+    /** The owner's public repositories for this project (`github.com/ShinyQ/<repo>`, roots only), main repository first. */
+    repos: z.array(httpsUrl.regex(GITHUB_REPO_PATTERN, "Expected https://github.com/ShinyQ/<repo>")).min(1).max(4).optional(),
+    /** Ids of `floors.library.publications` that come from this project (papers, the thesis, models). */
+    publications: z.array(SlugSchema).min(1).optional(),
   })
   .superRefine((pod, ctx) => {
     if (pod.liveUrl) {
@@ -431,7 +438,8 @@ export const ProductionSchema = z.strictObject({
   dashboard: AssetSchema.extend({ caption: LocalizedTextSchema }).optional(),
 });
 
-export const SiteContentSchema = z.strictObject({
+/** The dataset shape without cross-reference checks (`validate-fragment.ts` extends it). */
+export const SiteContentObjectSchema = z.strictObject({
   profile: ProfileSchema,
   production: ProductionSchema,
   stats: z.array(StatSchema).min(4).max(6),
@@ -456,6 +464,15 @@ export const SiteContentSchema = z.strictObject({
   sideProjects: z.array(SideProjectSchema),
   publicRepos: z.array(RepoRefSchema),
   missions: z.array(MissionSchema).min(1),
+});
+
+export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, ctx) => {
+  const ids = new Set(content.floors.library.publications.map((p) => p.id));
+  content.floors.labs.pods.forEach((pod, i) => {
+    pod.publications?.forEach((id, j) => {
+      if (!ids.has(id)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "publications", j], message: `Unknown publication "${id}"` });
+    });
+  });
 });
 
 export type Locale = z.infer<typeof LocaleSchema>;
