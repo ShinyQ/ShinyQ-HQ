@@ -10,7 +10,7 @@ import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
-import { findBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
+import { findBlockedLabels, findBlockedTerms, formatBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
 import { FORBIDDEN_OUTPUT, findBlocked } from "../../functions/_lib/checks";
 import { indexPack } from "../../functions/_lib/pack-index";
 import { retrieve } from "../../functions/_lib/retrieve";
@@ -68,7 +68,7 @@ describe("knowledge pack", () => {
   it("lists employers, freelance clients and products as allowed entities, never sector-labelled clients", () => {
     expect(pack.entities).toContain("Metrodata (PT Mitra Integrasi Informatika)");
     expect(pack.entities).toContain("Jenius (SMBC Indonesia)");
-    expect(findBlockedTerms(pack.entities.join("\n"), safety.blocklist)).toEqual([]);
+    expect(findBlockedLabels(pack.entities.join("\n"), safety.blocklist)).toEqual([]);
   });
 
   it("says the MII Microsoft sites are live without shipping their hostnames (R4-J, rt39)", () => {
@@ -161,7 +161,8 @@ describe("retrieval", () => {
 describe("safety parity", () => {
   it("matches the site lint's blocklist semantics", () => {
     const samples = ["Jenius (SMBC Indonesia)", "SMBC", "smbc bank", "Mitsubishi Motors", "a salary band", "Inalum", "TTA", "tta"];
-    for (const s of samples) expect(findBlocked(s, safety.blocklist), s).toEqual(findBlockedTerms(s, safety.blocklist));
+    const shown = (found: string[]) => formatBlockedTerms(found, safety.blocklist);
+    for (const s of samples) expect(shown(findBlocked(s, safety.blocklist)), s).toEqual(shown(findBlockedTerms(s, safety.blocklist)));
   });
 
   it("keeps the forbidden output patterns in sync with the site lint (minus the em dash)", () => {
@@ -254,7 +255,7 @@ describe("perspectives and principles in the pack", () => {
     expect(pack.orgs).toContain("Jenius (SMBC Indonesia)");
     expect(pack.orgs).toContain("Telkom University");
     expect(pack.orgs).not.toContain("ARIA");
-    expect(findBlockedTerms(pack.orgs.join("\n"), safety.blocklist)).toEqual([]);
+    expect(findBlockedLabels(pack.orgs.join("\n"), safety.blocklist)).toEqual([]);
   });
 
   it("lists only starred public repositories (pack budget, runbook deviation 8)", () => {

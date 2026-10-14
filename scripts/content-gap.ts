@@ -16,7 +16,7 @@
  */
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { normalizeQuestion } from "../functions/_lib/text";
-import { findBlockedTerms, loadBlocklist } from "../src/content/safety";
+import { loadBlocklist, redactBlockedText } from "../src/content/safety";
 
 export const TOP_N = 20;
 export const MAX_QUESTION_LENGTH = 200;
@@ -60,22 +60,8 @@ const PII: RegExp[] = [
   /\+?\d[\d\s().-]{7,}\d/g,
 ];
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /** Replaces every blocklisted term (client names, private terms) with "[redacted]"; keeps line breaks. */
-export function redactBlocked(text: string, blocklist: readonly string[]): string {
-  let out = text;
-  for (const term of findBlockedTerms(out, blocklist)) {
-    const regex =
-      term.length > 2 && term.startsWith("/") && term.endsWith("/")
-        ? new RegExp(term.slice(1, -1), "g")
-        : new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}(?=$|[^\\p{L}\\p{N}])`, "giu");
-    out = out.replace(regex, (_match, lead) => `${typeof lead === "string" ? lead : ""}[redacted]`);
-  }
-  return out;
-}
+export const redactBlocked = redactBlockedText;
 
 /** Second scrub before anything reaches a public issue: PII patterns, blocklisted names, length, backticks. */
 export function sanitizeForIssue(text: string, blocklist: readonly string[]): string {
