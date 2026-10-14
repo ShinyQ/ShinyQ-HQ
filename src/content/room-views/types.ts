@@ -164,6 +164,17 @@ export interface RoomView {
   reactor?: RoomReactor;
   /** RF:visits: labels the live stats panel needs (`VisitsBody`); the numbers are fetched on the client. */
   visits?: VisitsLabels;
+  /** L3:ops: the observability section (`OpsBody`); live numbers are fetched on the client. */
+  ops?: RoomOps;
+}
+
+/** L3:ops, the Ops Control Room (`OpsBody`): "How I run AI in production"; tiles ride in `metrics`, case studies in `cards`. */
+export interface RoomOps {
+  intro: string;
+  points: { lead: string; text: string }[];
+  outro: string;
+  /** Masked Bicep excerpt of one alert rule. */
+  excerpt?: { caption: string; code: string };
 }
 
 export type RoomViews = Record<RoomId, RoomView>;

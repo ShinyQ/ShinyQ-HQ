@@ -8,6 +8,7 @@ import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
+import { OPS_ROOM } from "./floors/labs/opsHash";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { withView } from "@/hud/drawer/urlSync";
 import { Hud } from "@/hud/Hud";
@@ -335,8 +336,8 @@ export default function Experience({
       // A deep link keeps its URL through the boot and the intro; the continuation rewrites it on arrival.
       if ((s.phase === "boot" || s.phase === "intro") && isContinuing()) return;
       const floor = READY_FLOORS.includes(s.floor) ? s.floor : "L1";
-      // The Tech Reactor has no route of its own (it keeps /labs and its hash).
-      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM ? s.activeRoom : null;
+      // The Tech Reactor and the Ops Control Room have no route of their own (they keep /labs).
+      const room = s.activeRoom && floorOf(s.activeRoom) === s.floor && s.activeRoom !== REACTOR_ROOM && s.activeRoom !== OPS_ROOM ? s.activeRoom : null;
       const path = serializeHQUrl({ locale: data.locale, floor, activeRoom: room, view: null });
       const url = withView(path, window.location.search, room && s.phase === "hologram" ? "architecture" : null);
       if (`${window.location.pathname}${window.location.search}` !== url) window.history.replaceState(window.history.state, "", url);
@@ -354,9 +355,10 @@ export default function Experience({
     // On L2 only career entries have /journey/{slug}; the Workshop and its bench and repo rooms keep /journey.
     const career = new Set(data.career.years.flatMap((y) => y.entries.map((e) => `L2:${e.slug}`)));
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
-    // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync).
+    // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync), and so does the
+    // Ops Control Room (the Classic site shows it on /contact#production).
     return (room: RoomId) =>
-      !isHighlightRoom(room) && room !== REACTOR_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Tech Reactor pick in the hash (`#labs-tech=<slug>`), after the floor and room URL writes above.
@@ -477,6 +479,7 @@ export default function Experience({
           highlightsContact: t("rooms.highlightsContact"),
           reactor: t("rooms.reactor"),
           visits: t("rooms.visits"),
+          ops: t("rooms.ops"),
         },
         reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
       },

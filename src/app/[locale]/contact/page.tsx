@@ -7,6 +7,7 @@ import { Marker, SectionSplit } from "@/components/page/Layout";
 import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { Portrait } from "@/components/page/Portrait";
+import { ProductionSection } from "@/components/page/Production";
 import { VisitsSection } from "@/components/stats/VisitsSection";
 import { getProfile, getRoof, getSkills } from "@/content/load";
 import { experienceDataFor } from "@/experience/gate-data";
@@ -65,6 +66,8 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       <SectionSplit id="how" title={th("howTitle")} intro={profile.howIWork[locale]}>
         <PrincipleGrid principles={profile.principles} locale={locale} />
       </SectionSplit>
+
+      <ProductionSection locale={locale} />
 
       <SectionSplit id="skills" title={tq("skills")}>
         <SkillsWall skills={getSkills()} locale={locale} />
