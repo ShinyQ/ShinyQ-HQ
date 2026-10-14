@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  draftFingerprints,
   draftPerspectives,
   isPublished,
-  perspectiveAnchor,
+  perspectiveFingerprints,
   perspectiveIssues,
-  perspectiveLinks,
-  perspectivePath,
+  perspectiveSourcePath,
   publishedPerspectives,
 } from "@/content/perspectives";
 import { getContent } from "@/content/load";
@@ -62,34 +60,28 @@ describe("approval gate", () => {
     expect(isPublished({}, { status: "draft" })).toBe(false);
     expect(isPublished({}, { status: "approved" })).toBe(true);
   });
-
-  it("anchors each entry on About for Ask to cite", () => {
-    expect(perspectiveAnchor("spec-before-code")).toBe("perspectives-spec-before-code");
-    expect(perspectivePath("spec-before-code")).toBe("/contact#perspectives-spec-before-code");
-  });
 });
 
 describe("sources and content checks", () => {
   const content = getContent();
-  const post = (slug: string) => content.floors.library.posts.find((p) => p.slug === slug)!;
 
-  it("resolves post, talk and project sources to Page View links and skips unknown ones", () => {
-    const e = entry("links", {
-      sources: [
-        { kind: "post", slug: "spec-driven-development-with-ai-coding-agents" },
+  it("cites the first backing source Ask may link: a hosted post, a project case study or the Library for a talk", () => {
+    const path = (sources: Perspective["sources"]) => perspectiveSourcePath({ sources }, content);
+    expect(
+      path([
         { kind: "post", slug: "crud-nodejs-express-mysql" },
-        { kind: "talk", slug: "agent-framework-walkthrough" },
-        { kind: "project", slug: "vendor-management-portal" },
         { kind: "project", slug: "no-such-project" },
-      ],
-    });
-    expect(perspectiveLinks(e, content, "en")).toEqual([
-      { href: "/blog/spec-driven-development-with-ai-coding-agents", label: post("spec-driven-development-with-ai-coding-agents").title.en, external: false },
-      { href: post("crud-nodejs-express-mysql").url, label: post("crud-nodejs-express-mysql").title.en, external: true },
-      { href: "/library#talks", label: content.floors.library.talks.find((t) => t.id === "agent-framework-walkthrough")!.title.en, external: false },
-      { href: "/labs/vendor-management-portal", label: content.floors.labs.pods.find((p) => p.slug === "vendor-management-portal")!.title.en, external: false },
-    ]);
-    expect(perspectiveLinks(e, content, "id")[0].label).toBe(post("spec-driven-development-with-ai-coding-agents").title.id);
+        { kind: "post", slug: "spec-driven-development-with-ai-coding-agents" },
+        { kind: "project", slug: "vendor-management-portal" },
+      ]),
+    ).toBe("/blog/spec-driven-development-with-ai-coding-agents");
+    expect(path([{ kind: "project", slug: "vendor-management-portal" }])).toBe("/labs/vendor-management-portal");
+    expect(path([{ kind: "talk", slug: "agent-framework-walkthrough" }])).toBe("/library");
+    // External (Medium) posts, personal essays, unknown slugs and no sources: no cite.
+    expect(path([{ kind: "post", slug: "crud-nodejs-express-mysql" }])).toBeUndefined();
+    expect(path([{ kind: "post", slug: "the-sun-the-moon-and-the-dark-sea" }])).toBeUndefined();
+    expect(path([{ kind: "project", slug: "no-such-project" }])).toBeUndefined();
+    expect(path(undefined)).toBeUndefined();
   });
 
   it("reports unknown sources, personal essays and instruction-like text", () => {
@@ -106,12 +98,12 @@ describe("sources and content checks", () => {
     ]);
   });
 
-  it("fingerprints only unpublished entries, stopping at punctuation and markup characters", () => {
+  it("fingerprints entries, stopping at punctuation and markup characters", () => {
     const f = file("draft", [
       entry("a", { answer: { en: "CI should fail closed: a skipped tier fails.", id: "CI harus fail closed: tier yang dilewati gagal." } }),
       entry("b", { approved: true }),
       entry("c", { question: { en: "Which tools do you prefer, and why?", id: "Tool apa yang Anda sukai, dan mengapa?" }, answer: { en: "For delivery: Copilot.", id: "Untuk delivery: Copilot." } }),
     ]);
-    expect(draftFingerprints(f)).toEqual(["CI should fail closed", "CI harus fail closed", "Which tools do you prefer", "Tool apa yang Anda sukai"]);
+    expect(perspectiveFingerprints(draftPerspectives(f))).toEqual(["CI should fail closed", "CI harus fail closed", "Which tools do you prefer", "Tool apa yang Anda sukai"]);
   });
 });

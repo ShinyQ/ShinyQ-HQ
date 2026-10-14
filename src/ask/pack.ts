@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, Perspective, Pod, SiteContent } from "@/content/schema";
-import { perspectivePath } from "@/content/perspectives";
+import { perspectiveSourcePath } from "@/content/perspectives";
 import { findBlockedTerms } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
@@ -313,7 +313,8 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       id: `perspective-${p.id}`,
       type: "perspective",
       title: p.question.en,
-      url: perspectivePath(p.id),
+      // Ask cites the backing post or project; an entry without one is cited by nothing (no page of its own).
+      url: perspectiveSourcePath(p, content),
       updatedAt: p.asOf,
       keywords: ["perspective", ...p.tags],
       text: {
