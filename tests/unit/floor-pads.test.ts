@@ -58,9 +58,10 @@ describe("floor pads in the real layouts", () => {
 
   it("drives from the everyday spots and beams only from the far ends (owner decision: 40 u)", () => {
     expect(FAST_RETURN.beamDistance).toBe(40);
-    // Drive: the L1 spawn (about 36 u), the L3 overview (29.5 u), the RF and L4 arrival spots.
+    // Drive: the L1 spawn (in front of the Ask Rover kiosk since 2026-10-14, about 16.5 u), the L3 overview
+    // (29.5 u), the RF and L4 arrival spots.
     expect(shouldBeamToCar(layouts.L1.spawn, layouts.L1)).toBe(false);
-    expect(distanceToElevator(layouts.L1.spawn, layouts.L1)).toBeGreaterThan(25);
+    expect(distanceToElevator(layouts.L1.spawn, layouts.L1)).toBeGreaterThan(10);
     for (const id of ["L3", "L4", "RF"] as const) expect(shouldBeamToCar(layouts[id].arrival!, layouts[id]), id).toBe(false);
     expect(distanceToElevator(layouts.L3.arrival!, layouts.L3)).toBeGreaterThan(25);
     expect(distanceToElevator(layouts.RF.arrival!, layouts.RF)).toBeGreaterThan(25);
