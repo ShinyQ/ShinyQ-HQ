@@ -7,6 +7,7 @@ import { OpsBody } from "./OpsBody";
 import { ReactorBody } from "./ReactorBody";
 import { ResearchBody } from "./ResearchBody";
 import { RoofBody } from "./RoofBody";
+import { TopicsBody } from "./TopicsBody";
 import { VisitsBody } from "./VisitsBody";
 
 export interface RoomBodyProps {
@@ -25,5 +26,6 @@ export const ROOM_BODIES: Partial<Record<RoomKind, ComponentType<RoomBodyProps>>
   reactor: ReactorBody,
   research: ResearchBody,
   roof: RoofBody,
+  topics: TopicsBody,
   visits: VisitsBody,
 };
