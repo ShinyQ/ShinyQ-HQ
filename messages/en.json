@@ -33,9 +33,7 @@
   },
   "common": {
     "present": "Present",
-    "readMore": "Read more",
     "caseStudy": "Read case study",
-    "viewAll": "View all",
     "stack": "Tech stack",
     "highlights": "Highlights",
     "previous": "Previous",
@@ -73,18 +71,11 @@
   "home": {
     "eyebrow": "Agent HQ · Lobby",
     "currentRole": "Current role",
-    "ctaQuick": "Quick view",
-    "ctaLabs": "Explore the Labs",
     "statsTitle": "At a glance",
-    "wingsTitle": "Product and AI engineering",
-    "wingsIntro": "My software engineering work since 2019, alongside enterprise AI work since 2026.",
     "journeyTitle": "Recent work",
     "skillsTitle": "Skills wall",
     "certsTitle": "Certifications",
     "howTitle": "Working approach",
-    "directoryTitle": "Tower directory",
-    "directoryIntro": "Choose a floor to explore. Every floor also has a page on the classic site.",
-    "storyTitle": "Background",
     "seeWork": "See the work",
     "selectedWork": "Selected work",
     "allProjects": "All {count} projects",
@@ -351,7 +342,6 @@
     "elsewhere": "Elsewhere"
   },
   "root": {
-    "redirecting": "Opening ShinyQ HQ…",
     "choose": "Choose a language"
   },
   "hud": {
@@ -491,7 +481,6 @@
       "stars": "{count, plural, one {# star} other {# stars}}"
     },
     "world": {
-      "lectern": "Reading desk",
       "read": "Read",
       "comms": "Contact links",
       "cvHint": "Open the CV viewer",
@@ -563,8 +552,6 @@
     "next": "Next room",
     "more": "More actions",
     "readme": "README",
-    "readmeOn": "Show README",
-    "readmeOff": "Hide README",
     "readmeHint": "README: press t to show or hide",
     "keyResults": "Key results",
     "gallery": "Gallery",
@@ -619,9 +606,7 @@
       "starOne": "1 star",
       "stars": "{count} stars"
     },
-    "directory": "Directory",
-    "signSoftware": "Product Engineering",
-    "signAi": "AI Engineering"
+    "directory": "Directory"
   },
   "gallery": {
     "title": "Gallery",
