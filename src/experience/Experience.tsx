@@ -25,7 +25,7 @@ import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { CanvasBoundary } from "./CanvasBoundary";
-import { buildFloorLayouts, READY_FLOORS } from "./config";
+import { buildFloorLayouts, LOBBY, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
 import { continuationSteps, endContinuation, introTarget, isContinuing, setIntroTarget, takeIntroTarget } from "./introContinue";
@@ -100,9 +100,13 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
   const place = (floor: FloorId, at: { x: number; z: number }) => {
-    s.resume(floor, at);
+    // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); every other start turns toward the default follow camera.
+    const spawn = layouts.L1.spawn;
+    const heading = floor === "L1" && at.x === spawn.x && at.z === spawn.z ? LOBBY.spawnHeading : Math.PI / 4;
+    s.resume(floor, { ...at, heading });
     roverRuntime.x = at.x;
     roverRuntime.z = at.z;
+    roverRuntime.heading = heading;
   };
   const doorOf = (floor: FloorId, room?: RoomId) => (room ? (layouts[floor].doors?.find((d) => d.room === room)?.at ?? layouts[floor].stops?.[room]) : undefined);
   const openStartRoom = () => {

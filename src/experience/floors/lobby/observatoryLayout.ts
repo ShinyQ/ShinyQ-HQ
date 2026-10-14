@@ -69,6 +69,7 @@ export function lobbyObservatory({ rect, spawn, axis, approach }: LobbyObservato
       area: { minX: spawn.x - s, maxX: spawn.x + s, minZ: spawn.z - s, maxZ: spawn.z + s },
       yaw: yawLooking(axis) + OBSERVATORY_VIEW.spawnTurn,
       zoom: OBSERVATORY_VIEW.spawnZoom,
+      prime: true,
       classView: {
         tablet: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.tablet },
         mobile: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.mobile },

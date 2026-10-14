@@ -125,6 +125,8 @@ describe("Visitor Observatory in the Lobby (owner decision 2026-10-14)", () => {
     expect(zoneAt("L1", door.at, zones)?.id).toBe("L1:visits");
     expect(zoneAt("L1", l1.spawn, zones)?.id).toBe("L1:kiosk");
     expect(zoneAt("L1", l1.approach, zones)?.id).toBe("L1:arrival");
+    // Only the spawn view is applied at once (boot, intro, first frame); the others ease in like every zone.
+    expect(zones.filter((z) => z.prime).map((z) => z.id)).toEqual(["L1:kiosk"]);
     // The hologram plaza, the skills wall and the certification wall keep their own views.
     expect(zoneAt("L1", { x: LOBBY.hologram.x + 10, z: LOBBY.hologram.z }, zones)).toBeNull();
     expect(zoneAt("L1", { x: LOBBY.skillsWall.x, z: LOBBY.skillsWall.z + 2.6 }, zones)?.id).toBe("L1:skills");

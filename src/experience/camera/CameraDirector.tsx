@@ -122,9 +122,12 @@ export function CameraDirector({
     const axis = exploring ? rotateAxisFromKeys(keys) : 0;
     const tilt = exploring ? pitchAxisFromKeys(keys) : 0;
     if (axis || tilt) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, tilt * KEY_PITCH_SPEED * dt, rail);
-    // The session spawn (the kiosk stop), a deep link's door and the rover in the boot and intro start in their
-    // zone's view at once: the intro flies into that view and the first frame shows it, with no turn afterwards.
-    if (!l.ready || s.phase === "boot" || s.phase === "intro") primeZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), cls);
+    // The session spawn (the L1 kiosk stop, a `prime` zone) starts in its zone's view at once: the intro flies into
+    // that view and the first frame shows it, with no turn afterwards. Other zones keep easing in (never under reduced motion).
+    if (!l.ready || s.phase === "boot" || s.phase === "intro") {
+      const zone = zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones);
+      if (zone?.prime) primeZone(orbit, zone, cls);
+    }
     if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), s.reducedMotion, cls);
     stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s));
     roverRuntime.cameraYaw = orbit.yaw;

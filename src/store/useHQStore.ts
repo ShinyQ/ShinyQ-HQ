@@ -164,7 +164,7 @@ export interface HQState {
   selectTopic: (topic: TopicPick) => void;
   clearTopic: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
-  resume: (floor: FloorId, at?: { x: number; z: number }) => void;
+  resume: (floor: FloorId, at?: { x: number; z: number; heading?: number }) => void;
 }
 
 export const STORE_KEY = "hq:v1";

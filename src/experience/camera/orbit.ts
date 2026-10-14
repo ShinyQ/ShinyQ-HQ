@@ -185,6 +185,8 @@ export interface ViewZone {
   zoom?: number;
   /** Another yaw or zoom for a camera class (a phone frames a tall view where a desktop frames a wide one). */
   classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number }>>;
+  /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
+  prime?: boolean;
 }
 
 /** The yaw and zoom a zone asks for on a camera class. */
