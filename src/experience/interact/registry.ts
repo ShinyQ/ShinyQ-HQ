@@ -5,7 +5,7 @@ import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
 import { buildCareerRoad, careerLayoutInput, type CareerRoadLayout } from "../floors/career/layout";
 import { SKYLINE } from "../floors/career/skyline";
 import { WORKSHOP } from "../floors/career/workshopLayout";
-import { buildLabsLayout, LABS, type LabsLayout } from "../floors/labs/layout";
+import { buildLabsLayout, LABS, LABS_WINGS, type LabsLayout } from "../floors/labs/layout";
 import { OPS } from "../floors/labs/ops";
 import { OPS_ROOM } from "../floors/labs/opsHash";
 import { REACTOR } from "../floors/labs/reactor";
@@ -76,7 +76,7 @@ export interface InteractData {
   labels: InteractLabels;
 }
 
-const WINGS: readonly Wing[] = ["software", "ai"];
+const WINGS: readonly Wing[] = LABS_WINGS;
 /** Pads: the floating icon tops out here. */
 const PAD_HEIGHT = PAD.iconY + PAD.iconSize / 2;
 /** L2 rooms are open bays with a neon frame about 2.2 u tall. */
@@ -222,8 +222,9 @@ function lobbyItems(layouts: FloorLayouts, data: InteractData): Interactable[] {
 }
 
 function labsBoards(labs: LabsLayout, data: InteractData): Interactable[] {
-  return WINGS.map((wing) => {
+  return WINGS.flatMap((wing) => {
     const board = labs.boards[wing];
+    if (!board) return [];
     return {
       id: `L3:board:${wing}`,
       floor: "L3",

@@ -3,7 +3,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
-import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, sanitizePackText, validatePack } from "@/ask/pack";
+import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, validatePack } from "@/ask/pack";
 import { isAskCite } from "@/ask/protocol";
 import { getContent, getPerspectivesFile } from "@/content/load";
 import { draftPerspectives } from "@/content/perspectives";
@@ -263,13 +263,48 @@ describe("perspectives and principles in the pack", () => {
   });
 });
 
+describe("pack budget with the Data and ML pods (runbook deviation 8, 2026-10-14)", () => {
+  const pods = getContent().floors.labs.pods;
+  const podRepos = new Set(pods.flatMap((p) => p.repos ?? []));
+  const byId = (p: KnowledgePack, chunkId: string) => p.chunks.find((c) => c.id === chunkId);
+
+  it("keeps one approach step for data pods and drops every tagline from project chunks", () => {
+    for (const pod of pods) {
+      const chunk = byId(pack, `project-${pod.slug}`)!;
+      expect(chunk.text_en.includes(cleanText(pod.tagline.en)), pod.slug).toBe(false);
+      if (pod.wing === "data") expect(packApproachSteps(pod), pod.slug).toBe(1);
+      expect(chunk.text_en.includes(cleanText(pod.problem.en)), pod.slug).toBe(true);
+    }
+  });
+
+  it("tells repositories that a pod links only through the project chunk", () => {
+    for (const sp of getContent().sideProjects) expect(Boolean(byId(pack, `side-${sp.id}`)), sp.id).toBe(!(sp.repo && podRepos.has(sp.repo)));
+    const repos = byId(pack, "repos")!;
+    for (const repo of getContent().publicRepos.filter((r) => r.stars > 0 && podRepos.has(r.url))) {
+      expect(repos.text_en.includes(`${repo.name} (${repo.language}, ${repo.stars} stars).`), repo.name).toBe(true);
+      expect(repos.text_en.includes(cleanText(repo.description.en)), repo.name).toBe(false);
+    }
+  });
+
+  it("keeps one lead paragraph of each hosted post", () => {
+    expect(POST_LEAD_PARAGRAPHS).toBe(1);
+  });
+
+  it("names the Data and ML wing in data project chunks", () => {
+    const chunk = byId(pack, "project-covid-herd-immunity-forecast")!;
+    expect(chunk.text_en.startsWith("Project (Data and ML): ")).toBe(true);
+    expect(chunk.text_id.startsWith("Proyek (Data dan ML): ")).toBe(true);
+    expect(chunk.keywords).toContain("data");
+  });
+});
+
 describe("pack budget for project chunks", () => {
   it("keeps every approach step of hero pods and caps featured and listed pods (the case study pages keep them all)", () => {
     expect(PACK_APPROACH_STEPS).toEqual({ hero: Infinity, featured: 1, listed: 1 });
     for (const pod of getContent().floors.labs.pods) {
       const chunk = pack.chunks.find((c) => c.id === `project-${pod.slug}`)!;
       pod.approach.forEach((step, i) => {
-        const kept = i < PACK_APPROACH_STEPS[pod.tier];
+        const kept = i < packApproachSteps(pod);
         expect(chunk.text_en.includes(cleanText(step.en)), `${pod.slug} step ${i + 1}`).toBe(kept);
       });
     }

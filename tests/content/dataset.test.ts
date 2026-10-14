@@ -3,6 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isPublicLiveUrl } from "@/content/live-links";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
+import { getPods } from "@/content/load";
+import { pickFeaturedPods } from "@/content/pageview";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
 
@@ -285,5 +287,45 @@ describe("AI Fraud Document Review gallery names its own product (R5-P11)", () =
     expect(assets[0]?.alt.en).toMatch(/^MII Fraud Detection home:/);
     expect(assets[0]?.alt.id).toMatch(/^Beranda MII Fraud Detection:/);
     for (const a of assets) expect(`${a.alt.en} ${a.alt.id}`).not.toMatch(/FREDDY/i);
+  });
+});
+
+describe("Data and ML pods (owner request 2026-10-14)", () => {
+  const content = parsed.data!;
+  const pods = content.floors.labs.pods;
+  const data = pods.filter((p) => p.wing === "data");
+  const DATA_SLUGS = ["university-sentiment-indobert", "ifest-2021-sentiment-analysis", "covid-herd-immunity-forecast", "stock-allocation-optimizer", "kampus-merdeka-reports-crawler"];
+
+  it("adds the five chosen repos as featured pods with their public repositories and no client", () => {
+    expect(data.map((p) => p.slug)).toEqual(DATA_SLUGS);
+    for (const pod of data) {
+      expect(pod.tier, pod.slug).toBe("featured");
+      expect(pod.client, pod.slug).toBeUndefined();
+      expect(pod.repos?.length, pod.slug).toBeGreaterThan(0);
+      expect(pod.liveUrl, pod.slug).toBeUndefined();
+      for (const r of pod.results) expect(r.context?.en, `${pod.slug} ${r.value}`).toBeTruthy();
+    }
+  });
+
+  it("does not duplicate the real estate side project as a pod", () => {
+    expect(content.sideProjects.some((s) => s.id === "real-estate-cluster-map")).toBe(true);
+    expect(pods.some((p) => p.repos?.some((r) => r.includes("Real-Estate")))).toBe(false);
+  });
+
+  it("takes the IFEST 2021 placing from the awards, never a new rank", () => {
+    const award = content.awards.find((a) => a.id === "ifest-2021-data-analysis")!;
+    const ifest = data.find((p) => p.slug === "ifest-2021-sentiment-analysis")!;
+    expect(award.placement.en).toBe("1st place");
+    expect(ifest.results[0].value).toBe(award.placement.en);
+  });
+
+  it("links the thesis, the papers and the models that came from these projects, both ways with the Journey", () => {
+    const entries = content.floors.careerArchive.entries;
+    expect(data.find((p) => p.slug === "university-sentiment-indobert")!.publications).toEqual(["sentiboard-bsc-thesis", "sentiboard-paper", "indobert-university-reviews-model"]);
+    for (const pod of data.filter((p) => p.timelineRef)) expect(entries.find((e) => e.id === pod.timelineRef)?.podRef, pod.slug).toBe(pod.slug);
+  });
+
+  it("keeps the home page's featured top three", () => {
+    expect(pickFeaturedPods(getPods()).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "fraud-review-platform"]);
   });
 });

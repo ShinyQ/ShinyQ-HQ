@@ -2,11 +2,11 @@ import type { Wing } from "@/content/schema";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { LabPod } from "../../types";
 import type { Box } from "../roof/solids";
-import { directoryBoard, LABS, tourOrder, WING_TINT } from "./layout";
+import { directoryBoard, LABS, LABS_WINGS, tourOrder, WING_TINT, type DirectoryBoard } from "./layout";
 
 /**
- * Pure content of the L3 wing directory wall (owner request 2026-10-13: noticeable on arrival). Both
- * panels are one merged mesh, their rims and title underlines one line batch, every text one troika
+ * Pure content of the L3 wing directory wall (owner request 2026-10-13: noticeable on arrival) and of
+ * the Data and ML panel past the data plaza (owner request 2026-10-14). All panels are one merged mesh, their rims and title underlines one line batch, every text one troika
  * BatchedText (3 draw calls). Each panel shows the same text on its west face (the arrival camera and
  * the board stop) and its east face (rovers coming back from the wings). Text is pre-wrapped here, so
  * the line count is known and the list never runs into the footer. Phones get the `compact` wall:
@@ -36,7 +36,10 @@ export interface WallLine {
   color: string;
 }
 
-const WINGS = ["software", "ai"] as const;
+/** Directory panels by wing: the layout's `boards` (the data panel stands past the data plaza); the hub pair by default. */
+export type WallBoards = Partial<Record<Wing, DirectoryBoard>>;
+const HUB_BOARDS: WallBoards = { software: directoryBoard("software"), ai: directoryBoard("ai") };
+const panels = (boards: WallBoards) => LABS_WINGS.flatMap((wing) => (boards[wing] ? [{ wing, b: boards[wing]! }] : []));
 export const TIER_MARK: Record<LabPod["tier"], string> = { hero: "\u25C6", featured: "\u25C7", listed: "\u00B7" };
 
 /** Panel text layout in u: heights from the floor, sizes as font em. */
@@ -153,21 +156,19 @@ export function boardList(list: readonly LabPod[], maxLines: number, style: List
   return { text: out.join("\n"), entries: out.length, lines };
 }
 
-/** Both panels as solids (one merged mesh). */
-export function wallSolids(): Box[] {
-  return WINGS.map((wing) => {
-    const b = directoryBoard(wing);
+/** Every panel as solids (one merged mesh). */
+export function wallSolids(boards: WallBoards = HUB_BOARDS): Box[] {
+  return panels(boards).map(({ b }) => {
     return { x: b.center.x, y: 0, z: b.center.z, w: LABS.board.w, h: LABS.board.h, d: LABS.board.d };
   });
 }
 
 /** Each panel's 12 rim edges and a title underline on both faces, in its wing tint (one line batch). */
-export function wallLines(): WallLine[] {
+export function wallLines(boards: WallBoards = HUB_BOARDS): WallLine[] {
   const out: WallLine[] = [];
   const { underline } = panelRows();
   const half = textWidth() / 2;
-  for (const wing of WINGS) {
-    const b = directoryBoard(wing);
+  for (const { wing, b } of panels(boards)) {
     const color = WING_TINT[wing];
     const y1 = LABS.board.h;
     const c: [number, number, number][] = [
@@ -191,13 +192,12 @@ export function wallLines(): WallLine[] {
 }
 
 /** Every text of the wall, both faces of both panels (one BatchedText). Wing names come from `labels.wings`, never literals. */
-export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts, size: WallSize = "full"): BatchedLabel[] {
+export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts, size: WallSize = "full", boards: WallBoards = HUB_BOARDS): BatchedLabel[] {
   const style = LIST_STYLE[size];
   const rows = panelRows(style);
   const width = textWidth();
   const out: BatchedLabel[] = [];
-  for (const wing of WINGS) {
-    const b = directoryBoard(wing);
+  for (const { wing, b } of panels(boards)) {
     const inWing = pods.filter((p) => p.wing === wing);
     const title = fitTitle(labels.wings[wing], width);
     const list = boardList(inWing, rows.listLines, style);

@@ -308,6 +308,20 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         }
         return;
       }
+      case "wing": {
+        const wing = index?.wings.find((w) => w.wing === target.wing);
+        // In the 3D tower: ride to L3 and drive to the wing's directory panel. On the Classic site: the
+        // Work page filtered by that wing.
+        if (wing?.stop && document.documentElement.hasAttribute("data-hq")) {
+          void runner.runSteps(`wing:${wing.wing}`, [
+            { kind: "elevator", floor: "L3" },
+            { kind: "drive", to: wing.stop },
+          ]);
+        } else {
+          router.push(`/${locale}/labs?wing=${target.wing}#all-projects`);
+        }
+        return;
+      }
     }
   };
 

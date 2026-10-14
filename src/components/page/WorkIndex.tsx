@@ -6,7 +6,7 @@ import { matchesPod, parsePodFilter, stackOptions, wingCounts, type PodFilter, t
 import type { Pod } from "@/content/schema";
 import { setSearchParams, useSearch } from "./urlState";
 
-const WING_ORDER: readonly ("all" | Wing)[] = ["all", "ai", "software"];
+const WING_ORDER: readonly ("all" | Wing)[] = ["all", "ai", "data", "software"];
 
 /**
  * Wing and stack filter over server-rendered project lists. Rows carry `podAttrs` data

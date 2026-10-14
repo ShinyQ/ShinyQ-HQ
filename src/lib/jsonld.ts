@@ -15,6 +15,7 @@ import id from "../../messages/id.json";
 type JsonLdObject = Record<string, unknown>;
 
 const MESSAGES = { en, id } as const;
+const GENRE: Record<Pod["wing"], string> = { software: "Software engineering", ai: "AI engineering", data: "Data science and machine learning" };
 
 export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
@@ -75,7 +76,7 @@ export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
     keywords: pod.stack.join(", "),
     ...(live ? { sameAs: [live.href] } : {}),
     image: [absoluteUrl(ogImagePath({ kind: "labs", locale, slug: pod.slug })), ...pod.assets.slice(0, 3).map((a) => absoluteUrl(a.src))],
-    genre: pod.wing === "ai" ? "AI engineering" : "Software engineering",
+    genre: GENRE[pod.wing],
     creator: { "@id": PERSON_ID },
     author: { "@id": PERSON_ID },
     isPartOf: { "@id": WEBSITE_ID },

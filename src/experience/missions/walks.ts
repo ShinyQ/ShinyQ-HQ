@@ -1,5 +1,5 @@
 import type { FloorId, RoomId, Wing } from "@/content/schema";
-import { directoryStop, tourOrder } from "../floors/labs/layout";
+import { buildLabsLayout, LABS_WINGS, tourOrder } from "../floors/labs/layout";
 import { experienceRows, highlightRoom, type HighlightStation } from "../floors/lobby/stations";
 import { LIBRARY_ZONES, type LibraryLayout, type LibraryZone } from "../floors/library/model";
 import { ROOF_STOPS } from "../floors/roof/layout";
@@ -31,7 +31,7 @@ export interface LabsWalkLabels {
 
 /** Filter ids match the Page View journey chips (`?type=`). */
 export const CAREER_FILTERS: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
-export const LABS_FILTERS: readonly Wing[] = ["software", "ai"];
+export const LABS_FILTERS: readonly Wing[] = LABS_WINGS;
 
 export function careerWalk(career: CareerData, labels: CareerWalkLabels): WalkDefinition {
   const stops: WalkStop[] = career.years.flatMap(({ year, entries }) =>
@@ -48,19 +48,23 @@ export function careerWalk(career: CareerData, labels: CareerWalkLabels): WalkDe
 
 /**
  * Wing by wing (the wing roads are far apart): each wing's hero and featured pods in docking order
- * (`tourOrder`: gallery first, then tier, then `order`); listed pods stay on the directory boards,
- * where the tour ends.
+ * (`tourOrder`: gallery first, then tier, then `order`), the Data and ML annex last; listed pods stay
+ * on the directory boards, where the tour ends. Wings without pods (and a floor without the data
+ * annex) are left out.
  */
 export function labsWalk(pods: readonly LabPod[], labels: LabsWalkLabels, placed?: ReadonlySet<string>): WalkDefinition {
-  const tour = LABS_FILTERS.flatMap((wing) => tourOrder(pods.filter((p) => p.wing === wing && (!placed || placed.has(p.slug)))));
+  const layout = buildLabsLayout(pods);
+  const docked = placed ?? new Set(layout.placed.map((p) => p.pod.slug));
+  const wings = LABS_FILTERS.filter((wing) => layout.boards[wing]);
+  const tour = wings.flatMap((wing) => tourOrder(pods.filter((p) => p.wing === wing && docked.has(p.slug))));
   const stops: WalkStop[] = tour.map((p) => {
     const room = `L3:${p.slug}` as RoomId;
     return { id: room, to: room, room, title: p.title, group: labels.wings[p.wing], tags: [p.wing] };
   });
-  for (const wing of LABS_FILTERS) {
-    stops.push({ id: `L3:directory:${wing}`, to: directoryStop(wing), palette: "pods", title: labels.more, subtitle: labels.moreSub, group: labels.wings[wing], tags: [wing] });
+  for (const wing of wings) {
+    stops.push({ id: `L3:directory:${wing}`, to: layout.boards[wing]!.stop, palette: "pods", title: labels.more, subtitle: labels.moreSub, group: labels.wings[wing], tags: [wing] });
   }
-  return { id: "projects", floor: "L3", stops, filters: LABS_FILTERS.map((id) => ({ id, label: labels.wings[id] })) };
+  return { id: "projects", floor: "L3", stops, filters: wings.map((id) => ({ id, label: labels.wings[id] })) };
 }
 
 export interface LibraryWalkLabels {

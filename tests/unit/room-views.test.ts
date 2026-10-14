@@ -238,3 +238,32 @@ describe("Highlights Hall room views", () => {
     }
   });
 });
+
+describe("Data and ML pod views (owner request 2026-10-14)", () => {
+  it("adds a Code and research section with the GitHub repositories and the linked papers, thesis and models", () => {
+    const pod = getPods().find((p) => p.slug === "university-sentiment-indobert")!;
+    for (const locale of LOCALES) {
+      const view = podView(pod, locale);
+      const section = view.sections?.find((s) => s.title === (locale === "en" ? en : id).labs.codeResearch);
+      expect(section, locale).toBeDefined();
+      const items = section!.items!;
+      expect(items.slice(0, 3).map((i) => i.href)).toEqual(pod.repos);
+      expect(items.slice(0, 3).every((i) => i.external && i.logo === "/tech/github.svg")).toBe(true);
+      expect(items.slice(3).map((i) => i.title)).toEqual(["Sentiboard: University Sentiment Dashboard Using IndoBERT", expect.stringContaining("IndoBERT"), "IndoBERT Sentiment Model for Indonesian University Reviews"]);
+      expect(view.badges?.[0]).toEqual({ label: (locale === "en" ? en : id).common.wing.data, accent: "amber" });
+    }
+  });
+
+  it("leaves pods without repositories or publications alone", () => {
+    const view = podView(getPods().find((p) => p.slug === "digital-banking-integrations")!, "en");
+    expect(view.sections?.some((s) => s.title === en.labs.codeResearch)).toBe(false);
+  });
+
+  it("chains data pods in their own wing order and builds every data pod view", () => {
+    const views = buildRoomViews("en");
+    const data = getPods("data");
+    for (const pod of data) expect(views[`L3:${pod.slug}`], pod.slug).toBeDefined();
+    const first = views[`L3:${data[0].slug}`]!;
+    expect(first.next).toBe(`L3:${data[1].slug}`);
+  });
+});

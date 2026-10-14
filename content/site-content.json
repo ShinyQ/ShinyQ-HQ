@@ -1243,6 +1243,7 @@
             "Streamlit"
           ],
           "discipline": "ai",
+          "podRef": "ifest-2021-sentiment-analysis",
           "url": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet",
           "confidence": "verified"
         },
@@ -1273,6 +1274,7 @@
             "Jupyter"
           ],
           "discipline": "data",
+          "podRef": "covid-herd-immunity-forecast",
           "url": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast",
           "confidence": "verified"
         },
@@ -1503,6 +1505,7 @@
             "Hugging Face"
           ],
           "discipline": "ai",
+          "podRef": "university-sentiment-indobert",
           "url": "https://huggingface.co/ShinyQ/indobert-sentiment-analysis-indonesian-university-reviews",
           "confidence": "verified",
           "logo": {
@@ -8089,6 +8092,557 @@
           ],
           "hologram": "waveform",
           "assets": []
+        },
+        {
+          "id": "university-sentiment-indobert",
+          "slug": "university-sentiment-indobert",
+          "order": 20,
+          "tier": "featured",
+          "accent": "amber",
+          "wing": "data",
+          "timelineRef": "sentiboard-2022",
+          "title": {
+            "en": "Sentiboard: IndoBERT University Sentiment Dashboard",
+            "id": "Sentiboard: Dashboard Sentimen Universitas Berbasis IndoBERT"
+          },
+          "tagline": {
+            "en": "A fine-tuned IndoBERT model, a FastAPI inference API and a Django dashboard that tracks sentiment in university-related posts.",
+            "id": "Model IndoBERT hasil fine-tuning, API inferensi FastAPI, dan dashboard Django yang memantau sentimen unggahan tentang kampus."
+          },
+          "period": {
+            "start": "2022-04",
+            "end": "2023-01"
+          },
+          "role": {
+            "en": "Sole author (BSc thesis): model, API and dashboard",
+            "id": "Penulis tunggal (skripsi S1): model, API, dan dashboard"
+          },
+          "problem": {
+            "en": "A university wanted to follow how people talk about it on social media, but reading Indonesian posts one by one does not scale and generic sentiment tools handle Indonesian slang poorly.",
+            "id": "Sebuah universitas ingin mengikuti pembicaraan tentang kampusnya di media sosial, tetapi membaca unggahan berbahasa Indonesia satu per satu tidak efisien dan tool sentimen umum kurang baik menangani bahasa gaul Indonesia."
+          },
+          "approach": [
+            {
+              "en": "I built a balanced training set of 7,500 Indonesian tweets (2,500 positive, neutral and negative each), sampled from a public dataset of tweets about online lectures, and cleaned it with case folding, slang normalization, Sastrawi stopword removal and stemming.",
+              "id": "Saya menyusun data latih seimbang berisi 7.500 tweet berbahasa Indonesia (masing-masing 2.500 positif, netral, dan negatif) dari dataset publik tentang kuliah daring, lalu membersihkannya dengan case folding, normalisasi kata gaul, stopword removal, dan stemming Sastrawi."
+            },
+            {
+              "en": "I fine-tuned indobert-base-p2 for three-class sentiment with the Hugging Face Trainer and published the model on Hugging Face.",
+              "id": "Saya melakukan fine-tuning indobert-base-p2 untuk klasifikasi sentimen tiga kelas dengan Hugging Face Trainer dan mempublikasikan modelnya di Hugging Face."
+            },
+            {
+              "en": "I wrapped the model in a Dockerized FastAPI service that returns the cleaned text, the logits and the label for each post.",
+              "id": "Saya membungkus model dalam layanan FastAPI ber-Docker yang mengembalikan teks bersih, logit, dan label untuk setiap unggahan."
+            },
+            {
+              "en": "I built Sentiboard, a Django dashboard that collects posts through the Twitter API, labels them with the model and shows sentiment by month with word clouds and topic views.",
+              "id": "Saya membangun Sentiboard, dashboard Django yang mengumpulkan unggahan lewat Twitter API, memberi label dengan model tersebut, dan menampilkan sentimen per bulan dengan word cloud dan tampilan topik."
+            }
+          ],
+          "results": [
+            {
+              "value": "89%",
+              "label": {
+                "en": "Validation accuracy of the fine-tuned model",
+                "id": "Akurasi validasi model hasil fine-tuning"
+              },
+              "context": {
+                "en": "On 1,350 held-out tweets after three epochs, weighted F1 0.89 (training notebook output); the Hugging Face model card also reports 89%.",
+                "id": "Pada 1.350 tweet validasi setelah tiga epoch, weighted F1 0,89 (output notebook training); model card Hugging Face juga mencatat 89%."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "88%",
+              "label": {
+                "en": "Test accuracy",
+                "id": "Akurasi uji"
+              },
+              "context": {
+                "en": "On 150 test tweets the model never saw in training (classification report in the training notebook).",
+                "id": "Pada 150 tweet uji yang tidak dipakai saat training (classification report di notebook training)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "7,500",
+              "label": {
+                "en": "Labelled tweets, balanced across three classes",
+                "id": "Tweet berlabel, seimbang di tiga kelas"
+              },
+              "context": {
+                "en": "2,500 positive, 2,500 neutral and 2,500 negative (the cleaned dataset file in the model repository).",
+                "id": "2.500 positif, 2.500 netral, dan 2.500 negatif (file dataset bersih di repository model)."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "IndoBERT",
+            "Hugging Face",
+            "PyTorch",
+            "pandas",
+            "Sastrawi",
+            "FastAPI",
+            "Django",
+            "Docker"
+          ],
+          "hologram": "chart",
+          "assets": [],
+          "repos": [
+            "https://github.com/ShinyQ/Indobert_University-Feedback-Sentiment-Analysis_Model",
+            "https://github.com/ShinyQ/FastAPI_Thesis-University-Sentiment-API",
+            "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App"
+          ],
+          "publications": [
+            "sentiboard-bsc-thesis",
+            "sentiboard-paper",
+            "indobert-university-reviews-model"
+          ]
+        },
+        {
+          "id": "ifest-2021-sentiment-analysis",
+          "slug": "ifest-2021-sentiment-analysis",
+          "order": 21,
+          "tier": "featured",
+          "accent": "amber",
+          "wing": "data",
+          "timelineRef": "research-ewallet-sentiment-2021",
+          "title": {
+            "en": "IFEST 2021 Sentiment Analysis: E-Wallets and PPKM Policy",
+            "id": "Analisis Sentimen IFEST 2021: E-Wallet dan Kebijakan PPKM"
+          },
+          "tagline": {
+            "en": "A team's winning entry in a national data analysis competition: CNN-LSTM for e-wallet reviews in the selection phase, then IndoBERTweet for PPKM policy tweets in the final.",
+            "id": "Karya tim pemenang kompetisi analisis data nasional: CNN-LSTM untuk ulasan e-wallet di babak seleksi, lalu IndoBERTweet untuk tweet kebijakan PPKM di babak final."
+          },
+          "period": {
+            "start": "2021-08",
+            "end": "2021-10"
+          },
+          "role": {
+            "en": "Team member in a team of four",
+            "id": "Anggota tim berempat"
+          },
+          "problem": {
+            "en": "The IFEST 2021 Data Analysis Competition asked teams to turn Indonesian public opinion into insight: first app-store reviews of four e-wallets, then, in a five-hour final, a sentiment model for tweets about the government's PPKM COVID-19 policy, scored on hidden test data.",
+            "id": "IFEST 2021 Data Analysis Competition meminta tim mengolah opini publik Indonesia menjadi insight: pertama ulasan app store empat e-wallet, lalu dalam final lima jam, model sentimen untuk tweet tentang kebijakan PPKM COVID-19 pemerintah, yang dinilai dengan data uji tersembunyi."
+          },
+          "approach": [
+            {
+              "en": "In the selection phase the team crawled Google Play reviews of four e-wallets, grouped them into topics with keyword rules and trained a CNN-LSTM sentiment model on public labelled data plus 201 reviews labelled by hand.",
+              "id": "Di babak seleksi, tim mengumpulkan ulasan Google Play empat e-wallet, mengelompokkannya ke topik dengan aturan kata kunci, dan melatih model sentimen CNN-LSTM dengan data berlabel publik ditambah 201 ulasan yang dilabeli manual."
+            },
+            {
+              "en": "The team presented the results in a Streamlit app with Plotly charts and later wrote them up as an IEEE conference paper.",
+              "id": "Tim menyajikan hasilnya di aplikasi Streamlit dengan grafik Plotly, lalu menuliskannya sebagai paper konferensi IEEE."
+            },
+            {
+              "en": "In the final the team compared seven cleaning variants on balanced and unbalanced data across IndoBERTweet, IndoBERT, LSTM, BiLSTM, SVM and Naive Bayes, then submitted IndoBERTweet predictions.",
+              "id": "Di final, tim membandingkan tujuh varian pembersihan data pada data seimbang dan tidak seimbang dengan IndoBERTweet, IndoBERT, LSTM, BiLSTM, SVM, dan Naive Bayes, lalu mengirim prediksi IndoBERTweet."
+            }
+          ],
+          "results": [
+            {
+              "value": "1st place",
+              "label": {
+                "en": "IFEST 2021 Data Analysis Competition, final round",
+                "id": "IFEST 2021 Data Analysis Competition, babak final"
+              },
+              "context": {
+                "en": "Organized by Universitas Padjadjaran; the judges reported the team's 0.79 test accuracy as the highest of all teams (repository README).",
+                "id": "Diselenggarakan Universitas Padjadjaran; juri menyatakan akurasi uji tim sebesar 0,79 sebagai yang tertinggi dari semua tim (README repository)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "84.8%",
+              "label": {
+                "en": "IndoBERTweet validation accuracy in the final",
+                "id": "Akurasi validasi IndoBERTweet di final"
+              },
+              "context": {
+                "en": "On 1,962 validation tweets after three epochs (fine-tuning notebook output).",
+                "id": "Pada 1.962 tweet validasi setelah tiga epoch (output notebook fine-tuning)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "9,810",
+              "label": {
+                "en": "Labelled PPKM tweets in three classes",
+                "id": "Tweet PPKM berlabel dalam tiga kelas"
+              },
+              "context": {
+                "en": "The competition's training data after cleaning (the unbalanced training file in the repository).",
+                "id": "Data latih kompetisi setelah dibersihkan (file training tidak seimbang di repository)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "82.8%",
+              "label": {
+                "en": "CNN-LSTM validation accuracy in the selection phase",
+                "id": "Akurasi validasi CNN-LSTM di babak seleksi"
+              },
+              "context": {
+                "en": "On 1,108 validation texts, F1 0.83 (training log in the CNN-LSTM notebook).",
+                "id": "Pada 1.108 teks validasi, F1 0,83 (log training di notebook CNN-LSTM)."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "IndoBERTweet",
+            "IndoBERT",
+            "Hugging Face",
+            "TensorFlow",
+            "scikit-learn",
+            "Gensim",
+            "Sastrawi",
+            "pandas",
+            "Streamlit",
+            "Plotly"
+          ],
+          "hologram": "graph",
+          "assets": [
+            {
+              "src": "/media/ifest-2021-sentiment-analysis/01-selection-flow.webp",
+              "alt": {
+                "en": "Flowchart of the selection-phase pipeline in Indonesian: data cleaning, topic classification, preprocessing and partial labelling, sentiment modelling with external labelled data, label prediction and sentiment analysis. From the team's IFEST 2021 Streamlit app.",
+                "id": "Diagram alur pipeline babak seleksi: pembersihan data, klasifikasi topik, pra-pemrosesan dan pelabelan sebagian data, pemodelan sentimen dengan data eksternal berlabel, prediksi label, dan analisis sentimen. Dari aplikasi Streamlit tim untuk IFEST 2021."
+              },
+              "width": 893,
+              "height": 1586,
+              "redacted": true
+            }
+          ],
+          "repos": [
+            "https://github.com/ShinyQ/IndoBERT-IndoBERTweet_Final-IFest-2021_Analisis-Sentimen-Kebijakan-PPKM-Pemerintah",
+            "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet",
+            "https://github.com/ShinyQ/E-Wallet-Sentiment-Analysis_IFest-Unpad-2021"
+          ],
+          "publications": [
+            "ewallet-sentiment-cnn-lstm"
+          ]
+        },
+        {
+          "id": "covid-herd-immunity-forecast",
+          "slug": "covid-herd-immunity-forecast",
+          "order": 22,
+          "tier": "featured",
+          "accent": "amber",
+          "wing": "data",
+          "timelineRef": "research-covid-forecasting-2021",
+          "title": {
+            "en": "COVID-19 Herd Immunity Forecasting with N-BEATS",
+            "id": "Prediksi Herd Immunity COVID-19 dengan N-BEATS"
+          },
+          "tagline": {
+            "en": "A study of Indonesia's COVID-19 case and vaccination dynamics, with N-BEATS forecasts of daily cases and full-dose vaccinations.",
+            "id": "Studi dinamika kasus dan vaksinasi COVID-19 di Indonesia, dengan prediksi N-BEATS untuk kasus harian dan vaksinasi dosis lengkap."
+          },
+          "period": {
+            "start": "2021-08",
+            "end": "2021-08"
+          },
+          "role": {
+            "en": "Co-author and notebook author in a three-person team",
+            "id": "Co-author dan penulis notebook dalam tim tiga orang"
+          },
+          "problem": {
+            "en": "In August 2021 Indonesia was coming off its largest COVID-19 wave, and the question was when cases would ease and how long full vaccination toward herd immunity would take at the current pace.",
+            "id": "Pada Agustus 2021 Indonesia baru melewati gelombang COVID-19 terbesarnya, dan pertanyaannya adalah kapan kasus mereda dan berapa lama vaksinasi lengkap menuju herd immunity dengan laju saat itu."
+          },
+          "approach": [
+            {
+              "en": "I combined daily case, recovery and vaccination data from January 2021 with population figures, mobility data and weights for policies and holidays.",
+              "id": "Saya menggabungkan data harian kasus, kesembuhan, dan vaksinasi sejak Januari 2021 dengan data populasi, data mobilitas, serta bobot kebijakan dan hari libur."
+            },
+            {
+              "en": "I trained N-BEATS models in Darts for daily cases (with mobility as a covariate) and for full-dose vaccinations, and backtested them with historical forecasts from March 2021.",
+              "id": "Saya melatih model N-BEATS di Darts untuk kasus harian (dengan mobilitas sebagai kovariat) dan vaksinasi dosis lengkap, lalu menguji mundur dengan historical forecast sejak Maret 2021."
+            },
+            {
+              "en": "The team turned the forecasts into estimates of when cases would bottom out and how long 80% full vaccination would take, published at IEEE ICICyTA 2021.",
+              "id": "Tim mengolah prediksi tersebut menjadi estimasi kapan kasus mencapai titik terendah dan berapa lama vaksinasi lengkap 80% tercapai, yang dipublikasikan di IEEE ICICyTA 2021."
+            }
+          ],
+          "results": [
+            {
+              "value": "0.992",
+              "label": {
+                "en": "R-squared of the daily case model backtest",
+                "id": "R-squared uji mundur model kasus harian"
+              },
+              "context": {
+                "en": "Historical forecast from 20 March to 22 August 2021 on the training series, so an in-sample check (Darts r2_score, notebook output).",
+                "id": "Historical forecast 20 Maret hingga 22 Agustus 2021 pada deret training, jadi pengecekan in-sample (r2_score Darts, output notebook)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "0.9995",
+              "label": {
+                "en": "R-squared of the full-dose vaccination model backtest",
+                "id": "R-squared uji mundur model vaksinasi dosis lengkap"
+              },
+              "context": {
+                "en": "Same in-sample historical forecast method on cumulative full-dose vaccinations (notebook output).",
+                "id": "Metode historical forecast in-sample yang sama pada vaksinasi dosis lengkap kumulatif (output notebook)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "208 days",
+              "label": {
+                "en": "Daily data used, from 27 January 2021",
+                "id": "Data harian yang dipakai, sejak 27 Januari 2021"
+              },
+              "context": {
+                "en": "Notebook output of the main case model.",
+                "id": "Output notebook model kasus utama."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "About 10 months",
+              "label": {
+                "en": "To 80% full vaccination at the August 2021 pace",
+                "id": "Menuju vaksinasi lengkap 80% dengan laju Agustus 2021"
+              },
+              "context": {
+                "en": "At an average of 273,318 second doses a day (the paper in the repository).",
+                "id": "Dengan rata-rata 273.318 dosis kedua per hari (paper di repository)."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "N-BEATS",
+            "Darts",
+            "PyTorch",
+            "pandas",
+            "Plotly",
+            "Matplotlib",
+            "Jupyter"
+          ],
+          "hologram": "waveform",
+          "assets": [
+            {
+              "src": "/media/covid-herd-immunity-forecast/01-case-forecast.webp",
+              "alt": {
+                "en": "Line chart of normalized daily COVID-19 cases in Indonesia from February to August 2021, peaking in mid July, followed by the N-BEATS forecast to late October 2021. Notebook output.",
+                "id": "Grafik garis kasus harian COVID-19 di Indonesia yang dinormalisasi dari Februari hingga Agustus 2021, memuncak pada pertengahan Juli, diikuti prediksi N-BEATS hingga akhir Oktober 2021. Output notebook."
+              },
+              "width": 704,
+              "height": 386,
+              "redacted": true
+            },
+            {
+              "src": "/media/covid-herd-immunity-forecast/02-case-backtest.webp",
+              "alt": {
+                "en": "Actual and predicted normalized daily cases from April to August 2021, the two lines nearly overlapping. Notebook output.",
+                "id": "Kasus harian aktual dan prediksi yang dinormalisasi dari April hingga Agustus 2021, kedua garis hampir berimpit. Output notebook."
+              },
+              "width": 369,
+              "height": 277,
+              "redacted": true
+            },
+            {
+              "src": "/media/covid-herd-immunity-forecast/03-vaccination-backtest.webp",
+              "alt": {
+                "en": "Actual and predicted cumulative full-dose vaccinations from April to August 2021, rising to about 32 million. Notebook output.",
+                "id": "Vaksinasi dosis lengkap kumulatif aktual dan prediksi dari April hingga Agustus 2021, naik hingga sekitar 32 juta. Output notebook."
+              },
+              "width": 369,
+              "height": 287,
+              "redacted": true
+            }
+          ],
+          "repos": [
+            "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast"
+          ],
+          "publications": [
+            "covid-19-herd-immunity-study"
+          ]
+        },
+        {
+          "id": "stock-allocation-optimizer",
+          "slug": "stock-allocation-optimizer",
+          "order": 23,
+          "tier": "featured",
+          "accent": "amber",
+          "wing": "data",
+          "title": {
+            "en": "S&P 500 Stock Allocation Optimizer",
+            "id": "Optimasi Alokasi Saham S&P 500"
+          },
+          "tagline": {
+            "en": "A Streamlit app that allocates a portfolio across chosen S&P 500 stocks with linear programming and SLSQP, under sector constraints.",
+            "id": "Aplikasi Streamlit yang mengalokasikan portofolio ke saham S&P 500 pilihan dengan linear programming dan SLSQP, dengan batasan sektor."
+          },
+          "period": {
+            "start": "2024-11",
+            "end": "2024-12"
+          },
+          "role": {
+            "en": "Group project: app, data loading, charts and the linear programming model",
+            "id": "Proyek kelompok: aplikasi, pemuatan data, grafik, dan model linear programming"
+          },
+          "problem": {
+            "en": "An investor choosing among S&P 500 stocks wants the split that maximizes return while keeping sector exposure in check, such as limits on tech and oil and gas and a minimum share per stock.",
+            "id": "Investor yang memilih saham S&P 500 ingin pembagian yang memaksimalkan imbal hasil sambil menjaga eksposur sektor, misalnya batas saham teknologi serta minyak dan gas, dan porsi minimum per saham."
+          },
+          "approach": [
+            {
+              "en": "I built the Streamlit app: stock selection, price download with yfinance for a chosen date range, cumulative return charts in Plotly and the results view.",
+              "id": "Saya membangun aplikasi Streamlit: pemilihan saham, pengunduhan harga dengan yfinance untuk rentang tanggal pilihan, grafik return kumulatif dengan Plotly, dan tampilan hasil."
+            },
+            {
+              "en": "I modelled the allocation as a linear program in PuLP that maximizes cumulative return under tech, non-tech, oil and gas and minimum proportion constraints.",
+              "id": "Saya memodelkan alokasi sebagai linear program di PuLP yang memaksimalkan return kumulatif dengan batasan saham teknologi, non-teknologi, minyak dan gas, serta proporsi minimum."
+            },
+            {
+              "en": "A teammate added the same model with SciPy's SLSQP solver, so the app compares both allocations side by side.",
+              "id": "Rekan tim menambahkan model yang sama dengan solver SLSQP dari SciPy, sehingga aplikasi membandingkan kedua alokasi berdampingan."
+            }
+          ],
+          "results": [
+            {
+              "value": "2 solvers",
+              "label": {
+                "en": "Linear programming and SLSQP compared in one view",
+                "id": "Linear programming dan SLSQP dibandingkan dalam satu tampilan"
+              },
+              "context": {
+                "en": "PuLP and SciPy SLSQP with the same constraints (the optimization module in the repository).",
+                "id": "PuLP dan SciPy SLSQP dengan batasan yang sama (modul optimasi di repository)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "503",
+              "label": {
+                "en": "S&P 500 tickers to choose from",
+                "id": "Ticker S&P 500 yang bisa dipilih"
+              },
+              "context": {
+                "en": "The ticker list in the repository; prices load live from Yahoo Finance.",
+                "id": "Daftar ticker di repository; harga dimuat langsung dari Yahoo Finance."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "8 of 9",
+              "label": {
+                "en": "Commits by Kurniadi",
+                "id": "Commit oleh Kurniadi"
+              },
+              "context": {
+                "en": "Repository commit history (one commit by a teammate adds the SLSQP solver).",
+                "id": "Riwayat commit repository (satu commit dari rekan tim menambahkan solver SLSQP)."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "Streamlit",
+            "PuLP",
+            "SciPy",
+            "yfinance",
+            "Plotly",
+            "pandas"
+          ],
+          "hologram": "chart",
+          "assets": [],
+          "repos": [
+            "https://github.com/ShinyQ/Streamlit_Stock-Allocation-Optimization-SLSQP"
+          ]
+        },
+        {
+          "id": "kampus-merdeka-reports-crawler",
+          "slug": "kampus-merdeka-reports-crawler",
+          "order": 24,
+          "tier": "featured",
+          "accent": "amber",
+          "wing": "data",
+          "title": {
+            "en": "Kampus Merdeka Reports Crawler",
+            "id": "Crawler Laporan Kampus Merdeka"
+          },
+          "tagline": {
+            "en": "Notebooks that collect a Kampus Merdeka participant's own daily and weekly reports into CSV or Excel files.",
+            "id": "Notebook yang mengumpulkan laporan harian dan mingguan milik peserta Kampus Merdeka ke file CSV atau Excel."
+          },
+          "period": {
+            "start": "2021-12",
+            "end": "2022-07"
+          },
+          "role": {
+            "en": "Author of the internship report crawler; a contributor added the independent study crawler",
+            "id": "Penulis crawler laporan magang; seorang kontributor menambahkan crawler studi independen"
+          },
+          "problem": {
+            "en": "Kampus Merdeka internship and independent study participants write daily and weekly reports on the program's platform, then need them together in one file for their own records and final reports.",
+            "id": "Peserta magang dan studi independen Kampus Merdeka menulis laporan harian dan mingguan di platform program, lalu membutuhkannya dalam satu file untuk arsip pribadi dan laporan akhir."
+          },
+          "approach": [
+            {
+              "en": "I wrote a notebook that signs in to the platform's API with the participant's own credentials from a local .env file, reads the active activity and fetches every weekly and daily report.",
+              "id": "Saya menulis notebook yang masuk ke API platform dengan kredensial peserta dari file .env lokal, membaca kegiatan aktif, lalu mengambil semua laporan mingguan dan harian."
+            },
+            {
+              "en": "It flattens the reports with pandas and writes them to CSV or Excel; credentials never leave the participant's machine.",
+              "id": "Notebook merapikan laporan dengan pandas dan menulisnya ke CSV atau Excel; kredensial tidak pernah keluar dari komputer peserta."
+            },
+            {
+              "en": "A contributor added a second notebook for independent study reports through a pull request.",
+              "id": "Seorang kontributor menambahkan notebook kedua untuk laporan studi independen melalui pull request."
+            }
+          ],
+          "results": [
+            {
+              "value": "21 stars",
+              "label": {
+                "en": "The most-starred of Kurniadi's public repositories",
+                "id": "Repository publik Kurniadi dengan bintang terbanyak"
+              },
+              "context": {
+                "en": "GitHub star count as of October 2026.",
+                "id": "Jumlah bintang GitHub per Oktober 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "2 report types",
+              "label": {
+                "en": "Internship and independent study reports",
+                "id": "Laporan magang dan studi independen"
+              },
+              "context": {
+                "en": "One notebook per program in the repository.",
+                "id": "Satu notebook per program di repository."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "Requests",
+            "pandas",
+            "Jupyter",
+            "openpyxl"
+          ],
+          "hologram": "documents",
+          "assets": [],
+          "repos": [
+            "https://github.com/ShinyQ/Python_Kampus-Merdeka-Reports-Crawler"
+          ]
         }
       ]
     },

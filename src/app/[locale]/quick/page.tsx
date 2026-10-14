@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/quick">)
   return seoMetadata(assertLocale((await params).locale), "/quick");
 }
 
-const TOC = ["profile", "stats", "software", "ai", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
+const TOC = ["profile", "stats", "software", "ai", "data", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
 
 export default async function QuickViewPage({ params }: PageProps<"/[locale]/quick">) {
   const locale = assertLocale((await params).locale);
@@ -71,7 +71,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <StatLedger stats={getStats()} locale={locale} />
       </SectionSplit>
 
-      {(["software", "ai"] as const).map((wing) => (
+      {(["software", "ai", "data"] as const).map((wing) => (
         <SectionSplit key={wing} {...section(wing)} intro={tc(`wing.${wing}`)}>
           <ul className="pv-rows pv-rows-closed">
             {getPods(wing)

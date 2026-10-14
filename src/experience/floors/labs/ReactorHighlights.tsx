@@ -94,7 +94,7 @@ function PodBeacons({ placed }: { placed: readonly PlacedPod[] }) {
 
 /**
  * The road from the reactor to every lit pod glows (holo `strip`, a pulse running out toward the pods):
- * one instanced draw, segments from `roadGlow`. Preallocated for every pod plus the wing runs.
+ * one instanced draw, segments from `roadGlow`. Preallocated for every pod plus the wing and data road runs.
  */
 function RoadGlow({ layout }: { layout: LabsLayout }) {
   const tier = useHQStore((s) => s.tier);
@@ -106,7 +106,8 @@ function RoadGlow({ layout }: { layout: LabsLayout }) {
   useDispose(material);
   const materials = useMemo(() => [material], [material]);
   useUniformTime(materials);
-  const count = layout.placed.length + 4;
+  // Every lit spur, plus two runs per hub wing and one on the data road.
+  const count = layout.placed.length + 5;
   const colors = useMemo(() => new Float32Array(count * 3).fill(1), [count]);
 
   useEffect(() => {

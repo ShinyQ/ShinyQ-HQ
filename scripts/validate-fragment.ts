@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { PerspectivesFileSchema, PodSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
+import { PerspectivesFileSchema, PodSchema, SiteContentObjectSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, findBlockedTerms, leafForbiddenPatterns, loadBlocklist } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
@@ -19,8 +19,8 @@ if (!kind || !file) {
   process.exit(2);
 }
 
-const RestSchema = SiteContentSchema.extend({
-  floors: SiteContentSchema.shape.floors.extend({ labs: z.unknown().optional() }),
+const RestSchema = SiteContentObjectSchema.extend({
+  floors: SiteContentObjectSchema.shape.floors.extend({ labs: z.unknown().optional() }),
 });
 
 const schema = kind === "pods" ? z.array(PodSchema) : kind === "rest" ? RestSchema : SiteContentSchema;

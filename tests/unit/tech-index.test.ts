@@ -85,3 +85,26 @@ describe("buildTechIndex", () => {
     expect(next.pods.length).toBe(pods.filter((p) => p.stack.some((s) => normalizeTech(s) === "next.js")).length);
   });
 });
+
+describe("Data and ML wing on the reactor (owner request 2026-10-14)", () => {
+  const index = getTechIndex();
+  const ringOfKey = new Map(index.rings.flatMap((r) => r.techs.map((t) => [techKey(t.name), r.id] as const)));
+  const dataPods = pods.filter((p) => p.wing === "data");
+
+  it("puts at least one tech of every data pod on the Data ring, so the ring lights the whole cluster", () => {
+    expect(dataPods.length).toBeGreaterThanOrEqual(5);
+    for (const pod of dataPods) expect(pod.stack.some((name) => ringOfKey.get(techKey(name)) === "data"), pod.slug).toBe(true);
+    const lit = new Set(index.rings.find((r) => r.id === "data")!.techs.flatMap((t) => t.pods));
+    for (const pod of dataPods) expect(lit.has(pod.slug), pod.slug).toBe(true);
+  });
+
+  it("maps every data pod tech to the Data or AI ring, except the CV languages and frameworks", () => {
+    const off = dataPods.flatMap((pod) => pod.stack.filter((name) => !["data", "ai"].includes(ringOfKey.get(techKey(name)) ?? "")));
+    expect([...new Set(off)].sort()).toEqual(["Django", "Docker", "FastAPI", "Python"]);
+  });
+
+  it("lights every data pod from pandas, the cluster's shared tech", () => {
+    const pandas = index.rings.flatMap((r) => r.techs).find((t) => t.slug === "pandas")!;
+    expect(pandas.pods.filter((slug) => dataPods.some((p) => p.slug === slug)).sort()).toEqual(dataPods.map((p) => p.slug).sort());
+  });
+});

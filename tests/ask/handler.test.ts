@@ -397,6 +397,8 @@ describe("chunk tags", () => {
     expect(chunkTags(byId("project-voice-ai-contact-center"))).toEqual(expect.arrayContaining(["work", "ai", "voice"]));
     expect(chunkTags(byId("project-fraud-review-platform"))).toEqual(expect.arrayContaining(["work", "ai", "fraud"]));
     expect(chunkTags(byId("project-digital-banking-integrations"))).toEqual(expect.arrayContaining(["work", "software"]));
+    expect(chunkTags(byId("project-university-sentiment-indobert"))).toEqual(expect.arrayContaining(["work", "data"]));
+    expect(chunkTags(byId("project-university-sentiment-indobert"))).not.toContain("software");
     expect(chunkTags(byId("certifications"))).toEqual(["certifications", "career"]);
     expect(answerTags([byId("profile"), byId("now")])).toEqual([]);
   });

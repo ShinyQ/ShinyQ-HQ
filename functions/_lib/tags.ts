@@ -43,7 +43,8 @@ const TOPICS: [AskTag, RegExp][] = [
 export function chunkTags(chunk: KnowledgeChunk): AskTag[] {
   const tags = [...BY_TYPE[chunk.type]];
   if (chunk.type === "project") {
-    const wing = chunk.keywords.includes("ai") ? "ai" : "software";
+    // The wing is a keyword of every project chunk; Data and ML pods take the `data` topic tag.
+    const wing = chunk.keywords.includes("data") ? "data" : chunk.keywords.includes("ai") ? "ai" : "software";
     tags.push(wing);
   }
   if (chunk.type === "project" || chunk.type === "post" || chunk.type === "side-project" || chunk.type === "perspective") {

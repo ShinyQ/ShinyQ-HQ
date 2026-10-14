@@ -84,10 +84,11 @@ describe("L3 Project Roads layout", () => {
     expect(layout.east.center).toEqual({ x: Math.max(...turns), z: 0 });
   });
 
-  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods", () => {
-    const lastEdge = Math.max(...layout.placed.map((p) => p.rect.maxX));
-    expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
-    expect(floor.bounds.maxX - lastEdge).toBe(LABS.tail + LABS.east / 2 + LABS.margin);
+  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods (without the data annex)", () => {
+    const hubOnly = buildLabsLayout(pods.filter((p) => p.wing !== "data"));
+    const lastEdge = Math.max(...hubOnly.placed.map((p) => p.rect.maxX));
+    expect(hubOnly.floor.bounds.maxX).toBe(hubOnly.east.center.x + LABS.east / 2 + LABS.margin);
+    expect(hubOnly.floor.bounds.maxX - lastEdge).toBe(LABS.tail + LABS.east / 2 + LABS.margin);
   });
 
   it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing cutting across to the plaza", () => {
@@ -125,7 +126,7 @@ describe("L3 Project Roads layout", () => {
   });
 
   it("puts the Product Engineering wing north (z < 0) and the AI Engineering wing south (z > 0)", () => {
-    for (const p of layout.placed) expect(Math.sign(p.center.z)).toBe(WING_SIDE[p.pod.wing]);
+    for (const p of layout.placed) if (p.pod.wing !== "data") expect(Math.sign(p.center.z)).toBe(WING_SIDE[p.pod.wing]);
   });
 
   it("docks pods in site order (gallery pods nearest the hub), alternating sides of the wing road", () => {
@@ -162,7 +163,7 @@ describe("L3 Project Roads layout", () => {
     const listed = pods.filter((p) => p.tier === "listed");
     expect(layout.placed.some((p) => p.pod.tier === "listed")).toBe(false);
     expect(layout.placed).toHaveLength(pods.length - listed.length);
-    expect([...layout.directory.software, ...layout.directory.ai].map((p) => p.slug).sort()).toEqual(listed.map((p) => p.slug).sort());
+    expect([...layout.directory.software, ...layout.directory.ai, ...layout.directory.data].map((p) => p.slug).sort()).toEqual(listed.map((p) => p.slug).sort());
     const many = Array.from({ length: LABS.maxPerWing + 2 }, (_, i) => pod(`f${i}`, "ai", "featured", i));
     const crowded = buildLabsLayout(many);
     expect(crowded.placed).toHaveLength(LABS.maxPerWing);
@@ -189,7 +190,8 @@ describe("L3 Project Roads layout", () => {
     }
     rects.forEach((a, i) => rects.slice(i + 1).forEach((b) => expect(rectGap(a, b)).toBeGreaterThanOrEqual(6)));
     for (const p of layout.placed) {
-      const road = WING_SIDE[p.pod.wing] * LABS.wingZ;
+      const road = p.roadZ;
+      expect(p.roadZ).toBe(p.pod.wing === "data" ? 0 : WING_SIDE[p.pod.wing] * LABS.wingZ);
       expect(Math.abs(p.forecourt.maxZ - p.forecourt.minZ)).toBeCloseTo(LABS.forecourt);
       expect(Math.min(Math.abs(p.rect.minZ - road), Math.abs(p.rect.maxZ - road))).toBeCloseTo(LABS.road / 2 + LABS.forecourt);
     }
@@ -205,7 +207,7 @@ describe("L3 Project Roads layout", () => {
     for (const p of layout.placed) {
       for (const o of floor.obstacles) expect(distanceToRect(p.door, o)).toBeGreaterThanOrEqual(ROVER.radius);
       expect(Math.sign(p.door.z - p.center.z)).toBe(p.facing);
-      expect(Math.sign(WING_SIDE[p.pod.wing] * LABS.wingZ - p.center.z)).toBe(p.facing);
+      expect(Math.sign(p.roadZ - p.center.z)).toBe(p.facing);
       expect(isWalkable(grid, p.door)).toBe(true);
       expect(findPath(grid, floor.approach, p.door), p.room).not.toBeNull();
       const route = roadRoute(network, grid, floor.approach, p.door);
@@ -331,10 +333,12 @@ describe("L3 Project Roads layout", () => {
   });
 
   it("feeds the tour in docking order, wing by wing, ending at the directory boards", () => {
-    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering" }, more: "More projects here", moreSub: "" });
+    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
     const rooms = walk.stops.filter((s) => s.room).map((s) => s.room);
     expect(rooms).toEqual(layout.placed.map((p) => p.room));
-    expect(walk.stops.slice(-2).map((s) => s.to)).toEqual([directoryStop("software"), directoryStop("ai")]);
+    const boards = (["software", "ai", "data"] as const).flatMap((wing) => (layout.boards[wing] ? [layout.boards[wing]!.stop] : []));
+    expect(walk.stops.slice(-boards.length).map((s) => s.to)).toEqual(boards);
+    expect(boards.slice(0, 2)).toEqual([directoryStop("software"), directoryStop("ai")]);
   });
 
   it("is what buildFloorLayouts uses for L3 when pods are given", () => {

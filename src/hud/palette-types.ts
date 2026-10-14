@@ -1,4 +1,4 @@
-import type { FloorId, LocalizedText, RoomId } from "@/content/schema";
+import type { FloorId, LocalizedText, RoomId, Wing } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
 import type { RoomKind } from "@/experience/missions/rooms";
 
@@ -13,6 +13,8 @@ export type PaletteTarget =
   | { type: "action"; id: PaletteActionId }
   /** L3 Tech Reactor: pick a tech (its pods light up) and ride to the reactor. */
   | { type: "tech"; slug: string }
+  /** An L3 wing: its directory panel in the 3D tower, the Work page filtered by it on the Classic site. */
+  | { type: "wing"; wing: Wing }
   /** Ask the HQ with the typed question (the row exists only while the feature is enabled). */
   | { type: "ask"; q: string };
 

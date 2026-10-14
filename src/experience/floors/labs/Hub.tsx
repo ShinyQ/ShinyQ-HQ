@@ -10,12 +10,11 @@ import type { LabPod } from "../../types";
 import { FONTS } from "../../tower/primitives";
 import { MergedBoxes } from "../roof/kit";
 import { wallLabels, wallLines, wallSolids, type DirectoryLabels } from "./directory";
-import { LABS, WING_TINT, type LabsLayout } from "./layout";
+import { LABS, LABS_WINGS, WING_TINT, type LabsLayout } from "./layout";
 import { LineBatch } from "./lines";
 
 export type HubLabels = DirectoryLabels;
 
-const WINGS = ["software", "ai"] as const;
 /** Height of the floating wing signs (bottom of the plate). */
 const SIGN_Y = 4.2;
 const NO_RAYCAST = () => null;
@@ -32,10 +31,12 @@ function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }
   const tier = useHQStore((s) => s.tier);
   const signs = useMemo<SignSpec[]>(
     () =>
-      WINGS.map((wing) => {
+      LABS_WINGS.flatMap((wing) => {
+        const sign = layout.signs[wing];
+        if (!sign) return [];
         const text = labels.wings[wing].toUpperCase();
         const { h } = signPlate({ text, fontSize: SIGN_FONT });
-        const at = layout.signs[wing].float;
+        const at = sign.float;
         return { text, x: at.x, y: SIGN_Y + h / 2, z: at.z, color: WING_TINT[wing], fontSize: SIGN_FONT, font: FONTS.monoBold };
       }),
     [layout, labels],
@@ -50,17 +51,17 @@ function WingSigns({ layout, labels }: { layout: LabsLayout; labels: HubLabels }
  * the top three projects in larger type, other screens the top five. Clicks go
  * through point-and-go (`L3:board:<wing>` in interact/registry.ts), never handlers on these meshes.
  */
-function DirectoryWall({ labels, pods }: { labels: HubLabels; pods: readonly LabPod[] }) {
+function DirectoryWall({ labels, pods, boards }: { labels: HubLabels; pods: readonly LabPod[]; boards: LabsLayout["boards"] }) {
   const tier = useHQStore((s) => s.tier);
   // Phones show the top three in larger type (`LIST_STYLE.compact`); everything else the top five.
   const size = useHQStore((s) => (s.device.viewport === "mobile" ? "compact" : "full"));
-  const solids = useMemo(() => wallSolids(), []);
-  const texts = useMemo(() => wallLabels(pods, labels, FONTS, size), [pods, labels, size]);
+  const solids = useMemo(() => wallSolids(boards), [boards]);
+  const texts = useMemo(() => wallLabels(pods, labels, FONTS, size, boards), [pods, labels, size, boards]);
   const lines = useMemo(() => {
     const batch = new LineBatch();
-    for (const line of wallLines()) batch.segment(line.seg, line.color);
+    for (const line of wallLines(boards)) batch.segment(line.seg, line.color);
     return batch.build();
-  }, []);
+  }, [boards]);
   useEffect(() => () => lines.dispose(), [lines]);
   const boost = useMemo(() => neonColor("#ffffff", 1.6, tier), [tier]);
   return (
@@ -79,7 +80,7 @@ export function Hub({ layout, labels, pods }: { layout: LabsLayout; labels: HubL
   return (
     <group name="labs-hub">
       <WingSigns layout={layout} labels={labels} />
-      <DirectoryWall labels={labels} pods={pods} />
+      <DirectoryWall labels={labels} pods={pods} boards={layout.boards} />
     </group>
   );
 }
