@@ -22,7 +22,6 @@ permissions:
   actions: read
 
 env:
-  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
@@ -40,7 +39,11 @@ jobs:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - run: bun run build
+      - name: Build
+        # The private blocklist only where the knowledge pack is built (H1).
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun run build
       - name: Timeline (cold cache, throttled, one worker)
         # Trend only: a slow or failed run must not hide the others' numbers.
         continue-on-error: true

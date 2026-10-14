@@ -22,19 +22,24 @@ jobs:
   report:
     name: Content-gap report
     runs-on: ubuntu-latest
+    # Main only (environment branch policy), no deployment record; secrets only on the step that reads them (H1).
+    environment:
+      name: production
+      deployment: false
     permissions:
       contents: read
       issues: write
     env:
-      CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
-      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
-      SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
       CONTENT_GAP_REPORT: content-gap-report.md
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - name: Query Analytics Engine
         id: gap
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/content-gap.ts
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}

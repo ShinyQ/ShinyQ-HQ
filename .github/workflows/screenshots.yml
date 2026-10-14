@@ -24,7 +24,6 @@ permissions:
   contents: read
 
 env:
-  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
   # No beacon in screenshot builds (see ci.yml); only deploy.yml sets NEXT_PUBLIC_CF_BEACON_TOKEN.
 
@@ -75,7 +74,11 @@ jobs:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - run: bun run build:web
+      - name: Build
+        # The private blocklist only where the knowledge pack is built (H1).
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun run build:web
       - uses: actions/upload-artifact@v7
         with:
           name: screenshots-site

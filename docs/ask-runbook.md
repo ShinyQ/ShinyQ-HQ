@@ -142,7 +142,7 @@ Secrets take effect on the next deployment.
 - Account resources: Include, the owner's account. TTL: 90 days. Client IP filtering: leave empty (GitHub-hosted runners have no fixed IPs).
 
 ```sh
-gh secret set CF_EVAL_TOKEN --repo ShinyQ/ShinyQ-HQ          # paste the token at the prompt
+gh secret set CF_EVAL_TOKEN --env production --repo ShinyQ/ShinyQ-HQ   # main-only environment (S3); paste the token at the prompt
 gh variable set CF_ACCOUNT_ID --repo ShinyQ/ShinyQ-HQ --body <account id>
 ```
 

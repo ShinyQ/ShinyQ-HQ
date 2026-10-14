@@ -1,11 +1,14 @@
 name: Stats Worker check
 
-# Pull request check for the public visit stats Worker (workers/stats/, hq-stats). It proves the two
-# tokens the production deploy relies on, without deploying anything:
-#   - CF_EVAL_TOKEN can read Web Analytics and Analytics Engine (the Worker's runtime secret WA_TOKEN);
-#   - CLOUDFLARE_API_TOKEN can see Workers scripts and the STATS_KV namespace (deploy permissions);
-# then bundles the Worker with `wrangler deploy --dry-run`. Not a required check. The deploy itself runs
-# in deploy.yml (job "hq-stats Worker"). Runbook: workers/stats/README.md.
+# Pull request check for the public visit stats Worker (workers/stats/, hq-stats): bundles the Worker
+# with `wrangler deploy --dry-run` and nothing else. Pull request runs never receive a Cloudflare
+# secret (security S3): PR code (scripts, lockfile, dependencies) must not see the production deploy
+# token. The token checks run only on a manual dispatch from main, in the main-only `production`
+# environment, and before every Worker deploy in deploy.yml (job "hq-stats Worker"):
+#   - the analytics token (CF_STATS_TOKEN, or CF_EVAL_TOKEN until it exists) can read Web Analytics
+#     and Analytics Engine (the Worker's runtime secret WA_TOKEN);
+#   - CLOUDFLARE_API_TOKEN can see Workers scripts and the STATS_KV namespace (deploy permissions).
+# Not a required check. Runbook: workers/stats/README.md.
 
 on:
   pull_request:
@@ -24,32 +27,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: hq-stats tokens and bundle
+  bundle:
+    name: hq-stats bundle (dry run)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      - name: Bundle the Worker (dry run)
+      - name: Bundle the Worker (dry run, no secrets)
         working-directory: workers/stats
         run: bunx wrangler@4 deploy --dry-run --outdir "$RUNNER_TEMP/hq-stats"
+
+  tokens:
+    name: hq-stats tokens
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Manual dispatch from main only; the environment's branch policy enforces the same.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      deployment: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
       - name: Secrets available
         id: gate
         env:
-          HAS: ${{ secrets.CF_EVAL_TOKEN != '' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          HAS: ${{ (secrets.CF_STATS_TOKEN != '' || secrets.CF_EVAL_TOKEN != '') && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
           echo "enabled=$HAS" >> "$GITHUB_OUTPUT"
-          if [ "$HAS" != "true" ]; then echo "::notice::Cloudflare secrets are not available (fork or unset); skipping the token checks."; fi
-      - name: Analytics token (CF_EVAL_TOKEN) can read Web Analytics and Analytics Engine
+          if [ "$HAS" != "true" ]; then echo "::notice::Cloudflare secrets are not set; skipping the token checks."; fi
+      - name: Analytics token can read Web Analytics and Analytics Engine
         if: steps.gate.outputs.enabled == 'true'
         env:
-          STATS_ANALYTICS_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          STATS_ANALYTICS_TOKEN: ${{ secrets.CF_STATS_TOKEN || secrets.CF_EVAL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bun scripts/stats-token-check.ts analytics
       - name: Deploy token (CLOUDFLARE_API_TOKEN) can deploy Workers
         if: steps.gate.outputs.enabled == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bun scripts/stats-token-check.ts deploy

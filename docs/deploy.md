@@ -121,20 +121,28 @@ The site is then served at `https://<name>.pages.dev`. Set `SITE_URL` to that UR
 4. Create the token and copy it once.
 5. Account ID: Workers & Pages overview page, right sidebar ("Account ID"), or the dashboard URL `dash.cloudflare.com/<account-id>/...`.
 
-## 3. GitHub repository secrets
+## 3. GitHub secrets
 
-Settings > Secrets and variables > Actions > Secrets, or with `gh`:
+The Cloudflare secrets belong to the `production` environment (Settings > Environments > production), whose deployment branch policy allows `main` only (security S3, owner decision 4). Jobs that read them declare `environment: production` (`deploy.yml`, the eval, content-gap and token-check jobs; with `deployment: false` where nothing is deployed), so no pull request or other branch can read the deploy token. `SAFETY_BLOCKLIST` stays a repository secret because pull request and `main` CI runs read it. Secrets are passed only to the steps that read them (H1).
 
 ```sh
-gh secret set CLOUDFLARE_API_TOKEN      # paste the token from step 2
-gh secret set CLOUDFLARE_ACCOUNT_ID     # paste the account id
-gh secret set SAFETY_BLOCKLIST < content/.safety-blocklist.local.txt   # required on main and for deploys
+# Environment secrets (main only)
+gh secret set CLOUDFLARE_API_TOKEN  --env production --repo ShinyQ/ShinyQ-HQ   # paste the token from step 2
+gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo ShinyQ/ShinyQ-HQ   # paste the account id
+gh secret set CF_EVAL_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # docs/ask-runbook.md section 8
+gh secret set CF_STATS_TOKEN        --env production --repo ShinyQ/ShinyQ-HQ   # section 13, Account Analytics Read only
+gh secret set CF_LOGS_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # optional, log purge
+# Repository secret
+gh secret set SAFETY_BLOCKLIST --repo ShinyQ/ShinyQ-HQ < content/.safety-blocklist.local.txt   # required on main and for deploys
 ```
+
+Moving from repository secrets: set each one in the environment first (an environment secret wins over a repository secret of the same name for jobs in that environment), run `gh workflow run deploy.yml --ref main` and `gh workflow run stats-worker.yml --ref main`, then delete the repository copies (`gh secret delete CLOUDFLARE_API_TOKEN --repo ShinyQ/ShinyQ-HQ`, and the same for `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN`). Secret values cannot be read back, so paste them from the password manager or create new tokens.
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) |
-| `CF_EVAL_TOKEN` | Yes, for evals and the visit stats | Account Analytics Read: Ask evals and reports, and the hq-stats Worker's runtime secret `WA_TOKEN` (section 13) |
+| `CF_EVAL_TOKEN` | Yes, for evals | Workers AI Read, AI Gateway Read, Account Analytics Read: Ask evals and the content-gap report; also the hq-stats Worker's `WA_TOKEN` until `CF_STATS_TOKEN` exists |
+| `CF_STATS_TOKEN` | Recommended | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
 | `SAFETY_BLOCKLIST` | Yes, on main and for deploys | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests, `scripts/scan-export.ts` (CI build and production build) and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it. Without it, the scan step fails on `main` and in `deploy.yml` (after `SAFETY_BLOCKLIST_GRACE_UNTIL`) and warns on pull requests. Output never prints a private term (`private term #n`). |
 
@@ -291,7 +299,9 @@ Pipeline and contract: appendix 06 section 4.1 and [`workers/stats/README.md`](.
 - `GET /api/stats` (`functions/api/stats.ts`) serves the snapshot (204 until the first one exists).
 - Kill switch: `STATS_ENABLED = "false"` in `wrangler.toml`, then deploy.
 
-Deploy: `deploy.yml` job "hq-stats Worker" runs after the Pages deploy. It proves `CF_EVAL_TOKEN` can read Web Analytics and Analytics Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise) and that `CLOUDFLARE_API_TOKEN` can see Workers scripts (`... deploy`; the KV namespace check only warns), then deploys with `cloudflare/wrangler-action` and sets the Worker secrets `WA_TOKEN` (from `CF_EVAL_TOKEN`) and `WA_ACCOUNT_ID` (from `CLOUDFLARE_ACCOUNT_ID`). Pull requests that touch the Worker run the same checks plus a bundle dry run (`.github/workflows/stats-worker.yml`).
+Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only) runs after the Pages deploy. It proves the analytics token (`CF_STATS_TOKEN`, or `CF_EVAL_TOKEN` until that exists) can read Web Analytics and Analytics Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise) and that `CLOUDFLARE_API_TOKEN` can see Workers scripts (`... deploy`; the KV namespace check only warns), then deploys with `cloudflare/wrangler-action` and sets the Worker secrets `WA_TOKEN` (from the same analytics token) and `WA_ACCOUNT_ID` (from `CLOUDFLARE_ACCOUNT_ID`). The deploy token keeps Workers Scripts Edit for this job (owner decision 4: accepted because it lives only in the main-only environment). Pull requests that touch the Worker only bundle it with `--dry-run` and receive no secret (`.github/workflows/stats-worker.yml`, security S3); the token checks run on `gh workflow run stats-worker.yml --ref main`.
+
+`CF_STATS_TOKEN`: Cloudflare dashboard > My Profile > API Tokens > Create Custom Token, permission Account / Account Analytics / Read only, your account, TTL 90 days; then `gh secret set CF_STATS_TOKEN --env production --repo ShinyQ/ShinyQ-HQ` and run a deploy (it rewrites `WA_TOKEN`).
 
 If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler@4 deploy` and set both secrets with `bunx wrangler@4 secret put WA_TOKEN` and `bunx wrangler@4 secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
 

@@ -20,11 +20,12 @@ concurrency:
 permissions:
   contents: read
 
+# The private public-safety blocklist (secret SAFETY_BLOCKLIST: internal codenames, private repo
+# names) is required on main: scripts/scan-export.ts fails main runs without it and warns on pull
+# requests (forks and Dependabot get no secrets), so a skipped check is never silent. It is passed
+# only to the steps that build the knowledge pack, run the content tests or scan out/ (H1), never
+# to dependency installs, Lighthouse or gitleaks.
 env:
-  # Private public-safety blocklist (internal codenames, private repo names). Required on main:
-  # scripts/scan-export.ts fails main runs without it and warns on pull requests (forks and
-  # Dependabot get no secrets), so a skipped check is never silent.
-  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
   # No NEXT_PUBLIC_CF_BEACON_TOKEN here: test builds never render the Web Analytics beacon, so the
   # e2e cross-origin guard stays strict and test runs never count as page views. Only deploy.yml sets it.
@@ -44,8 +45,12 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup
       - run: bun run typecheck
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
       - run: bun run lint
       - run: bun run test
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
       - name: Dependency audit (non-blocking)
         continue-on-error: true
         run: bun audit --audit-level=high
@@ -109,11 +114,14 @@ jobs:
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build static export
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run build
       - name: Public-safety scan of out/ and private blocklist gate
         # Every text file of the export, JS, CSS, SVG and MD included (S9); fails on main without the
         # SAFETY_BLOCKLIST secret (S1) unless the SAFETY_BLOCKLIST_GRACE_UNTIL date has not passed.
         env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           SAFETY_BLOCKLIST_GRACE_UNTIL: ${{ vars.SAFETY_BLOCKLIST_GRACE_UNTIL }}
         run: bun scripts/scan-export.ts out
       - uses: actions/upload-artifact@v7
@@ -141,6 +149,9 @@ jobs:
           path: out
       - name: Playwright e2e (shard ${{ matrix.shard }}/4)
         # Round-robin test list (scripts/e2e-shard.ts); keep the total in sync with the matrix.
+        # e2e/deploy.spec.ts repeats the out/ scan with the private list.
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run e2e:shard ${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
@@ -294,6 +305,9 @@ jobs:
     needs: site
     # Preview only, and opt-in: set the repository variable CF_PREVIEWS=true to turn it on. The
     # CLOUDFLARE_API_TOKEN secret exists for deploy.yml, so the variable keeps previews off by default.
+    # Once the Cloudflare secrets live only in the main-only `production` environment (S3), PR jobs
+    # cannot read them: previews then need their own preview-only token (Pages Edit on the preview
+    # project) as a repository secret.
     # Production deploys run from .github/workflows/deploy.yml.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.CF_PREVIEWS == 'true'
     permissions:
