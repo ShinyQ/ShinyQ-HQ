@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -389,6 +389,23 @@ test.describe("tiers and views", () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId("hq")).toHaveCount(0);
     await expect(page.locator("#site-shell")).not.toHaveAttribute("inert", "");
+  });
+
+  test("?tier=static creates no WebGL context for a human browser", async ({ page }) => {
+    await asHumanBrowser(page);
+    await page.addInitScript(() => {
+      const w = window as unknown as { __webgl: number };
+      w.__webgl = 0;
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
+        if (type.startsWith("webgl")) w.__webgl++;
+        return (original as (...a: unknown[]) => unknown).call(this, type, ...args);
+      } as typeof original;
+    });
+    await openPage(page, "/en?tier=static");
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId("hq")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { __webgl: number }).__webgl)).toBe(0);
   });
 
   test("software WebGL (no GPU) is treated as static without an override", async ({ page }) => {

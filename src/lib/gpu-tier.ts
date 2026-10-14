@@ -40,6 +40,8 @@ export function readTierInputs(search: string): TierInputs {
     connection?: { saveData?: boolean };
     deviceMemory?: number;
   };
+  // A valid `?tier=` wins in decideTier whatever the probe finds, so it never needs a WebGL context.
+  const override = new URLSearchParams(search).get("tier");
   let webgl2 = false;
   let renderer: string | undefined;
   // The boot-first head script already probed right after first paint; never create a second context.
@@ -47,7 +49,7 @@ export function readTierInputs(search: string): TierInputs {
   if (early) {
     webgl2 = early.webgl2;
     renderer = early.renderer || undefined;
-  } else try {
+  } else if (!isTier(override)) try {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2");
     if (gl) {
@@ -60,7 +62,7 @@ export function readTierInputs(search: string): TierInputs {
     webgl2 = false;
   }
   return {
-    override: new URLSearchParams(search).get("tier"),
+    override,
     webgl2,
     renderer,
     saveData: Boolean(nav.connection?.saveData),
