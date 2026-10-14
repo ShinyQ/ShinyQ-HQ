@@ -8,6 +8,7 @@ const CHIPS = new Map<string, StatsTopic>([
   ["ai-voice", "ai"],
 ]);
 const noWa: WaRows = { days: [], countries: [], paths: [] };
+const NO_PERF: DayRollup["perf"] = { sessions: 0, measured: 0, fps55: 0, explore: {} };
 
 function day(date: string, patch: Partial<DayRollup> = {}): DayRollup {
   return { date, visits: 0, pageViews: 0, countries: [], floors: {}, mode: { threeD: 0, classic: 0 }, asks: { total: 0, topics: {}, chips: {} }, ...patch };
@@ -58,6 +59,7 @@ describe("buildRollups", () => {
       { day: "2026-10-11", mode: "both", n: 1 },
       { day: "2026-10-11", mode: "vr", n: 9 },
     ],
+    perf: [],
   };
 
   it("folds the sources into one rollup per day", () => {
@@ -70,6 +72,7 @@ describe("buildRollups", () => {
       floors: { L1: 30, L3: 40 },
       mode: { threeD: 6, classic: 3 },
       asks: { total: 10, topics: { work: 3, ai: 2 }, chips: { "work-best": 3 } },
+      perf: NO_PERF,
     });
     expect(d12).toEqual({
       date: "2026-10-12",
@@ -79,15 +82,16 @@ describe("buildRollups", () => {
       floors: { L2: 20 },
       mode: { threeD: 0, classic: 0 },
       asks: { total: 1, topics: { ai: 1 }, chips: { "ai-voice": 1 } },
+      perf: NO_PERF,
     });
   });
 
   it("creates empty days for dates without rows", () => {
-    expect(buildRollups(["2026-10-13"], wa, ae, CHIPS)).toEqual([day("2026-10-13")]);
+    expect(buildRollups(["2026-10-13"], wa, ae, CHIPS)).toEqual([day("2026-10-13", { perf: NO_PERF })]);
   });
 
   it("rounds counts and drops negative or broken numbers", () => {
-    const [d] = buildRollups(["2026-10-11"], { days: [{ date: "2026-10-11", count: 12.6, visits: -4 }], countries: [], paths: [] }, { asks: [{ day: "2026-10-11", topic: "work", chip: "", n: Number.NaN }], visits: [] }, CHIPS);
+    const [d] = buildRollups(["2026-10-11"], { days: [{ date: "2026-10-11", count: 12.6, visits: -4 }], countries: [], paths: [] }, { asks: [{ day: "2026-10-11", topic: "work", chip: "", n: Number.NaN }], visits: [], perf: [] }, CHIPS);
     expect(d.pageViews).toBe(13);
     expect(d.visits).toBe(0);
     expect(d.asks.total).toBe(0);
@@ -96,10 +100,10 @@ describe("buildRollups", () => {
   it("freezes the 3D vs Classic split of a day whose beacon points outrun Web Analytics", () => {
     const pageViews = 20;
     const limit = Math.max(MODE_FREEZE.floor, MODE_FREEZE.factor * pageViews);
-    const spam: AeRows = { asks: [], visits: [{ day: "2026-10-11", mode: "3d", n: limit + 1 }] };
+    const spam: AeRows = { asks: [], visits: [{ day: "2026-10-11", mode: "3d", n: limit + 1 }], perf: [] };
     const [frozen] = buildRollups(["2026-10-11"], { ...noWa, days: [{ date: "2026-10-11", count: pageViews, visits: 10 }] }, spam, CHIPS);
     expect(frozen.mode).toEqual({ threeD: 0, classic: 0, frozen: true });
-    const fine: AeRows = { asks: [], visits: [{ day: "2026-10-11", mode: "3d", n: limit }] };
+    const fine: AeRows = { asks: [], visits: [{ day: "2026-10-11", mode: "3d", n: limit }], perf: [] };
     expect(buildRollups(["2026-10-11"], { ...noWa, days: [{ date: "2026-10-11", count: pageViews, visits: 10 }] }, fine, CHIPS)[0].mode).toEqual({ threeD: limit, classic: 0 });
   });
 
@@ -158,5 +162,72 @@ describe("buildSnapshot", () => {
     const snap = buildSnapshot([day("2026-10-13", { asks: { total: 2, topics: {}, chips: { "gone-chip": 2 } } })], "2026-10-13", CHIPS)!;
     expect(snap.asks.all.chips).toEqual([]);
     expect(snap.asks.all.total).toBe(2);
+  });
+});
+
+describe("perf rollup", () => {
+  const perfDay = (date: string, perf: DayRollup["perf"]) => day(date, { perf });
+
+  it("fills perf for every built day from known RUM buckets only", () => {
+    const ae: AeRows = {
+      asks: [],
+      visits: [],
+      perf: [
+        { day: "2026-10-11", fps50: "55+", explore: "lt3s", n: 4 },
+        { day: "2026-10-11", fps50: "30-44", explore: "3-5s", n: 2 },
+        { day: "2026-10-11", fps50: "na", explore: "na", n: 1 },
+        { day: "2026-10-11", fps50: "55+", explore: "3-5s", n: 1.4 },
+        { day: "2026-10-11", fps50: "120+", explore: "lt3s", n: 9 },
+        { day: "2026-10-11", fps50: "55+", explore: "soon", n: 9 },
+        { day: "2026-10-11", fps50: "55+", explore: "lt3s", n: -3 },
+        { day: "2026-10-12", fps50: "lt15", explore: "20s+", n: 2 },
+      ],
+    };
+    const [d11, d12, d13] = buildRollups(["2026-10-11", "2026-10-12", "2026-10-13"], noWa, ae, CHIPS);
+    expect(d11.perf).toEqual({ sessions: 8, measured: 7, fps55: 5, explore: { lt3s: 4, "3-5s": 3 } });
+    expect(d12.perf).toEqual({ sessions: 2, measured: 2, fps55: 0, explore: { "20s+": 2 } });
+    expect(d13.perf).toEqual({ sessions: 0, measured: 0, fps55: 0, explore: {} });
+  });
+
+  it("counts a day with perf sessions as not empty", () => {
+    const days = [perfDay("2026-10-09", { sessions: 0, measured: 0, fps55: 0, explore: {} }), perfDay("2026-10-10", { sessions: 1, measured: 0, fps55: 0, explore: {} })];
+    expect(trimLeadingEmpty(days).map((d) => d.date)).toEqual(["2026-10-10"]);
+  });
+
+  it("omits perf when no ledger day has it", () => {
+    const snap = buildSnapshot([day("2026-10-13", { visits: 10 })], "2026-10-13", CHIPS)!;
+    expect("perf" in snap).toBe(false);
+    expect(parseStatsSnapshot(snap)).toEqual(snap);
+  });
+
+  it("sums perf over each period and skips days without perf", () => {
+    const days = [
+      perfDay("2026-09-01", { sessions: 10, measured: 9, fps55: 3, explore: { "8-12s": 9 } }),
+      day("2026-10-01", { visits: 5 }),
+      perfDay("2026-10-12", { sessions: 6, measured: 5, fps55: 4, explore: { lt3s: 2, "3-5s": 1 } }),
+      perfDay("2026-10-13", { sessions: 4, measured: 4, fps55: 4, explore: { "5-8s": 3 } }),
+    ];
+    const snap = buildSnapshot(days, "2026-10-13", CHIPS)!;
+    expect(parseStatsSnapshot(snap)).toEqual(snap);
+    // d30: lt3s 2, 3-5s 1, 5-8s 3 (total 6): cumulative 2, 3 reaches half at 3-5s.
+    expect(snap.perf).toEqual({
+      d30: { sessions: 10, measured: 9, fps55: 8, explore: "3-5s" },
+      // all: lt3s 2, 3-5s 1, 5-8s 3, 8-12s 9 (total 15): cumulative 2, 3, 6, 15; 15 >= 15 at 8-12s.
+      all: { sessions: 20, measured: 18, fps55: 11, explore: "8-12s" },
+    });
+  });
+
+  it("takes the weighted median bucket and null without explore data", () => {
+    const at = (explore: Partial<Record<string, number>>) => buildSnapshot([perfDay("2026-10-13", { sessions: 9, measured: 9, fps55: 0, explore })], "2026-10-13", CHIPS)!.perf!.all.explore;
+    expect(at({ lt3s: 1, "20s+": 1 })).toBe("lt3s");
+    expect(at({ lt3s: 1, "3-5s": 1, "20s+": 1 })).toBe("3-5s");
+    expect(at({ lt3s: 1, "12-20s": 5 })).toBe("12-20s");
+    expect(at({})).toBeNull();
+  });
+
+  it("has a perf block with zero sessions when only days outside the 30-day window have data", () => {
+    const snap = buildSnapshot([perfDay("2026-08-01", { sessions: 3, measured: 3, fps55: 3, explore: { lt3s: 3 } }), day("2026-10-13", { visits: 1 })], "2026-10-13", CHIPS)!;
+    expect(snap.perf?.d30).toEqual({ sessions: 0, measured: 0, fps55: 0, explore: null });
+    expect(snap.perf?.all).toEqual({ sessions: 3, measured: 3, fps55: 3, explore: "lt3s" });
   });
 });

@@ -1,6 +1,19 @@
+import { RUM_FPS, RUM_TIMES } from "../../../src/lib/rum/protocol";
 import { floorOfPath } from "../../../src/lib/stats/floors";
-import { isCountryCode, STATS_FLOORS, STATS_MAX_CHIPS, STATS_TOPICS, type StatsAsks, type StatsFloor, type StatsSnapshotV1, type StatsTopic } from "../../../src/lib/stats/protocol";
-import type { AeRows, DayRollup, WaRows } from "./types";
+import {
+  isCountryCode,
+  STATS_EXPLORE,
+  STATS_FLOORS,
+  STATS_MAX_CHIPS,
+  STATS_TOPICS,
+  type StatsAsks,
+  type StatsExplore,
+  type StatsFloor,
+  type StatsPerf,
+  type StatsSnapshotV1,
+  type StatsTopic,
+} from "../../../src/lib/stats/protocol";
+import type { AeRows, DayPerf, DayRollup, PerfRow, WaRows } from "./types";
 
 /** Pure rollup and snapshot math of the hq-stats Worker (no I/O, unit tested in node). */
 
@@ -26,9 +39,24 @@ export const MODE_FREEZE = { factor: 3, floor: 30 };
 
 const clean = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.round(v) : 0);
 const isTopic = (v: string): v is StatsTopic => (STATS_TOPICS as readonly string[]).includes(v);
+const isIn = <T extends string>(list: readonly T[], v: string): v is T => (list as readonly string[]).includes(v);
 
 function add<K extends string>(map: Partial<Record<K, number>>, key: K, n: number) {
   if (n > 0) map[key] = (map[key] ?? 0) + n;
+}
+
+/** One day's RUM perf from `perf_events` rows; rows with a bucket outside the RUM contract are ignored. */
+export function buildPerf(date: string, rows: readonly PerfRow[]): DayPerf {
+  const perf: DayPerf = { sessions: 0, measured: 0, fps55: 0, explore: {} };
+  for (const r of rows) {
+    if (r.day !== date || !isIn(RUM_FPS, r.fps50) || !isIn(RUM_TIMES, r.explore)) continue;
+    const n = clean(r.n);
+    perf.sessions += n;
+    if (r.fps50 !== "na") perf.measured += n;
+    if (r.fps50 === "55+") perf.fps55 += n;
+    if (isIn(STATS_EXPLORE, r.explore)) add(perf.explore, r.explore, n);
+  }
+  return perf;
 }
 
 export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, chipTopics: ReadonlyMap<string, StatsTopic>): DayRollup[] {
@@ -76,11 +104,21 @@ export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, c
       if (chipTopics.has(r.chip) && n > 0) asks.chips[r.chip] = (asks.chips[r.chip] ?? 0) + n;
     }
 
-    return { date, visits, pageViews, countries: [...countries].sort(), floors, mode: frozen ? { threeD: 0, classic: 0, frozen: true } : { threeD, classic }, asks };
+    return {
+      date,
+      visits,
+      pageViews,
+      countries: [...countries].sort(),
+      floors,
+      mode: frozen ? { threeD: 0, classic: 0, frozen: true } : { threeD, classic },
+      asks,
+      perf: buildPerf(date, ae.perf),
+    };
   });
 }
 
-const isEmpty = (d: DayRollup) => d.visits === 0 && d.pageViews === 0 && d.countries.length === 0 && d.asks.total === 0 && d.mode.threeD === 0 && d.mode.classic === 0;
+const isEmpty = (d: DayRollup) =>
+  d.visits === 0 && d.pageViews === 0 && d.countries.length === 0 && d.asks.total === 0 && d.mode.threeD === 0 && d.mode.classic === 0 && (d.perf?.sessions ?? 0) === 0;
 
 /** Drops the empty days before the first day with any data (the first backfill), so `since` is the real launch. */
 export function trimLeadingEmpty(days: readonly DayRollup[]): DayRollup[] {
@@ -95,6 +133,19 @@ interface Period {
   topFloor: StatsFloor | null;
   mode: { threeD: number; classic: number };
   asks: StatsAsks;
+  perf: StatsPerf;
+}
+
+/** Weighted median bucket: the first bucket (in STATS_EXPLORE order) where the running count reaches half the total. */
+export function medianExplore(hist: Partial<Record<StatsExplore, number>>): StatsExplore | null {
+  const total = STATS_EXPLORE.reduce((sum, b) => sum + (hist[b] ?? 0), 0);
+  if (total <= 0) return null;
+  let running = 0;
+  for (const b of STATS_EXPLORE) {
+    running += hist[b] ?? 0;
+    if (running * 2 >= total) return b;
+  }
+  return null;
 }
 
 function aggregate(days: readonly DayRollup[], chipTopics: ReadonlyMap<string, StatsTopic>): Period {
@@ -106,7 +157,15 @@ function aggregate(days: readonly DayRollup[], chipTopics: ReadonlyMap<string, S
   const topics = Object.fromEntries(STATS_TOPICS.map((t) => [t, 0])) as Record<StatsTopic, number>;
   const chips = new Map<string, number>();
   let total = 0;
+  const perf = { sessions: 0, measured: 0, fps55: 0 };
+  const explore: Partial<Record<StatsExplore, number>> = {};
   for (const d of days) {
+    if (d.perf) {
+      perf.sessions += d.perf.sessions;
+      perf.measured += d.perf.measured;
+      perf.fps55 += d.perf.fps55;
+      for (const b of STATS_EXPLORE) add(explore, b, d.perf.explore[b] ?? 0);
+    }
     visits += d.visits;
     pageViews += d.pageViews;
     d.countries.forEach((c) => countries.add(c));
@@ -123,12 +182,13 @@ function aggregate(days: readonly DayRollup[], chipTopics: ReadonlyMap<string, S
     .map(([id, n]) => ({ id, topic: chipTopics.get(id) as StatsTopic, n }))
     .sort((a, b) => b.n - a.n || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .slice(0, STATS_MAX_CHIPS);
-  return { visits, pageViews, countries: [...countries].sort(), topFloor, mode, asks: { total, topics, chips: chipList } };
+  return { visits, pageViews, countries: [...countries].sort(), topFloor, mode, asks: { total, topics, chips: chipList }, perf: { ...perf, explore: medianExplore(explore) } };
 }
 
 /**
  * The public snapshot over the ledger up to `lastDay` (the last complete UTC day): `d30` is the 30 days
- * ending on `lastDay`, `all` every day since the first rollup. Null for an empty ledger.
+ * ending on `lastDay`, `all` every day since the first rollup. Null for an empty ledger. `perf` only when
+ * at least one day carries it (days without it count as no data).
  */
 export function buildSnapshot(days: readonly DayRollup[], lastDay: string, chipTopics: ReadonlyMap<string, StatsTopic>): StatsSnapshotV1 | null {
   const upTo = days.filter((d) => d.date <= lastDay);
@@ -150,5 +210,6 @@ export function buildSnapshot(days: readonly DayRollup[], lastDay: string, chipT
     topFloor: { d30: d30.topFloor, all: all.topFloor },
     mode: { d30: d30.mode, all: all.mode },
     asks: { d30: d30.asks, all: all.asks },
+    ...(upTo.some((d) => d.perf) ? { perf: { d30: d30.perf, all: all.perf } } : {}),
   };
 }

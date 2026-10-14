@@ -1,5 +1,6 @@
 import type { Locale } from "@/content/locales";
 import { intlLocale } from "@/lib/format";
+import type { StatsExplore } from "@/lib/stats/protocol";
 import { STATS_TOPICS, type StatsFloor, type StatsPeriod, type StatsSnapshotV1, type StatsTopic } from "./contract";
 
 /**
@@ -112,4 +113,20 @@ export function visitsView(s: StatsSnapshotV1, period: StatsPeriod, topic: Topic
       chips,
     },
   };
+}
+
+export interface PerfView {
+  /** Sampled 3D sessions in the period. */
+  sessions: number;
+  /** Share (0 to 1) of measured sessions with a median of 55 FPS or more; null without measured sessions. */
+  fpsShare: number | null;
+  /** Median time to explore, as a RUM bucket; null without any. */
+  explore: StatsExplore | null;
+}
+
+/** The RUM perf block of one period; null when the snapshot has none or no sampled session. */
+export function perfView(s: StatsSnapshotV1, period: StatsPeriod): PerfView | null {
+  const p = s.perf?.[period];
+  if (!p || p.sessions === 0) return null;
+  return { sessions: p.sessions, fpsShare: p.measured > 0 ? p.fps55 / p.measured : null, explore: p.explore };
 }
