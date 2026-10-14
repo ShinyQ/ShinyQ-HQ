@@ -195,8 +195,10 @@ test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or Sys
     await expect(palette).toBeVisible();
     await page.keyboard.type(query);
     await expect(palette.getByRole("option").first()).toContainText(label);
+    // The toast stays 2.4 s after it painted; a CI page can stall longer between two checks, so catch it on a frame.
+    const toast = page.waitForFunction((text) => [...document.querySelectorAll("[role='status']")].some((s) => s.textContent?.includes(text) && s.checkVisibility()), label, { polling: "raf" });
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("status").filter({ hasText: label })).toBeVisible();
+    await toast;
   }
   await run("motion reduced", en.hud.actions.motionReduced);
   await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
