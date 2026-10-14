@@ -50,7 +50,7 @@ public/logos/                   company and school logos (TimelineEntry.logo), 1
 public/media/production/        the masked Grafana probe dashboard of "How I run AI in production" (same three sizes; `scripts/media-sizes.ts` covers it)
 public/media/<pod-slug>/        pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide) + NN-name.w1200.webp (1200 wide, scripts/media-sizes.ts)
 public/cv/                      the owner's CV PDF, committed as-is (one file for both locales, never generated)
-public/cv/pages/                CV page images for the in-site viewer (1600 and 800 px lossless webp), output of `bun run cv:pages`, committed
+public/cv/pages/                CV page images for the in-site viewer (1600, 1200 and 800 px lossless webp), output of `bun run cv:pages`, committed
 public/papers/                  self-hosted paper PDFs ({file}.pdf: redacted or authors' manuscript, see "Content access") and their page images ({file}/{file}-N.webp, 1400 px), output of `bun run paper:pages`, committed
 public/floors/                  elevator picker thumbnails (320 x 180 webp, one per floor), output of `bun run floor:thumbs`, committed
 public/og-assets/               share card inputs: one 1200x630 still per floor (floor-{L1,L2,L3,L4,RF}.jpg) and the owner's photo (400 px PNG), output of `bun run og:stills`, committed (the build never needs WebGL)

@@ -15,6 +15,16 @@ export interface PageImage {
   /** Optional smaller rendition for narrow screens. */
   srcSmall?: string;
   widthSmall?: number;
+  /** Optional in-between rendition (the CV's 1200 px page, so a DPR 3 phone skips the full-size file). */
+  srcMedium?: string;
+  widthMedium?: number;
+}
+
+/** `srcset` from the renditions a page has, smallest first; undefined without a small one (src only). */
+export function pageSrcSet(p: PageImage): string | undefined {
+  if (!p.srcSmall || !p.widthSmall) return undefined;
+  const medium = p.srcMedium && p.widthMedium ? `, ${p.srcMedium} ${p.widthMedium}w` : "";
+  return `${p.srcSmall} ${p.widthSmall}w${medium}, ${p.src} ${p.width}w`;
 }
 
 export interface PageViewerLabels {
@@ -148,7 +158,7 @@ export function PageViewer({ pages, pdf, downloadName, labels, testPrefix, heade
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={p.src}
-                srcSet={p.srcSmall && p.widthSmall ? `${p.srcSmall} ${p.widthSmall}w, ${p.src} ${p.width}w` : undefined}
+                srcSet={pageSrcSet(p)}
                 sizes={p.srcSmall ? sizes : undefined}
                 width={p.width}
                 height={p.height}
