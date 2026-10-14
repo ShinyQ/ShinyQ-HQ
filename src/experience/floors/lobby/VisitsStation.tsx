@@ -14,11 +14,18 @@ import { neonColor } from "../../fx/materials";
 import { sceneProbes } from "../../fx/probes";
 import { useDispose } from "../../fx/useDispose";
 import { useUniformTime } from "../../fx/useUniformTime";
+import { RIDE_CULL_BOUNDS } from "../../tower/rideCull";
 import type { GpuTier } from "../../types";
 import { MergedBoxes, MergedEdges } from "../roof/kit";
 import { globeInstances, OBSERVATORY, observatoryParts, observatoryPlates, observatoryText, type DotInstances, type ObservatoryLabels } from "./observatory";
 
 const NO_RAYCAST = () => null;
+
+/** The globe, dot and plate modes never move a vertex, so the ride cull may hide them under a solid slab. */
+function boundsSafe(material: ReturnType<typeof createHoloMaterial>) {
+  material.userData[RIDE_CULL_BOUNDS] = true;
+  return material;
+}
 const NONE: readonly string[] = [];
 const Y = new Vector3(0, 1, 0);
 
@@ -61,11 +68,11 @@ export function VisitsStation({ labels, locale, tier, reducedMotion, active }: {
   useDispose(sphere);
   const dot = useMemo(() => new PlaneGeometry(1, 1), []);
   useDispose(dot);
-  const body = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor(OBSERVATORY.colors.rim, tier === "full" ? 1.3 : 1, tier), opacity: tier === "full" ? 0.9 : 0.75 }), [tier]);
+  const body = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor(OBSERVATORY.colors.rim, tier === "full" ? 1.3 : 1, tier), opacity: tier === "full" ? 0.9 : 0.75 })), [tier]);
   useDispose(body);
-  const land = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.1, tier), params: [0, 0.12, 0, 0] }), [tier]);
+  const land = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.1, tier), params: [0, 0.12, 0, 0] })), [tier]);
   useDispose(land);
-  const lit = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.8, tier), params: [reducedMotion ? 0 : 1, 0.3, 0, 0] }), [tier, reducedMotion]);
+  const lit = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.dot, color: neonColor("#ffffff", 1.8, tier), params: [reducedMotion ? 0 : 1, 0.3, 0, 0] })), [tier, reducedMotion]);
   useDispose(lit);
   const timed = useMemo(() => [lit], [lit]);
   useUniformTime(timed);
@@ -78,7 +85,7 @@ export function VisitsStation({ labels, locale, tier, reducedMotion, active }: {
     return g;
   }, []);
   useDispose(plateGeometry);
-  const plateMaterial = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.5, tier) }), [tier]);
+  const plateMaterial = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.5, tier) })), [tier]);
   useDispose(plateMaterial);
   const plateData = useMemo(() => {
     const m = new Matrix4();
