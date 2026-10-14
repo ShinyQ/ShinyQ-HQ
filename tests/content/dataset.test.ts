@@ -5,8 +5,6 @@ import { isPublicLiveUrl } from "@/content/live-links";
 import { getPods } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
-import { getPods } from "@/content/load";
-import { pickFeaturedPods } from "@/content/pageview";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
 
