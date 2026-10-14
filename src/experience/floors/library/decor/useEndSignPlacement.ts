@@ -39,6 +39,7 @@ export function useEndSignPlacement({
   angle,
   hovered,
   reducedMotion,
+  obstacles = [],
 }: {
   signs: readonly SignSpec[];
   meta: readonly EndSignMeta[];
@@ -47,6 +48,8 @@ export function useEndSignPlacement({
   angle: { readonly current: number };
   hovered: { readonly current: string | null };
   reducedMotion: boolean;
+  /** Solid shapes no label may cover (the glowing pedestal), as floor-local boxes around the group origin. */
+  obstacles?: readonly { x: number; z: number; r: number; h: number }[];
 }) {
   const alpha = useRef<Float32Array>(new Float32Array(0));
   const sizes = useMemo(() => signs.map(signPlate), [signs]);
@@ -99,6 +102,24 @@ export function useEndSignPlacement({
       const priority = m.kind !== "topic" ? 0 : (hovered.current === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
       return { box, priority, fixed };
     });
+    // Obstacles take their screen box first (fixed, never drawn), so no label sits over them.
+    for (const o of obstacles) {
+      const box: ScreenBox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+      let seen = true;
+      for (const dx of [-o.r, o.r])
+        for (const dz of [-o.r, o.r])
+          for (const y of [0, o.h]) {
+            v.set(origin.x + o.x + dx, origin.y + y, origin.z + o.z + dz).project(camera);
+            if (v.z < -1 || v.z > 1) seen = false;
+            const x = ((v.x + 1) / 2) * width;
+            const sy = ((1 - v.y) / 2) * height;
+            box.x0 = Math.min(box.x0, x);
+            box.x1 = Math.max(box.x1, x);
+            box.y0 = Math.min(box.y0, sy);
+            box.y1 = Math.max(box.y1, sy);
+          }
+      candidates.push({ box: seen ? box : null, priority: 0, fixed: true });
+    }
     const shown = placeLabels(candidates, width < 600 ? LABEL_MAX.narrow : LABEL_MAX.wide);
     // A new sign list (a pick) starts hidden and fades in where it fits.
     if (alpha.current.length !== signs.length) alpha.current = new Float32Array(signs.length);

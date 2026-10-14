@@ -29,6 +29,8 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
+/** The pedestal column as a placement obstacle: no topic label shows over it. */
+const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
 const COUNT_FONT = 0.62;
 /** Bottom of the monument's plate column (u above the floor). */
@@ -261,7 +263,7 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
   const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick), [layout, topics, slots, labels, pick]);
   const hovered = useRef<string | null>(null);
   const root = useRef<Group>(null);
-  const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion });
+  const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion, obstacles: PEDESTAL_OBSTACLE });
   useEffect(() => {
     sceneProbes.topics.monument = end.monument && labels.monument ? [labels.monument.citations, labels.monument.hIndex, labels.monument.source] : null;
   }, [end.monument, labels.monument]);
