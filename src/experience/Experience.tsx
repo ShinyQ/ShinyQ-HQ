@@ -9,6 +9,7 @@ import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
 import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
+import { formatYearMonth } from "@/lib/format";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { TOPICS_ROOM } from "./floors/library/topicHash";
 import { createTopicHashSync } from "./floors/library/topicUrl";
@@ -400,6 +401,7 @@ export default function Experience({
     [data.locale, startHash],
   );
 
+  const metrics = data.library.researchMetrics;
   const labels: SceneLabels = useMemo(
     () => ({
       placeholder: { construction: t("constructionLabel"), hint: t("constructionHint") },
@@ -447,6 +449,19 @@ export default function Experience({
       },
       library: {
         zones: { blog: tLibrary("posts"), research: tLibrary("research"), models: tLibrary("publications"), talks: tLibrary("talks") },
+        end: {
+          pieces: (count: number, topic: string) => tLibrary("topics.pieces", { count, topic }),
+          monument: metrics
+            ? {
+                citations: String(metrics.citations),
+                citationsLabel: tLibrary("topics.monument.citations"),
+                hIndex: String(metrics.hIndex),
+                hIndexLabel: tLibrary("topics.monument.hIndex"),
+                source: tLibrary("topics.monument.asOf", { source: metrics.source, date: formatYearMonth(metrics.asOf, data.locale) }),
+              }
+            : null,
+          archive: t("interact.archive"),
+        },
       },
       roof: {
         comms: t("world.comms"),
@@ -506,7 +521,7 @@ export default function Experience({
         metrics: tLibrary("topics.monument.target"),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats, metrics, data.locale],
   );
 
   return (

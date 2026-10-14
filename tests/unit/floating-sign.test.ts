@@ -50,10 +50,19 @@ describe("holo fx shader", () => {
   });
 
   it("draws holo materials only on instanced meshes, so they compile to one program", () => {
-    for (const file of ["fx/FloatingSign.tsx", "fx/HoloMesh.tsx", "floors/career/Horizon.tsx", "floors/labs/ReactorCore.tsx", "floors/labs/ReactorHighlights.tsx", "floors/lobby/HallFx.tsx"]) {
+    // The Tech Reactor and Topic Constellation highlights draw through fx/FilterHighlights.tsx.
+    for (const file of ["fx/FloatingSign.tsx", "fx/HoloMesh.tsx", "floors/career/Horizon.tsx", "floors/labs/ReactorCore.tsx", "floors/lobby/HallFx.tsx", "fx/FilterHighlights.tsx", "floors/library/decor/EndPlaza.tsx"]) {
       const source = readFileSync(join(__dirname, "../../src/experience", file), "utf8");
       expect(source, file).not.toMatch(/<mesh[\s>]/);
       expect(source, file).toMatch(/instancedMesh/);
+    }
+  });
+
+  it("keeps the filter highlights on the shared instanced component", () => {
+    for (const file of ["floors/labs/ReactorHighlights.tsx", "floors/library/decor/TopicHighlights.tsx"]) {
+      const source = readFileSync(join(__dirname, "../../src/experience", file), "utf8");
+      expect(source, file).not.toMatch(/<mesh[\s>]|createHoloMaterial/);
+      expect(source, file).toMatch(/<HighlightBeacons[\s\S]*<GlowStrips|<GlowStrips[\s\S]*<HighlightBeacons/);
     }
   });
 

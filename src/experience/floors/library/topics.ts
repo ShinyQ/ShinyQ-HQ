@@ -1,6 +1,7 @@
 import type { RoomId } from "@/content/schema";
 import type { RoomTopics } from "@/content/room-views/types";
 import type { TopicPick } from "@/store/useHQStore";
+import { orbitXZ } from "../../fx/signLayout";
 import type { LibraryTopic, Vec2 } from "../../types";
 import type { LibraryLayout, LibraryStation } from "./model";
 
@@ -108,9 +109,7 @@ export function orbSlots(topics: readonly Pick<LibraryTopic, "slug" | "count">[]
 
 /** A slot turned by the orbit angle about the plaza center (y up; positive angle turns counterclockwise seen from above). */
 export function orbitAt(slot: Pick<OrbSlot, "x" | "z">, angle: number): Vec2 {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return { x: slot.x * c + slot.z * s, z: -slot.x * s + slot.z * c };
+  return orbitXZ(slot.x, slot.z, angle);
 }
 
 /** Pairs of topics that light a common station or desk (constellation lines), each pair once in topic order. */
