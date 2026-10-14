@@ -34,7 +34,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | 2025 | Freelance: premium event ticketing (links to pod) · Freelance: Serupa event ticketing platform (links to pod) · Freelance: event ticket marketplace backend (links to pod) · Freelance: digital products e-commerce · Portfolio v1 |
 | 2026 | Technical Consultant, Software & AI (Feb 2026 to present, links to the Labs) · Certification desk 2026 · Hackathons: partner AI hackathon entry, Agentic AI hackathon (both "entry submitted", see C1) · Upcoming: regional Codex hackathon |
 
-**Workshop annex** (end of corridor): side projects (JagaRupa, CalorIQ, DevLens, AI Jury Council, certification trainers, Sentiboard, e-wallet sentiment, S&P 500 optimizer, crypto tracker, real-estate cluster map, alumni and counseling platforms, Pola.ai upcoming) and a wall of ~20 public repositories plus 3 Hugging Face models.
+**Workshop annex** (end of corridor): side projects (JagaRupa, CalorIQ, DevLens, AI Jury Council, certification trainers, crypto tracker, real-estate cluster map, alumni and counseling platforms, Pola.ai upcoming) and a wall of ~20 public repositories plus 3 Hugging Face models. Sentiboard, the e-wallet sentiment model and the S&P 500 optimizer left the annex on 2026-10-14 (owner decision): they are full Data and ML pods on L3, and their old bench rooms go to those pods.
 
 ## 4. L3 Labs
 
