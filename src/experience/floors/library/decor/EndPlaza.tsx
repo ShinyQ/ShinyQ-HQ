@@ -28,6 +28,7 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
+const LINK_COLOR = "#a5f3fc";
 const LABEL_FONT = 0.34;
 const COUNT_FONT = 0.62;
 
@@ -162,12 +163,12 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
     for (const [a, b] of topicLinks(topics)) {
       const p = slots[a];
       const q = slots[b];
-      if (p && q) batch.segment([p.x, p.y, p.z, q.x, q.y, q.z], orbTone(a));
+      if (p && q) batch.segment([p.x, p.y, p.z, q.x, q.y, q.z], LINK_COLOR);
     }
     return batch.build();
   }, [full, topics, slots]);
   useDispose(linkGeo);
-  const linkColor = useMemo(() => neonColor("#ffffff", 1, tier), [tier]);
+  const linkColor = useMemo(() => neonColor(LINK_COLOR, 1, tier), [tier]);
 
   useFrame(({ camera }, dt) => {
     const m = orbs.current;
@@ -235,7 +236,8 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
       {linkGeo && (
         <group ref={links}>
           <lineSegments geometry={linkGeo} raycast={NO_RAYCAST}>
-            <lineBasicMaterial color={linkColor} vertexColors transparent opacity={0.35} toneMapped={false} />
+            {/* One color, no vertex colors: the plain line program the neighbour floors already compile (programs within baseline). */}
+            <lineBasicMaterial color={linkColor} transparent opacity={0.3} toneMapped={false} />
           </lineSegments>
         </group>
       )}
