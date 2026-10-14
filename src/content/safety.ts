@@ -147,8 +147,11 @@ export function leafForbiddenPatterns(leaf: StringLeaf): string[] {
   return findForbiddenPatterns(leaf.value);
 }
 
-/** Text files of the static export that carry site copy (pages, RSC payloads, data, feeds). */
-const BUILD_TEXT_FILE = /\.(?:html|txt|json|xml|webmanifest)$/;
+/**
+ * Text files of the static export: pages, RSC payloads, data, feeds, and (S9) JavaScript chunks,
+ * CSS, SVG and Markdown, because client chunks do carry content strings (TS constants, Ask pills).
+ */
+export const BUILD_TEXT_FILE = /\.(?:html|txt|json|xml|webmanifest|js|mjs|css|svg|md)$/;
 
 export interface BuildHit {
   file: string;
@@ -157,10 +160,10 @@ export interface BuildHit {
 }
 
 /**
- * Scans every text file of a static export (`out/`) for blocklisted terms, so a
- * client company name cannot reach a page, payload, sitemap or room data file.
- * Skips JavaScript chunks (no content is bundled there) and binaries. Hits are
- * redacted with `formatBlockedTerms`; pass `label` only for terms that are public.
+ * Scans every text file of a static export (`out/`, `BUILD_TEXT_FILE`) for blocklisted terms, so
+ * a client company name cannot reach a page, payload, script, sitemap or room data file. Skips
+ * binaries. Blocklist terms only: forbidden patterns would flag RSC references such as `"$1c"`.
+ * Hits are redacted with `formatBlockedTerms`; pass `label` only for terms that are public.
  */
 export function scanBuildOutput(
   dir: string,

@@ -21,8 +21,9 @@ permissions:
   contents: read
 
 env:
-  # Private public-safety blocklist (internal codenames, private repo names).
-  # Optional: when unset, only the committed default list is enforced.
+  # Private public-safety blocklist (internal codenames, private repo names). Required on main:
+  # scripts/scan-export.ts fails main runs without it and warns on pull requests (forks and
+  # Dependabot get no secrets), so a skipped check is never silent.
   SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
   # No NEXT_PUBLIC_CF_BEACON_TOKEN here: test builds never render the Web Analytics beacon, so the
@@ -109,6 +110,12 @@ jobs:
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build static export
         run: bun run build
+      - name: Public-safety scan of out/ and private blocklist gate
+        # Every text file of the export, JS, CSS, SVG and MD included (S9); fails on main without the
+        # SAFETY_BLOCKLIST secret (S1) unless the SAFETY_BLOCKLIST_GRACE_UNTIL date has not passed.
+        env:
+          SAFETY_BLOCKLIST_GRACE_UNTIL: ${{ vars.SAFETY_BLOCKLIST_GRACE_UNTIL }}
+        run: bun scripts/scan-export.ts out
       - uses: actions/upload-artifact@v7
         with:
           name: site
