@@ -10,7 +10,7 @@ import path from "node:path";
 import { z } from "zod";
 import { PerspectivesFileSchema, PodSchema, SiteContentObjectSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
-import { collectStrings, findBlockedTerms, leafForbiddenPatterns, loadBlocklist } from "../src/content/safety";
+import { collectStrings, findBlockedLabels, leafForbiddenPatterns, loadBlocklist, redactBlockedText } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
 
 const [kind, file] = process.argv.slice(2);
@@ -27,6 +27,7 @@ const schema = kind === "pods" ? z.array(PodSchema) : kind === "rest" ? RestSche
 const data: unknown = JSON.parse(readFileSync(file, "utf8"));
 const parsed = schema.safeParse(data);
 let failed = false;
+const terms = loadBlocklist();
 
 if (!parsed.success) {
   failed = true;
@@ -34,7 +35,7 @@ if (!parsed.success) {
 } else if (kind === "full") {
   for (const change of titleCaseChanges(parsed.data as SiteContent)) {
     failed = true;
-    console.error(`${change.path}: not in Title Case, expected "${change.after}" (bun scripts/title-case.ts --write)\n  ${change.before}`);
+    console.error(`${change.path}: not in Title Case, expected "${redactBlockedText(change.after, terms)}" (bun scripts/title-case.ts --write)\n  ${redactBlockedText(change.before, terms)}`);
   }
 }
 
@@ -56,12 +57,11 @@ if (perspectivesData !== undefined) {
   }
 }
 
-const terms = loadBlocklist();
 for (const leaf of [...collectStrings(data), ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives"))]) {
-  const hits = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+  const hits = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
   if (hits.length > 0) {
     failed = true;
-    console.error(`${leaf.path}: ${hits.join(", ")}\n  ${leaf.value}`);
+    console.error(`${leaf.path}: ${hits.join(", ")}\n  ${redactBlockedText(leaf.value, terms)}`);
   }
 }
 

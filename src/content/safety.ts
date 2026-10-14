@@ -60,6 +60,42 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** The committed default list (client names, personal data, Azure resource names): public, so safe to print. */
+export function loadDefaultBlocklist(): string[] {
+  return existsSync(DEFAULT_BLOCKLIST_FILE) ? parseBlocklist(readFileSync(DEFAULT_BLOCKLIST_FILE, "utf8")) : [];
+}
+
+/**
+ * Display form of matched blocklist terms for test output, logs, reports and artifacts (S2).
+ * Terms from the committed default list stay readable; every other term (the local list or the
+ * SAFETY_BLOCKLIST secret) becomes `private term #n`, its 1-based position among the private
+ * terms of `terms` (default file order, then `.safety-blocklist.local.txt`, then the secret), so
+ * a caught leak never publishes the term it caught. GitHub masks only whole secret values.
+ */
+export function formatBlockedTerms(found: readonly string[], terms: readonly string[], publicTerms: readonly string[] = loadDefaultBlocklist()): string[] {
+  const visible = new Set(publicTerms);
+  const hidden = terms.filter((t) => !visible.has(t));
+  return found.map((t) => (visible.has(t) ? t : `private term #${hidden.indexOf(t) + 1 || "?"}`));
+}
+
+/** `findBlockedTerms` in display form (`formatBlockedTerms`): use it wherever matches can be printed. */
+export function findBlockedLabels(text: string, terms: readonly string[]): string[] {
+  return formatBlockedTerms(findBlockedTerms(text, terms), terms);
+}
+
+/** Replaces every blocklisted term in `text` with "[redacted]", keeping line breaks (logs, reports, public issues). */
+export function redactBlockedText(text: string, terms: readonly string[]): string {
+  let out = text;
+  for (const term of findBlockedTerms(out, terms)) {
+    const regex =
+      term.length > 2 && term.startsWith("/") && term.endsWith("/")
+        ? new RegExp(term.slice(1, -1), "g")
+        : new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}(?=$|[^\\p{L}\\p{N}])`, "giu");
+    out = out.replace(regex, (_match, lead) => `${typeof lead === "string" ? lead : ""}[redacted]`);
+  }
+  return out;
+}
+
 /**
  * Case-insensitive whole-word match. Terms wrapped in slashes (`/regex/`) are
  * treated as case-sensitive regular expressions.
@@ -116,15 +152,21 @@ const BUILD_TEXT_FILE = /\.(?:html|txt|json|xml|webmanifest)$/;
 
 export interface BuildHit {
   file: string;
+  /** Matched terms in display form (`formatBlockedTerms` unless `label` says otherwise). */
   terms: string[];
 }
 
 /**
  * Scans every text file of a static export (`out/`) for blocklisted terms, so a
  * client company name cannot reach a page, payload, sitemap or room data file.
- * Skips JavaScript chunks (no content is bundled there) and binaries.
+ * Skips JavaScript chunks (no content is bundled there) and binaries. Hits are
+ * redacted with `formatBlockedTerms`; pass `label` only for terms that are public.
  */
-export function scanBuildOutput(dir: string, terms: readonly string[]): BuildHit[] {
+export function scanBuildOutput(
+  dir: string,
+  terms: readonly string[],
+  label: (found: string[]) => string[] = (found) => formatBlockedTerms(found, terms),
+): BuildHit[] {
   const walk = (at: string): string[] =>
     readdirSync(at, { withFileTypes: true }).flatMap((d) =>
       d.isDirectory() ? walk(path.join(at, d.name)) : [path.join(at, d.name)],
@@ -133,6 +175,6 @@ export function scanBuildOutput(dir: string, terms: readonly string[]): BuildHit
     .filter((file) => BUILD_TEXT_FILE.test(file))
     .flatMap((file) => {
       const found = findBlockedTerms(readFileSync(file, "utf8"), terms);
-      return found.length ? [{ file: path.relative(dir, file), terms: found }] : [];
+      return found.length ? [{ file: path.relative(dir, file), terms: label(found) }] : [];
     });
 }

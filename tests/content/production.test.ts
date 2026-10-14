@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { getPods, getProduction } from "@/content/load";
 import { ProductionSchema } from "@/content/schema";
 import { midSrc, thumbSrc } from "@/content/media";
-import { collectStrings, findBlockedTerms, findForbiddenPatterns, loadBlocklist } from "@/content/safety";
+import { collectStrings, findBlockedLabels, findForbiddenPatterns, loadBlocklist } from "@/content/safety";
 import { webpChunks, webpSize } from "../helpers/webp";
 
 /** "How I run AI in production" (owner approved 2026-10-14): facts only, no client or resource names. */
@@ -45,7 +45,7 @@ describe("production observability section", () => {
   it("publishes no client name, resource id, hostname or GUID (masked excerpt included)", () => {
     const terms = loadBlocklist();
     const hits = collectStrings(production).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedTerms(value, terms), ...findForbiddenPatterns(value)];
+      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(value)) found.push("guid");
       if (/\/subscriptions\/|resourceGroups|\.azure\.com|\.windows\.net|https?:\/\//i.test(value)) found.push("resource path or url");
       return found.length ? [`${at}: ${found.join(", ")}`] : [];

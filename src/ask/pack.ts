@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, Perspective, Pod, SiteContent } from "@/content/schema";
 import { perspectiveSourcePath } from "@/content/perspectives";
-import { findBlockedTerms } from "@/content/safety";
+import { findBlockedLabels } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
@@ -516,11 +516,11 @@ export function validatePack(pack: KnowledgePack, blocklist: readonly string[]):
   const bytes = Buffer.byteLength(JSON.stringify(pack), "utf8");
   if (bytes > PACK_MAX_BYTES) errors.push(`pack is ${bytes} bytes, over the ${PACK_MAX_BYTES} byte cap`);
   for (const chunk of pack.chunks) {
-    const hits = findBlockedTerms([chunk.title, chunk.text_en, chunk.text_id, chunk.keywords.join(" ")].join("\n"), blocklist);
+    const hits = findBlockedLabels([chunk.title, chunk.text_en, chunk.text_id, chunk.keywords.join(" ")].join("\n"), blocklist);
     if (hits.length) errors.push(`chunk "${chunk.id}" contains blocklisted terms: ${hits.join(", ")}`);
     if (/\u2014/.test(chunk.text_en + chunk.text_id)) errors.push(`chunk "${chunk.id}" contains an em dash`);
   }
-  const entityHits = findBlockedTerms(pack.entities.join("\n"), blocklist);
+  const entityHits = findBlockedLabels(pack.entities.join("\n"), blocklist);
   if (entityHits.length) errors.push(`entity allowlist contains blocklisted terms: ${entityHits.join(", ")}`);
   return errors;
 }

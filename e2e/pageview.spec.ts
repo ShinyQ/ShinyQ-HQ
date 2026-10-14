@@ -447,7 +447,8 @@ const perspectivesFile = PerspectivesFileSchema.parse(JSON.parse(readFileSync(pa
 
 /** Owner decision 2026-10-14: perspectives are Ask the HQ knowledge only, never a page section. */
 test("Perspectives: no entry reaches the static export", () => {
-  expect(scanBuildOutput(path.join(process.cwd(), "out"), perspectiveFingerprints(perspectivesFile.entries))).toEqual([]);
+  // Fingerprints come from the public perspectives file, so hits stay readable.
+  expect(scanBuildOutput(path.join(process.cwd(), "out"), perspectiveFingerprints(perspectivesFile.entries), (found) => found)).toEqual([]);
 });
 
 test("Perspectives: About and Quick view have no perspectives section or ToC chip", async ({ page }) => {
