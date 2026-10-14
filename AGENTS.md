@@ -195,6 +195,21 @@ e2e/perf-probes.spec.ts         default suite: ?perf=1 overlay on and off, timel
 
 ## Content style
 
+- **Bilingual editorial voice**: review copy in context, with Indonesian as the priority. Prefer warm, direct, professional sentences without unnecessary `Anda` or `kamu`; keep strong existing passages rather than rewriting every line. Preserve facts, measurement caveats, negative results, team credit, official names, citations, code, URLs and identifiers. Never use promotional hype or AI-detector scores as editorial evidence.
+
+  | Context | Voice |
+  |---|---|
+  | Navigation and actions | Short, literal, action-led, usually pronoun-free |
+  | Rover guidance | Friendly host, explicit controls and useful next steps; Rover is not the owner |
+  | Owner stories and technical writing | Natural `saya` / `I`, concrete decisions, outcomes and limitations |
+  | Titles, mottos, taglines and share cards | No first person; existing Title Case rules apply |
+  | Personal essays and poetry | Preserve `aku`, imagery, rhythm, quotations and attribution; literary changes need author approval |
+  | Ask AI | Site assistant, not the owner speaking; third-person attribution, grounded plain text, at most three short sentences |
+  | Errors and refusals | State the real boundary or failure and an available next action |
+  | Privacy and stats | Neutral, implementation-backed wording; distinguish anonymous analytics from the 30-minute anti-bot cookie |
+
+- **Contextual glossary**: the boost control is `Boost` / `Turbo`; guided tours are `guided tour` / `tur terpandu`. Use navigation's localized page names and keep `Ask Rover` / `Tanya Rover`, `Classic site` / `Situs klasik` and all three wing names unchanged. Use `makalah` for reader-facing paper controls, `repositori` for public code links, and `situs aktif` for a live-site action when appropriate. Keep `paper`, `repo`, `live`, `production`, RAG, backend, guardrail, observability and shadow mode where technical prose needs them; never apply global term replacements.
+- **Copy compatibility**: preserve dictionary keys, interpolation variables and ICU semantics, plus existing 40-character mission, 110-character dialog, 120/520-character perspective and 140 to 160-character SEO limits. Edit authoritative sources, align hosted-post frontmatter with the registry, and keep sample limits in the registry excerpt plus first paragraph used by Ask. Do not change retrieval compression, scope, safety checks, routes or behavior to accommodate wording; bump `PROMPT_VERSION` for prompt changes.
 - **Title Case for titles** (owner decision 2026-10-12): pod, post (`site-content.json` and the MDX frontmatter `title`), publication, talk, side project, award and principle titles are stored in Title Case in both locales, never cased with CSS `text-transform`. The rules live in `titleCase` (`src/content/title-case.ts`): capitalize every word except minor words that are not first, last or right after a colon (English: a, an, and, as, at, but, by, for, in, of, on, or, the, to, vs, via, with; Indonesian: dan, di, ke, dari, untuk, yang, dengan, atau, pada, plus the PUEBI prepositions dalam, bagi, oleh, serta, tentang, sebagai, terhadap, kepada; both lists apply in both locales because titles mix languages), keep words with an inner capital as written (AI, SaaS, PoC, IndoBERT), fix brands through `BRAND_CASING` (iOS, e2e, .NET; common words such as "it" or "line" are never in it), and case each part of a compound (E-Commerce, Chart-of-Accounts, Error-nya). Creative titles the author styled on purpose go in `TITLE_CASE_KEEP`.
 - Not titles: role titles, org and certification names, skill group labels (rendered uppercase), mission labels (sentence-case actions) and body text.
 - `tests/content/title-case.test.ts` and `bun run validate:content` fail on a title that `titleCase` would change; `bun scripts/title-case.ts` lists them and `bun scripts/title-case.ts --write` fixes `site-content.json` and the MDX frontmatter. A post's frontmatter title must equal its `site-content.json` title. Slugs and URLs never change with a title.
