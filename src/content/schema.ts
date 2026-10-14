@@ -8,7 +8,8 @@ import { LOCALES } from "./locales";
  * Profile.monogram/subheadline/currentRole/timezone/story/principles,
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
- * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema).
+ * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
+ * (ProductionSchema).
  */
 
 export { DEFAULT_LOCALE, LOCALES } from "./locales";
@@ -397,8 +398,42 @@ export const PerspectivesFileSchema = z
     });
   });
 
+/**
+ * "How I run AI in production" (owner approved 2026-10-14): the About section `#production`, the L3 Ops
+ * Control Room (`L3:ops`) and its Ask chunk. Facts only, aggregated, no client or resource names. Each proof
+ * tile fills one Ops Control Room screen (`panel`); `alerts` are the rule families on the Alerts screen.
+ */
+export const ProductionPanelSchema = z.enum(["metrics", "traces", "alerts"]);
+
+export const ProductionSchema = z.strictObject({
+  title: LocalizedTextSchema,
+  intro: LocalizedTextSchema,
+  points: z.array(z.strictObject({ id: SlugSchema, lead: LocalizedTextSchema, text: LocalizedTextSchema })).min(2).max(6),
+  outro: LocalizedTextSchema,
+  tiles: z
+    .array(
+      z.strictObject({
+        id: SlugSchema,
+        label: LocalizedTextSchema,
+        value: LocalizedTextSchema,
+        detail: LocalizedTextSchema,
+        panel: ProductionPanelSchema,
+      }),
+    )
+    .min(3)
+    .max(6),
+  alerts: z.array(LocalizedTextSchema).min(1).max(6),
+  /** Pod slugs of the case studies that prove it (checked against the pods in tests/content/production.test.ts). */
+  caseStudies: z.array(SlugSchema).min(1).max(6),
+  /** A masked Bicep excerpt of one alert rule: every resource, client and project name is a neutral placeholder. */
+  alertExcerpt: z.strictObject({ caption: LocalizedTextSchema, code: nonEmpty }).optional(),
+  /** A masked dashboard screenshot rendered locally with demo traffic (`public/media/production/`). */
+  dashboard: AssetSchema.extend({ caption: LocalizedTextSchema }).optional(),
+});
+
 export const SiteContentSchema = z.strictObject({
   profile: ProfileSchema,
+  production: ProductionSchema,
   stats: z.array(StatSchema).min(4).max(6),
   skills: z.array(SkillGroupSchema).min(1),
   certifications: z.array(CertificationSchema),
@@ -435,6 +470,8 @@ export type RoomId = z.infer<typeof RoomIdSchema>;
 export type Asset = z.infer<typeof AssetSchema>;
 export type Principle = z.infer<typeof PrincipleSchema>;
 export type Profile = z.infer<typeof ProfileSchema>;
+export type Production = z.infer<typeof ProductionSchema>;
+export type ProductionPanel = z.infer<typeof ProductionPanelSchema>;
 export type Stat = z.infer<typeof StatSchema>;
 export type SkillGroup = z.infer<typeof SkillGroupSchema>;
 export type Certification = z.infer<typeof CertificationSchema>;
