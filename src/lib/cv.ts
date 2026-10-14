@@ -18,6 +18,9 @@ export interface CvPageImage {
   src: string;
   width: number;
   height: number;
+  srcMedium: string;
+  widthMedium: number;
+  heightMedium: number;
   srcSmall: string;
   widthSmall: number;
   heightSmall: number;

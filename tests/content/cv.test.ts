@@ -82,16 +82,18 @@ describe("CV page images (in-site viewer, rendered by `bun run cv:pages`)", () =
     expect(manifest.sha256, "public/cv PDF changed: run `bun run cv:pages` and commit the output").toBe(sha);
   });
 
-  it("are numbered pages with a large and a small webp each, and nothing else", () => {
+  it("are numbered pages with a large, a medium and a small webp each, and nothing else", () => {
     expect(CV_PAGES.length).toBeGreaterThan(0);
     const expected: string[] = [];
     CV_PAGES.forEach((page, i) => {
       expect(page.n).toBe(i + 1);
       expect(page.width).toBe(1600);
+      expect(page.widthMedium).toBe(1200);
       expect(page.widthSmall).toBe(800);
       expect(page.height / page.width).toBeCloseTo(page.heightSmall / page.widthSmall, 2);
-      for (const src of [page.src, page.srcSmall]) {
-        expect(src).toMatch(new RegExp(`^/cv/pages/${fileName}-${page.n}(-800)?\\.webp$`));
+      expect(page.height / page.width).toBeCloseTo(page.heightMedium / page.widthMedium, 2);
+      for (const src of [page.src, page.srcMedium, page.srcSmall]) {
+        expect(src).toMatch(new RegExp(`^/cv/pages/${fileName}-${page.n}(-800|-1200)?\\.webp$`));
         const bytes = readFileSync(path.join(root, "public", src));
         expect(bytes.subarray(0, 4).toString("latin1")).toBe("RIFF");
         expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");

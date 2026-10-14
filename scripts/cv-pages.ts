@@ -4,7 +4,8 @@
  *
  *   bun run cv:pages
  *
- * Writes `public/cv/pages/{fileName}-{n}.webp` (1600 px wide), `{fileName}-{n}-800.webp` (800 px wide)
+ * Writes `public/cv/pages/{fileName}-{n}.webp` (1600 px wide), `{fileName}-{n}-1200.webp` (1200 px wide,
+ * what a 390 px DPR 3 phone needs instead of the 1600 one), `{fileName}-{n}-800.webp` (800 px wide)
  * and the manifest `content/generated/cv-pages.json` (page sizes plus the PDF's sha256, which
  * `tests/content/cv.test.ts` compares with the committed PDF). The output is committed, so CI and
  * the build need no PDF tooling. Needs poppler (`pdftoppm`) and libwebp (`cwebp`) on the PATH
@@ -15,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pngSize, renderPng, sha256 as fileSha256, toWebp } from "./pdf-pages";
 
-export const CV_PAGE_WIDTHS = { large: 1600, small: 800 } as const;
+export const CV_PAGE_WIDTHS = { large: 1600, medium: 1200, small: 800 } as const;
 
 export interface CvPage {
   /** 1-based page number. */
@@ -23,6 +24,9 @@ export interface CvPage {
   src: string;
   width: number;
   height: number;
+  srcMedium: string;
+  widthMedium: number;
+  heightMedium: number;
   srcSmall: string;
   widthSmall: number;
   heightSmall: number;
@@ -48,21 +52,28 @@ function main() {
 
   try {
     const large = renderPng(pdf, CV_PAGE_WIDTHS.large, tmp);
+    const medium = renderPng(pdf, CV_PAGE_WIDTHS.medium, tmp);
     const small = renderPng(pdf, CV_PAGE_WIDTHS.small, tmp);
-    if (large.length === 0 || large.length !== small.length) throw new Error("pdftoppm produced no pages");
+    if (large.length === 0 || large.length !== small.length || large.length !== medium.length) throw new Error("pdftoppm produced no pages");
     const pages: CvPage[] = large.map((png, i) => {
       const n = i + 1;
       const name = `${fileName}-${n}.webp`;
+      const nameMedium = `${fileName}-${n}-${CV_PAGE_WIDTHS.medium}.webp`;
       const nameSmall = `${fileName}-${n}-${CV_PAGE_WIDTHS.small}.webp`;
       toWebp(png, path.join(outDir, name));
+      toWebp(medium[i], path.join(outDir, nameMedium));
       toWebp(small[i], path.join(outDir, nameSmall));
       const big = pngSize(png);
+      const mid = pngSize(medium[i]);
       const little = pngSize(small[i]);
       return {
         n,
         src: `/cv/pages/${name}`,
         width: big.width,
         height: big.height,
+        srcMedium: `/cv/pages/${nameMedium}`,
+        widthMedium: mid.width,
+        heightMedium: mid.height,
         srcSmall: `/cv/pages/${nameSmall}`,
         widthSmall: little.width,
         heightSmall: little.height,
