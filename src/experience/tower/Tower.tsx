@@ -11,6 +11,7 @@ import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import { Roof, type RoofLabels } from "../floors/Roof";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
+import { DrawnWork } from "../scene/DrawnWorkHook";
 import { ElevatorShaft } from "./ElevatorShaft";
 import { RideCull } from "./RideCullHooks";
 import { ReturnPadSign } from "../fx/ReturnPadSign";
@@ -124,6 +125,7 @@ export function Tower({
         );
       })}
       <ElevatorShaft layouts={layouts} near={shaftNear} />
+      <DrawnWork />
       <RideCull />
       <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />
     </group>
