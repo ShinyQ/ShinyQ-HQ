@@ -105,6 +105,16 @@ export function publicationDate(p: Publication, locale: Locale): string {
 }
 
 /** Papers and the thesis, newest first. */
+/** "owner/repo" of a GitHub repository URL (`Pod.repos`). */
+export function repoName(url: string): string {
+  return url.replace(/^https:\/\/github\.com\//, "");
+}
+
+/** The publications a pod links (`Pod.publications`), in the pod's order; unknown ids are dropped (the schema rejects them). */
+export function podPublications(pod: { publications?: readonly string[] }, publications: readonly Publication[]): Publication[] {
+  return (pod.publications ?? []).flatMap((id) => publications.filter((p) => p.id === id));
+}
+
 export function researchPublications(publications: readonly Publication[]): Publication[] {
   return publications.filter((p) => isResearch(p.kind)).sort((a, b) => (b.date ?? String(b.year)).localeCompare(a.date ?? String(a.year)));
 }

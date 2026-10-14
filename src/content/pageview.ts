@@ -9,7 +9,7 @@ import { podHasGallery } from "./selectors";
 export type Wing = Pod["wing"];
 export type EntryType = TimelineEntry["type"];
 
-export const WINGS: readonly Wing[] = ["ai", "software"];
+export const WINGS: readonly Wing[] = ["ai", "data", "software"];
 export const ENTRY_TYPES: readonly EntryType[] = ["job", "freelance", "education", "award", "milestone"];
 
 export interface PodFilter {
@@ -53,7 +53,7 @@ export function stackOptions(pods: readonly Pick<Pod, "stack">[], min = 1): { na
 }
 
 export function wingCounts(pods: readonly Pick<Pod, "wing">[]): Record<"all" | Wing, number> {
-  const counts = { all: pods.length, ai: 0, software: 0 };
+  const counts = { all: pods.length, ai: 0, data: 0, software: 0 };
   for (const pod of pods) counts[pod.wing] += 1;
   return counts;
 }

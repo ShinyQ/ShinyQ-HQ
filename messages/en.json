@@ -53,7 +53,8 @@
     },
     "wing": {
       "software": "Product Engineering",
-      "ai": "AI Engineering"
+      "ai": "AI Engineering",
+      "data": "Data and ML"
     },
     "type": {
       "job": "Employment",
@@ -116,6 +117,7 @@
     "stats": "At a glance",
     "software": "Selected software engineering work",
     "ai": "Selected AI engineering work",
+    "data": "Selected data and ML work",
     "timeline": "Career history",
     "projects": "Side projects",
     "certifications": "Certifications",
@@ -144,9 +146,14 @@
   },
   "labs": {
     "title": "Labs",
-    "intro": "Software and AI case studies covering my contribution and results: software systems since 2019, and enterprise AI applications since 2026.",
+    "intro": "Software, AI and data case studies with my contribution and results: software since 2019, data and ML since 2021, and enterprise AI since 2026.",
     "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",
     "aiIntro": "Enterprise AI platforms with evaluation gates before release.",
+    "dataIntro": "NLP, forecasting, optimization and data collection from my public repositories.",
+    "wingProjects": "{wing} projects",
+    "codeResearch": "Code and research",
+    "repositories": "Repositories on GitHub",
+    "research": "Papers, thesis and models",
     "directory": "Directory",
     "problem": "Problem",
     "approach": "What I did",
@@ -607,7 +614,8 @@
     "clear": "Clear filters",
     "wingShort": {
       "software": "Product Engineering",
-      "ai": "AI Engineering"
+      "ai": "AI Engineering",
+      "data": "Data and ML"
     }
   },
   "case": {

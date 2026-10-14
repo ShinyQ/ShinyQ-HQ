@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
 import { CaseToc } from "@/components/page/CaseToc";
+import { PodCodeResearch } from "@/components/page/PodCodeResearch";
 import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
@@ -50,12 +51,14 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
   const images = toGalleryImages(pod.assets, locale);
   const live = podLiveLink(pod);
+  const codeResearch = Boolean(pod.repos?.length || pod.publications?.length);
   const toc = [
     { id: "results", label: t("results") },
     { id: "problem", label: t("problem") },
     { id: "approach", label: t("approach") },
     ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
     ...(images.length > 0 ? [{ id: "gallery", label: tg("title") }] : []),
+    ...(codeResearch ? [{ id: "code", label: t("codeResearch") }] : []),
     { id: "stack", label: tc("stack") },
   ];
 
@@ -111,6 +114,11 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             {images.length > 0 && (
               <Chapter id="gallery" title={tg("title")}>
                 <Gallery images={images} layout="mosaic" label={`${tg("title")}: ${pod.title[locale]}`} />
+              </Chapter>
+            )}
+            {codeResearch && (
+              <Chapter id="code" title={t("codeResearch")}>
+                <PodCodeResearch pod={pod} locale={locale} />
               </Chapter>
             )}
             <Chapter id="stack" title={tc("stack")}>

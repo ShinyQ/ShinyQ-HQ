@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
-import type { LocalizedText, Mission, SiteContent } from "@/content/schema";
+import type { LocalizedText, Mission, SiteContent, Wing } from "@/content/schema";
 import type { PaletteActionId } from "./palette-types";
 import { buildRoomCatalog, buildYears, type RoomInfo, type StructuralLabels, type StructuralRoom, type YearInfo } from "@/experience/missions/rooms";
 import { buildTechIndex } from "@/content/tech-index";
 import type { ReactorRingId } from "@/content/tech-rings";
-import { orderPods } from "@/content/selectors";
+import { orderPods, podHasGallery } from "@/content/selectors";
+import { buildLabsLayout, LABS_WINGS } from "@/experience/floors/labs/layout";
 
 /** A Cmd-K "Show projects using X" row: the Tech Reactor pick it makes. */
 export interface HudTech {
@@ -18,6 +19,23 @@ export interface HudTech {
   /** "Show projects using X" in both languages. */
   title: LocalizedText;
 }
+
+/** A Cmd-K "<wing> projects" row: the wing's directory panel in 3D, `/labs?wing=` on the Classic site. */
+export interface HudWing {
+  wing: Wing;
+  /** "Data and ML projects" in both languages. */
+  title: LocalizedText;
+  keywords: string[];
+  /** The wing's directory panel stop on L3 (null when the floor has no panel for it). */
+  stop: { x: number; z: number } | null;
+}
+
+/** Search words per wing, besides its names (owner request 2026-10-14 for Data and ML). */
+const WING_KEYWORDS: Record<Wing, string[]> = {
+  software: ["software", "product", "backend", "full stack", "web"],
+  ai: ["ai", "llm", "genai", "agents", "azure"],
+  data: ["data", "ml", "machine learning", "data science", "nlp", "forecasting", "sentiment", "analytics", "sains data"],
+};
 
 /**
  * Serializable data the client HUD needs. Built on the server so zod and the full dataset stay out of the
@@ -34,6 +52,8 @@ export interface HudIndex {
   actionLabels: Record<PaletteActionId, LocalizedText>;
   /** L3 Tech Reactor techs (build-time tech index), for the Cmd-K "Show projects using X" rows. */
   techs: HudTech[];
+  /** L3 wings with pods, for the Cmd-K "<wing> projects" rows. */
+  wings: HudWing[];
 }
 
 const ACTION_KEYS: Record<PaletteActionId, keyof typeof en.hud.actions> = {
@@ -64,6 +84,15 @@ export function buildHudIndex(content: SiteContent): HudIndex {
       title: { en: en.labs.reactor.show.replace("{tech}", t.name), id: id.labs.reactor.show.replace("{tech}", t.name) },
     })),
   );
+  const labs = buildLabsLayout(
+    orderPods(content.floors.labs.pods).map((p) => ({ id: p.id, slug: p.slug, title: p.title.en, tier: p.tier, wing: p.wing, accent: p.accent, hologram: p.hologram, order: p.order, hasHologramView: false, hasGallery: podHasGallery(p) })),
+  );
+  const wings: HudWing[] = LABS_WINGS.filter((wing) => content.floors.labs.pods.some((p) => p.wing === wing)).map((wing) => ({
+    wing,
+    title: { en: en.labs.wingProjects.replace("{wing}", en.common.wing[wing]), id: id.labs.wingProjects.replace("{wing}", id.common.wing[wing]) },
+    keywords: [en.common.wing[wing], id.common.wing[wing], ...WING_KEYWORDS[wing]],
+    stop: labs.boards[wing]?.stop ?? null,
+  }));
   return {
     missions: [...content.missions].sort((a, b) => a.order - b.order),
     rooms: buildRoomCatalog(content, structuralLabels()),
@@ -74,6 +103,7 @@ export function buildHudIndex(content: SiteContent): HudIndex {
       Object.entries(ACTION_KEYS).map(([action, key]) => [action, { en: en.hud.actions[key], id: id.hud.actions[key] }]),
     ) as Record<PaletteActionId, LocalizedText>,
     techs,
+    wings,
   };
 }
 

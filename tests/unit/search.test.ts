@@ -168,3 +168,21 @@ describe("normalize and fuzzyScore", () => {
     expect(scoreEntry(voice, ["voice", "qqqzzz"])).toBe(0);
   });
 });
+
+describe("wing rows (Data and ML, owner request 2026-10-14)", () => {
+  it("indexes one row per wing with pods, the data wing with its directory panel stop", () => {
+    expect(index.wings.map((w) => w.wing)).toEqual(["software", "ai", "data"]);
+    expect(entries.filter((e) => e.target.type === "wing").map((e) => e.key)).toEqual(["wing:software", "wing:ai", "wing:data"]);
+    const data = index.wings.find((w) => w.wing === "data")!;
+    expect(data.title).toEqual({ en: "Data and ML projects", id: "Proyek Data dan ML" });
+    expect(data.stop).not.toBeNull();
+    expect(data.stop!.x).toBeGreaterThan(100);
+  });
+
+  it('finds "Data and ML projects" for data, ML and machine learning queries in both languages', () => {
+    for (const q of ["data and ml", "machine learning", "proyek data", "ml projects"]) {
+      expect(searchPalette(entries, q).flatMap((g) => g.entries.map((e) => e.key)), q).toContain("wing:data");
+    }
+    expect(searchPalette(entries, "")).not.toContainEqual(expect.objectContaining({ id: "actions" }));
+  });
+});

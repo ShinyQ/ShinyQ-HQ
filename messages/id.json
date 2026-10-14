@@ -53,7 +53,8 @@
     },
     "wing": {
       "software": "Product Engineering",
-      "ai": "AI Engineering"
+      "ai": "AI Engineering",
+      "data": "Data dan ML"
     },
     "type": {
       "job": "Pekerjaan",
@@ -116,6 +117,7 @@
     "stats": "Sekilas",
     "software": "Pilihan karya software engineering",
     "ai": "Pilihan karya AI engineering",
+    "data": "Pilihan karya data dan ML",
     "timeline": "Riwayat karier",
     "projects": "Proyek sampingan",
     "certifications": "Sertifikasi",
@@ -144,9 +146,14 @@
   },
   "labs": {
     "title": "Labs",
-    "intro": "Studi kasus software dan AI, beserta kontribusi dan hasil kerja saya: sistem software sejak 2019, dan aplikasi AI enterprise sejak 2026.",
+    "intro": "Studi kasus software, AI, dan data beserta kontribusi dan hasil saya: software sejak 2019, data dan ML sejak 2021, dan AI enterprise sejak 2026.",
     "softwareIntro": "Sistem backend, full-stack, fintech, dan SaaS.",
     "aiIntro": "Platform AI enterprise dengan evaluation gate sebelum rilis.",
+    "dataIntro": "NLP, forecasting, optimasi, dan pengumpulan data dari repository publik saya.",
+    "wingProjects": "Proyek {wing}",
+    "codeResearch": "Kode dan riset",
+    "repositories": "Repository di GitHub",
+    "research": "Paper, skripsi, dan model",
     "directory": "Direktori",
     "problem": "Masalah",
     "approach": "Yang saya kerjakan",
@@ -607,7 +614,8 @@
     "clear": "Hapus filter",
     "wingShort": {
       "software": "Product Engineering",
-      "ai": "AI Engineering"
+      "ai": "AI Engineering",
+      "data": "Data dan ML"
     }
   },
   "case": {

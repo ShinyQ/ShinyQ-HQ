@@ -1,16 +1,16 @@
-import { buildLabsLayout } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS_WINGS } from "@/experience/floors/labs/layout";
 import { OPS_ROOM } from "@/experience/floors/labs/opsHash";
 import { REACTOR_ROOM, ringById } from "@/experience/floors/labs/techReactor";
 import { labPods } from "../experience";
-import { getPod, getPods, getProduction, getTechIndex, getTimelineEntryById } from "../load";
+import { getLibrary, getPod, getPods, getProduction, getTechIndex, getTimelineEntryById } from "../load";
 import { getTechLogo } from "../tech";
-import type { Locale, Pod, Wing } from "../schema";
-import { clientLabel, podLiveLink } from "../selectors";
+import type { Locale, Pod } from "../schema";
+import { clientLabel, podLiveLink, podPublications, publicationDate, repoName } from "../selectors";
+import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
-import { chain, galleryOf, messages, roomId, single, stackItems } from "./shared";
-import type { RoomArchitecture, RoomView } from "./types";
+import { chain, galleryOf, linkLogo, messages, roomId, single, stackItems } from "./shared";
+import type { RoomArchitecture, RoomLinkItem, RoomSection, RoomView } from "./types";
 
-const WING_ACCENT: Record<Wing, "cyan" | "violet"> = { software: "cyan", ai: "violet" };
 
 function architectureOf(pod: Pod, locale: Locale): RoomArchitecture | undefined {
   if (!pod.architecture) return undefined;
@@ -18,6 +18,21 @@ function architectureOf(pod: Pod, locale: Locale): RoomArchitecture | undefined 
     nodes: pod.architecture.nodes.map((n) => ({ id: n.id, label: n.label, sublabel: n.sublabel?.[locale], layer: n.layer, row: n.row, kind: n.kind })),
     edges: pod.architecture.edges.map((e) => ({ from: e.from, to: e.to, label: e.label, async: e.async })),
   };
+}
+
+/** "Code and research": the pod's GitHub repositories, then the papers, thesis and models it produced (all open in a new tab). */
+function codeResearch(pod: Pod, locale: Locale): RoomSection | null {
+  const m = messages(locale);
+  const items: RoomLinkItem[] = [
+    ...(pod.repos ?? []).map((url) => ({ title: repoName(url), ...linkLogo("GitHub"), meta: "GitHub", href: url, external: true })),
+    ...podPublications(pod, getLibrary().publications).map((pub) => ({
+      title: pub.title,
+      meta: [m.library.kind[pub.kind], pub.venue, publicationDate(pub, locale)].filter(Boolean).join(" · "),
+      href: pub.doi ? `https://doi.org/${pub.doi}` : pub.url,
+      external: true,
+    })),
+  ];
+  return items.length ? { title: m.labs.codeResearch, items } : null;
 }
 
 export function podView(pod: Pod, locale: Locale): RoomView {
@@ -41,6 +56,7 @@ export function podView(pod: Pod, locale: Locale): RoomView {
     sections: [
       { title: m.labs.problem, body: pod.problem[locale] },
       { title: m.labs.approach, bullets: pod.approach.map((a) => a[locale]) },
+      ...[codeResearch(pod, locale)].filter((x): x is RoomSection => x !== null),
     ],
     metrics: pod.results.map((r) => ({ value: r.value, label: r.label[locale], context: r.context?.[locale] })),
     architecture,
@@ -110,5 +126,5 @@ export function opsView(locale: Locale): RoomView {
 
 /** L3 Labs: one tabbed view per pod; prev/next walk the wing in its display order; then the Tech Reactor and the Ops Control Room. */
 export function buildLabsViews(locale: Locale): RoomView[] {
-  return [...(["software", "ai"] as const).flatMap((wing) => chain(getPods(wing).map((pod) => podView(pod, locale)))), reactorView(locale), opsView(locale)];
+  return [...LABS_WINGS.flatMap((wing) => chain(getPods(wing).map((pod) => podView(pod, locale)))), reactorView(locale), opsView(locale)];
 }

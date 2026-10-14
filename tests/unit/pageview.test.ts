@@ -29,7 +29,8 @@ describe("pod filters", () => {
   });
 
   it("counts wings", () => {
-    expect(wingCounts(pods)).toEqual({ all: 3, ai: 2, software: 1 });
+    expect(wingCounts(pods)).toEqual({ all: 3, ai: 2, data: 0, software: 1 });
+    expect(wingCounts([...pods, { wing: "data" as const }])).toMatchObject({ all: 4, data: 1 });
   });
 });
 

@@ -32,7 +32,7 @@ const FIELD_WEIGHT = { title: 3, keywords: 1.5, subtitle: 1 } as const;
 const KIND_BONUS: Partial<Record<NonNullable<PaletteEntry["roomKind"]>, number>> = { pod: 0.5, post: 0.25 };
 
 export function buildPaletteEntries(
-  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs">>,
+  index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs" | "wings">>,
   actions: readonly PaletteActionId[],
 ): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
@@ -93,6 +93,18 @@ export function buildPaletteEntries(
       floor: "L3",
       keywords: [tech.name, ...TECH_KEYWORDS],
       target: { type: "tech", slug: tech.slug },
+    });
+  }
+
+  // Wing rows ("Data and ML projects"): actions too, so they only show for a query.
+  for (const wing of index.wings ?? []) {
+    entries.push({
+      key: `wing:${wing.wing}`,
+      group: "actions",
+      title: wing.title,
+      floor: "L3",
+      keywords: wing.keywords,
+      target: { type: "wing", wing: wing.wing },
     });
   }
 

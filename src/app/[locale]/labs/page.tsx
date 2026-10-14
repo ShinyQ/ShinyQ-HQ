@@ -36,8 +36,8 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
         title={tw("title")}
         lead={t("intro")}
         aside={
-          <dl className="grid grid-cols-2 gap-3">
-            {(["ai", "software"] as const).map((wing) => (
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+            {(["ai", "data", "software"] as const).map((wing) => (
               <div key={wing} className="card p-4">
                 {/* Two lines reserved: "Product Engineering" wraps on phones, and the counts stay aligned. */}
                 <dt className="pv-data min-h-[2lh]">
