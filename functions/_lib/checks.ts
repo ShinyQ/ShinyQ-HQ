@@ -242,11 +242,12 @@ export function firstPersonVoice(text: string): boolean {
 /** Wording that attributes an opinion to Kurniadi; such an answer needs a written source even for a factual question. */
 const OPINION_CLAIM: RegExp[] = [
   /\b(?:he|kurniadi)\s+(?:believes|thinks|feels|prefers|would\s+(?:say|think|prefer|recommend|argue|probably|likely))\b/i,
-  /\bin his (?:view|opinion)\b/i,
-  /\bhis (?:view|opinion|stance|philosophy|belief)\b/i,
+  // "written" echoes the pack's perspective label ("Kurniadi's written view", "Pandangan tertulis Kurniadi").
+  /\bin his (?:own )?(?:written )?(?:view|opinion)\b/i,
+  /\b(?:his|kurniadi'?s) (?:written )?(?:view|opinion|stance|philosophy|belief)\b/i,
   /\bmenurut(?:nya| kurniadi| dia)\b/i,
   /\b(?:dia|kurniadi)\s+(?:percaya|berpendapat|lebih suka|lebih memilih|merasa)\b/i,
-  /\bpandangan(?:nya| kurniadi)\b/i,
+  /\bpandangan(?: tertulis)?(?:nya| kurniadi)\b/i,
 ];
 
 export function claimsOpinion(text: string): boolean {

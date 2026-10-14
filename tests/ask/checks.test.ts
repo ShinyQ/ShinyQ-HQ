@@ -223,7 +223,11 @@ describe("perspective checks", () => {
   it("checks opinion claims in any answer, not only in perspective questions", () => {
     expect(claimsOpinion("He prefers monoliths over microservices.")).toBe(true);
     expect(claimsOpinion("Menurutnya, monolith lebih baik.")).toBe(true);
+    expect(claimsOpinion('In his written view "What makes a RAG assistant trustworthy?", Kurniadi states that answers need a source.')).toBe(true);
+    expect(claimsOpinion("Kurniadi's written view is that CI should fail closed.")).toBe(true);
+    expect(claimsOpinion('Dalam pandangan tertulisnya "Apa yang membuat asisten RAG layak dipercaya?", ia menyebut sumber.')).toBe(true);
     expect(claimsOpinion("Kurniadi works at Metrodata.")).toBe(false);
+    expect(claimsOpinion("He wrote a post about written specs.")).toBe(false);
     expect(check("He prefers monoliths over microservices.", "What does he do?")).toMatchObject({ ok: false, reason: "unsourced" });
     expect(check("Kurniadi works at Metrodata.", "Where does he work?")).toMatchObject({ ok: true });
   });
