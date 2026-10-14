@@ -6,6 +6,8 @@ name: Ask the HQ eval
 # labelled ask-redteam. Skips (green, with a notice) until the CF_EVAL_TOKEN secret exists
 # (Workers AI Read, AI Gateway Read, Account Analytics Read; docs/ask-runbook.md).
 # The optional purge job deletes AI Gateway logs older than 7 days when CF_LOGS_TOKEN is set.
+# Every job uses the `production` environment without a deployment (main only, so its Cloudflare
+# secrets never reach other branches); secrets are passed only to the steps that read them (H1).
 
 on:
   schedule:
@@ -21,35 +23,44 @@ permissions:
   contents: read
 
 env:
-  CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
-  CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
   ASK_GATEWAY_ID: shinyq-hq
-  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
 
 jobs:
   golden:
     name: Golden set (real model)
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      deployment: false
     env:
       ASK_EVAL_REPORT: ask-eval-golden.md
     steps:
       - name: Check token
         id: gate
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN != '' }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID != '' || secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
-          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+          if [ "$CF_EVAL_TOKEN" = "true" ] && [ "$CF_ACCOUNT_ID" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the golden eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Golden set
         if: steps.gate.outputs.enabled == 'true'
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts golden
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-golden
@@ -60,26 +71,38 @@ jobs:
   suggestions:
     name: Curated pills (real model)
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      deployment: false
     env:
       ASK_EVAL_REPORT: ask-eval-suggestions.md
     steps:
       - name: Check token
         id: gate
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN != '' }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID != '' || secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
-          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+          if [ "$CF_EVAL_TOKEN" = "true" ] && [ "$CF_ACCOUNT_ID" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the curated pill eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Curated pills (content/ask/suggestions.json)
         if: steps.gate.outputs.enabled == 'true'
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts suggestions
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-suggestions
@@ -90,6 +113,9 @@ jobs:
   redteam:
     name: Red-team set (real model)
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      deployment: false
     permissions:
       contents: read
       issues: write
@@ -98,22 +124,31 @@ jobs:
     steps:
       - name: Check token
         id: gate
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN != '' }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID != '' || secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
-          if [ -n "$CF_EVAL_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+          if [ "$CF_EVAL_TOKEN" = "true" ] && [ "$CF_ACCOUNT_ID" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the red-team eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Red-team set
         id: redteam
         if: steps.gate.outputs.enabled == 'true'
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts redteam
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-redteam
@@ -126,6 +161,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh label create ask-redteam --repo "$REPO" --color B60205 --description "Ask the HQ nightly red-team failure" 2>/dev/null || true
@@ -148,22 +184,31 @@ jobs:
   purge-logs:
     name: Purge AI Gateway logs older than 7 days
     runs-on: ubuntu-latest
-    env:
-      CF_LOGS_TOKEN: ${{ secrets.CF_LOGS_TOKEN }}
+    environment:
+      name: production
+      deployment: false
     steps:
       - name: Check token
         id: gate
+        env:
+          CF_LOGS_TOKEN: ${{ secrets.CF_LOGS_TOKEN != '' }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID != '' || secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
-          if [ -n "$CF_LOGS_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+          if [ "$CF_LOGS_TOKEN" = "true" ] && [ "$CF_ACCOUNT_ID" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_LOGS_TOKEN is not set; skipping the AI Gateway log purge (optional, docs/ask-runbook.md)."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Purge
         if: steps.gate.outputs.enabled == 'true'
+        env:
+          CF_LOGS_TOKEN: ${{ secrets.CF_LOGS_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bun scripts/purge-ask-logs.ts

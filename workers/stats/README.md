@@ -43,7 +43,7 @@ flowchart LR
 | `STATS_KV` | KV binding | namespace `STATS_KV` (same id as the Pages binding) |
 | `WA_SITE_TAG` | var | Web Analytics siteTag of kurniadi.pages.dev |
 | `WA_HOSTS` | var | `kurniadi.pages.dev,kurniadi.dev` |
-| `WA_TOKEN` | secret | read-only Account Analytics token (GitHub secret `CF_EVAL_TOKEN`) |
+| `WA_TOKEN` | secret | read-only Account Analytics token (GitHub environment secret `CF_STATS_TOKEN`, analytics only, 90 days; `CF_EVAL_TOKEN` until it exists) |
 | `WA_ACCOUNT_ID` | secret | Cloudflare account id (GitHub secret `CLOUDFLARE_ACCOUNT_ID`) |
 
 `deploy.yml` (job "hq-stats Worker") first proves the token can read Web Analytics and query Analytics
@@ -54,12 +54,12 @@ Workers Scripts Edit on the account.
 ## Operations
 
 - Dry run against production data (in-memory KV, prints the snapshot, writes nothing):
-  `WA_TOKEN="$(bunx wrangler@4 auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
+  `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
   The token stays in the environment; the script never prints it.
 - Manual deploy (fallback when the CI deploy token lacks Workers permissions): from this folder,
-  `bunx wrangler@4 deploy`, then `bunx wrangler@4 secret put WA_TOKEN` and
-  `bunx wrangler@4 secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
-- Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler@4 deploy`.
+  `bunx wrangler deploy`, then `bunx wrangler secret put WA_TOKEN` and
+  `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
+- Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine
   SQL API with the existing `WA_TOKEN`, and `scripts/stats-token-check.ts` already checks that it can
   query Analytics Engine. The first run after the deploy fills `perf` for the stored days of the last

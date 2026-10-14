@@ -223,15 +223,15 @@ export function buildPlan(state: State): Step[] {
 
 /** Copy-paste commands for the secrets. Random values are generated in the pipe and never shown. */
 export function secretCommands(project: string, sitekey?: string): string[] {
-  const put = (name: string) => `bunx wrangler@4 pages secret put ${name} --project-name=${project}`;
+  const put = (name: string) => `bunx wrangler pages secret put ${name} --project-name=${project}`;
   return [
-    "# wrangler needs a login first: bunx wrangler@4 login (or CLOUDFLARE_API_TOKEN with Pages Edit)",
+    "# wrangler needs a login first: bunx wrangler login (or CLOUDFLARE_API_TOKEN with Pages Edit)",
     sitekey
       ? `cf turnstile widgets get ${sitekey} | bun -e 'process.stdout.write(JSON.parse(await Bun.stdin.text()).secret)' | ${put("TURNSTILE_SECRET")}`
       : `# TURNSTILE_SECRET: created and stored by --apply, or copy it from Dashboard > Turnstile > ${TURNSTILE_NAME} > Settings`,
     `openssl rand -hex 32 | tr -d '\\n' | ${put("ASK_IP_SALT_SEED")}`,
     `openssl rand -hex 32 | tr -d '\\n' | ${put("ASK_COOKIE_KEY")}`,
-    `bunx wrangler@4 pages secret list --project-name=${project}`,
+    `bunx wrangler pages secret list --project-name=${project}`,
   ];
 }
 
@@ -275,14 +275,14 @@ function list<T>(args: string[], account: string): T[] {
 }
 
 function pipeSecret(name: string, value: string, project: string): boolean {
-  const run = Bun.spawnSync(["bunx", "wrangler@4", "pages", "secret", "put", name, `--project-name=${project}`], {
+  const run = Bun.spawnSync(["bunx", "wrangler", "pages", "secret", "put", name, `--project-name=${project}`], {
     stdin: new TextEncoder().encode(value),
     stdout: "ignore",
     stderr: "pipe",
   });
   if (run.exitCode !== 0) {
     const reason = run.stderr.toString().split(value).join("[hidden]").trim().split("\n")[0];
-    console.error(`::warning::Could not store ${name} (${reason}). Run \`bunx wrangler@4 login\`, then the TURNSTILE_SECRET command below.`);
+    console.error(`::warning::Could not store ${name} (${reason}). Run \`bunx wrangler login\`, then the TURNSTILE_SECRET command below.`);
   }
   return run.exitCode === 0;
 }
@@ -352,7 +352,7 @@ function main() {
   console.log("\nSecrets (values are generated in the pipe and never printed):");
   for (const line of secretCommands(options.project, sitekey)) console.log(`  ${line}`);
   console.log(
-    "\nThen: bun run build && bunx wrangler@4 pages deploy out --project-name=" +
+    "\nThen: bun run build && bunx wrangler pages deploy out --project-name=" +
       options.project +
       ", smoke test, and set ASK_ENABLED = \"true\" in wrangler.toml and deploy again (docs/ask-runbook.md).",
   );

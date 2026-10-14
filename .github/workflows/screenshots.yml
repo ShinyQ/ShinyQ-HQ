@@ -24,7 +24,6 @@ permissions:
   contents: read
 
 env:
-  SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
   NEXT_TELEMETRY_DISABLED: "1"
   # No beacon in screenshot builds (see ci.yml); only deploy.yml sets NEXT_PUBLIC_CF_BEACON_TOKEN.
 
@@ -68,15 +67,21 @@ jobs:
     needs: gate
     if: needs.gate.outputs.run == 'true'
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-      - run: bun run build:web
-      - uses: actions/upload-artifact@v7
+      - name: Build
+        # The private blocklist only where the knowledge pack is built (H1).
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun run build:web
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots-site
           path: out/
@@ -91,11 +96,13 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           playwright: "true"
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: screenshots-site
           path: out
@@ -103,14 +110,14 @@ jobs:
         env:
           SCREENSHOTS: "1"
         run: bunx playwright test e2e/screenshots.spec.ts e2e/pageview-visual.spec.ts --workers=1 --shard=${{ matrix.shard }}/4 --reporter=list
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: screenshots-${{ matrix.shard }}
           path: screenshots/
           retention-days: 1
           if-no-files-found: ignore
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: screenshots-test-results-${{ matrix.shard }}
@@ -123,12 +130,12 @@ jobs:
     needs: capture
     if: ${{ !cancelled() && needs.capture.result != 'skipped' }}
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: screenshots-[0-9]*
           path: screenshots
           merge-multiple: true
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots
           path: screenshots/
