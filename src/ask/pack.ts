@@ -21,6 +21,15 @@ export const PACK_MAX_BYTES = 200 * 1024;
  * perspective approved (runbook deviation 8). Answers get at most 6,000 characters of context anyway.
  */
 export const PACK_APPROACH_STEPS = { hero: Infinity, featured: 1, listed: 1 } as const satisfies Record<Pod["tier"], number>;
+/** Data and ML pods (academic and competition work, owner request 2026-10-14) keep their lead step only. */
+export const PACK_DATA_APPROACH_STEPS = 1;
+
+/** Approach steps a project chunk keeps (the case study page keeps every step). */
+export function packApproachSteps(pod: Pick<Pod, "tier" | "wing">): number {
+  return pod.wing === "data" ? Math.min(PACK_DATA_APPROACH_STEPS, PACK_APPROACH_STEPS[pod.tier]) : PACK_APPROACH_STEPS[pod.tier];
+}
+/** Lead paragraphs of a hosted post body after its excerpt (2 until the Data and ML pods, 2026-10-14). */
+export const POST_LEAD_PARAGRAPHS = 1;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 
 export interface PackSources {
@@ -41,7 +50,8 @@ type Bi = { en: string; id: string };
 const both = (en: string, id = en): Bi => ({ en, id });
 const loc = (text: LocalizedText | undefined): Bi => (text ? { en: text.en, id: text.id } : both(""));
 /** Display names of the L3 wings (messages `common.wing`), the same in both locales. */
-const WING_NAME = { software: "Product Engineering", ai: "AI Engineering" } as const;
+const WING_NAME: Record<Pod["wing"], Bi> = { software: both("Product Engineering"), ai: both("AI Engineering"), data: both("Data and ML", "Data dan ML") };
+const WING_SHORT: Record<Pod["wing"], string> = { software: "software", ai: "AI", data: "data and ML" };
 /** Retrieval words for pods with a public live site (R4-J). The hostname itself never enters the pack: Ask output checks block Azure hostnames. */
 const LIVE_KEYWORDS = ["live", "site", "sites", "website", "websites", "situs"];
 /** Section title of How I work on About (messages `home.howTitle`), quoted in the pack so answers can cite it. */
@@ -244,11 +254,11 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
     url: "/labs",
     keywords: ["project", "projects", "portfolio", "best", "hero"],
     text: join([
-      { en: "Projects (AI Engineering and Product Engineering), highlighted ones first:", id: "Proyek (AI Engineering dan Product Engineering), yang utama lebih dulu:" },
+      { en: "Projects (AI Engineering, Product Engineering, and Data and ML), highlighted ones first:", id: "Proyek (AI Engineering, Product Engineering, serta Data dan ML), yang utama lebih dulu:" },
       join(
         [...pods]
           .sort((a, b) => ["hero", "featured", "listed"].indexOf(a.tier) - ["hero", "featured", "listed"].indexOf(b.tier) || a.order - b.order)
-          .map((p) => ({ en: `${p.title.en} (${p.wing === "ai" ? "AI" : "software"}, ${p.tier}).`, id: `${p.title.id} (${p.wing === "ai" ? "AI" : "software"}, ${p.tier}).` })),
+          .map((p) => ({ en: `${p.title.en} (${WING_SHORT[p.wing]}, ${p.tier}).`, id: `${p.title.id} (${WING_SHORT[p.wing]}, ${p.tier}).` })),
       ),
     ]),
   });
@@ -290,14 +300,14 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       keywords: ["project", pod.wing, ...pod.stack.map((s) => s.toLowerCase()), pod.hologram, ...(live ? LIVE_KEYWORDS : [])],
       text: join([
         {
-          en: `Project (${WING_NAME[pod.wing]}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,
-          id: `Proyek (${WING_NAME[pod.wing]}): ${pod.title.id}, ${pod.period.start} hingga ${pod.period.end === "present" ? "sekarang" : pod.period.end}.`,
+          en: `Project (${WING_NAME[pod.wing].en}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,
+          id: `Proyek (${WING_NAME[pod.wing].id}): ${pod.title.id}, ${pod.period.start} hingga ${pod.period.end === "present" ? "sekarang" : pod.period.end}.`,
         },
-        loc(pod.tagline),
+        // No tagline: the problem says it in full (runbook deviation 8, 2026-10-14).
         client && label("For", "Untuk", client),
         label("Role", "Peran", loc(pod.role)),
         label("Problem", "Masalah", loc(pod.problem)),
-        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.slice(0, PACK_APPROACH_STEPS[pod.tier]).map(loc)]),
+        join([{ en: "Approach:", id: "Pendekatan:" }, ...pod.approach.slice(0, packApproachSteps(pod)).map(loc)]),
         join([
           { en: "Results:", id: "Hasil:" },
           ...pod.results.map((r) =>
@@ -323,7 +333,8 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       text: join([
         { en: `Post "${post.title.en}" (${post.date}).`, id: `Tulisan "${post.title.id}" (${post.date}).` },
         loc(post.excerpt),
-        { en: body.en ? leadParagraphs(body.en) : "", id: body.id ? leadParagraphs(body.id) : body.en ? leadParagraphs(body.en) : "" },
+        // One lead paragraph after the excerpt keeps the pack under its cap (runbook deviation 8).
+        { en: body.en ? leadParagraphs(body.en, POST_LEAD_PARAGRAPHS) : "", id: body.id ? leadParagraphs(body.id, POST_LEAD_PARAGRAPHS) : body.en ? leadParagraphs(body.en, POST_LEAD_PARAGRAPHS) : "" },
       ]),
     });
   }
@@ -413,7 +424,11 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
     },
   });
 
+  // Repositories a project pod links (`Pod.repos`) are told by its project chunk: their side project
+  // chunk is skipped and their repo line keeps only name, language and stars (runbook deviation 8).
+  const podRepos = new Set(content.floors.labs.pods.flatMap((p) => p.repos ?? []));
   for (const sp of content.sideProjects) {
+    if (sp.repo && podRepos.has(sp.repo)) continue;
     out.push({
       id: `side-${sp.id}`,
       type: "side-project",
@@ -435,7 +450,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
     keywords: ["github", "repository", "repositories", "repo", "repos", "open", "source"],
     text: join([
       { en: "Public GitHub repositories:", id: "Repositori GitHub publik:" },
-      join(repos.map((r) => join([both(`${r.name} (${r.language}, ${r.stars} stars):`), loc(r.description)], " "))),
+      join(repos.map((r) => (podRepos.has(r.url) ? both(`${r.name} (${r.language}, ${r.stars} stars).`) : join([both(`${r.name} (${r.language}, ${r.stars} stars):`), loc(r.description)], " ")))),
     ]),
   });
 
