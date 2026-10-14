@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { ALL_SPECS, assignShard, parseShard, SMOKE_SPECS, specsForChanges } from "../../scripts/e2e-plan";
-import { readdirSync } from "node:fs";
+import {
+  ALL_SPECS,
+  assignShard,
+  durationKey,
+  listTestIds,
+  medianDurations,
+  parseListReporter,
+  parseShard,
+  planShards,
+  shardSeconds,
+  SMOKE_SPECS,
+  specsForChanges,
+  type DurationsFile,
+  type ListSuite,
+} from "../../scripts/e2e-plan";
+import { execFileSync } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
@@ -181,4 +197,116 @@ describe("assignShard", () => {
     expect(() => parseShard("5/4")).toThrow();
     expect(() => parseShard("x")).toThrow();
   });
+});
+
+describe("planShards", () => {
+  const ids = ["a", "b", "c", "d", "e", "f"].map((t) => `[chromium] › x.spec.ts › ${t}`);
+  const durations = { "x.spec.ts › a": 10, "x.spec.ts › b": 60, "x.spec.ts › c": 20, "x.spec.ts › d": 30, "x.spec.ts › e": 40 };
+
+  it("puts the longest tests first onto the least-loaded shard, keeping the list order inside a shard", () => {
+    // f is unknown and counts as the median (30). LPT: b 60 -> 1, e 40 -> 2, d 30 -> 2, f 30 -> 1, c 20 -> 2, a 10 -> 1.
+    const shards = planShards(ids, 2, durations);
+    expect(shards.map((s) => s.map((t) => t.slice(-1)))).toEqual([["a", "b", "f"], ["c", "d", "e"]]);
+    expect(shards.map((s) => shardSeconds(s, durations))).toEqual([100, 90]);
+  });
+
+  it("is deterministic and covers every test exactly once for any total", () => {
+    for (const total of [1, 2, 3, 4, 6, 8]) {
+      const shards = planShards(ids, total, durations);
+      expect(shards).toHaveLength(total);
+      expect(shards.flat().sort()).toEqual([...ids].sort());
+      expect(planShards(ids, total, durations)).toEqual(shards);
+    }
+  });
+
+  it("spreads zero-second (skipped) tests by count", () => {
+    const zeros = Array.from({ length: 8 }, (_, i) => `[chromium] › z.spec.ts › ${i}`);
+    const shards = planShards([...ids, ...zeros], 2, { ...durations, ...Object.fromEntries(zeros.map((z) => [durationKey(z), 0])) });
+    expect(shards.map((s) => s.length)).toEqual([7, 7]);
+  });
+
+  it("falls back to round-robin without durations", () => {
+    expect(planShards(ids, 4, null)).toEqual([1, 2, 3, 4].map((i) => assignShard(ids, i, 4)));
+    expect(planShards(ids, 4, {})).toEqual([1, 2, 3, 4].map((i) => assignShard(ids, i, 4)));
+    expect(() => planShards(ids, 0, durations)).toThrow();
+  });
+});
+
+describe("CI timings", () => {
+  const log = [
+    "2026-10-14T12:37:22.6Z   ✓   1 [chromium] › e2e/perf/bytes-3d.spec.ts:54:7 › 3D JS after the gate stays under 450 KB gzip (lite) (19.0s)",
+    "2026-10-14T12:37:44.8Z   ✓    1 [chromium] › e2e/ask.spec.ts:83:5 › no POST before interaction (2.7s)",
+    "2026-10-14T12:38:12.8Z   ✘   15 [chromium] › e2e/camera.spec.ts:288:7 › wheel zoom and first person › the ! hints show (35.4s)",
+    "2026-10-14T12:38:36.1Z   ✓   17 [chromium] › e2e/camera.spec.ts:288:7 › wheel zoom and first person › the ! hints show (retry #1) (22.3s)",
+    "2026-10-14T12:38:20.1Z   -   10 [chromium] › e2e/camera-visual.spec.ts:136:9 › third-person poses on L3 at 1440x900 (full)",
+    "2026-10-14T12:39:00.0Z   ✓   18 [chromium] › e2e/gpu.spec.ts:59:5 › intro and ride draw-call peaks (full tier) (4.1m)",
+    "2026-10-14T12:39:00.0Z   ✓   19 [chromium] › e2e/hud.spec.ts:10:5 › fast (850ms)",
+    "2026-10-14T12:37:32.2Z - site (ID: 11895400150, Size: 55060380)",
+  ].join("\n");
+
+  it("parses passes, retries and skips from the list reporter, by lane", () => {
+    expect(parseListReporter(log)).toEqual([
+      { lane: "perf", key: "bytes-3d.spec.ts › 3D JS after the gate stays under 450 KB gzip (lite)", seconds: 19 },
+      { lane: "e2e", key: "ask.spec.ts › no POST before interaction", seconds: 2.7 },
+      { lane: "e2e", key: "camera.spec.ts › wheel zoom and first person › the ! hints show", seconds: 22.3 },
+      { lane: "e2e", key: "camera-visual.spec.ts › third-person poses on L3 at 1440x900 (full)", seconds: null },
+      { lane: "e2e", key: "gpu.spec.ts › intro and ride draw-call peaks (full tier)", seconds: 246 },
+      { lane: "e2e", key: "hud.spec.ts › fast", seconds: 0.85 },
+    ]);
+  });
+
+  it("keeps the median per test, skipped tests at 0", () => {
+    const m = medianDurations([
+      { lane: "e2e", key: "k", seconds: 3 },
+      { lane: "e2e", key: "k", seconds: 9 },
+      { lane: "e2e", key: "k", seconds: 4 },
+      { lane: "e2e", key: "s", seconds: null },
+      { lane: "perf", key: "p", seconds: 1.04 },
+      { lane: "perf", key: "p", seconds: 2 },
+    ]);
+    expect(m).toEqual({ e2e: { k: 4, s: 0 }, perf: { p: 1.5 } });
+  });
+
+  it("matches the duration keys to the test list ids", () => {
+    expect(durationKey("[chromium] › camera.spec.ts › wheel zoom and first person › the ! hints show")).toBe(
+      "camera.spec.ts › wheel zoom and first person › the ! hints show",
+    );
+  });
+});
+
+/**
+ * The real lists of both lanes with the committed e2e/durations.json: the union of all shards equals
+ * `playwright test --list` exactly, with no test lost or duplicated, for the CI shard counts and more.
+ */
+describe("shard plan against the real Playwright list", () => {
+  const root = path.resolve(__dirname, "../..");
+  const durations = JSON.parse(readFileSync(path.join(root, "e2e/durations.json"), "utf8")) as DurationsFile;
+  const list = (perf: boolean, args: string[] = []) => {
+    const env = { ...process.env, PERF: perf ? "1" : "", E2E_SHARD: "", SCREENSHOTS: "", CI: "" };
+    const out = execFileSync(path.join(root, "node_modules/.bin/playwright"), ["test", "--list", "--reporter=json", ...args], {
+      cwd: root,
+      env,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return listTestIds(JSON.parse(out) as { suites: ListSuite[] });
+  };
+
+  it.each([
+    { lane: "e2e" as const, perf: false, args: [], totals: [4, 5, 6] },
+    { lane: "perf" as const, perf: true, args: ["--grep-invert", "@nightly|@look"], totals: [2, 3] },
+  ])("$lane: every listed test lands in exactly one shard", ({ lane, perf, args, totals }) => {
+    const all = list(perf, args);
+    expect(all.length).toBeGreaterThan(perf ? 10 : 100);
+    expect(new Set(all).size).toBe(all.length);
+    for (const total of totals) {
+      const planned = planShards(all, total, durations[lane]).flat();
+      expect(planned).toHaveLength(all.length);
+      expect([...planned].sort()).toEqual([...all].sort());
+    }
+    // Most listed tests have a measured duration; a big gap means e2e/durations.json needs a refresh.
+    const known = all.filter((t) => durations[lane]?.[durationKey(t)] !== undefined).length;
+    expect(known / all.length).toBeGreaterThan(0.8);
+  }, 120_000);
 });

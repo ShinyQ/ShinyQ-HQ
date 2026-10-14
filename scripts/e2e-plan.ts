@@ -1,7 +1,10 @@
 /**
  * Pure planning helpers for the e2e scripts (no Bun, no Playwright, so Vitest can run them):
  * - specsForChanges: which Playwright specs cover a set of changed paths (`bun run e2e:changed`).
- * - assignShard: a balanced split of the test list for CI shards (`bun run e2e:shard`).
+ * - planShards: a duration-balanced split of the test list for CI shards (`bun run e2e:shard`), from the
+ *   per-test seconds in e2e/durations.json; assignShard (round-robin) is the fallback without durations.
+ * - listTestIds, parseListReporter, medianDurations: the test ids of a `playwright test --list` report
+ *   and the per-test seconds of CI logs (`scripts/e2e-durations.ts` refreshes e2e/durations.json).
  */
 
 /** Fast specs that cover routes, SEO, deploy rules and the game-first load (about 1 to 2 minutes). */
@@ -66,6 +69,8 @@ export const RULES: Rule[] = [
   { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
   { test: /^e2e\/(hq|routes|budgets)\.ts$/, specs: "all" },
   { test: /^e2e\/(screenshots|pageview-visual|camera-visual|visual-gate|delivery-visual)\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
+  // CI shard timings (scripts/e2e-shard.ts): they change which shard runs a test, never what it checks.
+  { test: /^e2e\/durations\.json$/, specs: [] },
   // Perf lane (PERF=1): `bun run e2e:perf` and the CI `3D perf gates` job run it, never the regular suite.
   { test: /^e2e\/perf\//, specs: [] },
   // Not part of the site or the e2e suite.
@@ -261,3 +266,136 @@ export function parseShard(value: string): { index: number; total: number } {
   assignShard([], index, total);
   return { index, total };
 }
+
+/** Test lanes with their own shard plan: the default suite (`e2e/`) and the perf lane (`e2e/perf/`, PERF=1). */
+export type Lane = "e2e" | "perf";
+
+/** Seconds per test, keyed by `durationKey` (file relative to the lane's test dir, then the title path). */
+export type Durations = Readonly<Record<string, number>>;
+
+/** The committed e2e/durations.json: one map per lane plus where the numbers came from. */
+export interface DurationsFile {
+  source?: string;
+  runs?: number[];
+  e2e?: Durations;
+  perf?: Durations;
+}
+
+/** A test id is `[project] › file › describe › title`; the duration key drops the project. */
+export function durationKey(testId: string): string {
+  return testId.replace(/^\[[^\]]*\] › /, "");
+}
+
+function median(values: readonly number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Splits an ordered test list into `total` shards, balanced by duration: longest first onto the shard
+ * with the least load (LPT). Tests missing from `durations` count as the median of the known ones;
+ * without durations it falls back to round-robin (`assignShard`). Deterministic for the same inputs,
+ * and every test lands in exactly one shard, in its original order within the shard.
+ */
+export function planShards<T extends string>(tests: readonly T[], total: number, durations?: Durations | null): T[][] {
+  assignShard([], 1, total);
+  if (!durations || Object.keys(durations).length === 0) {
+    return Array.from({ length: total }, (_, i) => assignShard(tests, i + 1, total));
+  }
+  const known = tests.map((t) => durations[durationKey(t)]).filter((d): d is number => typeof d === "number");
+  const fallback = median(known);
+  const seconds = tests.map((t) => durations[durationKey(t)] ?? fallback);
+  const order = tests.map((_, i) => i).sort((a, b) => seconds[b] - seconds[a] || a - b);
+  const loads = new Array<number>(total).fill(0);
+  const picked: number[][] = Array.from({ length: total }, () => []);
+  for (const i of order) {
+    let best = 0;
+    // Zero-second tests (skipped in CI) go to the shard with the fewest tests, so no shard collects them all.
+    const byCount = seconds[i] === 0;
+    for (let k = 1; k < total; k++) {
+      if (byCount ? picked[k].length < picked[best].length : loads[k] < loads[best]) best = k;
+    }
+    loads[best] += seconds[i];
+    picked[best].push(i);
+  }
+  return picked.map((idx) => idx.sort((a, b) => a - b).map((i) => tests[i]));
+}
+
+/** Estimated seconds of a shard (the sum of its tests' durations, unknown ones at the median). */
+export function shardSeconds(tests: readonly string[], durations?: Durations | null): number {
+  if (!durations) return 0;
+  const known = Object.values(durations);
+  const fallback = median(known);
+  return tests.reduce((sum, t) => sum + (durations[durationKey(t)] ?? fallback), 0);
+}
+
+/** One suite of Playwright's JSON report (`playwright test --list --reporter=json`). */
+export interface ListSuite {
+  title: string;
+  file: string;
+  specs?: { title: string; file: string; tests: { projectName: string }[] }[];
+  suites?: ListSuite[];
+}
+
+function collect(suite: ListSuite, titles: string[], out: string[]) {
+  for (const spec of suite.specs ?? []) {
+    for (const t of spec.tests) out.push(`[${t.projectName}] › ${spec.file} › ${[...titles, spec.title].join(" › ")}`);
+  }
+  for (const child of suite.suites ?? []) collect(child, [...titles, child.title], out);
+}
+
+/** The `--test-list` ids of a JSON list report, in Playwright's order. */
+export function listTestIds(report: { suites: ListSuite[] }): string[] {
+  const tests: string[] = [];
+  // Top-level suites are files; their title is the file name, not a describe block.
+  for (const file of report.suites) collect(file, [], tests);
+  return tests;
+}
+
+/** One test result line of the `list` reporter in a CI log; `seconds` is null for a skipped test. */
+export interface DurationSample {
+  lane: Lane;
+  key: string;
+  seconds: number | null;
+}
+
+const LIST_LINE = /(✓|✘|-)\s+\d+ \[[^\]]+\] › e2e\/(perf\/)?(\S+?):\d+:\d+ › (.+?)(?: \(retry #\d+\))?(?: \((\d+(?:\.\d+)?)(ms|s|m)\))?\s*$/;
+const UNIT: Record<string, number> = { ms: 0.001, s: 1, m: 60 };
+
+/**
+ * Passed and skipped tests from `list` reporter output (CI job logs, timestamps allowed). Failed
+ * attempts are left out; a pass on retry counts with the retry's time.
+ */
+export function parseListReporter(log: string): DurationSample[] {
+  const out: DurationSample[] = [];
+  for (const line of log.split(/\r?\n/)) {
+    const m = LIST_LINE.exec(line);
+    if (!m) continue;
+    const [, mark, perf, file, title, value, unit] = m;
+    if (mark === "✘") continue;
+    if (mark === "✓" && !value) continue;
+    const lane: Lane = perf ? "perf" : "e2e";
+    out.push({ lane, key: `${file} › ${title}`, seconds: mark === "-" ? null : Math.round(Number(value) * UNIT[unit] * 1000) / 1000 });
+  }
+  return out;
+}
+
+/** Median seconds per test and lane (skipped-only tests count as 0), rounded to 0.1 s, keys sorted. */
+export function medianDurations(samples: readonly DurationSample[]): Record<Lane, Record<string, number>> {
+  const byLane: Record<Lane, Map<string, number[]>> = { e2e: new Map(), perf: new Map() };
+  for (const s of samples) {
+    const list = byLane[s.lane].get(s.key) ?? [];
+    if (s.seconds !== null) list.push(s.seconds);
+    byLane[s.lane].set(s.key, list);
+  }
+  const result = { e2e: {}, perf: {} } as Record<Lane, Record<string, number>>;
+  for (const lane of ["e2e", "perf"] as const) {
+    for (const key of [...byLane[lane].keys()].sort()) {
+      result[lane][key] = Math.round(median(byLane[lane].get(key) ?? []) * 10) / 10;
+    }
+  }
+  return result;
+}
+

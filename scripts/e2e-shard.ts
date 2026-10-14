@@ -1,50 +1,61 @@
 /**
- * Runs one CI shard of the e2e suite with a balanced test list.
+ * Runs one CI shard of the e2e suite (or of the perf lane with PERF=1) with a duration-balanced test list.
  * Usage: bun scripts/e2e-shard.ts 2/4 [extra playwright args]
+ *        PERF=1 bun scripts/e2e-shard.ts 1/2 --grep-invert "@nightly|@look"   (`bun run e2e:perf:shard 1/2`)
+ *        bun scripts/e2e-shard.ts 1/4 --dry   (prints every shard's size and estimate, runs nothing)
  *
- * Lists the suite (`playwright test --list`), keeps every Nth test (scripts/e2e-plan.ts) and runs
- * them with `--test-list`. E2E_SHARD makes playwright.config.ts write a blob report for merging.
+ * Lists the suite (`playwright test --list`, with the same extra args), splits it with planShards
+ * (scripts/e2e-plan.ts: longest test first onto the least-loaded shard, from e2e/durations.json; round-robin
+ * when the file is missing) and runs this shard's tests with `--test-list`. E2E_SHARD makes
+ * playwright.config.ts write a blob report for merging. Refresh the durations with scripts/e2e-durations.ts.
  */
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { assignShard, parseShard } from "./e2e-plan";
+import { listTestIds, parseShard, planShards, shardSeconds, type Durations, type DurationsFile, type ListSuite } from "./e2e-plan";
 
-interface ListSuite {
-  title: string;
-  file: string;
-  specs?: { title: string; file: string; tests: { projectName: string }[] }[];
-  suites?: ListSuite[];
-}
+const DURATIONS = path.join(import.meta.dir, "..", "e2e", "durations.json");
 
-function collect(suite: ListSuite, titles: string[], out: string[]) {
-  for (const spec of suite.specs ?? []) {
-    for (const t of spec.tests) out.push(`[${t.projectName}] › ${spec.file} › ${[...titles, spec.title].join(" › ")}`);
-  }
-  for (const child of suite.suites ?? []) collect(child, [...titles, child.title], out);
-}
-
-function listTests(): string[] {
+function listTests(args: string[]): string[] {
   const env = { ...process.env, E2E_SHARD: "" };
-  const result = Bun.spawnSync(["bunx", "playwright", "test", "--list", "--reporter=json"], { env, stdout: "pipe", stderr: "inherit" });
+  const result = Bun.spawnSync(["bunx", "playwright", "test", "--list", "--reporter=json", ...args], { env, stdout: "pipe", stderr: "inherit" });
   if (result.exitCode !== 0) throw new Error(`playwright --list failed with exit code ${result.exitCode}`);
-  const report = JSON.parse(result.stdout.toString()) as { suites: ListSuite[] };
-  const tests: string[] = [];
-  // Top-level suites are files; their title is the file name, not a describe block.
-  for (const file of report.suites) collect(file, [], tests);
-  return tests;
+  return listTestIds(JSON.parse(result.stdout.toString()) as { suites: ListSuite[] });
+}
+
+function loadDurations(): Durations | null {
+  if (!existsSync(DURATIONS)) return null;
+  const file = JSON.parse(readFileSync(DURATIONS, "utf8")) as DurationsFile;
+  return (process.env.PERF ? file.perf : file.e2e) ?? null;
 }
 
 function main() {
-  const [shardArg, ...rest] = process.argv.slice(2);
-  if (!shardArg) {
-    console.error("usage: bun scripts/e2e-shard.ts <index>/<total> [playwright args]");
+  const argv = process.argv.slice(2);
+  const shardAt = argv.findIndex((a) => /^\d+\/\d+$/.test(a));
+  if (shardAt < 0) {
+    console.error("usage: bun scripts/e2e-shard.ts <index>/<total> [--dry] [playwright args]");
     process.exit(2);
   }
-  const { index, total } = parseShard(shardArg);
-  const all = listTests();
-  const mine = assignShard(all, index, total);
-  console.log(`e2e shard ${index}/${total}: ${mine.length} of ${all.length} tests`);
+  const { index, total } = parseShard(argv[shardAt]);
+  const dry = argv.includes("--dry");
+  const rest = argv.filter((a, i) => i !== shardAt && a !== "--dry");
+  const lane = process.env.PERF ? "perf lane" : "e2e";
+  const durations = loadDurations();
+  const all = listTests(rest);
+  const shards = planShards(all, total, durations);
+  // Every listed test runs in exactly one shard (also unit tested against the real list).
+  const planned = shards.flat();
+  if (planned.length !== all.length || new Set(planned).size !== new Set(all).size) {
+    throw new Error(`shard plan lost or duplicated tests: ${planned.length} planned, ${all.length} listed`);
+  }
+  const how = durations ? "duration-balanced (e2e/durations.json)" : "round-robin (no e2e/durations.json)";
+  if (dry) {
+    shards.forEach((s, i) => console.log(`${lane} shard ${i + 1}/${total}: ${s.length} tests, about ${Math.round(shardSeconds(s, durations))} s`));
+    console.log(`${all.length} tests, ${how}`);
+    return;
+  }
+  const mine = shards[index - 1];
+  console.log(`${lane} shard ${index}/${total}: ${mine.length} of ${all.length} tests, about ${Math.round(shardSeconds(mine, durations))} worker-s, ${how}`);
   if (mine.length === 0) return;
   const listFile = path.join(mkdtempSync(path.join(tmpdir(), "hq-e2e-")), `shard-${index}-of-${total}.txt`);
   writeFileSync(listFile, `${mine.join("\n")}\n`);
