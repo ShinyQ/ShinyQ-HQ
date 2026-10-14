@@ -143,6 +143,8 @@ Update rate (round 5): per-frame state (rover pose, ride and beam progress) live
 | Quick view | `/{locale}/quick` |
 | CV | `/{locale}/cv` (download plus inline preview), PDF at `/cv/kurniadi-ahmad-wijaya-cv.pdf` for both locales; `/cv.pdf`, `/{locale}/cv.pdf` and `/cv/kurniadi-ahmad-wijaya-cv-{locale}.pdf` 301 to it |
 
+Rooms without a route of their own keep the floor URL and live in the history entry (`hqRoom`): the Highlights Hall stations, the L3 Tech Reactor and Ops Control Room, and the Visitor Observatory `L1:visits` (`/{locale}#visits` and the old `/{locale}/contact#visits` open it; the Classic site keeps its "Visits" section at `/{locale}/contact#visits`). Moved rooms keep working under their old id through `canonicalRoom` (`src/experience/missions/roomAliases.ts`: `RF:visits` to `L1:visits`), which `openRoom`, `goToRoom` and the history sync apply.
+
 The store updates the URL with `history.pushState` (room open/close) or `replaceState` (floor changes during autopilot). On load, the URL is parsed into `{ floor, activeRoom, view }` and the experience starts at that state, skipping the intro.
 
 ## 4. Analytics
