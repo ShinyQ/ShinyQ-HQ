@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { decideTier, isTier } from "@/lib/gpu-tier";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { decideTier, isTier, readTierInputs } from "@/lib/gpu-tier";
 
 const desktop = { webgl2: true, renderer: "ANGLE (Apple, Apple M3, OpenGL 4.1)", coarse: false, deviceMemory: 8, cores: 10 };
 
@@ -33,5 +33,35 @@ describe("decideTier", () => {
     expect(decideTier({ ...desktop, coarse: true })).toBe("lite");
     expect(decideTier({ ...desktop, deviceMemory: 2 })).toBe("lite");
     expect(decideTier({ ...desktop, cores: 2 })).toBe("lite");
+  });
+});
+
+describe("readTierInputs", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubBrowser() {
+    const getContext = vi.fn(() => null);
+    const createElement = vi.fn(() => ({ getContext }));
+    vi.stubGlobal("navigator", { hardwareConcurrency: 8 });
+    vi.stubGlobal("window", { matchMedia: () => ({ matches: false }) });
+    vi.stubGlobal("document", { createElement });
+    return { createElement, getContext };
+  }
+
+  it("creates no WebGL context when ?tier= forces a tier", () => {
+    const { createElement } = stubBrowser();
+    for (const tier of ["static", "lite", "full"]) {
+      const inputs = readTierInputs(`?tier=${tier}`);
+      expect(inputs.override).toBe(tier);
+      expect(decideTier(inputs)).toBe(tier);
+    }
+    expect(createElement).not.toHaveBeenCalled();
+  });
+
+  it("still probes without a valid override", () => {
+    const { getContext } = stubBrowser();
+    expect(readTierInputs("?tier=ultra").webgl2).toBe(false);
+    expect(readTierInputs("").webgl2).toBe(false);
+    expect(getContext).toHaveBeenCalledTimes(2);
   });
 });
