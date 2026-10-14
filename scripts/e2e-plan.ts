@@ -41,6 +41,7 @@ export const ALL_SPECS = [
   "seo",
   "spectacle",
   "static-routes",
+  "topics",
   "visit",
   "visits",
   "walk",
@@ -136,7 +137,10 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle"] },
+  // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
+  { test: /^src\/hud\/drawer\/(TopicsBody|filterParts)\.tsx$|^src\/content\/(topic-index|topic-map|room-views\/library)\.ts$|^src\/components\/page\/TopicFilter\.tsx$/, specs: ["topics", "library-roof", "reactor"] },
+  { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle", "topics", "fast-return"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
   { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof", "visits"] },
   // Generated geo data (Natural Earth): covered by unit tests and the visits spec through its output.

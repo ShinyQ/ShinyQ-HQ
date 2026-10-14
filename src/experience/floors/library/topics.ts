@@ -65,16 +65,16 @@ export const CONSTELLATION = {
   /** Pedestal column height (the pick volume tops out here too). */
   pedestal: 2.6,
   /** Orbs orbit in two shells, alternating inner and outer. */
-  radii: [3.4, 5.2],
+  radii: [3.8, 6.2],
   /** Orb heights rise along a gentle helix between these. */
-  minY: 3.8,
-  maxY: 8.2,
+  minY: 4,
+  maxY: 10.2,
   /** Orb size: base plus a step per piece, capped. */
   orb: { base: 0.32, step: 0.06, max: 0.62 },
   /** Orbit speed (rad/s); still under reduced motion. */
   spin: 0.08,
   /** Height of the "N pieces on X" sign, above the cloud. */
-  countY: 10.4,
+  countY: 12.2,
   /** Label lift above an orb. */
   labelLift: 0.75,
 } as const;

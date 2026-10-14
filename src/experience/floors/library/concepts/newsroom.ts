@@ -47,7 +47,7 @@ export const NEWSROOM = {
     /** Half side of the constellation pedestal (the obstacle). */
     core: 1.6,
     /** Top of the topic cloud: the pedestal blocks a low camera up to here. */
-    coreHeight: 9,
+    coreHeight: 11.5,
     /** Ring road around the pedestal (centerline radius, vertices; vertex 0 due north). */
     ring: 6.5,
     segments: 16,

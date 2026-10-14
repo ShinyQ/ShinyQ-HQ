@@ -28,7 +28,7 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
-const LABEL_FONT = 0.3;
+const LABEL_FONT = 0.34;
 const COUNT_FONT = 0.62;
 
 export const orbTone = (i: number) => ORB_TONES[i % ORB_TONES.length];
@@ -104,6 +104,13 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
   const orbs = useRef<InstancedMesh>(null);
   const links = useRef<Group>(null);
   const dummy = useMemo(() => new Object3D(), []);
+  const probe = useMemo(() => slots.map((s) => ({ slug: s.slug, x: 0, y: s.y, z: 0 })), [slots]);
+  useEffect(
+    () => () => {
+      sceneProbes.topics.orbs = [];
+    },
+    [],
+  );
 
   // Pedestal and monument: one instanced column mesh (holo `core`, a hex prism).
   const columnGeo = useMemo(() => new CylinderGeometry(1, 1, 1, 6, 1, true).translate(0, 0.5, 0), []);
@@ -182,7 +189,12 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
     m.instanceMatrix.needsUpdate = true;
     if (links.current) links.current.rotation.y = angle.current;
     sceneProbes.topics.orbit = angle.current;
-    sceneProbes.topics.orbs = slots.length;
+    probe.forEach((p, i) => {
+      const at = orbitAt(slots[i], angle.current);
+      p.x = end.center.x + at.x;
+      p.z = end.center.z + at.z;
+    });
+    sceneProbes.topics.orbs = probe;
   });
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
