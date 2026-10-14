@@ -8,8 +8,6 @@ import type { AskLocale, AskTag } from "./protocol";
 export const ASK_TOPICS = ["work", "ai", "career", "contact", "perspectives"] as const;
 export type AskTopic = (typeof ASK_TOPICS)[number];
 
-export const isAskTopic = (value: unknown): value is AskTopic => typeof value === "string" && (ASK_TOPICS as readonly string[]).includes(value);
-
 export interface Suggestion {
   id: string;
   topic: AskTopic;

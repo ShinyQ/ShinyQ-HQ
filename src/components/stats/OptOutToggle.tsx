@@ -4,7 +4,7 @@ import { useId } from "react";
 import { useStatsOptOut } from "./optOutStore";
 
 /**
- * The "Don't count my visits" switch (footer privacy line and the RF:visits drawer). A native checkbox
+ * The "Don't count my visits" switch (footer privacy line and the L1:visits drawer). A native checkbox
  * with `role="switch"`, so it works with the keyboard and announces on or off; checked means opted out.
  */
 export function OptOutToggle({ label, hint, className = "" }: { label: string; hint?: string; className?: string }) {

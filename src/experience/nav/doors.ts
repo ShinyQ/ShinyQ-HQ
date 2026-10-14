@@ -9,18 +9,6 @@ export const DOOR_WIDTH = 2.4;
 export const DOOR_SLOW = 2;
 export const DOOR_DWELL = 0.25;
 
-/** Gap kept between a floor lane's end and a door pad, so lanes never run over a trigger. */
-export const LANE_CLEAR = 0.5;
-
-/** End point for a lane from `from` toward the door pad at `to`: it stops before the pad edge. */
-export function towardPad(from: [number, number], to: { x: number; z: number }, gap = DOOR_WIDTH / 2 + LANE_CLEAR): [number, number] {
-  const dx = to.x - from[0];
-  const dz = to.z - from[1];
-  const len = Math.hypot(dx, dz) || 1;
-  const k = Math.max(0, len - gap) / len;
-  return [from[0] + dx * k, from[1] + dz * k];
-}
-
 /** Half extents of a door's pad: DOOR_SIZE deep along `facing`, DOOR_WIDTH across (square without a facing). */
 export function padHalf(door: DoorTrigger): { along: number; across: number } {
   const along = (door.size ?? DOOR_SIZE) / 2;

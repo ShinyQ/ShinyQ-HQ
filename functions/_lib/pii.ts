@@ -19,8 +19,3 @@ const RULES: { tag: string; pattern: RegExp }[] = [
 export function scrubPII(text: string): string {
   return RULES.reduce((out, { tag, pattern }) => out.replace(pattern, tag), text);
 }
-
-/** True when scrubbing changed the text (the UI warns "don't share personal information"). */
-export function hasPII(text: string): boolean {
-  return scrubPII(text) !== text;
-}

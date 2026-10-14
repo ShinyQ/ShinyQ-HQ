@@ -23,17 +23,6 @@ export function AskAsOf({ asOf, locale, className }: { asOf?: string; locale: Lo
   return <p className={className}>{t("asOf", { date: formatDate(asOf, locale) })}</p>;
 }
 
-/** What happens to a question (design section 7.5, threat T10). */
-export function AskPrivacy({ className }: { className?: string }) {
-  const t = useTranslations("ask");
-  return (
-    <p className={className}>
-      <span className="font-semibold">{t("privacyTitle")}: </span>
-      {t("privacy")}
-    </p>
-  );
-}
-
 /**
  * "Read on this site" link under a cited answer (spec section 13). A plain anchor on purpose, so a
  * same-page hash (`/contact#how`) still scrolls; the path is allowlisted (`isAskCite`) and never

@@ -17,8 +17,6 @@ export interface PodFilter {
   stack: string | null;
 }
 
-export const NO_POD_FILTER: PodFilter = { wing: "all", stack: null };
-
 export function parsePodFilter(search: string): PodFilter {
   const params = new URLSearchParams(search);
   const wing = params.get("wing");

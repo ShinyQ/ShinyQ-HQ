@@ -2,9 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { CV_FILE_NAME, CV_PAGES, cvDownloadName, cvPdfPath } from "@/lib/cv";
-import { PageViewer, ZOOM_LEVELS } from "../docs/PageViewer";
-
-export const CV_ZOOM_LEVELS = ZOOM_LEVELS;
+import { PageViewer } from "../docs/PageViewer";
 
 export interface CvViewerProps {
   /** `modal` adds the title row and close button; `page` is the /cv route body. */

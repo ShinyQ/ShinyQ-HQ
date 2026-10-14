@@ -67,17 +67,6 @@ export function setPacerPaused(p: Pacer, paused: boolean, now: number): boolean 
 /** The pacer of the page's canvas (one 3D view at a time). */
 export const framePacer = createPacer();
 
-type PacerListener = (paused: boolean) => void;
-const listeners = new Set<PacerListener>();
-
-/** Pause and resume notifications, e.g. for a runtime quality monitor that must drop the sample window across a pause. */
-export function onPacerChange(listener: PacerListener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
 export function pauseFrames(paused: boolean, now = performance.now()): void {
-  if (setPacerPaused(framePacer, paused, now)) for (const listener of listeners) listener(paused);
+  setPacerPaused(framePacer, paused, now);
 }

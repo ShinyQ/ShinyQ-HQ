@@ -19,7 +19,3 @@ export function buildRoomViews(locale: Locale): RoomViews {
   ];
   return Object.fromEntries(views.map((view) => [view.id, view])) as RoomViews;
 }
-
-export function roomViewsPath(locale: Locale): string {
-  return `/data/rooms/${locale}.json`;
-}

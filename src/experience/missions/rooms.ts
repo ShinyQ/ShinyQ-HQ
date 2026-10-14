@@ -73,8 +73,6 @@ export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L
 /** Palette a walk's floor page opens next to it when the walk cannot run (static tier, or the walk is off). */
 export const WALK_PALETTE: Partial<Record<WalkId, PaletteFilter>> = { projects: "pods", writing: "posts" };
 
-export const FLOOR_ORDER: readonly FloorId[] = ["RF", "L4", "L3", "L2", "L1"];
-
 const SURPRISE_WEIGHT: Record<Tier, number> = { hero: 6, featured: 2, listed: 1 };
 
 const TAB_ANCHOR: Partial<Record<DrawerTab, string>> = {
