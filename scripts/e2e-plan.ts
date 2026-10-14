@@ -104,8 +104,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/interact\/|^src\/hud\/InteractStatus\.tsx$/, specs: ["interact", "experience", "pads", "career", "fast-return"] },
 
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
-  // Motion setting: the preference, its HUD control and the one-time hint.
-  { test: /^src\/lib\/(motion|reduced-motion)\.ts$|^src\/hud\/(MotionControl\.tsx|dialog\/MotionHintLayer\.tsx)$/, specs: ["motion", "hud", "ride", "onboarding"] },
+  // Motion setting: the preference (default Full) and its HUD control.
+  { test: /^src\/lib\/(motion|reduced-motion)\.ts$|^src\/hud\/MotionControl\.tsx$/, specs: ["motion", "hud", "ride", "onboarding"] },
   { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk", "camera"] },
 
   // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.

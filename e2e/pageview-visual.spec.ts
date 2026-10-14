@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
 import { captureShot, diffShotDirs, type Box } from "./region-diff";
 import { LOBBY } from "../src/experience/config";
@@ -27,6 +27,7 @@ test.describe.configure({ timeout: 120_000 });
 for (const v of VIEWPORTS) {
   test(`Page View at ${v.width}x${v.height}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     await context.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
@@ -165,6 +166,7 @@ test.describe("P10 accent stripes", () => {
       test.skip(P10 === "diff", "diff run");
       test.setTimeout(900_000);
       const context = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      await chooseMotion(context, "system");
       await context.addInitScript(() => {
         localStorage.setItem("hq:terminal-seen", "1");
         localStorage.setItem("hq:onboarded", "done");
@@ -227,6 +229,7 @@ test.describe("P10 accent stripes", () => {
       test.skip(P10 === "diff", "diff run");
       test.setTimeout(600_000);
       const world = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce", isMobile: phone, hasTouch: phone });
+      await chooseMotion(world, "system");
       const p3 = await world.newPage();
       await asReturningVisitor(p3);
       await p3.goto("/en/labs?tier=lite");
@@ -249,6 +252,7 @@ test.describe("P10 accent stripes", () => {
         test.skip(P10 === "diff", "diff run");
         test.setTimeout(1_200_000);
         const lobby = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce", isMobile: phone, hasTouch: phone });
+        await chooseMotion(lobby, "system");
         const p4 = await lobby.newPage();
         await asReturningVisitor(p4);
         await p4.goto(`/en?tier=${tier}`);

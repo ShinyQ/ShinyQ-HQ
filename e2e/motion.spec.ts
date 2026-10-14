@@ -2,13 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { enterHQ, openPage, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, openPage, waitForFloor, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 
 /**
- * Motion setting (owner decision, October 2026): System follows `prefers-reduced-motion`, Full and
- * Reduced override it, in 3D (`store.reducedMotion`: the elevator cut, the still intro) and on the
- * Classic site (`html[data-motion]` and the reduce CSS). A Windows PC with "Animation effects" off
- * reports reduce, so every ride used to be the 150 ms cut.
+ * Motion setting: System follows `prefers-reduced-motion`, Full and Reduced override it, in 3D
+ * (`store.reducedMotion`: the elevator cut, the still intro) and on the Classic site (`html[data-motion]`
+ * and the reduce CSS). Owner decision 2026-10-14: Full is the default on every OS (a Windows PC with
+ * "Animation effects" off reports reduce, so every ride used to be the 150 ms cut); the Motion menu
+ * (System or Reduced) restores the OS preference.
  */
 test.describe.configure({ timeout: 240_000 });
 
@@ -48,56 +49,47 @@ async function expectNoSeriousViolations(page: Page, selector: string) {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-/** Like asReturningVisitor, but the motion hint flag is left to the app (so a reload can prove it persisted). */
-async function enterWithHint(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem("hq:terminal-seen", "1");
-    localStorage.setItem("hq:onboarded", "done");
-    localStorage.setItem("hq:hints", "off");
-    sessionStorage.setItem("hq:intro", "seen");
-  });
-  await page.goto("/en?tier=lite");
-  await waitForHQ(page);
-  await waitForPhase(page, "explore");
-  await waitForSceneLive(page);
-}
 
-const dialogBox = (page: Page) => page.getByTestId("dialog-box");
+const STORE = "hq:v1";
+const storeWith = (motion: string, version: number) => JSON.stringify({ state: { visited: [], firstVisit: false, locale: "en", motion }, version });
 
-test("System follows an OS that asks for reduced motion: the ride is the 150 ms cut", async ({ page }) => {
+test("Full is the default even when the OS asks for reduced motion: rides animate", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await enterHQ(page);
-  expect(await motionState(page)).toEqual({ motion: "system", reduced: true, system: true, attr: null });
+  expect(await motionState(page)).toEqual({ motion: "full", reduced: false, system: true, attr: "full" });
   const ride = await rideTo(page, "L2");
+  console.log(`ride L1 to L2 by default with the OS reduce flag: ${JSON.stringify(ride)}`);
   expect(ride).not.toBeNull();
-  expect(ride!.distinctY).toBeLessThanOrEqual(2);
+  expect(ride!.distinctY).toBeGreaterThanOrEqual(12);
+  // No one-time "turn on full motion" line any more (it was retired with the new default).
+  await expect(page.getByTestId("dialog-box")).toHaveCount(0);
 });
 
-test("Full overrides the OS: rides animate, the page CSS follows, and the choice survives a reload", async ({ page }) => {
+test("System brings the OS preference back: the ride is the 150 ms cut, and the choice survives a reload", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await enterHQ(page);
-  const { trigger, group } = await pickMotion(page, en.hud.motion.full);
-  await expect(group.getByRole("radio", { name: en.hud.motion.full })).toBeChecked();
-  expect(await motionState(page)).toEqual({ motion: "full", reduced: false, system: true, attr: "full" });
+  const { trigger, group } = await pickMotion(page, en.hud.motion.system);
+  await expect(group.getByRole("radio", { name: en.hud.motion.system })).toBeChecked();
+  expect(await motionState(page)).toEqual({ motion: "system", reduced: true, system: true, attr: null });
   await expectNoSeriousViolations(page, "[data-testid='motion-popover']");
   await page.keyboard.press("Escape");
   await expect(group).toBeHidden();
   await expect(trigger).toBeFocused();
-  // The landing's Pause motion switch hides under reduced motion; Full brings it back.
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-pause")!).display)).not.toBe("none");
-  const ride = await rideTo(page, "L3");
-  console.log(`ride L1 to L3 under Full with the OS reduce flag: ${JSON.stringify(ride)}`);
-  expect(ride!.distinctY).toBeGreaterThanOrEqual(12);
-  // Persisted in hq:v1 and on <html> from the head script, before hydration.
+  // The landing's Pause motion switch hides under reduced motion.
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-pause")!).display)).toBe("none");
+  const ride = await rideTo(page, "L2");
+  expect(ride).not.toBeNull();
+  expect(ride!.distinctY).toBeLessThanOrEqual(2);
+  // Persisted in hq:v1 (version 3): the head script leaves html[data-motion] unset before hydration.
   await page.goto("/en?tier=lite");
-  expect(await page.evaluate(() => document.documentElement.getAttribute("data-motion"))).toBe("full");
+  expect(await page.evaluate(() => document.documentElement.getAttribute("data-motion"))).toBeNull();
   await waitForHQ(page);
-  expect((await motionState(page)).motion).toBe("full");
+  expect(await motionState(page)).toMatchObject({ motion: "system", reduced: true });
 });
 
 test("Reduced without the OS flag gives the cut and the reduced page CSS", async ({ page }) => {
   await enterHQ(page);
-  expect((await motionState(page)).reduced).toBe(false);
+  expect(await motionState(page)).toEqual({ motion: "full", reduced: false, system: false, attr: "full" });
   await pickMotion(page, en.hud.motion.reduced);
   await page.keyboard.press("Escape");
   expect(await motionState(page)).toEqual({ motion: "reduced", reduced: true, system: false, attr: "reduced" });
@@ -106,14 +98,12 @@ test("Reduced without the OS flag gives the cut and the reduced page CSS", async
   expect(ride!.distinctY).toBeLessThanOrEqual(2);
 });
 
-test("the intro animates under Full even when the OS asks for reduced motion", async ({ browser }: { browser: Browser }) => {
+test("a new visitor's intro animates even when the OS asks for reduced motion", async ({ browser }: { browser: Browser }) => {
   const context = await browser.newContext({ reducedMotion: "reduce" });
   const page = await context.newPage();
   await page.addInitScript(() => {
     localStorage.setItem("hq:terminal-seen", "1");
     localStorage.setItem("hq:onboarded", "done");
-    localStorage.setItem("hq:motion-hint", "seen");
-    if (!localStorage.getItem("hq:v1")) localStorage.setItem("hq:v1", JSON.stringify({ state: { visited: [], firstVisit: true, locale: "en", motion: "full" }, version: 2 }));
   });
   await page.goto("/en?tier=lite");
   await waitForHQ(page);
@@ -139,40 +129,39 @@ test("the intro animates under Full even when the OS asks for reduced motion", a
   await context.close();
 });
 
-test.describe("one-time hint", () => {
-  test("shows once when the OS reduces motion under System; Full motion fixes it and it never returns", async ({ page }) => {
+test.describe("existing visitors (store version 2 to 3)", () => {
+  /** A version 2 store before the first navigation only, then the HQ opens straight in (returning visitor). */
+  async function openWithStored(page: Page, motion: string) {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await enterWithHint(page);
-    await expect(dialogBox(page)).toHaveAttribute("data-line", "motion-hint", { timeout: 30_000 });
-    await expect(dialogBox(page)).toContainText(en.dialog.motion.ask);
-    await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.motion.full }).click();
-    await expect(dialogBox(page)).toHaveAttribute("data-line", "motion-on");
-    expect(await motionState(page)).toMatchObject({ motion: "full", reduced: false, attr: "full" });
-    expect(await page.evaluate(() => localStorage.getItem("hq:motion-hint"))).toBe("seen");
-    await page.reload();
+    await page.addInitScript(
+      ([key, value]) => {
+        if (!sessionStorage.getItem("hq:seeded")) localStorage.setItem(key, value);
+        sessionStorage.setItem("hq:seeded", "1");
+      },
+      [STORE, storeWith(motion, 2)] as const,
+    );
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    // Set by the head script before first paint; hydration never touches it.
+    const attr = await page.evaluate(() => document.documentElement.getAttribute("data-motion"));
     await waitForHQ(page);
     await waitForPhase(page, "explore");
-    // Proving that nothing shows: give the layer well past its start delay.
-    await page.waitForTimeout(3000);
-    await expect(dialogBox(page)).toHaveCount(0);
+    const saved = () => page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "{}") as { version?: number; state?: { motion?: string } }, STORE);
+    return { attr, saved };
+  }
+
+  test("a stored System (the old default) becomes Full", async ({ page }) => {
+    const { attr, saved } = await openWithStored(page, "system");
+    expect(attr).toBe("full");
+    expect(await motionState(page)).toEqual({ motion: "full", reduced: false, system: true, attr: "full" });
+    await expect.poll(saved).toMatchObject({ version: 3, state: { motion: "full" } });
   });
 
-  test("Esc keeps reduced motion and is remembered too", async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await enterWithHint(page);
-    await expect(dialogBox(page)).toHaveAttribute("data-line", "motion-hint", { timeout: 30_000 });
-    await expect(dialogBox(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    await page.keyboard.press("Escape");
-    await expect(dialogBox(page)).toHaveAttribute("data-line", "motion-kept");
-    expect(await motionState(page)).toMatchObject({ motion: "system", reduced: true });
-    expect(await page.evaluate(() => localStorage.getItem("hq:motion-hint"))).toBe("seen");
-  });
-
-  test("never shows without the OS flag", async ({ page }) => {
-    await enterWithHint(page);
-    await page.waitForTimeout(3000);
-    await expect(dialogBox(page)).toHaveCount(0);
-    expect(await page.evaluate(() => localStorage.getItem("hq:motion-hint"))).toBeNull();
+  test("a stored Reduced stays Reduced", async ({ page }) => {
+    const { attr, saved } = await openWithStored(page, "reduced");
+    expect(attr).toBe("reduced");
+    expect(await motionState(page)).toEqual({ motion: "reduced", reduced: true, system: true, attr: "reduced" });
+    await expect.poll(saved).toMatchObject({ version: 3, state: { motion: "reduced" } });
   });
 });
 
@@ -184,30 +173,39 @@ test("phones: Motion sits in the menu next to language and sound (Indonesian lab
   const group = page.getByRole("group", { name: id.hud.motion.label });
   await expect(group.getByRole("radio")).toHaveCount(3);
   for (const label of [id.hud.motion.system, id.hud.motion.full, id.hud.motion.reduced]) await expect(group.getByText(label, { exact: true })).toBeVisible();
+  await expect(group.getByRole("radio", { name: id.hud.motion.full })).toBeChecked();
   const box = (await group.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
-  await group.getByText(id.hud.motion.full, { exact: true }).click();
-  expect((await motionState(page)).motion).toBe("full");
+  await group.getByText(id.hud.motion.reduced, { exact: true }).click();
+  expect(await motionState(page)).toMatchObject({ motion: "reduced", reduced: true });
   await expectNoSeriousViolations(page, "[data-testid='motion-choices']");
   await context.close();
 });
 
-test("Classic site: Cmd-K sets the preference and the page CSS follows it", async ({ page }) => {
+test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or System and the page CSS follows", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openPage(page, "/en?tier=static");
   const pause = page.locator(".hx-pause");
-  await expect(pause).toBeHidden();
-  await page.keyboard.press("Control+k");
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "full");
+  await expect(pause).toBeVisible();
   const palette = page.getByRole("dialog", { name: "Command palette" });
-  await expect(palette).toBeVisible();
-  await page.keyboard.type("motion full");
-  await expect(palette.getByRole("option").first()).toContainText(en.hud.actions.motionFull);
-  await page.keyboard.press("Enter");
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "full");
-  await expect(pause).toBeVisible();
-  await expect(page.getByRole("status").filter({ hasText: en.hud.actions.motionFull })).toBeVisible();
+  async function run(query: string, label: string) {
+    await page.keyboard.press("Control+k");
+    await expect(palette).toBeVisible();
+    await page.keyboard.type(query);
+    await expect(palette.getByRole("option").first()).toContainText(label);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: label })).toBeVisible();
+  }
+  await run("motion reduced", en.hud.actions.motionReduced);
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
+  await expect(pause).toBeHidden();
+  await run("motion system", en.hud.actions.motionSystem);
+  await expect(page.locator("html")).not.toHaveAttribute("data-motion");
+  // System follows the OS flag, which asks for reduced motion here.
+  await expect(pause).toBeHidden();
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-motion", "full");
-  await expect(pause).toBeVisible();
+  await expect(page.locator("html")).not.toHaveAttribute("data-motion");
+  await expect(pause).toBeHidden();
 });

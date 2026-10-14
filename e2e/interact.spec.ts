@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   emptyFloorPoint,
@@ -158,6 +159,7 @@ test.describe("point and go on a phone", () => {
 
 test.describe("point and go with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
+  test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
   test("the highlight holds still", async ({ page }) => {
     await openFloor(page, "/en/labs");

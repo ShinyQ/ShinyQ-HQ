@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, enterHQ, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Realistic boost (owner pick: "Full package: path-following light trails, rover leans and squats,
@@ -97,6 +97,7 @@ test.describe("boost effects on keyboards", () => {
 
   test("reduced motion boosts without trails, streaks, sparks, camera kick or squat", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");

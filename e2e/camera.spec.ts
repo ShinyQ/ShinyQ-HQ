@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  chooseMotion,
   asReturningVisitor,
   driveTo,
   enterFloorRoute,
@@ -237,6 +238,7 @@ test.describe("wheel zoom and first person", () => {
 
   test("reduced motion cuts straight between third and first person", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await enterHQ(page);
     await trackBlend(page);
     await enterFirstPerson(page);

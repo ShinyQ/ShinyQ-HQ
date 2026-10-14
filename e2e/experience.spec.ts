@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 
@@ -139,6 +139,7 @@ test.describe("boot and intro", () => {
 
   test("reduced motion holds a still intro of the same length", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -306,6 +307,7 @@ test.describe("rover on desktop", () => {
 
   test("reduced motion boosts without the trail", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     // Not enterHQ: it works the same before and after the intro changes of Task 4.
     await asReturningVisitor(page);

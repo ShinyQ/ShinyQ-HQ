@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   driveTo,
@@ -177,6 +178,7 @@ test.describe("pad pickers", () => {
 
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
+    test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
     test("the teleport is a short fade cut that still lands on the target pad", async ({ page }) => {
       await openJourney(page);

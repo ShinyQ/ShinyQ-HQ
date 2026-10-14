@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { BUDGET_WINDOW, GPU_MEMORY_BUDGET, RENDER_BUDGET, type RenderBudget } from "./budgets";
 
 export interface HQSnapshot {
@@ -51,13 +51,30 @@ export async function asReturningVisitor(page: Page) {
     // The first-session tour already ran; "!" hint bubbles off so they never cover a click target.
     localStorage.setItem("hq:onboarded", "done");
     localStorage.setItem("hq:hints", "off");
-    // The one-time "your system reduces motion" line (MotionHintLayer) was answered too.
-    localStorage.setItem("hq:motion-hint", "seen");
     sessionStorage.setItem("hq:intro", "seen");
     if (!localStorage.getItem("hq:v1")) {
       localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false }, version: 1 }));
     }
   });
+}
+
+/**
+ * Picks the Motion setting before every navigation (merged into the persisted store `hq:v1`, version 3).
+ * Full is the default on every OS (owner decision 2026-10-14), so a spec that emulates
+ * `prefers-reduced-motion: reduce` to test reduced motion picks System (the OS flag decides, as before)
+ * or Reduced first. Register it before any reload that must keep a choice made in the UI: it rewrites it.
+ */
+export async function chooseMotion(target: Page | BrowserContext, motion: "system" | "full" | "reduced") {
+  await target.addInitScript((m) => {
+    try {
+      const raw = localStorage.getItem("hq:v1");
+      const saved = raw ? JSON.parse(raw) : null;
+      const state = saved && typeof saved.state === "object" && saved.state ? saved.state : {};
+      localStorage.setItem("hq:v1", JSON.stringify({ state: { ...state, motion: m }, version: 3 }));
+    } catch {
+      // about:blank and opaque origins have no storage.
+    }
+  }, motion);
 }
 
 /**

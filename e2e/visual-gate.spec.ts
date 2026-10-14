@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, waitForPhase } from "./hq";
 import { driveUntil, frameCount, installVirtualClock, stepFrames, waitForQuiet } from "./vclock";
 
 /**
@@ -76,6 +76,7 @@ async function open(browser: Browser, device: Device, pose: Pose) {
     isMobile: device.touch,
     reducedMotion: pose.kind === "ride" ? "no-preference" : "reduce",
   });
+  await chooseMotion(context, "system");
   const page = await context.newPage();
   await page.route("**/api/ask", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ enabled: true, turnstileSiteKey: null, asOf: "2026-10-11", maxLength: 300 }) }),

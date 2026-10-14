@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Request } from "@playwright/test";
-import { asReturningVisitor, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
 
 /**
  * Ask the HQ in the browser, against a mocked `/api/ask` (the static server has no Functions):
@@ -73,6 +73,7 @@ test.beforeEach(async ({ page }, testInfo) => {
     { key: TEASER_SEEN, teaser },
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
 });
 
 test.afterEach(() => {

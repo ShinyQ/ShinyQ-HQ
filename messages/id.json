@@ -908,13 +908,6 @@
       },
       "notNow": "Nanti saja"
     },
-    "motion": {
-      "ask": "Animasi dikurangi oleh pengaturan sistem. Nyalakan gerak penuh?",
-      "full": "Gerak penuh",
-      "keep": "Tetap dikurangi",
-      "on": "Gerak penuh aktif. Ubah kapan saja lewat Gerak di bagian atas.",
-      "kept": "Oke, gerak tetap dikurangi. Ubah kapan saja lewat Gerak di bagian atas."
-    },
     "menu": {
       "replay": "putar ulang tutorial",
       "hintsOn": "petunjuk: aktif",

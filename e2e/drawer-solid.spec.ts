@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
 import { findEdgeAccents } from "./edge-audit";
 
 test.describe.configure({ timeout: 120_000 });
@@ -22,6 +22,7 @@ function alphaOf(color: string): number {
 async function openModelsShelf(page: Page) {
   await asReturningVisitor(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await page.goto("/en/library?tier=lite");
   await waitForHQ(page);
   await waitForPhase(page, "explore");

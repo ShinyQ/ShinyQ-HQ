@@ -10,8 +10,8 @@ const ACTION_KEYWORDS: Record<PaletteActionId, string[]> = {
   "quick-view": ["quick", "summary", "ringkas", "overview"],
   "replay-tutorial": ["tutorial", "tour", "onboarding", "help", "guide", "replay", "panduan", "bantuan", "ulang"],
   "toggle-hints": ["hints", "hint", "bubbles", "tips", "petunjuk"],
-  "motion-system": ["motion", "animation", "reduced motion", "system", "default", "gerak", "animasi", "sistem"],
-  "motion-full": ["motion", "animation", "full", "animate", "gerak", "animasi", "penuh"],
+  "motion-system": ["motion", "animation", "reduced motion", "system", "device", "accessibility", "gerak", "animasi", "sistem", "perangkat"],
+  "motion-full": ["motion", "animation", "full", "animate", "default", "gerak", "animasi", "penuh"],
   "motion-reduced": ["motion", "animation", "reduce", "reduced motion", "accessibility", "gerak", "animasi", "kurangi", "dikurangi"],
 };
 

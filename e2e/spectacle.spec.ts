@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
+import { chooseMotion, collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
 
 /**
  * Spectacle round, Session B (docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md):
@@ -128,6 +128,7 @@ test("L3 reactor core: point-and-go to a pod beyond it drives around it and open
 
 test("reduced motion: the reactor, waterfalls and the L2 horizon stand still", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await enterFloorRoute(page, "/en/labs");
   await expect.poll(() => page.evaluate(() => (window as unknown as SpectacleWindow).__hq.store.getState().reducedMotion)).toBe(true);
   const read = () => page.evaluate(() => ({ ...(window as unknown as SpectacleWindow).__hq.probes.spectacle }));

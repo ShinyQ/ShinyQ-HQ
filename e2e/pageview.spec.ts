@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { openPage } from "./hq";
+import { chooseMotion, openPage } from "./hq";
 import { findEdgeAccents } from "./edge-audit";
 import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
@@ -42,6 +42,7 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem("hq:onboarded", "done");
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
 });
 
 for (const path of TEMPLATES) {

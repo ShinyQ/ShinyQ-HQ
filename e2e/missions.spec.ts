@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { openPage } from "./hq";
+import { chooseMotion, openPage } from "./hq";
 import { heroPod } from "./routes";
 import rawData from "../content/site-content.json";
 import { SiteContentSchema } from "../src/content/schema";
@@ -132,6 +132,7 @@ test.describe("accessibility (axe)", () => {
 
   test("Lobby with the terminal open", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible();

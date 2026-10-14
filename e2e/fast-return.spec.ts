@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, collectErrors, driveTo, padsOf, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, driveTo, padsOf, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Fast return (F1, owner decision 2026-10-14: "Beam when far"). Express Return pads beam the rover to
@@ -142,6 +142,7 @@ test.describe("fast return on the Career Road (L2)", () => {
 
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
+    test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
     test("the beam into the car is a fade cut, then the ride's own cut", async ({ page }) => {
       await openFloor(page, "/en/journey");

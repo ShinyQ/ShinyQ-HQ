@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
@@ -100,6 +100,7 @@ for (const viewport of VIEWPORTS) {
   for (const page of PAGES) {
     test(`${page.name} (HTML) @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      await chooseMotion(context, "system");
       const tab = await context.newPage();
       await tab.addInitScript(() => {
         localStorage.setItem("hq:terminal-seen", "1");
@@ -265,6 +266,7 @@ for (const viewport of VIEWPORTS) {
   for (const overlay of OVERLAYS) {
     test(`${overlay.name} @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      await chooseMotion(context, "system");
       const tab = await context.newPage();
       await tab.addInitScript(() => {
         localStorage.setItem("hq:terminal-seen", "1");
@@ -625,6 +627,7 @@ async function open3DStill(browser: Browser, v: Viewport, path: string) {
     isMobile: v.name === "mobile",
     reducedMotion: "reduce",
   });
+  await chooseMotion(context, "system");
   const page = await context.newPage();
   await asReturningVisitor(page);
   await page.goto(`${path}?tier=${v.tier}`);
@@ -674,6 +677,7 @@ test.describe("CV refresh captures", () => {
       const name = path === "/en" ? "home" : path.slice(4);
       test(`CV refresh page ${name} @ ${size}`, async ({ browser }) => {
         const context = await browser.newContext({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+        await chooseMotion(context, "system");
         const tab = await context.newPage();
         await tab.addInitScript(() => {
           localStorage.setItem("hq:terminal-seen", "1");
@@ -780,6 +784,7 @@ async function p8Open(browser: Browser, v: Viewport, path: string, reducedMotion
     isMobile: v.name === "mobile",
     reducedMotion,
   });
+  await chooseMotion(context, "system");
   const page = await context.newPage();
   await asReturningVisitor(page);
   await page.goto(`${path}?tier=${v.tier}&walk=off`);

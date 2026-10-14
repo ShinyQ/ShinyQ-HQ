@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "@playwright/test";
-import { asHumanBrowser, asReturningVisitor, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /** Opt-in (SCREENSHOTS=1): captures for the round 5 P1 before/after diff (scripts/shot-diff.ts). */
 test.skip(!process.env.SCREENSHOTS, "Set SCREENSHOTS=1 to capture screenshots");
@@ -39,6 +39,7 @@ for (const v of WORLD) {
   for (const [floor, route] of FLOORS) {
     test(`3D ${floor} ${v.name}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: v.viewport, deviceScaleFactor: 1, reducedMotion: "reduce", isMobile: v.mobile, hasTouch: v.mobile });
+      await chooseMotion(context, "system");
       const page = await context.newPage();
       await asReturningVisitor(page);
       await page.goto(`${route}?tier=${v.tier}&walk=off`);
@@ -58,6 +59,7 @@ for (const v of PAGES) {
   test(`Page View /en ${v.width}x${v.height}`, async ({ playwright, baseURL }) => {
     const browser = await playwright.chromium.launch();
     const context = await browser.newContext({ baseURL, viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await page.goto("/en?tier=static");
     await page.waitForSelector("html[data-hydrated]");
@@ -75,6 +77,7 @@ for (const v of PAGES) {
 
   test(`boot card ${v.width}x${v.height}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport: v, deviceScaleFactor: 1, reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await asHumanBrowser(page);
     // Keeps the cover up: no Next.js chunk, so nothing releases it before the capture.

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   driveTo,
@@ -179,6 +180,7 @@ test.describe("L2 Workshop", () => {
 
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
+    test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
     test("the Workshop holds still and the console's jump is the fade cut", async ({ page }) => {
       await openWorkshop(page);

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enterHQ, openPage, waitForCameraSettle, waitForFrames } from "../hq";
+import { chooseMotion, enterHQ, openPage, waitForCameraSettle, waitForFrames } from "../hq";
 
 /**
  * Local look check (`bun run e2e:look`, never in CI): the same camera poses rendered by two builds
@@ -38,6 +38,7 @@ for (const pose of POSES) {
   for (const { floor, path } of FLOORS) {
     test(`${floor} ${pose.name} @look`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: pose.viewport, isMobile: pose.mobile, hasTouch: pose.mobile, reducedMotion: "reduce" });
+      await chooseMotion(context, "system");
       const page = await context.newPage();
       await enterHQ(page, { path, tier: pose.tier });
       await waitForCameraSettle(page);
@@ -52,6 +53,7 @@ for (const pose of POSES) {
 for (const width of [1440, 390]) {
   test(`Page View main column ${width} @look`, async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await openPage(page, "/en/quick?tier=static");
     await page.evaluate(() => document.fonts.ready);
