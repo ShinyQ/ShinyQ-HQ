@@ -55,7 +55,7 @@ function main() {
     console.log("Private blocklist: enabled.");
     summary("Private blocklist: enabled (the export was checked against the private terms).");
   } else if (verdict === "warn") {
-    const why = ci ? "this pull request run has no SAFETY_BLOCKLIST secret (fork or Dependabot)" : "no local list or SAFETY_BLOCKLIST";
+    const why = ci ? "this pull request run has no SAFETY_BLOCKLIST secret (a fork, a Dependabot PR, or the secret is not set yet)" : "no local list or SAFETY_BLOCKLIST";
     console.log(`::warning title=Private blocklist not checked::Private blocklist: missing; ${why}. Only the committed default list was checked.`);
     summary(`> [!WARNING]\n> Private blocklist not checked: ${why}. Only the committed default list was checked; main and the production deploy check it.`);
   } else if (verdict === "grace") {
