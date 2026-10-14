@@ -124,6 +124,9 @@ test.describe("floor lines", () => {
     await waitForSceneLive(page);
     await expect(box(page)).toHaveAttribute("data-dialog", "floor:L2", { timeout: 15_000 });
     await expect(box(page)).toContainText(en.dialog.floor.L2);
+    // The choices show once the line has typed out. On CI's SwiftShader the neighbouring floors mount and compile
+    // right then (single 4 to 5 s main-thread tasks), so wait on the typing state with the line's own budget (as walk.spec.ts).
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
     await expect(choices(page).getByRole("button", { name: en.walk.journey.start })).toBeVisible();
     await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
     await choices(page).getByRole("button", { name: en.walk.explore }).click();
