@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createVisitHandler, resetVisitWindow, VISIT_ISOLATE_CAP } from "../../functions/_lib/visit";
 import type { AnalyticsEngineDataset, VisitEnv } from "../../functions/_lib/types";
+import { VISIT_MAX_BYTES } from "../../src/lib/stats/visit";
 
 const ORIGIN = "https://kurniadi.pages.dev";
 
@@ -19,6 +20,20 @@ function setup(env: Partial<VisitEnv> = {}) {
       waitUntil: () => undefined,
     });
   return { handler, post, points, env: fullEnv };
+}
+
+
+/** A body without Content-Length that streams `total` bytes in 64-byte chunks; `pulled()` counts what was read. */
+function endlessBody(total: number) {
+  let sent = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (sent >= total) return controller.close();
+      sent += 64;
+      controller.enqueue(new Uint8Array(64).fill(0x20));
+    },
+  });
+  return { stream, pulled: () => sent };
 }
 
 beforeEach(() => resetVisitWindow());
@@ -69,6 +84,16 @@ describe("POST /api/visit", () => {
     expect((await post("{", {})).status).toBe(400);
     expect((await post('{"v":1,"mode":"vr"}')).status).toBe(400);
     expect((await post('{"v":1,"mode":"3d","floor":"L1"}')).status).toBe(400);
+    expect(points).toEqual([]);
+  });
+
+  it("stops reading a body without Content-Length at the cap (S7)", async () => {
+    const { env, handler, points } = setup();
+    const body = endlessBody(1_000_000);
+    const request = new Request(`${ORIGIN}/api/visit`, { method: "POST", headers: { Origin: ORIGIN, "Content-Type": "text/plain;charset=UTF-8" }, body: body.stream, duplex: "half" } as RequestInit);
+    expect(request.headers.get("Content-Length")).toBeNull();
+    expect((await handler({ request, env, waitUntil: () => undefined })).status).toBe(413);
+    expect(body.pulled()).toBeLessThan(VISIT_MAX_BYTES + 256);
     expect(points).toEqual([]);
   });
 

@@ -32,6 +32,8 @@ export interface DayPerf {
   measured: number;
   fps55: number;
   explore: Partial<Record<StatsExplore, number>>;
+  /** The day's RUM sessions outran Web Analytics (`PERF_FREEZE`): kept at zero, like a frozen 3D vs Classic split. */
+  frozen?: true;
 }
 
 /** KV `stats:days:v1`: every finalized day, oldest first. */

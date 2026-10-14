@@ -37,6 +37,15 @@ export function dayRange(from: string, to: string): string[] {
  */
 export const MODE_FREEZE = { factor: 3, floor: 30 };
 
+/**
+ * The same cross-check for the public `perf` block (security S7): RUM sessions are sampled 3D page
+ * lifetimes, so a day with more than `max(floor, factor x page views)` of them is a flood of forged
+ * beacons and keeps zero perf (`frozen`), never attacker-chosen FPS or explore numbers.
+ */
+export const PERF_FREEZE = MODE_FREEZE;
+
+const FROZEN_PERF: DayPerf = { sessions: 0, measured: 0, fps55: 0, explore: {}, frozen: true };
+
 const clean = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.round(v) : 0);
 const isTopic = (v: string): v is StatsTopic => (STATS_TOPICS as readonly string[]).includes(v);
 const isIn = <T extends string>(list: readonly T[], v: string): v is T => (list as readonly string[]).includes(v);
@@ -95,6 +104,8 @@ export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, c
     }
     const frozen = points > Math.max(MODE_FREEZE.floor, MODE_FREEZE.factor * pageViews);
 
+    const perf = buildPerf(date, ae.perf);
+
     const asks: DayRollup["asks"] = { total: 0, topics: {}, chips: {} };
     for (const r of ae.asks) {
       if (r.day !== date) continue;
@@ -112,7 +123,7 @@ export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, c
       floors,
       mode: frozen ? { threeD: 0, classic: 0, frozen: true } : { threeD, classic },
       asks,
-      perf: buildPerf(date, ae.perf),
+      perf: perf.sessions > Math.max(PERF_FREEZE.floor, PERF_FREEZE.factor * pageViews) ? { ...FROZEN_PERF, explore: {} } : perf,
     };
   });
 }

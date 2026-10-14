@@ -151,6 +151,7 @@ Rules:
 ### 7.5 Privacy and transparency
 - A short **privacy note** on the ask box and on `/en/contact` (EN/ID): what is sent to Cloudflare Workers AI, how long logs are kept, that no account or cookie is needed except the short-lived anti-bot cookie.
 - No questions are used to train anything; the content-gap report uses only scrubbed, anonymized text.
+- Security assessment S8, owner decision 7 (2026-10-14): the public weekly content-gap issue and its artifact publish counts and topics only; the scrubbed question text stays private in Analytics Engine (up to 3 months) and is read by the owner locally (`bun scripts/content-gap.ts --questions`). The privacy note says so in EN and ID.
 - Data residency: Cloudflare processes at the nearest edge; this is stated in the note.
 
 ### 7.6 Monitoring and incident response

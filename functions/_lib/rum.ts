@@ -1,5 +1,5 @@
 import { parseRumPayload, rumDataPoint, RUM_MAX_BYTES } from "../../src/lib/rum/protocol";
-import { originAllowed } from "./security";
+import { originAllowed, readCapped } from "./security";
 import type { PagesContext, RumEnv } from "./types";
 
 /** Points written per isolate and minute at most: a cheap ceiling for a spammed endpoint (AE free plan: 100k points a day). */
@@ -25,9 +25,9 @@ export function createRumHandler({ now = () => Date.now() }: { now?: () => numbe
     if (request.method !== "POST") return empty(405, { Allow: "POST" });
     if (env.RUM_ENABLED !== "true") return empty(204);
     if (!originAllowed(request, env.ASK_ALLOWED_ORIGINS)) return empty(403);
-    if (Number(request.headers.get("Content-Length") ?? "0") > RUM_MAX_BYTES) return empty(413);
-    const text = await request.text();
-    if (text.length > RUM_MAX_BYTES) return empty(413);
+    // Streams at most RUM_MAX_BYTES bytes, with or without Content-Length (S7).
+    const text = await readCapped(request, RUM_MAX_BYTES);
+    if (text === null) return empty(413);
     let body: unknown;
     try {
       body = JSON.parse(text);

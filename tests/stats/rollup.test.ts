@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStatsSnapshot, type StatsTopic } from "@/lib/stats/protocol";
-import { addDays, buildRollups, buildSnapshot, dayRange, MODE_FREEZE, trimLeadingEmpty } from "../../workers/stats/src/rollup";
+import { addDays, buildRollups, buildSnapshot, dayRange, MODE_FREEZE, PERF_FREEZE, trimLeadingEmpty } from "../../workers/stats/src/rollup";
 import type { AeRows, DayRollup, WaRows } from "../../workers/stats/src/types";
 
 const CHIPS = new Map<string, StatsTopic>([
@@ -105,6 +105,18 @@ describe("buildRollups", () => {
     expect(frozen.mode).toEqual({ threeD: 0, classic: 0, frozen: true });
     const fine: AeRows = { asks: [], visits: [{ day: "2026-10-11", mode: "3d", n: limit }], perf: [] };
     expect(buildRollups(["2026-10-11"], { ...noWa, days: [{ date: "2026-10-11", count: pageViews, visits: 10 }] }, fine, CHIPS)[0].mode).toEqual({ threeD: limit, classic: 0 });
+  });
+
+  it("freezes the perf block of a day whose RUM sessions outrun Web Analytics (S7)", () => {
+    const pageViews = 20;
+    const limit = Math.max(PERF_FREEZE.floor, PERF_FREEZE.factor * pageViews);
+    const rows = (n: number): AeRows => ({ asks: [], visits: [], perf: [{ day: "2026-10-11", fps50: "55+", explore: "lt3s", n }] });
+    const waDay = { ...noWa, days: [{ date: "2026-10-11", count: pageViews, visits: 10 }] };
+    expect(buildRollups(["2026-10-11"], waDay, rows(limit + 1), CHIPS)[0].perf).toEqual({ sessions: 0, measured: 0, fps55: 0, explore: {}, frozen: true });
+    expect(buildRollups(["2026-10-11"], waDay, rows(limit), CHIPS)[0].perf).toEqual({ sessions: limit, measured: limit, fps55: limit, explore: { lt3s: limit } });
+    // A frozen day adds nothing to the public perf block.
+    const [frozen] = buildRollups(["2026-10-11"], waDay, rows(10_000), CHIPS);
+    expect(buildSnapshot([frozen], "2026-10-11", CHIPS)?.perf?.d30).toEqual({ sessions: 0, measured: 0, fps55: 0, explore: null });
   });
 
   it("trims empty days before the first day with data", () => {

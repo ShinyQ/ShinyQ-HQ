@@ -1,5 +1,5 @@
 import { parseVisitPayload, visitDataPoint, VISIT_MAX_BYTES } from "../../src/lib/stats/visit";
-import { originAllowed } from "./security";
+import { originAllowed, readCapped } from "./security";
 import type { PagesContext, VisitEnv } from "./types";
 
 /** Points written per isolate and minute at most: a cheap ceiling for a spammed endpoint (AE free plan: 100k points a day, shared). */
@@ -27,9 +27,9 @@ export function createVisitHandler({ now = () => Date.now() }: { now?: () => num
     if (request.method !== "POST") return empty(405, { Allow: "POST" });
     if (env.STATS_ENABLED !== "true") return empty(204);
     if (!originAllowed(request, env.ASK_ALLOWED_ORIGINS)) return empty(403);
-    if (Number(request.headers.get("Content-Length") ?? "0") > VISIT_MAX_BYTES) return empty(413);
-    const text = await request.text();
-    if (text.length > VISIT_MAX_BYTES) return empty(413);
+    // Streams at most VISIT_MAX_BYTES bytes, with or without Content-Length (S7).
+    const text = await readCapped(request, VISIT_MAX_BYTES);
+    if (text === null) return empty(413);
     let body: unknown;
     try {
       body = JSON.parse(text);
