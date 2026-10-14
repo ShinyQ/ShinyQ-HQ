@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { EM_DASH, collectStrings, findBlockedTerms, findForbiddenPatterns, leafForbiddenPatterns, loadBlocklist } from "@/content/safety";
+import { EM_DASH, collectStrings, findBlockedLabels, findForbiddenPatterns, leafForbiddenPatterns, loadBlocklist } from "@/content/safety";
 
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
@@ -19,7 +19,7 @@ describe("public-safety lint", () => {
 
   it("finds no blocklisted term or forbidden pattern in site-content.json", () => {
     const hits = collectStrings(content).flatMap((leaf) => {
-      const found = [...findBlockedTerms(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+      const found = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
       return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
@@ -27,7 +27,7 @@ describe("public-safety lint", () => {
 
   it("finds no blocklisted term or forbidden pattern in content/perspectives.json (drafts included: the repo is public)", () => {
     const hits = collectStrings(perspectives).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedTerms(value, terms), ...findForbiddenPatterns(value)];
+      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
@@ -35,14 +35,14 @@ describe("public-safety lint", () => {
 
   it.each(blogFiles)("finds no blocklisted term or em dash in content/blog/%s", (file) => {
     const text = read("content", "blog", file);
-    expect(findBlockedTerms(text, terms)).toEqual([]);
+    expect(findBlockedLabels(text, terms)).toEqual([]);
     expect(text.includes(EM_DASH)).toBe(false);
   });
 
   it.each(messageFiles)("finds no blocklisted term or forbidden pattern in messages/%s", (file) => {
     const strings = collectStrings(JSON.parse(read("messages", file)));
     const hits = strings.flatMap(({ path: at, value }) => {
-      const found = [...findBlockedTerms(value, terms), ...findForbiddenPatterns(value)];
+      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);

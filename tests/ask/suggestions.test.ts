@@ -4,7 +4,7 @@ import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { ASK_TOPICS, matchSuggestion, pickFollowUps, SUGGESTIONS, TOPIC_SIZE, topicQuestions, type Suggestion } from "@/ask/suggestions";
 import { getContent } from "@/content/load";
-import { findBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
+import { findBlockedLabels, FORBIDDEN_PATTERNS } from "@/content/safety";
 import { orderPods } from "@/content/selectors";
 import { retrieve } from "../../functions/_lib/retrieve";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
@@ -72,7 +72,7 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
 
   it("passes the public-safety lint (no client names, em dashes, money or personal data)", () => {
     const text = SUGGESTIONS.flatMap((s) => [s.q.en, s.q.id]).join("\n");
-    expect(findBlockedTerms(text, safety.blocklist)).toEqual([]);
+    expect(findBlockedLabels(text, safety.blocklist)).toEqual([]);
     for (const { name, pattern } of FORBIDDEN_PATTERNS) expect(text, name).not.toMatch(pattern);
   });
 

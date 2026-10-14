@@ -15,7 +15,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { findBlockedTerms, loadBlocklist } from "../src/content/safety";
+import { findBlockedLabels, loadBlocklist } from "../src/content/safety";
 import { WEBP_LOSSLESS, WEBP_LOSSY, pngSize, renderPng, run, sha256, toWebp } from "./pdf-pages";
 
 export const PAPER_PAGE_WIDTH = 1400;
@@ -34,7 +34,7 @@ export const PERSONAL_DATA_PATTERNS: { name: string; pattern: RegExp }[] = [
 
 /** Problems in the extractable text of a paper PDF: personal data patterns and blocklisted names. */
 export function paperTextProblems(text: string, terms: readonly string[]): string[] {
-  return [...PERSONAL_DATA_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ name }) => name), ...findBlockedTerms(text, terms)];
+  return [...PERSONAL_DATA_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ name }) => name), ...findBlockedLabels(text, terms)];
 }
 
 /** Text layer of a PDF via poppler's `pdftotext`. */
