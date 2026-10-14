@@ -395,8 +395,6 @@
     "staticNotice": "3D tidak tersedia. Situs klasik dibuka.",
     "kioskTitle": "rover@hq:~$ ./ask-rover",
     "kioskHint": "Pilih kios atau rover untuk membuka Tanya Rover",
-    "constructionLabel": "Sedang dibangun",
-    "constructionHint": "Buka lantai ini di situs klasik",
     "statusHello": "halo!",
     "rooms": {
       "profile": "Hologram profil",
