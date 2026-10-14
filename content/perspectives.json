@@ -1,6 +1,6 @@
 {
   "$comment": "Kurniadi's written professional perspectives (Q and A in his own words, EN and ID). Published on About (/contact#perspectives), Quick view and in Ask only when approved: an entry is published when its `approved` is true, or when it has no `approved` field and the file `status` is \"approved\". `approved: false` keeps one entry a draft even in an approved file. Professional topics only: never private life, family, health, religion, politics, pay, or opinions about specific people, employers or clients. Never name a client company (C3). How to edit and approve: docs/ask-runbook.md section 15.",
-  "status": "draft",
+  "status": "approved",
   "entries": [
     {
       "id": "coding-principles",
