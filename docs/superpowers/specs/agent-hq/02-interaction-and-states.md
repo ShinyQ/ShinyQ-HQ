@@ -37,7 +37,7 @@ stateDiagram-v2
 
 ## 2. Transition rules
 
-"Reduced motion" below means the effective flag: `prefers-reduced-motion` under the default Motion setting (System), or the visitor's Full or Reduced override from the HUD Motion control and Cmd-K (AGENTS.md, "Motion setting").
+"Reduced motion" below means the effective flag: on under the visitor's Reduced setting, or under System when `prefers-reduced-motion` asks for it, from the HUD Motion control and Cmd-K (AGENTS.md, "Motion setting"). Owner decision 2026-10-14: the default setting is Full on every OS, so the OS preference is no longer the default; the Motion menu (System or Reduced) restores it.
 
 | From → To | Visual | Duration | Reduced motion |
 |---|---|---|---|

@@ -33,7 +33,7 @@ const Wrap = ({ children }: { children: ReactNode }) => (
 
 afterEach(() => {
   cleanup();
-  getHQStore().getState().setMotion("system");
+  getHQStore().getState().setMotion("full");
   getHQStore().getState().setReducedMotion(false);
 });
 
@@ -76,14 +76,15 @@ describe("3D top bar", () => {
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     const group = screen.getByRole("group", { name: en.hud.motion.label });
-    const system = within(group).getByRole("radio", { name: en.hud.motion.system });
-    expect(system).toBeChecked();
-    expect(system).toHaveFocus();
-    // Native radio keys: ArrowRight moves to Full and selects it.
-    await userEvent.keyboard("{ArrowRight}");
-    expect(within(group).getByRole("radio", { name: en.hud.motion.full })).toBeChecked();
-    expect(getHQStore().getState().motion).toBe("full");
-    expect(document.documentElement).toHaveAttribute("data-motion", "full");
+    // Full is the default on every OS (owner decision 2026-10-14).
+    const full = within(group).getByRole("radio", { name: en.hud.motion.full });
+    expect(full).toBeChecked();
+    expect(full).toHaveFocus();
+    // Native radio keys: ArrowLeft moves to System and selects it.
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(within(group).getByRole("radio", { name: en.hud.motion.system })).toBeChecked();
+    expect(getHQStore().getState().motion).toBe("system");
+    expect(document.documentElement).not.toHaveAttribute("data-motion");
     await userEvent.click(within(group).getByRole("radio", { name: en.hud.motion.reduced }));
     expect(getHQStore().getState().reducedMotion).toBe(true);
     expect(document.documentElement).toHaveAttribute("data-motion", "reduced");
@@ -91,8 +92,9 @@ describe("3D top bar", () => {
     expect(screen.queryByRole("group", { name: en.hud.motion.label })).toBeNull();
     expect(trigger).toHaveFocus();
     await userEvent.click(trigger);
-    await userEvent.click(within(screen.getByRole("group", { name: en.hud.motion.label })).getByRole("radio", { name: en.hud.motion.system }));
-    expect(document.documentElement).not.toHaveAttribute("data-motion");
+    await userEvent.click(within(screen.getByRole("group", { name: en.hud.motion.label })).getByRole("radio", { name: en.hud.motion.full }));
+    expect(getHQStore().getState().reducedMotion).toBe(false);
+    expect(document.documentElement).toHaveAttribute("data-motion", "full");
     await userEvent.click(document.body);
     expect(screen.queryByTestId("motion-popover")).toBeNull();
   });

@@ -102,13 +102,13 @@ export function takePageViewParam(search: string): string | null {
  * the first paint (before hydration) it probes WebGL once and stores the result in
  * `window.__hqProbe` for the gate (readTierInputs). Without WebGL2 or on a software renderer it
  * releases the cover at once and remembers the verdict for the session, unless `?tier=` forces one.
- * It also sets html[data-hq-3d] (canOffer3D) and html[data-motion] (the visitor's Motion override,
- * storedMotion) on every page, before first paint.
+ * It also sets html[data-hq-3d] (canOffer3D) and html[data-motion] (the visitor's Motion setting,
+ * storedMotion: `full` by default, also without storage) on every page, before first paint.
  */
 export function bootFirstScript(): string {
   return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
 var q=(${takePageViewParam.toString()})(location.search);if(q!==null){s="page";try{sessionStorage.setItem("hq:view","page")}catch(e){}try{history.replaceState(history.state,"",location.pathname+q+location.hash)}catch(e){}}
-var d=document.documentElement;try{var m=(${storedMotion.toString()})(localStorage.getItem("${MOTION_STORE_KEY}"));if(m)d.setAttribute("${MOTION_ATTR}",m)}catch(e){}
+var d=document.documentElement,ms=null;try{ms=localStorage.getItem("${MOTION_STORE_KEY}")}catch(e){}var m=(${storedMotion.toString()})(ms);if(m)d.setAttribute("${MOTION_ATTR}",m);
 var c=navigator.connection,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
 var on=(${shouldBootFirst.toString()})({path:location.pathname,search:location.search,storedView:s,hasWebGL2:w,saveData:sd,bot:b,probe:p});

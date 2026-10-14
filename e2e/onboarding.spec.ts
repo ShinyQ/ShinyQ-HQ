@@ -3,6 +3,7 @@ import en from "../messages/en.json";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
 import { highlightRoom } from "../src/experience/floors/lobby/stations";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   driveTo,
@@ -308,6 +309,7 @@ test.describe("every step of the tour", () => {
 test.describe("reduced motion", () => {
   test("lines appear whole, one press advances, and nothing pulses", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
+    await chooseMotion(context, "system");
     const page = await context.newPage();
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);

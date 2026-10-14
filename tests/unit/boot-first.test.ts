@@ -131,14 +131,16 @@ describe("bootFirstScript", () => {
   });
 
   it("does not boot into 3D when it is not possible or not wanted", () => {
+    // Nothing but html[data-motion] (always set, Full by default since 2026-10-14).
+    const onlyMotion = (attrs: Map<string, string>) => [...attrs.keys()].join() === "data-motion" && attrs.get("data-motion") === "full";
     expect(runScript({ path: "/en/quick" }).attrs.has("data-hq-boot")).toBe(false);
     expect(runScript({ path: "/en", stored: "page" }).attrs.has("data-hq-boot")).toBe(false);
-    expect(runScript({ path: "/en", webgl2: false }).attrs.size).toBe(0);
-    expect(runScript({ path: "/en", saveData: true }).attrs.size).toBe(0);
+    expect(onlyMotion(runScript({ path: "/en", webgl2: false }).attrs)).toBe(true);
+    expect(onlyMotion(runScript({ path: "/en", saveData: true }).attrs)).toBe(true);
     expect(runScript({ path: "/en", probe: "static" }).attrs.has("data-hq-boot")).toBe(false);
-    expect(runScript({ path: "/en", ua: "Chrome-Lighthouse" }).attrs.size).toBe(0);
-    expect(runScript({ path: "/en", ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }).attrs.size).toBe(0);
-    expect(runScript({ path: "/en", webdriver: true }).attrs.size).toBe(0);
+    expect(onlyMotion(runScript({ path: "/en", ua: "Chrome-Lighthouse" }).attrs)).toBe(true);
+    expect(onlyMotion(runScript({ path: "/en", ua: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }).attrs)).toBe(true);
+    expect(onlyMotion(runScript({ path: "/en", webdriver: true }).attrs)).toBe(true);
     expect(runScript({ path: "/en", webdriver: true, search: "?tier=lite" }).attrs.get("data-hq-boot")).toBe("1");
   });
 
@@ -277,7 +279,7 @@ describe("bootFirstScript ?view=page", () => {
 });
 
 describe("bootFirstScript motion override", () => {
-  const stored = (motion: string) => ({ [STORE_KEY]: JSON.stringify({ state: { visited: [], firstVisit: false, locale: "en", motion }, version: 2 }) });
+  const stored = (motion: string, version = 3) => ({ [STORE_KEY]: JSON.stringify({ state: { visited: [], firstVisit: false, locale: "en", motion }, version }) });
 
   it("reads the persisted store key", () => {
     expect(MOTION_STORE_KEY).toBe(STORE_KEY);
@@ -287,13 +289,19 @@ describe("bootFirstScript motion override", () => {
     expect(runScript({ path: "/en", local: stored("full") }).attrs.get("data-motion")).toBe("full");
     expect(runScript({ path: "/en/blog/x", local: stored("reduced") }).attrs.get("data-motion")).toBe("reduced");
     expect(runScript({ path: "/en", search: "?tier=static", local: stored("reduced") }).attrs.get("data-motion")).toBe("reduced");
+    expect(runScript({ path: "/en", local: stored("reduced", 2) }).attrs.get("data-motion")).toBe("reduced");
   });
 
-  it("leaves it unset under System, without storage or on garbage", () => {
-    expect(runScript({ path: "/en", local: stored("system") }).attrs.has("data-motion")).toBe(false);
-    expect(runScript({ path: "/en" }).attrs.has("data-motion")).toBe(false);
+  it("defaults to full (owner decision 2026-10-14): new visitors, the old default System, garbage", () => {
+    expect(runScript({ path: "/en" }).attrs.get("data-motion")).toBe("full");
+    expect(runScript({ path: "/en/blog/x" }).attrs.get("data-motion")).toBe("full");
+    expect(runScript({ path: "/en", local: stored("system", 2) }).attrs.get("data-motion")).toBe("full");
     const r = runScript({ path: "/en", local: { [STORE_KEY]: "{oops" } });
-    expect(r.attrs.has("data-motion")).toBe(false);
+    expect(r.attrs.get("data-motion")).toBe("full");
     expect(r.attrs.get("data-hq-boot")).toBe("1");
+  });
+
+  it("leaves it unset only under a System the visitor picked", () => {
+    expect(runScript({ path: "/en", local: stored("system") }).attrs.has("data-motion")).toBe(false);
   });
 });

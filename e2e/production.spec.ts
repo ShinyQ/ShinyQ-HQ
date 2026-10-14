@@ -4,7 +4,7 @@ import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
-import { asReturningVisitor, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * "How I run AI in production" (owner approved 2026-10-14): the About section on the Classic site, the
@@ -127,6 +127,7 @@ test.describe("L3 Ops Control Room", () => {
 
   test("reduced motion: the room opens and L3 stays inside its render budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await mockStats(page);
     await openLabs(page);
     await rideToOps(page);

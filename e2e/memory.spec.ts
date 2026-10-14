@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, waitForFloor, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
+import { chooseMotion, enterHQ, waitForFloor, waitForFrames, waitForHQ, waitForSceneLive } from "./hq";
 
 /**
  * Appendix 08 memory budget (perf report SP8): floor round trips and Page View toggles must leave
@@ -25,6 +25,7 @@ const HEAP_SLACK = 2 * 1024 * 1024;
 
 test.describe.configure({ timeout: 600_000 });
 test.use({ reducedMotion: "reduce" });
+test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
 const read = (page: Page) => page.evaluate(() => (window as unknown as MemoryWindow).__hq.memory());
 

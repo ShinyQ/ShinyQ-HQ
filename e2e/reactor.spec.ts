@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, visibleTarget, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, visibleTarget, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * L3 Tech Reactor (design 2026-10-14, section 2): the reactor core as a project filter. Picking a tech in
@@ -131,6 +131,7 @@ test("Cmd-K shows the projects using a tech in the tower", async ({ page }) => {
 
 test("reduced motion holds the rings still, Surprise me included", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await enterFloorRoute(page, "/en/labs");
   const spin = () => page.evaluate(() => (window as unknown as RW).__hq.probes.spectacle["reactor.spin"]);
   await expect.poll(spin).toBeDefined();

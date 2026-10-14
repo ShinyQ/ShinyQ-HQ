@@ -10,6 +10,7 @@ import { gateOpening } from "../src/experience/floors/lobby/hallGallery";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
 import { HIGHLIGHT_STAT_COUNT, HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "../src/experience/floors/lobby/stations";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   driveTo,
@@ -337,6 +338,7 @@ test.describe("Highlights Hall", () => {
 
   test("reduced motion: the hall renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await enterHQ(page);
     expect(await page.evaluate(() => (window as unknown as InteractWindow).__hq.store.getState().reducedMotion)).toBe(true);
     await driveTo(page, { x: 34, z: 13 });

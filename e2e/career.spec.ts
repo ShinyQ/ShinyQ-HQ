@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 test.describe.configure({ timeout: 180_000 });
@@ -165,6 +165,7 @@ test.describe("Career Road (L2)", () => {
 
   test("the career drawer has no serious accessibility violations", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await openJourney(page, "/en/journey/jenius-2024");
     await waitForPhase(page, "room");
     await expect(page.getByTestId("room-drawer")).toBeVisible();

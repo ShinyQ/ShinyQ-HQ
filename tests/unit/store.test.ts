@@ -243,7 +243,7 @@ describe("HQ store", () => {
     st.getState().markVisited("L3:a" as RoomId);
     st.getState().setLocale("id");
     expect(writes).toBe(base + 2);
-    expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id", motion: "system" });
+    expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id", motion: "full" });
   });
 });
 

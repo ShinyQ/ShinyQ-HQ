@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 /**
@@ -49,6 +49,7 @@ async function open(browser: Browser, v: Viewport, path: string, quiet = false) 
     isMobile: v.name === "phone",
     reducedMotion: "reduce",
   });
+  await chooseMotion(context, "system");
   const page = await context.newPage();
   await asReturningVisitor(page);
   // First-person captures: no first-visit floor line (Rover's box would sit under the fingers of a pinch).

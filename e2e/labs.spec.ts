@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  chooseMotion,
   asReturningVisitor,
   collectErrors,
   DESKTOP_SAFE,
@@ -181,6 +182,7 @@ test.describe("L3 Labs in 3D", () => {
 
   test("the drawer has no serious accessibility violations", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await openPod(page);
     await waitForRoom(page, `L3:${heroPod.slug}`, 30_000);
     const results = await new AxeBuilder({ page }).include("[data-testid='room-drawer']").analyze();
@@ -193,6 +195,7 @@ test("desktop: the drawer body gets most of the height and the bar condenses on 
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await openPod(page);
   await waitForRoom(page, `L3:${heroPod.slug}`, 30_000);
   const drawer = page.getByTestId("room-drawer");

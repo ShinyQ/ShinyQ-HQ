@@ -17,8 +17,9 @@ function MotionIcon() {
 
 /**
  * The Motion setting as a 3-way segmented control: a fieldset of native radios (arrow keys move and
- * select, Tab enters at the checked one), styled like the language toggle. System follows
- * `prefers-reduced-motion`; Full and Reduced override it (store `motion`, src/lib/motion.ts).
+ * select, Tab enters at the checked one), styled like the language toggle. Full is the default
+ * (owner decision 2026-10-14); System follows `prefers-reduced-motion` and Reduced always reduces,
+ * so this menu is the only way to reduce motion (store `motion`, src/lib/motion.ts).
  */
 export function MotionChoices({ autoFocus = false }: { autoFocus?: boolean }) {
   const t = useTranslations("hud.motion");

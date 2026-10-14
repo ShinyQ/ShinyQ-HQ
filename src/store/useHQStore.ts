@@ -9,7 +9,7 @@ import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 import type { ReactorRingId } from "@/content/tech-rings";
-import { applyMotionAttr, isMotionPref, resolveReducedMotion, type MotionPref } from "@/lib/motion";
+import { applyMotionAttr, DEFAULT_MOTION, isMotionPref, migrateMotion, resolveReducedMotion, type MotionPref } from "@/lib/motion";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { skipUnchanged } from "./persist-storage";
 
@@ -86,7 +86,7 @@ export interface HQState {
   device: DeviceState;
   /** Effective reduced motion: `resolveReducedMotion(motion, systemReducedMotion)`. Every 3D consumer reads this. */
   reducedMotion: boolean;
-  /** Visitor preference (HUD Motion control, Cmd-K): System follows the OS, Full and Reduced override it. Persisted. */
+  /** Visitor preference (HUD Motion control, Cmd-K): System follows the OS, Full and Reduced override it. Default Full (owner decision 2026-10-14). Persisted. */
   motion: MotionPref;
   /** `prefers-reduced-motion: reduce` as the OS reports it. */
   systemReducedMotion: boolean;
@@ -156,8 +156,11 @@ export const STORE_KEY = "hq:v1";
 
 /** Keys the store persists (appendix 06 section 2, plus `motion`); `sound` is persisted by the audio engine. */
 type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale" | "motion">;
-/** Version 2 added `motion` (version 1 payloads migrate to System). */
-export const STORE_VERSION = 2;
+/**
+ * Version 2 added `motion`; version 3 made Full the default (owner decision 2026-10-14): older payloads
+ * migrate a stored or missing System to Full and keep Reduced (`migrateMotion`).
+ */
+export const STORE_VERSION = 3;
 
 /** Mirror tolerance for rover numbers (world units, radians, u/s): far below anything a reader shows. */
 export const POSE_EPSILON = 1e-4;
@@ -199,8 +202,8 @@ export function createHQStore(storage?: StateStorage) {
         firstVisit: true,
         ride: null,
         device: { viewport: "desktop", camera: "desktop", coarse: false },
-        reducedMotion: prefersReducedMotion(),
-        motion: "system",
+        reducedMotion: resolveReducedMotion(DEFAULT_MOTION, prefersReducedMotion()),
+        motion: DEFAULT_MOTION,
         systemReducedMotion: prefersReducedMotion(),
         notice: null,
         readme: false,
@@ -311,10 +314,13 @@ export function createHQStore(storage?: StateStorage) {
         storage: skipUnchanged(createJSONStorage<Persisted>(() => storage ?? localStorage)),
         // `sound` is owned and persisted by the audio engine (localStorage "hq:sound"); the store mirrors it.
         partialize: ({ visited, firstVisit, locale, motion }): Persisted => ({ visited, firstVisit, locale, motion }),
-        migrate: (persisted, version): Persisted => (version < 2 ? { ...(persisted as Persisted), motion: "system" } : (persisted as Persisted)),
+        migrate: (persisted, version): Persisted => {
+          const saved = (persisted ?? {}) as Persisted;
+          return version < STORE_VERSION ? { ...saved, motion: migrateMotion(saved.motion, version) } : saved;
+        },
         merge: (persisted, current) => {
           const saved = (persisted ?? {}) as Partial<Persisted>;
-          const motion = isMotionPref(saved.motion) ? saved.motion : "system";
+          const motion = isMotionPref(saved.motion) ? saved.motion : DEFAULT_MOTION;
           return { ...current, ...saved, motion, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
         },
       },

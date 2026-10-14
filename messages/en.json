@@ -908,13 +908,6 @@
       },
       "notNow": "Not now"
     },
-    "motion": {
-      "ask": "Animations are reduced by your system settings. Turn on full motion?",
-      "full": "Full motion",
-      "keep": "Keep reduced",
-      "on": "Full motion is on. Change it any time with Motion at the top.",
-      "kept": "Okay, motion stays reduced. Change it any time with Motion at the top."
-    },
     "menu": {
       "replay": "replay the tutorial",
       "hintsOn": "hints: on",

@@ -5,7 +5,7 @@ import id from "../messages/id.json";
 import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { asReturningVisitor, collectErrors, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
@@ -142,6 +142,7 @@ test.describe("RF Visitor Observatory", () => {
 
   test("reduced motion holds the globe still; RF stays inside its budget with the station", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await mockStats(page);
     await openRoof(page);
     await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { enterHQ, waitForFloor, waitForFrames } from "./hq";
+import { chooseMotion, enterHQ, waitForFloor, waitForFrames } from "./hq";
 
 /**
  * Elevator ride smoothness (R5 P6, owner report from a Windows PC): long frames pause the ride
@@ -81,6 +81,7 @@ test("the first ride to an unvisited floor animates the dolly under a 6x CPU thr
 test("reduced motion keeps the 150 ms cut", async ({ page }) => {
   test.slow();
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await enterHQ(page);
   const samples = await sampleCar(page);
   await rideTo(page, "L2", 180_000);
@@ -104,6 +105,7 @@ test("the car waits for the new floor with the doors closed, then compiles nothi
 test("a ride called the moment the rover arrives drops the old floor's roll-on drive", async ({ page }) => {
   test.slow();
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await chooseMotion(page, "system");
   await enterHQ(page);
   await rideTo(page, "L4", 180_000);
   type Pose = { x: number; z: number; autopilot: { state: string } | null };

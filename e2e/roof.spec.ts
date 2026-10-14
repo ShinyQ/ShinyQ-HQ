@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import { buildRoofLayout, ROOF_STOPS } from "../src/experience/floors/roof/layout";
-import { asReturningVisitor, collectErrors, expectRenderBudget, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 
 /**
@@ -117,6 +117,7 @@ test.describe("RF roof deck", () => {
 
   test("reduced motion: the roof renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await chooseMotion(page, "system");
     await openRoof(page);
     expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { reducedMotion: boolean } } } }).__hq.store.getState().reducedMotion)).toBe(true);
     await page.waitForTimeout(1500);
