@@ -61,6 +61,16 @@ export function doorAlong(doors: readonly DoorTrigger[] | undefined, a: Vec2, b:
   return null;
 }
 
+/**
+ * Whether a room open ends the rover's current path (`RoverController.pathId`). While the drawer is
+ * open it ends any path. A room that opened and closed again before this frame (slow frames) ends only
+ * the path that was running when it opened: a drive that started after the close (the next walk
+ * stop, a point-and-go click) must not be cut, or it reports "done" where the rover stands.
+ */
+export function openEndsPath(roomOpen: boolean, openedOnPath: number | null, pathId: number): boolean {
+  return roomOpen || openedOnPath === pathId;
+}
+
 /** Room whose zone the rover already used; it must leave the zone before that door fires again. Floor pads reuse it with pad ids. */
 export interface DoorLatch<K extends string = RoomId> {
   room: K | null;

@@ -15,7 +15,7 @@ import { REACTOR_ROOM } from "../floors/labs/techReactor";
 import { performInteract } from "../interact/pick";
 import { cancelMission, goToRoom, runMissionSteps } from "../missions/bridge";
 import { joystick } from "../input/joystick";
-import { doorAt, stepDoorLatch, type DoorLatch } from "../nav/doors";
+import { doorAt, openEndsPath, stepDoorLatch, type DoorLatch } from "../nav/doors";
 import { distanceToElevator, elevatorBeam, shouldBeamToCar } from "../nav/fastReturn";
 import { pickerFor, primedPadLatch, stepPadLatch } from "../nav/pads";
 import { buildNavGrid, findPath, type NavGrid } from "../nav/navgrid";
@@ -118,12 +118,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
      * quick Esc on a slow device), so the door latch learns about opens from the store, not the phase.
      */
     opened: null as RoomId | null,
+    /** The rover's path (`RoverController.pathId`) when `opened` opened. */
+    openedOnPath: null as number | null,
   });
 
   useEffect(
     () =>
       store.subscribe((s, prev) => {
-        if (s.activeRoom && s.activeRoom !== prev.activeRoom) state.current.opened = s.activeRoom;
+        if (s.activeRoom && s.activeRoom !== prev.activeRoom) {
+          state.current.opened = s.activeRoom;
+          state.current.openedOnPath = state.current.controller?.pathId ?? null;
+        }
       }),
     [store],
   );
@@ -460,10 +465,13 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const doors = layouts[s.floor].doors;
     const door = s.ride ? null : doorAt(doors, controller.pose);
     // Opening a room ends any drive toward it, so the rover does not keep rolling onto the pad behind
-    // (or after) the drawer. Every drive and ride closes the room first, so no other path is cut.
+    // (or after) the drawer. Every drive and ride closes the room first, so no other path is cut; a room
+    // that opened and closed again before this frame ends only the path it interrupted (`openEndsPath`).
     const opened = s.phase === "room" ? s.activeRoom : local.opened;
+    const openedOnPath = local.openedOnPath;
     local.opened = null;
-    if (opened && controller.following) {
+    local.openedOnPath = null;
+    if (opened && controller.following && openEndsPath(s.phase === "room", openedOnPath, controller.pathId)) {
       controller.clearPath();
       roverRuntime.target = null;
     }

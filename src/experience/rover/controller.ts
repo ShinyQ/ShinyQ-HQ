@@ -32,6 +32,8 @@ export class RoverController {
   pose: RoverPose;
   path: Vec2[] = [];
   autopilot = false;
+  /** Bumped by every `setPath`, so callers can tell a new drive from the one that was running earlier. */
+  pathId = 0;
   private stalled = 0;
 
   constructor(start: Vec2, heading = Math.PI) {
@@ -46,6 +48,7 @@ export class RoverController {
     this.path = [...points];
     this.autopilot = autopilot;
     this.stalled = 0;
+    this.pathId += 1;
   }
 
   clearPath() {
