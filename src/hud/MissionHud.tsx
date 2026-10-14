@@ -94,8 +94,18 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
 
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), toast.ms);
-    return () => window.clearTimeout(timer);
+    // The clock starts once the toast has painted (the frame after the next one), so a long task right
+    // after the action (a slow device restyling the page) cannot use up its time before anyone sees it.
+    let timer = 0;
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        timer = window.setTimeout(() => setToast(null), toast.ms);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [toast]);
 
   const showTerminal = useCallback(() => {
