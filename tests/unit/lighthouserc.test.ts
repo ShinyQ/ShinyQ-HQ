@@ -13,16 +13,28 @@ describe("lighthouserc", () => {
   it("warms up first and never asserts on the warm-up URL", () => {
     expect(urls[0]).toBe("http://127.0.0.1:4320/en?lhci-warmup=1");
     expect(rc.ci.assert.assertions).toBeUndefined();
-    expect(matrix).toHaveLength(1);
-    const re = new RegExp(matrix[0].matchingUrlPattern);
-    expect(re.test(urls[0])).toBe(false);
+    expect(matrix).toHaveLength(2);
+    for (const entry of matrix) expect(new RegExp(entry.matchingUrlPattern).test(urls[0])).toBe(false);
     expect(urls.slice(1)).toEqual([
       "http://127.0.0.1:4320/en",
+      "http://127.0.0.1:4320/id",
       "http://127.0.0.1:4320/en/quick",
       "http://127.0.0.1:4320/en/journey",
       "http://127.0.0.1:4320/en/labs/voice-ai-contact-center",
+      "http://127.0.0.1:4320/en/contact",
+      "http://127.0.0.1:4320/en/cv",
     ]);
-    for (const url of urls.slice(1)) expect(re.test(url), url).toBe(true);
+  });
+
+  it("asserts every route except /en/cv, which only warns (owner decision 15, until the CV image patch proves its gain)", () => {
+    const [asserted, cvOnly] = matrix.map((entry) => new RegExp(entry.matchingUrlPattern));
+    for (const url of urls.slice(1)) {
+      const cv = url.endsWith("/en/cv");
+      expect(asserted.test(url), url).toBe(!cv);
+      expect(cvOnly.test(url), url).toBe(cv);
+    }
+    expect(Object.values(matrix[1].assertions).every(([level]) => level === "warn")).toBe(true);
+    expect(Object.keys(matrix[1].assertions).sort()).toEqual(Object.keys(matrix[0].assertions).sort());
   });
 
   it("keeps the CI budgets", () => {
