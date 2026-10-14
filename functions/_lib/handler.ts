@@ -8,7 +8,7 @@ import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
-import { hasValidSession, issueSession, originAllowed, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
+import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
@@ -53,33 +53,6 @@ function json(body: unknown, status: number, extra: Record<string, string> = {})
 function fail(status: number, error: AskErrorCode, retryAfter?: number): Response {
   const body: AskError = retryAfter ? { error, retryAfter } : { error };
   return json(body, status, retryAfter ? { "Retry-After": String(retryAfter) } : {});
-}
-
-/** Reads at most `limit` bytes; null when the body is larger. */
-async function readCapped(request: Request, limit: number): Promise<string | null> {
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (declared > limit) return null;
-  if (!request.body) return "";
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > limit) {
-      await reader.cancel().catch(() => {});
-      return null;
-    }
-    chunks.push(value);
-  }
-  const merged = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return new TextDecoder().decode(merged);
 }
 
 interface ParsedBody {

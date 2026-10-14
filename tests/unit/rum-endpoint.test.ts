@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createRumHandler, resetRumWindow, RUM_ISOLATE_CAP } from "../../functions/_lib/rum";
 import type { AnalyticsEngineDataset, RumEnv } from "../../functions/_lib/types";
+import { RUM_MAX_BYTES } from "../../src/lib/rum/protocol";
 
 const ORIGIN = "https://kurniadi.pages.dev";
 const PAYLOAD = { v: 1, tier: "full", path: "cover", fps50: "55+", fps10: "45-54", explore: "5-8s", lost: 0, timeout: 0 };
@@ -21,6 +22,20 @@ function setup(env: Partial<RumEnv> = {}) {
       waitUntil: () => undefined,
     });
   return { handler, post, points, env: fullEnv };
+}
+
+
+/** A body without Content-Length that streams `total` bytes in 64-byte chunks; `pulled()` counts what was read. */
+function endlessBody(total: number) {
+  let sent = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (sent >= total) return controller.close();
+      sent += 64;
+      controller.enqueue(new Uint8Array(64).fill(0x20));
+    },
+  });
+  return { stream, pulled: () => sent };
 }
 
 beforeEach(() => resetRumWindow());
@@ -64,6 +79,16 @@ describe("POST /api/rum", () => {
     expect((await post("{not json")).status).toBe(400);
     expect((await post(JSON.stringify({ ...PAYLOAD, ua: "Mozilla" }))).status).toBe(400);
     expect((await post(JSON.stringify({ ...PAYLOAD, tier: "static" }))).status).toBe(400);
+    expect(points).toEqual([]);
+  });
+
+  it("stops reading a body without Content-Length at the cap (S7)", async () => {
+    const { env, handler, points } = setup();
+    const body = endlessBody(1_000_000);
+    const request = new Request(`${ORIGIN}/api/rum`, { method: "POST", headers: { Origin: ORIGIN, "Content-Type": "text/plain;charset=UTF-8" }, body: body.stream, duplex: "half" } as RequestInit);
+    expect(request.headers.get("Content-Length")).toBeNull();
+    expect((await handler({ request, env, waitUntil: () => undefined })).status).toBe(413);
+    expect(body.pulled()).toBeLessThan(RUM_MAX_BYTES + 256);
     expect(points).toEqual([]);
   });
 

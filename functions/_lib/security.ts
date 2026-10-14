@@ -61,6 +61,37 @@ export function originAllowed(request: Request, allowList: string | undefined): 
   });
 }
 
+/**
+ * Reads at most `limit` bytes of a request body; null when it is larger, declared or not. Streams the
+ * body and stops at the cap, so a client that omits Content-Length cannot make a handler buffer more
+ * (`/api/ask`, and the `/api/rum` and `/api/visit` beacons, security S7).
+ */
+export async function readCapped(request: Request, limit: number): Promise<string | null> {
+  const declared = Number(request.headers.get("Content-Length") ?? "0");
+  if (declared > limit) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const merged = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
+}
+
 export const SESSION_COOKIE = "hq_ask";
 export const SESSION_SECONDS = 30 * 60;
 
