@@ -2912,7 +2912,78 @@
             "SAP integration"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/vendor-management-portal/01-vendor-dashboard.webp",
+              "alt": {
+                "en": "Vendor dashboard: a welcome banner, total outstanding purchase orders and one counter per workflow stage, from delivery note upload to completed; vendor and user names blurred",
+                "id": "Dashboard vendor: banner sambutan, total purchase order yang masih berjalan, dan satu penghitung per tahap workflow, dari upload surat jalan hingga selesai; nama vendor dan pengguna diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/02-purchase-orders.webp",
+              "alt": {
+                "en": "Purchasing queue: purchase orders with date, subject and a status per order, from awaiting purchasing verification to revision required; PO numbers, values and supplier names blurred",
+                "id": "Antrean Purchasing: purchase order dengan tanggal, perihal, dan status per order, dari menunggu verifikasi Purchasing hingga perlu revisi; nomor PO, nilai, dan nama supplier diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/03-bast-upload.webp",
+              "alt": {
+                "en": "The shared purchase order workspace on the vendor side: a six-stage tracker at Upload BAST, a drop zone for the BAST PDF and the PO info panel; numbers, values, codes and the vendor name blurred",
+                "id": "Workspace purchase order bersama dari sisi vendor: tracker enam tahap di Upload BAST, area unggah PDF BAST, dan panel info PO; nomor, nilai, kode, dan nama vendor diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/04-parallel-review.webp",
+              "alt": {
+                "en": "The same workspace for the tax officer: the Accounting and Tax stage split into two parallel reviews, a tax invoice type field and Approve or Request Revision; numbers, values and the vendor name blurred",
+                "id": "Workspace yang sama untuk Tax officer: tahap Accounting dan Tax terbagi menjadi dua review paralel, kolom jenis faktur pajak, serta Approve atau Request Revision; nomor, nilai, dan nama vendor diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/05-invoice-documents.webp",
+              "alt": {
+                "en": "Documents tab: the tax invoice, invoice, supporting files and delivery note of this revision with view and download actions, then the Purchasing, Accounting and Tax verification decisions; file names, numbers and values blurred",
+                "id": "Tab Documents: faktur pajak, invoice, dokumen pendukung, dan surat jalan pada revisi ini dengan aksi lihat dan unduh, lalu keputusan verifikasi Purchasing, Accounting, dan Tax; nama file, nomor, dan nilai diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/06-finance-queue.webp",
+              "alt": {
+                "en": "Finance dashboard: counters for verification, ready to pay and awaiting payment above the finance queue with an Open next button; PO numbers, values, supplier names and the invoice number blurred",
+                "id": "Dashboard Finance: penghitung verifikasi, siap bayar, dan menunggu pembayaran di atas antrean Finance dengan tombol Open next; nomor PO, nilai, nama supplier, dan nomor invoice diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/vendor-management-portal/07-mobile.webp",
+              "alt": {
+                "en": "Phone view: the vendor dashboard, purchase orders as cards and the review step with Approve and Request Revision; names, numbers and values blurred",
+                "id": "Tampilan ponsel: dashboard vendor, purchase order dalam bentuk kartu, dan langkah review dengan Approve dan Request Revision; nama, nomor, dan nilai diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "multi-tenant-saas-platform",

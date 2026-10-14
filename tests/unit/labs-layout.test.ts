@@ -170,10 +170,10 @@ describe("L3 Project Roads layout", () => {
     expect(crowded.directory.ai.map((p) => p.slug)).toEqual([`f${LABS.maxPerWing}`, `f${LABS.maxPerWing + 1}`]);
   });
 
-  it("docks the MII Microsoft Solutions Website on the Product Engineering road, third in site order (R4-J)", () => {
+  it("docks the vendor portal first and the MII Microsoft Solutions Website fourth on the Product Engineering road (R4-J, gallery first)", () => {
     const software = layout.placed.filter((p) => p.pod.wing === "software").map((p) => p.pod.slug);
     const ai = layout.placed.filter((p) => p.pod.wing === "ai").map((p) => p.pod.slug);
-    expect(software.slice(0, 3)).toEqual(["anime-figure-ecommerce", "vulnerability-scanning-automation", "solutions-marketing-site"]);
+    expect(software.slice(0, 4)).toEqual(["vendor-management-portal", "anime-figure-ecommerce", "vulnerability-scanning-automation", "solutions-marketing-site"]);
     expect(ai).toContain("ai-solutions-assistant");
     expect(software).toHaveLength(ai.length);
     expect(layout.directory.ai.map((p) => p.slug)).not.toContain("solutions-marketing-site");
