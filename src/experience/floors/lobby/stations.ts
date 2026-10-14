@@ -1,6 +1,7 @@
 import type { FloorId, RoomId } from "@/content/schema";
 import type { CareerData, CareerEntryView } from "../../types";
 import { REACTOR_ROOM, techFromHash } from "../labs/techHash";
+import { TOPICS_ROOM, topicFromHash } from "../library/topicHash";
 
 /**
  * L1 Highlights Hall stations (owner request, October 2026): a short walk-through gallery east of the
@@ -35,10 +36,13 @@ export function experienceRows(career: CareerData): { employment: CareerEntryVie
 
 /**
  * The room a gated page starts on: its own room, else a hash room: `#highlights-<station>` on
- * `/{locale}` (no start floor) and the Tech Reactor for `#labs-tech=<slug>` on `/{locale}/labs`.
+ * `/{locale}` (no start floor), the Tech Reactor for `#labs-tech=<slug>` on `/{locale}/labs` and the
+ * Topic Constellation for `#library-topic=<slug>` on `/{locale}/library`.
  */
 export function gateStartRoom(startFloor: FloorId | undefined, startRoom: RoomId | undefined, hash: string): RoomId | undefined {
   if (startRoom) return startRoom;
-  if (startFloor) return startFloor === "L3" && techFromHash(hash) ? REACTOR_ROOM : undefined;
+  if (startFloor === "L3") return techFromHash(hash) ? REACTOR_ROOM : undefined;
+  if (startFloor === "L4") return topicFromHash(hash) ? TOPICS_ROOM : undefined;
+  if (startFloor) return undefined;
   return highlightsRoomFromHash(hash) ?? undefined;
 }

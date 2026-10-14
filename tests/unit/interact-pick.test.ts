@@ -167,6 +167,12 @@ describe("parseCommand", () => {
     expect(parseCommand("reactor:nope")).toBeNull();
   });
 
+  it("opens a room's drawer in place", () => {
+    expect(parseCommand("open:L4:research")).toEqual({ type: "open", room: "L4:research" });
+    expect(parseCommand("open:L9:research")).toBeNull();
+    expect(parseCommand("open:L4:")).toBeNull();
+  });
+
   it("ignores anything else", () => {
     expect(parseCommand("palette:nope")).toBeNull();
     expect(parseCommand("launch")).toBeNull();

@@ -29,6 +29,7 @@ const labels: InteractLabels = {
   archive: en.hud.interact.archive,
   rooms: en.hud.rooms,
   reactorRing: (ring) => en.labs.reactor.rings[ring],
+  metrics: en.library.topics.monument.target,
 };
 const data: InteractData = { experience, labels };
 const stationNames = {

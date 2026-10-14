@@ -4,16 +4,12 @@ import { useTranslations } from "next-intl";
 import type { RoomTopics } from "@/content/room-views/types";
 import type { TopicItemKind } from "@/content/topic-index";
 import { goToRoom } from "@/experience/missions/bridge";
-import { getHQStore, useHQStore, type TopicPick } from "@/store/useHQStore";
+import { topicPick } from "@/experience/floors/library/topics";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { RoomBodyProps } from "./bodies";
 import { FILTER_ACTION, FilterOption, FilterPiece } from "./filterParts";
 
 const KIND_LABEL: Record<TopicItemKind, "posts" | "research" | "publications" | "talks"> = { post: "posts", research: "research", model: "publications", talk: "talks" };
-
-/** The store pick for a topic of the drawer view. */
-export function topicPick(topic: RoomTopics["topics"][number]): TopicPick {
-  return { slug: topic.slug, name: topic.label, count: topic.items.length, rooms: [...new Set(topic.items.map((i) => i.room))] };
-}
 
 /** The selected topic: "N pieces on X", its pieces (each rides to its station or desk). */
 function Selection({ topics }: { topics: RoomTopics }) {

@@ -11,8 +11,11 @@ import { OPS_ROOM } from "../floors/labs/opsHash";
 import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
 import { kioskStop } from "../floors/lobby/kiosk";
+import { NEWSROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
+import { TOPICS_ROOM } from "../floors/library/topicHash";
+import { CONSTELLATION } from "../floors/library/topics";
 import { buildRoofLayout, ROOF_DECK } from "../floors/roof/layout";
 import { roomTarget } from "../missions/host3d";
 import type { StructuralRoom } from "../missions/rooms";
@@ -69,6 +72,8 @@ export interface InteractLabels {
   rooms: Record<StructuralRoom, string>;
   /** L3 Tech Reactor ring targets ("Tech Reactor: Azure"). */
   reactorRing: (ring: ReactorRingId) => string;
+  /** L4 research-metrics monument (`library.topics.monument.target`). */
+  metrics: string;
 }
 
 export interface InteractData {
@@ -88,7 +93,6 @@ const KIOSK_HEIGHT = 3.4;
 export const BENCH_TOP = 3.1;
 export const CONSOLE_TOP = 2.9;
 const PROFILE_HEIGHT = 7;
-const ARCHIVE_HEIGHT = 4;
 /** Door items without a known room footprint keep a plain door-pad volume this tall. */
 const DOOR_HEIGHT = 2.6;
 
@@ -103,6 +107,7 @@ const STRUCTURAL: Partial<Record<RoomId, StructuralRoom>> = {
   "RF:contact": "contact",
   "RF:cv": "cv",
   [REACTOR_ROOM]: "reactor",
+  [TOPICS_ROOM]: "topics",
   "RF:visits": "visits",
   [OPS_ROOM]: "ops",
 };
@@ -262,6 +267,42 @@ function reactorRings(labs: LabsLayout, data: InteractData): Interactable[] {
   });
 }
 
+/**
+ * The L4 end plaza (owner request 2026-10-14): the Topic Constellation pedestal (drive to the ring stop,
+ * then the topic drawer opens) and the research-metrics monument (drive in front of it, then the Research
+ * desk drawer opens in place). The orbiting topic orbs keep their own clicks (they pick a topic, no drive).
+ */
+function endItems(library: LibraryLayout, data: InteractData): Interactable[] {
+  const end = library.end;
+  if (!end) return [];
+  return [
+    {
+      id: "L4:station:topics",
+      floor: "L4",
+      kind: "station",
+      label: data.labels.rooms.topics,
+      at: { ...end.ringStop },
+      bounds: bare(end.core),
+      height: CONSTELLATION.pedestal,
+      action: { type: "open-room", room: TOPICS_ROOM },
+    },
+    ...(end.monument
+      ? [
+          {
+            id: "L4:station:metrics",
+            floor: "L4",
+            kind: "station",
+            label: data.labels.metrics,
+            at: { ...end.monument.stop },
+            bounds: bare(end.monument.rect),
+            height: NEWSROOM.end.monument.h,
+            action: { type: "command", command: "open:L4:research" },
+          } satisfies Interactable,
+        ]
+      : []),
+  ];
+}
+
 function archiveBoard(library: LibraryLayout, data: InteractData): Interactable[] {
   if (!library.board) return [];
   return [
@@ -272,7 +313,7 @@ function archiveBoard(library: LibraryLayout, data: InteractData): Interactable[
       label: data.labels.archive,
       at: { x: library.board.stop.x, z: library.board.stop.z },
       bounds: bare(library.board.rect),
-      height: ARCHIVE_HEIGHT,
+      height: NEWSROOM.board.h,
       action: { type: "command", command: "palette:posts" },
     },
   ];
@@ -358,7 +399,7 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     case "L4": {
       const library = buildLibraryLayout(libraryLayoutInput(experience.library));
       const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone] }]));
-      return [...pads, ...doorItems(floor, layouts, data, rooms), ...archiveBoard(library, data)];
+      return [...pads, ...doorItems(floor, layouts, data, rooms), ...endItems(library, data), ...archiveBoard(library, data)];
     }
     case "RF": {
       const roof = buildRoofLayout({ channels: experience.roof.channels.length });
