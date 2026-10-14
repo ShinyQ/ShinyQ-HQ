@@ -6,12 +6,9 @@ import { AskCta, AskOnly } from "@/components/page/AskEntry";
 import { Marker, SectionSplit } from "@/components/page/Layout";
 import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
-import { PerspectiveList } from "@/components/page/Perspectives";
 import { Portrait } from "@/components/page/Portrait";
 import { VisitsSection } from "@/components/stats/VisitsSection";
-import { getContent, getPerspectives, getProfile, getRoof, getSkills } from "@/content/load";
-import { perspectiveLinks } from "@/content/perspectives";
-import { formatYearMonth } from "@/lib/format";
+import { getProfile, getRoof, getSkills } from "@/content/load";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
@@ -43,8 +40,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const roof = getRoof();
   const profile = getProfile();
   const [lead, rest] = splitStory(profile.story[locale]);
-  const content = getContent();
-  const perspectives = getPerspectives().map((entry) => ({ entry, links: perspectiveLinks(entry, content, locale) }));
 
   return (
     <>
@@ -70,20 +65,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       <SectionSplit id="how" title={th("howTitle")} intro={profile.howIWork[locale]}>
         <PrincipleGrid principles={profile.principles} locale={locale} />
       </SectionSplit>
-
-      {perspectives.length > 0 && (
-        <SectionSplit id="perspectives" title={ta("perspectives.title")} intro={ta("perspectives.intro")}>
-          <PerspectiveList
-            items={perspectives}
-            locale={locale}
-            labels={{
-              related: ta("perspectives.related"),
-              external: tc("external"),
-              asOf: (date) => ta("perspectives.asOf", { date: formatYearMonth(date, locale) }),
-            }}
-          />
-        </SectionSplit>
-      )}
 
       <SectionSplit id="skills" title={tq("skills")}>
         <SkillsWall skills={getSkills()} locale={locale} />
