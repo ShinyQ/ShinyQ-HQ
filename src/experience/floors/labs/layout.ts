@@ -286,7 +286,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       yaw: p.facing > 0 ? 0 : Math.PI / 2,
     })),
     // The Ops Control Room faces the AI wing road like the inner pods: the same 45 degree look at its screens.
-    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0 },
+    // Zoomed in a little, so the screens and the live panel read.
+    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM },
   ];
   const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), bare(boards.software), bare(boards.ai), core, ops.rect];
   const extentZ = Math.max(L.wingZ + half, ...placed.map((p) => Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))));
@@ -344,6 +345,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     ops,
   };
 }
+
+/** Camera zoom in the Ops Control Room's door zone. */
+const OPS_ZOOM = 0.85;
 
 /** Road tint of the Ops Control Room spur (monitoring green). */
 export const OPS_TINT = "#34d399";

@@ -4,7 +4,7 @@
  */
 export function AlertExcerpt({ label, caption, code, className = "" }: { label: string; caption: string; code: string; className?: string }) {
   return (
-    <figure className={className} data-testid="alert-excerpt">
+    <figure className={`min-w-0 ${className}`} data-testid="alert-excerpt">
       <figcaption className="pv-data mb-3">{label}</figcaption>
       <pre
         tabIndex={0}

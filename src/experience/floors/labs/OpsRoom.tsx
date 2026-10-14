@@ -14,11 +14,11 @@ import { useStatsAfterFirstFrame } from "../../visits3d";
 import { MergedBoxes } from "../roof/kit";
 import { LABS } from "./layout";
 import { LineBatch } from "./lines";
-import { OPS, OPS_TONE, opsLabels, opsLines, opsLiveLabels, opsLiveLines, opsSolids, type OpsData, type OpsLabel, type OpsPlacement } from "./ops";
+import { OPS, OPS_TONE, opsFrame, opsLabels, opsLines, opsLiveLabels, opsLiveLines, opsSolids, type OpsData, type OpsLabel, type OpsPlacement } from "./ops";
 import { opsLiveRows } from "./opsLive";
 
 const NO_RAYCAST = () => null;
-const SIGN_FONT = 0.8;
+const SIGN_FONT = 0.6;
 
 const toBatched = (l: OpsLabel): BatchedLabel => ({
   text: l.text,
@@ -87,7 +87,9 @@ export function OpsRoom({ ops, data, locale }: { ops: OpsPlacement; data: OpsDat
   const signs = useMemo<SignSpec[]>(() => {
     const text = data.sign.toUpperCase();
     const { h } = signPlate({ text, fontSize: SIGN_FONT });
-    return [{ text, x: ops.center.x, y: OPS.h + 0.7 + h / 2, z: ops.center.z, color: OPS_TONE.live, fontSize: SIGN_FONT, font: FONTS.monoBold }];
+    // Over the back wall, clear of the screens as seen from the wing road.
+    const f = opsFrame(ops);
+    return [{ text, x: ops.center.x, y: OPS.h + 1 + h / 2, z: f.back - f.n * 0.6, color: OPS_TONE.live, fontSize: SIGN_FONT, font: FONTS.monoBold }];
   }, [data.sign, ops]);
   useEffect(() => {
     sceneProbes.ops.mounted = true;

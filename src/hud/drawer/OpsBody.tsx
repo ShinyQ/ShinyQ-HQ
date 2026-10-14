@@ -49,7 +49,7 @@ export function OpsBody({ view, locale }: RoomBodyProps) {
   const ops = view.ops;
   if (!ops) return null;
   return (
-    <div className="grid gap-6" data-testid="ops-body">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6" data-testid="ops-body">
       <div className="space-y-3 text-[15px] leading-6 text-ink-2">
         <p>{ops.intro}</p>
         <ul className="space-y-2">
