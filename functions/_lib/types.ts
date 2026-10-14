@@ -18,7 +18,8 @@ export type ChunkType =
   | "repo"
   | "live-stats"
   | "principle"
-  | "perspective";
+  | "perspective"
+  | "production";
 
 export interface KnowledgeChunk {
   id: string;

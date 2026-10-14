@@ -186,6 +186,21 @@ describe("perspectives and principles in the pack", () => {
     expect(chunkTags(principles)).toEqual(["perspectives"]);
   });
 
+  it("indexes How I run AI in production as one chunk with the proof tiles", () => {
+    const production = getContent().production;
+    const chunk = byId(pack, "production")!;
+    expect(chunk).toMatchObject({ type: "production", title: production.title.en, url: "/contact#production" });
+    expect(chunk.text_en).toContain(`"${production.title.en}"`);
+    expect(chunk.text_id).toContain(`"${production.title.id}"`);
+    for (const point of production.points) {
+      expect(chunk.text_en).toContain(cleanText(point.text.en));
+      expect(chunk.text_id).toContain(cleanText(point.text.id));
+    }
+    for (const tile of production.tiles) expect(chunk.text_en).toContain(`${tile.label.en}: ${tile.value.en}`);
+    expect(chunk.keywords).toEqual(expect.arrayContaining(["observability", "grafana", "application insights"]));
+    expect(chunkTags(chunk)).toEqual(expect.arrayContaining(["ai", "work"]));
+  });
+
   it("ships no unpublished perspective", () => {
     const text = JSON.stringify(pack);
     for (const draft of draftPerspectives(getPerspectivesFile())) {
@@ -250,7 +265,7 @@ describe("perspectives and principles in the pack", () => {
 
 describe("pack budget for project chunks", () => {
   it("keeps every approach step of hero pods and caps featured and listed pods (the case study pages keep them all)", () => {
-    expect(PACK_APPROACH_STEPS).toEqual({ hero: Infinity, featured: 2, listed: 1 });
+    expect(PACK_APPROACH_STEPS).toEqual({ hero: Infinity, featured: 1, listed: 1 });
     for (const pod of getContent().floors.labs.pods) {
       const chunk = pack.chunks.find((c) => c.id === `project-${pod.slug}`)!;
       pod.approach.forEach((step, i) => {
