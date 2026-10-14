@@ -33,6 +33,7 @@ describe("hint lines", () => {
       "L4:door:research": "research",
       "L2:station:workshop": "workshop",
       "L2:station:time-console": "timeConsole",
+      "L3:door:ops": "ops",
     });
     expect(hintObjectKey(item({ id: "RF:station:cv", floor: "RF", action: { type: "open-room", room: "RF:cv" } }))).toBe("cv");
     expect(hintObjectKey(item({ id: "L1:kiosk:ask-rover", kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");

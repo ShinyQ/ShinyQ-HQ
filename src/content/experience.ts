@@ -1,5 +1,6 @@
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
+import type { OpsData } from "@/experience/floors/labs/ops";
 import type { CareerData, ExperienceData, LabPod } from "@/experience/types";
 import { formatPeriod } from "@/lib/format";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
@@ -12,6 +13,7 @@ import {
   getMissions,
   getPods,
   getPosts,
+  getProduction,
   getProfile,
   getPublicRepos,
   getSideProjects,
@@ -24,6 +26,19 @@ import type { FloorId, Locale } from "./schema";
 import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
 import { getTechLogo } from "./tech";
 import { repoSlug } from "./workshop";
+
+/** L3 Ops Control Room texts ("How I run AI in production"): proof tiles on their screens, alert rule families, live panel labels. */
+export function buildOpsData(locale: Locale): OpsData {
+  const m = locale === "en" ? en : id;
+  const production = getProduction();
+  return {
+    sign: m.hud.rooms.ops,
+    screens: m.production.screens,
+    tiles: production.tiles.map((t) => ({ panel: t.panel, value: t.value[locale], label: t.label[locale] })),
+    alerts: production.alerts.map((a) => a[locale]),
+    live: { ...m.production.live, buckets: m.production.explore },
+  };
+}
 
 /** L3 pods in site order (`orderPods`) with only what the 3D floor draws (the drawer loads full content separately). */
 export function labPods(locale: Locale): LabPod[] {
@@ -100,7 +115,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     ) as ExperienceData["floors"],
     years: getYears().map((y) => y.year),
     roomCount: countRooms(),
-    labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing },
+    labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing, ops: buildOpsData(locale) },
     career: buildCareerData(locale),
     library: buildLibraryData(locale),
     roof: buildRoofData(locale),

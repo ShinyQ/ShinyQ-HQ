@@ -893,7 +893,8 @@
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
         "workshop": "The Workshop: side projects, repos and models.",
-        "timeConsole": "The time console: beam to any year, or back to the elevator."
+        "timeConsole": "The time console: beam to any year, or back to the elevator.",
+        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry."
       },
       "go": {
         "open": "Open",

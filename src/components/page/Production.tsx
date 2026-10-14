@@ -45,6 +45,7 @@ export async function ProductionSection({ locale }: { locale: Locale }) {
 
       {dashboard && (
         <figure className="mt-10" data-testid="production-dashboard">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={dashboard.src}
             srcSet={imageSrcSet(dashboard)}

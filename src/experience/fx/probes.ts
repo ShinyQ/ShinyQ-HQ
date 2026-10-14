@@ -20,6 +20,8 @@ export const sceneProbes = {
   /** Texts drawn flat on a floor right now (spectacle round: there should be none, `flatTexts`). */
   flatText: (): string[] => (renderProbe.scene ? flatTexts(renderProbe.scene) : []),
   hallGate: { sweeps: 0, active: false },
+  /** L3 Ops Control Room: mounted, and the live panel (this site's telemetry) with its rows when shown. */
+  ops: { mounted: false, live: false, rows: [] as string[] },
 };
 
 type TextLike = Object3D & { text?: unknown; textRenderInfo?: unknown; _members?: Map<Object3D & { text?: string }, unknown> };

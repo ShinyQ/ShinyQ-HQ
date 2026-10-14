@@ -6,6 +6,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
 import { HologramStage } from "./labs/HologramStage";
+import { OpsRoom } from "./labs/OpsRoom";
 import { Hub, type HubLabels } from "./labs/Hub";
 import { buildLabsLayout, LABS } from "./labs/layout";
 import { PacketLanes } from "./labs/PacketLanes";
@@ -40,6 +41,7 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
       <Reactor center={layout.reactor.center} labels={reactorLabels} />
       <ReactorHighlights layout={layout} />
       <Waterfalls bounds={layout.floor.bounds} />
+      <OpsRoom ops={layout.ops} data={data.labs.ops} locale={data.locale} />
       <Suspense fallback={null}>
         <HologramStage placed={layout.placed} locale={data.locale} tier={t} />
       </Suspense>

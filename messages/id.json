@@ -893,7 +893,8 @@
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: paper lengkap dengan abstrak dan sitasi.",
         "workshop": "Workshop: proyek sampingan, repo, dan model.",
-        "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift."
+        "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift.",
+        "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini."
       },
       "go": {
         "open": "Buka",

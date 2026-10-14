@@ -352,7 +352,7 @@ export const OPS_TINT = "#34d399";
 function opsPlacement(minX: number): OpsPlacement {
   const L = LABS;
   // Inner side of the AI wing road: toward the software wing (z decreases).
-  const side = -WING_SIDE.ai;
+  const side = -WING_SIDE.ai as -1 | 1;
   const front = WING_SIDE.ai * L.wingZ + side * (L.road / 2 + L.forecourt);
   const back = front + side * OPS.d;
   const center = { x: minX + OPS.w / 2, z: (front + back) / 2 };
