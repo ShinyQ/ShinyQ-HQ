@@ -37,6 +37,8 @@ type HQWindow = Window & {
     store: { getState: () => Omit<HQSnapshot, "drawCalls" | "triangles" | "sceneCalls" | "postCalls"> };
     rover: { drawCalls: number; triangles: number };
     perf: { stats: PerfStatsProbe; resetPeaks: () => void };
+    /** Live `renderer.info` counts of the current canvas, null while none exists (src/experience/scene/memoryProbe.ts). */
+    memory: () => GpuCounters | null;
   };
 };
 
@@ -206,12 +208,33 @@ export async function readGpuCounters(page: Page): Promise<GpuCounters> {
   });
 }
 
-/** No GPU object growth between two reads (GPU_MEMORY_BUDGET allows 0 by default). */
-export function expectNoGpuGrowth(before: GpuCounters, after: GpuCounters, budget: GpuCounters = GPU_MEMORY_BUDGET) {
-  const detail = JSON.stringify({ before, after });
-  expect(after.geometries - before.geometries, `geometries ${detail}`).toBeLessThanOrEqual(budget.geometries);
-  expect(after.textures - before.textures, `textures ${detail}`).toBeLessThanOrEqual(budget.textures);
-  expect(after.programs - before.programs, `programs ${detail}`).toBeLessThanOrEqual(budget.programs);
+/**
+ * GPU counters once the floor settled (the memory gate's reads): neighbours mount on idle and troika
+ * typesets asynchronously, so it waits for two equal reads of `__hq.memory()` in a row.
+ */
+export async function readSettledGpuCounters(page: Page): Promise<GpuCounters> {
+  let last = "";
+  for (let i = 0; i < 40; i++) {
+    await page.evaluate(() => new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 1000 })));
+    await waitForFrames(page, 10);
+    const now = await page.evaluate(() => (window as unknown as HQWindow).__hq.memory());
+    const key = JSON.stringify(now);
+    if (now && key === last) return now;
+    last = key;
+  }
+  throw new Error(`renderer memory never settled, last read ${last}`);
+}
+
+/**
+ * GPU objects back at their baseline: at most `budget` more of each (GPU_MEMORY_BUDGET allows 0), and
+ * never fewer, since a drop below the baseline means the baseline read was not settled.
+ */
+export function expectNoGpuGrowth(before: GpuCounters, after: GpuCounters, budget: GpuCounters = GPU_MEMORY_BUDGET, context = "") {
+  const detail = `${JSON.stringify({ before, after })}${context ? ` ${context}` : ""}`;
+  for (const key of ["geometries", "textures", "programs"] as const) {
+    expect(after[key] - before[key], `${key} growth ${detail}`).toBeLessThanOrEqual(budget[key]);
+    expect(after[key] - before[key], `${key} below the baseline ${detail}`).toBeGreaterThanOrEqual(0);
+  }
 }
 
 /** JS heap in use after a forced garbage collection (Chrome DevTools Protocol), in bytes. */

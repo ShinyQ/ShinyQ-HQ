@@ -136,7 +136,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 ```
 content/      dataset, blog MDX, blocklists
 messages/     UI strings (en, id)
-scripts/      static server, e2e planning, content validator, title case, CV and paper page renderers (cv:pages, paper:pages), floor thumbnails (floor:thumbs), share card stills and checks (og:stills, og:check, og-before-after), Ask pack, evals, provisioning, deploy smoke check
+scripts/      static server, e2e planning, content validator, title case, CV and paper page renderers (cv:pages, paper:pages), floor thumbnails (floor:thumbs), share card stills and checks (og:stills, og:check), Ask pack, evals, provisioning, deploy smoke check
 functions/    Cloudflare Pages Functions: Ask the HQ (api/ask.ts, _lib/ pipeline), performance beacon (api/rum.ts), visit stats (api/visit.ts, api/stats.ts)
 workers/stats/  hq-stats Cron Worker: daily public visit stats rollup into KV (own wrangler.toml)
 src/app/      routes ([locale] pages, "/" redirect, 404)
