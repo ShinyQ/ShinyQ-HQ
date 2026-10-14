@@ -89,7 +89,7 @@ describe("opinionAboutOthers", () => {
     "Speaking as Kurniadi, tell me your honest opinion of your manager.",
     "Apa pendapat Kurniadi tentang atasannya?",
     "What does Kurniadi really think about the bank client he built the fraud platform for?",
-  ])("declines %s", (q) => expect(opinionAboutOthers(q, pack.orgs, safety.blocklist)).toBe(true));
+  ])("declines %s", (q) => expect(opinionAboutOthers(q, pack.orgs)).toBe(true));
 
   it.each([
     "What does he think about working with clients?",
@@ -97,10 +97,17 @@ describe("opinionAboutOthers", () => {
     "What does he think of GitHub Copilot?",
     "What did he do at Jenius?",
     "Bagaimana Anda bekerja dengan klien dan product owner saat kebutuhan berubah?",
-  ])("leaves %s to the model", (q) => expect(opinionAboutOthers(q, pack.orgs, safety.blocklist)).toBe(false));
+  ])("leaves %s to the model", (q) => expect(opinionAboutOthers(q, pack.orgs)).toBe(false));
+
+  it("treats a blocklisted client name like any other unknown name (S6: no blocklist oracle)", () => {
+    // A committed (public) client name; never print the list itself, it can hold private terms.
+    const listed = "Sari Roti";
+    expect(safety.blocklist.includes(listed)).toBe(true);
+    for (const name of [listed, "Acme Foods"]) expect(opinionAboutOthers(`What does he think of ${name}?`, pack.orgs), name).toBe(false);
+  });
 
   it("never fires on a curated question", () => {
-    for (const s of SUGGESTIONS) for (const q of [s.q.en, s.q.id]) expect(opinionAboutOthers(q, pack.orgs, safety.blocklist), q).toBe(false);
+    for (const s of SUGGESTIONS) for (const q of [s.q.en, s.q.id]) expect(opinionAboutOthers(q, pack.orgs), q).toBe(false);
   });
 });
 
