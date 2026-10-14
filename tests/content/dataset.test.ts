@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isPublicLiveUrl } from "@/content/live-links";
+import { getPods } from "@/content/load";
+import { pickFeaturedPods } from "@/content/pageview";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
@@ -251,6 +253,27 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
     expect(vendor?.results.map((r) => r.value)).toEqual(["6 weeks", "21 domains", "4.5 KB → 2.1 KB"]);
     expect(vendor?.results[2].context?.en).toContain("4,491 bytes");
     expect(vendor?.liveUrl).toBeUndefined();
+  });
+
+  it("ships a masked gallery from a local demo instance: desktop screens, then one phone triptych", () => {
+    const assets = vendor?.assets ?? [];
+    expect(assets.length).toBeGreaterThanOrEqual(5);
+    expect(assets.length).toBeLessThanOrEqual(8);
+    expect(assets[0].src).toBe("/media/vendor-management-portal/01-vendor-dashboard.webp");
+    expect(assets.every((a) => a.width === 1600 && a.height === 1000 && a.redacted)).toBe(true);
+    expect(assets.map((a) => a.src.match(/\/(\d{2})-/)?.[1])).toEqual(assets.map((_, i) => String(i + 1).padStart(2, "0")));
+    expect(assets.at(-1)?.src).toMatch(/\/\d{2}-mobile\.webp$/);
+    for (const a of assets) {
+      expect(`${a.alt.en} ${a.alt.id}`).not.toMatch(/azurewebsites|windows\.net|onmicrosoft|localhost|tenant|\bPT\b|@|\.example\b/i);
+      expect(a.alt.en).toMatch(/blurred$/);
+      expect(a.alt.id).toMatch(/diburamkan$/);
+    }
+  });
+
+  it("keeps the landing top three when the gallery moves it ahead of pods without one", () => {
+    const pods = getPods();
+    expect(pickFeaturedPods(pods).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "fraud-review-platform"]);
+    expect(pods.findIndex((p) => p.slug === "vendor-management-portal")).toBe(3);
   });
 });
 

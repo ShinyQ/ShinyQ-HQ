@@ -10,6 +10,14 @@
       "expect": ["projects-summary"]
     },
     {
+      "id": "work-vendor",
+      "topic": "work",
+      "q": { "en": "Tell me about the vendor management portal", "id": "Ceritakan tentang portal manajemen vendor" },
+      "tags": ["work", "software"],
+      "followUps": ["work-stack", "work-best", "ai-agents"],
+      "expect": ["project-vendor-management-portal"]
+    },
+    {
       "id": "work-security",
       "topic": "work",
       "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
@@ -32,14 +40,6 @@
       "tags": ["work", "software"],
       "followUps": ["work-banking", "work-vendor", "work-github"],
       "expect": ["project-ticket-marketplace-backend"]
-    },
-    {
-      "id": "work-vendor",
-      "topic": "work",
-      "q": { "en": "Tell me about the vendor management portal", "id": "Ceritakan tentang portal manajemen vendor" },
-      "tags": ["work", "software"],
-      "followUps": ["work-stack", "work-best", "ai-agents"],
-      "expect": ["project-vendor-management-portal"]
     },
     {
       "id": "work-stack",
