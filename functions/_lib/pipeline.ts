@@ -77,7 +77,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   });
   if (isHarmful(question)) return early("decline", "harmful");
   if (privateTopic(question)) return early("private", "private");
-  if (opinionAboutOthers(question, pack.orgs, safety.blocklist)) return early("others", "others");
+  if (opinionAboutOthers(question, pack.orgs)) return early("others", "others");
 
   const { chunks, context } = retrieve(pack, question, locale);
   const chunkIds = chunks.map((c) => c.id);

@@ -240,6 +240,16 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(r).toMatchObject({ outcome: "decline", reason: "others", calledModel: false, text: MESSAGES.others.en });
   });
 
+  it("sends an opinion about a blocklisted name to the model like any unknown name (S6: no oracle)", async () => {
+    const unknown = await ask("What does Kurniadi think of Acme Foods?", "Kurniadi has no information about that on this site.");
+    const listed = await ask("What does Kurniadi think of Sari Roti?", "Kurniadi has no information about that on this site.");
+    for (const r of [unknown, listed]) expect(r).toMatchObject({ outcome: "unknown", calledModel: true });
+    expect(listed.calls).toHaveLength(unknown.calls.length);
+    // A model answer that names the client is still replaced by the output check.
+    const leak = await ask("What does Kurniadi think of Sari Roti?", "He thinks Sari Roti was a demanding client.");
+    expect(leak).toMatchObject({ reason: "blocklist", calledModel: true, text: MESSAGES.restricted.en });
+  });
+
   it("answers a view from his principles and returns the citation path and the perspectives tag", async () => {
     const answer = "Kurniadi writes that he defines each feature in a written spec with acceptance criteria.";
     const r = await ask("What are Kurniadi's coding principles?", answer);
