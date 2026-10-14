@@ -169,6 +169,8 @@ describe("L1:visits room ids and deep links", () => {
     expect(canonicalRoom("RF:visits")).toBe("L1:visits");
     expect(canonicalRoom("L1:visits")).toBe("L1:visits");
     expect(canonicalRoom("RF:contact")).toBe("RF:contact");
+    // The retired L2 side project benches (content/workshop.ts) resolve through the same call.
+    expect(canonicalRoom("L2:side-sentiboard")).toBe("L3:university-sentiment-indobert");
     expect(canonicalRoom(null)).toBeNull();
   });
 
