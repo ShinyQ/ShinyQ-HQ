@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { chooseMotion, asReturningVisitor, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
+import en from "../messages/en.json";
 
 /**
  * Ask the HQ in the browser, against a mocked `/api/ask` (the static server has no Functions):
@@ -174,7 +175,7 @@ test("teaser shows once per session next to the launcher", async ({ page }) => {
   await openPage(page, "/en/labs?tier=static");
   const teaser = page.getByTestId("ask-teaser");
   await expect(teaser).toBeVisible({ timeout: 15_000 });
-  await teaser.getByRole("button", { name: /Ask me anything/ }).click();
+  await teaser.getByRole("button", { name: en.ask.dock.teaser, exact: true }).click();
   await expect(dock(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await page.reload();
@@ -267,7 +268,7 @@ test("Ask Rover's ask option opens the dock", async ({ page }) => {
   await openPage(page, "/en/labs?tier=static");
   await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
   const terminal = page.getByRole("dialog", { name: "Ask Rover" });
-  await expect(terminal.getByRole("option", { name: "ask me anything ^_^" })).toBeVisible();
+  await expect(terminal.getByRole("option", { name: en.ask.terminal.option, exact: true })).toBeVisible();
   await page.keyboard.press("a");
   await expect(terminal).toBeHidden();
   const input = dock(page).getByRole("textbox", { name: "Your question" });
@@ -327,7 +328,7 @@ test("Perspectives topic: a cited answer links to its written source on About", 
   await expect(thread(page)).toContainText("owns every merge decision");
   expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill", chip: "persp-principles" });
   const link = thread(page).getByTestId("ask-cite");
-  await expect(link).toHaveText("Read on this site: How I work on the About page");
+  await expect(link).toHaveText(en.ask.dock.source.replace("{label}", en.ask.cite.how));
   await link.click();
   await expect(page).toHaveURL(/\/en\/contact#how$/);
   await expect(page.locator("#how")).toBeAttached();

@@ -42,7 +42,7 @@ test.describe("Guided walks", () => {
     // The choices show once Rover's floor line has typed out.
     await expect(prompt).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.L2, { timeout: 15_000 });
-    await prompt.getByRole("button", { name: "Walk my journey" }).click();
+    await prompt.getByRole("button", { name: en.walk.journey.start, exact: true }).click();
 
     const bar = page.getByTestId("walk-bar");
     await expect(bar).toBeVisible();
@@ -56,17 +56,17 @@ test.describe("Guided walks", () => {
     const second = await waitForArrival(page);
     expect(second).not.toBe(first);
 
-    // Driving by hand pauses the walk to the "Resume walk" pill.
+    // Driving by hand pauses the walk to the resume pill.
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
     await page.keyboard.down("d");
     await expect(page.getByTestId("walk-pill")).toBeVisible();
     await page.keyboard.up("d");
-    await page.getByTestId("walk-pill").getByRole("button", { name: /Resume walk/ }).click();
+    await page.getByTestId("walk-pill").getByRole("button", { name: en.walk.resume }).click();
     expect(await waitForArrival(page)).toBe(second);
 
     // Progress is saved; ending the walk leaves a launcher and the prompt does not come back.
-    await bar.getByRole("button", { name: "End walk" }).first().click();
+    await bar.getByRole("button", { name: en.walk.end, exact: true }).first().click();
     await expect(page.getByTestId("walk-launcher")).toBeVisible();
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hq:walk:journey") ?? "null"));
     expect(saved).toMatchObject({ stop: second, done: false });
@@ -84,7 +84,7 @@ test.describe("Guided walks", () => {
   test("L3: the tour starts at the first software pod in site order, filters by wing and Prev steps back", async ({ page }) => {
     const errors = collectErrors(page);
     await openWithWalks(page, "/en/labs");
-    await page.getByTestId("dialog-choices").getByRole("button", { name: "Tour my projects" }).click();
+    await page.getByTestId("dialog-choices").getByRole("button", { name: en.walk.projects.start, exact: true }).click();
     expect(await waitForArrival(page)).toBe(firstSoftwareStop);
     await page.getByTestId("walk-filter").selectOption("ai");
     await expect(page.getByTestId("walk-counter")).toContainText(en.common.wing.ai);
@@ -168,7 +168,7 @@ test.describe("Guided walks on a phone", () => {
 
   test("the Walk HUD sits under the top bar and a swipe steps forward", async ({ page }) => {
     await openWithWalks(page, "/en/journey");
-    await page.getByTestId("dialog-choices").getByRole("button", { name: "Walk my journey" }).click();
+    await page.getByTestId("dialog-choices").getByRole("button", { name: en.walk.journey.start, exact: true }).click();
     await waitForArrival(page);
     const bar = page.getByTestId("walk-bar");
     const box = (await bar.boundingBox())!;
@@ -198,7 +198,7 @@ async function openWalkWithAsk(page: Page) {
   );
   await page.addInitScript(() => sessionStorage.setItem("hq:ask-teaser", "1"));
   await openWithWalks(page, "/en/journey");
-  await page.getByTestId("dialog-choices").getByRole("button", { name: "Walk my journey" }).click();
+  await page.getByTestId("dialog-choices").getByRole("button", { name: en.walk.journey.start, exact: true }).click();
   await waitForArrival(page);
 }
 
