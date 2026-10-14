@@ -6,7 +6,7 @@
 
 **Owner request (verbatim):** "Btw i havent seen so much data related projects beside the fabric (but thts have dashboard app too) check my personal github for it". Owner choice: "Add a 'Data and ML' cluster of 5 to 6 real project pods on L3 (thesis IndoBERT line, IFest 2021 finals, N-BEATS forecast, Streamlit optimizer, Kampus Merdeka crawler), each with a short case card from the repo, so the Tech Reactor's Data ring lights them; Classic /labs gets a Data filter (Recommended)".
 
-**Architecture:** `WingSchema` gains `data`. The two hub wings (`software` north, `ai` south) keep their geometry byte for byte; the data wing gets its own road that leaves the reactor ring road at its east point and runs east along z = 0, docks its pods alternating north and south (same slot, gap and forecourt rules), and ends in a round "data plaza" with a third directory panel just east of it (same merged wall mesh, line batch and BatchedText, so no new draw call or program). The data pods start east of the old slab end, so the Express Return pad, the reactor stop and the inner pocket (x 91 to 103, |z| 9 to 20, the parallel Ops Control Room session) stay untouched. Pods carry an optional `repo` (public `github.com/ShinyQ/...` link) and `publications` (ids of existing `library.publications`), rendered on the case study page and in the Glass Drawer.
+**Architecture:** `WingSchema` gains `data`. The two hub wings (`software` north, `ai` south) keep their geometry byte for byte; the data wing gets its own road that leaves the reactor ring road at its east point and runs east along z = 0, docks its pods alternating north and south (same slot, gap and forecourt rules), and ends in a round "data plaza" with a third directory panel just east of it (same merged wall mesh, line batch and BatchedText, so no new draw call or program). The data pods start east of the old slab end, so the Express Return pad, the reactor stop and the inner pocket (x 91 to 103, |z| 9 to 20, the parallel Ops Control Room session) stay untouched. Pods carry optional `repos` (public `github.com/ShinyQ/...` links; several pods span more than one repo) and `publications` (ids of existing `library.publications`), rendered on the case study page and in the Glass Drawer.
 
 **Tech Stack:** Next.js 16 static export, React Three Fiber, zod content schema, Vitest, Playwright, Bun.
 
@@ -27,7 +27,7 @@
 
 | File | Responsibility |
 | --- | --- |
-| `src/content/schema.ts` | `WingSchema` adds `data`; `Pod.repo`, `Pod.publications` |
+| `src/content/schema.ts` | `WingSchema` adds `data`; `Pod.repos`, `Pod.publications` |
 | `content/site-content.json` | 5 to 6 data pods; `podRef` on matching timeline entries |
 | `src/content/tech-rings.ts`, `src/content/tech.ts`, `public/tech/README.md` | rings and logos for the new techs |
 | `src/experience/floors/labs/layout.ts` | `HUB_WINGS`, data annex (road, plaza, board, docking), `directoryStops` |
@@ -49,11 +49,11 @@
 
 **Files:** Modify `src/content/schema.ts`; Test `tests/content/dataset.test.ts`, `tests/unit/schema.test.ts`.
 
-**Interfaces:** Produces `Wing = "software" | "ai" | "data"`, `Pod.repo?: string` (https, `github.com/ShinyQ/<repo>` only), `Pod.publications?: string[]` (ids that must exist in `floors.library.publications`).
+**Interfaces:** Produces `Wing = "software" | "ai" | "data"`, `Pod.repos?: string[]` (1 to 4, https, `github.com/ShinyQ/<repo>` roots only), `Pod.publications?: string[]` (ids that must exist in `floors.library.publications`).
 
-- [ ] Write failing schema tests: a pod with `wing: "data"` parses; `repo: "https://gitlab.com/x"` and `repo: "https://github.com/other/x"` fail; dataset test: every `publications` id resolves; every data pod has a `repo`.
+- [ ] Write failing schema tests: a pod with `wing: "data"` parses; `repos: ["https://gitlab.com/x"]` and `repos: ["https://github.com/other/x"]` fail; dataset test: every `publications` id resolves; every data pod has `repos`.
 - [ ] Run `bunx vitest run tests/unit/schema.test.ts tests/content/dataset.test.ts`: FAIL.
-- [ ] Implement `WingSchema = z.enum(["software", "ai", "data"])`, `GITHUB_REPO = /^https:\/\/github\.com\/ShinyQ\/[A-Za-z0-9._-]+$/`, `repo: httpsUrl.regex(GITHUB_REPO).optional()`, `publications: z.array(SlugSchema).min(1).optional()`, cross-ref in `SiteContentSchema` superRefine.
+- [ ] Implement `WingSchema = z.enum(["software", "ai", "data"])`, `GITHUB_REPO = /^https:\/\/github\.com\/ShinyQ\/[A-Za-z0-9._-]+$/`, `repos: z.array(httpsUrl.regex(GITHUB_REPO)).min(1).max(4).optional()`, `publications: z.array(SlugSchema).min(1).optional()`, cross-ref in `SiteContentSchema` superRefine.
 - [ ] Fix every `Record<Wing, ...>` the compiler flags (`bun run typecheck`) with the data entries named in the File Structure table.
 - [ ] Run tests: PASS. Commit `feat(content): data wing, pod repo and publication links`.
 
@@ -72,13 +72,13 @@
 Facts source: `files/repo-facts.md` (session artifact, from `gh` reads of each repo). Pods (tier `featured`, wing `data`, accent `amber`, hologram `chart` or `graph` or `pipeline`, no `client`):
 
 1. `university-sentiment-indobert` (thesis line, `timelineRef: sentiboard-2022`, `publications: [sentiboard-bsc-thesis, sentiboard-paper, indobert-university-reviews-model]`)
-2. `ppkm-policy-sentiment` (IFEST 2021 final, `timelineRef: trophy-case-2021`, placing from `awards[]`; plus the selection-phase e-wallet repos, `publications: [ewallet-sentiment-cnn-lstm]` only if the paper is the same work)
+2. `ifest-2021-sentiment-analysis` (IFEST 2021 final and selection phase, `timelineRef: research-ewallet-sentiment-2021`, placing from `awards[]`; plus the selection-phase e-wallet repos, `publications: [ewallet-sentiment-cnn-lstm]` only if the paper is the same work)
 3. `covid-herd-immunity-forecast` (N-BEATS, `timelineRef: research-covid-forecasting-2021`, `publications: [covid-19-herd-immunity-study]`)
 4. `stock-allocation-optimizer` (Streamlit, SLSQP)
 5. `kampus-merdeka-reports-crawler`
-6. Optional sixth only with solid facts.
+6. No sixth pod: the DAC 2022 repo has no placing and holds personal data (student IDs, photos); the real estate map is already an L2 side project.
 
-- [ ] Failing dataset test: exactly the planned data slugs exist, all `featured`, each `repo` set, `pickFeaturedPods` top 3 unchanged (`voice-ai-contact-center`, `ai-code-security-platform`, `fraud-review-platform`), `real-estate-cluster-map` is not a pod.
+- [ ] Failing dataset test: exactly the planned data slugs exist, all `featured`, each with `repos`, `pickFeaturedPods` top 3 unchanged (`voice-ai-contact-center`, `ai-code-security-platform`, `fraud-review-platform`), `real-estate-cluster-map` is not a pod.
 - [ ] Add the pods (EN and ID), `podRef` on the linked timeline entries where the schema allows.
 - [ ] `bun run validate:content`, `bun scripts/title-case.ts`, safety and first-person tests: PASS. Commit `feat(content): Data and ML pods from public repos`.
 

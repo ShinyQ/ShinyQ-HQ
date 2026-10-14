@@ -69,7 +69,19 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Spec-Driven, Agent-Orchestrated Delivery | How the work is delivered: specs in, parallel agents, human review gates |
 | listed | From Apps to Products (managed-app packaging) · Operating a Shared Azure AI Estate · Fraud Review Dashboard and Security Remediation · AI Ticketing Assistant Re-platform · Chart-of-Accounts AI Assistant · Explainable In-Browser Credit Scoring · Governance for a Bank's GenAI Portal · Agent-Authored Presentations · Enterprise AI Contact Center Architecture | |
 
-Hologram views: the 6 hero pods (3 per wing).
+### Data and ML wing (annex east of the Tech Reactor; owner request 2026-10-14)
+
+Personal, academic and competition projects from the owner's public GitHub repositories (no client names). Facts come only from the repositories (READMEs, notebook outputs, commit history) and existing site content; every number's source is in its result `context`. All five are `featured`, accent amber, with `repos` (`github.com/ShinyQ/...`) and, where they exist, `publications` links. `real-estate-cluster-map` stays an L2 Workshop side project only (no duplicate pod).
+
+| Pod | Period | Key result (source) | Links |
+|---|---|---|---|
+| Sentiboard: IndoBERT University Sentiment Dashboard | 2022 to 2023 | 89% validation accuracy on 1,350 tweets (training notebook; model card 89%); 88% test accuracy on 150; 7,500 balanced labelled tweets | 3 repos (model, FastAPI API, Django app); BSc thesis, eProceedings paper, Hugging Face model; Journey `sentiboard-2022` |
+| IFEST 2021 Sentiment Analysis: E-Wallets and PPKM Policy | 2021 | 1st place (from `awards[]`, judges' test accuracy 0.79 per README); IndoBERTweet 84.8% validation on 1,962; 9,810 labelled tweets; CNN-LSTM 82.8% validation | 3 repos (final, selection phase, Streamlit demo); ICAIBDA 2021 paper; team of four; Journey `research-ewallet-sentiment-2021` |
+| COVID-19 Herd Immunity Forecasting with N-BEATS | 2021 | R-squared 0.992 cases and 0.9995 vaccinations (in-sample historical forecasts, notebook outputs); 208 days of data; about 10 months to 80% full vaccination at the August 2021 pace (paper) | 1 repo; ICICyTA 2021 paper; gallery of 3 notebook plots; Journey `research-covid-forecasting-2021` |
+| S&P 500 Stock Allocation Optimizer | 2024 | 2 solvers (PuLP and SciPy SLSQP); 503 tickers; 8 of 9 commits | 1 repo; group project |
+| Kampus Merdeka Reports Crawler | 2021 to 2022 | 21 stars (most-starred public repo, October 2026); 2 report types | 1 repo; a contributor added the independent study crawler |
+
+Hologram views: the 6 hero pods (3 per hub wing; the data wing has no hero pods).
 
 ## 5. L4 Library
 
