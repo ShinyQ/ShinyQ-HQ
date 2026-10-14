@@ -178,11 +178,12 @@ describe("prompt (spec section 13)", () => {
 
 describe("citation paths (done frame)", () => {
   it("allows only Page View paths of written sources", () => {
-    for (const ok of ["/contact#perspectives-spec-before-code", "/contact#how", "/blog/spec-driven-development-with-ai-coding-agents", "/library"]) expect(isAskCite(ok), ok).toBe(true);
-    for (const bad of ["https://evil.example", "//evil.example", '/contact#how"><script>', "javascript:alert(1)", "/labs/voice-ai-contact-center", "/contact#perspectives-", 42, undefined]) {
+    for (const ok of ["/contact#how", "/blog/spec-driven-development-with-ai-coding-agents", "/labs/voice-ai-contact-center", "/library"]) expect(isAskCite(ok), ok).toBe(true);
+    // Perspectives have no page (chatbot knowledge only), so their old About anchors are never cited.
+    for (const bad of ["https://evil.example", "//evil.example", '/contact#how"><script>', "javascript:alert(1)", "/labs/", "/labs/a/b", "/contact#perspectives-spec-before-code", "/contact#perspectives-", 42, undefined]) {
       expect(isAskCite(bad), String(bad)).toBe(false);
     }
-    expect(["/contact#perspectives-a", "/contact#how", "/blog/a", "/library"].map(citeKind)).toEqual(["perspective", "how", "blog", "library"]);
+    expect(["/contact#how", "/blog/a", "/labs/a", "/library"].map(citeKind)).toEqual(["how", "blog", "project", "library"]);
   });
 });
 
@@ -247,6 +248,28 @@ describe("perspective checks", () => {
       reason: "roleplay",
       replacement: "decline",
     });
+  });
+
+  it("cites a perspective answer through its backing post or project, and sends no cite for an entry without one", () => {
+    expect(perspectiveCheck('In his written view "What makes a RAG assistant trustworthy?", Kurniadi says an assistant answers only from curated content and shows the source of each answer.', "What makes a RAG assistant trustworthy?")).toMatchObject({
+      ok: true,
+      outcome: "answer",
+      cite: "/labs/ai-solutions-assistant",
+    });
+    expect(perspectiveCheck('Dalam pandangan tertulisnya "Bagaimana pendekatan Anda terhadap testing?", Kurniadi berpendapat bahwa CI harus fail closed.', "Bagaimana pendekatan Kurniadi terhadap testing?", "id")).toMatchObject({
+      ok: true,
+      cite: "/blog/spec-driven-development-with-ai-coding-agents",
+    });
+    const unsourced = perspectiveCheck('In his written view "What are your core engineering principles?", Kurniadi lists his core engineering principles.', "What is Kurniadi's view on his core engineering principles?");
+    expect(unsourced).toMatchObject({ ok: true, outcome: "answer" });
+    expect(unsourced).not.toHaveProperty("cite");
+  });
+
+  it("never names a perspective as the closest source: it has no page of its own", () => {
+    const chunk = (id: string) => pack.chunks.find((c) => c.id === id)!;
+    expect(chunk("perspective-rag-trust").url).toBe("/labs/ai-solutions-assistant");
+    expect(closestSource([chunk("perspective-rag-trust"), chunk("principles")], "en")).toEqual({ title: "How I work", url: "/contact#how" });
+    expect(closestSource([chunk("perspective-rag-trust")], "en")).toBeUndefined();
   });
 
   it("points the no-view answer to the closest written source, in both languages", () => {

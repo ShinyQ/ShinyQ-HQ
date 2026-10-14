@@ -418,6 +418,23 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect(modelCalls).toHaveLength(1);
   });
 
+  it("cites a perspective answer through its backing post in the done frame and the cache", async () => {
+    const answer = 'In his written view "How do you approach testing?", Kurniadi says CI should fail closed and every real failure becomes a regression test.';
+    const { call, kv } = setup({ answer });
+    const body = { q: "How does Kurniadi approach testing?", locale: "en" };
+    const done = doneOf(await frames(await call({ body })));
+    expect(done).toMatchObject({ outcome: "answer", source: "primary", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+    expect(JSON.parse(kv.store.get(await cacheKey(pack.packVersion, "en", body.q)) ?? "{}")).toEqual({ text: answer, cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+  });
+
+  it("drops a cached About anchor of a perspective: they have no page any more", async () => {
+    const { call, kv } = setup();
+    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "/contact#perspectives-testing-approach" }));
+    const done = doneOf(await frames(await call()));
+    expect(done.source).toBe("cache");
+    expect(done).not.toHaveProperty("cite");
+  });
+
   it("drops a cached citation that is not an allowlisted path", async () => {
     const { call, kv } = setup();
     kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "https://evil.example" }));

@@ -8,7 +8,7 @@ import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
-import { draftFingerprints, perspectiveAnchor, publishedPerspectives } from "../src/content/perspectives";
+import { perspectiveFingerprints } from "../src/content/perspectives";
 import { PerspectivesFileSchema } from "../src/content/schema";
 import { scanBuildOutput } from "../src/content/safety";
 
@@ -443,32 +443,20 @@ test("Visit live site opens the public site in a new tab without an opener, on t
 });
 
 const perspectivesFile = PerspectivesFileSchema.parse(JSON.parse(readFileSync(path.join(process.cwd(), "content", "perspectives.json"), "utf8")));
-const publishedEntries = publishedPerspectives(perspectivesFile);
 
-test("Perspectives: unpublished drafts never reach the static export", () => {
-  const prints = draftFingerprints(perspectivesFile);
-  test.skip(prints.length === 0, "every perspective is approved");
-  expect(scanBuildOutput(path.join(process.cwd(), "out"), prints)).toEqual([]);
+/** Owner decision 2026-10-14: perspectives are Ask the HQ knowledge only, never a page section. */
+test("Perspectives: no entry reaches the static export", () => {
+  expect(scanBuildOutput(path.join(process.cwd(), "out"), perspectiveFingerprints(perspectivesFile.entries))).toEqual([]);
 });
 
-test("Perspectives: About and Quick view show exactly the approved entries", async ({ page }) => {
+test("Perspectives: About and Quick view have no perspectives section or ToC chip", async ({ page }) => {
   for (const locale of ["en", "id"] as const) {
     for (const route of ["contact", "quick"]) {
       await openPage(page, staticTier(`/${locale}/${route}`));
-      await expect(page.locator("#perspectives [data-perspective]"), `${locale}/${route}`).toHaveCount(publishedEntries.length);
+      await expect(page.locator("#perspectives, [data-perspective], [id^='perspectives-']"), `${locale}/${route}`).toHaveCount(0);
+      await expect(page.locator('a[href="#perspectives"]'), `${locale}/${route}`).toHaveCount(0);
     }
   }
-  await expect(page.getByRole("link", { name: "Perspektif", exact: true })).toHaveCount(publishedEntries.length > 0 ? 1 : 0);
-});
-
-test("Perspectives: an entry opens from the anchor Ask cites and passes axe", async ({ page }) => {
-  test.skip(publishedEntries.length === 0, "no approved perspective yet; the section is absent (checked above)");
-  const first = publishedEntries[0];
-  await openPage(page, `${staticTier("/en/contact")}#${perspectiveAnchor(first.id)}`);
-  const entry = page.locator(`#${perspectiveAnchor(first.id)}`);
-  await expect(entry).toHaveAttribute("open", "");
-  await expect(entry).toContainText(first.answer.en);
-  await expectNoSeriousViolations(page);
 });
 
 /** R5 P10 (owner, 2026-10-13): no colored left or top edge stripe; a dot or icon chip plus an outline glow instead. */

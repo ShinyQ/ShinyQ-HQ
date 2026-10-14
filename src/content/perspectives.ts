@@ -1,13 +1,13 @@
+import { isAskCite } from "../ask/protocol";
 import { isInstructionLike } from "../../functions/_lib/text";
-import type { Locale, Perspective, PerspectivesFile, SiteContent } from "./schema";
+import type { Perspective, PerspectivesFile, SiteContent } from "./schema";
 
 /**
  * Kurniadi's written perspectives (content/perspectives.json): the publication gate and pure
- * helpers. Every surface (About, Quick view, the Ask knowledge pack) reads entries through
- * `publishedPerspectives` (via `getPerspectives()` in `@/content/load`), so a draft never ships.
+ * helpers. Owner decision 2026-10-14: they are Ask the HQ knowledge only, with no page or section
+ * of their own. The knowledge pack reads entries through `publishedPerspectives` (via
+ * `getPerspectives()` in `@/content/load`), so a draft never ships.
  */
-
-export const PERSPECTIVE_ANCHOR_PREFIX = "perspectives-";
 
 /** Published when the entry says `approved: true`, or has no `approved` field and the file status is "approved". */
 export function isPublished(entry: Pick<Perspective, "approved">, file: Pick<PerspectivesFile, "status">): boolean {
@@ -22,35 +22,29 @@ export function draftPerspectives(file: PerspectivesFile): Perspective[] {
   return file.entries.filter((entry) => !isPublished(entry, file));
 }
 
-/** Element id of an entry on About and Quick view. */
-export const perspectiveAnchor = (id: string) => `${PERSPECTIVE_ANCHOR_PREFIX}${id}`;
-
-/** Page View path (no locale prefix) that Ask cites for an entry. */
-export const perspectivePath = (id: string) => `/contact#${perspectiveAnchor(id)}`;
-
-export interface PerspectiveLink {
-  href: string;
-  label: string;
-  /** External posts (Medium) open in a new tab; everything else is an internal Page View path. */
-  external: boolean;
-}
-
-/** Related links of an entry, resolved against the dataset. Unknown sources are skipped (`perspectiveIssues` reports them). */
-export function perspectiveLinks(entry: Perspective, content: SiteContent, locale: Locale): PerspectiveLink[] {
+/**
+ * Page View path (no locale prefix) of the first backing source Ask may cite for an entry: a hosted
+ * post (`/blog/<slug>`), a project case study (`/labs/<slug>`) or the Library for a talk. External
+ * posts (Medium) and unknown sources are skipped; an entry without a citable source gets none.
+ */
+export function perspectiveSourcePath(entry: Pick<Perspective, "sources">, content: SiteContent): string | undefined {
   const { posts, talks } = content.floors.library;
-  return (entry.sources ?? []).flatMap((source): PerspectiveLink[] => {
-    if (source.kind === "post") {
-      const post = posts.find((p) => p.slug === source.slug);
-      if (!post) return [];
-      return [post.url ? { href: post.url, label: post.title[locale], external: true } : { href: `/blog/${post.slug}`, label: post.title[locale], external: false }];
-    }
-    if (source.kind === "talk") {
-      const talk = talks.find((t) => t.id === source.slug);
-      return talk ? [{ href: "/library#talks", label: talk.title[locale], external: false }] : [];
-    }
-    const pod = content.floors.labs.pods.find((p) => p.slug === source.slug);
-    return pod ? [{ href: `/labs/${pod.slug}`, label: pod.title[locale], external: false }] : [];
-  });
+  for (const source of entry.sources ?? []) {
+    const path =
+      source.kind === "post"
+        ? posts.some((p) => p.slug === source.slug && !p.url && !p.tags.includes("personal"))
+          ? `/blog/${source.slug}`
+          : undefined
+        : source.kind === "talk"
+          ? talks.some((t) => t.id === source.slug)
+            ? "/library"
+            : undefined
+          : content.floors.labs.pods.some((p) => p.slug === source.slug)
+            ? `/labs/${source.slug}`
+            : undefined;
+    if (path && isAskCite(path)) return path;
+  }
+  return undefined;
 }
 
 /**
@@ -93,11 +87,12 @@ function leadPhrase(text: string): string {
 }
 
 /**
- * Short phrases of every unpublished entry (answer lead, or the question when the answer lead is
- * under four words), used to prove that no draft text reaches the static export (e2e/pageview.spec.ts).
+ * Short phrases of the given entries (answer lead, or the question when the answer lead is under
+ * four words), used to prove that no perspective text reaches the static export: they live in the
+ * Ask knowledge pack only (e2e/pageview.spec.ts).
  */
-export function draftFingerprints(file: PerspectivesFile): string[] {
-  return draftPerspectives(file).flatMap((entry) =>
+export function perspectiveFingerprints(entries: readonly Perspective[]): string[] {
+  return entries.flatMap((entry) =>
     (["en", "id"] as const).map((locale) => {
       const lead = leadPhrase(entry.answer[locale]);
       return lead.split(" ").length >= 4 ? lead : leadPhrase(entry.question[locale]);

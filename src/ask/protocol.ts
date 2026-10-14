@@ -72,19 +72,21 @@ export function cleanTags(value: unknown): AskTag[] {
 }
 
 /**
- * Page View paths an answer may cite (the `done` frame `cite`, spec section 13): a perspective or
- * How I work on About, a hosted post, the Library. Anything else is dropped by both ends.
+ * Page View paths an answer may cite (the `done` frame `cite`, spec section 13): How I work on
+ * About, a hosted post, a project case study (the backing source of a perspective) or the Library.
+ * Perspectives themselves have no page (owner decision 2026-10-14: chatbot knowledge only).
+ * Anything else is dropped by both ends.
  */
-export const ASK_CITE_PATTERN = /^\/(?:contact#(?:perspectives-[a-z0-9]+(?:-[a-z0-9]+)*|how)|blog\/[a-z0-9]+(?:-[a-z0-9]+)*|library)$/;
+export const ASK_CITE_PATTERN = /^\/(?:contact#how|(?:blog|labs)\/[a-z0-9]+(?:-[a-z0-9]+)*|library)$/;
 
-export type AskCiteKind = "perspective" | "how" | "blog" | "library";
+export type AskCiteKind = "how" | "blog" | "project" | "library";
 
 export const isAskCite = (value: unknown): value is string => typeof value === "string" && value.length <= 120 && ASK_CITE_PATTERN.test(value);
 
 export function citeKind(path: string): AskCiteKind {
-  if (path.startsWith("/contact#perspectives-")) return "perspective";
   if (path === "/contact#how") return "how";
   if (path.startsWith("/blog/")) return "blog";
+  if (path.startsWith("/labs/")) return "project";
   return "library";
 }
 

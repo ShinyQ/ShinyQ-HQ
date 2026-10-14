@@ -35,9 +35,9 @@ export function AskPrivacy({ className }: { className?: string }) {
 }
 
 /**
- * "Read on this site" link under a cited answer (spec section 13). A plain anchor on purpose: a
- * same-page hash must fire `hashchange` so the Perspectives accordion opens (`OpenOnHash`); the
- * path is allowlisted (`isAskCite`) and never comes from the model's text.
+ * "Read on this site" link under a cited answer (spec section 13). A plain anchor on purpose, so a
+ * same-page hash (`/contact#how`) still scrolls; the path is allowlisted (`isAskCite`) and never
+ * comes from the model's text.
  */
 export function AskCiteLink({ path, locale, className, onNavigate }: { path: string; locale: Locale; className?: string; onNavigate?: () => void }) {
   const t = useTranslations("ask");

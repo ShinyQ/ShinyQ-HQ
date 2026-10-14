@@ -36,7 +36,7 @@ export function getPerspectivesFile(): PerspectivesFile {
   return cachedPerspectives;
 }
 
-/** Approved perspectives only, in file order. About, Quick view and the Ask pack read this. */
+/** Approved perspectives only, in file order. Only the Ask knowledge pack reads this (no page renders them). */
 export function getPerspectives(): Perspective[] {
   return publishedPerspectives(getPerspectivesFile());
 }

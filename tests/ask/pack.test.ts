@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, sanitizePackText, validatePack } from "@/ask/pack";
+import { isAskCite } from "@/ask/protocol";
 import { getContent, getPerspectivesFile } from "@/content/load";
 import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
@@ -193,15 +194,26 @@ describe("perspectives and principles in the pack", () => {
     }
   });
 
-  it("indexes approved perspectives with their question, date and About anchor", () => {
+  it("indexes approved perspectives with their question, date and the backing source Ask cites", () => {
     const approved = getPerspectivesFile().entries.map((e) => ({ ...e, approved: true }));
     const built = buildRepoPack("2026-10-11", { perspectives: approved }).pack;
     const chunk = byId(built, "perspective-spec-before-code")!;
-    expect(chunk).toMatchObject({ type: "perspective", url: "/contact#perspectives-spec-before-code", updatedAt: "2026-10" });
+    expect(chunk).toMatchObject({ type: "perspective", url: "/blog/spec-driven-development-with-ai-coding-agents", updatedAt: "2026-10" });
     expect(chunk.text_en.startsWith(`Kurniadi's written view "Why do you write a spec before any code?":`)).toBe(true);
     expect(chunk.text_id.startsWith(`Pandangan tertulis Kurniadi "Mengapa Anda menulis spec sebelum menulis kode?":`)).toBe(true);
     expect(chunk.keywords).toEqual(expect.arrayContaining(["perspective", "spec-driven-development"]));
     expect(chunkTags(chunk)).toContain("perspectives");
+  });
+
+  it("cites a perspective through its first backing post or project, or not at all; never an About anchor (chatbot knowledge only)", () => {
+    const built = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries.map((e) => ({ ...e, approved: true })) }).pack;
+    expect(byId(built, "perspective-rag-trust")!.url).toBe("/labs/ai-solutions-assistant");
+    expect(byId(built, "perspective-testing-approach")!.url).toBe("/blog/spec-driven-development-with-ai-coding-agents");
+    expect(byId(built, "perspective-coding-principles")!.url).toBeUndefined();
+    for (const chunk of built.chunks.filter((c) => c.type === "perspective")) {
+      expect(chunk.url === undefined || isAskCite(chunk.url), chunk.id).toBe(true);
+      expect(chunk.url ?? "", chunk.id).not.toContain("#perspectives");
+    }
   });
 
   it("stays under the 200 KB cap with every perspective approved, so approving drafts never breaks the build", () => {

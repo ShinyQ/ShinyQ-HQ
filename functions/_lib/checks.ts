@@ -291,9 +291,12 @@ export function citedSource(answer: string, chunks: readonly KnowledgeChunk[], l
   });
 }
 
-/** The first retrieved written source with a citable path, for the no-view answer. */
+/**
+ * The first retrieved written source with a citable path, for the no-view answer. Perspectives are
+ * skipped: they have no page of their own, so their question is not a title a visitor can find.
+ */
 export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale): { title: string; url: string } | undefined {
-  const chunk = chunks.find((c) => isSource(c) && isAskCite(c.url));
+  const chunk = chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
   return chunk?.url ? { title: sourceTitles(chunk, locale)[0], url: chunk.url } : undefined;
 }
 

@@ -228,6 +228,13 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(r.tags).toContain("perspectives");
   });
 
+  it("cites the backing project of a perspective answer, never an About anchor", async () => {
+    const answer = 'In his written view "What makes a RAG assistant trustworthy?", Kurniadi says an assistant answers only from curated content and shows the source of each answer.';
+    const r = await ask("What makes a RAG assistant trustworthy?", answer);
+    expect(r).toMatchObject({ outcome: "answer", source: "primary", text: answer, cite: "/labs/ai-solutions-assistant" });
+    expect(r.chunkIds).toContain("perspective-rag-trust");
+  });
+
   it("replaces an invented opinion with the no-view answer that points to the closest written source", async () => {
     const r = await ask("What does Kurniadi think about microservices?", "Kurniadi believes microservices are always better than monoliths.");
     expect(r).toMatchObject({ outcome: "unknown", source: "none", reason: "unsourced", cite: "/contact#how" });

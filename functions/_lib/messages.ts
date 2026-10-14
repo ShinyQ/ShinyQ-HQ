@@ -39,9 +39,9 @@ export function canned(kind: CannedKind, locale: AskLocale): string {
 }
 
 const WHERE: Record<AskCiteKind, Record<AskLocale, string>> = {
-  perspective: { en: "in Perspectives on the About page", id: "di bagian Perspektif pada halaman About" },
   how: { en: "on the About page", id: "di halaman About" },
   blog: { en: "on his blog", id: "di blognya" },
+  project: { en: "in a project case study", id: "di studi kasus proyek" },
   library: { en: "in the Library", id: "di halaman Library" },
 };
 const CLOSEST: Record<AskLocale, string> = { en: "The closest thing he wrote is", id: "Tulisan terdekat darinya adalah" };
