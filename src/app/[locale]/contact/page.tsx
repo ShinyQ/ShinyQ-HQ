@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { ContactPanel } from "@/components/page/About";
 import { AskCta, AskOnly } from "@/components/page/AskEntry";
@@ -43,7 +44,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const [lead, rest] = splitStory(profile.story[locale]);
 
   return (
-    <>
+    <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/contact")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="RF" />
       <header className="pv-wrap grid gap-10 pt-8 sm:pt-12 lg:grid-cols-12 lg:gap-6 lg:pt-16">
@@ -97,6 +98,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
           </li>
         </ul>
       </SectionSplit>
-    </>
+    </ClientMessages>
   );
 }

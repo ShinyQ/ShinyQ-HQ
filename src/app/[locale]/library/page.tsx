@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TopicFilter } from "@/components/page/TopicFilter";
@@ -36,7 +37,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   // The Topic Constellation's topics (L4), as a filter over every row below.
   const topics = getTopicIndex().topics.map((x) => ({ slug: x.slug, label: tt(`names.${x.slug}`), count: x.items.length }));
   return (
-    <>
+    <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/library")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L4" />
       <PageIntro
@@ -72,6 +73,6 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
           <TalkList talks={library.talks} locale={locale} />
         </SectionSplit>
       </TopicFilter>
-    </>
+    </ClientMessages>
   );
 }
