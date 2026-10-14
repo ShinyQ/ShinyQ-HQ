@@ -169,13 +169,19 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written professional views and keeps personal topics out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-14.copy-voice.1");
+    expect(PROMPT_VERSION).toBe("2026-10-14.copy-voice.2");
     expect(RULES[0]).toContain("the professional views he has written down");
     const rules = RULES.join(" ");
     expect(rules).toContain("never speak as Kurniadi in the first person");
     expect(rules).toContain("Report it in the third person");
     expect(rules).toContain("private life, family, relationships, health, religion, politics or pay");
     expect(systemPrompt("2026-10-12", "- ctx")).toContain("his own first-person words");
+  });
+
+  it("asks for neutral Indonesian phrasing without visitor address", () => {
+    expect(RULES[10]).toContain("omit visitor-address words Anda and kamu");
+    expect(RULES[10]).toContain("neutral subject-led sentences");
+    expect(RULES[10]).toContain("Preserve measurement caveats");
   });
 });
 
