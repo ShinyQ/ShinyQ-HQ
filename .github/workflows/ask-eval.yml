@@ -47,7 +47,7 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the golden eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
@@ -58,7 +58,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts golden
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-golden
@@ -87,7 +87,7 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the curated pill eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
@@ -98,7 +98,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts suggestions
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-suggestions
@@ -130,7 +130,7 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the red-team eval."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
@@ -142,7 +142,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts redteam
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-redteam
@@ -194,7 +194,7 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::CF_LOGS_TOKEN is not set; skipping the AI Gateway log purge (optional, docs/ask-runbook.md)."
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'

@@ -40,7 +40,7 @@ Or Actions > Deploy > Run workflow. `deploy.yml` checks that the commit is on `m
 
 ## Manual local deploy
 
-From a clean checkout of `main`, with `wrangler` logged in to the account that owns the project (`bunx wrangler@4 login`, once). Run it from the repo root so `functions/` and `wrangler.toml` are included:
+From a clean checkout of `main`, with `wrangler` logged in to the account that owns the project (`bunx wrangler login`, once). Run it from the repo root so `functions/` and `wrangler.toml` are included:
 
 ```sh
 git switch main && git pull
@@ -48,7 +48,7 @@ bun install --frozen-lockfile
 bun run typecheck && bun run lint && bun run test
 CF_BEACON_TOKEN=$(gh variable get CF_BEACON_TOKEN)
 NEXT_PUBLIC_SITE_URL=https://kurniadi.pages.dev NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun run build
-bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main \
+bunx wrangler pages deploy out --project-name=kurniadi --branch=main \
   --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
 NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun scripts/deploy-smoke.ts
 ```
@@ -95,20 +95,20 @@ Done for production on 2026-10-09 (see "Current state"); kept for reference. The
      2. Delete the `kurniadi` project (Settings > Delete project). This frees the name and the `kurniadi.pages.dev` subdomain. The old site is offline from this point until the first deploy.
      3. Recreate it immediately as a Direct Upload project with the same name:
         ```sh
-        bunx wrangler@4 pages project create kurniadi --production-branch=main
+        bunx wrangler pages project create kurniadi --production-branch=main
         ```
      4. Run the first deploy (section 5) right away to keep the downtime short.
 3. Make sure the production branch is `main` (Settings > Builds and deployments > Production branch, or recreate with `--production-branch=main`). If it is anything else, deploys from `deploy.yml` are published as previews and the production URL does not change.
 
-Rollback note: if the new site has a problem after the cut-over, use the dashboard rollback (section 6). If you need the old site back entirely, redeploy the backup to the same project with `bunx wrangler@3 pages deploy <backup-dir> --project-name=kurniadi --branch=main`.
+Rollback note: if the new site has a problem after the cut-over, use the dashboard rollback (section 6). If you need the old site back entirely, redeploy the backup to the same project with `bunx wrangler pages deploy <backup-dir> --project-name=kurniadi --branch=main`.
 
 ### Option B: create a new project
 
 Use this to try production deploys without touching the old site, then switch later.
 
 ```sh
-bunx wrangler@3 login
-bunx wrangler@3 pages project create <name> --production-branch=main
+bunx wrangler login
+bunx wrangler pages project create <name> --production-branch=main
 ```
 
 The site is then served at `https://<name>.pages.dev`. Set `SITE_URL` to that URL (section 4) so canonical links and the sitemap match.
@@ -303,6 +303,6 @@ Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only)
 
 `CF_STATS_TOKEN`: Cloudflare dashboard > My Profile > API Tokens > Create Custom Token, permission Account / Account Analytics / Read only, your account, TTL 90 days; then `gh secret set CF_STATS_TOKEN --env production --repo ShinyQ/ShinyQ-HQ` and run a deploy (it rewrites `WA_TOKEN`).
 
-If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler@4 deploy` and set both secrets with `bunx wrangler@4 secret put WA_TOKEN` and `bunx wrangler@4 secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
 
-Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler@4 auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
+Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.

@@ -39,13 +39,13 @@ What `--apply` does:
 3. Turnstile widget `shinyq-hq-ask` (invisible; `kurniadi.pages.dev`, `kurniadi.dev`), its public site key into `TURNSTILE_SITE_KEY`, and its secret piped into `TURNSTILE_SECRET`. `localhost` is deliberately not allowed (Cloudflare advises against local hostnames on production keys); for local work use the Turnstile test keys (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) in `.dev.vars`.
 4. Analytics Engine needs nothing: the dataset appears on the first write.
 
-Secrets (wrangler needs a login first: `bunx wrangler@4 login`). Values are generated or fetched inside the pipe, never shown:
+Secrets (wrangler needs a login first: `bunx wrangler login`). Values are generated or fetched inside the pipe, never shown:
 
 ```sh
-cf turnstile widgets get <site key> | bun -e 'process.stdout.write(JSON.parse(await Bun.stdin.text()).secret)' | bunx wrangler@4 pages secret put TURNSTILE_SECRET --project-name=kurniadi
-openssl rand -hex 32 | tr -d '\n' | bunx wrangler@4 pages secret put ASK_IP_SALT_SEED --project-name=kurniadi
-openssl rand -hex 32 | tr -d '\n' | bunx wrangler@4 pages secret put ASK_COOKIE_KEY --project-name=kurniadi
-bunx wrangler@4 pages secret list --project-name=kurniadi
+cf turnstile widgets get <site key> | bun -e 'process.stdout.write(JSON.parse(await Bun.stdin.text()).secret)' | bunx wrangler pages secret put TURNSTILE_SECRET --project-name=kurniadi
+openssl rand -hex 32 | tr -d '\n' | bunx wrangler pages secret put ASK_IP_SALT_SEED --project-name=kurniadi
+openssl rand -hex 32 | tr -d '\n' | bunx wrangler pages secret put ASK_COOKIE_KEY --project-name=kurniadi
+bunx wrangler pages secret list --project-name=kurniadi
 ```
 
 These set the production environment. Preview deployments of `kurniadi` have no secrets, so the Function answers 503 there unless you repeat the commands with `--env preview`.
@@ -62,7 +62,7 @@ By hand, from the repo root of a clean `main` (the Function is bundled from `fun
 git switch main && git pull
 bun install --frozen-lockfile
 bun run verify:quick                         # typecheck, lint, unit tests, build (build includes the knowledge pack)
-bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main \
+bunx wrangler pages deploy out --project-name=kurniadi --branch=main \
   --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
 ```
 
@@ -70,7 +70,7 @@ bunx wrangler@4 pages deploy out --project-name=kurniadi --branch=main \
 
 `deploy.yml` deploys from a checkout and rebuilds the knowledge pack for the same reason. The PR preview job in `ci.yml` (off unless `CF_PREVIEWS=true`) uploads `out/` only, so previews have no Function: test Ask on production or locally.
 
-Local: `bun run build && bunx wrangler@4 pages dev out` (put the test Turnstile keys and any values in `.dev.vars`, gitignored).
+Local: `bun run build && bunx wrangler pages dev out` (put the test Turnstile keys and any values in `.dev.vars`, gitignored).
 
 ## 4. Production smoke test
 
@@ -114,9 +114,9 @@ The circuit breaker trips on its own (more than half of 5 minutes of model calls
 - KV, by hand:
 
 ```sh
-bunx wrangler@4 kv key list --namespace-id=<ASK_KV id from wrangler.toml> --prefix=ans: --remote > keys.json
+bunx wrangler kv key list --namespace-id=<ASK_KV id from wrangler.toml> --prefix=ans: --remote > keys.json
 bun -e 'console.log(JSON.stringify((await Bun.file("keys.json").json()).map((k) => k.name)))' > names.json
-bunx wrangler@4 kv bulk delete names.json --namespace-id=<ASK_KV id> --remote --force
+bunx wrangler kv bulk delete names.json --namespace-id=<ASK_KV id> --remote --force
 rm keys.json names.json
 ```
 
@@ -127,7 +127,7 @@ rm keys.json names.json
 | Secret | How | Effect |
 | --- | --- | --- |
 | `TURNSTILE_SECRET` | `cf turnstile widgets rotate-secret <site key>` (or dashboard > Turnstile > Rotate), then the `TURNSTILE_SECRET` command in section 2 | The old secret keeps working for a grace period |
-| `ASK_COOKIE_KEY` | `openssl rand -hex 32 \| tr -d '\n' \| bunx wrangler@4 pages secret put ASK_COOKIE_KEY --project-name=kurniadi`, redeploy | Every visitor redoes Turnstile once; harmless |
+| `ASK_COOKIE_KEY` | `openssl rand -hex 32 \| tr -d '\n' \| bunx wrangler pages secret put ASK_COOKIE_KEY --project-name=kurniadi`, redeploy | Every visitor redoes Turnstile once; harmless |
 | `ASK_IP_SALT_SEED` | same command with `ASK_IP_SALT_SEED`, redeploy | Daily counters restart for everyone |
 | `CF_EVAL_TOKEN` | every 90 days, section 8 | Nightly eval and content-gap jobs skip with a notice when it is missing or expired |
 | `CF_LOGS_TOKEN` | every 90 days, section 8 (expires 2027-01-09) | The nightly log purge skips with a notice when it is missing |

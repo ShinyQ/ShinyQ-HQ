@@ -108,7 +108,7 @@ describe("buildPlan", () => {
 describe("secretCommands", () => {
   it("pipes generated values without printing them", () => {
     const lines = secretCommands("kurniadi", "0x4AAAAAAAabcdefGHIJ");
-    expect(lines.join("\n")).toMatch(/openssl rand -hex 32 \| tr -d '\\n' \| bunx wrangler@4 pages secret put ASK_IP_SALT_SEED --project-name=kurniadi/);
+    expect(lines.join("\n")).toMatch(/openssl rand -hex 32 \| tr -d '\\n' \| bunx wrangler pages secret put ASK_IP_SALT_SEED --project-name=kurniadi/);
     expect(lines.join("\n")).toMatch(/ASK_COOKIE_KEY/);
     expect(lines[1]).toMatch(/cf turnstile widgets get 0x4AAAAAAAabcdefGHIJ .*TURNSTILE_SECRET/);
     expect(lines.join("\n")).not.toMatch(/echo/);

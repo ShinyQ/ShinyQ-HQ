@@ -2,7 +2,7 @@
  * Runs the hq-stats Worker pipeline (workers/stats/src/run.ts) once against production data, into an
  * in-memory KV, and prints the ledger summary and the public snapshot. Writes nothing to Cloudflare.
  *
- *   WA_TOKEN="$(bunx wrangler@4 auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts
+ *   WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts
  *
  * WA_TOKEN needs Account Analytics Read (a Wrangler OAuth token works). It is read from the environment
  * and never printed. WA_SITE_TAG and WA_HOSTS default to the values in workers/stats/wrangler.toml.
