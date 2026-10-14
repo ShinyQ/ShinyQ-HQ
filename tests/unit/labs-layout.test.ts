@@ -197,7 +197,11 @@ describe("L3 Project Roads layout", () => {
 
   it("puts every door on clear floor, facing its wing road, reachable along the road from the elevator", () => {
     const grid = buildNavGrid(floor, ROVER.radius);
-    expect(floor.doors).toHaveLength(layout.placed.length);
+    // Every pod, plus the Ops Control Room (tests/unit/labs-ops.test.ts).
+    expect(floor.doors).toHaveLength(layout.placed.length + 1);
+    const ops = floor.doors!.find((d) => d.room === "L3:ops")!;
+    expect(isWalkable(grid, ops.at)).toBe(true);
+    expect(Math.hypot(roadRoute(network, grid, floor.approach, ops.at)!.at(-1)!.x - ops.at.x, roadRoute(network, grid, floor.approach, ops.at)!.at(-1)!.z - ops.at.z)).toBeLessThan(1);
     for (const p of layout.placed) {
       for (const o of floor.obstacles) expect(distanceToRect(p.door, o)).toBeGreaterThanOrEqual(ROVER.radius);
       expect(Math.sign(p.door.z - p.center.z)).toBe(p.facing);
@@ -337,6 +341,7 @@ describe("L3 Project Roads layout", () => {
     const layouts = buildFloorLayouts(8, { labs: pods });
     expect(layouts.L3.doors).toEqual(floor.doors);
     expect(layouts.L3.road).toEqual(network);
-    expect(buildFloorLayouts(8).L3.doors).toEqual([]);
+    // Without pods only the Ops Control Room stays (its content is not a pod).
+    expect(buildFloorLayouts(8).L3.doors?.map((d) => d.room)).toEqual(["L3:ops"]);
   });
 });

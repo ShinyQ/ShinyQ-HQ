@@ -5,6 +5,7 @@ import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts, FLOOR_IDS, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
+import { OPS } from "@/experience/floors/labs/ops";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
 import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
 import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
@@ -128,6 +129,15 @@ describe("interactablesFor on the real content", () => {
     for (const id of docked) expect(ids("L3").has(id), id).toBe(true);
     expect(ids("L2").has("L2:door:serupa-2025")).toBe(true);
     expect(ids("L3").has("L3:door:event-ticketing-platform")).toBe(true);
+  });
+
+  it("makes the Ops Control Room a point-and-go door over its whole footprint", () => {
+    const labs = buildLabsLayout(experience.labs.pods);
+    const ops = find("L3", "L3:door:ops")!;
+    expect(ops).toMatchObject({ kind: "door", label: en.hud.rooms.ops, action: { type: "open-room", room: "L3:ops" }, height: OPS.h });
+    expect(ops.at).toEqual(labs.ops.door);
+    expect(ops.bounds.minX).toBe(labs.ops.rect.minX);
+    expect(ops.bounds.minZ).toBe(labs.ops.rect.minZ);
   });
 
   it("names rooms after their content", () => {
