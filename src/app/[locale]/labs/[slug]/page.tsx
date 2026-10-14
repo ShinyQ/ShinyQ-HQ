@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
@@ -63,7 +64,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   ];
 
   return (
-    <>
+    <ClientMessages>
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
       <JsonLd data={pageJsonLd(locale, `/labs/${pod.slug}`)} />
       <article>
@@ -166,6 +167,6 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
           )}
         </section>
       </article>
-    </>
+    </ClientMessages>
   );
 }

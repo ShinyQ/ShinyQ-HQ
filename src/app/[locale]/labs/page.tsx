@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { experienceDataFor } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { Marker, PageIntro, SectionWide } from "@/components/page/Layout";
@@ -28,7 +29,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
   const rest = all.filter((p) => p.tier !== "hero");
 
   return (
-    <>
+    <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/labs")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" />
       <PageIntro
@@ -73,6 +74,6 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
           </SectionWide>
         </div>
       </WorkIndex>
-    </>
+    </ClientMessages>
   );
 }

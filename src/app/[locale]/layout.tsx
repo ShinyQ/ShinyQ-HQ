@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getMessages, setRequestLocale } from "next-intl/server";
 import { Analytics } from "@/components/Analytics";
 import { VisitBeacon } from "@/components/VisitBeacon";
 import { BootCover } from "@/components/BootCover";
@@ -13,6 +13,7 @@ import { roleLine } from "@/content/selectors";
 import { AskDock } from "@/hud/ask/AskDock";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
+import { LAYOUT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import { assertLocale } from "@/i18n/locale";
 import { bootFirstScript } from "@/lib/boot-first";
 import { routing } from "@/i18n/routing";
@@ -51,6 +52,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
   const profile = getProfile();
+  const messages = pickMessages(await getMessages(), LAYOUT_NAMESPACES);
   return (
     // The inline script sets data-hq-boot on <html> before hydration, hence suppressHydrationWarning.
     <html lang={locale} className={`${fontClassName} antialiased`} suppressHydrationWarning>
@@ -64,7 +66,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           monogram={profile.monogram}
           who={{ name: profile.name, headline: profile.headline[locale], motto: profile.subheadline[locale], role: roleLine(profile.currentRole, locale) }}
         />
-        <NextIntlClientProvider>
+        {/* Only the namespaces the layout's client islands read; pages add theirs (src/i18n/client-messages.ts). */}
+        <NextIntlClientProvider messages={messages}>
           {/* The 3D overlay marks this shell inert while it is open (see ExperienceGate). */}
           <div id="site-shell" className="flex min-h-screen flex-col">
             <SiteHeader locale={locale} />

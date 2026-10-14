@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { ChipList } from "@/components/Chip";
 import { ExternalLink } from "@/components/ExternalLink";
 import { OrgLogo } from "@/components/OrgLogo";
@@ -44,7 +45,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
   const pod = entry.podRef ? getPod(entry.podRef) : undefined;
 
   return (
-    <>
+    <ClientMessages>
       <JsonLd data={pageJsonLd(locale, `/journey/${entry.slug}`)} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" startRoom={`L2:${entry.slug}`} />
       <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
@@ -128,6 +129,6 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
           )}
         </nav>
       </article>
-    </>
+    </ClientMessages>
   );
 }

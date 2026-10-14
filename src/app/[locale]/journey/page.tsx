@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { JourneyFilter } from "@/components/page/JourneyFilter";
 import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
@@ -25,7 +26,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
   const years = [...getYears()].reverse();
 
   return (
-    <>
+    <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/journey")} />
       <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" />
       <PageIntro
@@ -74,6 +75,6 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
         <h3 className="pv-h3 mt-14 mb-4">{t("repos")}</h3>
         <RepoWall repos={getPublicRepos()} locale={locale} />
       </SectionSplit>
-    </>
+    </ClientMessages>
   );
 }

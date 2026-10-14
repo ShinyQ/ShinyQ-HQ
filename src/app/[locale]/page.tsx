@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { PostList } from "@/components/LibraryBlocks";
 import { FeaturedProject } from "@/components/page/Featured";
@@ -56,7 +57,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   ];
 
   return (
-    <>
+    <ClientMessages>
       <ExperienceGate data={experience} />
       <HomeHero
         locale={locale}
@@ -151,6 +152,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           <CvButton className="pv-btn pv-btn-ghost">{tc("viewCv")}</CvButton>
         </div>
       </section>
-    </>
+    </ClientMessages>
   );
 }
