@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
+import { distanceToRect } from "../src/experience/nav/collision";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -240,6 +241,9 @@ test.describe("elevator", () => {
   });
 });
 
+/** The Lobby hologram pedestal obstacle (`rect(6, 0, 6, 6)` in src/experience/config.ts). */
+const PEDESTAL = { minX: 3, maxX: 9, minZ: -3, maxZ: 3 };
+
 test.describe("rover on desktop", () => {
   test("WASD drives the rover and walls keep it inside the Lobby", async ({ page }) => {
     await enterHQ(page);
@@ -254,8 +258,9 @@ test.describe("rover on desktop", () => {
     expect(rover.x).toBeLessThan(63.01);
     expect(rover.z).toBeGreaterThan(-20.01);
     expect(rover.z).toBeLessThan(20.01);
-    // Never inside the hologram pedestal at (6, 0).
-    expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
+    // Never overlapping the hologram pedestal: its obstacle is the 6 by 6 square at (6, 0) (LOBBY.hologram, radius 3)
+    // and the rover a circle of radius 1 (ROVER.radius), so its center stays 1 u from the square, round at the corners.
+    expect(distanceToRect(rover, PEDESTAL), JSON.stringify(rover)).toBeGreaterThan(0.99);
   });
 
   test("a drive that starts right after a room opened and closed again (slow frames) still drives", async ({ page }) => {
