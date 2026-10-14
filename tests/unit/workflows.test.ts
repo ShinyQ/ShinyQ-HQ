@@ -26,6 +26,14 @@ describe("workflow pinning (S4)", () => {
     expect(files.filter((f) => /wrangler@/.test(read(f))).map((f) => path.basename(f))).toEqual([]);
   });
 
+  it("never leaves the job token in .git/config, except in the job that pushes the facts branch (S5)", () => {
+    const keep = files.flatMap((f) => {
+      const steps = read(f).split(/\n(?=\s*- )/).filter((step) => /uses:\s*actions\/checkout@/.test(step));
+      return steps.filter((step) => !/persist-credentials:\s*false/.test(step)).map(() => path.basename(f));
+    });
+    expect(keep).toEqual(["refresh-facts.yml"]);
+  });
+
   it("deploys the hq-stats Worker with the same wrangler version", () => {
     expect(read(path.join(dir, "deploy.yml"))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
   });

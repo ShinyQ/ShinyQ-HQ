@@ -3,11 +3,12 @@ name: Refresh live facts
 # Weekly live facts for the stats ring, the Page View and Ask the HQ (spec section 6.2):
 # GitHub contributions and public repos, Hugging Face models and downloads, credential URL checks.
 # Opens (or refreshes) one PR only when a value changed, then merges it itself once CI is green
-# (owner decision 3). PRs pushed with GITHUB_TOKEN do not trigger the pull_request CI run, and main
-# has no branch protection, so `gh pr merge --auto` would merge without checks. Instead this job
-# dispatches ci.yml on the PR branch (GITHUB_TOKEN may trigger workflow_dispatch), waits for that run
-# on the exact pushed commit, and merges only when the required jobs succeeded. Otherwise the PR
-# stays open and this job fails. No personal access token is needed (docs/ask-runbook.md).
+# (owner decision 3). PRs pushed with GITHUB_TOKEN do not trigger the pull_request CI run, so this
+# job dispatches ci.yml on the PR branch (GITHUB_TOKEN may trigger workflow_dispatch), waits for that
+# run on the exact pushed commit, and merges only when the required jobs succeeded. Otherwise the PR
+# stays open and this job fails. The `main` ruleset (require a PR and the required checks, security
+# S5) accepts this merge: the dispatched run reports the checks on the PR head commit. No personal
+# access token is needed (docs/ask-runbook.md). `actions: write` dispatches ci.yml and deploy.yml.
 # After the merge it dispatches deploy.yml for the merge commit (production deploy and smoke check).
 
 on:
@@ -37,6 +38,7 @@ jobs:
       CI_WORKFLOW: ci.yml
       REQUIRED_JOBS: "Typecheck, lint, unit tests|Build, CV and e2e"
     steps:
+      # The only checkout that keeps its credentials: this job pushes the facts branch.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - name: Fetch live facts

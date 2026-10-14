@@ -306,3 +306,16 @@ Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only)
 If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
 
 Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
+
+## 14. Repository protection (security S5, H2, H6; applied 2026-10-14)
+
+Applied with `gh api` by the security workstream (owner decision 6); check them with the commands below.
+
+- Ruleset "main protection" on the default branch: changes land only through a pull request (no approval count, so the owner and `refresh-facts.yml` can merge their own PRs); required status checks from GitHub Actions: `Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`, `3D perf gates 1/2`, `3D perf gates 2/2` (branches need not be up to date); force pushes and deletion blocked. Repository admins may bypass only through a pull request (emergency merge with `gh pr merge --admin`), so a direct push to `main` is rejected for everyone. Check: `gh api repos/ShinyQ/ShinyQ-HQ/rules/branches/main`.
+- Environment `production`: deployment branch policy `main` only (custom policy), so only jobs running on `main` read its secrets (section 3). Check: `gh api repos/ShinyQ/ShinyQ-HQ/environments/production`.
+- Dependabot alerts and Dependabot security updates on (version updates come from `.github/dependabot.yml`). Check: `gh api repos/ShinyQ/ShinyQ-HQ/vulnerability-alerts` (204) and `gh api repos/ShinyQ/ShinyQ-HQ/automated-security-fixes`.
+- Workflow runs from forks need approval for all external contributors. Check: `gh api repos/ShinyQ/ShinyQ-HQ/actions/permissions/fork-pr-contributor-approval`.
+- Every checkout sets `persist-credentials: false` except `refresh-facts.yml`, which pushes the facts branch.
+- "Allow GitHub Actions to create and approve pull requests" stays on: `refresh-facts.yml` opens its PR with `GITHUB_TOKEN`, and the setting covers both.
+
+Rollback: `gh api -X PUT repos/ShinyQ/ShinyQ-HQ/rulesets/<id> -f enforcement=disabled` (id from `gh api repos/ShinyQ/ShinyQ-HQ/rulesets`).

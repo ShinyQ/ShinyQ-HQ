@@ -49,6 +49,8 @@ jobs:
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Golden set
@@ -89,6 +91,8 @@ jobs:
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Curated pills (content/ask/suggestions.json)
@@ -132,6 +136,8 @@ jobs:
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Red-team set
@@ -196,6 +202,8 @@ jobs:
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
       - name: Purge
