@@ -182,6 +182,13 @@ describe("mission runner: control", () => {
     expect(runner.state.missionId).toBe("goto:L2:jenius-2024");
   });
 
+  it("goTo sends a retired Workshop bench (`L2:side-<id>`) to the L3 pod that replaced it", async () => {
+    const { host, calls } = fakeHost();
+    const runner = createMissionRunner({ host, missions, rooms });
+    await expect(runner.goTo("L2:side-sentiboard")).resolves.toBe("done");
+    expect(calls).toEqual(["elevator L3", "drive L3:university-sentiment-indobert", "open L3:university-sentiment-indobert"]);
+  });
+
   it("runSteps runs an ad hoc sequence such as a year jump", async () => {
     const { host, calls } = fakeHost();
     const runner = createMissionRunner({ host, missions, rooms });

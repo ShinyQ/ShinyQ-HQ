@@ -129,6 +129,8 @@ export const RULES: Rule[] = [
     test: /^src\/experience\/floors\/labs\/(OpsRoom\.tsx|ops\.ts|opsLive\.ts|opsHash\.ts)$|^src\/hud\/drawer\/OpsBody\.tsx$|^src\/components\/(page\/Production|AlertExcerpt)\.tsx$|^e2e\/production\.spec\.ts$/,
     specs: ["production", "labs", "pageview"],
   },
+  // L2 Workshop rooms (benches, skyline bars, retired benches that moved to L3 pods) and the career room views.
+  { test: /^src\/content\/(workshop|room-views\/career)\.ts$/, specs: ["workshop", "career", "missions", "pageview"] },
   // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view (also the Ops Control Room's).
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },

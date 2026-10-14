@@ -17,8 +17,8 @@ import {
 } from "./hq";
 
 /**
- * L2 Workshop (F3): the forecourt with the time console, the gateway, one bench per side project and the
- * public repo skyline at the end of the Career Road. Starts on the newest career room (its deep link
+ * L2 Workshop (F3): the forecourt with the time console, the gateway, one bench per side project (none for
+ * projects that have a full L3 pod) and the public repo skyline at the end of the Career Road. Starts on the newest career room (its deep link
  * spawns the rover on the last year plaza, a short drive from the forecourt) instead of driving 380 u.
  */
 test.describe.configure({ timeout: 240_000 });
@@ -88,6 +88,10 @@ test.describe("L2 Workshop", () => {
       await driveTo(page, target);
       expect(near(await roverAt(page), target, 1.2), JSON.stringify(target)).toBe(true);
     }
+    // Side projects that moved to full L3 Data and ML pods have no bench any more.
+    const benchIds = await page.evaluate(() => (window as unknown as WorkshopWindow).__hq.interact.items.filter((i) => i.id.startsWith("L2:station:bench-")).map((i) => i.id));
+    expect(benchIds).toEqual(data.sideProjects.map((p) => `L2:station:bench-${p.id}`));
+    for (const retired of ["sentiboard", "ewallet-sentiment", "sp500-portfolio-optimizer"]) expect(benchIds).not.toContain(`L2:station:bench-${retired}`);
     // None of these stops is a pad or a door: nothing opened on the way.
     expect((await state(page)).picker).toBeNull();
     expect(errors).toEqual([]);
