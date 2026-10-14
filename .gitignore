@@ -34,3 +34,6 @@ ask-eval-report*.md
 /perf-report/
 /out-main/
 e2e/perf/*-snapshots/
+
+# Local cache of the impeccable editor hook (absolute local paths), never committed
+.impeccable/hook.cache.json
