@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getPods, getProduction } from "@/content/load";
 import { ProductionSchema } from "@/content/schema";
+import { midSrc, thumbSrc } from "@/content/media";
 import { collectStrings, findBlockedTerms, findForbiddenPatterns, loadBlocklist } from "@/content/safety";
+import { webpChunks, webpSize } from "../helpers/webp";
 
 /** "How I run AI in production" (owner approved 2026-10-14): facts only, no client or resource names. */
 describe("production observability section", () => {
@@ -49,6 +51,20 @@ describe("production observability section", () => {
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
+  });
+
+  it("ships the masked dashboard as reviewed WebP files without metadata (full, 480 and 1200 px)", () => {
+    const dashboard = production.dashboard!;
+    expect(dashboard.redacted).toBe(true);
+    expect(dashboard.src.startsWith("/media/production/")).toBe(true);
+    for (const [src, width] of [[dashboard.src, dashboard.width], [thumbSrc(dashboard.src), 480], [midSrc(dashboard.src), 1200]] as const) {
+      const file = path.join(process.cwd(), "public", src);
+      expect(existsSync(file), src).toBe(true);
+      const bytes = readFileSync(file);
+      expect(webpSize(bytes).width, src).toBe(width);
+      expect(webpChunks(bytes).filter((c) => c === "EXIF" || c === "XMP "), src).toEqual([]);
+    }
+    expect(webpSize(readFileSync(path.join(process.cwd(), "public", dashboard.src))).height).toBe(dashboard.height);
   });
 
   it("is stored in the dataset, not hardcoded in components", () => {

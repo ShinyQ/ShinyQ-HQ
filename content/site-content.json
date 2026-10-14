@@ -270,6 +270,20 @@
         "id": "Satu alert rule sebagai kode, disamarkan: throttling 429 Cosmos DB dari platform keamanan kode AI. Nama diganti placeholder."
       },
       "code": "param databaseAccountName string\nparam actionGroupId string\n\n@description('429 responses per 15 minutes that fire the alert.')\nparam throttleThreshold int = 50\n\nresource database 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' existing = {\n  name: databaseAccountName\n}\n\nresource throttling 'Microsoft.Insights/metricAlerts@2026-01-01' = {\n  name: '${databaseAccountName}-throttling'\n  location: 'global'\n  properties: {\n    description: 'Cosmos DB returned 429 TooManyRequests above the threshold in 15 minutes.'\n    severity: 3\n    enabled: true\n    scopes: [database.id]\n    evaluationFrequency: 'PT5M'\n    windowSize: 'PT15M'\n    autoMitigate: true\n    criteria: {\n      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'\n      allOf: [\n        {\n          criterionType: 'StaticThresholdCriterion'\n          name: 'throttled'\n          metricNamespace: 'Microsoft.DocumentDB/databaseAccounts'\n          metricName: 'TotalRequests'\n          dimensions: [{ name: 'StatusCode', operator: 'Include', values: ['429'] }]\n          operator: 'GreaterThan'\n          threshold: throttleThreshold\n          timeAggregation: 'Count'\n        }\n      ]\n    }\n    actions: [{ actionGroupId: actionGroupId }]\n  }\n}"
+    },
+    "dashboard": {
+      "src": "/media/production/01-probe-dashboard.webp",
+      "alt": {
+        "en": "Grafana Blackbox Exporter dashboard: an HTTP probe overview table with every endpoint up and returning 200, above a chart of probe duration per endpoint, all under 65 ms.",
+        "id": "Dasbor Grafana Blackbox Exporter: tabel ringkasan probe HTTP dengan setiap endpoint aktif dan mengembalikan 200, di atas grafik durasi probe per endpoint, semuanya di bawah 65 ms."
+      },
+      "width": 1600,
+      "height": 744,
+      "redacted": true,
+      "caption": {
+        "en": "The Blackbox probe dashboard provisioned for the ticketing marketplace backend, rendered locally from its monitoring config with a demo target and demo traffic. Hosts and routes are placeholders.",
+        "id": "Dasbor probe Blackbox yang disiapkan untuk backend marketplace tiket, dirender lokal dari konfigurasi monitoring-nya dengan target dan trafik demo. Host dan route diganti placeholder."
+      }
     }
   },
   "stats": [
