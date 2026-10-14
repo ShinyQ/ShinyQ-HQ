@@ -8,6 +8,7 @@ import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./typ
 export const MAX_ANSWER_CHARS = 1000;
 
 const UNKNOWN_PHRASES = [
+  "belum tersedia di situs",
   "don't have that information",
   "do not have that information",
   "don't have information",
@@ -38,6 +39,7 @@ const UNKNOWN_PHRASES = [
   "tidak ada pandangan tertulis",
 ];
 const DECLINE_PHRASES = [
+  "can only provide information",
   "can only answer",
   "only answer questions",
   "only help with questions",

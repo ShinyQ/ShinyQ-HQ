@@ -3,28 +3,28 @@ import { citeKind, isAskCite, type AskCiteKind, type AskLocale } from "../../src
 /** Canned answers (EN/ID). These never repeat the visitor's text and are never cached. */
 export const MESSAGES = {
   unknown: {
-    en: "I don't have that information on this site. You can ask about Kurniadi's projects, roles, skills or writing.",
-    id: "Saya tidak memiliki informasi itu di situs ini. Kamu bisa bertanya tentang proyek, peran, keahlian, atau tulisan Kurniadi.",
+    en: "That information is not available on this site. Try asking about Kurniadi's projects, work experience or writing.",
+    id: "Informasi itu belum tersedia di situs ini. Coba tanyakan proyek, pengalaman kerja, atau tulisan Kurniadi.",
   },
   decline: {
-    en: "I can only answer questions about Kurniadi and his work. Try asking about his projects, career or skills.",
-    id: "Saya hanya bisa menjawab pertanyaan tentang Kurniadi dan pekerjaannya. Coba tanyakan proyek, karier, atau keahliannya.",
+    en: "This assistant can only answer questions about Kurniadi and his work. Try asking about his projects, career or skills.",
+    id: "Asisten ini hanya bisa menjawab pertanyaan tentang Kurniadi dan pekerjaannya. Coba tanyakan proyek, karier, atau keahliannya.",
   },
   restricted: {
-    en: "I can't share client names or private details. Projects for clients are described by sector on this site.",
-    id: "Saya tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
+    en: "This assistant can't share client names or private details. Projects for clients are described by sector on this site.",
+    id: "Asisten ini tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
   },
   fallback: {
-    en: "I can't answer that reliably right now. Press Cmd-K (Ctrl-K) to search the site, or browse the Work and Journey pages.",
-    id: "Saya belum bisa menjawab itu dengan andal sekarang. Tekan Cmd-K (Ctrl-K) untuk mencari di situs, atau buka halaman Work dan Journey.",
+    en: "A reliable answer is not available right now. Press Cmd-K (Ctrl-K) to search the site, or browse the Work and Journey pages.",
+    id: "Jawaban yang andal belum tersedia sekarang. Tekan Cmd-K (Ctrl-K) untuk mencari di situs, atau buka halaman Karya dan Perjalanan.",
   },
   private: {
-    en: "I only cover Kurniadi's professional side. Personal topics such as family, health, religion, politics and pay are not on this site.",
-    id: "Saya hanya membahas sisi profesional Kurniadi. Topik pribadi seperti keluarga, kesehatan, agama, politik, dan penghasilan tidak ada di situs ini.",
+    en: "This assistant only covers Kurniadi's professional work. Personal topics such as family, health, religion, politics and pay are not on this site.",
+    id: "Asisten ini hanya membahas sisi profesional Kurniadi. Topik pribadi seperti keluarga, kesehatan, agama, politik, dan penghasilan tidak ada di situs ini.",
   },
   others: {
-    en: "I can't share opinions about specific people, employers or clients. You can ask about Kurniadi's principles or the work he did.",
-    id: "Saya tidak bisa membagikan pendapat tentang orang, pemberi kerja, atau klien tertentu. Kamu bisa bertanya tentang prinsip kerja Kurniadi atau pekerjaan yang dia lakukan.",
+    en: "This assistant can't share opinions about specific people, employers or clients. Try asking about Kurniadi's principles or the work he did.",
+    id: "Asisten ini tidak bisa membagikan pendapat tentang orang, pemberi kerja, atau klien tertentu. Coba tanyakan prinsip kerja Kurniadi atau pekerjaan yang dia lakukan.",
   },
   noView: {
     en: "Kurniadi hasn't shared a written view on that on this site.",
@@ -39,13 +39,13 @@ export function canned(kind: CannedKind, locale: AskLocale): string {
 }
 
 const WHERE: Record<AskCiteKind, Record<AskLocale, string>> = {
-  how: { en: "on the About page", id: "di halaman About" },
+  how: { en: "on the About page", id: "di halaman Tentang" },
   blog: { en: "on his blog", id: "di blognya" },
   project: { en: "in a project case study", id: "di studi kasus proyek" },
-  library: { en: "in the Library", id: "di halaman Library" },
+  library: { en: "on the Writing page", id: "di halaman Tulisan" },
 };
-const CLOSEST: Record<AskLocale, string> = { en: "The closest thing he wrote is", id: "Tulisan terdekat darinya adalah" };
-const NO_SOURCE_HINT: Record<AskLocale, string> = { en: "You can read how he works on the About page.", id: "Kamu bisa membaca cara kerjanya di halaman About." };
+const CLOSEST: Record<AskLocale, string> = { en: "The closest written source is", id: "Tulisan yang paling terkait adalah" };
+const NO_SOURCE_HINT: Record<AskLocale, string> = { en: "Read about his working approach on the About page.", id: "Cara kerjanya bisa dibaca di halaman Tentang." };
 
 /**
  * The answer for a view Kurniadi never wrote down (spec section 13): says so and points to the

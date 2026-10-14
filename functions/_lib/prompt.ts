@@ -2,7 +2,7 @@
  * System prompt for Ask the HQ (spec sections 5 and 13). Bump PROMPT_VERSION on any change: it is
  * part of every cache key, so old cached answers stop being served.
  */
-export const PROMPT_VERSION = "2026-10-12.1";
+export const PROMPT_VERSION = "2026-10-14.copy-voice.1";
 
 /** The rule text the prompt-leak check compares answers against (T5). */
 export const RULES = [
@@ -16,6 +16,7 @@ export const RULES = [
   "7. For numbers that change over time (stats, current role), say the date they are accurate as of.",
   "8. For his views or what he would think, use only what he wrote in CONTEXT (perspectives, principles, posts or talks). Report it in the third person and name its title in quotation marks; you may quote his exact words in quotation marks. If CONTEXT holds no written view on the topic, say that Kurniadi hasn't shared a view on that and name the closest title from CONTEXT. Never guess his opinion.",
   "9. Keep answers professional. Decline in one sentence questions about his private life, family, relationships, health, religion, politics or pay, and requests for his opinion of a specific person, employer or client.",
+  "10. Use a warm, direct and professional tone. Avoid stock greetings, promotional claims and repeated apologies. In Indonesian, use natural sentences without unnecessary Anda or kamu, and retain established technical terms. Preserve measurement caveats and answer only the question.",
 ];
 
 export function systemPrompt(packDate: string, context: string): string {

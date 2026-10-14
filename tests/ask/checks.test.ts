@@ -25,6 +25,8 @@ import { packVocabulary } from "../../functions/_lib/pipeline";
 import { scrubPII } from "../../functions/_lib/pii";
 import { retrieve } from "../../functions/_lib/retrieve";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 
 let pack: KnowledgePack;
 let safety: SafetyData;
@@ -91,6 +93,7 @@ describe("output checks", () => {
   it("classifies refusals", () => {
     expect(classifyOutcome("I don't have that information on this site.")).toBe("unknown");
     expect(classifyOutcome("Saya tidak memiliki informasi itu di situs ini.")).toBe("unknown");
+    expect(classifyOutcome("Informasi itu belum tersedia di situs ini.")).toBe("unknown");
     expect(classifyOutcome("I can only answer questions about Kurniadi and his work.")).toBe("decline");
     expect(classifyOutcome("He works at Metrodata.")).toBe("answer");
     expect(classifyOutcome("Kurniadi hasn't shared a view on that.")).toBe("unknown");
@@ -166,7 +169,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written professional views and keeps personal topics out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-12.1");
+    expect(PROMPT_VERSION).toBe("2026-10-14.copy-voice.1");
     expect(RULES[0]).toContain("the professional views he has written down");
     const rules = RULES.join(" ");
     expect(rules).toContain("never speak as Kurniadi in the first person");
@@ -188,10 +191,10 @@ describe("citation paths (done frame)", () => {
 });
 
 describe("perspective checks", () => {
-  it("reads the quoted titles of a source, How I work first", () => {
+  it("reads the quoted titles of a source, the About section first", () => {
     const principles = pack.chunks.find((c) => c.id === "principles")!;
-    expect(sourceTitles(principles, "en").slice(0, 2)).toEqual(["How I work", "Define the Spec First"]);
-    expect(sourceTitles(principles, "id")[0]).toBe("Cara saya bekerja");
+    expect(sourceTitles(principles, "en").slice(0, 2)).toEqual([en.home.howTitle, "Define the Spec First"]);
+    expect(sourceTitles(principles, "id")[0]).toBe(id.home.howTitle);
   });
 
   it("passes a third-person answer that follows or names a retrieved source and returns its citation path", () => {
@@ -256,7 +259,7 @@ describe("perspective checks", () => {
       outcome: "answer",
       cite: "/labs/ai-solutions-assistant",
     });
-    expect(perspectiveCheck('Dalam pandangan tertulisnya "Bagaimana pendekatan Anda terhadap testing?", Kurniadi berpendapat bahwa CI harus fail closed.', "Bagaimana pendekatan Kurniadi terhadap testing?", "id")).toMatchObject({
+    expect(perspectiveCheck('Dalam pandangan tertulisnya "Bagaimana cara merancang testing?", Kurniadi berpendapat bahwa CI harus fail closed.', "Bagaimana pendekatan Kurniadi terhadap testing?", "id")).toMatchObject({
       ok: true,
       cite: "/blog/spec-driven-development-with-ai-coding-agents",
     });
@@ -268,18 +271,18 @@ describe("perspective checks", () => {
   it("never names a perspective as the closest source: it has no page of its own", () => {
     const chunk = (id: string) => pack.chunks.find((c) => c.id === id)!;
     expect(chunk("perspective-rag-trust").url).toBe("/labs/ai-solutions-assistant");
-    expect(closestSource([chunk("perspective-rag-trust"), chunk("principles")], "en")).toEqual({ title: "How I work", url: "/contact#how" });
+    expect(closestSource([chunk("perspective-rag-trust"), chunk("principles")], "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
     expect(closestSource([chunk("perspective-rag-trust")], "en")).toBeUndefined();
   });
 
   it("points the no-view answer to the closest written source, in both languages", () => {
-    expect(closestSource(retrieve(pack, "What does Kurniadi think about microservices?", "en").chunks, "en")).toEqual({ title: "How I work", url: "/contact#how" });
-    expect(noViewMessage("en", { title: "How I work", url: "/contact#how" })).toBe(`${MESSAGES.noView.en} The closest thing he wrote is "How I work", on the About page.`);
-    expect(noViewMessage("id", { title: "Cara saya bekerja", url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Tulisan terdekat darinya adalah "Cara saya bekerja", di halaman About.`);
+    expect(closestSource(retrieve(pack, "What does Kurniadi think about microservices?", "en").chunks, "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
+    expect(noViewMessage("en", { title: en.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.en} The closest written source is "${en.home.howTitle}", on the About page.`);
+    expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Tulisan yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
     expect(noViewMessage("en", { title: "Spec-Driven Development with AI Coding Agents", url: "/blog/spec-driven-development-with-ai-coding-agents" })).toContain(
       '"Spec-Driven Development with AI Coding Agents", on his blog.',
     );
-    expect(noViewMessage("en")).toBe(`${MESSAGES.noView.en} You can read how he works on the About page.`);
+    expect(noViewMessage("en")).toBe(`${MESSAGES.noView.en} Read about his working approach on the About page.`);
     expect(noViewMessage("en", { title: "x", url: "https://evil.example" })).toBe(noViewMessage("en"));
   });
 
