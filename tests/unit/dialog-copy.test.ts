@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "next-intl";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { collectStrings } from "@/content/safety";
@@ -22,6 +23,19 @@ describe("Rover dialog copy", () => {
 
   it("has a line for every floor above the Lobby", () => {
     expect(Object.keys(en.dialog.floor).sort()).toEqual(["L2", "L3", "L4", "RF"]);
+  });
+
+  it("keeps interpolated name and object-label examples within the same phone limit", () => {
+    for (const [locale, messages] of [["en", en], ["id", id]] as const) {
+      const groups = [messages.dialog.onboarding, messages.dialog.floor, messages.dialog.hints.kind, messages.dialog.hints.object];
+      for (const group of groups) {
+        for (const { path, value } of collectStrings(group)) {
+          const t = createTranslator({ locale, messages: { sample: value } });
+          const expanded = t("sample", { name: "Kurniadi", label: messages.library.topics.title });
+          expect(expanded.length, `${locale}.${path}`).toBeLessThanOrEqual(MAX_LINE);
+        }
+      }
+    }
   });
 });
 

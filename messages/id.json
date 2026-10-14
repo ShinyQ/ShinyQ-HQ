@@ -41,7 +41,7 @@
     "previous": "Sebelumnya",
     "next": "Berikutnya",
     "external": "terbuka di tab baru",
-    "visitLive": "Kunjungi situs live",
+    "visitLive": "Kunjungi situs aktif",
     "viewCv": "Lihat CV",
     "email": "Email",
     "copyEmail": "Salin email",
@@ -81,10 +81,10 @@
     "journeyTitle": "Pekerjaan terbaru",
     "skillsTitle": "Dinding keahlian",
     "certsTitle": "Sertifikasi",
-    "howTitle": "Cara saya bekerja",
+    "howTitle": "Cara kerja",
     "directoryTitle": "Direktori gedung",
     "directoryIntro": "Pilih lantai yang ingin dijelajahi. Setiap lantai juga punya halaman di situs klasik.",
-    "storyTitle": "Latar belakang saya",
+    "storyTitle": "Latar belakang",
     "seeWork": "Lihat karya",
     "selectedWork": "Karya pilihan",
     "allProjects": "Semua {count} proyek",
@@ -149,14 +149,14 @@
     "intro": "Studi kasus software, AI, dan data beserta kontribusi dan hasil saya: software sejak 2019, data dan ML sejak 2021, dan AI enterprise sejak 2026.",
     "softwareIntro": "Sistem backend, full-stack, fintech, dan SaaS.",
     "aiIntro": "Platform AI enterprise dengan evaluation gate sebelum rilis.",
-    "dataIntro": "NLP, forecasting, optimasi, dan pengumpulan data dari repository publik saya.",
+    "dataIntro": "NLP, forecasting, optimasi, dan pengumpulan data dari repositori publik saya.",
     "wingProjects": "Proyek {wing}",
     "codeResearch": "Kode dan riset",
-    "repositories": "Repository di GitHub",
-    "research": "Paper, skripsi, dan model",
+    "repositories": "Repositori di GitHub",
+    "research": "Makalah, skripsi, dan model",
     "directory": "Direktori",
     "problem": "Masalah",
-    "approach": "Yang saya kerjakan",
+    "approach": "Kontribusi",
     "architecture": "Arsitektur",
     "architectureFlow": "Alur data",
     "results": "Hasil",
@@ -175,7 +175,7 @@
     },
     "reactor": {
       "title": "Reaktor Teknologi",
-      "subtitle": "Pilih teknologi untuk menyalakan setiap proyek yang memakainya.",
+      "subtitle": "Pilih teknologi untuk menyorot proyek yang memakainya.",
       "rings": {
         "ai": "AI dan LLM",
         "azure": "Azure",
@@ -189,7 +189,7 @@
       "count": "{count} proyek",
       "uses": "{count} proyek memakai {tech}",
       "projects": "Proyek yang memakai {tech}",
-      "clear": "Hapus pilihan",
+      "clear": "Hapus filter teknologi",
       "surprise": "Kejutkan saya",
       "directory": "Di direktori sayap",
       "show": "Tampilkan proyek yang memakai {tech}",
@@ -228,7 +228,7 @@
     "profiles": "Profil riset",
     "topics": {
       "title": "Konstelasi Topik",
-      "subtitle": "Topik di blog, riset, model, dan sesi berbagi. Pilih satu untuk menyalakan karyanya di lantai ini.",
+      "subtitle": "Jelajahi blog, riset, model, dan sesi berbagi berdasarkan topik. Pilih topik untuk menyorot karya terkait di lantai ini.",
       "names": {
         "llm-evaluation": "Evaluasi LLM",
         "azure-openai": "Azure OpenAI",
@@ -249,7 +249,7 @@
       "pieces": "{count} karya tentang {topic}",
       "selection": "Karya tentang {topic}",
       "show": "Tampilkan tulisan tentang {topic}",
-      "clear": "Hapus pilihan",
+      "clear": "Hapus filter topik",
       "all": "Semua topik",
       "filters": "Filter berdasarkan topik",
       "monument": {
@@ -262,7 +262,7 @@
   },
   "blog": {
     "back": "Kembali ke Perpustakaan",
-    "translationMissing": "Hanya tersedia dalam {language}. Anda sedang membaca versi aslinya.",
+    "translationMissing": "Tulisan ini tersedia dalam {language}. Versi asli ditampilkan di sini.",
     "languageName": {
       "en": "bahasa Inggris",
       "id": "bahasa Indonesia"
@@ -345,7 +345,7 @@
   },
   "footer": {
     "built": "Situs ini berjalan di atas satu dataset yang tervalidasi.",
-    "privacy": "Privasi: tanpa cookie atau ID pelacak. Kunjungan dihitung secara anonim dengan Cloudflare (negara, halaman, tampilan 3D atau Situs klasik, dan topik pertanyaan ke AI) untuk menampilkan total publik, dan sebagian kunjungan 3D mengirim rentang performa. Alamat IP dan detail browser Anda tidak pernah disimpan. Do Not Track, Global Privacy Control, atau \"Jangan hitung kunjungan saya\" menghentikan penghitungan.",
+    "privacy": "Kunjungan dihitung secara anonim, tanpa cookie atau ID pelacak. Cloudflare menghitung negara, halaman, tampilan 3D atau Situs klasik, dan topik pertanyaan ke AI untuk total publik. Sebagian sesi 3D mengirim rentang performa. Ask AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Do Not Track dan Global Privacy Control menghentikan beacon kunjungan dan performa situs ini. \"Jangan hitung kunjungan saya\" juga menonaktifkan Cloudflare Web Analytics.",
     "source": "Lihat kode sumber di GitHub",
     "pages": "Halaman",
     "elsewhere": "Tautan lain"
@@ -373,7 +373,7 @@
       "system": "Sistem",
       "full": "Penuh",
       "reduced": "Dikurangi",
-      "note": "Sistem mengikuti pengaturan kurangi gerakan di perangkat."
+      "note": "Sistem mengikuti pengaturan pengurangan gerak di perangkat."
     },
     "menu": "Menu",
     "profile": "Profil",
@@ -409,7 +409,7 @@
       "contact": "Stasiun komunikasi",
       "cv": "Kios CV",
       "research": "Rak riset",
-      "highlightsAbout": "Sorotan: tentang saya",
+      "highlightsAbout": "Sorotan: profil",
       "highlightsProjects": "Sorotan: proyek unggulan",
       "highlightsExperience": "Sorotan: pengalaman kerja",
       "highlightsContact": "Sorotan: kontak",
@@ -435,7 +435,7 @@
       "question": "lanjut ke mana? ^_^",
       "options": "Pilihan Tanya Rover",
       "driveMyself": "saya jelajahi sendiri",
-      "hint": "Pilih: 1 hingga 8 atau panah + Enter · Tutup: Esc",
+      "hint": "Pilih: 1 hingga 9 atau panah + Enter · Tutup: Esc",
       "close": "Tutup terminal"
     },
     "palette": {
@@ -480,7 +480,7 @@
       "cancel": "Batalkan misi",
       "cancelled": "misi dibatalkan o_o",
       "copied": "Email tersalin ^_^",
-      "copyFailed": "Email gagal disalin. Hubungi saya di {email}."
+      "copyFailed": "Email belum bisa disalin. Alamatnya: {email}."
     },
     "career": {
       "prologue": "Prolog",
@@ -489,7 +489,7 @@
       "window": "Labs di lantai L3",
       "scrubHint": "Tahun: geser ke kiri untuk maju, ke kanan untuk kembali",
       "rooms": "{count} ruang",
-      "here": "Anda di sini",
+      "here": "Posisi saat ini",
       "stars": "{count} bintang"
     },
     "world": {
@@ -497,7 +497,7 @@
       "read": "Baca",
       "comms": "Tautan kontak",
       "cvHint": "Buka penampil CV",
-      "about": "Tentang saya",
+      "about": "Profil",
       "availability": "Ketersediaan"
     },
     "view": {
@@ -519,12 +519,12 @@
       "yearTitle": "Teleportasi ke tahun",
       "yearHint": "Pilih tahun: panah untuk berpindah, Enter untuk teleportasi, Esc untuk menutup.",
       "close": "Tutup",
-      "here": "Anda di sini",
+      "here": "Posisi saat ini",
       "floorDesc": {
         "L1": "Profil, Aula Sorotan, keahlian dan sertifikasi",
         "L2": "Career Road: satu plaza per tahun",
-        "L3": "Proyek product engineering dan AI engineering",
-        "L4": "Artikel blog, makalah riset dan talk",
+        "L3": "Product Engineering, AI Engineering, serta Data dan ML",
+        "L4": "Artikel blog, makalah riset, dan sesi berbagi",
         "RF": "Kanal kontak dan CV"
       },
       "consoleTitle": "Konsol waktu",
@@ -550,7 +550,7 @@
     "label": "Detail ruang",
     "close": "Tutup ruang",
     "loading": "Memuat ruang",
-    "unavailable": "Ruang ini gagal dimuat. Buka halamannya untuk melanjutkan.",
+    "unavailable": "Detail ruang belum bisa dimuat. Coba buka halaman lengkapnya.",
     "tabs": {
       "overview": "Ringkasan",
       "architecture": "Arsitektur",
@@ -589,9 +589,9 @@
       "label": "{title}, arsitektur"
     },
     "rooms": {
-      "bio": "Tentang saya",
-      "story": "Latar belakang saya",
-      "principles": "Cara saya bekerja",
+      "bio": "Profil",
+      "story": "Latar belakang",
+      "principles": "Cara kerja",
       "verify": "Lihat kredensial",
       "earned": "Diraih",
       "inProgress": "Dalam proses",
@@ -611,10 +611,10 @@
       "emailMe": "Kirim email",
       "copyEmail": "Salin email",
       "copied": "Email tersalin ^_^",
-      "copyFailed": "Email gagal disalin. Hubungi saya di {email}.",
+      "copyFailed": "Email belum bisa disalin. Alamatnya: {email}.",
       "writtenIn": "Hanya tersedia dalam {languages}",
       "sideProject": "Proyek sampingan",
-      "liveDemo": "Demo langsung",
+      "liveDemo": "Buka demo",
       "repository": "Repositori",
       "openProject": "Buka proyek",
       "viewRepo": "Lihat di GitHub",
@@ -639,7 +639,7 @@
     "keyProjects": "Proyek utama",
     "allProjects": "Semua proyek",
     "filters": "Filter proyek",
-    "wing": "Wing",
+    "wing": "Bidang",
     "all": "Semua",
     "stack": "Stack",
     "anyStack": "Semua stack",
@@ -671,15 +671,15 @@
     "thinking": "Sedang berpikir…",
     "asOf": "Dijawab oleh AI dari isi situs ini, per {date}",
     "privacyTitle": "Privasi",
-    "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI di edge terdekat dan disimpan dalam log paling lama 7 hari, dengan email, nomor telepon, dan nomor identitas dihapus. Data ini tidak pernah dipakai untuk training. Tidak perlu akun, dan satu-satunya cookie adalah pemeriksaan anti-bot yang berumur pendek. Mohon jangan bagikan informasi pribadi.",
+    "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Tidak perlu akun. Ask AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",
     "error": {
       "rateLimited": "Terlalu banyak pertanyaan untuk saat ini. Coba lagi dalam {minutes} menit.",
-      "offline": "Ask the HQ sedang istirahat. Coba pencarian ⌘K atau jelajahi halamannya.",
-      "fallback": "Saya belum bisa menjawabnya sekarang. Coba pencarian ⌘K atau halaman Karya dan Perjalanan."
+      "offline": "Ask AI sedang tidak tersedia. Coba pencarian atau jelajahi halaman situs.",
+      "fallback": "Jawaban belum tersedia saat ini. Coba pencarian atau halaman Karya dan Perjalanan."
     },
     "terminal": {
-      "option": "tanya apa saja ^_^",
-      "hintMenu": "Pilih: a, 1 hingga 8 atau panah + Enter · Tutup: Esc"
+      "option": "tanya AI tentang karya ^_^",
+      "hintMenu": "Pilih: a, 1 hingga 9 atau panah + Enter · Tutup: Esc"
     },
     "palette": {
       "row": "Tanya: \"{q}\"",
@@ -688,15 +688,15 @@
     "dock": {
       "launcher": "Tanya AI",
       "launcherLabel": "Tanya AI tentang Kurniadi",
-      "teaser": "Tanyakan apa saja tentang karya, proyek, atau karier Kurniadi.",
+      "teaser": "Ada pertanyaan tentang karya, proyek, atau karier Kurniadi?",
       "teaserDismiss": "Tutup",
       "title": "Ask the HQ",
       "subtitle": "Jawaban AI hanya dari isi situs ini",
       "close": "Tutup chat",
       "clear": "Hapus chat",
       "threadLabel": "Percakapan",
-      "welcome": "Halo! Saya menjawab pertanyaan seputar karya, proyek, karier, cara kerja Kurniadi, dan cara menghubunginya, hanya dari isi situs ini. Pilih topik atau ketik pertanyaan.",
-      "you": "Anda",
+      "welcome": "Halo! Temukan jawaban tentang karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Jawaban AI bersumber dari isi situs ini. Pilih topik atau ketik pertanyaan.",
+      "you": "Pengunjung",
       "hq": "HQ",
       "topicsLabel": "Pilih topik",
       "topicQuestions": "Pertanyaan {topic}",
@@ -704,7 +704,7 @@
       "followUpsLabel": "Tanya berikutnya",
       "moreTopics": "Topik lain",
       "edit": "Ubah sebelum bertanya: {q}",
-      "inputLabel": "Pertanyaan Anda",
+      "inputLabel": "Pertanyaan",
       "placeholder": "Tanyakan karya, proyek, atau cara kerjanya",
       "source": "Baca di situs ini: {label}",
       "send": "Kirim"
@@ -717,10 +717,10 @@
       "perspectives": "Perspektif"
     },
     "cite": {
-      "how": "Cara saya bekerja di halaman About",
-      "blog": "tulisan blognya",
-      "project": "studi kasus proyeknya",
-      "library": "halaman Library"
+      "how": "Cara kerja Kurniadi di halaman Tentang",
+      "blog": "Tulisan blog Kurniadi",
+      "project": "Studi kasus proyek",
+      "library": "Halaman Tulisan"
     },
     "hero": {
       "label": "Tanya AI tentang pekerjaan saya",
@@ -736,36 +736,36 @@
   },
   "walk": {
     "journey": {
-      "title": "Jelajahi perjalanan saya?",
-      "body": "Perjalanan terpandu melewati setiap peran dan pencapaian saya, dari yang paling awal. Lewati jika ingin menjelajah lantai ini sendiri.",
-      "start": "Jelajahi perjalanan saya",
+      "title": "Jelajahi perjalanan karier?",
+      "body": "Tur terpandu melewati setiap peran dan pencapaian, dari yang paling awal. Pilih jelajah bebas untuk menyusuri lantai ini sendiri.",
+      "start": "Jelajahi perjalanan karier",
       "name": "Tur perjalanan"
     },
     "projects": {
-      "title": "Tur proyek saya?",
-      "body": "Perjalanan terpandu melewati proyek utama dan unggulan saya, sayap demi sayap. Lewati jika ingin menjelajah lantai ini sendiri.",
-      "start": "Tur proyek saya",
+      "title": "Ikut tur proyek?",
+      "body": "Tur terpandu melewati proyek utama dan unggulan, dari satu sayap ke sayap berikutnya. Pilih jelajah bebas untuk menyusuri lantai ini sendiri.",
+      "start": "Mulai tur proyek",
       "name": "Tur proyek"
     },
     "writing": {
-      "title": "Baca tulisan saya?",
-      "body": "Perjalanan terpandu melewati tulisan saya dari yang terbaru, lalu riset, model, serta talk dan workshop saya. Lewati jika ingin menjelajah lantai ini sendiri.",
-      "start": "Baca tulisan saya",
+      "title": "Jelajahi tulisan?",
+      "body": "Tur terpandu dimulai dari tulisan terbaru, lalu riset, model, serta sesi berbagi dan workshop. Pilih jelajah bebas untuk menyusuri lantai ini sendiri.",
+      "start": "Mulai tur tulisan",
       "name": "Tur tulisan"
     },
     "meet": {
       "title": "Kenalan dulu?",
-      "body": "Perjalanan singkat terpandu: siapa saya, ketersediaan saya, CV saya, dan cara menghubungi saya. Lewati jika ingin menjelajah atap sendiri.",
-      "start": "Kenalan dengan saya",
+      "body": "Tur singkat tentang Kurniadi: profil, ketersediaan, CV, dan cara menghubunginya. Pilih jelajah bebas untuk menyusuri atap sendiri.",
+      "start": "Mulai tur perkenalan",
       "name": "Tur perkenalan",
-      "about": "Tentang saya",
+      "about": "Profil",
       "availability": "Ketersediaan",
-      "cv": "CV saya",
-      "contact": "Hubungi saya"
+      "cv": "CV",
+      "contact": "Kontak"
     },
     "highlights": {
       "title": "Ikut tur singkat?",
-      "body": "Perjalanan empat pemberhentian di Aula Sorotan: tentang saya, proyek teratas, pengalaman kerja dan cara menghubungi saya.",
+      "body": "Empat pemberhentian di Aula Sorotan: profil, proyek unggulan, pengalaman kerja, dan cara menghubungi Kurniadi.",
       "start": "Tur singkat",
       "name": "Tur singkat"
     },
@@ -775,7 +775,7 @@
     "stopShort": "{index}/{total}",
     "visited": "{count} dikunjungi",
     "driving": "Dalam perjalanan",
-    "here": "Anda di sini",
+    "here": "Posisi saat ini",
     "prev": "Sebelumnya",
     "next": "Berikutnya",
     "finish": "Selesai",
@@ -790,7 +790,7 @@
     "close": "Tutup",
     "keys": "[ dan ] untuk berpindah titik",
     "swipe": "Geser kartu untuk berpindah titik",
-    "workshopSub": "Side project, repository, dan model",
+    "workshopSub": "Proyek sampingan dan repositori publik",
     "more": "Proyek lainnya di sini",
     "moreSub": "Buka untuk melihat semua proyek di sayap ini",
     "moreWriting": "Tulisan lainnya di sini",
@@ -833,15 +833,15 @@
   },
   "hall": {
     "hall": "Aula Sorotan",
-    "about": "Tentang saya",
+    "about": "Profil",
     "projects": "3 proyek teratas",
-    "projectsSub": "Tiga proyek yang akan saya tunjukkan lebih dulu, lengkap dengan screenshot.",
+    "projectsSub": "Tiga proyek pilihan, lengkap dengan tangkapan layar.",
     "experience": "Pengalaman kerja",
     "counts": "{employment} peran pekerjaan dan {freelance} proyek freelance, terbaru lebih dulu",
     "contact": "Kontak",
     "more": "+{count} lainnya di panel",
-    "cvHint": "CV saya tinggal satu ketukan: buka stasiun ini",
-    "fullProfile": "Baca profil lengkap saya",
+    "cvHint": "Buka stasiun ini untuk membaca CV",
+    "fullProfile": "Baca profil lengkap",
     "openProject": "Buka di Labs",
     "openRole": "Buka di Career Road"
   },
@@ -895,33 +895,33 @@
       "start": "Ajak saya keliling",
       "skip": "Lewati tutorial",
       "skipped": "Tidak masalah. Tur ini bisa diputar ulang kapan saja dari Tanya Rover.",
-      "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk boost.",
+      "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
       "moveCoarse": "Geser joystick untuk mengemudi. Ketuk tombol turbo agar lebih cepat, ketuk lagi untuk mematikannya.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
       "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
       "moved": "Mantap, kemudinya lancar!",
       "cameraFine": "Seret atau pakai Q dan E untuk melihat sekeliling. Scroll untuk zoom; zoom terus untuk lihat dari mata saya!",
       "cameraCoarse": "Seret atau putar dua jari untuk melihat sekeliling. Cubit untuk zoom; zoom terus untuk lihat dari mata saya!",
-      "highlights": "Highlights Hall di sisi timur merangkum karya terbaik {name}. Mau lihat?",
+      "highlights": "Aula Sorotan di sisi timur merangkum karya pilihan {name}. Mau lihat?",
       "showMe": "Antar saya ke sana",
       "later": "Nanti saja",
       "elevator": "Lift ini menuju semua lantai. Berhenti di pad panggil yang menyala di depannya untuk memilih lantai.",
-      "askRover": "Bingung mau ke mana? Tanya Rover punya perjalanan berpemandu.",
+      "askRover": "Belum tahu mau ke mana? Tanya Rover punya tur terpandu.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
       "closingShort": "Itu dasarnya! Tur lengkap bisa diputar ulang dari Tanya Rover kapan saja."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",
-      "L3": "Selamat datang di Project Roads: proyek produk dan AI di dua sayap yang bertemu dalam satu putaran.",
-      "L4": "Ini Newsroom: tulisan terbaru lebih dulu, lalu riset, model, dan talk.",
+      "L3": "Selamat datang di Project Roads! Ada Product Engineering, AI Engineering, serta Data dan ML.",
+      "L4": "Ini Newsroom: tulisan terbaru lebih dulu, lalu riset, model, dan sesi berbagi.",
       "RF": "Di atap ini: siapa {name}, ketersediaan, CV, dan cara menghubungi."
     },
     "hints": {
       "bubble": "Petunjuk: {label}",
       "kind": {
         "door": "{label}: kemudikan masuk ke pintu untuk membukanya.",
-        "elevator-pad": "Berhenti di atas saya untuk memilih lantai.",
+        "elevator-pad": "Berhenti di pad ini untuk memilih lantai.",
         "teleporter": "Berhenti di pad ini untuk teleport ke tahun lain.",
         "return-pad": "Berhenti di sini untuk kembali ke lift dalam sekejap.",
         "station": "{label}: buka untuk melihat lebih dekat.",
@@ -929,12 +929,12 @@
         "board": "{label}: buka untuk melihat daftar lengkap."
       },
       "object": {
-        "highlights": "Highlights Hall: karya terbaik {name} di satu tempat.",
-        "askRover": "Kios Tanya Rover: perjalanan berpemandu keliling HQ.",
+        "highlights": "Aula Sorotan: karya pilihan {name} di satu tempat.",
+        "askRover": "Kios Tanya Rover: tur terpandu keliling HQ.",
         "cv": "Kios CV: baca atau unduh CV.",
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
-        "research": "Meja Riset: paper lengkap dengan abstrak dan sitasi.",
-        "workshop": "Workshop: proyek sampingan, repo, dan model.",
+        "research": "Meja Riset: makalah lengkap dengan abstrak dan sitasi.",
+        "workshop": "Workshop: proyek sampingan dan repositori publik.",
         "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift.",
         "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini."
       },
@@ -964,10 +964,10 @@
     "quickDescription": "{name} dalam satu halaman. {motto}",
     "journeyTitle": "Perjalanan karier {name}",
     "journeyDescription": "Perjalanan karier {name}, {from} hingga {to}: pekerjaan, proyek freelance, pendidikan, riset, dan penghargaan.",
-    "labsTitle": "Studi kasus software dan AI oleh {name}",
-    "labsDescription": "{count} studi kasus software dan AI oleh {name}: voice agent realtime, document AI, keamanan AI, dan backend.",
+    "labsTitle": "Studi kasus software, AI, dan data: {name}",
+    "labsDescription": "{count} studi kasus software, AI, dan data oleh {name}: voice agent realtime, document AI, backend, dan data serta ML.",
     "libraryTitle": "Tulisan dan riset oleh {name}",
-    "libraryDescription": "Artikel, publikasi riset, model yang dipublikasikan, dan materi talk oleh {name}, {role}.",
+    "libraryDescription": "Artikel, publikasi riset, model yang dipublikasikan, dan materi sesi berbagi oleh {name}, {role}.",
     "contactTitle": "Kontak {name}: peran software dan AI",
     "contactDescription": "Hubungi {name}, {role} di {city}, untuk peran dan proyek software serta AI engineering.",
     "cvTitle": "CV {name}: software dan AI engineering",
@@ -1041,7 +1041,7 @@
         },
         "labs": {
           "title": "Studi kasus",
-          "subtitle": "{count} proyek software dan AI, lengkap dengan hasil"
+          "subtitle": "{count} proyek software, AI, dan data, lengkap dengan hasil"
         },
         "library": {
           "title": "Tulisan dan riset",
@@ -1061,7 +1061,7 @@
   "stats": {
     "title": "Kunjungan",
     "observatory": "Observatorium Pengunjung",
-    "intro": "Total anonim kunjungan ke situs ini dan pertanyaan ke AI-nya, diperbarui sekali sehari dari hari penuh sebelumnya.",
+    "intro": "Jumlah kunjungan dan pertanyaan ke AI dihitung secara anonim, lalu diperbarui setiap hari dari data satu hari penuh sebelumnya.",
     "approx": "sekitar {n}",
     "window": {
       "d30": "30 hari penuh terakhir",
@@ -1071,7 +1071,7 @@
     "updated": "Diperbarui setiap hari",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
-    "offline": "Statistik offline",
+    "offline": "Statistik belum tersedia",
     "topicLegend": "Topik",
     "periodLegend": "Periode",
     "topics": {
@@ -1102,11 +1102,11 @@
       "note": "Kunjungan yang memakai keduanya dihitung di kedua sisi."
     },
     "topicsTitle": "Pertanyaan per topik",
-    "topicsNote": "Porsi pertanyaan yang punya topik, diklasifikasikan otomatis dari jawabannya.",
+    "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
     "chipsTitle": "Contoh pertanyaan (kurasi)",
-    "chipsNote": "Seberapa sering setiap pertanyaan saran dipilih. Apa yang diketik pengunjung tidak pernah ditampilkan.",
+    "chipsNote": "Seberapa sering pertanyaan yang disarankan dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
     "chipCount": "{n} kali dipilih",
-    "noChips": "Belum ada pertanyaan saran yang dipilih untuk topik ini.",
+    "noChips": "Pertanyaan yang disarankan untuk topik ini belum pernah dipilih.",
     "map": {
       "label": "Peta dunia dengan {n} negara yang disorot",
       "caption": "{window}: negara dengan minimal satu kunjungan. Hanya titik, tanpa angka per negara."
@@ -1118,7 +1118,7 @@
       "code": "Kode"
     },
     "optOut": "Jangan hitung kunjungan saya",
-    "optOutHint": "Hanya disimpan di browser ini. Do Not Track dan Global Privacy Control juga dihormati.",
+    "optOutHint": "Disimpan di browser ini. Do Not Track dan Global Privacy Control menghentikan beacon kunjungan dan performa.",
     "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
     "openObservatory": "Observatorium Pengunjung di Lobi",
     "panel": {
@@ -1132,7 +1132,7 @@
   },
   "production": {
     "proof": "Bukti dari production",
-    "cases": "Studi kasus yang membuktikannya",
+    "cases": "Studi kasus terkait",
     "excerpt": "Alert rule sebagai kode (disamarkan)",
     "screens": {
       "metrics": "Metrik",
@@ -1140,14 +1140,14 @@
       "alerts": "Alert"
     },
     "live": {
-      "title": "Situs ini, live",
+      "title": "Telemetri situs ini",
       "visits": "Kunjungan, 30 hari terakhir",
       "fps": "Sesi 3D di 55+ FPS",
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
-      "sessions": "{count} sesi 3D tersampel, 30 hari terakhir",
+      "sessions": "{count} sesi 3D dalam sampel, 30 hari terakhir",
       "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap hari.",
-      "offline": "Angka live sedang tidak tersedia."
+      "offline": "Angka terkini belum tersedia."
     },
     "explore": {
       "lt3s": "di bawah 3 detik",

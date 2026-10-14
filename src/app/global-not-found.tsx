@@ -18,7 +18,8 @@ export default function GlobalNotFound() {
           <p className="pv-data">404</p>
           <h1 className="pv-d-l mt-5">{en.notFound.title}</h1>
           <p className="pv-lead mt-6">{en.notFound.body}</p>
-          <p lang="id" className="pv-body mt-2">
+          <h2 lang="id" className="pv-h2 mt-8">{id.notFound.title}</h2>
+          <p lang="id" className="pv-body mt-3">
             {id.notFound.body}
           </p>
           <p className="mt-8 flex flex-wrap gap-3">

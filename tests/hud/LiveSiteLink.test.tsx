@@ -21,6 +21,6 @@ describe("LiveSiteLink (R4-J)", () => {
 
   it("is labelled in Indonesian too", () => {
     render(<LiveSiteLink href="https://mii-microsoft-ai.azurewebsites.net" label={id.common.visitLive} srHint={id.common.external} />);
-    expect(screen.getByRole("link", { name: "Kunjungi situs live (terbuka di tab baru)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kunjungi situs aktif (terbuka di tab baru)" })).toBeInTheDocument();
   });
 });

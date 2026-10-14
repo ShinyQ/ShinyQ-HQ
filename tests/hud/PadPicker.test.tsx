@@ -52,7 +52,7 @@ describe("pad pickers", () => {
     expect(dialog).toHaveAttribute("data-sheet", "bottom");
     expect([...dialog.querySelectorAll("[data-option]")].map((b) => b.getAttribute("data-option"))).toEqual(["RF", "L4", "L3", "L2", "L1"]);
     expect(option(dialog, "L3")).toHaveTextContent("Work");
-    expect(option(dialog, "L3")).toHaveTextContent("Product and AI engineering projects");
+    expect(option(dialog, "L3")).toHaveTextContent("Product Engineering, AI Engineering, and Data and ML");
     expect(option(dialog, "L2")).toHaveAttribute("aria-current", "true");
     expect(option(dialog, "L2")).toHaveTextContent("You are here");
     expect(option(dialog, "L2")).toHaveFocus();
@@ -125,7 +125,7 @@ describe("pad pickers", () => {
     act(() => getHQStore().getState().openPicker({ kind: "floor" }));
     const dialog = await screen.findByRole("dialog", { name: "Naik lift" });
     expect(option(dialog, "L3")).toHaveTextContent("Karya");
-    expect(option(dialog, "L3")).toHaveTextContent("Proyek product engineering dan AI engineering");
+    expect(option(dialog, "L3")).toHaveTextContent("Product Engineering, AI Engineering, serta Data dan ML");
     expect(within(dialog).getByRole("button", { name: "Tutup" })).toBeInTheDocument();
   });
 

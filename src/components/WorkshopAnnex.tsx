@@ -17,7 +17,7 @@ export async function SideProjectGrid({ projects, locale }: { projects: readonly
               <TechLogoRow items={p.stack} max={10} />
               {p.url && (
                 <ExternalLink href={p.url} srHint={t("external")} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink">
-                  Live
+                  {t("visitLive")}
                 </ExternalLink>
               )}
               {p.repo && (

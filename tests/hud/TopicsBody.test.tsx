@@ -78,7 +78,7 @@ describe("Topic Constellation drawer", () => {
     expect(goTo).toHaveBeenCalledWith("L4:publications");
   });
 
-  it("clears with Clear or a second pick", async () => {
+  it("clears the topic filter with its action or a second pick", async () => {
     const drawer = open();
     const voice = within(within(drawer).getByTestId("topics-list")).getByRole("button", { name: /^Voice AI/ });
     await userEvent.click(voice);
@@ -86,7 +86,7 @@ describe("Topic Constellation drawer", () => {
     await userEvent.click(voice);
     expect(getHQStore().getState().topics.topic).toBeNull();
     await userEvent.click(voice);
-    await userEvent.click(within(drawer).getByTestId("topics-clear"));
+    await userEvent.click(within(drawer).getByRole("button", { name: "Clear topic filter" }));
     expect(getHQStore().getState().topics.topic).toBeNull();
     expect(within(drawer).queryByTestId("topics-clear")).toBeNull();
   });
@@ -96,6 +96,7 @@ describe("Topic Constellation drawer", () => {
     await userEvent.click(within(within(drawer).getByTestId("topics-list")).getByRole("button", { name: /^Mengajar dan mentoring/ }));
     expect(within(drawer).getByTestId("topics-pieces")).toHaveTextContent(/karya tentang Mengajar dan mentoring$/);
     expect(within(drawer).getAllByTestId("topic-piece")[0]).toHaveTextContent(id.library.posts);
+    expect(within(drawer).getByRole("button", { name: "Hapus filter topik" })).toBeVisible();
     expect(en.library.topics.clear).not.toBe(id.library.topics.clear);
   });
 });

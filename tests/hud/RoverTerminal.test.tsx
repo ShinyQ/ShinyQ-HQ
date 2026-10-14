@@ -74,6 +74,14 @@ describe("RoverTerminal", () => {
     expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[4].id);
   });
 
+  it.each(["en", "id"] as const)("shows all nine choices and runs the ninth shortcut in %s", async (locale) => {
+    const { onRun } = renderTerminal({}, locale);
+    expect(missions).toHaveLength(9);
+    expect(screen.getByRole("dialog")).toHaveTextContent(locale === "en" ? "1 to 9" : "1 hingga 9");
+    await userEvent.keyboard("9");
+    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[8].id);
+  });
+
   it("moves with arrows and runs with Enter", async () => {
     const { onRun } = renderTerminal();
     const list = screen.getByRole("listbox");
@@ -171,7 +179,7 @@ describe("RoverTerminal", () => {
 });
 
 describe("RoverTerminal ask option", () => {
-  it("adds ask as the first option on key a, keeping missions on 1 to 8", async () => {
+  it("adds ask as the first option on key a, keeping missions on 1 to 9", async () => {
     const { onRun } = renderTerminal({ ask: true });
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(missions.length + 2);

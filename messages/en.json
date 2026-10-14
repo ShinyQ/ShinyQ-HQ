@@ -81,10 +81,10 @@
     "journeyTitle": "Recent work",
     "skillsTitle": "Skills wall",
     "certsTitle": "Certifications",
-    "howTitle": "How I work",
+    "howTitle": "Working approach",
     "directoryTitle": "Tower directory",
     "directoryIntro": "Choose a floor to explore. Every floor also has a page on the classic site.",
-    "storyTitle": "My background",
+    "storyTitle": "Background",
     "seeWork": "See the work",
     "selectedWork": "Selected work",
     "allProjects": "All {count} projects",
@@ -156,7 +156,7 @@
     "research": "Papers, thesis and models",
     "directory": "Directory",
     "problem": "Problem",
-    "approach": "What I did",
+    "approach": "Contribution",
     "architecture": "Architecture",
     "architectureFlow": "Data flow",
     "results": "Results",
@@ -175,7 +175,7 @@
     },
     "reactor": {
       "title": "Tech Reactor",
-      "subtitle": "Pick a tech to light every project that uses it.",
+      "subtitle": "Pick a technology to highlight the projects that use it.",
       "rings": {
         "ai": "AI and LLM",
         "azure": "Azure",
@@ -189,7 +189,7 @@
       "count": "{count, plural, =1 {# project} other {# projects}}",
       "uses": "{count, plural, =1 {1 project uses {tech}} other {# projects use {tech}}}",
       "projects": "Projects using {tech}",
-      "clear": "Clear",
+      "clear": "Clear technology filter",
       "surprise": "Surprise me",
       "directory": "On the wing directory",
       "show": "Show projects using {tech}",
@@ -228,7 +228,7 @@
     "profiles": "Research profiles",
     "topics": {
       "title": "Topic Constellation",
-      "subtitle": "Topics across the blog, research, models and talks. Pick one to light its pieces on the floor.",
+      "subtitle": "Explore the blog, research, models and talks by topic. Pick a topic to highlight related work on this floor.",
       "names": {
         "llm-evaluation": "LLM evaluation",
         "azure-openai": "Azure OpenAI",
@@ -249,7 +249,7 @@
       "pieces": "{count, plural, one {# piece} other {# pieces}} on {topic}",
       "selection": "Pieces on {topic}",
       "show": "Show writing about {topic}",
-      "clear": "Clear",
+      "clear": "Clear topic filter",
       "all": "All topics",
       "filters": "Filter by topic",
       "monument": {
@@ -262,7 +262,7 @@
   },
   "blog": {
     "back": "Back to the Library",
-    "translationMissing": "Available in {language} only. You are reading the original version.",
+    "translationMissing": "This post is available in {language}. The original version is shown here.",
     "languageName": {
       "en": "English",
       "id": "Indonesian"
@@ -345,7 +345,7 @@
   },
   "footer": {
     "built": "The site runs on one validated dataset.",
-    "privacy": "Privacy: no tracking cookies or IDs. Visits are counted anonymously with Cloudflare (country, pages, 3D or Classic site, and the topic of questions to the AI) to show public totals, and a sample of 3D visits sends performance ranges. Your IP address and browser details are never stored. Do Not Track, Global Privacy Control or \"Don't count my visits\" turn counting off.",
+    "privacy": "Anonymous visit analytics use no tracking cookies or tracking IDs. Cloudflare counts countries, pages, 3D or Classic site use, and AI question topics for public totals. A sample of 3D sessions sends performance ranges. Ask AI uses a separate 30-minute anti-bot cookie. Do Not Track and Global Privacy Control stop this site's visit and performance beacons. \"Don't count my visits\" also turns off Cloudflare Web Analytics.",
     "source": "View source on GitHub",
     "pages": "Pages",
     "elsewhere": "Elsewhere"
@@ -373,7 +373,7 @@
       "system": "System",
       "full": "Full",
       "reduced": "Reduced",
-      "note": "System follows the reduced motion setting of your device."
+      "note": "System follows the device's reduced motion setting."
     },
     "menu": "Menu",
     "profile": "Profile",
@@ -409,7 +409,7 @@
       "contact": "Comms station",
       "cv": "CV kiosk",
       "research": "Research shelf",
-      "highlightsAbout": "Highlights: about me",
+      "highlightsAbout": "Highlights: profile",
       "highlightsProjects": "Highlights: top projects",
       "highlightsExperience": "Highlights: work experience",
       "highlightsContact": "Highlights: contact",
@@ -435,7 +435,7 @@
       "question": "where next? ^_^",
       "options": "Ask Rover options",
       "driveMyself": "explore on my own",
-      "hint": "Pick: 1 to 8 or arrows + Enter · Close: Esc",
+      "hint": "Pick: 1 to 9 or arrows + Enter · Close: Esc",
       "close": "Close terminal"
     },
     "palette": {
@@ -480,7 +480,7 @@
       "cancel": "Cancel mission",
       "cancelled": "mission cancelled o_o",
       "copied": "Email copied ^_^",
-      "copyFailed": "Could not copy email. Contact me at {email}."
+      "copyFailed": "Could not copy the email address. Use {email}."
     },
     "career": {
       "prologue": "Prologue",
@@ -497,7 +497,7 @@
       "read": "Read",
       "comms": "Contact links",
       "cvHint": "Open the CV viewer",
-      "about": "About me",
+      "about": "Profile",
       "availability": "Availability"
     },
     "view": {
@@ -523,7 +523,7 @@
       "floorDesc": {
         "L1": "Profile, the Highlights Hall, skills and certifications",
         "L2": "The Career Road: one plaza per year",
-        "L3": "Product and AI engineering projects",
+        "L3": "Product Engineering, AI Engineering, and Data and ML",
         "L4": "Blog posts, research papers and talks",
         "RF": "Contact channels and the CV"
       },
@@ -550,7 +550,7 @@
     "label": "Room details",
     "close": "Close room",
     "loading": "Loading room",
-    "unavailable": "Could not load this room. Open its page to continue.",
+    "unavailable": "Could not load the room details. Try opening the full page.",
     "tabs": {
       "overview": "Overview",
       "architecture": "Architecture",
@@ -589,9 +589,9 @@
       "label": "{title}, architecture"
     },
     "rooms": {
-      "bio": "About me",
-      "story": "My background",
-      "principles": "How I work",
+      "bio": "Profile",
+      "story": "Background",
+      "principles": "Working approach",
       "verify": "View credential",
       "earned": "Earned",
       "inProgress": "In progress",
@@ -611,10 +611,10 @@
       "emailMe": "Email me",
       "copyEmail": "Copy email",
       "copied": "Email copied ^_^",
-      "copyFailed": "Could not copy email. Contact me at {email}.",
+      "copyFailed": "Could not copy the email address. Use {email}.",
       "writtenIn": "Available in {languages} only",
       "sideProject": "Side project",
-      "liveDemo": "Live demo",
+      "liveDemo": "Open demo",
       "repository": "Repository",
       "openProject": "Open project",
       "viewRepo": "View on GitHub",
@@ -671,15 +671,15 @@
     "thinking": "Thinking…",
     "asOf": "Answered by AI from this site, as of {date}",
     "privacyTitle": "Privacy",
-    "privacy": "Questions and answers are processed by Cloudflare Workers AI at the nearest edge and logged for up to 7 days, with emails, phone numbers and ID numbers removed. They are never used for training. No account is needed, and the only cookie is a short-lived anti-bot check. Please don't share personal information.",
+    "privacy": "Questions and answers are processed by Cloudflare Workers AI. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
-      "offline": "Ask the HQ is resting right now. Try ⌘K search or browse the pages.",
-      "fallback": "I couldn't answer that right now. Try ⌘K search or the Work and Journey pages."
+      "offline": "Ask AI is unavailable right now. Try search or browse the site pages.",
+      "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
     },
     "terminal": {
-      "option": "ask me anything ^_^",
-      "hintMenu": "Pick: a, 1 to 8 or arrows + Enter · Close: Esc"
+      "option": "ask AI about the work ^_^",
+      "hintMenu": "Pick: a, 1 to 9 or arrows + Enter · Close: Esc"
     },
     "palette": {
       "row": "Ask: \"{q}\"",
@@ -688,14 +688,14 @@
     "dock": {
       "launcher": "Ask AI",
       "launcherLabel": "Ask AI about Kurniadi",
-      "teaser": "Ask me anything about Kurniadi's work, projects or career.",
+      "teaser": "Questions about Kurniadi's work, projects or career?",
       "teaserDismiss": "Dismiss",
       "title": "Ask the HQ",
       "subtitle": "AI answers from this site only",
       "close": "Close chat",
       "clear": "Clear chat",
       "threadLabel": "Conversation",
-      "welcome": "Hi! I answer questions about Kurniadi's work, projects, career, how he works and how to reach him, using only what is on this site. Pick a topic or type a question.",
+      "welcome": "Hi! Find answers about Kurniadi's work, projects, career, approach or how to reach him. AI answers use the content on this site. Pick a topic or type a question.",
       "you": "You",
       "hq": "HQ",
       "topicsLabel": "Pick a topic",
@@ -717,10 +717,10 @@
       "perspectives": "Perspectives"
     },
     "cite": {
-      "how": "How I work on the About page",
-      "blog": "his blog post",
-      "project": "the project's case study",
-      "library": "the Library"
+      "how": "Kurniadi's approach on the About page",
+      "blog": "Kurniadi's blog post",
+      "project": "The project's case study",
+      "library": "The Writing page"
     },
     "hero": {
       "label": "Ask AI about my work",
@@ -736,36 +736,36 @@
   },
   "walk": {
     "journey": {
-      "title": "Walk my journey?",
-      "body": "A guided drive through every role and milestone, oldest first. Skip it to roam the floor on your own.",
-      "start": "Walk my journey",
-      "name": "Journey walk"
+      "title": "Explore the career journey?",
+      "body": "A guided tour through every role and milestone, oldest first. Choose Explore freely to roam the floor on your own.",
+      "start": "Explore the career journey",
+      "name": "Journey tour"
     },
     "projects": {
-      "title": "Tour my projects?",
-      "body": "A guided drive through the key and featured projects, wing by wing. Skip it to roam the floor on your own.",
-      "start": "Tour my projects",
+      "title": "Take the project tour?",
+      "body": "A guided tour through the key and featured projects, wing by wing. Choose Explore freely to roam the floor on your own.",
+      "start": "Start project tour",
       "name": "Project tour"
     },
     "writing": {
-      "title": "Read my writing?",
-      "body": "A guided drive past my posts, newest first, then my research, models and talks. Skip it to roam the floor on your own.",
-      "start": "Read my writing",
-      "name": "Writing walk"
+      "title": "Explore the writing?",
+      "body": "A guided tour past the newest posts, then research, models, talks and workshops. Choose Explore freely to roam the floor on your own.",
+      "start": "Start writing tour",
+      "name": "Writing tour"
     },
     "meet": {
-      "title": "Meet me?",
-      "body": "A short guided drive: who I am, my availability, my CV and how to reach me. Skip it to roam the roof on your own.",
-      "start": "Meet me",
-      "name": "Meet me walk",
-      "about": "About me",
+      "title": "Get to know Kurniadi?",
+      "body": "A short tour of Kurniadi's profile, availability, CV and contact details. Choose Explore freely to roam the roof on your own.",
+      "start": "Start introduction tour",
+      "name": "Introduction tour",
+      "about": "Profile",
       "availability": "Availability",
-      "cv": "My CV",
+      "cv": "CV",
       "contact": "Get in touch"
     },
     "highlights": {
       "title": "Take the quick tour?",
-      "body": "A four-stop drive through the Highlights Hall: about me, my top projects, my work experience and how to reach me.",
+      "body": "Four stops in the Highlights Hall: profile, selected projects, work experience and how to reach Kurniadi.",
       "start": "Quick tour",
       "name": "Quick tour"
     },
@@ -780,21 +780,21 @@
     "next": "Next",
     "finish": "Finish",
     "open": "Open",
-    "end": "End walk",
-    "resume": "Resume walk",
+    "end": "End tour",
+    "resume": "Resume tour",
     "filter": "Show",
     "all": "All stops",
-    "done": "Walk complete",
+    "done": "Tour complete",
     "doneBody": "{count} of {total} stops visited.",
-    "again": "Walk again",
+    "again": "Take the tour again",
     "close": "Close",
-    "keys": "[ and ] step through the walk",
+    "keys": "[ and ] move between tour stops",
     "swipe": "Swipe the card to step",
-    "workshopSub": "Side projects, repositories and models",
+    "workshopSub": "Side projects and public repositories",
     "more": "More projects here",
-    "moreSub": "Open lists every project of this wing",
+    "moreSub": "Open to see every project in this wing",
     "moreWriting": "More writing here",
-    "moreWritingSub": "Open lists every post",
+    "moreWritingSub": "Open to see every post",
     "boardCount": "{count, plural, one {# project} other {# projects}}",
     "boardOpen": "Open the full list",
     "proto": {
@@ -833,15 +833,15 @@
   },
   "hall": {
     "hall": "Highlights Hall",
-    "about": "About me",
+    "about": "Profile",
     "projects": "Top 3 projects",
-    "projectsSub": "The three projects I would show first, with screenshots.",
+    "projectsSub": "Three selected projects, with screenshots.",
     "experience": "Work experience",
     "counts": "{employment} employment roles and {freelance} freelance projects, newest first",
     "contact": "Contact",
     "more": "+{count} more in the drawer",
-    "cvHint": "My CV is one tap away: open this station",
-    "fullProfile": "Read my full profile",
+    "cvHint": "Open this station to read the CV",
+    "fullProfile": "Read the full profile",
     "openProject": "Open in the Labs",
     "openRole": "Open on the Career Road"
   },
@@ -902,18 +902,18 @@
       "moved": "Nice driving!",
       "cameraFine": "Drag or use Q and E to look around. Scroll to zoom, all the way in to see through my eyes!",
       "cameraCoarse": "Drag or twist two fingers to look around. Pinch to zoom, all the way in to see through my eyes!",
-      "highlights": "The Highlights Hall on the east side shows {name}'s best work at a glance. Want to see it?",
+      "highlights": "The Highlights Hall on the east side shows {name}'s selected work. Want to see it?",
       "showMe": "Take me there",
       "later": "Later",
       "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
-      "askRover": "Not sure where to go? Ask Rover has guided trips.",
+      "askRover": "Not sure where to go? Ask Rover has guided tours.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
       "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",
-      "L3": "Welcome to Project Roads: product and AI projects on two wings that meet in one loop.",
+      "L3": "Welcome to Project Roads! Explore Product Engineering, AI Engineering, and Data and ML.",
       "L4": "This is the Newsroom: posts newest first, then research, models and talks.",
       "RF": "Up on the roof: who {name} is, availability, the CV and how to get in touch."
     },
@@ -921,20 +921,20 @@
       "bubble": "Hint: {label}",
       "kind": {
         "door": "{label}: drive into the door to open it.",
-        "elevator-pad": "Step on me to pick a floor.",
+        "elevator-pad": "Stop on this pad to pick a floor.",
         "teleporter": "Stop on this pad to beam to another year.",
-        "return-pad": "Stop on me to beam back to the elevator.",
+        "return-pad": "Stop on this pad to beam back to the elevator.",
         "station": "{label}: open it for a closer look.",
         "kiosk": "{label}: open it to use the kiosk.",
         "board": "{label}: open it to see the full list."
       },
       "object": {
-        "highlights": "The Highlights Hall: {name}'s best work in one place.",
-        "askRover": "The Ask Rover kiosk: guided trips around the HQ.",
+        "highlights": "The Highlights Hall: {name}'s selected work in one place.",
+        "askRover": "The Ask Rover kiosk: guided tours around the HQ.",
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
-        "workshop": "The Workshop: side projects, repos and models.",
+        "workshop": "The Workshop: side projects and public repositories.",
         "timeConsole": "The time console: beam to any year, or back to the elevator.",
         "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry."
       },
@@ -964,8 +964,8 @@
     "quickDescription": "{name} on one page. {motto}",
     "journeyTitle": "Career journey of {name}",
     "journeyDescription": "The career journey of {name}, {from} to {to}: jobs, freelance projects, education, research and awards.",
-    "labsTitle": "Software and AI case studies by {name}",
-    "labsDescription": "{count} software and AI case studies by {name}: realtime voice agents, document AI, AI security and backends.",
+    "labsTitle": "Software, AI and data case studies by {name}",
+    "labsDescription": "{count} software, AI and data case studies by {name}: realtime voice agents, document AI, backends, data and ML.",
     "libraryTitle": "Writing and research by {name}",
     "libraryDescription": "Articles, research publications, published models and talks by {name}, {role}.",
     "contactTitle": "Contact {name}: software and AI roles",
@@ -1041,7 +1041,7 @@
         },
         "labs": {
           "title": "Case studies",
-          "subtitle": "{count} software and AI projects, with results"
+          "subtitle": "{count} software, AI and data projects, with results"
         },
         "library": {
           "title": "Writing and research",
@@ -1061,7 +1061,7 @@
   "stats": {
     "title": "Visits",
     "observatory": "Visitor Observatory",
-    "intro": "Anonymous totals of visits to this site and of questions to its AI, refreshed once a day from the previous full day.",
+    "intro": "Visits and AI questions are counted anonymously, then updated daily from the previous complete day's data.",
     "approx": "about {n}",
     "window": {
       "d30": "Last 30 complete days",
@@ -1071,7 +1071,7 @@
     "updated": "Updated daily",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
-    "offline": "Stats offline",
+    "offline": "Stats unavailable",
     "topicLegend": "Topic",
     "periodLegend": "Period",
     "topics": {
@@ -1104,7 +1104,7 @@
     "topicsTitle": "Questions by topic",
     "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
     "chipsTitle": "Example questions (curated)",
-    "chipsNote": "How often each suggested question was picked. What visitors type is never shown.",
+    "chipsNote": "How often each suggested question was picked. Visitor-entered text is not shown in these stats.",
     "chipCount": "{n} picks",
     "noChips": "No suggested question picked for this topic yet.",
     "map": {
@@ -1118,7 +1118,7 @@
       "code": "Code"
     },
     "optOut": "Don't count my visits",
-    "optOutHint": "Stored only in this browser. Do Not Track and Global Privacy Control are honoured too.",
+    "optOutHint": "Stored in this browser. Do Not Track and Global Privacy Control stop the visit and performance beacons.",
     "tile": "visits in the last 30 days (estimate)",
     "openObservatory": "Visitor Observatory in the Lobby",
     "panel": {
@@ -1132,7 +1132,7 @@
   },
   "production": {
     "proof": "Proof from production",
-    "cases": "Case studies that prove it",
+    "cases": "Related case studies",
     "excerpt": "Alert rule as code (masked)",
     "screens": {
       "metrics": "Metrics",
@@ -1140,14 +1140,14 @@
       "alerts": "Alerts"
     },
     "live": {
-      "title": "This site, live",
+      "title": "This site's telemetry",
       "visits": "Visits, last 30 days",
       "fps": "3D sessions at 55+ FPS",
       "explore": "Median time to explore",
       "nightly": "Nightly performance runs",
       "sessions": "{count} sampled 3D sessions, last 30 days",
       "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated daily.",
-      "offline": "Live numbers are offline right now."
+      "offline": "Current numbers are unavailable."
     },
     "explore": {
       "lt3s": "under 3 s",
