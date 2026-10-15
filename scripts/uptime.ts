@@ -265,8 +265,8 @@ export async function applyIssueAction(gh: GitHubCall, repo: string, action: Iss
       return `Opened ${issue.html_url ?? "the uptime issue"}.`;
     }
     case "update":
-      await must(gh, "PATCH", `/repos/${repo}/issues/${action.number}`, { body: action.body });
       if (action.comment) await must(gh, "POST", `/repos/${repo}/issues/${action.number}/comments`, { body: action.comment });
+      await must(gh, "PATCH", `/repos/${repo}/issues/${action.number}`, { body: action.body });
       return `Updated issue #${action.number}${action.comment ? " with a comment" : ""}.`;
     case "close":
       await must(gh, "POST", `/repos/${repo}/issues/${action.number}/comments`, { body: action.comment });
@@ -274,4 +274,3 @@ export async function applyIssueAction(gh: GitHubCall, repo: string, action: Iss
       return `Closed issue #${action.number} (recovered).`;
   }
 }
-

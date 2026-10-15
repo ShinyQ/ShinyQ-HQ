@@ -53,7 +53,7 @@ const healthy = () => ({
   "/api/stats": () => Response.json({ ...STATS_FIXTURE, updatedAt: "2026-10-15T00:00:00.000Z" }),
   "deploy.yml/runs": () => Response.json({ workflow_runs: [{ status: "completed", conclusion: "success", html_url: "u", created_at: "x" }] }),
 });
-const deps = (fetch: typeof fetch): UptimeDeps => ({ fetch, site: "https://kurniadi.pages.dev", repo: "o/r", token: "t", now: () => NOW });
+const deps = (fetchImpl: typeof fetch): UptimeDeps => ({ fetch: fetchImpl, site: "https://kurniadi.pages.dev", repo: "o/r", token: "t", now: () => NOW });
 
 describe("runChecks and checkWithRetry", () => {
   it("runs every check against production", async () => {
@@ -163,7 +163,7 @@ describe("applyIssueAction and findOpenIssue", () => {
     expect(calls).toEqual([["PATCH", "/repos/o/r/issues/7", { body: "B" }]]);
     const second = fakeGh();
     await applyIssueAction(second.gh, "o/r", { kind: "update", number: 7, body: "B", comment: "C" });
-    expect(second.calls.map((c) => c[0])).toEqual(["PATCH", "POST"]);
+    expect(second.calls.map((c) => c[0])).toEqual(["POST", "PATCH"]);
   });
 
   it("comments, then closes as completed", async () => {
