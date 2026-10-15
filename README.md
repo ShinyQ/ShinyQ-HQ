@@ -52,7 +52,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Guided walks** on every floor (Walk my journey, Tour my projects, Read my writing, Meet me, Quick tour).
 - **Rover's onboarding**: a handheld-RPG text box tour, "!" hint bubbles and first-visit floor lines.
-- **Ask the HQ**: grounded AI Q&A on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks.
+- **Ask the HQ**: grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a daily rollup by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
