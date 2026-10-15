@@ -2,6 +2,8 @@
 # See docs/deploy.md. HTML keeps the Cloudflare default (always revalidate).
 # CSP: Turnstile (Ask the HQ) adds https://challenges.cloudflare.com to script-src and frame-src only;
 # connect-src stays same-origin plus analytics (threat T13, tests/unit/csp.test.ts asserts the exact value).
+# script-src keeps 'unsafe-inline' only because a header cannot list per-page hashes: scripts/csp-hashes.ts adds a
+# per-page meta policy with the sha256 of each inline script, so the effective script policy has none (F1.9).
 
 /*
   X-Content-Type-Options: nosniff
