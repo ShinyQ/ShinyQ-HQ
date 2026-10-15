@@ -18,8 +18,10 @@ const UNSAFE = /[\s\\<>"'`\u0000-\u001F\u007F]/;
 export type AskLinkTarget = { kind: "site"; path: string } | { kind: "external"; href: string };
 
 function sitePath(path: string): AskLinkTarget | null {
-  let bare = path.replace(/^\/(?:en|id)(?=\/|#|$)/, "") || "/";
-  if (bare.length > 1) bare = bare.replace(/\/(?=#|$)/, "");
+  let bare = path.replace(/^\/(?:en|id)(?=\/|#|$)/, "");
+  if (!bare.startsWith("/")) bare = `/${bare}`;
+  // A trailing slash after a path segment ("/labs/", "/labs/#x"); the root's own slash stays ("/#x").
+  bare = bare.replace(/(?<=[^/])\/(?=#|$)/, "");
   return SITE_PATH.test(bare) ? { kind: "site", path: bare } : null;
 }
 

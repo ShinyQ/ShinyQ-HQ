@@ -11,6 +11,11 @@ describe("askLinkTarget", () => {
     expect(askLinkTarget("/id/journey/jenius-2024")).toEqual({ kind: "site", path: "/journey/jenius-2024" });
     expect(askLinkTarget("/contact#how")).toEqual({ kind: "site", path: "/contact#how" });
     expect(askLinkTarget("/")).toEqual({ kind: "site", path: "/" });
+    expect(askLinkTarget("/#highlights")).toEqual({ kind: "site", path: "/#highlights" });
+    expect(askLinkTarget("/en#highlights")).toEqual({ kind: "site", path: "/#highlights" });
+    expect(askLinkTarget("/id/")).toEqual({ kind: "site", path: "/" });
+    expect(askLinkTarget("/en/labs/")).toEqual({ kind: "site", path: "/labs" });
+    expect(askLinkTarget("/labs/#labs-tech=python")).toEqual({ kind: "site", path: "/labs#labs-tech=python" });
     expect(askLinkTarget("https://kurniadi.pages.dev/en/library")).toEqual({ kind: "site", path: "/library" });
     expect(askLinkTarget("https://preview.example/en/labs", ["https://preview.example"])).toEqual({ kind: "site", path: "/labs" });
   });
@@ -84,10 +89,13 @@ describe("parseMarkdown", () => {
   });
   it("renders headings as bold paragraphs and leaves tables and images as text", () => {
     expect(parseMarkdown("## Skills")).toEqual([{ type: "p", children: [{ type: "strong", children: [text("Skills")] }] }]);
+    expect(parseMarkdown("## Skills: C# and F#")).toEqual([{ type: "p", children: [{ type: "strong", children: [text("Skills: C# and F#")] }] }]);
+    expect(parseMarkdown("## Skills ##")).toEqual([{ type: "p", children: [{ type: "strong", children: [text("Skills")] }] }]);
     expect(parseMarkdown("| a | b |")).toEqual([{ type: "p", children: [text("| a | b |")] }]);
     expect(markdownToPlain("![logo](https://evil.example/x.png)")).toBe("!logo");
   });
   it("projects to plain text for the server checks", () => {
     expect(markdownToPlain("Projects:\n- **Voice AI** [page](/labs/voice-ai-contact-center)\n- *Fraud* `review`")).toBe("Projects:\n\nVoice AI page\nFraud review");
+    expect(markdownToPlain("Steps:\n1. One\n2. Two\n\n3) Three")).toBe("Steps:\n\n1. One\n2. Two\n\n3. Three");
   });
 });

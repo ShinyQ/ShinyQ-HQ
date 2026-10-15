@@ -23,7 +23,7 @@ export interface MarkdownOptions {
 
 const BULLET = /^\s{0,3}[-*+\u2022]\s+(.*)$/;
 const ORDERED = /^\s{0,3}(\d{1,3})[.)]\s+(.*)$/;
-const HEADING = /^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$/;
+const HEADING = /^\s{0,3}#{1,6}\s+(.*?)(?:\s+#+)?\s*$/;
 const ESCAPABLE = /[\\`*_[\]()#+\-.!]/;
 const MAX_DEPTH = 3;
 const WORD = /[\p{L}\p{N}]/u;
@@ -213,9 +213,9 @@ export function parseMarkdown(source: string, options: MarkdownOptions = {}): Bl
 const plainInline = (nodes: Inline[]): string =>
   nodes.map((n) => (n.type === "text" || n.type === "code" ? n.text : n.type === "br" ? "\n" : plainInline(n.children))).join("");
 
-/** The answer as plain text: marks dropped, links as their labels, list items one per line. */
+/** The answer as plain text: marks dropped, links as their labels, list items one per line (numbered items keep their number). */
 export function markdownToPlain(source: string): string {
   return parseMarkdown(source)
-    .map((b) => (b.type === "p" ? plainInline(b.children) : b.items.map(plainInline).join("\n")))
+    .map((b) => (b.type === "p" ? plainInline(b.children) : b.items.map((item, i) => `${b.type === "ol" ? `${b.start + i}. ` : ""}${plainInline(item)}`).join("\n")))
     .join("\n\n");
 }
