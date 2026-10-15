@@ -75,9 +75,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/page/Production.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle", "workshop"]);
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
-    expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-roof", "spectacle", "topics", "walk"]);
+    expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
+    expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-labels", "library-roof", "spectacle", "topics", "walk"]);
+    expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
+    expect(specsForChanges(["src/experience/fx/plateProjection.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
     expect(specsForChanges(["src/experience/fx/FilterHighlights.tsx"]).specs).toEqual(["reactor", "topics"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);

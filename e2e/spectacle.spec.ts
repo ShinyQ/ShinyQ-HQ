@@ -45,7 +45,8 @@ async function expectNoFlatText(page: Page) {
 for (const [floor, path, group, min] of [
   ["L2", "/en/journey", "career-year-markers", 1],
   ["L3", "/en/labs", "labs-wing-signs", 2],
-  ["L4", "/en/library", "library-signs", 2],
+  // L4 signs are placed on screen (Round 7 F): only signs in the frame draw, and the arrival view frames one.
+  ["L4", "/en/library", "library-signs", 1],
 ] as const) {
   test(`${floor}: floor words float as signs that face the camera from the default and a rotated view`, async ({ page }) => {
     const errors = collectErrors(page);
