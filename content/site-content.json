@@ -8105,7 +8105,88 @@
             "Azure Container Apps"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/mii-cowork/01-home.webp",
+              "alt": {
+                "en": "MII Cowork home in the MII Light theme: navigation rail and workspace panel, a greeting, the agent composer with Chat and Deck modes, starter ideas and the MII Deck promo; email blurred",
+                "id": "Halaman utama MII Cowork dengan tema MII Light: navigation rail dan panel workspace, sapaan, composer agent dengan mode Chat dan Deck, ide awal, dan promo MII Deck; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/02-deck-composer.webp",
+              "alt": {
+                "en": "Deck mode on the home page: the composer turns a prompt into a deck request with title, slug, privacy, theme and archetype chips, plus Enhance for a structured brief; email blurred",
+                "id": "Mode Deck di halaman utama: composer mengubah prompt menjadi permintaan deck dengan chip judul, slug, privasi, tema, dan archetype, serta Enhance untuk brief terstruktur; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/03-conversation-files.webp",
+              "alt": {
+                "en": "A conversation from a certification study workspace with the agent's summary in the centered chat column and the workspace files panel beside it; email blurred",
+                "id": "Percakapan dari workspace belajar sertifikasi dengan ringkasan agent di kolom chat tengah dan panel file workspace di sampingnya; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/04-conversation-tasks.webp",
+              "alt": {
+                "en": "The same conversation with the Tasks panel: the agent's plan with progress, done and pending steps; email blurred",
+                "id": "Percakapan yang sama dengan panel Tasks: rencana agent beserta progres, langkah selesai, dan langkah tertunda; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/05-deck-studio-brief.webp",
+              "alt": {
+                "en": "Deck Studio beside the chat: a demo deck brief, the agent's first steps and the stage rail from ingest to ready, with a blueprint slide in the live preview; email blurred",
+                "id": "Deck Studio di samping chat: brief deck demo, langkah awal agent, dan rail tahap dari ingest hingga ready, dengan slide blueprint di preview live; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/06-deck-studio-ready.webp",
+              "alt": {
+                "en": "The demo deck ready in Deck Studio: critic scores after three rounds, QA warnings per slide, PPTX download and Publish, with the QA and critic loop slide in the preview; email blurred",
+                "id": "Deck demo yang siap di Deck Studio: skor critic setelah tiga putaran, peringatan QA per slide, unduhan PPTX dan Publish, dengan slide loop QA dan critic di preview; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/07-home-dark.webp",
+              "alt": {
+                "en": "MII Cowork home in the MII Dark theme with the navigation rail, composer, starter ideas and MII Deck promo; email blurred",
+                "id": "Halaman utama MII Cowork dengan tema MII Dark beserta navigation rail, composer, ide awal, dan promo MII Deck; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/08-mobile.webp",
+              "alt": {
+                "en": "Phone layouts: the home page with Chat and Deck modes, a conversation, and Deck Studio with its stage rail and slide preview",
+                "id": "Tampilan ponsel: halaman utama dengan mode Chat dan Deck, sebuah percakapan, dan Deck Studio dengan rail tahap dan preview slide"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "solutions-marketing-site",

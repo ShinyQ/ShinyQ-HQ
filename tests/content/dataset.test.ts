@@ -292,8 +292,8 @@ describe("MII Deck and MII Cowork (owner request 2026-10-16)", () => {
       expect(pod?.repos ?? [], slug).toEqual([]);
       expect(pod?.liveUrl, slug).toBeUndefined();
       expect(pod?.client, slug).toBeUndefined();
+      expect(pod?.assets.length, slug).toBeGreaterThan(0);
     }
-    expect(pods.find((p) => p.slug === "agent-deck-platform")?.assets.length).toBeGreaterThan(0);
   });
 });
 
