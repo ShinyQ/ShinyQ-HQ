@@ -39,12 +39,13 @@ const SITE: RegExp[] = [
 
 /**
  * "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): questions that use it are about him. "ShinyQ HQ"
- * (this site) and URL parts ("github.com/ShinyQ/...") keep their meaning.
+ * (this site), URL parts ("github.com/ShinyQ/...") and handles ("@ShinyQ") keep their meaning. The
+ * visitor's own spelling stays beside his name, so "What does ShinyQ mean?" still reaches the model as asked.
  */
-const NICKNAME = /(?<![\w/.])shiny[ -]?q(?![ -]?hq\b)(?![\w/])/gi;
+const NICKNAME = /(?<![\w/.@])(shiny[ -]?q)(?![ -]?hq\b)(?![\w/])(['\u2019]s)?/gi;
 
 export function resolveNickname(question: string): string {
-  return question.replace(NICKNAME, "Kurniadi");
+  return question.replace(NICKNAME, (_m, nick: string, possessive?: string) => `Kurniadi${possessive ?? ""} (${nick})`);
 }
 
 /** A question about this site or its assistant (EN/ID): how it was built, its stack, hosting or model. */

@@ -258,9 +258,15 @@ describe("perspectives in the pipeline (spec section 13)", () => {
       expect(r).toMatchObject({ outcome: "answer", calledModel: true });
       expect(r.chunkIds).toContain("profile");
       const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
-      expect(messages[1].content).not.toMatch(/shinyq/i);
-      expect(messages[1].content).toContain("Kurniadi");
+      expect(messages[1].content).toContain("Kurniadi (ShinyQ)");
     }
+  });
+
+  it("keeps the visitor's word for a question about the nickname itself", async () => {
+    const r = await ask("What does ShinyQ mean?", "ShinyQ is Kurniadi's nickname.");
+    const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+    expect(messages[1].content).toBe("What does Kurniadi (ShinyQ) mean?");
+    expect(r).toMatchObject({ outcome: "answer", calledModel: true });
   });
 
   it("keeps ShinyQ HQ as the site name", async () => {
