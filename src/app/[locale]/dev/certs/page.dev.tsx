@@ -10,7 +10,7 @@ import { assertLocale } from "@/i18n/locale";
 
 /**
  * Dev-only route (see next.config.ts): the shipped certification layouts with live content and with
- * the 30-entry scale fixture, at /{locale}/dev/certs. ?view=3d&n=8|30&tier=lite|full shows the L1 wall.
+ * the 30-entry scale fixture, at /{locale}/dev/certs. ?view=3d&n=7|30&tier=lite|full shows the L1 wall.
  */
 export const metadata: Metadata = { title: "Certifications at scale", robots: { index: false, follow: false } };
 

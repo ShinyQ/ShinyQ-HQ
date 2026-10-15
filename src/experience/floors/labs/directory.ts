@@ -70,7 +70,8 @@ export interface ListStyle {
 /**
  * Desktops and tablets list the top `LABS.boardEntries` (5). Phones list the top 3 in larger type, so
  * they read from the arrival view and the panel stop; the panel width (21 characters per line at
- * 0.56 u) still fits every top-3 title in two lines, and the taller line height separates the entries.
+ * 0.56 u) fits most top-3 titles in two lines, the panel's seventh line lets one longer title take a
+ * third (`boardList`), and the taller line height separates the entries.
  */
 export const LIST_STYLE: Record<WallSize, ListStyle> = {
   full: { size: PANEL.list.size, lineHeight: PANEL.list.lineHeight, perEntry: PANEL.list.perEntry, entries: LABS.boardEntries },
@@ -137,15 +138,22 @@ export function fitTitle(name: string, width: number): { lines: string[]; size: 
   return { lines, size: Math.min(PANEL.title.size, width / (MONO_EM * longest)) };
 }
 
-/** The top `style.entries` docked pods (docking order, gallery first), each a tier mark and at most `style.perEntry` lines, within `maxLines`. */
+/**
+ * The top `style.entries` docked pods (docking order, gallery first), each a tier mark and at most `style.perEntry`
+ * lines, within `maxLines`. Lines the panel has beyond `entries * perEntry` let a longer title wrap whole instead of
+ * ending in "..." (the phone list: 7 lines for 3 entries).
+ */
 export function boardList(list: readonly LabPod[], maxLines: number, style: ListStyle = LIST_STYLE.full): { text: string; entries: number; lines: number } {
   const chars = listChars(style);
   const out: string[] = [];
   let lines = 0;
+  let spare = Math.max(0, maxLines - style.entries * style.perEntry);
   for (const pod of tourOrder(list).slice(0, style.entries)) {
     let wrapped = wrapWords(pod.title, chars - 2, chars);
-    if (wrapped.length > style.perEntry) {
-      wrapped = wrapped.slice(0, style.perEntry);
+    const allowed = style.perEntry + spare;
+    spare -= Math.max(0, Math.min(wrapped.length, allowed) - style.perEntry);
+    if (wrapped.length > allowed) {
+      wrapped = wrapped.slice(0, allowed);
       const last = wrapped.length - 1;
       wrapped[last] = `${wrapped[last].slice(0, chars - 3).trimEnd()}...`;
     }

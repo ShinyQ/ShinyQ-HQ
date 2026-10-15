@@ -106,7 +106,7 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
     expect(lines.filter((l) => l.seg[1] === y && l.seg[4] === y)).toHaveLength(4);
   });
 
-  it("lists the top three in larger type on phones, every title whole in two lines (coordinator decision 2026-10-13)", () => {
+  it("lists the top three in larger type on phones, every title whole (two lines, one may take the spare seventh; coordinator decision 2026-10-13)", () => {
     const compact = LIST_STYLE.compact;
     expect(compact.entries).toBe(3);
     expect(compact.size).toBeGreaterThan(LIST_STYLE.full.size);

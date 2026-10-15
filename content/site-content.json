@@ -8,8 +8,8 @@
       "id": "AI dan Software Engineer"
     },
     "subheadline": {
-      "en": "Production-grade AI and software for banking, fintech and enterprise.",
-      "id": "AI dan software untuk kebutuhan production di perbankan, fintech, dan enterprise."
+      "en": "Built production-grade AI and software for banking, fintech and enterprise.",
+      "id": "Membangun AI dan software kelas production untuk perbankan, fintech, dan enterprise."
     },
     "currentRole": {
       "title": {
@@ -29,8 +29,8 @@
       "id": "Saya AI dan Software Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin delivery platform AI berbasis Azure di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, dan manufaktur makanan. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
     },
     "story": {
-      "en": "I started learning Android development in a vocational school lab in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
-      "id": "Saya mulai belajar pengembangan Android di lab SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, lewat proyek dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan praktik Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang bisa disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menebak. Hasil evaluasi menentukan perubahan yang saya rilis."
+      "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
+      "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, lewat proyek dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan praktik Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang bisa disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menebak. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
       "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
@@ -509,14 +509,6 @@
       "expires": "2027-10"
     },
     {
-      "id": "hackerrank-problem-solving-basic",
-      "name": "Problem Solving (Basic)",
-      "issuer": "HackerRank",
-      "issued": "2021-02",
-      "credentialUrl": "https://www.hackerrank.com/certificates/3281f291b766",
-      "status": "earned"
-    },
-    {
       "id": "associate-data-scientist-microcredential",
       "name": "Microcredential: Associate Data Scientist",
       "issuer": "IARC x APTIKOM",
@@ -535,7 +527,7 @@
       "name": "TOEFL ITP (score 547)",
       "issuer": "ETS",
       "issued": "2024",
-      "status": "expired"
+      "status": "earned"
     }
   ],
   "awards": [
@@ -1306,22 +1298,18 @@
           "id": "certification-desk-2021",
           "slug": "certification-desk-2021",
           "type": "milestone",
-          "org": "HackerRank, Kominfo x IBM, IARC x APTIKOM",
+          "org": "Kominfo x IBM, IARC x APTIKOM",
           "role": {
             "en": "Learner",
             "id": "Pembelajar"
           },
-          "start": "2021-02",
+          "start": "2021-05",
           "end": "2021-12",
           "summary": {
-            "en": "I earned three certificates through self-study in problem solving, machine learning and data science.",
-            "id": "Saya meraih tiga sertifikat melalui belajar mandiri di bidang problem solving, machine learning, dan data science."
+            "en": "I earned two certificates through self-study in machine learning and data science.",
+            "id": "Saya meraih dua sertifikat melalui belajar mandiri di bidang machine learning dan data science."
           },
           "highlights": [
-            {
-              "en": "Problem Solving (Basic), HackerRank (February)",
-              "id": "Problem Solving (Basic), HackerRank (Februari)"
-            },
             {
               "en": "Digital Talent Scholarship: Machine Learning, 160 hours, Kominfo x IBM (May to July)",
               "id": "Digital Talent Scholarship: Machine Learning, 160 jam, Kominfo x IBM (Mei hingga Juli)"
@@ -1524,9 +1512,19 @@
           "slug": "bandung-techno-park-2022",
           "type": "job",
           "org": "Bandung Techno Park",
+          "logo": {
+            "src": "/logos/bandung-techno-park.webp",
+            "alt": {
+              "en": "Bandung Techno Park logo",
+              "id": "Logo Bandung Techno Park"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          },
           "role": {
-            "en": "Software Engineer (contract)",
-            "id": "Software Engineer (kontrak)"
+            "en": "Software Engineer (part-time)",
+            "id": "Software Engineer (paruh waktu)"
           },
           "start": "2022-07",
           "end": "2023-02",
@@ -1985,11 +1983,11 @@
         {
           "id": "370-agency-2025",
           "slug": "370-agency-2025",
-          "type": "job",
+          "type": "freelance",
           "org": "370 Agency",
           "role": {
-            "en": "Software Engineer (contract)",
-            "id": "Software Engineer (kontrak)"
+            "en": "Software Engineer (freelance)",
+            "id": "Software Engineer (freelance)"
           },
           "start": "2025-06",
           "end": "2025-11",
@@ -2101,6 +2099,16 @@
           "slug": "metrodata-2026",
           "type": "job",
           "org": "Metrodata (PT Mitra Integrasi Informatika)",
+          "logo": {
+            "src": "/logos/metrodata.webp",
+            "alt": {
+              "en": "Metrodata logo",
+              "id": "Logo Metrodata"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          },
           "role": {
             "en": "Technical Consultant, Software & AI",
             "id": "Technical Consultant, Software & AI"
@@ -5487,7 +5495,7 @@
           "id": "fraud-review-platform",
           "slug": "fraud-review-platform",
           "order": 2,
-          "tier": "hero",
+          "tier": "featured",
           "accent": "pink",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -6752,8 +6760,8 @@
         {
           "id": "ai-solutions-assistant",
           "slug": "ai-solutions-assistant",
-          "order": 7,
-          "tier": "featured",
+          "order": 2,
+          "tier": "hero",
           "accent": "violet",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -9077,8 +9085,8 @@
         "ieeeXplore": "https://ieeexplore.ieee.org/author/37089283106"
       },
       "availability": {
-        "en": "I am open to conversations about software and AI engineering.",
-        "id": "Saya terbuka untuk diskusi seputar software dan AI engineering."
+        "en": "I am open to freelance or part-time work in software and AI engineering.",
+        "id": "Saya terbuka untuk pekerjaan freelance atau paruh waktu di bidang software dan AI engineering."
       },
       "cv": {
         "fileName": "kurniadi-ahmad-wijaya-cv"

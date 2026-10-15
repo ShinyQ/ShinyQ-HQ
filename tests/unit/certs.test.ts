@@ -7,10 +7,10 @@ import { CertificationSchema } from "@/content/schema";
 import { CERT_FIXTURE, certFixture } from "@/experience/prototype/certs/fixture";
 
 describe("certification helpers", () => {
-  it("keeps the scale fixture valid against the schema, with the live 8 first", () => {
+  it("keeps the scale fixture valid against the schema, with the live 7 first", () => {
     expect(CERT_FIXTURE).toHaveLength(30);
     for (const cert of CERT_FIXTURE) expect(CertificationSchema.safeParse(cert).success, cert.id).toBe(true);
-    expect(certFixture(8).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
+    expect(certFixture(7).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
   });
 
   it("sorts earned newest first, then in progress, then expired", () => {
@@ -45,9 +45,9 @@ describe("certification helpers", () => {
 
   it("builds wall tabs: All, issuers with 2 or more, then Other", () => {
     expect(issuerTabs(getCertifications()).map((t) => [t.key, t.count])).toEqual([
-      ["all", 8],
+      ["all", 7],
       ["Microsoft", 3],
-      ["other", 5],
+      ["other", 4],
     ]);
     const tabs = issuerTabs(CERT_FIXTURE);
     expect(tabs.map((t) => t.key)).toEqual(["all", "Microsoft", "GitHub", "AWS", "other"]);
@@ -60,10 +60,10 @@ describe("certification helpers", () => {
   it("filters by issuer, status and search text", () => {
     const pick = (f: Parameters<typeof matchesCertFilter>[1]) => CERT_FIXTURE.filter((c) => matchesCertFilter(c, f)).map((c) => c.id);
     expect(pick({ issuer: "AWS" })).toHaveLength(5);
-    expect(pick({ status: "expired" })).toEqual(["toefl-itp", "dp-203", "gcp-ace"]);
+    expect(pick({ status: "expired" })).toEqual(["dp-203", "gcp-ace"]);
     expect(pick({ q: "  gh-6 " })).toEqual(["gh-600"]);
     expect(pick({ q: "copilot", issuer: "GitHub" })).toEqual(["gh-300"]);
-    expect(pick({ q: "hackerrank" })).toHaveLength(2);
+    expect(pick({ q: "hackerrank" })).toHaveLength(1);
     expect(pick({})).toHaveLength(30);
   });
 

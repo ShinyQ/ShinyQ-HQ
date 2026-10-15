@@ -172,8 +172,8 @@
       "id": "learning-advice",
       "question": { "en": "What advice would you give someone starting out in software or AI engineering?", "id": "Apa saran untuk yang baru mulai di software atau AI engineering?" },
       "answer": {
-        "en": "Build real things early and measure them honestly. I learned by building: Android apps in a vocational school lab, competitions from chatbots to capture-the-flag, and part-time backend work while I studied. The habits I would pass on are reading the actual error before changing anything, and writing down what would prove you wrong before you run the test.",
-        "id": "Bangun hal nyata sejak awal dan ukur hasilnya dengan jujur. Saya belajar dengan membangun: aplikasi Android di lab SMK, kompetisi mulai dari chatbot hingga capture-the-flag, dan pekerjaan backend paruh waktu selama kuliah. Kebiasaan yang ingin saya wariskan adalah membaca error yang sebenarnya sebelum mengubah apa pun, dan menuliskan apa yang akan membuktikan kita salah sebelum menjalankan test."
+        "en": "Build real things early and measure them honestly. I learned by building: Android apps at a vocational school, competitions from chatbots to capture-the-flag, and part-time backend work while I studied. The habits I would pass on are reading the actual error before changing anything, and writing down what would prove you wrong before you run the test.",
+        "id": "Bangun hal nyata sejak awal dan ukur hasilnya dengan jujur. Saya belajar dengan membangun: aplikasi Android di SMK, kompetisi mulai dari chatbot hingga capture-the-flag, dan pekerjaan backend paruh waktu selama kuliah. Kebiasaan yang ingin saya wariskan adalah membaca error yang sebenarnya sebelum mengubah apa pun, dan menuliskan apa yang akan membuktikan kita salah sebelum menjalankan test."
       },
       "tags": ["career", "learning"],
       "asOf": "2026-10",
