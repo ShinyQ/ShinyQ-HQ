@@ -106,6 +106,11 @@ describe("L3 Data and ML spine", () => {
     expect(WING_SIDE).toEqual({ software: -1, ai: 1 });
   });
 
+  it("has no Product Engineering directory stop when there are only AI pods", () => {
+    const walk = labsWalk(real.filter((p) => p.wing === "ai"), { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
+    expect(walk.stops.some((s) => s.group === "Product Engineering" && s.title === "More projects here")).toBe(false);
+  });
+
   it("puts one floating sign at each road: wing signs past their mouths, the spine sign over the spine before the wall", () => {
     for (const wing of ["software", "ai"] as const) {
       const road = network.roads.find((r) => r.id === wing)!;

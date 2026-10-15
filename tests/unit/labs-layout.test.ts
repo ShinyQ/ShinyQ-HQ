@@ -260,6 +260,16 @@ describe("L3 Project Roads layout", () => {
     }
   });
 
+  it("frames each side board from its stop whatever the arrival heading, and the data board only eastbound", () => {
+    for (const wing of SIDE_WINGS) {
+      for (const heading of [Math.PI - 0.4, -(Math.PI - 0.4), 0.4, -0.4, Math.PI / 2, -Math.PI / 2]) {
+        expect(zoneAt("L3", { ...directoryStop(wing), heading }, floor.viewZones)?.id, `${wing} ${heading}`).toBe(`L3:directory:${wing}`);
+      }
+    }
+    expect(zoneAt("L3", { ...directoryStop("data"), heading: 0 }, floor.viewZones)?.id).toBe("L3:directory:data");
+    expect(zoneAt("L3", { ...directoryStop("data"), heading: -Math.PI / 2 }, floor.viewZones)?.id).not.toBe("L3:directory:data");
+  });
+
   it("runs two packet spines between the spine pods and the inner wing pods, with a branch into each back wall", () => {
     const laneZ = LABS.road / 2 + LABS.forecourt + Math.max(...layout.placed.filter((p) => p.pod.wing === "data").map((p) => p.depth)) + LABS.rowGap / 2;
     const spines = layout.lanes.filter((l) => l[0][1] === l[1][1]);

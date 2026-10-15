@@ -315,6 +315,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     ...placed.map((p) => ({ room: p.room, from: { x: p.door.x, z: p.roadZ }, to: p.door, width: L.spurWidth, color: WING_TINT[p.pod.wing] })),
     { room: OPS_ROOM, from: { x: ops.door.x, z: WING_SIDE.ai * wingZ }, to: ops.door, width: L.spurWidth, color: OPS_TINT },
     // The outer board stops hang off the spine on short spurs, so a click on a board drives straight there.
+    // These are stop spurs, not doors: the `room` cast only labels them (no door trigger exists for a board).
     ...SIDE_WINGS.map((wing) => ({ room: `L3:directory:${wing}` as RoomId, from: { x: boards[wing].stop.x, z: 0 }, to: boards[wing].stop, width: L.spurWidth, color: WING_TINT[wing] })),
   ];
   // No floor arrows on L3 (owner request 2026-10-13): the roads, signs and directory guide the way.
@@ -336,10 +337,12 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const EAST: Vec2 = { x: 1, z: 0 };
   const boardZone = (wing: Wing): ViewZone => {
     const b = boards[wing];
-    return { id: `L3:directory:${wing}`, area: { minX: b.stop.x - 1, maxX: b.minX, minZ: b.minZ, maxZ: b.maxZ }, yaw: LOOK_EAST, zoom: L.boardZoom, travel: EAST };
+    return { id: `L3:directory:${wing}`, area: { minX: b.stop.x - 1, maxX: b.minX, minZ: b.minZ, maxZ: b.maxZ }, yaw: LOOK_EAST, zoom: L.boardZoom, ...(wing === "data" ? { travel: EAST } : {}) };
   };
   const viewZones: ViewZone[] = [
     // Board stops first: the camera stands west of the rover and looks east at the board, zoomed so it fits under the HUD.
+    // The side stops lie on dead-end spurs and are reached heading north or south, so they take any heading; only
+    // the data stop sits on the spine, where a westbound rover must not get the zone.
     ...LABS_WINGS.map(boardZone),
     // The arrival spot on the hub's east rim, on the spine: the camera sits west of the rover and looks east at
     // the wall with all three road mouths in front of it (phones zoom out further). Only rovers heading east
