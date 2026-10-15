@@ -1,4 +1,5 @@
 import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
+import { markdownToPlain } from "../../src/ask/markdown";
 import { findBlocked } from "./checks";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
@@ -223,8 +224,10 @@ export function createAskHandler(deps: HandlerDeps) {
     const key = await cacheKey(pack.packVersion, locale, question);
     try {
       const hit = await env.ASK_KV?.get(key);
-            const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
-      if (cached && typeof cached.text === "string" && findBlocked(cached.text, safety.blocklist).length === 0) {
+      const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
+      // Cached text is markdown: scan it and its plain text, which joins words that marks split ("SM**BC**").
+      const blocked = (text: string) => [text, markdownToPlain(text)].some((s) => findBlocked(s, safety.blocklist).length > 0);
+      if (cached && typeof cached.text === "string" && !blocked(cached.text)) {
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });

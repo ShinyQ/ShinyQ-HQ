@@ -293,7 +293,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                   {showFollowUps ? td("followUpsLabel") : topic ? td("topicQuestions", { topic: t(`topics.${topic}`) }) : td("topicsLabel")}
                 </h3>
                 {showFollowUps ? (
-                  <ul className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 [scrollbar-width:thin]" data-testid="ask-followups">
+                  <ul className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pt-1.5 pb-1 [scrollbar-width:thin]" data-testid="ask-followups">
                     {followUps.map((s) => (
                       <QuestionPill key={s.id} compact suggestion={s} locale={locale} onAsk={() => ask_(s.q[locale], "followup", s.id)} onEdit={() => edit(s)} editLabel={td("edit", { q: s.q[locale] })} />
                     ))}
