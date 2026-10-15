@@ -30,6 +30,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | 3 to 5 | Career Archive, Labs and the Glass Drawer, Library and Roof, missions | Done |
 | 6 | Launch on Cloudflare Pages (`kurniadi.pages.dev`), SEO, Lighthouse CI | Done |
 | Ask | Ask the HQ: grounded AI Q&A (Gemma 4 with Mistral fallback), chat dock, weekly live facts | Done |
+| Ask: leads and lifestyle | "What can you do?", project inquiries with a contact card, 30 endorsed lifestyle, industry and policy answers, deterministic scope routing | Done |
 | Walkable floors | Road kit, guided walks, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
 | Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
 | Walkable floors 2 | L4 Writing as the walkable Newsroom with the "Read my writing" walk | Done |
@@ -238,13 +239,15 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 
 ## Ask the HQ (AI Q&A)
 
-Visitors ask questions about Kurniadi's work, projects, career, contact details, the professional views he has written down (principles, engineering and AI practice, tools, career advice) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`, answers cite this repository), and get short answers grounded only in this site's content (EN and ID).
+Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`, answers cite this repository), and get short answers grounded only in this site's content (EN and ID).
 
 ### Where
 
 - The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, the Rover Terminal (`a`) and the Cmd-K "Ask AI" row.
 - Topic pills (Work, AI, Career, Contact, Perspectives) expand into curated questions (`content/ask/suggestions.json`), and each answer suggests related follow-ups with no extra AI call.
 - The thread is kept in `sessionStorage` only.
+- **What can you do?** (also a Contact pill, ID "Apa saja yang bisa ditanyakan di sini?") lists what the assistant covers, the two languages, sources, and what it will not discuss.
+- **Project inquiries**: when a visitor describes their own need ("I need an AI chatbot for my clinic", "Kami butuh sistem deteksi fraud dokumen"), the answer names related skills and up to three matching past projects, says whether that work suggests a fit, notes freelance or part-time availability and invites contact; a **contact card** (Email, LinkedIn, Contact page) from the dataset appears under it. No prices, timelines, designs or code.
 
 ### How
 
@@ -257,7 +260,8 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - Invisible Turnstile, Origin checks, per-visitor and global rate limits, PII scrubbing, prompt-injection handling.
 - Output checks: client-name blocklist, numeric grounding, entity and prompt-leak checks.
 - A circuit breaker and an `ASK_ENABLED` kill switch.
-- Professional-only scope: personal topics and opinions about people, employers or clients are declined before any model call.
+- Kurniadi-only scope, routed deterministically before any model call: family, relationships, health, religion, partisan politics, pay and opinions about people, employers or clients are declined; so are general-assistant requests (code, essays, homework, tutorials, translations, recommendations, "be a general chatbot" jailbreaks), with a decline that points back to what it covers. Lifestyle and tech-policy questions are answered only from his written perspectives on that topic.
+- Lead answers are checked for estimates, system designs, code, unsupported fit claims and requests for the visitor's personal data.
 - A first-person check, and a source check that turns any opinion he never wrote down into "Kurniadi hasn't shared a written view on that".
 - Full threat model: the Ask design spec sections 7 and 13.
 
