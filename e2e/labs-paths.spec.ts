@@ -23,6 +23,10 @@ const check = SHOTS ? expect.soft : expect;
 /** The `L3:overview` zone looks east at the wall: the camera stands west of the rover. */
 const LOOK_EAST = (-3 * Math.PI) / 4;
 const ROADS = ["software", "data", "ai"] as const;
+/** East face of the glass elevator shaft (`SHAFT_EAST_FACE` in src/experience/config.ts): the arrival camera stays east of it. */
+const SHAFT_EAST_FACE = -25;
+/** The full tier at 1440x900 renders a few frames a second on SwiftShader beside a second worker: give the camera spring longer. */
+const SETTLE = { timeout: 120_000 };
 const ENTRANCE = 18;
 
 type Pt = { x: number; z: number };
@@ -31,12 +35,14 @@ type LW = Window & {
     layouts: Record<string, { road?: { roads: { id: string; points: Pt[] }[] }; stops?: Record<string, Pt>; arrival?: Pt }>;
     probes: { signs: Record<string, { text: string; facing: number }[]> };
     rover: { cameraYaw: number; cameraZoom: number };
+    camera?: () => [number, number, number];
   };
 };
 
 const SIZES = [
   { name: "1440x900", width: 1440, height: 900, tier: "full", phone: false, zoom: 1.3 },
-  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: 1.9 },
+  // Phones zoom out further, but only so far that the follow camera stays east of the elevator shaft (LABS.overviewZoomPhone).
+  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: 1.45 },
 ] as const;
 
 /** The point `distance` along road `id` from its first point (walks the polyline), or null without that road. */
@@ -73,7 +79,7 @@ async function openArrival(browser: Browser, size: (typeof SIZES)[number]) {
 
 /** Settles the camera, checks the L3 budget, logs the numbers and saves the capture when asked. */
 async function pose(page: Page, size: (typeof SIZES)[number], name: string): Promise<RenderPeaks> {
-  await waitForCameraSettle(page);
+  await waitForCameraSettle(page, SETTLE);
   const peaks = await expectRenderBudget(page);
   const { drawCalls, triangles } = await snapshot(page);
   const line = `L3 ${size.name} ${size.tier} ${name}: scene calls peak ${peaks.sceneCalls} (min ${peaks.minSceneCalls}), post ${peaks.postCalls}, triangles peak ${peaks.triangles}; frame ${drawCalls} calls, ${triangles} triangles`;
@@ -99,13 +105,19 @@ for (const size of SIZES) {
       const arrival = await page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.arrival!);
       const { rover } = await snapshot(page);
       check(Math.hypot(rover.x - arrival.x, rover.z - arrival.z), "rover on the arrival spot").toBeLessThan(0.5);
-      await waitForCameraSettle(page);
+      await waitForCameraSettle(page, SETTLE);
       const view = await page.evaluate(() => {
-        const r = (window as unknown as LW).__hq.rover;
-        return { yaw: r.cameraYaw, zoom: r.cameraZoom };
+        const w = window as unknown as LW;
+        return { yaw: w.__hq.rover.cameraYaw, zoom: w.__hq.rover.cameraZoom, camera: w.__hq.camera?.() ?? null };
       });
       check(Math.abs(Math.sin((view.yaw - LOOK_EAST) / 2)), `camera yaw ${view.yaw} looks east (L3:overview)`).toBeLessThan(0.02);
       check(view.zoom, "L3:overview zoom").toBeCloseTo(size.zoom, 2);
+      // The follow camera stands west of the rover, but never behind the glass shaft, which would fill the frame.
+      check(view.camera, "camera position probe").not.toBeNull();
+      if (view.camera) {
+        console.log(`L3 ${size.name} arrival camera at x ${view.camera[0].toFixed(2)}, z ${view.camera[2].toFixed(2)}`);
+        check(view.camera[0], "camera east of the elevator shaft").toBeGreaterThan(SHAFT_EAST_FACE);
+      }
       const signs = await page.evaluate(() => ((window as unknown as LW).__hq.probes.signs["labs-wing-signs"] ?? []).map((s) => s.text.replace(/\s+/g, " ")));
       check(signs.sort()).toEqual([en.common.wing.software, en.common.wing.data, en.common.wing.ai].map((w) => w.toUpperCase()).sort());
       await pose(page, size, "arrival");
@@ -121,7 +133,8 @@ for (const size of SIZES) {
         if (at) {
           await driveTo(page, at, 240_000);
           const { rover } = await snapshot(page);
-          check(Math.hypot(rover.x - at.x, rover.z - at.z), `rover at ${name}`).toBeLessThan(name === "reactor" ? 2 : 1.5);
+          // The autopilot ends a leg within its arrival radius, not on the exact point.
+          check(Math.hypot(rover.x - at.x, rover.z - at.z), `rover at ${name}`).toBeLessThan(2);
           await pose(page, size, name);
         }
         await context.close();
