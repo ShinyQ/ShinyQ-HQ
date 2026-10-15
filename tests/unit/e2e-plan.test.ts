@@ -27,6 +27,10 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("maps the floor chunk loader to its spec and the ride", () => {
+    expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride", "experience"]));
+  });
+
   it("keeps the perf lane out of the regular suite and treats the budgets as shared infrastructure", () => {
     expect(specsForChanges(["e2e/perf/look.spec.ts"]).specs).toEqual([]);
     expect(specsForChanges(["e2e/perf/baseline.json"]).specs).toEqual([]);

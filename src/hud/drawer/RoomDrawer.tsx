@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { createElement, Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
@@ -11,8 +11,7 @@ import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_TEXT } from "@/lib/accent";
-import { renderReadme } from "./ascii";
-import { ROOM_BODIES } from "./bodies";
+import { lazyRoomBody } from "./bodies";
 import { Chips, MetricTiles, Sections } from "./blocks";
 import { SHEET_SNAPS, snapSheet, type DrawerLayout } from "./layout";
 
@@ -119,6 +118,22 @@ interface OverflowProps {
 }
 
 const MENU_ITEM = "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-ink transition hover:bg-white/5";
+
+type RenderReadme = (typeof import("./ascii"))["renderReadme"];
+
+/** The README renderer loads the first time the README view opens (Round 7 B: keeps it out of the main 3D chunk). */
+function useReadmeRenderer(open: boolean): RenderReadme | null {
+  const [render, setRender] = useState<RenderReadme | null>(null);
+  useEffect(() => {
+    if (!open || render) return;
+    let alive = true;
+    void import("./ascii").then((m) => alive && setRender(() => m.renderReadme));
+    return () => {
+      alive = false;
+    };
+  }, [open, render]);
+  return render;
+}
 
 function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps) {
   const t = useTranslations("drawer");
@@ -344,13 +359,14 @@ export function RoomDrawer({
   const condensed = condensedRoom === view.id;
   const tabs = view.variant === "tabs" ? view.tabs : [];
   const activeTab = tabs.includes(tab) ? tab : "overview";
-  const Body = ROOM_BODIES[view.kind];
+  const customBody = lazyRoomBody(view.kind);
+  const renderReadme = useReadmeRenderer(readme);
   const readmeText = useMemo(
     () =>
-      readme
+      readme && renderReadme
         ? renderReadme(view, { overview: t("tabs.overview"), architecture: t("tabs.architecture"), results: t("tabs.results"), stack: t("tabs.stack"), links: t("openPage") })
         : "",
-    [readme, view, t],
+    [readme, renderReadme, view, t],
   );
 
   // Focus moves into the drawer on open and when the room changes; a new room starts at the top.
@@ -424,7 +440,9 @@ export function RoomDrawer({
       : "inset-x-0 bottom-0 rounded-b-none pb-[env(safe-area-inset-bottom)]";
 
   let body: ReactNode;
-  if (readme) {
+  if (readme && !renderReadme) {
+    body = <p className="pv-small text-ink-2" role="status">{t("loading")}</p>;
+  } else if (readme) {
     body = (
       <pre
         tabIndex={0}
@@ -441,8 +459,12 @@ export function RoomDrawer({
         <TabPanel view={view} tab={activeTab} onHologram={onHologram} />
       </div>
     );
-  } else if (Body) {
-    body = <Body view={view} locale={locale} />;
+  } else if (customBody) {
+    body = (
+      <Suspense fallback={<p className="pv-small text-ink-2" role="status">{t("loading")}</p>}>
+        {createElement(customBody, { view, locale })}
+      </Suspense>
+    );
   } else {
     body = (
       <div className="space-y-5">

@@ -139,7 +139,7 @@ describe("RoomDrawer", () => {
     const user = userEvent.setup();
     render(<Harness view={hero} />);
     await user.keyboard("t");
-    const readme = screen.getByTestId("readme");
+    const readme = await screen.findByTestId("readme");
     expect(readme.textContent).toContain("$ cat README.md");
     expect(readme.textContent).toContain("\u250C");
     expect(screen.queryByRole("tablist")).toBeNull();

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { FloorId } from "@/content/schema";
 import { FLOOR_IDS } from "@/experience/config";
+import { floorChunks } from "@/experience/floors/floorChunks";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
@@ -52,6 +53,8 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
             key={id}
             type="button"
             onClick={() => intents.emit({ type: "elevator", to: id })}
+            onPointerEnter={() => floorChunks.prefetch(id)}
+            onFocus={() => floorChunks.prefetch(id)}
             aria-label={t("goToFloor", {
               floor: id,
               label,

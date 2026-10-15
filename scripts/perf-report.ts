@@ -17,7 +17,7 @@ export interface GpuCountersEntry {
 
 /** One JSON file in perf-report/ (written by `writePerfEntry` in e2e/perf/helpers.ts). */
 export type PerfEntry =
-  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap }
+  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF", number>>; sessionTotal?: number }
   | { kind: "floor"; tier: Tier; floor: string; sceneCalls: number; postCalls: number; triangles: number; programs: number; geometries: number; textures: number }
   | { kind: "peak"; tier: Tier; scenario: string; sceneCalls: number; postCalls: number; triangles: number; frames: number }
   | { kind: "memory"; tier: Tier; trips: number; before: GpuCountersEntry; after: GpuCountersEntry; heapDeltaBytes: number }
@@ -168,6 +168,14 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
     const s = renderChunkDiff(`3D JS after the gate (${e.tier})`, e.js, baseOf(e)?.js, BYTES_3D_BUDGET.failAt);
     const other = Object.entries(e.other).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k} ${kb(v)}`).join(", ");
     out.markdown += `${s.markdown}Other 3D-path bytes: ${other || "none"}.\n\n`;
+    if (e.floors) {
+      const caps = BYTES_3D_BUDGET.floors;
+      const parts = (Object.keys(caps) as (keyof typeof caps)[])
+        .filter((f) => e.floors?.[f] !== undefined)
+        .map((f) => `${f} ${kb(e.floors?.[f] ?? 0)} of ${kb(caps[f])}`);
+      const total = e.sessionTotal === undefined ? "" : ` Session total with every floor chunk: ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.session[e.tier])}.`;
+      if (parts.length) out.markdown += `Floor chunks (loaded on demand): ${parts.join(", ")}.${total}\n\n`;
+    }
     out.warnings.push(...s.warnings);
   }
 

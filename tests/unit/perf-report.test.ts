@@ -87,6 +87,21 @@ describe("gates", () => {
     expect(s.warnings).toEqual(["full L1: 136 scene calls is 91% of the 150 budget", "lite intro: 140 scene calls is 93% of the 150 budget"]);
   });
 
+  it("lists the on-demand floor chunks against their caps", () => {
+    const entry = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, floors: { L3: 12 * 1024, L4: 10 * 1024, RF: 3.5 * 1024 } } as const;
+    const s = renderGates([entry], []);
+    expect(s.markdown).toContain("Floor chunks (loaded on demand): L3 12.0 KB of 20.0 KB, L4 10.0 KB of 16.0 KB, RF 3.5 KB of 8.0 KB.");
+  });
+
+  it("shows the session total against the tier's session cap", () => {
+    const floors = { L3: 12 * 1024, L4: 10 * 1024, RF: 3.5 * 1024 };
+    const full = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, floors, sessionTotal: 445.5 * 1024 } as const;
+    const lite = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, floors, sessionTotal: 425.5 * 1024 } as const;
+    const s = renderGates([full, lite], []);
+    expect(s.markdown).toContain("Session total with every floor chunk: 445.5 KB of 470.0 KB.");
+    expect(s.markdown).toContain("Session total with every floor chunk: 425.5 KB of 446.4 KB.");
+  });
+
   it("renders P3's memory entries", () => {
     const s = renderGates([{ kind: "memory", tier: "lite", trips: 10, before: { geometries: 400, textures: 30, programs: 26 }, after: { geometries: 400, textures: 30, programs: 26 }, heapDeltaBytes: 512 * 1024 }], []);
     expect(s.markdown).toContain("| lite | 10 | 0 | 0 | 0 | 0.5 MB |");

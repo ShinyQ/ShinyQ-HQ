@@ -16,6 +16,8 @@ export interface RideSummary {
   /** Seconds the car waited at closed doors for the destination, and whether it gave up. */
   held: number;
   timedOut: boolean;
+  /** Seconds the car waited at closed doors for the destination floor's code chunk (no timeout). */
+  chunkHeld: number;
   /** Shader programs linked between the start of the dolly and the arrival (0 when precompile worked). */
   programs: number;
   /** Wall time from boarding to the arrival. */
@@ -33,7 +35,7 @@ export interface RideStats {
 
 export function startRideStats(from: FloorId, to: FloorId, span: number): RideStats {
   return {
-    summary: { from, to, frames: 0, dollyFrames: 0, distinctY: 0, maxStep: 0, longestFrameMs: 0, held: 0, timedOut: false, programs: 0, elapsedMs: 0 },
+    summary: { from, to, frames: 0, dollyFrames: 0, distinctY: 0, maxStep: 0, longestFrameMs: 0, held: 0, timedOut: false, chunkHeld: 0, programs: 0, elapsedMs: 0 },
     seen: new Set(),
     lastY: null,
     programsAtMove: null,
@@ -42,12 +44,13 @@ export function startRideStats(from: FloorId, to: FloorId, span: number): RideSt
 }
 
 /** Records one frame of a ride past `toDoor`: its stage, the car height drawn and the raw frame time. */
-export function stepRideStats(stats: RideStats, sample: { stage: RideStage; y: number; frameDt: number; held: number; programs: number }): void {
+export function stepRideStats(stats: RideStats, sample: { stage: RideStage; y: number; frameDt: number; held: number; chunkHeld?: number; programs: number }): void {
   const s = stats.summary;
   s.frames += 1;
   s.elapsedMs += sample.frameDt * 1000;
   s.longestFrameMs = Math.max(s.longestFrameMs, sample.frameDt * 1000);
   s.held = Math.max(s.held, sample.held);
+  s.chunkHeld = Math.max(s.chunkHeld, sample.chunkHeld ?? 0);
   if (sample.stage !== "moving") return;
   stats.programsAtMove ??= sample.programs;
   s.dollyFrames += 1;
@@ -68,5 +71,6 @@ export function finishRideStats(stats: RideStats, programs: number): RideSummary
 
 export function formatRideSummary(s: RideSummary): string {
   const waited = `waited ${s.held.toFixed(2)} s${s.timedOut ? " (gave up)" : ""}`;
-  return `[hq ride] ${s.from} to ${s.to}: ${s.dollyFrames} dolly frames, ${s.distinctY} car heights, biggest jump ${Math.round(s.maxStep * 100)}% of the trip, longest frame ${Math.round(s.longestFrameMs)} ms, ${waited}, ${s.programs} shaders compiled while moving, ${(s.elapsedMs / 1000).toFixed(2)} s in total`;
+  const chunk = s.chunkHeld > 0 ? `, chunk ${s.chunkHeld.toFixed(2)} s` : "";
+  return `[hq ride] ${s.from} to ${s.to}: ${s.dollyFrames} dolly frames, ${s.distinctY} car heights, biggest jump ${Math.round(s.maxStep * 100)}% of the trip, longest frame ${Math.round(s.longestFrameMs)} ms, ${waited}${chunk}, ${s.programs} shaders compiled while moving, ${(s.elapsedMs / 1000).toFixed(2)} s in total`;
 }

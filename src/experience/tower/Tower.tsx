@@ -5,10 +5,11 @@ import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
-import { Labs, type LabsLabels } from "../floors/Labs";
-import { Library, type LibraryLabels } from "../floors/Library";
+import type { LabsLabels } from "../floors/Labs";
+import type { LibraryLabels } from "../floors/Library";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
-import { Roof, type RoofLabels } from "../floors/Roof";
+import type { RoofLabels } from "../floors/Roof";
+import { labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { DrawnWork } from "../scene/DrawnWorkHook";
@@ -97,26 +98,39 @@ export function Tower({
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
   const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
+  // L3, L4 and RF load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
+  // ordinary update like L1 and L2 (`floorMount`); until then the floor's own slab (FloorLevel) shows.
+  // Rides hold for the chunk (elevator.ts).
+  useFloorChunks(near);
+  const Labs = labsFloor();
+  const Library = libraryFloor();
+  const Roof = roofFloor();
+  /** The floor's component, or null for a lazy floor whose chunk is still loading (the slab shows). */
+  const floorContent = (id: FloorId) => {
+    switch (id) {
+      case "L1":
+        return <Lobby data={data} labels={labels.lobby} tier={tier} />;
+      case "L2":
+        return <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />;
+      case "L3":
+        return Labs && <Labs data={data} labels={labels.labs} tier={tier} />;
+      case "L4":
+        return Library && <Library data={data} labels={labels.library} tier={tier} />;
+      case "RF":
+        return Roof && <Roof data={data} labels={labels.roof} tier={tier} />;
+    }
+  };
 
   return (
     <group name="tower">
       {FLOOR_IDS.map((id) => {
         const isNear = near.includes(id);
+        const content = isNear ? floorContent(id) : null;
         return (
           <FloorLevel key={id} layout={layouts[id]} near={isNear}>
-            {isNear && (
+            {content && (
               <Suspense fallback={null}>
-                {id === "L1" ? (
-                  <Lobby data={data} labels={labels.lobby} tier={tier} />
-                ) : id === "L3" ? (
-                  <Labs data={data} labels={labels.labs} tier={tier} />
-                ) : id === "L2" ? (
-                  <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
-                ) : id === "L4" ? (
-                  <Library data={data} labels={labels.library} tier={tier} />
-                ) : (
-                  <Roof data={data} labels={labels.roof} tier={tier} />
-                )}
+                {content}
                 {layouts[id].returnPad && <ReturnPadSign at={layouts[id].returnPad} label={labels.returnPad} tier={tier} />}
                 <FloorPrep floor={id} />
               </Suspense>

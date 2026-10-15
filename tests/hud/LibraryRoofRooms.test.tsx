@@ -25,10 +25,19 @@ vi.mock("@/i18n/navigation", async () => {
   };
 });
 
+// The first lazy body loads its floor chunk (Round 7 B), slow on a loaded CI runner.
+vi.setConfig({ testTimeout: 20_000 });
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
+async function openLazy(room: RoomId, locale: Locale = "en") {
+  const drawer = open(room, locale);
+  await within(drawer).findAllByTestId("research-item", {}, { timeout: 20_000 });
+  return drawer;
+}
 
 function open(room: RoomId, locale: Locale = "en") {
   const view = buildRoomViews(locale)[room];
@@ -81,8 +90,8 @@ describe("Library rooms in the drawer", () => {
 });
 
 describe("Research shelf in the drawer", () => {
-  it("lists papers with the owner highlighted among the authors, venue, DOI link, summary and profiles", () => {
-    const drawer = open("L4:research");
+  it("lists papers with the owner highlighted among the authors, venue, DOI link, summary and profiles", async () => {
+    const drawer = await openLazy("L4:research");
     const items = within(drawer).getAllByTestId("research-item");
     expect(items.length).toBe(4);
     const ewallet = items.find((li) => li.textContent?.includes("Indonesian Digital Wallet"))!;
@@ -103,7 +112,7 @@ describe("Research shelf in the drawer", () => {
     const user = userEvent.setup();
     const commands: HudCommand[] = [];
     const off = onHudCommand((c) => commands.push(c));
-    const drawer = open("L4:research");
+    const drawer = await openLazy("L4:research");
     const ewallet = within(drawer).getAllByTestId("research-item").find((li) => li.textContent?.includes("Indonesian Digital Wallet"))!;
     await user.click(within(ewallet).getByRole("button", { name: /Indonesian Digital Wallet/ }));
     await user.click(within(ewallet).getByRole("button", { name: "Abstract and citation" }));
