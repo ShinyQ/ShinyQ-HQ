@@ -7,6 +7,7 @@ Read this before changing anything. It applies to humans and AI agents in every 
 - Design: `docs/superpowers/specs/2026-10-09-agent-hq-design.md` plus appendices `docs/superpowers/specs/agent-hq/01..08`. An appendix wins over the main spec for its topic.
 - Owner content decisions C1 to C9 (appendix 07 section 7) override everything else about content.
 - Phase plans live in `docs/superpowers/plans/`. Write one before starting a phase.
+- Documentation split (owner request 2026-10-15): `README.md` is a short, scannable overview (centered header with badges, the hero GIF, highlights, the floor guide, architecture, stack, quick start, routes, structure, CI budgets, docs index; keep it under about 300 lines with no prose line over about 300 characters, and put anything long in `<details>`). Never document a feature or a phase there: feature detail goes into `docs/features.md` (by floor, with headings and bullets; the status log lives there too) and content workflows into `docs/content.md` (dataset, galleries, certifications, CV, paper PDFs, safety). A PR that changes a feature, a route, a budget or a content rule updates those files (and the README table or bullet only when the overview itself changes). README media live in `docs/readme/` (`hero.gif` under 6 MB, `hero.jpg`, `floor-*.jpg`), captured by `bun scripts/readme-hero.ts`; re-run it after a large visual change to the Lobby, the elevator, L3 or the HUD.
 
 ## Hard rules
 
@@ -86,6 +87,7 @@ scripts/
   stats-token-check.ts          CI probes before the hq-stats deploy: the analytics token (CF_STATS_TOKEN, else CF_EVAL_TOKEN) reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers (KV advisory; never prints a token)
   stats-dry-run.ts              runs the hq-stats pipeline against production data into an in-memory KV and prints the snapshot (WA_TOKEN, WA_ACCOUNT_ID from the environment)
   capture-dev.ts                owner review captures (dev routes or the served export) at 1440x900, 834x1112 and 390x844 with draw call metrics
+  readme-hero.ts                README media from the served export on the virtual frame clock (e2e/vclock.ts): the hero GIF (ffmpeg plus gifsicle, under 6 MB), its still and the floor stills in docs/readme/
 src/
   app/(root)/                   "/" language redirect (own root layout)
   app/[locale]/                 all localized routes (root layout with <html lang>)
@@ -175,6 +177,9 @@ e2e/budgets.ts                  every 3D CI threshold (render, bytes, programs, 
 e2e/durations.json              median seconds per test of both lanes from CI logs (`bun run e2e:durations`), for the CI shard split
 e2e/perf/                       perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`): bytes-3d, floors (+ baseline.json), peaks, memory-full (the memory gate on the full tier with Motion Full), nightly timeline, local look check (the lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the default suite)
 e2e/perf-probes.spec.ts         default suite: ?perf=1 overlay on and off, timeline marks, RUM beacon, footer privacy note
+docs/features.md                feature reference by floor (controls, floors, Ask, CI, performance, status log); the README links here
+docs/content.md                 content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, safety lint)
+docs/readme/                    README media: hero.gif, hero.jpg, floor-{L1,L2,L3,L4,RF}.jpg (output of scripts/readme-hero.ts, committed)
 ```
 
 ## Content access

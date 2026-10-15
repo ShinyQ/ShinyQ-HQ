@@ -9,7 +9,7 @@
  * lossy webp, so text pages stay crisp and scanned pages stay small) and the manifest
  * `content/generated/paper-pages.json` (page sizes plus each PDF's sha256, which
  * `tests/content/papers.test.ts` compares with the committed PDFs). The output is committed. Needs
- * poppler and webp (see `scripts/pdf-pages.ts`). Read the redaction and publisher rules in README
+ * poppler and webp (see `scripts/pdf-pages.ts`). Read the redaction and publisher rules in docs/content.md
  * ("Paper PDFs") before adding a PDF.
  */
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -22,7 +22,7 @@ export const PAPER_PAGE_WIDTH = 1400;
 
 /**
  * Personal data that must never be extractable from a hosted paper PDF (redact it by rasterizing the
- * page, see README "Paper PDFs"). Generic on purpose: the real values are never written down here.
+ * page, see docs/content.md "Paper PDFs"). Generic on purpose: the real values are never written down here.
  */
 export const PERSONAL_DATA_PATTERNS: { name: string; pattern: RegExp }[] = [
   { name: "student ID (NIM)", pattern: /\bNIM\s*[:.]?\s*\d{6,}/i },
@@ -69,7 +69,7 @@ function main() {
   for (const file of files) {
     const pdf = path.join(dir, `${file}.pdf`);
     const problems = paperTextProblems(pdfToText(pdf), loadBlocklist());
-    if (problems.length) throw new Error(`${file}.pdf: ${problems.join(", ")}. Redact these pages (README "Paper PDFs") before hosting the PDF.`);
+    if (problems.length) throw new Error(`${file}.pdf: ${problems.join(", ")}. Redact these pages (docs/content.md "Paper PDFs") before hosting the PDF.`);
     const outDir = path.join(dir, file);
     rmSync(outDir, { recursive: true, force: true });
     mkdirSync(outDir, { recursive: true });
