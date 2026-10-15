@@ -12,6 +12,17 @@ describe("directional view zones (Round 7 G)", () => {
     expect(zoneAt("L3", { x: 5, z: 0, heading: 0 }, [zone])?.id).toBe("L3:test");
   });
 
+  it("keeps a little slack past perpendicular, so a rover arriving due north or south still gets the zone", () => {
+    expect(zoneAt("L3", { x: 5, z: 0, heading: Math.PI }, [zone])?.id).toBe("L3:test");
+    expect(zoneAt("L3", { x: 5, z: 0, heading: Math.PI + (10 * Math.PI) / 180 }, [zone])?.id).toBe("L3:test");
+  });
+
+  it("falls through a skipped travel zone to the next matching zone", () => {
+    const under: ViewZone = { id: "L3:under", area: zone.area, yaw: 1 };
+    expect(zoneAt("L3", { x: 5, z: 0, heading: -Math.PI / 2 }, [zone, under])?.id).toBe("L3:under");
+    expect(zoneAt("L3", { x: 5, z: 0, heading: Math.PI / 2 }, [zone, under])?.id).toBe("L3:test");
+  });
+
   it("skips a travel zone for a rover driving against it", () => {
     expect(zoneAt("L3", { x: 5, z: 0, heading: -Math.PI / 2 }, [zone])).toBeNull();
     expect(zoneAt("L3", { x: 5, z: 0, heading: (-3 * Math.PI) / 4 }, [zone])).toBeNull();
