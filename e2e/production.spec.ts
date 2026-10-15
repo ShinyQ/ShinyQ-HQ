@@ -22,7 +22,12 @@ async function mockStats(page: Page, body: StatsSnapshotV1 | 204 = fresh(STATS_F
   );
 }
 
-type ProbeWindow = { __hq: { probes: { ops: { mounted: boolean; live: boolean; rows: string[] } }; layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }> } };
+type ProbeWindow = {
+  __hq: {
+    probes: { ops: { mounted: boolean; live: boolean; rows: string[] } };
+    layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[]; road?: { roads: { id: string; points: { x: number; z: number }[] }[] } }>;
+  };
+};
 const opsProbe = (page: Page) => page.evaluate(() => (window as unknown as ProbeWindow).__hq.probes.ops);
 
 async function openLabs(page: Page, hash = "") {
@@ -79,8 +84,12 @@ test.describe("L3 Ops Control Room", () => {
     const errors = collectErrors(page);
     await mockStats(page);
     await openLabs(page);
-    const door = await page.evaluate(() => (window as unknown as ProbeWindow).__hq.layouts.L3.doors!.find((d) => d.room === "L3:ops")!.at);
-    await driveTo(page, { x: door.x - 6, z: 24 });
+    const { door, roadZ } = await page.evaluate(() => {
+      const l3 = (window as unknown as ProbeWindow).__hq.layouts.L3;
+      // The AI wing road's straight run (its third point), which the room faces.
+      return { door: l3.doors!.find((d) => d.room === "L3:ops")!.at, roadZ: l3.road!.roads.find((r) => r.id === "ai")!.points[2].z };
+    });
+    await driveTo(page, { x: door.x - 6, z: roadZ });
     const point = await targetPoint(page, "L3:door:ops");
     await page.mouse.click(point.x, point.y);
     await waitForRoom(page, "L3:ops");

@@ -268,8 +268,8 @@ async function openLabsArrival(page: Page) {
   await waitForCameraSettle(page);
 }
 
-/** Screen box (CSS px) of a wing panel: the corners of its point-and-go pick volume. */
-async function panelBox(page: Page, wing: "software" | "ai") {
+/** Screen box (CSS px) of a directory board: the corners of its point-and-go pick volume. */
+async function panelBox(page: Page, wing: "software" | "data" | "ai") {
   return page.evaluate((id) => {
     const { interact } = (window as unknown as PanelWindow).__hq;
     const points = [0, 1].flatMap((fx) => [0, 1].flatMap((fz) => [0.02, 0.98].map((lift) => interact.screenAt(id, fx, fz, lift))));
@@ -285,11 +285,11 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
     { width: 1440, height: 900, safe: DESKTOP_SAFE, phone: false },
     { width: 390, height: 844, safe: PHONE_SAFE, phone: true },
   ] as const) {
-    test(`both wing panels are whole and unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
+    test(`all three directory boards are whole and unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, isMobile: size.phone, hasTouch: size.phone });
       const page = await context.newPage();
       await openLabsArrival(page);
-      for (const wing of ["software", "ai"] as const) {
+      for (const wing of ["software", "data", "ai"] as const) {
         const box = await panelBox(page, wing);
         expect(box, wing).not.toBeNull();
         expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
