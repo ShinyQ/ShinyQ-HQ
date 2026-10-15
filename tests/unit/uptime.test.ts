@@ -34,8 +34,8 @@ describe("statsCheck", () => {
   it("uses the site's delayed threshold", () => expect(STATS_MAX_AGE_MS).toBe(DELAYED_AFTER_MS));
   it("passes a fresh snapshot", () => expect(statsCheck({ code: 200, body: fresh }, NOW).ok).toBe(true));
   it("fails a stale snapshot", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: "2026-10-12T00:00:00.000Z" } }, NOW)).toMatchObject({ ok: false, detail: expect.stringContaining("old") }));
-  it("passes at exactly 48 h old", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS).toISOString() } }, NOW).ok).toBe(true));
-  it("fails at 48 h plus one minute", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS - 60_000).toISOString() } }, NOW).ok).toBe(false));
+  it("passes at exactly 12 h old", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS).toISOString() } }, NOW).ok).toBe(true));
+  it("fails at 12 h plus one minute", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS - 60_000).toISOString() } }, NOW).ok).toBe(false));
   it("fails on 204", () => expect(statsCheck({ code: 204 }, NOW).ok).toBe(false));
   it("fails on an invalid body", () => expect(statsCheck({ code: 200, body: { v: 9 } }, NOW).ok).toBe(false));
 });

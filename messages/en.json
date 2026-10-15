@@ -1044,14 +1044,14 @@
   "stats": {
     "title": "Visits",
     "observatory": "Visitor Observatory",
-    "intro": "Visits and AI questions are counted anonymously, then updated daily from the previous complete day's data.",
+    "intro": "Visits and AI questions are counted anonymously and updated every 4 hours, including today so far.",
     "approx": "about {n}",
     "window": {
-      "d30": "Last 30 complete days",
+      "d30": "Last 30 days, including today",
       "all": "Since {date}"
     },
     "source": "Cloudflare Web Analytics, sampled estimates",
-    "updated": "Updated daily",
+    "updated": "Updated every 4 hours",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
     "offline": "Stats unavailable",
@@ -1129,7 +1129,7 @@
       "explore": "Median time to explore",
       "nightly": "Nightly performance runs",
       "sessions": "{count} sampled 3D sessions, last 30 days",
-      "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated daily.",
+      "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated every 4 hours.",
       "offline": "Current numbers are unavailable."
     },
     "explore": {

@@ -381,7 +381,7 @@ Facts, not a recommendation to move now (section 7 explains the `kurniadi.dev` b
 |---|---|
 | Page `/` and `/en` | HTTP 200 (no redirect) with `og:title`, `og:image` and `og:url` |
 | `GET /api/ask` | 200 with `enabled: true`. A 503 with `enabled: false` passes only while `wrangler.toml` sets `ASK_ENABLED` to `"false"` (the kill switch, switched off on purpose); otherwise a disabled Ask fails, which catches a lost AI binding or Turnstile secret (production's `enabled()` is false for those too). Status only: no model call, no AI quota |
-| `GET /api/stats` | 200 with a valid snapshot whose `updatedAt` is at most 48 h old (the site's "delayed" threshold; the Worker writes daily at 01:00 UTC). 204 fails |
+| `GET /api/stats` | 200 with a valid snapshot whose `updatedAt` is at most 12 h old (the site's "delayed" threshold; the Worker writes every 4 hours, at minute 0 UTC). 204 fails |
 | Latest `deploy.yml` run on main | the newest completed run that is not cancelled, skipped, neutral or stale succeeded (those runs are ignored) |
 
 A failing check is retried once after 60 s. Then the script opens one issue labelled `uptime` ("Uptime: production checks failing") listing the failing checks, rewrites its body on later failing runs (a comment, and so an email, only when the set of failing checks changes) and closes it with a recovery comment once every check passes. GitHub emails the owner on the new issue, on comments and on the close. The run stays green when checks fail (the issue is the alert, so there are no hourly failure emails); it turns red only when the script cannot talk to GitHub.
@@ -392,7 +392,7 @@ Prove the issue path: `gh workflow run uptime.yml -R ShinyQ/ShinyQ-HQ -f force_f
 
 Things to know:
 
-- `updatedAt` is midnight UTC of the Worker's run day. If one daily Worker run is missed, the 00:17 UTC check two days later finds a snapshot just over 48 h old and fails, and the issue stays open for about an hour until the Worker's 01:00 UTC catch-up run. That is two emails per missed Worker run, by design: the site shows "delayed" in that hour too.
+- `updatedAt` is the time of the Worker's last run. If three 4-hour runs in a row are missed, the next hourly check finds a snapshot over 12 h old and fails, and the issue stays open until the next successful Worker run. That is two emails per outage, by design: the site shows "delayed" in that period too.
 - GitHub disables scheduled workflows in public repositories after 60 days without repository activity. Re-enable it from Actions > Uptime.
 - Removing the `uptime` label from an open issue hides it from the script, so the next failing run opens a new issue.
 

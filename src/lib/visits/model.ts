@@ -15,8 +15,8 @@ export const TOPIC_FILTERS: readonly TopicFilter[] = ["all", "work", "ai", "care
 export const PERIODS: readonly StatsPeriod[] = ["d30", "all"];
 
 const HOUR = 3_600_000;
-/** After this the stats show a "delayed" note (the snapshot is daily). */
-export const DELAYED_AFTER_MS = 48 * HOUR;
+/** After this the stats show a "delayed" note (the snapshot refreshes every 4 hours). */
+export const DELAYED_AFTER_MS = 12 * HOUR;
 /** After this every surface hides the stats. */
 export const HIDDEN_AFTER_MS = 7 * 24 * HOUR;
 
@@ -29,7 +29,7 @@ export function freshness(snapshot: StatsSnapshotV1 | null, now: number): Freshn
   return age > DELAYED_AFTER_MS ? "delayed" : "fresh";
 }
 
-/** The last complete UTC day the snapshot covers (`updatedAt` is its exclusive end), YYYY-MM-DD. */
+/** The UTC day of the snapshot's last data (`updatedAt` is the run time; a midnight run reports the previous day), YYYY-MM-DD. */
 export function lastUpdatedDay(snapshot: StatsSnapshotV1): string {
   return new Date(Date.parse(snapshot.updatedAt) - 1).toISOString().slice(0, 10);
 }

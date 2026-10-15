@@ -43,7 +43,7 @@ function useLines(segs: ReturnType<typeof opsLines>) {
 }
 
 /**
- * This site's own telemetry on the panel above the screens, only while the daily snapshot is ready
+ * This site's own telemetry on the panel above the screens, only while the 4-hour snapshot is ready
  * (hidden when missing, invalid or older than 7 days). Two draw calls: rim lines and one text batch.
  */
 function LivePanel({ ops, live, locale }: { ops: OpsPlacement; live: OpsData["live"]; locale: "en" | "id" }) {
