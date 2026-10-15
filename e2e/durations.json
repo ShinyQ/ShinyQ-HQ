@@ -9,7 +9,7 @@
   ],
   "e2e": {
     "ask.spec.ts › 3D: the top-right pill opens the dock over the tower, and typing does not drive the rover": 11.5,
-    "ask.spec.ts › About CTA opens the dock": 3.3,
+    "ask.spec.ts › About has no Ask the HQ section; the floating launcher stays (owner request 2026-10-15)": 3.3,
     "ask.spec.ts › Ask Rover's ask option opens the dock": 2.3,
     "ask.spec.ts › Cmd-K Ask row sends the question to the dock": 2.5,
     "ask.spec.ts › Page View launcher: topic, pill, inert answer, follow-ups, Esc": 5.4,

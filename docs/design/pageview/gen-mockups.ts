@@ -80,7 +80,7 @@ function footer() {
       <div style="grid-column:6 / span 3"><p class="data">Pages</p><ul class="stack-2"><li><a href="work.html">Work</a></li><li><a href="journey.html">Journey</a></li><li><a href="writing.html">Writing</a></li><li><a href="about.html">About</a></li><li><a href="#">Quick view</a></li><li><a href="#">CV</a></li></ul></div>
       <div style="grid-column:9 / span 4"><p class="data">Elsewhere</p><ul class="stack-2"><li><a href="#">LinkedIn ↗</a></li><li><a href="#">GitHub ↗</a></li><li><a href="#">Medium ↗</a></li><li><a href="#">Google Scholar ↗</a></li></ul></div>
     </div>
-    <div class="base"><p class="small">${esc(M.footer.built)}</p><a class="small uline" href="#">${esc(M.footer.source)}</a></div>
+
   </div>
 </footer>`;
 }

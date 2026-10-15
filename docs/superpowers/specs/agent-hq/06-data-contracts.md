@@ -175,8 +175,8 @@ The beacon leaves on the first of: tab hidden, page left, 3D view closed (Page V
 - Never sampled: browser automation (`navigator.webdriver`), Do Not Track, Global Privacy Control, and every visit that never opens the 3D view (Page View, static tier, crawlers). `?rum=0` opts a session out; `?rum=1` forces it (preview checks), except under Do Not Track or Global Privacy Control, which always win.
 - Retention: Analytics Engine keeps points for 3 months (Cloudflare limit), then drops them.
 - Kill switch: `RUM_ENABLED` in `wrangler.toml` (anything but `"true"` drops every point).
-- Visitors see the same promise in one footer line (`footer.privacy`, EN and ID).
-- "Don't count my visits" (`localStorage["hq:stats-optout"] = "1"`, see 4.1) also turns the performance beacon off.
+- The Classic site footer no longer carries a privacy line (owner request 2026-10-15); this section and the Ask AI panel note (`ask.privacy`) document the promise.
+- "Don't count my visits" (`localStorage["hq:stats-optout"] = "1"`, see 4.1, now offered in the L1:visits drawer only) also turns the performance beacon off.
 
 ### 4.1 Public visit stats (Layer 1)
 

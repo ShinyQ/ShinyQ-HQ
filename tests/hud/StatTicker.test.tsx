@@ -13,8 +13,6 @@ const props = {
   liveIds: Object.keys(DYNAMIC_STATS),
   title: "At a glance",
   live: "Live",
-  updated: "Updated Oct 11, 2026",
-  pause: "Pause motion",
 };
 
 function tracks(container: HTMLElement) {
@@ -40,15 +38,16 @@ describe("StatTicker", () => {
     }
   });
 
-  it("marks the stats that come from the live facts and says when they were updated", () => {
+  it("marks the stats that come from the live facts", () => {
     const { container } = render(<StatTicker {...props} />);
     const { shown } = tracks(container);
     expect(within(shown).getAllByText("Live")).toHaveLength(props.stats.filter((s) => props.liveIds.includes(s.id)).length);
-    expect(screen.getByText("Updated Oct 11, 2026")).toBeInTheDocument();
   });
 
-  it("offers a native pause control for the motion", () => {
-    render(<StatTicker {...props} />);
-    expect(screen.getByRole("checkbox", { name: "Pause motion" })).not.toBeChecked();
+  it("is a plain marquee: no date stamp and no pause switch (owner request 2026-10-15)", () => {
+    const { container } = render(<StatTicker {...props} />);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(container.querySelector(".hx-tick-bar")?.children).toHaveLength(1);
+    expect(container).not.toHaveTextContent(/Updated/);
   });
 });

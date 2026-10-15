@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { ContactPanel } from "@/components/page/About";
-import { AskCta, AskOnly } from "@/components/page/AskEntry";
 import { Marker, SectionSplit } from "@/components/page/Layout";
 import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
@@ -38,7 +37,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const tc = await getTranslations({ locale, namespace: "common" });
   const tq = await getTranslations({ locale, namespace: "quick" });
   const tf = await getTranslations({ locale, namespace: "floors" });
-  const tk = await getTranslations({ locale, namespace: "ask.cta" });
   const roof = getRoof();
   const profile = getProfile();
   const [lead, rest] = splitStory(profile.story[locale]);
@@ -77,12 +75,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       <SectionSplit id="certifications" title={th("certsTitle")}>
         <Certifications locale={locale} />
       </SectionSplit>
-
-      <AskOnly>
-        <SectionSplit id="ask" title={tk("title")} intro={tk("intro")}>
-          <AskCta />
-        </SectionSplit>
-      </AskOnly>
 
       <VisitsSection locale={locale} />
 

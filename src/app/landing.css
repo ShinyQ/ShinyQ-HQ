@@ -2,7 +2,7 @@
   Landing layer: the cinematic first screen of the Page View home (src/components/page/Hero.tsx).
   Motion is CSS only and compositor only (transform, opacity): no JavaScript, and the backdrop holds no
   image or text, so it is never an LCP candidate. Every animation starts after 0.5 s with its first
-  keyframe as the still frame. Reduced motion (the OS setting or the Motion override) and the "Pause motion" checkbox stop it.
+  keyframe as the still frame. Reduced motion (the OS setting or the Motion override) stops it.
 */
 @layer components {
   /* First screen: the header is 60 px plus the 49 px tab row below lg, 68 px from lg. */
@@ -96,16 +96,6 @@
     animation-delay: 6.5s;
   }
 
-  .hx-dot {
-    width: 8px;
-    height: 8px;
-    flex: none;
-    border-radius: 50%;
-    background: var(--color-green);
-    box-shadow: 0 0 10px var(--color-green);
-    animation: hx-pulse 2s ease-in-out 0.5s infinite;
-  }
-
   /* The LCP element: static, solid color (no gradient text, no entrance animation). */
   .hx-name {
     font-size: clamp(44px, 8vw, 112px);
@@ -144,14 +134,7 @@
   }
 
   .hx-tick-bar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "upd pause"
-      "view view";
-    align-items: center;
-    column-gap: 16px;
-    padding-block: 4px 10px;
+    padding-block: 6px;
   }
 
   /* From sm the ticker can share the bottom of the first screen with the floating buttons, so the bar
@@ -169,26 +152,7 @@
     }
   }
 
-  @media (min-width: 64rem) {
-    .hx-tick-bar {
-      grid-template-columns: auto auto minmax(0, 1fr);
-      grid-template-areas: "upd pause view";
-      padding-block: 6px;
-    }
-  }
-
-  .hx-tick-updated {
-    grid-area: upd;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    color: var(--color-green);
-    white-space: nowrap;
-  }
-
   .hx-tick-view {
-    grid-area: view;
     display: flex;
     gap: 48px;
     overflow: hidden;
@@ -223,22 +187,6 @@
 
   .hx-tick-live {
     color: var(--color-green);
-  }
-
-  /* Left of the marquee, so the floating "Back to 3D" button (bottom right) never covers it. */
-  .hx-pause {
-    grid-area: pause;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    cursor: pointer;
-  }
-
-  .hx-pause-box {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--color-cyan);
   }
 
   /* Featured project cards. */
@@ -310,22 +258,16 @@
     }
   }
 
-  @keyframes hx-pulse {
-    50% {
-      opacity: 0.35;
-    }
-  }
-
   @keyframes hx-marquee {
     to {
       transform: translateX(calc(-100% - 48px));
     }
   }
 
-  /* "Pause motion" (a native checkbox in the ticker) stops every hero animation. Automation and crawlers
-     (html[data-hq-still], ambientStill in src/lib/boot-first.ts) get the same still frame. */
-  .hx:has(.hx-pause-box:checked) :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track),
-  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-dot, .hx-tick-track) {
+  /* Automation and crawlers (html[data-hq-still], ambientStill in src/lib/boot-first.ts) get the still frame.
+     Hover or keyboard focus inside the marquee holds it, so a stat can be read in place. */
+  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-tick-track),
+  .hx-tick-view:is(:hover, :focus-within) .hx-tick-track {
     animation-play-state: paused;
   }
 
@@ -334,7 +276,6 @@
      names are removed here. */
   .hx-glow,
   .hx-ground-grid,
-  .hx-dot,
   .hx-tick-track {
     @variant motion-reduce {
       animation: none;
@@ -342,7 +283,6 @@
   }
 
   .hx-packet,
-  .hx-pause,
   .hx-tick-track[aria-hidden="true"] {
     @variant motion-reduce {
       display: none;

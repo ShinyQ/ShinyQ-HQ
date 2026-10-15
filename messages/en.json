@@ -95,9 +95,7 @@
       "enter3dHint": "Drive a rover through the five-floor tower"
     },
     "ticker": {
-      "updated": "Updated {date}",
-      "live": "Live",
-      "pause": "Pause motion"
+      "live": "Live"
     }
   },
   "quick": {
@@ -335,9 +333,6 @@
     "home": "Return to the Lobby"
   },
   "footer": {
-    "built": "The site runs on one validated dataset.",
-    "privacy": "Anonymous visit analytics use no tracking cookies or tracking IDs. Cloudflare counts countries, pages, 3D or Classic site use, and AI question topics for public totals. A sample of 3D sessions sends performance ranges. Ask AI uses a separate 30-minute anti-bot cookie. Do Not Track and Global Privacy Control stop this site's visit and performance beacons. \"Don't count my visits\" also turns off Cloudflare Web Analytics.",
-    "source": "View source on GitHub",
     "pages": "Pages",
     "elsewhere": "Elsewhere"
   },
@@ -713,11 +708,6 @@
       "placeholder": "Ask anything about my work",
       "submit": "Ask",
       "topicsLabel": "Or start with"
-    },
-    "cta": {
-      "title": "Ask the HQ",
-      "intro": "Questions about my work, projects, career or how to reach me, answered by AI from this site.",
-      "button": "Ask AI"
     }
   },
   "walk": {

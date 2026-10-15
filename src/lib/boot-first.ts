@@ -86,7 +86,7 @@ export function canOffer3D(i: Offer3DInput): boolean {
 
 /**
  * Whether the landing's ambient motion (the hero backdrop and the stats ticker) holds its still frame,
- * the frame visitors see with "Pause motion" or reduced motion. True under automation
+ * the frame visitors see under reduced motion. True under automation
  * (`navigator.webdriver`: Playwright, Lighthouse 12) and for crawlers: nobody watches it there, and on a
  * software compositor (SwiftShader in CI) the infinite animations queue seconds of GPU work that stall
  * the page's main thread and the next browser call, even after navigating away (13 s at 1999x1129).
