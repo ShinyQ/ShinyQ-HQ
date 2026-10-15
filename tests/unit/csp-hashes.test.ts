@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { addScriptPolicy, CSP_MARKER, inlineScripts, pagePolicy, scriptHash, scriptPolicyProblems, sitePolicy } from "../../scripts/csp-hashes";
+import { addScriptPolicy, CSP_MARKER, exportPolicyProblems, inlineScripts, pagePolicy, scriptHash, scriptPolicyProblems, sitePolicy } from "../../scripts/csp-hashes";
 import { cfBeaconScript } from "../../src/components/Analytics";
 
 const SITE = sitePolicy(readFileSync(path.join(process.cwd(), "public", "_headers"), "utf8"));
@@ -103,5 +103,24 @@ describe("scriptPolicyProblems", () => {
   });
   it("with the site policy, flags script sources that drifted from _headers", () => {
     expect(scriptPolicyProblems(ok.replace(" https://challenges.cloudflare.com", ""), SITE)).toContainEqual(expect.stringMatching(/differs from/));
+  });
+});
+
+describe("exportPolicyProblems", () => {
+  it("checks every HTML file of an export against its _headers and names the file", () => {
+    mkdirSync(path.join(process.cwd(), "test-results"), { recursive: true });
+    const dir = mkdtempSync(path.join(process.cwd(), "test-results", "csp-export-"));
+    try {
+      copyFileSync(path.join(process.cwd(), "public", "_headers"), path.join(dir, "_headers"));
+      mkdirSync(path.join(dir, "en"), { recursive: true });
+      writeFileSync(path.join(dir, "index.html"), addScriptPolicy(page("<script>a()</script>"), SITE));
+      writeFileSync(path.join(dir, "en", "bad.html"), addScriptPolicy(page("<script>a()</script>"), SITE).replace("</body>", "<script>evil()</script></body>"));
+      const problems = exportPolicyProblems(dir);
+      const bad = path.join("en", "bad.html");
+      // Only the bad page: its unlisted script, and so a policy that no longer matches its scripts.
+      expect(problems).toEqual([`${bad}: missing hash for inline script #2 "evil()"`, `${bad}: the script policy differs from the one derived from _headers`]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

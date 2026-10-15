@@ -11,10 +11,13 @@
  *    secrets) it warns. Both write a job summary line, so a skip is never silent.
  * 2. Scans every text file of `out/` (HTML, RSC payloads, JSON, XML, webmanifest, JS, CSS, SVG, MD)
  *    for blocklisted terms with `scanBuildOutput`. Hits print private terms as `private term #n`.
+ * 3. Checks the script policy of every page (`exportPolicyProblems`, scripts/csp-hashes.ts): one
+ *    data-hq-csp meta tag derived from `_headers`, a sha256 for each inline script, no 'unsafe-inline'.
  */
 import { appendFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { loadBlocklist, loadDefaultBlocklist, scanBuildOutput } from "../src/content/safety";
+import { exportPolicyProblems } from "./csp-hashes";
 
 export type GateState = "enabled" | "missing";
 export type GateVerdict = "pass" | "warn" | "fail" | "grace";
@@ -77,6 +80,21 @@ function main() {
   } else {
     console.log(`Export scan: no blocklisted term in ${path.relative(process.cwd(), dir) || "."} (${ms} ms).`);
     summary(`Export scan: no blocklisted term in \`${path.relative(process.cwd(), dir) || "."}\` (${ms} ms).`);
+  }
+
+  let policy: string[];
+  try {
+    policy = exportPolicyProblems(dir);
+  } catch (error) {
+    policy = [error instanceof Error ? error.message : String(error)];
+  }
+  if (policy.length) {
+    for (const problem of policy) console.log(`::error::csp: ${problem}`);
+    summary(`Script policy: **${policy.length} problem(s)**; every page needs its data-hq-csp meta with each inline script hash (scripts/csp-hashes.ts).`);
+    failed = true;
+  } else {
+    console.log("Script policy: every page lists its inline script hashes.");
+    summary("Script policy: every page lists its inline script hashes.");
   }
   if (failed) process.exit(1);
 }

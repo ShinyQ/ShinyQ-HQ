@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Request } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, collectCspViolations, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
 import en from "../messages/en.json";
 
 /**
@@ -231,6 +231,7 @@ test("axe: open side panel with an answer", async ({ page }) => {
 });
 
 test("Turnstile: lazy script, invisible widget, token in the POST", async ({ page }) => {
+  const csp = await collectCspViolations(page);
   const errors = collectErrors(page);
   const scripts: string[] = [];
   await page.route("https://challenges.cloudflare.com/turnstile/v0/api.js*", async (route) => {
@@ -261,6 +262,7 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
   });
   expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill", chip: "contact-reach" });
   expect(errors).toEqual([]);
+  expect(csp).toEqual([]);
 });
 
 test("Ask Rover's ask option opens the dock", async ({ page }) => {

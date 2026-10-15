@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { exportPolicyProblems } from "../scripts/csp-policy";
 import { loadBlocklist, scanBuildOutput } from "../src/content/safety";
 import { content } from "./routes";
 
@@ -38,4 +39,9 @@ test("the export names no client company or other blocklisted term (C3)", () => 
   // only as "private term #n" (S2), so a failure never prints them.
   expect(existsSync(outDir)).toBe(true);
   expect(scanBuildOutput(outDir, loadBlocklist())).toEqual([]);
+});
+
+test("every exported page carries its script policy: one data-hq-csp meta with each inline script hash, no 'unsafe-inline'", () => {
+  expect(existsSync(outDir)).toBe(true);
+  expect(exportPolicyProblems(outDir)).toEqual([]);
 });

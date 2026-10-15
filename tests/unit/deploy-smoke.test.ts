@@ -1,8 +1,14 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { addScriptPolicy, sitePolicy } from "../../scripts/csp-hashes";
 import { smokeProblems, type Expected, type Observed } from "../../scripts/deploy-smoke";
 
 const expected: Expected = { asOf: "2026-10-18", contributions: "7,600", beacon: true };
-const html = '<p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{}"></script>';
+const SITE = sitePolicy(readFileSync(path.join(process.cwd(), "public", "_headers"), "utf8"));
+/** A production /en page around `body`, with the script policy the build adds (scripts/csp-hashes.ts). */
+const enPage = (body: string) => addScriptPolicy(`<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/></head><body>${body}</body></html>`, SITE);
+const html = enPage('<p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{}"></script>');
 const card = (path: string) =>
   `<html><head><link rel="canonical" href="https://kurniadi.pages.dev${path}"/><meta property="og:title" content="T"/><meta property="og:description" content="D"/><meta property="og:url" content="https://kurniadi.pages.dev${path}"/><meta property="og:image" content="https://kurniadi.pages.dev/og/en.jpg"/></head>`;
 const jpeg = { code: 200, type: "image/jpeg" };
@@ -17,7 +23,7 @@ describe("post-deploy smoke check", () => {
   it("reports a stale deployment, a disabled endpoint, a missing number or beacon", () => {
     expect(smokeProblems(expected, { ...healthy, status: { code: 200, enabled: true, asOf: "2026-10-11" } })).toEqual(["GET /api/ask asOf is 2026-10-11, expected 2026-10-18"]);
     expect(smokeProblems(expected, { ...healthy, status: { code: 503 } })[0]).toMatch(/not enabled/);
-    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: "<p>7,541</p>" } })).toEqual(["/en does not show 7,600 contributions", "/en has no Web Analytics beacon"]);
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: enPage("<p>7,541</p>") } })).toEqual(["/en does not show 7,600 contributions", "/en has no Web Analytics beacon"]);
     expect(smokeProblems(expected, {})).toHaveLength(8);
   });
 
@@ -35,7 +41,7 @@ describe("post-deploy smoke check", () => {
   });
 
   it("finds the inline opt-out guard that loads the beacon", () => {
-    const guard = '<script id="hq-cf-beacon">(function(){var s=document.createElement("script");s.src="https://static.cloudflareinsights.com/beacon.min.js"})()</script><p>7,600</p>';
+    const guard = enPage('<script id="hq-cf-beacon">(function(){var s=document.createElement("script");s.src="https://static.cloudflareinsights.com/beacon.min.js"})()</script><p>7,600</p>');
     expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: guard } })).toEqual([]);
   });
 
@@ -46,7 +52,19 @@ describe("post-deploy smoke check", () => {
     expect(smokeProblems(expected, { ...healthy, visit: { code: 404 } })).toEqual(["GET /api/visit returned HTTP 404, expected 405 (the visit beacon Function is missing)"]);
   });
 
+  it("reports an /en page without its script policy or with an inline script the policy does not list", () => {
+    const bare = '<html><head><meta charSet="utf-8"/></head><body><p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js"></script></body></html>';
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: bare } })).toEqual(["/en: no data-hq-csp script policy"]);
+    const injected = html.replace("</body>", "<script>injected()</script></body>");
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: injected } })).toEqual(['/en: missing hash for inline script #1 "injected()"']);
+  });
+
+  it("accepts external scripts Cloudflare injects into production HTML", () => {
+    const injected = html.replace("</body>", '<script defer src="/cdn-cgi/scripts/email-decode.min.js"></script></body>');
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: injected } })).toEqual([]);
+  });
+
   it("does not require the beacon when the build had no token", () => {
-    expect(smokeProblems({ ...expected, beacon: false }, { ...healthy, page: { code: 200, html: "7,600" } })).toEqual([]);
+    expect(smokeProblems({ ...expected, beacon: false }, { ...healthy, page: { code: 200, html: enPage("7,600") } })).toEqual([]);
   });
 });
