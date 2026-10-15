@@ -460,7 +460,6 @@ export default function Experience({
         prologue: t("career.prologue"),
         workshop: t("career.workshop"),
         repos: t("career.repos"),
-        window: t("career.window"),
         console: t("interact.console"),
         back: t("pads.back"),
         stars: (count: number) => t("career.stars", { count }),

@@ -1,6 +1,5 @@
 "use client";
 
-import { Text } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, InstancedBufferAttribute, Object3D } from "three";
 import { COLORS, FLOOR_COLOR, FLOOR_GAP } from "../../config";
@@ -10,10 +9,8 @@ import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
 import { CAREER_ICONS } from "../../fx/holoIcons";
 import { HoloIcon } from "../../fx/HoloIcon";
 import { neonColor } from "../../fx/materials";
-import { monoWidth } from "../../fx/readableFlip";
-import { Readable } from "../../fx/Readable";
 import { useDispose } from "../../fx/useDispose";
-import { FONTS, GlassBox } from "../../tower/primitives";
+import { GlassBox } from "../../tower/primitives";
 import { MergedBoxes, MergedEdges } from "../roof/kit";
 import type { Box } from "../roof/solids";
 import type { CareerData, GpuTier, Rect } from "../../types";
@@ -26,7 +23,6 @@ import { WORKSHOP } from "./workshopLayout";
 export interface WorkshopLabels {
   workshop: string;
   repos: string;
-  window: string;
   /** Time console sign (`hud.interact.console`). */
   console: string;
   /** "Back to elevator" on the console screen (`hud.pads.back`). */
@@ -81,7 +77,7 @@ function plateInstances(w: CareerRoadLayout["workshop"], tier: GpuTier) {
  * The Workshop at the end of the Career Road (F3, owner approved 2026-10-14): the time console on the
  * forecourt, the gateway arch, one workbench per side project with a hologram card, the public repo
  * skyline (height by stars on a log scale, color by language), and the glass window over the Horizon
- * deck looking up at L3. About ten draw calls: merged solids, merged edges, one instanced holo plate mesh
+ * deck looking up at L3 (no text on it: owner decision 2026-10-15). About ten draw calls: merged solids, merged edges, one instanced holo plate mesh
  * (bars, cards, the console screen), one label batch, the bench icons (full tier), the signs and the
  * window. Static: nothing animates but the icons' sway (still under reduced motion). Clicks go through
  * point-and-go (`interact/registry.ts`, `L2:station:*`).
@@ -156,12 +152,6 @@ export function WorkshopAnnex({
       <lineSegments geometry={sight} raycast={NO_RAYCAST}>
         <lineBasicMaterial color={COLORS.violet} transparent opacity={0.45} toneMapped={false} />
       </lineSegments>
-      {/* Right-aligned at the window: seen from behind it turns around its own middle, so it stays inside the Workshop. */}
-      <Readable position={[windowX - 0.6, WINDOW_H - 1.2, d / 2 - 1]} pivot={[windowX - 0.6 - monoWidth(`\u25B2 ${labels.window}`, 0.5, 0.1) / 2, d / 2 - 1]}>
-        <Text font={FONTS.monoBold} fontSize={0.5} letterSpacing={0.1} color={COLORS.violet} anchorX="right" anchorY="bottom" material-toneMapped={false}>
-          {`\u25B2 ${labels.window}`}
-        </Text>
-      </Readable>
     </group>
   );
 }

@@ -469,7 +469,6 @@
       "prologue": "Prologue",
       "workshop": "Workshop annex",
       "repos": "Public repositories",
-      "window": "L3 Labs above",
       "scrubHint": "Years: swipe left to advance, right to go back",
       "rooms": "{count, plural, one {# room} other {# rooms}}",
       "here": "You are here",
