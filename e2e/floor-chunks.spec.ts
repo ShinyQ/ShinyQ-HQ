@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PREPARE_TIMEOUT } from "../src/experience/tower/elevator";
 import { asReturningVisitor, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
 
 /**
@@ -55,9 +56,14 @@ test("a deep link requests its floor chunk before the first frame and builds the
 test("the car holds at closed doors until a slow floor chunk arrives, then the floor is there", async ({ page }) => {
   await open(page, "/en?tier=lite&prefetch=off");
   expect(await page.evaluate(() => (window as unknown as ChunkWindow).__hq.floorChunks.state("L3"))).toBe("idle");
-  // Every script requested from now on is a floor chunk: hold each for 6 s (longer than PREPARE_TIMEOUT).
+  // Every script requested from now on is a floor chunk: hold each until the test releases the gate,
+  // which it does only after the car has waited longer than PREPARE_TIMEOUT.
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route(/\/_next\/static\/chunks\/.+\.js$/, async (route) => {
-    await new Promise((r) => setTimeout(r, 6000));
+    await gate;
     await route.continue();
   });
   await page.evaluate(() => {
@@ -76,6 +82,13 @@ test("the car holds at closed doors until a slow floor chunk arrives, then the f
     requestAnimationFrame(tick);
   });
   await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L3"]').click();
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as ChunkWindow).__hq.motion().ride?.chunkHeld ?? 0), { timeout: 60_000 })
+    .toBeGreaterThan(PREPARE_TIMEOUT + 0.5);
+  const held = await page.evaluate(() => ({ ride: (window as unknown as ChunkWindow).__hq.motion().ride, chunk: (window as unknown as ChunkWindow).__hq.floorChunks.state("L3") }));
+  expect(held.chunk, "the chunk is still loading while the car waits").toBe("loading");
+  expect(["moving", "opening", "exiting"], "the car stays at closed doors past PREPARE_TIMEOUT").not.toContain(held.ride?.stage);
+  release();
   await waitForFloor(page, "L3", 90_000);
   const samples = await page.evaluate(() => (window as unknown as ChunkWindow).__chunkSamples);
   const travelling = samples.filter((s) => s.stage === "moving" || s.stage === "opening" || s.stage === "exiting");
