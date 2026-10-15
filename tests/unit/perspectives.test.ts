@@ -22,12 +22,13 @@ const file = (status: "draft" | "approved", entries: Perspective[]): Perspective
 const ten = () => Array.from({ length: 10 }, (_, i) => entry(`topic-${i}`));
 
 describe("PerspectivesFileSchema", () => {
-  it("accepts 10 to 20 bilingual entries with a draft or approved status", () => {
+  it("accepts 10 to 50 bilingual entries with a draft or approved status", () => {
     expect(PerspectivesFileSchema.safeParse(file("draft", ten())).success).toBe(true);
     expect(PerspectivesFileSchema.safeParse(file("approved", ten())).success).toBe(true);
     expect(PerspectivesFileSchema.safeParse(file("draft", ten().slice(0, 9))).success).toBe(false);
-    const twentyOne = [...ten(), ...ten().map((e, i) => ({ ...e, id: `more-${i}` })), entry("one-too-many")];
-    expect(PerspectivesFileSchema.safeParse(file("draft", twentyOne)).success).toBe(false);
+    const fifty = Array.from({ length: 50 }, (_, i) => entry(`topic-${i}`));
+    expect(PerspectivesFileSchema.safeParse(file("draft", fifty)).success).toBe(true);
+    expect(PerspectivesFileSchema.safeParse(file("draft", [...fifty, entry("one-too-many")])).success).toBe(false);
     expect(PerspectivesFileSchema.safeParse({ status: "published", entries: ten() }).success).toBe(false);
   });
 
@@ -40,7 +41,10 @@ describe("PerspectivesFileSchema", () => {
     expect(parses({ answer: { en: "Only English." } })).toBe(false);
     expect(parses({ asOf: "2026-13" })).toBe(false);
     expect(parses({ sources: [{ kind: "tweet", slug: "x" }] })).toBe(false);
-    expect(parses({ answer: { en: "x".repeat(521), id: "y" } })).toBe(false);
+    expect(parses({ answer: { en: "x".repeat(640), id: "y" } })).toBe(true);
+    expect(parses({ answer: { en: "x".repeat(641), id: "y" } })).toBe(false);
+    expect(parses({ references: [{ label: "Report", url: "https://evil.example/x" }] })).toBe(false);
+    expect(parses({ references: [{ label: "Report", url: "https://news.microsoft.com/id-id/x" }] })).toBe(true);
     expect(parses({ question: { en: "q".repeat(121), id: "q" } })).toBe(false);
     expect(parses({ tags: [] })).toBe(false);
     expect(parses({ extra: true })).toBe(false);

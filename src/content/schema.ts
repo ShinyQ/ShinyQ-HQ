@@ -375,15 +375,35 @@ export const MissionSchema = z.strictObject({
  * entries only through `getPerspectives()` (published) in `@/content/load`.
  */
 export const PERSPECTIVE_QUESTION_MAX = 120;
-export const PERSPECTIVE_ANSWER_MAX = 520;
+/** 520 until 2026-10-15; the owner's lifestyle, industry and policy answers run up to about 610 characters as written. */
+export const PERSPECTIVE_ANSWER_MAX = 640;
 export const PERSPECTIVES_MIN = 10;
-export const PERSPECTIVES_MAX = 20;
+/** 20 until 2026-10-15, when 30 endorsed answers joined the 15 engineering entries. */
+export const PERSPECTIVES_MAX = 50;
+/** Hosts a perspective `references` URL may point to: public primary sources for facts from outside the site. */
+export const PERSPECTIVE_REFERENCE_HOSTS = ["news.microsoft.com"] as const;
 
 const boundedText = (max: number) => z.strictObject({ en: nonEmpty.max(max), id: nonEmpty.max(max) });
 
 export const PerspectiveSourceSchema = z.strictObject({
   kind: z.enum(["post", "talk", "project"]),
   slug: SlugSchema,
+});
+
+/**
+ * A public primary source for a fact in an answer that the site itself does not hold (owner request
+ * 2026-10-15: "cited to its public URL"). Kept for review and audits; the knowledge pack names the
+ * label, never the URL, and Ask never links it (`isAskCite` stays site-only).
+ */
+export const PerspectiveReferenceSchema = z.strictObject({
+  label: nonEmpty.max(200),
+  url: z
+    .string()
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return url.protocol === "https:" && (PERSPECTIVE_REFERENCE_HOSTS as readonly string[]).includes(url.hostname);
+    }, "references must be https URLs on an allowed host (PERSPECTIVE_REFERENCE_HOSTS)"),
 });
 
 export const PerspectiveSchema = z.strictObject({
@@ -393,6 +413,7 @@ export const PerspectiveSchema = z.strictObject({
   tags: z.array(SlugSchema).min(1).max(6),
   asOf: YearMonthSchema,
   sources: z.array(PerspectiveSourceSchema).min(1).max(4).optional(),
+  references: z.array(PerspectiveReferenceSchema).min(1).max(2).optional(),
   /** true publishes this entry, false pins it as a draft, absent follows the file `status`. */
   approved: z.boolean().optional(),
 });
@@ -544,6 +565,7 @@ export type WalkId = z.infer<typeof WalkIdSchema>;
 export type Mission = z.infer<typeof MissionSchema>;
 export type SiteContent = z.infer<typeof SiteContentSchema>;
 export type PerspectiveSource = z.infer<typeof PerspectiveSourceSchema>;
+export type PerspectiveReference = z.infer<typeof PerspectiveReferenceSchema>;
 export type Perspective = z.infer<typeof PerspectiveSchema>;
 export type PerspectivesFile = z.infer<typeof PerspectivesFileSchema>;
 export type SiteBuild = z.infer<typeof SiteBuildSchema>;
