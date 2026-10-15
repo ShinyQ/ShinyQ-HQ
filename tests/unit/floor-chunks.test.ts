@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createFloorChunks, isLazyFloor, LAZY_FLOORS, speculativePrefetchOn } from "@/experience/floors/floorChunks";
+import { createFloorChunks, isLazyFloor, LAZY_FLOORS, rideChunkHold, speculativePrefetchOn } from "@/experience/floors/floorChunks";
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -103,5 +103,38 @@ describe("floor chunks", () => {
     expect(speculativePrefetchOn("")).toBe(true);
     expect(speculativePrefetchOn("?tier=lite")).toBe(true);
     expect(speculativePrefetchOn("?tier=lite&prefetch=off")).toBe(false);
+  });
+
+  describe("rideChunkHold", () => {
+    it("starts one load when idle and holds while it loads", () => {
+      const { chunks, calls } = setup();
+      expect(rideChunkHold(chunks, "L3")).toBe(true);
+      expect(calls.L3).toBe(1);
+      expect(rideChunkHold(chunks, "L3")).toBe(true);
+      expect(rideChunkHold(chunks, "L3")).toBe(true);
+      expect(calls.L3).toBe(1);
+    });
+
+    it("releases after a failed load and never restarts it", async () => {
+      const { chunks, d, calls } = setup();
+      expect(rideChunkHold(chunks, "L4")).toBe(true);
+      d.L4.reject(new Error("offline"));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(chunks.state("L4")).toBe("failed");
+      for (let i = 0; i < 5; i++) expect(rideChunkHold(chunks, "L4")).toBe(false);
+      expect(calls.L4).toBe(1);
+      expect(chunks.state("L4")).toBe("failed");
+    });
+
+    it("releases after success and for eager floors without loading", async () => {
+      const { chunks, d, calls } = setup();
+      rideChunkHold(chunks, "RF");
+      d.RF.resolve("roof");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(rideChunkHold(chunks, "RF")).toBe(false);
+      expect(rideChunkHold(chunks, "L1")).toBe(false);
+      expect(rideChunkHold(chunks, "L2")).toBe(false);
+      expect(calls).toEqual({ L3: 0, L4: 0, RF: 1 });
+    });
   });
 });

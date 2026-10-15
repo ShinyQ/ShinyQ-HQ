@@ -86,6 +86,18 @@ export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
   };
 }
 
+/**
+ * Whether a ride to `to` must wait for its chunk. Starts the import only while the chunk is idle, so a
+ * failed import releases the car instead of retrying every frame (the canvas crash remount retries it).
+ */
+export function rideChunkHold(
+  chunks: Pick<FloorChunks<FloorChunkModules>, "state" | "ensure" | "settled">,
+  to: FloorId,
+): boolean {
+  if (chunks.state(to) === "idle") chunks.ensure(to);
+  return !chunks.settled(to);
+}
+
 export interface FloorChunkModules {
   L3: typeof LabsChunk;
   L4: typeof LibraryChunk;

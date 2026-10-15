@@ -44,7 +44,10 @@ export function ProgramWarmup({ tier }: { tier: GpuTier }) {
       for (const id of warmQueue(getHQStore().getState().floor)) {
         if (cancelled || getHQStore().getState().phase !== "boot") break;
         // A lazy floor's code must be here before it can mount hidden (Round 7 B).
-        if (isLazyFloor(id)) await floorChunks.load(id).catch(() => null);
+        if (isLazyFloor(id)) {
+          const loaded = await floorChunks.load(id).then(() => true, () => false);
+          if (!loaded) continue;
+        }
         if (cancelled || getHQStore().getState().phase !== "boot") break;
         warmingFloor.set(id);
         // Let React commit the floor (and its Suspense children) before compiling.
