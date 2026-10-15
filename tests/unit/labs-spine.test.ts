@@ -41,6 +41,36 @@ describe("L3 Data and ML spine", () => {
     }
   });
 
+  it("turns short side wings past the last spine pod, so their last leg never crosses the spine rows", () => {
+    const software = tourOrder(real.filter((p) => p.wing === "software"));
+    const nonSoftware = real.filter((p) => p.wing !== "software");
+    const sets: [string, LabPod[]][] = [
+      ["one Product pod", [...nonSoftware, software[0]]],
+      ["no Product pods", nonSoftware],
+      [
+        "two Product, two AI, four featured Data",
+        [
+          pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1),
+          pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1),
+          ...Array.from({ length: 4 }, (_, i) => pod(`d${i}`, "data", "featured", i)),
+        ],
+      ],
+      ["eight hero Data only", Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i))],
+      ["one Product, eight hero Data", [pod("s0", "software", "featured", 0), ...Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i))]],
+    ];
+    for (const [name, pods] of sets) {
+      const l = buildLabsLayout(pods);
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      const pads = buildFloorLayouts(8, { labs: pods }).L3.pads ?? [];
+      expect(padViolations({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach, pads }), name).toEqual([]);
+      const spineEdge = Math.max(-Infinity, ...l.placed.filter((p) => p.pod.wing === "data").map((p) => p.rect.maxX));
+      for (const wing of ["software", "ai"] as const) {
+        const turn = l.network.roads.find((r) => r.id === wing)!.points.at(-2)!;
+        if (Number.isFinite(spineEdge)) expect(turn.x, `${name} ${wing}`).toBeGreaterThanOrEqual(spineEdge + LABS.tail);
+      }
+    }
+  });
+
   it("docks spine pods alternating north and south from x = 24, doors facing the spine, 6 u from the inner wing rows", () => {
     expect(spinePods.map((p) => p.pod.slug)).toEqual(tourOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
     spinePods.forEach((p, i) => {

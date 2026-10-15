@@ -295,7 +295,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   // inner row starts); the AI road turns at least half a road width past it, so the room always fits.
   const aiInner = placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX);
   const opsMinX = aiInner.length ? Math.max(...aiInner) + OPS.gap : L.innerStart;
-  const minTurn: Record<SideWing, number> = { software: -Infinity, ai: opsMinX + OPS.w + half };
+  // With spine pods, every side wing also turns `tail` past the last spine pod, so its last leg into the
+  // ring never cuts diagonally through the spine rows.
+  const spineTurn = Number.isFinite(spineEdge) ? spineEdge + L.tail : -Infinity;
+  const minTurn: Record<SideWing, number> = { software: spineTurn, ai: Math.max(opsMinX + OPS.w + half, spineTurn) };
   const turnX = (wing: SideWing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail, minTurn[wing]);
   // The reactor plaza sits on the later wing turn, and a `tail` plus its radius past the last spine pod.
   const loopEnd: Vec2 = { x: Math.max(turnX("software"), turnX("ai"), spineEdge + L.tail + L.east / 2), z: 0 };
