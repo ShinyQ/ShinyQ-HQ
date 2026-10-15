@@ -25,12 +25,15 @@ beforeEach(() => {
   const s = getHQStore().getState();
   s.clearTopic();
 });
+// The first lazy body loads its floor chunk (Round 7 B), slow on a loaded CI runner.
+vi.setConfig({ testTimeout: 20_000 });
+
 afterEach(() => {
   cleanup();
   goTo.mockReset();
 });
 
-function open(locale: Locale = "en") {
+async function open(locale: Locale = "en") {
   const view = buildRoomViews(locale)["L4:topics"];
   render(
     <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : id}>
@@ -49,14 +52,16 @@ function open(locale: Locale = "en") {
       />
     </NextIntlClientProvider>,
   );
-  return screen.getByRole("dialog", { name: view.title });
+  const drawer = screen.getByRole("dialog", { name: view.title });
+  await within(drawer).findByTestId("topics-list", {}, { timeout: 20_000 });
+  return drawer;
 }
 
 const index = getTopicIndex();
 
 describe("Topic Constellation drawer", () => {
-  it("lists every topic with its piece count", () => {
-    const drawer = open();
+  it("lists every topic with its piece count", async () => {
+    const drawer = await open();
     const list = within(drawer).getByTestId("topics-list");
     const buttons = within(list).getAllByRole("button");
     expect(buttons.map((b) => b.dataset.topic)).toEqual(index.topics.map((t) => t.slug));
@@ -66,7 +71,7 @@ describe("Topic Constellation drawer", () => {
   });
 
   it("picks a topic, lists its pieces with their desks, and rides to one", async () => {
-    const drawer = open();
+    const drawer = await open();
     await userEvent.click(within(within(drawer).getByTestId("topics-list")).getByRole("button", { name: /^Sentiment analysis/ }));
     const topic = index.topics.find((t) => t.slug === "sentiment-analysis")!;
     expect(getHQStore().getState().topics.topic).toEqual({ slug: "sentiment-analysis", name: "Sentiment analysis", count: topic.items.length, rooms: ["L4:research", "L4:publications"] });
@@ -79,7 +84,7 @@ describe("Topic Constellation drawer", () => {
   });
 
   it("clears the topic filter with its action or a second pick", async () => {
-    const drawer = open();
+    const drawer = await open();
     const voice = within(within(drawer).getByTestId("topics-list")).getByRole("button", { name: /^Voice AI/ });
     await userEvent.click(voice);
     expect(voice).toHaveAttribute("aria-pressed", "true");
@@ -92,7 +97,7 @@ describe("Topic Constellation drawer", () => {
   });
 
   it("speaks Indonesian", async () => {
-    const drawer = open("id");
+    const drawer = await open("id");
     await userEvent.click(within(within(drawer).getByTestId("topics-list")).getByRole("button", { name: /^Mengajar dan mentoring/ }));
     expect(within(drawer).getByTestId("topics-pieces")).toHaveTextContent(/karya tentang Mengajar dan mentoring$/);
     expect(within(drawer).getAllByTestId("topic-piece")[0]).toHaveTextContent(id.library.posts);

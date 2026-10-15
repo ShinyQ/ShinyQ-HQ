@@ -26,12 +26,15 @@ beforeEach(() => {
   s.clearReactorTech();
   s.setReactorRing("ai");
 });
+// The first lazy body loads its floor chunk (Round 7 B), slow on a loaded CI runner.
+vi.setConfig({ testTimeout: 20_000 });
+
 afterEach(() => {
   cleanup();
   goTo.mockReset();
 });
 
-function open(locale: Locale = "en") {
+async function open(locale: Locale = "en") {
   const view = buildRoomViews(locale)["L3:reactor"];
   render(
     <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : id}>
@@ -50,15 +53,17 @@ function open(locale: Locale = "en") {
       />
     </NextIntlClientProvider>,
   );
-  return screen.getByRole("dialog", { name: view.title });
+  const drawer = screen.getByRole("dialog", { name: view.title });
+  await within(drawer).findByTestId("reactor-techs", {}, { timeout: 20_000 });
+  return drawer;
 }
 
 const index = getTechIndex();
 const azure = index.rings.find((r) => r.id === "azure")!;
 
 describe("Tech Reactor drawer", () => {
-  it("shows six ring chips and the current ring's techs with project counts, by count", () => {
-    const drawer = open();
+  it("shows six ring chips and the current ring's techs with project counts, by count", async () => {
+    const drawer = await open();
     const rings = within(within(drawer).getByRole("group", { name: "Tech groups" })).getAllByRole("button");
     expect(rings.map((b) => b.textContent)).toEqual(index.rings.map((r) => `${en.labs.reactor.rings[r.id]}${r.techs.length}`));
     expect(rings[0]).toHaveAttribute("aria-pressed", "true");
@@ -69,7 +74,7 @@ describe("Tech Reactor drawer", () => {
   });
 
   it("switches rings and picks a tech, which lists its projects", async () => {
-    const drawer = open();
+    const drawer = await open();
     await userEvent.click(within(within(drawer).getByRole("group", { name: "Tech groups" })).getByRole("button", { name: /^Azure/ }));
     expect(getHQStore().getState().reactor.ring).toBe("azure");
     const top = azure.techs[0];
@@ -83,7 +88,7 @@ describe("Tech Reactor drawer", () => {
   });
 
   it("clears with Clear or a second pick, and Surprise me bumps the spin", async () => {
-    const drawer = open();
+    const drawer = await open();
     const first = within(within(drawer).getByTestId("reactor-techs")).getAllByRole("button")[0];
     await userEvent.click(first);
     expect(first).toHaveAttribute("aria-pressed", "true");
@@ -99,7 +104,7 @@ describe("Tech Reactor drawer", () => {
   });
 
   it("speaks Indonesian", async () => {
-    const drawer = open("id");
+    const drawer = await open("id");
     expect(within(drawer).getByRole("group", { name: "Kelompok teknologi" })).toBeInTheDocument();
     expect(within(drawer).getByRole("button", { name: id.labs.reactor.surprise })).toBeInTheDocument();
     await userEvent.click(within(within(drawer).getByTestId("reactor-techs")).getAllByRole("button")[0]);

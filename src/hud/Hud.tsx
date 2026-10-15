@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
+import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { useHQStore } from "@/store/useHQStore";
@@ -18,7 +19,6 @@ import { firstName } from "./dialog/onboarding";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
-import { HologramOverlay } from "./HologramOverlay";
 import { InteractStatus } from "./InteractStatus";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
@@ -29,6 +29,9 @@ import { ViewControls } from "./ViewControls";
 import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
+
+// The hologram view only opens on L3, whose chunk carries the overlay (Round 7 B).
+const HologramOverlay = lazy(() => floorChunks.load("L3").then((m) => ({ default: m.HologramOverlay }), () => ({ default: () => null })));
 
 /** Control hints, in the bottom band's center column under the walk pill. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
@@ -125,7 +128,9 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
         <BootOverlay who={{ name: data.profile.name, headline: data.profile.headline, motto: data.profile.motto, role: data.profile.role }} />
       ) : phase === "hologram" ? (
         // The hologram view owns the screen: only its own controls show.
-        <HologramOverlay locale={data.locale} />
+        <Suspense fallback={null}>
+          <HologramOverlay locale={data.locale} />
+        </Suspense>
       ) : (
         <>
           <ProfileCard data={data} mobile={mobile} />

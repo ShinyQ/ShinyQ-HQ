@@ -5,10 +5,11 @@ import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
-import { Labs, type LabsLabels } from "../floors/Labs";
-import { Library, type LibraryLabels } from "../floors/Library";
+import type { LabsLabels } from "../floors/Labs";
+import type { LibraryLabels } from "../floors/Library";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
-import { Roof, type RoofLabels } from "../floors/Roof";
+import type { RoofLabels } from "../floors/Roof";
+import { lazyLabs, lazyLibrary, lazyRoof } from "../floors/lazyFloors";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { DrawnWork } from "../scene/DrawnWorkHook";
@@ -97,6 +98,11 @@ export function Tower({
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
   const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
+  // L3, L4 and RF load on demand (floors/floorChunks.ts); their Suspense fallback is nothing, so the
+  // floor's own slab (FloorLevel) is what shows until the chunk arrives. Rides hold for it (elevator.ts).
+  const Labs = lazyLabs();
+  const Library = lazyLibrary();
+  const Roof = lazyRoof();
 
   return (
     <group name="tower">

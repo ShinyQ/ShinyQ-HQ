@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
@@ -442,7 +442,11 @@ export function RoomDrawer({
       </div>
     );
   } else if (Body) {
-    body = <Body view={view} locale={locale} />;
+    body = (
+      <Suspense fallback={<p className="pv-small text-ink-2" role="status">{t("loading")}</p>}>
+        <Body view={view} locale={locale} />
+      </Suspense>
+    );
   } else {
     body = (
       <div className="space-y-5">
