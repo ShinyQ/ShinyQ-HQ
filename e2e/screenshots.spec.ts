@@ -282,13 +282,17 @@ for (const viewport of VIEWPORTS) {
   }
 }
 
-const FLOOR_THUMBS = [
-  { id: "L1", path: "/en" },
+/**
+ * `ogAt`: where the share card still is taken when the start spot does not show the floor's centerpiece
+ * (L1 spawns at the Ask Rover kiosk, so its still drives in front of the rover mark hologram).
+ */
+const FLOOR_THUMBS: readonly { id: string; path: string; ogAt?: { x: number; z: number } }[] = [
+  { id: "L1", path: "/en", ogAt: { x: 5, z: -8 } },
   { id: "L2", path: "/en/journey" },
   { id: "L3", path: "/en/labs" },
   { id: "L4", path: "/en/library" },
   { id: "RF", path: "/en/contact" },
-] as const;
+];
 
 /** Elevator picker thumbnails: each floor from its start spot with the HUD hidden (`bun run floor:thumbs` converts them to public/floors/*.webp). */
 for (const floor of FLOOR_THUMBS) {
@@ -590,6 +594,11 @@ for (const floor of FLOOR_THUMBS) {
     await page.goto(`${floor.path}?tier=full&walk=off`);
     await waitForHQ(page);
     await waitForPhase(page, "explore", 240_000);
+    if (floor.ogAt) {
+      await waitForSceneLive(page, 240_000);
+      await driveTo(page, floor.ogAt, 240_000);
+      await waitForCameraSettle(page, { timeout: 240_000 });
+    }
     await page.evaluate(() => document.fonts.ready);
     await page.addStyleTag({ content: "[data-testid='hud'], [data-testid^='ask-'] { display: none !important; }" });
     // Let the floor and its neighbours mount and the bloom settle, then freeze one finished frame.
