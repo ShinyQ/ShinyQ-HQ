@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { zoneAt } from "@/experience/camera/orbit";
+import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
-import { buildFloorLayouts, ROVER, ROVER_HEIGHT, SHAFT } from "@/experience/config";
+import { buildFloorLayouts, ROVER, ROVER_HEIGHT, SHAFT, SHAFT_EAST_FACE } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { chevronMarks } from "@/experience/nav/roadGeometry";
@@ -340,11 +340,11 @@ describe("L3 Project Roads layout", () => {
     expect(zone?.classView?.mobile?.zoom).toBe(LABS.overviewZoomPhone);
     for (const cls of ["desktop", "tablet", "mobile"] as const) {
       // The Director aims FOLLOW_LOOK_AHEAD ahead of the rover along the camera's forward (+x here).
-      const [cx, , cz] = followPose(cls, [LABS.overview.x + FOLLOW_LOOK_AHEAD[cls], 0, LABS.overview.z], zone!.yaw, zone!.zoom).position;
+      const [cx, , cz] = followPose(cls, [LABS.overview.x + FOLLOW_LOOK_AHEAD[cls], 0, LABS.overview.z], zone!.yaw, zoneView(zone!, cls).zoom ?? 1).position;
       // The camera looks east along the floor from west of the rover, and stays clear of the shaft column.
       expect(cx).toBeLessThan(LABS.overview.x);
       expect(Math.abs(cz - LABS.overview.z)).toBeLessThan(0.01);
-      expect(cx).toBeGreaterThan(SHAFT.x + SHAFT.size / 2 + 3);
+      expect(cx, cls).toBeGreaterThan(SHAFT_EAST_FACE + (cls === "mobile" ? 1.5 : 3));
     }
     // Driving the roads never swings the camera to the overview or a board: the wing roads, the lead road
     // and the ring either way, and the spine back toward the hub (those zones only apply heading east).

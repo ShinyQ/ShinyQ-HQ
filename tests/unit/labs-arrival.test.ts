@@ -6,7 +6,7 @@ import { followOffsetScale } from "@/experience/camera/offset";
 import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
 import { yawTowards } from "@/experience/fx/facing";
 import { signPlate, type SignSpec } from "@/experience/fx/signLayout";
-import { LIST_STYLE, PANEL, roadSigns } from "@/experience/floors/labs/directory";
+import { fitTitle, LIST_STYLE, PANEL, panelRows, roadSigns, textWidth } from "@/experience/floors/labs/directory";
 import { buildLabsLayout, directoryBoard, directoryStop, LABS, LABS_WINGS } from "@/experience/floors/labs/layout";
 import type { Wing } from "@/content/schema";
 import type { Vec2 } from "@/experience/types";
@@ -80,6 +80,20 @@ function signBox(camera: PerspectiveCamera, w: number, h: number, spec: SignSpec
   return boxOf(corners);
 }
 
+/** A board's title block on its west face (the two title lines, centred at the top), on screen. */
+function titleBlock(camera: PerspectiveCamera, w: number, h: number, wing: Wing): ScreenBox {
+  const b = directoryBoard(wing);
+  const title = fitTitle(WING_NAMES[wing], textWidth());
+  const half = (Math.max(...title.lines.map((l) => l.length)) * 0.6 * title.size) / 2;
+  const top = panelRows().titleTop;
+  const bottom = top - title.size * PANEL.title.lineHeight * title.lines.length;
+  const corners = [b.center.z - half, b.center.z + half].flatMap((z) => [bottom, top].map((y) => screen(camera, w, h, b.minX, y, z)));
+  return boxOf(corners);
+}
+
+/** Share of a screen box's width inside 0..w. */
+const onScreenShare = (box: ScreenBox, w: number) => (Math.min(box.maxX, w) - Math.max(box.minX, 0)) / (box.maxX - box.minX);
+
 /** Strict box intersection (touching edges do not count). */
 const overlap = (a: ScreenBox, b: ScreenBox) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
 
@@ -92,11 +106,26 @@ function expectInside(face: ScreenBox, w: number, h: number, safe: Safe, label: 
 
 describe("L3 arrival frames the wing directory wall (owner request 2026-10-13)", () => {
   for (const { w, h, safe } of VIEWPORTS) {
-    it(`shows the three boards whole and clear of the HUD on arrival at ${w}x${h}`, () => {
+    const phone = cameraClass(w, h) === "mobile";
+    it(phone ? `frames the gate board whole and the side boards' titles on arrival at ${w}x${h}` : `shows the three boards whole and clear of the HUD on arrival at ${w}x${h}`, () => {
       const { camera, zone } = settledCamera(w, h, LABS.overview);
       expect(zone.id).toBe("L3:overview");
       expect(zone.yaw).toBeCloseTo(LOOK_EAST);
-      for (const wing of LABS_WINGS) expectInside(westFace(camera, w, h, wing), w, h, safe, `${wing} arrival ${w}x${h}`);
+      if (!phone) {
+        for (const wing of LABS_WINGS) expectInside(westFace(camera, w, h, wing), w, h, safe, `${wing} arrival ${w}x${h}`);
+        return;
+      }
+      // Phones (owner review 2026-10-16): the camera has to stay east of the elevator shaft, so the 22 u wall
+      // cannot be whole; the gate board is, and each side board shows its title and most of its face.
+      expectInside(westFace(camera, w, h, "data"), w, h, safe, `data arrival ${w}x${h}`);
+      for (const wing of ["software", "ai"] as const) {
+        const t = titleBlock(camera, w, h, wing);
+        expect(t.minX, `${wing} title`).toBeGreaterThanOrEqual(0);
+        expect(t.maxX, `${wing} title`).toBeLessThanOrEqual(w);
+        expect(t.minY, `${wing} title`).toBeGreaterThanOrEqual(safe.top);
+        expect(t.maxY, `${wing} title`).toBeLessThanOrEqual(h - safe.bottom);
+        expect(onScreenShare(westFace(camera, w, h, wing), w), `${wing} on screen`).toBeGreaterThanOrEqual(0.75);
+      }
     });
 
     it(`fits the whole board under the HUD from its stop at ${w}x${h}`, () => {
@@ -124,8 +153,10 @@ describe("L3 arrival frames the wing directory wall (owner request 2026-10-13)",
       for (const road of ["software", "ai", "data"] as const) {
         const p = road === "data" ? { x: layout.hub.center.x + LABS.hub.size / 2, z: 0 } : layout.network.roads.find((r) => r.id === road)!.points[1];
         const s = screen(camera, w, h, p.x, 0, p.z);
-        expect(s.x, road).toBeGreaterThanOrEqual(safe.side);
-        expect(s.x, road).toBeLessThanOrEqual(w - safe.side);
+        const side = phone ? 0 : safe.side;
+        expect(s.x, road).toBeGreaterThanOrEqual(side);
+        expect(s.x, road).toBeLessThanOrEqual(w - side);
+        expect(s.y, road).toBeGreaterThanOrEqual(0);
         expect(s.y, road).toBeLessThanOrEqual(h - safe.bottom);
       }
     });

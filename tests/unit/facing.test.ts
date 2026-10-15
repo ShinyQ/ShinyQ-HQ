@@ -48,11 +48,13 @@ describe("L3 floating wing signs (owner request 2026-10-13)", () => {
   const [x, , z] = followPose("desktop", [LABS.overview.x + FOLLOW_LOOK_AHEAD.desktop, 0, LABS.overview.z], zone.yaw, zone.zoom).position;
   const eye = { x, z };
 
-  it("stand on their wing road, LABS.signAlong past the road mouth", () => {
+  it("stand on the line from the hub centre through their road mouth, LABS.signAlong from the mouth", () => {
+    const hub = layout.hub.center;
     for (const wing of SIDE_WINGS) {
-      const { at, heading, float } = layout.signs[wing];
-      expect(float.x).toBeCloseTo(at.x + heading.x * LABS.signAlong);
-      expect(float.z).toBeCloseTo(at.z + heading.z * LABS.signAlong);
+      const { at, float } = layout.signs[wing];
+      const out = Math.hypot(at.x - hub.x, at.z - hub.z);
+      expect(float.x).toBeCloseTo(at.x + ((at.x - hub.x) / out) * LABS.signAlong);
+      expect(float.z).toBeCloseTo(at.z + ((at.z - hub.z) / out) * LABS.signAlong);
     }
   });
 

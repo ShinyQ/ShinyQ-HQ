@@ -80,10 +80,13 @@ export const LABS = {
   overview: { x: 8.5, z: 0 } as Vec2,
   /** Overview camera zoom: the whole wall in the middle of the frame, the camera still east of the shaft. */
   overviewZoom: 1.3,
-  /** Phones frame all three road mouths and the whole wall from the arrival spot. */
-  overviewZoomPhone: 1.9,
-  /** Wing signs float this far along their road past the mouth; the spine sign floats over the spine at `spineSignX`. */
-  signAlong: 2,
+  /** The farthest phone view that keeps the follow camera east of the elevator shaft with a 1.5 u gap; the shaft then lies wholly behind the camera, which looks east. */
+  overviewZoomPhone: 1.45,
+  /**
+   * Wing signs float this far along the line from the hub centre through their road mouth, measured from the mouth
+   * (negative: back inside the hub, so all three signs sit in the phone's arrival view); the spine sign floats over the spine at `spineSignX`.
+   */
+  signAlong: -4.5,
   spineSignX: 12,
   margin: 6,
   /** Hologram stage disc inside hero pods (6 u diameter). */
@@ -328,7 +331,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     const to = { x: L.wingStartX, z: WING_SIDE[wing] * wingZ };
     const len = Math.hypot(to.x - at.x, to.z - at.z);
     const heading = { x: (to.x - at.x) / len, z: (to.z - at.z) / len };
-    return { at, heading, float: { x: at.x + heading.x * L.signAlong, z: at.z + heading.z * L.signAlong } };
+    const out = Math.hypot(at.x - hubC.x, at.z - hubC.z);
+    const dir = { x: (at.x - hubC.x) / out, z: (at.z - hubC.z) / out };
+    return { at, heading, float: { x: at.x + dir.x * L.signAlong, z: at.z + dir.z * L.signAlong } };
   };
   const spineSign: WingSign = { at: { x: hubC.x + r, z: 0 }, heading: { x: 1, z: 0 }, float: { x: L.spineSignX, z: 0 } };
 
