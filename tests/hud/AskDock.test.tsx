@@ -204,6 +204,20 @@ describe("Ask dock chat", () => {
     expect(within(panel).getByTestId("ask-thread")).toHaveAttribute("aria-live", "polite");
   });
 
+  it("shows the rover mark in the header and 'Rover is thinking . . .' while waiting", async () => {
+    let finish: (value: AskResult) => void = () => {};
+    askMock.ask.mockImplementation(() => new Promise<AskResult>((resolve) => (finish = resolve)));
+    await ready();
+    act(() => openAsk("What is he building now?", { source: "hero" }));
+    const panel = await dock();
+    const mark = within(panel).getByTestId("ask-mark");
+    expect(mark.querySelector("svg[data-brand-mark]")).toHaveAttribute("aria-hidden", "true");
+    const thinking = await within(panel).findByTestId("ask-thinking");
+    expect(thinking).toHaveTextContent(en.ask.thinking);
+    expect(en.ask.thinking).toBe("Rover is thinking . . .");
+    await act(async () => finish({ outcome: "answer", source: "primary", asOf: "2026-10-11" }));
+  });
+
   it("expands a topic, asks a pill, then offers that question's follow-ups", async () => {
     answerWith("The voice agent answers calls.");
     await ready();

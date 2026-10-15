@@ -645,7 +645,7 @@
     "title": "Tentang dan kontak"
   },
   "ask": {
-    "thinking": "Sedang berpikir…",
+    "thinking": "Rover sedang berpikir . . .",
     "asOf": "Dijawab oleh AI dari isi situs ini, per {date}",
     "privacyTitle": "Privasi",
     "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Pertanyaan yang tidak bisa dijawab disimpan secara privat paling lama 3 bulan, disamarkan dengan cara yang sama, agar topik yang belum ada bisa ditambahkan; yang dipublikasikan hanya jumlah dan topiknya. Tidak perlu akun. Ask AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",

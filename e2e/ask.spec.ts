@@ -84,7 +84,8 @@ async function slowAsk(page: Page, { deltas, firstMs = 300, everyMs = 120, tags 
   );
 }
 
-const LONG_ANSWER = Array.from({ length: 14 }, (_, i) => `Sentence ${i + 1} explains how the voice agent handles calls in production. `);
+// Long enough to overflow the side panel well before the stream ends, at the 14 px chat text.
+const LONG_ANSWER = Array.from({ length: 20 }, (_, i) => `Sentence ${i + 1} explains how the voice agent handles calls in production. `);
 
 /** The first line of the last answer sits inside the thread's visible area. */
 async function expectAnswerStartInView(page: Page) {
@@ -162,6 +163,13 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
 
   const followUps = dock(page).getByTestId("ask-followups");
   await expect(followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true })).toBeVisible();
+  // Owner request 2026-10-16: smaller text, one compact row of follow-ups, 44 px targets.
+  expect(await thread(page).locator("[data-role='assistant'] p").first().evaluate((n) => getComputedStyle(n).fontSize)).toBe("14px");
+  const pill = followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true });
+  expect(await pill.evaluate((n) => getComputedStyle(n).fontSize)).toBe("13px");
+  expect((await pill.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect((await followUps.boundingBox())!.height).toBeLessThan(80);
+  await expect(dock(page).getByTestId("ask-mark").locator("svg[data-brand-mark]")).toBeVisible();
   await followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true }).click();
   await expect.poll(() => api.posts().length).toBe(2);
   expect(api.bodies()[1]).toMatchObject({ q: "What latency did the voice agent reach?", source: "followup" });

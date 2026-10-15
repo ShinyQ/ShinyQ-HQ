@@ -259,7 +259,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### Where
 
 - The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, the Rover Terminal (`a`) and the Cmd-K "Ask AI" row.
-- Topic pills (Work, AI, Career, Contact, Perspectives) expand into curated questions (`content/ask/suggestions.json`), and each answer suggests related follow-ups with no extra AI call.
+- Topic pills (Work, AI, Career, Contact, Perspectives) expand into curated questions (`content/ask/suggestions.json`), and each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
 - The thread is kept in `sessionStorage` only.
 - **What can you do?** (also a Contact pill, ID "Apa saja yang bisa ditanyakan di sini?") lists what the assistant covers, the two languages, sources, and what it will not discuss.
 - **Project inquiries**: when a visitor describes their own need ("I need an AI chatbot for my clinic", "Kami butuh sistem deteksi fraud dokumen"), the answer names related skills and up to three matching past projects, says whether that work suggests a fit, notes freelance or part-time availability and invites contact; a **contact card** (Email, LinkedIn, Contact page) from the dataset appears under it. No prices, timelines, designs or code.
