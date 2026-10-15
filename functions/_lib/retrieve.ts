@@ -1,3 +1,5 @@
+import { askLinkTarget } from "../../src/ask/links";
+import { ASK_REPO_CITE } from "../../src/ask/protocol";
 import { indexPack } from "./pack-index";
 import { isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
@@ -192,8 +194,13 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     if (budget <= 200) break;
     const body = locale === "id" ? chunk.text_id : chunk.text_en;
     const dated = chunk.updatedAt ? ` [as of ${chunk.updatedAt}]` : "";
-    const line = `- ${body}${dated}`;
-    const clipped = line.length > budget ? `${line.slice(0, budget - 1).replace(/\s+\S*$/, "")}...` : line;
+    // The chunk's page, for an answer's markdown link (the output check keeps only these and the top pages).
+    const target = chunk.url ? askLinkTarget(chunk.url) : null;
+    const link = target?.kind === "site" || (target?.kind === "external" && target.href === ASK_REPO_CITE) ? ` [link: ${chunk.url}]` : "";
+    const head = `- ${body}`;
+    const tail = `${dated}${link}`;
+    // A clipped line keeps its date and link: the body is cut, never the annotations.
+    const clipped = head.length + tail.length > budget ? `${head.slice(0, Math.max(0, budget - tail.length - 4)).replace(/\s+\S*$/, "")}...${tail}` : `${head}${tail}`;
     lines.push(clipped);
     used.push(chunk);
     budget -= clipped.length + 1;

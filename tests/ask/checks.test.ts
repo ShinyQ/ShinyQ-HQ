@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { ASK_REPO_CITE, citeKind, isAskCite } from "@/ask/protocol";
 import {
+  answerLinkPaths,
   canonicalNumber,
   checkAnswer,
   citedSource,
@@ -70,7 +71,7 @@ describe("harmful heuristic (T15)", () => {
 
 describe("output sanitizer (T6)", () => {
   it("renders model markup inert and drops invisible characters and em dashes", () => {
-    expect(sanitizeAnswer("<img src=x onerror=alert(1)>Hi **there**\u200B \u2014 ok")).toBe("Hi there, ok");
+    expect(sanitizeAnswer("<img src=x onerror=alert(1)>Hi **there**\u200B \u2014 ok")).toBe("Hi **there**, ok");
     expect(sanitizeAnswer("<script>alert(1)</script>ok")).toBe("ok");
   });
   it("caps the length at a sentence boundary", () => {
@@ -78,6 +79,66 @@ describe("output sanitizer (T6)", () => {
     const out = sanitizeAnswer(long);
     expect(out.length).toBeLessThanOrEqual(1000);
     expect(out.endsWith(".")).toBe(true);
+  });
+});
+
+describe("markdown answers (owner request 2026-10-16)", () => {
+  it("keeps the safe subset and drops links outside the allowlist", () => {
+    const links = new Set(["/labs/voice-ai-contact-center", "/labs"]);
+    expect(sanitizeAnswer("Two:\n- **Voice AI** [case](/en/labs/voice-ai-contact-center)\n- [x](javascript:alert(1))\n- [y](/labs/made-up)\n- [z](https://evil.example)", links)).toBe(
+      "Two:\n- **Voice AI** [case](/labs/voice-ai-contact-center)\n- x\n- y\n- z",
+    );
+    expect(sanitizeAnswer("# Title\n![img](https://evil.example/a.png) ok\n```\nconst a = 1;\n```")).toBe("Title\nok\nconst a = 1;");
+  });
+
+  it("keeps the top pages by default, the repository only when allowed, and never live sites or data URLs", () => {
+    expect(sanitizeAnswer("See [Work](https://kurniadi.pages.dev/id/labs/), [home](/en) and [hall](/en#highlights).")).toBe("See [Work](/labs), [home](/) and hall.");
+    expect(sanitizeAnswer(`[repo](${ASK_REPO_CITE})`)).toBe("repo");
+    expect(sanitizeAnswer(`[repo](${ASK_REPO_CITE}/)`, new Set([ASK_REPO_CITE]))).toBe(`[repo](${ASK_REPO_CITE})`);
+    expect(sanitizeAnswer("[live](https://mii-microsoft.azurewebsites.net/) [d](data:text/html,x) [v](vbscript:x)")).toBe("live d v");
+  });
+
+  it("drops a link that removing another one exposes, and echoed CONTEXT annotations", () => {
+    expect(sanitizeAnswer("[[x](/nope)](/labs/made-up)", new Set(["/labs"]))).toBe("x");
+    expect(sanitizeAnswer("Voice AI [link: /labs/voice-ai-contact-center] ships.")).toBe("Voice AI ships.");
+  });
+
+  it("collapses spaces per line and blank runs, and caps at a line boundary", () => {
+    expect(sanitizeAnswer("A  \t b\n\n\n\n- c   d  ")).toBe("A b\n\n- c d");
+    const list = `Projects:\n${Array.from({ length: 80 }, (_, i) => `- Item number ${i} of the list`).join("\n")}`;
+    const out = sanitizeAnswer(list);
+    expect(out.length).toBeLessThanOrEqual(1000);
+    expect(out.endsWith("of the list")).toBe(true);
+  });
+
+  it("lists every retrieved chunk page plus the top pages", () => {
+    const r = retrieve(pack, "Tell me about the voice AI contact center project", "en");
+    const links = answerLinkPaths(r.chunks);
+    for (const page of ["/", "/labs", "/journey", "/library", "/contact", "/quick", "/cv"]) expect(links.has(page)).toBe(true);
+    expect(links.has("/labs/voice-ai-contact-center")).toBe(true);
+    expect(answerLinkPaths(retrieve(pack, "How was this site built?", "en").chunks).has(ASK_REPO_CITE)).toBe(true);
+    expect(r.context).toContain("[link: /labs/voice-ai-contact-center]");
+  });
+
+  it("runs the content checks on the plain text", () => {
+    const q = "Tell me about the voice AI contact center project";
+    const r = retrieve(pack, q, "en");
+    const input = { question: q, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks };
+    const result = checkAnswer({ ...input, answer: "Projects:\n- **Voice AI Contact Center** [case study](/en/labs/voice-ai-contact-center)\n- [Fake](/labs/made-up)" });
+    expect(result).toMatchObject({ ok: true, outcome: "answer", text: "Projects:\n- **Voice AI Contact Center** [case study](/labs/voice-ai-contact-center)\n- Fake" });
+    // Marks that split a word or a number never hide it from the checks.
+    expect(checkAnswer({ ...input, answer: "The bank client was SM**BC**." })).toMatchObject({ ok: false, reason: "blocklist" });
+    expect(checkAnswer({ ...input, answer: "Call +62 8**12** 3456 7890." })).toMatchObject({ ok: false, reason: "forbidden" });
+    expect(checkAnswer({ ...input, answer: "- **I think** testing matters." })).toMatchObject({ ok: false, reason: "roleplay" });
+    // A numbered list shows its start number; later items count from it, as the browser draws them.
+    expect(checkAnswer({ ...input, answer: "Projects:\n613. Voice AI\n2. Fraud review" })).toMatchObject({ ok: false, reason: "numeric", detail: ["613", "614"] });
+    expect(checkAnswer({ ...input, answer: "Kurniadi built `const a = 1;` here." })).toMatchObject({ ok: false, reason: "code" });
+    expect(checkAnswer({ ...input, answer: "**" })).toMatchObject({ ok: true });
+  });
+
+  it("keeps a normal list answer clear of the prompt-leak check", () => {
+    expect(leaksPrompt("Kurniadi's AI projects:\n- **Voice AI Contact Center**\n- **AI Fraud Document Review**\n- **Pris.AI**")).toBe(false);
+    expect(leaksPrompt(RULES[4])).toBe(true);
   });
 });
 
@@ -169,7 +230,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-15.leads-lifestyle.1");
+    expect(PROMPT_VERSION).toBe("2026-10-16.markdown.1");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");

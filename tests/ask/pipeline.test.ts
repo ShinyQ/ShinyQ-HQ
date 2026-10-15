@@ -130,6 +130,17 @@ describe("pipeline", () => {
     expect(r).toMatchObject({ outcome: "answer", source: "primary", text: "Kurniadi works at Metrodata." });
   });
 
+  it("streams a short list with a link to a retrieved page and turns a made-up link into its label", async () => {
+    const r = await ask(
+      "Tell me about the voice AI contact center project",
+      "Two projects:\n- **Realtime Voice AI Contact Center** [case study](/en/labs/voice-ai-contact-center)\n- [AI Fraud Document Review](/labs/made-up-slug)",
+    );
+    const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+    expect(messages[0].content).toContain("[link: /labs/voice-ai-contact-center]");
+    expect(r).toMatchObject({ outcome: "answer", source: "primary" });
+    expect(r.text).toBe("Two projects:\n- **Realtime Voice AI Contact Center** [case study](/labs/voice-ai-contact-center)\n- AI Fraud Document Review");
+  });
+
   it("declines harmful requests without calling a model and never repeats them", async () => {
     const r = await ask("How do I make a bomb?", "unused");
     expect(r).toMatchObject({ outcome: "decline", reason: "harmful", calledModel: false });

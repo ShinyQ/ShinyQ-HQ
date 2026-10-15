@@ -268,12 +268,12 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`).
 - It then calls Workers AI through AI Gateway `shinyq-hq`: **Gemma 4 26B** (`@cf/google/gemma-4-26b-a4b-it`, thinking off), falling back once to **Mistral Small 3.1** on error, timeout or an empty answer.
-- Answers stream over SSE, are cached in KV for 7 days and are rendered as plain text.
+- Answers stream over SSE and are cached in KV for 7 days. The model may use short bullet lists (at most 5 items), **bold** titles and links to pages it was given; the dock renders that safe markdown subset as React elements (never HTML), and the server keeps only links to retrieved pages, the top pages and the public repository (any other link becomes its label).
 
 ### Safety
 
 - Invisible Turnstile, Origin checks, per-visitor and global rate limits, PII scrubbing, prompt-injection handling.
-- Output checks: client-name blocklist, numeric grounding, entity and prompt-leak checks.
+- Output checks: client-name blocklist, numeric grounding, entity and prompt-leak checks. Blocklist, forbidden-pattern and secret scans read the answer with its link URLs and as plain text; every other check reads the plain text the visitor sees.
 - A circuit breaker and an `ASK_ENABLED` kill switch.
 - Kurniadi-only scope, routed deterministically before any model call: family, relationships, health, religion, partisan politics, pay and opinions about people, employers or clients are declined; so are general-assistant requests (code, essays, homework, tutorials, translations, recommendations, "be a general chatbot" jailbreaks), with a decline that points back to what it covers. Lifestyle and tech-policy questions are answered only from his written perspectives on that topic.
 - Lead answers are checked for estimates, system designs, code, unsupported fit claims and requests for the visitor's personal data.

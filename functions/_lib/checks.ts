@@ -1,4 +1,6 @@
-import { isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
+import { ASK_LINK_PAGES, askLinkTarget } from "../../src/ask/links";
+import { markdownToPlain } from "../../src/ask/markdown";
+import { ASK_REPO_CITE, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
@@ -116,24 +118,71 @@ export function findBlocked(text: string, terms: readonly string[]): string[] {
   });
 }
 
-/** Plain-text cleanup of model output (T6): invisible characters, markdown marks, em dashes. Length capped. */
-export function sanitizeAnswer(raw: string): string {
+const DEFAULT_LINKS: ReadonlySet<string> = new Set(ASK_LINK_PAGES);
+/** `[label](url)` with an url of no whitespace and at most one level of parentheses (a site path has none). */
+const MD_LINK = /\[([^[\]\n]+)\]\(([^\s()]*(?:\([^\s()]*\)[^\s()]*)*)\)/g;
+
+/** The link an answer may keep: a site path in `links` (locale-less), or the public repository when `links` holds it. */
+function keptLink(url: string, links: ReadonlySet<string>): string | null {
+  const target = askLinkTarget(url);
+  if (target?.kind === "site") return links.has(target.path) ? target.path : null;
+  if (target?.kind === "external" && target.href === ASK_REPO_CITE && links.has(ASK_REPO_CITE)) return ASK_REPO_CITE;
+  return null;
+}
+
+/**
+ * Cleanup of model output (T6) to the safe markdown subset the dock renders (owner request 2026-10-16):
+ * newlines, list markers, bold, italic and single backticks stay; invisible characters, HTML, images,
+ * heading marks, code fence markers and em dashes go. Every `[label](url)` keeps only an allowlisted
+ * site path in `links` (default: the top pages) or the repository, normalized; any other link becomes
+ * its label. Length capped at a sentence or line boundary.
+ */
+export function sanitizeAnswer(raw: string, links: ReadonlySet<string> = DEFAULT_LINKS): string {
   let text = raw
     .normalize("NFKC")
+    .replace(/\r\n?/g, "\n")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFEFF]/g, "")
     .replace(/<(script|style)\b[^>]*>[\s\S]*?(<\/\1\s*>|$)/gi, " ")
     .replace(/<\/?[A-Za-z!][^>]*>?/g, " ")
-    .replace(/\*\*|__|`+|^#+\s*/gm, "")
-    .replace(/^\s*[-*]\s+/gm, "")
-    .replace(/\s*\u2014\s*/g, ", ")
-    .replace(/\s+/g, " ")
+    .replace(/!\[[^\]\n]*\]\([^)\n]*\)?/g, "")
+    // An echoed CONTEXT annotation is not part of the answer.
+    .replace(/[ \t]*\[link:[^\]\n]*\]/gi, "")
+    .replace(/^[ \t]*(?:```|~~~)[^\n]*(?:\n|$)/gm, "")
+    .replace(/`{2,}/g, "")
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, "")
+    .replace(/[ \t]*\u2014[ \t]*/g, ", ")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
   if (text.length > MAX_ANSWER_CHARS) {
     const cut = text.slice(0, MAX_ANSWER_CHARS);
-    const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
-    text = end > 200 ? cut.slice(0, end + 1) : `${cut.replace(/\s+\S*$/, "")}...`;
+    const sentence = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+    const line = cut.lastIndexOf("\n");
+    if (Math.max(sentence, line) > 200) text = (sentence >= line ? cut.slice(0, sentence + 1) : cut.slice(0, line)).trimEnd();
+    else text = `${cut.replace(/\s+\S*$/, "")}...`;
+  }
+  // Repeat until stable: dropping a link can expose a new one ("[[x](y)](z)").
+  for (let previous = ""; previous !== text; ) {
+    previous = text;
+    text = text.replace(MD_LINK, (_, label: string, url: string) => {
+      const kept = keptLink(url, links);
+      return kept ? `[${label}](${kept})` : label;
+    });
   }
   return text;
+}
+
+/** Link targets an answer may keep: the top pages plus every retrieved chunk's page (site paths locale-less, the repository as itself). */
+export function answerLinkPaths(chunks: readonly KnowledgeChunk[]): Set<string> {
+  const out = new Set(ASK_LINK_PAGES);
+  for (const chunk of chunks) {
+    const target = chunk.url ? askLinkTarget(chunk.url) : null;
+    if (target?.kind === "site") out.add(target.path);
+    else if (target?.kind === "external" && target.href === ASK_REPO_CITE) out.add(ASK_REPO_CITE);
+  }
+  return out;
 }
 
 export function classifyOutcome(text: string): Extract<AskOutcome, "answer" | "unknown" | "decline"> {
@@ -367,14 +416,20 @@ export interface CheckInput {
   locale?: AskLocale;
 }
 
-/** Output checks in spec order (7.4 step 8). The first failure decides the replacement message. */
+/**
+ * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
+ * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
+ */
 export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, locale = "en" }: CheckInput): CheckResult {
-  const text = sanitizeAnswer(answer);
+  const markdown = sanitizeAnswer(answer, answerLinkPaths(chunks));
+  const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
-  const blocked = findBlocked(text, safety.blocklist);
+  // Both forms: the markdown carries the link URLs, the plain text joins words that marks split ("SM**BC**").
+  const scanned = [markdown, text];
+  const blocked = [...new Set(scanned.flatMap((s) => findBlocked(s, safety.blocklist)))];
   if (blocked.length) return { ok: false, reason: "blocklist", detail: blocked, replacement: "restricted" };
-  if (FORBIDDEN_OUTPUT.some((re) => re.test(text))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
-  if (SECRET_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
+  if (scanned.some((s) => FORBIDDEN_OUTPUT.some((re) => re.test(s)))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
+  if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
   if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
   if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
@@ -398,16 +453,16 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
   // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
-  if (lead) return { ok: true, text, outcome };
+  if (lead) return { ok: true, text: markdown, outcome };
   // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
   // Lifestyle and policy (routed topics) must follow one of that topic's perspectives.
   if (outcome === "answer" && (perspective || topic || claimsOpinion(text))) {
     const source = citedSource(text, topic ? chunks.filter((c) => c.type === "perspective" && c.keywords.includes(topic)) : chunks, locale);
     if (!source) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
-    return isAskCite(source.url) ? { ok: true, text, outcome, cite: source.url } : { ok: true, text, outcome };
+    return isAskCite(source.url) ? { ok: true, text: markdown, outcome, cite: source.url } : { ok: true, text: markdown, outcome };
   }
   // How this site was built: the answer comes from the retrieved `site` chunk, so it cites its public repository.
   const siteSource = site && outcome === "answer" ? chunks.find((c) => c.type === "site" && isAskCite(c.url)) : undefined;
-  if (siteSource?.url) return { ok: true, text, outcome, cite: siteSource.url };
-  return { ok: true, text, outcome };
+  if (siteSource?.url) return { ok: true, text: markdown, outcome, cite: siteSource.url };
+  return { ok: true, text: markdown, outcome };
 }
