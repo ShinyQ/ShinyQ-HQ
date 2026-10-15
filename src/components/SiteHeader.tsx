@@ -6,6 +6,7 @@ import { FLOOR_ACCENT } from "@/lib/accent";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { NavLink } from "./NavLink";
 import { QuietLink } from "./QuietLink";
+import { RoverMark } from "./RoverMark";
 
 /** Primary sections, in reading order; each one is a floor of the tower. */
 export const PRIMARY_NAV = [
@@ -29,12 +30,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
       </a>
       <div className="pv-wrap flex h-[60px] items-center gap-2 lg:h-[68px] lg:gap-6">
         <QuietLink href="/" className="mr-auto flex min-h-11 min-w-0 items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-[34px] shrink-0 place-items-center rounded-lg border border-line-2 font-display text-[13px] font-extrabold tracking-[0.02em] [font-stretch:75%]"
-          >
-            {profile.monogram}
-          </span>
+          <RoverMark id="hq-header-mark" size={34} className="shrink-0" />
           <span className="min-w-0 text-[14px] leading-[18px] sm:text-[15px]">
             <span className="block font-semibold text-ink">{profile.name}</span>
             <span className="hidden font-mono text-[11px] leading-[14px] tracking-[0.04em] text-ink-3 sm:block">{tm("siteName")}</span>

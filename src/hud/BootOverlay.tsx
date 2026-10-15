@@ -15,7 +15,7 @@ const LINE_MS = 180;
  * the SSR boot cover (BootCard); when the cover was shown, its log already played, so the overlay
  * starts with every line visible and the handoff does not restart the animation.
  */
-export function BootOverlay({ monogram, who }: { monogram: string; who: BootWho }) {
+export function BootOverlay({ who }: { who: BootWho }) {
   const t = useTranslations("hud");
   const setPhase = useHQStore((s) => s.setPhase);
   const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name: who.name }), t("bootLine5"), t("bootLine6")];
@@ -43,7 +43,7 @@ export function BootOverlay({ monogram, who }: { monogram: string; who: BootWho 
     >
       <BootCard
         eyebrow={t("bootEyebrow")}
-        monogram={monogram}
+        markId="hq-boot-overlay-mark"
         title={t("bootTitle")}
         titleId="hq-boot-title"
         lines={lines}

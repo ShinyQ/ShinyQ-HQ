@@ -241,7 +241,7 @@ describe("walk definitions", () => {
     const walk = roofWalk(
       {
         roof: { availability: "Open to talk", email: "me@example.com", channels: [], timezone: "GMT+7", subheadline: "Builds AI." },
-        profile: { name: "N", monogram: "N", headline: "H", role: "Role · Org", location: "Jakarta" },
+        profile: { name: "N", headline: "H", role: "Role · Org", location: "Jakarta" },
       },
       { about: "About me", availability: "Availability", cv: "My CV", cvSub: "Read it here", contact: "Get in touch" },
     );
@@ -258,7 +258,7 @@ describe("walk definitions", () => {
   it("tours the Highlights Hall on L1: about, projects, experience, then contact, without a first-visit prompt", () => {
     const walk = highlightsWalk(
       {
-        profile: { name: "N", monogram: "N", headline: "Engineer", role: "Role · Org", location: "Jakarta" },
+        profile: { name: "N", headline: "Engineer", role: "Role · Org", location: "Jakarta" },
         roof: { availability: "Open to talk", email: "me@example.com", channels: [], timezone: "GMT+7", subheadline: "Builds." },
         highlights: {
           projects: [

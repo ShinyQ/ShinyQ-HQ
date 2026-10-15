@@ -2,6 +2,7 @@ import type { Ref } from "react";
 import { splitBootLine } from "@/lib/boot-first";
 import { HEADLINE_TIMING_ID } from "@/lib/perf-marks";
 import { PageViewIcon } from "./PageViewIcon";
+import { RoverMark } from "./RoverMark";
 
 /** Who the owner is, shown on the boot card at first paint (owner decision, round 5). */
 export interface BootWho {
@@ -20,7 +21,8 @@ export interface BootPageLink {
 
 export interface BootCardProps {
   eyebrow: string;
-  monogram: string;
+  /** Unique id prefix for the inline rover mark (the cover and the 3D overlay can both be in the DOM). */
+  markId: string;
   title: string;
   titleId?: string;
   lines: string[];
@@ -56,9 +58,7 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       <p className="eyebrow" aria-hidden={deco}>
         {p.eyebrow}
       </p>
-      <p className="mt-3 font-mono text-sm text-cyan" aria-hidden={deco}>
-        {p.monogram}
-      </p>
+      <RoverMark id={p.markId} size={44} className="mt-3 block" />
       <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>

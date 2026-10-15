@@ -63,7 +63,6 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <body>
         <BootCover
           locale={locale}
-          monogram={profile.monogram}
           who={{ name: profile.name, headline: profile.headline[locale], motto: profile.subheadline[locale], role: roleLine(profile.currentRole, locale) }}
         />
         {/* Only the namespaces the layout's client islands read; pages add theirs (src/i18n/client-messages.ts). */}
