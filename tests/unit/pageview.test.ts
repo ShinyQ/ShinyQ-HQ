@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesPod, pickFeaturedPods, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
+import { isKeyProject, matchesPod, moreKeyProjects, pickFeaturedPods, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
 import { getPods } from "@/content/load";
 import type { Pod } from "@/content/schema";
 
@@ -89,5 +89,22 @@ describe("pickFeaturedPods", () => {
     expect(picks.map((p) => p.slug)).toContain("ai-solutions-assistant");
     expect(pods.find((p) => p.slug === "ai-solutions-assistant")?.tier).toBe("featured");
     expect(pods.find((p) => p.slug === "fraud-review-platform")?.tier).toBe("hero");
+  });
+});
+
+describe("key projects", () => {
+  const asset = { src: "/x.webp", alt: { en: "x", id: "x" }, width: 1600, height: 1000, redacted: true };
+  it("needs the hero tier and at least one screenshot", () => {
+    expect(isKeyProject({ tier: "hero", assets: [asset] })).toBe(true);
+    expect(isKeyProject({ tier: "hero", assets: [] })).toBe(false);
+    expect(isKeyProject({ tier: "featured", assets: [asset] })).toBe(false);
+  });
+  it("lists only image key projects on the landing, outside Selected work (owner 2026-10-16)", () => {
+    const all = getPods();
+    const featured = pickFeaturedPods(all);
+    const more = moreKeyProjects(all, featured).map((p) => p.slug);
+    expect(more).toEqual(["fraud-review-platform", "vendor-management-portal", "ai-app-accelerator"]);
+    expect(more).not.toContain("digital-banking-integrations");
+    expect(more).not.toContain("ticket-marketplace-backend");
   });
 });

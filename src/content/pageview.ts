@@ -102,3 +102,14 @@ export function pickFeaturedPods<T extends Pick<Pod, "assets"> & { selected?: nu
   const picked = withGallery.filter((pod) => pod.selected !== undefined).sort((a, b) => a.selected! - b.selected!);
   return [...picked, ...withGallery.filter((pod) => pod.selected === undefined)].slice(0, count);
 }
+
+/** A key project (owner request 2026-10-15/16): a hero pod with screenshots. Decides /labs Key projects and the landing "More key projects". */
+export function isKeyProject(pod: Pick<Pod, "tier" | "assets">): boolean {
+  return pod.tier === "hero" && podHasGallery(pod);
+}
+
+/** Landing "More key projects": key projects that are not already in Selected work, in input order. Image-less pods stay on /labs only. */
+export function moreKeyProjects<T extends Pick<Pod, "id" | "tier" | "assets">>(pods: readonly T[], featured: readonly Pick<Pod, "id">[]): T[] {
+  const shown = new Set(featured.map((p) => p.id));
+  return pods.filter((p) => isKeyProject(p) && !shown.has(p.id));
+}

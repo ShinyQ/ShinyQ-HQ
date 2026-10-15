@@ -6289,7 +6289,7 @@
           "id": "ai-app-accelerator",
           "slug": "ai-app-accelerator",
           "order": 5,
-          "tier": "featured",
+          "tier": "hero",
           "accent": "pink",
           "wing": "ai",
           "timelineRef": "metrodata-2026",

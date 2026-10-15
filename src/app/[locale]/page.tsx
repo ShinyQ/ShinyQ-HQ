@@ -14,7 +14,7 @@ import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
 import { buildExperienceData } from "@/content/experience";
 import { DYNAMIC_STATS, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
-import { pickFeaturedPods } from "@/content/pageview";
+import { moreKeyProjects, pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
@@ -41,8 +41,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const roof = getRoof();
   const pods = getPods();
   const featured = pickFeaturedPods(pods);
-  const featuredIds = new Set(featured.map((pod) => pod.id));
-  const more = pods.filter((pod) => pod.tier === "hero" && !featuredIds.has(pod.id));
+  const more = moreKeyProjects(pods, featured);
   const latest = getTimeline()
     .filter((e) => e.type === "job" || e.type === "freelance")
     .slice(-4)

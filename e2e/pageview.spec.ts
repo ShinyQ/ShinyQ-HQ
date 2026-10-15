@@ -387,7 +387,14 @@ for (const viewport of [
       .locator("#work .pv-rows > li")
       .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width / el.parentElement!.getBoundingClientRect().width));
     for (const ratio of rows) expect(ratio).toBeGreaterThan(0.99);
+    // Owner 2026-10-16: the landing lists only key projects with screenshots; image-less pods live on /labs.
+    await expect(page.locator("#work .pv-rows [data-row-placeholder]")).toHaveCount(0);
+    expect(await page.locator("#work .pv-rows [data-row-thumb] img").count()).toBe(await page.locator("#work .pv-rows > li").count());
     await page.goto(staticTier("/en/labs"));
+    // Rows without screenshots show the designed placeholder, never an empty frame.
+    const placeholders = page.locator("#all-projects [data-row-placeholder] [data-project-placeholder]");
+    expect(await placeholders.count()).toBeGreaterThan(0);
+    await expect(placeholders.first()).toHaveAttribute("aria-hidden", "true");
     await expectAlignedGrid(page, "#key-projects li[data-pod]", columnsFor(viewport.width));
     await context.close();
   });
