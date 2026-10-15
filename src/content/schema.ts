@@ -406,6 +406,25 @@ export const PerspectivesFileSchema = z
   });
 
 /**
+ * How ShinyQ HQ itself was built (content/ask/site-build.json, owner request 2026-10-15): Ask the HQ
+ * knowledge only, no page. One knowledge chunk (`site-build`) that answers questions about the site's
+ * stack, 3D engine, hosting, the assistant, testing and process, cited to the public repository.
+ * Facts only, third person, never a client, resource or host name.
+ */
+export const SITE_BUILD_TEXT_MAX = 1600;
+export const SITE_BUILD_SOURCE = "https://github.com/ShinyQ/ShinyQ-HQ";
+
+export const SiteBuildSchema = z.strictObject({
+  $comment: z.string().optional(),
+  asOf: IsoDateSchema,
+  title: LocalizedTextSchema,
+  /** The public repository the answer cites (the footer's source code link). */
+  source: z.literal(SITE_BUILD_SOURCE),
+  text: boundedText(SITE_BUILD_TEXT_MAX),
+  keywords: z.array(z.string().trim().min(2).max(32).regex(/^[a-z0-9][a-z0-9 .+-]*$/, "Lowercase keywords")).min(4).max(40),
+});
+
+/**
  * "How I run AI in production" (owner approved 2026-10-14): the About section `#production`, the L3 Ops
  * Control Room (`L3:ops`) and its Ask chunk. Facts only, aggregated, no client or resource names. Each proof
  * tile fills one Ops Control Room screen (`panel`); `alerts` are the rule families on the Alerts screen.
@@ -513,3 +532,4 @@ export type SiteContent = z.infer<typeof SiteContentSchema>;
 export type PerspectiveSource = z.infer<typeof PerspectiveSourceSchema>;
 export type Perspective = z.infer<typeof PerspectiveSchema>;
 export type PerspectivesFile = z.infer<typeof PerspectivesFileSchema>;
+export type SiteBuild = z.infer<typeof SiteBuildSchema>;

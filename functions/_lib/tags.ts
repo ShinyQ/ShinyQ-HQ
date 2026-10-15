@@ -27,6 +27,7 @@ const BY_TYPE: Record<KnowledgeChunk["type"], AskTag[]> = {
   principle: ["perspectives"],
   perspective: ["perspectives"],
   production: ["ai", "work"],
+  site: ["work", "agents"],
 };
 
 /** Topic markers matched on a chunk's id and keywords (lowercase). */
@@ -40,6 +41,12 @@ const TOPICS: [AskTag, RegExp][] = [
   ["data", /fabric|forecast|xgboost|lightgbm|lakehouse|\bdata\b|sentiment/],
 ];
 
+/** Topic tags a keyword (or any id and keyword text) carries. The pack builder keeps every keyword that carries one. */
+export function topicTagsOf(text: string): AskTag[] {
+  const haystack = text.toLowerCase();
+  return TOPICS.filter(([, re]) => re.test(haystack)).map(([tag]) => tag);
+}
+
 export function chunkTags(chunk: KnowledgeChunk): AskTag[] {
   const tags = [...BY_TYPE[chunk.type]];
   if (chunk.type === "project") {
@@ -48,8 +55,7 @@ export function chunkTags(chunk: KnowledgeChunk): AskTag[] {
     tags.push(wing);
   }
   if (chunk.type === "project" || chunk.type === "post" || chunk.type === "side-project" || chunk.type === "perspective") {
-    const haystack = `${chunk.id} ${chunk.keywords.join(" ")}`.toLowerCase();
-    for (const [tag, re] of TOPICS) if (re.test(haystack)) tags.push(tag);
+    tags.push(...topicTagsOf(`${chunk.id} ${chunk.keywords.join(" ")}`));
   }
   return tags;
 }

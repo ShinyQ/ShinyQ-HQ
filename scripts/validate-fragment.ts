@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { PerspectivesFileSchema, PodSchema, SiteContentObjectSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
+import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, findBlockedLabels, leafForbiddenPatterns, loadBlocklist, redactBlockedText } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
@@ -57,7 +57,22 @@ if (perspectivesData !== undefined) {
   }
 }
 
-for (const leaf of [...collectStrings(data), ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives"))]) {
+// ... and the Ask-only note on how this site was built (content/ask/site-build.json).
+const siteBuildFile = path.join(path.dirname(file), "ask", "site-build.json");
+const siteBuildData: unknown = kind === "full" && existsSync(siteBuildFile) ? JSON.parse(readFileSync(siteBuildFile, "utf8")) : undefined;
+if (siteBuildData !== undefined) {
+  const siteBuild = SiteBuildSchema.safeParse(siteBuildData);
+  if (!siteBuild.success) {
+    failed = true;
+    console.error(`${siteBuildFile}:\n${z.prettifyError(siteBuild.error)}`);
+  }
+}
+
+for (const leaf of [
+  ...collectStrings(data),
+  ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives")),
+  ...(siteBuildData === undefined ? [] : collectStrings(siteBuildData, "site-build")),
+]) {
   const hits = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
   if (hits.length > 0) {
     failed = true;

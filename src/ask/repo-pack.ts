@@ -4,7 +4,7 @@ import path from "node:path";
 import { listBlogFiles } from "@/content/blog";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
 import { loadAllowlist, loadBlocklist } from "@/content/safety";
-import { getContent, getPerspectives } from "@/content/load";
+import { getContent, getPerspectives, getSiteBuild } from "@/content/load";
 import type { Locale, Perspective } from "@/content/schema";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import { buildKnowledgePack, validatePack } from "./pack";
@@ -39,6 +39,7 @@ export function buildRepoPack(date = contentDate(), options: { perspectives?: re
     contentDate: date,
     products: loadAllowlist(),
     perspectives: options.perspectives ?? getPerspectives(),
+    siteBuild: getSiteBuild(),
   });
   return { pack, safety: { blocklist }, errors: validatePack(pack, blocklist) };
 }

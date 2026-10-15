@@ -75,15 +75,20 @@ export function cleanTags(value: unknown): AskTag[] {
  * Page View paths an answer may cite (the `done` frame `cite`, spec section 13): How I work on
  * About, a hosted post, a project case study (the backing source of a perspective) or the Library.
  * Perspectives themselves have no page (owner decision 2026-10-14: chatbot knowledge only).
- * Anything else is dropped by both ends.
+ * The one external cite is the site's own public repository (`ASK_REPO_CITE`), for answers about
+ * how this site was built (owner request 2026-10-15). Anything else is dropped by both ends.
  */
 export const ASK_CITE_PATTERN = /^\/(?:contact#how|(?:blog|labs)\/[a-z0-9]+(?:-[a-z0-9]+)*|library)$/;
+/** The public ShinyQ HQ repository (`REPO_URL` in src/lib/site.ts, the footer's source code link). */
+export const ASK_REPO_CITE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
-export type AskCiteKind = "how" | "blog" | "project" | "library";
+export type AskCiteKind = "how" | "blog" | "project" | "library" | "repo";
 
-export const isAskCite = (value: unknown): value is string => typeof value === "string" && value.length <= 120 && ASK_CITE_PATTERN.test(value);
+export const isAskCite = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 120 && (value === ASK_REPO_CITE || ASK_CITE_PATTERN.test(value));
 
 export function citeKind(path: string): AskCiteKind {
+  if (path === ASK_REPO_CITE) return "repo";
   if (path === "/contact#how") return "how";
   if (path.startsWith("/blog/")) return "blog";
   if (path.startsWith("/labs/")) return "project";

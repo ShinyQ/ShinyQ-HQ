@@ -19,7 +19,8 @@ export type ChunkType =
   | "live-stats"
   | "principle"
   | "perspective"
-  | "production";
+  | "production"
+  | "site";
 
 export interface KnowledgeChunk {
   id: string;
@@ -29,7 +30,7 @@ export interface KnowledgeChunk {
   text_id: string;
   /** YYYY-MM or YYYY-MM-DD of the fact, when known. */
   updatedAt?: string;
-  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center". */
+  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center"; the `site` chunk holds the public repository URL (`ASK_REPO_CITE`). */
   url?: string;
   keywords: string[];
 }

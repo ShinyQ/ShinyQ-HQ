@@ -1,9 +1,10 @@
 import raw from "../../content/site-content.json";
 import factsRaw from "../../content/generated/dynamic-facts.json";
 import perspectivesRaw from "../../content/perspectives.json";
+import siteBuildRaw from "../../content/ask/site-build.json";
 import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
 import { publishedPerspectives } from "./perspectives";
-import { PerspectivesFileSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteContent, type Stat, type Wing } from "./schema";
+import { PerspectivesFileSchema, SiteBuildSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteBuild, type SiteContent, type Stat, type Wing } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 import { buildTechIndex, type TechIndex } from "./tech-index";
 import { buildTopicIndex, type TopicIndex } from "./topic-index";
@@ -40,6 +41,14 @@ export function getPerspectivesFile(): PerspectivesFile {
 /** Approved perspectives only, in file order. Only the Ask knowledge pack reads this (no page renders them). */
 export function getPerspectives(): Perspective[] {
   return publishedPerspectives(getPerspectivesFile());
+}
+
+let cachedSiteBuild: SiteBuild | undefined;
+
+/** How this site was built (content/ask/site-build.json). Ask knowledge only: no page renders it. */
+export function getSiteBuild(): SiteBuild {
+  cachedSiteBuild ??= SiteBuildSchema.parse(siteBuildRaw);
+  return cachedSiteBuild;
 }
 
 /** Stats whose value comes from the live facts, so the stats ring, Page View and Ask agree. */
