@@ -310,14 +310,16 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const hubEndX = loopEnd.x + L.east / 2 + L.margin;
 
   const ops = opsPlacement(opsMinX, wingZ);
+  const boards = { software: directoryBoard("software"), ai: directoryBoard("ai"), data: directoryBoard("data") } satisfies Record<Wing, DirectoryBoard>;
   const spurs: Spur[] = [
     ...placed.map((p) => ({ room: p.room, from: { x: p.door.x, z: p.roadZ }, to: p.door, width: L.spurWidth, color: WING_TINT[p.pod.wing] })),
     { room: OPS_ROOM, from: { x: ops.door.x, z: WING_SIDE.ai * wingZ }, to: ops.door, width: L.spurWidth, color: OPS_TINT },
+    // The outer board stops hang off the spine on short spurs, so a click on a board drives straight there.
+    ...SIDE_WINGS.map((wing) => ({ room: `L3:directory:${wing}` as RoomId, from: { x: boards[wing].stop.x, z: 0 }, to: boards[wing].stop, width: L.spurWidth, color: WING_TINT[wing] })),
   ];
   // No floor arrows on L3 (owner request 2026-10-13): the roads, signs and directory guide the way.
   const network: RoadNetwork = { roads: [lead, spine, wingRoad("software"), wingRoad("ai"), ring], plazas: [hub, east], spurs, chevrons: false };
 
-  const boards = { software: directoryBoard("software"), ai: directoryBoard("ai"), data: directoryBoard("data") } satisfies Record<Wing, DirectoryBoard>;
   const wingSign = (wing: SideWing): WingSign => {
     const at = mouth(wing);
     const to = { x: L.wingStartX, z: WING_SIDE[wing] * wingZ };

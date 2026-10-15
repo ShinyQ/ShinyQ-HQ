@@ -256,7 +256,7 @@ describe("L3 Project Roads layout", () => {
         length += Math.hypot(p.x - at.x, p.z - at.z);
         at = p;
       }
-      expect(length, wing).toBeLessThan(13);
+      expect(length, wing).toBeLessThan(14);
     }
   });
 
@@ -302,6 +302,7 @@ describe("L3 Project Roads layout", () => {
       expect(stop).toEqual(b.stop);
       expect(stop).toEqual({ x: b.minX - LABS.boardStop, z: b.center.z });
       expect(isWalkable(grid, stop), wing).toBe(true);
+      expect(onNetwork(network, directoryStop(wing)), wing).toBe(true);
       expect(Math.hypot(stop.x - LABS.overview.x, stop.z - LABS.overview.z), wing).toBeGreaterThan(HINT.radius);
       const zone = zoneAt("L3", stop, floor.viewZones);
       expect(zone?.id).toBe(`L3:directory:${wing}`);
