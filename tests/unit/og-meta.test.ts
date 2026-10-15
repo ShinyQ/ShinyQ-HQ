@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { exportHtmlPath, jpegSize, parseSocialMeta, validateSocialMeta } from "../../scripts/og-meta";
+import { byteOffset, exportHtmlPath, jpegFormat, jpegSize, jsonLdBlocks, lateShareTags, parseSocialMeta, validateSocialMeta } from "../../scripts/og-meta";
 
 const description = "d".repeat(150);
 const HTML = [
@@ -15,6 +15,7 @@ const HTML = [
   '<meta property="og:description" content="D"/>',
   '<meta property="og:url" content="https://x.dev/en"/>',
   '<meta property="og:image" content="https://x.dev/og/en.jpg"/>',
+  '<meta property="og:image:secure_url" content="https://x.dev/og/en.jpg"/>',
   '<meta property="og:image:type" content="image/jpeg"/>',
   '<meta property="og:image:width" content="1200"/>',
   '<meta property="og:image:height" content="630"/>',
@@ -41,6 +42,28 @@ describe("og-meta", () => {
       "missing hreflang id",
       "twitter:card is not summary_large_image",
     ]);
+  });
+
+  it("requires og:url to equal the canonical and secure_url to match an https image", () => {
+    const html = HTML.replace('og:url" content="https://x.dev/en"', 'og:url" content="https://x.dev/"').replace(/<meta property="og:image:secure_url"[^>]*>/, "");
+    expect(validateSocialMeta(parseSocialMeta(html))).toEqual(["og:url differs from the canonical", "og:image:secure_url differs from og:image"]);
+  });
+
+  it("finds share tags past the first bytes, counting UTF-8 bytes", () => {
+    expect(lateShareTags(HTML)).toEqual([]);
+    expect(byteOffset("é<a>", "<a>")).toBe(2);
+    const late = HTML.replace("<html><head>", `<html><head>${"<meta name=x>".repeat(700)}`);
+    expect(lateShareTags(late)).toHaveLength(5);
+    expect(lateShareTags("<head></head>")).toContain('missing property="og:image"');
+  });
+
+  it("tells baseline JFIF JPEGs from progressive ones and parses JSON-LD", async () => {
+    const progressive = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#000" } }).jpeg({ progressive: true }).toBuffer();
+    expect(jpegFormat(progressive).baseline).toBe(false);
+    const baseline = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#000" } }).jpeg({ progressive: false }).toBuffer();
+    expect(jpegFormat(baseline).baseline).toBe(true);
+    expect(jsonLdBlocks('<script type="application/ld+json">[{"@type":"A"},{"@type":"B"}]</script><script type="application/ld+json">{"@type":"C"}</script>').map((d) => d["@type"])).toEqual(["A", "B", "C"]);
+    expect(() => jsonLdBlocks('<script type="application/ld+json">{</script>')).toThrow();
   });
 
   it("reads JPEG dimensions and rejects other formats", async () => {

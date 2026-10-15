@@ -3,7 +3,11 @@ import { smokeProblems, type Expected, type Observed } from "../../scripts/deplo
 
 const expected: Expected = { asOf: "2026-10-18", contributions: "7,600", beacon: true };
 const html = '<p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{}"></script>';
-const healthy: Observed = { status: { code: 200, enabled: true, asOf: "2026-10-18" }, page: { code: 200, html }, rum: { code: 405 }, visit: { code: 405 }, stats: { code: 204 } };
+const card = (path: string) =>
+  `<html><head><link rel="canonical" href="https://kurniadi.pages.dev${path}"/><meta property="og:title" content="T"/><meta property="og:description" content="D"/><meta property="og:url" content="https://kurniadi.pages.dev${path}"/><meta property="og:image" content="https://kurniadi.pages.dev/og/en.jpg"/></head>`;
+const jpeg = { code: 200, type: "image/jpeg" };
+const unfurl: Observed["unfurl"] = { "/": { code: 200, html: card("/en"), image: jpeg }, "/en": { code: 200, html: card("/en"), image: jpeg }, "/id": { code: 200, html: card("/id"), image: jpeg } };
+const healthy: Observed = { status: { code: 200, enabled: true, asOf: "2026-10-18" }, page: { code: 200, html }, rum: { code: 405 }, visit: { code: 405 }, stats: { code: 204 }, unfurl };
 
 describe("post-deploy smoke check", () => {
   it("passes when production serves the new pack, facts, beacon and the RUM Function", () => {
@@ -14,7 +18,16 @@ describe("post-deploy smoke check", () => {
     expect(smokeProblems(expected, { ...healthy, status: { code: 200, enabled: true, asOf: "2026-10-11" } })).toEqual(["GET /api/ask asOf is 2026-10-11, expected 2026-10-18"]);
     expect(smokeProblems(expected, { ...healthy, status: { code: 503 } })[0]).toMatch(/not enabled/);
     expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: "<p>7,541</p>" } })).toEqual(["/en does not show 7,600 contributions", "/en has no Web Analytics beacon"]);
-    expect(smokeProblems(expected, {})).toHaveLength(5);
+    expect(smokeProblems(expected, {})).toHaveLength(8);
+  });
+
+  it("checks that LinkedInBot gets a 200 with early share tags and a JPEG card on every entry point", () => {
+    expect(smokeProblems(expected, { ...healthy, unfurl: { ...unfurl, "/": { code: 403, html: "" } } })).toEqual(["LinkedInBot got HTTP 403 for /, expected 200"]);
+    const late = `<head>${"<meta name=x>".repeat(1000)}${card("/en").slice(12)}`;
+    expect(smokeProblems(expected, { ...healthy, unfurl: { ...unfurl, "/en": { code: 200, html: late, image: jpeg } } })[0]).toMatch(/LinkedInBot \/en: property="og:title" at byte \d+, after 8192/);
+    expect(smokeProblems(expected, { ...healthy, unfurl: { ...unfurl, "/id": { code: 200, html: card("/id"), image: { code: 404, type: "text/html" } } } })).toEqual([
+      "LinkedInBot /id: og:image returned HTTP 404 text/html",
+    ]);
   });
 
   it("reports a missing RUM Function (the static 404 page)", () => {
