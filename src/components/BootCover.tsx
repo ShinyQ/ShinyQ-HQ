@@ -14,7 +14,6 @@ export async function BootCover({ locale, who }: { locale: Locale; who: BootWho 
     <div id="hq-boot-cover" data-testid="boot-cover" className="hq-boot-cover">
       <BootCard
         eyebrow={t("bootEyebrow")}
-        markId="hq-boot-cover-mark"
         title={t("bootTitle")}
         lines={lines}
         shown={lines.length}

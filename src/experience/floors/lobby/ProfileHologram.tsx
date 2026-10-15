@@ -3,8 +3,7 @@
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BufferGeometry, Color, Float32BufferAttribute, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3, type Group, type Mesh } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { BufferGeometry, Color, ExtrudeGeometry, Float32BufferAttribute, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Shape, Vector3, type Group, type Mesh } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BatchedLabels } from "../../fx/BatchedLabels";
 import { getGlassMaterial } from "../../fx/geometry";
@@ -29,6 +28,23 @@ const circle = (r: number, n = 48): [number, number][] =>
 function boundsSafe(material: ReturnType<typeof createHoloMaterial>) {
   material.userData[RIDE_CULL_BOUNDS] = true;
   return material;
+}
+
+/**
+ * A 1 x 1 x 1 rounded box built like drei's `RoundedBox` (an extruded, beveled shape), from three classes
+ * the 3D chunk already ships, so the hologram adds no geometry module. Normals are not needed (holo globe mode).
+ */
+function unitRoundedBox(r: number, segments: number) {
+  const eps = 1e-5;
+  const inner = 1 - 2 * r;
+  const shape = new Shape();
+  shape.absarc(eps, eps, eps, -Math.PI / 2, -Math.PI, true);
+  shape.absarc(eps, inner, eps, Math.PI, Math.PI / 2, true);
+  shape.absarc(inner, inner, eps, Math.PI / 2, 0, true);
+  shape.absarc(inner, eps, eps, 0, -Math.PI / 2, true);
+  const g = new ExtrudeGeometry(shape, { depth: inner, bevelEnabled: true, bevelSegments: segments, steps: 1, bevelSize: r - eps, bevelThickness: r, curveSegments: segments });
+  g.center();
+  return g;
 }
 
 type Part = { at: [number, number, number]; yaw?: number; size: [number, number, number]; color: string };
@@ -66,7 +82,7 @@ export function ProfileHologram({ name, headline }: { name: string; headline: st
   const ring = useMemo(() => circle(3.05), []);
   const { x, z, radius } = LOBBY.hologram;
 
-  const box = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 2, 0.2), []);
+  const box = useMemo(() => unitRoundedBox(0.2, 3), []);
   useDispose(box);
   const body = useMemo(
     () => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor("#ffffff", tier === "full" ? 1.4 : 1.1, tier), opacity: tier === "full" ? 0.95 : 0.85 })),

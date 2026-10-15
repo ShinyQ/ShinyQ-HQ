@@ -43,7 +43,6 @@ export function BootOverlay({ who }: { who: BootWho }) {
     >
       <BootCard
         eyebrow={t("bootEyebrow")}
-        markId="hq-boot-overlay-mark"
         title={t("bootTitle")}
         titleId="hq-boot-title"
         lines={lines}

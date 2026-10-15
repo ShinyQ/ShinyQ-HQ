@@ -5,7 +5,7 @@
  * face, the antenna right of center with its pink tip, and a tread with three wheels on each side.
  *
  * One source for every rendering: `scripts/brand-marks.ts` writes the files in `public/brand/` and the
- * app icons from it, `RoverMark` inlines it in the header and the boot card, and
+ * app icons from it, `RoverMark` inlines it in the Classic site header (the boot card shows the tile file), and
  * `tests/unit/brand-mark.test.tsx` keeps the committed files equal to it. Pure, no imports.
  */
 

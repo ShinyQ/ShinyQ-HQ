@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { BOOT_MARK_SRC } from "@/components/BootCard";
 import { RoverMark } from "@/components/RoverMark";
 import { HOLOGRAM } from "@/experience/floors/lobby/layout";
 import { antenna, faceLabels, ROVER_MARK_3D, roverMarkExtent, screenPlate, treadBoxes } from "@/experience/floors/lobby/roverMark3d";
@@ -44,6 +45,10 @@ describe("rover brand mark", () => {
     const html = renderToStaticMarkup(<RoverMark id="t" size={34} />);
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('width="34"');
+  });
+
+  it("shows the committed tile on the boot card (a file, so the 3D chunk never bundles the mark module)", () => {
+    expect(readFileSync(path.join(root, "public", BOOT_MARK_SRC), "utf8")).toBe(MARK_FILES["public/brand/rover-mark.svg"]());
   });
 });
 

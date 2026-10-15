@@ -133,7 +133,7 @@ src/
   lib/rum/protocol.ts           RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/
   lib/stats/                    public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts
   experience/perf/              render counters (renderStats, RenderCounter), FrameSampler, the ?perf=1 overlay (perfOverlayOn is the one flag parser, also for the Director's ride console line), timeline marks, the RUM decision and probe (overlay and probe are static imports in the 3D chunk that mount only with the flag or in a sampled session: a dynamic import inside the 3D chunk makes Turbopack regroup shared modules into the Page View bundle)
-  lib/brand-mark.ts             the rover brand mark (owner pick 2026-10-15, it retired the KAW monogram): geometry, colors and SVG bodies for every variant; `RoverMark` (src/components/RoverMark.tsx) inlines it in the header and the boot card
+  lib/brand-mark.ts             the rover brand mark (owner pick 2026-10-15, it retired the KAW monogram): geometry, colors and SVG bodies for every variant; `RoverMark` (src/components/RoverMark.tsx) inlines it in the header; the boot card shows `/brand/rover-mark.svg` as a lazy image, so the mark module stays out of the 3D chunk
   lib/site.ts                   SITE_URL, pageMetadata (absolute titles), ogImagePath, OG_PAGES, beacon token
   lib/seo.ts                    every page's title, description and share card: seoFor, seoMetadata, fitDescription, keyResult
   lib/routes.ts                 allPagePaths() for the sitemap (keep in sync with generateStaticParams)

@@ -2,7 +2,6 @@ import type { Ref } from "react";
 import { splitBootLine } from "@/lib/boot-first";
 import { HEADLINE_TIMING_ID } from "@/lib/perf-marks";
 import { PageViewIcon } from "./PageViewIcon";
-import { RoverMark } from "./RoverMark";
 
 /** Who the owner is, shown on the boot card at first paint (owner decision, round 5). */
 export interface BootWho {
@@ -21,8 +20,6 @@ export interface BootPageLink {
 
 export interface BootCardProps {
   eyebrow: string;
-  /** Unique id prefix for the inline rover mark (the cover and the 3D overlay can both be in the DOM). */
-  markId: string;
   title: string;
   titleId?: string;
   lines: string[];
@@ -50,6 +47,9 @@ export interface BootCardProps {
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
 
+/** The rover brand mark tile (public/brand, written by scripts/brand-marks.ts). */
+export const BOOT_MARK_SRC = "/brand/rover-mark.svg";
+
 export function BootCard({ startRef, ...p }: BootCardProps) {
   // On the cover only the owner block and the Classic site link are for assistive tech; the log is decoration.
   const deco = p.placeholder ? true : undefined;
@@ -58,7 +58,10 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       <p className="eyebrow" aria-hidden={deco}>
         {p.eyebrow}
       </p>
-      <RoverMark id={p.markId} size={44} className="mt-3 block" />
+      {/* The brand mark file, not the inline RoverMark: keeps the mark module out of the 3D chunk (the overlay
+          reuses this card). Lazy, so the hidden cover on Classic site visits never fetches it. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BOOT_MARK_SRC} alt="" width={44} height={44} loading="lazy" decoding="async" className="mt-3 block" />
       <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>

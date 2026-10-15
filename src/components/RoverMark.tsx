@@ -1,7 +1,7 @@
 import { MARK, roverMarkBody, type MarkVariant } from "@/lib/brand-mark";
 
 /**
- * The rover brand mark inline (`src/lib/brand-mark.ts`), for the header and the boot card. No hooks, so
+ * The rover brand mark inline (`src/lib/brand-mark.ts`), for the Classic site header. No hooks, so
  * server and client components can render it. Decorative: the owner's name or a title always sits next
  * to it. `id` must be unique on the page (it prefixes the gradient ids).
  */
