@@ -4,6 +4,14 @@ import { addDays, buildPerf, buildRollups, buildSnapshot, dayRange, trimLeadingE
 import { fetchAnalyticsEngine, fetchPerf, fetchWebAnalytics, type SourceConfig } from "./sources";
 import type { DayRollup, Fetcher, Ledger, StatsWorkerEnv } from "./types";
 
+/** A UTC day is finalized (written to the ledger once, never recomputed) an hour after it ends, so late events land first. */
+export const SETTLE_MS = 3_600_000;
+
+/** The last UTC day that ended at least `SETTLE_MS` before `now`. */
+export function finalizedThrough(now: number): string {
+  return addDays(new Date(now - SETTLE_MS).toISOString().slice(0, 10), -1);
+}
+
 /** KV key of the ledger: every finalized day (written once, never recomputed). */
 export const LEDGER_KEY = "stats:days:v1";
 /** First run: history to backfill, inside Web Analytics' 184-day `notOlderThan` (Analytics Engine keeps 3 months). */
@@ -19,6 +27,8 @@ export const CHIP_TOPICS: ReadonlyMap<string, StatsTopic> = new Map(SUGGESTIONS.
 export interface RunResult {
   /** Days appended to the ledger by this run. */
   added: string[];
+  /** Days rolled up into the snapshot but not stored (not finalized yet, up to today). */
+  provisional: string[];
   /** Days in the ledger after the run. */
   days: number;
   /** Whether a snapshot was written. */
@@ -70,51 +80,27 @@ async function backfillPerf(cfg: SourceConfig, days: readonly DayRollup[], missi
 }
 
 /**
- * One daily run (cron `0 1 * * *`): appends a rollup for every complete UTC day after the ledger's last
- * day (the whole backfill window on the first run), then rebuilds the public snapshot. A finalized day is
- * never fetched again. Any API error throws before anything is written, so the last good snapshot stays;
- * the next run catches up every missed day. Stored days inside the Analytics Engine retention that have
- * no `perf` yet get it filled once (at most one extra query per run). Logs dates and counts only, never a
- * token.
+ * One run (every 4 hours, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
+ * backfill window on the first run) from one Web Analytics pass and the same Analytics Engine queries.
+ * Days that ended at least `SETTLE_MS` ago are finalized: appended to the ledger once and never fetched
+ * again. The later days (at most yesterday, within the hour after midnight, and today so far) are
+ * provisional: they enter the public snapshot but are never stored, and the next run recomputes them.
+ * The snapshot is rewritten on every run with `updatedAt` set to the run time. Any API error throws before
+ * anything is written, so the last good snapshot stays; the next run catches up every missed day. Stored
+ * days inside the Analytics Engine retention that have no `perf` yet get it filled once (at most one extra
+ * query per run). Logs dates and counts only, never a token.
  */
 export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetcher = (input, init) => fetch(input, init), log: (line: string) => void = console.log): Promise<RunResult> {
   const cfg = config(env);
   const today = new Date(now).toISOString().slice(0, 10);
-  const lastDay = addDays(today, -1);
+  const lastFinal = finalizedThrough(now);
   const ledger = readLedger(await env.STATS_KV.get(LEDGER_KEY));
   const last = ledger.days.at(-1)?.date;
   const from = last ? addDays(last, 1) : addDays(today, -BACKFILL_DAYS);
+  const end = addDays(today, 1);
   const perfFrom = addDays(today, -AE_RETENTION_DAYS);
   const missingPerf = ledger.days.filter((d) => !d.perf && d.date >= perfFrom);
 
-  if (from > lastDay && missingPerf.length) {
-    const days = await backfillPerf(cfg, ledger.days, missingPerf, fetcher);
-    const snapshot = buildSnapshot(days, lastDay, CHIP_TOPICS);
-    if (!validSnapshot(snapshot)) throw new Error("hq-stats: the snapshot failed validation; nothing written");
-    await env.STATS_KV.put(LEDGER_KEY, JSON.stringify({ v: 1, days } satisfies Ledger));
-    await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
-    log(`hq-stats: filled perf for ${missingPerf.length} stored days, ledger ${days.length} days`);
-    return { added: [], days: days.length, snapshot: true };
-  }
-
-  if (from > lastDay) {
-    const stored = await env.STATS_KV.get(STATS_KEY);
-    const expected = `${today}T00:00:00.000Z`;
-    let current = false;
-    try {
-      current = stored !== null && parseStatsSnapshot(JSON.parse(stored))?.updatedAt === expected;
-    } catch {
-      current = false;
-    }
-    if (current) return { added: [], days: ledger.days.length, snapshot: false };
-    const snapshot = buildSnapshot(ledger.days, lastDay, CHIP_TOPICS);
-    if (!validSnapshot(snapshot)) return { added: [], days: ledger.days.length, snapshot: false };
-    await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
-    log(`hq-stats: rewrote the snapshot from ${ledger.days.length} ledger days`);
-    return { added: [], days: ledger.days.length, snapshot: true };
-  }
-
-  const end = addDays(lastDay, 1);
   const wa = { days: [], countries: [], paths: [] } as Awaited<ReturnType<typeof fetchWebAnalytics>>;
   for (let start = from; start < end; start = addDays(start, WA_WINDOW_DAYS)) {
     const windowEnd = addDays(start, WA_WINDOW_DAYS) < end ? addDays(start, WA_WINDOW_DAYS) : end;
@@ -126,19 +112,23 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
   const ae = await fetchAnalyticsEngine(cfg, from, end, fetcher);
   const stored = await backfillPerf(cfg, ledger.days, missingPerf, fetcher);
 
-  const fresh = buildRollups(dayRange(from, lastDay), wa, ae, CHIP_TOPICS);
-  const added: DayRollup[] = stored.length ? fresh : trimLeadingEmpty(fresh);
-  if (!added.length) {
-    log(`hq-stats: no data from ${from} to ${lastDay} yet`);
-    return { added: [], days: 0, snapshot: false };
+  const rolled = buildRollups(dayRange(from, today), wa, ae, CHIP_TOPICS);
+  const days = stored.length ? rolled : trimLeadingEmpty(rolled);
+  const added = days.filter((d) => d.date <= lastFinal);
+  const provisional = days.filter((d) => d.date > lastFinal);
+  if (!stored.length && !days.length) {
+    log(`hq-stats: no data from ${from} to ${today} yet`);
+    return { added: [], provisional: [], days: 0, snapshot: false };
   }
-  const days = [...stored, ...added];
-  const snapshot = buildSnapshot(days, lastDay, CHIP_TOPICS);
+
+  const snapshot = buildSnapshot([...stored, ...added, ...provisional], today, CHIP_TOPICS, new Date(now).toISOString());
   if (!validSnapshot(snapshot)) throw new Error("hq-stats: the snapshot failed validation; nothing written");
 
-  await env.STATS_KV.put(LEDGER_KEY, JSON.stringify({ v: 1, days } satisfies Ledger));
+  const ledgerDays = [...stored, ...added];
+  if (added.length || missingPerf.length) await env.STATS_KV.put(LEDGER_KEY, JSON.stringify({ v: 1, days: ledgerDays } satisfies Ledger));
   await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
+  const range = (list: readonly DayRollup[]) => (list.length ? `${list[0].date} to ${list.at(-1)?.date}` : "none");
   const filled = missingPerf.length ? `, filled perf for ${missingPerf.length} stored days` : "";
-  log(`hq-stats: added ${added.length} days (${added[0].date} to ${added.at(-1)?.date})${filled}, ledger ${days.length} days`);
-  return { added: added.map((d) => d.date), days: days.length, snapshot: true };
+  log(`hq-stats: added ${added.length} days (${range(added)})${filled}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days`);
+  return { added: added.map((d) => d.date), provisional: provisional.map((d) => d.date), days: ledgerDays.length, snapshot: true };
 }

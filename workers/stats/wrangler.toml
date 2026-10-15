@@ -14,9 +14,9 @@ compatibility_date = "2026-10-01"
 workers_dev = false
 preview_urls = false
 
-# Daily at 01:00 UTC: finalizes the previous complete UTC day (and catches up any missed days).
+# Every 4 hours (UTC): finalizes days an hour after they end and refreshes the snapshot with today so far.
 [triggers]
-crons = ["0 1 * * *"]
+crons = ["0 */4 * * *"]
 
 # Same namespace as the Pages project's STATS_KV binding (wrangler.toml in the repo root): the ledger
 # `stats:days:v1` and the public snapshot `stats:v1`. KV namespace IDs are not secret.

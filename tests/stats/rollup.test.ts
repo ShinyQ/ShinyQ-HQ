@@ -127,6 +127,13 @@ describe("buildRollups", () => {
 });
 
 describe("buildSnapshot", () => {
+  it("stamps the snapshot with the given run time and covers the partial last day", () => {
+    const days = [day("2026-11-14", { visits: 10 }), day("2026-11-15", { visits: 3 })];
+    const snap = buildSnapshot(days, "2026-11-15", CHIPS, "2026-11-15T08:00:00.000Z")!;
+    expect(snap.updatedAt).toBe("2026-11-15T08:00:00.000Z");
+    expect(snap.visits).toEqual({ d30: 13, all: 13 });
+  });
+
   it("returns null for an empty ledger", () => {
     expect(buildSnapshot([], "2026-10-13", CHIPS)).toBeNull();
   });
