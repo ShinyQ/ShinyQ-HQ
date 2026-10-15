@@ -313,7 +313,8 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
       await openLabsArrival(page);
       for (const wing of ["software", "data", "ai"] as const) {
         const side = size.phone && wing !== "data";
-        const box = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
+        // `shown` only comes from `visiblePanel` (phone side boards).
+        const box: { minX: number; maxX: number; minY: number; maxY: number; shown?: number } | null = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
         expect(box, wing).not.toBeNull();
         if (side) {
           expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.75);
