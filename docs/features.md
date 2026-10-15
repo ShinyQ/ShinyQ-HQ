@@ -43,6 +43,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | SEO and link previews | Search titles within 60 characters, unique titles, `/` canonical to `/en`, baseline JFIF share cards with `og:image:secure_url`, Person, ProfilePage and SoftwareSourceCode structured data, content-dated sitemap, Search Console and Bing verification, LinkedInBot checks in e2e and the deploy smoke | Done |
 | Fast return | Any floor change more than 40 u from the elevator call pad beams the rover into the car; green "Back to elevator" pads at the far ends of L2 and L3 beam it to the call pad | Done |
 | Floor chunks | Round 7 B: L3, L4 and RF are separate chunks, prefetched after the first frame and on elevator intent, loaded at once on deep links; the car waits at closed doors for a slow chunk; the main 3D path is 16 KB gzip smaller | Done |
+| L3 three paths | Round 7 G: three roads leave the hub (Product Engineering north, Data and ML straight to the reactor, AI Engineering south), a raised three-board directory wall with a gate over the spine, smaller board text and one floating sign per road | Done |
 
 ## Controls and first visit
 
@@ -172,11 +173,11 @@ Route `/en/journey`. One road runs forward in time.
 
 Route `/en/labs`.
 
-- **Hub and directory wall**: a hub plaza in front of the elevator, and a wing directory wall where the two wing roads fork. It is the first thing you see on arrival: each wing's name, project count and top projects; click a panel for the full list.
-- **Wing roads**: Product Engineering and AI Engineering run east and meet in a loop right after their last pods, with every key and featured project docked along them.
-- **Data and ML annex**: past the reactor, the Data and ML road runs east to its own plaza and directory panel, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories docked along it.
+- **Hub and directory wall**: a hub plaza in front of the elevator and, where the three roads fork, a raised directory wall of three boards on posts. It is the first thing you see on arrival: each wing's name, project count and top projects; click a board for the full list. The Data and ML board is a gate that the rover drives under.
+- **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road and meet it in a loop right after their last pods, with every key and featured project docked along them. One floating sign over each road names it.
+- **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories docked on both sides. The wing roads spread apart just enough to leave room for them.
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners.
-- **Tour my projects**: offered on the first visit, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones). Skip it to roam, or start it later from the launcher or the "Tour my projects" pick in Ask Rover. The boards list each wing's top projects and open the full list on click.
+- **Tour my projects**: offered on the first visit, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones). Skip it to roam, or start it later from the launcher or the "Tour my projects" pick in Ask Rover. The boards list each wing's top projects and open the full list on click. The tour visits Product, AI, then the Data and ML spine.
 
 ### Tech Reactor
 

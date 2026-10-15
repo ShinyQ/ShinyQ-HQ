@@ -20,6 +20,8 @@
 
 ## Decisions (made in planning, numbers checked with a projection harness)
 
+Amended during execution: the Road signs and Arrival framing rows below follow the final implementation (sign offset -4.5, phone overview zoom 1.45, board zoom 1.05 with phones 1, side board stops on spurs); the harness table and the task code that follow are the original plan.
+
 | Topic | Decision |
 | --- | --- |
 | Spine | Road `data` from the hub centre `(-4, 0)` straight east to `ringEntry(loopEnd, hubC)` (the ring road's west point). Always present, also without data pods. |
@@ -29,8 +31,8 @@
 | Reactor plaza | `loopEnd.x = max(turn(software), turn(ai), lastSpineEdge + tail + east/2)`: 107 today (unchanged), so the reactor, Ops Control Room (x 97 to 103) and Return pad `(117, 9)` keep their x. |
 | Wall | Three raised boards at x = 17, thin along x (`w` 0.6): Product z [-11.1, -4.5], Data and ML (gate) z [-4.5, 4.5], AI z [4.5, 11.1]; bottoms at `base` 3.2 (rover 2.8), tops at `h` 11.2. Four posts (0.4 along z) from the floor to `base`: z [-11.1, -10.7], [-4.5, -4.1], [4.1, 4.5], [10.7, 11.1]. The posts are the obstacles; the board rects are `tall` camera columns. |
 | Text | Title 0.8 to 0.6 (-25%), desktop list 0.46 to 0.37 (-20%), phone list 0.56 to 0.45 (-20%); text width 6.0 on every face (outer boards 6.6 wide, gate centred); 10 list lines fit. |
-| Road signs | Exactly one floating sign per road (`labs-wing-signs`): wing signs 2 u along the road past their mouth, the spine sign over the spine at x = 12; plate bottom 3.0 u (rover drives under), font 0.8, wrapped at 12 characters (two lines for the wing names). No other floating wing label. |
-| Arrival framing | Overview `(8.5, 0)` unchanged. Overview zone x [4.5, 12.7], z [-2, 2], yaw east, zoom 1.3 (desktop, tablet), `classView.mobile.zoom` 1.9. Board zones x [12.7, 16.7] over each board's z span, zoom 0.9. All four have `travel: { x: 1, z: 0 }`. |
+| Road signs | Exactly one floating sign per road (`labs-wing-signs`): wing signs 4.5 u back from their mouth toward the hub (`signAlong` -4.5), the spine sign over the spine at x = 12; plate bottom 3.0 u (rover drives under), font 0.8, wrapped at 12 characters (two lines for the wing names). No other floating wing label. |
+| Arrival framing | Overview `(8.5, 0)` unchanged. Overview zone x [4.5, 12.7], z [-2, 2], yaw east, zoom 1.3 (desktop, tablet), `classView.mobile.zoom` 1.45 (`overviewZoomPhone`). Board zones x [12.7, board face] over each board's z span, zoom 1.05, phones 1. Board stops at x 13.7, the side ones on short spurs off the spine. `travel: { x: 1, z: 0 }` on the overview and the Data and ML board zone only (the side board stops are reached heading north or south). |
 | Lanes | Two packet spines at z = ±(road/2 + forecourt + spineDepth + rowGap/2) (±17 today) from x 18.3 to the east plaza's west rim, a branch into the back wall of every inner wing pod and every spine pod. Same `PacketLanes` mesh and packet counts. |
 | Naming | `HUB_WINGS`/`HubWing` become `SIDE_WINGS`/`SideWing` (the two wings beside the spine); `WING_SIDE` stays. `LabsLayout.dataPlaza`, the `directory` stub road and `LABS.data.{plaza,boardGap}` are removed. `LabsLayout.wingZ` is new. |
 
