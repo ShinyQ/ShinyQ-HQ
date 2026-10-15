@@ -26,13 +26,15 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * `failAt` gates the critical path before the first frame (`?prefetch=off`). `floors`: each on-demand floor chunk
  * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
- * session total (main + all floor chunks) is held to `spec`.
+ * session total (main + all floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
+ * (measured 455.0 KB, 15 KB margin so creep is caught early), lite the measured 431.4 KB plus 15 KB.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 },
+  session: { lite: Math.round(446.4 * 1024), full: 470 * 1024 },
 } as const;
 
 /** Lighthouse CI script budget per Page View page (`resource-summary:script:size` in lighthouserc.json). */

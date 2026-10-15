@@ -173,7 +173,7 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
       const parts = (Object.keys(caps) as (keyof typeof caps)[])
         .filter((f) => e.floors?.[f] !== undefined)
         .map((f) => `${f} ${kb(e.floors?.[f] ?? 0)} of ${kb(caps[f])}`);
-      const total = e.sessionTotal === undefined ? "" : ` Session total with every floor chunk: ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.spec)}.`;
+      const total = e.sessionTotal === undefined ? "" : ` Session total with every floor chunk: ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.session[e.tier])}.`;
       if (parts.length) out.markdown += `Floor chunks (loaded on demand): ${parts.join(", ")}.${total}\n\n`;
     }
     out.warnings.push(...s.warnings);
