@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { DELAYED_AFTER_MS } from "@/lib/visits/model";
 import { STATS_FIXTURE } from "@/lib/stats/fixtures";
-import { applyIssueAction, askCheck, checkWithRetry, deployCheck, failingFromBody, findOpenIssue, githubClient, type GitHubCall, issueAction, ISSUE_TITLE, pageCheck, runChecks, statsCheck, summaryMarkdown, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type CheckId, type UptimeDeps } from "../../scripts/uptime";
+import { applyIssueAction, askCheck, askExpectedEnabled, checkWithRetry, deployCheck, failingFromBody, findOpenIssue, githubClient, type GitHubCall, issueAction, ISSUE_TITLE, pageCheck, runChecks, statsCheck, summaryMarkdown, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type CheckId, type UptimeDeps } from "../../scripts/uptime";
 
 const OG = '<html><head><link rel="canonical" href="https://x/en"><meta property="og:title" content="T"><meta property="og:image" content="https://x/og.jpg"><meta property="og:url" content="https://x/en"></head></html>';
 const NOW = Date.parse("2026-10-15T10:00:00Z");
@@ -15,10 +15,18 @@ describe("pageCheck", () => {
 });
 
 describe("askCheck", () => {
-  it("passes when enabled", () => expect(askCheck({ code: 200, body: { enabled: true, asOf: "2026-10-15" } })).toMatchObject({ ok: true, detail: expect.stringContaining("2026-10-15") }));
-  it("passes with a note when the kill switch is off", () => expect(askCheck({ code: 503, body: { enabled: false } })).toMatchObject({ ok: true, detail: expect.stringContaining("kill switch") }));
-  it("fails on a 503 without the status body", () => expect(askCheck({ code: 503 }).ok).toBe(false));
-  it("fails on a 404", () => expect(askCheck({ code: 404 }).ok).toBe(false));
+  it("passes when enabled", () => expect(askCheck({ code: 200, body: { enabled: true, asOf: "2026-10-15" } }, true)).toMatchObject({ ok: true, detail: expect.stringContaining("2026-10-15") }));
+  it("passes a 503 with a note when wrangler.toml switched Ask off", () => expect(askCheck({ code: 503, body: { enabled: false } }, false)).toMatchObject({ ok: true, detail: expect.stringContaining("kill switch") }));
+  it("fails a disabled Ask while wrangler.toml expects it enabled", () => expect(askCheck({ code: 503, body: { enabled: false } }, true)).toMatchObject({ ok: false, detail: expect.stringContaining("wrangler.toml") }));
+  it("fails on a 503 without the status body", () => expect(askCheck({ code: 503 }, false).ok).toBe(false));
+  it("fails on a 404", () => expect(askCheck({ code: 404 }, true).ok).toBe(false));
+});
+
+describe("askExpectedEnabled", () => {
+  it("is true for ASK_ENABLED = \"true\"", () => expect(askExpectedEnabled('[vars]\nASK_ENABLED = "true"\n')).toBe(true));
+  it("is false for ASK_ENABLED = \"false\"", () => expect(askExpectedEnabled('ASK_ENABLED = "false"')).toBe(false));
+  it("is false without the line", () => expect(askExpectedEnabled('ASK_PRIMARY = "x"')).toBe(false));
+  it("reads true from the real wrangler.toml", () => expect(askExpectedEnabled(readFileSync("wrangler.toml", "utf8"))).toBe(true));
 });
 
 describe("statsCheck", () => {
@@ -26,6 +34,8 @@ describe("statsCheck", () => {
   it("uses the site's delayed threshold", () => expect(STATS_MAX_AGE_MS).toBe(DELAYED_AFTER_MS));
   it("passes a fresh snapshot", () => expect(statsCheck({ code: 200, body: fresh }, NOW).ok).toBe(true));
   it("fails a stale snapshot", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: "2026-10-12T00:00:00.000Z" } }, NOW)).toMatchObject({ ok: false, detail: expect.stringContaining("old") }));
+  it("passes at exactly 48 h old", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS).toISOString() } }, NOW).ok).toBe(true));
+  it("fails at 48 h plus one minute", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS - 60_000).toISOString() } }, NOW).ok).toBe(false));
   it("fails on 204", () => expect(statsCheck({ code: 204 }, NOW).ok).toBe(false));
   it("fails on an invalid body", () => expect(statsCheck({ code: 200, body: { v: 9 } }, NOW).ok).toBe(false));
 });
@@ -70,6 +80,14 @@ describe("runChecks and checkWithRetry", () => {
     expect(sleep).toHaveBeenCalledWith(RETRY_DELAY_MS);
     expect(askCalls).toBe(2);
     expect(results.every((r) => r.ok)).toBe(true);
+  });
+
+  it("keeps a check that fails on both attempts failed", async () => {
+    let askCalls = 0;
+    const routes = { ...healthy(), "/api/ask": () => (++askCalls, new Response("down", { status: 502 })) };
+    const results = await checkWithRetry(deps(fakeFetch(routes)), { forceFail: false, sleep: async () => {} });
+    expect(askCalls).toBe(2);
+    expect(results.find((r) => r.id === "ask")?.ok).toBe(false);
   });
 
   it("does not wait when everything passes", async () => {

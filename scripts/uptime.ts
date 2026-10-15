@@ -9,7 +9,7 @@
  * with a recovery comment once every check passes (GitHub emails the owner). Uses fetch and GH_TOKEN
  * only (issues: write, actions: read); no dependencies, so the workflow skips `bun install`.
  */
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
 import { parseSocialMeta } from "./og-meta";
 
@@ -36,7 +36,7 @@ export const RETRY_DELAY_MS = 60_000;
 export const STATS_MAX_AGE_MS = 48 * 3_600_000;
 export const DEPLOY_WORKFLOW = "deploy.yml";
 const FETCH_TIMEOUT_MS = 20_000;
-/** Cancelled or skipped deploys say nothing about production (as in scripts/ci-status.ts). */
+/** The deploy check ignores cancelled, skipped, neutral and stale runs: they say nothing about production (as in scripts/ci-status.ts). */
 const NO_RESULT = new Set(["cancelled", "skipped", "neutral", "stale"]);
 
 export type PageObs = { code: number; html: string } | { error: string };
@@ -59,11 +59,20 @@ export function pageCheck(id: "home" | "en", obs: PageObs): CheckResult {
   return missing.length ? result(id, false, `HTTP 200 but missing ${missing.join(", ")}`) : result(id, true, "HTTP 200 with og tags");
 }
 
-export function askCheck(obs: JsonObs): CheckResult {
+/** The committed kill switch: production's `enabled()` is also false for a missing AI binding or Turnstile secret. */
+export function askExpectedEnabled(wranglerToml: string): boolean {
+  return /^\s*ASK_ENABLED\s*=\s*"true"\s*$/m.test(wranglerToml);
+}
+
+export function askCheck(obs: JsonObs, expectEnabled: boolean): CheckResult {
   if ("error" in obs) return result("ask", false, `no response (${obs.error})`);
   const body = (obs.body ?? {}) as { enabled?: unknown; asOf?: unknown };
   if (obs.code === 200 && body.enabled === true) return result("ask", true, `enabled, knowledge pack ${String(body.asOf ?? "unknown")}`);
-  if (obs.code === 503 && body.enabled === false) return result("ask", true, "answered, switched off (kill switch)");
+  if (obs.code === 503 && body.enabled === false) {
+    return expectEnabled
+      ? result("ask", false, 'answered but disabled while wrangler.toml sets ASK_ENABLED = "true" (missing AI binding or Turnstile secret?)')
+      : result("ask", true, "answered, switched off (kill switch in wrangler.toml)");
+  }
   return result("ask", false, `HTTP ${obs.code} without a status body`);
 }
 
@@ -92,6 +101,8 @@ export interface UptimeDeps {
   repo: string;
   token?: string;
   now: () => number;
+  /** Whether wrangler.toml sets ASK_ENABLED = "true" (default true: a disabled Ask then fails). */
+  askEnabled?: boolean;
 }
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -138,7 +149,7 @@ async function observeDeploys(deps: UptimeDeps): Promise<RunsObs> {
 const CHECKS: Record<Exclude<CheckId, "forced">, (deps: UptimeDeps) => Promise<CheckResult>> = {
   home: async (deps) => pageCheck("home", await observePage(deps, PAGE_PATHS.home)),
   en: async (deps) => pageCheck("en", await observePage(deps, PAGE_PATHS.en)),
-  ask: async (deps) => askCheck(await observeJson(deps, "/api/ask")),
+  ask: async (deps) => askCheck(await observeJson(deps, "/api/ask"), deps.askEnabled ?? true),
   stats: async (deps) => statsCheck(await observeJson(deps, "/api/stats"), deps.now()),
   deploy: async (deps) => deployCheck(await observeDeploys(deps)),
 };
@@ -290,22 +301,38 @@ async function main() {
   const repo = flag("--repo") ?? process.env.GITHUB_REPOSITORY ?? "ShinyQ/ShinyQ-HQ";
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
   const forceFail = args.includes("--force-fail") || process.env.UPTIME_FORCE_FAIL === "true";
-  const dry = args.includes("--dry") || !token;
-  const deps: UptimeDeps = { fetch, site, repo, token, now: Date.now };
+  const dryFlag = args.includes("--dry");
+  if (process.env.GITHUB_ACTIONS === "true" && !token && !dryFlag) throw new Error("GH_TOKEN is missing in GitHub Actions: refusing to skip the uptime issue");
+  const dry = dryFlag || !token;
+  let askEnabled = true;
+  try {
+    askEnabled = askExpectedEnabled(readFileSync("wrangler.toml", "utf8"));
+  } catch {
+    // No wrangler.toml in the working directory: expect Ask enabled.
+  }
+  const deps: UptimeDeps = { fetch, site, repo, token, now: Date.now, askEnabled };
   const results = await checkWithRetry(deps, { forceFail, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) });
   const server = process.env.GITHUB_SERVER_URL ?? "https://github.com";
   const runUrl = process.env.GITHUB_RUN_ID ? `${server}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` : `${server}/${repo}/actions/workflows/uptime.yml`;
   const ctx: IssueContext = { site, runUrl, checkedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z") };
   for (const r of results) console.log(`${r.ok ? "pass" : "FAIL"}  ${CHECK_LABELS[r.id]}: ${r.detail}`);
+  const writeSummary = (outcome: string) => {
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(results, outcome));
+  };
   let outcome: string;
   if (dry) {
     outcome = `Dry run (${token ? "--dry" : "no GH_TOKEN"}): issue left alone.`;
   } else {
-    const gh = githubClient(fetch, token!);
-    outcome = await applyIssueAction(gh, repo, issueAction(results, await findOpenIssue(gh, repo), ctx));
+    try {
+      const gh = githubClient(fetch, token!);
+      outcome = await applyIssueAction(gh, repo, issueAction(results, await findOpenIssue(gh, repo), ctx));
+    } catch (error) {
+      writeSummary(`Issue handling failed: ${message(error)}`);
+      throw error;
+    }
   }
   console.log(outcome);
-  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(results, outcome));
+  writeSummary(outcome);
 }
 
 if (import.meta.main) {
