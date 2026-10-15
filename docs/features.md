@@ -318,6 +318,12 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - `deploy.yml` also deploys the Worker after checking its tokens.
 - Details, secrets, variables and the Cloudflare resource inventory: [`deploy.md`](deploy.md).
 
+### Dependencies
+
+- Dependabot opens one weekly PR with every minor and patch update, and one PR per major.
+- A major ships in its own PR with every gate green; 3D library majors also need the strict visual gate, the perf lane and the memory gates.
+- A major that cannot pass is pinned with a dated reason in `.github/dependabot.yml` and listed in [`deploy.md`](deploy.md) section 17.
+
 ## Performance
 
 ### Page View budgets

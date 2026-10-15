@@ -396,3 +396,13 @@ Things to know:
 - Removing the `uptime` label from an open issue hides it from the script, so the next failing run opens a new issue.
 
 Pause it: Actions > Uptime > Disable workflow (or `gh workflow disable uptime.yml`).
+
+## 17. Dependency upgrades and pinned majors
+
+Policy (Round 7, owner decision 2026-10-15: tiered). Minor and patch updates land together (Dependabot group `minor-and-patch`, or one PR with `bun update` plus widened ranges). Each major gets its own PR and ships only with every gate green; 3D library majors (three, @types/three, @react-three/drei, @react-three/fiber, postprocessing, @react-three/postprocessing) also need the strict visual gate (`bun scripts/visual-gate.ts --base main --profile strict`), the perf lane (`bun run e2e:perf`) and the memory gates. `next`, `eslint-config-next`, `react`, `react-dom`, `sharp` and `wrangler` stay exact pins; bump `wranglerVersion` in `deploy.yml` with `wrangler`.
+
+A major that cannot pass is pinned: its Dependabot PR is closed with the reason, `.github/dependabot.yml` gets an `ignore` entry for `version-update:semver-major` with a `# revisit YYYY-MM-DD: reason` comment on the line above, and the table below gets a row (`tests/unit/dependabot.test.ts` keeps both in sync). On the revisit date, try the major again; extend the date with a new reason or remove the pin.
+
+| Package | Pinned to | Latest | Reason | Revisit |
+|---|---|---|---|---|
+| none | | | | |
