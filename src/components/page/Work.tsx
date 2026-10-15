@@ -95,16 +95,37 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
   );
 }
 
-/** One project in the index: title and stack, client, start date and the headline result. */
+/**
+ * One project in the index: its cover thumbnail when it has screenshots (owner request 2026-10-15; an empty
+ * frame keeps the column aligned otherwise), title and stack, client, start date and the headline result.
+ * The thumbnail is the 480 px file, lazy, below the stretched title link, so a click opens the case study.
+ */
 export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "work" });
   const result = pod.results[0];
   const start = formatYearMonth(pod.period.start, locale);
+  const cover = coverImage(pod.assets, locale);
   return (
     <li
       {...podAttrs(pod)}
-      className="grid gap-x-6 gap-y-3 py-5 md:grid-cols-[minmax(0,5fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,3fr)] md:py-6"
+      className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-4 gap-y-3 py-5 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-x-6 md:grid-cols-[136px_minmax(0,5fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,3fr)] md:py-6"
     >
+      <div className="row-span-2 self-start md:row-span-1 md:pt-1" data-row-thumb={cover ? "" : undefined}>
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover.thumb}
+            alt=""
+            width={480}
+            height={300}
+            loading="lazy"
+            decoding="async"
+            className="aspect-[16/10] w-full rounded-lg border border-line object-cover object-top"
+          />
+        ) : (
+          <span className="block aspect-[16/10] w-full rounded-lg border border-dashed border-line" aria-hidden="true" />
+        )}
+      </div>
       <div className="min-w-0">
         <p className="pv-data mb-2 flex flex-wrap gap-x-4">
           <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
@@ -124,7 +145,7 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
       <p className="pv-small hidden md:block md:pt-6">{clientLabel(pod.client, locale)}</p>
       <p className="pv-data hidden md:block md:pt-7">{start}</p>
       {result && (
-        <div className="md:pt-6">
+        <div className="col-start-2 md:col-start-auto md:pt-6">
           <p className="pv-num text-[22px]">{result.value}</p>
           <p className="mt-1 text-[13px] leading-[19px] text-ink-2">{result.label[locale]}</p>
         </div>

@@ -98,7 +98,7 @@ const ASK_ON = JSON.stringify({ enabled: true, turnstileSiteKey: null, asOf: "20
 type HQ = { __hq: { store: { getState: () => { openRoom: (room: string) => void } } } };
 
 async function openStatic(page: Page, path: string) {
-  // The Ask entry points (launcher, About CTA) appear once `GET /api/ask` answers on idle: wait for it, so
+  // The Ask entry points (the launcher) appear once `GET /api/ask` answers on idle: wait for it, so
   // before and after hold the same state.
   const status = page.waitForResponse((r) => r.url().endsWith("/api/ask") && r.request().method() === "GET", { timeout: 60_000 });
   await page.goto(`${path}?tier=static`, { waitUntil: "networkidle" });

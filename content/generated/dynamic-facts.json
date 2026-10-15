@@ -13,7 +13,6 @@
   "credentials": [
     { "id": "ai-103", "reachable": true },
     { "id": "ai-901", "reachable": true },
-    { "id": "az-900", "reachable": true },
-    { "id": "hackerrank-problem-solving-basic", "reachable": true }
+    { "id": "az-900", "reachable": true }
   ]
 }

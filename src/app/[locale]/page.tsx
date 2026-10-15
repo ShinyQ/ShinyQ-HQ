@@ -13,12 +13,12 @@ import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
 import { buildExperienceData } from "@/content/experience";
-import { DYNAMIC_STATS, getDynamicFacts, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
+import { DYNAMIC_STATS, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { formatDate, formatYearMonth } from "@/lib/format";
+import { formatYearMonth } from "@/lib/format";
 import { seoMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
@@ -68,8 +68,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             liveIds={Object.keys(DYNAMIC_STATS)}
             title={t("statsTitle")}
             live={t("ticker.live")}
-            updated={t("ticker.updated", { date: formatDate(getDynamicFacts().asOf, locale) })}
-            pause={t("ticker.pause")}
             extra={(copy) => <TickerVisits locale={locale} label={ts("tile")} live={t("ticker.live")} scope={visitsScope} copy={copy} />}
           />
         }

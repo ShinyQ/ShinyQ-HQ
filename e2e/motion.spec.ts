@@ -75,8 +75,8 @@ test("System brings the OS preference back: the ride is the 150 ms cut, and the 
   await page.keyboard.press("Escape");
   await expect(group).toBeHidden();
   await expect(trigger).toBeFocused();
-  // The landing's Pause motion switch hides under reduced motion.
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-pause")!).display)).toBe("none");
+  // The landing's marquee copy hides under reduced motion (the stats wrap, still).
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-tick-track[aria-hidden='true']")!).display)).toBe("none");
   const ride = await rideTo(page, "L2");
   expect(ride).not.toBeNull();
   expect(ride!.distinctY).toBeLessThanOrEqual(2);
@@ -93,7 +93,7 @@ test("Reduced without the OS flag gives the cut and the reduced page CSS", async
   await pickMotion(page, en.hud.motion.reduced);
   await page.keyboard.press("Escape");
   expect(await motionState(page)).toEqual({ motion: "reduced", reduced: true, system: false, attr: "reduced" });
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-pause")!).display)).toBe("none");
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-tick-track[aria-hidden='true']")!).display)).toBe("none");
   const ride = await rideTo(page, "L2");
   expect(ride!.distinctY).toBeLessThanOrEqual(2);
 });
@@ -186,9 +186,10 @@ test("phones: Motion sits in the menu next to language and sound (Indonesian lab
 test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or System and the page CSS follows", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openPage(page, "/en?tier=static");
-  const pause = page.locator(".hx-pause");
+  // The marquee's aria-hidden copy only shows while the stats scroll.
+  const marqueeCopy = page.locator(".hx-tick-track[aria-hidden='true']");
   await expect(page.locator("html")).toHaveAttribute("data-motion", "full");
-  await expect(pause).toBeVisible();
+  await expect(marqueeCopy).toBeVisible();
   const palette = page.getByRole("dialog", { name: "Command palette" });
   async function run(query: string, label: string) {
     await page.keyboard.press("Control+k");
@@ -202,12 +203,12 @@ test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or Sys
   }
   await run("motion reduced", en.hud.actions.motionReduced);
   await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
-  await expect(pause).toBeHidden();
+  await expect(marqueeCopy).toBeHidden();
   await run("motion system", en.hud.actions.motionSystem);
   await expect(page.locator("html")).not.toHaveAttribute("data-motion");
   // System follows the OS flag, which asks for reduced motion here.
-  await expect(pause).toBeHidden();
+  await expect(marqueeCopy).toBeHidden();
   await page.reload();
   await expect(page.locator("html")).not.toHaveAttribute("data-motion");
-  await expect(pause).toBeHidden();
+  await expect(marqueeCopy).toBeHidden();
 });

@@ -55,22 +55,20 @@ describe("bilingual UI copy", () => {
 
   it("distinguishes anonymous visit analytics from the 30-minute anti-bot cookie", () => {
     expect(SESSION_SECONDS).toBe(30 * 60);
-    expect(en.footer.privacy).toContain("no tracking cookies or tracking IDs");
-    expect(id.footer.privacy).toContain("tanpa cookie atau ID pelacak");
-    for (const text of [en.footer.privacy, en.ask.privacy]) {
+    for (const text of [en.ask.privacy]) {
       expect(text).toContain("30-minute anti-bot cookie");
       expect(text).toMatch(/separate(?:ly)?/);
       expect(text).toMatch(/anonymous visit/i);
     }
-    for (const text of [id.footer.privacy, id.ask.privacy]) {
+    for (const text of [id.ask.privacy]) {
       expect(text).toContain("cookie anti-bot selama 30 menit");
       expect(text).toContain("terpisah");
       expect(text).toMatch(/kunjungan.*anonim/);
     }
+    // The L1:visits drawer, the one remaining opt-out surface, names both browser signals.
     for (const messages of [en, id]) {
-      expect(messages.footer.privacy).toContain("Do Not Track");
-      expect(messages.footer.privacy).toContain("Global Privacy Control");
-      expect(messages.footer.privacy).toContain(messages.stats.optOut);
+      expect(messages.stats.optOutHint).toContain("Do Not Track");
+      expect(messages.stats.optOutHint).toContain("Global Privacy Control");
     }
   });
 

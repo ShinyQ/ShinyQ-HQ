@@ -79,7 +79,7 @@ export function cleanTags(value: unknown): AskTag[] {
  * how this site was built (owner request 2026-10-15). Anything else is dropped by both ends.
  */
 export const ASK_CITE_PATTERN = /^\/(?:contact#how|(?:blog|labs)\/[a-z0-9]+(?:-[a-z0-9]+)*|library)$/;
-/** The public ShinyQ HQ repository (`REPO_URL` in src/lib/site.ts, the footer's source code link). */
+/** The public ShinyQ HQ repository (`REPO_URL` in src/lib/site.ts). */
 export const ASK_REPO_CITE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
 export type AskCiteKind = "how" | "blog" | "project" | "library" | "repo";

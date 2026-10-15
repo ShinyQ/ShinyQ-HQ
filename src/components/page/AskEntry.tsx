@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { isAskEnabled } from "@/ask/status";
 import { ASK_MAX_QUESTION } from "@/ask/protocol";
 import { openAsk } from "@/hud/events";
@@ -94,22 +94,5 @@ export function AskHeroBar() {
         ))}
       </div>
     </div>
-  );
-}
-
-/** Renders its children only once Ask the HQ is known to be on (below-the-fold sections, so no visible shift). */
-export function AskOnly({ children }: { children: ReactNode }) {
-  const status = useAskStatus();
-  return isAskEnabled(status) ? <>{children}</> : null;
-}
-
-/** Compact "Ask AI" call to action (About): opens the dock. */
-export function AskCta() {
-  const t = useTranslations("ask.cta");
-  return (
-    <button type="button" onPointerEnter={preload} onFocus={preload} onClick={() => openAsk(undefined, { source: "dock" })} className="pv-btn pv-btn-primary gap-2" data-testid="ask-cta">
-      <SparkIcon />
-      {t("button")}
-    </button>
   );
 }

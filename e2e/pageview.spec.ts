@@ -434,7 +434,8 @@ test("Visit live site opens the public site in a new tab without an opener, on t
   await expect(page.locator("[data-live-link]")).toHaveCount(0);
 
   await openPage(page, staticTier("/en/labs"));
-  const rowLinks = page.locator("#all-projects [data-live-link]");
+  // Key project cards and index rows both carry the live link.
+  const rowLinks = page.locator("#key-projects [data-live-link], #all-projects [data-live-link]");
   await expect(rowLinks).toHaveCount(livePods.length);
   expect((await rowLinks.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).sort()).toEqual(livePods.map((p) => p.liveUrl).sort());
   // The link sits above the row's stretched title link: clicking it opens the site, not the case study.

@@ -483,7 +483,7 @@ test.describe("tiers and views", () => {
       const ticker = document.querySelector<HTMLElement>("#stats")!;
       window.scrollBy(0, ticker.getBoundingClientRect().bottom - window.innerHeight + 8);
       const button = document.querySelector<HTMLElement>("[data-testid=back-to-3d]")!.getBoundingClientRect();
-      return Array.from(ticker.querySelectorAll<HTMLElement>(".hx-tick-updated, .hx-pause, .hx-tick-view"))
+      return Array.from(ticker.querySelectorAll<HTMLElement>(".hx-tick-view"))
         .map((el) => el.getBoundingClientRect())
         .filter((r) => r.left < button.right && r.right > button.left && r.top < button.bottom && r.bottom > button.top).length;
     });

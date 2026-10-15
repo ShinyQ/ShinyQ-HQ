@@ -79,3 +79,22 @@ describe("Data and ML wing (owner request 2026-10-14)", () => {
     expect(result.error?.issues[0]?.path).toEqual(["floors", "labs", "pods", 0, "publications", 0]);
   });
 });
+
+describe("Pod.selected (owner decision 2026-10-15)", () => {
+  const asset = { src: "/media/x/01-a.webp", alt: { en: "A", id: "A" }, width: 1600, height: 1000, redacted: true };
+
+  it("needs a gallery image and a rank from 1 to 3", () => {
+    expect(PodSchema.safeParse(makePod({ selected: 1, assets: [asset] })).success).toBe(true);
+    expect(PodSchema.safeParse(makePod({ selected: 1 })).error?.issues[0]?.path).toEqual(["selected"]);
+    expect(PodSchema.safeParse(makePod({ selected: 4, assets: [asset] })).success).toBe(false);
+  });
+
+  it("rejects a rank used twice", () => {
+    const content = makeContent();
+    const pod = makePod({ selected: 1, assets: [asset] });
+    content.floors.labs.pods = [pod, { ...pod, id: "other", slug: "other", order: 1 }];
+    const result = SiteContentSchema.safeParse(content);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["floors", "labs", "pods", 1, "selected"]);
+  });
+});

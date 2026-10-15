@@ -6,7 +6,7 @@ import { LOCALES } from "./locales";
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
  * Documented additions (see AGENTS.md): Confidence "self-reported" (C4),
  * Profile.monogram/subheadline/currentRole/timezone/story/principles,
- * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, PostRef.url,
+ * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, Pod.selected, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
  * (ProductionSchema).
@@ -178,6 +178,11 @@ export const PodSchema = z
     id: SlugSchema,
     slug: SlugSchema,
     order: z.number().int().min(0),
+    /**
+     * Owner pick for the landing's "Selected work" (owner decision 2026-10-15): its rank, 1 first. Independent of
+     * `tier`, so a hero can stay a key project without being on the landing. Needs a gallery; ranks are unique.
+     */
+    selected: z.number().int().min(1).max(3).optional(),
     tier: TierSchema,
     accent: AccentSchema,
     wing: WingSchema,
@@ -209,6 +214,9 @@ export const PodSchema = z
     if (pod.liveUrl) {
       const problem = liveUrlProblem(pod.liveUrl);
       if (problem) ctx.addIssue({ code: "custom", path: ["liveUrl"], message: problem });
+    }
+    if (pod.selected !== undefined && pod.assets.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["selected"], message: "Selected work needs at least one gallery image" });
     }
     if (pod.tier === "hero" && (!pod.architecture || pod.architecture.nodes.length < 3)) {
       ctx.addIssue({
@@ -486,6 +494,12 @@ export const SiteContentObjectSchema = z.strictObject({
 });
 
 export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, ctx) => {
+  const ranks = new Set<number>();
+  content.floors.labs.pods.forEach((pod, i) => {
+    if (pod.selected === undefined) return;
+    if (ranks.has(pod.selected)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "selected"], message: `Selected rank ${pod.selected} is used twice` });
+    ranks.add(pod.selected);
+  });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));
   content.floors.labs.pods.forEach((pod, i) => {
     pod.publications?.forEach((id, j) => {

@@ -100,9 +100,10 @@ Open `/en` and press **Boot rover**.
 
 The Classic site (internally the Page View) is the permanent no-WebGL fallback and the version crawlers see.
 
-- The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion, with a Pause motion switch).
+- The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
-- Then the **Ask AI** bar and a live stats ticker, followed by three featured projects with their screenshots.
+- Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
+- On `/labs`, Key projects are the hero projects with screenshots, and every project row with a gallery shows its cover thumbnail.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer
@@ -130,7 +131,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - A panel with visits in the last 30 complete days and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
 - Its drawer filters by Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch).
 - The numbers come from the daily snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates, updated daily). A snapshot older than 48 hours shows a "delayed" note; one older than 7 days hides every stats surface.
-- Every page footer and the observatory drawer carry a **Don't count my visits** switch, stored only in this browser.
+- The observatory drawer carries a **Don't count my visits** switch, stored only in this browser.
 
 ## L1 Highlights Hall
 

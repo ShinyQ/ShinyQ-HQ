@@ -1,9 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import en from "../messages/en.json";
-import id from "../messages/id.json";
 import { PERF_MARKS } from "../src/lib/perf-marks";
 import { parseRumPayload } from "../src/lib/rum/protocol";
-import { asReturningVisitor, enterHQ, openPage, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Measurement probes in the default suite (round 5 P4): the `?perf=1` overlay is there with the flag
@@ -101,11 +99,4 @@ test("automation is never sampled without ?rum=1", async ({ page }) => {
   await waitForFrames(page, 10);
   expect(await beacons(page)).toEqual([]);
   expect(await page.evaluate(() => sessionStorage.getItem("hq:rum"))).toBe("off");
-});
-
-test("the footer tells visitors what the performance beacon sends, in both languages", async ({ page }) => {
-  await openPage(page, "/en/quick?tier=static");
-  await expect(page.getByTestId("footer-privacy")).toHaveText(en.footer.privacy);
-  await openPage(page, "/id/quick?tier=static");
-  await expect(page.getByTestId("footer-privacy")).toHaveText(id.footer.privacy);
 });

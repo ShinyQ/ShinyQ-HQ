@@ -8,20 +8,17 @@ export interface StatTickerProps {
   liveIds: readonly string[];
   title: string;
   live: string;
-  /** "Updated {date}" from the live facts' `asOf`, already formatted. */
-  updated: string;
-  pause: string;
   /** Live items appended to both copies of the track (`copy` is the aria-hidden duplicate): the public visits island. */
   extra?: (copy: boolean) => ReactNode;
 }
 
 /**
  * The landing's stats as a ticker band at the bottom of the first screen (`#stats`, the L1:stats room).
- * CSS only (src/app/landing.css): two copies of the list scroll on the compositor and the second is
- * aria-hidden; the native "Pause motion" checkbox stops every hero animation; under reduced motion the
- * copy and the checkbox hide and the first list becomes one still, scrollable row.
+ * CSS only (src/app/landing.css): a plain marquee (owner request 2026-10-15: no date stamp, no pause
+ * switch). Two copies of the list scroll on the compositor and the second is aria-hidden; hover or
+ * keyboard focus holds it; under reduced motion the copy hides and the first list wraps, still.
  */
-export function StatTicker({ stats, locale, liveIds, title, live, updated, pause, extra }: StatTickerProps) {
+export function StatTicker({ stats, locale, liveIds, title, live, extra }: StatTickerProps) {
   const track = (hidden: boolean) => (
     <ul className="hx-tick-track" aria-hidden={hidden || undefined}>
       {stats.map((stat) => (
@@ -40,18 +37,10 @@ export function StatTicker({ stats, locale, liveIds, title, live, updated, pause
         {title}
       </h2>
       <div className="pv-wrap hx-tick-bar">
-        <p className="pv-data hx-tick-updated">
-          <span className="hx-dot" aria-hidden="true" />
-          {updated}
-        </p>
         <div className="hx-tick-view">
           {track(false)}
           {track(true)}
         </div>
-        <label className="pv-data hx-pause">
-          <input type="checkbox" className="hx-pause-box" />
-          {pause}
-        </label>
       </div>
     </section>
   );

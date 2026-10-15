@@ -148,17 +148,15 @@ test("everything hides and nothing posts when /api/ask is missing", async ({ pag
   await expect(page.getByTestId("ask-hero")).toHaveAttribute("data-off", "");
   await expect(page.getByTestId("ask-hero")).toBeHidden();
   await expect(page.getByTestId("ask-launcher")).toHaveCount(0);
-  await openPage(page, "/en/contact?tier=static");
-  await expect(page.getByTestId("ask-cta")).toHaveCount(0);
   expect(api.posts()).toHaveLength(0);
 });
 
-test("About CTA opens the dock", async ({ page }) => {
+test("About has no Ask the HQ section; the floating launcher stays (owner request 2026-10-15)", async ({ page }) => {
   await mockAsk(page, { status: enabled() });
   await openPage(page, "/en/contact?tier=static");
-  await page.getByTestId("ask-cta").click();
+  await page.getByTestId("ask-launcher").click();
   await expect(dock(page)).toBeVisible();
-  await expect(dock(page).getByTestId("ask-topics")).toBeVisible();
+  await expect(page.locator("#ask")).toHaveCount(0);
 });
 
 test("rate limit shows an inline system message", async ({ page }) => {

@@ -95,9 +95,7 @@
       "enter3dHint": "Kemudikan rover menjelajahi gedung lima lantai"
     },
     "ticker": {
-      "updated": "Diperbarui {date}",
-      "live": "Terkini",
-      "pause": "Jeda animasi"
+      "live": "Terkini"
     }
   },
   "quick": {
@@ -335,9 +333,6 @@
     "home": "Kembali ke Lobi"
   },
   "footer": {
-    "built": "Situs ini berjalan di atas satu dataset yang tervalidasi.",
-    "privacy": "Kunjungan dihitung secara anonim, tanpa cookie atau ID pelacak. Cloudflare menghitung negara, halaman, tampilan 3D atau Situs klasik, dan topik pertanyaan ke AI untuk total publik. Sebagian sesi 3D mengirim rentang performa. Ask AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Do Not Track dan Global Privacy Control menghentikan beacon kunjungan dan performa situs ini. \"Jangan hitung kunjungan saya\" juga menonaktifkan Cloudflare Web Analytics.",
-    "source": "Lihat kode sumber di GitHub",
     "pages": "Halaman",
     "elsewhere": "Tautan lain"
   },
@@ -713,11 +708,6 @@
       "placeholder": "Tanyakan apa saja tentang pekerjaan saya",
       "submit": "Tanya",
       "topicsLabel": "Atau mulai dari"
-    },
-    "cta": {
-      "title": "Ask the HQ",
-      "intro": "Pertanyaan seputar karya, proyek, karier, atau cara menghubungi saya, dijawab oleh AI dari isi situs ini.",
-      "button": "Tanya AI"
     }
   },
   "walk": {

@@ -272,7 +272,7 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
 
   it("keeps the landing top three when the gallery moves it ahead of pods without one", () => {
     const pods = getPods();
-    expect(pickFeaturedPods(pods).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "fraud-review-platform"]);
+    expect(pickFeaturedPods(pods).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant"]);
     expect(pods.findIndex((p) => p.slug === "vendor-management-portal")).toBe(3);
   });
 });
@@ -347,6 +347,6 @@ describe("Data and ML pods (owner request 2026-10-14)", () => {
   });
 
   it("keeps the home page's featured top three", () => {
-    expect(pickFeaturedPods(getPods()).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "fraud-review-platform"]);
+    expect(pickFeaturedPods(getPods()).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant"]);
   });
 });
