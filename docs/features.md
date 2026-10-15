@@ -284,6 +284,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
 - `ask-eval.yml` runs the golden set (47 questions) and the red-team set (52 attacks) against the real models nightly.
 - `content-gap.yml` reports unanswered questions weekly.
+- `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
 
 ## Visual language

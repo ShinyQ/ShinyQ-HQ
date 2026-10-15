@@ -1,0 +1,50 @@
+name: Uptime
+
+# Hourly production check (Round 7 E; owner decision: every hour, not every 15 minutes).
+# scripts/uptime.ts checks / and /en (200 with og tags), GET /api/ask status (no model call, no AI
+# quota), GET /api/stats (a snapshot at most 48 h old) and the newest deploy.yml result on main.
+# A failing check is retried once after 60 s; then one issue labelled `uptime` is opened or updated,
+# and closed with a recovery comment once every check passes (GitHub emails the owner on both).
+# No secrets: the job token reads Actions runs and writes issues. Runbook: docs/deploy.md section 16.
+
+on:
+  schedule:
+    # Minute 17 of every hour (avoids the top-of-hour queue).
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_fail:
+        description: Add a forced failing check to prove the issue path (the next green run closes the issue)
+        type: boolean
+        default: false
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Uptime check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No dependency install step: scripts/uptime.ts imports only dependency-free modules.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - name: Check production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
+          UPTIME_FORCE_FAIL: ${{ inputs.force_fail && 'true' || 'false' }}
+        run: bun scripts/uptime.ts

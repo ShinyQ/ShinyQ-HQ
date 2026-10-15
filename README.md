@@ -233,7 +233,7 @@ The full annotated layout is in [`AGENTS.md`](AGENTS.md#folder-layout).
 
 - **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
 - **CI** (`ci.yml`): check and build in parallel, Playwright in 4 shards and the 3D perf gates in 2 shards against one build, plus a blocking Lighthouse CI job. `main` accepts changes only through PRs with green checks.
-- **Nightly**: Ask evals against the real models, the game-first timeline trend and screenshots; weekly live facts and content-gap reports.
+- **Scheduled**: Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check.
 
 | Gate | Budget |
 |---|---|
