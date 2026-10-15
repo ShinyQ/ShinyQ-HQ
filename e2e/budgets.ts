@@ -21,8 +21,16 @@ export const FLOOR_SCENE_CAPS: Readonly<Record<string, number>> = { L1: 125, RF:
 /** A settled budget check watches at least this many frames and this long (every frame counts). */
 export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 
-/** gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB; CI fails at 450 KB. */
-export const BYTES_3D_BUDGET = { failAt: 450 * 1024, spec: 600 * 1024, minExpected: 100 * 1024 } as const;
+/**
+ * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB; CI fails at 450 KB.
+ * `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on its own load.
+ */
+export const BYTES_3D_BUDGET = {
+  failAt: 450 * 1024,
+  spec: 600 * 1024,
+  minExpected: 100 * 1024,
+  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 },
+} as const;
 
 /** Lighthouse CI script budget per Page View page (`resource-summary:script:size` in lighthouserc.json). */
 export const PAGE_JS_BUDGET = 245_760;
