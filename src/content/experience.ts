@@ -100,7 +100,6 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     locale,
     profile: {
       name: profile.name,
-      monogram: profile.monogram,
       headline: profile.headline[locale],
       role: roleLine(profile.currentRole, locale),
       motto: profile.subheadline[locale],

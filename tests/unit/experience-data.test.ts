@@ -13,7 +13,7 @@ describe("buildExperienceData", () => {
     const en = buildExperienceData("en", names);
     const id = buildExperienceData("id", names);
     expect(en.locale).toBe("en");
-    expect(en.profile.monogram).toBe("KAW");
+    expect(en.profile.name).toBe(getProfile().name);
     expect(en.profile.headline).not.toBe(id.profile.headline);
     expect(id.stats[0].label).toBe(getStats()[0].label.id);
   });

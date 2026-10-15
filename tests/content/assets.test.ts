@@ -67,7 +67,10 @@ describe("assets", () => {
     expect(walk(dir) / 1024 / 1024).toBeLessThan(25);
   });
 
-  it("ships the KAW monogram", () => {
-    expect(existsSync(path.join(root, "public", "brand", "kaw-monogram.svg"))).toBe(true);
+  it("ships the rover brand mark (the KAW monogram is retired)", () => {
+    for (const file of ["rover-mark.svg", "rover-mark-glyph.svg", "rover-mark-mono.svg", "rover-lockup.svg", "rover-lockup-light.svg"]) {
+      expect(existsSync(path.join(root, "public", "brand", file)), file).toBe(true);
+    }
+    expect(existsSync(path.join(root, "public", "brand", "kaw-monogram.svg"))).toBe(false);
   });
 });

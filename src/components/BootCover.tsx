@@ -7,14 +7,13 @@ import { BootCard, type BootWho } from "./BootCard";
  * then it hides the Page View until the 3D HQ draws its first frame, and the boot overlay takes over.
  * It names the owner at first paint and offers the Page View (a real link, works before any JS).
  */
-export async function BootCover({ locale, monogram, who }: { locale: Locale; monogram: string; who: BootWho }) {
+export async function BootCover({ locale, who }: { locale: Locale; who: BootWho }) {
   const t = await getTranslations({ locale, namespace: "hud" });
   const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name: who.name }), t("bootLine5"), t("bootLine6")];
   return (
     <div id="hq-boot-cover" data-testid="boot-cover" className="hq-boot-cover">
       <BootCard
         eyebrow={t("bootEyebrow")}
-        monogram={monogram}
         title={t("bootTitle")}
         lines={lines}
         shown={lines.length}

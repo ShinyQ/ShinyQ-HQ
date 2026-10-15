@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="KAW monogram">
-  <defs>
-    <linearGradient id="e" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#a78bfa"/>
-    </linearGradient>
-  </defs>
-  <rect width="120" height="120" fill="#05050c"/>
-  <polygon points="60,4 112,32 112,88 60,116 8,88 8,32" fill="#0f0f19" stroke="url(#e)" stroke-width="2"/>
-  <polygon points="60,18 98,39 98,81 60,102 22,81 22,39" fill="none" stroke="#6366f1" stroke-opacity="0.45"/>
-  <text x="60" y="69" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, monospace" font-weight="700" font-size="26" letter-spacing="2" fill="#f4f4f5">KAW</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="ShinyQ HQ rover mark"><title>ShinyQ HQ rover mark</title><defs><linearGradient id="icon-g" gradientUnits="userSpaceOnUse" x1="22" y1="26" x2="98" y2="96"><stop offset="0" stop-color="#22D3EE"/><stop offset=".55" stop-color="#6366F1"/><stop offset="1" stop-color="#A78BFA"/></linearGradient><filter id="icon-f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter></defs><rect width="120" height="120" rx="26" fill="#070A16"/><rect x="22" y="26" width="76" height="70" rx="15" fill="url(#icon-g)" opacity=".45" filter="url(#icon-f)"/><path d="M82 26V15" stroke="url(#icon-g)" stroke-width="5" stroke-linecap="round"/><circle cx="82" cy="11" r="7" fill="#F472B6"/><rect x="14" y="100" width="32" height="12" rx="6" fill="#6366F1"/><rect x="74" y="100" width="32" height="12" rx="6" fill="#6366F1"/><circle cx="22" cy="106" r="2.2" fill="#070A16" opacity=".55"/><circle cx="30" cy="106" r="2.2" fill="#070A16" opacity=".55"/><circle cx="38" cy="106" r="2.2" fill="#070A16" opacity=".55"/><circle cx="82" cy="106" r="2.2" fill="#070A16" opacity=".55"/><circle cx="90" cy="106" r="2.2" fill="#070A16" opacity=".55"/><circle cx="98" cy="106" r="2.2" fill="#070A16" opacity=".55"/><rect x="22" y="26" width="76" height="70" rx="15" fill="#0F172A" stroke="url(#icon-g)" stroke-width="6"/><rect x="32" y="37" width="56" height="45" rx="8" fill="#04121A"/><path d="M39 60L47 51L55 60M65 60L73 51L81 60" fill="none" stroke="#22D3EE" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 71H65" stroke="#22D3EE" stroke-width="5.5" stroke-linecap="round"/></svg>

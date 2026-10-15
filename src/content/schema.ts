@@ -5,7 +5,7 @@ import { LOCALES } from "./locales";
 /**
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
  * Documented additions (see AGENTS.md): Confidence "self-reported" (C4),
- * Profile.monogram/subheadline/currentRole/timezone/story/principles,
+ * Profile.subheadline/currentRole/timezone/story/principles,
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, Pod.selected, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
@@ -62,7 +62,6 @@ export const PrincipleSchema = z.strictObject({
 export const ProfileSchema = z.strictObject({
   name: nonEmpty,
   handle: nonEmpty,
-  monogram: nonEmpty,
   headline: LocalizedTextSchema,
   subheadline: LocalizedTextSchema,
   currentRole: z.strictObject({

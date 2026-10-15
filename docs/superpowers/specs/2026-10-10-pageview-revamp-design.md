@@ -33,7 +33,7 @@ Owner request: "for the Page View its looks so AI and need full revamp on the de
 
 URLs and in-page anchors stay stable: `#stats`, `#skills`, `#certifications` (Home), `#y{year}`, `#workshop` (Journey), `#posts`, `#research`, `#publications`, `#talks` (Library), `#results`, `#architecture`, `#stack`, `#gallery` (case study), `#cv`, `#channels` (Contact). The room catalog (`experience/missions/rooms.ts`) points at these. Skills and certifications move to About visually, but Home keeps `#skills` and `#certifications` sections so `/#skills` deep links still land (Home renders compact versions: the skills groups as chip rows and the certification list).
 
-**Header** (`SiteHeader`, sticky, glass): brand (KAW monogram square, name, mono subline "ShinyQ HQ"), primary nav (4 items with floor id prefix on desktop), tools (Missions `>_`, Search with shortcut, EN/ID switch). Active item: `aria-current="page"` plus a 2 px floor-colored rule at the header's bottom edge. Child routes (`/labs/x`) mark their parent.
+**Header** (`SiteHeader`, sticky, glass): brand (rover mark tile, revised 2026-10-15 from the KAW monogram square; name, mono subline "ShinyQ HQ"), primary nav (4 items with floor id prefix on desktop), tools (Missions `>_`, Search with shortcut, EN/ID switch). Active item: `aria-current="page"` plus a 2 px floor-colored rule at the header's bottom edge. Child routes (`/labs/x`) mark their parent.
 
 **Below 1024 px** (`lg`): header row with brand, Missions (icon only), Search (icon only), language; a second row with the 4 nav items as equal tabs (no hamburger, no hidden menu). The desktop nav (with floor id prefixes) starts at 1024 px.
 

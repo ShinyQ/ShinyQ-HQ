@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://kurniadi.pages.dev"><img src="public/brand/kaw-monogram.svg" width="88" height="88" alt="KAW monogram"></a>
+<a href="https://kurniadi.pages.dev"><img src="public/brand/rover-mark.svg" width="88" height="88" alt="ShinyQ HQ rover mark"></a>
 
 # ShinyQ HQ
 

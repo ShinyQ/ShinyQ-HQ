@@ -9,6 +9,8 @@ import { BRAND_PHOTO_WIDTHS, brandPhotoSrc, brandPhotoSrcSet } from "@/lib/brand
 import { webpChunks, webpSize } from "../helpers/webp";
 
 const pub = (src: string) => path.join(process.cwd(), "public", src);
+/** The rover brand mark files (scripts/brand-marks.ts) and their README; everything else in public/brand is a photo. */
+const BRAND_FILES = ["README.md", "rover-lockup-light.svg", "rover-lockup.svg", "rover-mark-glyph.svg", "rover-mark-mono.svg", "rover-mark.svg"];
 
 describe("owner portrait (C5 revised 2026-10-13)", () => {
   it("ships square WebPs without metadata at every width", () => {
@@ -21,7 +23,7 @@ describe("owner portrait (C5 revised 2026-10-13)", () => {
   });
 
   it("is the only photo in public/brand", () => {
-    expect(readdirSync(pub("brand")).sort()).toEqual(["kaw-monogram.svg", ...BRAND_PHOTO_WIDTHS.map((w) => path.basename(brandPhotoSrc(w)))].sort());
+    expect(readdirSync(pub("brand")).sort()).toEqual([...BRAND_FILES, ...BRAND_PHOTO_WIDTHS.map((w) => path.basename(brandPhotoSrc(w)))].sort());
   });
 
   it("renders round, named after the owner, lazy at low priority (never loads under the boot cover, never the LCP)", () => {

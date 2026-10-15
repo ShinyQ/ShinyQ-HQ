@@ -1,4 +1,5 @@
 import { kioskRect, LOBBY } from "../../config";
+import { ROVER_MARK_3D, roverMarkExtent } from "./roverMark3d";
 
 /**
  * Curved certification wall: badges on an arc around the plaza center, each facing it. Two rows of
@@ -143,8 +144,9 @@ export function skillsWallLayout(groups: readonly { label: string; items: readon
   return { h: Math.round(h * 100) / 100, column, textWidth, labelLines, itemTop };
 }
 
-/** Monogram hexagon radius and height on the hologram pedestal. */
-export const HOLOGRAM = { hexRadius: 2.3, y: 3.4 } as const;
+/** The rover mark on the hologram pedestal (floors/lobby/roverMark3d.ts): head center height, swept radius and top at rest. */
+const MARK_EXTENT = roverMarkExtent();
+export const HOLOGRAM = { y: ROVER_MARK_3D.y, radius: MARK_EXTENT.radius, top: MARK_EXTENT.top } as const;
 /** Half of the name/headline text block width (Text maxWidth 14). */
 const TITLE_HALF_WIDTH = 7;
 /** Troika's "normal" line height is about 1.2 em. */
@@ -176,7 +178,7 @@ export function lobbyElements(statCount: number, ringTurn = 0): Box[] {
   const kb = kioskRect();
   const out: Box[] = [
     box("pedestal", h.x, h.z, h.radius + 0.2, h.radius + 0.2, 0, 0.62),
-    box("monogram", h.x, h.z, HOLOGRAM.hexRadius, HOLOGRAM.hexRadius, 0.62, HOLOGRAM.y + HOLOGRAM.hexRadius + BOB),
+    box("rover-mark", h.x, h.z, HOLOGRAM.radius, HOLOGRAM.radius, 0.62, HOLOGRAM.top + BOB),
     box("title", h.x, h.z, TITLE_HALF_WIDTH, TITLE_HALF_WIDTH, TITLE_BOTTOM, TITLE_TOP),
     // The skills wall title floats 0.3 u above the wall.
     box("skills-wall", sw.x, sw.z, sw.w / 2, sw.d / 2 + 0.05, 0, sw.h + 0.8),

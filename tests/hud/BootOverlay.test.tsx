@@ -17,7 +17,7 @@ const who = { name: profile.name, headline: profile.headline.en, motto: profile.
 function renderOverlay() {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <BootOverlay monogram={profile.monogram} who={who} />
+      <BootOverlay who={who} />
     </NextIntlClientProvider>,
   );
 }

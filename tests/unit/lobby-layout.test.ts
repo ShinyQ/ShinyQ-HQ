@@ -27,8 +27,8 @@ const STATS = getStats().length;
 const TURNS = Array.from({ length: 24 }, (_, i) => (i / 24) * Math.PI * 2);
 /** The walkable lane ring: the rover's footprint around the lane radius, up to its height. */
 const RING = { inner: LOBBY.laneRadius - ROVER.radius - 0.5, outer: LOBBY.laneRadius + ROVER.radius + 0.5 };
-/** Elements stacked on the hologram column by design (pedestal, monogram, title above them). */
-const COLUMN = new Set(["pedestal", "monogram", "title"]);
+/** Elements stacked on the hologram column by design (pedestal, rover mark, title above them). */
+const COLUMN = new Set(["pedestal", "rover-mark", "title"]);
 
 const pairs = (boxes: Box[]) => boxes.flatMap((a, i) => boxes.slice(i + 1).map((b) => [a, b] as const));
 

@@ -46,7 +46,6 @@ export function makeContent(): SiteContent {
     profile: {
       name: "Test Person",
       handle: "test",
-      monogram: "TP",
       headline: lt("Software Engineer and AI Engineer"),
       subheadline: lt("Builds things"),
       currentRole: { title: lt("Consultant"), org: "Example", since: "2026-02" },

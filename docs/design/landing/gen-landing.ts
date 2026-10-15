@@ -11,6 +11,7 @@ import { toGalleryImages } from "../../../src/content/media";
 import type { Pod } from "../../../src/content/schema";
 import { clientLabel } from "../../../src/content/selectors";
 import { ACCENT_TEXT, FLOOR_ACCENT, WING_ACCENT } from "../../../src/lib/accent";
+import { roverMarkBody } from "../../../src/lib/brand-mark";
 import { formatDate, formatPeriod } from "../../../src/lib/format";
 
 const L = "en" as const;
@@ -33,7 +34,7 @@ const CUBE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke
 const SPARK = `<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5c.5 3.9 2.1 5.5 6 6-3.9.5-5.5 2.1-6 6-.5-3.9-2.1-5.5-6-6 3.9-.5 5.5-2.1 6-6Z"/></svg>`;
 
 const header = `<header class="site-header"><div class="wrap bar">
-<a class="brand" href="#"><span class="brand-mark" aria-hidden="true">${esc(profile.monogram)}</span><span class="brand-name">${esc(profile.name)}<small>${esc(t("meta.siteName"))}</small></span></a>
+<a class="brand" href="#"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 120 120" style="flex:none">${roverMarkBody("tile", "mock-mark")}</svg><span class="brand-name">${esc(profile.name)}<small>${esc(t("meta.siteName"))}</small></span></a>
 <nav aria-label="${esc(t("nav.label"))}"><ul class="nav">${NAV.map((n) => `<li><a href="#" style="--fc:var(--${FLOOR_ACCENT[n.floor]})"><span class="fl">${n.floor}</span>${esc(t(`nav.${n.key}`))}</a></li>`).join("")}</ul></nav>
 <div class="tools"><button class="icon-btn hide-sm" type="button"><span aria-hidden="true" style="font-family:var(--mono);color:var(--cyan)">&gt;_</span>${esc(t("hud.launcher.missions"))}</button><nav aria-label="${esc(t("nav.language"))}" class="lang"><a href="#" aria-current="true">EN</a><a href="#">ID</a></nav></div>
 </div><nav aria-label="${esc(t("nav.mobile"))}" class="mobile-nav">${NAV.map((n) => `<a href="#" style="--fc:var(--${FLOOR_ACCENT[n.floor]})">${esc(t(`nav.${n.key}`))}</a>`).join("")}</nav></header>`;
