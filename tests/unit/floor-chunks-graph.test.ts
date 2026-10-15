@@ -13,6 +13,7 @@ const LAZY_ONLY = [
   "src/experience/floors/chunks/labs.ts",
   "src/experience/floors/chunks/library.ts",
   "src/experience/floors/chunks/roof.ts",
+  "src/hud/drawer/ascii.ts",
   "src/hud/drawer/OpsBody.tsx",
   "src/hud/drawer/ReactorBody.tsx",
   "src/hud/drawer/ResearchBody.tsx",
