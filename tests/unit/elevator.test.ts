@@ -144,6 +144,28 @@ describe("destination gate", () => {
     expect(r.held).toBeCloseTo(0.04);
   });
 
+  it("holds past PREPARE_TIMEOUT while the destination chunk loads, counting chunkHeld instead of held", () => {
+    let r: Ride | null = closing;
+    for (let i = 0; i < 20; i++) r = advanceRide(r!, 0.25, { atDoor: true, reduced: false, ready: false, hold: true });
+    expect(r).toMatchObject({ stage: "closing", t: STAGE_TIME.closing });
+    expect(r!.held ?? 0).toBe(0);
+    expect(r!.chunkHeld).toBeCloseTo(5);
+    expect(doorsOpen(r, "L1", false)).toBe(0);
+    // Chunk in: the usual preparation wait starts from zero, then the car moves once ready.
+    r = advanceRide(r!, 0.02, { atDoor: true, reduced: false, ready: false, hold: false })!;
+    expect(r).toMatchObject({ stage: "closing" });
+    expect(r.held).toBeCloseTo(0.02);
+    r = advanceRide(r, 0.02, { atDoor: true, reduced: false, ready: true, hold: false })!;
+    expect(r).toMatchObject({ stage: "moving", t: 0 });
+    expect(r.chunkHeld).toBeCloseTo(5);
+  });
+
+  it("holds reduced motion at the door while the chunk loads", () => {
+    const r = advanceRide(ride(), 3, { atDoor: true, reduced: true, ready: true, hold: true })!;
+    expect(r.stage).toBe("toDoor");
+    expect(r.chunkHeld).toBeCloseTo(3);
+  });
+
   it("gives up after PREPARE_TIMEOUT of real frame time", () => {
     let r: Ride | null = closing;
     let frames = 0;

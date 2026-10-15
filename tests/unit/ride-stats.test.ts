@@ -14,11 +14,18 @@ function sampleRide(held: number) {
 describe("ride stats", () => {
   it("counts dolly frames, car heights, the biggest jump and the shaders linked while moving", () => {
     const s = sampleRide(0.3);
-    expect(s).toMatchObject({ from: "L1", to: "L3", frames: 10, dollyFrames: 7, distinctY: 7, timedOut: false, programs: 1 });
+    expect(s).toMatchObject({ from: "L1", to: "L3", frames: 10, dollyFrames: 7, distinctY: 7, timedOut: false, programs: 1, chunkHeld: 0 });
     expect(s.held).toBeCloseTo(0.3);
     expect(s.maxStep).toBeCloseTo(8 / 28);
     expect(s.longestFrameMs).toBeCloseTo(300);
     expect(s.elapsedMs).toBeCloseTo(9 * 16 + 300);
+  });
+
+  it("records the longest chunk hold", () => {
+    const stats = startRideStats("L1", "L3", 8);
+    stepRideStats(stats, { stage: "closing", y: 0, frameDt: 0.016, held: 0, chunkHeld: 0.5, programs: 10 });
+    stepRideStats(stats, { stage: "closing", y: 0, frameDt: 0.016, held: 0, chunkHeld: 2.25, programs: 10 });
+    expect(finishRideStats(stats, 10).chunkHeld).toBeCloseTo(2.25);
   });
 
   it("flags a wait that hit the timeout", () => {

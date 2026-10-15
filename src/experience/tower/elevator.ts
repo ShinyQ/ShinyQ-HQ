@@ -11,6 +11,8 @@ export interface Ride {
   t: number;
   /** Seconds the car waited at closed doors for the destination floor (see PREPARE_TIMEOUT). */
   held?: number;
+  /** Seconds the car waited at closed doors for the destination floor's code chunk (Round 7 B; no timeout). */
+  chunkHeld?: number;
 }
 
 /** Fixed stage lengths in seconds. The dolly length depends on the distance. */
@@ -68,15 +70,20 @@ export interface RideOptions {
   reduced: boolean;
   /** The destination floor is ready (`destinationReady` in ridePrep.ts); the car waits at closed doors until then. */
   ready?: boolean;
+  /** The destination floor's chunk has not settled (floors/floorChunks.ts): never move, whatever the wait. */
+  hold?: boolean;
   /** Most ride time this frame may add (`rideCap`); defaults to RIDE_CAP.min. */
   cap?: number;
 }
 
 /**
  * Enters `moving` once the destination is ready or the wait hit PREPARE_TIMEOUT; until then returns
- * `waiting` (doors closed) with the wait grown by the frame time, not the capped ride time.
+ * `waiting` (doors closed) with the wait grown by the frame time, not the capped ride time. While the
+ * destination chunk loads (`hold`) the car never moves and that time counts as `chunkHeld`, so the
+ * preparation timeout only starts once the floor can mount: a ride never shows an empty floor.
  */
-function enterMoving(ride: Ride, frameDt: number, ready: boolean, waiting: Ride): Ride {
+function enterMoving(ride: Ride, frameDt: number, ready: boolean, hold: boolean, waiting: Ride): Ride {
+  if (hold) return { ...waiting, chunkHeld: (ride.chunkHeld ?? 0) + frameDt };
   const held = ride.held ?? 0;
   if (ready || held >= PREPARE_TIMEOUT) return { ...ride, stage: "moving", t: 0, held };
   return { ...waiting, held: held + frameDt };
@@ -85,19 +92,19 @@ function enterMoving(ride: Ride, frameDt: number, ready: boolean, waiting: Ride)
 /**
  * Advances the ride by one frame of `frameDt` seconds. Returns null when the rover has left the car on
  * the new floor. `toDoor` runs on the frame time (the rover drives in real time); every other stage
- * adds at most `cap`. The car only starts moving once `ready` (or after PREPARE_TIMEOUT): at the end of
+ * adds at most `cap`. The car only starts moving once `ready` (or after PREPARE_TIMEOUT, and never while `hold`): at the end of
  * `closing`, or at the door under reduced motion.
  */
-export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, ready = true, cap = RIDE_CAP.min }: RideOptions): Ride | null {
+export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, ready = true, hold = false, cap = RIDE_CAP.min }: RideOptions): Ride | null {
   if (ride.stage === "toDoor") {
     if (!atDoor) return { ...ride, t: ride.t + frameDt };
-    return reduced ? enterMoving(ride, frameDt, ready, ride) : { ...ride, stage: "boarding", t: 0 };
+    return reduced ? enterMoving(ride, frameDt, ready, hold, ride) : { ...ride, stage: "boarding", t: 0 };
   }
   const duration = stageDuration(ride, reduced);
   const t = ride.t + Math.min(frameDt, cap);
   if (t < duration) return { ...ride, t };
   const next = reduced && ride.stage === "moving" ? null : NEXT[ride.stage];
-  if (next === "moving") return enterMoving(ride, frameDt, ready, { ...ride, t: duration });
+  if (next === "moving") return enterMoving(ride, frameDt, ready, hold, { ...ride, t: duration });
   return next ? { ...ride, stage: next, t: 0 } : null;
 }
 

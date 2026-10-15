@@ -47,6 +47,7 @@ const ride: RideSummary = {
   longestFrameMs: 33.4,
   held: 0.2,
   timedOut: false,
+  chunkHeld: 0,
   programs: 0,
   elapsedMs: 2340,
 };

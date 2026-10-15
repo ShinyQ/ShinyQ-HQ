@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { GpuTier } from "../types";
+import { floorChunks, isLazyFloor } from "../floors/floorChunks";
 import { FLOOR_ROOT, getFloorContent } from "../tower/floorRegistry";
 import { precompileFloor, precompileScene } from "./precompile";
 import { isFloorWarm, warmingFloor, warmQueue } from "./warmState";
@@ -41,6 +42,9 @@ export function ProgramWarmup({ tier }: { tier: GpuTier }) {
     let cancelled = false;
     void (async () => {
       for (const id of warmQueue(getHQStore().getState().floor)) {
+        if (cancelled || getHQStore().getState().phase !== "boot") break;
+        // A lazy floor's code must be here before it can mount hidden (Round 7 B).
+        if (isLazyFloor(id)) await floorChunks.load(id).catch(() => null);
         if (cancelled || getHQStore().getState().phase !== "boot") break;
         warmingFloor.set(id);
         // Let React commit the floor (and its Suspense children) before compiling.

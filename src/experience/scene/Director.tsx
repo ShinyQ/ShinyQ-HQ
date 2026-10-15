@@ -8,6 +8,7 @@ import { getHQStore, type HQState } from "@/store/useHQStore";
 import { scrubSign } from "../camera/rigs";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
+import { floorChunks } from "../floors/floorChunks";
 import { openCv, openPalette, openTerminal } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
@@ -400,14 +401,17 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       y = carY(ride, s.reducedMotion);
       if (ride.stage !== "toDoor") {
         local.rideStats ??= startRideStats(ride.from, ride.to, Math.abs(floorY(ride.to) - floorY(ride.from)));
-        stepRideStats(local.rideStats, { stage: ride.stage, y, frameDt: rawDt, held: ride.held ?? 0, programs: programCount(three.gl) });
+        stepRideStats(local.rideStats, { stage: ride.stage, y, frameDt: rawDt, held: ride.held ?? 0, chunkHeld: ride.chunkHeld ?? 0, programs: programCount(three.gl) });
       }
 
       if (store.getState().ride) {
+        // The destination's code chunk loads now if no prefetch did (Round 7 B); the car waits for it.
+        floorChunks.ensure(ride.to);
         const next = advanceRide(ride, dt, {
           atDoor,
           reduced: s.reducedMotion,
           ready: destinationReady(ride.to),
+          hold: !floorChunks.settled(ride.to),
           cap: rideCap(local.typicalDt),
         });
         // Progress within a stage stays in the motion clock; the store changes when a stage starts or the ride ends.
