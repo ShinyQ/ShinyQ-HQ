@@ -3,9 +3,9 @@ import { RoverMark } from "../RoverMark";
 
 const MINOR = new Set(["a", "an", "and", "of", "for", "the", "to", "in", "on", "with", "dan", "di", "ke", "untuk", "yang", "dengan"]);
 
-/** Initials of a project title: the first letters of its first two significant words. */
+/** Initials of a project title: the first letters of its first two significant words ("&" separates, numbers are skipped). */
 export function projectInitials(title: string): string {
-  const words = title.split(/[\s:/]+/).filter((w) => /^\p{L}/u.test(w) && !MINOR.has(w.toLowerCase()));
+  const words = title.split(/[\s:/&]+/).filter((w) => /^\p{L}/u.test(w) && !MINOR.has(w.toLowerCase()));
   return words
     .slice(0, 2)
     .map((w) => w[0]!.toUpperCase())

@@ -223,7 +223,7 @@ In `WorkRow` replace the dashed `<span ... border-dashed ...>` with `<ProjectPla
 - Modify: `e2e/pageview.spec.ts` (landing rows and placeholder assertions)
 - Modify: `docs/features.md` (Classic site landing and Work sections), `AGENTS.md` ("Landing" bullet: More key projects are `moreKeyProjects`; placeholder), `docs/superpowers/plans/2026-10-16-landing-key-projects.md` (tick boxes)
 
-- [ ] **Step 1: e2e.** In the landing test of `e2e/pageview.spec.ts`, after the "More key projects" width check, add:
+- [x] **Step 1: e2e.** In the landing test of `e2e/pageview.spec.ts`, after the "More key projects" width check, add:
 
 ```ts
     // Owner 2026-10-16: the landing lists only key projects with screenshots; image-less pods live on /labs.
@@ -240,10 +240,10 @@ and after `page.goto(staticTier("/en/labs"))`:
     await expect(placeholders.first()).toHaveAttribute("aria-hidden", "true");
 ```
 
-- [ ] **Step 2: Docs.** Update `docs/features.md` (landing: "More key projects" lists key projects with screenshots only; /labs, Quick view: placeholders) and the AGENTS.md "Landing (home hero)" bullet (one sentence each). No em dashes.
+- [x] **Step 2: Docs.** Update `docs/features.md` (landing: "More key projects" lists key projects with screenshots only; /labs, Quick view: placeholders) and the AGENTS.md "Landing (home hero)" bullet (one sentence each). No em dashes.
 
-- [ ] **Step 3: Verify.** `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed` (pageview, static-routes, gallery, labs), then `E2E_PORT=<port> bun run e2e:perf e2e/perf/floors.spec.ts` (L3 hero footprint). If the floors program baseline moved because of the hero, regenerate it per AGENTS.md and say why.
+- [x] **Step 3: Verify.** `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed` (pageview, static-routes, gallery, labs), then `E2E_PORT=<port> bun run e2e:perf e2e/perf/floors.spec.ts` (L3 hero footprint). If the floors program baseline moved because of the hero, regenerate it per AGENTS.md and say why.
 
 - [ ] **Step 4: Captures.** Before (production) and after (served `out/`) of `#work` on `/en`, `#all-projects` on `/en/labs` and `/en/quick` at 1440x900 and 390x844; attach to the PR.
 
-- [ ] **Step 5: Commit** `test(e2e): landing key projects with screenshots and project placeholders` and `docs: key projects and placeholders`.
+- [x] **Step 5: Commit** `test(e2e): landing key projects with screenshots and project placeholders` and `docs: key projects and placeholders`.

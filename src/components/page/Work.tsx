@@ -30,7 +30,7 @@ export async function PodLiveCta({ pod, locale, className = "" }: { pod: Pod; lo
 }
 
 /**
- * A project with its cover (or its headline result when it has no images).
+ * A project with its cover (or a designed placeholder when it has no images).
  * `lead`: full image and two outcomes; `pair`: wide thumb and one outcome; `grid`: thumb and stack logos.
  */
 export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Locale; size: "lead" | "pair" | "grid" }) {

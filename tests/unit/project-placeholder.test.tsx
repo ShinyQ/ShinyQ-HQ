@@ -7,6 +7,9 @@ describe("ProjectPlaceholder", () => {
     expect(projectInitials("Digital Banking Integrations")).toBe("DB");
     expect(projectInitials("Event Ticket Marketplace Backend")).toBe("ET");
     expect(projectInitials("E-Commerce for Digital Products and Training")).toBe("ED");
+    expect(projectInitials("S&P 500 Stock Allocation Optimizer")).toBe("SP");
+    expect(projectInitials("Optimasi Alokasi Saham S&P 500")).toBe("OA");
+    expect(projectInitials("Integrasi Perbankan Digital")).toBe("IP");
     expect(projectInitials("Sentiboard: IndoBERT University Sentiment Dashboard")).toBe("SI");
   });
 

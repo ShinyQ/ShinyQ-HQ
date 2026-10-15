@@ -310,7 +310,12 @@
   }
 
   .pv-ph-film {
-    border-radius: 6px;
+    border-radius: 8px;
+  }
+
+  .pv-shot .pv-ph {
+    border: 0;
+    border-radius: 0;
   }
 
   .pv-feature:hover .pv-feature-title {
