@@ -58,6 +58,8 @@ import { resetWarm } from "./scene/warmState";
 import { isHighlightRoom } from "./floors/lobby/stations";
 import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
+import { floorChunks, floorChunksHandle } from "./floors/floorChunks";
+import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
 import { sceneProbes } from "./fx/probes";
@@ -117,6 +119,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   const first = !started;
   started = true;
   const resume = first ? takeResume() : null;
+  // Deep links (and a language switch that resumes a floor) need their floor's chunk at once (Round 7 B).
+  for (const floor of [startFloor, startRoom ? floorOf(startRoom) : undefined, resume?.floor]) if (floor) floorChunks.ensure(floor);
   const intro = !introSeen();
   if (intro) {
     const architecture = parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture";
@@ -154,6 +158,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     layouts,
     interact: interactRuntime,
     memory: memoryCounts,
+    // Floor chunk states and loads (Round 7 B).
+    floorChunks: floorChunksHandle,
     ridePrep,
     probes: sceneProbes,
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
@@ -570,6 +576,7 @@ export default function Experience({
       <p id="hq-desc" className="sr-only">
         {t("canvasDescription")}
       </p>
+      <FloorChunkPrefetch />
       <Hud data={data} onExit={onExit} onToggleLang={toggleLang} />
       {perf && <PerfOverlay />}
     </div>
