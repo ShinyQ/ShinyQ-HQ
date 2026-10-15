@@ -816,9 +816,9 @@ async function p8Metrics(page: Page, name: string, v: Viewport) {
 
 type RoadsWindow = Window & { __hq: { layouts: { L3: { road: { roads: { id: string; points: { x: number; z: number }[] }[] } } } } };
 
-/** Drives along a wing road to 14 u before its turn, then turns the camera to look east at the road end (reset, then three 45 degree steps left). */
+/** Drives along a wing road to 14 u before its turn (the second to last point; the last enters the reactor ring), then turns the camera to look east at the road end (reset, then three 45 degree steps left). */
 async function p8WingEnd(page: Page, wing: "software" | "ai") {
-  const end = await page.evaluate((id) => (window as unknown as RoadsWindow).__hq.layouts.L3.road.roads.find((r) => r.id === id)!.points[2], wing);
+  const end = await page.evaluate((id) => (window as unknown as RoadsWindow).__hq.layouts.L3.road.roads.find((r) => r.id === id)!.points.at(-2)!, wing);
   await driveTo(page, { x: end.x - 14, z: end.z }, P8_WAIT);
   await page.getByRole("button", { name: en.hud.view.reset }).click();
   for (let i = 0; i < 3; i++) await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();

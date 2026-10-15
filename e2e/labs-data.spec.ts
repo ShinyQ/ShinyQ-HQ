@@ -56,7 +56,8 @@ test("every data pod docks along the spine, and a data pod door opens its drawer
     return {
       doors: l.doors ?? [],
       spine: roads.find((r) => r.id === "data")?.points ?? [],
-      wingZ: Math.abs(roads.find((r) => r.id === "software")?.points[2]?.z ?? 0),
+      // The wing road's straight run lies at the z of its turn, the second to last point (the last enters the ring).
+      wingZ: Math.abs(roads.find((r) => r.id === "software")?.points.at(-2)?.z ?? 0),
       reactor: l.stops!["L3:reactor"],
     };
   });
