@@ -181,7 +181,8 @@ test.describe("Visitor Observatory in the Lobby", () => {
     await open3D(page, "/en#visits");
     await waitForRoom(page, "L1:visits");
     await expect(page.getByTestId("visits-offline")).toHaveText(en.stats.offline);
-    expect(await spectacle(page, "observatoryCountries")).toBe(0);
+    // The station writes this probe from its frame loop, so it is undefined until the globe has rendered once.
+    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(0);
   });
 
   test("reduced motion holds the globe still; L1 stays inside its budget at the station", async ({ page }) => {
