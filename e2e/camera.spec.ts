@@ -134,20 +134,55 @@ async function verticalDrag(page: Page, dy: number) {
 
 /** Moves the mouse to a canvas point whose ray hits no target, so nothing stays hovered (a hovered target hides the "!" bubble). */
 async function hoverNothing(page: Page) {
-  const point = await page.evaluate(() => {
-    const hit = (window as unknown as { __hq: { interact: { hitAt: ((x: number, y: number) => string | null) | null } } }).__hq.interact.hitAt;
-    // Close up (first person), one target can fill the middle of the view: scan out to the edges.
-    for (let fy = 0.2; fy <= 0.8; fy += 0.05) {
-      for (let fx = 0.05; fx <= 0.95; fx += 0.05) {
-        const x = Math.round(innerWidth * fx);
-        const y = Math.round(innerHeight * fy);
-        if (document.elementFromPoint(x, y)?.tagName === "CANVAS" && hit && hit(x, y) === null) return { x, y };
-      }
-    }
-    return null;
-  });
-  if (!point) throw new Error("No canvas point without a target");
-  await page.mouse.move(point.x, point.y);
+  // Point-and-go hovers on the pointer move itself, so confirm through state that nothing ended up hovered
+  // (and pick again if the view still moved a target under the point).
+  await expect
+    .poll(
+      async () => {
+        const point = await page.evaluate(() => {
+          const hit = (window as unknown as { __hq: { interact: { hitAt: ((x: number, y: number) => string | null) | null } } }).__hq.interact.hitAt;
+          // Close up (first person), one target can fill the middle of the view: scan out to the edges.
+          for (let fy = 0.2; fy <= 0.8; fy += 0.05) {
+            for (let fx = 0.05; fx <= 0.95; fx += 0.05) {
+              const x = Math.round(innerWidth * fx);
+              const y = Math.round(innerHeight * fy);
+              if (document.elementFromPoint(x, y)?.tagName === "CANVAS" && hit && hit(x, y) === null) return { x, y };
+            }
+          }
+          return null;
+        });
+        if (!point) return "no canvas point without a target";
+        await page.mouse.move(point.x, point.y);
+        await waitForFrames(page, 5);
+        return page.evaluate(() => (window as unknown as HoverWindow).__hq.store.getState().hover?.item.id ?? null);
+      },
+      { timeout: 15_000 },
+    )
+    .toBeNull();
+}
+
+type HoverWindow = { __hq: { store: { getState: () => { hover: { item: { id: string } } | null } } } };
+
+/**
+ * Waits until the view stops turning: a rotate step eases in, so `forward.x < -0.99` holds while the
+ * camera still turns about 5 to 8 degrees, enough to move a target under a point picked as free.
+ */
+async function waitForViewStill(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const a = await probe(page);
+        await waitForFrames(page, 12);
+        const b = await probe(page);
+        return (
+          Math.hypot(a.forward.x - b.forward.x, a.forward.z - b.forward.z) < 1e-3 &&
+          Math.abs(a.elevation - b.elevation) < 1e-3 &&
+          Math.hypot(a.position[0] - b.position[0], a.position[1] - b.position[1], a.position[2] - b.position[2]) < 1e-2
+        );
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
 }
 
 /** Two-finger pinch through CDP: the distance between the fingers goes from `from` to `to` px. */
@@ -305,6 +340,7 @@ test.describe("wheel zoom and first person", () => {
     await enterFirstPerson(page);
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
     await expect.poll(async () => (await probe(page)).forward.x, { timeout: 15_000 }).toBeLessThan(-0.99);
+    await waitForViewStill(page);
     await hoverNothing(page);
     // The rotate button keeps focus after the click, and Enter on a focused control is that control's.
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
