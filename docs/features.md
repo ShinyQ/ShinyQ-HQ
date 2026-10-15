@@ -42,6 +42,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Point-and-go | Hover or tap a glowing object (room doors, elevator pads, Return pads, teleporters, stations, the Ask Rover kiosk, boards) to see its name and drive there; no free click-to-move | Done |
 | SEO and link previews | Search titles within 60 characters, unique titles, `/` canonical to `/en`, baseline JFIF share cards with `og:image:secure_url`, Person, ProfilePage and SoftwareSourceCode structured data, content-dated sitemap, Search Console and Bing verification, LinkedInBot checks in e2e and the deploy smoke | Done |
 | Fast return | Any floor change more than 40 u from the elevator call pad beams the rover into the car; green "Back to elevator" pads at the far ends of L2 and L3 beam it to the call pad | Done |
+| Floor chunks | Round 7 B: L3, L4 and RF are separate chunks, prefetched after the first frame and on elevator intent, loaded at once on deep links; the car waits at closed doors for a slow chunk; the main 3D path is 16 KB gzip smaller | Done |
 
 ## Controls and first visit
 
@@ -360,8 +361,10 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate | under 450 KB gzip per tier | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 450 KB gzip per tier | `bun run e2e:perf` |
+| Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB gzip | `bun run e2e:perf` |
 
+- Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.
 - The peaks of the intro, every elevator ride and hover count too. During a ride, meshes hidden under a solid slab are skipped (`src/experience/tower/rideCull.ts`).
 - Real-device frame rate is checked with `?perf=1`.
 - The pixel budget (`renderBudget` in `src/experience/scene/settings.ts`) keeps desktops at DPR up to 2 within 8.3 MP and skips composer MSAA from DPR 1.5 up; touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite).
