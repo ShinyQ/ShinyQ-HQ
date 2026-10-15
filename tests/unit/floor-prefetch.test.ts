@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prefetchFor } from "@/experience/floors/floorPrefetch";
+import { prefetchFor, rideRetry } from "@/experience/floors/floorPrefetch";
 
 const idle = { ride: null, picker: null, hover: null };
 
@@ -18,5 +18,27 @@ describe("floor chunk prefetch triggers", () => {
     expect(prefetchFor({ ...idle, picker: { kind: "console" } })).toEqual({ need: [], soon: [] });
     expect(prefetchFor({ ...idle, hover: { item: { kind: "door" } } })).toEqual({ need: [], soon: [] });
     expect(prefetchFor(idle)).toEqual({ need: [], soon: [] });
+  });
+});
+
+describe("failed chunk retry at ride start", () => {
+  const ride = { from: "L1", to: "L3" } as const;
+
+  it("retries a failed target once when a ride appears", () => {
+    const first = rideRetry(null, ride, "failed");
+    expect(first).toEqual({ key: "L1->L3", retry: "L3" });
+    // later store changes of the same ride (stages, doors) never retry again
+    expect(rideRetry(first.key, ride, "failed")).toEqual({ key: "L1->L3", retry: null });
+  });
+
+  it("retries again for the next ride, or for a retargeted one", () => {
+    const done = rideRetry("L1->L3", null, "failed");
+    expect(done).toEqual({ key: null, retry: null });
+    expect(rideRetry(done.key, ride, "failed").retry).toBe("L3");
+    expect(rideRetry("L1->L3", { from: "L1", to: "L4" }, "failed")).toEqual({ key: "L1->L4", retry: "L4" });
+  });
+
+  it("leaves idle, loading, ready and eager targets alone", () => {
+    for (const state of ["idle", "loading", "ready", "eager"] as const) expect(rideRetry(null, ride, state).retry).toBeNull();
   });
 });
