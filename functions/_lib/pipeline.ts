@@ -6,7 +6,7 @@ import { canned, noViewMessage, type CannedKind } from "./messages";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
-import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, routedTopic } from "./scope";
+import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, resolveNickname, routedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack, SafetyData } from "./types";
 
@@ -71,7 +71,9 @@ export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
 }
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
-  const { question, locale, pack, vocabulary, safety, client } = input;
+  const { locale, pack, vocabulary, safety, client } = input;
+  // "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): every routing, retrieval, prompt and check step sees his name.
+  const question = resolveNickname(input.question);
   // Deterministic routing first (T15, spec section 13, owner rules 2026-10-15): no retrieval, no model call, never cached.
   const early = (kind: CannedKind, reason?: PipelineReason, extra: Partial<PipelineResult> = {}): PipelineResult => ({
     text: canned(kind, locale),

@@ -249,6 +249,27 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(r).toMatchObject({ outcome: "decline", reason: "others", calledModel: false, text: MESSAGES.others.en });
   });
 
+  it("treats ShinyQ as Kurniadi's nickname: retrieval, the prompt and the model call", async () => {
+    for (const [q, locale] of [
+      ["Who is ShinyQ?", "en"],
+      ["Apa itu ShinyQ?", "id"],
+    ] as const) {
+      const r = await ask(q, "Kurniadi is an AI and Software Engineer.", locale);
+      expect(r).toMatchObject({ outcome: "answer", calledModel: true });
+      expect(r.chunkIds).toContain("profile");
+      const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+      expect(messages[1].content).not.toMatch(/shinyq/i);
+      expect(messages[1].content).toContain("Kurniadi");
+    }
+  });
+
+  it("keeps ShinyQ HQ as the site name", async () => {
+    const r = await ask("How was ShinyQ HQ built?", "ShinyQ HQ is a static Next.js site.");
+    expect(r.chunkIds).toContain("site-build");
+    const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+    expect(messages[1].content).toBe("How was ShinyQ HQ built?");
+  });
+
   it("sends an opinion about a blocklisted name to the model like any unknown name (S6: no oracle)", async () => {
     const unknown = await ask("What does Kurniadi think of Acme Foods?", "Kurniadi has no information about that on this site.");
     const listed = await ask("What does Kurniadi think of Sari Roti?", "Kurniadi has no information about that on this site.");

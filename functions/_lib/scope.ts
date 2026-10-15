@@ -37,6 +37,16 @@ const SITE: RegExp[] = [
   /\b(?:kamu|anda) (?:dibuat|dibangun|memakai|menggunakan|pakai)\b|\bmodel (?:ai |llm )?apa (?:yang )?(?:kamu|anda)\b/i,
 ];
 
+/**
+ * "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): questions that use it are about him. "ShinyQ HQ"
+ * (this site) and URL parts ("github.com/ShinyQ/...") keep their meaning.
+ */
+const NICKNAME = /(?<![\w/.])shiny[ -]?q(?![ -]?hq\b)(?![\w/])/gi;
+
+export function resolveNickname(question: string): string {
+  return question.replace(NICKNAME, "Kurniadi");
+}
+
 /** A question about this site or its assistant (EN/ID): how it was built, its stack, hosting or model. */
 export function isSiteQuestion(question: string): boolean {
   return SITE.some((re) => re.test(question));

@@ -3,7 +3,7 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
-import { isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, orgAliases, privateTopic } from "../../functions/_lib/scope";
+import { isGeneralAssistantRequest, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, orgAliases, privateTopic, resolveNickname } from "../../functions/_lib/scope";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
@@ -16,6 +16,27 @@ beforeAll(() => {
 
 const originalGolden = golden.items.filter((i) => Number(i.id.slice(1)) <= 32);
 const refuses = (item: (typeof golden.items)[number]) => (item.expect as { refuse?: boolean }).refuse === true;
+
+describe("resolveNickname (owner 2026-10-16: ShinyQ is Kurniadi's nickname)", () => {
+  it.each([
+    ["Who is ShinyQ?", "Who is Kurniadi?"],
+    ["what does shinyq do", "what does Kurniadi do"],
+    ["Apa itu ShinyQ?", "Apa itu Kurniadi?"],
+    ["Is Shiny Q open to freelance work?", "Is Kurniadi open to freelance work?"],
+    ["Siapa Shiny-Q?", "Siapa Kurniadi?"],
+    ["ShinyQ's projects", "Kurniadi's projects"],
+  ])("%s", (q, out) => expect(resolveNickname(q)).toBe(out));
+
+  it.each(["How was ShinyQ HQ built?", "What stack does ShinyQ-HQ use?", "Shiny Q HQ hosting?", "github.com/ShinyQ/ShinyQ-HQ"])("keeps the site name: %s", (q) => {
+    expect(resolveNickname(q)).toBe(q);
+    expect(isSiteQuestion(resolveNickname(q))).toBe(isSiteQuestion(q));
+  });
+
+  it("routes nickname questions like questions about him", () => {
+    expect(isGeneralAssistantRequest(resolveNickname("Who is ShinyQ?"))).toBe(false);
+    expect(privateTopic(resolveNickname("What does ShinyQ do?"))).toBeNull();
+  });
+});
 
 describe("isPerspectiveQuestion", () => {
   it.each([
