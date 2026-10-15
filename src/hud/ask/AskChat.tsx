@@ -9,6 +9,7 @@ import type { ThreadMessage } from "@/ask/thread";
 import { RoverMark } from "@/components/RoverMark";
 import type { Locale } from "@/content/schema";
 import type { DrawerLayout } from "@/hud/drawer/layout";
+import { AskMarkdown } from "./AskMarkdown";
 import { CloseIcon, EditIcon, SendIcon } from "./icons";
 import { anchoredScrollTop, askReducedMotion, scrolledAway } from "./scroll";
 import { AskAsOf, AskCiteLink, AskContactCard, useAskErrorMessage } from "./ui";
@@ -417,10 +418,8 @@ function Message({
   }
   return (
     <li className="max-w-[92%] self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5" data-role="assistant">
-      <p className="text-sm leading-[22px] break-words whitespace-pre-wrap text-ink">
-        <span className="sr-only">{labels.hq}: </span>
-        {message.text}
-      </p>
+      <span className="sr-only">{labels.hq}: </span>
+      <AskMarkdown text={message.text} locale={locale} onNavigate={onCite} className="text-sm leading-[22px] text-ink" />
       {message.cite && <AskCiteLink path={message.cite} locale={locale} onNavigate={onCite} className="mt-1.5 text-xs leading-5" />}
       {message.contact && <AskContactCard contact={message.contact} locale={locale} onNavigate={onCite} className="mt-2" />}
       {message.outcome && message.outcome !== "fallback" && <AskAsOf asOf={message.asOf} locale={locale} className="mt-1.5 text-[11px] leading-4 text-ink-3" />}

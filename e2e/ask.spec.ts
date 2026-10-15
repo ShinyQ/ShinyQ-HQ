@@ -340,6 +340,24 @@ test.describe("phones", () => {
   });
 });
 
+test("markdown answer: a bullet list with site links, blocked links as text, axe passes", async ({ page }) => {
+  await mockAsk(page, {
+    status: enabled(),
+    deltas: ["Two projects fit:\n", "- **Voice AI Contact Center** ([case study](/labs/voice-ai-contact-center))\n", "- Fraud review [x](javascript:alert(1))\n"],
+  });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByRole("textbox", { name: "Your question" }).fill("Which AI projects?");
+  await dock(page).getByRole("textbox", { name: "Your question" }).press("Enter");
+  const answer = thread(page).locator("[data-role='assistant']").last();
+  await expect(answer.locator("ul > li")).toHaveCount(2);
+  await expect(answer.getByRole("link", { name: "case study" })).toHaveAttribute("href", "/en/labs/voice-ai-contact-center");
+  await expect(answer.locator("a[href^='javascript' i]")).toHaveCount(0);
+  await expect(answer).toContainText("Fraud review x");
+  const axe = await new AxeBuilder({ page }).include("[data-testid='ask-dock']").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(axe.violations).toEqual([]);
+});
+
 test("axe: open side panel with an answer", async ({ page }) => {
   await mockAsk(page, { status: enabled() });
   await openPage(page, "/en/labs?tier=static");
