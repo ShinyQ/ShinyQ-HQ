@@ -82,6 +82,11 @@ Workers Scripts Edit on the account.
   `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
+- Rollout order for the 4-hour cadence: the uptime check allows a snapshot at most 12 h old, but the
+  previous daily Worker keeps running until it is redeployed, so merging first would fail the hourly check
+  from about 12:17 UTC on merge day. Deploy this Worker first (`bunx wrangler deploy`; safe because the
+  current site accepts the new snapshot, whose shape is unchanged), confirm a fresh `updatedAt` on
+  `/api/stats` (after the next 4-hour slot), then merge and deploy the site.
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine
   SQL API with the existing `WA_TOKEN`, and `scripts/stats-token-check.ts` already checks that it can

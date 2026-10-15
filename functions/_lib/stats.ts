@@ -3,7 +3,7 @@ import type { PagesContext, StatsEnv } from "./types";
 
 /** Seconds a KV read stays cached at the reading location. */
 export const STATS_KV_CACHE_TTL = 300;
-const OK_CACHE = "public, max-age=600, stale-while-revalidate=86400";
+const OK_CACHE = "public, max-age=600, stale-while-revalidate=3600";
 const EMPTY_CACHE = "public, max-age=300";
 
 const empty = () => new Response(null, { status: 204, headers: { "Cache-Control": EMPTY_CACHE } });
