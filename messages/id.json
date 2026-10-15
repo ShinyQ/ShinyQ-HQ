@@ -33,9 +33,7 @@
   },
   "common": {
     "present": "Sekarang",
-    "readMore": "Baca selengkapnya",
     "caseStudy": "Baca studi kasus",
-    "viewAll": "Lihat semua",
     "stack": "Tech stack",
     "highlights": "Poin utama",
     "previous": "Sebelumnya",
@@ -73,18 +71,11 @@
   "home": {
     "eyebrow": "Agent HQ · Lobi",
     "currentRole": "Saat ini",
-    "ctaQuick": "Lihat ringkasan",
-    "ctaLabs": "Jelajahi Labs",
     "statsTitle": "Sekilas",
-    "wingsTitle": "Product dan AI engineering",
-    "wingsIntro": "Pekerjaan software engineering saya sejak 2019, berdampingan dengan pekerjaan AI enterprise sejak 2026.",
     "journeyTitle": "Pekerjaan terbaru",
     "skillsTitle": "Dinding keahlian",
     "certsTitle": "Sertifikasi",
     "howTitle": "Cara kerja",
-    "directoryTitle": "Direktori gedung",
-    "directoryIntro": "Pilih lantai yang ingin dijelajahi. Setiap lantai juga punya halaman di situs klasik.",
-    "storyTitle": "Latar belakang",
     "seeWork": "Lihat karya",
     "selectedWork": "Karya pilihan",
     "allProjects": "Semua {count} proyek",
@@ -351,7 +342,6 @@
     "elsewhere": "Tautan lain"
   },
   "root": {
-    "redirecting": "Membuka ShinyQ HQ…",
     "choose": "Pilih bahasa"
   },
   "hud": {
@@ -491,7 +481,6 @@
       "stars": "{count} bintang"
     },
     "world": {
-      "lectern": "Meja baca",
       "read": "Baca",
       "comms": "Tautan kontak",
       "cvHint": "Buka penampil CV",
@@ -563,8 +552,6 @@
     "next": "Ruang berikutnya",
     "more": "Pilihan lainnya",
     "readme": "README",
-    "readmeOn": "Tampilkan README",
-    "readmeOff": "Sembunyikan README",
     "readmeHint": "README: tekan t untuk tampilkan atau sembunyikan",
     "keyResults": "Hasil utama",
     "gallery": "Galeri",
@@ -619,9 +606,7 @@
       "starOne": "1 bintang",
       "stars": "{count} bintang"
     },
-    "directory": "Direktori",
-    "signSoftware": "Product Engineering",
-    "signAi": "AI Engineering"
+    "directory": "Direktori"
   },
   "gallery": {
     "title": "Galeri",
