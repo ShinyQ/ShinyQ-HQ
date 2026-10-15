@@ -237,7 +237,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 
 ## Ask the HQ (AI Q&A)
 
-Visitors ask questions about Kurniadi's work, projects, career, contact details and the professional views he has written down (principles, engineering and AI practice, tools, career advice) and get short answers grounded only in this site's content (EN and ID).
+Visitors ask questions about Kurniadi's work, projects, career, contact details, the professional views he has written down (principles, engineering and AI practice, tools, career advice) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`, answers cite this repository), and get short answers grounded only in this site's content (EN and ID).
 
 ### Where
 
@@ -263,7 +263,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details 
 ### Freshness and operations
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
-- `ask-eval.yml` runs the golden set (44 questions) and the red-team set (52 attacks) against the real models nightly.
+- `ask-eval.yml` runs the golden set (47 questions) and the red-team set (52 attacks) against the real models nightly.
 - `content-gap.yml` reports unanswered questions weekly.
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
 
