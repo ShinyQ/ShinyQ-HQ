@@ -4,9 +4,22 @@ import sitemap from "@/app/sitemap";
 import { Analytics } from "@/components/Analytics";
 import { getContent } from "@/content/load";
 import { LOCALES } from "@/content/schema";
-import { PERSON_ID, breadcrumbJsonLd, pageJsonLd, personJsonLd, podJsonLd, postJsonLd, serializeJsonLd, websiteJsonLd } from "@/lib/jsonld";
+import {
+  PERSON_ID,
+  WEBSITE_ID,
+  addressJsonLd,
+  breadcrumbJsonLd,
+  organizationJsonLd,
+  pageJsonLd,
+  personJsonLd,
+  podJsonLd,
+  postJsonLd,
+  profilePageJsonLd,
+  serializeJsonLd,
+  websiteJsonLd,
+} from "@/lib/jsonld";
 import { seoFor } from "@/lib/seo";
-import { allPagePaths } from "@/lib/routes";
+import { allPagePaths, lastModified } from "@/lib/routes";
 import {
   SITE_URL,
   languageAlternates,
@@ -14,6 +27,8 @@ import {
   pageMetadata,
   resolveBeaconToken,
   resolveSiteUrl,
+  resolveVerificationToken,
+  searchVerification,
 } from "@/lib/site";
 
 const { floors } = getContent();
@@ -37,6 +52,16 @@ describe("site config", () => {
     expect(resolveBeaconToken('abc"><script>')).toBeUndefined();
     expect(resolveBeaconToken("0123456789abcdef0123456789abcdef")).toBe("0123456789abcdef0123456789abcdef");
   });
+
+  it("renders search engine verification tags only for well-formed tokens", () => {
+    expect(searchVerification({})).toBeUndefined();
+    expect(resolveVerificationToken('x"><script>')).toBeUndefined();
+    expect(resolveVerificationToken("short")).toBeUndefined();
+    expect(searchVerification({ GOOGLE_SITE_VERIFICATION: " AbC_dEf-123456789 " })).toEqual({ google: "AbC_dEf-123456789" });
+    expect(searchVerification({ BING_SITE_VERIFICATION: "0123456789ABCDEF0123456789ABCDEF" })).toEqual({
+      other: { "msvalidate.01": "0123456789ABCDEF0123456789ABCDEF" },
+    });
+  });
 });
 
 describe("pageMetadata", () => {
@@ -46,8 +71,17 @@ describe("pageMetadata", () => {
     expect(meta.title).toEqual({ absolute: "Labs" });
     expect(meta.alternates?.languages).toEqual({ en: "/en/labs", id: "/id/labs", "x-default": "/en/labs" });
     expect(meta.openGraph).toMatchObject({ locale: "id_ID", url: "/id/labs", siteName: "ShinyQ HQ", type: "website" });
-    expect(meta.openGraph?.images).toEqual([{ url: "/og/id.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Labs" }]);
+    expect(meta.openGraph?.images).toEqual([
+      { url: "/og/id.jpg", ...(SITE_URL.startsWith("https:") ? { secureUrl: `${SITE_URL}/og/id.jpg` } : {}), width: 1200, height: 630, type: "image/jpeg", alt: "Labs" },
+    ]);
     expect(meta.twitter).toMatchObject({ card: "summary_large_image", title: "Labs" });
+  });
+
+  it("keeps the share title for Open Graph and Twitter when the document title is shorter", () => {
+    const meta = pageMetadata({ locale: "en", path: "/labs", title: "A long share title", documentTitle: "Short" });
+    expect(meta.title).toEqual({ absolute: "Short" });
+    expect(meta.openGraph).toMatchObject({ title: "A long share title" });
+    expect(meta.twitter).toMatchObject({ title: "A long share title" });
   });
 
   it("maps the root path without a trailing segment", () => {
@@ -82,8 +116,27 @@ describe("sitemap and robots", () => {
     expect(entries.every((e) => e.url.startsWith(`${SITE_URL}/`))).toBe(true);
   });
 
-  it("points robots at the sitemap", () => {
-    expect(robots()).toMatchObject({ rules: { userAgent: "*", allow: "/" }, sitemap: `${SITE_URL}/sitemap.xml` });
+  it("points robots at the sitemap without the non-standard Host line", () => {
+    expect(robots()).toEqual({ rules: { userAgent: "*", allow: "/" }, sitemap: `${SITE_URL}/sitemap.xml` });
+  });
+
+  it("dates posts, Writing, Journey, Home and Quick view from content, and nothing else", () => {
+    const post = hostedPosts[0];
+    expect(lastModified(`/blog/${post.slug}`)).toBe(post.date);
+    const newestPost = [...floors.library.posts].map((p) => p.date).sort().at(-1);
+    expect(lastModified("/library")).toBe(newestPost);
+    expect(lastModified("/journey")).toMatch(/^\d{4}-\d{2}(-\d{2})?$/);
+    expect(lastModified("/")! >= newestPost!).toBe(true);
+    expect(lastModified("/")! >= lastModified("/journey")!).toBe(true);
+    expect(lastModified("/quick")).toBe(lastModified("/"));
+    for (const path of ["/labs", "/contact", "/cv", `/labs/${floors.labs.pods[0].slug}`]) expect(lastModified(path), path).toBeUndefined();
+    const today = new Date().toISOString().slice(0, 10);
+    for (const path of allPagePaths()) {
+      const date = lastModified(path);
+      if (date) expect(date.slice(0, today.length) <= today, path).toBe(true);
+    }
+    const entry = sitemap().find((e) => e.url === `${SITE_URL}/en/blog/${post.slug}`);
+    expect(entry?.lastModified).toBe(post.date);
   });
 });
 
@@ -92,7 +145,38 @@ describe("JSON-LD", () => {
     const person = personJsonLd("en");
     const contact = floors.roof.contact;
     expect(person).toMatchObject({ "@type": "Person", "@id": PERSON_ID, name: getContent().profile.name });
-    expect(person.sameAs).toEqual(expect.arrayContaining([contact.linkedin, contact.github]));
+    expect(person.sameAs).toEqual(expect.arrayContaining([contact.linkedin, contact.github, contact.googleScholar]));
+  });
+
+  it("gives the person the employer, the city, the university and skills from content", () => {
+    const { profile } = getContent();
+    const person = personJsonLd("en");
+    expect(person.worksFor).toEqual({ "@type": "Organization", name: "Metrodata", alternateName: "PT Mitra Integrasi Informatika" });
+    expect(person.address).toEqual({ "@type": "PostalAddress", addressLocality: "Jakarta", addressCountry: "Indonesia" });
+    expect(person.alumniOf).toEqual([{ "@type": "CollegeOrUniversity", name: "Telkom University" }]);
+    expect(person.knowsAbout).toEqual(expect.arrayContaining([getContent().skills[0].items[0]]));
+    expect(organizationJsonLd(profile.currentRole.org).name).toBe("Metrodata");
+    expect(organizationJsonLd("Jublia")).toEqual({ "@type": "Organization", name: "Jublia" });
+    expect(addressJsonLd("Jakarta")).toEqual({ "@type": "PostalAddress", addressLocality: "Jakarta" });
+  });
+
+  it("marks the About page as the owner's ProfilePage", () => {
+    for (const locale of LOCALES) {
+      const types = pageJsonLd(locale, "/contact").map((d) => d["@type"]);
+      expect(types).toEqual(["BreadcrumbList", "ProfilePage"]);
+      const page = profilePageJsonLd(locale);
+      expect(page).toMatchObject({ url: `${SITE_URL}/${locale}/contact`, isPartOf: { "@id": WEBSITE_ID } });
+      expect(page.mainEntity).toMatchObject({ "@type": "Person", "@id": PERSON_ID, name: getContent().profile.name });
+      expect(page.mainEntity).not.toHaveProperty("@context");
+    }
+  });
+
+  it("lists a pod's public repositories as SoftwareSourceCode parts", () => {
+    const pod = floors.labs.pods.find((p) => p.repos?.length)!;
+    const parts = podJsonLd(pod, "en").hasPart as { "@type": string; codeRepository: string }[];
+    expect(parts.map((p) => p.codeRepository)).toEqual(pod.repos);
+    expect(parts.every((p) => p["@type"] === "SoftwareSourceCode")).toBe(true);
+    expect(podJsonLd(floors.labs.pods.find((p) => !p.repos?.length)!, "en")).not.toHaveProperty("hasPart");
   });
 
   it("describes pods as CreativeWork and posts as BlogPosting", () => {
