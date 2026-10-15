@@ -120,6 +120,29 @@ describe("markdown answers (owner request 2026-10-16)", () => {
     expect(r.context).toContain("[link: /labs/voice-ai-contact-center]");
   });
 
+  it("keeps link notes outside the context budget, so the same chunks fit as without them", () => {
+    const plainPack: KnowledgePack = { ...pack, chunks: pack.chunks.map((c) => ({ ...c, url: undefined })) };
+    const strip = (context: string) => context.replace(/ \[link: [^\]]+\]$/gm, "");
+    const questions = [
+      "We need a RAG chatbot for our customer service team, can you build it?",
+      "What does Kurniadi think about code review and testing?",
+      "Tell me about all his AI projects, papers and posts",
+    ];
+    let clippedSeen = false;
+    for (const locale of ["en", "id"] as const) {
+      for (const q of questions) {
+        const linked = retrieve(pack, q, locale);
+        const plain = retrieve(plainPack, q, locale);
+        expect(linked.chunks.map((c) => c.id)).toEqual(plain.chunks.map((c) => c.id));
+        expect(strip(linked.context)).toBe(plain.context);
+        expect(plain.context.length).toBeLessThanOrEqual(6000);
+        const last = linked.context.split("\n").at(-1) ?? "";
+        if (/\.\.\.( \[as of [^\]]+\])?( \[link: [^\]]+\])?$/.test(last) && plain.context.length > 5000) clippedSeen = true;
+      }
+    }
+    expect(clippedSeen).toBe(true);
+  });
+
   it("runs the content checks on the plain text", () => {
     const q = "Tell me about the voice AI contact center project";
     const r = retrieve(pack, q, "en");

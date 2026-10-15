@@ -198,10 +198,11 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     const target = chunk.url ? askLinkTarget(chunk.url) : null;
     const link = target?.kind === "site" || (target?.kind === "external" && target.href === ASK_REPO_CITE) ? ` [link: ${chunk.url}]` : "";
     const head = `- ${body}`;
-    const tail = `${dated}${link}`;
-    // A clipped line keeps its date and link: the body is cut, never the annotations.
-    const clipped = head.length + tail.length > budget ? `${head.slice(0, Math.max(0, budget - tail.length - 4)).replace(/\s+\S*$/, "")}...${tail}` : `${head}${tail}`;
-    lines.push(clipped);
+    const line = `${head}${dated}`;
+    // A clipped line keeps its date: the body is cut, never the annotation.
+    const clipped = line.length > budget ? `${head.slice(0, Math.max(0, budget - dated.length - 4)).replace(/\s+\S*$/, "")}...${dated}` : line;
+    // Link notes ride outside the budget (short, one per chunk), so retrieval matches the plain context.
+    lines.push(`${clipped}${link}`);
     used.push(chunk);
     budget -= clipped.length + 1;
   }
