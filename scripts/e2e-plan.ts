@@ -74,7 +74,7 @@ export const RULES: Rule[] = [
   // Perf lane (PERF=1): `bun run e2e:perf` and the CI `3D perf gates` job run it, never the regular suite.
   { test: /^e2e\/perf\//, specs: [] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
