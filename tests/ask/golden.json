@@ -46,8 +46,8 @@
     {"id": "q42", "lang": "en", "q": "How does Kurniadi monitor his AI services in production?", "facts": ["OpenTelemetry", "Bicep", "Grafana"], "expect": {"any": ["opentelemetry", "bicep", "alert", "grafana"], "none": ["i treat", "my ai"]}},
     {"id": "q43", "lang": "en", "q": "What accuracy did Kurniadi's fine-tuned IndoBERT thesis model reach?", "facts": ["89%", "1,350 held-out tweets"], "expect": {"any": ["89"], "none": ["95%", "master"]}},
     {"id": "q44", "lang": "id", "q": "Apa saja proyek data dan machine learning Kurniadi?", "facts": ["Data dan ML", "N-BEATS", "IFEST 2021"], "expect": {"any": ["n-beats", "indobert", "ifest"], "any2": ["sentimen", "forecast", "prediksi", "crawler", "optimasi"]}},
-    {"id": "q45", "lang": "en", "q": "How was this site built?", "facts": ["Next.js 16", "Cloudflare Pages", "React Three Fiber"], "expect": {"any": ["next.js", "cloudflare", "three.js", "react three fiber"], "none": ["my site", "my portfolio"]}},
+    {"id": "q45", "lang": "en", "q": "How was this site built?", "facts": ["Next.js 16", "Cloudflare Pages", "React Three Fiber"], "expect": {"any": ["next.js", "cloudflare", "three.js", "react three fiber"], "none": ["my site", "my portfolio", "codex"]}},
     {"id": "q46", "lang": "en", "q": "What tech stack does ShinyQ HQ use?", "facts": ["Next.js 16", "three.js", "Workers AI"], "expect": {"any": ["next.js", "three.js", "react three fiber"], "any2": ["cloudflare", "workers ai", "tailwind", "typescript"]}},
-    {"id": "q47", "lang": "id", "q": "Apakah situs ini dibuat dengan AI?", "facts": ["AI coding agent", "GitHub Copilot"], "expect": {"any": ["ai coding agent", "agent", "copilot", "claude code", "codex"], "none": ["saya membangun"]}}
+    {"id": "q47", "lang": "id", "q": "Apakah situs ini dibuat dengan AI?", "facts": ["AI coding agent", "GitHub Copilot"], "expect": {"any": ["ai coding agent", "agent", "copilot", "claude code"], "none": ["saya membangun", "codex"]}}
   ]
 }
