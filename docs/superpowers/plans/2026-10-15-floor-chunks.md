@@ -1008,6 +1008,48 @@ git commit -m "test(perf): measure the main 3D path and cap each floor chunk"
 
 ---
 
+### Task 5b: README renderer on demand (headroom to the 15 KB target)
+
+Measured after Task 5: main path lite 405.2 KB, full 428.8 KB, a 14.9 KB drop (Tasks 3 and 4 added about 0.4 KB to the main path). The drawer's README view (`t` key or the "..." menu) is the largest remaining module that only runs on demand: `src/hud/drawer/ascii.ts` (about 1.7 KB gzip alone, type-only imports).
+
+**Files:**
+- Modify: `src/hud/drawer/RoomDrawer.tsx` (line 14 import, the `readmeText` memo near line 348 and the README `<pre>` branch)
+- Test: `tests/hud/RoomDrawer.test.tsx`; `tests/unit/floor-chunks-graph.test.ts` (`LAZY_ONLY` gets `src/hud/drawer/ascii.ts`)
+
+**Interfaces:**
+- Consumes: `renderReadme(view, labels)` from `./ascii` (unchanged).
+- Produces: nothing new; the README view renders the same text once the module has loaded.
+
+- [ ] **Step 1: Write the failing tests.** Add `"src/hud/drawer/ascii.ts"` to `LAZY_ONLY` in `tests/unit/floor-chunks-graph.test.ts`. In `tests/hud/RoomDrawer.test.tsx`, make every README assertion wait with `findBy*` (the text arrives after the module loads). Run `bunx vitest run tests/unit/floor-chunks-graph.test.ts tests/hud/RoomDrawer.test.tsx`: the graph test fails (ascii is in the main closure).
+
+- [ ] **Step 2: Implement.** In `RoomDrawer.tsx` drop the static import and load the renderer the first time README opens:
+
+```tsx
+type RenderReadme = (typeof import("./ascii"))["renderReadme"];
+
+/** The README renderer loads the first time the README view opens (Round 7 B: keeps it out of the main 3D chunk). */
+function useReadmeRenderer(open: boolean): RenderReadme | null {
+  const [render, setRender] = useState<RenderReadme | null>(null);
+  useEffect(() => {
+    if (!open || render) return;
+    let alive = true;
+    void import("./ascii").then((m) => alive && setRender(() => m.renderReadme));
+    return () => {
+      alive = false;
+    };
+  }, [open, render]);
+  return render;
+}
+```
+
+Use it in the drawer: `const renderReadme = useReadmeRenderer(readme);` and compute `readmeText` with `readme && renderReadme ? renderReadme(view, {...same labels}) : ""`. While `readme` is on and the renderer is not loaded yet, the README branch shows `<p className="pv-small text-ink-2" role="status">{t("loading")}</p>` instead of the `<pre>` (same `drawer.loading` string as the lazy bodies). Keep everything else (focus, `aria-pressed`, the `t` key) unchanged.
+
+- [ ] **Step 3: Verify.** `bunx vitest run tests/unit tests/hud`, `bun run typecheck`, `bun run lint`, then `bun run build && E2E_PORT=4791 PERF=1 bunx playwright test e2e/perf/bytes-3d.spec.ts --workers=1`. Expected: main path lite at most 405.1 KB and full at most 428.7 KB (a drop of at least 15 KB from 420.1 and 443.7); record the numbers. Also run `E2E_PORT=4791 bunx playwright test e2e/labs.spec.ts -g -i readme` (the README e2e) and keep it green.
+
+- [ ] **Step 4: Commit** `perf(hud): load the drawer README renderer on demand`.
+
+---
+
 ### Task 6: E2E: no blank floor, deep links and idle prefetch
 
 **Files:**
