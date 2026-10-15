@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createFloorChunks, isLazyFloor, LAZY_FLOORS, rideChunkHold, speculativePrefetchOn } from "@/experience/floors/floorChunks";
+import { createFloorChunks, floorMount, isLazyFloor, LAZY_FLOORS, rideChunkHold, speculativePrefetchOn } from "@/experience/floors/floorChunks";
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -135,6 +135,63 @@ describe("floor chunks", () => {
       expect(rideChunkHold(chunks, "L1")).toBe(false);
       expect(rideChunkHold(chunks, "L2")).toBe(false);
       expect(calls).toEqual({ L3: 0, L4: 0, RF: 1 });
+    });
+  });
+
+  describe("floor mounting (no React.lazy retry for a loaded chunk)", () => {
+    it("keeps the loaded module for a synchronous render, null before", async () => {
+      const { chunks, d } = setup();
+      expect(chunks.module("L3")).toBeNull();
+      const load = chunks.load("L3");
+      expect(chunks.module("L3")).toBeNull();
+      d.L3.resolve("labs");
+      await load;
+      expect(chunks.module("L3")).toBe("labs");
+    });
+
+    it("notifies subscribers on every state change until they unsubscribe", async () => {
+      const { chunks, d } = setup();
+      const seen: string[] = [];
+      const off = chunks.subscribe(() => seen.push(chunks.state("L4")));
+      const first = chunks.load("L4");
+      d.L4.reject(new Error("offline"));
+      await first.catch(() => undefined);
+      d.L4 = deferred<string>();
+      const again = chunks.load("L4");
+      d.L4.resolve("library");
+      await again;
+      expect(seen).toEqual(["loading", "failed", "loading", "ready"]);
+      off();
+      chunks.load("RF");
+      expect(seen).toHaveLength(4);
+    });
+
+    it("renders eager floors as they are, a loaded chunk directly, nothing while it loads", async () => {
+      const { chunks, d } = setup();
+      expect(floorMount(chunks, "L1")).toBe("eager");
+      expect(floorMount(chunks, "L2")).toBe("eager");
+      expect(floorMount(chunks, "RF")).toBe("wait");
+      const load = chunks.load("RF");
+      expect(floorMount(chunks, "RF")).toBe("wait");
+      d.RF.resolve("roof");
+      await load;
+      expect(floorMount(chunks, "RF")).toBe("module");
+    });
+
+    it("hands a floor whose chunk ever failed to React.lazy for the rest of the session", async () => {
+      const { chunks, d } = setup();
+      const first = chunks.load("L3");
+      d.L3.reject(new Error("offline"));
+      await first.catch(() => undefined);
+      expect(chunks.hasFailed("L3")).toBe(true);
+      expect(floorMount(chunks, "L3")).toBe("lazy");
+      d.L3 = deferred<string>();
+      const again = chunks.load("L3");
+      expect(floorMount(chunks, "L3")).toBe("lazy");
+      d.L3.resolve("labs");
+      await again;
+      expect(floorMount(chunks, "L3")).toBe("lazy");
+      expect(chunks.hasFailed("L4")).toBe(false);
     });
   });
 });

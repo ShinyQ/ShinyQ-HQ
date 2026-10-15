@@ -9,7 +9,7 @@ import type { LabsLabels } from "../floors/Labs";
 import type { LibraryLabels } from "../floors/Library";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import type { RoofLabels } from "../floors/Roof";
-import { lazyLabs, lazyLibrary, lazyRoof } from "../floors/lazyFloors";
+import { labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { DrawnWork } from "../scene/DrawnWorkHook";
@@ -98,31 +98,34 @@ export function Tower({
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
   const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
-  // L3, L4 and RF load on demand (floors/floorChunks.ts); their Suspense fallback is nothing, so the
-  // floor's own slab (FloorLevel) is what shows until the chunk arrives. Rides hold for it (elevator.ts).
-  const Labs = lazyLabs();
-  const Library = lazyLibrary();
-  const Roof = lazyRoof();
+  // L3, L4 and RF load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
+  // ordinary update like L1 and L2 (`floorMount`); until then the floor's own slab (FloorLevel) shows.
+  // Rides hold for the chunk (elevator.ts).
+  useFloorChunks(near);
+  const Labs = labsFloor();
+  const Library = libraryFloor();
+  const Roof = roofFloor();
 
   return (
     <group name="tower">
       {FLOOR_IDS.map((id) => {
         const isNear = near.includes(id);
+        const loaded = (id === "L3" ? Labs : id === "L4" ? Library : id === "RF" ? Roof : true) !== null;
         return (
           <FloorLevel key={id} layout={layouts[id]} near={isNear}>
-            {isNear && (
+            {isNear && loaded && (
               <Suspense fallback={null}>
                 {id === "L1" ? (
                   <Lobby data={data} labels={labels.lobby} tier={tier} />
-                ) : id === "L3" ? (
+                ) : id === "L3" && Labs ? (
                   <Labs data={data} labels={labels.labs} tier={tier} />
                 ) : id === "L2" ? (
                   <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
-                ) : id === "L4" ? (
+                ) : id === "L4" && Library ? (
                   <Library data={data} labels={labels.library} tier={tier} />
-                ) : (
+                ) : Roof ? (
                   <Roof data={data} labels={labels.roof} tier={tier} />
-                )}
+                ) : null}
                 {layouts[id].returnPad && <ReturnPadSign at={layouts[id].returnPad} label={labels.returnPad} tier={tier} />}
                 <FloorPrep floor={id} />
               </Suspense>

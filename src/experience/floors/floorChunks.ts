@@ -36,6 +36,12 @@ export interface FloorChunks<M extends Record<LazyFloor, unknown>> {
   /** `now()` of the first request this session, or null. */
   requestedAt(id: FloorId): number | null;
   snapshot(): Record<FloorId, FloorChunkState>;
+  /** The loaded module, or null until its import resolved (renders a ready floor without React.lazy). */
+  module<K extends LazyFloor>(id: K): M[K] | null;
+  /** The floor's import failed at least once this session (it then renders through React.lazy). */
+  hasFailed(id: FloorId): boolean;
+  /** Called after every state change; returns the unsubscribe function. */
+  subscribe(listener: () => void): () => void;
 }
 
 export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
@@ -45,24 +51,34 @@ export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
   const states = new Map<LazyFloor, FloorChunkState>();
   const pending = new Map<LazyFloor, Promise<unknown>>();
   const requested = new Map<LazyFloor, number>();
+  const modules = new Map<LazyFloor, unknown>();
+  const failed = new Set<LazyFloor>();
+  const listeners = new Set<() => void>();
+
+  const setState = (id: LazyFloor, next: FloorChunkState) => {
+    states.set(id, next);
+    for (const listener of [...listeners]) listener();
+  };
 
   function load<K extends LazyFloor>(id: K): Promise<M[K]> {
     const inFlight = pending.get(id);
     if (inFlight) return inFlight as Promise<M[K]>;
     if (!requested.has(id)) requested.set(id, now());
-    states.set(id, "loading");
     const promise = loaders[id]().then(
       (mod) => {
-        states.set(id, "ready");
+        modules.set(id, mod);
+        setState(id, "ready");
         return mod;
       },
       (error: unknown) => {
-        states.set(id, "failed");
+        failed.add(id);
         pending.delete(id);
+        setState(id, "failed");
         throw error;
       },
     );
     pending.set(id, promise);
+    setState(id, "loading");
     return promise;
   }
 
@@ -83,7 +99,30 @@ export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
     settled: (id) => state(id) !== "idle" && state(id) !== "loading",
     requestedAt: (id) => (isLazyFloor(id) ? (requested.get(id) ?? null) : null),
     snapshot: () => Object.fromEntries(ALL_FLOORS.map((id) => [id, state(id)])) as Record<FloorId, FloorChunkState>,
+    module: <K extends LazyFloor>(id: K) => (modules.get(id) as M[K] | undefined) ?? null,
+    hasFailed: (id) => isLazyFloor(id) && failed.has(id),
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
   };
+}
+
+/**
+ * How the tower mounts a floor. A loaded chunk renders its component directly, so the floor commits in
+ * an ordinary update like an eager floor. Through React.lazy it would commit in a Suspense retry, which
+ * React throttles for up to 300 ms when a nested boundary (the L4 newsroom decor waiting for fonts)
+ * suspends; a font that resolves inside that window joins the floor's first commit, so FloorPrep
+ * compiled and pinned its programs on some runs and not on others. While the chunk loads nothing
+ * renders (the slab shows); a floor whose import ever failed keeps React.lazy, whose rejection reaches
+ * the canvas error boundary (the crash path).
+ */
+export type FloorMount = "eager" | "module" | "lazy" | "wait";
+
+export function floorMount(chunks: Pick<FloorChunks<Record<LazyFloor, unknown>>, "module" | "hasFailed">, id: FloorId): FloorMount {
+  if (!isLazyFloor(id)) return "eager";
+  if (chunks.hasFailed(id)) return "lazy";
+  return chunks.module(id) === null ? "wait" : "module";
 }
 
 /**
