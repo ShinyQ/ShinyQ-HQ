@@ -42,7 +42,7 @@ test.describe("command palette", () => {
 
   test("search button and / open it; Esc returns focus", async ({ page }) => {
     await openPage(page, "/en/labs");
-    const button = page.getByRole("button", { name: /Open search/ });
+    const button = page.getByRole("button", { name: /open search/i });
     await button.click();
     await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
     await page.keyboard.press("Escape");
@@ -69,7 +69,7 @@ test.describe("command palette", () => {
   test("is a full-screen sheet on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: /Open search/ }).click();
+    await page.getByRole("button", { name: /open search/i }).click();
     const box = await page.getByRole("dialog", { name: "Command palette" }).boundingBox();
     expect(box?.width).toBe(390);
     expect(box?.height).toBe(844);
