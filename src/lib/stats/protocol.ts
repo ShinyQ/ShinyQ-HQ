@@ -1,5 +1,5 @@
 /**
- * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written once a day by
+ * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written every 4 hours by
  * the `hq-stats` Cron Worker (workers/stats/) and read by the 3D HQ and the Classic site. Pure and
  * client-safe: no imports, a hand-written validator (no zod on the client).
  *

@@ -1,8 +1,9 @@
 # hq-stats: public visit stats Cron Worker
 
-Daily job (`0 1 * * *`, UTC) behind the public visit stats (Layer 1). It reads two sources with one
-read-only Account Analytics token, keeps one rollup per finalized UTC day, and writes the public
-snapshot that `GET /api/stats` (Pages Function, `functions/api/stats.ts`) serves.
+Job every 4 hours (`0 */4 * * *`, UTC: 00, 04, 08, 12, 16 and 20 o'clock) behind the public visit stats
+(Layer 1). It reads two sources with one read-only Account Analytics token, keeps one rollup per
+finalized UTC day, and writes the public snapshot (days so far, today included) that `GET /api/stats`
+(Pages Function, `functions/api/stats.ts`) serves.
 
 ```mermaid
 flowchart LR
@@ -29,13 +30,31 @@ flowchart LR
   bucket, sessions at "55+", median explore bucket) sums each day's `perf` over the period; the median
   is weighted (the first bucket where the running count reaches half the total).
 - Run: `src/run.ts`. The first run backfills 183 days (Web Analytics keeps 184, Analytics Engine 3
-  months) and starts the ledger at the first day with data, which becomes `since`. Every later run
-  appends only the days after the ledger's last day, so a finalized day is never recomputed; a failed
-  run writes nothing and the next one catches up. Stored days without `perf` (rolled up before it
-  existed) that are inside the Analytics Engine retention (90 days) get `perf` filled once from one
-  extra `perf_events` query; nothing else of those days changes, and older days stay without it (no
-  data). At most 3 GraphQL requests, 4 SQL queries (asks, visits, perf, and one perf backfill), 2 KV
-  reads and 2 KV writes per run.
+  months) and starts the ledger at the first day with data, which becomes `since`. An empty ledger
+  fetches the whole backfill window again on every run until the first day finalizes (bootstrap only).
+- Finalized and provisional days: a UTC day is finalized (`finalizedThrough(now)`) once it ended at least
+  `SETTLE_MS` (1 hour) ago, so late events land first. Finalized days are appended to the ledger once and
+  never recomputed. Every run also rolls up the days after that from the same queries: yesterday during
+  the 00:00 run (it is not settled yet) and today so far. These provisional days enter the public
+  snapshot but are never stored; the next run recomputes them. `d30` is the 30 days ending today (today
+  partial) and `updatedAt` is the run time. A failed run writes nothing, so the last good snapshot stays,
+  and the next one catches up every missed day.
+- Perf backfill: stored days without `perf` (rolled up before it existed) that are inside the Analytics
+  Engine retention (90 days) get `perf` filled once from one extra `perf_events` query; nothing else of
+  those days changes, and older days stay without it (no data).
+- Run budget (routine run): 1 Web Analytics GraphQL request, 3 Analytics Engine SQL queries (asks,
+  visits, perf; plus one perf backfill query at most), 1 KV read, and the snapshot write every run. The
+  ledger is written only when a day finalizes or perf is filled, so at most 2 KV writes per run and 12
+  a day.
+
+Limits checked 2026-10-16:
+
+| Limit | Value | This Worker |
+|---|---|---|
+| GraphQL Analytics API | 300 queries per 5 minutes per user | 1 per run, 6 a day |
+| Cron Triggers | several schedules per Worker | 1 schedule |
+| Workers KV (free plan) | 1,000 writes a day | at most 12 a day (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
+| Analytics Engine SQL API | no per-query charge on this plan | 3 to 4 queries per run |
 
 ## Configuration
 
@@ -57,8 +76,11 @@ Workers Scripts Edit on the account.
 - Dry run against production data (in-memory KV, prints the snapshot, writes nothing):
   `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
   The token stays in the environment; the script never prints it.
-- Manual deploy (fallback when the CI deploy token lacks Workers permissions): from this folder,
-  `bunx wrangler deploy`, then `bunx wrangler secret put WA_TOKEN` and
+- Manual deploy (what runs today: `STATS_WORKER_DEPLOY=false` because the CI deploy token lacks Workers
+  permissions; use the owner's wrangler login): from this folder, `bunx wrangler deploy` (this also
+  registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next 4-hour slot,
+  `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
+  secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine

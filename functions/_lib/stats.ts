@@ -16,7 +16,7 @@ async function etagOf(body: string): Promise<string> {
 
 /**
  * `GET /api/stats`: the public visit stats snapshot (`StatsSnapshotV1`, src/lib/stats/protocol.ts) that
- * the hq-stats Cron Worker writes to KV once a day. No parameters. Validated again here, so a broken
+ * the hq-stats Cron Worker writes to KV every 4 hours. No parameters. Validated again here, so a broken
  * value never reaches a page; 204 (no body) when the kill switch is off or nothing valid is stored.
  */
 export function createStatsHandler() {

@@ -275,8 +275,8 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
 | Analytics Engine | `perf_events` | Anonymous performance beacon, one point per sampled 3D session (created on first write) |
 | Analytics Engine | `visit_events` | Public visit stats beacon, one point per page lifetime (created on first write) |
-| KV | `STATS_KV` | Public visit stats: daily ledger `stats:days:v1` and snapshot `stats:v1` |
-| Worker | `hq-stats` | Public visit stats Cron Worker (`0 1 * * *` UTC, no route), `workers/stats/` |
+| KV | `STATS_KV` | Public visit stats: ledger of finalized days `stats:days:v1` and snapshot `stats:v1` |
+| Worker | `hq-stats` | Public visit stats Cron Worker (`0 */4 * * *` UTC, every 4 hours, no route), `workers/stats/` |
 | Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
@@ -301,7 +301,7 @@ Multiply by 4 for an estimate of 3D sessions (25% sampling). Other useful groupi
 Pipeline and contract: appendix 06 section 4.1 and [`workers/stats/README.md`](../workers/stats/README.md). Pieces:
 
 - `POST /api/visit` (`functions/api/visit.ts`) writes one point per page lifetime to Analytics Engine `visit_events` (binding `VISIT_EVENTS`).
-- The Cron Worker `hq-stats` (`workers/stats/`, cron `0 1 * * *` UTC) reads Web Analytics (GraphQL) and Analytics Engine (`ask_events`, `visit_events`) and writes KV `STATS_KV`: the daily ledger `stats:days:v1` and the snapshot `stats:v1`.
+- The Cron Worker `hq-stats` (`workers/stats/`, cron `0 */4 * * *` UTC: 00, 04, 08, 12, 16 and 20 o'clock) reads Web Analytics (GraphQL) and Analytics Engine (`ask_events`, `visit_events`, `perf_events`) and writes KV `STATS_KV`: the ledger `stats:days:v1` (a UTC day is appended once, an hour after it ended, and never recomputed) and the snapshot `stats:v1` (every run, over the ledger plus the provisional days after it, today so far, which are never stored). A routine run makes 1 GraphQL request, 3 SQL queries, 1 KV read and at most 2 KV writes (12 a day, inside the free plan's 1,000 writes a day per account); see `workers/stats/README.md` for the limits.
 - `GET /api/stats` (`functions/api/stats.ts`) serves the snapshot (204 until the first one exists).
 - Kill switch: `STATS_ENABLED = "false"` in `wrangler.toml`, then deploy.
 
@@ -310,6 +310,8 @@ Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only)
 `CF_STATS_TOKEN`: Cloudflare dashboard > My Profile > API Tokens > Create Custom Token, permission Account / Account Analytics / Read only, your account, TTL 90 days; then `gh secret set CF_STATS_TOKEN --env production --repo ShinyQ/ShinyQ-HQ` and run a deploy (it rewrites `WA_TOKEN`).
 
 If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+
+Manual deploy (what runs today, `STATS_WORKER_DEPLOY=false`, because the CI deploy token lacks Workers permissions): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next 4-hour slot `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
 
 Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
 

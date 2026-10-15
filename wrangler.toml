@@ -49,8 +49,8 @@ dataset = "perf_events"
 binding = "VISIT_EVENTS"
 dataset = "visit_events"
 
-# KV namespace "STATS_KV": the public visit stats snapshot (`stats:v1`) and the daily ledger
-# (`stats:days:v1`), written once a day by the hq-stats Cron Worker (workers/stats/wrangler.toml binds
+# KV namespace "STATS_KV": the public visit stats snapshot (`stats:v1`) and the ledger of finalized days
+# (`stats:days:v1`), written by the hq-stats Cron Worker every 4 hours (workers/stats/wrangler.toml binds
 # the same id) and read by GET /api/stats. KV namespace IDs are not secret.
 [[kv_namespaces]]
 binding = "STATS_KV"

@@ -138,7 +138,7 @@ describe("buildSnapshot", () => {
     expect(buildSnapshot([], "2026-10-13", CHIPS)).toBeNull();
   });
 
-  it("sums the last 30 complete days and every day since launch", () => {
+  it("sums the 30 days ending on the last day (today included) and every day since launch", () => {
     const days = [
       day("2026-09-01", { visits: 100, pageViews: 300, countries: ["GB", "ID"], floors: { L2: 300 }, mode: { threeD: 1, classic: 9 }, asks: { total: 5, topics: { career: 5 }, chips: { "work-best": 1 } } }),
       day("2026-10-01", { visits: 20, pageViews: 50, countries: ["SG", "ID"], floors: { L3: 30, L1: 20 }, mode: { threeD: 4, classic: 1 }, asks: { total: 3, topics: { ai: 2 }, chips: { "ai-voice": 2 } } }),
