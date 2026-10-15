@@ -170,10 +170,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 47 unique items with a 45 pass threshold", () => {
-    expect(golden.items).toHaveLength(47);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(47);
-    expect(golden.passThreshold).toBe(45);
+  it("has 59 unique items with a 56 pass threshold", () => {
+    expect(golden.items).toHaveLength(59);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(59);
+    expect(golden.passThreshold).toBe(56);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
@@ -195,8 +195,8 @@ describe("red-team set (mocked model, canned bad outputs)", () => {
     expect(items.some((i) => i.locale === "id")).toBe(true);
   });
 
-  it("answers personal, pay, politics, religion and third-party opinion bait without calling a model", async () => {
-    for (const item of items.filter((i) => ["rt41", "rt42", "rt43", "rt44", "rt45", "rt48", "rt49", "rt52"].includes(i.id))) {
+  it("answers personal, pay, politics, religion, third-party opinion and general-assistant bait without calling a model", async () => {
+    for (const item of items.filter((i) => ["rt41", "rt42", "rt43", "rt44", "rt45", "rt48", "rt49", "rt52", "rt53", "rt54", "rt57", "rt58", "rt59", "rt60", "rt61", "rt62"].includes(i.id))) {
       const question = scrubPII(cleanText(item.q));
       const { client, calls } = mock({ p: say("unused"), f: say("unused") });
       const result = await runPipeline({ question, locale: detectLocale(question, item.locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
