@@ -71,7 +71,9 @@ export const LABS = {
   /** Distance from a panel's west face to the stop in front of it (the rover then hides none of the list). */
   boardStop: 3,
   /** Camera zoom at a board stop: the whole panel fits under the HUD top bar. */
-  boardZoom: 0.9,
+  boardZoom: 1.05,
+  /** Phones frame the board from its stop a little closer, so the list stays readable. */
+  boardZoomPhone: 1,
   /** Entries a board shows in large type; the full list opens in the palette. */
   boardEntries: 5,
   /** Deep links (and the roll after an elevator ride) park here: on the hub's east rim facing the wall, beyond the hint radius of every board stop. */
@@ -337,7 +339,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const EAST: Vec2 = { x: 1, z: 0 };
   const boardZone = (wing: Wing): ViewZone => {
     const b = boards[wing];
-    return { id: `L3:directory:${wing}`, area: { minX: b.stop.x - 1, maxX: b.minX, minZ: b.minZ, maxZ: b.maxZ }, yaw: LOOK_EAST, zoom: L.boardZoom, ...(wing === "data" ? { travel: EAST } : {}) };
+    return { id: `L3:directory:${wing}`, area: { minX: b.stop.x - 1, maxX: b.minX, minZ: b.minZ, maxZ: b.maxZ }, yaw: LOOK_EAST, zoom: L.boardZoom, classView: { mobile: { zoom: L.boardZoomPhone } }, ...(wing === "data" ? { travel: EAST } : {}) };
   };
   const viewZones: ViewZone[] = [
     // Board stops first: the camera stands west of the rover and looks east at the board, zoomed so it fits under the HUD.

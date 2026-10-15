@@ -318,6 +318,7 @@ describe("L3 Project Roads layout", () => {
       expect(zone?.id).toBe(`L3:directory:${wing}`);
       expect(zone?.yaw).toBeCloseTo((-3 * Math.PI) / 4);
       expect(zone?.zoom).toBe(LABS.boardZoom);
+      expect(zone?.classView?.mobile?.zoom).toBe(LABS.boardZoomPhone);
       for (const p of layout.placed) expect(rectGap(b, p.rect), p.room).toBeGreaterThanOrEqual(6);
     }
     expect(floor.directoryStops).toEqual({ software: directoryStop("software"), ai: directoryStop("ai"), data: directoryStop("data") });
