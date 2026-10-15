@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { DELAYED_AFTER_MS } from "@/lib/visits/model";
 import { STATS_FIXTURE } from "@/lib/stats/fixtures";
-import { askCheck, checkWithRetry, deployCheck, pageCheck, runChecks, statsCheck, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type UptimeDeps } from "../../scripts/uptime";
+import { applyIssueAction, askCheck, checkWithRetry, deployCheck, failingFromBody, findOpenIssue, githubClient, type GitHubCall, issueAction, ISSUE_TITLE, pageCheck, runChecks, statsCheck, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type CheckId, type UptimeDeps } from "../../scripts/uptime";
 
 const OG = '<html><head><link rel="canonical" href="https://x/en"><meta property="og:title" content="T"><meta property="og:image" content="https://x/og.jpg"><meta property="og:url" content="https://x/en"></head></html>';
 const NOW = Date.parse("2026-10-15T10:00:00Z");
@@ -88,5 +88,105 @@ describe("runChecks and checkWithRetry", () => {
     const routes = { ...healthy(), "/api/stats": () => { throw new Error("ECONNRESET"); } };
     const results = await checkWithRetry(deps(fakeFetch(routes)), { forceFail: false, sleep: async () => {} });
     expect(results.find((r) => r.id === "stats")).toMatchObject({ ok: false, detail: expect.stringContaining("ECONNRESET") });
+  });
+});
+
+describe("issueAction", () => {
+  const ctx = { site: "https://kurniadi.pages.dev", runUrl: "https://github.com/o/r/actions/runs/1", checkedAt: "2026-10-15T10:17:00Z" };
+  const ok = (id: CheckId) => ({ id, ok: true, detail: "fine" });
+  const bad = (id: CheckId, detail = "HTTP 502 | gateway") => ({ id, ok: false, detail });
+
+  it("does nothing when all pass and no issue is open", () => expect(issueAction([ok("home"), ok("ask")], null, ctx)).toEqual({ kind: "none" }));
+
+  it("opens one labelled issue listing only the failing checks", () => {
+    const action = issueAction([ok("home"), bad("ask"), bad("stats", "stale")], null, ctx);
+    expect(action).toMatchObject({ kind: "open", title: ISSUE_TITLE });
+    const body = (action as { body: string }).body;
+    expect(body).toContain("<!-- uptime:failing=ask,stats -->");
+    expect(body).toContain("GET /api/ask status");
+    expect(body).not.toContain("Page /");
+    expect(body).toContain("HTTP 502 \\| gateway");
+    expect(body).toContain(ctx.runUrl);
+    expect(body).not.toMatch(/\u2014/);
+  });
+
+  it("updates the body silently while the same checks keep failing", () => {
+    const open = { number: 7, body: "<!-- uptime:failing=ask -->\nold" };
+    const action = issueAction([bad("ask")], open, ctx);
+    expect(action).toMatchObject({ kind: "update", number: 7 });
+    expect((action as { comment?: string }).comment).toBeUndefined();
+  });
+
+  it("comments when the failing set changes", () => {
+    const open = { number: 7, body: "<!-- uptime:failing=ask -->" };
+    const action = issueAction([bad("ask"), bad("deploy")], open, ctx) as { comment?: string };
+    expect(action.comment).toContain("Latest deploy.yml run on main");
+  });
+
+  it("closes with a recovery comment when every check passes", () => {
+    const action = issueAction([ok("home"), ok("en")], { number: 7, body: "" }, ctx);
+    expect(action).toMatchObject({ kind: "close", number: 7, comment: expect.stringContaining("All production checks pass again") });
+  });
+
+  it("reads the failing set back from the marker", () => {
+    expect(failingFromBody("x\n<!-- uptime:failing=ask,stats -->")).toEqual(["ask", "stats"]);
+    expect(failingFromBody("no marker")).toBeNull();
+  });
+});
+
+describe("applyIssueAction and findOpenIssue", () => {
+  function fakeGh(responses: Record<string, { status: number; data: unknown }> = {}) {
+    const calls: [string, string, unknown?][] = [];
+    const gh: GitHubCall = async (method, path, body) => {
+      calls.push(body === undefined ? [method, path] : [method, path, body]);
+      return responses[`${method} ${path.split("?")[0]}`] ?? { status: 200, data: {} };
+    };
+    return { gh, calls };
+  }
+
+  it("finds the open uptime issue and ignores pull requests", async () => {
+    const { gh, calls } = fakeGh({ "GET /repos/o/r/issues": { status: 200, data: [{ number: 3, body: "b", pull_request: {} }, { number: 5, body: "c" }] } });
+    expect(await findOpenIssue(gh, "o/r")).toEqual({ number: 5, body: "c" });
+    expect(calls[0][1]).toBe("/repos/o/r/issues?labels=uptime&state=open&per_page=20");
+  });
+
+  it("creates the label (an existing one is fine) and opens the issue", async () => {
+    const { gh, calls } = fakeGh({ "POST /repos/o/r/labels": { status: 422, data: {} }, "POST /repos/o/r/issues": { status: 201, data: { html_url: "https://i/9" } } });
+    await applyIssueAction(gh, "o/r", { kind: "open", title: ISSUE_TITLE, body: "B" });
+    expect(calls.map((c) => `${c[0]} ${c[1]}`)).toEqual(["POST /repos/o/r/labels", "POST /repos/o/r/issues"]);
+    expect(calls[1][2]).toEqual({ title: ISSUE_TITLE, body: "B", labels: ["uptime"] });
+  });
+
+  it("updates the body and comments only when asked", async () => {
+    const { gh, calls } = fakeGh();
+    await applyIssueAction(gh, "o/r", { kind: "update", number: 7, body: "B" });
+    expect(calls).toEqual([["PATCH", "/repos/o/r/issues/7", { body: "B" }]]);
+    const second = fakeGh();
+    await applyIssueAction(second.gh, "o/r", { kind: "update", number: 7, body: "B", comment: "C" });
+    expect(second.calls.map((c) => c[0])).toEqual(["PATCH", "POST"]);
+  });
+
+  it("comments, then closes as completed", async () => {
+    const { gh, calls } = fakeGh();
+    await applyIssueAction(gh, "o/r", { kind: "close", number: 7, comment: "R" });
+    expect(calls).toEqual([
+      ["POST", "/repos/o/r/issues/7/comments", { body: "R" }],
+      ["PATCH", "/repos/o/r/issues/7", { state: "closed", state_reason: "completed" }],
+    ]);
+  });
+
+  it("throws on a failed API call so the run turns red", async () => {
+    const { gh } = fakeGh({ "POST /repos/o/r/issues": { status: 403, data: { message: "Resource not accessible" } } });
+    await expect(applyIssueAction(gh, "o/r", { kind: "open", title: "t", body: "b" })).rejects.toThrow(/403/);
+  });
+
+  it("githubClient sends the token and JSON", async () => {
+    const f = vi.fn(async () => Response.json({ ok: 1 }, { status: 201 })) as unknown as typeof fetch;
+    const res = await githubClient(f, "tok")("POST", "/repos/o/r/issues", { a: 1 });
+    expect(res).toEqual({ status: 201, data: { ok: 1 } });
+    const [url, init] = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(url).toBe("https://api.github.com/repos/o/r/issues");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer tok");
+    expect(init.body).toBe('{"a":1}');
   });
 });

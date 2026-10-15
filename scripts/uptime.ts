@@ -159,3 +159,119 @@ export async function checkWithRetry(deps: UptimeDeps, opts: { forceFail: boolea
   if (opts.forceFail) results.push(result("forced", false, "forced failure from the workflow_dispatch input force_fail"));
   return results;
 }
+
+export const UPTIME_LABEL = "uptime";
+export const ISSUE_TITLE = "Uptime: production checks failing";
+const LABEL_COLOR = "B60205";
+const LABEL_DESCRIPTION = "Hourly production check failing (uptime.yml)";
+const MARKER = /<!-- uptime:failing=([a-z,]*) -->/;
+
+export interface OpenIssue {
+  number: number;
+  body: string;
+}
+export type IssueAction =
+  | { kind: "none" }
+  | { kind: "open"; title: string; body: string }
+  | { kind: "update"; number: number; body: string; comment?: string }
+  | { kind: "close"; number: number; comment: string };
+export interface IssueContext {
+  site: string;
+  runUrl: string;
+  checkedAt: string;
+}
+
+export function failingFromBody(body: string): CheckId[] | null {
+  const m = MARKER.exec(body);
+  return m ? (m[1].split(",").filter(Boolean) as CheckId[]) : null;
+}
+
+const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+
+export function issueBody(results: readonly CheckResult[], ctx: IssueContext): string {
+  const failing = results.filter((r) => !r.ok);
+  return [
+    `<!-- uptime:failing=${failing.map((r) => r.id).join(",")} -->`,
+    `Production checks on ${ctx.site} failed after one retry (60 s apart).`,
+    "",
+    "| Check | Result |",
+    "|---|---|",
+    ...failing.map((r) => `| ${CHECK_LABELS[r.id]} | ${cell(r.detail)} |`),
+    "",
+    `Last checked ${ctx.checkedAt} ([run](${ctx.runUrl})). The hourly check updates this issue and closes it once every check passes. Runbook: docs/deploy.md section 16.`,
+  ].join("\n");
+}
+
+export function issueAction(results: readonly CheckResult[], open: OpenIssue | null, ctx: IssueContext): IssueAction {
+  const failing = results.filter((r) => !r.ok);
+  if (failing.length === 0) {
+    return open ? { kind: "close", number: open.number, comment: `All production checks pass again (${ctx.checkedAt}, [run](${ctx.runUrl})). Closing.` } : { kind: "none" };
+  }
+  const body = issueBody(results, ctx);
+  if (!open) return { kind: "open", title: ISSUE_TITLE, body };
+  const before = (failingFromBody(open.body) ?? []).slice().sort().join(",");
+  const now = failing.map((r) => r.id).sort().join(",");
+  if (before === now) return { kind: "update", number: open.number, body };
+  const comment = `Failing checks changed (${ctx.checkedAt}, [run](${ctx.runUrl})): ${failing.map((r) => CHECK_LABELS[r.id]).join(", ")}.`;
+  return { kind: "update", number: open.number, body, comment };
+}
+
+export type GitHubCall = (method: string, path: string, body?: unknown) => Promise<{ status: number; data: unknown }>;
+
+export function githubClient(fetchImpl: typeof fetch, token: string): GitHubCall {
+  return async (method, path, body) => {
+    const r = await fetchImpl(`https://api.github.com${path}`, {
+      method,
+      headers: {
+        accept: "application/vnd.github+json",
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        "x-github-api-version": "2022-11-28",
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    const text = await r.text();
+    let data: unknown = text;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      // Keep the text.
+    }
+    return { status: r.status, data };
+  };
+}
+
+async function must(gh: GitHubCall, method: string, path: string, body?: unknown): Promise<unknown> {
+  const res = await gh(method, path, body);
+  if (res.status >= 300) throw new Error(`GitHub ${method} ${path} returned HTTP ${res.status}: ${JSON.stringify(res.data).slice(0, 200)}`);
+  return res.data;
+}
+
+export async function findOpenIssue(gh: GitHubCall, repo: string): Promise<OpenIssue | null> {
+  const data = (await must(gh, "GET", `/repos/${repo}/issues?labels=${UPTIME_LABEL}&state=open&per_page=20`)) as { number: number; body?: string | null; pull_request?: unknown }[];
+  const issue = data.find((i) => !i.pull_request);
+  return issue ? { number: issue.number, body: issue.body ?? "" } : null;
+}
+
+export async function applyIssueAction(gh: GitHubCall, repo: string, action: IssueAction): Promise<string> {
+  switch (action.kind) {
+    case "none":
+      return "No open uptime issue; nothing to do.";
+    case "open": {
+      const label = await gh("POST", `/repos/${repo}/labels`, { name: UPTIME_LABEL, color: LABEL_COLOR, description: LABEL_DESCRIPTION });
+      if (label.status >= 300 && label.status !== 422) throw new Error(`GitHub POST label returned HTTP ${label.status}`);
+      const issue = (await must(gh, "POST", `/repos/${repo}/issues`, { title: action.title, body: action.body, labels: [UPTIME_LABEL] })) as { html_url?: string };
+      return `Opened ${issue.html_url ?? "the uptime issue"}.`;
+    }
+    case "update":
+      await must(gh, "PATCH", `/repos/${repo}/issues/${action.number}`, { body: action.body });
+      if (action.comment) await must(gh, "POST", `/repos/${repo}/issues/${action.number}/comments`, { body: action.comment });
+      return `Updated issue #${action.number}${action.comment ? " with a comment" : ""}.`;
+    case "close":
+      await must(gh, "POST", `/repos/${repo}/issues/${action.number}/comments`, { body: action.comment });
+      await must(gh, "PATCH", `/repos/${repo}/issues/${action.number}`, { state: "closed", state_reason: "completed" });
+      return `Closed issue #${action.number} (recovered).`;
+  }
+}
+
