@@ -300,6 +300,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). `Lighthouse CI` enforces the Page View budgets and the `3D perf gates` job the 3D ones. Both publish per-chunk JS and gate tables against the last green `main` run in the job summary.
 - Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`).
 - The game-first timeline runs nightly as a trend (`.github/workflows/perf-nightly.yml`).
+- Every HTML page carries its own script policy: the last build step (`scripts/csp-hashes.ts`) adds the sha256 of each inline script, so the effective `script-src` has no `'unsafe-inline'`. The build, the export scan, the deploy smoke check and `e2e/csp.spec.ts` (zero CSP violations) guard it; details in [`deploy.md`](deploy.md) section 9.
 
 ### Production
 

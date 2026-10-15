@@ -17,6 +17,7 @@ export const ALL_SPECS = [
   "boot-first",
   "camera",
   "career",
+  "csp",
   "deploy",
   "drawer-solid",
   "experience",
@@ -82,6 +83,10 @@ export const RULES: Rule[] = [
   // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client
   // beacon and the opt-out aware Web Analytics guard run on every page.
   { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats|askStats))\.ts$|^workers\/|^scripts\/stats-/, specs: [] },
+  // Inline scripts under the per-page script policy (scripts/csp-hashes.ts): the head boot script, the
+  // Web Analytics guard and the / language redirect each need their hash.
+  { test: /^src\/components\/Analytics\.tsx$/, specs: ["csp", "boot-first", "static-routes", "visit", "pageview"] },
+  { test: /^src\/(lib\/boot-first|app\/\(root\)\/page)\.tsx?$/, specs: ["csp", "boot-first", "static-routes", "experience", "onboarding"] },
   { test: /^src\/lib\/stats\/|^src\/components\/(VisitBeacon|Analytics)\.tsx$/, specs: ["visit", "pageview"] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
@@ -200,7 +205,9 @@ export const RULES: Rule[] = [
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
-  { test: /^public\/_(headers|redirects)$|^scripts\/(serve-static|root-redirect)\.ts$/, specs: ["deploy", "static-routes"] },
+  { test: /^scripts\/(csp-hashes|csp-policy|defer-scripts)\.ts$/, specs: ["csp", "deploy", "static-routes", "boot-first"] },
+  { test: /^public\/_headers$|^scripts\/root-redirect\.ts$/, specs: ["csp", "deploy", "static-routes"] },
+  { test: /^public\/_redirects$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
   { test: /^public\/brand\/|^src\/lib\/brand-photo\.ts$|^src\/components\/page\/Portrait\.tsx$/, specs: ["pageview", "seo", "static-routes", "hud", "highlights"] },
   // Full-screen panels that pause the canvas (data-hq-cover).
   { test: /^src\/components\/(Modal|Lightbox)\.tsx$/, specs: ["gallery", "lifecycle", "pageview"] },

@@ -3,9 +3,12 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { loadBlocklist, loadDefaultBlocklist } from "@/content/safety";
+import { addScriptPolicy, sitePolicy } from "../../scripts/csp-hashes";
 import { gateVerdict, privateTermCount } from "../../scripts/scan-export";
 
 const CANARY = "canary-term-q7x";
+const HEADERS = readFileSync(path.join(process.cwd(), "public", "_headers"), "utf8");
+const PAGE = '<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><script>a()</script></head><body><p>clean</p></body></html>';
 mkdirSync(path.join(process.cwd(), "test-results"), { recursive: true });
 const scratch = mkdtempSync(path.join(process.cwd(), "test-results", "scan-export-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -42,8 +45,16 @@ describe("scan-export (S9, tests P4)", () => {
     return { status: result.status, text: `${result.stdout}${result.stderr}${readFileSync(summary, "utf8")}` };
   };
 
-  it("fails on a private term in a JS chunk without printing it", () => {
+  /** An empty out/ with the real _headers and one page that carries its script policy. */
+  const freshOut = () => {
+    rmSync(path.join(scratch, "out"), { recursive: true, force: true });
     mkdirSync(path.join(scratch, "out", "_next"), { recursive: true });
+    writeFileSync(path.join(scratch, "out", "_headers"), HEADERS);
+    writeFileSync(path.join(scratch, "out", "index.html"), addScriptPolicy(PAGE, sitePolicy(HEADERS)));
+  };
+
+  it("fails on a private term in a JS chunk without printing it", () => {
+    freshOut();
     writeFileSync(path.join(scratch, "out", "_next", "chunk.js"), `const pill = "${CANARY}";`);
     const r = run({ SAFETY_BLOCKLIST: CANARY, GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "push" });
     expect(r.status).toBe(1);
@@ -53,14 +64,34 @@ describe("scan-export (S9, tests P4)", () => {
   });
 
   it("fails a main run without the secret and only warns on a pull request, with a summary line", () => {
-    rmSync(path.join(scratch, "out"), { recursive: true, force: true });
-    mkdirSync(path.join(scratch, "out"), { recursive: true });
-    writeFileSync(path.join(scratch, "out", "index.html"), "<p>clean</p>");
+    freshOut();
     const main = run({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "push" });
     expect(main.status).toBe(1);
     expect(main.text).toContain("Private blocklist missing");
     const pr = run({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "pull_request" });
     expect(pr.status).toBe(0);
     expect(pr.text).toContain("Private blocklist not checked");
+    expect(pr.text).toContain("Script policy: every page lists its inline script hashes.");
+  });
+
+  it("fails on a page without its script policy or with an unhashed inline script", () => {
+    freshOut();
+    writeFileSync(path.join(scratch, "out", "plain.html"), PAGE);
+    writeFileSync(path.join(scratch, "out", "added.html"), addScriptPolicy(PAGE, sitePolicy(HEADERS)).replace("</body>", "<script>b()</script></body>"));
+    const r = run({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "pull_request" });
+    expect(r.status).toBe(1);
+    expect(r.text).toContain("::error::csp: plain.html: no data-hq-csp script policy");
+    expect(r.text).toMatch(/::error::csp: added\.html: missing hash for inline script #2/);
+    expect(r.text).toContain("::error::csp: added.html: the script policy differs from the one derived from _headers");
+    expect(r.text).not.toContain("::error::csp: index.html");
+    expect(r.text).toContain("Script policy: **3 problem(s)**");
+  });
+
+  it("fails when the export has no _headers to derive the policy from", () => {
+    freshOut();
+    rmSync(path.join(scratch, "out", "_headers"));
+    const r = run({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "pull_request" });
+    expect(r.status).toBe(1);
+    expect(r.text).toContain("::error::csp: ");
   });
 });

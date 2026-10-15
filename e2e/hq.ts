@@ -110,13 +110,39 @@ export async function openPage(page: Page, url: string, options?: Parameters<Pag
  */
 const ALLOWED_CROSS_ORIGIN_HOSTS: ReadonlySet<string> = new Set(["challenges.cloudflare.com"]);
 
+/** Console text of a Content-Security-Policy violation (Chromium logs "Refused to ... Content Security Policy"). */
+const CSP_CONSOLE = /Content Security Policy|Refused to (execute|load|create|evaluate)/i;
+
 /**
- * Collects page errors and any request to another origin. The local server does not apply the
- * production CSP from public/_headers, so a runtime CDN fetch only fails on Cloudflare.
+ * Every CSP violation of the page and its frames, across navigations: a `securitypolicyviolation`
+ * listener installed before any page script reports through an exposed binding.
+ */
+export async function collectCspViolations(page: Page): Promise<string[]> {
+  const violations: string[] = [];
+  await page.exposeBinding("__hqCspViolation", (_source, text: string) => void violations.push(text));
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (e) => {
+      const report = (window as unknown as { __hqCspViolation?: (t: string) => void }).__hqCspViolation;
+      report?.(`${e.violatedDirective} blocked ${e.blockedURI || "inline"} at ${e.sourceFile || location.pathname}:${e.lineNumber} (${e.sample || ""})`);
+    });
+  });
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && CSP_CONSOLE.test(msg.text())) violations.push(msg.text());
+  });
+  return violations;
+}
+
+/**
+ * Collects page errors, CSP violations reported on the console and any request to another origin.
+ * The local server does not send the production headers from public/_headers, so a runtime CDN fetch
+ * only fails on Cloudflare; the per-page script policy meta tag (scripts/csp-hashes.ts) does apply.
  */
 export function collectErrors(page: Page) {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && CSP_CONSOLE.test(msg.text())) errors.push(`CSP: ${msg.text()}`);
+  });
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (!url.protocol.startsWith("http") || url.hostname === "127.0.0.1" || url.hostname === "localhost") return;

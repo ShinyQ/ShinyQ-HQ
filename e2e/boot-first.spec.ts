@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { addScriptPolicy, sitePolicy } from "../scripts/csp-policy";
 import { asHumanBrowser, asReturningVisitor, collectErrors, waitForHQ } from "./hq";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
@@ -135,13 +138,18 @@ async function recordRelease(page: Page) {
 /**
  * Lengthens the head script's 8 s safety timeout for this document: on a loaded machine SwiftShader can
  * take longer than that to draw the first frame, and a timeout release shows the page (whose images then
- * load legitimately), which is not what these tests measure.
+ * load legitimately), which is not what these tests measure. The edited script gets a new sha256, so the
+ * page's script policy is rebuilt the way the build writes it (scripts/csp-hashes.ts); otherwise the
+ * browser would block the head script.
  */
 async function patientBootCover(page: Page, url: RegExp) {
+  const site = sitePolicy(readFileSync(path.join(process.cwd(), "out", "_headers"), "utf8"));
   await page.route(url, async (route) => {
     if (route.request().resourceType() !== "document") return route.fallback();
     const response = await route.fetch();
-    const body = (await response.text()).replace('off("timeout")},8000', 'off("timeout")},120000');
+    const html = await response.text();
+    expect(html).toContain('off("timeout")},8000');
+    const body = addScriptPolicy(html.replace('off("timeout")},8000', 'off("timeout")},120000'), site);
     await route.fulfill({ response, body });
   });
 }
