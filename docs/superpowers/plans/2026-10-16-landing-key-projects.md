@@ -33,7 +33,7 @@
 **Interfaces:**
 - Produces: `isKeyProject(pod: Pick<Pod, "tier" | "assets">): boolean` and `moreKeyProjects<T extends Pick<Pod, "id" | "tier" | "assets">>(pods: readonly T[], featured: readonly Pick<Pod, "id">[]): T[]` (input order kept; callers pass `getPods()` site order).
 
-- [ ] **Step 1: Write the failing tests** in `tests/unit/pageview.test.ts`:
+- [x] **Step 1: Write the failing tests** in `tests/unit/pageview.test.ts`:
 
 ```ts
 import { getPods } from "@/content/load";
@@ -59,9 +59,9 @@ describe("key projects", () => {
 
 (`pickFeaturedPods` is already imported in that file; add `isKeyProject`, `moreKeyProjects` to the import, and `getPods` from `@/content/load`.)
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/pageview.test.ts`. Expected: FAIL (`isKeyProject` not exported).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/pageview.test.ts`. Expected: FAIL (`isKeyProject` not exported).
 
-- [ ] **Step 3: Implement** in `src/content/pageview.ts` (next to `pickFeaturedPods`; import `podHasGallery` from `./selectors` if not imported):
+- [x] **Step 3: Implement** in `src/content/pageview.ts` (next to `pickFeaturedPods`; import `podHasGallery` from `./selectors` if not imported):
 
 ```ts
 /** A key project (owner request 2026-10-15/16): a hero pod with screenshots. Decides /labs Key projects and the landing "More key projects". */
@@ -78,7 +78,7 @@ export function moreKeyProjects<T extends Pick<Pod, "id" | "tier" | "assets">>(p
 
 In `src/app/[locale]/page.tsx` replace the `featuredIds`/`more` lines with `const more = moreKeyProjects(pods, featured);`. In `src/app/[locale]/labs/page.tsx` replace the `.filter((p) => p.tier === "hero" && podHasGallery(p))` with `.filter(isKeyProject)` and drop the unused `podHasGallery` import.
 
-- [ ] **Step 4: Promote the template.** In `content/site-content.json` set `ai-app-accelerator` `"tier": "hero"` (keep `order` 5). Update `tests/content/dataset.test.ts`:
+- [x] **Step 4: Promote the template.** In `content/site-content.json` set `ai-app-accelerator` `"tier": "hero"` (keep `order` 5). Update `tests/content/dataset.test.ts`:
 
 ```ts
   it("has 3 Product Engineering and 4 AI Engineering hero pods (hologram view) and at most 6 featured per wing", () => {
@@ -92,9 +92,9 @@ In `src/app/[locale]/page.tsx` replace the `featuredIds`/`more` lines with `cons
   });
 ```
 
-- [ ] **Step 5: Run** `bunx vitest run tests/unit tests/content tests/ask`. Fix any test that pinned the old AI order or tier (L3 docking in `tests/unit/labs-*.test.ts`, the Ask "Projects summary" order, `tests/unit/highlights-data.test.ts`). A changed expectation must reflect the new tier only; never weaken a space rule.
+- [x] **Step 5: Run** `bunx vitest run tests/unit tests/content tests/ask`. Fix any test that pinned the old AI order or tier (L3 docking in `tests/unit/labs-*.test.ts`, the Ask "Projects summary" order, `tests/unit/highlights-data.test.ts`). A changed expectation must reflect the new tier only; never weaken a space rule.
 
-- [ ] **Step 6: Commit** `feat(landing): only image key projects on the landing; the AI template is a key project`.
+- [x] **Step 6: Commit** `feat(landing): only image key projects on the landing; the AI template is a key project`.
 
 ### Task 2: Project placeholder
 
@@ -108,7 +108,7 @@ In `src/app/[locale]/page.tsx` replace the `featuredIds`/`more` lines with `cons
 **Interfaces:**
 - Produces: `ProjectPlaceholder({ id, title, wing, size }: { id: string; title: string; wing: Wing; size: "row" | "film" | "card" })` (sync, no hooks) and `projectInitials(title: string): string`.
 
-- [ ] **Step 1: Write the failing test** `tests/unit/project-placeholder.test.tsx`:
+- [x] **Step 1: Write the failing test** `tests/unit/project-placeholder.test.tsx`:
 
 ```tsx
 import { renderToStaticMarkup } from "react-dom/server";
@@ -133,9 +133,9 @@ describe("ProjectPlaceholder", () => {
 });
 ```
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/project-placeholder.test.tsx`. Expected: FAIL (module missing).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/project-placeholder.test.tsx`. Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement** `src/components/page/ProjectPlaceholder.tsx`:
+- [x] **Step 3: Implement** `src/components/page/ProjectPlaceholder.tsx`:
 
 ```tsx
 import type { Wing } from "@/content/schema";
@@ -213,9 +213,9 @@ The `::after` grid is a full-surface pattern, not an edge stripe; confirm `bunx 
 
 In `WorkRow` replace the dashed `<span ... border-dashed ...>` with `<ProjectPlaceholder id={`ph-row-${pod.slug}`} title={pod.title[locale]} wing={pod.wing} size="row" />` and add `data-row-placeholder=""` on the wrapper when there is no cover (keep `data-row-thumb` for covers). In `FeaturedProject` replace `<span className="hx-film-empty" />` with `<ProjectPlaceholder id={`ph-film-${pod.slug}-${i}`} title={pod.title[locale]} wing={pod.wing} size="film" />`; remove the `.hx-film-empty` rule from `landing.css`. Rover glyph gradient ids must be unique per page: the id includes the slug (and the slot index), and a pod renders at most once per list.
 
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/project-placeholder.test.tsx tests/unit/edge-accents.test.ts tests/content/fonts.test.ts`. Expected: PASS.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/project-placeholder.test.tsx tests/unit/edge-accents.test.ts tests/content/fonts.test.ts`. Expected: PASS.
 
-- [ ] **Step 5: Commit** `feat(pageview): designed placeholder for projects without screenshots`.
+- [x] **Step 5: Commit** `feat(pageview): designed placeholder for projects without screenshots`.
 
 ### Task 3: e2e, docs, captures
 

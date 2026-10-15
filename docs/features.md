@@ -107,7 +107,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
-- On `/labs`, Key projects are the hero projects with screenshots, and every project row with a gallery shows its cover thumbnail.
+- "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer
@@ -224,7 +224,7 @@ Route `/en/contact`. A walkable deck: a road from the elevator into a round plaz
 All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the remembered or browser language. The [README](../README.md#routes) has the overview table.
 
 - `/{locale}`: cinematic hero (name over a CSS-only animated Neon Grid, Enter the 3D HQ, Ask AI) and a live stats ticker (`#stats`, with a visits item from the public stats).
-  - Three featured projects with screenshots and the other key projects (`#work`), a short intro with the current role (`#intro`), latest journey, writing and skills.
+  - Three featured projects with screenshots and the other key projects that have screenshots (`#work`), a short intro with the current role (`#intro`), latest journey, writing and skills.
   - Certifications: 3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`.
   - Mounts the 3D tower on top when WebGL is available: the Lobby and the Highlights Hall (`#highlights-<station>` opens a station).
 - `/{locale}/quick`: Quick view, everything on one page.
