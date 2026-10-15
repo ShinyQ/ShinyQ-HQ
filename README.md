@@ -73,39 +73,41 @@ Controls, floor-by-floor details and the full status log: **[docs/features.md](d
 ## Architecture
 
 ```mermaid
-flowchart LR
-  visitor(["Visitor browser"])
+flowchart TB
+  visitor(["Visitor browser<br/>Classic site + 3D tower"])
 
-  subgraph gh["GitHub Actions"]
-    ci["ci.yml<br/>typecheck, lint, unit, build<br/>e2e x4, 3D perf x2, Lighthouse"]
-    deploy["deploy.yml<br/>dispatch only"]
-    nightly["ask-eval, refresh-facts,<br/>content-gap, screenshots"]
+  subgraph pagesbox["Cloudflare Pages"]
+    pages["Static export<br/>HTML, 3D chunk, room data"]
+    fn["Pages Functions<br/>/api/ask, /api/rum<br/>/api/visit, /api/stats"]
   end
 
-  subgraph cf["Cloudflare"]
-    pages["Pages<br/>static export (out/)"]
-    fn["Pages Functions<br/>/api/ask /api/rum<br/>/api/visit /api/stats"]
-    gateway["AI Gateway"]
-    wai["Workers AI<br/>Gemma 4, Mistral fallback"]
-    kv[("KV<br/>ASK_KV, STATS_KV")]
+  subgraph aibox["AI"]
+    gateway["AI Gateway"] --> wai["Workers AI<br/>Gemma 4, Mistral fallback"]
+  end
+
+  subgraph databox["Storage and analytics"]
+    kv[("KV<br/>answer cache, stats snapshot")]
     ae[("Analytics Engine<br/>ask, perf, visit events")]
     wa["Web Analytics"]
-    cron["hq-stats Cron Worker<br/>daily rollup"]
   end
 
-  visitor -->|"HTML, JS, 3D chunk"| pages
-  visitor -->|"questions (SSE), beacons"| fn
-  fn --> gateway --> wai
+  cron["hq-stats Cron Worker<br/>daily rollup"]
+
+  subgraph ghbox["GitHub Actions"]
+    ci["CI: unit, e2e x4,<br/>3D perf x2, Lighthouse"] -->|green build| deploy["Deploy<br/>dispatch only"]
+  end
+
+  visitor --> pages
+  visitor --> fn
+  visitor -.-> wa
+  fn --> gateway
   fn --> kv
   fn --> ae
-  visitor -.->|"beacon"| wa
   cron --> wa
   cron --> ae
   cron --> kv
-  ci -->|"green build"| deploy
-  deploy --> pages
+  deploy --> pagesbox
   deploy --> cron
-  nightly -.-> ci
 ```
 
 - **Content is data**: `content/site-content.json` (zod-validated, every string `{ en, id }`) generates pages, rooms, pods and missions.
