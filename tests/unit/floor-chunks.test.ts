@@ -168,30 +168,43 @@ describe("floor chunks", () => {
 
     it("renders eager floors as they are, a loaded chunk directly, nothing while it loads", async () => {
       const { chunks, d } = setup();
-      expect(floorMount(chunks, "L1")).toBe("eager");
-      expect(floorMount(chunks, "L2")).toBe("eager");
-      expect(floorMount(chunks, "RF")).toBe("wait");
+      expect(floorMount(chunks, "L1", false)).toBe("eager");
+      expect(floorMount(chunks, "L2", false)).toBe("eager");
+      expect(floorMount(chunks, "RF", false)).toBe("wait");
       const load = chunks.load("RF");
-      expect(floorMount(chunks, "RF")).toBe("wait");
+      expect(floorMount(chunks, "RF", false)).toBe("wait");
       d.RF.resolve("roof");
       await load;
-      expect(floorMount(chunks, "RF")).toBe("module");
+      expect(floorMount(chunks, "RF", false)).toBe("module");
     });
 
-    it("hands a floor whose chunk ever failed to React.lazy for the rest of the session", async () => {
+    it("hands a failed floor to React.lazy, and keeps it there once a wrapper is in use", async () => {
       const { chunks, d } = setup();
       const first = chunks.load("L3");
       d.L3.reject(new Error("offline"));
       await first.catch(() => undefined);
       expect(chunks.hasFailed("L3")).toBe(true);
-      expect(floorMount(chunks, "L3")).toBe("lazy");
+      expect(floorMount(chunks, "L3", false)).toBe("lazy");
       d.L3 = deferred<string>();
       const again = chunks.load("L3");
-      expect(floorMount(chunks, "L3")).toBe("lazy");
+      expect(floorMount(chunks, "L3", true)).toBe("lazy");
       d.L3.resolve("labs");
       await again;
-      expect(floorMount(chunks, "L3")).toBe("lazy");
+      expect(floorMount(chunks, "L3", true)).toBe("lazy");
       expect(chunks.hasFailed("L4")).toBe(false);
+    });
+
+    it("renders a recovered floor directly when no lazy wrapper was ever rendered", async () => {
+      const { chunks, d } = setup();
+      const first = chunks.load("L4");
+      d.L4.reject(new Error("offline"));
+      await first.catch(() => undefined);
+      d.L4 = deferred<string>();
+      const again = chunks.load("L4");
+      expect(floorMount(chunks, "L4", false)).toBe("lazy");
+      d.L4.resolve("library");
+      await again;
+      expect(floorMount(chunks, "L4", false)).toBe("module");
     });
   });
 });

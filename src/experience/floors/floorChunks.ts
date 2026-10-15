@@ -114,15 +114,17 @@ export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
  * React throttles for up to 300 ms when a nested boundary (the L4 newsroom decor waiting for fonts)
  * suspends; a font that resolves inside that window joins the floor's first commit, so FloorPrep
  * compiled and pinned its programs on some runs and not on others. While the chunk loads nothing
- * renders (the slab shows); a floor whose import ever failed keeps React.lazy, whose rejection reaches
- * the canvas error boundary (the crash path).
+ * renders (the slab shows). A failed floor without a module renders through React.lazy, whose rejection
+ * reaches the canvas error boundary (the crash path); once a lazy wrapper is in use (`lazyInUse`) the
+ * floor stays on it, so a later load never swaps the component and remounts the floor.
  */
 export type FloorMount = "eager" | "module" | "lazy" | "wait";
 
-export function floorMount(chunks: Pick<FloorChunks<Record<LazyFloor, unknown>>, "module" | "hasFailed">, id: FloorId): FloorMount {
+export function floorMount(chunks: Pick<FloorChunks<Record<LazyFloor, unknown>>, "module" | "hasFailed">, id: FloorId, lazyInUse: boolean): FloorMount {
   if (!isLazyFloor(id)) return "eager";
-  if (chunks.hasFailed(id)) return "lazy";
-  return chunks.module(id) === null ? "wait" : "module";
+  if (lazyInUse) return "lazy";
+  if (chunks.module(id) !== null) return "module";
+  return chunks.hasFailed(id) ? "lazy" : "wait";
 }
 
 /**

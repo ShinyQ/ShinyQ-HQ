@@ -2,45 +2,48 @@
 
 import { lazy, useEffect, useState, type ComponentType, type LazyExoticComponent } from "react";
 import type { FloorId } from "@/content/schema";
-import { floorChunks, floorMount, isLazyFloor, type FloorChunkModules, type LazyFloor } from "./floorChunks";
+import { floorChunks, floorMount, isLazyFloor, type FloorChunkModules, type FloorChunks, type LazyFloor } from "./floorChunks";
 
 /**
- * The on-demand floors (Round 7 B). A loaded chunk renders its component directly (`floorMount` explains
- * why not through React.lazy); while it loads the getter returns null. A floor whose import failed renders
- * through React.lazy: React caches a rejected lazy forever, so a failed import drops its wrapper and the
- * canvas remount after the crash (CanvasBoundary) gets a fresh one that retries the import.
+ * The on-demand floors (Round 7 B). `floorMount` decides how a floor renders: a loaded chunk's component
+ * directly, null while it loads, or a React.lazy wrapper after a failed import. React caches a rejected
+ * lazy forever, so a rejection drops the wrapper and the canvas remount after the crash (CanvasBoundary)
+ * gets a fresh one that retries the import.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- one map for floors with different props
-const cache = new Map<LazyFloor, LazyExoticComponent<ComponentType<any>>>();
+export function floorGetters<M extends Record<LazyFloor, unknown>>(source: Pick<FloorChunks<M>, "load" | "module" | "hasFailed">) {
+  return <K extends LazyFloor, P>(id: K, pick: (m: M[K]) => ComponentType<P>) => floorGetter(source, id, pick);
+}
 
-function lazyFloor<K extends LazyFloor, P>(id: K, pick: (m: FloorChunkModules[K]) => ComponentType<P>): () => ComponentType<P> | null {
-  const viaLazy = () => {
-    let wrapper = cache.get(id) as LazyExoticComponent<ComponentType<P>> | undefined;
+function floorGetter<M extends Record<LazyFloor, unknown>, K extends LazyFloor, P>(
+  source: Pick<FloorChunks<M>, "load" | "module" | "hasFailed">,
+  id: K,
+  pick: (m: M[K]) => ComponentType<P>,
+): () => ComponentType<P> | null {
+  let wrapper: LazyExoticComponent<ComponentType<P>> | null = null;
+  return () => {
+    const mount = floorMount(source, id, wrapper !== null);
+    if (mount === "module") return pick(source.module(id) as M[K]);
+    if (mount !== "lazy") return null;
     if (!wrapper) {
-      wrapper = lazy(() =>
-        floorChunks.load(id).then(
+      const created: LazyExoticComponent<ComponentType<P>> = lazy(() =>
+        source.load(id).then(
           (m) => ({ default: pick(m) }),
           (error: unknown) => {
-            cache.delete(id);
+            if (wrapper === created) wrapper = null;
             throw error;
           },
         ),
       );
-      cache.set(id, wrapper);
+      wrapper = created;
     }
     return wrapper;
   };
-  return () => {
-    const mount = floorMount(floorChunks, id);
-    if (mount === "lazy") return viaLazy();
-    const mod = mount === "module" ? floorChunks.module(id) : null;
-    return mod ? pick(mod) : null;
-  };
 }
 
-export const labsFloor = lazyFloor("L3", (m) => m.Labs);
-export const libraryFloor = lazyFloor("L4", (m) => m.Library);
-export const roofFloor = lazyFloor("RF", (m) => m.Roof);
+const appFloor = floorGetters<FloorChunkModules>(floorChunks);
+export const labsFloor = appFloor("L3", (m) => m.Labs);
+export const libraryFloor = appFloor("L4", (m) => m.Library);
+export const roofFloor = appFloor("RF", (m) => m.Roof);
 
 /**
  * Re-renders on every floor chunk state change and starts the import of each near floor that has not

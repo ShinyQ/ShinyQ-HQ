@@ -105,27 +105,32 @@ export function Tower({
   const Labs = labsFloor();
   const Library = libraryFloor();
   const Roof = roofFloor();
+  /** The floor's component, or null for a lazy floor whose chunk is still loading (the slab shows). */
+  const floorContent = (id: FloorId) => {
+    switch (id) {
+      case "L1":
+        return <Lobby data={data} labels={labels.lobby} tier={tier} />;
+      case "L2":
+        return <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />;
+      case "L3":
+        return Labs && <Labs data={data} labels={labels.labs} tier={tier} />;
+      case "L4":
+        return Library && <Library data={data} labels={labels.library} tier={tier} />;
+      case "RF":
+        return Roof && <Roof data={data} labels={labels.roof} tier={tier} />;
+    }
+  };
 
   return (
     <group name="tower">
       {FLOOR_IDS.map((id) => {
         const isNear = near.includes(id);
-        const loaded = (id === "L3" ? Labs : id === "L4" ? Library : id === "RF" ? Roof : true) !== null;
+        const content = isNear ? floorContent(id) : null;
         return (
           <FloorLevel key={id} layout={layouts[id]} near={isNear}>
-            {isNear && loaded && (
+            {content && (
               <Suspense fallback={null}>
-                {id === "L1" ? (
-                  <Lobby data={data} labels={labels.lobby} tier={tier} />
-                ) : id === "L3" && Labs ? (
-                  <Labs data={data} labels={labels.labs} tier={tier} />
-                ) : id === "L2" ? (
-                  <CareerArchive career={data.career} labs={layouts.L3.bounds} labels={labels.career} />
-                ) : id === "L4" && Library ? (
-                  <Library data={data} labels={labels.library} tier={tier} />
-                ) : Roof ? (
-                  <Roof data={data} labels={labels.roof} tier={tier} />
-                ) : null}
+                {content}
                 {layouts[id].returnPad && <ReturnPadSign at={layouts[id].returnPad} label={labels.returnPad} tier={tier} />}
                 <FloorPrep floor={id} />
               </Suspense>
