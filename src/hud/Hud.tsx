@@ -1,12 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { createElement, Suspense, useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
-import { useHQStore } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
@@ -20,6 +20,7 @@ import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { drawerLayout } from "./drawer/layout";
 import { InteractStatus } from "./InteractStatus";
+import { lazyFromChunk } from "./lazyFromChunk";
 import { MobileMenu, TopBar } from "./Controls";
 import { ElevatorPanel } from "./ElevatorPanel";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
@@ -30,8 +31,27 @@ import type { WalkPlacement } from "./walk/WalkBar";
 import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
 
-// The hologram view only opens on L3, whose chunk carries the overlay (Round 7 B).
-const HologramOverlay = lazy(() => floorChunks.load("L3").then((m) => ({ default: m.HologramOverlay }), () => ({ default: () => null })));
+type HologramOverlayProps = ComponentProps<typeof import("@/experience/floors/chunks/labs").HologramOverlay>;
+
+/** Stands in when the L3 chunk fails: leaves the hologram view (Esc and close live only in the overlay) so the HUD is never stuck. */
+function HologramUnavailable() {
+  useEffect(() => {
+    getHQStore().getState().closeHologram();
+  }, []);
+  return null;
+}
+
+// The hologram view only opens on L3, whose chunk carries the overlay (Round 7 B); a failed import is retried on the next open.
+const lazyHologramOverlay = lazyFromChunk<HologramOverlayProps>(() => floorChunks.load("L3").then((m) => m.HologramOverlay), HologramUnavailable);
+
+function HologramView({ locale }: { locale: HologramOverlayProps["locale"] }) {
+  const overlay = lazyHologramOverlay();
+  return (
+    <Suspense fallback={null}>
+      {createElement(overlay, { locale })}
+    </Suspense>
+  );
+}
 
 /** Control hints, in the bottom band's center column under the walk pill. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
@@ -128,9 +148,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
         <BootOverlay who={{ name: data.profile.name, headline: data.profile.headline, motto: data.profile.motto, role: data.profile.role }} />
       ) : phase === "hologram" ? (
         // The hologram view owns the screen: only its own controls show.
-        <Suspense fallback={null}>
-          <HologramOverlay locale={data.locale} />
-        </Suspense>
+        <HologramView locale={data.locale} />
       ) : (
         <>
           <ProfileCard data={data} mobile={mobile} />

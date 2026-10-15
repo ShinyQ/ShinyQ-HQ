@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { createElement, Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
@@ -11,7 +11,7 @@ import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_TEXT } from "@/lib/accent";
-import { ROOM_BODIES } from "./bodies";
+import { lazyRoomBody } from "./bodies";
 import { Chips, MetricTiles, Sections } from "./blocks";
 import { SHEET_SNAPS, snapSheet, type DrawerLayout } from "./layout";
 
@@ -359,7 +359,7 @@ export function RoomDrawer({
   const condensed = condensedRoom === view.id;
   const tabs = view.variant === "tabs" ? view.tabs : [];
   const activeTab = tabs.includes(tab) ? tab : "overview";
-  const Body = ROOM_BODIES[view.kind];
+  const customBody = lazyRoomBody(view.kind);
   const renderReadme = useReadmeRenderer(readme);
   const readmeText = useMemo(
     () =>
@@ -459,10 +459,10 @@ export function RoomDrawer({
         <TabPanel view={view} tab={activeTab} onHologram={onHologram} />
       </div>
     );
-  } else if (Body) {
+  } else if (customBody) {
     body = (
       <Suspense fallback={<p className="pv-small text-ink-2" role="status">{t("loading")}</p>}>
-        <Body view={view} locale={locale} />
+        {createElement(customBody, { view, locale })}
       </Suspense>
     );
   } else {
