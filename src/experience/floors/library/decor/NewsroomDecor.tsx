@@ -9,9 +9,10 @@ import { FONTS } from "../../../tower/primitives";
 import { LineBatch } from "../../labs/lines";
 import { ZONE_TONE } from "../model";
 import { FlipBooks } from "./BookHolograms";
-import { ResearchPapers, STATION_HEIGHT, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
+import { ResearchPapers, STATION_HEIGHT, StationShells, stationTitles, ZoneIcons, type DecorProps } from "./common";
 import { stageBook } from "./flipBooks";
-import { yearPostSpecs } from "./signs";
+import { LibrarySigns } from "./LibrarySigns";
+import { yearPostSegments } from "./signs";
 
 /** Ticker speed (u/s) and the gap between headlines. */
 const TICKER = { speed: 2.4, separator: "   \u25c6   " } as const;
@@ -65,6 +66,7 @@ export function NewsroomDecor(props: DecorProps) {
   const ticker = library.posts.map((p) => p.title).join(TICKER.separator);
   const others = useMemo(() => layout.stations.filter((s) => s !== featured), [layout.stations, featured]);
   const books = useMemo(() => (featured ? [stageBook(featured, STATION_HEIGHT.blog)] : []), [featured]);
+  const years = layout.extras.years;
   const frame = useMemo(() => {
     if (!wall) return null;
     const batch = new LineBatch();
@@ -72,19 +74,19 @@ export function NewsroomDecor(props: DecorProps) {
     batch.box((wall.minX + wall.maxX) / 2, 3.5, (wall.minZ + wall.maxZ) / 2, w, 7, wall.maxZ - wall.minZ, ZONE_TONE.blog);
     // Ticker rails above and below the scrolling line.
     for (const y of [1.15, 2.25]) batch.segment([wall.minX, y, wall.maxZ + 0.05, wall.maxX, y, wall.maxZ + 0.05], ZONE_TONE.talks);
+    // The low posts under the year plates ride the wall's line batch: no draw call of their own.
+    for (const seg of yearPostSegments(years ?? [])) batch.segment(seg, ZONE_TONE.blog);
     return batch.build();
-  }, [wall]);
+  }, [wall, years]);
   useEffect(() => () => frame?.dispose(), [frame]);
   const neon = useMemo(() => neonColor("#ffffff", 1.5, tier), [tier]);
-  const yearSigns = useMemo(() => yearPostSpecs(layout.extras.years ?? []), [layout.extras.years]);
 
   return (
     <group name="library-newsroom">
       <StationShells stations={layout.stations} tier={tier} onStation={onStation} />
       <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
-      <StationLabels stations={others} titles={titles} />
-      <ZoneSigns layout={layout} zones={zones} tier={tier} extra={yearSigns} />
+      <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
       {wall && frame && (
         <group name="headline-wall">
