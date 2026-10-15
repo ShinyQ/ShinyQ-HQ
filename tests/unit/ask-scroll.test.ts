@@ -24,10 +24,12 @@ describe("scrolledAway", () => {
   it("is false before the panel scrolled and within the slack", () => {
     expect(scrolledAway(120, null)).toBe(false);
     expect(scrolledAway(126, 120)).toBe(false);
+    expect(scrolledAway(128, 120)).toBe(false);
   });
   it("is true when the visitor moved the thread", () => {
     expect(scrolledAway(40, 120)).toBe(true);
     expect(scrolledAway(200, 120)).toBe(true);
+    expect(scrolledAway(129, 120)).toBe(true);
   });
 });
 
