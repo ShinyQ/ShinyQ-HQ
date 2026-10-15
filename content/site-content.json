@@ -8037,8 +8037,8 @@
             "id": "Pemimpin revamp frontend dan engineer Deck Studio (platform dan backend dipimpin rekan)"
           },
           "problem": {
-            "en": "MII Cowork already ran agents in per-conversation sandboxes, but its interface was still a prototype, with browser confirm dialogs and mixed icon sets, and there was no path from a conversation to a finished MII presentation.",
-            "id": "MII Cowork sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih prototipe, dengan dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
+            "en": "MII Cowork already ran agents in per-conversation sandboxes, but its interface still relied on browser confirm dialogs and mixed icon sets, and there was no path from a conversation to a finished MII presentation.",
+            "id": "MII Cowork sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih memakai dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
           },
           "approach": [
             {
