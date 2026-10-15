@@ -22,6 +22,7 @@ export const ALL_SPECS = [
   "drawer-solid",
   "experience",
   "fast-return",
+  "floor-chunks",
   "gallery",
   "gpu",
   "highlights",
@@ -144,6 +145,8 @@ export const RULES: Rule[] = [
   { test: /^src\/content\/(workshop|room-views\/career)\.ts$/, specs: ["workshop", "career", "missions", "pageview"] },
   // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view (also the Ops Control Room's).
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
+  // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
+  { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
