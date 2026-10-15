@@ -7,8 +7,7 @@ import { Marker, PageIntro, SectionWide } from "@/components/page/Layout";
 import { WorkFeature, WorkRow } from "@/components/page/Work";
 import { WorkIndex } from "@/components/page/WorkIndex";
 import { getPods } from "@/content/load";
-import { podAttrs } from "@/content/pageview";
-import { podHasGallery } from "@/content/selectors";
+import { isKeyProject, podAttrs } from "@/content/pageview";
 import { assertLocale } from "@/i18n/locale";
 import { WING_ACCENT } from "@/lib/accent";
 import { seoMetadata } from "@/lib/seo";
@@ -27,7 +26,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
   const tf = await getTranslations({ locale, namespace: "floors" });
   const all = getPods();
   // Key projects are the hero pods with screenshots (owner request 2026-10-15); the rest stay in the index.
-  const heroes = [...getPods("ai"), ...getPods("software")].filter((p) => p.tier === "hero" && podHasGallery(p));
+  const heroes = [...getPods("ai"), ...getPods("software")].filter(isKeyProject);
   const keyIds = new Set(heroes.map((p) => p.id));
   const rest = all.filter((p) => !keyIds.has(p.id));
 

@@ -73,11 +73,14 @@ describe("content/site-content.json", () => {
     expect(pods.filter((p) => p.timelineRef && !entryIds.has(p.timelineRef)).map((p) => p.id)).toEqual([]);
   });
 
-  it("has 3 hero pods per wing (hologram view) and at most 6 featured per wing", () => {
+  it("has 3 Product Engineering and 4 AI Engineering hero pods (hologram view) and at most 6 featured per wing", () => {
+    // AI has a fourth hero since the owner made the Full-Stack AI Application Template a key project (2026-10-16).
+    const heroes = { software: 3, ai: 4 } as const;
     for (const wing of ["software", "ai"] as const) {
-      expect(pods.filter((p) => p.wing === wing && p.tier === "hero")).toHaveLength(3);
+      expect(pods.filter((p) => p.wing === wing && p.tier === "hero")).toHaveLength(heroes[wing]);
       expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(6);
     }
+    expect(pods.find((p) => p.slug === "ai-app-accelerator")?.tier).toBe("hero");
   });
 
   it("links exactly the two public MII Microsoft sites, never an internal app (R4-J)", () => {
