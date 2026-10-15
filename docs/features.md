@@ -163,7 +163,7 @@ Route `/en/journey`. One road runs forward in time.
   - Beside the time console a green **Back to elevator** pad beams you straight back to the elevator call pad.
   - A gateway into the Workshop proper with one workbench per side project that has no L3 pod (click its hologram for the project drawer).
   - The public repos as a neon skyline (height by stars on a log scale, color by language; click a bar for the repo drawer and its GitHub link).
-- **Horizon**: past the Workshop window a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
+- **Horizon**: past the Workshop window (clear glass, no label) a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
 - **Origin**: a light pillar rises at the start of the road.
 - Add `?walk=on` or `?walk=off` to force guided walks on or off.
 
