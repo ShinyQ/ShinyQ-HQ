@@ -10,7 +10,8 @@ import { writePerfEntry } from "./helpers";
  * the Page View (`?tier=static`) and the 3D view until the scene runs and the network is quiet. Every
  * response the Page View did not fetch is 3D-path bytes: scripts are gated, fonts, JSON, CSS and
  * images are reported. The main path is measured with `?prefetch=off`; then each on-demand floor chunk
- * (L3, L4, RF) is loaded on its own and held to its cap. Fails at 450 KB (spec ceiling 600 KB).
+ * (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at 450 KB; main plus every
+ * floor chunk (what idle prefetch downloads in a normal session) must stay under the 600 KB spec ceiling.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -102,9 +103,12 @@ for (const tier of ["lite", "full"] as const) {
       if (kind === "js") js[chunkName(t.path)] = (js[chunkName(t.path)] ?? 0) + t.bytes;
       else other[kind] = (other[kind] ?? 0) + t.bytes;
     }
-    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors } : {}) });
     const total = sum(js);
+    const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
+    const sessionTotal = total + floorsTotal;
+    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors, sessionTotal } : {}) });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
+    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + floor chunks ${kb(floorsTotal)}, spec ceiling ${kb(BYTES_3D_BUDGET.spec)})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
 
     if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
@@ -115,5 +119,6 @@ for (const tier of ["lite", "full"] as const) {
       expect(bytes, `${floor} chunk: did __hq.floorChunks.load fetch any script?`).toBeGreaterThan(0);
       expect(bytes, `${floor} chunk ${kb(bytes)} is over its ${kb(cap)} cap`).toBeLessThan(cap);
     }
+    if (hasChunks) expect(sessionTotal, `main + floor chunks ${kb(sessionTotal)} is over the ${kb(BYTES_3D_BUDGET.spec)} spec ceiling`).toBeLessThan(BYTES_3D_BUDGET.spec);
   });
 }

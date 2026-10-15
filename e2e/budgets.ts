@@ -23,7 +23,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 
 /**
  * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB; CI fails at 450 KB.
- * `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on its own load.
+ * `failAt` gates the critical path before the first frame (`?prefetch=off`). `floors`: each on-demand floor chunk
+ * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
+ * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
+ * session total (main + all floor chunks) is held to `spec`.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
