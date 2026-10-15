@@ -344,7 +344,7 @@
     "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan sepenuhnya, serta R dan F untuk memiringkannya; tekan 0 untuk mengatur ulang. Scroll, cubit, atau tekan + dan - untuk zoom; zoom sampai paling dekat untuk melihat lewat mata rover, dengan WASD menyetir ke arah pandangan, lalu zoom keluar untuk kembali. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, pad panggilnya, atau PageUp dan PageDown. Situs klasik menampilkan portofolio sebagai situs biasa.",
     "floor": "Lantai",
     "elevator": "Lift",
-    "goToFloor": "Ke {floor}, {label} ({name})",
+    "goToFloor": "{floor} {label}: ke lantai ini ({name})",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
     "pageView": "Situs klasik",
     "pageViewHint": "Buka halaman ini sebagai situs klasik, tanpa menara 3D",
@@ -403,7 +403,7 @@
     },
     "launcher": {
       "search": "Cari",
-      "searchShortcut": "Buka pencarian ({shortcut})",
+      "searchShortcut": "{shortcut}, buka pencarian",
       "askRover": "Tanya Rover"
     },
     "terminal": {
@@ -444,7 +444,7 @@
       "hint": "Pilih: panah · Buka: Enter · Grup: Tab · Tutup: Esc",
       "year": "Tahun {year}",
       "entries": "{count} entri",
-      "close": "Tutup pencarian"
+      "close": "Esc, tutup pencarian"
     },
     "actions": {
       "viewCv": "Lihat CV",

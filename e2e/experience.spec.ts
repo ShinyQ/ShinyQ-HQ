@@ -197,7 +197,7 @@ test.describe("elevator", () => {
     const names = { RF: "About", L4: "Writing", L3: "Work", L2: "Journey", L1: "Home" };
     for (const [floor, name] of Object.entries(names)) {
       await expect(panel.locator(`[data-floor="${floor}"]`)).toContainText(name);
-      await expect(panel.getByRole("button", { name: new RegExp(`^Go to ${floor}, ${name} \\(`) })).toBeVisible();
+      await expect(panel.getByRole("button", { name: new RegExp(`^${floor} ${name}: go to floor \\(`) })).toBeVisible();
     }
   });
 

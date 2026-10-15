@@ -68,6 +68,8 @@ export function ElevatorPanel({ data, compact }: { data: ExperienceData; compact
             }
           >
             <span className={`label grid shrink-0 place-items-center rounded-full border transition ${compact ? "size-8" : "size-10"} ${tone}`}>{id}</span>
+            {/* Collapsed by the flex layout; keeps the visible text "L3 Work", not "L3Work", for label-in-name checks. */}
+            {!codesOnly && " "}
             {!codesOnly && (
               <span
                 aria-hidden="true"

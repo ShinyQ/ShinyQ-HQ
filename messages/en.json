@@ -344,7 +344,7 @@
     "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom; zoom all the way in to see through the rover's eyes, where WASD drives where you look, and zoom out to return. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, its call pads or PageUp and PageDown to change floors. Classic site shows the portfolio as a regular website.",
     "floor": "Floor",
     "elevator": "Elevator",
-    "goToFloor": "Go to {floor}, {label} ({name})",
+    "goToFloor": "{floor} {label}: go to floor ({name})",
     "currentFloor": "Current floor: {floor}, {name}",
     "pageView": "Classic site",
     "pageViewHint": "Open this page as a classic website, without the 3D tower",
@@ -403,7 +403,7 @@
     },
     "launcher": {
       "search": "Search",
-      "searchShortcut": "Open search ({shortcut})",
+      "searchShortcut": "{shortcut}, open search",
       "askRover": "Ask Rover"
     },
     "terminal": {
@@ -444,7 +444,7 @@
       "hint": "Select: arrows · Open: Enter · Groups: Tab · Close: Esc",
       "year": "Year {year}",
       "entries": "{count, plural, one {# entry} other {# entries}}",
-      "close": "Close search"
+      "close": "Esc, close search"
     },
     "actions": {
       "viewCv": "View CV",

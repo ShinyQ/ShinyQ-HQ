@@ -66,7 +66,7 @@ async function open3DAt(browser: Browser, v: Viewport, path: string) {
 
 /** Opens a room through the command palette (drive and open), like a visitor would. */
 async function openRoomFromPalette(page: Page, query: string, room: string) {
-  await page.getByRole("button", { name: /Open search/ }).click();
+  await page.getByRole("button", { name: /open search/i }).click();
   await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
   await page.keyboard.type(query);
   await page.keyboard.press("Enter");
@@ -256,7 +256,7 @@ const OVERLAYS = [
   {
     name: "palette",
     open: async (tab: Page) => {
-      await tab.getByRole("button", { name: /Open search/ }).click();
+      await tab.getByRole("button", { name: /open search/i }).click();
       await tab.keyboard.type("azure");
     },
   },
@@ -704,7 +704,7 @@ test.describe("CV refresh captures", () => {
       test.setTimeout(budget);
       const { context, page } = await open3DStill(browser, v, "/en");
       await settleFloor(page, v);
-      await page.getByRole("button", { name: /Open search/ }).click();
+      await page.getByRole("button", { name: /open search/i }).click();
       await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
       await page.keyboard.type("Skills wall");
       await page.keyboard.press("Enter");
