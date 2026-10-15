@@ -47,22 +47,21 @@ export function careerWalk(career: CareerData, labels: CareerWalkLabels): WalkDe
 }
 
 /**
- * Wing by wing (the wing roads are far apart): each wing's hero and featured pods in docking order
- * (`tourOrder`: gallery first, then tier, then `order`), the Data and ML annex last; listed pods stay
- * on the directory boards, where the tour ends. Wings without pods (and a floor without the data
- * annex) are left out.
+ * Road by road: each wing's hero and featured pods in docking order (`tourOrder`: gallery first, then
+ * tier, then `order`), Product, AI, then the Data and ML spine; listed pods stay on the directory
+ * boards, where the tour ends. Wings without pods are left out.
  */
 export function labsWalk(pods: readonly LabPod[], labels: LabsWalkLabels, placed?: ReadonlySet<string>): WalkDefinition {
   const layout = buildLabsLayout(pods);
   const docked = placed ?? new Set(layout.placed.map((p) => p.pod.slug));
-  const wings = LABS_FILTERS.filter((wing) => layout.boards[wing]);
+  const wings = LABS_FILTERS.filter((wing) => pods.some((p) => p.wing === wing));
   const tour = wings.flatMap((wing) => tourOrder(pods.filter((p) => p.wing === wing && docked.has(p.slug))));
   const stops: WalkStop[] = tour.map((p) => {
     const room = `L3:${p.slug}` as RoomId;
     return { id: room, to: room, room, title: p.title, group: labels.wings[p.wing], tags: [p.wing] };
   });
   for (const wing of wings) {
-    stops.push({ id: `L3:directory:${wing}`, to: layout.boards[wing]!.stop, palette: "pods", title: labels.more, subtitle: labels.moreSub, group: labels.wings[wing], tags: [wing] });
+    stops.push({ id: `L3:directory:${wing}`, to: layout.boards[wing].stop, palette: "pods", title: labels.more, subtitle: labels.moreSub, group: labels.wings[wing], tags: [wing] });
   }
   return { id: "projects", floor: "L3", stops, filters: wings.map((id) => ({ id, label: labels.wings[id] })) };
 }

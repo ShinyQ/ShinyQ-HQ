@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
-import { buildLabsLayout, LABS } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS, LABS_WINGS, SIDE_WINGS } from "@/experience/floors/labs/layout";
 import { yawTowards } from "@/experience/fx/facing";
 import type { Vec2 } from "@/experience/types";
 
@@ -48,11 +48,11 @@ describe("L3 floating wing signs (owner request 2026-10-13)", () => {
   const [x, , z] = followPose("desktop", [LABS.overview.x + FOLLOW_LOOK_AHEAD.desktop, 0, LABS.overview.z], zone.yaw, zone.zoom).position;
   const eye = { x, z };
 
-  it("stand on their wing road, 5 u past the hub-rim marker", () => {
-    for (const wing of ["software", "ai"] as const) {
+  it("stand on their wing road, LABS.signAlong past the road mouth", () => {
+    for (const wing of SIDE_WINGS) {
       const { at, heading, float } = layout.signs[wing];
-      expect(float.x).toBeCloseTo(at.x + heading.x * 5);
-      expect(float.z).toBeCloseTo(at.z + heading.z * 5);
+      expect(float.x).toBeCloseTo(at.x + heading.x * LABS.signAlong);
+      expect(float.z).toBeCloseTo(at.z + heading.z * LABS.signAlong);
     }
   });
 
@@ -61,7 +61,7 @@ describe("L3 floating wing signs (owner request 2026-10-13)", () => {
   });
 
   it("face the arrival camera and read left to right once turned with yawTowards", () => {
-    for (const wing of ["software", "ai"] as const) {
+    for (const wing of LABS_WINGS) {
       const s = layout.signs[wing].float;
       const yaw = yawTowards(s, eye);
       expect(dot(front(yaw), toward(s, eye))).toBeCloseTo(1, 9);

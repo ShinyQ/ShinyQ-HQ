@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getContent } from "@/content/load";
 import type { RoomId } from "@/content/schema";
+import { directoryStop } from "@/experience/floors/labs/layout";
 import { buildHudIndex } from "@/hud/index-data";
 import type { PaletteGroup } from "@/hud/palette-types";
 import { buildPaletteEntries, fuzzyScore, normalize, scoreEntry, searchPalette } from "@/hud/search";
@@ -180,13 +181,13 @@ describe("normalize and fuzzyScore", () => {
 });
 
 describe("wing rows (Data and ML, owner request 2026-10-14)", () => {
-  it("indexes one row per wing with pods, the data wing with its directory panel stop", () => {
+  it("indexes one row per wing with pods, the data wing with its board stop at the fork", () => {
     expect(index.wings.map((w) => w.wing)).toEqual(["software", "ai", "data"]);
     expect(entries.filter((e) => e.target.type === "wing").map((e) => e.key)).toEqual(["wing:software", "wing:ai", "wing:data"]);
     const data = index.wings.find((w) => w.wing === "data")!;
     expect(data.title).toEqual({ en: "Data and ML projects", id: "Proyek Data dan ML" });
-    expect(data.stop).not.toBeNull();
-    expect(data.stop!.x).toBeGreaterThan(100);
+    // The Data and ML board stands in the middle of the wall at the fork, over the spine (Round 7 G).
+    expect(data.stop).toEqual(directoryStop("data"));
   });
 
   it('finds "Data and ML projects" for data, ML and machine learning queries in both languages', () => {

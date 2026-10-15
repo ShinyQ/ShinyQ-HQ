@@ -58,7 +58,7 @@ export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Reco
     const index = room?.year !== undefined ? years.indexOf(room.year) : -1;
     return index >= 0 ? { x: -20 + 14 * index + 7, z: 0 } : fallback;
   }
-  if (floor === "L3" && room?.wing) return layout.directoryStops?.[room.wing] ?? (room.wing === "data" ? fallback : directoryStop(room.wing));
+  if (floor === "L3" && room?.wing) return layout.directoryStops?.[room.wing] ?? directoryStop(room.wing);
   return layout.listStop ?? fallback;
 }
 

@@ -29,6 +29,7 @@ const ROOMS: RoomInfo[] = [
   room({ id: "L2:jenius-2024", floor: "L2", kind: "career", year: 2024, path: "/journey/jenius-2024" }),
   room({ id: "L3:voice-ai", floor: "L3", kind: "pod", wing: "ai", path: "/labs/voice-ai" }),
   room({ id: "L3:listed", floor: "L3", kind: "pod", wing: "software", tier: "listed", path: "/labs/listed" }),
+  room({ id: "L3:listed-data", floor: "L3", kind: "pod", wing: "data", tier: "listed", path: "/labs/listed-data" }),
   room({ id: "L4:newest", floor: "L4", kind: "post", path: "/blog/newest" }),
   room({ id: "L4:medium-post", floor: "L4", kind: "post", path: "/library#posts", external: "https://medium.com/x" }),
   room({ id: "L4:oldest", floor: "L4", kind: "post", path: "/blog/oldest" }),
@@ -92,6 +93,7 @@ describe("roomTarget", () => {
     const listed = roomTarget(ROOMS[3], "L3:listed", layouts, years);
     expect(listed).toEqual(directoryStop("software"));
     expect(listed.z).toBeLessThan(0);
+    expect(roomTarget(byId("L3:listed-data"), "L3:listed-data", layouts, years)).toEqual(directoryStop("data"));
   });
 
   it("falls back near the floor label", () => {

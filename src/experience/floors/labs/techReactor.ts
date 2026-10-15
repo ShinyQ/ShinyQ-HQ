@@ -3,7 +3,7 @@ import type { RoomReactor } from "@/content/room-views/types";
 import type { ReactorTech } from "@/store/useHQStore";
 import type { ReactorRingId } from "@/content/tech-rings";
 import type { Vec2 } from "../../types";
-import type { HubWing, LabsLayout, PlacedPod } from "./layout";
+import { LABS_WINGS, type LabsLayout, type PlacedPod } from "./layout";
 import { REACTOR } from "./reactor";
 
 /**
@@ -77,26 +77,27 @@ export interface GlowSegment {
 }
 
 /**
- * Road to the lit pods, from the reactor out: per hub wing with a lit pod, the leg from the ring road to
- * the wing road's turn, the wing road back to the westmost lit spur, then every lit pod's spur to its
- * door; on the data road, the run from the ring road out to the farthest lit data spur, then the spurs.
+ * Road to the lit pods, from the reactor out: per road with a lit pod. On a wing road, the leg from the
+ * ring road to the wing road's turn, the wing road back to the westmost lit spur, then every lit pod's
+ * spur to its door; on the spine, the run from the ring road back to the westmost lit spine spur, then the spurs.
  * Overlaps never double (one run per wing).
  */
 export function roadGlow(layout: LabsLayout, lit: readonly PlacedPod[]): GlowSegment[] {
   const out: GlowSegment[] = [];
-  const data = lit.filter((p) => p.pod.wing === "data");
-  const dataRoad = layout.network.roads.find((r) => r.id === "data");
-  if (data.length && dataRoad) {
-    const start = dataRoad.points[0];
-    out.push({ a: { ...start }, b: { x: Math.max(...data.map((p) => p.door.x)), z: start.z } });
-    for (const p of data) out.push({ a: { x: p.door.x, z: p.roadZ }, b: { ...p.door } });
-  }
-  for (const wing of ["software", "ai"] as const satisfies readonly HubWing[]) {
+  for (const wing of LABS_WINGS) {
     const pods = lit.filter((p) => p.pod.wing === wing);
     if (!pods.length) continue;
     const road = layout.network.roads.find((r) => r.id === wing);
-    if (!road || road.points.length < 4) continue;
-    const [, start, turn, entry] = road.points;
+    if (!road || road.points.length < 2) continue;
+    const entry = road.points[road.points.length - 1];
+    if (wing === "data") {
+      out.push({ a: { ...entry }, b: { x: Math.min(...pods.map((p) => p.door.x)), z: entry.z } });
+      for (const p of pods) out.push({ a: { x: p.door.x, z: p.roadZ }, b: { ...p.door } });
+      continue;
+    }
+    if (road.points.length < 4) continue;
+    const turn = road.points[road.points.length - 2];
+    const start = road.points[road.points.length - 3];
     const z = turn.z;
     const west = Math.max(start.x, Math.min(...pods.map((p) => p.door.x)));
     out.push({ a: { ...entry }, b: { ...turn } });
