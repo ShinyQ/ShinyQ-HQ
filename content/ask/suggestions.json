@@ -244,6 +244,14 @@
       "expect": ["skills-*"]
     },
     {
+      "id": "contact-capabilities",
+      "topic": "contact",
+      "q": { "en": "What can you do?", "id": "Apa saja yang bisa ditanyakan di sini?" },
+      "tags": ["contact", "work", "perspectives"],
+      "followUps": ["contact-reach", "work-best", "persp-principles"],
+      "expect": ["profile"]
+    },
+    {
       "id": "contact-reach",
       "topic": "contact",
       "q": { "en": "How can I contact him?", "id": "Bagaimana cara menghubunginya?" },
@@ -330,6 +338,14 @@
       "tags": ["perspectives", "stats"],
       "followUps": ["persp-principles", "ai-voice-latency", "ai-fraud"],
       "expect": ["principles"]
+    },
+    {
+      "id": "persp-outside-work",
+      "topic": "perspectives",
+      "q": { "en": "What does he do outside work?", "id": "Apa kegiatannya di luar pekerjaan?" },
+      "tags": ["perspectives"],
+      "followUps": ["persp-principles", "persp-agents", "contact-reach"],
+      "expect": ["perspective-outside-work"]
     },
     {
       "id": "ai-observability",

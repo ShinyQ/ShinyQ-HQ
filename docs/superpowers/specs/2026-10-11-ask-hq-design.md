@@ -61,7 +61,7 @@ Rules:
 - Each chunk carries `id`, `type`, `title`, `text_en`, `text_id`, `updatedAt`, `url` (for the Page View), and keywords.
 - Synonym table (EN/ID): study/education/university/kuliah/pendidikan, work/job/career/kerja/pengalaman, contact/email/hubungi, certification/sertifikasi, project/proyek, and so on. Fixes the q11 retrieval gap from the benchmark.
 - `packVersion` = sha256 of the pack contents. It's part of every cache key, so **any content change invalidates old cached answers automatically** on deploy.
-- A build check fails if the pack contains a blocklisted client name, is over 200 KB, or lacks the profile, now and contact chunks.
+- A build check fails if the pack contains a blocklisted client name, is over the size cap (200 KB, raised to 256 KiB on 2026-10-15 after measurement, runbook section 15), or lacks the profile, now and contact chunks.
 
 ## 5. Prompt (system)
 - Identity: "You are the assistant on Kurniadi Ahmad Wijaya's portfolio website."
@@ -223,7 +223,7 @@ Owner request: "also for chatbot i have improvement . the ai is permissible btw 
 - Still declined: private life, family, relationships, health, religion, politics, salary, rates or other pay, opinions about specific people, employers or clients, and anything ungrounded.
 
 ### 13.2 Perspectives content
-- `content/perspectives.json` (`PerspectivesFileSchema`): `status` (`draft` or `approved`) and 10 to 20 entries `{ id, question: { en, id }, answer: { en, id }, tags, asOf: "YYYY-MM", sources?: [{ kind: "post" | "talk" | "project", slug }], approved? }`. Answers are the owner's own words in the first person (the site's voice); questions are not titles (no Title Case rule).
+- `content/perspectives.json` (`PerspectivesFileSchema`): `status` (`draft` or `approved`) and 10 to 50 entries (20 until 2026-10-15) `{ id, question: { en, id }, answer: { en, id }, tags, asOf: "YYYY-MM", sources?: [{ kind: "post" | "talk" | "project", slug }], approved? }`. Answers are the owner's own words in the first person (the site's voice); questions are not titles (no Title Case rule).
 - Publication gate: an entry is published when `approved` is `true`, or when it has no `approved` field and the file `status` is `"approved"`; `approved: false` pins a draft. `getPerspectives()` is the only reader for pages and the pack. Drafts are committed to a public repo, so they only restate what the site already publishes.
 - Checks: the zod schema, `perspectiveIssues` (sources exist, no personal essay as a source, no instruction-like sentence, T2), the public-safety lint, a pack test that builds the pack with every entry approved (must stay under 200 KB), and an e2e scan of `out/` for the fingerprints of every entry (drafts and published alike: none may reach a page).
 - Page View: none. Owner decision 2026-10-14 ("make it a material for our chatbot"): perspectives are Ask knowledge only. About and Quick view have no perspectives section, ToC chip or `perspectives-<id>` anchor (the 2026-10-12 accordion was removed before it shipped), and an e2e scan of `out/` proves no entry text reaches a page.

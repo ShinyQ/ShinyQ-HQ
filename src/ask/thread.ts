@@ -4,7 +4,7 @@
  * multi-turn context. Pure apart from the storage calls, which tolerate a missing or full store.
  */
 import type { AskClientError } from "./client";
-import { cleanTags, isAskCite, type AskOutcome, type AskTag } from "./protocol";
+import { cleanTags, isAskCite, isAskContact, type AskContact, type AskOutcome, type AskTag } from "./protocol";
 
 export const THREAD_KEY = "hq:ask-thread";
 /** Messages kept (user, answer and system lines together). */
@@ -24,6 +24,8 @@ export interface ThreadMessage {
   tags?: AskTag[];
   /** Allowlisted Page View path of the cited written source (`isAskCite`); rendered as a link built by the client. */
   cite?: string;
+  /** Contact card of a lead-intent answer (`isAskContact`, dataset values from the `done` frame). */
+  contact?: AskContact;
   error?: AskClientError;
   retryAfter?: number;
 }
@@ -47,6 +49,7 @@ export function parseThread(raw: unknown): ThreadMessage[] {
     const tags = cleanTags(v.tags);
     if (tags.length) message.tags = tags;
     if (isAskCite(v.cite)) message.cite = v.cite;
+    if (isAskContact(v.contact)) message.contact = { email: v.contact.email, linkedin: v.contact.linkedin };
     if (ERRORS.includes(v.error as AskClientError)) message.error = v.error as AskClientError;
     if (typeof v.retryAfter === "number" && Number.isFinite(v.retryAfter)) message.retryAfter = v.retryAfter;
     out.push(message);

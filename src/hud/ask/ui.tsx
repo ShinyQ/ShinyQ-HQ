@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { AskClientError } from "@/ask/client";
-import { citeKind, isAskCite } from "@/ask/protocol";
+import { citeKind, isAskCite, isAskContact, type AskContact } from "@/ask/protocol";
 import type { Locale } from "@/content/schema";
 import { formatDate } from "@/lib/format";
 
@@ -49,5 +49,42 @@ export function AskCiteLink({ path, locale, className, onNavigate }: { path: str
         {t("dock.source", { label: t(`cite.${citeKind(path)}`) })}
       </a>
     </p>
+  );
+}
+
+/**
+ * Contact card under a lead-intent answer (owner request 2026-10-15): email, LinkedIn and the
+ * Contact page. The values come from the dataset through the `done` frame, never from the model's
+ * text, and are validated again here (`isAskContact`).
+ */
+export function AskContactCard({ contact, locale, className = "", onNavigate }: { contact: AskContact; locale: Locale; className?: string; onNavigate?: () => void }) {
+  const t = useTranslations("ask");
+  if (!isAskContact(contact)) return null;
+  const item = "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface-2 px-3 text-sm text-ink transition hq-glow hover:text-cyan";
+  return (
+    <section aria-label={t("contact.label")} className={`rounded-xl border border-line bg-surface-2/60 p-3 ${className}`} data-testid="ask-contact">
+      <p className="text-[13px] leading-5 font-semibold text-ink">{t("contact.title")}</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        <li>
+          <a href={`mailto:${contact.email}`} className={item} data-testid="ask-contact-email">
+            {t("contact.email")}
+            <span className="sr-only">: {contact.email}</span>
+          </a>
+        </li>
+        <li>
+          <a href={contact.linkedin} target="_blank" rel="noopener noreferrer" className={item} data-testid="ask-contact-linkedin">
+            {t("contact.linkedin")}
+            <span aria-hidden="true">↗</span>
+            <span className="sr-only"> ({t("dock.newTab")})</span>
+          </a>
+        </li>
+        <li>
+          <a href={`/${locale}/contact`} onClick={onNavigate} className={item} data-testid="ask-contact-page">
+            {t("contact.page")}
+          </a>
+        </li>
+      </ul>
+      <p className="mt-2 text-[12px] leading-4 break-all text-ink-3">{contact.email}</p>
+    </section>
   );
 }

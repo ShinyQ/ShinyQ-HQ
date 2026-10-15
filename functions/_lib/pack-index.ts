@@ -3,7 +3,7 @@ import type { KnowledgePack } from "./types";
 
 /**
  * BM25 statistics and the word vocabulary of a pack. Built once per isolate at module load
- * (functions/api/ask.ts), so the pack ships as plain text and stays under the 200 KB cap.
+ * (functions/api/ask.ts), so the pack ships as plain text and stays under the pack cap (PACK_MAX_BYTES in src/ask/pack.ts).
  */
 export interface PackIndex {
   tf: Record<string, number>[];

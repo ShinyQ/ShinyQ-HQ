@@ -219,3 +219,19 @@ describe("done frame citation", () => {
     }
   });
 });
+
+describe("done frame contact card (lead intent)", () => {
+  const done = (contact: unknown) => parseFrame(JSON.stringify({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-15", contact }));
+  const good = { email: "kurniadiahmadwijaya@gmail.com", linkedin: "https://www.linkedin.com/in/kurniadiwijaya" };
+
+  it("keeps a valid email and LinkedIn profile, and only those two fields", () => {
+    expect(done({ ...good, extra: "x" })).toMatchObject({ contact: good });
+    expect(done(good)).toHaveProperty("contact", good);
+  });
+
+  it("drops a forged card", () => {
+    for (const contact of [{ email: good.email }, { ...good, linkedin: "javascript:alert(1)" }, { ...good, linkedin: "https://evil.example/in/x" }, { ...good, email: "x@y.co<img>" }, "mailto:x@y.co", null]) {
+      expect(done(contact), JSON.stringify(contact)).not.toHaveProperty("contact");
+    }
+  });
+});

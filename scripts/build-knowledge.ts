@@ -1,7 +1,7 @@
 /**
  * Builds the Ask the HQ knowledge pack and safety lists into functions/_generated/ (gitignored;
  * the safety list can hold private blocklist terms). Runs in `bun run build` and `bun run typecheck`.
- * Fails when the pack holds a blocklisted term (client names, C3), is over 200 KB, or lacks the
+ * Fails when the pack holds a blocklisted term (client names, C3), is over PACK_MAX_BYTES (256 KiB), or lacks the
  * profile, now and contact chunks (spec section 4).
  */
 import { mkdirSync, writeFileSync } from "node:fs";

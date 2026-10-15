@@ -1,5 +1,5 @@
 import { indexPack } from "./pack-index";
-import { isPerspectiveQuestion, isSiteQuestion } from "./scope";
+import { isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 
@@ -14,6 +14,23 @@ export const PERSPECTIVE_INCLUDE = "principles";
 export const SITE_INCLUDE = "site-build";
 /** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
 export const PERSPECTIVE_CAP = 3;
+/** Added for lead-intent questions (`isLeadQuestion`): the answer ends with an invitation to get in touch. */
+export const LEAD_INCLUDE = "contact";
+/** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
+export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+/** Most matching past projects or jobs a lead answer is grounded in (owner request: 1 to 3). */
+export const LEAD_MATCH_CAP = 3;
+/** A lead match needs two specific terms in common, or one specific term with at least this BM25 score. */
+export const LEAD_STRONG_SCORE = 4.4;
+/** ...and that term appears at least this often in the project chunk. */
+export const LEAD_STRONG_TF = 3;
+/** Terms in more than this share of chunks are too common to show a fit on their own ("ai", "system"). */
+const LEAD_COMMON_SHARE = 0.2;
+
+/** Words every lead question uses: they say nothing about which past work fits. */
+const LEAD_STOP = new Set(
+  "need needs want wants like looking look plan planning require required build building make making develop developing create help us our company team business startup organization organisation project projects system systems app apps application applications platform website site solution software developer developers engineer engineers programmer freelancer contractor someone work working can could would will you he kurniadi new kami saya kita aku butuh membutuhkan perlu memerlukan mencari cari ingin mau membuat membangun bikin buatkan membuatkan bisa bisakah sistem aplikasi situs solusi proyek perusahaan tim usaha bantu bantuan over contract contractor kontrak internal our dengan untuk re ll ve".split(" "),
+);
 
 /**
  * Intent boosts: a question that names a topic (directly or through a synonym, e.g. "kuliah" for
@@ -38,6 +55,15 @@ const INTENTS: Record<string, (chunk: KnowledgeChunk) => boolean> = {
 /** Intents that boost less than INTENT_BOOST: every perspective chunk is an opinion, so the question's own words still decide. */
 const INTENT_WEIGHT: Partial<Record<string, number>> = { perspective: 3 };
 
+/** Added per question term that is also a word of a project or post title (2026-10-15: keeps named projects first as the pack grows). */
+const TITLE_BOOST = 0.5;
+const titleCache = new WeakMap<KnowledgeChunk, string[]>();
+const titleTerms = (chunk: KnowledgeChunk): string[] => {
+  let hit = titleCache.get(chunk);
+  if (!hit) titleCache.set(chunk, (hit = [...new Set(expandTokens(tokenize(chunk.title)))]));
+  return hit;
+};
+
 const K1 = 1.2;
 const B = 0.75;
 
@@ -61,27 +87,102 @@ export function scoreChunks(pack: KnowledgePack, question: string): { chunk: Kno
       score += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
     }
     for (const term of terms) if (INTENTS[term]?.(chunk)) score += INTENT_WEIGHT[term] ?? INTENT_BOOST;
+    // A project or post named in the question ("the voice AI project") beats one that only shares its words.
+    if (score > 0 && (chunk.type === "project" || chunk.type === "post")) score += TITLE_BOOST * titleTerms(chunk).filter((t) => terms.includes(t)).length;
     return { chunk, score };
   });
 }
 
+/** Perspective chunks tagged with a routed topic (their tags are chunk keywords). */
+export const hasTopic = (chunk: KnowledgeChunk, topic: RoutedTopic) => chunk.type === "perspective" && chunk.keywords.includes(topic);
+
+/**
+ * Past projects that fit a lead question, best first (at most `LEAD_MATCH_CAP`): they share at
+ * least one specific term with it (in at most a fifth of the chunks, lead stop words removed) and
+ * either a second term ("ai" counts here) or, for one term, a BM25 score of at least
+ * `LEAD_STRONG_SCORE` with the term repeated `LEAD_STRONG_TF` times. Empty means no real match, and the answer
+ * must not claim a fit (functions/_lib/checks.ts).
+ */
+export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChunk[] {
+  const index = indexPack(pack);
+  const n = pack.chunks.length;
+  const all = [...new Set(expandTokens(tokenize(question)))].filter((t) => !LEAD_STOP.has(t) && (index.df[t] ?? 0) > 0);
+  const specific = new Set(all.filter((t) => index.df[t] <= n * LEAD_COMMON_SHARE));
+  if (!specific.size) return [];
+  return pack.chunks
+    .map((chunk, i) => {
+      if (!(chunk.type === "project" || chunk.type === "side-project") || chunk.id === "projects-summary") return null;
+      let score = 0;
+      let shared = 0;
+      let own = 0;
+      let peak = 0;
+      for (const term of all) {
+        const tf = index.tf[i][term];
+        if (!tf) continue;
+        shared++;
+        if (specific.has(term)) {
+          own++;
+          peak = Math.max(peak, tf);
+        }
+        const df = index.df[term];
+        score += (Math.log(1 + (n - df + 0.5) / (df + 0.5)) * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
+      }
+      // One term alone fits only when the project is about it (repeated), not when it is mentioned once or twice.
+      return own >= 1 && (shared >= 2 || (score >= LEAD_STRONG_SCORE && peak >= LEAD_STRONG_TF)) ? { chunk, score } : null;
+    })
+    .filter((r): r is { chunk: KnowledgeChunk; score: number } => r !== null)
+    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+    .slice(0, LEAD_MATCH_CAP)
+    .map((r) => r.chunk);
+}
+
+export interface RetrieveOptions {
+  /** Routed perspective topic (`routedTopic`): only that topic's perspectives, no other chunk but the profile. */
+  topic?: RoutedTopic;
+  /** Lead intent (`isLeadQuestion`): contact first, then the matching past work and his engagement terms, never other opinions. */
+  lead?: boolean;
+}
+
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
-export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id"): Retrieved {
-  const ranked = scoreChunks(pack, question)
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
-  const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
+export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question) }): Retrieved {
+  const { topic, lead } = options;
+  const scored = scoreChunks(pack, question);
+  const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
-  for (const id of always) {
-    const chunk = pack.chunks.find((c) => c.id === id);
-    if (chunk) picked.push(chunk);
-  }
-  let perspectives = 0;
-  for (const { chunk } of ranked) {
-    if (picked.length >= TOP_K + always.length) break;
-    if (picked.includes(chunk)) continue;
-    if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) continue;
-    picked.push(chunk);
+  const add = (chunk: KnowledgeChunk | undefined) => {
+    if (chunk && !picked.includes(chunk)) picked.push(chunk);
+  };
+  const byId = (id: string) => pack.chunks.find((c) => c.id === id);
+
+  if (topic) {
+    // Lifestyle and tech policy: answerable from his written perspectives on that topic only.
+    add(byId("profile"));
+    scored
+      .filter((r) => hasTopic(r.chunk, topic))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, PERSPECTIVE_CAP)
+      .forEach((r) => add(r.chunk));
+  } else if (lead) {
+    // Lead intent: who he is, his availability, how to reach him, then matching past work and skills.
+    for (const id of [...ALWAYS_INCLUDE, LEAD_INCLUDE]) add(byId(id));
+    leadMatches(pack, question).forEach(add);
+    add(byId(LEAD_ENGAGEMENTS));
+    const limit = TOP_K + ALWAYS_INCLUDE.length + 2;
+    for (const { chunk } of ranked) {
+      if (picked.length >= limit) break;
+      if (chunk.type === "perspective" || chunk.type === "principle") continue;
+      add(chunk);
+    }
+  } else {
+    const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
+    always.forEach((id) => add(byId(id)));
+    let perspectives = 0;
+    for (const { chunk } of ranked) {
+      if (picked.length >= TOP_K + always.length) break;
+      if (picked.includes(chunk)) continue;
+      if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) continue;
+      picked.push(chunk);
+    }
   }
 
   let budget = CONTEXT_CHAR_BUDGET;

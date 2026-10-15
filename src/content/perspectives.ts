@@ -9,6 +9,19 @@ import type { Perspective, PerspectivesFile, SiteContent } from "./schema";
  * `getPerspectives()` in `@/content/load`), so a draft never ships.
  */
 
+/**
+ * Topic tags of the owner's endorsed answers (2026-10-15). `lifestyle` and `policy` are routed
+ * deterministically (`routedTopic` in functions/_lib/scope.ts): those questions are answered from
+ * the entries with that tag only. The 15 engineering entries carry none.
+ */
+export const PERSPECTIVE_TOPICS = ["work-style", "ai-industry", "indonesia-tech", "policy", "lifestyle"] as const;
+export type PerspectiveTopic = (typeof PERSPECTIVE_TOPICS)[number];
+
+/** The entry's topic tag, if it has one. */
+export function perspectiveTopic(entry: Pick<Perspective, "tags">): PerspectiveTopic | undefined {
+  return entry.tags.find((tag): tag is PerspectiveTopic => (PERSPECTIVE_TOPICS as readonly string[]).includes(tag));
+}
+
 /** Published when the entry says `approved: true`, or has no `approved` field and the file status is "approved". */
 export function isPublished(entry: Pick<Perspective, "approved">, file: Pick<PerspectivesFile, "status">): boolean {
   return entry.approved ?? file.status === "approved";

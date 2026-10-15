@@ -1,6 +1,7 @@
 import { isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
+import type { RoutedTopic } from "./scope";
 import { tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./types";
 
@@ -40,6 +41,8 @@ const UNKNOWN_PHRASES = [
 ];
 const DECLINE_PHRASES = [
   "can only provide information",
+  "only answers questions",
+  "hanya menjawab pertanyaan",
   "can only answer",
   "only answer questions",
   "only help with questions",
@@ -93,7 +96,7 @@ export const FORBIDDEN_OUTPUT = [
 /** Capitalized words that are fine mid-sentence even when the site never uses them. */
 const COMMON_CAPS = new Set(
   [
-    "i i'm i've i'd yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shinyq hq ai page view classic site situs klasik work journey writing about contact",
+    "i i'm i've i'd anda kamu yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shinyq hq ai page view classic site situs klasik work journey writing about contact",
     // Dates in the pack are YYYY-MM, so answers spell out month and day names.
     "january february march april may june july august september october november december jan feb mar apr jun jul aug sep sept oct nov dec",
     "januari februari maret mei juni juli agustus oktober desember agu okt des",
@@ -302,7 +305,42 @@ export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLoca
   return chunk?.url ? { title: sourceTitles(chunk, locale)[0], url: chunk.url } : undefined;
 }
 
-export type CheckFailure = "blocklist" | "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty";
+/** Code in an answer (T6, owner rule 2026-10-15: never a general coding assistant). Markdown fences are already stripped. */
+const CODE: RegExp[] = [
+  /\b(?:def|function|fn|func) \w+\s*\(|=>\s*[{(\w]|\b(?:const|let|var) \w+\s*=|\bimport \w+(?:,? ?\{[^}]*\})? from\b|\bfrom \w+ import\b|\bSELECT\b[\s\S]{0,60}\bFROM\b|\bconsole\.log\(|\bprint\(|\breturn [^.]{0,40};|\{\s*\}|;\s*\}/,
+];
+
+export function containsCode(text: string): boolean {
+  return CODE.some((re) => re.test(text));
+}
+
+/** The assistant asking the visitor for personal data (owner rule 2026-10-15: offer his contact instead). */
+const ASKS_PERSONAL_DATA =
+  /\b(?:share|send|give|tell|provide|leave|drop)\b[^.?!]{0,20}\b(?:your|me your|us your)\b[^.?!]{0,20}\b(?:phone|number|email|e-mail|whatsapp|company name|company details|address|full name|contact details)\b|\bwhat(?:'s| is) your (?:phone|email|company|name|number|whatsapp)\b|\b(?:kirim(?:kan)?|bagikan|berikan|sebutkan|tinggalkan)\b[^.?!]{0,20}\b(?:nomor|email|alamat|nama perusahaan|whatsapp|kontak)\b[^.?!]{0,10}\b(?:anda|kamu|mu)\b|\b(?:nomor|email|whatsapp) (?:anda|kamu)\b/i;
+
+export function asksForPersonalData(text: string): boolean {
+  return ASKS_PERSONAL_DATA.test(text);
+}
+
+/** Free consulting in a lead answer: time or cost estimates and designing the visitor's system (owner rule 2026-10-15). */
+const CONSULTING: RegExp[] = [
+  /\b\d+\s*(?:-|to|or|sampai|hingga|atau)?\s*\d*\s*(?:hours?|days?|weeks?|months?|sprints?|jam|hari|minggu|bulan)\b/i,
+  /\b(?:would|will|could|might|should) (?:cost|take)\b|\b(?:estimated|estimates?|budget|pricing|quote|biaya|anggaran|harga|estimasi|perkiraan)\b[^.]{0,30}\b(?:\d|weeks?|months?|days?|minggu|bulan|hari)\b/i,
+  /\b(?:you (?:should|could|can|would|might) (?:use|build|start|deploy|choose|consider|set up|add)|i(?: would|'d)? (?:recommend|suggest)|the (?:architecture|design|stack) (?:would|should|could|will)|(?:recommended|suggested) (?:stack|architecture|approach|design)|step (?:1|one)\b|first,? (?:set up|create|build|define)|sebaiknya (?:anda |kamu )?(?:gunakan|memakai|menggunakan|pakai|membangun)|disarankan (?:untuk )?(?:menggunakan|memakai)|arsitekturnya (?:bisa|akan|sebaiknya))/i,
+];
+
+export function consulting(text: string): boolean {
+  return CONSULTING.some((re) => re.test(text)) || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > 5;
+}
+
+/** A lead answer that claims a fit (only allowed when retrieval found matching past projects). */
+const FIT_CLAIM = /\b(?:strong|good|great|close|natural|solid|perfect|excellent|ideal) (?:fit|match)\b|\bwell[- ]suited\b|\bperfect for\b|\bgood chance\b|\b(?:very|highly) likely\b|\bcocok\b|\bsangat sesuai\b|\bkemungkinan besar\b|\bpeluang (?:yang )?(?:besar|bagus|baik)\b/i;
+
+export function claimsFit(text: string): boolean {
+  return FIT_CLAIM.test(text);
+}
+
+export type CheckFailure = "blocklist" | "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
 
 export type CheckResult =
   | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline">; cite?: string }
@@ -322,19 +360,27 @@ export interface CheckInput {
   perspective?: boolean;
   /** The question is about this site itself (`isSiteQuestion`): an answer cites the `site` chunk's repository. */
   site?: boolean;
+  /** Routed perspective topic (`routedTopic`): the answer must follow one of that topic's perspectives. */
+  topic?: RoutedTopic;
+  /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
+  lead?: { fit: boolean };
   locale?: AskLocale;
 }
 
 /** Output checks in spec order (7.4 step 8). The first failure decides the replacement message. */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, locale = "en" }: CheckInput): CheckResult {
   const text = sanitizeAnswer(answer);
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
   const blocked = findBlocked(text, safety.blocklist);
   if (blocked.length) return { ok: false, reason: "blocklist", detail: blocked, replacement: "restricted" };
   if (FORBIDDEN_OUTPUT.some((re) => re.test(text))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
   if (SECRET_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
-  if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: "decline" };
-  if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: "decline" };
+  if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
+  if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
+  if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
+  if (asksForPersonalData(text)) return { ok: false, reason: "personal-data", detail: [], replacement: lead ? "lead" : "unknown" };
+  if (lead && consulting(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+  if (lead && !lead.fit && claimsFit(text)) return { ok: false, reason: "fit", detail: [], replacement: "lead" };
 
   const accusations = defamatoryWords(text, context);
   if (accusations.length) return { ok: false, reason: "defamation", detail: accusations, replacement: "unknown" };
@@ -351,9 +397,12 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const questionWords = new Set(echo.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
+  // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
+  if (lead) return { ok: true, text, outcome };
   // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
-  if (outcome === "answer" && (perspective || claimsOpinion(text))) {
-    const source = citedSource(text, chunks, locale);
+  // Lifestyle and policy (routed topics) must follow one of that topic's perspectives.
+  if (outcome === "answer" && (perspective || topic || claimsOpinion(text))) {
+    const source = citedSource(text, topic ? chunks.filter((c) => c.type === "perspective" && c.keywords.includes(topic)) : chunks, locale);
     if (!source) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
     return isAskCite(source.url) ? { ok: true, text, outcome, cite: source.url } : { ok: true, text, outcome };
   }
