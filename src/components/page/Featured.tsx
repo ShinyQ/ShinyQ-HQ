@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { Marker } from "./Layout";
+import { ProjectPlaceholder } from "./ProjectPlaceholder";
 import { PodLiveCta } from "./Work";
 
 /** Thumbnails in the filmstrip under a featured project's cover (always this many slots, so cards line up). */
@@ -49,7 +50,7 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image.thumb} alt="" width={480} height={300} loading="lazy" decoding="async" />
             ) : (
-              <span className="hx-film-empty" />
+              <ProjectPlaceholder id={`ph-film-${pod.slug}-${i}`} title={pod.title[locale]} wing={pod.wing} size="film" />
             )}
           </li>
         ))}

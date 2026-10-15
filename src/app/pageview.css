@@ -250,6 +250,69 @@
     transform: scale(1.015);
   }
 
+  /* Placeholder for a project without screenshots: wing tint, rover glyph, initials, a faint full-surface grid. */
+  .pv-ph {
+    --ph: var(--color-cyan);
+    position: relative;
+    display: flex;
+    aspect-ratio: 16 / 10;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
+    background:
+      radial-gradient(120% 90% at 85% 0%, color-mix(in oklab, var(--ph) 30%, transparent), transparent 60%),
+      radial-gradient(90% 80% at 0% 100%, color-mix(in oklab, var(--color-violet) 16%, transparent), transparent 70%),
+      linear-gradient(160deg, #10101c, #0b0b14);
+  }
+
+  .pv-ph[data-wing="ai"] {
+    --ph: var(--color-violet);
+  }
+
+  .pv-ph[data-wing="data"] {
+    --ph: var(--color-amber);
+  }
+
+  .pv-ph::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--ph) 10%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--ph) 10%, transparent) 1px, transparent 1px);
+    background-size: 14px 14px;
+    mask-image: radial-gradient(closest-side, black, transparent);
+  }
+
+  .pv-ph-mark {
+    position: relative;
+    z-index: 1;
+    opacity: 0.9;
+  }
+
+  .pv-ph-initials {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-stretch: 80%;
+    font-size: clamp(16px, 2.2vw, 26px);
+    letter-spacing: 0.02em;
+    color: color-mix(in oklab, var(--ph) 55%, white);
+  }
+
+  .pv-ph-card .pv-ph-initials {
+    font-size: 40px;
+  }
+
+  .pv-ph-film {
+    border-radius: 6px;
+  }
+
   .pv-feature:hover .pv-feature-title {
     text-decoration: underline;
     text-decoration-thickness: 1px;
