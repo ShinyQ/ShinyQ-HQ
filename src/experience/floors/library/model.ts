@@ -70,6 +70,9 @@ export const DOCK = {
   spurWidth: 3,
 } as const;
 
+/** Year markers: a low post on the road edge (`edge` past it) with a small plate on top (`top` = post height). Lives here so the layout builders stay free of the sign module's tower imports. */
+export const YEAR_POST = { fontSize: 0.45, top: 0.9, edge: 0.4 } as const;
+
 export interface LibraryStation {
   room: RoomId;
   zone: LibraryZone;

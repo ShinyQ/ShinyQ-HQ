@@ -11,7 +11,7 @@ import { ZONE_TONE } from "../model";
 import { FlipBooks } from "./BookHolograms";
 import { ResearchPapers, STATION_HEIGHT, StationLabels, StationShells, stationTitles, ZoneIcons, ZoneSigns, type DecorProps } from "./common";
 import { stageBook } from "./flipBooks";
-import { yearMarkSigns } from "./signs";
+import { yearPostSpecs } from "./signs";
 
 /** Ticker speed (u/s) and the gap between headlines. */
 const TICKER = { speed: 2.4, separator: "   \u25c6   " } as const;
@@ -76,7 +76,7 @@ export function NewsroomDecor(props: DecorProps) {
   }, [wall]);
   useEffect(() => () => frame?.dispose(), [frame]);
   const neon = useMemo(() => neonColor("#ffffff", 1.5, tier), [tier]);
-  const yearSigns = useMemo(() => yearMarkSigns(layout.extras.years ?? []), [layout.extras.years]);
+  const yearSigns = useMemo(() => yearPostSpecs(layout.extras.years ?? []), [layout.extras.years]);
 
   return (
     <group name="library-newsroom">
