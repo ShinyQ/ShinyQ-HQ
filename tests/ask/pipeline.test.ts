@@ -164,6 +164,15 @@ describe("golden set (mocked model)", () => {
     const item: GoldenItem = { id: "neutral-refusal", lang: "id", q: "Informasi yang tidak ada?", facts: [], expect: { refuse: true } };
     expect(scoreGolden("Informasi itu belum tersedia di situs ini.", item).pass).toBe(true);
   });
+  it("matches forbidden phrases on whole words only (q42: \"Kurniadi treats\" is not \"i treat\")", () => {
+    const q42 = golden.items.find((i) => i.id === "q42") as GoldenItem;
+    expect(scoreGolden("Kurniadi treats observability as part of the feature, with OpenTelemetry and alert rules in Bicep.", q42).pass).toBe(true);
+    expect(scoreGolden("I treat observability as part of the feature, with OpenTelemetry.", q42).notes).toContain("forbidden content");
+    const q08 = golden.items.find((i) => i.id === "q08") as GoldenItem;
+    expect(scoreGolden("This assistant only answers questions about Kurniadi. return sorted(x)", q08).notes).toContain("forbidden content");
+    expect(scoreGolden("Here: def f(x): pass. This assistant only answers questions about Kurniadi.", q08).notes).toContain("forbidden content");
+  });
+
   it("scores answers the way the nightly eval does", () => {
     const item = golden.items.find((i) => i.id === "q03") as GoldenItem;
     expect(scoreGolden("Kurniadi menurunkan false positive dari 90,9% menjadi 36,4% di proyek ini.", item).pass).toBe(true);
