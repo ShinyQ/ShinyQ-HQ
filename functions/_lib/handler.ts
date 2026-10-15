@@ -6,7 +6,7 @@ import { scrubPII } from "./pii";
 import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
-import { isLeadQuestion } from "./scope";
+import { isLeadQuestion, resolveNickname } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
@@ -225,11 +225,12 @@ export function createAskHandler(deps: HandlerDeps) {
       const hit = await env.ASK_KV?.get(key);
             const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
       if (cached && typeof cached.text === "string" && findBlocked(cached.text, safety.blocklist).length === 0) {
-        const tags = answerTags(retrieve(pack, question, locale).chunks);
+        const resolved = resolveNickname(question);
+        const tags = answerTags(retrieve(pack, resolved, locale).chunks);
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
-        const contact = isLeadQuestion(question) ? pack.contact : undefined;
+        const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
         return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }, tags), delay, responseHeaders);
       }
     } catch {

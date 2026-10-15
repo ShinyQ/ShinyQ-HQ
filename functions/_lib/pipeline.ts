@@ -6,7 +6,7 @@ import { canned, noViewMessage, type CannedKind } from "./messages";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
-import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, routedTopic } from "./scope";
+import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, nicknameForModel, resolveNickname, routedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack, SafetyData } from "./types";
 
@@ -71,7 +71,10 @@ export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
 }
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
-  const { question, locale, pack, vocabulary, safety, client } = input;
+  const { locale, pack, vocabulary, safety, client } = input;
+  // "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): routing, retrieval and the checks see his name; the model also sees the visitor's word.
+  const question = resolveNickname(input.question);
+  const modelQuestion = nicknameForModel(input.question);
   // Deterministic routing first (T15, spec section 13, owner rules 2026-10-15): no retrieval, no model call, never cached.
   const early = (kind: CannedKind, reason?: PipelineReason, extra: Partial<PipelineResult> = {}): PipelineResult => ({
     text: canned(kind, locale),
@@ -99,7 +102,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
   const matches = lead ? leadMatches(pack, question) : [];
-  const messages = buildMessages(pack.packDate, context, question, { ...(topic ? { topic } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) });
+  const messages = buildMessages(pack.packDate, context, modelQuestion, { ...(topic ? { topic } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) });
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
   const generation = await generate(client, models, messages, input.timeouts);
   const leadFlag = lead ? { lead: true } : {};

@@ -179,10 +179,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 59 unique items with a 56 pass threshold", () => {
-    expect(golden.items).toHaveLength(59);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(59);
-    expect(golden.passThreshold).toBe(56);
+  it("has 63 unique items with a 60 pass threshold", () => {
+    expect(golden.items).toHaveLength(63);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(63);
+    expect(golden.passThreshold).toBe(60);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
@@ -247,6 +247,39 @@ describe("perspectives in the pipeline (spec section 13)", () => {
   it("declines opinions about an employer without a model call", async () => {
     const r = await ask("What does Kurniadi think of Jenius?", "unused");
     expect(r).toMatchObject({ outcome: "decline", reason: "others", calledModel: false, text: MESSAGES.others.en });
+  });
+
+  it("treats ShinyQ as Kurniadi's nickname: retrieval, the prompt and the model call", async () => {
+    for (const [q, locale] of [
+      ["Who is ShinyQ?", "en"],
+      ["Apa itu ShinyQ?", "id"],
+    ] as const) {
+      const r = await ask(q, "Kurniadi is an AI and Software Engineer.", locale);
+      expect(r).toMatchObject({ outcome: "answer", calledModel: true });
+      expect(r.chunkIds).toContain("profile");
+      const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+      expect(messages[1].content).toContain("Kurniadi (ShinyQ)");
+    }
+  });
+
+  it("retrieves on the plain name: the nickname questions get the chunks of the same question about him", async () => {
+    const nick = await ask("Who is ShinyQ?", "Kurniadi is an AI and Software Engineer.");
+    const name = await ask("Who is Kurniadi?", "Kurniadi is an AI and Software Engineer.");
+    expect(nick.chunkIds).toEqual(name.chunkIds);
+  });
+
+  it("keeps the visitor's word for a question about the nickname itself", async () => {
+    const r = await ask("What does ShinyQ mean?", "ShinyQ is Kurniadi's nickname.");
+    const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+    expect(messages[1].content).toBe("What does Kurniadi (ShinyQ) mean?");
+    expect(r).toMatchObject({ outcome: "answer", calledModel: true });
+  });
+
+  it("keeps ShinyQ HQ as the site name", async () => {
+    const r = await ask("How was ShinyQ HQ built?", "ShinyQ HQ is a static Next.js site.");
+    expect(r.chunkIds).toContain("site-build");
+    const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
+    expect(messages[1].content).toBe("How was ShinyQ HQ built?");
   });
 
   it("sends an opinion about a blocklisted name to the model like any unknown name (S6: no oracle)", async () => {

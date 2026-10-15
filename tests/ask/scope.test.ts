@@ -3,7 +3,7 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
-import { isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, orgAliases, privateTopic } from "../../functions/_lib/scope";
+import { isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, nicknameForModel, orgAliases, privateTopic, resolveNickname } from "../../functions/_lib/scope";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
@@ -16,6 +16,45 @@ beforeAll(() => {
 
 const originalGolden = golden.items.filter((i) => Number(i.id.slice(1)) <= 32);
 const refuses = (item: (typeof golden.items)[number]) => (item.expect as { refuse?: boolean }).refuse === true;
+
+describe("resolveNickname (owner 2026-10-16: ShinyQ is Kurniadi's nickname)", () => {
+  it.each([
+    ["Who is ShinyQ?", "Who is Kurniadi?", "Who is Kurniadi (ShinyQ)?"],
+    ["what does shinyq do", "what does Kurniadi do", "what does Kurniadi (shinyq) do"],
+    ["Apa itu ShinyQ?", "Apa itu Kurniadi?", "Apa itu Kurniadi (ShinyQ)?"],
+    ["Is Shiny Q open to freelance work?", "Is Kurniadi open to freelance work?", "Is Kurniadi (Shiny Q) open to freelance work?"],
+    ["Siapa Shiny-Q?", "Siapa Kurniadi?", "Siapa Kurniadi (Shiny-Q)?"],
+    ["ShinyQ's projects", "Kurniadi's projects", "Kurniadi's (ShinyQ) projects"],
+    ["What does ShinyQ mean?", "What does Kurniadi mean?", "What does Kurniadi (ShinyQ) mean?"],
+  ])("%s", (q, plain, forModel) => {
+    expect(resolveNickname(q)).toBe(plain);
+    expect(nicknameForModel(q)).toBe(forModel);
+  });
+
+  it.each(["How was ShinyQ HQ built?", "What stack does ShinyQ-HQ use?", "Shiny Q HQ hosting?", "github.com/ShinyQ/ShinyQ-HQ", "Is @ShinyQ his handle?"])("keeps the site name: %s", (q) => {
+    expect(resolveNickname(q)).toBe(q);
+    expect(nicknameForModel(q)).toBe(q);
+    expect(isSiteQuestion(resolveNickname(q))).toBe(isSiteQuestion(q));
+  });
+
+  it("retrieves the same chunks for the nickname as for his name", () => {
+    for (const [nick, name] of [
+      ["Who is ShinyQ?", "Who is Kurniadi?"],
+      ["What projects has ShinyQ built?", "What projects has Kurniadi built?"],
+      ["Where does ShinyQ work?", "Where does Kurniadi work?"],
+      ["ShinyQ's certifications?", "Kurniadi's certifications?"],
+    ]) {
+      expect(retrieve(pack, resolveNickname(nick), "en").chunks.map((c) => c.id)).toEqual(retrieve(pack, name, "en").chunks.map((c) => c.id));
+    }
+  });
+
+  it("routes nickname questions like questions about him", () => {
+    expect(isGeneralAssistantRequest(resolveNickname("Who is ShinyQ?"))).toBe(false);
+    expect(privateTopic(resolveNickname("What does ShinyQ do?"))).toBeNull();
+    expect(isLeadQuestion(resolveNickname("Can ShinyQ build a chatbot for our company?"))).toBe(true);
+    expect(opinionAboutOthers(resolveNickname("What does ShinyQ think of Jenius?"), ["Jenius"])).toBe(true);
+  });
+});
 
 describe("isPerspectiveQuestion", () => {
   it.each([

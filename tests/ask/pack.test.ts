@@ -191,6 +191,13 @@ describe("perspectives and principles in the pack", () => {
     expect(chunkTags(principles)).toEqual(["perspectives"]);
   });
 
+  it("names the ShinyQ nickname in the profile chunk (owner 2026-10-16)", () => {
+    const profile = byId(pack, "profile")!;
+    expect(profile.text_en).toContain("nickname ShinyQ");
+    expect(profile.text_id).toContain("nama panggilan ShinyQ");
+    expect(profile.keywords).toEqual(expect.arrayContaining(["shinyq", "nickname", "panggilan"]));
+  });
+
   it("indexes How I run AI in production as one chunk with the proof tiles", () => {
     const production = getContent().production;
     const chunk = byId(pack, "production")!;
