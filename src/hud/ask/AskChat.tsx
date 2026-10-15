@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { prepareAsk } from "@/ask/client";
 import { ASK_MAX_QUESTION, type AskEntry, type AskStatus } from "@/ask/protocol";
 import { ASK_TOPICS, pickFollowUps, topicQuestions, type AskTopic, type Suggestion } from "@/ask/suggestions";
@@ -9,6 +9,7 @@ import type { ThreadMessage } from "@/ask/thread";
 import type { Locale } from "@/content/schema";
 import type { DrawerLayout } from "@/hud/drawer/layout";
 import { CloseIcon, EditIcon, SendIcon, SparkIcon } from "./icons";
+import { anchoredScrollTop, askReducedMotion, scrolledAway } from "./scroll";
 import { AskAsOf, AskCiteLink, AskContactCard, useAskErrorMessage } from "./ui";
 import { useAskThread, type AskFn } from "./useAskThread";
 
@@ -99,12 +100,48 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Keep the newest message in view while it streams.
+  // Owner request 2026-10-16: follow the answer as it streams, but never past its first line, and
+  // stop following once the visitor scrolls the thread; a new question, an open or a pill mode
+  // change follows again.
   const last = messages.at(-1);
+  const follow = useRef(true);
+  const lastSet = useRef<number | null>(null);
+  const prevPhase = useRef(phase);
+  const scrollThread = useCallback((top: number, smooth: boolean) => {
+    const node = scrollRef.current;
+    if (!node) return;
+    lastSet.current = top;
+    if (smooth && typeof node.scrollTo === "function" && !askReducedMotion()) node.scrollTo({ top, behavior: "smooth" });
+    else node.scrollTop = top;
+  }, []);
+  const onThreadScroll = () => {
+    const node = scrollRef.current;
+    if (node && scrolledAway(node.scrollTop, lastSet.current)) follow.current = false;
+  };
+  useLayoutEffect(() => {
+    follow.current = true;
+    // Content may shrink in this commit (pills hide) and clamp scrollTop: not the visitor's scroll.
+    lastSet.current = null;
+  }, [messages.length, open]);
   useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (node) node.scrollTop = node.scrollHeight;
-  }, [messages.length, last?.text, phase, mode, open]);
+    if (!node) return;
+    follow.current = true;
+    scrollThread(Math.max(0, node.scrollHeight - node.clientHeight), false);
+  }, [mode, scrollThread]);
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    const finished = prevPhase.current !== "idle" && phase === "idle";
+    prevPhase.current = phase;
+    if (!node) return;
+    // The scroll event of a visitor's scroll can arrive after this commit: read the position too.
+    if (scrolledAway(node.scrollTop, lastSet.current)) follow.current = false;
+    if (!follow.current) return;
+    const answers = threadRef.current?.querySelectorAll<HTMLElement>("[data-role='assistant']");
+    const answer = last?.role === "assistant" && answers?.length ? answers[answers.length - 1] : null;
+    const answerTop = answer ? answer.getBoundingClientRect().top - node.getBoundingClientRect().top + node.scrollTop : null;
+    scrollThread(anchoredScrollTop(node, answerTop), finished);
+  }, [messages.length, last?.text, last?.role, phase, open, scrollThread]);
 
   const followUps = useMemo(() => {
     if (busy || !last || last.role !== "assistant") return [];
@@ -220,7 +257,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
           </button>
         </header>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-3">
+        <div ref={scrollRef} onScroll={onThreadScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-3" data-testid="ask-scroll">
           <div ref={threadRef} tabIndex={-1} role="log" aria-live="polite" aria-busy={busy} aria-label={td("threadLabel")} className="focus:outline-none" data-testid="ask-thread">
             <ol className="flex flex-col gap-3">
               {messages.length === 0 && (

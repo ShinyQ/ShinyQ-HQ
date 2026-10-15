@@ -51,6 +51,52 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
   };
 }
 
+/**
+ * A real stream for `/api/ask` POSTs (route.fulfill sends the body at once): the page's fetch returns
+ * a ReadableStream that emits one SSE frame every `everyMs`, after `firstMs`. GETs still go to the route mock.
+ */
+async function slowAsk(page: Page, { deltas, firstMs = 300, everyMs = 120, tags = ["ai", "voice"] }: { deltas: string[]; firstMs?: number; everyMs?: number; tags?: string[] }) {
+  await page.addInitScript(
+    ({ deltas, firstMs, everyMs, tags, asOf }) => {
+      const real = window.fetch.bind(window);
+      window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (!url.endsWith("/api/ask") || (init?.method ?? "GET") !== "POST") return real(input, init);
+        const frames = [...deltas.map((delta) => ({ delta })), { done: true, outcome: "answer", source: "primary", asOf, tags }];
+        const encoder = new TextEncoder();
+        const body = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            await new Promise((r) => setTimeout(r, firstMs));
+            for (const frame of frames) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(frame)}\n\n`));
+              await new Promise((r) => setTimeout(r, everyMs));
+            }
+            controller.close();
+          },
+        });
+        return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+      }) as typeof window.fetch;
+    },
+    { deltas, firstMs, everyMs, tags, asOf: AS_OF },
+  );
+}
+
+const LONG_ANSWER = Array.from({ length: 14 }, (_, i) => `Sentence ${i + 1} explains how the voice agent handles calls in production. `);
+
+/** The first line of the last answer sits inside the thread's visible area. */
+async function expectAnswerStartInView(page: Page) {
+  const scroller = dock(page).getByTestId("ask-scroll");
+  const answer = thread(page).locator("[data-role='assistant']").last();
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const s = (await scroller.boundingBox())!;
+      const a = (await answer.boundingBox())!;
+      return a.y >= s.y - 1 && a.y + 24 <= s.y + s.height;
+    })
+    .toBe(true);
+}
+
 const enabled = (turnstileSiteKey: string | null = null) => ({ enabled: true, turnstileSiteKey, asOf: AS_OF, maxLength: 300 });
 
 const dock = (page: Page) => page.getByRole("dialog", { name: "Ask the HQ" });
@@ -185,8 +231,43 @@ test("teaser shows once per session next to the launcher", async ({ page }) => {
   await expect(teaser).toHaveCount(0);
 });
 
+test("a long answer keeps its first line in view after the follow-ups appear", async ({ page }) => {
+  await mockAsk(page, { status: enabled(), deltas: LONG_ANSWER });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByTestId("ask-topics").getByRole("button", { name: "AI" }).click();
+  await dock(page).getByRole("button", { name: "How does the voice AI contact center work?", exact: true }).click();
+  await expectAnswerStartInView(page);
+});
+
+test("scrolling up while an answer streams is never overridden", async ({ page }) => {
+  await mockAsk(page, { status: enabled() });
+  await slowAsk(page, { deltas: LONG_ANSWER, everyMs: 150 });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  const scroller = dock(page).getByTestId("ask-scroll");
+  await dock(page).getByRole("textbox", { name: "Your question" }).fill("How does the voice agent work?");
+  await dock(page).getByRole("textbox", { name: "Your question" }).press("Enter");
+  await expect(dock(page).getByTestId("ask-thinking")).toContainText(en.ask.thinking);
+  // Wait until the thread overflows and the panel has followed the stream down, then scroll up.
+  await expect.poll(() => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(20);
+  await expect(dock(page).getByTestId("ask-followups")).toHaveCount(0);
+  await scroller.evaluate((node) => node.scrollTo({ top: 0 }));
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBeLessThan(5);
+});
+
 test.describe("phones", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("bottom sheet: a long answer keeps its first line in view", async ({ page }) => {
+    await mockAsk(page, { status: enabled(), deltas: LONG_ANSWER });
+    await openPage(page, "/en/labs?tier=static");
+    await page.getByTestId("ask-launcher").click();
+    await dock(page).getByTestId("ask-topics").getByRole("button", { name: "AI" }).click();
+    await dock(page).getByRole("button", { name: "How does the voice AI contact center work?", exact: true }).click();
+    await expectAnswerStartInView(page);
+  });
 
   test("bottom sheet: modal, closes with the button and the handle", async ({ page }) => {
     await mockAsk(page, { status: enabled() });
