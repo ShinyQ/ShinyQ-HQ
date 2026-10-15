@@ -38,10 +38,10 @@ describe("Lobby title", () => {
     expect(top).toBeGreaterThanOrEqual(80);
   });
 
-  it("still floats above the stats tiles and the monogram", () => {
+  it("still floats above the stats tiles and the rover mark", () => {
     const boxes = lobbyElements(getStats().length);
     const title = boxes.find((b) => b.name === "title")!;
-    for (const b of boxes.filter((b) => b.name.startsWith("tile-") || b.name === "monogram")) {
+    for (const b of boxes.filter((b) => b.name.startsWith("tile-") || b.name === "rover-mark")) {
       expect(title.min[1], b.name).toBeGreaterThan(b.max[1]);
     }
     expect(TITLE_TOP).toBeCloseTo(LOBBY.titleY + LOBBY.titleFont.name * 1.2);

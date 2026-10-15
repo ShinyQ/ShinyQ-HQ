@@ -52,7 +52,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
   return (
     <group name="lobby">
       <Lanes packets={tier === "full" ? 28 : 12} />
-      <ProfileHologram name={data.profile.name} monogram={data.profile.monogram} headline={data.profile.headline} />
+      <ProfileHologram name={data.profile.name} headline={data.profile.headline} />
       <StatsRing key={stats.length} stats={stats} />
       <SkillsWall skills={data.skills} title={labels.skillsTitle} />
       <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />

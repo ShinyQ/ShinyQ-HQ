@@ -3,42 +3,119 @@
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
+import { BufferGeometry, Color, Float32BufferAttribute, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3, type Group, type Mesh } from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { BatchedLabels } from "../../fx/BatchedLabels";
 import { getGlassMaterial } from "../../fx/geometry";
+import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
+import type { BatchedLabel } from "../../fx/labelProps";
 import { neonColor } from "../../fx/materials";
 import { useDispose } from "../../fx/useDispose";
 import { COLORS, LOBBY } from "../../config";
+import { RIDE_CULL_BOUNDS } from "../../tower/rideCull";
 import { FONTS, FloorLine } from "../../tower/primitives";
 import { HOLOGRAM } from "./layout";
+import { antenna, faceLabels, outlineSegments, ROVER_MARK_3D, screenPlate, treadBoxes } from "./roverMark3d";
 
-function hexGeometry(r: number) {
-  const pts: number[] = [];
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + Math.PI / 2;
-    pts.push(Math.cos(a) * r, Math.sin(a) * r, 0);
-  }
-  const g = new BufferGeometry();
-  g.setAttribute("position", new Float32BufferAttribute(pts, 3));
-  return g;
-}
+const NO_RAYCAST = () => null;
+const Y = new Vector3(0, 1, 0);
+const M = ROVER_MARK_3D;
 
 const circle = (r: number, n = 48): [number, number][] =>
   Array.from({ length: n }, (_, i) => [Math.cos((i / n) * Math.PI * 2) * r, Math.sin((i / n) * Math.PI * 2) * r]);
 
-/** Rotating wireframe KAW monogram on a pedestal, with the name and headline floating above (C5: no photo). */
-export function ProfileHologram({ name, monogram, headline }: { name: string; monogram: string; headline: string }) {
+/** Globe and plate modes never move a vertex, so the ride cull may hide them under a solid slab. */
+function boundsSafe(material: ReturnType<typeof createHoloMaterial>) {
+  material.userData[RIDE_CULL_BOUNDS] = true;
+  return material;
+}
+
+type Part = { at: [number, number, number]; yaw?: number; size: [number, number, number]; color: string };
+
+/** Instance matrices and colors, attached at creation so precompile and culling see the final mesh. */
+function instances(parts: readonly Part[]) {
+  const m = new Matrix4();
+  const q = new Quaternion();
+  const p = new Vector3();
+  const s = new Vector3();
+  const c = new Color();
+  const matrices = new Float32Array(parts.length * 16);
+  const colors = new Float32Array(parts.length * 3);
+  parts.forEach((part, i) => {
+    m.compose(p.set(...part.at), q.setFromAxisAngle(Y, part.yaw ?? 0), s.set(...part.size)).toArray(matrices, i * 16);
+    c.set(part.color).toArray(colors, i * 3);
+  });
+  return { matrices, colors };
+}
+
+/**
+ * The rover brand mark as a turning hologram on the pedestal (owner pick 2026-10-15; it replaced the KAW
+ * monogram), with the name and headline floating above (C5: no photo). Shapes in roverMark3d.ts. Five
+ * draw calls on programs the Lobby already has: the head and treads (one instanced holo globe mesh),
+ * the screen (a one-instance holo plate mesh), the `^_^` face (one label batch), the neon edges (one
+ * line mesh) and the antenna tip (the rover's own tip material).
+ */
+export function ProfileHologram({ name, headline }: { name: string; headline: string }) {
   const spin = useRef<Group>(null);
+  const tip = useRef<Mesh>(null);
   const halos = useRef<(Group | null)[]>([]);
   const flicker = useRef({ until: 0, wasHere: false });
   const tier = useHQStore((st) => st.tier);
   const haloColors = useMemo(() => [neonColor(COLORS.green, 2, tier), neonColor(COLORS.cyan, 2, tier)], [tier]);
-  const outer = useMemo(() => hexGeometry(HOLOGRAM.hexRadius), []);
-  const inner = useMemo(() => hexGeometry(1.8), []);
-  useDispose(outer);
-  useDispose(inner);
   const ring = useMemo(() => circle(3.05), []);
   const { x, z, radius } = LOBBY.hologram;
+
+  const box = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 2, 0.2), []);
+  useDispose(box);
+  const body = useMemo(
+    () => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.globe, color: neonColor("#ffffff", tier === "full" ? 1.4 : 1.1, tier), opacity: tier === "full" ? 0.95 : 0.85 })),
+    [tier],
+  );
+  useDispose(body);
+  const bodyData = useMemo(
+    () =>
+      instances([
+        { at: [0, 0, 0], size: [M.head.w, M.head.h, M.head.d], color: M.colors.head },
+        ...treadBoxes().map((t) => ({ at: t.at, size: t.size, color: M.colors.tread })),
+      ]),
+    [],
+  );
+
+  const plate = useMemo(() => {
+    const g = new PlaneGeometry(1, 1);
+    g.setAttribute("aAlpha", new InstancedBufferAttribute(new Float32Array([1]), 1));
+    return g;
+  }, []);
+  useDispose(plate);
+  const plateMaterial = useMemo(() => boundsSafe(createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.5, tier) })), [tier]);
+  useDispose(plateMaterial);
+  const plateData = useMemo(() => {
+    const s = screenPlate();
+    return instances([{ at: s.at, size: [s.size[0], s.size[1], 1], color: M.colors.screen }]);
+  }, []);
+
+  const faces = useMemo<BatchedLabel[]>(
+    () =>
+      faceLabels().map((f) => ({
+        text: M.face.text,
+        position: f.at,
+        yaw: f.yaw,
+        font: FONTS.monoBold,
+        fontSize: M.face.fontSize,
+        color: M.colors.eyes,
+      })),
+    [],
+  );
+
+  const edges = useMemo(() => {
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(outlineSegments(), 3));
+    return g;
+  }, []);
+  useDispose(edges);
+  const tipAt = useMemo(() => antenna().tip, []);
+  const tipColor = useMemo(() => neonColor(M.colors.tip, 3, tier), [tier]);
 
   useFrame((state, dt) => {
     if (!spin.current) return;
@@ -49,8 +126,10 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
     const d = Math.min(dt, 0.1) * (reduced ? 0.25 : 1);
     if (halos.current[0]) halos.current[0].rotation.y += d * 0.4;
     if (halos.current[1]) halos.current[1].rotation.y -= d * 0.25;
-    // Flicker in for 400 ms whenever the rover arrives on the Lobby.
     const t = state.clock.elapsedTime;
+    // The antenna tip blinks like the rover's.
+    if (tip.current) tip.current.scale.setScalar(reduced || Math.sin(t * 5) > 0 ? 1 : 0.55);
+    // Flicker in for 400 ms whenever the rover arrives on the Lobby.
     const s = getHQStore().getState();
     const here = s.floor === "L1" && !s.ride && s.phase === "explore";
     const f = flicker.current;
@@ -89,29 +168,23 @@ export function ProfileHologram({ name, monogram, headline }: { name: string; mo
           </group>
         </group>
       ))}
-      <group ref={spin} position={[0, HOLOGRAM.y, 0]}>
-        <lineLoop geometry={outer}>
-          <lineBasicMaterial color={COLORS.cyan} toneMapped={false} />
-        </lineLoop>
-        <lineLoop geometry={inner}>
-          <lineBasicMaterial color={COLORS.violet} transparent opacity={0.6} toneMapped={false} />
-        </lineLoop>
-        <Text font={FONTS.monoBold} fontSize={0.95} letterSpacing={0.06} color="#f4f4f5" anchorX="center" anchorY="middle" position={[0, 0, 0.02]} material-toneMapped={false}>
-          {monogram}
-        </Text>
-        <Text
-          font={FONTS.monoBold}
-          fontSize={0.95}
-          letterSpacing={0.06}
-          color="#f4f4f5"
-          anchorX="center"
-          anchorY="middle"
-          position={[0, 0, -0.02]}
-          rotation={[0, Math.PI, 0]}
-          material-toneMapped={false}
-        >
-          {monogram}
-        </Text>
+      <group ref={spin} position={[0, HOLOGRAM.y, 0]} name="hologram-rover-mark">
+        <instancedMesh name="hologram-rover-body" args={[box, body, 3]} raycast={NO_RAYCAST}>
+          <instancedBufferAttribute attach="instanceMatrix" args={[bodyData.matrices, 16]} />
+          <instancedBufferAttribute attach="instanceColor" args={[bodyData.colors, 3]} />
+        </instancedMesh>
+        <instancedMesh name="hologram-rover-screens" args={[plate, plateMaterial, 1]} raycast={NO_RAYCAST} renderOrder={1}>
+          <instancedBufferAttribute attach="instanceMatrix" args={[plateData.matrices, 16]} />
+          <instancedBufferAttribute attach="instanceColor" args={[plateData.colors, 3]} />
+        </instancedMesh>
+        <BatchedLabels labels={faces} name="hologram-rover-faces" renderOrder={2} />
+        <lineSegments geometry={edges} raycast={NO_RAYCAST}>
+          <lineBasicMaterial color={M.colors.line} toneMapped={false} />
+        </lineSegments>
+        <mesh ref={tip} position={tipAt} raycast={NO_RAYCAST}>
+          <sphereGeometry args={[M.antenna.tip, 12, 12]} />
+          <meshBasicMaterial color={tipColor} toneMapped={false} />
+        </mesh>
       </group>
       <Billboard position={[0, LOBBY.titleY, 0]}>
         <Text font={FONTS.sansBold} fontSize={LOBBY.titleFont.name} color="#f4f4f5" anchorX="center" anchorY="bottom" maxWidth={14} textAlign="center">

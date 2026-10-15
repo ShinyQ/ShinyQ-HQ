@@ -138,7 +138,7 @@ export const LOBBY = {
   spawnHeading: Math.atan2(KIOSK_AXIS.x, KIOSK_AXIS.z),
   hologram: LOBBY_HOLOGRAM,
   /**
-   * Name and headline float above the stats tiles and the monogram (both top out at 5.85), low and
+   * Name and headline float above the stats tiles and the rover mark (both top out below 5.85), low and
    * small enough that the name clears the HUD top bar at 1440 x 900 (tests/unit/lobby-title.test.ts).
    */
   titleY: 6.4,
