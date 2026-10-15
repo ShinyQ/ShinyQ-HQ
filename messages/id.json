@@ -942,6 +942,7 @@
   "seo": {
     "home": "Beranda",
     "homeTitle": "{name}: {role} yang membangun platform AI production",
+    "homeSearchTitle": "{name}: {role} di {city}",
     "homeDescription": "{name}, {role} di {city}. {motto}",
     "quickTitle": "Ringkasan profil dan karya {name}",
     "quickDescription": "{name} dalam satu halaman. {motto}",

@@ -31,6 +31,24 @@ export function resolveBeaconToken(value: string | undefined): string | undefine
 
 export const CF_BEACON_TOKEN = resolveBeaconToken(process.env.NEXT_PUBLIC_CF_BEACON_TOKEN);
 
+/**
+ * Search engine ownership tokens, read at build time from GOOGLE_SITE_VERIFICATION (the `content`
+ * of Search Console's HTML tag) and BING_SITE_VERIFICATION (Bing Webmaster's `msvalidate.01`).
+ * Rendered on `/` and the two locale home pages only (docs/deploy.md section 15). Unset or
+ * malformed values render nothing.
+ */
+export function resolveVerificationToken(value: string | undefined): string | undefined {
+  const token = value?.trim();
+  return token && /^[A-Za-z0-9_-]{8,128}$/.test(token) ? token : undefined;
+}
+
+export function searchVerification(env: Record<string, string | undefined> = process.env): Metadata["verification"] | undefined {
+  const google = resolveVerificationToken(env.GOOGLE_SITE_VERIFICATION);
+  const bing = resolveVerificationToken(env.BING_SITE_VERIFICATION);
+  if (!google && !bing) return undefined;
+  return { ...(google ? { google } : {}), ...(bing ? { other: { "msvalidate.01": bing } } : {}) };
+}
+
 /** Locale-prefixed path: ("/", "en") -> "/en", ("/labs", "id") -> "/id/labs". */
 export function localePath(locale: Locale, path: string): string {
   return `/${locale}${path === "/" ? "" : path}`;
@@ -70,15 +88,28 @@ export const OG_IMAGE_TYPE = "image/jpeg";
 
 export const OG_LOCALE: Record<Locale, string> = { en: "en_US", id: "id_ID" };
 
+/** Open Graph and Twitter image entry for a share card path; `secureUrl` is set on https origins. */
+export function shareImage(path: string, alt: string) {
+  const secure = SITE_URL.startsWith("https:") ? { secureUrl: absoluteUrl(path) } : {};
+  return { url: path, ...secure, ...OG_IMAGE_SIZE, type: OG_IMAGE_TYPE, alt };
+}
+
+/** The same card for Twitter, which has no secure_url tag. */
+export function twitterImage({ url, width, height, type, alt }: ReturnType<typeof shareImage>) {
+  return { url, width, height, type, alt };
+}
+
 /**
  * Localized title/description, canonical, hreflang alternates, Open Graph
  * and Twitter card for a locale-relative path. `image` defaults to the
- * locale's default share card.
+ * locale's default share card. `documentTitle` is the `<title>` search engines show (at most about
+ * 60 characters, see `searchTitle` in src/lib/seo.ts); Open Graph and Twitter keep `title`.
  */
 export function pageMetadata({
   locale,
   path,
   title,
+  documentTitle,
   description,
   type = "website",
   publishedTime,
@@ -89,6 +120,7 @@ export function pageMetadata({
   locale: Locale;
   path: string;
   title?: string;
+  documentTitle?: string;
   description?: string;
   type?: "website" | "article";
   publishedTime?: string;
@@ -97,16 +129,10 @@ export function pageMetadata({
   imageAlt?: string;
 }): Metadata {
   const url = localePath(locale, path);
-  const images = [
-    {
-      url: image ?? ogImagePath({ kind: "default", locale }),
-      ...OG_IMAGE_SIZE,
-      type: OG_IMAGE_TYPE,
-      alt: imageAlt ?? title ?? SITE_NAME,
-    },
-  ];
+  const images = [shareImage(image ?? ogImagePath({ kind: "default", locale }), imageAlt ?? title ?? SITE_NAME)];
+  const shown = documentTitle ?? title;
   return {
-    ...(title ? { title: { absolute: title } } : {}),
+    ...(shown ? { title: { absolute: shown } } : {}),
     ...(description ? { description } : {}),
     alternates: {
       canonical: url,
@@ -124,7 +150,7 @@ export function pageMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      images,
+      images: images.map(twitterImage),
       ...(title ? { title } : {}),
       ...(description ? { description } : {}),
     },

@@ -20,9 +20,11 @@ import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatYearMonth } from "@/lib/format";
 import { seoMetadata } from "@/lib/seo";
+import { searchVerification } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
-  return seoMetadata(assertLocale((await params).locale), "/");
+  const verification = searchVerification();
+  return { ...seoMetadata(assertLocale((await params).locale), "/"), ...(verification ? { verification } : {}) };
 }
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
