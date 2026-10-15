@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { DELAYED_AFTER_MS } from "@/lib/visits/model";
 import { STATS_FIXTURE } from "@/lib/stats/fixtures";
-import { applyIssueAction, askCheck, checkWithRetry, deployCheck, failingFromBody, findOpenIssue, githubClient, type GitHubCall, issueAction, ISSUE_TITLE, pageCheck, runChecks, statsCheck, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type CheckId, type UptimeDeps } from "../../scripts/uptime";
+import { applyIssueAction, askCheck, checkWithRetry, deployCheck, failingFromBody, findOpenIssue, githubClient, type GitHubCall, issueAction, ISSUE_TITLE, pageCheck, runChecks, statsCheck, summaryMarkdown, STATS_MAX_AGE_MS, RETRY_DELAY_MS, type CheckId, type UptimeDeps } from "../../scripts/uptime";
 
 const OG = '<html><head><link rel="canonical" href="https://x/en"><meta property="og:title" content="T"><meta property="og:image" content="https://x/og.jpg"><meta property="og:url" content="https://x/en"></head></html>';
 const NOW = Date.parse("2026-10-15T10:00:00Z");
@@ -188,5 +189,32 @@ describe("applyIssueAction and findOpenIssue", () => {
     expect(url).toBe("https://api.github.com/repos/o/r/issues");
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer tok");
     expect(init.body).toBe('{"a":1}');
+  });
+});
+
+describe("summaryMarkdown", () => {
+  it("lists every check with its state and the issue outcome", () => {
+    const md = summaryMarkdown([{ id: "home", ok: true, detail: "HTTP 200 with og tags" }, { id: "ask", ok: false, detail: "HTTP 502" }], "Opened https://i/9.");
+    expect(md).toContain("| Page / | pass | HTTP 200 with og tags |");
+    expect(md).toContain("| GET /api/ask status | FAIL | HTTP 502 |");
+    expect(md).toContain("Opened https://i/9.");
+  });
+});
+
+describe("uptime.yml", () => {
+  const yml = readFileSync(".github/workflows/uptime.yml", "utf8");
+  it("runs hourly (owner decision) and on dispatch with force_fail", () => {
+    expect(yml).toMatch(/cron: "17 \* \* \* \*"/);
+    expect(yml).toMatch(/workflow_dispatch:\s*\n\s*inputs:\s*\n\s*force_fail:/);
+    expect(yml).toContain("UPTIME_FORCE_FAIL: ${{ inputs.force_fail && 'true' || 'false' }}");
+  });
+  it("uses only issues write, contents read and actions read, and no secrets", () => {
+    const job = yml.slice(yml.indexOf("jobs:"));
+    expect(job).toMatch(/permissions:\s*\n\s*actions: read\s*\n\s*contents: read\s*\n\s*issues: write/);
+    expect(yml).not.toMatch(/secrets\./);
+  });
+  it("runs the script without installing dependencies", () => {
+    expect(yml).toContain("run: bun scripts/uptime.ts");
+    expect(yml).not.toContain("bun install");
   });
 });

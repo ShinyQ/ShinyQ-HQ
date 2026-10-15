@@ -9,6 +9,7 @@
  * with a recovery comment once every check passes (GitHub emails the owner). Uses fetch and GH_TOKEN
  * only (issues: write, actions: read); no dependencies, so the workflow skips `bun install`.
  */
+import { appendFileSync } from "node:fs";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
 import { parseSocialMeta } from "./og-meta";
 
@@ -273,4 +274,43 @@ export async function applyIssueAction(gh: GitHubCall, repo: string, action: Iss
       await must(gh, "PATCH", `/repos/${repo}/issues/${action.number}`, { state: "closed", state_reason: "completed" });
       return `Closed issue #${action.number} (recovered).`;
   }
+}
+
+export function summaryMarkdown(results: readonly CheckResult[], outcome: string): string {
+  return ["## Uptime", "", "| Check | State | Detail |", "|---|---|---|", ...results.map((r) => `| ${CHECK_LABELS[r.id]} | ${r.ok ? "pass" : "FAIL"} | ${cell(r.detail)} |`), "", outcome, ""].join("\n");
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const flag = (name: string) => {
+    const i = args.indexOf(name);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
+  const site = (flag("--site") ?? process.env.SITE_URL ?? "https://kurniadi.pages.dev").replace(/\/+$/, "");
+  const repo = flag("--repo") ?? process.env.GITHUB_REPOSITORY ?? "ShinyQ/ShinyQ-HQ";
+  const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+  const forceFail = args.includes("--force-fail") || process.env.UPTIME_FORCE_FAIL === "true";
+  const dry = args.includes("--dry") || !token;
+  const deps: UptimeDeps = { fetch, site, repo, token, now: Date.now };
+  const results = await checkWithRetry(deps, { forceFail, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) });
+  const server = process.env.GITHUB_SERVER_URL ?? "https://github.com";
+  const runUrl = process.env.GITHUB_RUN_ID ? `${server}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` : `${server}/${repo}/actions/workflows/uptime.yml`;
+  const ctx: IssueContext = { site, runUrl, checkedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z") };
+  for (const r of results) console.log(`${r.ok ? "pass" : "FAIL"}  ${CHECK_LABELS[r.id]}: ${r.detail}`);
+  let outcome: string;
+  if (dry) {
+    outcome = `Dry run (${token ? "--dry" : "no GH_TOKEN"}): issue left alone.`;
+  } else {
+    const gh = githubClient(fetch, token!);
+    outcome = await applyIssueAction(gh, repo, issueAction(results, await findOpenIssue(gh, repo), ctx));
+  }
+  console.log(outcome);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(results, outcome));
+}
+
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }
