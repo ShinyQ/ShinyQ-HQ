@@ -262,6 +262,12 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     }
   });
 
+  it("retrieves on the plain name: the nickname questions get the chunks of the same question about him", async () => {
+    const nick = await ask("Who is ShinyQ?", "Kurniadi is an AI and Software Engineer.");
+    const name = await ask("Who is Kurniadi?", "Kurniadi is an AI and Software Engineer.");
+    expect(nick.chunkIds).toEqual(name.chunkIds);
+  });
+
   it("keeps the visitor's word for a question about the nickname itself", async () => {
     const r = await ask("What does ShinyQ mean?", "ShinyQ is Kurniadi's nickname.");
     const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
