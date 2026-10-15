@@ -55,12 +55,9 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
           />
         </div>
       ) : (
-        first && (
-          <div className="card flex min-h-[200px] flex-col justify-end p-6 sm:p-8">
-            <p className="pv-num text-[44px] sm:text-[56px]">{first.value}</p>
-            <p className="pv-small mt-3 max-w-[40ch]">{first.label[locale]}</p>
-          </div>
-        )
+        <div className={`pv-shot ${size === "pair" ? "[&_.pv-ph]:aspect-[16/8]" : ""}`}>
+          <ProjectPlaceholder id={`ph-card-${pod.slug}`} title={pod.title[locale]} wing={pod.wing} size="card" />
+        </div>
       )}
       <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
         <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>

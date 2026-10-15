@@ -19,6 +19,16 @@ describe("ProjectPlaceholder", () => {
     expect(html).not.toMatch(/<img|url\((?!#)|https?:/);
   });
 
+  it("renders the card size with the larger glyph and initials", () => {
+    const card = renderToStaticMarkup(<ProjectPlaceholder id="ph-card-x" title="Digital Banking Integrations" wing="data" size="card" />);
+    const row = renderToStaticMarkup(<ProjectPlaceholder id="ph-row-x" title="Digital Banking Integrations" wing="data" size="row" />);
+    expect(card).toContain("pv-ph-card");
+    expect(card).toContain(">DB<");
+    expect(card).toContain('width="56"');
+    expect(row).toContain('width="30"');
+    expect(card).not.toContain("pv-ph-row");
+  });
+
   it("gives every placeholder its own gradient ids", () => {
     const a = renderToStaticMarkup(<ProjectPlaceholder id="ph-a" title="Alpha Beta" wing="ai" size="film" />);
     const b = renderToStaticMarkup(<ProjectPlaceholder id="ph-b" title="Alpha Beta" wing="ai" size="film" />);
