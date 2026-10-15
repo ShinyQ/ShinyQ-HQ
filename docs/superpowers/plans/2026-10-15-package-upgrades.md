@@ -363,46 +363,61 @@ Follow "Pin procedure" with package `eslint`, Dependabot PR 31, reason naming th
 
 ---
 
-### Task 4: A4, TypeScript 7 (closes #30)
+### Task 4: A4, TypeScript 6.0 and a TypeScript 7 pin (closes #30)
 
-**Branch:** `feat/r7a4-typescript-7` from `main` after Task 3 merged (or after its pin merged).
+Probe result (2026-10-15, scratch worktree with A1 to A3 applied): TypeScript 7.0.2 cannot pass. `bun run lint` stops with "typescript-eslint does not support TS 7.0" (typescript-eslint 8.71.2 supports `>=4.8.4 <6.1.0`, tracking typescript-eslint#10940), and `bun run typecheck` fails in `tests/unit/three-disposal.test.ts`, which uses the classic compiler API (`ts.forEachChild`, `ts.isIdentifier`) that TypeScript 7's package no longer exports (its main export is `lib/version.cjs`). TypeScript 6.0.3, the last release with that API, passes typecheck, lint, every unit test and the build once `tsconfig.json` lists `"types": ["bun"]` (TypeScript 6 no longer includes every `@types/*` package by default; `bun-types` brings the Node types too).
+
+**Branch:** `feat/r7a4-typescript-6` from `main` after Task 3 merged.
 
 **Files:**
-- Modify: `package.json` (`"typescript": "^7"`), `bun.lock`, `tsconfig.json` (only if TS 7 rejects an option, for example `target: ES2017` deprecations or `baseUrl`)
-- Or (pin): `.github/dependabot.yml`, `docs/deploy.md` section 17
+- Modify: `package.json` (`"typescript": "~6.0.3"`: tilde, because typescript-eslint stops below 6.1), `bun.lock`, `tsconfig.json` (`"types": ["bun"]`)
+- Modify: `.github/dependabot.yml` (ignore `typescript` majors), `docs/deploy.md` section 17 (pin row)
 
-- [ ] **Step 1: Upgrade**
-
-```bash
-bun add -d typescript@^7
-```
-
-Bun warns that `typescript-eslint` 8.x wants `typescript <6.1.0`.
-
-- [ ] **Step 2: The four TypeScript consumers, in order**
+- [ ] **Step 1: Upgrade to 6.0**
 
 ```bash
-bun run typecheck          # next typegen + tsc --noEmit
-bun run lint               # typescript-eslint parser loads typescript
-bun run test               # vitest (esbuild transpiles, but some tests import typescript)
-rm -rf .next && bun run build   # next build loads typescript for its config and type step
+bun add -d typescript@~6.0.3
 ```
 
-Expected outcomes:
-- `tsc` missing or different binary (TS 7 ships the native compiler; check `bunx tsc --version`): if the `tsc` entry still exists and passes, continue.
-- `next typegen` or `next build` fails to load `typescript` (no JS API, `ts.createProgram` missing, "TypeScript is not installed" or similar): pin (Step 4b).
-- `typescript-eslint` fails (`Cannot read properties of undefined` from `@typescript-eslint/typescript-estree`, or the unsupported-version error): pin (Step 4b). Do not set `warnOnUnsupportedTypeScriptVersion` or swap parsers to hide it.
-- New genuine type errors under TS 7 strictness: fix at the source, no `any` or `@ts-expect-error`.
+- [ ] **Step 2: Typecheck fails without `types`**
 
-- [ ] **Step 3: Gates, docs, commit, PR, close #30**
+Run: `bun run typecheck`
+Expected: FAIL with `TS2868: Cannot find name 'Bun'` in `scripts/*.ts` and `TS2339: Property 'dir' does not exist on type 'ImportMeta'`.
 
-`bun run verify:quick` and `E2E_PORT=4517 bun run e2e:smoke`. Commit `chore(deps): TypeScript 7`. Capacity check, push, PR "Replaces Dependabot #30." After green: `gh pr close 30 -R ShinyQ/ShinyQ-HQ --comment "Superseded by #<n> (Round 7 A4)."` Report and wait.
+- [ ] **Step 3: Name the global types**
 
-- [ ] **Step 4b (if it cannot pass): pin**
+In `tsconfig.json` `compilerOptions`, after `"incremental": true,`:
 
-Follow "Pin procedure" with package `typescript`, Dependabot PR 30, reason naming the failing consumer (for example "typescript-eslint 8.71.2 supports TypeScript <6.1.0 and Next.js 16.4.1 loads the TypeScript 5 JS API; TypeScript 7 is the native port"), revisit `2027-01-15`.
+```json
+    "types": ["bun"],
+```
 
-If both ESLint 10 and TypeScript 7 end up pinned, one PR may carry both pins (Task 3's and Task 4's), since each pin is config and docs only; still close #31 and #30 separately with their own reasons.
+Run: `bun run typecheck`
+Expected: PASS.
+
+- [ ] **Step 4: Pin TypeScript 7** (Pin procedure Steps 1 to 3)
+
+`.github/dependabot.yml` entry:
+
+```yaml
+    ignore:
+      # revisit 2027-01-15: typescript-eslint 8 supports TypeScript below 6.1 and TypeScript 7 drops the compiler API tests use
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+```
+
+`docs/deploy.md` section 17 row (replaces `| none | | | | |`):
+
+```markdown
+| `typescript` | 6.0.x (`~6.0.3`) | 7.0.2 | typescript-eslint 8.71 (via eslint-config-next) throws "does not support TS 7.0" and supports TypeScript below 6.1 (typescript-eslint#10940); TypeScript 7 also drops the classic compiler API that `tests/unit/three-disposal.test.ts` uses. 6.1 is held back by the tilde range for the same reason | 2027-01-15 |
+```
+
+Run: `bunx vitest run tests/unit/dependabot.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Gates, commit, PR, close #30**
+
+`rm -rf .next && bun run verify:quick` and `E2E_PORT=4517 bun run e2e:smoke`. Commit `chore(deps): TypeScript 6.0, pin TypeScript 7`. Capacity check, push, PR. After green: `gh pr close 30 -R ShinyQ/ShinyQ-HQ --comment "Pinned in #<n>: <reason>. TypeScript moves to 6.0.3 instead; Dependabot ignores typescript majors until the revisit on 2027-01-15 (docs/deploy.md section 17)."` Report and wait.
 
 ---
 
