@@ -8,6 +8,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `404 · ${en.meta.siteName}`,
   description: en.notFound.body,
+  robots: { index: false, follow: true },
 };
 
 export default function GlobalNotFound() {

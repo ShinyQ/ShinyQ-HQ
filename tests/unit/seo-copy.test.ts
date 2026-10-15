@@ -4,7 +4,7 @@ import { LOCALES } from "@/content/schema";
 import { hasFirstPerson } from "@/lib/first-person";
 import { allOgTargets } from "@/lib/og-cards";
 import { allPagePaths } from "@/lib/routes";
-import { DESCRIPTION_MAX, DESCRIPTION_MIN, DYNAMIC_TITLE_MAX, HOME_TITLE_MAX, TITLE_MAX, fitDescription, keyResult, periodLabel, seoFor, seoMetadata, shortenLead } from "@/lib/seo";
+import { DESCRIPTION_MAX, DESCRIPTION_MIN, DYNAMIC_TITLE_MAX, HOME_TITLE_MAX, SEARCH_TITLE_MAX, TITLE_MAX, fitDescription, fitTitle, keyResult, periodLabel, seoFor, seoMetadata, shortenLead } from "@/lib/seo";
 import { ogImagePath } from "@/lib/site";
 
 const name = getProfile().name;
@@ -87,6 +87,38 @@ describe("every page's title and description", () => {
     expect(seoFor("en", `/blog/${post.slug}`).title).toBe(`${post.title.en} by ${name}`);
   });
 
+  it("keeps every <title> within the search result width, unique per locale and attributed", () => {
+    const first = name.split(" ")[0];
+    for (const locale of LOCALES) {
+      const titles = allPagePaths().map((path) => {
+        const { title, searchTitle } = seoFor(locale, path);
+        const [, section, slug] = path.split("/");
+        const bare =
+          section === "labs" && slug
+            ? getPod(slug)!.title[locale]
+            : section === "blog"
+              ? getContent().floors.library.posts.find((p) => p.slug === slug)!.title[locale]
+              : section === "journey" && slug
+                ? getContent().floors.careerArchive.entries.find((e) => e.slug === slug)!.role[locale]
+                : undefined;
+        // Journey entries prefer the organization (two entries can share a role); others keep a fitting share title.
+        if (title.length <= SEARCH_TITLE_MAX && section !== "journey") expect(searchTitle, path).toBe(title);
+        // A content title longer than the budget stays whole (never cut mid-title); everything else fits.
+        if (!bare || bare.length <= SEARCH_TITLE_MAX) expect(searchTitle.length, `${path}: ${searchTitle}`).toBeLessThanOrEqual(SEARCH_TITLE_MAX);
+        expect(hasFirstPerson(searchTitle, locale), path).toBe(false);
+        return searchTitle;
+      });
+      expect(new Set(titles).size, locale).toBe(titles.length);
+      const shareTitles = allPagePaths().map((path) => seoFor(locale, path).title);
+      expect(new Set(shareTitles).size, `${locale} share titles`).toBe(shareTitles.length);
+      expect(titles.filter((t) => t.includes(first)).length / titles.length, locale).toBeGreaterThan(0.6);
+    }
+    expect(seoFor("en", "/").searchTitle).toBe(`${name}: ${getProfile().headline.en} in Jakarta`);
+    expect(seoFor("id", "/").searchTitle).toBe(`${name}: ${getProfile().headline.id} di Jakarta`);
+    expect(fitTitle(["a".repeat(70), "b".repeat(50)])).toBe("b".repeat(50));
+    expect(fitTitle(["a".repeat(70), "b".repeat(65)])).toBe("b".repeat(65));
+  });
+
   it("uses the motto in the home description", () => {
     for (const locale of LOCALES) expect(seoFor(locale, "/").description).toContain(getProfile().subheadline[locale]);
   });
@@ -109,7 +141,7 @@ describe("every page's Next metadata", () => {
       it(`${locale} ${path} has a title, description, canonical, hreflang and a JPEG share card`, () => {
         const seo = seoFor(locale, path);
         const meta = seoMetadata(locale, path);
-        expect(meta.title).toEqual({ absolute: seo.title });
+        expect(meta.title).toEqual({ absolute: seo.searchTitle });
         expect(meta.description).toBe(seo.description);
         expect(meta.alternates?.canonical).toBe(path === "/" ? `/${locale}` : `/${locale}${path}`);
         expect(Object.keys(meta.alternates?.languages ?? {}).sort()).toEqual(["en", "id", "x-default"]);

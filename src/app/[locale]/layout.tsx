@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   return {
     ...seoMetadata(locale, "/"),
     metadataBase: new URL(SITE_URL),
-    title: { default: home.title, template: "%s" },
+    title: { default: home.searchTitle, template: "%s" },
     applicationName: SITE_NAME,
     authors: [{ name: profile.name, url: `${SITE_URL}/${locale}` }],
     creator: profile.name,

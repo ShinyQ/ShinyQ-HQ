@@ -942,6 +942,7 @@
   "seo": {
     "home": "Home",
     "homeTitle": "{name}: {role} building production AI platforms",
+    "homeSearchTitle": "{name}: {role} in {city}",
     "homeDescription": "{name}, {role} in {city}. {motto}",
     "quickTitle": "{name} at a glance: AI and software work",
     "quickDescription": "{name} on one page. {motto}",

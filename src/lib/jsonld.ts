@@ -3,7 +3,7 @@
  * metadata (src/lib/seo.ts). Rendered with <JsonLd> as `application/ld+json` scripts.
  */
 import { getPostSource } from "@/content/blog";
-import { getContact, getPod, getPost, getProfile, getTimelineEntry } from "@/content/load";
+import { getContact, getPod, getPost, getProfile, getSkills, getTimeline, getTimelineEntry } from "@/content/load";
 import type { Locale, Pod, PostRef } from "@/content/schema";
 import { podLiveLink } from "@/content/selectors";
 import { OG_PHOTO_PATH } from "@/lib/og-layout";
@@ -21,11 +21,32 @@ export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 
 const LANGUAGE_TAG: Record<Locale, string> = { en: "en", id: "id" };
+/** Skills listed in Person.knowsAbout (CV skill groups in content order). */
+const KNOWS_ABOUT_MAX = 24;
+
+/** "Metrodata (PT Mitra Integrasi Informatika)" -> Organization "Metrodata", alternateName "PT Mitra Integrasi Informatika". */
+export function organizationJsonLd(org: string, type = "Organization"): JsonLdObject {
+  const match = org.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  return match ? { "@type": type, name: match[1], alternateName: match[2] } : { "@type": type, name: org };
+}
+
+/** "Jakarta, Indonesia" -> PostalAddress with locality "Jakarta" and country "Indonesia". */
+export function addressJsonLd(location: string): JsonLdObject {
+  const [locality, ...rest] = location.split(",").map((part) => part.trim());
+  return { "@type": "PostalAddress", addressLocality: locality, ...(rest.length ? { addressCountry: rest.join(", ") } : {}) };
+}
+
+/** Reference to the site's Person with its name inline, for author and creator fields. */
+function personRef(locale: Locale): JsonLdObject {
+  return { "@type": "Person", "@id": PERSON_ID, name: getProfile().name, url: absoluteUrl(localePath(locale, "/")) };
+}
 
 export function personJsonLd(locale: Locale): JsonLdObject {
   const profile = getProfile();
   const contact = getContact();
-  const sameAs = [contact.linkedin, contact.github, contact.huggingface, contact.medium].filter(Boolean);
+  const sameAs = [contact.linkedin, contact.github, contact.googleScholar, contact.ieeeXplore, contact.huggingface, contact.medium].filter(Boolean);
+  const schools = [...new Set(getTimeline().filter((e) => e.type === "education").map((e) => e.org))];
+  const knowsAbout = [...new Set(getSkills().flatMap((g) => g.items))].slice(0, KNOWS_ABOUT_MAX);
   return {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -38,8 +59,28 @@ export function personJsonLd(locale: Locale): JsonLdObject {
     image: absoluteUrl(OG_PHOTO_PATH),
     url: absoluteUrl(localePath(locale, "/")),
     sameAs,
-    worksFor: { "@type": "Organization", name: profile.currentRole.org },
+    worksFor: organizationJsonLd(profile.currentRole.org),
+    address: addressJsonLd(profile.location[locale]),
     homeLocation: { "@type": "Place", name: profile.location[locale] },
+    ...(schools.length ? { alumniOf: schools.map((school) => organizationJsonLd(school, "CollegeOrUniversity")) } : {}),
+    ...(knowsAbout.length ? { knowsAbout } : {}),
+  };
+}
+
+/** The About page (/contact) is the owner's profile page: ProfilePage with the Person as its main entity. */
+export function profilePageJsonLd(locale: Locale): JsonLdObject {
+  const url = absoluteUrl(localePath(locale, "/contact"));
+  const person = personJsonLd(locale);
+  delete person["@context"];
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": `${url}#profile`,
+    url,
+    name: seoFor(locale, "/contact").title,
+    inLanguage: LANGUAGE_TAG[locale],
+    mainEntity: person,
+    isPartOf: { "@id": WEBSITE_ID },
   };
 }
 
@@ -77,8 +118,19 @@ export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
     ...(live ? { sameAs: [live.href] } : {}),
     image: [absoluteUrl(ogImagePath({ kind: "labs", locale, slug: pod.slug })), ...pod.assets.slice(0, 3).map((a) => absoluteUrl(a.src))],
     genre: GENRE[pod.wing],
-    creator: { "@id": PERSON_ID },
-    author: { "@id": PERSON_ID },
+    creator: personRef(locale),
+    author: personRef(locale),
+    ...(pod.repos?.length
+      ? {
+          hasPart: pod.repos.map((repo) => ({
+            "@type": "SoftwareSourceCode",
+            name: repo.split("/").pop(),
+            codeRepository: repo,
+            url: repo,
+            author: { "@id": PERSON_ID },
+          })),
+        }
+      : {}),
     isPartOf: { "@id": WEBSITE_ID },
   };
 }
@@ -98,7 +150,7 @@ export function postJsonLd(post: PostRef, locale: Locale, contentLocale: Locale)
     inLanguage: LANGUAGE_TAG[contentLocale],
     datePublished: post.date,
     keywords: post.tags.join(", "),
-    author: { "@id": PERSON_ID },
+    author: personRef(locale),
     publisher: { "@id": PERSON_ID },
     isPartOf: { "@id": WEBSITE_ID },
   };
@@ -145,6 +197,8 @@ export function pageJsonLd(locale: Locale, path: string): JsonLdObject[] {
   } else if (slug && section === "journey") {
     const entry = getTimelineEntry(slug);
     if (entry) crumbs.push({ name: `${entry.role[locale]}, ${entry.org}`, path });
+  } else if (!slug && section === "contact") {
+    extra.push(profilePageJsonLd(locale));
   }
   return [breadcrumbJsonLd(crumbs, locale), ...extra];
 }

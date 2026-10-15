@@ -5,6 +5,10 @@
  */
 export const DESCRIPTION_RANGE = [140, 160] as const;
 export const OG_MAX_BYTES = 300 * 1024;
+/** LinkedIn's link preview fetcher (Post Inspector and "Add link" in Featured). */
+export const LINKEDIN_UA = "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)";
+/** Share tags must sit in the first bytes of the HTML: some unfurlers read only the start of a page. */
+export const UNFURL_HEAD_BYTES = 8 * 1024;
 
 export interface SocialMeta {
   title?: string;
@@ -57,6 +61,9 @@ export function validateSocialMeta(meta: SocialMeta): string[] {
   need(meta.canonical, "missing canonical");
   for (const lang of ["en", "id", "x-default"]) need(meta.hreflang[lang], `missing hreflang ${lang}`);
   for (const key of ["og:title", "og:description", "og:url", "og:image", "og:image:alt"]) need(meta.og[key], `missing ${key}`);
+  need(meta.og["og:url"] === meta.canonical, "og:url differs from the canonical");
+  const image = meta.og["og:image"];
+  if (image?.startsWith("https:")) need(meta.og["og:image:secure_url"] === image, "og:image:secure_url differs from og:image");
   need(meta.og["og:image:width"] === "1200" && meta.og["og:image:height"] === "630", "og:image is not declared 1200x630");
   need(meta.og["og:image:type"] === "image/jpeg", "og:image:type is not image/jpeg");
   need(meta.twitter["twitter:card"] === "summary_large_image", "twitter:card is not summary_large_image");
@@ -84,6 +91,38 @@ export function jpegSize(bytes: Uint8Array): { width: number; height: number } |
     i += 2 + ((bytes[i + 2] << 8) | bytes[i + 3]);
   }
   return null;
+}
+
+/** UTF-8 byte offset of `needle` in `html`, or -1. */
+export function byteOffset(html: string, needle: string): number {
+  const i = html.indexOf(needle);
+  return i === -1 ? -1 : new TextEncoder().encode(html.slice(0, i)).length;
+}
+
+/** Problems an unfurler that reads only the start of the page would hit: share tags past UNFURL_HEAD_BYTES. */
+export function lateShareTags(html: string, limit = UNFURL_HEAD_BYTES): string[] {
+  return ['property="og:title"', 'property="og:description"', 'property="og:image"', 'property="og:url"', 'rel="canonical"']
+    .map((needle) => ({ needle, at: byteOffset(html, needle) }))
+    .filter(({ at }) => at === -1 || at > limit)
+    .map(({ needle, at }) => (at === -1 ? `missing ${needle}` : `${needle} at byte ${at}, after ${limit}`));
+}
+
+/** Baseline (SOF0) and JFIF header flags of a JPEG: the most widely decodable share card. */
+export function jpegFormat(bytes: Uint8Array): { baseline: boolean; jfif: boolean } {
+  const jfif = bytes[2] === 0xff && bytes[3] === 0xe0 && String.fromCharCode(...bytes.subarray(6, 10)) === "JFIF";
+  let i = 2;
+  while (i + 4 < bytes.length && bytes[i] === 0xff) {
+    const marker = bytes[i + 1];
+    if (marker === 0xc0 || marker === 0xc1) return { baseline: true, jfif };
+    if (marker === 0xc2 || marker === 0xda) return { baseline: false, jfif };
+    i += 2 + ((bytes[i + 2] << 8) | bytes[i + 3]);
+  }
+  return { baseline: false, jfif };
+}
+
+/** Every `application/ld+json` block of a page, parsed (throws on invalid JSON). */
+export function jsonLdBlocks(html: string): Record<string, unknown>[] {
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => [JSON.parse(m[1])].flat());
 }
 
 /** The exported HTML of a page: ("out", "en", "/") -> "out/en.html", "/labs/x" -> "out/en/labs/x.html". */

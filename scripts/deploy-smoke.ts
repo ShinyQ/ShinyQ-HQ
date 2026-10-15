@@ -15,6 +15,10 @@ import { DynamicFactsSchema } from "@/content/dynamic-facts";
 import troikaFonts from "../src/experience/troika-fonts.json";
 import cvPages from "../content/generated/cv-pages.json";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
+import { LINKEDIN_UA, lateShareTags, parseSocialMeta } from "./og-meta";
+
+/** Entry points a visitor pastes into LinkedIn (Featured, posts): each must answer LinkedInBot with a full card. */
+export const UNFURL_PATHS = ["/", "/en", "/id"] as const;
 
 /** Cache rules from public/_headers that production must serve (round 5 P1). */
 export const CACHE_RULES: readonly { prefix: string; value: string }[] = [
@@ -57,6 +61,8 @@ export interface Observed {
   visit?: { code: number };
   /** `GET /api/stats`: 204 (no snapshot yet, or switched off) or 200 with a valid snapshot. */
   stats?: { code: number; valid?: boolean };
+  /** Each UNFURL_PATHS entry fetched as LinkedInBot without following redirects, and its og:image. */
+  unfurl?: Record<string, { code: number; html: string; image?: { code: number; type: string | null } }>;
 }
 
 /** Problems with what production serves; empty when it matches. */
@@ -77,6 +83,17 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
   if (observed.visit?.code !== 405) problems.push(`GET /api/visit returned HTTP ${observed.visit?.code ?? "none"}, expected 405 (the visit beacon Function is missing)`);
   const st = observed.stats;
   if (st?.code === 200 ? !st.valid : st?.code !== 204) problems.push(st?.code === 200 ? "GET /api/stats served a snapshot that fails the contract" : `GET /api/stats returned HTTP ${st?.code ?? "none"}, expected 200 or 204 (the stats Function is missing)`);
+  for (const route of UNFURL_PATHS) {
+    const u = observed.unfurl?.[route];
+    if (!u || u.code !== 200) {
+      problems.push(`LinkedInBot got HTTP ${u?.code ?? "none"} for ${route}, expected 200`);
+      continue;
+    }
+    for (const late of lateShareTags(u.html)) problems.push(`LinkedInBot ${route}: ${late}`);
+    const meta = parseSocialMeta(u.html);
+    if (meta.og["og:url"] !== meta.canonical) problems.push(`LinkedInBot ${route}: og:url differs from the canonical`);
+    if (u.image?.code !== 200 || !u.image.type?.startsWith("image/jpeg")) problems.push(`LinkedInBot ${route}: og:image returned HTTP ${u.image?.code ?? "none"} ${u.image?.type ?? ""}`.trim());
+  }
   return problems;
 }
 
@@ -140,6 +157,23 @@ async function observe(site: string): Promise<Observed> {
   } catch {
     // Reported as no response.
   }
+  observed.unfurl = {};
+  for (const route of UNFURL_PATHS) {
+    try {
+      const headers = { "user-agent": LINKEDIN_UA, accept: "*/*" };
+      const r = await fetch(`${site}${route}`, { headers, redirect: "manual", cache: "no-store" });
+      const html = await r.text();
+      const entry: NonNullable<Observed["unfurl"]>[string] = { code: r.status, html };
+      const image = parseSocialMeta(html).og["og:image"];
+      if (image) {
+        const i = await fetch(image, { method: "HEAD", headers, cache: "no-store" });
+        entry.image = { code: i.status, type: i.headers.get("content-type") };
+      }
+      observed.unfurl[route] = entry;
+    } catch {
+      // Reported as no response.
+    }
+  }
   return observed;
 }
 
@@ -152,7 +186,7 @@ async function main() {
   const site = (flag("--site") ?? process.env.SITE_URL ?? "https://kurniadi.pages.dev").replace(/\/+$/, "");
   const deadline = Date.now() + (Number(flag("--timeout")) || 180) * 1000;
   const expected = expectedFromCheckout();
-  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}, /api/rum, /api/visit and /api/stats deployed.`);
+  console.log(`Expecting ${site}: Ask enabled as of ${expected.asOf}, ${expected.contributions ?? "no"} contributions, beacon ${expected.beacon ? "on" : "off"}, /api/rum, /api/visit and /api/stats deployed, LinkedInBot cards on ${UNFURL_PATHS.join(", ")}.`);
   let problems: string[] = [];
   while (true) {
     problems = smokeProblems(expected, await observe(site));

@@ -16,6 +16,8 @@ import id from "../../messages/id.json";
 export const TITLE_MAX = 60;
 export const HOME_TITLE_MAX = 95;
 export const DYNAMIC_TITLE_MAX = 100;
+/** `<title>` budget: search results cut titles at about 600 px, roughly 60 characters. */
+export const SEARCH_TITLE_MAX = 60;
 export const DESCRIPTION_MIN = 140;
 export const DESCRIPTION_MAX = 160;
 /** Journey entry titles add the organization only while they stay this short. */
@@ -106,8 +108,16 @@ export function periodLabel(start: string, end: string, locale: Locale): string 
   return t("period", { from, to: end === "present" ? t("present") : end.slice(0, 4) });
 }
 
+/** The first candidate within `max` characters, else the shortest one. */
+export function fitTitle(candidates: readonly string[], max = SEARCH_TITLE_MAX): string {
+  return candidates.find((c) => c.length <= max) ?? [...candidates].sort((a, b) => a.length - b.length)[0];
+}
+
 export interface SeoPage {
+  /** Share copy: Open Graph and Twitter title, OG card alt text, structured data. */
   title: string;
+  /** `<title>`: the share title when it fits SEARCH_TITLE_MAX, else a shorter attribution (`fitTitle`). */
+  searchTitle: string;
   description: string;
   image: OgTarget;
   imageAlt: string;
@@ -125,37 +135,58 @@ const SECTION_PAGES: Record<string, OgPage> = {
   "/cv": "cv",
 };
 
+/** "Kurniadi Ahmad Wijaya" -> "Kurniadi": the short attribution in search titles. */
+function firstName(name: string): string {
+  return name.split(" ")[0];
+}
+
 function podSeo(pod: Pod, locale: Locale, name: string): SeoPage {
   const t = seoT(locale);
   const result = keyResult(pod);
   const title = t("podTitle", { title: pod.title[locale], name });
+  const searchTitle = fitTitle([title, t("podTitle", { title: pod.title[locale], name: firstName(name) }), pod.title[locale]]);
   const description = fitDescription(pod.tagline[locale], [
     [t("keyResult", { value: result.value, label: lowerFirst(result.label[locale]) })],
     [3, 2, 1].filter((k) => pod.stack.length >= k).map((k) => t("builtWith", { stack: pod.stack.slice(0, k).join(", ") })),
     [t("caseStudyBy", { name }), t("byName", { name })],
   ]);
-  return { title, description, image: { kind: "labs", locale, slug: pod.slug }, imageAlt: title, type: "article", tags: pod.stack };
+  return { title, searchTitle, description, image: { kind: "labs", locale, slug: pod.slug }, imageAlt: title, type: "article", tags: pod.stack };
 }
 
 function postSeo(post: PostRef, locale: Locale, name: string, role: string): SeoPage {
   const t = seoT(locale);
   const title = t("postTitle", { title: post.title[locale], name });
+  const searchTitle = fitTitle([title, t("postTitle", { title: post.title[locale], name: firstName(name) }), post.title[locale]]);
   const description = fitDescription(post.excerpt[locale], [[t("postBy", { name, role }), t("articleBy", { name }), t("byName", { name })], [t("readArticle")]]);
-  return { title, description, image: { kind: "blog", locale, slug: post.slug }, imageAlt: title, type: "article", publishedTime: post.date, tags: post.tags };
+  return { title, searchTitle, description, image: { kind: "blog", locale, slug: post.slug }, imageAlt: title, type: "article", publishedTime: post.date, tags: post.tags };
 }
 
 function entrySeo(entry: TimelineEntry, locale: Locale, name: string): SeoPage {
   const t = seoT(locale);
   const role = entry.role[locale];
   const period = periodLabel(entry.start, entry.end, locale);
-  const withOrg = t("entryTitleOrg", { name, role, org: entry.org.replace(/\s*\([^)]*\)/g, "").trim() });
-  const title = withOrg.length <= ENTRY_TITLE_WITH_ORG_MAX ? withOrg : t("entryTitle", { name, role });
+  const bareOrg = (value: string) => value.replace(/\s*\([^)]*\)/g, "").trim();
+  const org = bareOrg(entry.org);
+  // Entries that share a role and organization (yearly trophy cases, side projects) are told apart by their period.
+  const shared = getTimeline().some((e) => e.slug !== entry.slug && e.role[locale] === role && bareOrg(e.org) === org);
+  const dated = (text: string) => (shared ? `${text} (${period})` : text);
+  const withOrg = dated(t("entryTitleOrg", { name, role, org }));
+  const title = withOrg.length <= ENTRY_TITLE_WITH_ORG_MAX ? withOrg : dated(t("entryTitle", { name, role }));
+  const short = firstName(name);
+  // The organization keeps two entries with the same role apart, so it goes before the full name.
+  const searchTitle = fitTitle([
+    withOrg,
+    dated(t("entryTitleOrg", { name: short, role, org })),
+    dated(t("entryTitle", { name, role })),
+    dated(t("entryTitle", { name: short, role })),
+    dated(role),
+  ]);
   const description = fitDescription(entry.summary[locale], [
     [t("entryRole", { role, org: entry.org, period }), t("entryOrg", { org: entry.org, period }), t("entryPeriod", { period })],
     [t("careerOf", { name }), t("byName", { name })],
     [t("seeJourney")],
   ]);
-  return { title, description, image: { kind: "page", locale, page: "journey" }, imageAlt: title, type: "website" };
+  return { title, searchTitle, description, image: { kind: "page", locale, page: "journey" }, imageAlt: title, type: "website" };
 }
 
 type DescribedPage = keyof (typeof en)["seo"]["more"];
@@ -182,12 +213,13 @@ export function seoFor(locale: Locale, path: string): SeoPage {
   };
   if (path === "/") {
     const title = t("homeTitle", values);
-    return { title, description: pageDescription(locale, "home", values), image: { kind: "default", locale }, imageAlt: title, type: "website" };
+    const searchTitle = fitTitle([title, t("homeSearchTitle", values)]);
+    return { title, searchTitle, description: pageDescription(locale, "home", values), image: { kind: "default", locale }, imageAlt: title, type: "website" };
   }
   const page = SECTION_PAGES[path];
   if (page) {
     const title = t(`${page}Title`, values);
-    return { title, description: pageDescription(locale, page, values), image: { kind: "page", locale, page }, imageAlt: title, type: "website" };
+    return { title, searchTitle: title, description: pageDescription(locale, page, values), image: { kind: "page", locale, page }, imageAlt: title, type: "website" };
   }
   const [, section, slug] = path.split("/");
   if (section === "labs") {
@@ -212,6 +244,7 @@ export function seoMetadata(locale: Locale, path: string): Metadata {
     locale,
     path,
     title: seo.title,
+    documentTitle: seo.searchTitle,
     description: seo.description,
     type: seo.type,
     publishedTime: seo.publishedTime,

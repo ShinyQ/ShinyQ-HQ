@@ -135,9 +135,12 @@ jobs:
           name: site-test
           path: out/
           retention-days: 3
-      - name: Build for production (with the analytics beacon)
+      - name: Build for production (with the analytics beacon and search engine verification)
         env:
           NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+          # Public ownership tokens (they ship in the HTML), so repository variables, not secrets (docs/deploy.md section 15).
+          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: |
           rm -rf out
