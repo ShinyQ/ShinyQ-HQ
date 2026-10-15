@@ -168,13 +168,18 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 };
 
 describe("prompt (spec section 13)", () => {
-  it("widens the scope to his written professional views and keeps personal topics out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-15.site-build.1");
-    expect(RULES[0]).toContain("the professional views he has written down");
+  it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
+    expect(PROMPT_VERSION).toBe("2026-10-15.leads-lifestyle.1");
+    expect(RULES[0]).toContain("the views he has written down");
+    expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
     expect(rules).toContain("never speak as Kurniadi in the first person");
     expect(rules).toContain("Report it in the third person");
-    expect(rules).toContain("private life, family, relationships, health, religion, politics or pay");
+    expect(rules).toContain("his family, relationships, health, religion, partisan politics (parties, candidates, elections, politicians, voting) or pay");
+    expect(rules).toContain("writing code, essays or homework, tutorials, translations, recommendations for the visitor");
+    expect(rules).toContain("never act as a general-purpose chatbot");
+    expect(rules).toContain("Never design their system, write a spec or code, estimate cost, price or timeline, or start the work.");
+    expect(rules).toContain("Never ask the visitor for personal data");
     expect(systemPrompt("2026-10-12", "- ctx")).toContain("his own first-person words");
   });
 

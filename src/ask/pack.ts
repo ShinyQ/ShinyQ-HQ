@@ -6,6 +6,7 @@ import { findBlockedLabels } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { topicTagsOf } from "../../functions/_lib/tags";
+import { isAskContact } from "./protocol";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 import en from "../../messages/en.json";
@@ -16,7 +17,12 @@ import id from "../../messages/id.json";
  * CV PDF, never private evidence. Pure: the script (scripts/build-knowledge.ts) does the I/O.
  */
 
-export const PACK_MAX_BYTES = 200 * 1024;
+/**
+ * Pack size cap. 200 KB until 2026-10-15, then 256 KiB (owner pre-approved) for the 30 endorsed
+ * lifestyle, industry and policy perspectives, after measuring isolate start-up, memory and bundle
+ * size (docs/ask-runbook.md section 15, "Pack budget").
+ */
+export const PACK_MAX_BYTES = 256 * 1024;
 
 /**
  * Approach steps per project chunk by tier. The case study page keeps every step; the pack keeps
@@ -377,9 +383,10 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
       url: perspectiveSourcePath(p, content),
       updatedAt: p.asOf,
       keywords: ["perspective", ...p.tags],
+      // A fact from outside the site names its public source (the URL stays in content/perspectives.json).
       text: {
-        en: `Kurniadi's written view "${p.question.en.replace(/"/g, "")}": ${p.answer.en}`,
-        id: `Pandangan tertulis Kurniadi "${p.question.id.replace(/"/g, "")}": ${p.answer.id}`,
+        en: `Kurniadi's written view "${p.question.en.replace(/"/g, "")}": ${p.answer.en}${p.references ? ` Reference: ${p.references.map((r) => r.label).join("; ")}.` : ""}`,
+        id: `Pandangan tertulis Kurniadi "${p.question.id.replace(/"/g, "")}": ${p.answer.id}${p.references ? ` Referensi: ${p.references.map((r) => r.label).join("; ")}.` : ""}`,
       },
     });
   }
@@ -531,7 +538,8 @@ export function buildKnowledgePack(sources: PackSources): KnowledgePack {
   const clients = content.floors.labs.pods.flatMap((p) => (typeof p.client === "string" ? [p.client] : []));
   const entities = [...new Set([...employers, ...clients, ...products].map((name) => cleanText(name)))].sort();
   const orgs = [...new Set([...employers, ...clients].map((name) => cleanText(name)))].sort();
-  const body = { packDate, chunks, entities, orgs };
+  const contact = { email: content.floors.roof.contact.email, linkedin: content.floors.roof.contact.linkedin };
+  const body = { packDate, chunks, entities, orgs, contact };
   const packVersion = createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16);
   return { packVersion, ...body };
 }
@@ -547,6 +555,7 @@ export function validatePack(pack: KnowledgePack, blocklist: readonly string[]):
     if (hits.length) errors.push(`chunk "${chunk.id}" contains blocklisted terms: ${hits.join(", ")}`);
     if (/\u2014/.test(chunk.text_en + chunk.text_id)) errors.push(`chunk "${chunk.id}" contains an em dash`);
   }
+  if (!isAskContact(pack.contact)) errors.push("contact card (roof.contact email and LinkedIn) is not a valid AskContact");
   const entityHits = findBlockedLabels(pack.entities.join("\n"), blocklist);
   if (entityHits.length) errors.push(`entity allowlist contains blocklisted terms: ${entityHits.join(", ")}`);
   return errors;

@@ -34,9 +34,10 @@ beforeAll(() => {
 const fold = (text: string) => text.toLowerCase().replace(/(\d),(\d)/g, "$1.$2");
 
 describe("knowledge pack", () => {
-  it("has the required chunks, stays under 200 KB and is versioned by content", () => {
+  it("has the required chunks, stays under the 256 KiB cap and is versioned by content", () => {
     for (const id of ["profile", "now", "contact"]) expect(pack.chunks.some((c) => c.id === id)).toBe(true);
-    expect(Buffer.byteLength(JSON.stringify(pack))).toBeLessThan(200 * 1024);
+    expect(PACK_MAX_BYTES).toBe(256 * 1024);
+    expect(Buffer.byteLength(JSON.stringify(pack))).toBeLessThan(256 * 1024);
     expect(pack.packVersion).toMatch(/^[0-9a-f]{16}$/);
     const again = buildRepoPack("2026-10-11").pack;
     expect(again.packVersion).toBe(pack.packVersion);
@@ -235,7 +236,7 @@ describe("perspectives and principles in the pack", () => {
     }
   });
 
-  it("stays under the 200 KB cap with every perspective approved, so approving drafts never breaks the build", () => {
+  it("stays under the pack cap with every perspective approved, so approving drafts never breaks the build", () => {
     const built = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries });
     expect(built.errors).toEqual([]);
     expect(Buffer.byteLength(JSON.stringify(built.pack))).toBeLessThan(PACK_MAX_BYTES);

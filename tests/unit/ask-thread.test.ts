@@ -68,3 +68,15 @@ describe("thread citations", () => {
     expect(bad).not.toHaveProperty("cite");
   });
 });
+
+describe("thread contact cards", () => {
+  it("keeps a valid card and drops a forged one", () => {
+    const card = { email: "kurniadiahmadwijaya@gmail.com", linkedin: "https://www.linkedin.com/in/kurniadiwijaya" };
+    const [ok, bad] = parseThread([
+      { id: "a", role: "assistant", text: "x", contact: card },
+      { id: "b", role: "assistant", text: "y", contact: { ...card, linkedin: "https://evil.example/in/x" } },
+    ]);
+    expect(ok.contact).toEqual(card);
+    expect(bad).not.toHaveProperty("contact");
+  });
+});

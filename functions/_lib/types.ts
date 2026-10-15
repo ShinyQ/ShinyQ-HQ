@@ -1,5 +1,7 @@
 /** Knowledge pack and Function environment types. Kept free of Cloudflare type packages on purpose (T12). */
 
+import type { AskContact } from "../../src/ask/protocol";
+
 export type ChunkType =
   | "profile"
   | "now"
@@ -44,6 +46,8 @@ export interface KnowledgePack {
   entities: string[];
   /** Employers, schools and freelance clients (never products): opinion questions that name one are declined (spec section 13). */
   orgs: string[];
+  /** Email and LinkedIn from the dataset (`roof.contact`): the contact card of lead-intent answers (the `done` frame). */
+  contact: AskContact;
 }
 
 /** Output safety data compiled at build time from the public-safety blocklist (includes private terms; never public). */

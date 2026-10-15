@@ -95,6 +95,31 @@ export function citeKind(path: string): AskCiteKind {
   return "library";
 }
 
+/**
+ * Contact details the dock shows as a card under a lead-intent answer (owner request 2026-10-15): a
+ * visitor described their own project or need. Built from the dataset (`roof.contact`) into the
+ * knowledge pack, sent in the `done` frame, never taken from the model's text. Both ends validate.
+ */
+export interface AskContact {
+  email: string;
+  linkedin: string;
+}
+
+const EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,180}\.[A-Za-z]{2,24}$/;
+
+/** True for a plain email address and an https LinkedIn profile URL (`/in/<handle>`). */
+export function isAskContact(value: unknown): value is AskContact {
+  if (!value || typeof value !== "object") return false;
+  const { email, linkedin } = value as Record<string, unknown>;
+  if (typeof email !== "string" || !EMAIL.test(email) || typeof linkedin !== "string" || linkedin.length > 200) return false;
+  try {
+    const url = new URL(linkedin);
+    return url.protocol === "https:" && (url.hostname === "www.linkedin.com" || url.hostname === "linkedin.com") && /^\/in\/[A-Za-z0-9_-]+\/?$/.test(url.pathname) && !url.search && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
 /** `POST /api/ask` body (Content-Type: application/json, same origin only). */
 export interface AskRequest {
   q: string;
@@ -122,7 +147,7 @@ export type AskSource = "primary" | "fallback" | "cache" | "none";
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
 export type AskFrame =
   | { delta: string }
-  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string };
+  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact };
 
 /** Error bodies (JSON) for non-200 responses. */
 export type AskErrorCode =

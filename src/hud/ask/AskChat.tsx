@@ -9,7 +9,7 @@ import type { ThreadMessage } from "@/ask/thread";
 import type { Locale } from "@/content/schema";
 import type { DrawerLayout } from "@/hud/drawer/layout";
 import { CloseIcon, EditIcon, SendIcon, SparkIcon } from "./icons";
-import { AskAsOf, AskCiteLink, useAskErrorMessage } from "./ui";
+import { AskAsOf, AskCiteLink, AskContactCard, useAskErrorMessage } from "./ui";
 import { useAskThread, type AskFn } from "./useAskThread";
 
 export interface AskRequest {
@@ -385,6 +385,7 @@ function Message({
         {message.text}
       </p>
       {message.cite && <AskCiteLink path={message.cite} locale={locale} onNavigate={onCite} className="mt-1.5 text-[13px] leading-5" />}
+      {message.contact && <AskContactCard contact={message.contact} locale={locale} onNavigate={onCite} className="mt-2" />}
       {message.outcome && message.outcome !== "fallback" && <AskAsOf asOf={message.asOf} locale={locale} className="mt-1.5 text-[11px] leading-4 text-ink-3" />}
     </li>
   );

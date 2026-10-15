@@ -6,6 +6,7 @@ import { scrubPII } from "./pii";
 import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
+import { isLeadQuestion } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
@@ -14,7 +15,7 @@ import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
-const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "unsourced"]);
+const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "unsourced", "model_decline", "fit", "consulting"]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
@@ -227,7 +228,9 @@ export function createAskHandler(deps: HandlerDeps) {
         const tags = answerTags(retrieve(pack, question, locale).chunks);
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
-        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}) }, tags), delay, responseHeaders);
+        // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
+        const contact = isLeadQuestion(question) ? pack.contact : undefined;
+        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -266,7 +269,9 @@ export function createAskHandler(deps: HandlerDeps) {
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;
-    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}) }, tags), delay, responseHeaders);
+    // Lead intent: the contact card values come from the dataset (the pack), never from the model.
+    const contact = result.lead && shareable ? pack.contact : undefined;
+    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }, tags), delay, responseHeaders);
   }
 
   return async function onRequest(context: PagesContext): Promise<Response> {

@@ -22,15 +22,17 @@ interface MockOptions {
   outcome?: string;
   tags?: string[];
   cite?: string;
+  /** Contact card of a lead-intent answer (the `done` frame). */
+  contact?: { email: string; linkedin: string };
   /** HTTP status for POSTs (429: rate limited). */
   post?: number;
 }
 
-const sse = (deltas: string[], outcome: string, tags: string[], cite?: string) =>
-  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
+const sse = (deltas: string[], outcome: string, tags: string[], cite?: string, contact?: MockOptions["contact"]) =>
+  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
 
 /** Routes `/api/ask` and records every request to it. */
-async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, post = 200 }: MockOptions) {
+async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, contact, post = 200 }: MockOptions) {
   const requests: Request[] = [];
   await page.route("**/api/ask", async (route) => {
     const request = route.request();
@@ -40,7 +42,7 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(status) });
     }
     if (post !== 200) return route.fulfill({ status: post, contentType: "application/json", headers: { "retry-after": "90" }, body: JSON.stringify({ error: "rate_limited", retryAfter: 90 }) });
-    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite) });
+    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite, contact) });
   });
   return {
     all: requests,
@@ -330,4 +332,28 @@ test("Perspectives topic: a cited answer links to its written source on About", 
   await link.click();
   await expect(page).toHaveURL(/\/en\/contact#how$/);
   await expect(page.locator("#how")).toBeAttached();
+});
+
+test("lead intent: the contact card shows email, LinkedIn and the Contact page under the answer, and passes axe", async ({ page }) => {
+  const contact = { email: "kurniadiahmadwijaya@gmail.com", linkedin: "https://www.linkedin.com/in/kurniadiwijaya" };
+  await mockAsk(page, {
+    status: enabled(),
+    deltas: ['Kurniadi has built AI assistants with RAG, such as "AI Ticketing Assistant Migration". This looks like a strong fit, and he takes freelance or part-time engagements. Feel free to get in touch.'],
+    tags: ["contact", "ai"],
+    contact,
+  });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByRole("textbox", { name: en.ask.dock.inputLabel }).fill("I need an AI chatbot for my clinic, can you help?");
+  await dock(page).getByRole("textbox", { name: en.ask.dock.inputLabel }).press("Enter");
+  const card = thread(page).getByTestId("ask-contact");
+  await expect(card).toBeVisible();
+  await expect(card).toContainText(en.ask.contact.title);
+  await expect(card.getByTestId("ask-contact-email")).toHaveAttribute("href", `mailto:${contact.email}`);
+  await expect(card.getByTestId("ask-contact-linkedin")).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(card.getByTestId("ask-contact-page")).toHaveAttribute("href", "/en/contact");
+  const axe = await new AxeBuilder({ page }).include("[data-testid='ask-dock']").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(axe.violations).toEqual([]);
+  // Opt-in capture for the PR (ASK_CAPTURE=<dir>).
+  if (process.env.ASK_CAPTURE) await dock(page).screenshot({ path: `${process.env.ASK_CAPTURE}/ask-contact-card-${test.info().project.name}.png` });
 });

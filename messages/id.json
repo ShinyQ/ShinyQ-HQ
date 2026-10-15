@@ -703,6 +703,13 @@
       "library": "Halaman Tulisan",
       "repo": "Kode sumber ShinyQ HQ di GitHub"
     },
+    "contact": {
+      "title": "Hubungi Kurniadi",
+      "email": "Email",
+      "linkedin": "LinkedIn",
+      "page": "Halaman kontak",
+      "label": "Detail kontak"
+    },
     "hero": {
       "label": "Tanya AI tentang pekerjaan saya",
       "placeholder": "Tanyakan apa saja tentang pekerjaan saya",

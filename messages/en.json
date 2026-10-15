@@ -703,6 +703,13 @@
       "library": "The Writing page",
       "repo": "The ShinyQ HQ source code on GitHub"
     },
+    "contact": {
+      "title": "Get in touch with Kurniadi",
+      "email": "Email",
+      "linkedin": "LinkedIn",
+      "page": "Contact page",
+      "label": "Contact details"
+    },
     "hero": {
       "label": "Ask AI about my work",
       "placeholder": "Ask anything about my work",

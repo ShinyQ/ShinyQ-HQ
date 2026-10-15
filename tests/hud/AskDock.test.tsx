@@ -152,6 +152,36 @@ describe("Ask dock chat", () => {
     expect(link).toHaveTextContent(d.newTab);
   });
 
+  it("shows the contact card under a lead answer, with values from the done frame", async () => {
+    const contact = { email: "kurniadiahmadwijaya@gmail.com", linkedin: "https://www.linkedin.com/in/kurniadiwijaya" };
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta("Kurniadi built AI assistants with RAG, and he takes freelance or part-time engagements.");
+      return { outcome: "answer", source: "primary", asOf: "2026-10-15", tags: ["contact"], contact };
+    });
+    await ready();
+    act(() => openAsk("I need an AI chatbot for my clinic, can you help?"));
+    const panel = await dock();
+    const card = await within(panel).findByTestId("ask-contact");
+    expect(card).toHaveAccessibleName(en.ask.contact.label);
+    expect(card).toHaveTextContent(en.ask.contact.title);
+    expect(within(card).getByTestId("ask-contact-email")).toHaveAttribute("href", `mailto:${contact.email}`);
+    const linkedin = within(card).getByTestId("ask-contact-linkedin");
+    expect(linkedin).toHaveAttribute("href", contact.linkedin);
+    expect(linkedin).toHaveAttribute("target", "_blank");
+    expect(linkedin).toHaveAttribute("rel", "noopener noreferrer");
+    expect(within(card).getByTestId("ask-contact-page")).toHaveAttribute("href", "/en/contact");
+    expect(JSON.parse(sessionStorage.getItem(THREAD_KEY) ?? "[]").at(-1).contact).toEqual(contact);
+  });
+
+  it("shows no contact card on other answers", async () => {
+    answerWith("Kurniadi works at Metrodata.");
+    await ready();
+    act(() => openAsk("Where does he work?"));
+    const panel = await dock();
+    await vi.waitFor(() => expect(within(panel).getByTestId("ask-thread")).toHaveTextContent("Kurniadi works at Metrodata."));
+    expect(within(panel).queryByTestId("ask-contact")).toBeNull();
+  });
+
   it("shows no source link when the answer cites nothing", async () => {
     answerWith("The voice agent answers calls.");
     await ready();
