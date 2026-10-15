@@ -64,7 +64,7 @@ describe("withParams", () => {
 });
 
 describe("pickFeaturedPods", () => {
-  const pod = (id: string, images: number) => ({ id, assets: Array.from({ length: images }, () => ({})) as unknown as Pod["assets"] });
+  const pod = (id: string, images: number, selected?: number) => ({ id, selected, assets: Array.from({ length: images }, () => ({})) as unknown as Pod["assets"] });
 
   it("keeps the given order and skips pods without a gallery", () => {
     expect(pickFeaturedPods([pod("a", 0), pod("b", 2), pod("c", 1), pod("d", 5), pod("e", 3)]).map((p) => p.id)).toEqual(["b", "c", "d"]);
@@ -75,11 +75,19 @@ describe("pickFeaturedPods", () => {
     expect(pickFeaturedPods([pod("a", 1), pod("b", 1)], 1).map((p) => p.id)).toEqual(["a"]);
   });
 
-  it("features three pods with screenshots from the real dataset, best ranked first", () => {
+  it("puts the owner's picks first by rank, then fills from the given order (owner decision 2026-10-15)", () => {
+    const list = [pod("a", 1), pod("b", 1, 2), pod("c", 1), pod("d", 1, 1)];
+    expect(pickFeaturedPods(list).map((p) => p.id)).toEqual(["d", "b", "a"]);
+    expect(pickFeaturedPods(list, 2).map((p) => p.id)).toEqual(["d", "b"]);
+  });
+
+  it("features the three selected pods from the real dataset, independent of tier", () => {
     const pods = getPods();
     const picks = pickFeaturedPods(pods);
-    expect(picks).toHaveLength(3);
+    expect(picks.map((p) => p.selected)).toEqual([1, 2, 3]);
     for (const p of picks) expect(p.assets.length).toBeGreaterThan(0);
-    expect(picks[0]).toBe(pods.find((p) => p.assets.length > 0));
+    expect(picks.map((p) => p.slug)).toContain("ai-solutions-assistant");
+    expect(pods.find((p) => p.slug === "ai-solutions-assistant")?.tier).toBe("featured");
+    expect(pods.find((p) => p.slug === "fraud-review-platform")?.tier).toBe("hero");
   });
 });

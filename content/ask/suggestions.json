@@ -91,14 +91,6 @@
       "expect": ["project-ai-code-security-platform"]
     },
     {
-      "id": "ai-solutions-assistant",
-      "topic": "ai",
-      "q": { "en": "How does the assistant on his MII Microsoft AI portfolio work?", "id": "Bagaimana cara kerja asisten di portofolio MII Microsoft AI miliknya?" },
-      "tags": ["ai", "agents", "rag"],
-      "followUps": ["ai-agents", "ai-voice", "career-certs"],
-      "expect": ["project-ai-solutions-assistant"]
-    },
-    {
       "id": "ai-fraud",
       "topic": "ai",
       "q": { "en": "How did the fraud review platform cut false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
@@ -153,6 +145,14 @@
       "tags": ["ai", "data"],
       "followUps": ["ai-research", "ai-documents", "work-best"],
       "expect": ["project-fabric-forecasting-dashboard"]
+    },
+    {
+      "id": "ai-solutions-assistant",
+      "topic": "ai",
+      "q": { "en": "How does the assistant on his MII Microsoft AI portfolio work?", "id": "Bagaimana cara kerja asisten di portofolio MII Microsoft AI miliknya?" },
+      "tags": ["ai", "agents", "rag"],
+      "followUps": ["ai-agents", "ai-voice", "career-certs"],
+      "expect": ["project-ai-solutions-assistant"]
     },
     {
       "id": "ai-agents",

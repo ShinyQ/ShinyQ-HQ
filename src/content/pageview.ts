@@ -92,10 +92,13 @@ export function podAttrs(pod: Pick<Pod, "wing" | "stack">) {
 }
 
 /**
- * Landing features: the first `count` pods that have a gallery (`podHasGallery`), in the order given
- * (pass `getPods()`, which is `orderPods`: gallery first, then hero, featured, listed). Pods without
- * screenshots stay in the rows below.
+ * Landing features ("Selected work", also the L1 Highlights Hall projects): the owner's picks (`Pod.selected`,
+ * rank 1 first, owner decision 2026-10-15), then, if fewer than `count` are picked, the first other pods that
+ * have a gallery (`podHasGallery`) in the order given (pass `getPods()`, which is `orderPods`). Independent of
+ * `tier`, so a hero can stay a key project without a landing slot. Pods without screenshots stay in the rows below.
  */
-export function pickFeaturedPods<T extends Pick<Pod, "assets">>(sorted: readonly T[], count = 3): T[] {
-  return sorted.filter(podHasGallery).slice(0, count);
+export function pickFeaturedPods<T extends Pick<Pod, "assets"> & { selected?: number }>(sorted: readonly T[], count = 3): T[] {
+  const withGallery = sorted.filter(podHasGallery);
+  const picked = withGallery.filter((pod) => pod.selected !== undefined).sort((a, b) => a.selected! - b.selected!);
+  return [...picked, ...withGallery.filter((pod) => pod.selected === undefined)].slice(0, count);
 }

@@ -102,7 +102,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 
 - The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
-- Then the **Ask AI** bar and a live stats marquee, followed by three featured projects with their screenshots.
+- Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - On `/labs`, Key projects are the hero projects with screenshots, and every project row with a gallery shows its cover thumbnail.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 

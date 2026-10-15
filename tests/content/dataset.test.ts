@@ -104,7 +104,7 @@ describe("content/site-content.json", () => {
       "MII Microsoft AI Portfolio and Assistant",
       "Portofolio dan Asisten MII Microsoft AI",
       "ai",
-      "hero",
+      "featured",
       "Sole engineer",
     ]);
     expect(ai.tagline.en).toMatch(/multi-agent RAG assistant/);
@@ -239,10 +239,10 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
     expect(text).not.toMatch(/MII's internal|internal MII|group business unit|Unit bisnis dalam grup/);
   });
 
-  it("sorts after the MII Microsoft AI Portfolio among hero pods, so the landing top three stay (owner request 2026-10-15)", () => {
-    const assistant = data?.floors.labs.pods.find((p) => p.slug === "ai-solutions-assistant");
+  it("sorts after AI Fraud Document Review among hero pods, so the landing top three stay (coordinator decision)", () => {
+    const fraud = data?.floors.labs.pods.find((p) => p.slug === "fraud-review-platform");
     expect(vendor?.tier).toBe("hero");
-    expect(vendor!.order).toBeGreaterThan(assistant!.order);
+    expect(vendor!.order).toBeGreaterThan(fraud!.order);
   });
 
   it("matches the repository: 51 specs, 21 domains, 109 migrations, six weeks, the measured cookie", () => {
