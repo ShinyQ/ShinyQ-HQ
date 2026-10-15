@@ -139,9 +139,14 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     type: "profile",
     title: profile.name,
     url: "/",
-    keywords: ["kurniadi", "shinyq", "profile", "about", "bio", "who"],
+    keywords: ["kurniadi", "shinyq", "nickname", "panggilan", "profile", "about", "bio", "who"],
     text: join([
       both(`${profile.name} (handle ${profile.handle}).`),
+      // Owner request 2026-10-16: "ShinyQ" is his nickname; ShinyQ HQ is the site.
+      {
+        en: `Kurniadi also goes by the nickname ${profile.handle} (his GitHub handle); ${profile.handle} HQ is his site.`,
+        id: `Kurniadi juga dikenal dengan nama panggilan ${profile.handle} (nama akun GitHub-nya); ${profile.handle} HQ adalah situsnya.`,
+      },
       loc(profile.headline),
       loc(profile.subheadline),
       loc(profile.bio),
