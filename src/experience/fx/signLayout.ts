@@ -74,3 +74,14 @@ export function wrapSign(text: string, max: number): string {
   if (line) lines.push(line);
   return lines.join("\n");
 }
+
+/** Opacity at or below which a floating sign counts as hidden (it draws nothing). */
+export const SIGN_HIDDEN = 0.01;
+
+/**
+ * Consecutive hidden frames of a sign: one more while its opacity `k` stays at or below `SIGN_HIDDEN`,
+ * back to 0 as soon as it rises. `FloatingSigns dropHidden` drops a sign's glyphs once this reaches its limit.
+ */
+export function nextHiddenFrames(prev: number, k: number): number {
+  return k <= SIGN_HIDDEN ? prev + 1 : 0;
+}

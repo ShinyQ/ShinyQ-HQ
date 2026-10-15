@@ -11,7 +11,8 @@ import { useLibrarySignPlacement } from "./useLibrarySignPlacement";
 
 /**
  * Every L4 timeline sign in one `FloatingSigns` group (two draw calls): one sign per section, the year
- * plates on their low posts and the post titles, shown per frame by the screen placement rule.
+ * plates on their low posts and the post titles, shown per frame by the screen placement rule. Signs
+ * hidden for 30 frames leave the text batch (`dropHidden`), so off-screen titles cost no triangles.
  */
 export function LibrarySigns({
   layout,
@@ -33,7 +34,7 @@ export function LibrarySigns({
   const alpha = useLibrarySignPlacement({ signs, meta, group, reducedMotion });
   return (
     <group ref={group}>
-      <FloatingSigns signs={signs} name="library-signs" tier={tier} visibility={alpha} />
+      <FloatingSigns signs={signs} name="library-signs" tier={tier} visibility={alpha} dropHidden={30} />
     </group>
   );
 }

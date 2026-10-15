@@ -1,10 +1,19 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SIGN_PAD, signFacing, signFacingDot, signPlate } from "@/experience/fx/signLayout";
+import { nextHiddenFrames, SIGN_HIDDEN, SIGN_PAD, signFacing, signFacingDot, signPlate } from "@/experience/fx/signLayout";
 import { createHoloMaterial, HOLO_FS, HOLO_MODE, HOLO_VS } from "@/experience/fx/holoFx";
 
 describe("floating signs", () => {
+  it("counts consecutive hidden frames and resets when a sign shows again", () => {
+    let n = 0;
+    for (let i = 0; i < 30; i++) n = nextHiddenFrames(n, 0);
+    expect(n).toBe(30);
+    expect(nextHiddenFrames(n, SIGN_HIDDEN)).toBe(31);
+    expect(nextHiddenFrames(n, 0.02)).toBe(0);
+    expect(nextHiddenFrames(0, 1)).toBe(0);
+  });
+
   it("sizes the plate to the monospace text plus padding", () => {
     const short = signPlate({ text: "2021", fontSize: 1 });
     const long = signPlate({ text: "RESEARCH", fontSize: 1 });
