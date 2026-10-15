@@ -690,6 +690,8 @@
       "inputLabel": "Pertanyaan",
       "placeholder": "Tanyakan karya, proyek, atau cara kerjanya",
       "source": "Baca di situs ini: {label}",
+      "sourceExternal": "Sumber: {label}",
+      "newTab": "terbuka di tab baru",
       "send": "Kirim"
     },
     "topics": {
@@ -703,7 +705,8 @@
       "how": "Cara kerja Kurniadi di halaman Tentang",
       "blog": "Tulisan blog Kurniadi",
       "project": "Studi kasus proyek",
-      "library": "Halaman Tulisan"
+      "library": "Halaman Tulisan",
+      "repo": "Kode sumber ShinyQ HQ di GitHub"
     },
     "hero": {
       "label": "Tanya AI tentang pekerjaan saya",

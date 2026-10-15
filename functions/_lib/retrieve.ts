@@ -1,5 +1,5 @@
 import { indexPack } from "./pack-index";
-import { isPerspectiveQuestion } from "./scope";
+import { isPerspectiveQuestion, isSiteQuestion } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 
@@ -10,6 +10,8 @@ export const TOP_K = 6;
 export const ALWAYS_INCLUDE = ["profile", "now"] as const;
 /** Added after the always-included chunks for questions about Kurniadi's views, so the answer has his principles to cite. */
 export const PERSPECTIVE_INCLUDE = "principles";
+/** Added for questions about this site itself (`isSiteQuestion`): how ShinyQ HQ was built (content/ask/site-build.json). */
+export const SITE_INCLUDE = "site-build";
 /** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
 export const PERSPECTIVE_CAP = 3;
 
@@ -68,7 +70,7 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
   const ranked = scoreChunks(pack, question)
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
-  const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : [])];
+  const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
   const picked: KnowledgeChunk[] = [];
   for (const id of always) {
     const chunk = pack.chunks.find((c) => c.id === id);

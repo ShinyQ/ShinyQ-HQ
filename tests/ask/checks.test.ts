@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
-import { citeKind, isAskCite } from "@/ask/protocol";
+import { ASK_REPO_CITE, citeKind, isAskCite } from "@/ask/protocol";
 import {
   canonicalNumber,
   checkAnswer,
@@ -19,7 +19,7 @@ import {
 } from "../../functions/_lib/checks";
 import { MESSAGES, noViewMessage } from "../../functions/_lib/messages";
 import { PROMPT_VERSION, RULES, systemPrompt } from "../../functions/_lib/prompt";
-import { isPerspectiveQuestion } from "../../functions/_lib/scope";
+import { isPerspectiveQuestion, isSiteQuestion } from "../../functions/_lib/scope";
 import { isHarmful } from "../../functions/_lib/harmful";
 import { packVocabulary } from "../../functions/_lib/pipeline";
 import { scrubPII } from "../../functions/_lib/pii";
@@ -169,7 +169,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written professional views and keeps personal topics out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-14.copy-voice.2");
+    expect(PROMPT_VERSION).toBe("2026-10-15.site-build.1");
     expect(RULES[0]).toContain("the professional views he has written down");
     const rules = RULES.join(" ");
     expect(rules).toContain("never speak as Kurniadi in the first person");
@@ -193,6 +193,30 @@ describe("citation paths (done frame)", () => {
       expect(isAskCite(bad), String(bad)).toBe(false);
     }
     expect(["/contact#how", "/blog/a", "/labs/a", "/library"].map(citeKind)).toEqual(["how", "blog", "project", "library"]);
+  });
+
+  it("allows exactly one external cite: the site's public repository", () => {
+    expect(isAskCite(ASK_REPO_CITE)).toBe(true);
+    expect(citeKind(ASK_REPO_CITE)).toBe("repo");
+    for (const bad of [`${ASK_REPO_CITE}/`, `${ASK_REPO_CITE}/issues`, "https://github.com/ShinyQ/ShinyQ-Dev", "http://github.com/ShinyQ/ShinyQ-HQ"]) expect(isAskCite(bad), bad).toBe(false);
+  });
+
+  it("cites the repository for an answer about how this site was built, and nothing for other factual answers", () => {
+    const siteCheck = (answer: string, question: string, locale: "en" | "id" = "en") => {
+      const r = retrieve(pack, question, locale);
+      return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks, site: isSiteQuestion(question), locale });
+    };
+    expect(siteCheck("Kurniadi built ShinyQ HQ as a Next.js 16 static export on Cloudflare Pages, with the 3D tower in three.js through React Three Fiber.", "How was this site built?")).toEqual({
+      ok: true,
+      text: expect.any(String),
+      outcome: "answer",
+      cite: ASK_REPO_CITE,
+    });
+    expect(siteCheck("Ya. Kurniadi membangunnya dengan AI coding agent seperti GitHub Copilot, lalu me-review dan me-merge setiap perubahan.", "Apakah situs ini dibuat dengan AI?", "id")).toMatchObject({ ok: true, cite: ASK_REPO_CITE });
+    const other = siteCheck("Kurniadi currently works at Metrodata.", "What does he do now?");
+    expect(other).toMatchObject({ ok: true });
+    expect(other).not.toHaveProperty("cite");
+    expect(noViewMessage("en", { title: "How ShinyQ HQ Was Built", url: ASK_REPO_CITE })).toContain("in the site's public repository");
   });
 });
 

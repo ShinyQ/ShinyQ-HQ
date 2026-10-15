@@ -66,6 +66,15 @@
       "expect": ["side-*"]
     },
     {
+      "id": "work-site",
+      "topic": "work",
+      "q": { "en": "How was this site built?", "id": "Bagaimana situs ini dibuat?" },
+      "tags": ["work", "agents"],
+      "followUps": ["ai-agents", "work-github", "ai-solutions-assistant"],
+      "expect": ["site-build"],
+      "answer": { "any": ["Next.js", "Cloudflare", "three.js"] }
+    },
+    {
       "id": "ai-voice",
       "topic": "ai",
       "q": { "en": "How does the voice AI contact center work?", "id": "Bagaimana cara kerja voice AI contact center?" },

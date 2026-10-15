@@ -3,9 +3,11 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
-import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, validatePack } from "@/ask/pack";
-import { isAskCite } from "@/ask/protocol";
-import { getContent, getPerspectivesFile } from "@/content/load";
+import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, SITE_CHUNK, stackKeywords, validatePack } from "@/ask/pack";
+import { ASK_REPO_CITE, isAskCite } from "@/ask/protocol";
+import { getContent, getPerspectivesFile, getSiteBuild } from "@/content/load";
+import { SITE_BUILD_SOURCE } from "@/content/schema";
+import { REPO_URL } from "@/lib/site";
 import { listBlogFiles } from "@/content/blog";
 import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
@@ -14,7 +16,7 @@ import id from "../../messages/id.json";
 import { findBlockedLabels, findBlockedTerms, formatBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
 import { FORBIDDEN_OUTPUT, findBlocked } from "../../functions/_lib/checks";
 import { indexPack } from "../../functions/_lib/pack-index";
-import { retrieve } from "../../functions/_lib/retrieve";
+import { retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { cleanText, detectLocale, normalizeQuestion, tokenize } from "../../functions/_lib/text";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import golden from "./golden.json";
@@ -330,6 +332,44 @@ describe("pack budget for project chunks", () => {
         const kept = i < packApproachSteps(pod);
         expect(chunk.text_en.includes(cleanText(step.en)), `${pod.slug} step ${i + 1}`).toBe(kept);
       });
+    }
+  });
+});
+
+describe("how this site was built (content/ask/site-build.json, owner request 2026-10-15)", () => {
+  it("adds one site-build chunk with the file's text, cited to the public repository", () => {
+    const file = getSiteBuild();
+    const chunk = pack.chunks.find((c) => c.id === SITE_CHUNK)!;
+    expect(SITE_CHUNK).toBe(SITE_INCLUDE);
+    expect(chunk.type).toBe("site");
+    expect(chunk.text_en).toBe(file.text.en);
+    expect(chunk.text_id).toBe(file.text.id);
+    expect(chunk.url).toBe(ASK_REPO_CITE);
+    expect(isAskCite(chunk.url)).toBe(true);
+    expect([ASK_REPO_CITE, SITE_BUILD_SOURCE]).toEqual([REPO_URL, REPO_URL]);
+    expect(chunkTags(chunk)).toEqual(["work", "agents"]);
+  });
+
+  it("states only facts the repository backs", () => {
+    const text = getSiteBuild().text.en;
+    const pkg = JSON.parse(readFileSync(path.join(process.cwd(), "package.json"), "utf8")) as { dependencies: Record<string, string>; devDependencies: Record<string, string> };
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    expect(text).toContain(`Next.js ${deps.next.match(/\d+/)![0]}`);
+    expect(text).toContain(`React ${deps.react.match(/\d+/)![0]}`);
+    for (const dep of ["three", "@react-three/fiber", "zustand", "next-intl", "zod", "vitest", "@playwright/test"]) expect(deps[dep], dep).toBeDefined();
+    const wrangler = readFileSync(path.join(process.cwd(), "wrangler.toml"), "utf8");
+    expect(wrangler).toContain("gemma-4");
+    expect(wrangler).toContain("mistral-small-3.1");
+    expect(text).toMatch(/Gemma 4\b.*Mistral Small 3\.1/);
+  });
+
+  it("drops only the stack keywords that already sit in the project text and carry no topic tag", () => {
+    for (const pod of getContent().floors.labs.pods) {
+      const chunk = pack.chunks.find((c) => c.id === `project-${pod.slug}`)!;
+      const full = { ...chunk, keywords: [...chunk.keywords, ...pod.stack.map((s) => s.toLowerCase())] };
+      expect(chunkTags(chunk), pod.slug).toEqual(chunkTags(full));
+      expect(chunk.keywords, pod.slug).toEqual(expect.arrayContaining(stackKeywords(pod.stack)));
+      for (const name of pod.stack) expect(chunk.text_en, `${pod.slug} ${name}`).toContain(name);
     }
   });
 });

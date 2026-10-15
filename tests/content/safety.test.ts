@@ -7,6 +7,7 @@ const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
 const content = JSON.parse(read("content", "site-content.json"));
 const perspectives = JSON.parse(read("content", "perspectives.json"));
+const siteBuild = JSON.parse(read("content", "ask", "site-build.json"));
 const blogFiles = readdirSync(path.join(root, "content", "blog")).filter((f) => f.endsWith(".mdx"));
 const messageFiles = readdirSync(path.join(root, "messages")).filter((f) => f.endsWith(".json"));
 
@@ -27,6 +28,14 @@ describe("public-safety lint", () => {
 
   it("finds no blocklisted term or forbidden pattern in content/perspectives.json (drafts included: the repo is public)", () => {
     const hits = collectStrings(perspectives).flatMap(({ path: at, value }) => {
+      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      return found.length ? [`${at}: ${found.join(", ")}`] : [];
+    });
+    expect(hits).toEqual([]);
+  });
+
+  it("finds no blocklisted term or forbidden pattern in content/ask/site-build.json (Ask knowledge only)", () => {
+    const hits = collectStrings(siteBuild).flatMap(({ path: at, value }) => {
       const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });

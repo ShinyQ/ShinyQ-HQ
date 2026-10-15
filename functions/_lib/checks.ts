@@ -320,11 +320,13 @@ export interface CheckInput {
   chunks?: readonly KnowledgeChunk[];
   /** The question asks for Kurniadi's views (`isPerspectiveQuestion`). */
   perspective?: boolean;
+  /** The question is about this site itself (`isSiteQuestion`): an answer cites the `site` chunk's repository. */
+  site?: boolean;
   locale?: AskLocale;
 }
 
 /** Output checks in spec order (7.4 step 8). The first failure decides the replacement message. */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, locale = "en" }: CheckInput): CheckResult {
   const text = sanitizeAnswer(answer);
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
   const blocked = findBlocked(text, safety.blocklist);
@@ -355,5 +357,8 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
     if (!source) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
     return isAskCite(source.url) ? { ok: true, text, outcome, cite: source.url } : { ok: true, text, outcome };
   }
+  // How this site was built: the answer comes from the retrieved `site` chunk, so it cites its public repository.
+  const siteSource = site && outcome === "answer" ? chunks.find((c) => c.type === "site" && isAskCite(c.url)) : undefined;
+  if (siteSource?.url) return { ok: true, text, outcome, cite: siteSource.url };
   return { ok: true, text, outcome };
 }

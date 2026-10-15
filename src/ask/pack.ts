@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
-import type { Locale, LocalizedText, Perspective, Pod, SiteContent } from "@/content/schema";
+import type { Locale, LocalizedText, Perspective, Pod, SiteBuild, SiteContent } from "@/content/schema";
 import { perspectiveSourcePath } from "@/content/perspectives";
 import { findBlockedLabels } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
+import { topicTagsOf } from "../../functions/_lib/tags";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 import en from "../../messages/en.json";
@@ -33,6 +34,8 @@ export function packApproachSteps(pod: Pick<Pod, "tier" | "wing">): number {
 /** Lead paragraphs of a hosted post body after its excerpt (2 until the Data and ML pods, 2026-10-14). */
 export const POST_LEAD_PARAGRAPHS = 1;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
+/** Id of the chunk built from content/ask/site-build.json (`SITE_INCLUDE` in functions/_lib/retrieve.ts). */
+export const SITE_CHUNK = "site-build";
 
 export interface PackSources {
   content: SiteContent;
@@ -45,6 +48,8 @@ export interface PackSources {
   products: readonly string[];
   /** Approved perspectives only (`getPerspectives()`); drafts never enter the pack. */
   perspectives?: readonly Perspective[];
+  /** How this site was built (`getSiteBuild()`, content/ask/site-build.json). */
+  siteBuild?: SiteBuild;
 }
 
 type Bi = { en: string; id: string };
@@ -107,7 +112,16 @@ interface Draft {
   keywords?: string[];
 }
 
-function drafts({ content, facts, posts = {}, products, perspectives = [] }: PackSources): Draft[] {
+/**
+ * Retrieval keywords of a project chunk's stack. The chunk text already lists the whole stack
+ * ("Stack: ..."), so only the names that carry a topic tag (`topicTagsOf`: follow-up pills) stay
+ * keywords; repeating the rest only filled the pack (runbook deviation 8, 2026-10-15).
+ */
+export function stackKeywords(stack: readonly string[]): string[] {
+  return stack.map((s) => s.toLowerCase()).filter((s) => topicTagsOf(s).length > 0);
+}
+
+function drafts({ content, facts, posts = {}, products, perspectives = [], siteBuild }: PackSources): Draft[] {
   const out: Draft[] = [];
   const { profile } = content;
   const roof = content.floors.roof;
@@ -146,6 +160,19 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       join(profile.principles.map((p) => ({ en: `"${p.title.en}": ${p.text.en}`, id: `"${p.title.id}": ${p.text.id}` }))),
     ]),
   });
+
+  // How this site was built (owner request 2026-10-15): Ask knowledge only, cited to the public repository.
+  if (siteBuild) {
+    out.push({
+      id: SITE_CHUNK,
+      type: "site",
+      title: siteBuild.title.en,
+      url: siteBuild.source,
+      updatedAt: siteBuild.asOf,
+      keywords: siteBuild.keywords,
+      text: loc(siteBuild.text),
+    });
+  }
 
   // "How I run AI in production" (owner approved 2026-10-14): the About section and the L3 Ops Control Room.
   const production = content.production;
@@ -299,7 +326,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [] }: Pac
       title: pod.title.en,
       url: `/labs/${pod.slug}`,
       updatedAt: pod.period.end === "present" ? pod.period.start : pod.period.end,
-      keywords: ["project", pod.wing, ...pod.stack.map((s) => s.toLowerCase()), pod.hologram, ...(live ? LIVE_KEYWORDS : [])],
+      keywords: ["project", pod.wing, ...stackKeywords(pod.stack), pod.hologram, ...(live ? LIVE_KEYWORDS : [])],
       text: join([
         {
           en: `Project (${WING_NAME[pod.wing].en}): ${pod.title.en}, ${pod.period.start} to ${pod.period.end}.`,

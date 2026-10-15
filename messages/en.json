@@ -690,6 +690,8 @@
       "inputLabel": "Your question",
       "placeholder": "Ask about his work, projects or how he works",
       "source": "Read on this site: {label}",
+      "sourceExternal": "Source: {label}",
+      "newTab": "opens in a new tab",
       "send": "Send"
     },
     "topics": {
@@ -703,7 +705,8 @@
       "how": "Kurniadi's approach on the About page",
       "blog": "Kurniadi's blog post",
       "project": "The project's case study",
-      "library": "The Writing page"
+      "library": "The Writing page",
+      "repo": "The ShinyQ HQ source code on GitHub"
     },
     "hero": {
       "label": "Ask AI about my work",

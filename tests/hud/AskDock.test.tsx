@@ -136,6 +136,22 @@ describe("Ask dock chat", () => {
     expect(link).toHaveTextContent(d.source.replace("{label}", en.ask.cite.how));
   });
 
+  it("links an answer about how this site was built to its public repository in a new tab", async () => {
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta("Kurniadi built ShinyQ HQ as a Next.js static export on Cloudflare Pages.");
+      return { outcome: "answer", source: "primary", asOf: "2026-10-15", tags: ["work", "agents"], cite: "https://github.com/ShinyQ/ShinyQ-HQ" };
+    });
+    await ready();
+    act(() => openAsk("How was this site built?"));
+    const panel = await dock();
+    const link = await within(panel).findByTestId("ask-cite");
+    expect(link).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(link).toHaveTextContent(d.sourceExternal.replace("{label}", en.ask.cite.repo));
+    expect(link).toHaveTextContent(d.newTab);
+  });
+
   it("shows no source link when the answer cites nothing", async () => {
     answerWith("The voice agent answers calls.");
     await ready();

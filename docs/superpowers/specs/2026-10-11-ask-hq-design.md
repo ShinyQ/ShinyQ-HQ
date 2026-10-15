@@ -179,7 +179,7 @@ Rules:
 - **Review gate:** run the security-review agent on the PR before merge.
 - **Golden set:** `tests/ask/golden.json`, 30 questions (18 from the benchmark + 12 new: GH-600 status, latest post, "what are you building now", ID-only phrasing, two injections, two unknown traps), 32 with the live-site and ticketing questions (q31, q32), 38 since section 13, 41 since the CV refresh (q39 to q41, 2026-10-13).
   - **PR CI:** a mocked model checks pipeline behavior plus the drift check.
-  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30; 36/38 since section 13; 39/41 since the CV refresh; 40/42 since the observability section). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
+  - **Nightly (real model):** `ask-eval.yml` runs the golden set against Workers AI and fails on a regression (< 28/30; 36/38 since section 13; 39/41 since the CV refresh; 40/42 since the observability section; 45/47 since the site-build note). It needs a Cloudflare token with Workers AI Read; until the owner adds it, the same script runs locally with the `cf` CLI.
 
 ## 10. Provisioning (Cloudflare, all free)
 | Resource | Command / place | Notes |
@@ -248,6 +248,17 @@ Owner request: "also for chatbot i have improvement . the ai is permissible btw 
 | T2 (extended) | Injection through perspective text | Owner-reviewed PRs only (CODEOWNERS on `content/**`); `perspectiveIssues` refuses instruction-like sentences; the pack sanitizer drops them; red-team item rt50 |
 
 ### 13.5 Evaluation
-- Golden set: 42 items (q33 to q38 are perspective questions; q37 and q38 have no written view; q39 to q41 come from the 2026-10-13 CV refresh; q42 from the 2026-10-14 observability section), nightly threshold 40/42, the same bar as 28/30 (two misses allowed).
+- Golden set: 42 items (q33 to q38 are perspective questions; q37 and q38 have no written view; q39 to q41 come from the 2026-10-13 CV refresh; q42 from the 2026-10-14 observability section), nightly threshold 40/42, the same bar as 28/30 (two misses allowed). Since then q43 and q44 (Data and ML) and q45 to q47 (section 14): 47 items, threshold 45/47.
 - Red team: 52 items; the nightly real-model run must stay 100% safe.
 - Curated pills: a fifth topic, Perspectives, with 5 questions grounded in How I work, the principles and the posts; the nightly 90% answered bar is unchanged.
+
+## 14. How this site was built (owner request 2026-10-15)
+
+Owner request: "i also want you to inserting additional knowledge when user is asking about how the ShinyQ-HQ was build when user chat inthe chatbot".
+
+- Source: `content/ask/site-build.json` (`SiteBuildSchema`): one bilingual, third-person note on the stack, the 3D engine, hosting, this assistant, testing and the process (specs and plans, AI coding agents, review and merge after the required checks). Ask knowledge only, no page; every fact backed by the repository.
+- Pack: one `site-build` chunk (type `site`, tags `work` and `agents`, url the public repository). To fit it under the unchanged 200 KB cap, project chunks keep as keywords only the stack names that carry a topic tag (runbook deviation 8).
+- Retrieval: `isSiteQuestion` (`functions/_lib/scope.ts`, deterministic, EN and ID, deliberately narrow) always adds the chunk, like `principles` for perspective questions.
+- Prompt: rule 1's scope names "how this site and its assistant were built" (`PROMPT_VERSION` 2026-10-15.site-build.1).
+- Citation: an answer to a site question carries `cite` = `https://github.com/ShinyQ/ShinyQ-HQ` (`ASK_REPO_CITE`), the only external value `isAskCite` accepts; the dock renders it as "Source: The ShinyQ HQ source code on GitHub" in a new tab.
+- Evaluation: golden q45 to q47 (two EN, one ID), nightly threshold 45/47; the curated pill `work-site` ("How was this site built?").

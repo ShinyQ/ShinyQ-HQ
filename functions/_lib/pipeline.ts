@@ -6,7 +6,7 @@ import { canned, noViewMessage, type CannedKind } from "./messages";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { retrieve } from "./retrieve";
-import { isPerspectiveQuestion, opinionAboutOthers, privateTopic } from "./scope";
+import { isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack, SafetyData } from "./types";
 
@@ -43,7 +43,7 @@ export interface PipelineResult {
   chunkIds: string[];
   /** Allowlisted topic tags of the retrieved chunks (follow-up pills); empty when nothing was retrieved. */
   tags: AskTag[];
-  /** Page View path of the written source the answer cites, or of the closest one for the no-view answer (`isAskCite`). */
+  /** Page View path of the written source the answer cites (or the public repository for a site question), or of the closest one for the no-view answer (`isAskCite`). */
   cite?: string;
 }
 
@@ -99,6 +99,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     safety,
     chunks,
     perspective: isPerspectiveQuestion(question),
+    site: isSiteQuestion(question),
     locale,
   });
   if (!check.ok) {

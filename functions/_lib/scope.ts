@@ -21,6 +21,27 @@ export function isPerspectiveQuestion(question: string): boolean {
   return PERSPECTIVE.some((re) => re.test(question));
 }
 
+/**
+ * Questions about this site itself (ShinyQ HQ): its stack, 3D engine, hosting, the assistant and how
+ * it was made (owner request 2026-10-15). They always retrieve the `site-build` chunk, and an answer
+ * cites the public repository. Deliberately narrow: "his portfolio" or "a live site" of a project
+ * are about his work, not about this site.
+ */
+const SITE: RegExp[] = [
+  /\bshinyq[ -]?hq\b|\bagent hq\b/i,
+  /\b(?:this|the|your) (?:3d |portfolio )?(?:site|website|web ?site|web ?app|tower|hq)\b(?! (?:of|for|on|in)\b)/i,
+  /\b(?:this|your) (?:ai )?(?:chat ?bot|assistant)\b/i,
+  /\b(?:built|made|created|developed|coded|designed|powered|powers) (?:you|this)\b|\b(?:are|were) you (?:built|made|created|powered)\b/i,
+  /\bwhat (?:ai |llm |language )?models? (?:are you|do you|powers? you)\b/i,
+  /\b(?:situs|website|web|portofolio|chatbot|asisten|menara) ini\b/i,
+  /\b(?:kamu|anda) (?:dibuat|dibangun|memakai|menggunakan|pakai)\b|\bmodel (?:ai |llm )?apa (?:yang )?(?:kamu|anda)\b/i,
+];
+
+/** A question about this site or its assistant (EN/ID): how it was built, its stack, hosting or model. */
+export function isSiteQuestion(question: string): boolean {
+  return SITE.some((re) => re.test(question));
+}
+
 export type PrivateTopic = "family" | "health" | "religion" | "politics" | "pay" | "life";
 
 const PRIVATE: [PrivateTopic, RegExp][] = [
