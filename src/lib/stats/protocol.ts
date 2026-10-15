@@ -58,7 +58,7 @@ export interface StatsPerf {
 
 export interface StatsSnapshotV1 {
   v: 1;
-  /** ISO, end of the last complete UTC day (the next midnight, exclusive). */
+  /** ISO time of the Worker run that wrote this snapshot (every 4 hours); the data includes today so far. */
   updatedAt: string;
   /** First rollup day (YYYY-MM-DD), the "since launch" date. */
   since: string;

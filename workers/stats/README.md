@@ -54,7 +54,7 @@ Limits checked 2026-10-16:
 | GraphQL Analytics API | 300 queries per 5 minutes per user | 1 per run, 6 a day |
 | Cron Triggers | several schedules per Worker | 1 schedule |
 | Workers KV (free plan) | 1,000 writes a day | at most 12 a day (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
-| Analytics Engine SQL API | no per-query charge on this plan | 3 to 4 queries per run |
+| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 queries per routine run (4 with a perf backfill), 18 to 24 a day |
 
 ## Configuration
 

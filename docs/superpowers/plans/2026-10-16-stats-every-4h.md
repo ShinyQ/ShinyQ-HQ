@@ -16,7 +16,7 @@
 - Earlier owner decisions stay: public numbers, no thresholds, countries as dots only (ISO alpha-2, never `XX` or `T1`), the label "visits" / "kunjungan", the "Don't count my visits" opt-out, the abuse freezes (`MODE_FREEZE`, `PERF_FREEZE`).
 - Contract `StatsSnapshotV1` does not change shape (`updatedAt` already accepts any ISO time). No `v: 2`.
 - Copy is EN and ID, honest: today is included and partial; "updated every 4 hours".
-- Limits (checked 2026-10-16, Cloudflare docs): GraphQL Analytics API 300 queries per 5 minutes per user (6 runs a day use 6); Cron Triggers: one schedule on this Worker; KV free plan 1,000 writes a day (at most 2 per run, 12 a day); Analytics Engine SQL API has no per-query charge on this plan. No cost change worth noting.
+- Limits (checked 2026-10-16, Cloudflare docs): GraphQL Analytics API 300 queries per 5 minutes per user (6 runs a day use 6); Cron Triggers: one schedule on this Worker; KV free plan 1,000 writes a day (at most 2 per run, 12 a day); Analytics Engine SQL API: 10,000 read queries a day on the Workers Free plan (not billed today), 18 to 24 a day used (3 per routine run, 4 with a perf backfill). No cost change worth noting.
 - Deploy stays manual (`STATS_WORKER_DEPLOY=false`): `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login, after merge.
 
 ---
