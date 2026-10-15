@@ -202,7 +202,7 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-/** L4 Writing: the floor with the first-visit prompt, the first stop of "Read my writing" and the Research drawer. */
+/** L4 Writing: the floor with the first-visit prompt, the first stop of the writing tour and the Research drawer. */
 for (const viewport of L4_VIEWPORTS) {
   test(`3D hq-l4 @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(300_000);
@@ -212,11 +212,11 @@ for (const viewport of L4_VIEWPORTS) {
     const prompt = page.getByTestId("dialog-choices");
     await expect(prompt).toBeVisible();
     await page.screenshot({ path: shot("hq-l4-writing", viewport) });
-    await prompt.getByRole("button", { name: "Read my writing" }).click();
+    await prompt.getByRole("button", { name: en.walk.writing.start }).click();
     await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-status", "arrived", { timeout: 120_000 });
     await page.waitForTimeout(3000);
     await page.screenshot({ path: shot("hq-l4-walk", viewport) });
-    await page.getByTestId("walk-bar").getByRole("button", { name: "End walk" }).first().click();
+    await page.getByTestId("walk-bar").getByRole("button", { name: en.walk.end }).first().click();
     await openRoomFromPalette(page, "Research shelf", "L4:research");
     await page.waitForTimeout(3000);
     await page.screenshot({ path: shot("hq-l4-research", viewport) });
