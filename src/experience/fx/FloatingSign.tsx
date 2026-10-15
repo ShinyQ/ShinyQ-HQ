@@ -16,6 +16,27 @@ import { sceneProbes } from "./probes";
 import { useDispose } from "./useDispose";
 
 const NO_RAYCAST = () => null;
+/** Inputs before the per-sign values: group origin x and z, camera x and z, orbit angle, rover x. */
+const FIXED_INPUTS = 6;
+
+interface LastUpdate {
+  signs: readonly SignSpec[];
+  mesh: InstancedMesh;
+  alphas: InstancedBufferAttribute;
+  members: readonly unknown[];
+  values: Float64Array;
+}
+
+function sameUpdate(last: LastUpdate | null, signs: readonly SignSpec[], mesh: InstancedMesh, alphas: InstancedBufferAttribute, members: readonly unknown[] | undefined, values: Float64Array): boolean {
+  if (!last || last.signs !== signs || last.mesh !== mesh || last.alphas !== alphas) return false;
+  const now = members ?? [];
+  if (now.length !== last.members.length) return false;
+  for (let i = 0; i < now.length; i++) if (now[i] !== last.members[i]) return false;
+  if (values.length !== last.values.length) return false;
+  // NaN never equals itself, so it always counts as a change.
+  for (let i = 0; i < values.length; i++) if (values[i] !== last.values[i]) return false;
+  return true;
+}
 /** Text sits this far in front of its plate (u). */
 const TEXT_LIFT = 0.03;
 
@@ -74,6 +95,8 @@ export function FloatingSigns({
   const origin = useMemo(() => new Vector3(), []);
   // Instance colors exist from creation, so the floor's precompile builds the instanced-color program.
   const colors = useMemo(() => new Float32Array(signs.flatMap((s) => neonColor(s.color, 1.5, tier).toArray())), [signs, tier]);
+  const scratch = useRef(new Float64Array(0));
+  const last = useRef<LastUpdate | null>(null);
 
   useEffect(
     () => () => {
@@ -88,11 +111,24 @@ export function FloatingSigns({
     if (!g || !mesh) return;
     const alphas = mesh.geometry.getAttribute("aAlpha") as InstancedBufferAttribute;
     g.getWorldPosition(origin);
-    const cam = { x: camera.position.x, z: camera.position.z };
     const members = batch.current?.members;
+    const angle = orbit?.current ?? 0;
+    // Everything below is a pure function of these inputs: when none changed (a parked rover under a
+    // still camera), the matrices, fades and probe from the last update are exact, so skip the work and
+    // the two instance buffer uploads.
+    if (scratch.current.length !== FIXED_INPUTS + signs.length) scratch.current = new Float64Array(FIXED_INPUTS + signs.length);
+    const inputs = scratch.current;
+    inputs[0] = origin.x;
+    inputs[1] = origin.z;
+    inputs[2] = camera.position.x;
+    inputs[3] = camera.position.z;
+    inputs[4] = angle;
+    inputs[5] = roverRuntime.x;
+    for (let i = 0; i < signs.length; i++) inputs[FIXED_INPUTS + i] = visibility?.current[i] ?? 1;
+    if (sameUpdate(last.current, signs, mesh, alphas, members, inputs)) return;
+    const cam = { x: camera.position.x, z: camera.position.z };
     const probe: { text: string; facing: number }[] = [];
     let any = false;
-    const angle = orbit?.current ?? 0;
     signs.forEach((s, i) => {
       const local = s.orbit && angle ? orbitXZ(s.x, s.z, angle) : { x: s.x, z: s.z };
       const at = { x: origin.x + local.x, z: origin.z + local.z };
@@ -123,6 +159,7 @@ export function FloatingSigns({
     mesh.visible = any;
     if (batch.current) batch.current.batch.visible = any;
     sceneProbes.signs[name] = probe;
+    last.current = { signs, mesh, alphas, members: members ? [...members] : [], values: inputs.slice() };
   });
 
   if (!signs.length) return null;

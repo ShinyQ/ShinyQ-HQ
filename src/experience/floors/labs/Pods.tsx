@@ -10,6 +10,7 @@ import { floorY } from "../../config";
 import { createInstancedGlassMaterial, neonColor } from "../../fx/materials";
 import { useUniformTime } from "../../fx/useUniformTime";
 import { roverRuntime } from "../../rover/runtime";
+import { forgetDrawn, whenDrawn } from "../../scene/drawnWork";
 import { FONTS, tierFill } from "../../tower/primitives";
 import { hologramParts } from "./hologramParts";
 import { LABS, WING_TINT, type PlacedPod } from "./layout";
@@ -128,6 +129,24 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
   }, [parts, boost]);
 
+  const writeParts = (m: InstancedMesh, t: number, hidden: string | null) => {
+    const l = local.current;
+    parts.forEach(({ part, podIndex, scale, lift }, i) => {
+      const pod = placed[podIndex];
+      const off = pod.room === hidden ? 0 : 1;
+      const angle = l.angles[podIndex];
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      const pulse = part.pulse !== undefined && !reduced ? 0.65 + 0.35 * Math.sin(t * 3 + part.pulse) : 1;
+      dummy.position.set(pod.center.x + (part.x * c + part.z * s) * scale, lift + part.y * scale, pod.center.z + (-part.x * s + part.z * c) * scale);
+      dummy.rotation.set(0, angle, 0);
+      dummy.scale.set(part.w * scale * off + 1e-4, part.h * scale * pulse * off + 1e-4, part.d * scale * off + 1e-4);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  };
+
   useFrame((state, rawDt) => {
     const m = mesh.current;
     if (!m) return;
@@ -157,21 +176,17 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     // The pod whose hologram view is open shows the diagram instead.
     const hs = getHQStore().getState();
     const hidden = hs.phase === "hologram" ? hs.activeRoom : null;
-    parts.forEach(({ part, podIndex, scale, lift }, i) => {
-      const pod = placed[podIndex];
-      const off = pod.room === hidden ? 0 : 1;
-      const angle = l.angles[podIndex];
-      const c = Math.cos(angle);
-      const s = Math.sin(angle);
-      const pulse = part.pulse !== undefined && !reduced ? 0.65 + 0.35 * Math.sin(t * 3 + part.pulse) : 1;
-      dummy.position.set(pod.center.x + (part.x * c + part.z * s) * scale, lift + part.y * scale, pod.center.z + (-part.x * s + part.z * c) * scale);
-      dummy.rotation.set(0, angle, 0);
-      dummy.scale.set(part.w * scale * off + 1e-4, part.h * scale * pulse * off + 1e-4, part.d * scale * off + 1e-4);
-      dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
-    });
-    m.instanceMatrix.needsUpdate = true;
+    // The matrices only matter when the floor's content is drawn: skip them while FloorLevel hides it
+    // (a neighbour floor), and catch up before the render that shows it again (scene/drawnWork.ts).
+    whenDrawn(m, () => writeParts(m, t, hidden));
   });
+
+  useEffect(() => {
+    const m = mesh.current;
+    return () => {
+      if (m) forgetDrawn(m);
+    };
+  }, []);
 
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, parts.length]} frustumCulled={false}>
