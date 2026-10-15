@@ -2,8 +2,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
-import { PERSPECTIVE_CAP, retrieve } from "../../functions/_lib/retrieve";
-import { isPerspectiveQuestion, opinionAboutOthers, orgAliases, privateTopic } from "../../functions/_lib/scope";
+import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
+import { isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, orgAliases, privateTopic } from "../../functions/_lib/scope";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
@@ -156,5 +156,44 @@ describe("perspective retrieval with every draft approved", () => {
         for (const chunk of s.expect ?? []) expect(ids, `${s.id} (${locale})`).toContain(chunk);
       }
     }
+  });
+});
+
+describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", () => {
+  it.each([
+    "How was this site built?",
+    "What tech stack does ShinyQ HQ use?",
+    "Is this website open source?",
+    "Does the site use three.js?",
+    "What model powers you?",
+    "How does this chatbot work?",
+    "Who made you?",
+    "Apakah situs ini dibuat dengan AI?",
+    "Bagaimana situs ini dibuat?",
+    "Asisten ini memakai model apa?",
+    "Model apa yang kamu pakai?",
+  ])("treats %s as a question about this site", (q) => expect(isSiteQuestion(q)).toBe(true));
+
+  it.each([
+    "What's in his portfolio?",
+    "Which projects have a live site?",
+    "Who built the fraud engine?",
+    "How does the assistant on his MII Microsoft AI portfolio work?",
+    "Which models has he published on Hugging Face?",
+    "Model apa yang dia publikasikan?",
+    "Is the website of the vendor portal public?",
+  ])("treats %s as a question about his work", (q) => expect(isSiteQuestion(q)).toBe(false));
+
+  it("fires on no curated or golden question except the ones about this site", () => {
+    const site = new Set(["work-site", "q45", "q46", "q47"]);
+    for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(site.has(s.id));
+    for (const item of golden.items) expect(isSiteQuestion(item.q), item.id).toBe(site.has(item.id));
+  });
+
+  it("always retrieves the site-build chunk for them, in both languages", () => {
+    for (const [q, locale] of [["How was this site built?", "en"], ["What tech stack does ShinyQ HQ use?", "en"], ["Apakah situs ini dibuat dengan AI?", "id"], ["Bagaimana situs ini dibuat?", "id"]] as const) {
+      expect(retrieve(pack, q, locale).chunks.map((c) => c.id), q).toContain(SITE_INCLUDE);
+    }
+    expect(retrieve(pack, "What are his best software projects?", "en").chunks.map((c) => c.id)).not.toContain(SITE_INCLUDE);
   });
 });
