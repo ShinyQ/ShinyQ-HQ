@@ -280,6 +280,20 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
   });
 });
 
+describe("MII Deck and MII Cowork (owner request 2026-10-16)", () => {
+  it("MII Deck and MII Cowork are featured AI pods without repos or live links", () => {
+    const pods = getPods("ai");
+    for (const slug of ["agent-deck-platform", "mii-cowork"]) {
+      const pod = pods.find((p) => p.slug === slug);
+      expect(pod?.tier, slug).toBe("featured");
+      expect(pod?.repos ?? [], slug).toEqual([]);
+      expect(pod?.liveUrl, slug).toBeUndefined();
+      expect(pod?.client, slug).toBeUndefined();
+    }
+    expect(pods.find((p) => p.slug === "agent-deck-platform")?.assets.length).toBeGreaterThan(0);
+  });
+});
+
 describe("image-free client pods (owner decision 2026-10-11)", () => {
   it("keeps SITA and FREDDY without screenshots", () => {
     const pods = parsed.success ? parsed.data.floors.labs.pods : [];

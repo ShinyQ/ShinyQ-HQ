@@ -7799,7 +7799,7 @@
           "id": "agent-deck-platform",
           "slug": "agent-deck-platform",
           "order": 16,
-          "tier": "listed",
+          "tier": "featured",
           "accent": "green",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -7808,32 +7808,52 @@
             "id": "Penyusunan dan Hosting Presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. AI agents in MII Cowork draft decks in sandboxes, an owner approves each change, and private decks stay behind their own passwords.",
-            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan deck privat tetap terlindungi password masing-masing."
+            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. Agents in MII Cowork draft decks in sandboxes, an owner approves each change, and each publish ships through a checked pull request.",
+            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan setiap publikasi dirilis lewat pull request yang lolos pemeriksaan."
           },
           "period": {
             "start": "2026-07",
             "end": "2026-10"
           },
           "role": {
-            "en": "Owner of the Deck Studio subsystem inside MII Cowork (platform led by a colleague), with sole engineering responsibility for hosting",
-            "id": "Owner subsistem Deck Studio di dalam MII Cowork (platform dipimpin rekan), dengan tanggung jawab engineering tunggal untuk hosting"
+            "en": "Sole engineer of MII Deck and of its Deck Studio integration in MII Cowork, from agent authoring to CI/CD and hosting (the Cowork platform is led by a colleague)",
+            "id": "Engineer tunggal MII Deck dan integrasi Deck Studio-nya di MII Cowork, dari penyusunan oleh agent hingga CI/CD dan hosting (platform Cowork dipimpin rekan)"
           },
           "problem": {
-            "en": "Teams needed AI-authored client presentations with safe execution and automated publication.",
-            "id": "Tim membutuhkan presentasi klien yang disusun AI agent dengan eksekusi aman dan publikasi otomatis."
+            "en": "MII teams needed client-ready presentations that AI agents could draft without breaking the MII design, with every change approved by a person and private decks kept behind their own passwords.",
+            "id": "Tim MII membutuhkan presentasi siap klien yang dapat disusun AI agent tanpa merusak desain MII, dengan setiap perubahan disetujui manusia dan deck privat tetap terlindungi password masing-masing."
           },
           "approach": [
             {
-              "en": "I built isolated previews and a trust boundary for agent-authored content in container sandboxes, with QA and critic gates and editable PPTX export.",
-              "id": "Saya membangun preview terisolasi dan trust boundary untuk konten buatan agent di container sandbox, dengan gate QA dan critic serta ekspor PPTX yang dapat diedit."
+              "en": "I built the MII Deck kit: light and dark slide components, 32 slide blueprints with motion, and QA gates for layout, contrast and text depth, plus a critic that scores each deck against a rubric.",
+              "id": "Saya membangun kit MII Deck: komponen slide terang dan gelap, 32 blueprint slide dengan animasi, serta gate QA untuk layout, kontras, dan kedalaman teks, ditambah critic yang menilai setiap deck dengan rubrik."
             },
             {
-              "en": "I built git-backed hosting with exact-commit deployments and automatic rollback.",
-              "id": "Saya membangun hosting berbasis git dengan deployment berdasarkan commit yang tepat dan rollback otomatis."
+              "en": "I built Deck Studio inside MII Cowork: agents draft decks in the conversation's sandbox, the owner approves stages and locks slides, and decks export to editable PPTX.",
+              "id": "Saya membangun Deck Studio di dalam MII Cowork: agent menyusun deck di sandbox percakapan, owner menyetujui setiap tahap dan mengunci slide, dan deck dapat diekspor ke PPTX yang bisa diedit."
+            },
+            {
+              "en": "I built the publish path: Cowork opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
+              "id": "Saya membangun alur publikasi: Cowork membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang sehat jika gagal."
+            },
+            {
+              "en": "I added private decks with generated passwords, shared password links and rate limits on failed attempts.",
+              "id": "Saya menambahkan deck privat dengan password yang dibuat otomatis, tautan berbagi dengan password, dan rate limit untuk percobaan yang gagal."
             }
           ],
           "results": [
+            {
+              "value": "134 of 136",
+              "label": {
+                "en": "MII Deck commits by Kurniadi",
+                "id": "Commit MII Deck oleh Kurniadi"
+              },
+              "context": {
+                "en": "Repository history, Sep to Oct 2026; the other two came from the publishing GitHub App and a coding agent.",
+                "id": "Riwayat repositori, Sep hingga Okt 2026; dua lainnya berasal dari GitHub App penerbit dan coding agent."
+              },
+              "confidence": "verified"
+            },
             {
               "value": "20 releases",
               "label": {
@@ -7845,12 +7865,28 @@
                 "id": "Berdasarkan riwayat repositori."
               },
               "confidence": "verified"
+            },
+            {
+              "value": "32 blueprints",
+              "label": {
+                "en": "Slide blueprints with motion and QA",
+                "id": "Blueprint slide dengan animasi dan QA"
+              },
+              "context": {
+                "en": "Counted in the kit, Oct 2026.",
+                "id": "Dihitung dari kit, Okt 2026."
+              },
+              "confidence": "verified"
             }
           ],
           "stack": [
+            "Next.js",
+            "TypeScript",
+            "Python",
             "Azure Container Apps",
+            "Azure App Service",
             "GitHub Apps",
-            "Next.js"
+            "GitHub Actions"
           ],
           "hologram": "template",
           "assets": [
