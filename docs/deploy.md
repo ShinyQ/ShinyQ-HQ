@@ -168,6 +168,8 @@ gh variable set CF_PREVIEWS --body true                        # optional: turn 
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
 | `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
 | `SAFETY_BLOCKLIST_GRACE_UNTIL` | Temporary | `YYYY-MM-DD`: until this day (UTC) a missing `SAFETY_BLOCKLIST` only warns on `main` and in `deploy.yml`; afterwards it fails. Set on 2026-10-14 to `2026-10-21` while the owner adds the secret; delete it once the secret is set (`gh variable delete SAFETY_BLOCKLIST_GRACE_UNTIL`). |
+| `GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console HTML tag token (the `content` value of `google-site-verification`), rendered on `/`, `/en` and `/id` by production builds. Section 15. |
+| `BING_SITE_VERIFICATION` | Optional | Bing Webmaster Tools `msvalidate.01` token, rendered the same way. Section 15. |
 | `STATS_WORKER_DEPLOY` | Optional | `false` skips the hq-stats Worker job in `deploy.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
 
 Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
@@ -189,7 +191,7 @@ curl -sI "$HOST/cv.pdf" | grep -iE '^(HTTP|location)' # 301 to /cv/kurniadi-ahma
 curl -sI "$HOST/cv/kurniadi-ahmad-wijaya-cv.pdf" | grep -iE '^(HTTP|content-type|x-frame-options)' # 200, application/pdf, SAMEORIGIN
 curl -s "$HOST/sitemap.xml" | head -n5               # URLs use SITE_URL
 curl -s "$HOST/robots.txt"
-curl -sI "$HOST/og/en.png" | grep -i content-type    # image/png (share card)
+curl -sI "$HOST/og/en.jpg" | grep -i content-type    # image/jpeg (share card)
 curl -sI "$HOST/en" | grep -iE 'content-security-policy|strict-transport|x-frame-options'
 ```
 
@@ -319,3 +321,51 @@ Applied with `gh api` by the security workstream (owner decision 6); check them 
 - "Allow GitHub Actions to create and approve pull requests" stays on: `refresh-facts.yml` opens its PR with `GITHUB_TOKEN`, and the setting covers both.
 
 Rollback: `gh api -X PUT repos/ShinyQ/ShinyQ-HQ/rulesets/<id> -f enforcement=disabled` (id from `gh api repos/ShinyQ/ShinyQ-HQ/rulesets`).
+
+## 15. Search engines and link previews
+
+What the build does is in [features.md](features.md#search-and-link-previews). The owner steps:
+
+### Google Search Console
+
+1. https://search.google.com/search-console > Add property > **URL prefix** `https://kurniadi.pages.dev/` (a Domain property needs a DNS TXT record, which a `pages.dev` subdomain cannot have).
+2. Choose **HTML tag**, copy only the `content` value of `<meta name="google-site-verification" content="...">`.
+3. `gh variable set GOOGLE_SITE_VERIFICATION --body <content value>`, then deploy (`gh workflow run deploy.yml --ref main`). Check: `curl -s https://kurniadi.pages.dev/ | grep google-site-verification`.
+4. Click **Verify**. Keep the variable: Google re-checks the tag from time to time.
+5. Sitemaps > add `sitemap.xml`. URL inspection > `https://kurniadi.pages.dev/en` > Request indexing (and `/id`).
+
+Alternative without a deploy variable: download Google's HTML file (`google<token>.html`) into `public/`, commit it in a PR and deploy. Do not invent or reuse tokens.
+
+### Bing Webmaster Tools
+
+1. https://www.bing.com/webmasters > Import from Google Search Console (fastest once Google is verified; nothing else to do), or Add a site `https://kurniadi.pages.dev/` and choose **HTML Meta Tag**.
+2. For the meta tag: `gh variable set BING_SITE_VERIFICATION --body <content of msvalidate.01>`, deploy, then Verify.
+3. Sitemaps > Submit `https://kurniadi.pages.dev/sitemap.xml`. Bing also feeds DuckDuckGo and Yahoo.
+
+### LinkedIn previews (Featured "Add link", posts)
+
+LinkedIn caches a preview per URL, including a failed one, and does not run JavaScript. After a deploy that changes share tags or cards:
+
+1. Open https://www.linkedin.com/post-inspector/ (signed in), paste the exact URL you will share (for example `https://kurniadi.pages.dev/en`), and Inspect. It shows the title, description, image and any error, and refreshes LinkedIn's cache for that URL.
+2. If the Featured section still shows "We couldn't load a preview for this link", remove the link, wait a few minutes and add it again (the Featured section keeps its own copy).
+3. Prefer the locale URL (`/en` or `/id`): `/` answers with the same card but declares `/en` as its canonical, so LinkedIn may show `/en` anyway.
+
+Check what LinkedIn's fetcher gets, from any machine:
+
+```sh
+UA='LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)'
+curl -s -A "$UA" -o /dev/null -w '%{http_code} %{size_download}\n' https://kurniadi.pages.dev/en   # 200
+curl -s -A "$UA" https://kurniadi.pages.dev/en | head -c 8192 | grep -o 'property="og:[a-z:_]*"' | sort -u
+curl -sI -A "$UA" https://kurniadi.pages.dev/og/en.jpg | grep -iE '^(HTTP|content-type)'           # 200, image/jpeg
+```
+
+`deploy.yml` runs the same check after every deploy (`scripts/deploy-smoke.ts`, `UNFURL_PATHS`).
+
+### Would a custom domain help?
+
+Facts, not a recommendation to move now (section 7 explains the `kurniadi.dev` blocklist issue):
+
+- `pages.dev` is on the Public Suffix List (https://publicsuffix.org/list/), so `kurniadi.pages.dev` is already its own registrable site, not a part of a shared one. The HTML, share tags and structured data are the same on either origin.
+- A domain on a Cloudflare zone allows a Search Console Domain property (DNS TXT), zone-level security and bot settings (on `pages.dev` these are Cloudflare's, not ours), and request logs by user agent, which would show whether LinkedInBot reached the site and what it got.
+- A domain change moves every URL, so LinkedIn and search engines treat it as a new site until redirects and re-crawls settle.
+

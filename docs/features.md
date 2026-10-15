@@ -15,6 +15,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 - [L4 Newsroom](#l4-newsroom)
 - [RF Roof deck](#rf-roof-deck)
 - [Routes](#routes)
+- [Search and link previews](#search-and-link-previews)
 - [Ask the HQ (AI Q&A)](#ask-the-hq-ai-qa)
 - [Visual language](#visual-language)
 - [CI and deploys](#ci-and-deploys)
@@ -39,6 +40,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Highlights Hall | L1 summary behind the certifications wall: about me, top 3 projects, work experience (employment and freelance), contact; the "Quick tour" walk | Done |
 | Onboarding | Rover's dialog (handheld RPG text box), first-session tour, "!" hint bubbles, first-visit floor lines with the walk choice | Done |
 | Point-and-go | Hover or tap a glowing object (room doors, elevator pads, Return pads, teleporters, stations, the Ask Rover kiosk, boards) to see its name and drive there; no free click-to-move | Done |
+| SEO and link previews | Search titles within 60 characters, unique titles, `/` canonical to `/en`, baseline JFIF share cards with `og:image:secure_url`, Person, ProfilePage and SoftwareSourceCode structured data, content-dated sitemap, Search Console and Bing verification, LinkedInBot checks in e2e and the deploy smoke | Done |
 | Fast return | Any floor change more than 40 u from the elevator call pad beams the rover into the car; green "Back to elevator" pads at the far ends of L2 and L3 beam it to the call pad | Done |
 
 ## Controls and first visit
@@ -236,6 +238,18 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the daily public visit stats snapshot (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
+
+## Search and link previews
+
+Every page is a static HTML page with its own search and share tags, so crawlers and link unfurlers (LinkedIn, Slack, WhatsApp, X) never need the 3D view or JavaScript.
+
+- Titles (`src/lib/seo.ts`): Open Graph and Twitter keep the share title (`seoFor().title`, owner wording); `<title>` uses `searchTitle`, which fits 60 characters by dropping the attribution step by step (full name, first name, none; journey entries keep the organization first), unique in each locale. Entries that share a role and organization (trophy cases, side projects) add their period. Descriptions stay 140 to 160 characters.
+- Canonical: every page points at itself (`og:url` equals the canonical, checked by `og:check`); `/` (the script language redirect) points at `/en`, its x-default, with the same share card. hreflang `en`, `id` and `x-default` on every page and in the sitemap.
+- Share cards: 1200x630 baseline JPEGs with a JFIF header (`src/lib/og-encode.ts`), under 300 KB, with `og:image:secure_url`, type, size and alt. The tags sit in the first 8 KB of every page (`lateShareTags` in `scripts/og-meta.ts`).
+- Structured data (`src/lib/jsonld.ts`): `Person` (employer, Jakarta address, university, skills, LinkedIn, GitHub, Google Scholar, IEEE Xplore, Hugging Face and Medium) and `WebSite` on every page; `ProfilePage` on About (`/contact`); `CreativeWork` with `SoftwareSourceCode` parts (public repositories) on case studies; `BlogPosting` on posts; `BreadcrumbList` everywhere but home.
+- `robots.txt` allows everything and names the sitemap. The sitemap dates posts, Writing, Journey, Home and Quick view from content (`lastModified` in `src/lib/routes.ts`) and leaves other pages undated. The 404 page is `noindex`.
+- Search engine verification: `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` repository variables render the tags on `/`, `/en` and `/id` in production builds ([deploy guide](deploy.md#15-search-engines-and-link-previews)).
+- Checks: `bun run og:check` (every page), `e2e/seo.spec.ts` (fetches every entry point as LinkedInBot), and the post-deploy smoke (`/`, `/en`, `/id` as LinkedInBot against production).
 
 ## Ask the HQ (AI Q&A)
 
