@@ -58,8 +58,13 @@ describe("L3 Project Roads layout", () => {
     const south = network.roads.find((r) => r.id === "ai")!;
     expect(north.points[0]).toEqual(layout.hub.center);
     expect(south.points[0]).toEqual(layout.hub.center);
-    // They end on the ring road around the reactor core in the east plaza (spectacle round), due north and south of it.
-    expect(north.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z - REACTOR.ring });
+    // They end on the ring road around the reactor core in the east plaza (spectacle round), north and south of it
+    // (due south for the AI wing, the longer one since MII Deck and MII Cowork docked, 2026-10-16).
+    for (const road of [north, south]) {
+      const end = road.points.at(-1)!;
+      expect(Math.hypot(end.x - layout.east.center.x, end.z - layout.east.center.z), road.id).toBeCloseTo(REACTOR.ring, 5);
+    }
+    expect(north.points.at(-1)!.z).toBeLessThan(layout.east.center.z);
     expect(south.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z + REACTOR.ring });
     expect(Math.min(layout.east.w, layout.east.d)).toBeGreaterThanOrEqual(16);
     // No dead ends: the far end of each wing is reachable along the road both ways round the loop.
@@ -175,7 +180,8 @@ describe("L3 Project Roads layout", () => {
     const ai = layout.placed.filter((p) => p.pod.wing === "ai").map((p) => p.pod.slug);
     expect(software.slice(0, 4)).toEqual(["vendor-management-portal", "anime-figure-ecommerce", "vulnerability-scanning-automation", "solutions-marketing-site"]);
     expect(ai).toContain("ai-solutions-assistant");
-    expect(software).toHaveLength(ai.length);
+    // 9 and 11 docked since MII Deck and MII Cowork joined the AI wing (2026-10-16); equal before.
+    expect([software.length, ai.length]).toEqual([9, 11]);
     expect(layout.directory.ai.map((p) => p.slug)).not.toContain("solutions-marketing-site");
     expect(layout.directory.software.map((p) => p.slug)).toContain("event-tech-search-backend");
   });

@@ -8013,6 +8013,101 @@
           ]
         },
         {
+          "id": "mii-cowork",
+          "slug": "mii-cowork",
+          "order": 17,
+          "tier": "featured",
+          "accent": "blue",
+          "wing": "ai",
+          "timelineRef": "metrodata-2026",
+          "title": {
+            "en": "MII Cowork UI Revamp and Deck Studio",
+            "id": "Revamp UI MII Cowork dan Deck Studio"
+          },
+          "tagline": {
+            "en": "MII Cowork, MII's AI agent workspace where every conversation runs in its own Azure Container Apps sandbox: its interface rebuilt on MII light and dark themes, plus Deck Studio for drafting MII Deck presentations beside the chat.",
+            "id": "MII Cowork, workspace AI agent milik MII tempat setiap percakapan berjalan di sandbox Azure Container Apps sendiri: antarmukanya dibangun ulang dengan tema terang dan gelap MII, ditambah Deck Studio untuk menyusun presentasi MII Deck di samping chat."
+          },
+          "period": {
+            "start": "2026-09",
+            "end": "2026-10"
+          },
+          "role": {
+            "en": "Frontend revamp lead and Deck Studio engineer (the platform and backend are led by a colleague)",
+            "id": "Pemimpin revamp frontend dan engineer Deck Studio (platform dan backend dipimpin rekan)"
+          },
+          "problem": {
+            "en": "MII Cowork already ran agents in per-conversation sandboxes, but its interface was still a prototype, with browser confirm dialogs and mixed icon sets, and there was no path from a conversation to a finished MII presentation.",
+            "id": "MII Cowork sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih prototipe, dengan dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
+          },
+          "approach": [
+            {
+              "en": "I rebuilt the frontend on an MII design system with MII Light (default) and MII Dark themes, official MII brand assets, and shared dialog, sheet, menu and toast components in place of browser confirm dialogs.",
+              "id": "Saya membangun ulang frontend di atas design system MII: MII Light sebagai default dan MII Dark, aset brand resmi MII, serta komponen dialog, sheet, menu, dan toast bersama sebagai pengganti dialog konfirmasi bawaan browser."
+            },
+            {
+              "en": "I redesigned the layout: a navigation rail with a context panel, a files and tasks panel that overlays the chat or docks beside it, a centered chat column, and tool steps shown as activity rows.",
+              "id": "Saya mendesain ulang tata letak: navigation rail dengan context panel, panel files dan tasks yang dapat menimpa chat atau berdampingan dengannya, kolom chat di tengah, dan langkah tool yang ditampilkan sebagai baris aktivitas."
+            },
+            {
+              "en": "I integrated MII Deck as Deck Studio: a Decks hub and a Deck mode on the home page, a studio panel beside the chat, and publishing through the MII Deck pipeline.",
+              "id": "Saya mengintegrasikan MII Deck sebagai Deck Studio: hub Decks dan mode Deck di halaman utama, panel studio di samping chat, serta publikasi melalui pipeline MII Deck."
+            },
+            {
+              "en": "I checked AA contrast in every theme, focus traps, keyboard focus and reduced motion, and tested the revamp at 1440, 1100, 768 and 390 px without changing a backend file or API contract.",
+              "id": "Saya memeriksa kontras AA di setiap tema, focus trap, fokus keyboard, dan reduced motion, lalu menguji revamp di 1440, 1100, 768, dan 390 px tanpa mengubah file backend atau kontrak API."
+            }
+          ],
+          "results": [
+            {
+              "value": "194",
+              "label": {
+                "en": "Commits by Kurniadi, merged in 10 pull requests",
+                "id": "Commit oleh Kurniadi, di-merge dalam 10 pull request"
+              },
+              "context": {
+                "en": "Repository history, 23 Sep to 6 Oct 2026.",
+                "id": "Riwayat repositori, 23 Sep hingga 6 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "133 files",
+              "label": {
+                "en": "Changed by the frontend revamp, with no backend or API change",
+                "id": "Diubah oleh revamp frontend, tanpa perubahan backend atau API"
+              },
+              "context": {
+                "en": "Pull request record.",
+                "id": "Catatan pull request."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "57%",
+              "label": {
+                "en": "Frontend source lines written by Kurniadi",
+                "id": "Baris kode frontend yang ditulis Kurniadi"
+              },
+              "context": {
+                "en": "Line authorship (git blame) on the main branch, 15 Oct 2026.",
+                "id": "Kepemilikan baris (git blame) di branch main, 15 Okt 2026."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Next.js",
+            "TypeScript",
+            "Tailwind CSS",
+            "Python",
+            "Microsoft Agent Framework",
+            "Azure Container Apps"
+          ],
+          "hologram": "template",
+          "assets": []
+        },
+        {
           "id": "solutions-marketing-site",
           "slug": "solutions-marketing-site",
           "order": 11,
