@@ -7,8 +7,8 @@ const BEACON_SRC = "https://static.cloudflareinsights.com/beacon.min.js";
  * Inline guard that loads the Cloudflare beacon unless the visitor chose "Don't count my visits"
  * (`localStorage["hq:stats-optout"] === "1"`, src/lib/stats/optout.ts). Runs where the tag used to be, so
  * the beacon still loads during page parse; the page's script policy covers both (scripts/csp-hashes.ts
- * adds this loader's sha256 at build time, the beacon host is in script-src). The token is alphanumeric (`resolveBeaconToken`), so it cannot break out of
- * the string.
+ * adds this loader's sha256 at build time, the beacon host is in script-src). The token is alphanumeric
+ * (`resolveBeaconToken`), so it cannot break out of the string.
  */
 export function cfBeaconScript(token: string): string {
   const config = JSON.stringify(JSON.stringify({ token, spa: true }));
