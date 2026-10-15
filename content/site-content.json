@@ -1985,6 +1985,16 @@
           "slug": "370-agency-2025",
           "type": "freelance",
           "org": "370 Agency",
+          "logo": {
+            "src": "/logos/370-agency.webp",
+            "alt": {
+              "en": "370 Agency logo",
+              "id": "Logo 370 Agency"
+            },
+            "width": 128,
+            "height": 128,
+            "redacted": true
+          },
           "role": {
             "en": "Software Engineer (freelance)",
             "id": "Software Engineer (freelance)"
