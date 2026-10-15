@@ -429,7 +429,7 @@
     "visits.spec.ts › Visitor Observatory in the Lobby › the globe turns with full motion": 9.5,
     "visits.spec.ts › Visits on the Classic site › Contact shows the section: scope line, radios with a live status, the map and the table": 7.8,
     "visits.spec.ts › Visits on the Classic site › a delayed snapshot shows the note; a stale one, a 204 or a bad body hides every surface": 11.6,
-    "visits.spec.ts › Visits on the Classic site › the footer switch stores the opt-out and survives a reload": 5.4,
+    "visits.spec.ts › Visits on the Classic site › the Classic site footer carries no opt-out switch, privacy line or source link (owner request 2026-10-15)": 5.4,
     "visits.spec.ts › Visits on the Classic site › the home ticker gets a visits item linking to the section; Indonesian copy": 0.8,
     "visual-gate.spec.ts › full-1440x900@2 intro-still": 0,
     "visual-gate.spec.ts › full-1440x900@2 l1-spawn": 0,

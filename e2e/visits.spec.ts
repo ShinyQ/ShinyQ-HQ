@@ -8,7 +8,7 @@ import { chooseMotion, asReturningVisitor, collectErrors, enterFloorRoute, enter
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
- * home ticker item, the footer opt-out, and the Visitor Observatory in the Lobby's south-west corner
+ * home ticker item, and the Visitor Observatory in the Lobby's south-west corner
  * (owner decision 2026-10-14: reached from the elevator arrival, drawer filters, deep links including the
  * old roof ones, Cmd-K, reduced motion, budget) plus the L1 ring tile. `/api/stats` is mocked with the fixture.
  */
@@ -94,16 +94,12 @@ test.describe("Visits on the Classic site", () => {
     await expect(item.getByRole("link")).toHaveAttribute("href", "/id/contact#visits");
   });
 
-  test("the footer switch stores the opt-out and survives a reload", async ({ page }) => {
+  test("the Classic site footer carries no opt-out switch, privacy line or source link (owner request 2026-10-15)", async ({ page }) => {
     await openPage(page, "/en/labs?tier=static");
-    const sw = page.locator("footer").getByRole("switch", { name: en.stats.optOut });
-    await expect(sw).not.toBeChecked();
-    await sw.check();
-    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBe("1");
-    await page.reload();
-    await expect(page.locator("footer").getByRole("switch", { name: en.stats.optOut })).toBeChecked();
-    await page.locator("footer").getByRole("switch", { name: en.stats.optOut }).uncheck();
-    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBeNull();
+    const footer = page.locator("footer");
+    await expect(footer.getByRole("link", { name: "LinkedIn" })).toBeVisible();
+    await expect(footer.getByRole("switch")).toHaveCount(0);
+    await expect(footer).not.toContainText(/tracking cookies|validated dataset|View source/);
   });
 });
 
