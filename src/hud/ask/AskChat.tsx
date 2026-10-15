@@ -104,6 +104,10 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
   // stop following once the visitor scrolls the thread; a new question, an open or a pill mode
   // change follows again.
   const last = messages.at(-1);
+  // Keyed on the newest question, not the message count: the answer (first delta) and an error line
+  // append mid-exchange, and must not undo a visitor's scroll made while Rover thinks.
+  let questionId: string | undefined;
+  for (let i = messages.length - 1; i >= 0 && questionId === undefined; i--) if (messages[i].role === "user") questionId = messages[i].id;
   const follow = useRef(true);
   const lastSet = useRef<number | null>(null);
   const prevPhase = useRef(phase);
@@ -122,7 +126,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
     follow.current = true;
     // Content may shrink in this commit (pills hide) and clamp scrollTop: not the visitor's scroll.
     lastSet.current = null;
-  }, [messages.length, open]);
+  }, [questionId, open]);
   useLayoutEffect(() => {
     const node = scrollRef.current;
     if (!node) return;
