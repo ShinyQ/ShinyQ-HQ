@@ -45,9 +45,9 @@ describe("specsForChanges", () => {
   });
 
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
-    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
-    expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "walk"]);
-    expect(specsForChanges(["src/hud/walk/WalkLayer.tsx"]).specs).toEqual(["hud", "missions", "onboarding", "walk"]);
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/FloorIntroLayer.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
   });
   it("maps point-and-go code to the interact spec and the specs that click targets", () => {
@@ -60,16 +60,16 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/page/EnterHqButton.tsx"]).specs).toEqual(["boot-first", "experience", "pageview"]);
   });
 
-  it("maps the Highlights Hall to its spec, the 3D experience and the walks", () => {
-    expect(specsForChanges(["src/experience/floors/lobby/hallLayout.ts"]).specs).toEqual(["experience", "highlights", "walk"]);
-    expect(specsForChanges(["src/experience/floors/lobby/HighlightsHall.tsx"]).specs).toEqual(["experience", "highlights", "walk"]);
-    expect(specsForChanges(["src/content/room-views/highlights.ts"]).specs).toEqual(["experience", "highlights", "walk"]);
-    expect(specsForChanges(["src/hud/drawer/HighlightsBody.tsx"]).specs).toEqual(["experience", "highlights", "walk"]);
+  it("maps the Highlights Hall to its spec and the 3D experience", () => {
+    expect(specsForChanges(["src/experience/floors/lobby/hallLayout.ts"]).specs).toEqual(["experience", "highlights"]);
+    expect(specsForChanges(["src/experience/floors/lobby/HighlightsHall.tsx"]).specs).toEqual(["experience", "highlights"]);
+    expect(specsForChanges(["src/content/room-views/highlights.ts"]).specs).toEqual(["experience", "highlights"]);
+    expect(specsForChanges(["src/hud/drawer/HighlightsBody.tsx"]).specs).toEqual(["experience", "highlights"]);
     expect(specsForChanges(["src/experience/floors/lobby/CertWall.tsx"]).specs).toEqual(["experience", "highlights"]);
   });
 
   it("maps floor code to its spec", () => {
-    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "spectacle", "walk"]);
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "spectacle"]);
     expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "labs-data", "production", "reactor"]);
     expect(specsForChanges(["src/experience/floors/labs/OpsRoom.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
     expect(specsForChanges(["src/components/page/Production.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
@@ -77,7 +77,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-labels", "library-roof", "spectacle", "topics", "walk"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
     expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/experience/fx/plateProjection.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
@@ -92,9 +92,8 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/Analytics.tsx"]).specs).toEqual(["boot-first", "csp", "pageview", "static-routes", "visit"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/Controls.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "missions"]);
-    expect(specsForChanges(["src/hud/walk/WalkBar.tsx"]).specs).toEqual(["hud", "missions", "onboarding", "walk"]);
-    expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
-    expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).toEqual(["library-roof", "pads", "roof", "walk"]);
+    expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["library-roof", "pads", "roof"]);
+    expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).toEqual(["library-roof", "pads", "roof"]);
     expect(specsForChanges(["src/content/room-views/roof.ts"]).specs).toEqual(["library-roof", "roof"]);
     // The Visitor Observatory lives in the Lobby (owner decision 2026-10-14).
     expect(specsForChanges(["src/experience/floors/lobby/VisitsStation.tsx"]).specs).toEqual(["experience", "highlights", "pageview", "visits"]);
@@ -173,7 +172,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/fx/ReturnPadSign.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
     expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
-    expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads", "walk"]);
+    expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads"]);
     expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);
   });
 

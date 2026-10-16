@@ -51,7 +51,6 @@ export const ALL_SPECS = [
   "topics",
   "visit",
   "visits",
-  "walk",
   "workshop",
 ] as const;
 
@@ -106,10 +105,9 @@ export const RULES: Rule[] = [
   // Certifications: Page View index and the shared preview card, which the 3D Lobby wall opens too.
   { test: /^src\/components\/certs\/|^src\/content\/cert(s|-views)\.ts$/, specs: ["pageview", "experience", "static-routes"] },
 
-  // Guided walks and the road kit (autopilot follows roads once a floor has one).
-  { test: /^src\/experience\/missions\/walks?\.ts$|^src\/hud\/walk\//, specs: ["walk", "missions", "hud", "onboarding"] },
-  { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions", "walk"] },
-  { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["walk", "experience", "pads"] },
+  // The navgrid and the road kit (autopilot follows roads once a floor has one).
+  { test: /^src\/experience\/nav\/navgrid\.ts$/, specs: ["career", "experience", "missions"] },
+  { test: /^src\/experience\/nav\/(road|roadGeometry|space)\.ts$|^src\/experience\/fx\/RoadMarkings\.tsx$/, specs: ["experience", "pads"] },
 
   // Fast return (F1): Express Return pads, the 40 u rule and the beam into the car.
   { test: /^src\/experience\/nav\/fastReturn\.ts$|^src\/experience\/fx\/ReturnPadSign\.tsx$/, specs: ["fast-return", "pads", "ride", "experience"] },
@@ -121,12 +119,12 @@ export const RULES: Rule[] = [
   // Rover's dialog, the first-session tour, floor lines and the "!" hint bubbles.
   // Motion setting: the preference (default Full) and its HUD control.
   { test: /^src\/lib\/(motion|reduced-motion)\.ts$|^src\/hud\/MotionControl\.tsx$/, specs: ["motion", "hud", "ride", "onboarding"] },
-  { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "walk", "camera"] },
+  { test: /^src\/hud\/dialog\/|^src\/experience\/hints\//, specs: ["onboarding", "experience", "camera"] },
 
-  // L1 Highlights Hall: layout, scenery, payload, drawer content and body; its Quick tour runs in the walk spec.
+  // L1 Highlights Hall: layout, scenery, payload, drawer content and body.
   {
     test: /^src\/experience\/floors\/lobby\/(stations|hallLayout|hallContent|hallGallery|hallSolids|hallStage|gateSweep|HighlightsHall|HallFx|hallInteract)\.tsx?$|^src\/content\/(highlights|room-views\/highlights)\.ts$|^src\/hud\/drawer\/HighlightsBody\.tsx$/,
-    specs: ["experience", "highlights", "walk"],
+    specs: ["experience", "highlights"],
   },
 
   // Renderer memory: the probe, the disposal hook and floor mounting (round 5, SP8).
@@ -149,13 +147,12 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "labs-paths", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "labs-paths", "gallery", "spectacle", "fast-return", "reactor", "production"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
-  // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
   { test: /^src\/hud\/drawer\/(TopicsBody|filterParts)\.tsx$|^src\/content\/(topic-index|topic-map|room-views\/library)\.ts$|^src\/components\/page\/TopicFilter\.tsx$/, specs: ["topics", "library-roof", "reactor"] },
   { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "walk", "spectacle", "topics", "fast-return"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "spectacle", "topics", "fast-return"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
   { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
   // Screen placement of floating labels (L4 timeline and end plaza): the label overlap gates.
@@ -167,8 +164,8 @@ export const RULES: Rule[] = [
     test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/lobby\/(VisitsStation\.tsx|observatory\.ts|observatoryLayout\.ts|visitsRoom\.ts)$|experience\/missions\/roomAliases\.ts$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
     specs: ["visits", "experience", "highlights", "pageview"],
   },
-  // RF roof deck: its walk ("Meet me") reads the layout, and the elevator call pad sits on the deck.
-  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof", "walk"] },
+  // RF roof deck: the layout, and the elevator call pad that sits on the deck.
+  { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
   { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
