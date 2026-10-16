@@ -220,7 +220,7 @@ test("boot card: who the owner is at first paint, and Classic site works before 
   await expect(who).toBeVisible();
   for (const text of [data.profile.name, data.profile.headline.en, data.profile.subheadline.en, data.profile.currentRole.org]) await expect(who).toContainText(text);
   await cover.getByRole("link", { name: en.hud.pageView }).click();
-  await expect(page).toHaveURL(/\/en$/);
+  await expect(page).toHaveURL(/\/en\?view=classic$/);
   expect(await page.locator("html").getAttribute("data-hq-boot")).toBeNull();
   await expect(page.locator("#site-shell")).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBe("page");
@@ -249,7 +249,7 @@ test("boot card: the overlay keeps the card in place, Boot rover stays required,
   await expect(page.getByTestId("hq")).toHaveCount(0);
   await expect(page.locator("#site-shell")).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument)).toBe(true);
-  expect(page.url()).toMatch(/\/en\?tier=lite$/);
+  expect(page.url()).toMatch(/\/en\?tier=lite&view=classic$/);
   expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBe(0);
   expect(errors).toEqual([]);
 });

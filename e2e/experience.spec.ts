@@ -491,7 +491,7 @@ test.describe("tiers and views", () => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await enter.click();
     await waitForHQ(page);
-    expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBe("3d");
   });
 
   test("a WebGL context loss remounts the 3D view once, then shows the static page with Retry 3D", async ({ page }) => {

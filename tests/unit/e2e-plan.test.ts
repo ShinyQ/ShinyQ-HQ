@@ -92,8 +92,12 @@ describe("specsForChanges", () => {
     // The per-page script policy: its build step, the headers it derives from and every inline script source.
     expect(specsForChanges(["scripts/csp-hashes.ts"]).specs).toEqual(["boot-first", "csp", "deploy", "static-routes"]);
     expect(specsForChanges(["public/_headers"]).specs).toEqual(["csp", "deploy", "static-routes"]);
-    expect(specsForChanges(["src/lib/boot-first.ts"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes"]);
-    expect(specsForChanges(["src/app/(root)/page.tsx"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes"]);
+    expect(specsForChanges(["src/lib/boot-first.ts"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes", "view-links"]);
+    expect(specsForChanges(["src/app/(root)/page.tsx"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes", "view-links"]);
+    // Shareable Classic and 3D links.
+    for (const file of ["src/lib/view-param.ts", "src/lib/view-pref.ts", "src/components/ViewParamSync.tsx", "src/components/ShareLinks.tsx"]) {
+      expect(specsForChanges([file]).specs).toEqual(["boot-first", "experience", "pageview", "view-links"]);
+    }
     expect(specsForChanges(["src/components/Analytics.tsx"]).specs).toEqual(["boot-first", "csp", "pageview", "static-routes", "visit"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/Controls.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "missions"]);

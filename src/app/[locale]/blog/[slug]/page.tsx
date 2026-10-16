@@ -4,6 +4,7 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { postMdxComponents } from "@/components/blog/mdx";
 import { JsonLd } from "@/components/JsonLd";
+import { ShareLinks } from "@/components/ShareLinks";
 import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
@@ -63,6 +64,9 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
               <li key={tag}>{tag}</li>
             ))}
           </ul>
+          <div className="mt-6" lang={locale}>
+            <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }} />
+          </div>
           {found.locale !== locale && (
             <p role="note" lang={locale} className="card mt-8 border-amber/40 px-4 py-3 text-sm text-amber">
               {t("translationMissing", { language: t(`languageName.${found.locale}`) })}

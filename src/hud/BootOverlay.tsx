@@ -49,7 +49,7 @@ export function BootOverlay({ who }: { who: BootWho }) {
         shown={typed}
         startLabel={t("bootStart")}
         who={who}
-        pageView={{ href: "?view=page", label: t("pageView"), hint: t("pageViewHint") }}
+        pageView={{ href: "?view=classic", label: t("pageView"), hint: t("pageViewHint") }}
         startDisabled={!ready}
         startRef={start}
         onStart={() => {

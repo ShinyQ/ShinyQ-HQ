@@ -1,12 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { createElement, Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { createElement, Suspense, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DrawerTab, Locale, RoomId } from "@/content/schema";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
 import { Gallery as ImageGallery } from "@/components/Gallery";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
+import { ShareLinks } from "@/components/ShareLinks";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
@@ -119,6 +120,24 @@ interface OverflowProps {
 
 const MENU_ITEM = "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-ink transition hover:bg-white/5";
 
+/** Runs `onLeave` for plain clicks only: a new tab or window leaves this tab in 3D. */
+function leaveOnPlainClick(onLeave?: () => void) {
+  return (event: ReactMouseEvent) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    onLeave?.();
+  };
+}
+
+/**
+ * A drawer page link opens the Classic site, so it says so in the URL: the target never equals the URL the
+ * room pushed (which would keep the 3D route mounted), and new tabs open Classic too. `data-hq-view` keeps
+ * ViewParamSync from stripping it while the tab is in 3D.
+ */
+function classicHref(page: string): string {
+  const at = page.indexOf("#");
+  return at < 0 ? `${page}?view=classic` : `${page.slice(0, at)}?view=classic${page.slice(at)}`;
+}
+
 type RenderReadme = (typeof import("./ascii"))["renderReadme"];
 
 /** The README renderer loads the first time the README view opens (Round 7 B: keeps it out of the main 3D chunk). */
@@ -137,6 +156,7 @@ function useReadmeRenderer(open: boolean): RenderReadme | null {
 
 function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps) {
   const t = useTranslations("drawer");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
@@ -194,11 +214,16 @@ function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps
           )}
           {page && (
             <li>
-              <Link href={page} onClick={onLeave} className={MENU_ITEM}>
+              <Link href={classicHref(page)} onClick={leaveOnPlainClick(onLeave)} data-hq-view="page" className={MENU_ITEM}>
                 {t("openPage")}
               </Link>
             </li>
           )}
+          <ShareLinks
+            variant="menu"
+            itemClassName={MENU_ITEM}
+            labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }}
+          />
         </ul>
       )}
     </div>
@@ -631,8 +656,9 @@ export function RoomDrawer({
         <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-glass-border px-4 py-2.5 sm:px-5" data-testid="drawer-footer">
           {view.page && (
             <Link
-              href={view.page}
-              onClick={onLeave}
+              href={classicHref(view.page)}
+              onClick={leaveOnPlainClick(onLeave)}
+              data-hq-view="page"
               className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-cyan px-4 text-sm font-semibold text-void transition hover:bg-cyan/85"
             >
               {primaryLabel}

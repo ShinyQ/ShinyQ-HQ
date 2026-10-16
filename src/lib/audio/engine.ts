@@ -1,4 +1,5 @@
-import { ONE_SHOTS, createAmbientPad, createRumble, type LoopVoice, type RumbleVoice } from "./synth";
+import { createSpaceMusic, type MusicVoice } from "./music";
+import { ONE_SHOTS, createRumble, type RumbleVoice } from "./synth";
 import type { AudioEngine, AudioEngineDeps, SoundName } from "./types";
 
 export const SOUND_STORAGE_KEY = "hq:sound";
@@ -58,7 +59,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let unavailable = false;
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
-  let ambient: LoopVoice | null = null;
+  let music: MusicVoice | null = null;
   let rumble: RumbleVoice | null = null;
   let rumbleSpeed = 0;
   let suspendTimer: ReturnType<typeof setTimeout> | null = null;
@@ -94,7 +95,18 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     }
   }
 
-  /** Creates the context, master bus and ambient pad on demand. Only called while unmuted. */
+  /** Starts the background music on the master bus if it is not playing. */
+  function startMusic(): void {
+    if (!music && ctx && master && !silent() && ctx.state !== "closed") music = createSpaceMusic(ctx, master);
+  }
+
+  /** Cancels every scheduled note and disconnects the music graph. */
+  function stopMusic(): void {
+    music?.stop();
+    music = null;
+  }
+
+  /** Creates the context, master bus and background music on demand. Only called while unmuted. */
   function ensureContext(): AudioContext | null {
     if (ctx || unavailable || disposed) return ctx;
     try {
@@ -110,7 +122,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
     master.connect(ctx.destination);
-    ambient = createAmbientPad(ctx, master);
+    startMusic();
     return ctx;
   }
 
@@ -131,6 +143,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     if (!ctx || disposed) return;
     if (isHidden()) {
       clearSuspendTimer();
+      if (muted || paused) stopMusic();
       ignore(ctx.suspend());
     } else if (!muted && !paused) {
       resume();
@@ -139,7 +152,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   /**
    * Browsers keep a context suspended until a user gesture, so the first click, tap or key press in
-   * the HQ starts it (and the ambient hum). Listeners stay until the context really runs.
+   * the HQ starts it (and the background music). Listeners stay until the context really runs.
    */
   function onGesture(): void {
     if (muted || disposed) {
@@ -184,7 +197,10 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     clearSuspendTimer();
     suspendTimer = setTimeout(() => {
       suspendTimer = null;
-      if ((muted || paused) && !disposed) ignore(context.suspend());
+      if ((muted || paused) && !disposed) {
+        stopMusic();
+        ignore(context.suspend());
+      }
     }, SUSPEND_DELAY_MS);
   }
 
@@ -227,6 +243,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
           master.gain.cancelScheduledValues(context.currentTime);
           master.gain.setTargetAtTime(1, context.currentTime, FADE_TIME_CONSTANT);
           if (context.state !== "closed") ignore(context.resume());
+          startMusic();
           if (rumble) rumble.setSpeed(rumbleSpeed);
         }
       } else {
@@ -247,6 +264,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       master.gain.cancelScheduledValues(ctx.currentTime);
       master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
       resume();
+      startMusic();
       rumble?.setSpeed(rumbleSpeed);
     },
 
@@ -276,9 +294,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       doc?.removeEventListener("visibilitychange", onVisibilityChange);
       removeGestureListeners();
       listeners.clear();
-      ambient?.stop();
+      stopMusic();
       rumble?.stop();
-      ambient = null;
       rumble = null;
       master = null;
       if (ctx && ctx.state !== "closed") ignore(ctx.close());

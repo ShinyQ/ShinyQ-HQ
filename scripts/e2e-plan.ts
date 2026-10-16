@@ -49,6 +49,7 @@ export const ALL_SPECS = [
   "spectacle",
   "static-routes",
   "topics",
+  "view-links",
   "visit",
   "visits",
   "workshop",
@@ -88,7 +89,7 @@ export const RULES: Rule[] = [
   // Inline scripts under the per-page script policy (scripts/csp-hashes.ts): the head boot script, the
   // Web Analytics guard and the / language redirect each need their hash.
   { test: /^src\/components\/Analytics\.tsx$/, specs: ["csp", "boot-first", "static-routes", "visit", "pageview"] },
-  { test: /^src\/(lib\/boot-first|app\/\(root\)\/page)\.tsx?$/, specs: ["csp", "boot-first", "static-routes", "experience", "onboarding"] },
+  { test: /^src\/(lib\/boot-first|app\/\(root\)\/page)\.tsx?$/, specs: ["csp", "boot-first", "static-routes", "experience", "onboarding", "view-links"] },
   { test: /^src\/lib\/stats\/|^src\/components\/(VisitBeacon|Analytics)\.tsx$/, specs: ["visit", "pageview"] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
@@ -191,10 +192,12 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
   { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
-  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
+  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding", "view-links"] },
   // Measurement in the 3D view: render counters, the ?perf=1 overlay, timeline marks, the RUM probe.
   { test: /^src\/experience\/perf\/|^src\/lib\/(perf-marks\.ts|rum\/)/, specs: ["perf-probes", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$|^src\/hud\/BootOverlay\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
+  // Shareable Classic and 3D links: the view decision, its storage, the link rewriting and the copy buttons.
+  { test: /^src\/lib\/view-[a-z-]+\.ts$|^src\/components\/(ViewParamSync|ShareLinks)\.tsx$/, specs: ["view-links", "boot-first", "pageview", "experience"] },
   // The Page view glyph: the boot card link and the HUD top bar button.
   { test: /^src\/components\/PageViewIcon\.tsx$/, specs: ["boot-first", "hud", "experience"] },
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
@@ -203,7 +206,7 @@ export const RULES: Rule[] = [
   { test: /^src\/store\//, specs: ["experience", "lifecycle", "motion"] },
 
   // HUD over the canvas.
-  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle"] },
+  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.

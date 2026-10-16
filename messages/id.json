@@ -32,6 +32,10 @@
     "RF": "Atap · Komunikasi"
   },
   "common": {
+    "share": "Bagikan",
+    "copyClassicLink": "Salin tautan situs klasik",
+    "copy3dLink": "Salin tautan 3D",
+    "linkCopied": "Tautan disalin",
     "present": "Sekarang",
     "caseStudy": "Baca studi kasus",
     "stack": "Tech stack",
@@ -527,6 +531,14 @@
       "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
       "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
       "console": "Konsol waktu"
+    },
+    "settings": {
+      "openLinks": {
+        "label": "Buka tautan di",
+        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
+        "page": "Situs klasik",
+        "3d": "3D"
+      }
     }
   },
   "drawer": {

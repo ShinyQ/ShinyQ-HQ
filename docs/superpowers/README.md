@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-65 plans: 41 shipped and still current, 23 shipped with a part later removed or replaced, 1 in review (see each plan's status line).
+66 plans: 42 shipped and still current, 23 shipped with a part later removed or replaced, 1 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -70,6 +70,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Ask the HQ: "ShinyQ" Is Kurniadi's Nickname Implementation Plan](plans/2026-10-16-ask-shinyq-nickname.md) | shipped | [#160](https://github.com/ShinyQ/ShinyQ-HQ/pull/160) |
 | [Blog Architecture Diagrams Implementation Plan](plans/2026-10-16-blog-architecture-diagrams.md) | shipped | [#172](https://github.com/ShinyQ/ShinyQ-HQ/pull/172) |
 | [Clearbox and Sewise Fashion Labs Pods Implementation Plan](plans/2026-10-16-clearbox-and-sewise.md) | shipped | [#173](https://github.com/ShinyQ/ShinyQ-HQ/pull/173) |
+| [Deep Space Ambient Background Music Implementation Plan](plans/2026-10-16-deep-space-ambient.md) | shipped | [#175](https://github.com/ShinyQ/ShinyQ-HQ/pull/175) |
 | [L3 Neat Entrance and Symmetric End Implementation Plan](plans/2026-10-16-l3-neat-entrance-symmetric-end.md) | shipped | [#168](https://github.com/ShinyQ/ShinyQ-HQ/pull/168) |
 | [L3 Three Paths (Round 7 G) Implementation Plan](plans/2026-10-16-l3-three-paths.md) | shipped, later removed | [#164](https://github.com/ShinyQ/ShinyQ-HQ/pull/164); later [#168](https://github.com/ShinyQ/ShinyQ-HQ/pull/168) |
 | [L4 Declutter (Round 7 F) Implementation Plan](plans/2026-10-16-l4-declutter.md) | shipped | [#165](https://github.com/ShinyQ/ShinyQ-HQ/pull/165) |
@@ -77,6 +78,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [MII Cowork and MII Deck Implementation Plan](plans/2026-10-16-mii-cowork-and-deck.md) | shipped | [#163](https://github.com/ShinyQ/ShinyQ-HQ/pull/163) |
 | [Remove Guided Walks Implementation Plan](plans/2026-10-16-remove-guided-walks.md) | shipped | [#167](https://github.com/ShinyQ/ShinyQ-HQ/pull/167) |
 | [Public Visit Stats Every 4 Hours Implementation Plan](plans/2026-10-16-stats-every-4h.md) | shipped | [#161](https://github.com/ShinyQ/ShinyQ-HQ/pull/161) |
+| [Shareable Classic and 3D Links Implementation Plan](plans/2026-10-17-classic-links.md) | shipped | [#181](https://github.com/ShinyQ/ShinyQ-HQ/pull/181) |
 | [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review | [#176](https://github.com/ShinyQ/ShinyQ-HQ/pull/176) |
 
 ## Specs

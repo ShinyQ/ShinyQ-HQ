@@ -49,6 +49,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Guided walks removed | Owner request 2026-10-16: no tours on any floor (the walk bar, its launcher pill and the URL flag are gone); missions ride to a floor and, for most, open a room or a list, and first-visit floor lines stay without the walk choice | Done |
 | Visit stats fix | 2026-10-16: a finalized day is stored only from an unsampled, consistent Web Analytics answer; Pages Web Analytics stays off (its injected beacon took every page load from the site's own beacon and ignored the opt-out), and deploy-smoke and uptime fail if it comes back | Done |
 | Blog architecture figures | 2026-10-16: the four technical posts show architecture figures through an `<Architecture>` MDX tag (a case study's diagram or a post-local one from `content/blog/diagrams.json`), each with a caption and a numbered walkthrough; every architecture diagram (posts and case studies) is a real box and arrow drawing (build-time SVG: left to right from 1100 px, top to bottom below and on phones), and the Clearbox post's two figures use it too | Done |
+| Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
 
 ## Controls and first visit
 
@@ -95,6 +96,10 @@ Open `/en` and press **Boot rover**.
 - Near anything you can use, a "!" bubble floats over it: press Enter or tap it for a one-line tip with a Go choice.
 - The first time you reach L2, L3, L4 or RF, Rover introduces the floor in one line. Driving, a point-and-go action or a swipe dismisses it, and it never comes back on that floor.
 
+### Sound
+
+- While sound is on, the tower plays procedural "Deep Space Ambient" background music (drones, random pentatonic bells, a long reverb), quiet enough to keep the effects clear; muting or leaving the 3D view stops it.
+
 ### Motion setting
 
 - The **Motion** button right of Sound (in the menu on phones, and in Cmd-K) picks System, Full or Reduced.
@@ -114,6 +119,10 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
+- **Shareable links:**
+  - `?view=classic` opens the Classic site and stays in the URL through navigation, the language switch and copied links (`?view=page` still works).
+  - **Copy Classic link** and **Copy 3D link** sit on case studies, posts and the drawer's "..." menu; the 3D link opens the same page in the tower (posts open the Writing floor).
+  - The choice is remembered across tabs, and an explicit `?view=` in a link always wins.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer
