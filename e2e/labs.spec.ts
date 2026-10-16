@@ -294,7 +294,8 @@ async function panelBox(page: Page, wing: "software" | "data" | "ai") {
 /**
  * The on-screen part of a board that may run off the screen edge (phones): its front face (`directoryBoard`)
  * sampled at 101 columns across its width, top and bottom; `shown` is the share of columns whose both ends
- * are on screen (fine enough to measure the design's 35 percent floor) (a point off screen projects to null, so `panelBox` cannot measure it).
+ * are on screen (fine enough to measure the design's 35 percent floor) (a point off screen projects to null, so `panelBox` cannot measure it),
+ * and `clear` the share of columns that are on screen and bare canvas at their mid-height (no HUD over them).
  */
 async function visiblePanel(page: Page, wing: "software" | "ai") {
   const board = directoryBoard(wing);
@@ -308,11 +309,19 @@ async function visiblePanel(page: Page, wing: "software" | "ai") {
     ({ columns, base, top }) => {
       const { interact } = (window as unknown as FaceWindow).__hq;
       const projected = columns.map((c) => [base, top].map((y) => interact.project!({ x: c.x, y: interact.floorY + y, z: c.z })));
-      const visible = projected.filter((c) => c.every(Boolean)).flat() as { x: number; y: number }[];
-      if (!visible.length) return null;
-      const xs = visible.map((p) => p.x);
-      const ys = visible.map((p) => p.y);
-      return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys), shown: visible.length / (projected.length * 2) };
+      const onScreen = projected.filter((c) => c.every(Boolean)) as { x: number; y: number }[][];
+      if (!onScreen.length) return null;
+      const clear = onScreen.filter(([a, b]) => document.elementFromPoint((a.x + b.x) / 2, (a.y + b.y) / 2)?.tagName === "CANVAS").length;
+      const xs = onScreen.flat().map((p) => p.x);
+      const ys = onScreen.flat().map((p) => p.y);
+      return {
+        minX: Math.min(...xs),
+        maxX: Math.max(...xs),
+        minY: Math.min(...ys),
+        maxY: Math.max(...ys),
+        shown: onScreen.length / projected.length,
+        clear: clear / projected.length,
+      };
     },
     { columns, base, top: h },
   );
@@ -332,28 +341,25 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
       await openLabsArrival(page);
       for (const wing of ["software", "data", "ai"] as const) {
         const side = size.phone && wing !== "data";
-        // `shown` only comes from `visiblePanel` (phone side boards).
-        const box: { minX: number; maxX: number; minY: number; maxY: number; shown?: number } | null = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
+        // `shown` and `clear` only come from `visiblePanel` (phone side boards).
+        const box: { minX: number; maxX: number; minY: number; maxY: number; shown?: number; clear?: number } | null = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
         expect(box, wing).not.toBeNull();
         if (side) {
+          test.info().annotations.push({ type: "phone board share", description: `${wing}: on screen ${box!.shown!.toFixed(3)}, unobstructed ${box!.clear!.toFixed(3)}` });
           expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.35);
+          // On phones the elevator panel (data-testid elevator-panel) covers the screen's right edge, where the AI
+          // board's inner part shows; it already covered that board on main before the separate boards. The Product
+          // board on the left edge is clear. Measured at mid-height: AI 0.069, Product 0.376.
+          expect(box!.clear, `${wing}: share of the board on screen and not under the HUD`).toBeGreaterThanOrEqual(wing === "ai" ? 0.05 : 0.35);
         } else {
           expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
           expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);
         }
         expect(box!.minY, wing).toBeGreaterThanOrEqual(size.safe.top);
         expect(box!.maxY, wing).toBeLessThanOrEqual(size.height - size.safe.bottom);
-        const minX = Math.max(box!.minX, size.safe.side);
-        const maxX = Math.min(box!.maxX, size.width - size.safe.side);
-        const y = (box!.minY + box!.maxY) / 2;
-        if (side) {
-          // A phone side board shows only a strip at the screen edge, where the elevator panel may cover part of
-          // it: some of the strip must still be bare canvas (the tap test below picks a point there).
-          const xs = Array.from({ length: 11 }, (_, i) => minX + ((maxX - minX) * i) / 10);
-          const tags = await page.evaluate(({ xs, y }) => xs.map((x) => document.elementFromPoint(x, y)?.tagName), { xs, y });
-          expect(tags, `${wing}: HUD over the whole visible strip`).toContain("CANVAS");
-        } else {
-          expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, { x: (minX + maxX) / 2, y }), `${wing}: HUD over the panel`).toBe("CANVAS");
+        if (!side) {
+          const y = (box!.minY + box!.maxY) / 2;
+          expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, { x: (box!.minX + box!.maxX) / 2, y }), `${wing}: HUD over the panel`).toBe("CANVAS");
         }
       }
       await context.close();
