@@ -28,7 +28,7 @@ export interface RideCullStats {
   triangles: number;
 }
 
-/** `window.__hq.probes.rideCull` (tests). */
+/** `window.__hq.rideCull` (tests). */
 export const rideCullStats: RideCullStats = { frames: 0, meshes: 0, triangles: 0 };
 
 type Drawable = Object3D & { geometry?: BufferGeometry; material?: Material | Material[]; isMesh?: boolean; isLine?: boolean; isPoints?: boolean };

@@ -24,6 +24,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | `e2e:timeline` | nightly timeline |
 | `e2e:look` | local look check |
 | `screenshots`, `screenshots:pages`, `serve`, `validate:content`, `floor:thumbs` | |
+| `bench` | Vitest benches in `tests/bench/` (see [Fast verification](performance.md#fast-verification)) |
 
 ### Before pushing and committing
 

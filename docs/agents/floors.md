@@ -198,7 +198,6 @@ Design: [spectacle floor ends and hall](../superpowers/specs/2026-10-13-spectacl
 - Never lay a `Text` or `BatchedLabel` flat (`rotation` -90 degrees about x, `tilt: Math.PI / 2`).
   - `tests/unit/floor-text.test.ts` and `__hq.probes.flatText()` (`e2e/spectacle.spec.ts`) fail.
 - Road chevrons and other non-text glyphs stay on the floor.
-- The L1 "HIGHLIGHTS HALL" floor word is the one allowed exception until the Highlights Hall rebuild turns it into its gateway arch sign ([L1 Lobby](floor-l1-lobby.md)).
 - `FloatingSigns` takes an optional `dropHidden` (frames, off by default).
   - A sign hidden that long leaves the text batch and the plate draw until it shows again (L4 passes 30), so hidden glyphs cost no triangles.
 

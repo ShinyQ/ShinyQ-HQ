@@ -111,7 +111,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 ### Copy compatibility
 
 - Preserve dictionary keys, interpolation variables and ICU semantics.
-- Preserve the existing limits: 40-character mission, 110-character dialog, 120/520-character perspective and 140 to 160-character SEO.
+- Preserve the existing limits: 40-character mission, 110-character dialog, 120/640-character perspective (question/answer, `PerspectivesFileSchema`) and 140 to 160-character SEO.
 - Edit authoritative sources, and align hosted-post frontmatter with the registry.
 - Keep sample limits in the registry excerpt plus first paragraph used by Ask.
 - Do not change retrieval compression, scope, safety checks, routes or behavior to accommodate wording.

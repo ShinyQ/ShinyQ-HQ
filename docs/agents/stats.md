@@ -11,7 +11,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Design: appendix 06 section 4.1; Worker runbook `workers/stats/README.md`; deploy [`docs/deploy.md`](../deploy.md) section 13.
 - Owner decisions:
   - public numbers with no thresholds;
-  - updated daily from complete UTC days;
+  - updated every 4 hours (cron `17 */4 * * *` UTC): finalized complete UTC days plus today so far;
   - countries as dots only (ISO alpha-2, never `XX` or `T1`);
   - the label "visits" / "kunjungan" (never visitors);
   - a "Don't count my visits" switch.
@@ -109,7 +109,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 - Numbers show now (no thresholds).
 - Countries are dots only (never a number per country, the table lists names).
 - The label is "visits" / "kunjungan".
-- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled estimates") and "Updated daily".
+- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled estimates") and "Updated every 4 hours" (`stats.updated`).
 - Copy lives in `messages/*.json` `stats`.
 - Numbers go through `formatCount` (exact below 10,000, CLDR compact above: "12.3K", "12,3 rb"; ID uses a no-break space) and `formatCountLong` for screen readers.
 

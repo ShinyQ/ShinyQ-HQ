@@ -313,7 +313,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - Room views, drawer layout and URL, ASCII, hologram, interact registry and pick logic.
 - `tests/hud/`: Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, AskDock, RoomDrawer, L4/RF rooms.
 - `tests/content/`: Vitest: dataset, public safety, assets.
-- `tests/ask/`: Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json (47) and redteam.json sets.
+- `tests/ask/`: Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json and redteam.json sets (the counts and the golden `passThreshold` live in the files).
 
 ## e2e/
 

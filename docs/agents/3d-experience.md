@@ -146,7 +146,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 - The ride and the beam are written when a stage starts, the rover jumps or the motion ends.
   - Live progress: `rideNow`/`beamNow` from `tower/rideClock.ts`, `__hq.motion()` in tests.
   - `store.ride.t` is the stage start.
-- `persist` writes `localStorage` only when `visited`, `firstVisit` or `locale` change (`skipUnchanged`, `src/store/persist-storage.ts`).
+- `persist` writes `localStorage` only when `visited`, `firstVisit`, `locale` or `motion` change (`skipUnchanged`, `src/store/persist-storage.ts`).
 
 ## Elevator ride
 
@@ -223,9 +223,8 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 - Wrap a sign in `<Readable position pivot? yaw?>` (`fx/Readable.tsx`, pure side test `readableFlip` in `fx/readableFlip.ts` with hysteresis).
   - It turns its children half a turn around `pivot` when the camera is behind them and leaves them untouched from the front, so default views keep their pixels.
   - A function child gets `flipped` for direction marks (the L2 signpost arrow).
-- Every L2 text uses it: room labels, placings, arch digits and signposts, the prologue, Workshop wall, benches and window.
+- Every L2 text uses it: room labels, placings, arch digits and signposts, the prologue, Workshop wall and benches.
 - `HoloIcon` line icons do the same in their vertex shader on every floor.
-- The L3 road signs turn with `yawTowards`.
 - In first person the ghost floors above fade out with the glide and hide (`ceilingOpacity`, `tower/FloorLevel.tsx`), so no slab hangs over the rover's eyes.
 - Probes: `__hq.probes.flippedSigns`, `__hq.probes.ghosts` (`fx/probes.ts`).
 
@@ -418,7 +417,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 ## Testing hooks
 
 - Playwright sets `navigator.webdriver`, so e2e tests that need the 3D tier pass `?tier=lite|full`; tests of real auto-detection call `asHumanBrowser(page)` (`e2e/hq.ts`). More on writing 3D tests: [performance.md](performance.md).
-- `window.__hq` exposes `{ store, rover, layouts, interact, memory, ridePrep, frames, motion, render, quality, perf, floorChunks }` for Playwright:
+- `window.__hq` exposes `{ store, rover, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf }` for Playwright:
 
   | Member | Contents |
   |---|---|
