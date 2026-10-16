@@ -1,6 +1,6 @@
 import type { RoomId, Wing } from "@/content/schema";
 import { comparePods } from "@/content/selectors";
-import { projectOnSegment, ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
+import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 import { reactorRect, REACTOR, ringEntry, ringPoints } from "./reactor";
@@ -363,11 +363,12 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const spurs: Spur[] = [
     ...placed.map((p) => ({ room: p.room, from: { x: p.door.x, z: p.roadZ }, to: p.door, width: L.spurWidth, color: WING_TINT[p.pod.wing] })),
     { room: OPS_ROOM, from: { x: ops.door.x, z: WING_SIDE.ai * wingZ }, to: ops.door, width: L.spurWidth, color: OPS_TINT },
-    // The side board stops hang off their wing road's mouth leg on short spurs, so a click on a board drives straight there.
-    // These are stop spurs, not doors: the `room` cast only labels them (no door trigger exists for a board).
+    // The side board stops hang straight off the spine on short spurs, so a click on a board from the arrival spot drives
+    // east and turns off, never back through the hub. These are stop spurs, not doors: the `room` cast only labels them
+    // (no door trigger exists for a board).
     ...SIDE_WINGS.map((wing) => ({
       room: `L3:directory:${wing}` as RoomId,
-      from: projectOnSegment(boards[wing].stop, mouth(wing), { x: L.wingStartX, z: WING_SIDE[wing] * wingZ }).point,
+      from: { x: boards[wing].stop.x, z: 0 },
       to: boards[wing].stop,
       width: L.spurWidth,
       color: WING_TINT[wing],

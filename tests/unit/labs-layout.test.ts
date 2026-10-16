@@ -255,7 +255,7 @@ describe("L3 Project Roads layout", () => {
     expect(onNetwork(network, directoryStop("data"))).toBe(true);
   });
 
-  it("drives from the arrival spot to the data board stop along the spine, and to each side board stop over its wing road", () => {
+  it("drives from the arrival spot to every board stop along the spine, never back toward the hub", () => {
     const grid = buildNavGrid(floor, ROVER.radius);
     const length = (route: Vec2[]) => route.reduce((sum, p, i) => sum + Math.hypot(p.x - (i ? route[i - 1] : LABS.overview).x, p.z - (i ? route[i - 1] : LABS.overview).z), 0);
     for (const wing of LABS_WINGS) {
@@ -268,10 +268,9 @@ describe("L3 Project Roads layout", () => {
         expect(length(route), wing).toBeLessThan(14);
         continue;
       }
-      // The side stops hang off their wing road's mouth leg (plan decision 2026-10-16), so the drive leaves the hub through that mouth.
-      const mouth = network.roads.find((r) => r.id === wing)!.points[1];
-      expect(route.some((p) => Math.hypot(p.x - mouth.x, p.z - mouth.z) < 1e-6), wing).toBe(true);
-      expect(length(route), wing).toBeLessThan(40);
+      // The side stops hang straight off the spine (plan amendment 2026-10-16), so the drive never turns back toward the hub.
+      for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x - 1e-6);
+      expect(length(route), wing).toBeLessThan(16);
     }
   });
 
@@ -368,7 +367,7 @@ describe("L3 Project Roads layout", () => {
     expect(LABS.board.base).toBeGreaterThan(ROVER_HEIGHT);
   });
 
-  it("puts each board stop in front of its board, the side stops on spurs from their wing road's mouth leg", () => {
+  it("puts each board stop in front of its board, the side stops on spurs straight off the spine", () => {
     const grid = buildNavGrid(floor, ROVER.radius);
     for (const wing of LABS_WINGS) {
       const b = layout.boards[wing];
@@ -385,10 +384,11 @@ describe("L3 Project Roads layout", () => {
       for (const p of layout.placed) expect(rectGap(b, p.rect), p.room).toBeGreaterThanOrEqual(6);
     }
     expect(directoryStop("data")).toEqual({ x: LABS.board.dataX - LABS.board.w / 2 - LABS.boardStop, z: 0 });
+    const spine = network.roads.find((r) => r.id === "data")!;
     for (const wing of SIDE_WINGS) {
       const spur = network.spurs.find((s) => s.room === `L3:directory:${wing}`)!;
-      const road = network.roads.find((r) => r.id === wing)!;
-      expect(projectOnRoad(road, spur.from).distance, wing).toBeLessThan(1e-6);
+      expect(spur.from, wing).toEqual({ x: directoryStop(wing).x, z: 0 });
+      expect(projectOnRoad(spine, spur.from).distance, wing).toBeLessThan(1e-6);
       expect(spur.to).toEqual(directoryStop(wing));
     }
     expect(floor.directoryStops).toEqual({ software: directoryStop("software"), ai: directoryStop("ai"), data: directoryStop("data") });
