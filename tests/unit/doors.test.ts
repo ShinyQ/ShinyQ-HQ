@@ -143,6 +143,19 @@ describe("a closed room never reopens when the rover reaches its pad", () => {
     expect(stepDoorLatch(latch, "L3:a", step({ speed: 1 }))).toBeNull();
   });
 
+  it("leaves the pad a drive-only mission ends on closed (the Director passes explore false while a mission runs)", () => {
+    const latch: DoorLatch = { room: null };
+    // The journey mission drives onto the first room's pad and stops there; nothing opens it.
+    expect(stepDoorLatch(latch, "L3:a", step({ explore: false, following: true, speed: 2 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ explore: false, following: true, speed: 0 }))).toBeNull();
+    // The mission ends: the rover stands on the pad in explore and the room stays closed.
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0, now: 1 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0, now: 5 }))).toBeNull();
+    // Leaving the pad and coming back on purpose opens it.
+    expect(stepDoorLatch(latch, null, step({ speed: 3 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L3:a", step({ speed: 0 }))).toBe("L3:a");
+  });
+
   it("releases an unreached pad once the rover stops elsewhere", () => {
     const latch: DoorLatch = { room: null };
     stepDoorLatch(latch, null, step({ explore: false, openRoom: "L3:a" }));

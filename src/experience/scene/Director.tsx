@@ -479,11 +479,13 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       controller.clearPath();
       roverRuntime.target = null;
     }
+    const missionRunning = s.mission?.status === "running";
     const open = stepDoorLatch(local.door, door?.room ?? null, {
       openRoom: opened,
-      explore: s.phase === "explore",
       // A running mission opens its rooms itself; a pad firing first would reopen after the visitor closes it.
-      following: controller.following || s.mission?.status === "running",
+      // It also latches the pad it ends on, so a mission that only drives to a door (journey) leaves it closed.
+      explore: s.phase === "explore" && !missionRunning,
+      following: controller.following || missionRunning,
       now,
       speed: controller.pose.speed,
       heading: controller.pose.heading,
