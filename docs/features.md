@@ -47,6 +47,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | L3 neat entrance | 2026-10-16: three free-standing directory boards at the fork (one name per path, no floating road signs), one line per project with optional short titles and "+N more", quieter board text; both wing roads meet the reactor ring north and south, mirrored about the spine, with the Return pad on the axis; the Fabric forecasting pod moves to Data and ML | Done |
 | L4 declutter | Round 7 F (2026-10-16): one sign per section over its first desk, post titles only for the nearest stations (6 on desktop, 4 on phones), year marks on small low posts, no label covers another or the rover; L4 draws 2 fewer scene calls and no more triangles | Done |
 | Guided walks removed | Owner request 2026-10-16: no tours on any floor (the walk bar, its launcher pill and the URL flag are gone); missions ride to a floor and, for most, open a room or a list, and first-visit floor lines stay without the walk choice | Done |
+| Blog architecture figures | 2026-10-16: the four technical posts show architecture figures through an `<Architecture>` MDX tag (a case study's diagram or a post-local one from `content/blog/diagrams.json`), each with a caption and a numbered walkthrough; diagrams stack into one column on phones | Done |
 
 ## Controls and first visit
 

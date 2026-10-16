@@ -562,3 +562,45 @@ test("the Page View stays silent: clicks and the CV dialog create no AudioContex
   await page.keyboard.press("Escape");
   expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
 });
+
+test.describe("blog architecture figures", () => {
+  const FIGURE_POSTS: { slug: string; figures: number }[] = [
+    { slug: "making-a-voice-agent-interruptible", figures: 1 },
+    { slug: "45-percent-of-our-llm-calls-failed", figures: 1 },
+    { slug: "why-the-better-fraud-engine-shipped-in-shadow-mode", figures: 1 },
+    { slug: "spec-driven-development-with-ai-coding-agents", figures: 2 },
+  ];
+
+  for (const { slug, figures } of FIGURE_POSTS) {
+    test(`/en/blog/${slug} renders ${figures} captioned figure(s) that fit a phone`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openPage(page, staticTier(`/en/blog/${slug}`));
+      const figure = page.locator("figure[data-post-architecture]");
+      await expect(figure).toHaveCount(figures);
+      for (let i = 0; i < figures; i++) {
+        await expect(figure.nth(i).locator("figcaption")).toHaveText(/\S/);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+      const lefts = await figure
+        .first()
+        .locator("ol > li")
+        .evaluateAll((items) => items.map((li) => Math.round(li.getBoundingClientRect().left)));
+      expect(lefts.length).toBeGreaterThan(1);
+      expect(new Set(lefts).size).toBe(1);
+      await expectNoSeriousViolations(page);
+    });
+  }
+
+  test("prose list rules do not leak into the figures", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openPage(page, staticTier("/id/blog/spec-driven-development-with-ai-coding-agents"));
+    const figure = page.locator("figure[data-post-architecture]");
+    await expect(figure).toHaveCount(2);
+    const edgeStyles = await figure
+      .locator("ul li")
+      .evaluateAll((items) => items.map((li) => getComputedStyle(li).listStyleType));
+    expect(edgeStyles.length).toBeGreaterThan(0);
+    expect(new Set(edgeStyles)).toEqual(new Set(["none"]));
+    await expect(figure.first().locator("ol > li").first()).toHaveCSS("list-style-type", "none");
+  });
+});

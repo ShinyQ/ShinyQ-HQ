@@ -21,6 +21,7 @@ describe("lighthouserc", () => {
       "http://127.0.0.1:4320/en/quick",
       "http://127.0.0.1:4320/en/journey",
       "http://127.0.0.1:4320/en/labs/voice-ai-contact-center",
+      "http://127.0.0.1:4320/en/blog/making-a-voice-agent-interruptible",
       "http://127.0.0.1:4320/en/contact",
       "http://127.0.0.1:4320/en/cv",
     ]);
