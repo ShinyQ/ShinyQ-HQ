@@ -2,11 +2,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
-import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames } from "./hq";
+import { collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames } from "./hq";
 
 /**
  * L4 declutter (Round 7 F): the timeline signs (sections, post titles, year plates) and the end plaza signs
- * never cover each other on screen, from the arrival, along the posts, mid-floor and at each zone, on a
+ * never cover each other or the rover on screen, from the arrival, along the posts, mid-floor and at each zone, on a
  * desktop (full tier) and a phone (lite tier). Titles stay within their cap, no text shows twice and each
  * zone shows its own sign. `L4_SHOTS=<dir>` also writes a screenshot per pose and the render numbers per
  * device; `L4_SHOTS_BASELINE=1` skips the checks that need the new placement (a run against `out-main`).
@@ -21,6 +21,8 @@ type LW = Window & {
     probes: { library?: { labels: Box[] }; topics?: { labels: Box[] } };
     layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] } }>;
     store: { getState: () => { phase: string; activeRoom: string | null } };
+    interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
+    rover: { x: number; z: number };
   };
 };
 
@@ -38,22 +40,53 @@ const shownLabels = (page: Page) =>
     return [...(p.library?.labels ?? []), ...(p.topics?.labels ?? [])];
   });
 
-/** What the gate checks on one read: overlapping pairs, titles over the cap, texts shown twice. */
-function audit(boxes: Box[], titleCap: number) {
+/** Kinds the timeline placement owns (the end plaza's own signs do not avoid the rover). */
+const TIMELINE_KINDS = new Set(["section", "title", "year"]);
+/** Matches `useLibrarySignPlacement`: the rover's bounds, 0.9 u around it and `ROVER_HEIGHT` (2.8 u) tall. */
+const ROVER_BOUNDS = { half: 0.9, height: 2.8 };
+
+/**
+ * The rover's screen quad (its projected bounds as an axis-aligned box), or null when a corner is off
+ * screen (`interact.project` returns null there).
+ */
+const roverQuad = (page: Page) =>
+  page.evaluate((r) => {
+    const hq = (window as unknown as LW).__hq;
+    const pts: { x: number; y: number }[] = [];
+    for (let c = 0; c < 8; c++) {
+      const p = hq.interact.project({ x: hq.rover.x + (c & 1 ? r.half : -r.half), y: hq.interact.floorY + (c & 2 ? r.height : 0), z: hq.rover.z + (c & 4 ? r.half : -r.half) });
+      if (!p) return null;
+      pts.push(p);
+    }
+    const [x0, x1, y0, y1] = [Math.min(...pts.map((p) => p.x)), Math.max(...pts.map((p) => p.x)), Math.min(...pts.map((p) => p.y)), Math.max(...pts.map((p) => p.y))];
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] as [number, number][];
+  }, ROVER_BOUNDS);
+
+/** Overlap of two quads as a share of the smaller one; 0 when the smaller is at most 1 px squared (no NaN). */
+function overlapShare(a: [number, number][], b: [number, number][]) {
+  const min = Math.min(polygonArea(a), polygonArea(b));
+  return min <= 1 ? 0 : polygonOverlap(a, b) / min;
+}
+
+/** What the gate checks on one read: overlapping pairs, labels on the rover, titles over the cap, texts shown twice. */
+function audit(boxes: Box[], titleCap: number, rover: [number, number][] | null = null) {
   const hits: string[] = [];
   let worst = 0;
   for (let i = 0; i < boxes.length; i++)
     for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i];
       const b = boxes[j];
-      const share = polygonOverlap(a.quad, b.quad) / Math.min(polygonArea(a.quad), polygonArea(b.quad));
+      const share = overlapShare(a.quad, b.quad);
       worst = Math.max(worst, share);
       if (share > 0.02) hits.push(`${a.text} x ${b.text} (${(share * 100).toFixed(1)}%)`);
     }
+  const onRover = rover
+    ? boxes.filter((b) => TIMELINE_KINDS.has(b.kind) && overlapShare(b.quad, rover) > 0.02).map((b) => `${b.text} (${(overlapShare(b.quad, rover) * 100).toFixed(1)}%)`)
+    : [];
   const titles = boxes.filter((b) => b.kind === "title").length;
   const seen = new Set<string>();
   const twice = boxes.filter((b) => (seen.has(b.text) ? true : (seen.add(b.text), false))).map((b) => b.text);
-  return { hits, overCap: Math.max(0, titles - titleCap), twice, worst };
+  return { hits, onRover, overCap: Math.max(0, titles - titleCap), twice, worst };
 }
 
 for (const device of [
@@ -65,6 +98,7 @@ for (const device of [
     test("never overlap, stay within the title cap and show each zone's sign", async ({ page }) => {
       // Captures add the door poses and a measured window per pose (the full tier draws about 3 frames a second on SwiftShader).
       if (SHOTS) test.setTimeout(1_800_000);
+      const errors = collectErrors(page);
       // Rover's first-visit floor line would cover the middle of the view (captures): mark it as spoken.
       await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L4"])));
       await enterFloorRoute(page, "/en/library", { tier: device.tier });
@@ -101,12 +135,12 @@ for (const device of [
           .poll(
             async () => {
               boxes = await shownLabels(page);
-              last = audit(boxes, device.titleCap);
-              return BASELINE ? { hits: [], overCap: 0, twice: [] } : { hits: last.hits, overCap: last.overCap, twice: last.twice };
+              last = audit(boxes, device.titleCap, await roverQuad(page));
+              return BASELINE ? { hits: [], onRover: [], overCap: 0, twice: [] } : { hits: last.hits, onRover: last.onRover, overCap: last.overCap, twice: last.twice };
             },
             { message: `${device.id} ${pose}`, timeout: 10_000 },
           )
-          .toEqual({ hits: [], overCap: 0, twice: [] });
+          .toEqual({ hits: [], onRover: [], overCap: 0, twice: [] });
         worst = Math.max(worst, last.worst);
         test.info().annotations.push({ type: `${device.id} ${pose}`, description: boxes.map((b) => `${b.kind}:${b.text}`).join(" | ") || "(none)" });
         return boxes;
@@ -117,15 +151,23 @@ for (const device of [
           await expect.poll(async () => (await shownLabels(page)).some((b) => b.kind === "section" && b.text === ZONE_SIGN[zone]), { timeout: 3_000 }).toBe(true);
           return true;
         } catch {
+          // Where the sign would sit and the rover box it keeps clear of, for the report.
+          const why = await page.evaluate((text) => {
+            const lib = (window as unknown as { __hq: { probes: { library?: { hidden?: { text: string; x0: number; y0: number; x1: number; y1: number }[]; rover?: unknown } } } }).__hq.probes.library;
+            return { sign: lib?.hidden?.find((b) => b.text === text) ?? null, rover: lib?.rover ?? null };
+          }, ZONE_SIGN[zone]);
+          test.info().annotations.push({ type: `${device.id} ${zone} sign hidden`, description: JSON.stringify(why) });
           return false;
         }
       };
 
       await check("approach");
       await driveTo(page, { x: 8, z: 0 });
-      await check("posts");
+      const posts = await check("posts");
       await driveTo(page, { x: 24, z: 0 });
-      await check("mid");
+      const mid = await check("mid");
+      // Along the posts the nearest titles show.
+      if (!BASELINE) expect([...posts, ...mid].some((b) => b.kind === "title"), `${device.id}: a post title at posts or mid`).toBe(true);
       if (!SHOTS) await expectRenderBudget(page);
 
       for (const zone of ["research", "models", "talks"] as const) {
@@ -142,11 +184,13 @@ for (const device of [
           await check(`${zone}-door`);
           shown ||= await zoneSignShown(zone);
         }
-        if (!BASELINE) expect(shown, `${device.id}: ${ZONE_SIGN[zone]} sign at the ${zone} zone`).toBe(true);
+        // Soft: a missing sign still fails the test, but the remaining zones (and captures) still run.
+        if (!BASELINE) expect.soft(shown, `${device.id}: ${ZONE_SIGN[zone]} sign at the ${zone} zone`).toBe(true);
       }
 
       test.info().annotations.push({ type: "max overlap", description: `${device.id}: ${(worst * 100).toFixed(2)}% of the smaller plate` });
       if (SHOTS) writeFileSync(`${SHOTS}/${device.id}.json`, `${JSON.stringify({ device: device.id, tier: device.tier, maxOverlap: worst, poses: numbers }, null, 2)}\n`);
+      expect(errors).toEqual([]);
     });
   });
 }
