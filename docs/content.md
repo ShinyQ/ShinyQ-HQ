@@ -31,7 +31,7 @@ How the site's content is stored, checked and published. The authoritative rules
 
 - Titles (projects, posts, publications, talks, side projects, awards, principles) are written in Title Case in both languages.
 - `bun scripts/title-case.ts` lists any that are not and `--write` fixes them (rules: "Content style" in `AGENTS.md`).
-- Projects with a gallery come first in every project list (Work, Home, Cmd-K, the L3 wing roads and the project tour), then hero, featured and listed pods by `order` (`orderPods` in `src/content/selectors.ts`).
+- Projects with a gallery come first in every project list (Work, Home, Cmd-K and the L3 wing roads), then hero, featured and listed pods by `order` (`orderPods` in `src/content/selectors.ts`).
 - The home page "Selected work" (and the L1 Highlights Hall projects) shows the pods with `selected: 1`, `2` and `3` in that order. Each needs a gallery and the ranks must be unique; the tier stays free, so a hero can remain a key project on `/labs` without a landing slot.
 
 ## Project galleries and live sites
