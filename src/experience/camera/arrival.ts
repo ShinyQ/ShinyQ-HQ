@@ -1,0 +1,80 @@
+import { SHAFT_EAST_FACE } from "../config";
+import { easeInOutCubic } from "../tower/elevator";
+import type { ViewportClass } from "../types";
+import { followForward, followPose, FOLLOW_LOOK_AHEAD, railPose, type CameraPose, type Vec3 } from "./rigs";
+import { followOffsetScale } from "./offset";
+
+/**
+ * Arrival glide (Round 8 J): every floor's elevator door faces east, and the camera starts over the rover's
+ * shoulder as it leaves the car, then glides to the floor's settled view. Pure math, no React or three.
+ */
+export const ARRIVAL_GLIDE = { duration: 1.5, start: { back: 2.4, up: 2.1, side: 0.7, look: 10, lookUp: 1.4 } } as const;
+
+/** The rover leaves the car heading east; rover forward is `(sin h, cos h)`, so east is PI / 2. */
+export const ARRIVAL_HEADING = Math.PI / 2;
+/** Follow yaw that looks east (camera west of the rover). */
+export const LOOK_EAST_YAW = (-3 * Math.PI) / 4;
+
+/** The arrival camera stays this far east of the shaft's east face so the shaft never blocks the view. */
+export const SHAFT_CLEAR_X = SHAFT_EAST_FACE + 1.5;
+
+/**
+ * Over-the-right-shoulder camera: behind the rover along its heading, a little to its right (as seen looking
+ * along the heading, which is `(-cos h, sin h)` on the floor) and above it, looking `look` ahead.
+ * `rover` is the rover's floor position (y is the floor height).
+ */
+export function shoulderPose(rover: Vec3, heading: number, fov: number): CameraPose {
+  const { back, up, side, look, lookUp } = ARRIVAL_GLIDE.start;
+  const fx = Math.sin(heading);
+  const fz = Math.cos(heading);
+  const rx = -fz;
+  const rz = fx;
+  return {
+    position: [rover[0] - fx * back + rx * side, rover[1] + up, rover[2] - fz * back + rz * side],
+    target: [rover[0] + fx * look, rover[1] + lookUp, rover[2] + fz * look],
+    fov,
+  };
+}
+
+/** Eased glide progress 0..1 after `t` seconds. */
+export function glideProgress(t: number): number {
+  return easeInOutCubic(Math.max(0, Math.min(1, t / ARRIVAL_GLIDE.duration)));
+}
+
+const mix = (a: number, b: number, p: number) => a + (b - a) * p;
+const mix3 = (a: Vec3, b: Vec3, p: number): Vec3 => [mix(a[0], b[0], p), mix(a[1], b[1], p), mix(a[2], b[2], p)];
+
+/** Blends two poses (position, target and fov) at `p` in 0..1. */
+export function glidePose(start: CameraPose, end: CameraPose, p: number): CameraPose {
+  return { position: mix3(start.position, end.position, p), target: mix3(start.target, end.target, p), fov: mix(start.fov, end.fov, p) };
+}
+
+/** Heading (`atan2(dx, dz)`, forward `(sin h, cos h)`) of the horizontal vector from the camera to the rover. */
+export function cameraBehindHeading(camera: Vec3, rover: Vec3): number {
+  return Math.atan2(rover[0] - camera[0], rover[2] - camera[2]);
+}
+
+/** Rail yaw that puts the L2 camera behind a rover heading east (due west of it). */
+export function railYawBehind(): number {
+  return -Math.PI / 2;
+}
+
+/** Camera x of the settled arrival view for a rover at floor x (z does not matter) at `zoom`. */
+function arrivalCameraX(cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number): number {
+  if (rig === "rail") return railPose(cls, x, 0, zoom, 0, railYawBehind(), 0).position[0];
+  const forward = followForward(cls, LOOK_EAST_YAW);
+  const ahead = FOLLOW_LOOK_AHEAD[cls];
+  return followPose(cls, [x + forward.x * ahead, 0, forward.z * ahead], LOOK_EAST_YAW, zoom * followOffsetScale(cls, aspect)).position[0];
+}
+
+/**
+ * The largest zoom that keeps the arrival camera at `x >= SHAFT_CLEAR_X` for a rover at floor `x` facing
+ * east. The camera x is linear in the zoom (the position is the target plus offset times zoom), so two
+ * samples solve it exactly.
+ */
+export function shaftClearZoom(cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number): number {
+  const at0 = arrivalCameraX(cls, aspect, rig, x, 0);
+  const slope = arrivalCameraX(cls, aspect, rig, x, 1) - at0;
+  if (slope >= 0) return Infinity;
+  return (SHAFT_CLEAR_X - at0) / slope;
+}
