@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import content from "../content/site-content.json";
 
@@ -123,6 +123,8 @@ test.describe("Career Road (L2)", () => {
     await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: new RegExp(label) }).first().click();
     await waitForFloor(page, "L2", 90_000);
     await waitForSceneLive(page);
+    // A few more frames, so a late mission step (an open after the ride) would have run by now.
+    await waitForFrames(page, 10);
     expect(await activeRoom(page)).toBeNull();
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);

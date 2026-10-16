@@ -132,6 +132,17 @@ test.describe("floor lines", () => {
     await expect(box(page)).toHaveCount(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("hq:floor-intro") ?? "[]"))).toContain("L2");
   });
+
+  test("an old ?walk=off link lands on L2 without errors and turns nothing off", async ({ page }) => {
+    const errors = collectErrors(page);
+    await asReturningVisitor(page);
+    await page.goto("/en/journey?tier=lite&walk=off");
+    await waitForHQ(page);
+    await waitForSceneLive(page);
+    await waitForFloor(page, "L2");
+    await expect(box(page)).toHaveAttribute("data-dialog", "floor:L2", { timeout: 15_000 });
+    expect(errors).toEqual([]);
+  });
 });
 
 test.describe("hint bubbles", () => {
