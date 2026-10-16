@@ -50,6 +50,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Visit stats fix | 2026-10-16: a finalized day is stored only from an unsampled, consistent Web Analytics answer; Pages Web Analytics stays off (its injected beacon took every page load from the site's own beacon and ignored the opt-out), and deploy-smoke and uptime fail if it comes back | Done |
 | Blog architecture figures | 2026-10-16: the four technical posts show architecture figures through an `<Architecture>` MDX tag (a case study's diagram or a post-local one from `content/blog/diagrams.json`), each with a caption and a numbered walkthrough; every architecture diagram (posts and case studies) is a real box and arrow drawing (build-time SVG: left to right from 1100 px, top to bottom below and on phones), and the Clearbox post's two figures use it too | Done |
 | Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
+| Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; reduced motion holds night; +2 scene calls, no new shader program | Done |
 
 ## Controls and first visit
 
@@ -105,6 +106,15 @@ Open `/en` and press **Boot rover**.
 - The **Motion** button right of Sound (in the menu on phones, and in Cmd-K) picks System, Full or Reduced.
 - Full is the default on every device (owner decision 2026-10-14; Windows reports reduced motion whenever its animation effects are off), so the device's reduced motion setting no longer applies by default.
 - Pick System to follow it again, or Reduced to keep rides as a short cut and the intro still.
+
+### Day and night
+
+- The 3D tower runs an 8 minute cycle driven by clock time (`Date.now() % 8 min`), so every visitor sees the same phase and a reload continues.
+- Night is the neon look with a moon and twinkling stars; "day" is a deep twilight, an indigo to teal sky with a sun glow on the horizon. Dawn and dusk blend the two.
+- The sun and the moon cross a shallow arc around the tower, opposite each other; the lights, the fog and the bloom follow the phase, and the neon glows brighter at night.
+- Reduced motion holds night. A "Day and night" switch in the settings panel (display group) turns the cycle on or off; it is remembered in this browser.
+- Automated browsers hold night; `?sky=night|dawn|day|dusk|<0..1>` pins a phase and `?sky=cycle` runs the clock.
+- The Classic site is unchanged. Rules: [`agents/3d-experience.md`](agents/3d-experience.md).
 
 ### Ask Rover and the Classic site
 

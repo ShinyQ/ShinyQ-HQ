@@ -1,6 +1,6 @@
 # Day and Night with a Moving Sun and Moon Implementation Plan
 
-Status: in progress (Round 8, sub-project K), 2026-10-17
+Status: in review (Round 8 K), 2026-10-17
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -61,7 +61,7 @@ Depends on Task 2 (`dayNightOn`, `DayNightPref` from `src/lib/day-night.ts`): ru
 **Interfaces:**
 - Produces: `CYCLE_MS`, `SKY_PHASES`, `SKY`, `clockPhase(nowMs): number`, `parseSkyParam(search): SkyParam`, `resolveSkyMode(input): SkyMode`, `skyState(phase, out?): SkyState`, `orbDirection(phase, out?)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -144,9 +144,9 @@ describe("day and night model", () => {
 });
 ```
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/day-night.test.ts`. Expected: FAIL (module missing).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/day-night.test.ts`. Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement** `src/experience/sky/dayNight.ts`:
+- [x] **Step 3: Implement** `src/experience/sky/dayNight.ts`:
 
 ```ts
 import { Color, Vector3 } from "three";
@@ -291,8 +291,8 @@ export function skyState(phase: number, out: SkyState = createSkyState()): SkySt
 
 (At night the `lerp(_, 0)` calls leave the night color unchanged, so `getHex()` matches exactly. The palette values are the starting point; tune them with the Task 4 captures and keep the tests green.)
 
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/day-night.test.ts`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(sky): pure day and night model (8 minute clock cycle)`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/day-night.test.ts`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(sky): pure day and night model (8 minute clock cycle)`.
 
 ### Task 2: Visitor preference store
 
@@ -304,9 +304,9 @@ export function skyState(phase: number, out: SkyState = createSkyState()): SkySt
 - Consumes: nothing.
 - Produces: `DayNightPref`, `dayNightOn(pref, reducedMotion)`, `DAY_NIGHT_KEY = "hq:day-night"`, `readDayNight(): DayNightPref`, `setDayNight(on: boolean): void`, `subscribeDayNight(listener): () => void`, `dayNightOn`. Sub-project I's registry entry uses them: `get: () => dayNightOn(readDayNight(), getHQStore().getState().reducedMotion)`, `set: setDayNight`, `subscribe: subscribeDayNight` (plus a store subscription for `reducedMotion`).
 
-- [ ] **Step 1: Write the failing test** (happy-dom or a stubbed `localStorage`, as other `src/lib` tests do): unset reads null; `setDayNight(false)` stores `"off"`, notifies subscribers once, `readDayNight()` returns `"off"`; an invalid stored value reads as null; a `storage` event for the key notifies; unsubscribe stops notifications; storage that throws reads null and `setDayNight` does not throw.
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/day-night-pref.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement**
+- [x] **Step 1: Write the failing test** (happy-dom or a stubbed `localStorage`, as other `src/lib` tests do): unset reads null; `setDayNight(false)` stores `"off"`, notifies subscribers once, `readDayNight()` returns `"off"`; an invalid stored value reads as null; a `storage` event for the key notifies; unsubscribe stops notifications; storage that throws reads null and `setDayNight` does not throw.
+- [x] **Step 2: Run** `bunx vitest run tests/unit/day-night-pref.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement**
 
 ```ts
 /** The visitor's Day and night choice (settings panel). Unset follows the Motion setting. */
@@ -352,8 +352,8 @@ export function subscribeDayNight(listener: () => void): () => void {
 
 This module imports nothing (no three, no store), so the HUD registry entry keeps three out of the main bundle; `dayNight.ts` imports `dayNightOn` and `DayNightPref` from here.
 
-- [ ] **Step 4: Run** the test. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(sky): day and night preference store`.
+- [x] **Step 4: Run** the test. Expected: PASS.
+- [x] **Step 5: Commit** `feat(sky): day and night preference store`.
 
 ### Task 3: Holo shader modes `sky` and `orb`
 
@@ -366,9 +366,9 @@ This module imports nothing (no three, no store), so the HUD registry entry keep
 - Sky mode reads: `uColor * vTint` zenith, `uFill` horizon, `uGlow`, `uSun`, `uParams.x` = sin of the dome horizon, `uParams.y` = star amount, `uTime` (twinkle). Alpha 1.
 - Orb mode reads: instance color (`vTint`), `vAlpha` (`aAlpha` per instance), `uParams.x` disc radius (quad units), `uParams.y` halo falloff, `uParams.z` moon shadow offset (instance 1 only).
 
-- [ ] **Step 1: Failing test:** `HOLO_MODE.sky === 12`, `HOLO_MODE.orb === 13`; `HOLO_FS` contains `uMode == 12` and `uMode == 13` and declares `uniform vec3 uSun` and `uniform vec3 uGlow`; `createHoloMaterial({ mode: HOLO_MODE.sky })` has `uSun` and `uGlow` uniforms; two materials of different modes share identical `vertexShader` and `fragmentShader` strings (one program).
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/holo-sky.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement.** Add to `HOLO_MODE` (with doc comments) `sky: 12` and `orb: 13`; add `uniform vec3 uSun; uniform vec3 uGlow;` to the `HOLO_FS` uniform line; insert before the final `else` (dot mode) branch:
+- [x] **Step 1: Failing test:** `HOLO_MODE.sky === 12`, `HOLO_MODE.orb === 13`; `HOLO_FS` contains `uMode == 12` and `uMode == 13` and declares `uniform vec3 uSun` and `uniform vec3 uGlow`; `createHoloMaterial({ mode: HOLO_MODE.sky })` has `uSun` and `uGlow` uniforms; two materials of different modes share identical `vertexShader` and `fragmentShader` strings (one program).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/holo-sky.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement.** Add to `HOLO_MODE` (with doc comments) `sky: 12` and `orb: 13`; add `uniform vec3 uSun; uniform vec3 uGlow;` to the `HOLO_FS` uniform line; insert before the final `else` (dot mode) branch:
 
 ```glsl
   } else if (uMode == 12) {
@@ -398,8 +398,8 @@ This module imports nothing (no three, no store), so the HUD registry entry keep
 
 Add `uSun: { value: new Vector3(0, 1, 0) }` and `uGlow: { value: new Color(0, 0, 0) }` to the `createHoloMaterial` uniforms (import `Vector3`).
 
-- [ ] **Step 4: Run** the test plus `tests/unit/floating-sign.test.ts tests/unit/hall-stage.test.ts`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(fx): holo sky and orb modes (no new program)`.
+- [x] **Step 4: Run** the test plus `tests/unit/floating-sign.test.ts tests/unit/hall-stage.test.ts`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(fx): holo sky and orb modes (no new program)`.
 
 ### Task 4: SkyController, prototype captures, owner check
 
@@ -412,7 +412,7 @@ Add `uSun: { value: new Vector3(0, 1, 0) }` and `uGlow: { value: new Color(0, 0,
 - Consumes: Task 1 (`skyState`, `resolveSkyMode`, `parseSkyParam`, `clockPhase`, `SKY`), Task 2 (`readDayNight`, `subscribeDayNight`), Task 3 modes, `postHandle`, `sceneSettings`, `useDispose`, `useUniformTime`.
 - Produces: `skyRuntime: { phase, day, stars, source, enabled }` (read by RF `Sky` and `window.__hq.sky`); `<SkyController tier />` rendering the hemisphere and directional lights, the dome and the orbs.
 
-- [ ] **Step 1: `skyRuntime.ts`**
+- [x] **Step 1: `skyRuntime.ts`**
 
 ```ts
 import type { SkyMode } from "./dayNight";
@@ -421,12 +421,12 @@ import type { SkyMode } from "./dayNight";
 export const skyRuntime = { phase: 0, day: 0, stars: 1, source: "held" as SkyMode["source"] };
 ```
 
-- [ ] **Step 2: `SkyController.tsx`** (client): lights with refs and the night values from `sceneSettings`; a dome `InstancedMesh` (`SphereGeometry(400, 24, 12)`, one instance, instance color white, `createHoloMaterial({ mode: HOLO_MODE.sky, additive: false })`, `renderOrder={-100}`, `frustumCulled={false}`, `raycast` none); an orb `InstancedMesh` (`PlaneGeometry(1, 1)`, two instances, instance colors sun `#ffb070` x 2.2 and moon `#dfe6ff` x 1.4 through `neonColor(_, _, tier)`, an `aAlpha` `InstancedBufferAttribute`, `createHoloMaterial({ mode: HOLO_MODE.orb, params: [0.32, 5, 0.22, 0] })`, `frustumCulled={false}`); `useDispose` on both geometries, material disposal on unmount; `useUniformTime([dome, orbs])`. The mode resolves once on mount and on preference or reduced-motion changes (`resolveSkyMode({ param: parseSkyParam(location.search), pref: readDayNight(), reducedMotion, automated: navigator.webdriver === true })`). Each frame: phase = mode.phase ?? `clockPhase(Date.now())`; when it moved by more than 1e-5 (or on first frame), `skyState(phase, state)` and copy into `scene.background`, `scene.fog.color`, the two lights, the dome uniforms (`uColor` zenith, `uFill` horizon, `uGlow`, `uSun`, `uParams.x = sin(SKY.horizon)`, `uParams.y = stars`), the orb instance matrices (position `dir * 380`, quad facing the center, scale `SUN_SIZE` / `MOON_SIZE`) and `aAlpha` (`smoothstep(SKY.horizon - 0.06, SKY.horizon + 0.03, elevation)`), and `postHandle.get()?.bloom()?.intensity`; always copy the camera position into the sky group. Write `skyRuntime`.
-- [ ] **Step 3: Scene.tsx:** replace the two light elements with `<SkyController tier={tier} />`. Experience.tsx: add `sky: skyRuntime` to `__hq`. RF `Sky.tsx`: in its existing `useFrame`, set the star material opacity to `0.85 * skyRuntime.stars` (material ref; no recompile).
-- [ ] **Step 4:** `bunx tsc --noEmit`, `bunx vitest run tests/unit/day-night.test.ts tests/unit/holo-sky.test.ts tests/unit/three-disposal.test.ts`.
-- [ ] **Step 5: Prototype captures:** dev server, `bun scripts/sky-shots.ts --base http://localhost:<port> --out <session files>/shots/proto` (L1 and L3, four phases, desktop and phone). Tune `SKY` and the palette until night matches today (plus moon and stars), the day sky reads indigo to teal with a warm glow, and the default L1 views show the moon at night and the sun at midday. Check `metrics.json`: programs equal the baseline captures, scene calls +2.
-- [ ] **Step 6:** Send the L1 capture set (night, dawn, day, dusk; desktop and phone) to the coordinator for owner approval. Continue with Tasks 5 and 6 meanwhile; apply feedback before the PR.
-- [ ] **Step 7: Commit** `feat(sky): sky dome, sun and moon, lights and bloom follow the phase`.
+- [x] **Step 2: `SkyController.tsx`** (client): lights with refs and the night values from `sceneSettings`; a dome `InstancedMesh` (`SphereGeometry(400, 24, 12)`, one instance, instance color white, `createHoloMaterial({ mode: HOLO_MODE.sky, additive: false })`, `renderOrder={-100}`, `frustumCulled={false}`, `raycast` none); an orb `InstancedMesh` (`PlaneGeometry(1, 1)`, two instances, instance colors sun `#ffb070` x 2.2 and moon `#dfe6ff` x 1.4 through `neonColor(_, _, tier)`, an `aAlpha` `InstancedBufferAttribute`, `createHoloMaterial({ mode: HOLO_MODE.orb, params: [0.32, 5, 0.22, 0] })`, `frustumCulled={false}`); `useDispose` on both geometries, material disposal on unmount; `useUniformTime([dome, orbs])`. The mode resolves once on mount and on preference or reduced-motion changes (`resolveSkyMode({ param: parseSkyParam(location.search), pref: readDayNight(), reducedMotion, automated: navigator.webdriver === true })`). Each frame: phase = mode.phase ?? `clockPhase(Date.now())`; when it moved by more than 1e-5 (or on first frame), `skyState(phase, state)` and copy into `scene.background`, `scene.fog.color`, the two lights, the dome uniforms (`uColor` zenith, `uFill` horizon, `uGlow`, `uSun`, `uParams.x = sin(SKY.horizon)`, `uParams.y = stars`), the orb instance matrices (position `dir * 380`, quad facing the center, scale `SUN_SIZE` / `MOON_SIZE`) and `aAlpha` (`smoothstep(SKY.horizon - 0.06, SKY.horizon + 0.03, elevation)`), and `postHandle.get()?.bloom()?.intensity`; always copy the camera position into the sky group. Write `skyRuntime`.
+- [x] **Step 3: Scene.tsx:** replace the two light elements with `<SkyController tier={tier} />`. Experience.tsx: add `sky: skyRuntime` to `__hq`. RF `Sky.tsx`: in its existing `useFrame`, set the star material opacity to `0.85 * skyRuntime.stars` (material ref; no recompile).
+- [x] **Step 4:** `bunx tsc --noEmit`, `bunx vitest run tests/unit/day-night.test.ts tests/unit/holo-sky.test.ts tests/unit/three-disposal.test.ts`.
+- [x] **Step 5: Prototype captures:** dev server, `bun scripts/sky-shots.ts --base http://localhost:<port> --out <session files>/shots/proto` (L1 and L3, four phases, desktop and phone). Tune `SKY` and the palette until night matches today (plus moon and stars), the day sky reads indigo to teal with a warm glow, and the default L1 views show the moon at night and the sun at midday. Check `metrics.json`: programs equal the baseline captures, scene calls +2.
+- [x] **Step 6:** Send the L1 capture set (night, dawn, day, dusk; desktop and phone) to the coordinator for owner approval. Continue with Tasks 5 and 6 meanwhile; apply feedback before the PR.
+- [x] **Step 7: Commit** `feat(sky): sky dome, sun and moon, lights and bloom follow the phase`.
 
 ### Task 5: E2E and the e2e plan
 
@@ -434,20 +434,20 @@ export const skyRuntime = { phase: 0, day: 0, stars: 1, source: "held" as SkyMod
 - Create: `e2e/daynight.spec.ts`
 - Modify: `scripts/e2e-plan.ts` (rule: `src/experience/sky/**`, `src/lib/day-night.ts` to `daynight` and `experience`), `tests/unit/e2e-plan.test.ts` if it lists rules.
 
-- [ ] **Step 1: Specs** (lite tier, `asReturningVisitor`, `enterHQ` helpers from `e2e/hq.ts`):
+- [x] **Step 1: Specs** (lite tier, `asReturningVisitor`, `enterHQ` helpers from `e2e/hq.ts`):
   1. Default under automation holds night: `__hq.sky.source === "held"`, `phase === 0`, `day === 0`.
   2. `?sky=day`: `__hq.sky.day === 1`, `stars === 0`, the scene fog color differs from night (read through `__hq.sky` or a canvas pixel at the top-left void is brighter than at night).
   3. Same program count and same settled scene calls at `?sky=night` and `?sky=day` on L1 (`__hq.render.programs()`, `expectRenderBudget`).
   4. `?sky=cycle`: `__hq.sky.source === "clock"` and `phase` within 0.01 of `(Date.now() % 480000) / 480000` read in the page.
   5. A stored `hq:day-night = "off"` with `?sky=cycle` absent and `navigator.webdriver` hidden (`asHumanBrowser`): held night; `"on"` under `prefers-reduced-motion: reduce` with Motion System: clock.
-- [ ] **Step 2: Run** `bun run build` then `E2E_PORT=<port> bunx playwright test e2e/daynight.spec.ts`. Expected: PASS.
-- [ ] **Step 3: Commit** `test(sky): day and night e2e`.
+- [x] **Step 2: Run** `bun run build` then `E2E_PORT=<port> bunx playwright test e2e/daynight.spec.ts`. Expected: PASS.
+- [x] **Step 3: Commit** `test(sky): day and night e2e`.
 
 ### Task 6: Docs, perf lane and PR
 
 **Files:** `docs/agents/3d-experience.md` (new "Day and night" section: model, mode resolution, `?sky=`, dome and orbs on the holo program, draw order, probes `__hq.sky`, `hq:day-night`), `docs/agents/folder-layout.md` (`src/experience/sky/`), `docs/features.md` (feature and status log entry), `docs/decisions.md` (dated owner decision row), `docs/superpowers/README.md` (this plan, count), `README.md` (one highlight bullet if the overview lists the look).
 
-- [ ] **Step 1:** Write the docs.
+- [x] **Step 1:** Write the docs.
 - [ ] **Step 2:** `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=<port> bun run e2e:perf` (floors, peaks, bytes, memory-full). Program counts must equal the baseline; scene calls +2; bytes within budget.
 - [ ] **Step 3:** Final captures at four phases on L1 and L3, desktop and phone (`scripts/sky-shots.ts`).
 - [ ] **Step 4:** Check the CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), rebase on `origin/main` (add the `day-night` registry entry and its EN and ID copy if I's registry has landed), push, open the PR (do not merge).

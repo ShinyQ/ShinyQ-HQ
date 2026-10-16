@@ -200,6 +200,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/lib/og.tsx`, `og-layout.ts`, `og-assets.ts`, `og-encode.ts`, `og-cards.ts` (all in `src/lib/`): neon cinematic OG renderer, pure layout rules, build-time inputs (floor stills, photo, pod covers), JPEG encoder (baseline with a JFIF header, never progressive: link unfurlers), list of cards.
 - `src/lib/first-person.ts`: hasFirstPerson (owner rule: no first person in mottos, taglines and titles).
 - `src/lib/audio/`: procedural Web Audio engine + useAudio hook (see its README).
+- `src/lib/day-night.ts`: the day and night preference (`hq:day-night`: readDayNight, setDayNight, subscribeDayNight, dayNightOn); imports nothing, safe for the HUD bundle.
 
 ### src/experience/
 
@@ -211,6 +212,12 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - perfOverlayOn is the one flag parser, also for the Director's ride console line.
   - Overlay and probe are static imports in the 3D chunk that mount only with the flag or in a sampled session: a dynamic import inside the 3D chunk can make Turbopack regroup shared modules into the Page View bundle.
   - The floor chunks were measured against that risk and cost the Classic site +381 B (see "Floor chunks" in [floors.md](floors.md)).
+
+#### Sky
+
+- `src/experience/sky/`: day and night (see "Day and night" in [3d-experience.md](3d-experience.md)).
+  - dayNight.ts (pure: CYCLE_MS, SKY, clockPhase, parseSkyParam, resolveSkyMode, skyState), applySky.ts (writes a state into the dome and the sun and moon mesh), skyRuntime.ts (live state for `__hq.sky` and the RF stars).
+  - SkyController.tsx: lights, the dome and the two-instance sun and moon mesh, on the shared holo program (`HOLO_MODE.sky`, `HOLO_MODE.orb`).
 
 #### Floor chunks
 

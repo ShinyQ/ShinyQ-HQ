@@ -1,6 +1,6 @@
 # 3D experience
 
-How the 3D tower mounts, boots and runs: gate and tiers, boot and intro, boost, data flow, elevator ride, camera, frame loop, render budget, crash recovery, quality, precompile, batched text, ride cull, store and `window.__hq`.
+How the 3D tower mounts, boots and runs: gate and tiers, boot and intro, boost, data flow, elevator ride, camera, frame loop, render budget, crash recovery, quality, precompile, batched text, ride cull, day and night, store and `window.__hq`.
 Floor content lives in [floors.md](floors.md) and the per-floor files.
 
 Index: [AGENTS.md](../../AGENTS.md).
@@ -347,6 +347,43 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 - It keeps the ride peaks under 30k triangles with no visible change (`e2e/visual-gate.spec.ts` ride poses `ride-down-l2-l1-*`, `ride-down-l3-l2-*`).
 - New floor content that moves vertices in a shader must use a shader material (or stay out of the cull) so its bounds are never trusted.
 
+## Day and night
+
+The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner decision 2026-10-17). Classic site pages are unchanged.
+
+### Model
+
+- `src/experience/sky/dayNight.ts` is pure: `skyState(phase)` maps a phase in [0, 1) to the sky (`CYCLE_MS` is 8 minutes).
+  - Phase 0 is night, 0.25 dawn, 0.5 twilight day, 0.75 dusk (`SKY_PHASES`); the `day`, `warm` and `stars` mixes drive colors, lights and the star amount.
+  - Night reproduces `sceneSettings` exactly (fog and background `#0a0a0f`, hemisphere, directional light, bloom), so the base look does not move.
+  - "Day" is not daylight: an indigo to teal sky with a sun glow on the horizon. Neon glows brighter at night (full tier bloom 0.9 at night, 0.72 at twilight day).
+- Geometry: the sky is a dome whose horizon sits at `SKY.horizon` (-0.6 rad), because the follow cameras look 44 to 47 degrees down.
+  - The sun and the moon ride a shallow arc (`SKY.arc` 0.09) around the tower, opposite each other; `SKY.azimuth` puts the night moon and the midday sun on the left of the L1 desktop view.
+
+### Mode resolution
+
+- `resolveSkyMode` picks the phase source:
+  - `?sky=night|dawn|day|dusk|<0..1>` pins a phase (source `param`); `?sky=cycle` runs the clock.
+  - Under automation (`navigator.webdriver`) the sky holds night otherwise (source `held`).
+  - A visitor runs the clock (source `clock`) when the stored choice says on, or when there is no choice and reduced motion is off. Reduced motion holds night unless the visitor turns the cycle on.
+- The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 8 min`): every visitor sees the same phase and a reload continues.
+- Preference: `localStorage["hq:day-night"]` is `"on"`, `"off"` or unset (unset follows Motion). `src/lib/day-night.ts` (`readDayNight`, `setDayNight`, `subscribeDayNight`, `dayNightOn`) imports nothing, so the HUD bundle can use it.
+- The "Day and night" toggle is a settings panel entry (registry id `day-night`, group display, order 30), added when the settings panel lands.
+
+### Rendering
+
+- `SkyController` (`src/experience/sky/`, mounted by `Scene.tsx` in place of the two light elements) owns the lights and the sky meshes; `applySky.ts` writes the state into them.
+  - One camera-centered dome (`SphereGeometry` 400, 8x4, 48 triangles; the color comes per pixel from the view direction, with procedural twinkling stars) and one two-instance sun and moon mesh.
+  - Both use the shared instanced holo program: `HOLO_MODE.sky` (12) and `HOLO_MODE.orb` (13), uniforms `uSun` and `uGlow` (`fx/holoFx.ts`). That is +2 scene draw calls and no new shader program.
+  - The dome has `renderOrder` -100, is transparent and does not write depth.
+  - On the full tier the two meshes mount only once the lazy composer is live; earlier, the frame-3 precompile would compile a canvas variant of the holo program.
+- Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
+- The RF star dome (`floors/roof/Sky.tsx`) fades with `skyRuntime.stars`.
+- Probe: `__hq.sky` is `{ phase, day, stars, source, fog, applied }` (`source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications), read from `skyRuntime`.
+- Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (held night under automation, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
+- Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite).
+- Measured: L1 full settled at 88 scene calls (cap 125); lite ride L3 to L2 peaks at 29,940 triangles (cap 30k); 3D JS 426.2 KB full and 402.6 KB lite, session 453.4 KB of 470 (full) and 429.7 KB of 446.4 (lite) gzip.
+
 ## Store additions beyond appendix 06
 
 Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contracts.md).
@@ -394,6 +431,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   - Older payloads migrate a stored or missing `system` to `full` and keep `reduced`; an unknown value falls back to `full` (see "Motion setting" in [hud-and-drawer.md](hud-and-drawer.md)).
   - `firstVisit` stays persisted for compatibility; the boot follows `hq:intro`.
 - `sound` mirrors the audio engine (`@/lib/audio`, `localStorage["hq:sound"]`), which is the source of truth.
+- The day and night choice lives outside the store in `localStorage["hq:day-night"]` (`"on"` or `"off"`; unset follows Motion), owned by `@/lib/day-night` (see "Day and night").
 - `sessionStorage` keys:
 
   | Key | Meaning |
@@ -418,7 +456,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 ## Testing hooks
 
 - Playwright sets `navigator.webdriver`, so e2e tests that need the 3D tier pass `?tier=lite|full`; tests of real auto-detection call `asHumanBrowser(page)` (`e2e/hq.ts`). More on writing 3D tests: [performance.md](performance.md).
-- `window.__hq` exposes `{ store, rover, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf }` for Playwright:
+- `window.__hq` exposes `{ store, rover, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf, sky }` for Playwright:
 
   | Member | Contents |
   |---|---|
@@ -427,6 +465,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `interact` | `interactRuntime`: the current floor's `items`, `project`, `screenOf(id)`, `screenAt(id, fx, fz, lift)`, `hitAt(x, y)` (the click raycast) and `highlight` |
   | `memory()` | the live `renderer.info` geometries, textures and program count (null without a canvas) |
   | `motion()` | the live ride and beam (`{ ride, beam }`, the store only holds their stage starts) |
+  | `sky` | `{ phase, day, stars, source, fog, applied }` of the day and night cycle (see "Day and night") |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.
 - The rover hides during the hologram view; pod labels too.
