@@ -1,5 +1,7 @@
 # Shareable Classic and 3D Links Implementation Plan
 
+Status: shipped in #181, 2026-10-17
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `?view=classic` opens the Classic site, stays in the URL through navigation and copy-paste, and the visitor's choice is remembered across tabs, while an explicit `?view=` always wins (Round 8 sub-project L).
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Next.js 16 static export, React 19, next-intl, Vitest (node and jsdom), Playwright.
 
-Spec: Round 8 design, section 6 (session-state plan `2026-10-17-round-8-design.md`). Status: in progress.
+Spec: Round 8 design, section 6 (session-state plan `2026-10-17-round-8-design.md`).
 
 ## Global Constraints
 
@@ -39,7 +41,7 @@ Spec: Round 8 design, section 6 (session-state plan `2026-10-17-round-8-design.m
 **Interfaces:**
 - Produces: `type ViewChoice = "page" | "3d"`, `VIEW_KEY = "hq:view"`, `decideView(search, session, local): { view: ViewChoice; explicit: ViewChoice | null }`, `normalizeViewSearch(search, view): string`, `viewHref(href, view, base): string | null`, `threeDPath(pathname): string`, `shareUrls(origin, loc: { pathname; search; hash }): { classic: string; threeD: string }`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -128,9 +130,9 @@ describe("shareUrls", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**: `bunx vitest run tests/unit/view-param.test.ts` (module not found).
+- [x] **Step 2: Run it to see it fail**: `bunx vitest run tests/unit/view-param.test.ts` (module not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 /**
@@ -196,8 +198,8 @@ export function shareUrls(origin: string, loc: { pathname: string; search: strin
 }
 ```
 
-- [ ] **Step 4: Run tests**: `bunx vitest run tests/unit/view-param.test.ts` PASS.
-- [ ] **Step 5: Commit** `feat(view): pure helpers for shareable Classic and 3D links`.
+- [x] **Step 4: Run tests**: `bunx vitest run tests/unit/view-param.test.ts` PASS.
+- [x] **Step 5: Commit** `feat(view): pure helpers for shareable Classic and 3D links`.
 
 ### Task 2: Head script keeps `?view=classic`
 
@@ -208,7 +210,7 @@ export function shareUrls(origin: string, loc: { pathname: string; search: strin
 **Interfaces:**
 - Consumes: `decideView`, `normalizeViewSearch`, `VIEW_KEY` from Task 1.
 
-- [ ] **Step 1: Failing tests** in `tests/unit/boot-first.test.ts`:
+- [x] **Step 1: Failing tests** in `tests/unit/boot-first.test.ts`:
 
 ```ts
 describe("bootFirstScript view choice", () => {
@@ -241,8 +243,8 @@ describe("bootFirstScript view choice", () => {
 });
 ```
 
-- [ ] **Step 2: Run**: `bunx vitest run tests/unit/boot-first.test.ts`, expect FAIL.
-- [ ] **Step 3: Implement**: the first two lines of `bootFirstScript()` become
+- [x] **Step 2: Run**: `bunx vitest run tests/unit/boot-first.test.ts`, expect FAIL.
+- [x] **Step 3: Implement**: the first two lines of `bootFirstScript()` become
 
 ```ts
   return `(function(){try{var s=null,l=null,p=null;try{s=sessionStorage.getItem("${VIEW_KEY}");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}try{l=localStorage.getItem("${VIEW_KEY}")}catch(e){}
@@ -251,8 +253,8 @@ var v=(${decideView.toString()})(location.search,s,l);s=v.view;try{sessionStorag
 
 `shouldBootFirst` keeps `storedView` (it now receives `"page"` or `"3d"`). Update its doc comment and the file comment of `takePageViewParam`'s former place. The test helper's `localStorage` stub gains `setItem`.
 
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/boot-first.test.ts tests/unit/view-param.test.ts` PASS.
-- [ ] **Step 5: Commit** `feat(view): head script keeps ?view=classic and pins the tab's view`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/boot-first.test.ts tests/unit/view-param.test.ts` PASS.
+- [x] **Step 5: Commit** `feat(view): head script keeps ?view=classic and pins the tab's view`.
 
 ### Task 3: Client view state and the gate
 
@@ -267,7 +269,7 @@ var v=(${decideView.toString()})(location.search,s,l);s=v.view;try{sessionStorag
 **Interfaces:**
 - Produces: `VIEW_EVENT = "hq:view"`, `PREF_EVENT = "hq:view-pref"`, `currentView(): ViewChoice`, `syncViewUrl(view?: ViewChoice): void`, `chooseView(view: ViewChoice): void`, `setTabView(view: ViewChoice): void`, `getViewPreference(): ViewChoice | null`, `setViewPreference(view: ViewChoice): void`, `subscribeViewPreference(listener: () => void): () => void`.
 
-- [ ] **Step 1: Failing test** (`// @vitest-environment jsdom`):
+- [x] **Step 1: Failing test** (`// @vitest-environment jsdom`):
 
 ```ts
 beforeEach(() => { sessionStorage.clear(); localStorage.clear(); history.replaceState(null, "", "/en/labs"); });
@@ -306,8 +308,8 @@ it("setViewPreference only changes new tabs", () => {
 });
 ```
 
-- [ ] **Step 2: Run**, FAIL.
-- [ ] **Step 3: Implement** `src/lib/view-pref.ts`:
+- [x] **Step 2: Run**, FAIL.
+- [x] **Step 3: Implement** `src/lib/view-pref.ts`:
 
 ```ts
 import { decideView, normalizeViewSearch, VIEW_KEY, type ViewChoice } from "./view-param";
@@ -366,8 +368,8 @@ export function subscribeViewPreference(listener: () => void): () => void {
 
 Gate: `useState(() => typeof window === "undefined" ? "3d" : currentView())`; `back3D` calls `chooseView("3d")`, `toPage` calls `chooseView("page")` (then `setView`). DrawerHost `onLeave`: `setTabView("page")`.
 
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/view-pref.test.ts tests/hud` PASS.
-- [ ] **Step 5: Commit** `feat(view): Classic site and Back to 3D remember the choice and keep the URL`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/view-pref.test.ts tests/hud` PASS.
+- [x] **Step 5: Commit** `feat(view): Classic site and Back to 3D remember the choice and keep the URL`.
 
 ### Task 4: Links keep `?view=classic` (layout island)
 
@@ -380,7 +382,7 @@ Gate: `useState(() => typeof window === "undefined" ? "3d" : currentView())`; `b
 - Consumes: `viewHref` (Task 1), `currentView`, `syncViewUrl`, `VIEW_EVENT` (Task 3).
 - Produces: `syncViewLinks(root: ParentNode, view: ViewChoice, base: string): void`.
 
-- [ ] **Step 1: Failing test**:
+- [x] **Step 1: Failing test**:
 
 ```ts
 // @vitest-environment jsdom
@@ -398,8 +400,8 @@ it("adds and removes the parameter on internal page links only", () => {
 });
 ```
 
-- [ ] **Step 2: Run**, FAIL.
-- [ ] **Step 3: Implement**
+- [x] **Step 2: Run**, FAIL.
+- [x] **Step 3: Implement**
 
 `src/lib/view-links.ts`:
 
@@ -476,8 +478,8 @@ export function ViewParamSync() {
 }
 ```
 
-- [ ] **Step 4: Run** unit tests, then `bun run build` (static export accepts `useSearchParams` under Suspense) PASS.
-- [ ] **Step 5: Commit** `feat(view): internal links and client navigation keep ?view=classic`.
+- [x] **Step 4: Run** unit tests, then `bun run build` (static export accepts `useSearchParams` under Suspense) PASS.
+- [x] **Step 5: Commit** `feat(view): internal links and client navigation keep ?view=classic`.
 
 ### Task 5: Copy Classic link / Copy 3D link
 
@@ -493,11 +495,11 @@ export function ViewParamSync() {
 
 Strings: EN `Share`, `Copy Classic link`, `Copy 3D link`, `Link copied`; ID `Bagikan`, `Salin tautan situs klasik`, `Salin tautan 3D`, `Tautan disalin`.
 
-- [ ] **Step 1: Failing test**: renders two buttons by name; clicking "Copy Classic link" on `/en/labs/clearbox` writes `${SITE_URL}/en/labs/clearbox?view=classic` to a mocked `navigator.clipboard.writeText` and shows "Link copied"; "Copy 3D link" writes `${SITE_URL}/en/labs/clearbox`.
-- [ ] **Step 2: Run**, FAIL.
-- [ ] **Step 3: Implement** a client component: a `role="group"` with `aria-label={labels.group}`; two `<button type="button">` (min 44 px); on click `navigator.clipboard.writeText(shareUrls(SITE_URL, window.location)[kind])`, then show `labels.copied` in an `aria-live="polite"` span for 2 s (same pattern as `CopyEmail`). `variant="page"` uses `pv-btn pv-btn-ghost`; `variant="menu"` renders `<li>` items with the caller's `itemClassName` (the drawer's `MENU_ITEM`). Pages pass labels from `getTranslations("common")`; the drawer from `useTranslations("common")`.
-- [ ] **Step 4: Run** `bunx vitest run tests/hud/ShareLinks.test.tsx tests/hud/RoomDrawer.test.tsx tests/unit` PASS.
-- [ ] **Step 5: Commit** `feat(view): Copy Classic link and Copy 3D link on case studies, posts and the drawer`.
+- [x] **Step 1: Failing test**: renders two buttons by name; clicking "Copy Classic link" on `/en/labs/clearbox` writes `${SITE_URL}/en/labs/clearbox?view=classic` to a mocked `navigator.clipboard.writeText` and shows "Link copied"; "Copy 3D link" writes `${SITE_URL}/en/labs/clearbox`.
+- [x] **Step 2: Run**, FAIL.
+- [x] **Step 3: Implement** a client component: a `role="group"` with `aria-label={labels.group}`; two `<button type="button">` (min 44 px); on click `navigator.clipboard.writeText(shareUrls(SITE_URL, window.location)[kind])`, then show `labels.copied` in an `aria-live="polite"` span for 2 s (same pattern as `CopyEmail`). `variant="page"` uses `pv-btn pv-btn-ghost`; `variant="menu"` renders `<li>` items with the caller's `itemClassName` (the drawer's `MENU_ITEM`). Pages pass labels from `getTranslations("common")`; the drawer from `useTranslations("common")`.
+- [x] **Step 4: Run** `bunx vitest run tests/hud/ShareLinks.test.tsx tests/hud/RoomDrawer.test.tsx tests/unit` PASS.
+- [x] **Step 5: Commit** `feat(view): Copy Classic link and Copy 3D link on case studies, posts and the drawer`.
 
 ### Task 6: "Open links in" setting (sibling I's registry)
 
@@ -543,4 +545,4 @@ E2E cases (spec section 6), all with `?tier=lite` where 3D must be possible unde
 4. Precedence: a context with `localStorage["hq:view"]="page"` opens `/en?tier=lite` as Classic (URL gains the parameter); `/en?view=3d&tier=lite` in a new tab of that context opens 3D and the URL drops `view=3d`; Back to 3D removes the parameter and stores `3d`.
 5. Copy buttons: with clipboard permissions, "Copy Classic link" on `/en/labs/<slug>?view=classic` reads `.../en/labs/<slug>?view=classic`, "Copy 3D link" reads `.../en/labs/<slug>`; a post's 3D link reads `.../en/library`.
 
-- [ ] Run `bun run verify:quick`, `bun run e2e:changed`, commit `test(e2e): shareable Classic links` and `docs: shareable Classic and 3D links`.
+- [x] Run `bun run verify:quick`, `bun run e2e:changed`, commit `test(e2e): shareable Classic links` and `docs: shareable Classic and 3D links`.
