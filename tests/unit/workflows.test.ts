@@ -60,4 +60,16 @@ describe("smart CI (ci.yml)", () => {
   it("marks complete runs for the deploy gate", () => {
     expect(job("build")).toContain("name: ci-full");
   });
+
+  it("runs the visual gate and the ci-nightly report only on the nightly schedule or the nightly input", () => {
+    expect(ci).toContain('- cron: "15 20 * * *"');
+    expect(job("visual")).toContain("if: github.event_name == 'schedule' || inputs.nightly");
+    expect(job("visual")).toContain("bun scripts/visual-gate.ts --base \"$BASE\" --profile strict");
+    expect(job("visual")).toContain("name: visual-gate-diffs");
+    expect(job("nightly")).toContain("needs: [changes, check, secrets, site, e2e, perf, lighthouse, build, visual]");
+    expect(job("nightly")).toContain("if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.nightly) }}");
+    expect(job("nightly")).toContain("NEEDS: ${{ toJSON(needs) }}");
+    expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
+    expect(job("nightly")).toContain("run: bun scripts/ci-nightly.ts");
+  });
 });
