@@ -1,5 +1,7 @@
 # CSP Script Hashes Implementation Plan
 
+Status: shipped in #147 (2fd1b34), 2026-10-15
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** No page of the static export runs under a script policy with `'unsafe-inline'` (Round 7 sub-project D, security assessment F1.9).
@@ -40,7 +42,7 @@
   - `scriptPolicyProblems(html: string, site?: string): string[]` empty when the page is fine
   - `exportPolicyProblems(dir: string): string[]` problems of every HTML file under `dir`, prefixed with the relative path; reads `dir/_headers`
 
-- [ ] **Step 1: Write the failing tests** in `tests/unit/csp-hashes.test.ts`:
+- [x] **Step 1: Write the failing tests** in `tests/unit/csp-hashes.test.ts`:
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -154,12 +156,12 @@ describe("scriptPolicyProblems", () => {
 
 Also export `cfBeaconScript` from `src/components/Analytics.tsx` if it is not exported already (check first; keep its behavior).
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bunx vitest run tests/unit/csp-hashes.test.ts`
 Expected: FAIL (module `scripts/csp-hashes` not found).
 
-- [ ] **Step 3: Implement `scripts/csp-hashes.ts`**
+- [x] **Step 3: Implement `scripts/csp-hashes.ts`**
 
 ```ts
 /**
@@ -320,16 +322,16 @@ if (import.meta.main) {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/csp-hashes.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Wire into the build and run it**
+- [x] **Step 5: Wire into the build and run it**
 
 Append ` && bun scripts/csp-hashes.ts` to both `build` and `build:web` in `package.json` (after `bun scripts/check-client-chunks.ts`). Run `bun run build`; expect the `csp-hashes:` line with 171 files and exit 0. Then run `bun run og:check` (share tags still in the first 8 KB) and `bunx vitest run tests/unit` (root-redirect, defer-scripts, csp tests unaffected).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/csp-hashes.ts tests/unit/csp-hashes.test.ts package.json src/components/Analytics.tsx
@@ -352,7 +354,7 @@ git commit -m "feat(security): per-page script policy with sha256 hashes, no uns
 - Consumes: `exportPolicyProblems`, `scriptPolicyProblems`, `addScriptPolicy`, `sitePolicy` from `scripts/csp-hashes.ts` (Task 1).
 - Produces: `collectCspViolations(page: Page): Promise<string[]>` in `e2e/hq.ts`.
 
-- [ ] **Step 1: e2e helper** in `e2e/hq.ts`:
+- [x] **Step 1: e2e helper** in `e2e/hq.ts`:
 
 ```ts
 /** Console text of a Content-Security-Policy violation (Chromium logs "Refused to ... Content Security Policy"). */
@@ -386,7 +388,7 @@ In `collectErrors` add (sync, so every spec that already collects errors also fa
   });
 ```
 
-- [ ] **Step 2: Write `e2e/csp.spec.ts`**
+- [x] **Step 2: Write `e2e/csp.spec.ts`**
 
 ```ts
 import { expect, test, type Page } from "@playwright/test";
@@ -473,15 +475,15 @@ test("a returning 3D visit with a floor deep link has no CSP violation", async (
 
 Adjust selectors to the real UI when a step fails for a selector reason (CV entry label: check `CvButton` and `messages/en.json`; the onboarding dialog may need `hq:onboarded=done` via an init script so it does not cover the elevator panel; nav link names from `messages/en.json` `nav`). Never weaken the `violations` assertions.
 
-- [ ] **Step 3: Ask with Turnstile.** In `e2e/ask.spec.ts` test "Turnstile: lazy script, invisible widget, token in the POST": add `const csp = await collectCspViolations(page);` as the first line and `expect(csp).toEqual([]);` at the end.
+- [x] **Step 3: Ask with Turnstile.** In `e2e/ask.spec.ts` test "Turnstile: lazy script, invisible widget, token in the POST": add `const csp = await collectCspViolations(page);` as the first line and `expect(csp).toEqual([]);` at the end.
 
-- [ ] **Step 4: Artifact guards.** `scan-export.ts`, `e2e/deploy.spec.ts`, `deploy-smoke.ts` (+ its unit test) as listed under Files. Add a unit test to `tests/unit/csp-hashes.test.ts` for `exportPolicyProblems` using a temp dir (`mkdtempSync`) with `_headers` copied from `public/_headers`, one good page and one page with an unhashed script; expect exactly one problem prefixed with the bad file's relative path.
+- [x] **Step 4: Artifact guards.** `scan-export.ts`, `e2e/deploy.spec.ts`, `deploy-smoke.ts` (+ its unit test) as listed under Files. Add a unit test to `tests/unit/csp-hashes.test.ts` for `exportPolicyProblems` using a temp dir (`mkdtempSync`) with `_headers` copied from `public/_headers`, one good page and one page with an unhashed script; expect exactly one problem prefixed with the bad file's relative path.
 
-- [ ] **Step 5: e2e plan.** Update `scripts/e2e-plan.ts` as listed; run `bunx vitest run tests/unit/e2e-plan.test.ts`.
+- [x] **Step 5: e2e plan.** Update `scripts/e2e-plan.ts` as listed; run `bunx vitest run tests/unit/e2e-plan.test.ts`.
 
-- [ ] **Step 6: Verify.** `bun run verify:quick`, then `E2E_PORT=<free port> bunx playwright test e2e/csp.spec.ts e2e/deploy.spec.ts e2e/ask.spec.ts e2e/boot-first.spec.ts e2e/static-routes.spec.ts e2e/seo.spec.ts`. All green.
+- [x] **Step 6: Verify.** `bun run verify:quick`, then `E2E_PORT=<free port> bunx playwright test e2e/csp.spec.ts e2e/deploy.spec.ts e2e/ask.spec.ts e2e/boot-first.spec.ts e2e/static-routes.spec.ts e2e/seo.spec.ts`. All green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add e2e scripts tests
@@ -496,9 +498,9 @@ git commit -m "test(security): CSP violation e2e and script policy guards on the
 - Modify: `src/components/Analytics.tsx` doc comment (it cites `script-src 'unsafe-inline'`; say the loader's hash is added by `scripts/csp-hashes.ts`)
 - Modify: `docs/features.md` CI/security list if it lists post-build steps (check with grep for `root-redirect`)
 
-- [ ] **Step 1:** Make the edits. No em dashes.
-- [ ] **Step 2:** `bunx vitest run tests/unit` (the em dash scan) passes.
-- [ ] **Step 3: Commit** `docs: per-page script policy without unsafe-inline (F1.9)`.
+- [x] **Step 1:** Make the edits. No em dashes.
+- [x] **Step 2:** `bunx vitest run tests/unit` (the em dash scan) passes.
+- [x] **Step 3: Commit** `docs: per-page script policy without unsafe-inline (F1.9)`.
 
 ## Done when
 

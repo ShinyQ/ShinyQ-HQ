@@ -1,5 +1,7 @@
 # Public Visit Stats, Layer 1: Data Pipeline (S1) Implementation Plan
 
+Status: shipped in #89 (4314523), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Collect, roll up and serve anonymous public site activity (visits, countries, top floor, 3D vs Classic split, questions asked by topic and chip) as one daily `StatsSnapshotV1` at `GET /api/stats`, for the S2 display.
@@ -63,9 +65,9 @@ Source plan: the coordinator's "CURRENT: Public visit stats, Layer 1" (owner dec
 **Interfaces:**
 - Produces: `StatsPeriod`, `StatsTopic`, `StatsFloor`, `StatsSnapshotV1`, `STATS_PERIODS`, `STATS_TOPICS`, `STATS_FLOORS`, `STATS_KEY = "stats:v1"`, `isCountryCode(v): v is string`, `parseStatsSnapshot(v): StatsSnapshotV1 | null`, `STATS_FIXTURE`, `STATS_FIXTURE_EMPTY`.
 
-- [ ] **Step 1: Failing test** (`tests/stats/protocol.test.ts`): fixtures parse; `STATS_TOPICS` equals `ASK_TOPICS`; rejects wrong `v`, extra keys, negative or fractional counts, `XX`, `T1`, lowercase codes, duplicate countries, unknown floors, unknown topic keys, chips with unknown topic, non-ISO dates.
-- [ ] **Step 2: Run** `bunx vitest run tests/stats/protocol.test.ts` (FAIL: module missing).
-- [ ] **Step 3: Implement**
+- [x] **Step 1: Failing test** (`tests/stats/protocol.test.ts`): fixtures parse; `STATS_TOPICS` equals `ASK_TOPICS`; rejects wrong `v`, extra keys, negative or fractional counts, `XX`, `T1`, lowercase codes, duplicate countries, unknown floors, unknown topic keys, chips with unknown topic, non-ISO dates.
+- [x] **Step 2: Run** `bunx vitest run tests/stats/protocol.test.ts` (FAIL: module missing).
+- [x] **Step 3: Implement**
 
 ```ts
 export const STATS_PERIODS = ["d30", "all"] as const;
@@ -84,8 +86,8 @@ export interface StatsSnapshotV1 {
 }
 ```
 `parseStatsSnapshot` checks exact key sets at every level, counts as non-negative safe integers, `updatedAt` matches `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$`, `since` matches `^\d{4}-\d{2}-\d{2}$`, countries unique and `isCountryCode` (`/^[A-Z]{2}$/` and not `XX`), chip ids match `^[a-z0-9]+(?:-[a-z0-9]+)*$` (at most 64 chars, at most 100 chips), and returns a fresh object (never the input).
-- [ ] **Step 4: Run** the test (PASS).
-- [ ] **Step 5: Commit** `feat(stats): snapshot protocol, validator and fixtures`.
+- [x] **Step 4: Run** the test (PASS).
+- [x] **Step 5: Commit** `feat(stats): snapshot protocol, validator and fixtures`.
 
 ### Task 2: Shared helpers: path to floor, opt-out, visit wire contract
 
@@ -96,11 +98,11 @@ export interface StatsSnapshotV1 {
 **Interfaces:**
 - Produces: `floorOfPath(path: string): StatsFloor | null` (uses `parseHQUrl` from `src/lib/url-sync.ts`; `/en` L1, `/id/journey/x` L2, `/en/labs` L3, `/en/blog/x` and `/en/library` L4, `/en/contact` RF, `/en/quick`, `/en/cv`, `/` null); `STATS_OPTOUT_KEY = "hq:stats-optout"`, `STATS_OPTOUT_EVENT = "hq:stats-optout"`, `isStatsOptedOut(storage?: Pick<Storage, "getItem"> | null): boolean`; `VISIT_VERSION = 1`, `VISIT_MODES = ["3d", "classic", "both"]`, `VisitMode`, `VisitPayload { v: 1; mode: VisitMode }`, `VISIT_MAX_BYTES = 128`, `parseVisitPayload(v): VisitPayload | null` (exact keys), `visitDataPoint(p)` returns `{ blobs: ["1", mode], doubles: [1], indexes: ["visit"] }`.
 
-- [ ] **Step 1: Failing tests** for each mapping row, the opt-out value `"1"` only (`"0"`, `"true"`, missing and a throwing storage give false), and the payload parser (extra keys, wrong mode, wrong version rejected).
-- [ ] **Step 2: Run** (FAIL).
-- [ ] **Step 3: Implement** (`floorOfPath` imports `parseHQUrl` relatively: `../url-sync`; that module imports only `@/content/locales`, so check that the Worker bundle resolves `@/` through the root tsconfig paths in Task 7; if not, switch the import there to a relative path).
-- [ ] **Step 4: Run** (PASS).
-- [ ] **Step 5: Commit** `feat(stats): path to floor mapping, opt-out key and visit beacon contract`.
+- [x] **Step 1: Failing tests** for each mapping row, the opt-out value `"1"` only (`"0"`, `"true"`, missing and a throwing storage give false), and the payload parser (extra keys, wrong mode, wrong version rejected).
+- [x] **Step 2: Run** (FAIL).
+- [x] **Step 3: Implement** (`floorOfPath` imports `parseHQUrl` relatively: `../url-sync`; that module imports only `@/content/locales`, so check that the Worker bundle resolves `@/` through the root tsconfig paths in Task 7; if not, switch the import there to a relative path).
+- [x] **Step 4: Run** (PASS).
+- [x] **Step 5: Commit** `feat(stats): path to floor mapping, opt-out key and visit beacon contract`.
 
 ### Task 3: Ask events carry topic (blob8) and chip id (blob9)
 
@@ -114,11 +116,11 @@ export interface StatsSnapshotV1 {
 
 Rules (deterministic): each tag maps to one topic (`perspectives` to perspectives; `contact` to contact; `ai, voice, fraud, documents, agents, rag, data, research` to ai; `career, now, education, certifications, awards, skills` to career; `work, software, github, security, writing, talks, stats` to work); the topic with the most tags wins; ties go to the first in `perspectives, contact, ai, career, work`; no tags give `""`. A chip counts only when its id is in `content/ask/suggestions.json` and `matchSuggestion(question)` returns the same id (stops poisoned ids); then the event topic is the chip's topic. Blob order stays `[outcome, locale, source, gap, packVersion, reason, entry, topic, chip]`.
 
-- [ ] **Step 1: Failing tests**: mapping table, ties, empty tags; `chipFor` with a valid id and matching text (EN and ID), a valid id with other text, an unknown id, a non-string; handler test: a pill question writes `blobs[7] = "work"` and `blobs[8] = "work-best"`, a typed question writes the tag topic and `""`, a turnstile reject writes `""`, `""`; the client body includes `chip` only when given.
-- [ ] **Step 2: Run** `bunx vitest run tests/ask` (FAIL).
-- [ ] **Step 3: Implement**; `parseBody`: `chip` must be absent or a string of at most 64 characters, else 400.
-- [ ] **Step 4: Run** (PASS) plus `bun run typecheck`.
-- [ ] **Step 5: Commit** `feat(ask): record question topic and curated chip in ask events`.
+- [x] **Step 1: Failing tests**: mapping table, ties, empty tags; `chipFor` with a valid id and matching text (EN and ID), a valid id with other text, an unknown id, a non-string; handler test: a pill question writes `blobs[7] = "work"` and `blobs[8] = "work-best"`, a typed question writes the tag topic and `""`, a turnstile reject writes `""`, `""`; the client body includes `chip` only when given.
+- [x] **Step 2: Run** `bunx vitest run tests/ask` (FAIL).
+- [x] **Step 3: Implement**; `parseBody`: `chip` must be absent or a string of at most 64 characters, else 400.
+- [x] **Step 4: Run** (PASS) plus `bun run typecheck`.
+- [x] **Step 5: Commit** `feat(ask): record question topic and curated chip in ask events`.
 
 ### Task 4: `POST /api/visit` Function
 
@@ -129,9 +131,9 @@ Rules (deterministic): each tag maps to one topic (`perspectives` to perspective
 
 Clone of `createRumHandler`: POST only (405, `Allow: POST`), `STATS_ENABLED !== "true"` gives 204, `originAllowed` else 403, Content-Length and text length over `VISIT_MAX_BYTES` 413, bad JSON or payload 400, per-isolate cap `VISIT_ISOLATE_CAP = 600` per minute 429, `writeDataPoint` in try/catch, 204, `Cache-Control: no-store`. No other header read.
 
-- [ ] **Step 1: Failing test** (cases above, plus "never stores IP or user agent").
-- [ ] **Step 2: Run** (FAIL). **Step 3: Implement.** **Step 4: Run** (PASS).
-- [ ] **Step 5: Commit** `feat(stats): POST /api/visit beacon Function`.
+- [x] **Step 1: Failing test** (cases above, plus "never stores IP or user agent").
+- [x] **Step 2: Run** (FAIL). **Step 3: Implement.** **Step 4: Run** (PASS).
+- [x] **Step 5: Commit** `feat(stats): POST /api/visit beacon Function`.
 
 ### Task 5: `GET /api/stats` Function
 
@@ -141,7 +143,7 @@ Clone of `createRumHandler`: POST only (405, `Allow: POST`), `STATS_ENABLED !== 
 
 GET and HEAD only (else 405 `Allow: GET, HEAD`). `STATS_ENABLED !== "true"` or missing KV or missing key or invalid JSON or `parseStatsSnapshot` null: 204 with `Cache-Control: public, max-age=300`. Else 200, body `JSON.stringify(parsed)`, `Content-Type: application/json; charset=utf-8`, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=600, stale-while-revalidate=86400`, `ETag: "<first 32 hex of sha256(body)>"`; `If-None-Match` equal to it gives 304 with the same ETag and cache headers. KV read `get(STATS_KEY, { cacheTtl: 300 })`; a KV error gives 204.
 
-- [ ] Steps 1 to 5 as above; commit `feat(stats): GET /api/stats Function`.
+- [x] Steps 1 to 5 as above; commit `feat(stats): GET /api/stats Function`.
 
 ### Task 6: Worker rollup math (pure)
 
@@ -168,7 +170,7 @@ export const MODE_FREEZE = { factor: 3, floor: 30 };
 ```
 Rules: counts are non-negative integers (`Math.round`, negatives and NaN to 0); countries pass `isCountryCode`, presence when `count > 0 || visits > 0`, sorted alphabetically; floors sum page views by `floorOfPath`; mode `3d` adds to threeD, `classic` to classic, `both` to both; a day whose beacon total exceeds `max(MODE_FREEZE.floor, MODE_FREEZE.factor * pageViews)` keeps zeros and `frozen: true` (abuse cross-check); asks: unknown topics count only in `total`, chips only when known (`chipTopics`). Snapshot: `d30` sums the days in `(lastDay - 30 days, lastDay]`, `all` every day; `topFloor` is the floor with the most page views (ties in `STATS_FLOORS` order, none gives null); `chips` sorted by n desc then id; `since` is the first ledger day; `updatedAt` is `lastDay + 1` at `00:00:00.000Z`; returns null for an empty ledger; the result passes `parseStatsSnapshot`.
 
-- [ ] Steps 1 to 5 (tests: sampling-adjusted inputs in steps of 10, a 31-day window, path mapping, freeze, unknown chip and topic, alphabetical countries, XX and T1 dropped, empty input); commit `feat(stats): daily rollup and snapshot math`.
+- [x] Steps 1 to 5 (tests: sampling-adjusted inputs in steps of 10, a 31-day window, path mapping, freeze, unknown chip and topic, alphabetical countries, XX and T1 dropped, empty input); commit `feat(stats): daily rollup and snapshot math`.
 
 ### Task 7: Worker sources, run and entry
 
@@ -184,9 +186,9 @@ Run: last complete day = yesterday (UTC) of `now`; read ledger `stats:days:v1`; 
 
 wrangler.toml: `name = "hq-stats"`, `main = "src/index.ts"`, `compatibility_date = "2026-10-01"`, `workers_dev = false`, `preview_urls = false`, `[triggers] crons = ["0 1 * * *"]`, `[[kv_namespaces]] binding = "STATS_KV" id = "88fb27f910f44e6393b8fd495d6a2c4f"`, `[vars] WA_SITE_TAG = "4134db56168b4eb58d19fc1ead78b131"`, `WA_HOSTS = "kurniadi.pages.dev,kurniadi.dev"`.
 
-- [ ] **Step 1: Failing test** with a fake fetcher (asserts the GraphQL body has the siteTag, `bot: 0` and the hosts; SQL bodies exclude `rejected`; the Authorization header is used but never appears in logs or the KV values) and an in-memory KV: backfill on empty KV, a second run the same day adds nothing, a next-day run adds one day and never rewrites earlier ones (existing ledger day kept byte for byte even if the source now returns other numbers), a GraphQL `errors[]` response writes nothing.
-- [ ] **Step 2: Run** (FAIL). **Step 3: Implement.** **Step 4: Run** (PASS); `cd workers/stats && bunx wrangler@4 deploy --dry-run --outdir /tmp/hq-stats-dry` bundles.
-- [ ] **Step 5: Commit** `feat(stats): hq-stats cron Worker`.
+- [x] **Step 1: Failing test** with a fake fetcher (asserts the GraphQL body has the siteTag, `bot: 0` and the hosts; SQL bodies exclude `rejected`; the Authorization header is used but never appears in logs or the KV values) and an in-memory KV: backfill on empty KV, a second run the same day adds nothing, a next-day run adds one day and never rewrites earlier ones (existing ledger day kept byte for byte even if the source now returns other numbers), a GraphQL `errors[]` response writes nothing.
+- [x] **Step 2: Run** (FAIL). **Step 3: Implement.** **Step 4: Run** (PASS); `cd workers/stats && bunx wrangler@4 deploy --dry-run --outdir /tmp/hq-stats-dry` bundles.
+- [x] **Step 5: Commit** `feat(stats): hq-stats cron Worker`.
 
 ### Task 8: Client visit beacon and the opt-out aware Web Analytics beacon
 
@@ -199,7 +201,7 @@ wrangler.toml: `name = "hq-stats"`, `main = "src/index.ts"`, `compatibility_date
 - Produces: `visitAllowed({ privacySignal, webdriver, search, optedOut }): boolean` (DNT and GPC and opt-out always win, `?visit=1` forces under automation, `?visit=0` off, automation off); `visitMode({ threeD, classic }): VisitMode | null`; `startVisitBeacon(win = window): () => void` watches `html` attributes (`data-hq` set: 3D seen; neither `data-hq` nor `data-hq-boot` and the page visible: Classic seen), sends one `navigator.sendBeacon("/api/visit", JSON)` on the first `visibilitychange` to hidden or `pagehide`, re-checks the opt-out at send time, stops on the `hq:stats-optout` event when opted out; one point per page lifetime (module flag, no storage).
 - Analytics: renders `<script id="hq-cf-beacon">` whose inline code returns when `localStorage["hq:stats-optout"] === "1"`, else appends `script[defer][src=https://static.cloudflareinsights.com/beacon.min.js][data-cf-beacon={token, spa: true}]` to `document.body`. Token stays alphanumeric (`resolveBeaconToken`), so no escaping issue.
 
-- [ ] Steps 1 to 5; e2e (`?visit=1`): Classic page hidden sends `{"v":1,"mode":"classic"}`; 3D (`?tier=lite&visit=1`) sends `3d`; opt-out set sends nothing; DNT sends nothing. Commit `feat(stats): first-party visit beacon and opt-out aware Web Analytics beacon`.
+- [x] Steps 1 to 5; e2e (`?visit=1`): Classic page hidden sends `{"v":1,"mode":"classic"}`; 3D (`?tier=lite&visit=1`) sends `3d`; opt-out set sends nothing; DNT sends nothing. Commit `feat(stats): first-party visit beacon and opt-out aware Web Analytics beacon`.
 
 ### Task 9: CI and deploy
 
@@ -210,7 +212,7 @@ wrangler.toml: `name = "hq-stats"`, `main = "src/index.ts"`, `compatibility_date
 
 `stats-token-check.ts analytics`: POSTs the settings probe with `STATS_ANALYTICS_TOKEN`, passes when `settings.rumPageloadEventsAdaptiveGroups[0].enabled` is true, else prints `::error::CF_EVAL_TOKEN cannot read Web Analytics (rumPageloadEventsAdaptiveGroups). Give it Account > Account Analytics > Read on this account.` and exits 1. `deploy`: read-only probes with `CLOUDFLARE_API_TOKEN` (`GET /accounts/{id}/workers/scripts`, `GET /accounts/{id}/storage/kv/namespaces/{STATS_KV id}`), reporting which permission is missing. Deploy job: checkout, setup, probe, then `cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0` (v4.1.3) with `workingDirectory: workers/stats`, `secrets: WA_TOKEN WA_ACCOUNT_ID` from `CF_EVAL_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
-- [ ] Steps 1 to 5; commit `ci(stats): probe the analytics token and deploy hq-stats`.
+- [x] Steps 1 to 5; commit `ci(stats): probe the analytics token and deploy hq-stats`.
 
 ### Task 10: Docs and privacy text
 
@@ -218,10 +220,10 @@ wrangler.toml: `name = "hq-stats"`, `main = "src/index.ts"`, `compatibility_date
 
 Footer EN: "Privacy: no cookies and no tracking IDs. Visits are counted anonymously with Cloudflare (country, pages, 3D or Classic view, and the topic of questions to the AI) to show public totals, and a sample of 3D visits sends performance ranges. Your IP address and browser details are never stored. Do Not Track, Global Privacy Control or \"Don't count my visits\" turn counting off." ID equivalent with "kunjungan" and "Jangan hitung kunjungan saya".
 
-- [ ] Commit `docs(stats): data contract, runbook and privacy note`.
+- [x] Commit `docs(stats): data contract, runbook and privacy note`.
 
 ### Task 11: Verification, backfill and PR
 
-- [ ] `bun run verify:quick`; `E2E_PORT=4448 bun run e2e:changed`.
-- [ ] `WA_TOKEN=... bun scripts/stats-dry-run.ts` with the owner's Wrangler OAuth token (from `wrangler auth token`, held in a shell variable, never printed) and record the snapshot.
-- [ ] Security review of the diff; open the PR; get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green.
+- [x] `bun run verify:quick`; `E2E_PORT=4448 bun run e2e:changed`.
+- [x] `WA_TOKEN=... bun scripts/stats-dry-run.ts` with the owner's Wrangler OAuth token (from `wrangler auth token`, held in a shell variable, never printed) and record the snapshot.
+- [x] Security review of the diff; open the PR; get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green.

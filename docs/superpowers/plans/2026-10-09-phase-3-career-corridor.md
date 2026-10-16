@@ -1,5 +1,7 @@
 # Phase 3: Career Archive Corridor Implementation Plan
 
+Status: shipped in #11 (674fcc5), 2026-10-10. Later replaced in #40 by the L2 Career Road
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the L2 placeholder slab into the Career Archive corridor described in appendix 01 section 3. It is generated from `getYears()`, uses the rail camera and swipe scrubbing, has real door triggers, and supports deep links at `/{locale}/journey` and `/{locale}/journey/[slug]`.
@@ -87,9 +89,9 @@ export function buildCorridor(input: CorridorInput, benchCount?: number): Corrid
 export function scrubTarget(x: number, dx: number, width: number, stops: readonly number[]): number;
 ```
 
-- [ ] Write tests: segment x positions (`-20 + 14 i`), ascending years, alternating sides, outward rows (±10, ±19, ±28), award 6 × 6, door and `at` positions, pedestal obstacles, bounds containing every room and the annex, workshop door in front of the wall, stops, and `scrubTarget` (left swipe goes forward, at least one stop, clamped at the ends).
-- [ ] Run `bunx vitest run tests/unit/career-layout.test.ts`. It should fail.
-- [ ] Implement, then run again. It should pass. Commit `feat: generate the L2 corridor layout from year data`.
+- [x] Write tests: segment x positions (`-20 + 14 i`), ascending years, alternating sides, outward rows (±10, ±19, ±28), award 6 × 6, door and `at` positions, pedestal obstacles, bounds containing every room and the annex, workshop door in front of the wall, stops, and `scrubTarget` (left swipe goes forward, at least one stop, clamped at the ends).
+- [x] Run `bunx vitest run tests/unit/career-layout.test.ts`. It should fail.
+- [x] Implement, then run again. It should pass. Commit `feat: generate the L2 corridor layout from year data`.
 
 ### Task 2: Door zones and rail z-follow (pure)
 
@@ -97,8 +99,8 @@ export function scrubTarget(x: number, dx: number, width: number, stops: readonl
 
 **Produces:** `doorAt(doors, p): RoomId | null` (zone half size `size/2`, default 1), and `stepDoors(latch: { room: RoomId | null }, doors, p, { following, canOpen }): RoomId | null`, which updates the latch when not following and returns a room to open only on entering a new zone while `canOpen`. Also `railShift(z)` and `railPose(cls, x, floorY, zoom, z = 0)`.
 
-- [ ] Tests: entering opens once, staying does not reopen, leaving and re-entering reopens, following never opens or updates the latch, a latch set while `canOpen` is false prevents reopening after close. `railShift` is 0 inside |z| ≤ 4 and linear outside it. `railPose` shifts the position and target z.
-- [ ] Implement, run, commit `feat: door zones and rail camera z-follow`.
+- [x] Tests: entering opens once, staying does not reopen, leaving and re-entering reopens, following never opens or updates the latch, a latch set while `canOpen` is false prevents reopening after close. `railShift` is 0 inside |z| ≤ 4 and linear outside it. `railPose` shifts the position and target z.
+- [x] Implement, run, commit `feat: door zones and rail camera z-follow`.
 
 ### Task 3: Data, layouts, host and links
 
@@ -120,8 +122,8 @@ READY_FLOORS = ["L1", "L2"]
 // bridge
 goToRoom(room: RoomId, tab?: DrawerTab): void
 ```
-- [ ] Tests: career years equal `getYears()`, Jenius has `link: "L3:digital-banking-integrations"`, the prologue flag is set for 2016, there are no em dashes, and both locales differ. `roomTarget("L2:jenius-2024")` equals that door's `at`. `RoomInfo.link` is set for career rooms with `podRef` and for pods with `timelineRef`. L2 layout doors cover every career room plus `L2:workshop`.
-- [ ] Implement, run `bun run test`, commit `feat: career data, L2 layout and room links for the 3D tower`.
+- [x] Tests: career years equal `getYears()`, Jenius has `link: "L3:digital-banking-integrations"`, the prologue flag is set for 2016, there are no em dashes, and both locales differ. `roomTarget("L2:jenius-2024")` equals that door's `at`. `RoomInfo.link` is set for career rooms with `podRef` and for pods with `timelineRef`. L2 layout doors cover every career room plus `L2:workshop`.
+- [x] Implement, run `bun run test`, commit `feat: career data, L2 layout and room links for the 3D tower`.
 
 ### Task 4: Corridor scene
 
@@ -131,26 +133,26 @@ goToRoom(room: RoomId, tab?: DrawerTab): void
 - Gates: one merged `lineSegments` for every arch, and one `Text` per year. The 2019 gate gets a "Prologue" plaque.
 - Rooms: one `InstancedMesh` for pad fills (clickable, which emits `goto` to `at`), merged pad edges, one `InstancedMesh` for pedestals, one `InstancedMesh` per hologram type (job: stacked boxes, freelance: octahedron, education: torus, milestone: tall pillar, award: trophy cups, one per award that year), rotated in `useFrame`. Each room gets one `Text` label (role, org and period). The active room gets a highlight ring.
 - Annex: instanced benches with a label each, a wall `GlassBox` with one `Text` for the repo grid and one for the models, and a window pane with its caption.
-- [ ] Typecheck, check visually with `bun run build:web` and a manual screenshot on port 4320, then commit `feat: L2 corridor scene with year gates, rooms and the Workshop annex`.
+- [x] Typecheck, check visually with `bun run build:web` and a manual screenshot on port 4320, then commit `feat: L2 corridor scene with year gates, rooms and the Workshop annex`.
 
 ### Task 5: Director wiring, deep links, RoomPeek
 
 **Files:** `Director.tsx` (scrub, doors, open), `CameraDirector.tsx` (rail z), `Experience.tsx`/`ExperienceGate.tsx` (`startFloor`, `startRoom`, URL sync of `activeRoom`), `src/hud/RoomPeek.tsx`, `Hud.tsx`, the journey pages, and the messages.
 
-- [ ] Implement, typecheck, run unit tests, commit `feat: L2 door triggers, scrubbing, deep links and the interim room panel`.
+- [x] Implement, typecheck, run unit tests, commit `feat: L2 door triggers, scrubbing, deep links and the interim room panel`.
 
 ### Task 6: E2E and screenshots
 
 **Files:** `e2e/career.spec.ts`, `e2e/experience.spec.ts`, `e2e/screenshots.spec.ts`.
 
 - Tests: `/en/journey?tier=lite` starts on L2 in explore with no intro. Holding D moves x forward past a year gate. A palette search for "Jenius" drives there and opens the room (RoomPeek visible, URL `/en/journey/jenius-2024`). A deep link to `/en/journey/jenius-2024` opens that room. "See the case study on L3" rides to L3 and lands on `/en/labs/digital-banking-integrations`. A mobile horizontal swipe advances x by at least one segment. Draw calls stay under 150 on L2. Axe finds nothing serious with RoomPeek open.
-- [ ] Run with `E2E_PORT=4321 bun run e2e` (never port 4310), then `SCREENSHOTS=1 E2E_PORT=4321 bun run screenshots`. Commit `test: e2e for the Career Archive corridor`.
+- [x] Run with `E2E_PORT=4321 bun run e2e` (never port 4310), then `SCREENSHOTS=1 E2E_PORT=4321 bun run screenshots`. Commit `test: e2e for the Career Archive corridor`.
 
 ### Task 7: Docs, full check, PR
 
-- [ ] Update `AGENTS.md` (READY_FLOORS, career layout, door contract, rail z-follow deviation, RoomPeek being temporary).
-- [ ] `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4321 bun run e2e`
-- [ ] Rebase on `origin/main`, push, open PR "Phase 3: Career Archive corridor" with screenshots, and report to the creator session.
+- [x] Update `AGENTS.md` (READY_FLOORS, career layout, door contract, rail z-follow deviation, RoomPeek being temporary).
+- [x] `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4321 bun run e2e`
+- [x] Rebase on `origin/main`, push, open PR "Phase 3: Career Archive corridor" with screenshots, and report to the creator session.
 
 ## After Phase 4 merged (rebase notes)
 

@@ -1,5 +1,7 @@
 # Rover Dialog, First-Session Onboarding, Hint Bubbles and Floor Lines Implementation Plan
 
+Status: shipped in #64 (f1845ac), 2026-10-12. Later removed in #167: the walk choice at the end of the floor lines (the lines stay)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give first-time visitors simple guidance in the 3D HQ through a classic handheld-RPG text box spoken by the Rover (typewriter text, portrait, continue arrow, choices), a short first-session onboarding after the boot and intro, "!" hint bubbles over nearby interactive objects, and one first-visit line per floor that ends with that floor's walk choice.
@@ -132,7 +134,7 @@ Task order: 1 engine, 2 flags and replay bridge, 3 blip, 4 dialog box, 5 hint so
 - Produces (engine): `CHAR_MS = 28`, `BLIP_EVERY = 3`, `CONTINUE_CHOICE = "continue"`, `interface DialogChoice { id: string; label: string; cancel?: boolean }`, `interface DialogLine { text: string; key?: string; face?: RoverFace; choices?: readonly DialogChoice[]; spotlight?: string; until?: (signal: AbortSignal) => Promise<unknown>; fallbackMs?: number }`, `type SayInput = string | DialogLine | readonly (string | DialogLine)[]`, `interface SayOptions { id?: string; skip?: { label: string } }`, `interface SayResult { status: "done" | "skipped" | "cancelled"; choice: string | null }`, `interface DialogView { id; line; index; total; shown; length; waiting; fallback; paused; active; skipLabel }`, `IDLE_VIEW`, `linesOf(input): DialogLine[]`, `createDialogEngine(): DialogEngine` with `view`, `say`, `advance`, `choose(id)`, `move(1 | -1)`, `escape(): boolean`, `skip`, `cancel(id)`, `cancelAll`, `setPaused`, `setInstant`, `tick(ms): number`, `busy`, `subscribe`.
 - Produces (store): `dialog` (the singleton engine), `dialogStore`, `say(input, options?)`, `cancelDialog(id)`, `cancelAllDialogs()`, `useDialog<T>(selector: (view: DialogView) => T): T`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/dialog-engine.test.ts`:
 
@@ -328,12 +330,12 @@ describe("dialog engine", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/dialog-engine.test.ts`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/engine"".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/engine.ts`:
 
@@ -701,12 +703,12 @@ export function useDialog<T>(selector: (view: DialogView) => T): T {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/dialog-engine.test.ts`
 Expected: PASS (12 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/engine.ts src/hud/dialog/store.ts tests/unit/dialog-engine.test.ts
@@ -729,7 +731,7 @@ rtk git commit -m "feat(hud): Rover dialog engine with queue, typewriter, choice
 - Consumes: nothing new.
 - Produces: `ONBOARDED_KEY = "hq:onboarded"`, `HINTS_KEY = "hq:hints"`, `type OnboardingMark = "done" | "skipped"`, `interface FlagStorage { getItem(key: string): string | null; setItem(key: string, value: string): void }`, `onboarded(storage?): boolean`, `markOnboarded(mark, storage?)`, `hintsOn(storage?): boolean`, `setHintsOn(on, storage?)`, `subscribeFlags(listener): () => void`, `resetFlagMemory()`; `registerTutorial(run: () => void): () => void`, `replayTutorial(): boolean`, `tutorialAvailable(): boolean`, `subscribeTutorial(listener): () => void`; hooks `useOnboardingSettled(): boolean`, `useHintsOn(): boolean`, `useTutorialAvailable(): boolean`; `onContinuationChange(listener: () => void): () => void` in `introContinue.ts`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/dialog-storage.test.ts`:
 
@@ -847,12 +849,12 @@ describe("continuation listener", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/dialog-storage.test.ts tests/unit/intro-session.test.ts`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/storage"" and "onContinuationChange is not a function".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/storage.ts`:
 
@@ -1046,12 +1048,12 @@ export function endContinuation() {
 
 Also update the `isContinuing` doc comment to: `/** A deep link is pending or being continued (the onboarding waits for it to arrive). */`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/dialog-storage.test.ts tests/unit/intro-session.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/storage.ts src/hud/dialog/tutorial.ts src/hud/dialog/hooks.ts src/experience/introContinue.ts tests/unit/dialog-storage.test.ts tests/unit/intro-session.test.ts
@@ -1072,7 +1074,7 @@ rtk git commit -m "feat(hud): onboarding and hint flags, tutorial replay bridge,
 - Consumes: nothing new.
 - Produces: `SoundName` gains `"blip"`; `audio.play("blip")` (shares the click rate limit, 20 per second).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/audio.test.ts`, change the one-shot list to include the blip:
 
@@ -1095,12 +1097,12 @@ and add after the "rate limits key clicks to 20 per second" test:
   });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/audio.test.ts`
 Expected: FAIL with "TypeError: ONE_SHOTS[name] is not a function" for `blip`, and the rate limit test counts 0 oscillators.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `src/lib/audio/types.ts` line 1:
 
@@ -1144,12 +1146,12 @@ In `src/lib/audio/engine.ts`, inside `play`, replace `if (name === "click" && !a
       if ((name === "click" || name === "blip") && !allowClick()) return;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/audio.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/lib/audio/types.ts src/lib/audio/synth.ts src/lib/audio/engine.ts tests/unit/audio.test.ts
@@ -1177,7 +1179,7 @@ rtk git commit -m "feat(audio): soft blip one-shot for the Rover dialog"
 - Consumes: `dialog`, `say`, `useDialog`, `cancelAllDialogs` (Task 1); `CONTINUE_CHOICE`, `BLIP_EVERY` (Task 1); `audio` from `@/lib/audio` (`blip`, Task 3); `drawFace`, `FACE_W`, `FACE_H` from `src/experience/rover/faceTexture.ts`; `faceFrame` from `src/experience/rover/faces.ts`; `useAskPanelOpen` from `src/hud/ask/availability.ts`.
 - Produces: messages `dialog.*` (all keys used by later tasks: `dialog.onboarding.*`, `dialog.floor.{L2,L3,L4,RF}`, `dialog.hints.*`, `dialog.menu.*`); `type DialogPlacement = "bottom" | "raised" | "phone"`, `dialogPlacement(viewport: ViewportClass, coarse: boolean): DialogPlacement`, `DIALOG_PLACE`; `DialogBox({ placement, reducedMotion })` with test ids `dialog-box` (attributes `data-dialog`, `data-line`, `data-typing`, `data-motion`), `dialog-choices`, `dialog-next`, `dialog-try`, `dialog-skip`; `Spotlight({ target, still })` with test id `onboard-spotlight` (`data-target`, `data-motion`); default export `DialogLayer()`; HUD attributes `data-onboard="elevator" | "ask-rover" | "ask-ai"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/dialog-copy.test.ts`:
 
@@ -1363,12 +1365,12 @@ describe("DialogBox", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/dialog-copy.test.ts tests/hud/DialogBox.test.tsx`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/placement"" and "Cannot read properties of undefined (reading 'onboarding')".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add to `messages/en.json` as a new top-level key after `"certs"`:
 
@@ -1954,7 +1956,7 @@ Add the spotlight targets:
 - `src/hud/HudLaunchers.tsx`: on the Ask Rover `<button type="button" onClick={openTerminal} ...>`, add `data-onboard="ask-rover"`.
 - `src/hud/ask/AskPill.tsx`: on the pill `<button ... data-testid="ask-pill">`, add `data-onboard="ask-ai"`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/dialog-copy.test.ts tests/hud/DialogBox.test.tsx tests/unit/ui-copy.test.ts tests/content/fonts.test.ts tests/content/safety.test.ts`
 Expected: PASS (the font test proves the copy and the components stay inside the font cut; the safety test proves no em dash or blocked term).
@@ -1962,7 +1964,7 @@ Expected: PASS (the font test proves the copy and the components stay inside the
 Then: `bun run typecheck && bun run lint`
 Expected: no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add messages/en.json messages/id.json src/app/globals.css src/hud/dialog/placement.ts src/hud/dialog/RoverPortrait.tsx src/hud/dialog/DialogBox.tsx src/hud/dialog/Spotlight.tsx src/hud/dialog/useModalOpen.ts src/hud/dialog/DialogLayer.tsx src/hud/Hud.tsx src/hud/ElevatorPanel.tsx src/hud/HudLaunchers.tsx src/hud/ask/AskPill.tsx tests/unit/dialog-copy.test.ts tests/hud/DialogBox.test.tsx
@@ -1986,7 +1988,7 @@ Gate: point-and-go is on `main` (see "Interfaces From Parallel Plans"): `src/exp
 - Consumes (point-and-go): `Interactable`, `extraInteractables` from `src/experience/interact/registry.ts`; `interactRuntime` (`items`) from `src/experience/interact/runtime.ts`; `labelAnchor` from `src/experience/interact/pick.ts`; store `hover`. Also `floorY` from `src/experience/config.ts`; `roverRuntime` from `src/experience/rover/runtime.ts`; `getHQStore`, `useHQStore`.
 - Produces: `hintItems(): readonly Interactable[]` (the current floor's targets, base plus extras), `extraItems(floor: FloorId): readonly Interactable[]`, `type Interactable` (re-export); `HINT = { radius: 5, keep: 6, margin: 0.5, lift: 1.1, everyS: 0.1 }`, `nearestHint<T extends { id: string; at: Vec2 }>(items: readonly T[], rover: Vec2, current?: T | null): T | null`, `hintAnchor(item: Pick<Interactable, "bounds" | "height" | "kind">, floorY: number): { x: number; y: number; z: number }` (above point-and-go's hover label); `interface HintTarget { item: Interactable; anchor: { x: number; y: number; z: number } }`, `hintRuntime: { target: HintTarget | null; element: HTMLElement | null }`, `setHintTarget(next: HintTarget | null)`, `subscribeHintTarget(listener): () => void`, `registerHintElement(element: HTMLElement | null)`; `<HintProbe />` (no props).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/hint-select.test.ts`:
 
@@ -2046,12 +2048,12 @@ describe("hint runtime", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/hint-select.test.ts`
 Expected: FAIL with "Failed to resolve import "@/experience/hints/select"".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/experience/hints/source.ts`:
 
@@ -2227,12 +2229,12 @@ Modify `src/experience/scene/Scene.tsx`: add `import { HintProbe } from "../hint
       <HintProbe />
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/hint-select.test.ts && bun run typecheck`
 Expected: PASS, no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/hints/ src/experience/scene/Scene.tsx tests/unit/hint-select.test.ts
@@ -2251,7 +2253,7 @@ rtk git commit -m "feat(3d): hint bubble probe picks the nearest point-and-go ta
 - Consumes: `DialogLine`, `SayInput`, `SayOptions`, `SayResult`, `linesOf` (Task 1); `Interactable` from `src/experience/hints/source.ts` (Task 5, type only); `HQStore` (type only); `FloorId`, `Vec2` (types).
 - Produces: `ONBOARDING_ID = "onboarding"`, `HIGHLIGHTS_ID = "L1:station:highlights-about"` (the hall's first station in the registry), `HIGHLIGHTS_ROOM = "L1:highlights-about"` (its room, the fallback match), `TRY_IT_MS = 12_000`, `MOVE_DONE_U = 2`, `type OnboardingVariant = "full" | "short"`, `type OnboardingOutcome = "done" | "skipped" | "cancelled"`, `interface HighlightsTarget { floor: FloorId; at: Vec2 }`, `interface OnboardingCopy { welcome; start; skip; skipped; moveFine; moveCoarse; pointGoFine; pointGoCoarse; moved; highlights; showMe; later; elevator; askRover; askAi; closing; closingShort }` (all `string`), `interface OnboardingDeps { say; copy; coarse; variant; waitForMove; highlights; showMe; askAi; tryItMs? }`, `runOnboarding(deps): Promise<OnboardingOutcome>`, `waitForRoverMove(store, signal, distance?): Promise<void>`, `highlightsTarget(items: readonly Interactable[]): HighlightsTarget | null` (id `HIGHLIGHTS_ID`, else an `open-room` action on `HIGHLIGHTS_ROOM`), `firstName(name: string): string`. Line keys spoken, in order: `welcome`, `move`, `point-go`, `moved`, `highlights` (full, when the hall exists), `elevator` (full), `ask-rover`, `ask-ai` (when the Ask AI pill shows), `closing`; on skip: `skipped`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/onboarding.test.ts`:
 
@@ -2468,12 +2470,12 @@ describe("firstName", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/onboarding.test.ts`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/onboarding"".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/onboarding.ts`:
 
@@ -2652,12 +2654,12 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/onboarding.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/onboarding.ts tests/unit/onboarding.test.ts
@@ -2682,7 +2684,7 @@ rtk git commit -m "feat(hud): first-session onboarding script (full and short to
 - Consumes: `runOnboarding`, `waitForRoverMove`, `highlightsTarget`, `firstName`, `OnboardingCopy`, `OnboardingVariant` (Task 6); `say`, `cancelAllDialogs` (Task 1); `onboarded`, `markOnboarded` (Task 2); `registerTutorial` (Task 2); `isContinuing`, `onContinuationChange` (Task 2); `extraItems` (Task 5); `runMissionSteps` from `src/experience/missions/bridge.ts`; `roverRuntime` from `src/experience/rover/runtime.ts`.
 - Produces: `OnboardingLayer({ data })` (auto start 600 ms after the rover is free in explore, retried every 600 ms while a mission, an arrival roll-on or a point-and-go drive still runs; `START_DELAY_MS`); e2e spec `onboarding` with helpers `box`, `expectLine`, `next`, `freshVisit` reused by Tasks 8 to 11; `asReturningVisitor` sets `hq:onboarded=done` and `hq:hints=off`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/hud/OnboardingLayer.test.tsx`:
 
@@ -2904,12 +2906,12 @@ Add to `tests/unit/e2e-plan.test.ts` (inside `describe("specsForChanges")`):
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/hud/OnboardingLayer.test.tsx tests/unit/e2e-plan.test.ts`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/OnboardingLayer"", and the e2e-plan test fails on "knows every spec in e2e/" (`onboarding` missing from `ALL_SPECS`) and on the new mapping.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/OnboardingLayer.tsx`:
 
@@ -3127,7 +3129,7 @@ Modify `scripts/e2e-plan.ts`:
 
 4. Add `"onboarding"` to the gate rule's specs: `specs: ["boot-first", "experience", "onboarding"]` (the rule matching `introContinue.ts`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/hud/OnboardingLayer.test.tsx tests/unit/e2e-plan.test.ts tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx`
 Expected: PASS.
@@ -3135,7 +3137,7 @@ Expected: PASS.
 Run: `bun run verify:quick && bunx playwright test e2e/onboarding.spec.ts e2e/experience.spec.ts -g "tour|Rover greets|boot and intro"`
 Expected: PASS (the build runs inside `verify:quick`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/OnboardingLayer.tsx src/hud/Hud.tsx src/experience/scene/Director.tsx src/hud/RoverTerminal.tsx tests/hud/OnboardingLayer.test.tsx tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx e2e/ scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -3158,7 +3160,7 @@ rtk git commit -m "feat(hud): first-session onboarding after the intro replaces 
 - Consumes: `replayTutorial`, `useTutorialAvailable`, `useHintsOn`, `setHintsOn`, `hintsOn` (Task 2); `dialog.menu.*` messages (Task 4); e2e helpers from Task 7.
 - Produces: `interface TerminalExtra { key: string; label: string; onSelect: () => void }`, `RoverTerminalProps.extras?: readonly TerminalExtra[]` (shown after the missions, before "explore on my own"; their keys select them); `PaletteActionId` gains `"replay-tutorial" | "toggle-hints"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/hud/RoverTerminal.test.tsx` (inside the top-level `describe`):
 
@@ -3253,12 +3255,12 @@ test.describe("replay", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/hud/RoverTerminal.test.tsx tests/hud/CommandPalette.test.tsx tests/hud/MissionHud.test.tsx`
 Expected: FAIL (no `[r]` option; `actionLabels` has keys `PaletteActionId` does not know, reported by the test run as a missing label; no replay option in MissionHud).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `messages/en.json` `hud.actions` gains:
 
@@ -3426,7 +3428,7 @@ const TUTORIAL_ACTIONS: readonly PaletteActionId[] = ["replay-tutorial", "toggle
 
 6. Pass the extras to the terminal: add `extras={extras}` to `<RoverTerminal ... />`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/hud/RoverTerminal.test.tsx tests/hud/CommandPalette.test.tsx tests/hud/MissionHud.test.tsx tests/unit/ui-copy.test.ts tests/unit/search.test.ts`
 Expected: PASS.
@@ -3434,7 +3436,7 @@ Expected: PASS.
 Run: `bun run verify:quick && bunx playwright test e2e/onboarding.spec.ts -g "replay"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/RoverTerminal.tsx src/hud/MissionHud.tsx src/hud/palette-types.ts src/hud/search.ts src/hud/index-data.ts messages/en.json messages/id.json tests/hud/RoverTerminal.test.tsx tests/hud/CommandPalette.test.tsx tests/hud/MissionHud.test.tsx e2e/onboarding.spec.ts
@@ -3455,7 +3457,7 @@ rtk git commit -m "feat(hud): replay the tutorial and toggle hints from Ask Rove
 - Consumes: `say`, `cancelDialog` (Task 1); `useOnboardingSettled` (Task 2); `firstName` (Task 6); `dialog.floor.*` messages (Task 4); `promptSeen`, `markPromptSeen` from `src/experience/missions/walk.ts`.
 - Produces: `FLOOR_LINES: readonly FloorId[] = ["L2", "L3", "L4", "RF"]` (floors with a Rover line; L1 is the onboarding's, even after the hall adds an L1 walk), `interface FloorIntroCopy { text: string; start: string; resume: string | null; explore: string }`, `floorIntroLine(copy): DialogLine` (key `floor`, choices `start` or `resume`, then `explore` as the cancel choice); dialog request id `floor:<FloorId>`. `WalkPrompt` is no longer rendered by `WalkLayer` (it stays for the dev prototypes).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/floor-intro.test.ts`:
 
@@ -3512,12 +3514,12 @@ test.describe("floor lines", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/floor-intro.test.ts`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/floorIntro"".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/floorIntro.ts`:
 
@@ -3639,7 +3641,7 @@ Update the e2e specs that drove the old card (the floor line keeps the same butt
 
 Run `git grep -n "walk-prompt" e2e` afterwards: no line may remain.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/floor-intro.test.ts tests/hud/WalkBar.test.tsx tests/unit/walk.test.ts`
 Expected: PASS.
@@ -3647,7 +3649,7 @@ Expected: PASS.
 Run: `bun run verify:quick && bunx playwright test e2e/onboarding.spec.ts e2e/walk.spec.ts -g "floor lines|Guided walks"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/floorIntro.ts src/hud/walk/WalkLayer.tsx tests/unit/floor-intro.test.ts e2e/walk.spec.ts e2e/hud.spec.ts e2e/library-roof.spec.ts e2e/screenshots.spec.ts e2e/onboarding.spec.ts
@@ -3670,7 +3672,7 @@ rtk git commit -m "feat(hud): first-visit floor lines in Rover's dialog end with
 - Consumes: `Interactable` (Task 5, re-exported from point-and-go's registry: `label` is one string, actions `open-room { room }`, `elevator-picker`, `teleport-picker { year }`, `command { command }`); `hintRuntime`, `setHintTarget`, `subscribeHintTarget`, `registerHintElement` (Task 5); `say`, `useDialog` (Task 1); `useHintsOn` (Task 2); `dialog.hints.*` messages (Task 4); point-and-go's intent `{ type: "interact"; item }` (`intents` from `src/experience/input/intents.ts`) and store `hover`.
 - Produces: `HINT_KINDS: readonly InteractKind[]`, `HINT_OBJECTS: Readonly<Record<string, string>>` (registry id to `dialog.hints.object.<key>`), `hintObjectKey(item): string | null`, `type HintGoKey = "open" | "pickFloor" | "pickYear" | "askRover" | "browse" | "viewCv" | "go"`, `hintGoKey(item): HintGoKey`, `interface HintCopy { text: string; go: string; notNow: string }`, `hintLine(item, copy): DialogLine` (key `hint:<kind>`, choices `go`, `no`); `HintLayer({ suppressed, name })` with test id `hint-bubble` (`data-hint` = registry id, `data-kind`); dialog request id `hint:<registry id>`. The Go choice emits `{ type: "interact", item }`; nothing else runs object actions.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/hint-lines.test.ts`:
 
@@ -3872,12 +3874,12 @@ test.describe("hint bubbles", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/hint-lines.test.ts tests/hud/HintLayer.test.tsx`
 Expected: FAIL with "Failed to resolve import "@/hud/dialog/hintLines"".
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `src/hud/dialog/hintLines.ts`:
 
@@ -4041,7 +4043,7 @@ Modify `src/hud/Hud.tsx`: add `import { HintLayer } from "./dialog/HintLayer";` 
       <HintLayer suppressed={walking} name={firstName(data.profile.name)} />
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/hint-lines.test.ts tests/hud/HintLayer.test.tsx tests/unit/ui-copy.test.ts`
 Expected: PASS.
@@ -4049,7 +4051,7 @@ Expected: PASS.
 Run: `bun run verify:quick && bunx playwright test e2e/onboarding.spec.ts -g "hint bubbles"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/hud/dialog/hintLines.ts src/hud/dialog/HintLayer.tsx src/hud/Hud.tsx tests/unit/hint-lines.test.ts tests/hud/HintLayer.test.tsx e2e/onboarding.spec.ts
@@ -4067,7 +4069,7 @@ rtk git commit -m "feat(hud): ! hint bubbles over point-and-go targets open Rove
 - Consumes: helpers `box`, `choices`, `expectLine`, `next`, `mockAsk`, `freshVisit` (Task 7); `snapshot`, `waitForRoverMove`, `waitForFloor`, `expectRenderBudget`, `driveTo`, `padsOf` from `e2e/hq.ts`; point-and-go's `visibleTarget`, `targetPoint`, `PHONE_SAFE` (`e2e/hq.ts`) and test ids `interact-go`, `point-hint`; line keys from Task 6.
 - Produces: nothing new for later tasks.
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 Append to `e2e/onboarding.spec.ts` (extend the import from `./hq` with `expectRenderBudget`, `snapshot`, `waitForFloor`, `waitForRoverMove`, `visibleTarget`, `targetPoint`, `PHONE_SAFE`; add `type Browser, type Locator` to the Playwright import):
 
@@ -4263,21 +4265,21 @@ test.describe("phone layout", () => {
 });
 ```
 
-- [ ] **Step 2: Run the new tests against a fresh build**
+- [x] **Step 2: Run the new tests against a fresh build**
 
 Run: `bun run build && bunx playwright test e2e/onboarding.spec.ts`
 Expected: PASS (all tests in the file, about 3 to 5 minutes on SwiftShader).
 
-- [ ] **Step 3: Fix any failure at its source**
+- [x] **Step 3: Fix any failure at its source**
 
 If a test fails, fix the implementation (never loosen an assertion); the likely spots are placement classes in `src/hud/dialog/placement.ts` (phone overlap) and the pause rules in `DialogLayer.tsx` (a line hidden behind a drawer). Re-run the single failing test with `bunx playwright test e2e/onboarding.spec.ts -g "<test title>"`.
 
-- [ ] **Step 4: Run the affected suites**
+- [x] **Step 4: Run the affected suites**
 
 Run: `bun run e2e:changed`
 Expected: PASS (onboarding, experience, walk, hud, missions and the other mapped specs).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add e2e/onboarding.spec.ts src/hud/dialog/
@@ -4295,7 +4297,7 @@ rtk git commit -m "test(e2e): onboarding steps, deep link short tour, reduced mo
 - Consumes: `VIEWPORTS`, `shot`, `open3DAt` (existing in `e2e/screenshots.spec.ts`); `driveTo`, `padsOf`, `waitForHQ`, `waitForPhase` from `e2e/hq.ts`.
 - Produces: `screenshots/hq-onboarding-welcome-*.png`, `hq-onboarding-spotlight-*.png`, `hq-hint-bubble-*.png`, `hq-floor-line-*.png` at 1440x900, 1024x1366 and 390x844.
 
-- [ ] **Step 1: Add the captures**
+- [x] **Step 1: Add the captures**
 
 Add `import en from "../messages/en.json";` to `e2e/screenshots.spec.ts` and append:
 
@@ -4375,16 +4377,16 @@ test.describe("Rover dialog", () => {
 });
 ```
 
-- [ ] **Step 2: Capture**
+- [x] **Step 2: Capture**
 
 Run: `bun run build && SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "Rover dialog" --workers=1`
 Expected: PASS and 12 new PNG files under `screenshots/`: `hq-onboarding-welcome`, `hq-onboarding-spotlight`, `hq-hint-bubble` and `hq-floor-line`, each at 1440x900, 1024x1366 and 390x844.
 
-- [ ] **Step 3: Review the captures**
+- [x] **Step 3: Review the captures**
 
 Open each new PNG and check: the box sits above the bottom band and never covers the joystick, boost, view controls or the elevator panel; the portrait shows `^_^`; the spotlight ring sits on the elevator panel; the "!" bubble floats over the call pad; on 390x844 the box text wraps within three rows. Fix placement or copy length and re-capture if any check fails.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts
@@ -4405,13 +4407,13 @@ rtk git commit -m "test(screenshots): Rover dialog, tour spotlight, hint bubble 
 - Consumes: everything above.
 - Produces: the PR.
 
-- [ ] **Step 1: Copy the plan into the repo**
+- [x] **Step 1: Copy the plan into the repo**
 
 ```bash
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r4-h-onboarding-dialog.md docs/superpowers/plans/2026-10-12-onboarding-dialog.md
 ```
 
-- [ ] **Step 2: Update README.md**
+- [x] **Step 2: Update README.md**
 
 1. Status table, add a row after "Walkable floors 3":
 
@@ -4431,7 +4433,7 @@ Right after the boot and intro of your first session, Rover runs a short tour in
 The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 ```
 
-- [ ] **Step 3: Update AGENTS.md**
+- [x] **Step 3: Update AGENTS.md**
 
 1. "Missions and HUD", the localStorage bullet: replace "`hq:terminal-seen` (first-visit auto-open in the 3D Lobby after the intro; the Page View never opens the terminal on its own)" with "`hq:terminal-seen` (set when the terminal first opens; nothing opens it on its own any more)", add "`hq:onboarded` (`done` or `skipped`: the first-session tour ran) and `hq:hints` (`off` hides the hint bubbles)" to the list, and replace the last sentence with "Tests and screenshots that must not see the tour or the bubbles use `asReturningVisitor` (it sets `hq:onboarded=done` and `hq:hints=off`) or set `hq:onboarded` next to `hq:terminal-seen`."
 
@@ -4454,7 +4456,7 @@ The Rover Terminal never opens on its own; the **Ask Rover** button opens it any
 
 4. "Fast verification", the `e2e:changed` bullet: after "`src/hud/drawer/**` to the drawer specs, `drawer-solid` included)" add ", `src/hud/dialog/**` and `src/experience/hints/**` to `onboarding`, `experience` and `walk`".
 
-- [ ] **Step 4: Full verification**
+- [x] **Step 4: Full verification**
 
 Run: `bun run verify:quick`
 Expected: typecheck, lint, all unit tests and the build pass.
@@ -4465,7 +4467,7 @@ Expected: PASS (this work changed `e2e/hq.ts`, so the whole suite runs once).
 Run: `git grep -nP "\x{2014}" -- . ':!node_modules' | head`
 Expected: no output.
 
-- [ ] **Step 5: Commit and open the PR**
+- [x] **Step 5: Commit and open the PR**
 
 ```bash
 rtk git add docs/superpowers/plans/2026-10-12-onboarding-dialog.md README.md AGENTS.md

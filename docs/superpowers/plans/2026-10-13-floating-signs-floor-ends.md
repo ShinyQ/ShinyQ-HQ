@@ -1,5 +1,7 @@
 # Floating Floor Signs and Floor Ends (Session B) Implementation Plan
 
+Status: shipped in #87 (43607d9), 2026-10-13. Later removed in #168: the L3 floating wing signs (the board titles name the paths)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Every word painted on a floor becomes a floating, camera-facing sign (Part 1), and the empty ends of L2 and L3 get the owner-approved spectacle: the L2 "Horizon" and "Origin", the L3 "Reactor core" and the corner data waterfalls (Part 3).
@@ -56,11 +58,11 @@
 - `signFacing(at: Vec2, camera: Vec2): number` (alias of `yawTowards`)
 - `<FloatingSigns signs name tier fade? />`: one instanced plate (mode `plate`), one `BatchedLabels` (`exactColors`), per frame: each member and plate instance yaws toward the camera (around its own anchor), fades by `labelFade` when `fade` is set. Writes `sceneProbes.signs[name] = [{ text, facing }]` (facing = dot of the sign front and the direction to the camera, 1 means square).
 
-- [ ] Write `tests/unit/floating-sign.test.ts`: `signPlate` grows with text length and font size; `signFacing` faces the camera from 8 directions (front dot camera direction is 1); the holo shader source declares `uMode` and every mode constant.
-- [ ] Run `bunx vitest run tests/unit/floating-sign.test.ts` (fails: modules missing).
-- [ ] Implement the three modules.
-- [ ] Run the test (passes), `bun run typecheck`.
-- [ ] Commit `feat(3d): shared FloatingSigns and holo fx shader`.
+- [x] Write `tests/unit/floating-sign.test.ts`: `signPlate` grows with text length and font size; `signFacing` faces the camera from 8 directions (front dot camera direction is 1); the holo shader source declares `uMode` and every mode constant.
+- [x] Run `bunx vitest run tests/unit/floating-sign.test.ts` (fails: modules missing).
+- [x] Implement the three modules.
+- [x] Run the test (passes), `bun run typecheck`.
+- [x] Commit `feat(3d): shared FloatingSigns and holo fx shader`.
 
 ### Task 2: Convert floor text to floating signs
 
@@ -70,10 +72,10 @@
 - Modify: `src/experience/floors/library/decor/common.tsx` (`ZoneSigns` floating), `NewsroomDecor.tsx` (year marks floating), `AtriumDecor.tsx` (newest title floating)
 - Test: `tests/unit/career-labels.test.ts` (year marker placement), `tests/unit/floor-text.test.ts` (static audit)
 
-- [ ] Write `tests/unit/floor-text.test.ts`: scans `src/experience/**/*.{ts,tsx}` (except `prototype/`) for a drei or troika text laid flat (`rotation={[-Math.PI / 2` inside a `<Text` element, or a `BatchedLabel` with `tilt: Math.PI / 2`); only `floors/lobby/hallContent.ts` is allowed until Session A lands. Fails today on YearGates, common.tsx, NewsroomDecor and AtriumDecor.
-- [ ] Write the year marker test: one marker per year at the plaza center x, z on the plaza's south edge (`center.z + plazaDepth / 2`), bottom 5.2 u up, font 3, the floor accent.
-- [ ] Convert the four places; L2 markers keep the arch pulse (scale) and the distance fade; L3 keeps `signs[wing].float` at y 4.2.
-- [ ] Run the tests, typecheck, commit `feat(3d): floor words float as signs on L2, L3 and L4`.
+- [x] Write `tests/unit/floor-text.test.ts`: scans `src/experience/**/*.{ts,tsx}` (except `prototype/`) for a drei or troika text laid flat (`rotation={[-Math.PI / 2` inside a `<Text` element, or a `BatchedLabel` with `tilt: Math.PI / 2`); only `floors/lobby/hallContent.ts` is allowed until Session A lands. Fails today on YearGates, common.tsx, NewsroomDecor and AtriumDecor.
+- [x] Write the year marker test: one marker per year at the plaza center x, z on the plaza's south edge (`center.z + plazaDepth / 2`), bottom 5.2 u up, font 3, the floor accent.
+- [x] Convert the four places; L2 markers keep the arch pulse (scale) and the distance fade; L3 keeps `signs[wing].float` at y 4.2.
+- [x] Run the tests, typecheck, commit `feat(3d): floor words float as signs on L2, L3 and L4`.
 
 ### Task 3: L3 Reactor core (layout and routing)
 
@@ -86,9 +88,9 @@
 
 Numbers: `REACTOR = { half: 1.6, ring: 6.5, segments: 16, height: 11, rings: [{ y: 4.2, r: 2.6 }, { y: 6.4, r: 3.4 }, { y: 8.6, r: 2.2 }] }`. Ring inner edge 6.5 cos(pi/16) - 4 = 2.38 u keeps the 3.2 u core square (corner 2.26 u) clear.
 
-- [ ] Tests: the space rules still pass with the real pods, a lopsided floor and an empty one; the core rect sits at the east plaza center; `pathBetween` from the end of the software road to the end of the ai road stays at least 2.3 u from the core center; `roadRoute` on the navgrid from a software pod door to an ai pod door never enters the core; the spine's last point is the core's west face; the slab ends one plaza radius plus margin past the plaza.
-- [ ] Implement; update the existing layout assertions that pin `points.at(-1)` to the plaza center (now the ring) and the spine end.
-- [ ] Commit `feat(l3): reactor core in the east plaza, ring road around it`.
+- [x] Tests: the space rules still pass with the real pods, a lopsided floor and an empty one; the core rect sits at the east plaza center; `pathBetween` from the end of the software road to the end of the ai road stays at least 2.3 u from the core center; `roadRoute` on the navgrid from a software pod door to an ai pod door never enters the core; the spine's last point is the core's west face; the slab ends one plaza radius plus margin past the plaza.
+- [x] Implement; update the existing layout assertions that pin `points.at(-1)` to the plaza center (now the ring) and the spine end.
+- [x] Commit `feat(l3): reactor core in the east plaza, ring road around it`.
 
 ### Task 4: L3 Reactor and waterfalls (render)
 
@@ -98,7 +100,7 @@ Numbers: `REACTOR = { half: 1.6, ring: 6.5, segments: 16, height: 11, rings: [{ 
 - Modify: `src/experience/floors/Labs.tsx`, `PacketLanes.tsx` (packets reach the core)
 - Test: `tests/unit/labs-reactor.test.ts` (panel placement on the corners, outside the slab footprint of L2 below)
 
-- [ ] Write placement tests, implement, check the spin rate constant is 0 under reduced motion (`reactorSpin(reduced)`), commit `feat(l3): reactor core visuals and corner data waterfalls`.
+- [x] Write placement tests, implement, check the spin rate constant is 0 under reduced motion (`reactorSpin(reduced)`), commit `feat(l3): reactor core visuals and corner data waterfalls`.
 
 ### Task 5: L2 Horizon and Origin
 
@@ -110,7 +112,7 @@ Numbers: `REACTOR = { half: 1.6, ring: 6.5, segments: 16, height: 11, rings: [{ 
 
 Rules: the bridge starts at the window (`windowX`) and runs east off the slab; towers stand off the slab (x beyond the window), fog exempt with their own fade; corner strips stay inside the empty NE and SE corners (x 344 to 363, z -29 to -11.6 and x 341 to 363, z 14.5 to 29) and clear of the repo wall, benches, door pads and the 6 u reach; the origin pillar stands west of the 2019 plaza, at least 3 u from the call pad (-21, 0), the 2019 teleporter and the road, inside the slab.
 
-- [ ] Tests for every rule above, implement, commit `feat(l2): horizon bridge, skyline and origin pillar`.
+- [x] Tests for every rule above, implement, commit `feat(l2): horizon bridge, skyline and origin pillar`.
 
 ### Task 6: E2E and probes
 
@@ -118,13 +120,13 @@ Rules: the bridge starts at the window (`windowX`) and runs east off the slab; t
 - Create: `e2e/spectacle.spec.ts`: signs face the camera from the default and a rotated camera on L2, L3, L4 (`__hq.probes.signs`); no flat text on any floor (`__hq.probes.flatText()`, allowing "HIGHLIGHTS HALL" on L1); autopilot and point-and-go across the L3 east plaza never enter the core; reduced motion (`?motion=reduce` or the Motion setting) freezes the reactor and waterfalls (`__hq.probes.spectacle`).
 - Modify: `scripts/e2e-plan.ts` (map `floors/career/horizon*`, `floors/labs/reactor*`, `fx/FloatingSign*`, `fx/holoFx*` to `spectacle`), `src/experience/fx/probes.ts`.
 
-- [ ] Write, run locally on port 4447 with `bun run e2e:changed`, commit `test(e2e): floating signs, reactor routing and motion gating`.
+- [x] Write, run locally on port 4447 with `bun run e2e:changed`, commit `test(e2e): floating signs, reactor routing and motion gating`.
 
 ### Task 7: Budgets, baseline, visuals, docs
 
-- [ ] `bun run verify:quick`.
-- [ ] `PERF=1 E2E_PORT=4447 bunx playwright test e2e/perf/floors.spec.ts`, then `bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json` (deliberate: new programs from the holo shader).
-- [ ] Peaks and bytes: `E2E_PORT=4447 bun run e2e:perf`.
-- [ ] Captures before (main build in `out-main/`) and after: L2 east (rail default, rotated east), L2 west, L3 east plaza from both wings, a waterfall corner, every converted sign, at 1440x900 full, 2560x1440 full, 390x844 lite; frame sequences of the reactor and a waterfall.
-- [ ] Docs: README, `AGENTS.md` (FloatingSign, holo fx, reactor, horizon), spec 01 (world), spec 08 (budget numbers).
-- [ ] PR, CI green, report.
+- [x] `bun run verify:quick`.
+- [x] `PERF=1 E2E_PORT=4447 bunx playwright test e2e/perf/floors.spec.ts`, then `bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json` (deliberate: new programs from the holo shader).
+- [x] Peaks and bytes: `E2E_PORT=4447 bun run e2e:perf`.
+- [x] Captures before (main build in `out-main/`) and after: L2 east (rail default, rotated east), L2 west, L3 east plaza from both wings, a waterfall corner, every converted sign, at 1440x900 full, 2560x1440 full, 390x844 lite; frame sequences of the reactor and a waterfall.
+- [x] Docs: README, `AGENTS.md` (FloatingSign, holo fx, reactor, horizon), spec 01 (world), spec 08 (budget numbers).
+- [x] PR, CI green, report.

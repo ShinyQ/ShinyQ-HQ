@@ -1,5 +1,7 @@
 # Remove Guided Walks Implementation Plan
 
+Status: shipped in #167 (5f4c360), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remove the guided walks (tours) on every floor end to end, while keeping the first-visit onboarding, the "!" hint bubbles, the per-floor first-visit Rover lines, Cmd-K, point-and-go and the missions.
@@ -40,10 +42,10 @@
 - Modify: `src/hud/MissionHud.tsx` (host adapter `walk`), `src/hud/dialog/tutorial.ts` (comment)
 - Test: `tests/unit/missions-runner.test.ts`, `tests/unit/missions-static-host.test.ts`, `tests/unit/missions-host3d.test.ts`, `tests/hud/MissionHud.test.tsx`, `tests/content/dataset.test.ts`
 
-- [ ] Step 1: In `tests/content/dataset.test.ts` add a test: no mission step has kind `walk`, and no mission label (en or id) matches `/\btours?\b|\btur\b/i`. Update `tests/hud/MissionHud.test.tsx` so the journey case expects steps `[{ kind: "elevator", floor: "L2" }]` and the highlights case expects `[{ kind: "elevator", floor: "L1" }, { kind: "drive", to: "L1:highlights-about" }, { kind: "open", room: "L1:highlights-about" }]` and navigation to `/en#intro`.
-- [ ] Step 2: Run `bunx vitest run tests/content/dataset.test.ts tests/hud/MissionHud.test.tsx`; expect FAIL.
-- [ ] Step 3: Edit the four missions in `content/site-content.json` as in Decisions; delete the walk step from the schema and every host; remove the `walk` host method from test doubles.
-- [ ] Step 4: `bunx vitest run tests/content tests/hud/MissionHud.test.tsx tests/unit/missions-*.test.ts` and `bun run validate:content`; expect PASS. (`tsc` still fails until Task 2 removes `WalkLayer`.)
+- [x] Step 1: In `tests/content/dataset.test.ts` add a test: no mission step has kind `walk`, and no mission label (en or id) matches `/\btours?\b|\btur\b/i`. Update `tests/hud/MissionHud.test.tsx` so the journey case expects steps `[{ kind: "elevator", floor: "L2" }]` and the highlights case expects `[{ kind: "elevator", floor: "L1" }, { kind: "drive", to: "L1:highlights-about" }, { kind: "open", room: "L1:highlights-about" }]` and navigation to `/en#intro`.
+- [x] Step 2: Run `bunx vitest run tests/content/dataset.test.ts tests/hud/MissionHud.test.tsx`; expect FAIL.
+- [x] Step 3: Edit the four missions in `content/site-content.json` as in Decisions; delete the walk step from the schema and every host; remove the `walk` host method from test doubles.
+- [x] Step 4: `bunx vitest run tests/content tests/hud/MissionHud.test.tsx tests/unit/missions-*.test.ts` and `bun run validate:content`; expect PASS. (`tsc` still fails until Task 2 removes `WalkLayer`.)
 
 ### Task 2: Floor lines without walks; delete the walk engine and Walk HUD
 
@@ -54,19 +56,19 @@
 - Delete: `src/hud/walk/` (WalkBar, WalkLayer, WalkPrompt), `src/experience/missions/walk.ts`, `src/experience/missions/walks.ts`, `tests/unit/walk.test.ts`, `tests/unit/library-walk.test.ts`, `tests/hud/WalkBar.test.tsx`
 - Test: `tests/unit/floor-intro.test.ts`, `tests/unit/dialog-storage.test.ts`, labsWalk cases in `tests/unit/labs-layout.test.ts` and `tests/unit/labs-spine.test.ts` (delete those cases only), `tests/unit/boot-first.test.ts` (example param), `tests/unit/client-namespaces.test.ts`, `tests/unit/ui-copy.test.ts`
 
-- [ ] Step 1: Rewrite `tests/unit/floor-intro.test.ts`: `FLOOR_LINES` is `["L2","L3","L4","RF"]`, `floorIntroLine("x")` has no `choices`, key `floor`, face `arrived`. Add to `tests/unit/dialog-storage.test.ts`: `floorIntroSeen` false on empty storage; true after `markFloorIntroSeen("L3")`, which writes `hq:floor-intro` = `["L3"]`; true for a floor listed in legacy `hq:walk-prompt`; blocked storage does not throw.
-- [ ] Step 2: Run them; expect FAIL.
-- [ ] Step 3: Implement `floorIntroLine`, the storage helpers and `FloorIntroLayer` (props `data: ExperienceData`): after `useOnboardingSettled()`, while exploring (phase `explore`, no ride, no running mission) on a floor in `FLOOR_LINES` not yet seen, wait 700 ms, then `say(floorIntroLine(t(floor, { name })), { id: "floor:<floor>" })`; `done` or `skipped` marks seen; `cancelled` does not; a `move`, `interact` or `scrub` intent while the line is pending or showing marks it seen and cancels it. Cleanup cancels the dialog id.
-- [ ] Step 4: Delete the walk files and their references listed above; move the messages per Decisions; update the prototypes (no walk controller, prompt or bar) and `dev-shots.ts`.
-- [ ] Step 5: `bun run typecheck && bun run lint && bun run test`; expect PASS. `rg -n "WalkLayer|WalkBar|createWalk|WALK_FLOORS|startWalk|WalkId|useTranslations\(\"walk" src tests scripts` returns nothing.
+- [x] Step 1: Rewrite `tests/unit/floor-intro.test.ts`: `FLOOR_LINES` is `["L2","L3","L4","RF"]`, `floorIntroLine("x")` has no `choices`, key `floor`, face `arrived`. Add to `tests/unit/dialog-storage.test.ts`: `floorIntroSeen` false on empty storage; true after `markFloorIntroSeen("L3")`, which writes `hq:floor-intro` = `["L3"]`; true for a floor listed in legacy `hq:walk-prompt`; blocked storage does not throw.
+- [x] Step 2: Run them; expect FAIL.
+- [x] Step 3: Implement `floorIntroLine`, the storage helpers and `FloorIntroLayer` (props `data: ExperienceData`): after `useOnboardingSettled()`, while exploring (phase `explore`, no ride, no running mission) on a floor in `FLOOR_LINES` not yet seen, wait 700 ms, then `say(floorIntroLine(t(floor, { name })), { id: "floor:<floor>" })`; `done` or `skipped` marks seen; `cancelled` does not; a `move`, `interact` or `scrub` intent while the line is pending or showing marks it seen and cancels it. Cleanup cancels the dialog id.
+- [x] Step 4: Delete the walk files and their references listed above; move the messages per Decisions; update the prototypes (no walk controller, prompt or bar) and `dev-shots.ts`.
+- [x] Step 5: `bun run typecheck && bun run lint && bun run test`; expect PASS. `rg -n "WalkLayer|WalkBar|createWalk|WALK_FLOORS|startWalk|WalkId|useTranslations\(\"walk" src tests scripts` returns nothing.
 
 ### Task 3: Copy that points at tours
 
 **Files:** `messages/en.json`, `messages/id.json`
 
-- [ ] `dialog.onboarding.askRover`: EN "Not sure where to go? Ask Rover has shortcuts to the best rooms." ID "Belum tahu mau ke mana? Tanya Rover punya jalan pintas ke ruang-ruang terbaik."
-- [ ] `dialog.hints.object.askRover`: EN "The Ask Rover kiosk: shortcuts to the best rooms in the HQ." ID "Kios Tanya Rover: jalan pintas ke ruang terbaik di HQ."
-- [ ] `bunx vitest run tests/unit/dialog-copy.test.ts tests/unit/ui-copy.test.ts tests/unit/hint-lines.test.ts`; PASS. (Folded into Task 2's commit if done together.)
+- [x] `dialog.onboarding.askRover`: EN "Not sure where to go? Ask Rover has shortcuts to the best rooms." ID "Belum tahu mau ke mana? Tanya Rover punya jalan pintas ke ruang-ruang terbaik."
+- [x] `dialog.hints.object.askRover`: EN "The Ask Rover kiosk: shortcuts to the best rooms in the HQ." ID "Kios Tanya Rover: jalan pintas ke ruang terbaik di HQ."
+- [x] `bunx vitest run tests/unit/dialog-copy.test.ts tests/unit/ui-copy.test.ts tests/unit/hint-lines.test.ts`; PASS. (Folded into Task 2's commit if done together.)
 
 ### Task 4: E2E specs and the e2e plan
 
@@ -76,23 +78,23 @@
 - Modify: every spec that uses `?walk=` or `hq:walk-prompt` (`camera-visual`, `labs-data`, `library-labels`, `delivery-visual`, `pads`, `interact`, `screenshots`, `workshop`, `roof`, `visits`, `labs-paths`, `production`, `labs`, `fast-return`, `spectacle`, `career`); rewrite walk tests: `onboarding.spec.ts` floor lines (no choices; Enter closes; `hq:floor-intro` contains L2; deep-link case ends on the L4 line), `hud.spec.ts` (bottom band without the walk pill), `highlights.spec.ts` (mission rides to L1 and opens `L1:highlights-about`), `roof.spec.ts` (delete the Meet me walk test), `career.spec.ts` (Follow my career rides to L2 and explores), `library-roof.spec.ts` (Read my writing rides to L4 and opens the posts palette), `missions.spec.ts` (title), `experience.spec.ts` (comment)
 - Modify: `scripts/e2e-plan.ts` (drop the `walk` spec and its rule), `tests/unit/e2e-plan.test.ts`
 
-- [ ] Step 1: Edit specs and the plan; `bunx vitest run tests/unit/e2e-plan.test.ts` PASS; `bunx playwright test --list` lists no `walk.spec.ts`.
-- [ ] Step 2: Build and run the touched specs: `bun run build && E2E_PORT=<port> bunx playwright test e2e/onboarding.spec.ts e2e/highlights.spec.ts e2e/career.spec.ts e2e/library-roof.spec.ts e2e/roof.spec.ts e2e/hud.spec.ts e2e/missions.spec.ts`; PASS.
+- [x] Step 1: Edit specs and the plan; `bunx vitest run tests/unit/e2e-plan.test.ts` PASS; `bunx playwright test --list` lists no `walk.spec.ts`.
+- [x] Step 2: Build and run the touched specs: `bun run build && E2E_PORT=<port> bunx playwright test e2e/onboarding.spec.ts e2e/highlights.spec.ts e2e/career.spec.ts e2e/library-roof.spec.ts e2e/roof.spec.ts e2e/hud.spec.ts e2e/missions.spec.ts`; PASS.
 
 ### Task 5: Docs
 
 **Files:** `README.md`, `docs/features.md`, `docs/content.md`, `AGENTS.md`
 
-- [ ] README: drop the "Guided walks" highlight and the walk mentions in the routes table and structure line.
-- [ ] features.md: status rows, "Rover's tour, hints and floor lines" (floor lines without the walk choice), the per-floor walk bullets, `?walk=` flag, Highlights Hall "Quick tour"; add a status log row "Guided walks removed (owner request 2026-10-16)".
-- [ ] content.md: "the project tour" out of the gallery-first list.
-- [ ] AGENTS.md: delete the "Guided walks" and "Walk HUD" bullets, `hud/walk/`, `walks.ts` in the folder layout, `hq:walk:*` and `hq:walk-prompt` keys (add `hq:floor-intro`), `WalkIdSchema` and the mission `walk` step, the walk glossary entry, walk mentions in Missions, Point-and-go, onboarding and HUD layout sections.
-- [ ] `rg -n -i "guided walk|walk hud|WalkLayer|\?walk=" README.md docs/features.md docs/content.md AGENTS.md` returns nothing.
+- [x] README: drop the "Guided walks" highlight and the walk mentions in the routes table and structure line.
+- [x] features.md: status rows, "Rover's tour, hints and floor lines" (floor lines without the walk choice), the per-floor walk bullets, `?walk=` flag, Highlights Hall "Quick tour"; add a status log row "Guided walks removed (owner request 2026-10-16)".
+- [x] content.md: "the project tour" out of the gallery-first list.
+- [x] AGENTS.md: delete the "Guided walks" and "Walk HUD" bullets, `hud/walk/`, `walks.ts` in the folder layout, `hq:walk:*` and `hq:walk-prompt` keys (add `hq:floor-intro`), `WalkIdSchema` and the mission `walk` step, the walk glossary entry, walk mentions in Missions, Point-and-go, onboarding and HUD layout sections.
+- [x] `rg -n -i "guided walk|walk hud|WalkLayer|\?walk=" README.md docs/features.md docs/content.md AGENTS.md` returns nothing.
 
 ### Task 6: Verification and PR
 
-- [ ] `bun run verify:quick`; `bun run e2e:changed` (full suite since `e2e/hq.ts` changed: run the floor specs listed in Task 4 plus `experience`, `interact`, `pads` locally, CI runs the rest).
-- [ ] `E2E_PORT=<port> bun run e2e:perf` (bytes and floors); report main path and floor chunk gzip bytes before and after.
-- [ ] Classic JS: compare `out/_next/static/chunks` totals for a Classic page before/after.
-- [ ] After captures (same script as before) for L1 to RF at 1440x900 and 390x844.
-- [ ] Rebase on `origin/main`, check `gh run list -s in_progress` and `-s queued`, push, open the PR (do not merge), report to the coordinator.
+- [x] `bun run verify:quick`; `bun run e2e:changed` (full suite since `e2e/hq.ts` changed: run the floor specs listed in Task 4 plus `experience`, `interact`, `pads` locally, CI runs the rest).
+- [x] `E2E_PORT=<port> bun run e2e:perf` (bytes and floors); report main path and floor chunk gzip bytes before and after.
+- [x] Classic JS: compare `out/_next/static/chunks` totals for a Classic page before/after.
+- [x] After captures (same script as before) for L1 to RF at 1440x900 and 390x844.
+- [x] Rebase on `origin/main`, check `gh run list -s in_progress` and `-s queued`, push, open the PR (do not merge), report to the coordinator.

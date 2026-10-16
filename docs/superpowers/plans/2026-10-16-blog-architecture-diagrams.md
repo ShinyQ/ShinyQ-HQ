@@ -1,5 +1,7 @@
 # Blog Architecture Diagrams Implementation Plan
 
+Status: shipped in #172 (43d4c82), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Every technical blog post shows a clear architecture section: the case-study diagram of the system it describes (or a post-specific workflow diagram), with a numbered walkthrough of the flow that matters to the story, in EN and ID.
@@ -48,7 +50,7 @@
 **Interfaces:**
 - Produces: `orderArchitectureNodes<T extends { layer: number; row: number }>(nodes: readonly T[]): T[]` (sorted by layer, then row, stable), `architectureLayers(nodes: readonly { layer: number }[]): number` (max layer + 1). `ArchitectureDiagram({ architecture, locale })` keeps its signature.
 
-- [ ] **Step 1: Write the failing test** `tests/unit/architecture-order.test.ts`:
+- [x] **Step 1: Write the failing test** `tests/unit/architecture-order.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -72,9 +74,9 @@ describe("architecture node order", () => {
 });
 ```
 
-- [ ] **Step 2:** `bunx vitest run tests/unit/architecture-order.test.ts`, expect FAIL (module not found).
+- [x] **Step 2:** `bunx vitest run tests/unit/architecture-order.test.ts`, expect FAIL (module not found).
 
-- [ ] **Step 3: Implement** `src/content/architecture.ts`:
+- [x] **Step 3: Implement** `src/content/architecture.ts`:
 
 ```ts
 /** Reading order of architecture nodes: left to right by layer, then top to bottom by row (stacked phone layout, screen readers). */
@@ -98,8 +100,8 @@ In `globals.css`, rewrite each element rule inside `.prose-hq` so it skips `.not
 
 Apply to `h2, h3`, `h2`, `blockquote`, `blockquote::before` (as `.prose-hq :where(blockquote):not(:where(.not-prose, .not-prose *))::before`), `a`, `img`, `ul`, `ol`, `code`, `pre`. Keep `.prose-hq` and `.prose-hq > * + *` as they are.
 
-- [ ] **Step 4:** run the test (PASS), `bun run typecheck`, `bun run lint`.
-- [ ] **Step 5: Commit** `feat: stack architecture diagrams on phones and isolate them from prose`.
+- [x] **Step 4:** run the test (PASS), `bun run typecheck`, `bun run lint`.
+- [x] **Step 5: Commit** `feat: stack architecture diagrams on phones and isolate them from prose`.
 
 ### Task 2: Post diagrams registry and the MDX `Architecture` tag
 
@@ -121,7 +123,7 @@ Apply to `h2, h3`, `h2`, `blockquote`, `blockquote::before` (as `.prose-hq :wher
   - `architectureRefs(mdx: string): (ArchitectureRef & { caption?: string })[]` (every `<Architecture ... />` tag's string props).
   - `postMdxComponents(post: string, locale: Locale): { Architecture: (props: ArchitectureRef & { caption: string }) => JSX }`.
 
-- [ ] **Step 1: Write failing unit tests** `tests/unit/post-diagrams.test.ts`:
+- [x] **Step 1: Write failing unit tests** `tests/unit/post-diagrams.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -160,8 +162,8 @@ describe("architectureRefs", () => {
 });
 ```
 
-- [ ] **Step 2:** run, expect FAIL.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2:** run, expect FAIL.
+- [x] **Step 3: Implement.**
 
 `src/content/schema.ts` (after `ArchitectureSchema`):
 
@@ -287,8 +289,8 @@ describe("post architecture diagrams", () => {
 
 `tests/content/safety.test.ts`: include `content/blog/diagrams.json` in the same blocklist and forbidden-pattern scan as `site-content.json` (read it with the existing helpers; follow the file's pattern).
 
-- [ ] **Step 4:** `bunx vitest run tests/unit/post-diagrams.test.ts tests/content/post-diagrams.test.ts tests/content/safety.test.ts`, `bun run typecheck`, `bun run lint` all PASS.
-- [ ] **Step 5: Commit** `feat: render architecture diagrams in blog posts through an MDX tag`.
+- [x] **Step 4:** `bunx vitest run tests/unit/post-diagrams.test.ts tests/content/post-diagrams.test.ts tests/content/safety.test.ts`, `bun run typecheck`, `bun run lint` all PASS.
+- [x] **Step 5: Commit** `feat: render architecture diagrams in blog posts through an MDX tag`.
 
 ### Task 3: Architecture sections in the four technical posts (EN and ID)
 
@@ -296,7 +298,7 @@ describe("post architecture diagrams", () => {
 
 Insert each block exactly as written, with a blank line before and after every tag. Tags stay on one line.
 
-- [ ] **Step 1: Voice post.** EN: new section right before `## Failure one: finished for the model, still playing for the caller`:
+- [x] **Step 1: Voice post.** EN: new section right before `## Failure one: finished for the model, still playing for the caller`:
 
 ```mdx
 ## Where barge-in happens
@@ -330,7 +332,7 @@ Pada desain yang sudah diperbaiki, interupsi dari penelepon melewati jalur ini:
 Masalah pertama di bawah merusak langkah 4. Masalah kedua membuat receive loop di langkah 2 berhenti membaca.
 ```
 
-- [ ] **Step 2: LLM failures post.** EN: at the end of `## Where the result was getting lost` (after the paragraph ending "that candidate and job pair was lost."):
+- [x] **Step 2: LLM failures post.** EN: at the end of `## Where the result was getting lost` (after the paragraph ending "that candidate and job pair was lost."):
 
 ```mdx
 <Architecture pod="ai-cv-screening-platform" caption="The platform's architecture today, from its case study. The evaluation harness came months after the batch in this post." />
@@ -358,7 +360,7 @@ Satu evaluasi melewati jalur ini:
 5. Beberapa bulan kemudian, harness evaluasi mulai menjalankan golden set terhadap model sebagai deployment gate di CI.
 ```
 
-- [ ] **Step 3: Fraud post.** EN: inside `## Production, without control of the verdict`, after the code block and before "The rollout record counts":
+- [x] **Step 3: Fraud post.** EN: inside `## Production, without control of the verdict`, after the code block and before "The rollout record counts":
 
 ```mdx
 <Architecture pod="fraud-review-platform" caption="The platform's architecture, from its case study. In the data flow, ⇢ marks the shadow path, which runs asynchronously and only writes to storage." />
@@ -386,7 +388,7 @@ Satu paket melewati dua jalur di platform ini:
 5. Secara paralel, backend menjalankan engine risiko hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
 ```
 
-- [ ] **Step 4: Spec-driven post, delivery loop.** Add to `content/blog/diagrams.json`:
+- [x] **Step 4: Spec-driven post, delivery loop.** Add to `content/blog/diagrams.json`:
 
 ```json
 {
@@ -441,7 +443,7 @@ ID: in `## Alur kerjanya`, replace the code block after "Setiap fitur melewati j
 6. Deploy ke Azure App Service hanya berjalan setelah CI hijau.
 ```
 
-- [ ] **Step 5: Spec-driven post, the system.** EN: new section right before `## What got through anyway`:
+- [x] **Step 5: Spec-driven post, the system.** EN: new section right before `## What got through anyway`:
 
 ```mdx
 ## The system the agents built
@@ -475,24 +477,24 @@ Two-boundary rule menentukan alur request setelah login:
 Bug cookie di bawah ada di langkah 1 dan 3. Bug waktu commit ada di langkah 2.
 ```
 
-- [ ] **Step 6:** `bun run validate:content`, `bunx vitest run tests/content tests/ask` PASS; `rg -n "\u2014" content/blog` empty.
-- [ ] **Step 7: Commit** `docs(blog): add architecture sections to the four technical posts`.
+- [x] **Step 6:** `bun run validate:content`, `bunx vitest run tests/content tests/ask` PASS; `rg -n "\u2014" content/blog` empty.
+- [x] **Step 7: Commit** `docs(blog): add architecture sections to the four technical posts`.
 
 ### Task 4: Guards, docs and budgets
 
 **Files:** `e2e/pageview.spec.ts`, `lighthouserc.json`, `docs/content.md`, `docs/features.md`, `AGENTS.md`.
 
-- [ ] **Step 1: e2e.** In `e2e/pageview.spec.ts` add a test per post with a figure (slugs listed in the test: the four technical posts): open `/en/blog/<slug>?tier=static` at 390x844, assert `figure[data-post-architecture]` count matches (spec-driven: 2, others: 1), each figure has a non-empty `figcaption`, `document.documentElement.scrollWidth <= 390`, and `expectNoSeriousViolations(page)`. One more at 1440x900 for `/id/blog/spec-driven-development-with-ai-coding-agents` checks that list items inside the figure have `list-style-type: none` (prose rules do not leak).
-- [ ] **Step 2: Lighthouse.** Add `"http://127.0.0.1:4320/en/blog/making-a-voice-agent-interruptible"` to `lighthouserc.json` `collect.url` (before `/en/contact`).
-- [ ] **Step 3: Docs.** `docs/content.md` "Dataset and posts": a bullet on `<Architecture pod="<pod-slug>" caption="..." />` and `<Architecture diagram="<id>" caption="..." />` (data in `content/blog/diagrams.json`, keyed by post slug then id, the pod `architecture` shape; string props only; follow it with a numbered walkthrough; same tags in both locales; an unknown pod or diagram fails the build and `tests/content/post-diagrams.test.ts`). `AGENTS.md`: folder layout lines for `content/blog/diagrams.json` and `src/components/blog/`, and one sentence in "Content access". `docs/features.md`: one status log line.
-- [ ] **Step 4: Commit** `test: guard blog architecture figures; docs`.
+- [x] **Step 1: e2e.** In `e2e/pageview.spec.ts` add a test per post with a figure (slugs listed in the test: the four technical posts): open `/en/blog/<slug>?tier=static` at 390x844, assert `figure[data-post-architecture]` count matches (spec-driven: 2, others: 1), each figure has a non-empty `figcaption`, `document.documentElement.scrollWidth <= 390`, and `expectNoSeriousViolations(page)`. One more at 1440x900 for `/id/blog/spec-driven-development-with-ai-coding-agents` checks that list items inside the figure have `list-style-type: none` (prose rules do not leak).
+- [x] **Step 2: Lighthouse.** Add `"http://127.0.0.1:4320/en/blog/making-a-voice-agent-interruptible"` to `lighthouserc.json` `collect.url` (before `/en/contact`).
+- [x] **Step 3: Docs.** `docs/content.md` "Dataset and posts": a bullet on `<Architecture pod="<pod-slug>" caption="..." />` and `<Architecture diagram="<id>" caption="..." />` (data in `content/blog/diagrams.json`, keyed by post slug then id, the pod `architecture` shape; string props only; follow it with a numbered walkthrough; same tags in both locales; an unknown pod or diagram fails the build and `tests/content/post-diagrams.test.ts`). `AGENTS.md`: folder layout lines for `content/blog/diagrams.json` and `src/components/blog/`, and one sentence in "Content access". `docs/features.md`: one status log line.
+- [x] **Step 4: Commit** `test: guard blog architecture figures; docs`.
 
 ### Task 5: Verification and PR
 
-- [ ] `bun run verify:quick`; `bun run e2e:changed`; `E2E_PORT=<port> bunx lhci autorun` or `bunx @lhci/cli collect` against the post URL (LCP, CLS, TBT, document size within budgets).
-- [ ] Byte deltas: HTML and RSC `.txt` sizes (raw and gzip) of every `out/*/blog/*` file against the baseline build; client chunk total unchanged.
-- [ ] Captures of every post figure at 1440x900 and 390x844 (Playwright, `?tier=static`), saved in the session files folder.
-- [ ] Check CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), push, open the PR (not merged), report to the coordinator.
+- [x] `bun run verify:quick`; `bun run e2e:changed`; `E2E_PORT=<port> bunx lhci autorun` or `bunx @lhci/cli collect` against the post URL (LCP, CLS, TBT, document size within budgets).
+- [x] Byte deltas: HTML and RSC `.txt` sizes (raw and gzip) of every `out/*/blog/*` file against the baseline build; client chunk total unchanged.
+- [x] Captures of every post figure at 1440x900 and 390x844 (Playwright, `?tier=static`), saved in the session files folder.
+- [x] Check CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), push, open the PR (not merged), report to the coordinator.
 
 ## Execution notes (2026-10-16)
 

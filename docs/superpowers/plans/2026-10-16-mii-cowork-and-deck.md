@@ -1,5 +1,7 @@
 # MII Cowork and MII Deck Implementation Plan
 
+Status: shipped in #163 (8dd529c), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a new "MII Cowork" pod (the owner's UI and UX revamp plus the Deck Studio integration) and update the existing `agent-deck-platform` pod (MII Deck) with verified, git-backed facts, a gallery for Cowork and the right tiers.
@@ -53,7 +55,7 @@ Owner decisions: two projects (a new MII Cowork pod and the existing MII Deck po
 **Interfaces:**
 - Produces: pod `agent-deck-platform` with `tier: "featured"`, unchanged slug, title and assets.
 
-- [ ] **Step 1: Write the failing test** in `tests/content/dataset.test.ts`:
+- [x] **Step 1: Write the failing test** in `tests/content/dataset.test.ts`:
 
 ```ts
 it("MII Deck and MII Cowork are featured AI pods with galleries", () => {
@@ -68,10 +70,10 @@ it("MII Deck and MII Cowork are featured AI pods with galleries", () => {
 });
 ```
 
-- [ ] **Step 2:** `bunx vitest run tests/content/dataset.test.ts` fails (tier is `listed`, no `mii-cowork`).
-- [ ] **Step 3:** Edit the pod: `tier: "featured"`; role "Sole engineer of MII Deck and of its Deck Studio integration in MII Cowork, from agent authoring to CI/CD and hosting"; approach (agent authoring with QA and critic gates and the 32 blueprints, editable PPTX export, PR-based publishing gated by the `validate` check and merged by a GitHub App, exact-commit deploys with rollback); results: "134 of 136 commits", "20 releases", "32 blueprints", all `verified`; stack adds TypeScript, Python, GitHub Actions and Azure App Service.
-- [ ] **Step 4:** Run the test (still fails on `mii-cowork` until Task 2) and `bun run validate:content`.
-- [ ] **Step 5:** Commit `feat(content): MII Deck pod from git history, featured`.
+- [x] **Step 2:** `bunx vitest run tests/content/dataset.test.ts` fails (tier is `listed`, no `mii-cowork`).
+- [x] **Step 3:** Edit the pod: `tier: "featured"`; role "Sole engineer of MII Deck and of its Deck Studio integration in MII Cowork, from agent authoring to CI/CD and hosting"; approach (agent authoring with QA and critic gates and the 32 blueprints, editable PPTX export, PR-based publishing gated by the `validate` check and merged by a GitHub App, exact-commit deploys with rollback); results: "134 of 136 commits", "20 releases", "32 blueprints", all `verified`; stack adds TypeScript, Python, GitHub Actions and Azure App Service.
+- [x] **Step 4:** Run the test (still fails on `mii-cowork` until Task 2) and `bun run validate:content`.
+- [x] **Step 5:** Commit `feat(content): MII Deck pod from git history, featured`.
 
 ### Task 2: Add the MII Cowork pod
 
@@ -83,10 +85,10 @@ it("MII Deck and MII Cowork are featured AI pods with galleries", () => {
 - Consumes: Task 1.
 - Produces: pod `mii-cowork` (`id === slug`, `wing: "ai"`, `tier: "featured"`, `order: 17`, `timelineRef: "metrodata-2026"`, `client: "Metrodata"` omitted because it is an internal product), assets filled in Task 3.
 
-- [ ] **Step 1:** Add the pod with a temporary single asset (the Task 3 cover path) so the Task 1 test can pass once the image exists. Title "MII Cowork UI Revamp and Deck Studio" / "Revamp UI MII Cowork dan Deck Studio"; role "Frontend revamp lead and Deck Studio engineer; the platform and backend are led by a colleague"; results "194 commits" (10 merged PRs), "133 files" (revamp PR, no backend change), "57%" (current frontend source lines), all `verified` with their measuring context.
-- [ ] **Step 2:** Add a golden question `"What did Kurniadi change in MII Cowork?"` whose facts are present in the pack.
-- [ ] **Step 3:** Run `bunx vitest run tests/content tests/ask tests/unit/tech-index.test.ts tests/unit/labs-layout.test.ts tests/unit/labs-ops.test.ts tests/unit/labs-data-annex.test.ts tests/unit/labs-arrival.test.ts`; fix pins that move because the AI wing now docks 11 pods (update "today" coordinates in tests and AGENTS.md only when the layout rule still holds).
-- [ ] **Step 4:** Commit `feat(content): MII Cowork pod`.
+- [x] **Step 1:** Add the pod with a temporary single asset (the Task 3 cover path) so the Task 1 test can pass once the image exists. Title "MII Cowork UI Revamp and Deck Studio" / "Revamp UI MII Cowork dan Deck Studio"; role "Frontend revamp lead and Deck Studio engineer; the platform and backend are led by a colleague"; results "194 commits" (10 merged PRs), "133 files" (revamp PR, no backend change), "57%" (current frontend source lines), all `verified` with their measuring context.
+- [x] **Step 2:** Add a golden question `"What did Kurniadi change in MII Cowork?"` whose facts are present in the pack.
+- [x] **Step 3:** Run `bunx vitest run tests/content tests/ask tests/unit/tech-index.test.ts tests/unit/labs-layout.test.ts tests/unit/labs-ops.test.ts tests/unit/labs-data-annex.test.ts tests/unit/labs-arrival.test.ts`; fix pins that move because the AI wing now docks 11 pods (update "today" coordinates in tests and AGENTS.md only when the layout rule still holds).
+- [x] **Step 4:** Commit `feat(content): MII Cowork pod`.
 
 ### Task 3: Capture the MII Cowork gallery
 
@@ -95,16 +97,16 @@ it("MII Deck and MII Cowork are featured AI pods with galleries", () => {
 - Modify: `content/site-content.json` (`mii-cowork.assets`)
 - Scratch (never committed): session `files/capture/` (scripts, raw PNGs, OCR dumps)
 
-- [ ] **Step 1:** Headed Chrome, fresh `--user-data-dir` in `/tmp`, remote debugging on 127.0.0.1; the owner signs in; poll until the app shell loads.
-- [ ] **Step 2:** Connect with Playwright `connectOverCDP`; abort every non-GET request except what loading needs; 1440x900 at DPR 2 in MII Light (and one MII Dark shot).
-- [ ] **Step 3:** Before each shot, blur in the DOM: user names and avatars other than the owner, emails, conversation titles, chat text, file and workspace names that are private, any client name.
-- [ ] **Step 4:** Screens: home, conversation (masked), files panel, Decks hub, Deck Studio with a product deck (ARIA or eVendor, never a client deck), one MII Dark view, one 390 px phone triptych.
-- [ ] **Step 5:** Convert to 1600 px webp q80 plus 480 px thumbnails without metadata; `bun scripts/media-sizes.ts`.
-- [ ] **Step 6:** OCR every image (normal and inverted) and check the dump with `loadBlocklist` / `findBlockedLabels`, `findForbiddenPatterns`, email, phone and hostname patterns; review each image by eye.
-- [ ] **Step 7:** Wire `assets` (alt text EN/ID, `redacted: true`), run the content tests, commit `feat(media): MII Cowork gallery, masked`.
-- [ ] **Step 8:** Close Chrome and delete the temporary profile.
+- [x] **Step 1:** Headed Chrome, fresh `--user-data-dir` in `/tmp`, remote debugging on 127.0.0.1; the owner signs in; poll until the app shell loads.
+- [x] **Step 2:** Connect with Playwright `connectOverCDP`; abort every non-GET request except what loading needs; 1440x900 at DPR 2 in MII Light (and one MII Dark shot).
+- [x] **Step 3:** Before each shot, blur in the DOM: user names and avatars other than the owner, emails, conversation titles, chat text, file and workspace names that are private, any client name.
+- [x] **Step 4:** Screens: home, conversation (masked), files panel, Decks hub, Deck Studio with a product deck (ARIA or eVendor, never a client deck), one MII Dark view, one 390 px phone triptych.
+- [x] **Step 5:** Convert to 1600 px webp q80 plus 480 px thumbnails without metadata; `bun scripts/media-sizes.ts`.
+- [x] **Step 6:** OCR every image (normal and inverted) and check the dump with `loadBlocklist` / `findBlockedLabels`, `findForbiddenPatterns`, email, phone and hostname patterns; review each image by eye.
+- [x] **Step 7:** Wire `assets` (alt text EN/ID, `redacted: true`), run the content tests, commit `feat(media): MII Cowork gallery, masked`.
+- [x] **Step 8:** Close Chrome and delete the temporary profile.
 
 ### Task 4: Verify and open the PR
 
-- [ ] `bun run verify:quick`, `bun run e2e:changed`, and `E2E_PORT=<port> bun run e2e:perf` (L3 docks two more pods).
-- [ ] Rebase on `origin/main`; check `gh run list -s in_progress` and `-s queued` before pushing; open the PR (not merged) and report to the coordinator.
+- [x] `bun run verify:quick`, `bun run e2e:changed`, and `E2E_PORT=<port> bun run e2e:perf` (L3 docks two more pods).
+- [x] Rebase on `origin/main`; check `gh run list -s in_progress` and `-s queued` before pushing; open the PR (not merged) and report to the coordinator.

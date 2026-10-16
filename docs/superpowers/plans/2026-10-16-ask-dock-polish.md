@@ -1,5 +1,7 @@
 # Ask Dock Polish Implementation Plan
 
+Status: shipped in #162 (880b62d), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Keep the start of an Ask answer in view, make follow-up pills compact, show the rover mark in the panel header, rename the loading label to "Rover is thinking . . ." and shrink chat and suggestion text by about one step.
@@ -36,7 +38,7 @@
   - `scrolledAway(current: number, lastSet: number | null, slack?: number): boolean`
   - `askReducedMotion(root?: HTMLElement | null, systemReduced?: () => boolean): boolean`
 
-- [ ] **Step 1: Write the failing test** (`tests/unit/ask-scroll.test.ts`)
+- [x] **Step 1: Write the failing test** (`tests/unit/ask-scroll.test.ts`)
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -82,12 +84,12 @@ describe("askReducedMotion", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `bunx vitest run tests/unit/ask-scroll.test.ts`
 Expected: FAIL, module `@/hud/ask/scroll` not found.
 
-- [ ] **Step 3: Implement** (`src/hud/ask/scroll.ts`)
+- [x] **Step 3: Implement** (`src/hud/ask/scroll.ts`)
 
 ```ts
 import { MOTION_ATTR } from "@/lib/motion";
@@ -126,12 +128,12 @@ export function askReducedMotion(
 }
 ```
 
-- [ ] **Step 4: Run it to see it pass**
+- [x] **Step 4: Run it to see it pass**
 
 Run: `bunx vitest run tests/unit/ask-scroll.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hud/ask/scroll.ts tests/unit/ask-scroll.test.ts
@@ -150,7 +152,7 @@ git commit -m "feat(ask): pure scroll rules that keep an answer's start in view"
 - Consumes: `anchoredScrollTop`, `scrolledAway`, `askReducedMotion` from Task 1.
 - Produces: `data-testid="ask-scroll"` on the scroll container (used by the e2e tests and the captures).
 
-- [ ] **Step 1: Write the failing e2e tests** in `e2e/ask.spec.ts`
+- [x] **Step 1: Write the failing e2e tests** in `e2e/ask.spec.ts`
 
 Add after `mockAsk`:
 
@@ -245,12 +247,12 @@ Inside `test.describe("phones", ...)`:
   });
 ```
 
-- [ ] **Step 2: Build and run them to see them fail**
+- [x] **Step 2: Build and run them to see them fail**
 
 Run: `bun run build && E2E_PORT=4391 bunx playwright test e2e/ask.spec.ts -g "first line|never overridden"`
 Expected: FAIL (no `ask-scroll` test id; the thread scrolls to the bottom).
 
-- [ ] **Step 3: Implement in `AskChat.tsx`**
+- [x] **Step 3: Implement in `AskChat.tsx`**
 
 Import: `import { anchoredScrollTop, askReducedMotion, scrolledAway } from "./scroll";`
 
@@ -302,12 +304,12 @@ Notes for the implementer:
 - The smooth scroll after an answer finishes fires intermediate scroll events that `scrolledAway` reads as the visitor's own; that is fine, the next question, open or mode change follows again.
 - Put `ref={scrollRef}` container `onScroll={onThreadScroll}` and `data-testid="ask-scroll"`.
 
-- [ ] **Step 4: Run the new tests and the whole spec**
+- [x] **Step 4: Run the new tests and the whole spec**
 
 Run: `bun run build && E2E_PORT=4391 bunx playwright test e2e/ask.spec.ts`
 Expected: PASS (all tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hud/ask/AskChat.tsx e2e/ask.spec.ts
@@ -328,7 +330,7 @@ git commit -m "feat(ask): keep the answer's first line in view and never steal t
 - Consumes: `RoverMark` from `@/components/RoverMark` (`{ id: string; size: number; variant?: "tile" | "glyph" | "mono"; className?: string }`).
 - Produces: `data-testid="ask-mark"` on the header mark wrapper, `data-testid="ask-thinking"` (unchanged) whose text content is exactly the message.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/hud/AskDock.test.tsx` (new `it` inside the main describe):
 
@@ -360,12 +362,12 @@ git commit -m "feat(ask): keep the answer's first line in view and never steal t
   await expect(dock(page).getByTestId("ask-mark").locator("svg[data-brand-mark]")).toBeVisible();
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bunx vitest run tests/hud/AskDock.test.tsx`
 Expected: FAIL (no `ask-mark`, old thinking text).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Messages: `messages/en.json` `"thinking": "Rover is thinking . . ."`; `messages/id.json` `"thinking": "Rover sedang berpikir . . ."`.
 
@@ -431,12 +433,12 @@ function ThinkingLabel({ text }: { text: string }) {
 
 `docs/features.md`, "Where" bullet on topic pills, append: "Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has)."
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `bunx vitest run tests/hud/AskDock.test.tsx tests/unit/ask-scroll.test.ts && bun run build && E2E_PORT=4391 bunx playwright test e2e/ask.spec.ts`
 Expected: PASS, axe tests included.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hud/ask/AskChat.tsx messages/en.json messages/id.json docs/features.md tests/hud/AskDock.test.tsx e2e/ask.spec.ts
@@ -461,7 +463,7 @@ Use relative imports only in these two files (`./protocol`, `../content/live-lin
 - `src/ask/links.ts`: `ASK_SITE_ORIGINS: readonly string[]`, `type AskLinkTarget = { kind: "site"; path: string } | { kind: "external"; href: string }`, `askLinkTarget(raw: string, origins?: readonly string[]): AskLinkTarget | null`, `siteHref(path: string, locale: AskLocale): string`, `ASK_LINK_PAGES: readonly string[]` (locale-less top pages an answer may always link to).
 - `src/ask/markdown.ts`: `type Inline`, `type Block`, `parseMarkdown(source: string, options?: { origins?: readonly string[] }): Block[]`, `parseInline(source: string, options?: { origins?: readonly string[]; links?: boolean }): Inline[]`, `markdownToPlain(source: string): string`.
 
-- [ ] **Step 1: Write the failing tests** (`tests/unit/ask-markdown.test.ts`)
+- [x] **Step 1: Write the failing tests** (`tests/unit/ask-markdown.test.ts`)
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -557,12 +559,12 @@ describe("parseMarkdown", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `bunx vitest run tests/unit/ask-markdown.test.ts`
 Expected: FAIL, modules not found.
 
-- [ ] **Step 3: Implement `src/ask/links.ts`**
+- [x] **Step 3: Implement `src/ask/links.ts`**
 
 ```ts
 import { isPublicLiveUrl } from "../content/live-links";
@@ -616,7 +618,7 @@ export function siteHref(path: string, locale: AskLocale): string {
 }
 ```
 
-- [ ] **Step 4: Implement `src/ask/markdown.ts`**
+- [x] **Step 4: Implement `src/ask/markdown.ts`**
 
 ```ts
 import { askLinkTarget, type AskLinkTarget } from "./links";
@@ -831,12 +833,12 @@ export function markdownToPlain(source: string): string {
 
 Note: the expected value in the plain-text test (`"Projects:\n\nVoice AI page\nFraud review"`) follows from this code: the paragraph and the list are separate blocks joined by a blank line. If a test expectation and this code disagree on a detail that is not a safety rule, fix the test to the documented behavior, never weaken a blocked-link case.
 
-- [ ] **Step 5: Run the tests to see them pass**
+- [x] **Step 5: Run the tests to see them pass**
 
 Run: `bunx vitest run tests/unit/ask-markdown.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ask/links.ts src/ask/markdown.ts tests/unit/ask-markdown.test.ts
@@ -856,7 +858,7 @@ git commit -m "feat(ask): safe markdown subset and link allowlist for answers"
 - Consumes: `parseMarkdown`, `Block`, `Inline` (Task 4), `siteHref`, `ASK_SITE_ORIGINS` (Task 4).
 - Produces: `AskMarkdown({ text, locale, onNavigate?, className? })`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/hud/AskDock.test.tsx`:
 
@@ -904,12 +906,12 @@ test("markdown answer: a bullet list with site links, blocked links as text, axe
 });
 ```
 
-- [ ] **Step 2: Run to see them fail**
+- [x] **Step 2: Run to see them fail**
 
 Run: `bunx vitest run tests/hud/AskDock.test.tsx`
 Expected: FAIL (the answer is one `<p>` of raw text).
 
-- [ ] **Step 3: Implement `src/hud/ask/AskMarkdown.tsx`**
+- [x] **Step 3: Implement `src/hud/ask/AskMarkdown.tsx`**
 
 ```tsx
 "use client";
@@ -994,12 +996,12 @@ export function AskMarkdown({ text, locale, onNavigate, className = "" }: { text
 
 (`dock.newTab` already exists in both message files; check with `grep -n '"newTab"' messages/*.json`.)
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `bunx vitest run tests/hud/AskDock.test.tsx tests/unit/ask-markdown.test.ts && bun run build && E2E_PORT=4391 bunx playwright test e2e/ask.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hud/ask/AskMarkdown.tsx src/hud/ask/AskChat.tsx tests/hud/AskDock.test.tsx e2e/ask.spec.ts
@@ -1029,7 +1031,7 @@ Design:
 - Context lines: `- ${body}${dated}${link}` where `link = target ? \` [link: ${chunk.url}]\` : ""` for chunk urls `askLinkTarget` accepts.
 - Rule 4 becomes: `"4. Answer in the same language as the question (English or Indonesian). Keep it short: at most 3 short sentences, or one short sentence and a bullet list of at most 5 short items when listing projects, skills, posts or roles. You may use **bold** for a title and a markdown link [title](link) only with a link given in CONTEXT; no headings, tables, images or other links. Refer to him as Kurniadi."` Bump `PROMPT_VERSION` to `"2026-10-16.markdown.1"`.
 
-- [ ] **Step 1: Write the failing tests** (`tests/ask/checks.test.ts`; update the existing `sanitizeAnswer` expectation on line 73 to `"Hi **there**, ok"`)
+- [x] **Step 1: Write the failing tests** (`tests/ask/checks.test.ts`; update the existing `sanitizeAnswer` expectation on line 73 to `"Hi **there**, ok"`)
 
 ```ts
 describe("markdown answers (owner request 2026-10-16)", () => {
@@ -1051,19 +1053,19 @@ describe("markdown answers (owner request 2026-10-16)", () => {
 
 Implementer note: read the top of `tests/ask/checks.test.ts` and `tests/ask/pipeline.test.ts` for the existing fixtures (pack, vocabulary, safety); write the second test with them, choosing words the fixture vocabulary knows. Add a pipeline test where the mock model returns a list answer with one allowed link (a retrieved chunk's url) and one made-up link, and assert the streamed text keeps the first and turns the second into its label.
 
-- [ ] **Step 2: Run to see them fail**
+- [x] **Step 2: Run to see them fail**
 
 Run: `bunx vitest run tests/ask/checks.test.ts tests/ask/pipeline.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** as designed above. Keep imports relative (`../../src/ask/markdown`, `../../src/ask/links`).
+- [x] **Step 3: Implement** as designed above. Keep imports relative (`../../src/ask/markdown`, `../../src/ask/links`).
 
-- [ ] **Step 4: Run the Ask suites**
+- [x] **Step 4: Run the Ask suites**
 
 Run: `bunx vitest run tests/ask tests/unit/ask-markdown.test.ts && bun run typecheck`
 Expected: PASS. Fix any test that pinned the old context line format or plain-text-only behavior to the new documented behavior.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add functions/_lib scripts/ask-eval.ts tests/ask docs
@@ -1074,7 +1076,7 @@ git commit -m "feat(ask): the model may answer with short lists and site links; 
 
 ### Task 7: Verify, capture, PR
 
-- [ ] `bun run verify:quick`, then `bun run e2e:changed`.
-- [ ] Byte delta: Classic first-load JS (Lighthouse transfer, should be unchanged) and the lazy `AskChat` chunk gzip before (build of the base commit) and after.
-- [ ] Captures (desktop 1440x900 side panel, 390x844 bottom sheet): mid-stream, after an answer with pills, and a bullet answer with links; before from the base build with a mocked `/api/ask`, after from this branch; images in the session artifacts folder, uploaded to the PR.
-- [ ] Check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`; rebase on `origin/main`; push; open the PR; report to the coordinator.
+- [x] `bun run verify:quick`, then `bun run e2e:changed`.
+- [x] Byte delta: Classic first-load JS (Lighthouse transfer, should be unchanged) and the lazy `AskChat` chunk gzip before (build of the base commit) and after.
+- [x] Captures (desktop 1440x900 side panel, 390x844 bottom sheet): mid-stream, after an answer with pills, and a bullet answer with links; before from the base build with a mocked `/api/ask`, after from this branch; images in the session artifacts folder, uploaded to the PR.
+- [x] Check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`; rebase on `origin/main`; push; open the PR; report to the coordinator.

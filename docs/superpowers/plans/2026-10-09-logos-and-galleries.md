@@ -1,5 +1,7 @@
 # Tech Logos and Project Galleries Implementation Plan
 
+Status: shipped in #9 (ca3ba39), 2026-10-10
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show tech stack logos everywhere a stack or skill appears (static pages, Glass Drawer, L1 skills wall in 3D), add company logos to career entries and ship reviewed image galleries for the owner's pods.

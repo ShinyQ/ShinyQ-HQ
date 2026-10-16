@@ -1,5 +1,7 @@
 # Public Visit Stats Every 4 Hours Implementation Plan
 
+Status: shipped in #161 (6924629), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The `hq-stats` Cron Worker runs every 4 hours and the public snapshot includes the current UTC day so far, with the UI copy saying so honestly in EN and ID.
@@ -32,7 +34,7 @@
 **Interfaces:**
 - Produces: `SETTLE_MS = 3_600_000` and `finalizedThrough(now: number): string` (last UTC day that ended at least `SETTLE_MS` ago, YYYY-MM-DD) exported from `run.ts`; `buildSnapshot(days, lastDay, chipTopics, updatedAt?: string)` where `updatedAt` defaults to the old value (`${addDays(lastDay, 1)}T00:00:00.000Z`); `RunResult` gains `provisional: string[]` (dates rolled up but not stored).
 
-- [ ] **Step 1: Write the failing tests.** In `tests/stats/rollup.test.ts`:
+- [x] **Step 1: Write the failing tests.** In `tests/stats/rollup.test.ts`:
 
 ```ts
 it("stamps the snapshot with the given run time and covers the partial last day", () => {
@@ -72,9 +74,9 @@ it("queries the provisional days in the same requests: one Web Analytics call an
 
 Write the bodies concretely with the file's existing helpers (`kv()`, `fetcherFor(...)`, `waBody(...)` or equivalents). Replace the old tests that assumed one run per day: "does nothing more the same day..." becomes "a second run the same day rebuilds the snapshot from fresh provisional rows and never rewrites a finalized day"; "rewrites a missing or stale snapshot from the ledger without fetching" is removed (every run fetches the provisional days now); "fills perf once for stored days ... when the ledger is up to date" keeps its assertion that perf is filled once and only `perf` changes.
 
-- [ ] **Step 2: Run** `bunx vitest run tests/stats`. Expected: the new tests FAIL.
+- [x] **Step 2: Run** `bunx vitest run tests/stats`. Expected: the new tests FAIL.
 
-- [ ] **Step 3: Implement.** In `run.ts`:
+- [x] **Step 3: Implement.** In `run.ts`:
 
 ```ts
 /** A UTC day is finalized (written to the ledger once, never recomputed) an hour after it ends, so late events land first. */
@@ -99,9 +101,9 @@ Rewrite `runStats` as one path:
 
 Keep the "API error throws before anything is written" property. Update the `runStats` doc comment (cron `0 */4 * * *`, provisional days, settle lag). In `rollup.ts` add the optional `updatedAt` parameter to `buildSnapshot` and update its doc (d30 = the 30 days ending on `lastDay`, which may be today so far). Set `crons = ["0 */4 * * *"]` in `workers/stats/wrangler.toml` with the comment "Every 4 hours (UTC): finalizes days an hour after they end and refreshes the snapshot with today so far." and update `index.ts`'s comment.
 
-- [ ] **Step 4: Run** `bunx vitest run tests/stats` and `bun scripts/stats-dry-run.ts --help 2>/dev/null || true` (the dry-run script must still type check: `bunx tsc --noEmit -p .` or `bun run typecheck`). Expected: PASS.
+- [x] **Step 4: Run** `bunx vitest run tests/stats` and `bun scripts/stats-dry-run.ts --help 2>/dev/null || true` (the dry-run script must still type check: `bunx tsc --noEmit -p .` or `bun run typecheck`). Expected: PASS.
 
-- [ ] **Step 5: Commit** `feat(stats): refresh the public visit stats every 4 hours, today included`.
+- [x] **Step 5: Commit** `feat(stats): refresh the public visit stats every 4 hours, today included`.
 
 ### Task 2: Site copy and freshness thresholds
 
@@ -112,7 +114,7 @@ Keep the "API error throws before anything is written" property. Update the `run
 - Modify: comments that say "daily snapshot" or "complete days" in `src/experience/visits3d.ts`, `src/experience/floors/labs/opsLive.ts`, `src/experience/floors/labs/OpsRoom.tsx`, `src/components/stats/TickerVisits.tsx`, `functions/api/stats.ts`
 - Test: `tests/unit/visits-model.test.ts`, `tests/unit/uptime.test.ts`, `tests/unit/lobby-observatory.test.ts`, any e2e that asserts the old copy (`grep -rn "Updated daily\|complete days" e2e tests`)
 
-- [ ] **Step 1: Copy (exact strings).**
+- [x] **Step 1: Copy (exact strings).**
 
 | Key | EN | ID |
 |---|---|---|
@@ -123,11 +125,11 @@ Keep the "API error throws before anything is written" property. Update the `run
 
 Keep key names; check the 3D observatory panel still fits (`tests/unit/lobby-observatory.test.ts` measures lines).
 
-- [ ] **Step 2: Thresholds.** `DELAYED_AFTER_MS = 12 * HOUR` (three missed 4-hour runs) with the doc "After this the stats show a "delayed" note (the snapshot refreshes every 4 hours)."; `HIDDEN_AFTER_MS` stays 7 days. `STATS_MAX_AGE_MS` in `scripts/uptime.ts` stays equal to it (`12 * 3_600_000`, message "limit 12 h"). `lastUpdatedDay` doc: "The UTC day of the snapshot's last data (`updatedAt` is the run time; a midnight run reports the previous day)." Update tests that pinned 48 h.
+- [x] **Step 2: Thresholds.** `DELAYED_AFTER_MS = 12 * HOUR` (three missed 4-hour runs) with the doc "After this the stats show a "delayed" note (the snapshot refreshes every 4 hours)."; `HIDDEN_AFTER_MS` stays 7 days. `STATS_MAX_AGE_MS` in `scripts/uptime.ts` stays equal to it (`12 * 3_600_000`, message "limit 12 h"). `lastUpdatedDay` doc: "The UTC day of the snapshot's last data (`updatedAt` is the run time; a midnight run reports the previous day)." Update tests that pinned 48 h.
 
-- [ ] **Step 3: Run** `bunx vitest run tests/unit/visits-model.test.ts tests/unit/uptime.test.ts tests/unit/lobby-observatory.test.ts tests/hud tests/stats`. Expected: PASS.
+- [x] **Step 3: Run** `bunx vitest run tests/unit/visits-model.test.ts tests/unit/uptime.test.ts tests/unit/lobby-observatory.test.ts tests/hud tests/stats`. Expected: PASS.
 
-- [ ] **Step 4: Commit** `feat(stats): say the visit stats update every 4 hours and include today`.
+- [x] **Step 4: Commit** `feat(stats): say the visit stats update every 4 hours and include today`.
 
 ### Task 3: Docs
 
@@ -137,9 +139,9 @@ Keep key names; check the 3D observatory panel still fits (`tests/unit/lobby-obs
 - Modify: `docs/superpowers/specs/agent-hq/06-data-contracts.md` section 4.1 (rollup cadence, `d30` now ends today, `updatedAt` is the run time; owner decision line: "the snapshot updates every 4 hours and includes today so far (owner 2026-10-16; was daily from complete UTC days)")
 - Modify: `AGENTS.md` ("Public visit stats" sections: cron and the owner decision), `docs/features.md` if it says daily
 
-- [ ] **Step 1:** Edit the docs; no em dashes (`bunx vitest run tests/unit/no-em-dash*` or the repo's em dash test).
-- [ ] **Step 2:** `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed` (visits, pageview).
-- [ ] **Step 3: Commit** `docs(stats): 4-hour cadence`.
+- [x] **Step 1:** Edit the docs; no em dashes (`bunx vitest run tests/unit/no-em-dash*` or the repo's em dash test).
+- [x] **Step 2:** `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed` (visits, pageview).
+- [x] **Step 3: Commit** `docs(stats): 4-hour cadence`.
 
 ### After merge (owner wrangler login on this machine)
 

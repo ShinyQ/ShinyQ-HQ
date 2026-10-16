@@ -1,5 +1,7 @@
 # Ride Triangles Under 30k Implementation Plan
 
+Status: shipped in #85 (94fc885), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bring the two elevator ride peaks that P4 (#79) recorded as expected failures (`full ride-L2-L1`: 34,059 triangles, `lite ride-L3-L2`: 31,306 triangles) under the 30,000 triangle budget of spec 08 with no visible change, then drop both `KNOWN_OVER` ids.
@@ -55,9 +57,9 @@ Rendering each mesh alone over the frame without its floor (real GPU, depth test
 
 Rule: false unless `eye[1] > slab.top + 1e-3` and `box.max[1] < slab.bottom` and the box is finite and non-empty; otherwise project each of the 8 corners P along the ray from the eye onto the plane `y = slab.top` (`t = (eye.y - top) / (eye.y - P.y)`, `Q = eye + (P - eye) * t`) and require every Q inside the slab rectangle shrunk by `margin`. Central projection maps segments to segments, so the box's image is the hull of the corner images and the rectangle is convex: all corners inside means the whole box is hidden.
 
-- [ ] Write failing tests: a box straight under the middle of a slab with the eye above is covered; a box under the slab edge seen from outside the rectangle is not; eye below the top is not; a box reaching above the slab bottom is not; an empty or infinite box is not; margin shrinks coverage.
-- [ ] Run `bunx vitest run tests/unit/slab-shadow.test.ts` (fails: module missing), implement, run again (passes).
-- [ ] Commit `feat: pure slab shadow test for ride culling`.
+- [x] Write failing tests: a box straight under the middle of a slab with the eye above is covered; a box under the slab edge seen from outside the rectangle is not; eye below the top is not; a box reaching above the slab bottom is not; an empty or infinite box is not; margin shrinks coverage.
+- [x] Run `bunx vitest run tests/unit/slab-shadow.test.ts` (fails: module missing), implement, run again (passes).
+- [x] Commit `feat: pure slab shadow test for ride culling`.
 
 ### Task 2: Ride cull (three side) and wiring
 
@@ -74,21 +76,21 @@ Rules (each one a unit test with plain three objects in node):
 - Hidden objects are restored in `restoreCulled()`; a culled troika text still gets `sync()` so typesetting (P6's `ridePrep.texts`) happens on the same frames as before.
 - `RideCull` sets `scene.onBeforeRender` (restore leftovers, then cull when `ride !== null` and the phase is not `boot`/`intro`) and `scene.onAfterRender` (restore), chaining previous hooks, and removes them on unmount. `gl.compile` never calls these hooks, so precompile still sees every mesh.
 
-- [ ] Write failing unit tests (`tests/unit/ride-cull.test.ts`), run (fail), implement, run (pass).
-- [ ] `bun run typecheck && bun run lint`.
-- [ ] Commit `perf: skip meshes hidden under a solid slab during rides`.
+- [x] Write failing unit tests (`tests/unit/ride-cull.test.ts`), run (fail), implement, run (pass).
+- [x] `bun run typecheck && bun run lint`.
+- [x] Commit `perf: skip meshes hidden under a solid slab during rides`.
 
 ### Task 3: Measure, prove and gate
 
-- [ ] `bun run build`, then `PERF=1 E2E_PORT=4444 bunx playwright test e2e/perf/peaks.spec.ts -g ride`: both ids now "expected to fail, but passed"; record every ride's calls and triangles.
-- [ ] Remove both ids from `KNOWN_OVER` (keep the mechanism and comment for future ids); rerun peaks: all green.
-- [ ] Scratch pixel check (real GPU) on the head build: render the culled meshes over the frame and count changed pixels on every ride frame for both rides at 1440x900 and 390x844: expect 0.
-- [ ] Add ride poses to `e2e/visual-gate.spec.ts`: `ride-down-l2-l1` (parked: boarding; dolly: 24 frames into moving) and `ride-down-l3-l2` (parked on L3: boarding; arrival: opening). Run `E2E_PORT=4444 bun scripts/visual-gate.ts --base origin/main --profile strict` (3 devices); expect PASS.
-- [ ] `E2E_PORT=4444 bun run e2e:perf` (bytes, floors, peaks, memory) and `E2E_PORT=4444 bunx playwright test e2e/ride.spec.ts e2e/gpu.spec.ts`.
-- [ ] Commit `test: ride peaks within budget, visual gate ride poses`.
+- [x] `bun run build`, then `PERF=1 E2E_PORT=4444 bunx playwright test e2e/perf/peaks.spec.ts -g ride`: both ids now "expected to fail, but passed"; record every ride's calls and triangles.
+- [x] Remove both ids from `KNOWN_OVER` (keep the mechanism and comment for future ids); rerun peaks: all green.
+- [x] Scratch pixel check (real GPU) on the head build: render the culled meshes over the frame and count changed pixels on every ride frame for both rides at 1440x900 and 390x844: expect 0.
+- [x] Add ride poses to `e2e/visual-gate.spec.ts`: `ride-down-l2-l1` (parked: boarding; dolly: 24 frames into moving) and `ride-down-l3-l2` (parked on L3: boarding; arrival: opening). Run `E2E_PORT=4444 bun scripts/visual-gate.ts --base origin/main --profile strict` (3 devices); expect PASS.
+- [x] `E2E_PORT=4444 bun run e2e:perf` (bytes, floors, peaks, memory) and `E2E_PORT=4444 bunx playwright test e2e/ride.spec.ts e2e/gpu.spec.ts`.
+- [x] Commit `test: ride peaks within budget, visual gate ride poses`.
 
 ### Task 4: Docs and PR
 
-- [ ] Spec 08 section 2: remove "Known over budget", note the ride cull. AGENTS.md: one bullet under "3D experience". README only if it mentions the known-over rides.
-- [ ] `bun run verify:quick`, `bun run e2e:changed`.
-- [ ] Commit `docs: ride cull, budgets met`, push, open the PR with the before and after table (calls and triangles per ride, all floors and tiers) and the visual gate results; get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI" and "3D perf gates" green. Do not merge.
+- [x] Spec 08 section 2: remove "Known over budget", note the ride cull. AGENTS.md: one bullet under "3D experience". README only if it mentions the known-over rides.
+- [x] `bun run verify:quick`, `bun run e2e:changed`.
+- [x] Commit `docs: ride cull, budgets met`, push, open the PR with the before and after table (calls and triangles per ride, all floors and tiers) and the visual gate results; get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI" and "3D perf gates" green. Do not merge.

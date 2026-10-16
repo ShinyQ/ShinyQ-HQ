@@ -1,5 +1,7 @@
 # RF Roof Revamp Implementation Plan
 
+Status: shipped in #58 (e2a6c53), 2026-10-12. Later removed in #167: the "Meet me" walk
+
 > Outcome: the coordinator picked C. Signal Garden plus the courier drone from B on 2026-10-12 (owner away; reviews the PR). Lite draw calls at 1440x900: the old RF 113, the new roof 64 (full tier 67); the e2e cap is 80. Walk on first visit: yes. Review fixes: the availability sign is large and faces the spawn camera (`ROOF_DECK.signYaw`, the overview turned `overviewYaw` north so the comms station fits on phones), the channel labels are larger and staggered on two rows, and the availability stop moved onto the sign's line (4.5, 6.1).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -96,7 +98,7 @@ Task 1 is split into sub-steps 1A to 1I, each with its own test cycle and commit
 - Consumes: `getProfile()` from `@/content/load` (`profile.timezone: string`, `profile.subheadline: { en, id }`).
 - Produces: `RoofData` gains `timezone: string` and `subheadline: string` (locale-resolved). Every scenery and the walk read them.
 
-- [ ] **Step 1: Create the branch and copy the plan**
+- [x] **Step 1: Create the branch and copy the plan**
 
 Run in your working clone of ShinyQ/ShinyQ-HQ (never in the read-only `hq-local` reference clone):
 
@@ -107,7 +109,7 @@ mkdir -p docs/superpowers/plans
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r3-f-rf-roof.md docs/superpowers/plans/2026-10-12-rf-roof-revamp.md
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 In `tests/unit/experience-data.test.ts`, change line 3 to:
 
@@ -125,12 +127,12 @@ and add this test right after `it("carries the Roof: availability, email and cha
   });
 ```
 
-- [ ] **Step 3: Run it to make sure it fails**
+- [x] **Step 3: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/unit/experience-data.test.ts`
 Expected: FAIL in "carries the Roof about card" (`expected { availability: ..., email: ..., channels: [...] } to match object { timezone: 'GMT+7', ... }`).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 In `src/experience/types.ts`, replace the `RoofData` interface with:
 
@@ -174,12 +176,12 @@ export function buildRoofData(locale: Locale): RoofData {
 }
 ```
 
-- [ ] **Step 5: Run the test to make sure it passes**
+- [x] **Step 5: Run the test to make sure it passes**
 
 Run: `bunx vitest run tests/unit/experience-data.test.ts`
 Expected: PASS (all tests in the file).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add docs/superpowers/plans/2026-10-12-rf-roof-revamp.md src/experience/types.ts src/content/experience-floors.ts tests/unit/experience-data.test.ts
@@ -203,7 +205,7 @@ rtk git commit -m "feat(rf): roof payload carries the timezone and one-line intr
   - `channelSlots(n: number): Vec2[]`.
   - `type RoofActive = "contact" | "cv" | null` and `roofActive(phase: string, room: string | null): RoofActive`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/roof-layout.test.ts`:
 
@@ -322,12 +324,12 @@ describe("RF roof deck layout", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/unit/roof-layout.test.ts`
 Expected: FAIL, every test errors with `TypeError: buildRoofLayout is not a function` (or the module has no export `buildRoofLayout`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 At the top of `src/experience/floors/roof/layout.ts`, replace the two import lines with:
 
@@ -488,12 +490,12 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
 }
 ```
 
-- [ ] **Step 4: Run the test to make sure it passes**
+- [x] **Step 4: Run the test to make sure it passes**
 
 Run: `bunx vitest run tests/unit/roof-layout.test.ts tests/unit/library-roof-layout.test.ts`
 Expected: PASS (9 tests in `roof-layout.test.ts`; `library-roof-layout.test.ts` unchanged and green, since today's exports are untouched).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/floors/roof/layout.ts tests/unit/roof-layout.test.ts
@@ -520,7 +522,7 @@ rtk git commit -m "feat(rf): roof deck layout builder with road, plaza, stations
   - `mulberry32(seed: number): () => number`.
   - `interface RoofDetail { skyline: number; windows: number; flowers: number }`; `roofDetail(tier: GpuTier): RoofDetail`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/roof-solids.test.ts`:
 
@@ -638,12 +640,12 @@ describe("roof solids", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/unit/roof-solids.test.ts`
 Expected: FAIL with `Failed to load url @/experience/floors/roof/solids` (module does not exist).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/experience/floors/roof/solids.ts`:
 
@@ -843,12 +845,12 @@ In `src/experience/floors/roof/Sky.tsx`, delete the local `mulberry32` function 
 import { mulberry32 } from "./solids";
 ```
 
-- [ ] **Step 4: Run the tests to make sure they pass**
+- [x] **Step 4: Run the tests to make sure they pass**
 
 Run: `bunx vitest run tests/unit/roof-solids.test.ts && bun run typecheck`
 Expected: 9 tests PASS; typecheck exits 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/floors/roof/solids.ts src/experience/floors/roof/Sky.tsx tests/unit/roof-solids.test.ts
@@ -865,7 +867,7 @@ rtk git commit -m "feat(rf): pure roof scenery geometry (merged boxes, lattice, 
 - Consumes: the local `open`, `shut`, `arc` helpers and `Stroke` type in `holoIcons.ts`.
 - Produces: `type RoofIcon = "email" | "cv" | "about" | "signal"`; `ROOF_ICONS: Record<RoofIcon, Stroke[]>` (24 x 24 grid), consumed by `HoloIcon strokes={ROOF_ICONS.email}`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/roof-icons.test.ts`:
 
@@ -897,12 +899,12 @@ describe("roof station icons", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/unit/roof-icons.test.ts`
 Expected: FAIL with `TypeError: Cannot convert undefined or null to object` (no `ROOF_ICONS` export).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `src/experience/fx/holoIcons.ts`, right after the closing `};` of `CAREER_ICONS`:
 
@@ -927,12 +929,12 @@ export const ROOF_ICONS: Record<RoofIcon, Stroke[]> = {
 };
 ```
 
-- [ ] **Step 4: Run the tests to make sure they pass**
+- [x] **Step 4: Run the tests to make sure they pass**
 
 Run: `bunx vitest run tests/unit/roof-icons.test.ts tests/unit/holo-icons.test.ts`
 Expected: PASS (both files).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/fx/holoIcons.ts tests/unit/roof-icons.test.ts
@@ -954,7 +956,7 @@ rtk git commit -m "feat(rf): neon line icons for the roof stations"
   - `applyLabel(target: LabelTarget, label: BatchedLabel): void`.
   - `<BatchedLabels labels={BatchedLabel[]} name?="labels" />`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/label-props.test.ts`:
 
@@ -998,12 +1000,12 @@ describe("applyLabel", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/unit/label-props.test.ts`
 Expected: FAIL with `Failed to load url @/experience/fx/labelProps`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/experience/fx/labelProps.ts`:
 
@@ -1149,12 +1151,12 @@ export function BatchedLabels({ labels, name = "labels" }: { labels: readonly Ba
 }
 ```
 
-- [ ] **Step 4: Run the tests, typecheck and lint**
+- [x] **Step 4: Run the tests, typecheck and lint**
 
 Run: `bunx vitest run tests/unit/label-props.test.ts && bun run typecheck && bun run lint`
 Expected: 2 tests PASS; typecheck and lint exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/fx/labelProps.ts src/experience/fx/BatchedLabels.tsx src/types/troika-three-text.d.ts tests/unit/label-props.test.ts
@@ -1178,7 +1180,7 @@ rtk git commit -m "feat(3d): BatchedLabels draws every label of a floor in one c
   - `<HitBox rect room h y? />` (invisible, no draw call; click drives to the room and opens it).
   - `aboutCard(at: { x: number; z: number; top: number; yaw: number; width: number }, profile, roof, labels): BatchedLabel[]`.
 
-- [ ] **Step 1: Write the kit**
+- [x] **Step 1: Write the kit**
 
 Create `src/experience/floors/roof/kit.tsx`:
 
@@ -1391,12 +1393,12 @@ export function aboutCard(
 }
 ```
 
-- [ ] **Step 2: Typecheck and lint**
+- [x] **Step 2: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: both exit 0 (the kit has no node test: it is R3F; Task 1H renders it in the harness).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 rtk git add src/experience/floors/roof/kit.tsx
@@ -1416,7 +1418,7 @@ rtk git commit -m "feat(rf): roof scenery kit (merged solids and edges, pulse ri
 
 Shared conventions in all three files: stations stay inside their layout rects (they are the navgrid obstacles); nothing is placed inside `layout.callPad`; text yaw 0 faces south (the plaza and the default camera), `-Math.PI / 2` faces west (CV station), `Math.PI` faces north (about board); `HoloIcon` `face` uses the same angles.
 
-- [ ] **Step 1: Write concept A, the Rooftop Observatory**
+- [x] **Step 1: Write concept A, the Rooftop Observatory**
 
 Create `src/experience/floors/roof/concepts/Observatory.tsx`:
 
@@ -1620,7 +1622,7 @@ export function Observatory({ layout, roof, profile, labels, tier, reducedMotion
 }
 ```
 
-- [ ] **Step 2: Write concept B, the Helipad Launch Deck**
+- [x] **Step 2: Write concept B, the Helipad Launch Deck**
 
 Create `src/experience/floors/roof/concepts/Helipad.tsx`:
 
@@ -1823,7 +1825,7 @@ export function Helipad({ layout, roof, profile, labels, tier, reducedMotion, ac
 }
 ```
 
-- [ ] **Step 3: Write concept C, the Signal Garden**
+- [x] **Step 3: Write concept C, the Signal Garden**
 
 Create `src/experience/floors/roof/concepts/SignalGarden.tsx`:
 
@@ -1990,12 +1992,12 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
 }
 ```
 
-- [ ] **Step 4: Typecheck and lint**
+- [x] **Step 4: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: both exit 0. If lint flags `react-hooks/exhaustive-deps` on a `useLayoutEffect` that reads a ref, keep the deps shown above (they list the inputs that rebuild the mesh) and do not add the ref.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/floors/roof/concepts
@@ -2015,7 +2017,7 @@ rtk git commit -m "feat(rf): three roof concepts (observatory, helipad launch de
 - Produces: the route `/{locale}/dev/roof?concept=current|observatory|helipad|garden&at=spawn|availability|about|cv|contact&view=rover|top&tier=full|lite&active=contact|cv&rm=1&ui=0`. The root `div[data-testid="roof-concepts"]` gets `data-ready="1"` after 60 rendered frames and `data-draw-calls` / `data-triangles` (all render passes of the last frame) every 30 frames; Task 1I waits on and reads them.
 - Message keys `hud.world.about` and `hud.world.availability` (used by `RoofLabels` from here on).
 
-- [ ] **Step 1: Add the two in-world strings**
+- [x] **Step 1: Add the two in-world strings**
 
 In `messages/en.json`, inside `"hud" > "world"`, change `"cvHint": "Open the CV viewer"` to:
 
@@ -2036,7 +2038,7 @@ In `messages/id.json`, inside `"hud" > "world"`, change `"cvHint": "Buka penampi
 Run: `bunx vitest run tests/content`
 Expected: PASS (message key parity, fonts coverage and the safety lint accept the new strings).
 
-- [ ] **Step 2: Write the harness**
+- [x] **Step 2: Write the harness**
 
 Create `src/experience/prototype/roof/RoofConcepts.tsx`:
 
@@ -2360,7 +2362,7 @@ export default async function RoofConceptsPage({ params }: { params: Promise<{ l
 }
 ```
 
-- [ ] **Step 3: Verify the build and the dev route**
+- [x] **Step 3: Verify the build and the dev route**
 
 Run: `bun run verify:quick`
 Expected: typecheck, lint, all unit tests and `next build` pass; the static export contains no `dev/roof` page (`ls out/en/dev 2>/dev/null` prints nothing).
@@ -2373,7 +2375,7 @@ bun run dev
 
 Open `http://localhost:3000/en/dev/roof?concept=observatory`, then the same with `helipad`, `garden` and `current`. Expected: each scenery renders on the deck, the panel shows "space rules: pass" and a draw call count, the amber rectangle in front of the shaft is empty, "open contact" makes the dish, beacons or mast rings pulse faster, "open CV" lifts the drone (Helipad), and the Indonesian route `/id/dev/roof` shows Indonesian labels.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add messages/en.json messages/id.json src/experience/prototype/roof "src/app/[locale]/dev/roof"
@@ -2389,7 +2391,7 @@ rtk git commit -m "feat(rf): dev-only /dev/roof route with the three concepts, t
 - Consumes: the `/dev/roof` route and its `data-ready`, `data-draw-calls`, `data-triangles` (Task 1H); `window.__hq.rover.drawCalls` on the served export.
 - Produces: `bun scripts/capture-dev.ts [--base URL] [--out DIR] [--ready SELECTOR|hq] [--settle MS] name=/path?query ...` writing `<name>-<w>x<h>.png` for 1440x900, 834x1112 and 390x844 plus `metrics.json` (`{ "<file>": { drawCalls, triangles } }`) into `--out`. Task 5 reuses it for the final screenshots.
 
-- [ ] **Step 1: Write the capture script**
+- [x] **Step 1: Write the capture script**
 
 Create `scripts/capture-dev.ts`:
 
@@ -2485,7 +2487,7 @@ try {
 Run: `bun run typecheck && bun run lint`
 Expected: both exit 0.
 
-- [ ] **Step 2: Capture the concepts (dev server running from Task 1H)**
+- [x] **Step 2: Capture the concepts (dev server running from Task 1H)**
 
 With `bun run dev` still running, in a second terminal:
 
@@ -2508,7 +2510,7 @@ bun scripts/capture-dev.ts --out screenshots/roof-concepts \
 
 Expected: 39 lines like `observatory-spawn-1440x900.png drawCalls=... triangles=...`, 39 PNGs and `metrics.json` in `screenshots/roof-concepts/` (gitignored). Open the PNGs: no blank canvases, labels readable, nothing drawn in the amber call pad rectangle. If a shot is blank, raise `--settle 4000` and capture that shot again.
 
-- [ ] **Step 3: Measure draw calls on the lite tier (same harness, same camera)**
+- [x] **Step 3: Measure draw calls on the lite tier (same harness, same camera)**
 
 ```bash
 bun scripts/capture-dev.ts --out screenshots/roof-concepts/lite \
@@ -2520,7 +2522,7 @@ bun scripts/capture-dev.ts --out screenshots/roof-concepts/lite \
 
 Expected: at 1440x900, `current` reports roughly 75 to 90 draw calls and every concept at least 40 fewer (concepts about 30 to 40 including slab, grid, shaft stub and rover). Record the four numbers.
 
-- [ ] **Step 4: Record the real-site baseline**
+- [x] **Step 4: Record the real-site baseline**
 
 Stop the dev server, then:
 
@@ -2536,7 +2538,7 @@ bun scripts/capture-dev.ts --base http://127.0.0.1:4173 --ready hq --settle 8000
 
 Expected: three lines `rf-today-<size>.png drawCalls=B ...`. Record B at 1440x900 (today's whole RF frame on the lite tier, under 150). Task 5 sets the new RF cap from it.
 
-- [ ] **Step 5: STOP: present the concepts to the owner**
+- [x] **Step 5: STOP: present the concepts to the owner**
 
 Post to the owner (session message or a draft PR comment with the images via the `github-pr-media` skill) and wait. Do not start Task 2 before the answer:
 
@@ -2585,7 +2587,7 @@ Start only after the owner's pick. In the steps below, `<Pick>` is the picked fi
   - `layouts.RF` from `buildFloorLayouts` is `buildRoofLayout().floor` (road, plaza, doors, view zones, arrival).
   - `ROOF_STOPS: Record<RoofStop, Vec2>` (= `buildRoofLayout().stops`) from `roof/layout.ts`; `ROOF_STOPS.contact` and `ROOF_STOPS.cv` equal the door pads, so `roomTarget` and missions drive there unchanged.
 
-- [ ] **Step 1: Write the failing test (the tower uses the deck)**
+- [x] **Step 1: Write the failing test (the tower uses the deck)**
 
 Append to `tests/unit/roof-layout.test.ts`:
 
@@ -2605,7 +2607,7 @@ describe("RF in the tower", () => {
 Run: `bunx vitest run tests/unit/roof-layout.test.ts`
 Expected: FAIL in "is the roof deck" (`expected { id: 'RF', bounds: { minX: -20, maxX: 20, ...} } to deeply equal { ... }`).
 
-- [ ] **Step 2: Promote the picked scenery and delete the rest**
+- [x] **Step 2: Promote the picked scenery and delete the rest**
 
 ```bash
 rtk git mv src/experience/floors/roof/concepts/<Pick>.tsx src/experience/floors/roof/<Pick>.tsx
@@ -2632,7 +2634,7 @@ Also remove the deleted names from the test's import list, then trim `RoofDetail
 | Helipad | nothing: delete `RoofDetail` and `roofDetail` | delete the test |
 | SignalGarden | `flowers` | unchanged |
 
-- [ ] **Step 3: Delete today's layout exports**
+- [x] **Step 3: Delete today's layout exports**
 
 In `src/experience/floors/roof/layout.ts`:
 - Delete everything from `/** RF Roof element positions (appendix 01 section 6). Floor-local, pure. */` down to the end of `ROOF_LANES` (the old `ROOF`, `TERMINAL_COUNT`, `STOP_GAP`, `TerminalSlot`, `terminalSlots`, `middle` const, `kiosk` const, old `ROOF_STOPS`, `roofObstacles`, `ROOF_DOORS`, `LANE_Z`, `ROOF_LANES`), but keep the `rect` helper.
@@ -2644,7 +2646,7 @@ In `src/experience/floors/roof/layout.ts`:
 export const ROOF_STOPS: Record<RoofStop, Vec2> = buildRoofLayout().stops;
 ```
 
-- [ ] **Step 4: Rewrite `Roof.tsx` and wire it**
+- [x] **Step 4: Rewrite `Roof.tsx` and wire it**
 
 Replace `src/experience/floors/Roof.tsx` with (use the line for your pick in the import):
 
@@ -2714,7 +2716,7 @@ and the RF entry of `buildFloorLayouts` (line 153) to:
 
 and update the comment above the L4 line to `// Deep links spawn L4 in front of its content (the follow camera looks toward -x, -z).` The `standard()` helper keeps its `id === "RF"` door branch unused; change `const doorX = id === "RF" ? -20 : -24;` to `const doorX = -24;`.
 
-- [ ] **Step 5: Move the RF unit tests off today's layout**
+- [x] **Step 5: Move the RF unit tests off today's layout**
 
 In `tests/unit/library-roof-layout.test.ts`:
 - Line 4: delete the `@/experience/floors/roof/layout` import.
@@ -2756,7 +2758,7 @@ import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
 
 and change `await expectRoverNear(page, { x: 0, z: 6.8 });` to `await expectRoverNear(page, ROOF_STOPS.contact);` and `await expectRoverNear(page, { x: 10, z: 9.4 });` to `await expectRoverNear(page, ROOF_STOPS.cv);`.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/unit/roof-layout.test.ts tests/unit/roof-solids.test.ts tests/unit/library-roof-layout.test.ts tests/unit/experience-data.test.ts tests/unit/missions-host3d.test.ts tests/unit/doors.test.ts tests/unit/navgrid.test.ts tests/unit/e2e-plan.test.ts`
 Expected: PASS, including "is the roof deck" and "every door on every floor points into its room".
@@ -2767,7 +2769,7 @@ Expected: exit 0.
 Run: `bun run e2e:changed`
 Expected: the plan includes `library-roof` (and `experience`, `labs`, `career`, `missions` through the floor and config rules); all pass. In particular "hire rides to the Roof, parks at the comms terminals and copies the email" and "cv drives to the kiosk, opens the CV viewer ..." pass with the new stops, and "L4 and RF stay under the draw call budget" passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add -A src/experience tests/unit e2e/library-roof.spec.ts "src/app/[locale]/dev"
@@ -2792,7 +2794,7 @@ rtk git commit -m "feat(rf): the roof deck ships with the <Pick> scenery; drop t
   - `e2e/roof.spec.ts` with the helper `openRoof(page, { locale?, walk? })` (Task 4 and Task 5 add tests to it) and `RF_MAX_DRAW_CALLS`.
   - e2e plan: spec `roof`; `src/experience/floors/roof/**` and `src/experience/floors/Roof.tsx` map to `library-roof`, `roof`, `walk`; `src/content/room-views/roof.ts` maps to `library-roof`, `roof`.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 In `tests/unit/room-views.test.ts`, change line 2 to:
 
@@ -2824,12 +2826,12 @@ with:
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["library-roof"]);
 ```
 
-- [ ] **Step 2: Run them to make sure they fail**
+- [x] **Step 2: Run them to make sure they fail**
 
 Run: `bunx vitest run tests/unit/room-views.test.ts tests/unit/e2e-plan.test.ts`
 Expected: FAIL: "shows the location and timezone" (`expected [] to deeply equal [ 'Jakarta, Indonesia', 'GMT+7' ]`) and "maps floor code to its spec" (`expected [ 'library-roof' ] to deeply equal [ 'library-roof', 'roof', 'walk' ]`).
 
-- [ ] **Step 3: Implement the meta, the room name and the plan rules**
+- [x] **Step 3: Implement the meta, the room name and the plan rules**
 
 In `src/content/room-views/roof.ts`, change the first import to:
 
@@ -2867,12 +2869,12 @@ In `scripts/e2e-plan.ts`, add `"roof",` to `ALL_SPECS` between `"pageview",` and
 
 The second rule must also sit above the `^(content|messages)\/|^src\/content\/` rule; placing both in the "3D floors" block (above the library rule) satisfies that.
 
-- [ ] **Step 4: Run the unit tests**
+- [x] **Step 4: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/room-views.test.ts tests/unit/e2e-plan.test.ts tests/hud/LibraryRoofRooms.test.tsx tests/content`
 Expected: PASS except "knows every spec in e2e/" in `e2e-plan.test.ts`, which fails until `e2e/roof.spec.ts` exists (next step).
 
-- [ ] **Step 5: Write the roof e2e spec**
+- [x] **Step 5: Write the roof e2e spec**
 
 Create `e2e/roof.spec.ts`:
 
@@ -2976,12 +2978,12 @@ test.describe("RF roof deck", () => {
 
 If B (Task 1I Step 4) is below 120, set `RF_MAX_DRAW_CALLS` to B minus 30, rounded down to a multiple of 5 (for example B = 104 gives 70), so the test proves the reduction.
 
-- [ ] **Step 6: Run the unit tests, build and the specs**
+- [x] **Step 6: Run the unit tests, build and the specs**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts && bun run verify:quick && bunx playwright test e2e/roof.spec.ts e2e/library-roof.spec.ts`
 Expected: unit tests PASS ("knows every spec in e2e/" included); verify:quick exits 0; Playwright reports `roof.spec.ts` 3 passed and `library-roof.spec.ts` all passed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/content/room-views/roof.ts messages/en.json messages/id.json e2e/screenshots.spec.ts e2e/roof.spec.ts scripts/e2e-plan.ts tests/unit/room-views.test.ts tests/unit/e2e-plan.test.ts
@@ -3007,7 +3009,7 @@ If the owner answered "no" to question 2 in Task 1I, still ship `roofWalk` and i
   - `WALK_FLOORS = ["L2", "L3", "RF"]`.
   - Message keys `walk.meet.title`, `.body`, `.start`, `.name`, `.about`, `.availability`, `.cv`, `.contact`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/walk.test.ts`, change line 5 to:
 
@@ -3044,12 +3046,12 @@ and add inside `describe("walk definitions", ...)`, before `it("offers walks on 
   });
 ```
 
-- [ ] **Step 2: Run them to make sure they fail**
+- [x] **Step 2: Run them to make sure they fail**
 
 Run: `bunx vitest run tests/unit/walk.test.ts`
 Expected: FAIL in "meets the owner on the roof" with `TypeError: roofWalk is not a function`.
 
-- [ ] **Step 3: Implement the walk**
+- [x] **Step 3: Implement the walk**
 
 In `src/experience/missions/walks.ts`, change the imports to:
 
@@ -3154,12 +3156,12 @@ In `messages/id.json`, at the same place:
     },
 ```
 
-- [ ] **Step 4: Run the unit tests**
+- [x] **Step 4: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/walk.test.ts tests/content && bun run typecheck && bun run lint`
 Expected: PASS; typecheck and lint exit 0.
 
-- [ ] **Step 5: Add the walk e2e test**
+- [x] **Step 5: Add the walk e2e test**
 
 Append inside `test.describe("RF roof deck", ...)` in `e2e/roof.spec.ts`:
 
@@ -3188,12 +3190,12 @@ Append inside `test.describe("RF roof deck", ...)` in `e2e/roof.spec.ts`:
   });
 ```
 
-- [ ] **Step 6: Build and run the affected specs**
+- [x] **Step 6: Build and run the affected specs**
 
 Run: `bun run verify:quick && bunx playwright test e2e/roof.spec.ts e2e/walk.spec.ts e2e/library-roof.spec.ts e2e/missions.spec.ts`
 Expected: all pass. `library-roof.spec.ts` now sees the RF walk prompt after arrivals; it is a non-modal dialog, so the hire, CV and language tests still pass. If one fails because the prompt covers a control, end the prompt in that test with `await page.getByTestId("walk-prompt").getByRole("button", { name: en.walk.explore }).click()` (import `en` from `../messages/en.json`) rather than adding retries.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/missions/walks.ts src/experience/config.ts src/hud/walk/WalkLayer.tsx messages/en.json messages/id.json tests/unit/walk.test.ts e2e/roof.spec.ts
@@ -3209,7 +3211,7 @@ rtk git commit -m "feat(rf): \"Meet me\" guided walk on the roof (about, availab
 - Consumes: `openRoof`, `snapshot`, `expectRenderBudget` (Task 3); `scripts/capture-dev.ts` (Task 1I); the store's `reducedMotion` (set from `prefers-reduced-motion` by `Experience`).
 - Produces: a reduced-motion e2e check and the owner's final screenshots in `screenshots/rf-final/`.
 
-- [ ] **Step 1: Write the reduced motion test**
+- [x] **Step 1: Write the reduced motion test**
 
 Append inside `test.describe("RF roof deck", ...)` in `e2e/roof.spec.ts`:
 
@@ -3224,12 +3226,12 @@ Append inside `test.describe("RF roof deck", ...)` in `e2e/roof.spec.ts`:
   });
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `bun run build && bunx playwright test e2e/roof.spec.ts -g "reduced motion"`
 Expected: 1 passed.
 
-- [ ] **Step 3: Calibrate the cap**
+- [x] **Step 3: Calibrate the cap**
 
 Start `bun run serve` (it serves the build from Step 2) and read the RF draw calls:
 
@@ -3239,7 +3241,7 @@ bun scripts/capture-dev.ts --base http://127.0.0.1:4173 --ready hq --settle 8000
 
 Expected: `rf-1440x900.png drawCalls=N` with N at least 30 below B (Task 1I Step 4) and below `RF_MAX_DRAW_CALLS`. If `RF_MAX_DRAW_CALLS` is more than N + 15, lower it to N + 10 rounded up to a multiple of 5, so a regression shows; rerun `bunx playwright test e2e/roof.spec.ts`.
 
-- [ ] **Step 4: Capture the final screenshots for the owner**
+- [x] **Step 4: Capture the final screenshots for the owner**
 
 ```bash
 bun scripts/capture-dev.ts --base http://127.0.0.1:4173 --ready hq --settle 8000 --out screenshots/rf-final \
@@ -3251,7 +3253,7 @@ SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "hq-rf" --workers=
 
 Expected: 9 PNGs in `screenshots/rf-final/` (1440x900, 834x1112, 390x844) plus `hq-rf-roof-*` and `hq-rf-comms-*` in `screenshots/` from the screenshots spec (6 tests pass; the lite mobile shot passes its `drawCalls > 35` wait because the whole RF frame stays above 35). Check: labels readable, the drawer's comms station shows the location and timezone, nothing sits in front of the elevator.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add e2e/roof.spec.ts
@@ -3269,7 +3271,7 @@ rtk git commit -m "test(rf): reduced motion check and a draw call cap that prove
 - Consumes: the pick, B, the concept numbers (Task 1I) and N (Task 5).
 - Produces: up-to-date docs and the PR.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Replace the routes row
 
@@ -3289,7 +3291,7 @@ and add after the L3 paragraph (the one that starts "On L3 (Labs) the floor is *
 On RF (`/en/contact`) the roof is a walkable deck: a road from the elevator into a round plaza around the centerpiece, the comms station (all contact channels and the email) to the north, the CV kiosk to the east and an about board with location and timezone to the south-west. Opening the contact or CV room makes the deck react. The first visit offers **Meet me**, a four-stop guided drive (about, availability, CV, contact).
 ```
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Make these edits (each "find" line exists verbatim today):
 
@@ -3339,7 +3341,7 @@ Make these edits (each "find" line exists verbatim today):
 
 Replace `<concept name>`, N and B with the pick and the measured numbers.
 
-- [ ] **Step 3: Record the outcome in the repo plan copy**
+- [x] **Step 3: Record the outcome in the repo plan copy**
 
 At the top of `docs/superpowers/plans/2026-10-12-rf-roof-revamp.md`, under the title, add:
 
@@ -3349,17 +3351,17 @@ At the top of `docs/superpowers/plans/2026-10-12-rf-roof-revamp.md`, under the t
 
 with the real values.
 
-- [ ] **Step 4: Verify the docs**
+- [x] **Step 4: Verify the docs**
 
 Run: `bunx vitest run tests/content`
 Expected: PASS (the safety lint and the repo-wide em dash scan accept the docs). Then `grep -nP '\x{2014}' README.md AGENTS.md docs/superpowers/plans/2026-10-12-rf-roof-revamp.md` prints nothing.
 
-- [ ] **Step 5: Final verification**
+- [x] **Step 5: Final verification**
 
 Run: `bun run verify:quick && bun run e2e:changed`
 Expected: verify:quick exits 0; `e2e:changed` runs at least `library-roof`, `roof`, `walk`, `missions`, `experience` (and the smoke specs for `scripts/capture-dev.ts`) and all pass. Then rebase on `origin/main` (parallel sessions: HUD polish, elevator pads, L4 revamp, landing, content) and rerun both commands if anything changed. If the elevator pads work landed a `FloorLayout` call pad field first, set it in `buildRoofLayout` from `ROOF_DECK.callPad` and keep the "keeps the spot in front of the elevator free" test.
 
-- [ ] **Step 6: Commit and open the PR**
+- [x] **Step 6: Commit and open the PR**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/plans/2026-10-12-rf-roof-revamp.md

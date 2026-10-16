@@ -1,5 +1,7 @@
 # R5 P6: Elevator Ride Smoothness, Page View Icon and Owner Photo Implementation Plan
 
+Status: shipped in #74 (7a2afea), 2026-10-13. Later replaced in #88: the neon portrait frame on the About me station, by the hologram disc
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The elevator dolly always animates (no skipped rides on slow-compiling GPUs such as Windows Brave at 2560x1440), the 3D "Page view" button gets a document icon on its left, and the owner's photo appears as the round HUD profile badge and in a neon frame on the L1 Highlights Hall "About me" station.
@@ -97,7 +99,7 @@ Records the "before" numbers and images with the exact method used after the fix
 - Consumes: `enterHQ`, `waitForFloor`, `waitForCameraSettle`, `driveTo` from `e2e/hq.ts`; `stationOf` from `src/experience/floors/lobby/hallLayout.ts`; `window.__hq.store`, `window.__hq.rover.y`.
 - Produces: spec name `ride` in `ALL_SPECS`; helper functions `sampleCar(page)` and `analyse(samples)` local to `e2e/ride.spec.ts` (later tasks append tests to this file); env `SHOT_DIR` for the P6 screenshot block, output `${SHOT_DIR}/p6/{topbar,profile,l1-plaza,l1-about,l3-arrival}-WxH.png`.
 
-- [ ] **Step 1: Create the branch and build main as is**
+- [x] **Step 1: Create the branch and build main as is**
 
 ```bash
 cd ~/code/ShinyQ-HQ   # your working clone, not the read-only hq-local reference
@@ -107,7 +109,7 @@ bun run build
 ```
 Expected: `next build` ends with the static export summary and no error.
 
-- [ ] **Step 2: Write `e2e/ride.spec.ts`**
+- [x] **Step 2: Write `e2e/ride.spec.ts`**
 
 ```ts
 import { expect, test, type Page } from "@playwright/test";
@@ -199,7 +201,7 @@ test("reduced motion keeps the 150 ms cut", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 3: Register the spec**
+- [x] **Step 3: Register the spec**
 
 In `scripts/e2e-plan.ts`, add `"ride",` to `ALL_SPECS` between `"pageview",` and `"roof",`. Then replace
 
@@ -230,7 +232,7 @@ In `tests/unit/e2e-plan.test.ts`, add inside `describe("specsForChanges", ...)`:
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: PASS (all tests, including "knows every spec in e2e/").
 
-- [ ] **Step 4: Add the P6 review poses to `e2e/screenshots.spec.ts`**
+- [x] **Step 4: Add the P6 review poses to `e2e/screenshots.spec.ts`**
 
 Change the `./hq` import on line 2 to also import `waitForCameraSettle` and `waitForFloor`:
 
@@ -280,12 +282,12 @@ for (const viewport of P6_VIEWPORTS) {
 }
 ```
 
-- [ ] **Step 5: Run the baseline ride spec on unchanged code (expect the throttled test to fail)**
+- [x] **Step 5: Run the baseline ride spec on unchanged code (expect the throttled test to fail)**
 
 Run: `E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts --reporter=list`
 Expected: "reduced motion keeps the 150 ms cut" PASSES; "the first ride ... under a 6x CPU throttle" FAILS with `expect(received).toBeGreaterThanOrEqual(expected) Expected: >= 12` (or the `maxStep` assertion). Copy the printed line `ride L1 to L3 at 6x: {...}` into `docs/superpowers/plans/2026-10-13-r5-p6-measurements.md` under "Before (main f61fbba)". If it unexpectedly passes on this machine, raise the throttle to 10x in a local run only and record both numbers; keep 6x in the committed test.
 
-- [ ] **Step 6: Capture the before screenshots twice (A/A noise floor)**
+- [x] **Step 6: Capture the before screenshots twice (A/A noise floor)**
 
 ```bash
 SCREENSHOTS=1 E2E_PORT=4435 SHOT_DIR=screenshots/before bunx playwright test e2e/screenshots.spec.ts -g "P6 review poses" --workers=1
@@ -294,7 +296,7 @@ ls screenshots/before/p6 screenshots/before2/p6
 ```
 Expected: 3 tests pass per run; each folder holds 15 PNGs (5 names x 3 sizes). `screenshots/` is gitignored.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add e2e/ride.spec.ts e2e/screenshots.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts docs/superpowers/plans/2026-10-13-r5-p6-measurements.md
@@ -337,7 +339,7 @@ Fixes the owner's report at its root (REPORT Area 5, SP9). Pure change in `eleva
   - `interface RideOptions { atDoor: boolean; reduced: boolean; ready?: boolean; cap?: number }` (`ready` is added in Task 3; this task adds `cap`)
   - `advanceRide(ride: Ride, frameDt: number, options: RideOptions): Ride | null`
 
-- [ ] **Step 1: Write the failing stall test**
+- [x] **Step 1: Write the failing stall test**
 
 Add to `tests/unit/elevator.test.ts` inside `describe("elevator ride", ...)`:
 
@@ -359,12 +361,12 @@ Add to `tests/unit/elevator.test.ts` inside `describe("elevator ride", ...)`:
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/elevator.test.ts -t "pauses the dolly"`
 Expected: FAIL with `AssertionError: expected 4 to be greater than or equal to 24`.
 
-- [ ] **Step 3: Write the cap tests**
+- [x] **Step 3: Write the cap tests**
 
 Add to the imports of `tests/unit/elevator.test.ts`: `RIDE_CAP, rideCap, trackFrameDt, TYPICAL_FRAME_DT,`. Change the `run` helper's default step from `dt = 0.05` to `dt = 1 / 60` (the stage-time assertions describe a 60 fps device). Add:
 
@@ -402,7 +404,7 @@ describe("ride clock", () => {
 });
 ```
 
-- [ ] **Step 4: Implement the capped clock in `src/experience/tower/elevator.ts`**
+- [x] **Step 4: Implement the capped clock in `src/experience/tower/elevator.ts`**
 
 Replace lines 14 to 52 (from `/** Fixed stage lengths` through the end of `advanceRide`) with:
 
@@ -481,12 +483,12 @@ export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, cap 
 
 (Keep `/** Fixed stage lengths ... */` only once: the block above includes it.)
 
-- [ ] **Step 5: Run the unit tests**
+- [x] **Step 5: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/elevator.test.ts`
 Expected: PASS (stall test, ride clock tests and the existing tests, including "runs every stage in order and then finishes" at 1/60 s frames: elapsed between 2 and 2.4 s).
 
-- [ ] **Step 6: Wire the typical frame and the cap into the Director**
+- [x] **Step 6: Wire the typical frame and the cap into the Director**
 
 In `src/experience/scene/Director.tsx`:
 
@@ -530,7 +532,7 @@ with
         const next = advanceRide(ride, dt, { atDoor, reduced: s.reducedMotion, cap: rideCap(local.typicalDt) });
 ```
 
-- [ ] **Step 7: Cap the camera spring during rides**
+- [x] **Step 7: Cap the camera spring during rides**
 
 In `src/experience/camera/CameraDirector.tsx`, add `import { RIDE_CAP } from "../tower/elevator";` after the `MAX_FRAME_DT` import, and replace
 
@@ -552,7 +554,7 @@ with
     l.now += dt;
 ```
 
-- [ ] **Step 8: Typecheck, lint, build and run the ride spec**
+- [x] **Step 8: Typecheck, lint, build and run the ride spec**
 
 ```bash
 bun run verify:quick
@@ -560,7 +562,7 @@ E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts --reporter=list
 ```
 Expected: `verify:quick` passes; both ride tests PASS. The printed line shows `distinctY` >= 16 and `maxStep` well under 7. Note the numbers in the measurements file under "After Task 2".
 
-- [ ] **Step 9: Run the affected e2e and commit**
+- [x] **Step 9: Run the affected e2e and commit**
 
 Run: `E2E_PORT=4435 bun run e2e:changed`
 Expected: `experience`, `career` and `ride` specs pass.
@@ -591,7 +593,7 @@ The car waits at closed doors until the destination floor is built, compiled and
   - `rideStats.ts`: `interface RideSummary { from; to; frames; dollyFrames; distinctY; maxStep; longestFrameMs; held; timedOut; programs; elapsedMs }`, `interface RideStats`, `startRideStats(from, to, span): RideStats`, `stepRideStats(stats, sample: { stage: RideStage; y: number; frameDt: number; held: number; programs: number }): void`, `finishRideStats(stats, programs): RideSummary`, `formatRideSummary(summary): string`.
   - `near.ts`: `floorContentVisible(o: { floorY: number; roverY: number; exterior: boolean; ride: { stage: RideStage } | null; ready: boolean }): boolean`.
 
-- [ ] **Step 1: Write the failing gate tests**
+- [x] **Step 1: Write the failing gate tests**
 
 Add `PREPARE_TIMEOUT, STAGE_TIME,` to the imports of `tests/unit/elevator.test.ts` and append:
 
@@ -643,7 +645,7 @@ describe("destination gate", () => {
 Run: `bunx vitest run tests/unit/elevator.test.ts -t "destination gate"`
 Expected: FAIL (`PREPARE_TIMEOUT` is undefined and the first test sees `stage: "moving"`).
 
-- [ ] **Step 2: Implement the gate in `src/experience/tower/elevator.ts`**
+- [x] **Step 2: Implement the gate in `src/experience/tower/elevator.ts`**
 
 Replace the `Ride` interface (lines 6 to 12) with:
 
@@ -712,7 +714,7 @@ export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, read
 Run: `bunx vitest run tests/unit/elevator.test.ts`
 Expected: PASS (all describes).
 
-- [ ] **Step 3: Write `tests/unit/ride-prep.test.ts`**
+- [x] **Step 3: Write `tests/unit/ride-prep.test.ts`**
 
 ```ts
 import { beforeEach, describe, expect, it } from "vitest";
@@ -776,7 +778,7 @@ describe("ride preparation", () => {
 Run: `bunx vitest run tests/unit/ride-prep.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/tower/ridePrep"`.
 
-- [ ] **Step 4: Create `src/experience/tower/ridePrep.ts`**
+- [x] **Step 4: Create `src/experience/tower/ridePrep.ts`**
 
 ```ts
 import type { FloorId } from "@/content/schema";
@@ -849,7 +851,7 @@ export function resetRidePrep(): void {
 }
 ```
 
-- [ ] **Step 5: Write `tests/unit/ride-stats.test.ts`**
+- [x] **Step 5: Write `tests/unit/ride-stats.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -890,7 +892,7 @@ describe("ride stats", () => {
 Run: `bunx vitest run tests/unit/ride-stats.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/tower/rideStats"`.
 
-- [ ] **Step 6: Create `src/experience/tower/rideStats.ts`**
+- [x] **Step 6: Create `src/experience/tower/rideStats.ts`**
 
 ```ts
 import type { FloorId } from "@/content/schema";
@@ -970,7 +972,7 @@ export function formatRideSummary(s: RideSummary): string {
 Run: `bunx vitest run tests/unit/ride-stats.test.ts tests/unit/ride-prep.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Write `tests/unit/floor-visibility.test.ts`**
+- [x] **Step 7: Write `tests/unit/floor-visibility.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1006,7 +1008,7 @@ describe("floor content visibility", () => {
 Run: `bunx vitest run tests/unit/floor-visibility.test.ts`
 Expected: FAIL with `floorContentVisible is not a function` (or not exported).
 
-- [ ] **Step 8: Add `floorContentVisible` to `src/experience/tower/near.ts`**
+- [x] **Step 8: Add `floorContentVisible` to `src/experience/tower/near.ts`**
 
 Add after the existing imports:
 
@@ -1045,7 +1047,7 @@ export function floorContentVisible({
 Run: `bunx vitest run tests/unit/floor-visibility.test.ts tests/unit/elevator.test.ts tests/unit/ride-prep.test.ts tests/unit/ride-stats.test.ts`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -1073,7 +1075,7 @@ Feeds `ridePrep` from the scene (REPORT SP9, F5.6, F5.7). No pixel change: compi
   - `textSync.ts`: `floorOfObject(object: Object3D | null): FloorId | null`, `trackTextSync(textProto: SyncProto, batchProto?: BatchProto): void`, types `SyncProto`, `BatchProto`.
   - `Tower.tsx`: `FloorPrep` (local component) inside every near floor's Suspense boundary.
 
-- [ ] **Step 1: Write `tests/unit/precompile.test.ts`**
+- [x] **Step 1: Write `tests/unit/precompile.test.ts`**
 
 ```ts
 import { beforeEach, describe, expect, it } from "vitest";
@@ -1146,7 +1148,7 @@ describe("precompileScene", () => {
 Run: `bunx vitest run tests/unit/precompile.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/scene/precompile"`.
 
-- [ ] **Step 2: Create `src/experience/scene/precompile.ts`**
+- [x] **Step 2: Create `src/experience/scene/precompile.ts`**
 
 ```ts
 import type { Camera, Object3D, Scene, WebGLRenderer, WebGLRenderTarget } from "three";
@@ -1205,7 +1207,7 @@ export function resetSceneTarget(): void {
 Run: `bunx vitest run tests/unit/precompile.test.ts`
 Expected: PASS.
 
-- [ ] **Step 3: Write `tests/unit/text-sync.test.ts`**
+- [x] **Step 3: Write `tests/unit/text-sync.test.ts`**
 
 ```ts
 import { beforeEach, describe, expect, it } from "vitest";
@@ -1296,7 +1298,7 @@ describe("troika sync tracking", () => {
 Run: `bunx vitest run tests/unit/text-sync.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/tower/textSync"`.
 
-- [ ] **Step 4: Create `src/experience/tower/textSync.ts`**
+- [x] **Step 4: Create `src/experience/tower/textSync.ts`**
 
 ```ts
 import type { Object3D } from "three";
@@ -1356,7 +1358,7 @@ export function trackTextSync(textProto: SyncProto, batchProto?: BatchProto): vo
 Run: `bunx vitest run tests/unit/text-sync.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Install the tracker in `src/experience/text-config.ts`**
+- [x] **Step 5: Install the tracker in `src/experience/text-config.ts`**
 
 Replace line 1 with:
 
@@ -1373,7 +1375,7 @@ After the `configureTextBuilder(...)` line (line 12) add:
 trackTextSync(Text.prototype, BatchedText.prototype);
 ```
 
-- [ ] **Step 6: Add the `FloorPrep` marker to `src/experience/tower/Tower.tsx`**
+- [x] **Step 6: Add the `FloorPrep` marker to `src/experience/tower/Tower.tsx`**
 
 Replace the React import on line 3 with:
 
@@ -1436,7 +1438,7 @@ In the JSX, change the Suspense body so the marker follows the floor:
               </Suspense>
 ```
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 ```bash
 bun run verify:quick
@@ -1466,7 +1468,7 @@ Connects Tasks 3 and 4 in the Director and `FloorLevel`, exposes the measurement
 - Consumes: `advanceRide(..., { ready, cap })`, `rideCap`, `trackFrameDt` (Tasks 2 and 3); `destinationReady`, `floorReady`, `ridePrep` (Task 3); `startRideStats`, `stepRideStats`, `finishRideStats`, `formatRideSummary`, `RideStats` (Task 3); `floorContentVisible` (Task 3).
 - Produces: `window.__hq.ridePrep` (the `ridePrep` object; `lastRide: RideSummary | null`); console line `[hq ride] ...` when the URL has `?perf=1`.
 
-- [ ] **Step 1: Write the failing e2e for the gate and the precompile**
+- [x] **Step 1: Write the failing e2e for the gate and the precompile**
 
 Append to `e2e/ride.spec.ts`:
 
@@ -1486,7 +1488,7 @@ test("the car waits for the new floor with the doors closed, then compiles nothi
 Run: `bun run build && E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts -g "waits for the new floor" --reporter=list`
 Expected: FAIL with `expect(received).not.toBeNull()` (`window.__hq.ridePrep` does not exist yet).
 
-- [ ] **Step 2: Wire the Director**
+- [x] **Step 2: Wire the Director**
 
 In `src/experience/scene/Director.tsx`:
 
@@ -1558,7 +1560,7 @@ In the arrival branch, right after `audio.play("ding");` add:
           }
 ```
 
-- [ ] **Step 3: Use `floorContentVisible` in `src/experience/tower/FloorLevel.tsx`**
+- [x] **Step 3: Use `floorContentVisible` in `src/experience/tower/FloorLevel.tsx`**
 
 Add imports:
 
@@ -1585,7 +1587,7 @@ Replace the `useFrame` body (lines 37 to 49) with:
   });
 ```
 
-- [ ] **Step 4: Expose `ridePrep` to Playwright in `src/experience/Experience.tsx`**
+- [x] **Step 4: Expose `ridePrep` to Playwright in `src/experience/Experience.tsx`**
 
 Add `import { ridePrep } from "./tower/ridePrep";` after the `interactRuntime` import, and change line 107 to:
 
@@ -1593,7 +1595,7 @@ Add `import { ridePrep } from "./tower/ridePrep";` after the `interactRuntime` i
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime, ridePrep };
 ```
 
-- [ ] **Step 5: Run the unit tests, build and the ride spec**
+- [x] **Step 5: Run the unit tests, build and the ride spec**
 
 ```bash
 bun run verify:quick
@@ -1601,12 +1603,12 @@ E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts --reporter=list
 ```
 Expected: all three ride tests PASS. The gate test prints `ride L1 to L3: {"from":"L1","to":"L3",...,"timedOut":false,"programs":0,...}`. If `programs` is not 0, find the material: temporarily add `console.info(three.gl.info.programs?.slice(-3).map((p) => p.name))` next to the arrival `console.info` and run with `?perf=1`; the usual cause is a material created after mount (lazy texture swap or a `key` remount). Precompile that object too (call `precompileScene` again from the component that creates it) rather than relaxing the assertion.
 
-- [ ] **Step 6: Check render budgets and the experience suite**
+- [x] **Step 6: Check render budgets and the experience suite**
 
 Run: `E2E_PORT=4435 bun run e2e:changed`
 Expected: `experience`, `ride` (and `career` if the camera changed in this branch) pass, including every `expectRenderBudget` call (precompile adds no draw call).
 
-- [ ] **Step 7: Look gate (settled poses must not change)**
+- [x] **Step 7: Look gate (settled poses must not change)**
 
 ```bash
 SCREENSHOTS=1 E2E_PORT=4435 SHOT_DIR=screenshots/after bunx playwright test e2e/screenshots.spec.ts -g "P6 review poses" --workers=1
@@ -1623,7 +1625,7 @@ Threshold: for each file `A/B <= max(1.5 x A/A, 0.1% of the pixels)` (1,296 px a
 
 Ride frames themselves differ only on purpose: during `toDoor`, `boarding` and `closing` of a descent, a floor below the car that is still compiling is hidden, which is exactly how explore shows that floor one frame before the ride starts. Rollback note: replace the `floorContentVisible` call with the old two-line rule (`above`/`below`) to restore main's ride frames; the dolly still never skips (Task 2), only the first descent may pause in `boarding` while it compiles.
 
-- [ ] **Step 8: Update the ride docs**
+- [x] **Step 8: Update the ride docs**
 
 `docs/superpowers/specs/agent-hq/02-interaction-and-states.md` line 43, replace the row with:
 
@@ -1651,7 +1653,7 @@ Ride frames themselves differ only on purpose: during `toDoor`, `boarding` and `
 
 In "## Fast verification", after "`src/experience/interact/**` to `interact`, `experience`, `pads` and `career`," insert "`src/experience/tower/**`, `scene/Director.tsx`, `scene/precompile.ts` and `text-config.ts` to `ride` and `experience`,".
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/scene/Director.tsx src/experience/tower/FloorLevel.tsx src/experience/Experience.tsx e2e/ride.spec.ts AGENTS.md docs/superpowers/specs/agent-hq/02-interaction-and-states.md docs/superpowers/specs/agent-hq/03-rover-camera-input.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md docs/superpowers/plans/2026-10-13-r5-p6-measurements.md
@@ -1672,7 +1674,7 @@ Owner: "also can you make Page View button have icon on the left". One `ViewActi
 - Consumes: `hud.pageView`, `hud.pageViewHint` (`messages/*.json`), `data-testid="page-view"`.
 - Produces: `PageIcon` (local to `Controls.tsx`): `<svg data-testid="page-view-icon" aria-hidden="true">` as the first child of the Page view button.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 In `tests/hud/Controls.test.tsx`, inside the first test after `expect(pageView.className).toContain("bg-cyan");` add:
 
@@ -1695,7 +1697,7 @@ and in the phone test after the first `expect(...)` add:
 Run: `bunx vitest run tests/hud/Controls.test.tsx`
 Expected: FAIL (`expected 'button' ...` / first child is not an svg).
 
-- [ ] **Step 2: Implement the icon**
+- [x] **Step 2: Implement the icon**
 
 In `src/hud/Controls.tsx`, replace lines 54 to 70 (from `const launcher = ...` through the end of `ViewActions`) with:
 
@@ -1745,7 +1747,7 @@ function ViewActions({ onExit }: { onExit: () => void }) {
 Run: `bunx vitest run tests/hud/Controls.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 3: Extend the e2e layout checks**
+- [x] **Step 3: Extend the e2e layout checks**
 
 In `e2e/hud.spec.ts`, inside the `3D top bar` loop test, after `const a = await box(ask);` add:
 
@@ -1779,12 +1781,12 @@ and add `import id from "../messages/id.json";` under the `en` import.
 Run: `bun run build && E2E_PORT=4435 bunx playwright test e2e/hud.spec.ts -g "top bar|1024 px" --reporter=list`
 Expected: 4 tests PASS. If the 1024 ID test fails, the bar wraps: change `TopBar`'s breakpoint class from `lg:flex-row` to `xl:flex-row` (tablet-style own row up to 1279 px) and update appendix 04's "one row from 1024 px" accordingly; re-run.
 
-- [ ] **Step 4: Screenshots at the three sizes**
+- [x] **Step 4: Screenshots at the three sizes**
 
 Run: `SCREENSHOTS=1 E2E_PORT=4435 SHOT_DIR=screenshots/after bunx playwright test e2e/screenshots.spec.ts -g "P6 review poses" --workers=1`
 Expected: `screenshots/after/p6/topbar-{1440x900,2560x1440,390x844}.png` show the icon left of "Page view"; compare with `screenshots/before/p6/topbar-*.png` (only the button grows by the icon width and gap, about 26 px). Attach both sets to the PR.
 
-- [ ] **Step 5: Update appendix 04**
+- [x] **Step 5: Update appendix 04**
 
 `docs/superpowers/specs/agent-hq/04-hud-responsive-i18n.md` line 21, replace with:
 
@@ -1792,7 +1794,7 @@ Expected: `screenshots/after/p6/topbar-{1440x900,2560x1440,390x844}.png` show th
 | Page view and Ask AI | Top-right, last in the bar: Page view (primary, solid cyan, a document icon left of the label), then Ask AI at the far right | Own row under the bar, same order | Second row under the menu row, same order |
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 E2E_PORT=4435 bun run e2e:changed
@@ -1818,7 +1820,7 @@ Owner decision 12 (plan.md): "3D profile card KAW badge becomes a round photo". 
 - Consumes: source photo `/Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/owner-photo/kurniadi-photo.png` (800x800, never committed).
 - Produces (`src/lib/brand-photo.ts`): `BRAND_PHOTO_WIDTHS: readonly [160, 320, 640]`, `type BrandPhotoWidth`, `brandPhotoSrc(width: BrandPhotoWidth): string` (`/brand/kurniadi-photo-${width}.webp`), `brandPhotoSrcSet(): string`. `ProfilePhoto` (local to `ProfileCard.tsx`, `data-testid="profile-photo"`).
 
-- [ ] **Step 1: Generate the renditions (skip if `origin/main` already has them from P1)**
+- [x] **Step 1: Generate the renditions (skip if `origin/main` already has them from P1)**
 
 ```bash
 rtk git ls-tree --name-only origin/main public/brand/
@@ -1836,7 +1838,7 @@ Expected: three files, roughly 5 to 9 KB (160), 14 to 25 KB (320), 40 to 70 KB (
 bun -e 'import sharp from "sharp"; const src = process.argv[1]; for (const w of [160, 320, 640]) await sharp(src).resize(w, w).flatten({ background: "#ffffff" }).webp({ quality: 80, effort: 6 }).toFile(`public/brand/kurniadi-photo-${w}.webp`);' "$SRC"
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/content/assets.test.ts` inside `describe("assets", ...)`:
 
@@ -1886,7 +1888,7 @@ In `tests/hud/ProfileCard.test.tsx`, add `import { brandPhotoSrc } from "@/lib/b
 Run: `bunx vitest run tests/hud/ProfileCard.test.tsx tests/content/assets.test.ts`
 Expected: FAIL (`Failed to resolve import "@/lib/brand-photo"`; the assets test passes once Step 1 ran).
 
-- [ ] **Step 3: Create `src/lib/brand-photo.ts`**
+- [x] **Step 3: Create `src/lib/brand-photo.ts`**
 
 ```ts
 /**
@@ -1905,7 +1907,7 @@ export function brandPhotoSrcSet(): string {
 }
 ```
 
-- [ ] **Step 4: Replace the monogram badge in `src/hud/ProfileCard.tsx`**
+- [x] **Step 4: Replace the monogram badge in `src/hud/ProfileCard.tsx`**
 
 Replace `import { Monogram } from "@/components/Monogram";` with `import { brandPhotoSrc, brandPhotoSrcSet } from "@/lib/brand-photo";`. Before `export function ProfileCard` add:
 
@@ -1939,7 +1941,7 @@ Replace `<Monogram text={data.profile.monogram} size={36} />` with `<ProfilePhot
 Run: `bunx vitest run tests/hud/ProfileCard.test.tsx tests/content/assets.test.ts`
 Expected: PASS (including the existing test, whose `[aria-hidden='true'].rounded-full` probe still finds nothing: the badge has no `aria-hidden`).
 
-- [ ] **Step 5: e2e: the badge loads at every HUD size**
+- [x] **Step 5: e2e: the badge loads at every HUD size**
 
 Append to `e2e/hud.spec.ts` (after the top bar tests):
 
@@ -1964,7 +1966,7 @@ test.describe("profile photo badge", () => {
 Run: `bun run build && E2E_PORT=4435 bunx playwright test e2e/hud.spec.ts -g "profile photo" --reporter=list`
 Expected: 3 tests PASS.
 
-- [ ] **Step 6: Amend the photo rule (skip any part P1 already merged)**
+- [x] **Step 6: Amend the photo rule (skip any part P1 already merged)**
 
 `AGENTS.md` line 14, replace the end of the sentence "the Master's degree, 2026 hackathon entries or any photo." with "the Master's degree, 2026 hackathon entries or any photo other than the owner's portrait (`public/brand/kurniadi-photo-{160,320,640}.webp`, owner decision 2026-10-13, C5 revised)."
 
@@ -1982,7 +1984,7 @@ Expected: 3 tests PASS.
 
 `tests/content/safety.test.ts` keeps "publishes no photo (C5)" (it checks `content.profile.photo` and the word "portrait" in the dataset, which P6 does not touch); if P1 renamed or changed it, keep P1's version.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 bun run verify:quick
@@ -2007,11 +2009,11 @@ Owner decision 12: "the Highlights Hall "About me" station shows it in a neon fr
 - Consumes: `brandPhotoSrc(320)` (Task 7), `stationOf`, `HALL`, `coverCrop`, `SHOT_CELL`, `hallShots`, `onPanel` (existing).
 - Produces (`hallContent.ts`): `PHOTO = { u: -3.45, y: 4.85, size: 1.8 }`, `PHOTO_SRC: string`, `PHOTO_BRIGHTNESS = 0.85`, `interface AtlasCell { src: string; x: number; w: number; h: number; brightness: number }`, `interface HallAtlas { cells: AtlasCell[]; width: number; height: number }`, `hallAtlas(thumbs: readonly string[], cell: { w: number; h: number }): HallAtlas`, `hallPhoto(index: number): ShotQuad`, `shotQuadBuffers(quads: readonly ShotQuad[], cells: readonly AtlasCell[])` (signature change: cells instead of a count). `HighlightsHall.tsx`: `useHallAtlas(atlas: HallAtlas, enabled: boolean): CanvasTexture | null`.
 
-- [ ] **Step 1: Before captures exist**
+- [x] **Step 1: Before captures exist**
 
 Confirm `screenshots/before/p6/l1-about-{1440x900,2560x1440,390x844}.png` from Task 1 Step 6. Also record the L1 budget numbers on the unchanged hall: `E2E_PORT=4435 bunx playwright test e2e/highlights.spec.ts -g "headroom" --reporter=list` prints `L1 lite at ...: N calls` and `L1 full at ...` lines; copy them into the measurements file under "Hall before".
 
-- [ ] **Step 2: Write the failing unit tests**
+- [x] **Step 2: Write the failing unit tests**
 
 In `tests/unit/hall-content.test.ts`, extend the import from `hallContent` with `hallAtlas, hallPhoto, PHOTO, PHOTO_SRC, SHOT_CELL,` and add `import { brandPhotoSrc } from "@/lib/brand-photo";`. Replace the test "builds plinths, panels, stat tiles and screenshot frames ..." expectation `expect(solids).toHaveLength(4 + 4 + 4 + 3);` with:
 
@@ -2077,7 +2079,7 @@ Replace the test "puts the screenshots on the projects panel, facing the plaza, 
 Run: `bunx vitest run tests/unit/hall-content.test.ts`
 Expected: FAIL (`hallAtlas is not a function`, length 15 instead of 16).
 
-- [ ] **Step 3: Implement in `src/experience/floors/lobby/hallContent.ts`**
+- [x] **Step 3: Implement in `src/experience/floors/lobby/hallContent.ts`**
 
 Add the import `import { brandPhotoSrc } from "@/lib/brand-photo";` under the existing imports. After `export const SHOT_CELL = ...;` add:
 
@@ -2193,7 +2195,7 @@ Update the file's top doc comment: "the three screenshots and the owner's portra
 Run: `bunx vitest run tests/unit/hall-content.test.ts`
 Expected: PASS (the existing "keeps every station label on its own panel" passes: the block spans u -2.2 to 4.7 on a 10 u panel).
 
-- [ ] **Step 4: Draw the portrait in `src/experience/floors/lobby/HighlightsHall.tsx`**
+- [x] **Step 4: Draw the portrait in `src/experience/floors/lobby/HighlightsHall.tsx`**
 
 Change the `hallContent` import to:
 
@@ -2289,7 +2291,7 @@ Update the `HighlightsHall` doc comment: "the screenshots and the owner's portra
 Run: `bun run typecheck && bunx vitest run tests/unit/hall-content.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: e2e: the portrait loads with the hall and the budget holds**
+- [x] **Step 5: e2e: the portrait loads with the hall and the budget holds**
 
 In `e2e/highlights.spec.ts`, in the headroom test change
 
@@ -2321,12 +2323,12 @@ and add after that test loop:
 Run: `bun run build && E2E_PORT=4435 bunx playwright test e2e/highlights.spec.ts -g "headroom|portrait" --reporter=list`
 Expected: 3 tests PASS. The printed `L1 lite/full at ...` call counts at the existing spots equal the "Hall before" numbers (the portrait shares the screenshot mesh and the merged solids); record them under "Hall after".
 
-- [ ] **Step 6: Screenshots before/after**
+- [x] **Step 6: Screenshots before/after**
 
 Run: `SCREENSHOTS=1 E2E_PORT=4435 SHOT_DIR=screenshots/after bunx playwright test e2e/screenshots.spec.ts -g "P6 review poses" --workers=1`
 Expected: `screenshots/after/p6/l1-about-*.png` show the portrait in a green neon frame left of the name, headline in at most two lines, tiles and subheadline unchanged; `profile-*.png` show the round badge. Check the full-tier 1440x900 and 2560x1440 shots: the backdrop must not bloom into a white block. If it does, lower `PHOTO_BRIGHTNESS` in 0.05 steps (unit tests do not pin the value) and re-capture. Re-run the Task 5 Step 7 diff loop for `l1-plaza` and `l3-arrival`; both stay within the threshold (the About face is not in those poses; if `l1-plaza` shows the hall at a size, the diff is limited to that panel: confirm by eye and note it in the PR). Attach before/after `l1-about` and `profile` sets to the PR.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 bun run verify:quick
@@ -2348,7 +2350,7 @@ Rollback: revert; the About face returns to the centered name and headline, and 
 - Consumes: everything above.
 - Produces: the PR.
 
-- [ ] **Step 1: README: how to check the elevator on any device**
+- [x] **Step 1: README: how to check the elevator on any device**
 
 Append to the "## Performance" section of `README.md`:
 
@@ -2356,7 +2358,7 @@ Append to the "## Performance" section of `README.md`:
 The elevator never skips its ride: each frame adds at most 1/30 s of ride time (1/20 s on steadily slow devices), and on a first visit the car waits with closed doors (at most 1.5 s) until the new floor's shaders are compiled and its text is set. To check a device, open any 3D route with `?perf=1` (for example `/en?perf=1`), open the browser console (F12) and ride: every ride prints one `[hq ride]` line with the dolly frames, car heights, biggest jump, longest frame, wait and shaders compiled while moving. Good: at least 12 car heights, biggest jump at most 25% of the trip, "0 shaders compiled while moving".
 ```
 
-- [ ] **Step 2: Copy the plan into the repo**
+- [x] **Step 2: Copy the plan into the repo**
 
 ```bash
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r5-p6-elevator-ride-pageview-icon.md docs/superpowers/plans/2026-10-13-r5-p6-elevator-ride-pageview-icon.md
@@ -2364,7 +2366,7 @@ grep -c "$(printf '\342\200\224')" docs/superpowers/plans/2026-10-13-r5-p6-eleva
 ```
 Expected: every count is `0` (no em dashes).
 
-- [ ] **Step 3: Full local verification**
+- [x] **Step 3: Full local verification**
 
 ```bash
 rm -rf .next
@@ -2374,11 +2376,11 @@ E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts --reporter=list
 ```
 Expected: `verify:quick` green (typecheck, lint, every unit test, build); `e2e:changed` runs at least `experience`, `ride`, `career`, `hud`, `highlights`, `missions`, `drawer-solid`, `walk` and passes; the ride spec prints the "after" lines. Copy them into the measurements file under "After" next to the Task 1 "Before" line, plus the Task 5 and Task 8 A/A, A/B and draw-call numbers.
 
-- [ ] **Step 4: Lighthouse budgets unchanged**
+- [x] **Step 4: Lighthouse budgets unchanged**
 
 Nothing here runs on the Page View path (HUD, 3D chunk and lazy hall atlas only). Confirm on the PR's `Lighthouse CI` job (LCP 2000 ms, CLS 0.01, TBT 200 ms, JS 240 KB, CSS 20 KB, fonts 60 KB, HTML 80 KB): all green. The 3D path gains about 6 KB (badge, 160 px webp) at HUD mount and about 20 KB (320 px webp) when the rover heads for the hall; note both in the PR for P4's 3D bytes gate.
 
-- [ ] **Step 5: Push and open the PR**
+- [x] **Step 5: Push and open the PR**
 
 ```bash
 rtk git add README.md docs/superpowers/plans/2026-10-13-r5-p6-elevator-ride-pageview-icon.md docs/superpowers/plans/2026-10-13-r5-p6-measurements.md
@@ -2396,7 +2398,7 @@ Then edit the PR body (web UI or `gh pr edit --body-file`) so it contains, in th
 6. "Owner check on the Windows PC" (Step 6 text).
 7. Cross-workstream notes (copy the table from this plan).
 
-- [ ] **Step 6: Owner check on the Windows PC (put in the PR and in the hand-off message)**
+- [x] **Step 6: Owner check on the Windows PC (put in the PR and in the hand-off message)**
 
 1. After the deploy, on the Windows PC (Brave, 2560x1440), open `https://kurniadi.pages.dev/en?perf=1` in a fresh window.
 2. Press F12 and open the Console tab.
@@ -2405,7 +2407,7 @@ Then edit the PR body (web UI or `gh pr edit --body-file`) so it contains, in th
 5. Each ride prints a line such as `[hq ride] L1 to L3: 19 dolly frames, 19 car heights, biggest jump 14% of the trip, longest frame 120 ms, waited 0.40 s, 0 shaders compiled while moving, 3.10 s in total`.
 6. Good: at least 12 car heights and a biggest jump of at most 25% on every line; the first ride to a floor may say "waited" up to 1.50 s, later rides about 0. Send a screenshot of the console if any line says "(gave up)" or shows fewer than 12 car heights.
 
-- [ ] **Step 7: Clean up**
+- [x] **Step 7: Clean up**
 
 ```bash
 rm -rf screenshots/before screenshots/before2 screenshots/after

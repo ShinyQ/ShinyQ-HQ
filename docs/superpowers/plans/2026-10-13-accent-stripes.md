@@ -1,5 +1,7 @@
 # R5 P10: Accent Stripes Replaced Sitewide Implementation Plan
 
+Status: shipped in #72 (1c77b04), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remove every colored left or top edge stripe from the site (Page View, HUD, Cmd-K, dialogs; the OG bar is P9's) and mark state and category with a small colored dot or icon chip next to the label plus a subtle full-outline glow on hover or selection, with cards keeping one uniform neutral hairline border.
@@ -125,7 +127,7 @@ Records the look of `main` before any source change: full pages, the states the 
 - Consumes: `asReturningVisitor`, `waitForHQ`, `waitForPhase` from `e2e/hq.ts`; `heroPod` from `e2e/routes.ts`.
 - Produces: `captureShot(page: Page, dir: string, name: string, options: ShotOptions): Promise<void>`; `diffShotDirs(page: Page, beforeDir: string, afterDir: string, outDir: string, options: DiffOptions): Promise<DiffRow[]>`; `interface Box { x; y; w; h }`; `interface ShotOptions { kind: "page" | "viewport" | "element"; element?: Locator; changes?: readonly string[] }`; `interface DiffOptions { tolerance: number; pad: number }`; `interface DiffRow { name; width; height; changed; outside; ratio; expected; sizeMismatch? }`. Captures land in `screenshots/p10/{before,after}/<scene>-<w>x<h>.png` plus `.json` (`{ regions }`); the diff writes `screenshots/p10/diff/*.diff.png`, `report.json`, `report.md`. `/screenshots/` is gitignored.
 
-- [ ] **Step 1: Create the capture and diff harness**
+- [x] **Step 1: Create the capture and diff harness**
 
 Create `e2e/region-diff.ts`:
 
@@ -298,7 +300,7 @@ export async function diffShotDirs(page: Page, beforeDir: string, afterDir: stri
 
 (Planning note: this harness was exercised against a local build of `main`; a CSS-only change to the ToC and the blockquote produced 0 changed pixels outside the edited elements and 0 on `/en/labs`.)
 
-- [ ] **Step 2: Add the P10 captures and the diff gate to the opt-in visual spec**
+- [x] **Step 2: Add the P10 captures and the diff gate to the opt-in visual spec**
 
 In `e2e/pageview-visual.spec.ts`, replace the first two lines:
 
@@ -459,12 +461,12 @@ test.describe("P10 accent stripes", () => {
 });
 ```
 
-- [ ] **Step 3: Typecheck and lint the test-only change**
+- [x] **Step 3: Typecheck and lint the test-only change**
 
 Run: `bun run typecheck && bun run lint`
 Expected: both exit 0 (no output from `tsc`; ESLint prints nothing).
 
-- [ ] **Step 4: Build main and capture the "before" set**
+- [x] **Step 4: Build main and capture the "before" set**
 
 Run:
 
@@ -476,7 +478,7 @@ ls screenshots/p10/before | wc -l
 
 Expected: build exits 0; Playwright prints `3 passed` and `1 skipped` (the diff test); the count is `82`: 14 scenes x (PNG + JSON) at 1440x900 and at 2560x1440, and 13 x 2 at 390x844 (the ToC viewport shot is desktop only because the ToC is hidden below 1024 px).
 
-- [ ] **Step 5: Record the byte baseline**
+- [x] **Step 5: Record the byte baseline**
 
 Run:
 
@@ -486,7 +488,7 @@ bun -e 'import { readFileSync, writeFileSync } from "node:fs"; import { brotliCo
 
 Expected: one JSON line such as `{"css":{"files":1,"raw":7xxxx,"br":1xxxx},"js":{...}}` (CSS brotli is about 11 to 13 KB, well under the 20 KB budget). Also note the `Lighthouse CI` job's stylesheet and script transfer sizes for the latest green `main` run (Actions > CI > Lighthouse CI > job summary) in the PR body draft.
 
-- [ ] **Step 6: Copy this plan into the repo and commit**
+- [x] **Step 6: Copy this plan into the repo and commit**
 
 ```bash
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r5-p10-accent-stripes.md docs/superpowers/plans/2026-10-13-accent-stripes.md
@@ -510,7 +512,7 @@ git commit -m "P10: before/after capture and pixel diff harness for the accent s
   - CSS components `.hq-dot` (6 px circle filled with `currentColor`), `.hq-dot-md` (8 px), `.hq-dot-glow` (`box-shadow: 0 0 8px currentColor`).
   - Tailwind utility `hq-glow`: on `:hover`, `:focus-visible`, `[aria-current="true"]` and `[aria-selected="true"]` the element's whole border turns `color-mix(in srgb, var(--hq-glow, var(--color-cyan)) 50%, transparent)` and gets `box-shadow: 0 0 24px -8px var(--hq-glow, var(--color-cyan))`; set `[--hq-glow:var(--color-violet)]` (or any token) to recolor. It never touches `outline`, so the global keyboard focus ring stays.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/hud/AccentDot.test.tsx`:
 
@@ -554,12 +556,12 @@ In `tests/hud/RoomDrawer.test.tsx`, add inside `describe("RoomDrawer", () => {`,
   });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bun run test tests/hud/AccentDot.test.tsx tests/hud/RoomDrawer.test.tsx`
 Expected: FAIL. `AccentDot.test.tsx` fails to resolve `@/components/AccentDot`; the new RoomDrawer test fails with `expect(received).toHaveAttribute()` on `null` (the bar's dot has no `data-accent-dot` yet). The other RoomDrawer tests pass.
 
-- [ ] **Step 3: Create the component**
+- [x] **Step 3: Create the component**
 
 Create `src/components/AccentDot.tsx`:
 
@@ -591,7 +593,7 @@ export function AccentDot({ tone, size = "sm", glow = false, className = "" }: A
 }
 ```
 
-- [ ] **Step 4: Add the CSS**
+- [x] **Step 4: Add the CSS**
 
 In `src/app/globals.css`, replace:
 
@@ -658,7 +660,7 @@ Append at the very end of `src/app/globals.css` (top level, outside any `@layer`
 
 (Planning note: compiled with this repo's Tailwind 4 `@tailwindcss/node`; it lands in `@layer utilities`, so it wins over `.card` (components layer) and, at higher specificity, over `border-transparent`.)
 
-- [ ] **Step 5: Move the drawer bar dot onto `AccentDot` (pixel-identical: 8 px circle in the same color)**
+- [x] **Step 5: Move the drawer bar dot onto `AccentDot` (pixel-identical: 8 px circle in the same color)**
 
 In `src/hud/drawer/RoomDrawer.tsx`, replace:
 
@@ -687,17 +689,17 @@ with:
 
 (Keep the `@/components/AccentDot` import next to the other `@/` imports in the file's existing order; `ACCENT_DOT` stays exported from `src/lib/accent.ts` because P1 may use it.)
 
-- [ ] **Step 6: Run the tests to see them pass**
+- [x] **Step 6: Run the tests to see them pass**
 
 Run: `bun run test tests/hud/AccentDot.test.tsx tests/hud/RoomDrawer.test.tsx`
 Expected: PASS, `Test Files  2 passed`.
 
-- [ ] **Step 7: Typecheck and lint**
+- [x] **Step 7: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: exit 0.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/components/AccentDot.tsx src/app/globals.css src/hud/drawer/RoomDrawer.tsx tests/hud/AccentDot.test.tsx tests/hud/RoomDrawer.test.tsx
@@ -720,7 +722,7 @@ Two guards with the same rule. The static scanner reads `src` and fails on a new
   - `findEdgeAccents(selector: string): string[]` (pass to `page.evaluate`); empty array means clean.
   - `P10_PENDING: Set<string>` and `QUOTE_POST` in `e2e/pageview.spec.ts`; Tasks 5 to 7 delete their paths.
 
-- [ ] **Step 1: Write the static scanner**
+- [x] **Step 1: Write the static scanner**
 
 Create `tests/helpers/edge-accents.ts`:
 
@@ -864,7 +866,7 @@ export function scanTree(repo: string, root = "src"): EdgeAccent[] {
 }
 ```
 
-- [ ] **Step 2: Write the detector self-tests and the ratchet**
+- [x] **Step 2: Write the detector self-tests and the ratchet**
 
 Create `tests/unit/edge-accents.test.ts`:
 
@@ -952,12 +954,12 @@ describe("src", () => {
 });
 ```
 
-- [ ] **Step 3: Run the scanner tests**
+- [x] **Step 3: Run the scanner tests**
 
 Run: `bun run test tests/unit/edge-accents.test.ts`
 Expected: PASS, `Tests  4 passed`. The ratchet test proves the scanner finds exactly the six stripes of the inventory and nothing else in `src` (planning run on `main` @ f61fbba printed exactly these six ids). To see it guard, temporarily add `<div className="border-l-2 border-amber" />` to any component: the test fails listing `...: class: border-l-2 + border-amber`; remove it again.
 
-- [ ] **Step 4: Write the runtime audit**
+- [x] **Step 4: Write the runtime audit**
 
 Create `e2e/edge-audit.ts`:
 
@@ -1059,7 +1061,7 @@ export function findEdgeAccents(selector: string): string[] {
 
 (Planning note: run against a synthetic page this flags a 2 px `oklab` top bar, a 2 px left border, an inset 3 px shadow and a 3 px `::before` bar, and passes a full cyan outline with glow, a 2 px bottom tab rule, the `.glass` white inset highlight, a 6 px dot, gradient data packets and neutral `rgb(255 255 255 / 0.09)` rules. On a build of `main` it flags the current ToC link, the six blockquotes of the quote post and the palette's selected row; the HUD and the drawer are clean at 1440x900 and 390x844.)
 
-- [ ] **Step 5: Add the Page View and Ask dock audits**
+- [x] **Step 5: Add the Page View and Ask dock audits**
 
 In `e2e/pageview.spec.ts`, add below `import { openPage } from "./hq";`:
 
@@ -1111,7 +1113,7 @@ test.describe("no colored edge stripes", () => {
 
 (`content` is already imported from `./routes` at the top of the file.)
 
-- [ ] **Step 6: Add the Glass Drawer and 3D HUD audits**
+- [x] **Step 6: Add the Glass Drawer and 3D HUD audits**
 
 In `e2e/drawer-solid.spec.ts`, add below `import { asReturningVisitor, waitForHQ, waitForPhase } from "./hq";`:
 
@@ -1139,7 +1141,7 @@ with:
     await context.close();
 ```
 
-- [ ] **Step 7: Run the new e2e audits**
+- [x] **Step 7: Run the new e2e audits**
 
 Run:
 
@@ -1150,7 +1152,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts e2e/drawer-solid.spec.ts -g "edge
 
 Expected: PASS, `6 passed` (the two Page View audits, the three drawer viewports and the HUD pills test, which `near-opaque` also matches). These surfaces are already clean or listed as pending, so this step proves the guards run; the pending entries turn into real assertions in Tasks 5 to 7.
 
-- [ ] **Step 8: Typecheck, lint, commit**
+- [x] **Step 8: Typecheck, lint, commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -1169,7 +1171,7 @@ git commit -m "P10: static and runtime guards against colored edge stripes (ratc
 - Consumes: `AccentDot` (Task 2), `findEdgeAccents` (Task 3).
 - Produces: every palette option renders an `AccentDot` first (`data-accent-dot="cyan"` with `hq-dot-glow` when selected, `"line"` otherwise); the selected option carries `border border-cyan/60 bg-cyan/10 shadow-[0_0_16px_-6px_var(--color-cyan)]`, idle options `border border-transparent`. Row height is unchanged (1 px border + 7 px padding replaces 8 px padding).
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 In `tests/hud/CommandPalette.test.tsx`, add inside `describe("CommandPalette", () => {`, right after the `it("moves the active option with the arrow keys, wrapping around", ...)` test:
 
@@ -1191,7 +1193,7 @@ In `tests/hud/CommandPalette.test.tsx`, add inside `describe("CommandPalette", (
   });
 ```
 
-- [ ] **Step 2: Write the failing e2e test**
+- [x] **Step 2: Write the failing e2e test**
 
 In `e2e/pageview.spec.ts`, add inside `test.describe("no colored edge stripes", () => {`, after the Ask dock test:
 
@@ -1222,7 +1224,7 @@ In `e2e/pageview.spec.ts`, add inside `test.describe("no colored edge stripes", 
   });
 ```
 
-- [ ] **Step 3: Run both to see them fail**
+- [x] **Step 3: Run both to see them fail**
 
 Run:
 
@@ -1233,7 +1235,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "Cmd-K marks"
 
 Expected: the unit test FAILS on `expect(selected.className).not.toMatch(...)` (the class list holds `border-l-2`); the e2e test FAILS on `expect(look.sides).toBe(1)` (received 2: cyan left, default elsewhere). The `out/` build from Task 3 is still `main`'s palette.
 
-- [ ] **Step 4: Implement the row**
+- [x] **Step 4: Implement the row**
 
 In `src/hud/CommandPalette.tsx`, add below `import { useTranslations } from "next-intl";`:
 
@@ -1264,7 +1266,7 @@ with:
 
 (The idle `line` dots form a quiet bullet column under the group heading; the selected row gets the tinted fill, the full cyan hairline, the halo and a glowing cyan dot, plus `text-ink` on the title as before. The input keeps focus and `aria-activedescendant`, so keyboard users see the same selection.)
 
-- [ ] **Step 5: Shrink the ratchet**
+- [x] **Step 5: Shrink the ratchet**
 
 In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
 
@@ -1272,7 +1274,7 @@ In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
   "src/hud/CommandPalette.tsx: class: border-l-2 + border-cyan",
 ```
 
-- [ ] **Step 6: Run the tests to see them pass**
+- [x] **Step 6: Run the tests to see them pass**
 
 Run:
 
@@ -1284,7 +1286,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts e2e/ask.spec.ts -g "Cmd-K"
 
 Expected: unit PASS (`Test Files  2 passed`); e2e PASS: `Cmd-K marks the selected row ...` and the existing `Cmd-K Ask row sends the question to the dock` (2 passed).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -1304,7 +1306,7 @@ git commit -m "P10: Cmd-K selected row uses a glowing dot and a full outline ins
 - Consumes: `hq-glow` (Task 2), `findEdgeAccents` (Task 3), `STATUS_CLASS` already in `CertDialog.tsx`.
 - Produces: featured cards keep `.card` (neutral hairline) and add `hq-glow` (cyan outline glow on hover and keyboard focus); the issuer logo stays the icon chip next to the issuer label. The preview card keeps the status chip next to the "Status" label (`pv-mark text-green|text-amber|text-ink-3`) as its only status color.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Create `tests/hud/CertDialog.test.tsx`:
 
@@ -1358,7 +1360,7 @@ describe("CertDialog (R5 P10)", () => {
 });
 ```
 
-- [ ] **Step 2: Write the failing e2e test and arm the pending pages**
+- [x] **Step 2: Write the failing e2e test and arm the pending pages**
 
 In `e2e/pageview.spec.ts`, change the `P10_PENDING` line to:
 
@@ -1387,7 +1389,7 @@ and add inside `test.describe("no colored edge stripes", () => {`:
   });
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run:
 
@@ -1398,7 +1400,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "edge stripes"
 
 Expected: unit FAILS 3 times on `expect(...querySelector(".absolute.inset-x-0.top-0")).toBeNull()`; e2e FAILS: the templates test reports `/en` with `span ... edge bar NNNx2 oklab(...)` (the cyan card bars), and the new test fails on the hover poll (box-shadow `none`) on the `out/` build of Task 4.
 
-- [ ] **Step 4: Remove the featured card bar and add the outline glow**
+- [x] **Step 4: Remove the featured card bar and add the outline glow**
 
 In `src/components/certs/Certifications.tsx`, replace:
 
@@ -1419,7 +1421,7 @@ with:
 
 (`hq-glow` owns the transition; `relative` and `overflow-hidden` stay so the box and the layout are unchanged.)
 
-- [ ] **Step 5: Remove the preview card bar**
+- [x] **Step 5: Remove the preview card bar**
 
 In `src/components/certs/CertDialog.tsx`, delete the line:
 
@@ -1433,7 +1435,7 @@ and delete the line:
       <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-0.5 ${RULE[cert.status]}`} />
 ```
 
-- [ ] **Step 6: Shrink the ratchet**
+- [x] **Step 6: Shrink the ratchet**
 
 In `tests/unit/edge-accents.test.ts`, delete these two lines from `KNOWN`:
 
@@ -1442,7 +1444,7 @@ In `tests/unit/edge-accents.test.ts`, delete these two lines from `KNOWN`:
   "src/components/certs/Certifications.tsx: bar: top h-0.5",
 ```
 
-- [ ] **Step 7: Run the tests to see them pass**
+- [x] **Step 7: Run the tests to see them pass**
 
 Run:
 
@@ -1454,7 +1456,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "edge stripes|certifications o
 
 Expected: unit PASS; e2e PASS (the edge stripe tests plus the two existing certification preview tests: keyboard first and Indonesian).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -1473,7 +1475,7 @@ git commit -m "P10: certification cards and preview lose the colored top bar; ca
 - Consumes: `CaseToc` markup (`nav.pv-toc > ul > li > a[aria-current]`, unchanged), `findEdgeAccents` (Task 3).
 - Produces: each ToC link draws a 6 px `::before` dot (neutral `--color-line-2`); the current link (`aria-current="true"`) gets ink text, a violet dot with an 8 px halo, and a full violet hairline (`rgb(167 139 250 / 0.45)`, radius 8 px) with `box-shadow: 0 0 20px -8px var(--color-violet)`. Link height (36 px) and vertical rhythm are unchanged; the text starts 12 px further right (dot plus gap).
 
-- [ ] **Step 1: Arm the pending page (failing test)**
+- [x] **Step 1: Arm the pending page (failing test)**
 
 In `e2e/pageview.spec.ts`, change the `P10_PENDING` line to:
 
@@ -1481,12 +1483,12 @@ In `e2e/pageview.spec.ts`, change the `P10_PENDING` line to:
 const P10_PENDING = new Set<string>([QUOTE_POST]);
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "Page View templates"`
 Expected: FAIL at `/en/labs/<hero slug>` with `a "What I did" border-left 1px rgb(167, 139, 250)` (the planning run on `main` printed exactly this entry).
 
-- [ ] **Step 3: Replace the ToC styles**
+- [x] **Step 3: Replace the ToC styles**
 
 In `src/app/pageview.css`, replace:
 
@@ -1565,7 +1567,7 @@ with:
 
 (Planning note: this exact CSS was injected into a build of `main` and captured at 1440x900, DPR 2: dots at the left, "What I did" inside a soft violet outline; the diff showed 0 changed pixels outside `.pv-toc`.)
 
-- [ ] **Step 4: Keep the mockup in step**
+- [x] **Step 4: Keep the mockup in step**
 
 In `docs/design/pageview/pageview.css`, replace:
 
@@ -1585,7 +1587,7 @@ with:
 
 (Changing `docs/design/**` also makes the Screenshots workflow run on the PR.)
 
-- [ ] **Step 5: Shrink the ratchet**
+- [x] **Step 5: Shrink the ratchet**
 
 In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
 
@@ -1593,7 +1595,7 @@ In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
   "src/app/pageview.css: css: border-left-color: var(--color-violet);",
 ```
 
-- [ ] **Step 6: Run the tests to see them pass**
+- [x] **Step 6: Run the tests to see them pass**
 
 Run:
 
@@ -1605,7 +1607,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "Page View templates|table of 
 
 Expected: unit PASS (the ToC scroll-spy tests are unchanged); e2e PASS: the templates audit and `case study keeps its anchors and table of contents`. (`rm -rf .next` because Turbopack can serve stale CSS after style edits, AGENTS.md "Fast verification".)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/app/pageview.css docs/design/pageview/pageview.css tests/unit/edge-accents.test.ts e2e/pageview.spec.ts
@@ -1622,7 +1624,7 @@ git commit -m "P10: case study table of contents marks the current section with 
 - Consumes: `.prose-hq` (MDX body on `/[locale]/blog/[slug]`), `findEdgeAccents` (Task 3).
 - Produces: `.prose-hq blockquote` keeps the same 18 px text inset (`padding-left: calc(1rem + 2px)`, the old 2 px rule plus 16 px padding), so line wrapping and height do not change; `::before` draws a 7 px violet dot with an 8 px halo at the first line's center (`left: 1px; top: 11px` for the 28 px line height).
 
-- [ ] **Step 1: Arm the last pending page (failing test)**
+- [x] **Step 1: Arm the last pending page (failing test)**
 
 In `e2e/pageview.spec.ts`, change the `P10_PENDING` line to:
 
@@ -1630,12 +1632,12 @@ In `e2e/pageview.spec.ts`, change the `P10_PENDING` line to:
 const P10_PENDING = new Set<string>();
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "Page View templates"`
 Expected: FAIL at `/id/blog/the-sun-the-moon-and-the-dark-sea` with six entries like `blockquote ""The soggy darkness crouched dow" border-left 2px rgb(167, 139, 250)`.
 
-- [ ] **Step 3: Replace the blockquote style**
+- [x] **Step 3: Replace the blockquote style**
 
 In `src/app/globals.css`, replace:
 
@@ -1674,7 +1676,7 @@ with:
 
 (Planning note: two variants were captured on `main` at DPR 2, a 14 px quote-mark chip and this dot; the dot reads cleaner at the poem's small italic size and matches the dot language of the ToC and the palette. The full-page diff of the post changed pixels only inside the blockquotes and the page height was identical.)
 
-- [ ] **Step 4: Shrink the ratchet**
+- [x] **Step 4: Shrink the ratchet**
 
 In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
 
@@ -1684,7 +1686,7 @@ In `tests/unit/edge-accents.test.ts`, delete this line from `KNOWN`:
 
 `KNOWN` now holds only `"src/lib/og.tsx: style: side bar width 10"` (P9). If P9 has already merged and removed the OG bar, the ratchet test fails with that entry missing: delete it too, leaving `const KNOWN: string[] = [];`.
 
-- [ ] **Step 5: Run the tests to see them pass**
+- [x] **Step 5: Run the tests to see them pass**
 
 Run:
 
@@ -1696,7 +1698,7 @@ E2E_PORT=4439 bun run e2e e2e/pageview.spec.ts -g "edge stripes"
 
 Expected: unit PASS; e2e PASS (`4 passed`: templates, Ask dock, Cmd-K, certifications).
 
-- [ ] **Step 6: Simplify the now-empty pending set and commit**
+- [x] **Step 6: Simplify the now-empty pending set and commit**
 
 With nothing pending, replace the pending block in `e2e/pageview.spec.ts`:
 
@@ -1740,7 +1742,7 @@ git commit -m "P10: blockquotes use a glowing dot instead of a violet left rule"
 - Consumes: everything above; `screenshots/p10/before/*` from Task 1.
 - Produces: `screenshots/p10/{after,diff}/*`, `screenshots/p10/diff/report.md`, `screenshots/p10/bytes-after.json`, the PR.
 
-- [ ] **Step 1: Capture the "after" set**
+- [x] **Step 1: Capture the "after" set**
 
 Run:
 
@@ -1752,20 +1754,20 @@ ls screenshots/p10/after | wc -l
 
 Expected: `3 passed`, `1 skipped`; `82` files (same scenes as Task 1).
 
-- [ ] **Step 2: Run the diff gate**
+- [x] **Step 2: Run the diff gate**
 
 Run: `SCREENSHOTS=1 P10_SHOTS=diff E2E_PORT=4439 bun run e2e e2e/pageview-visual.spec.ts -g "P10 diff" --workers=1`
 Expected: `1 passed`. `screenshots/p10/diff/report.md` lists 41 shots. Every row has `Outside edited elements` at or near 0 and a ratio of at most 0.050%; rows for `home`, `home-certs`, `about`, `case`, `case-toc`, `quote`, `cert-dialog` and `palette` show a non-zero `Changed px`; `labs`, `journey`, `library`, `home-work`, `ask` and `drawer` show `0` (or a few anti-aliasing pixels under the threshold). No size changes.
 
-- [ ] **Step 3: If the gate fails, fix the cause (never raise the threshold)**
+- [x] **Step 3: If the gate fails, fix the cause (never raise the threshold)**
 
 Open the failing `screenshots/p10/diff/<name>.diff.png`: red pixels are changes outside the edited elements, yellow ones are inside. A size mismatch means a layout shift: compare the element's box in `before/<name>.json` and `after/<name>.json`. Typical causes and fixes: the palette rows grew (the row must keep `py-[7px]` with the 1 px border); the blockquote reflowed (`padding-left` must stay `calc(1rem + 2px)`); a lazy image or the Ask teaser differed between runs (re-run both captures; the harness waits for images and sets `hq:ask-teaser`). Re-run Steps 1 and 2 after a fix.
 
-- [ ] **Step 4: Review the edited elements by eye**
+- [x] **Step 4: Review the edited elements by eye**
 
 Open the before/after pairs at 1440x900 and 390x844 for: `home-work` (featured cards and work rows, unchanged), `labs`, `case-toc` (dots and the violet outline on "What I did"), `journey`, `library`, `cert-dialog`, `palette` (selected row: tinted fill, cyan hairline, glowing dot; idle rows: grey dots), `drawer`, `ask`, and `quote`/`home-certs` (2560x1440 too). Check: the selected palette row is obvious at a glance; no stripe anywhere; hairlines look uniform. Keep these PNGs for the PR.
 
-- [ ] **Step 5: Record bytes after**
+- [x] **Step 5: Record bytes after**
 
 Run the Task 1 Step 5 command again with `bytes-after.json` as the output name:
 
@@ -1775,7 +1777,7 @@ bun -e 'import { readFileSync, writeFileSync } from "node:fs"; import { brotliCo
 
 Expected: CSS raw grows by about 1 KB and brotli by at most 400 B; JS brotli grows by at most 300 B (`AccentDot` in the palette and drawer chunks). Anything larger means an unintended change: inspect before continuing.
 
-- [ ] **Step 6: Update AGENTS.md**
+- [x] **Step 6: Update AGENTS.md**
 
 In `AGENTS.md` ("Styling"), below the bullet that starts with `- Utility classes: \`.glass\`, \`.label\``, add:
 
@@ -1796,7 +1798,7 @@ tests/helpers/space.ts          expectSpaceRules(...) for walkable floor layouts
 tests/helpers/edge-accents.ts   static scanner for colored left/top edge stripes (tests/unit/edge-accents.test.ts)
 ```
 
-- [ ] **Step 7: Update README.md**
+- [x] **Step 7: Update README.md**
 
 Below the "## Stack" paragraph (the line that starts with `Next.js 16 (App Router, static export)`), add a blank line and:
 
@@ -1804,7 +1806,7 @@ Below the "## Stack" paragraph (the line that starts with `Next.js 16 (App Route
 Visual language: the Neon Grid tokens of spec appendix 05. Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see AGENTS.md, "Styling").
 ```
 
-- [ ] **Step 8: Update the spec appendices**
+- [x] **Step 8: Update the spec appendices**
 
 In `docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md`, replace:
 
@@ -1854,7 +1856,7 @@ Featured cards keep the neutral card hairline and light up with `hq-glow` on hov
 `tests/hud/CertDialog.test.tsx` (no top rule, status chip per status), `tests/unit/certs.test.ts`
 ```
 
-- [ ] **Step 9: Full fast verification**
+- [x] **Step 9: Full fast verification**
 
 Run:
 
@@ -1865,14 +1867,14 @@ E2E_PORT=4439 bun run e2e:changed
 
 Expected: `verify:quick` exits 0 (typecheck, lint, all unit tests including `edge-accents`, `AccentDot`, `CertDialog`, `CommandPalette`, `RoomDrawer`, build). `e2e:changed` runs the mapped specs (`pageview`, `static-routes`, `gallery` for `src/app` and `src/components`; `ask`, `experience`, `missions`, `drawer-solid` for `CommandPalette`; `labs`, `gallery`, `career`, `library-roof`, `drawer-solid`, `hud` for the drawer; `pageview`, `experience`, `static-routes` for certs; `drawer-solid`, `pageview`, `static-routes` for `globals.css`; the smoke specs for the new `e2e/*.ts` helpers) and all pass. It is the longest step (about 8 to 12 minutes on SwiftShader).
 
-- [ ] **Step 10: Commit the docs**
+- [x] **Step 10: Commit the docs**
 
 ```bash
 git add AGENTS.md README.md docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md docs/superpowers/specs/2026-10-10-pageview-revamp-design.md docs/superpowers/specs/2026-10-11-certifications-layout-design.md
 git commit -m "P10: document the no-edge-stripe rule, AccentDot, hq-glow and the guards"
 ```
 
-- [ ] **Step 11: Open the PR**
+- [x] **Step 11: Open the PR**
 
 ```bash
 git push -u origin r5/p10-accent-stripes

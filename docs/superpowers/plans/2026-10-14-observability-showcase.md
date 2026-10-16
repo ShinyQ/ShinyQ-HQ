@@ -1,5 +1,7 @@
 # Observability Showcase Implementation Plan
 
+Status: shipped in #95 (5f5fef3), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show how Kurniadi runs AI in production: an owner-approved "How I run AI in production" section on the About page (`/{locale}/contact#production`), a Cmd-K room row, an Ask the HQ chunk, and an Ops Control Room on L3 with three panel screens and a live panel of this site's own telemetry.
@@ -49,11 +51,11 @@
   export function getProduction(): Production;
   ```
 
-- [ ] Step 1: failing test: schema parses the dataset; every `caseStudies` slug resolves to a pod; tiles cover all three panels; the text contains no GUIDs, Azure hostnames or blocklisted names (`loadBlocklist`).
-- [ ] Step 2: run `bunx vitest run tests/content/production.test.ts`, expect FAIL.
-- [ ] Step 3: add schema, data (approved text verbatim, 10 endpoints), `getProduction`.
-- [ ] Step 4: run the test plus `tests/content` and `bun run validate:content`, expect PASS.
-- [ ] Step 5: commit `feat(content): add the production observability section`.
+- [x] Step 1: failing test: schema parses the dataset; every `caseStudies` slug resolves to a pod; tiles cover all three panels; the text contains no GUIDs, Azure hostnames or blocklisted names (`loadBlocklist`).
+- [x] Step 2: run `bunx vitest run tests/content/production.test.ts`, expect FAIL.
+- [x] Step 3: add schema, data (approved text verbatim, 10 endpoints), `getProduction`.
+- [x] Step 4: run the test plus `tests/content` and `bun run validate:content`, expect PASS.
+- [x] Step 5: commit `feat(content): add the production observability section`.
 
 ### Task 2: Classic site section and Cmd-K room
 
@@ -65,10 +67,10 @@
 - Modify: `src/experience/Experience.tsx` (`rooms.ops` label, `hasPage` false for `L3:ops`)
 - Test: `tests/unit/rooms*.test.ts` additions, `e2e/production.spec.ts`
 
-- [ ] Step 1: failing unit test: catalog has `L3:ops` with kind `ops` and path `/contact#production`.
-- [ ] Step 2: implement catalog entry and labels; the section component; run unit tests.
-- [ ] Step 3: e2e: `/en/contact#production` shows the section after `#how`, five case study links resolve, Cmd-K "Ops Control Room" on the Classic site lands on `#production`.
-- [ ] Step 4: commit `feat(pageview): How I run AI in production section and Cmd-K room`.
+- [x] Step 1: failing unit test: catalog has `L3:ops` with kind `ops` and path `/contact#production`.
+- [x] Step 2: implement catalog entry and labels; the section component; run unit tests.
+- [x] Step 3: e2e: `/en/contact#production` shows the section after `#how`, five case study links resolve, Cmd-K "Ops Control Room" on the Classic site lands on `#production`.
+- [x] Step 4: commit `feat(pageview): How I run AI in production section and Cmd-K room`.
 
 ### Task 3: Ask chunk
 
@@ -77,10 +79,10 @@
 - Modify: `tests/ask/pack.test.ts`, `tests/ask/golden.json`, `content/ask/suggestions.json`
 - Docs: `docs/ask-runbook.md` (pack size), bump nothing in the prompt.
 
-- [ ] Step 1: failing test: chunk `production` exists with the section text, url `/contact#production`, tags `ai`, `work`; pack under `PACK_MAX_BYTES` with every perspective approved.
-- [ ] Step 2: implement; measure; trim per deviation 8 if over.
-- [ ] Step 3: golden question about observability (facts "OpenTelemetry", "Bicep") and a curated pill in topic `ai`; run `tests/ask`.
-- [ ] Step 4: commit `feat(ask): production observability chunk`.
+- [x] Step 1: failing test: chunk `production` exists with the section text, url `/contact#production`, tags `ai`, `work`; pack under `PACK_MAX_BYTES` with every perspective approved.
+- [x] Step 2: implement; measure; trim per deviation 8 if over.
+- [x] Step 3: golden question about observability (facts "OpenTelemetry", "Bicep") and a curated pill in topic `ai`; run `tests/ask`.
+- [x] Step 4: commit `feat(ask): production observability chunk`.
 
 ### Task 4: Stats `perf` block (Worker, contract, model) [parallel subagent]
 
@@ -117,9 +119,9 @@
   // LabsLayout.ops: OpsPlacement | null
   ```
 
-- [ ] Step 1: failing tests: real layout has `ops` on the AI side within x 91..103, |z| 9..20, `expectSpaceRules` passes for real, lopsided and empty pods; door, spur, tall (h 5.6) and view zone exist; registry has `L3:door:ops`.
-- [ ] Step 2: implement; run `bunx vitest run tests/unit/labs-*.test.ts tests/unit/interact-registry.test.ts`.
-- [ ] Step 3: commit `feat(l3): place the Ops Control Room`.
+- [x] Step 1: failing tests: real layout has `ops` on the AI side within x 91..103, |z| 9..20, `expectSpaceRules` passes for real, lopsided and empty pods; door, spur, tall (h 5.6) and view zone exist; registry has `L3:door:ops`.
+- [x] Step 2: implement; run `bunx vitest run tests/unit/labs-*.test.ts tests/unit/interact-registry.test.ts`.
+- [x] Step 3: commit `feat(l3): place the Ops Control Room`.
 
 ### Task 6: L3 Ops Control Room scene and drawer
 
@@ -130,19 +132,19 @@
 - Create: `src/experience/floors/labs/opsHash.ts` (import-free `#production` deep link), modify `ExperienceGate.tsx`
 - Modify: `src/hud/dialog/hintLines.ts` + `dialog.hints.object.ops`
 
-- [ ] Step 1: unit tests for room view (`L3:ops` view has sections, metrics, case study cards, code), hash helper.
-- [ ] Step 2: implement; `bun run typecheck`; check troika glyph coverage (`tests/content/troika-fonts.test.ts`).
-- [ ] Step 3: e2e `e2e/production.spec.ts`: drive to the room via point-and-go, drawer opens with the section, reduced motion holds the panel still; `/en/contact#production` in 3D opens the room.
-- [ ] Step 4: perf lane for L3 (`floors`, `peaks`), update baseline only if programs grew (they must not).
-- [ ] Step 5: commit `feat(l3): Ops Control Room scene, live panel and drawer`.
+- [x] Step 1: unit tests for room view (`L3:ops` view has sections, metrics, case study cards, code), hash helper.
+- [x] Step 2: implement; `bun run typecheck`; check troika glyph coverage (`tests/content/troika-fonts.test.ts`).
+- [x] Step 3: e2e `e2e/production.spec.ts`: drive to the room via point-and-go, drawer opens with the section, reduced motion holds the panel still; `/en/contact#production` in 3D opens the room.
+- [x] Step 4: perf lane for L3 (`floors`, `peaks`), update baseline only if programs grew (they must not).
+- [x] Step 5: commit `feat(l3): Ops Control Room scene, live panel and drawer`.
 
 ### Task 7: Visuals
 
-- [ ] Grafana Blackbox dashboard rendered locally (temp folder outside both repos, TEMMPAT's prometheus, blackbox and Grafana provisioning, neutral demo target `demo-api` with 10 endpoints); capture, crop, convert to webp (`public/media/production/01-probe-dashboard.webp`, thumb, w1200); alt text EN and ID; `redacted: true` after review.
-- [ ] Masked Bicep excerpt (`production.alertExcerpt`): neutral names only.
+- [x] Grafana Blackbox dashboard rendered locally (temp folder outside both repos, TEMMPAT's prometheus, blackbox and Grafana provisioning, neutral demo target `demo-api` with 10 endpoints); capture, crop, convert to webp (`public/media/production/01-probe-dashboard.webp`, thumb, w1200); alt text EN and ID; `redacted: true` after review.
+- [x] Masked Bicep excerpt (`production.alertExcerpt`): neutral names only.
 
 ### Task 8: Docs, safety, verification, PR
 
-- [ ] README, AGENTS.md (schema additions, room ids, folder layout, e2e plan), specs 01 (L3 room), 06 (perf block), 08 (L3 budget note), ask runbook (pack size).
-- [ ] `bun run verify:quick`, `bun run e2e:changed`, perf lane, visual gate on L3 poses, captures at 1440x900 full, 2560x1440 full, 390x844 lite.
-- [ ] Security review of the diff; PR; CI green.
+- [x] README, AGENTS.md (schema additions, room ids, folder layout, e2e plan), specs 01 (L3 room), 06 (perf block), 08 (L3 budget note), ask runbook (pack size).
+- [x] `bun run verify:quick`, `bun run e2e:changed`, perf lane, visual gate on L3 poses, captures at 1440x900 full, 2560x1440 full, 390x844 lite.
+- [x] Security review of the diff; PR; CI green.

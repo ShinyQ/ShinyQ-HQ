@@ -1,5 +1,7 @@
 # F1 Fast Return Implementation Plan
 
+Status: shipped in #91 (d474671), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Getting back to the elevator is never a long drive: Express Return pads (`return:<floor>`) beam the rover to its floor's elevator call pad, and any floor change requested more than 25 u from the elevator pad beams the rover into the car before the ride.
@@ -70,11 +72,11 @@ Design: `/Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd8
   - `isElevatorBeam(beam: Pick<Beam, "pad">): boolean`
   - `startBeam(from, pad, heading = Math.PI / 2)` in teleport.ts
 
-- [ ] **Step 1: failing tests** for the threshold (24.9 and 25 drive, 25.1 beams), `returnPad` null without a coordinate and `{ id: "return:L2", kind: "return", at, face }` with one, `elevatorBeam` (pad id, to equals approach, heading -PI/2, t 0, not jumped), `startBeam` default and custom heading, `returnSign` (text, above the pad icon, `fadeX` = pad x), `isElevatorBeam`.
-- [ ] **Step 2:** `bunx vitest run tests/unit/fast-return.test.ts` fails (module missing).
-- [ ] **Step 3:** implement; add `"return"` to `PadKind` and `returnPad?: Vec2` to `FloorLayout`.
-- [ ] **Step 4:** tests pass; `bun run typecheck` (PadKind records in `holoIcons.ts` fail until Task 2: do Task 2 before typechecking).
-- [ ] **Step 5:** commit `feat(nav): fast return rule, Return pad trigger and elevator beam`.
+- [x] **Step 1: failing tests** for the threshold (24.9 and 25 drive, 25.1 beams), `returnPad` null without a coordinate and `{ id: "return:L2", kind: "return", at, face }` with one, `elevatorBeam` (pad id, to equals approach, heading -PI/2, t 0, not jumped), `startBeam` default and custom heading, `returnSign` (text, above the pad icon, `fadeX` = pad x), `isElevatorBeam`.
+- [x] **Step 2:** `bunx vitest run tests/unit/fast-return.test.ts` fails (module missing).
+- [x] **Step 3:** implement; add `"return"` to `PadKind` and `returnPad?: Vec2` to `FloorLayout`.
+- [x] **Step 4:** tests pass; `bun run typecheck` (PadKind records in `holoIcons.ts` fail until Task 2: do Task 2 before typechecking).
+- [x] **Step 5:** commit `feat(nav): fast return rule, Return pad trigger and elevator beam`.
 
 ### Task 2: Return pads in the layouts and on the floor
 
@@ -87,11 +89,11 @@ Coordinates (checked against `padViolations` with the real content, all clear):
 - L2: `{ x: annexStart - 5, z: 8 }` = (336, 8): the forecourt south of the S-curve into the annex, 10.5 u from the road center, 9 u from the benches, face 0 (the rail camera).
 - L3: `{ x: loopEnd.x + 10, z: 9 }` = (117, 9): south-east of the reactor core, 13.5 u from its center (the ring road's driving width ends at 10.5 u), face -PI/2.
 
-- [ ] **Step 1: failing tests** in `floor-pads.test.ts`: L2 and L3 each have exactly one `return:<floor>` pad after the elevator pad, at their layout's `returnPad`, more than `FAST_RETURN.beamDistance` from the approach; L1, L4, RF have none; the placeholder corridor keeps only `elevator:L2`. The existing "pad rules" tests cover the new pads.
-- [ ] **Step 2:** run, expect failure.
-- [ ] **Step 3:** implement: `returnPad` in both floor builders (coordinate only), `withFloorPads` in config.ts, `PAD_ICONS.return` (lift doors with an arrow into them), `PAD_TONE.return` green (its own tone; the sign and the elevator beam share it), `PadGlow` kinds, `ReturnPadSign` mounted by `FloorLevel` when `near && layout.returnPad`, label `hud.interact.returnPad` through `TowerLabels.returnPad`.
-- [ ] **Step 4:** tests pass, typecheck.
-- [ ] **Step 5:** commit `feat(L2,L3): Express Return pads with a floating sign`.
+- [x] **Step 1: failing tests** in `floor-pads.test.ts`: L2 and L3 each have exactly one `return:<floor>` pad after the elevator pad, at their layout's `returnPad`, more than `FAST_RETURN.beamDistance` from the approach; L1, L4, RF have none; the placeholder corridor keeps only `elevator:L2`. The existing "pad rules" tests cover the new pads.
+- [x] **Step 2:** run, expect failure.
+- [x] **Step 3:** implement: `returnPad` in both floor builders (coordinate only), `withFloorPads` in config.ts, `PAD_ICONS.return` (lift doors with an arrow into them), `PAD_TONE.return` green (its own tone; the sign and the elevator beam share it), `PadGlow` kinds, `ReturnPadSign` mounted by `FloorLevel` when `near && layout.returnPad`, label `hud.interact.returnPad` through `TowerLabels.returnPad`.
+- [x] **Step 4:** tests pass, typecheck.
+- [x] **Step 5:** commit `feat(L2,L3): Express Return pads with a floating sign`.
 
 ### Task 3: Point-and-go and hints
 
@@ -102,23 +104,23 @@ Coordinates (checked against `padViolations` with the real content, all clear):
 **Interfaces:**
 - `InteractKind` adds `"return-pad"`; `InteractAction` adds `{ type: "return-beam" }`; `InteractLabels.returnPad: string`; `InteractDeps.beamHome: () => void`; registry id `${floor}:pad:return`.
 
-- [ ] **Step 1: failing tests**: the real L2 and L3 registries contain `L2:pad:return` / `L3:pad:return` (kind `return-pad`, label "Back to elevator", action `return-beam`, `at` = pad center); `performInteract` on a far return target drives there, then calls `beamHome` once; already on the pad it calls `beamHome` without a drive; `reach` is the pad radius; `labelAnchor` lifts the tag like other pads.
-- [ ] **Step 2:** run, expect failure.
-- [ ] **Step 3:** implement; `HINT_KINDS` adds `return-pad`; `dialog.hints.kind.return-pad` EN "Stop on me to beam back to the elevator." ID "Berhenti di sini untuk kembali ke lift dalam sekejap."
-- [ ] **Step 4:** tests pass (`tests/unit/dialog-copy.test.ts` too).
-- [ ] **Step 5:** commit `feat(interact): Return pad target and hint`.
+- [x] **Step 1: failing tests**: the real L2 and L3 registries contain `L2:pad:return` / `L3:pad:return` (kind `return-pad`, label "Back to elevator", action `return-beam`, `at` = pad center); `performInteract` on a far return target drives there, then calls `beamHome` once; already on the pad it calls `beamHome` without a drive; `reach` is the pad radius; `labelAnchor` lifts the tag like other pads.
+- [x] **Step 2:** run, expect failure.
+- [x] **Step 3:** implement; `HINT_KINDS` adds `return-pad`; `dialog.hints.kind.return-pad` EN "Stop on me to beam back to the elevator." ID "Berhenti di sini untuk kembali ke lift dalam sekejap."
+- [x] **Step 4:** tests pass (`tests/unit/dialog-copy.test.ts` too).
+- [x] **Step 5:** commit `feat(interact): Return pad target and hint`.
 
 ### Task 4: Director wiring
 
 **Files:**
 - Modify: `src/experience/scene/Director.tsx`, `src/experience/fx/TeleportBeam.tsx`, `src/store/useHQStore.ts`
 
-- [ ] **Step 1:** `beamHome()` helper in the Director: in explore with no ride, beam, or picker, clear the path, target and autopilot, `setBeam(elevatorBeam(pose, layout))`, play `whoosh`.
-- [ ] **Step 2:** pad latch: a `return` pad calls `beamHome()` instead of opening a picker (counts in `padOpens`, so the point-and-go action does not beam twice).
-- [ ] **Step 3:** `performInteract` deps: `beamHome` guarded by `padOpens` like `openPicker`.
-- [ ] **Step 4:** ride `toDoor`: on the first frame (`ride.t === 0`, no beam yet) and `shouldBeamToCar`, clear the path and start `elevatorBeam`; while `s.beam` is set in `toDoor`, the rover does not drive and `atDoor` is the distance check (the jump lands on the approach, so boarding starts on the jump frame). Esc and manual input do nothing during the beam.
-- [ ] **Step 5:** `TeleportBeam` color: green (`PAD_TONE.return`) for `isElevatorBeam`, pink otherwise (uniform change, same program).
-- [ ] **Step 6:** `bun run typecheck && bun run lint && bunx vitest run`; commit `feat(director): beam into the car when far, Return pads beam to the elevator`.
+- [x] **Step 1:** `beamHome()` helper in the Director: in explore with no ride, beam, or picker, clear the path, target and autopilot, `setBeam(elevatorBeam(pose, layout))`, play `whoosh`.
+- [x] **Step 2:** pad latch: a `return` pad calls `beamHome()` instead of opening a picker (counts in `padOpens`, so the point-and-go action does not beam twice).
+- [x] **Step 3:** `performInteract` deps: `beamHome` guarded by `padOpens` like `openPicker`.
+- [x] **Step 4:** ride `toDoor`: on the first frame (`ride.t === 0`, no beam yet) and `shouldBeamToCar`, clear the path and start `elevatorBeam`; while `s.beam` is set in `toDoor`, the rover does not drive and `atDoor` is the distance check (the jump lands on the approach, so boarding starts on the jump frame). Esc and manual input do nothing during the beam.
+- [x] **Step 5:** `TeleportBeam` color: green (`PAD_TONE.return`) for `isElevatorBeam`, pink otherwise (uniform change, same program).
+- [x] **Step 6:** `bun run typecheck && bun run lint && bunx vitest run`; commit `feat(director): beam into the car when far, Return pads beam to the elevator`.
 
 ### Task 5: E2E
 
@@ -133,13 +135,13 @@ Tests (L2 `/en/journey?tier=lite&walk=off` as a returning visitor; the rover is 
 4. Reduced motion: the annex ride beams with `BeamFade` at full opacity at some point (MutationObserver), no beam column drawn, arrives on L3.
 5. L3 Return pad: present in `padsOf(page, "L3")` and the interact registry; a point-and-go click on it drives and beams to the L3 elevator pad.
 
-- [ ] **Step 1:** write the spec, build, run `E2E_PORT=4450 bunx playwright test e2e/fast-return.spec.ts`.
-- [ ] **Step 2:** `bun run e2e:changed` (ride, pads, interact, experience, missions specs); fix regressions.
-- [ ] **Step 3:** `E2E_PORT=4450 bun run e2e:perf` (programs within baseline + 2, peaks).
-- [ ] **Step 4:** commit `test(e2e): fast return`.
+- [x] **Step 1:** write the spec, build, run `E2E_PORT=4450 bunx playwright test e2e/fast-return.spec.ts`.
+- [x] **Step 2:** `bun run e2e:changed` (ride, pads, interact, experience, missions specs); fix regressions.
+- [x] **Step 3:** `E2E_PORT=4450 bun run e2e:perf` (programs within baseline + 2, peaks).
+- [x] **Step 4:** commit `test(e2e): fast return`.
 
 ### Task 6: Docs, captures, PR
 
-- [ ] README (try-it paragraph and the L2 paragraph), AGENTS.md (floor pads paragraph: `return` pads, `returnPad`, the 25 u rule), spec 02 (state diagram note: explore to elevator with a beam when far), spec 03 (the rule, metric, cancellation), spec 08 (acceptance: tests and budgets).
-- [ ] Captures at 1440x900 full: the L2 and L3 Return pads, a frame sequence of a far floor change (beam rise, jump, boarding, moving), and the reduced motion cut; 390x844 lite of the L2 pad.
-- [ ] `bun run verify:quick`, push, open the PR, comment with the captures and measurements, get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green. Do not merge.
+- [x] README (try-it paragraph and the L2 paragraph), AGENTS.md (floor pads paragraph: `return` pads, `returnPad`, the 25 u rule), spec 02 (state diagram note: explore to elevator with a beam when far), spec 03 (the rule, metric, cancellation), spec 08 (acceptance: tests and budgets).
+- [x] Captures at 1440x900 full: the L2 and L3 Return pads, a frame sequence of a far floor change (beam rise, jump, boarding, moving), and the reduced motion cut; 390x844 lite of the L2 pad.
+- [x] `bun run verify:quick`, push, open the PR, comment with the captures and measurements, get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green. Do not merge.

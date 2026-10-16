@@ -1,5 +1,7 @@
 # R5 P6 measurements
 
+Status: measurements for the plan shipped in #74 (7a2afea), 2026-10-13
+
 Method: `E2E_PORT=4435 bunx playwright test e2e/ride.spec.ts` (lite tier, SwiftShader, car height sampled every rendered frame through `window.__hq`). Local runs shared the machine with other sessions' e2e suites (load average 70 to 200 on 10 cores), so wall times are long; frame counts and heights are what matter.
 
 ## Before (main f61fbba)

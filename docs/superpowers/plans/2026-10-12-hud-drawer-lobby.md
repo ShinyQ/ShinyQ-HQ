@@ -1,5 +1,7 @@
 # R3-B: HUD, Boost, Unskippable Intro, Drawer Footer and Centered Lobby Implementation Plan
 
+Status: shipped in #55 (017ed69), 2026-10-12. Later removed in #167: the walk pill in the bottom band
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the owner's 3D HUD round: no rooms-visited counter, a hold-Shift (and touch) boost, the hint and walk pills pinned to the bottom on tablets and phones, an L1 Lobby centered on the elevator axis, "Missions" renamed to "Ask Rover", an unskippable boot and intro played once per browser session, a top bar without Quick view (highlighted Page view, Ask AI on its right) and the room drawer's cross-floor link moved into the footer.
@@ -80,7 +82,7 @@ Every message edit below uses this exact inline Bun helper (the message files ro
 
 **Files:** none.
 
-- [ ] **Step 1: Create the branch from main**
+- [x] **Step 1: Create the branch from main**
 
 Run:
 ```bash
@@ -101,7 +103,7 @@ Expected: `Switched to a new branch 'feat/r3-b-hud-drawer-lobby'`, install finis
 - Consumes: `buildExperienceData(locale, floorNames)` from `@/content/experience`, `getHQStore()` from `@/store/useHQStore`.
 - Produces: `ProfileCard({ data, mobile })` (same signature). The store keeps `visited`, `markVisited`, persisted `hq:v1` unchanged (missions and walks use them).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/hud/ProfileCard.test.tsx`:
 ```tsx
@@ -137,12 +139,12 @@ describe("ProfileCard", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/hud/ProfileCard.test.tsx`
 Expected: FAIL, `expected element not to have text content /\d+\s*\/\s*\d+/` (the card still renders `2/N`).
 
-- [ ] **Step 3: Replace `src/hud/ProfileCard.tsx`**
+- [x] **Step 3: Replace `src/hud/ProfileCard.tsx`**
 
 ```tsx
 "use client";
@@ -213,7 +215,7 @@ export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: bo
 }
 ```
 
-- [ ] **Step 4: Delete the unused `hud.visited` string in both locales**
+- [x] **Step 4: Delete the unused `hud.visited` string in both locales**
 
 Run:
 ```bash
@@ -236,12 +238,12 @@ edit("messages/id.json", { "hud.visited": null });
 ```
 Expected: `rtk git diff --stat messages` shows one deleted line per file (`"visited": "Rooms visited",` and `"visited": "Ruang yang dikunjungi",`). `walk.visited` stays.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `rtk bunx vitest run tests/hud/ProfileCard.test.tsx tests/unit/ui-copy.test.ts tests/unit/experience-data.test.ts`
 Expected: PASS (3 files). `roomCount` stays in `ExperienceData` (its test still passes).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/hud/ProfileCard.tsx tests/hud/ProfileCard.test.tsx messages/en.json messages/id.json
@@ -268,7 +270,7 @@ rtk git commit -m "feat(hud): drop the rooms visited counter from the profile ca
   - `MAX_STEP_DISTANCE = 0.4`, `physicsSteps(dt: number, topSpeed: number): number` (exported from `rover/controller.ts`)
   - `joystick.boost: boolean`, `setBoost(on: boolean): void` (from `input/joystick.ts`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/boost.test.ts`:
 ```ts
@@ -354,12 +356,12 @@ describe("physics sub-steps", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/boost.test.ts`
 Expected: FAIL, `Failed to resolve import "@/experience/rover/boost"`.
 
-- [ ] **Step 3: Create `src/experience/rover/boost.ts`**
+- [x] **Step 3: Create `src/experience/rover/boost.ts`**
 
 ```ts
 import type { Vec2 } from "../types";
@@ -401,7 +403,7 @@ export function stepBoostLevel(level: number, on: boolean, dt: number): number {
 }
 ```
 
-- [ ] **Step 4: Add distance-aware sub-steps to `src/experience/rover/controller.ts`**
+- [x] **Step 4: Add distance-aware sub-steps to `src/experience/rover/controller.ts`**
 
 Replace:
 ```ts
@@ -436,7 +438,7 @@ with:
     const steps = physicsSteps(dt, top);
 ```
 
-- [ ] **Step 5: Replace `src/experience/input/joystick.ts`**
+- [x] **Step 5: Replace `src/experience/input/joystick.ts`**
 
 ```ts
 /** Shared touch state written by the HUD joystick and boost button, polled by the Director each frame. */
@@ -454,12 +456,12 @@ export function setBoost(on: boolean) {
 }
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `rtk bunx vitest run tests/unit/boost.test.ts tests/unit/rover.test.ts`
 Expected: PASS (2 files). At 60 fps the sub-step count is unchanged (1), so `rover.test.ts` keeps passing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/rover/boost.ts src/experience/rover/controller.ts src/experience/input/joystick.ts tests/unit/boost.test.ts
@@ -480,7 +482,7 @@ rtk git commit -m "feat(rover): pure boost rules and distance-aware physics sub-
 - Consumes: `boostOn`, `boostTuning`, `stepBoostLevel`, `BOOST` (Task 2), `joystick.boost` (Task 2).
 - Produces: `roverRuntime.boost: number` (0 to 1, eased level) and `roverRuntime.trail: number` (opacity drawn this frame, 0 when hidden); both readable in Playwright as `window.__hq.rover.boost` / `.trail`.
 
-- [ ] **Step 1: Write the failing e2e tests**
+- [x] **Step 1: Write the failing e2e tests**
 
 In `e2e/experience.spec.ts`, replace the import line:
 ```ts
@@ -560,12 +562,12 @@ Then add these tests at the end of `test.describe("rover on desktop", () => {` (
   });
 ```
 
-- [ ] **Step 2: Build and run them to verify they fail**
+- [x] **Step 2: Build and run them to verify they fail**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/experience.spec.ts -g "Shift|cruising|reduced motion boosts"`
 Expected: FAIL. The Shift test times out at `toBeGreaterThan(12)` (received 9); the reduced-motion test fails the same way.
 
-- [ ] **Step 3: Add the runtime fields in `src/experience/rover/runtime.ts`**
+- [x] **Step 3: Add the runtime fields in `src/experience/rover/runtime.ts`**
 
 Replace:
 ```ts
@@ -582,7 +584,7 @@ with:
   trail: 0,
 ```
 
-- [ ] **Step 4: Wire the boost in `src/experience/scene/Director.tsx`**
+- [x] **Step 4: Wire the boost in `src/experience/scene/Director.tsx`**
 
 Replace the import line:
 ```ts
@@ -633,7 +635,7 @@ with:
 ```
 (The ride branch keeps `tuning`: manual input there cancels the ride, so a boost never applies to the elevator approach.)
 
-- [ ] **Step 5: Draw the trail in `src/experience/rover/Rover.tsx`**
+- [x] **Step 5: Draw the trail in `src/experience/rover/Rover.tsx`**
 
 Replace:
 ```ts
@@ -718,7 +720,7 @@ with:
         {tier === "full" && <pointLight color={GLOW_CYAN} intensity={8} distance={7} decay={2} position={[0, 0.6, 0]} />}
 ```
 
-- [ ] **Step 6: Mention the boost in the keyboard hint and the canvas description**
+- [x] **Step 6: Mention the boost in the keyboard hint and the canvas description**
 
 Run:
 ```bash
@@ -750,12 +752,12 @@ rtk git diff --stat messages
 ```
 Expected: 2 changed lines per file (`hintFine`, `canvasDescription`); `grep -c "hold Shift to boost" messages/en.json` prints `1`, `grep -c "tahan Shift untuk turbo" messages/id.json` prints `1`.
 
-- [ ] **Step 7: Run unit checks, build and the e2e tests**
+- [x] **Step 7: Run unit checks, build and the e2e tests**
 
 Run: `rtk bun run typecheck && rtk bunx vitest run tests/unit/ui-copy.test.ts tests/content/fonts.test.ts tests/unit/boost.test.ts && rtk bun run build && rtk bunx playwright test e2e/experience.spec.ts -g "Shift|cruising|reduced motion boosts|draw call budget"`
 Expected: typecheck clean, 3 Vitest files PASS, 4 Playwright tests PASS (the Lobby draw call budget test proves the idle trail costs no draw call).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/rover/runtime.ts src/experience/scene/Director.tsx src/experience/rover/Rover.tsx messages/en.json messages/id.json e2e/experience.spec.ts
@@ -788,7 +790,7 @@ rtk git commit -m "feat(rover): hold Shift to boost with a short trail"
   - `BootCardProps` without `skipLabel`/`onSkip`, with `startDisabled?: boolean`
   - E2E: `asReturningVisitor(page)` sets `sessionStorage["hq:intro"] = "seen"`; `enterHQ(page, { path?, tier? })` waits for explore and `waitForSceneLive` (no Skip click).
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 Create `tests/unit/intro-session.test.ts`:
 ```ts
@@ -981,12 +983,12 @@ In `tests/unit/e2e-plan.test.ts`, add to `it("maps floor code to its spec", () =
     expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience"]);
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/intro-session.test.ts tests/hud/BootOverlay.test.tsx tests/unit/rigs.test.ts tests/unit/missions-host3d.test.ts tests/unit/e2e-plan.test.ts`
 Expected: FAIL: `Failed to resolve import "@/lib/intro-session"`; BootOverlay finds a `Skip intro` button; `reducedIntroPose is not a function`; host3d `expected [ 'elevator', ... ] to deeply equal [ 'intro', 'intro', 'intro' ]`; e2e-plan maps `src/lib/intro-session.ts` to `["pageview", "static-routes"]`.
 
-- [ ] **Step 3: Create `src/lib/intro-session.ts`**
+- [x] **Step 3: Create `src/lib/intro-session.ts`**
 
 ```ts
 /**
@@ -1032,7 +1034,7 @@ export function lobbyStartPhase(seen: boolean): "boot" | "explore" {
 }
 ```
 
-- [ ] **Step 4: Start the Lobby from the flag and mark it in `src/experience/Experience.tsx`**
+- [x] **Step 4: Start the Lobby from the flag and mark it in `src/experience/Experience.tsx`**
 
 Replace:
 ```ts
@@ -1070,7 +1072,7 @@ with:
   // The audio engine owns the sound setting (localStorage "hq:sound", on unless the visitor muted);
 ```
 
-- [ ] **Step 5: Replace `src/components/BootCard.tsx`**
+- [x] **Step 5: Replace `src/components/BootCard.tsx`**
 
 ```tsx
 import type { Ref } from "react";
@@ -1147,7 +1149,7 @@ In `src/components/BootCover.tsx` delete the line:
         skipLabel={t("skipIntro")}
 ```
 
-- [ ] **Step 6: Replace `src/hud/BootOverlay.tsx`**
+- [x] **Step 6: Replace `src/hud/BootOverlay.tsx`**
 
 ```tsx
 "use client";
@@ -1212,7 +1214,7 @@ export function BootOverlay({ name, monogram }: { name: string; monogram: string
 }
 ```
 
-- [ ] **Step 7: Remove the in-world Skip button from `src/hud/Hud.tsx`**
+- [x] **Step 7: Remove the in-world Skip button from `src/hud/Hud.tsx`**
 
 Delete the whole `IntroSkip` function:
 ```tsx
@@ -1240,7 +1242,7 @@ with:
           {phase !== "intro" && phase !== "room" && !walking && <HintBar coarse={coarse} mobile={mobile} />}
 ```
 
-- [ ] **Step 8: Esc no longer ends the intro (`src/experience/scene/Director.tsx`)**
+- [x] **Step 8: Esc no longer ends the intro (`src/experience/scene/Director.tsx`)**
 
 Replace:
 ```ts
@@ -1256,7 +1258,7 @@ with:
           if (s.ride?.stage === "toDoor") {
 ```
 
-- [ ] **Step 9: Reduced motion keeps the intro length (`rigs.ts`, `CameraDirector.tsx`)**
+- [x] **Step 9: Reduced motion keeps the intro length (`rigs.ts`, `CameraDirector.tsx`)**
 
 In `src/experience/camera/rigs.ts`, add after the `introPose` function:
 ```ts
@@ -1329,7 +1331,7 @@ with:
     l.desiredPos.set(...desired.position);
 ```
 
-- [ ] **Step 10: Missions wait for the intro (`src/experience/missions/host3d.ts`)**
+- [x] **Step 10: Missions wait for the intro (`src/experience/missions/host3d.ts`)**
 
 Replace:
 ```ts
@@ -1387,7 +1389,7 @@ with:
       const room = byId.get(id);
 ```
 
-- [ ] **Step 11: Delete the Skip string and map the new paths for `e2e:changed`**
+- [x] **Step 11: Delete the Skip string and map the new paths for `e2e:changed`**
 
 Run:
 ```bash
@@ -1417,12 +1419,12 @@ with:
   { test: /^src\/experience\/ExperienceGate\.tsx$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$/, specs: ["boot-first", "experience"] },
 ```
 
-- [ ] **Step 12: Run the unit tests**
+- [x] **Step 12: Run the unit tests**
 
 Run: `rtk bunx vitest run tests/unit/intro-session.test.ts tests/hud/BootOverlay.test.tsx tests/unit/rigs.test.ts tests/unit/missions-host3d.test.ts tests/unit/e2e-plan.test.ts tests/unit/store.test.ts tests/unit/ui-copy.test.ts && rtk bun run typecheck && rtk bun run lint`
 Expected: 7 files PASS; typecheck and lint clean (no `useHQStore` or `finishIntro` left unused in `Hud.tsx`).
 
-- [ ] **Step 13: Update the e2e helpers (`e2e/hq.ts`)**
+- [x] **Step 13: Update the e2e helpers (`e2e/hq.ts`)**
 
 Replace:
 ```ts
@@ -1467,7 +1469,7 @@ export async function enterHQ(page: Page, { path = "/en", tier = "lite" }: { pat
 }
 ```
 
-- [ ] **Step 14: Rewrite the boot and intro e2e tests (`e2e/experience.spec.ts`)**
+- [x] **Step 14: Rewrite the boot and intro e2e tests (`e2e/experience.spec.ts`)**
 
 Replace the import line (as left by Task 3):
 ```ts
@@ -1570,7 +1572,7 @@ Replace the test `the terminal opens after the intro on the first visit` with:
   });
 ```
 
-- [ ] **Step 15: Drop the remaining Skip references in other specs**
+- [x] **Step 15: Drop the remaining Skip references in other specs**
 
 Delete this line in `e2e/career.spec.ts`:
 ```ts
@@ -1587,12 +1589,12 @@ In `e2e/screenshots.spec.ts` (`open3D`), delete:
 Then run: `grep -rnE "Skip intro|skipIntro|Lewati intro" src e2e tests messages`
 Expected: no output.
 
-- [ ] **Step 16: Build and run the affected e2e specs**
+- [x] **Step 16: Build and run the affected e2e specs**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/experience.spec.ts e2e/boot-first.spec.ts`
 Expected: all PASS, including the three new boot tests and the reworded terminal test.
 
-- [ ] **Step 17: Commit**
+- [x] **Step 17: Commit**
 
 ```bash
 rtk git add src/lib/intro-session.ts src/experience/Experience.tsx src/components/BootCard.tsx src/components/BootCover.tsx src/hud/BootOverlay.tsx src/hud/Hud.tsx src/experience/scene/Director.tsx src/experience/camera/rigs.ts src/experience/camera/CameraDirector.tsx src/experience/missions/host3d.ts messages/en.json messages/id.json scripts/e2e-plan.ts tests/unit/intro-session.test.ts tests/hud/BootOverlay.test.tsx tests/unit/rigs.test.ts tests/unit/missions-host3d.test.ts tests/unit/e2e-plan.test.ts e2e/hq.ts e2e/experience.spec.ts e2e/career.spec.ts e2e/library-roof.spec.ts e2e/screenshots.spec.ts
@@ -1628,7 +1630,7 @@ Final strings:
 
 (`hud.status.running`, `.cancel`, `.cancelled` are not rendered anywhere today, so they stay untouched.)
 
-- [ ] **Step 1: Update the tests first**
+- [x] **Step 1: Update the tests first**
 
 Run:
 ```bash
@@ -1638,12 +1640,12 @@ grep -rnE '"Missions"|"Rover Terminal"|\./missions' e2e tests
 ```
 Expected: the grep prints nothing. `rtk git diff --stat` shows 8 changed test files.
 
-- [ ] **Step 2: Run the unit tests to verify they fail**
+- [x] **Step 2: Run the unit tests to verify they fail**
 
 Run: `rtk bunx vitest run tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx`
 Expected: FAIL, `Unable to find role="dialog" and name "Ask Rover"` (the terminal is still titled "Rover Terminal").
 
-- [ ] **Step 3: Update the strings**
+- [x] **Step 3: Update the strings**
 
 Run:
 ```bash
@@ -1687,7 +1689,7 @@ edit("messages/id.json", {
 '
 ```
 
-- [ ] **Step 4: Use the new key in `src/hud/HudLaunchers.tsx`**
+- [x] **Step 4: Use the new key in `src/hud/HudLaunchers.tsx`**
 
 Replace:
 ```tsx
@@ -1706,17 +1708,17 @@ with:
         <span className="sr-only sm:not-sr-only">{t("askRover")}</span>
 ```
 
-- [ ] **Step 5: Run the unit tests**
+- [x] **Step 5: Run the unit tests**
 
 Run: `rtk bunx vitest run tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx tests/hud/CommandPalette.test.tsx tests/unit/ui-copy.test.ts tests/unit/search.test.ts && rtk bun run typecheck`
 Expected: 5 files PASS; typecheck clean (next-intl message types know `askRover`).
 
-- [ ] **Step 6: Build and run the e2e specs that click it**
+- [x] **Step 6: Build and run the e2e specs that click it**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/missions.spec.ts e2e/ask.spec.ts -g "Ask Rover|Lobby with the terminal open|journey|hire" && rtk bunx playwright test e2e/experience.spec.ts -g "Ask Rover|terminal"`
 Expected: all PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add messages/en.json messages/id.json src/hud/HudLaunchers.tsx tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx e2e/experience.spec.ts e2e/missions.spec.ts e2e/ask.spec.ts e2e/walk.spec.ts e2e/library-roof.spec.ts e2e/screenshots.spec.ts
@@ -1745,7 +1747,7 @@ rtk git commit -m "feat(hud): rename Missions to Ask Rover (Tanya Rover)"
   - Layout contract used by later tasks: phones have two top rows (12 to 56 px and 64 to 108 px), so overlays under the top controls on phones start at `top-[116px]`; tablets keep `sm:top-[124px]`; from 1024 px the bar is one row.
   - E2E spec `hud` (`e2e/hud.spec.ts`) with helpers `box(locator)`, `mockAsk(page)`, `newPage(browser, vp)` that Tasks 7 and 9 extend.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Create `tests/hud/Controls.test.tsx`:
 ```tsx
@@ -1821,12 +1823,12 @@ describe("3D top bar", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `rtk bunx vitest run tests/hud/Controls.test.tsx`
 Expected: FAIL, `Unable to find an element by: [data-testid="page-view"]`.
 
-- [ ] **Step 3: Replace `src/hud/HudLaunchers.tsx`**
+- [x] **Step 3: Replace `src/hud/HudLaunchers.tsx`**
 
 ```tsx
 "use client";
@@ -1874,7 +1876,7 @@ export function HudLaunchers({ buttonClassName, labelClassName = "sr-only sm:not
 }
 ```
 
-- [ ] **Step 4: Replace `src/hud/Controls.tsx`**
+- [x] **Step 4: Replace `src/hud/Controls.tsx`**
 
 ```tsx
 "use client";
@@ -1999,7 +2001,7 @@ export function MobileMenu({ onExit, onToggleLang }: { onExit: () => void; onTog
 }
 ```
 
-- [ ] **Step 5: Move phone overlays under the second row, and the tablet side drawer under it**
+- [x] **Step 5: Move phone overlays under the second row, and the tablet side drawer under it**
 
 In `src/hud/Hud.tsx` (`FloorNotice`), replace `${mobile ? "top-[68px]" : "top-[168px]"}` with `${mobile ? "top-[116px]" : "top-[168px]"}`.
 
@@ -2047,7 +2049,7 @@ with:
 ```
 (The side layout only exists from 900 px wide; below 1024 px it now starts under the Page view and Ask AI row, exactly like the Ask side panel in `AskChat.tsx`.)
 
-- [ ] **Step 6: Strings: no Quick view in the 3D HUD**
+- [x] **Step 6: Strings: no Quick view in the 3D HUD**
 
 Run:
 ```bash
@@ -2079,12 +2081,12 @@ grep -nE "Quick view|Ringkasan" messages/en.json messages/id.json
 ```
 Expected: only `hud.actions.quickView` (Cmd-K action, both locales) and the Page View strings remain (`quick.*`, `common.*`); no `hud.quickView`, and `canvasDescription` ends with "Page view shows the portfolio as a page." / "Tampilan halaman menampilkan portofolio sebagai halaman.".
 
-- [ ] **Step 7: Run the unit tests**
+- [x] **Step 7: Run the unit tests**
 
 Run: `rtk bunx vitest run tests/hud/Controls.test.tsx tests/hud/RoomDrawer.test.tsx tests/hud/AskDock.test.tsx tests/unit/ui-copy.test.ts && rtk bun run typecheck && rtk bun run lint`
 Expected: 4 files PASS; typecheck and lint clean.
 
-- [ ] **Step 8: Write the e2e spec for the top bar**
+- [x] **Step 8: Write the e2e spec for the top bar**
 
 Create `e2e/hud.spec.ts`:
 ```ts
@@ -2183,7 +2185,7 @@ In `tests/unit/e2e-plan.test.ts`, add to `it("maps floor code to its spec", () =
     expect(specsForChanges(["src/hud/walk/WalkBar.tsx"]).specs).toEqual(["hud", "missions", "walk"]);
 ```
 
-- [ ] **Step 9: Point the old Quick view checks at the new bar**
+- [x] **Step 9: Point the old Quick view checks at the new bar**
 
 In `e2e/drawer-solid.spec.ts`, replace:
 ```ts
@@ -2206,12 +2208,12 @@ In `e2e/screenshots.spec.ts`, delete:
     if (viewport.name === "mobile") await page.getByRole("button", { name: "Menu" }).click();
 ```
 
-- [ ] **Step 10: Build and run**
+- [x] **Step 10: Build and run**
 
 Run: `rtk bunx vitest run tests/unit/e2e-plan.test.ts && rtk bun run build && rtk bunx playwright test e2e/hud.spec.ts e2e/drawer-solid.spec.ts && rtk bunx playwright test e2e/experience.spec.ts -g "page view|3 key|accessibility" && rtk bunx playwright test e2e/walk.spec.ts -g "phone"`
 Expected: e2e-plan PASS; `hud.spec.ts` 3 tests PASS; `drawer-solid` PASS (Ask AI and Page view at 1024 px and up are in the single row, clear of the drawer); Page view and axe tests PASS; the phone walk tests PASS (walk card at 116 px, under both rows, clear of Ask AI).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/hud/Controls.tsx src/hud/HudLaunchers.tsx src/hud/Hud.tsx src/hud/walk/WalkBar.tsx src/hud/walk/WalkPrompt.tsx src/hud/ask/AskDock.tsx src/hud/drawer/RoomDrawer.tsx messages/en.json messages/id.json tests/hud/Controls.test.tsx e2e/hud.spec.ts e2e/drawer-solid.spec.ts e2e/screenshots.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -2235,7 +2237,7 @@ rtk git commit -m "feat(hud): top bar without Quick view, highlighted Page view,
   - `BottomBand({ left, right, children, slotRef })` inside `Hud.tsx`, `data-testid="hud-bottom"`, center column `data-testid="hud-bottom-center"`.
   - `WalkBarProps.slot?: HTMLElement | null` and `WalkLayer` prop `bottomSlot?: HTMLElement | null`: when set, the idle launcher (`data-testid="walk-launcher"`) and the paused pill (`data-testid="walk-pill"`) render in flow inside that element through a portal; without it they keep their absolute placement.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 Create `tests/hud/BoostButton.test.tsx`:
 ```tsx
@@ -2340,12 +2342,12 @@ describe("WalkBar pills and the bottom band", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `rtk bunx vitest run tests/hud/BoostButton.test.tsx tests/hud/WalkBar.test.tsx`
 Expected: FAIL: `Failed to resolve import "@/hud/BoostButton"`; WalkBar `expected <div> to contain element` (the launcher renders absolute, outside the slot).
 
-- [ ] **Step 3: Strings for the touch boost**
+- [x] **Step 3: Strings for the touch boost**
 
 Run:
 ```bash
@@ -2373,7 +2375,7 @@ edit("messages/id.json", {
 '
 ```
 
-- [ ] **Step 4: Create `src/hud/BoostButton.tsx`**
+- [x] **Step 4: Create `src/hud/BoostButton.tsx`**
 
 ```tsx
 "use client";
@@ -2435,7 +2437,7 @@ export function BoostButton() {
 }
 ```
 
-- [ ] **Step 5: Put the joystick and the view controls in flow**
+- [x] **Step 5: Put the joystick and the view controls in flow**
 
 In `src/hud/Joystick.tsx`, replace:
 ```tsx
@@ -2462,7 +2464,7 @@ with:
       className="glass glass-solid pointer-events-auto flex flex-col items-center gap-0.5 rounded-full p-0.5 sm:flex-row"
 ```
 
-- [ ] **Step 6: Let `WalkBar` portal its pills into the band**
+- [x] **Step 6: Let `WalkBar` portal its pills into the band**
 
 In `src/hud/walk/WalkBar.tsx`, replace:
 ```tsx
@@ -2626,7 +2628,7 @@ with:
   );
 ```
 
-- [ ] **Step 7: Replace `src/hud/Hud.tsx` with the bottom band**
+- [x] **Step 7: Replace `src/hud/Hud.tsx` with the bottom band**
 
 ```tsx
 "use client";
@@ -2785,12 +2787,12 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
 }
 ```
 
-- [ ] **Step 8: Run the unit tests**
+- [x] **Step 8: Run the unit tests**
 
 Run: `rtk bunx vitest run tests/hud/BoostButton.test.tsx tests/hud/WalkBar.test.tsx tests/unit/ui-copy.test.ts tests/content/fonts.test.ts && rtk bun run typecheck && rtk bun run lint`
 Expected: 4 files PASS; typecheck and lint clean.
 
-- [ ] **Step 9: Write the bottom band e2e tests**
+- [x] **Step 9: Write the bottom band e2e tests**
 
 In `e2e/hud.spec.ts`, replace the import line:
 ```ts
@@ -2862,12 +2864,12 @@ test.describe("bottom band", () => {
 });
 ```
 
-- [ ] **Step 10: Build and run the HUD specs**
+- [x] **Step 10: Build and run the HUD specs**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/hud.spec.ts e2e/walk.spec.ts e2e/drawer-solid.spec.ts && rtk bunx playwright test e2e/experience.spec.ts -g "touch|joystick|reset button|one-finger|accessibility"`
 Expected: all PASS: 5 `hud.spec` tests (3 top bar, 2 bottom band), the walk specs (pills in the band, cards unchanged), drawer-solid, the joystick and view controls tests, axe.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/hud/BoostButton.tsx src/hud/Hud.tsx src/hud/Joystick.tsx src/hud/ViewControls.tsx src/hud/walk/WalkBar.tsx src/hud/walk/WalkLayer.tsx messages/en.json messages/id.json tests/hud/BoostButton.test.tsx tests/hud/WalkBar.test.tsx e2e/hud.spec.ts
@@ -2888,7 +2890,7 @@ rtk git commit -m "feat(hud): bottom band for hint, walk pill, joystick, boost a
 - Consumes: `SHAFT` (`config.ts`, `z: 0`, not modified), `buildFloorLayouts`.
 - Produces: `LOBBY` with `bounds { minX: -24, maxX: 28, minZ: -21, maxZ: 21 }`, `spawn { x: 14, z: 10 }`, `hologram { x: 6, z: 0, radius: 3 }`, `skillsWall.z = -18.5`, `certWall.z = 0`, `kiosk.z = 19`. Every Lobby element moves +4 u in z with the plaza, so the relative layout (walkways, view zones, `LOBBY_STOPS`, lane spokes) is unchanged. The lane ring, the stats ring, the certification arc and the slab (and its grid floor, which `FloorLevel` centers on the bounds) are all centered on z = 0, the axis of the elevator door at (-24, 0).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/lobby-layout.test.ts`, replace:
 ```ts
@@ -2916,12 +2918,12 @@ and add as the first test inside `describe("Lobby layout", () => {`:
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/lobby-layout.test.ts`
 Expected: FAIL, `expected -4 to be 0` (hologram z).
 
-- [ ] **Step 3: Move the plaza in `src/experience/config.ts`**
+- [x] **Step 3: Move the plaza in `src/experience/config.ts`**
 
 Replace:
 ```ts
@@ -2964,12 +2966,12 @@ with:
   kiosk: { x: 2, z: 19, w: 3, d: 2 },
 ```
 
-- [ ] **Step 4: Run the Lobby, navigation and mission tests**
+- [x] **Step 4: Run the Lobby, navigation and mission tests**
 
 Run: `rtk bunx vitest run tests/unit/lobby-layout.test.ts tests/unit/navgrid.test.ts tests/unit/orbit.test.ts tests/unit/missions-host3d.test.ts tests/unit/doors.test.ts tests/unit/store.test.ts`
 Expected: 6 files PASS (spacing, on-slab, walkable ring, spawn and approach all hold: the kiosk box ends at z 20.75 inside 21, the skills wall starts at z -19.05 inside -21).
 
-- [ ] **Step 5: Update the e2e wall check**
+- [x] **Step 5: Update the e2e wall check**
 
 In `e2e/experience.spec.ts`, replace:
 ```ts
@@ -2992,7 +2994,7 @@ with:
     expect(Math.abs(rover.x - 6) > 3.9 || Math.abs(rover.z) > 3.9).toBe(true);
 ```
 
-- [ ] **Step 6: Update appendix 01 section 2**
+- [x] **Step 6: Update appendix 01 section 2**
 
 In `docs/superpowers/specs/agent-hq/01-world-and-layout.md`, replace:
 ```md
@@ -3031,12 +3033,12 @@ with (only the position cells change; keep the rest of each row as it is):
 | Ask Rover kiosk | (2, 19) | 3 × 2 | Diegetic mirror of Ask Rover (the Rover Terminal missions) |
 ```
 
-- [ ] **Step 7: Build and run the Lobby e2e tests**
+- [x] **Step 7: Build and run the Lobby e2e tests**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/experience.spec.ts -g "WASD|click to move|draw call budget|certification|Shift|cruising"`
 Expected: all PASS (walls, click to move, budget under 150 calls and 30k triangles, the certification preview, and the boost tests from the new spawn).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/config.ts tests/unit/lobby-layout.test.ts e2e/experience.spec.ts docs/superpowers/specs/agent-hq/01-world-and-layout.md
@@ -3055,7 +3057,7 @@ rtk git commit -m "fix(lobby): center the plaza ring and the slab on the elevato
 - Consumes: `RoomView.link` (`{ room, label }`, set by `room-views/career.ts` (`drawer.seeOnL3`) and `room-views/labs.ts` (`drawer.seeOnL2`)), `onLink(room)`.
 - Produces: `<footer data-testid="drawer-footer">` with children in this order: primary `page` link (`drawer.openPage`, `common.caseStudy` for pods, `drawer.rooms.readPost` for posts), `external` link, the cross-floor button (`data-testid="drawer-cross-link"`, secondary amber outline), then View architecture. The drawer body no longer renders the link; the "..." menu still offers it. One shared footer serves every room type (L1 to RF, custom `research` and `roof` bodies included).
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 In `tests/hud/RoomDrawer.test.tsx`, replace the whole test `it("keeps the footer to one primary action and offers the cross-floor link in the menu", async () => {` (through its closing `});`) with:
 ```tsx
@@ -3098,12 +3100,12 @@ In `tests/hud/RoomDrawer.test.tsx`, replace the whole test `it("keeps the footer
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `rtk bunx vitest run tests/hud/RoomDrawer.test.tsx`
 Expected: FAIL, `Unable to find an element by: [data-testid="drawer-footer"]`.
 
-- [ ] **Step 3: Move the link in `src/hud/drawer/RoomDrawer.tsx`**
+- [x] **Step 3: Move the link in `src/hud/drawer/RoomDrawer.tsx`**
 
 Replace the doc comment lines:
 ```tsx
@@ -3176,12 +3178,12 @@ with:
         </footer>
 ```
 
-- [ ] **Step 4: Run the drawer unit tests**
+- [x] **Step 4: Run the drawer unit tests**
 
 Run: `rtk bunx vitest run tests/hud/RoomDrawer.test.tsx tests/hud/LibraryRoofRooms.test.tsx && rtk bun run typecheck && rtk bun run lint`
 Expected: 2 files PASS (including `links to the related room on another floor`, which finds the button by name); typecheck and lint clean.
 
-- [ ] **Step 5: Write the drawer footer e2e tests**
+- [x] **Step 5: Write the drawer footer e2e tests**
 
 In `e2e/hud.spec.ts`, replace:
 ```ts
@@ -3231,12 +3233,12 @@ test.describe("room drawer footer", () => {
 });
 ```
 
-- [ ] **Step 6: Build and run the drawer specs**
+- [x] **Step 6: Build and run the drawer specs**
 
 Run: `rtk bun run build && rtk bunx playwright test e2e/hud.spec.ts -g "drawer footer" && rtk bunx playwright test e2e/career.spec.ts -g "See the case study" && rtk bunx playwright test e2e/drawer-solid.spec.ts e2e/labs.spec.ts`
 Expected: 4 footer tests PASS; the L2 to L3 cross-floor ride still PASSES (the button keeps its name); drawer-solid and labs PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/hud/drawer/RoomDrawer.tsx tests/hud/RoomDrawer.test.tsx e2e/hud.spec.ts
@@ -3256,7 +3258,7 @@ rtk git commit -m "feat(drawer): cross-floor link moves into the footer next to 
 - Consumes: the names and behaviors produced by Tasks 1 to 9.
 - Produces: docs only.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Replace:
 ```md
@@ -3268,7 +3270,7 @@ Try it: open `/en`, press **Boot rover** (the boot log and the intro play in ful
 ```
 In the L2 paragraph replace `or the "Follow my career" mission.` with `or the "Follow my career" pick in Ask Rover.`; in the L3 paragraph replace `or the "Tour my projects" mission;` with `or the "Tour my projects" pick in Ask Rover;`.
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Make these replacements (each `old` string occurs once):
 
@@ -3296,7 +3298,7 @@ At the end of `## Styling`:
 - 3D HUD layout (owner decisions, October 2026): the top bar has no Quick view (it stays in the Page View footer, the Home hero and About); Page view is the one primary (solid cyan) control, with the Ask AI pill on its right at the far right. From 1024 px everything is one row; below that Page view and Ask AI get their own row (tablets under the bar, phones under the menu row, so phone overlays under the top controls start at 116 px). The screen bottom is one flex band (`BottomBand` in `Hud.tsx`): joystick and boost button on the left (phones stack the boost button above the joystick), the walk pill above the controls hint in the center, the view controls on the right (vertical on phones). Nothing in the band can overlap, it hugs the bottom edge above the safe area, and `e2e/hud.spec.ts` checks the boxes at 834 x 1112 and 390 x 844. The profile card shows no rooms-visited counter; the store still records `visited`.
 ```
 
-- [ ] **Step 3: Appendix 02 (`02-interaction-and-states.md`)**
+- [x] **Step 3: Appendix 02 (`02-interaction-and-states.md`)**
 
 Replace:
 ```md
@@ -3320,7 +3322,7 @@ with:
 | intro → explore | Exterior orbit and fly-in (see appendix 01); once per browser session | 2.5 s, never skipped | A still exterior shot for the same 2.5 s, then a cut |
 ```
 
-- [ ] **Step 4: Appendix 03 (`03-rover-camera-input.md`)**
+- [x] **Step 4: Appendix 03 (`03-rover-camera-input.md`)**
 
 Replace:
 ```md
@@ -3341,7 +3343,7 @@ with:
 - The joystick appears only on coarse pointers: bottom-left, 120 px diameter, 12% dead zone, with a hold-to-boost button beside it (above it on phones). Keyboards boost with Shift. Physics sub-steps never travel more than 0.4 u, so boosting never tunnels through walls.
 ```
 
-- [ ] **Step 5: Appendix 04 (`04-hud-responsive-i18n.md`, section 2 table)**
+- [x] **Step 5: Appendix 04 (`04-hud-responsive-i18n.md`, section 2 table)**
 
 Replace:
 ```md
@@ -3366,12 +3368,12 @@ with:
 | View controls | Bottom band, right | Same | Bottom band, right, vertical |
 ```
 
-- [ ] **Step 6: Check the docs**
+- [x] **Step 6: Check the docs**
 
 Run: `rtk bunx vitest run tests/content/safety.test.ts && grep -rnP "\x{2014}" README.md AGENTS.md docs/superpowers/specs/agent-hq/0[1-4]-*.md || echo "no em dash"`
 Expected: PASS and `no em dash`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/specs/agent-hq/02-interaction-and-states.md docs/superpowers/specs/agent-hq/03-rover-camera-input.md docs/superpowers/specs/agent-hq/04-hud-responsive-i18n.md
@@ -3389,7 +3391,7 @@ rtk git commit -m "docs: boost, Ask Rover, unskippable intro, HUD bands and draw
 - Consumes: everything above.
 - Produces: the PR.
 
-- [ ] **Step 1: Add HUD screenshots**
+- [x] **Step 1: Add HUD screenshots**
 
 In `e2e/screenshots.spec.ts`, append at the end of the file:
 ```ts
@@ -3436,27 +3438,27 @@ test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
 });
 ```
 
-- [ ] **Step 2: Quick verification**
+- [x] **Step 2: Quick verification**
 
 Run: `rtk bun run verify:quick`
 Expected: typecheck, lint, all Vitest files and `next build` pass (about 1 to 2 minutes). `tests/unit/e2e-plan.test.ts` confirms `hud` is a known spec; the em dash scan and `ui-copy` pass.
 
-- [ ] **Step 3: Full e2e (this branch changes `e2e/hq.ts`)**
+- [x] **Step 3: Full e2e (this branch changes `e2e/hq.ts`)**
 
 Run: `rtk bun run e2e:changed --dry && rtk bun run e2e:changed`
 Expected: the dry run prints `all` (because `e2e/hq.ts` changed); the full suite then passes (20 to 40 minutes locally on SwiftShader), including every `expectRenderBudget` check (under 150 draw calls and 30k triangles per floor).
 
-- [ ] **Step 4: Lighthouse budgets (optional locally, blocking in CI)**
+- [x] **Step 4: Lighthouse budgets (optional locally, blocking in CI)**
 
 Run: `rtk bunx @lhci/cli@0.15.1 autorun`
 Expected: `Done running autorun.` with no failed assertions (LCP 2 s, CLS 0.01, TBT 200 ms, transfer budgets). The SSR boot cover only lost a button; nothing new ships on the Page View path.
 
-- [ ] **Step 5: Screenshots**
+- [x] **Step 5: Screenshots**
 
 Run: `SCREENSHOTS=1 rtk bunx playwright test e2e/screenshots.spec.ts --workers=1 -g "HUD layout|3D lobby|page view with Back|3D boot|terminal"`
 Expected: PASS, and `ls screenshots | grep -E "hq-bottom-band|hq-drawer-footer|hq-lobby|page-view|hq-boot|terminal"` lists the new `hq-bottom-band-834x1112.png`, `hq-bottom-band-390x844.png`, `hq-drawer-footer-1440x900.png`, `hq-drawer-footer-390x844.png` and the refreshed lobby (top bar), page view, boot (no Skip) and terminal (Ask Rover) shots. Review them by eye: hint and pill on the bottom edge, Ask AI right of a cyan Page view, the cross link next to Open page.
 
-- [ ] **Step 6: Commit the screenshot spec, push and open the PR**
+- [x] **Step 6: Commit the screenshot spec, push and open the PR**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts

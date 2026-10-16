@@ -1,5 +1,7 @@
 # Highlights Hall gallery rebuild (Session A) Implementation Plan
 
+Status: shipped in #88 (91a8a95), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rebuild the L1 Highlights Hall as a gallery (Part 2 of `docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md`): each station gets its own shape, a gateway arch with a floating "HIGHLIGHTS HALL" sign and a one-shot light curtain, a light fountain centerpiece and fake stage lighting, with the same content, pads, doors, deep links and budgets.
@@ -48,9 +50,9 @@
 - `hallLightInstances(tier)`: `LightInstance[]` (`kind: "beam" | "pool"`, `x, y, z, h, r0, r1, color, alpha, spin, phase`).
 - `hallTall(): TallObstacle[]` (gate pillars, monoliths, experience pillars, mast, card).
 
-- [ ] Write failing tests: the arch pillars are space-rule clean (cert wall at least 6 u away, south pillar touches the slab), the opening spans the 8 u lead road, the rover route from the spawn to every station pad passes the opening, `gateCrossed` fires once eastward only inside the opening, monoliths stay inside the projects footprint and clear of the pad by 0.9 u, every tile and face yaw reads toward the plaza, lights count per tier, tall columns cover every shape over 3.2 u.
-- [ ] Implement; add the pillars to `HALL_LAYOUT.obstacles`, `HALL.zoom` per station in `stationZone`, `HALL.height` per station.
-- [ ] Run `bunx vitest run tests/unit/hall-gallery.test.ts tests/unit/highlights-layout.test.ts`; commit `feat(l1): gallery layout for the Highlights Hall`.
+- [x] Write failing tests: the arch pillars are space-rule clean (cert wall at least 6 u away, south pillar touches the slab), the opening spans the 8 u lead road, the rover route from the spawn to every station pad passes the opening, `gateCrossed` fires once eastward only inside the opening, monoliths stay inside the projects footprint and clear of the pad by 0.9 u, every tile and face yaw reads toward the plaza, lights count per tier, tall columns cover every shape over 3.2 u.
+- [x] Implement; add the pillars to `HALL_LAYOUT.obstacles`, `HALL.zoom` per station in `stationZone`, `HALL.height` per station.
+- [x] Run `bunx vitest run tests/unit/hall-gallery.test.ts tests/unit/highlights-layout.test.ts`; commit `feat(l1): gallery layout for the Highlights Hall`.
 
 ### Task 2: Solids, lines and content placement
 
@@ -58,37 +60,37 @@
 
 **Interfaces:** `prismBuffers(prisms)`, `hallGeometryBuffers(projectCount)` returning `{ positions, normals, indices }` and `hallLineBuffers(projectCount)` returning `Float32Array`; `hallLabels(input, labels, fonts)` returns `HallTexts = { labels: BatchedLabel[]; tile: number[] }` (`tile[i]` is the stat tile a label rides with, or -1); `hallShots(count)` on monolith faces; `hallPhoto(index)` as the hologram disc.
 
-- [ ] Rewrite the content tests against faces (every label on its station's face, inside its width, between the base and the shape top; tile labels flagged; the floor sign gone; no first person added).
-- [ ] Implement; run `bunx vitest run tests/unit/hall-content.test.ts`; commit.
+- [x] Rewrite the content tests against faces (every label on its station's face, inside its width, between the base and the shape top; tile labels flagged; the floor sign gone; no first person added).
+- [x] Implement; run `bunx vitest run tests/unit/hall-content.test.ts`; commit.
 
 ### Task 3: Scenery components
 
 **Files:** Create `HallLights.tsx`, `HallFx.tsx`; modify `HighlightsHall.tsx`, `fx/probes.ts`.
 
-- [ ] `HallLights`: one `InstancedBufferGeometry` (open cylinder, 20 segments, y 0 to 1) with per-instance attributes, one `ShaderMaterial` (soft edge from the view angle for beams, radial fade for pools, beam spin around the fountain and height pulse from `uTime`), additive on full, normal on lite; `useUniformTime` freezes under reduced motion.
-- [ ] `HallCurtain` (gate): plane in the opening, hidden until `gateCrossed` fires the first time this session (`sessionStorage["hq:hall-gate"]`), a 0.8 s sweep, never under reduced motion; probe `sceneProbes.hallGate = { sweeps, active }`. `PortalGlow` (experience opening) uses the same shader with a still band.
-- [ ] `StatTiles`: instanced plates with a neon border in the shader; drift on full only (shader offset), the matching text members follow through the `BatchedLabels` handle.
-- [ ] `PortraitHolo`: disc over the atlas photo cell, scanlines, flicker on full only.
-- [ ] `GateSign`: troika `Text` plus a dark backing and a neon outline, turned by `yawTowards` every frame.
-- [ ] `HighlightsHall`: hidden until `precompileObject` resolves for the hall group (all materials compiled and pinned), then visible.
-- [ ] `bun run typecheck && bun run lint`; commit.
+- [x] `HallLights`: one `InstancedBufferGeometry` (open cylinder, 20 segments, y 0 to 1) with per-instance attributes, one `ShaderMaterial` (soft edge from the view angle for beams, radial fade for pools, beam spin around the fountain and height pulse from `uTime`), additive on full, normal on lite; `useUniformTime` freezes under reduced motion.
+- [x] `HallCurtain` (gate): plane in the opening, hidden until `gateCrossed` fires the first time this session (`sessionStorage["hq:hall-gate"]`), a 0.8 s sweep, never under reduced motion; probe `sceneProbes.hallGate = { sweeps, active }`. `PortalGlow` (experience opening) uses the same shader with a still band.
+- [x] `StatTiles`: instanced plates with a neon border in the shader; drift on full only (shader offset), the matching text members follow through the `BatchedLabels` handle.
+- [x] `PortraitHolo`: disc over the atlas photo cell, scanlines, flicker on full only.
+- [x] `GateSign`: troika `Text` plus a dark backing and a neon outline, turned by `yawTowards` every frame.
+- [x] `HighlightsHall`: hidden until `precompileObject` resolves for the hall group (all materials compiled and pinned), then visible.
+- [x] `bun run typecheck && bun run lint`; commit.
 
 ### Task 4: Camera, point-and-go heights
 
-- [ ] `TALL.L1 = hallTall()`; `highlightsInteractables` height per station; update `tests/unit/hall-interact.test.ts`; commit.
+- [x] `TALL.L1 = hallTall()`; `highlightsInteractables` height per station; update `tests/unit/hall-interact.test.ts`; commit.
 
 ### Task 5: E2E
 
-- [ ] `e2e/highlights.spec.ts`: the arch is passable (drive from the plaza through the opening, the rover x crosses `GATE.x`), the sweep runs once per session (probe `sweeps` 1 after two passes) and never under reduced motion (`sweeps` 0), the budget test keeps its spots plus the arch.
-- [ ] Run `E2E_PORT=4446 bun run e2e:changed`; commit.
+- [x] `e2e/highlights.spec.ts`: the arch is passable (drive from the plaza through the opening, the rover x crosses `GATE.x`), the sweep runs once per session (probe `sweeps` 1 after two passes) and never under reduced motion (`sweeps` 0), the budget test keeps its spots plus the arch.
+- [x] Run `E2E_PORT=4446 bun run e2e:changed`; commit.
 
 ### Task 6: Perf, visual gate, evidence, docs
 
-- [ ] `E2E_PORT=4446 bun run e2e:perf e2e/perf/floors.spec.ts` then regenerate `e2e/perf/baseline.json` (note why in the PR).
-- [ ] `E2E_PORT=4446 bun scripts/visual-gate.ts --base origin/main --grep l1-spawn` (rest of L1 unchanged).
-- [ ] Captures before and after (1440x900 full, 2560x1440 full, 390x844 lite), arch drive frames, calls and triangles table.
-- [ ] Docs: README hall paragraph, AGENTS.md (hall section, `hq:hall-gate`), spec 01 (L1 hall), spec 08 (hall budget line).
-- [ ] `bun run verify:quick`, push, open the PR, get the four required checks green.
+- [x] `E2E_PORT=4446 bun run e2e:perf e2e/perf/floors.spec.ts` then regenerate `e2e/perf/baseline.json` (note why in the PR).
+- [x] `E2E_PORT=4446 bun scripts/visual-gate.ts --base origin/main --grep l1-spawn` (rest of L1 unchanged).
+- [x] Captures before and after (1440x900 full, 2560x1440 full, 390x844 lite), arch drive frames, calls and triangles table.
+- [x] Docs: README hall paragraph, AGENTS.md (hall section, `hq:hall-gate`), spec 01 (L1 hall), spec 08 (hall budget line).
+- [x] `bun run verify:quick`, push, open the PR, get the four required checks green.
 
 ## Revision (after #87 merged)
 

@@ -1,5 +1,7 @@
 # Landing Key Projects and Project Placeholders Implementation Plan
 
+Status: shipped in #159 (c03043f), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The Classic landing lists only key projects that have screenshots, the Full-Stack AI Application Template becomes a key project, and every project thumbnail without a screenshot shows a designed placeholder instead of an empty box.
@@ -244,6 +246,6 @@ and after `page.goto(staticTier("/en/labs"))`:
 
 - [x] **Step 3: Verify.** `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed` (pageview, static-routes, gallery, labs), then `E2E_PORT=<port> bun run e2e:perf e2e/perf/floors.spec.ts` (L3 hero footprint). If the floors program baseline moved because of the hero, regenerate it per AGENTS.md and say why.
 
-- [ ] **Step 4: Captures.** Before (production) and after (served `out/`) of `#work` on `/en`, `#all-projects` on `/en/labs` and `/en/quick` at 1440x900 and 390x844; attach to the PR.
+- [x] **Step 4: Captures.** Before (production) and after (served `out/`) of `#work` on `/en`, `#all-projects` on `/en/labs` and `/en/quick` at 1440x900 and 390x844; attach to the PR.
 
 - [x] **Step 5: Commit** `test(e2e): landing key projects with screenshots and project placeholders` and `docs: key projects and placeholders`.

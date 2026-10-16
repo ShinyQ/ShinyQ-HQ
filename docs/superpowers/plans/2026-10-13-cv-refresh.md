@@ -1,5 +1,7 @@
 # R5 P5: CV Refresh Implementation Plan
 
+Status: shipped in #67 (fafbe64), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the owner's CV PDF with the 2026-10-13 version and make every CV-derived fact on the site (EN and ID, Page View, 3D, Ask, JSON-LD) agree with it, with a test that cross-checks the site against the CV.
@@ -136,7 +138,7 @@ Adds an opt-in capture block (Page View pages that carry CV facts, the L1 skills
 - Consumes: `asReturningVisitor`, `waitForHQ`, `waitForPhase`, `waitForRoom`, `waitForCameraSettle` from `e2e/hq.ts`; the file's own `Viewport` type.
 - Produces: `screenshots/r5-p5/{before,after}/page-{home,contact,cv,journey}-{W}x{H}.png`, `3d-l1-skills-wall-{W}x{H}.png`, `3d-rf-control-{W}x{H}.png`, `metrics.jsonl` (`{ view, size, tier, drawCalls }` per line), `sizes.txt`, `pack.json`. `screenshots/` is gitignored.
 
-- [ ] **Step 1: Branch from main**
+- [x] **Step 1: Branch from main**
 
 ```bash
 git fetch origin && git switch -c r5-p5-cv-refresh origin/main
@@ -144,7 +146,7 @@ rtk git log --oneline -1
 ```
 Expected: the tip of `origin/main` (f61fbba or later).
 
-- [ ] **Step 2: Add the capture block**
+- [x] **Step 2: Add the capture block**
 
 In `e2e/screenshots.spec.ts`, add `import { appendFileSync, mkdirSync } from "node:fs";` as the first line, and add `waitForCameraSettle` to the `./hq` import so it reads:
 
@@ -258,17 +260,17 @@ test.describe("CV refresh captures", () => {
 });
 ```
 
-- [ ] **Step 3: Typecheck and lint the spec**
+- [x] **Step 3: Typecheck and lint the spec**
 
 Run: `bun run typecheck && bun run lint`
 Expected: exit 0, no errors.
 
-- [ ] **Step 4: Confirm the block is skipped without the flag (it must never run in CI)**
+- [x] **Step 4: Confirm the block is skipped without the flag (it must never run in CI)**
 
 Run: `E2E_PORT=4434 bunx playwright test e2e/screenshots.spec.ts -g "CV refresh" --list | tail -3`
 Expected: `Total: 18 tests in 1 file` (3 sizes x (4 pages + 2 3D poses)).
 
-- [ ] **Step 5: Build the unchanged site and capture the baseline**
+- [x] **Step 5: Build the unchanged site and capture the baseline**
 
 ```bash
 bun run build
@@ -279,7 +281,7 @@ cat screenshots/r5-p5/before/metrics.jsonl
 ```
 Expected: 18 passed; 19 files (18 PNG + `metrics.jsonl`); six metric lines. `l1-skills-wall` draw calls are well under the L1 cap of 140 (spawn lite 115 / full 134 per REPORT.md c-gpu-memory; the wall pose is lower).
 
-- [ ] **Step 6: Record baseline sizes and the Ask pack**
+- [x] **Step 6: Record baseline sizes and the Ask pack**
 
 ```bash
 for f in out/en.html out/en/contact.html out/en/cv.html out/en/journey.html out/data/rooms/en.json public/cv/kurniadi-ahmad-wijaya-cv.pdf; do printf "%s raw %s gz %s\n" "$f" "$(wc -c < "$f" | tr -d ' ')" "$(gzip -9 -c "$f" | wc -c | tr -d ' ')"; done | tee screenshots/r5-p5/before/sizes.txt
@@ -288,7 +290,7 @@ bun -e 'import { buildRepoPack } from "./src/ask/repo-pack"; import { getPerspec
 ```
 Expected `pack.json` at f61fbba: `{"chunks":109,"bytes":181415,"approvedBytes":199443,"cap":204800}` (later main commits may move it a little; the after run uses the same command).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts
@@ -308,7 +310,7 @@ rtk git commit -m "test(e2e): opt-in CV refresh review captures with draw-call m
 - Consumes: `cvPdfPath`, `CV_PAGES` from `@/lib/cv`; `bun run cv:pages` (`scripts/cv-pages.ts`).
 - Produces: `CV_SHA256` (test-local constant) = `86695d1f52c473f44286dc82ff63b132b450c67ff988037ec43595987c30f89f`; the manifest `content/generated/cv-pages.json` with that sha256 and 2 pages. Task 3 reads the PDF text through `pdftotext`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/content/cv.test.ts`, after `const pdf = cvPdfPath(fileName);` add:
 
@@ -330,12 +332,12 @@ and, inside `describe("CV PDF (owner's file, served as-is for every locale)", ..
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/content/cv.test.ts`
 Expected: FAIL in "is the owner's current CV (pinned sha256)": expected `b75d89bd...1342` to be `86695d1f...f89f`. Every other test passes.
 
-- [ ] **Step 3: Copy the new PDF over the old one (same file name)**
+- [x] **Step 3: Copy the new PDF over the old one (same file name)**
 
 ```bash
 cp "/Users/shinyq/.copilot/attachments/23e7e2f1-b31a-495d-8e36-eb27aba0c1f2-CV_Kurniadi Ahmad Wijaya.docx (1).pdf" public/cv/kurniadi-ahmad-wijaya-cv.pdf
@@ -344,12 +346,12 @@ pdfinfo public/cv/kurniadi-ahmad-wijaya-cv.pdf | grep -E "Pages|Page size"
 ```
 Expected: `86695d1f52c473f44286dc82ff63b132b450c67ff988037ec43595987c30f89f`, `Pages: 2`, `Page size: 612 x 1008 pts` (same size as before, so the page images keep 1600x2636 and 800x1318).
 
-- [ ] **Step 4: Run the test again: the pin passes, the page images are now stale**
+- [x] **Step 4: Run the test again: the pin passes, the page images are now stale**
 
 Run: `bunx vitest run tests/content/cv.test.ts`
 Expected: FAIL only in "were rendered from the committed PDF (run `bun run cv:pages` after replacing it)" with the message "public/cv PDF changed: run `bun run cv:pages` and commit the output".
 
-- [ ] **Step 5: Regenerate the page images (no /tmp: point TMPDIR into the repo)**
+- [x] **Step 5: Regenerate the page images (no /tmp: point TMPDIR into the repo)**
 
 ```bash
 mkdir -p .cv-tmp
@@ -360,16 +362,16 @@ ls -l public/cv/pages
 ```
 Expected: `cv-pages: 2 pages from kurniadi-ahmad-wijaya-cv.pdf`; the manifest's `sha256` is `86695d1f...f89f`, two pages at 1600x2636 and 800x1318; four webp files, each under 400,000 bytes (old: 233,926 / 105,878 / 192,720 / 87,668).
 
-- [ ] **Step 6: Look at both pages**
+- [x] **Step 6: Look at both pages**
 
 Open `public/cv/pages/kurniadi-ahmad-wijaya-cv-1.webp` and `-2.webp`. Expected: page 1 starts with the new summary ("AI and Software Engineer with 4+ years..."), page 2 shows EDUCATION with Telkom University only and the seven-line SKILLS section. Do not copy any text from the images into the site (C3).
 
-- [ ] **Step 7: Run the CV tests**
+- [x] **Step 7: Run the CV tests**
 
 Run: `bunx vitest run tests/content/cv.test.ts`
 Expected: PASS (all tests, including the pin and the page-image checks).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add public/cv/kurniadi-ahmad-wijaya-cv.pdf public/cv/pages content/generated/cv-pages.json tests/content/cv.test.ts
@@ -389,7 +391,7 @@ rtk git commit -m "feat(cv): the owner's 2026-10-13 CV, page images regenerated 
 - Consumes: `getContent`, `getPod`, `getProfile`, `getTimelineEntry` from `@/content/load`; the PDF from Task 2.
 - Produces: `tests/content/cv-facts.test.ts` with the module-local `cvText()`, `hasPdftotext`, `PERIODS`, `ROLES`, `FACTS` (Task 4 appends a skills block to this file and adds `getSkills` to its import). Content strings that Task 5's golden items rely on: bio contains "12+ enterprise clients"; `metrodata-2026.summary` contains "10+ client projects" / "10+ proyek klien"; TEMMPAT period `2025-11` to `2025-12`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/content/cv-facts.test.ts`:
 
@@ -563,7 +565,7 @@ describe.skipIf(!hasPdftotext)("CV markers in the committed PDF", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/content/cv-facts.test.ts`
 Expected: FAIL in exactly these tests (all others pass, including both PDF-side tests when poppler is installed):
@@ -577,7 +579,7 @@ Expected: FAIL in exactly these tests (all others pass, including both PDF-side 
 
 If the PDF-side test "carries every period, role and fact marker" fails, print the missing markers and compare them with `pdftotext -layout public/cv/kurniadi-ahmad-wijaya-cv.pdf - | grep -n "<marker start>"`; fix the marker in the test to the exact CV wording (never the site value).
 
-- [ ] **Step 3: Write the one-off content script**
+- [x] **Step 3: Write the one-off content script**
 
 Create `.r5-p5-apply.ts` in the repo root (not committed; deleted in Step 5). It refuses to change a field whose current value is not the expected old value.
 
@@ -709,7 +711,7 @@ writeFileSync(FILE, `${JSON.stringify(data, null, 2)}\n`);
 console.log("site-content.json: CV facts updated");
 ```
 
-- [ ] **Step 4: Let the new stack name keep the AWS logo**
+- [x] **Step 4: Let the new stack name keep the AWS logo**
 
 In `src/content/tech.ts` line 36, add the alias:
 
@@ -717,7 +719,7 @@ In `src/content/tech.ts` line 36, add the alias:
   webp("aws", "AWS", ["amazon web services", "aws s3", "aws lambda", "aws ec2", "aws websocket apis", "aws api gateway websocket"]),
 ```
 
-- [ ] **Step 5: Run the script, then delete it**
+- [x] **Step 5: Run the script, then delete it**
 
 ```bash
 bun .r5-p5-apply.ts && rm .r5-p5-apply.ts
@@ -725,19 +727,19 @@ rtk git diff --stat
 ```
 Expected: `site-content.json: CV facts updated`; diff touches only `content/site-content.json` (about 30 changed lines) and `src/content/tech.ts` (1 line). If the script throws `expected ..., found ...`, main moved that field: stop, compare with the inventory row, and adjust only the `from` value after checking the new value is still what the CV says.
 
-- [ ] **Step 6: Run the cross-check and the content checks**
+- [x] **Step 6: Run the cross-check and the content checks**
 
 Run: `bunx vitest run tests/content/cv-facts.test.ts tests/content/dataset.test.ts tests/content/safety.test.ts tests/content/title-case.test.ts tests/unit/tech.test.ts && bun run validate:content`
 Expected: all PASS; `validate:content` reports no issues.
 
-- [ ] **Step 7: Check the Master's is absent from every shipped source (C7)**
+- [x] **Step 7: Check the Master's is absent from every shipped source (C7)**
 
 ```bash
 git grep -n -i -E "sepuluh nopember|magister|master of management|\bMMT\b" -- content messages src functions public
 ```
 Expected: matches only in `src/content/safety.ts` and `functions/_lib/checks.ts` (the block patterns); nothing in `content/`, `messages/` or `public/`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add tests/content/cv-facts.test.ts content/site-content.json src/content/tech.ts
@@ -764,7 +766,7 @@ The CV now has seven skill groups (56 items). Page View (Home, Quick view, About
 - Consumes: `getSkills()` from `@/content/load`; `SkillGroup` type from `@/content/schema`; `cvText`, `hasPdftotext` (module-local in `tests/content/cv-facts.test.ts`, Task 3).
 - Produces: `SkillGroupSchema.id` = `"ai" | "azure" | "languages" | "backend" | "frontend" | "data" | "devops"`; `SKILLS_WALL_GROUPS: readonly ["backend", "ai", "azure", "devops"]` and `wallSkillGroups(groups: readonly SkillGroup[]): SkillGroup[]` from `@/content/selectors`; `ExperienceData.skills` now holds the four wall groups in that order; Ask chunk ids `skills-ai`, `skills-azure`, `skills-languages`, `skills-backend`, `skills-frontend`, `skills-data`, `skills-devops`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/content/cv-facts.test.ts`, change the load import to:
 
@@ -875,12 +877,12 @@ In `tests/fixtures/minimal-content.ts` line 61:
     skills: [{ id: "backend", label: lt("Backend"), items: ["Go"] }],
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/content/cv-facts.test.ts tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/lobby-layout.test.ts tests/unit/schema.test.ts`
 Expected: FAIL: `lists the CV groups in CV order with the CV items` (ids software/ai/cloud/data), the selectors file fails to import `SKILLS_WALL_GROUPS` / `wallSkillGroups` (not exported), `carries the Lobby content` (ids), `measures the skills wall` (import error), and `schema.test.ts` tests using `makeContent` fail with an invalid enum value `"backend"`. The PDF-side skills test passes.
 
-- [ ] **Step 3: Schema ids**
+- [x] **Step 3: Schema ids**
 
 `src/content/schema.ts` lines 84 to 88:
 
@@ -893,7 +895,7 @@ export const SkillGroupSchema = z.strictObject({
 });
 ```
 
-- [ ] **Step 4: Wall selector**
+- [x] **Step 4: Wall selector**
 
 `src/content/selectors.ts` line 3 becomes:
 
@@ -916,7 +918,7 @@ export function wallSkillGroups(groups: readonly SkillGroup[]): SkillGroup[] {
 }
 ```
 
-- [ ] **Step 5: 3D payload and wall accents**
+- [x] **Step 5: 3D payload and wall accents**
 
 `src/content/experience.ts` line 26 becomes:
 
@@ -942,7 +944,7 @@ const GROUP_ACCENT: Record<string, string> = {
 };
 ```
 
-- [ ] **Step 6: Text-only tech names without a logo file**
+- [x] **Step 6: Text-only tech names without a logo file**
 
 In `src/content/tech.ts`, after `"microsoft entra id",` (line 182) add:
 
@@ -957,7 +959,7 @@ In `src/content/tech.ts`, after `"microsoft entra id",` (line 182) add:
 
 (Checked at f61fbba: every other CV skill name resolves to a committed logo; these six do not, and none of them has a logo, so "keeps the text-only allowlist free of names that have a logo" stays green.)
 
-- [ ] **Step 7: Write and run the one-off skills script**
+- [x] **Step 7: Write and run the one-off skills script**
 
 Create `.r5-p5-skills.ts` in the repo root (not committed):
 
@@ -1009,7 +1011,7 @@ bun .r5-p5-skills.ts && rm .r5-p5-skills.ts
 ```
 Expected: `site-content.json: skills follow the CV taxonomy (7 groups, 56 items)`.
 
-- [ ] **Step 8: Point the backend-stack pill at the new chunk**
+- [x] **Step 8: Point the backend-stack pill at the new chunk**
 
 `content/ask/suggestions.json` line 50 (`work-stack`):
 
@@ -1019,12 +1021,12 @@ Expected: `site-content.json: skills follow the CV taxonomy (7 groups, 56 items)
 
 (Checked with the new content at f61fbba: "Which backend stack does he use most?" and "Stack backend apa yang paling sering dia pakai?" retrieve `skills-backend` third, after `profile` and `now`.)
 
-- [ ] **Step 9: Run the tests**
+- [x] **Step 9: Run the tests**
 
 Run: `bunx vitest run tests/content tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/lobby-layout.test.ts tests/unit/schema.test.ts tests/unit/tech.test.ts tests/unit/logo-atlas.test.ts tests/unit/room-views.test.ts tests/unit/titles.test.ts tests/ask/suggestions.test.ts && bun run validate:content && bun run typecheck`
 Expected: all PASS; typecheck exit 0. If `suggestions.test.ts` reports `work-stack` no longer finds `skills-backend` in one locale, change that expect to `["skills-*"]` (the pattern `career-skills` already uses) and rerun.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/content/schema.ts src/content/selectors.ts src/content/experience.ts src/experience/floors/lobby/SkillsWall.tsx src/content/tech.ts content/site-content.json content/ask/suggestions.json tests/content/cv-facts.test.ts tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/lobby-layout.test.ts tests/fixtures/minimal-content.ts
@@ -1046,7 +1048,7 @@ The pack is built from content (`src/ask/pack.ts`), so Tasks 3 and 4 already cha
 - Consumes: content strings from Task 3 ("12+ enterprise clients", "2025-11 to 2025-12" in the pack's career line `Freelance: Backend Engineer (freelance) at TEMMPAT (2025-11 to 2025-12).`, "10+ proyek klien").
 - Produces: golden items `q39`, `q40`, `q41`; `passThreshold` 39 of 41 (two misses allowed, the same bar as 36/38).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/ask/pipeline.test.ts`, replace the count test:
 
@@ -1058,12 +1060,12 @@ The pack is built from content (`src/ask/pack.ts`), so Tasks 3 and 4 already cha
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/ask/pipeline.test.ts -t "pass threshold"`
 Expected: FAIL: expected length 41, received 38.
 
-- [ ] **Step 3: Add the CV refresh questions**
+- [x] **Step 3: Add the CV refresh questions**
 
 In `tests/ask/golden.json`:
 - line 3: `"passThreshold": 39,`
@@ -1085,12 +1087,12 @@ In `tests/ask/golden.json`:
  *   bun scripts/ask-eval.ts golden    # 41 questions, fails below passThreshold (39)
 ```
 
-- [ ] **Step 4: Run the Ask tests (count, drift check, retrieval, pack size, scope)**
+- [x] **Step 4: Run the Ask tests (count, drift check, retrieval, pack size, scope)**
 
 Run: `bunx vitest run tests/ask`
 Expected: PASS, including "has 41 unique items with a 39 pass threshold", "finds every golden fact in the pack (drift check) and in the retrieved context", "has the required chunks, stays under 200 KB", the all-approved pack size test and `scope.test.ts` "perspective retrieval with every draft approved".
 
-- [ ] **Step 5: Rebuild the pack and record its size**
+- [x] **Step 5: Rebuild the pack and record its size**
 
 ```bash
 bun run build:knowledge
@@ -1098,12 +1100,12 @@ bun -e 'import { buildRepoPack } from "./src/ask/repo-pack"; import { getPerspec
 ```
 Expected: about `{"chunks":112,"bytes":183000,"approvedBytes":201000,"cap":204800}` (within a few hundred bytes); `approvedBytes` must be below 204,800. If it is not, stop and report: the perspectives approval headroom is a known limit (runbook deviation 8), and the fix belongs to the owner (shorter bio) rather than to the pack code.
 
-- [ ] **Step 6: Optional real-model spot check (needs the `cf` CLI login or `CF_EVAL_TOKEN`)**
+- [x] **Step 6: Optional real-model spot check (needs the `cf` CLI login or `CF_EVAL_TOKEN`)**
 
 Run: `bun scripts/ask-eval.ts golden --only q11,q39,q40,q41 --cli`
 Expected: 4/4 pass. Skip this step if no Cloudflare credentials are available; the nightly `ask-eval.yml` covers it after merge.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add tests/ask/golden.json tests/ask/pipeline.test.ts scripts/ask-eval.ts
@@ -1128,7 +1130,7 @@ rtk git commit -m "test(ask): golden questions for the CV refresh (12+ clients, 
 - Consumes: names from Tasks 2 to 5 (`wallSkillGroups`, `SKILLS_WALL_GROUPS`, `tests/content/cv-facts.test.ts`, golden 41/39).
 - Produces: documentation only.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Line 45, replace `On L1 (Lobby) the stats ring, the skills wall and the certifications wall (a curved holo-wall with issuer tabs and paging) surround the plaza in front of the elevator.` with:
 
@@ -1138,7 +1140,7 @@ On L1 (Lobby) the stats ring, the skills wall (four of the CV's skill groups: Ba
 
 Line 61: `runs the golden set (38 questions)` becomes `runs the golden set (41 questions)`.
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Line 140: `golden.json (32) and redteam.json sets` becomes `golden.json (41) and redteam.json sets`.
 
@@ -1154,7 +1156,7 @@ Line 192: replace `` `skills[].logos` carries the tech logo per item; `` with:
 `skills` carries only the four L1 wall groups (`wallSkillGroups` and `SKILLS_WALL_GROUPS` in `@/content/selectors`: backend, ai, azure, devops, in that column order; the skills drawer, Page View and Ask list all seven CV groups) and `skills[].logos` the tech logo per item;
 ```
 
-- [ ] **Step 3: Appendix 01 (world and layout), the Skills wall row**
+- [x] **Step 3: Appendix 01 (world and layout), the Skills wall row**
 
 Line 29, replace the last cell `Skill groups: Software Engineering, AI Engineering, Cloud and DevOps, Data (10 u per column, items at 0.4 u)` with:
 
@@ -1162,7 +1164,7 @@ Line 29, replace the last cell `Skill groups: Software Engineering, AI Engineeri
 Four of the CV's seven skill groups, Backend, AI and LLM, Azure, DevOps (`wallSkillGroups`; 10 u per column, items at 0.4 u, at most 12 items per column so the wall stays at or under 9.85 u); the skills drawer lists all seven
 ```
 
-- [ ] **Step 4: Appendix 06 (data contracts)**
+- [x] **Step 4: Appendix 06 (data contracts)**
 
 Line 46:
 
@@ -1170,7 +1172,7 @@ Line 46:
 interface SkillGroup { id: "ai" | "azure" | "languages" | "backend" | "frontend" | "data" | "devops"; label: LocalizedText; items: string[]; } // the CV's taxonomy, CV order (2026-10-13)
 ```
 
-- [ ] **Step 5: Appendix 07 (content map)**
+- [x] **Step 5: Appendix 07 (content map)**
 
 Line 19, the Skills wall row becomes:
 
@@ -1188,7 +1190,7 @@ After the C9 row (line 105) add:
 | C10 | CV refresh (2026-10-13) | The new CV is the source of truth for CV-derived facts (dates, numbers, roles, skills, education); every site fact that differed was updated and listed in the round 5 P5 PR. Facts with stronger evidence that the CV does not contradict stay (TEMMPAT stack from the repository, official credential names). `tests/content/cv-facts.test.ts` pairs CV markers with site values |
 ```
 
-- [ ] **Step 6: Ask design spec, runbook and the eval workflow comment**
+- [x] **Step 6: Ask design spec, runbook and the eval workflow comment**
 
 `docs/superpowers/specs/2026-10-11-ask-hq-design.md`:
 - line 179: after `38 since section 13` add `, 41 since the CV refresh (q39 to q41, 2026-10-13)`.
@@ -1199,7 +1201,7 @@ After the C9 row (line 105) add:
 
 `.github/workflows/ask-eval.yml` line 4: `# 36/38, at least 90% of the curated pill questions` becomes `# 39/41, at least 90% of the curated pill questions`.
 
-- [ ] **Step 7: Check for stale numbers, em dashes and leftovers**
+- [x] **Step 7: Check for stale numbers, em dashes and leftovers**
 
 ```bash
 git grep -n -E "36/38|\(38 questions\)|golden.json \(32\)|Oct 6, 2026|Software Engineering, AI Engineering, Cloud and DevOps|Master of Management" -- README.md AGENTS.md docs/superpowers/specs docs/ask-runbook.md .github scripts
@@ -1207,7 +1209,7 @@ bunx vitest run tests/content/safety.test.ts -t "U\+2014"
 ```
 Expected (before this task the same command lists 9 lines, all edited above): exactly one grep match, `docs/superpowers/specs/2026-10-11-ask-hq-design.md:181` (it keeps "36/38 since section 13" as history next to the new "39/41"); the repo-wide test "has no U+2014 in any tracked text file" passes.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/specs/agent-hq/01-world-and-layout.md docs/superpowers/specs/agent-hq/06-data-contracts.md docs/superpowers/specs/agent-hq/07-content-map.md docs/superpowers/specs/2026-10-11-ask-hq-design.md docs/ask-runbook.md .github/workflows/ask-eval.yml
@@ -1225,7 +1227,7 @@ rtk git commit -m "docs: CV refresh (source of truth, skills taxonomy, wall grou
 - Consumes: the capture block (Task 1), the baseline in `screenshots/r5-p5/before/`, everything from Tasks 2 to 6.
 - Produces: the numbers and images for the PR body (Task 8).
 
-- [ ] **Step 1: Fast verification (AGENTS.md)**
+- [x] **Step 1: Fast verification (AGENTS.md)**
 
 ```bash
 rm -rf .next
@@ -1233,7 +1235,7 @@ bun run verify:quick
 ```
 Expected: typecheck, lint, all unit tests and `next build` pass (about 1 to 2 minutes). On a machine with poppler, the PDF-side tests in `tests/content/cv-facts.test.ts` run and pass; without poppler they show as skipped.
 
-- [ ] **Step 2: Changed-path e2e on port 4434**
+- [x] **Step 2: Changed-path e2e on port 4434**
 
 ```bash
 E2E_PORT=4434 bun run e2e:changed --dry
@@ -1241,14 +1243,14 @@ E2E_PORT=4434 bun run e2e:changed
 ```
 Expected: the plan includes at least `static-routes`, `pageview`, `seo`, `ask`, `experience`, `highlights`, `gallery` (paths: `content/`, `content/ask/`, `src/content/`, `src/experience/floors/lobby/`, `src/content/tech.ts`, `public/`); all pass. `e2e/highlights.spec.ts` keeps L1 under its 140 draw-call cap on both tiers.
 
-- [ ] **Step 3: The CV specs that `e2e:changed` may not pick**
+- [x] **Step 3: The CV specs that `e2e:changed` may not pick**
 
 ```bash
 E2E_PORT=4434 bunx playwright test e2e/deploy.spec.ts e2e/library-roof.spec.ts e2e/roof.spec.ts e2e/pageview.spec.ts -g "CV"
 ```
 Expected: pass: the PDF is served as a PDF, old CV paths 301 to it, `/en/cv` and `/id/cv` show 2 page images (`cv-viewer-page`), every CV entry point opens the viewer, the RF kiosk opens the viewer over the tower.
 
-- [ ] **Step 4: The export never ships the Master's or a client name**
+- [x] **Step 4: The export never ships the Master's or a client name**
 
 ```bash
 grep -rIl -E "Sepuluh Nopember|Magister|Master of Management" out --include=*.html --include=*.txt --include=*.json --include=*.xml; echo "exit $?"
@@ -1256,7 +1258,7 @@ cmp out/cv/kurniadi-ahmad-wijaya-cv.pdf public/cv/kurniadi-ahmad-wijaya-cv.pdf &
 ```
 Expected: `exit 1` (no file), then `pdf exported byte for byte`. (`e2e/deploy.spec.ts` already ran the blocklist scan over `out/` in Step 3.)
 
-- [ ] **Step 5: Capture "after" with the same procedure**
+- [x] **Step 5: Capture "after" with the same procedure**
 
 ```bash
 rm -rf screenshots/r5-p5/after
@@ -1265,7 +1267,7 @@ cat screenshots/r5-p5/after/metrics.jsonl
 ```
 Expected: 18 passed. For each `size`, `l1-skills-wall` and `rf-control` draw calls equal the "before" values (the wall still draws one `BatchedLabels` and one `LogoQuads`; a difference of more than 1 call is a failure to investigate).
 
-- [ ] **Step 6: Pixel diffs of the 3D poses (explicit thresholds)**
+- [x] **Step 6: Pixel diffs of the 3D poses (explicit thresholds)**
 
 ```bash
 mkdir -p screenshots/r5-p5/diff
@@ -1283,7 +1285,7 @@ Thresholds (changed pixels = gray difference above 5%):
 
 Rollback: every change is content or a pure selector; `git revert` of the Task 4 commit restores the four old groups and wall (pixels identical to "before"), and reverting Task 3 and Task 2 restores the old facts and the old PDF with its page images (the sha pin and manifest revert with them).
 
-- [ ] **Step 7: Sizes and pack, same commands as the baseline**
+- [x] **Step 7: Sizes and pack, same commands as the baseline**
 
 ```bash
 for f in out/en.html out/en/contact.html out/en/cv.html out/en/journey.html out/data/rooms/en.json public/cv/kurniadi-ahmad-wijaya-cv.pdf; do printf "%s raw %s gz %s\n" "$f" "$(wc -c < "$f" | tr -d ' ')" "$(gzip -9 -c "$f" | wc -c | tr -d ' ')"; done | tee screenshots/r5-p5/after/sizes.txt
@@ -1294,14 +1296,14 @@ diff screenshots/r5-p5/before/sizes.txt screenshots/r5-p5/after/sizes.txt
 ```
 Expected: wall `{"wallHeight":9.32,"labelLines":1,"logos":34,"atlas":"6x6"}` (before: 9.85, 2 lines, 28 logos, 6x5); `out/en.html` gz grows by about 1 to 3 KB (seven skill rows with logos, longer bio) and stays far under the 80 KB Lighthouse HTML budget; CV PDF 122,716 bytes (was 127,035); pack about 112 chunks with `approvedBytes` below 204,800.
 
-- [ ] **Step 8: Push and let CI run the full suite and Lighthouse**
+- [x] **Step 8: Push and let CI run the full suite and Lighthouse**
 
 ```bash
 rtk git push -u origin r5-p5-cv-refresh
 ```
 Expected: `Build, CV and e2e` and `Lighthouse CI` green on the PR (Task 8). Record the LHCI numbers for `/en` (LCP, CLS, TBT, HTML transfer) from the job summary.
 
-- [ ] **Step 9: Clean up local scratch**
+- [x] **Step 9: Clean up local scratch**
 
 ```bash
 ls -a | grep -E "^\.(r5-p5|cv-tmp)" ; echo "scratch left: exit $?"
@@ -1319,7 +1321,7 @@ Expected: `scratch left: exit 1` (the one-off scripts and `.cv-tmp` are gone). K
 - Consumes: `screenshots/r5-p5/{before,after}/{metrics.jsonl,sizes.txt,pack.json}`, `screenshots/r5-p5/diff/summary.txt`, the Task 7 wall JSON line and the CI Lighthouse numbers.
 - Produces: the PR.
 
-- [ ] **Step 1: Write the PR body**
+- [x] **Step 1: Write the PR body**
 
 Write `screenshots/r5-p5/pr-body.md` with exactly these sections, filling each "after" cell from the Task 7 outputs (the "before" cells are the Task 1 outputs; values shown were measured at f61fbba):
 
@@ -1385,14 +1387,14 @@ Before and after: `/en`, `/en/contact`, `/en/cv`, `/en/journey` (full page) at 1
 Shared with other round 5 workstreams: `README.md`, `AGENTS.md` (all), `e2e/screenshots.spec.ts` (P2 and P4 captures), `src/experience/floors/lobby/SkillsWall.tsx` (P2 L1 label batching), `docs/superpowers/specs/agent-hq/01-world-and-layout.md` (P7 camera notes). See the plan's cross-workstream section.
 ```
 
-- [ ] **Step 2: Open the PR and attach the images**
+- [x] **Step 2: Open the PR and attach the images**
 
 ```bash
 gh pr create --base main --head r5-p5-cv-refresh --title "R5 P5: CV refresh (new CV, re-verified facts, CV skills taxonomy)" --body-file screenshots/r5-p5/pr-body.md
 ```
 Then attach the PNGs from `screenshots/r5-p5/after/` and `screenshots/r5-p5/diff/` (and the matching `before/` images) to the PR description under "Screenshots" (drag and drop in the browser, or the `github-pr-media` skill). Expected: PR open, CI running; do not merge without the owner.
 
-- [ ] **Step 3: Check the PR text for client names and em dashes**
+- [x] **Step 3: Check the PR text for client names and em dashes**
 
 ```bash
 gh pr view --json body -q .body > screenshots/r5-p5/pr-body.check.md

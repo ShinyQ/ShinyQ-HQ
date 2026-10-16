@@ -1,5 +1,7 @@
 # L4 Declutter (Round 7 F) Implementation Plan
 
+Status: shipped in #165 (4bb8579), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Normalize the L4 Writing floor's floating text (keep the Newsroom layout): one sign per section, no overlapping labels, year plates as low posts on the road edge, station titles only for the nearest stations, one height rule.
@@ -53,7 +55,7 @@
   - `yearPostSpecs(years): SignSpec[]`, `yearPostSegments(years): [number, number, number, number, number, number][]`
   - `librarySigns({ layout, zones, titles, titled }): { signs: SignSpec[]; meta: LibrarySignMeta[] }` (order: sections, years, titles)
 
-- [ ] **Step 1: Write the failing tests** in `tests/unit/floor-signs.test.ts`, replacing the "L4 floating signs" describe:
+- [x] **Step 1: Write the failing tests** in `tests/unit/floor-signs.test.ts`, replacing the "L4 floating signs" describe:
 
 ```ts
 describe("L4 floating signs (Round 7 F: one height rule)", () => {
@@ -118,9 +120,9 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
 
 Imports to add: `stationTitles` from `@/experience/floors/library/decor/common` is a client module with three imports; instead build titles inline: `new Map(data.library.posts.map((p) => [\`L4:${p.slug}\`, p.title]))` cast to `Map<RoomId, string>`. Import `L4_SIGN, TITLE_SIGN, YEAR_POST, librarySigns, stationTitleSpecs, yearPostSegments, yearPostSpecs, zoneSignSpecs` from signs, `DOCK, LIBRARY_FLOOR` from model.
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/floor-signs.test.ts` and expect FAIL (exports missing).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/floor-signs.test.ts` and expect FAIL (exports missing).
 
-- [ ] **Step 3: Implement `signs.ts`**:
+- [x] **Step 3: Implement `signs.ts`**:
 
 ```ts
 import type { RoomId } from "@/content/schema";
@@ -151,7 +153,7 @@ export function librarySigns({ layout, zones, titles, titled }) { sections (meta
 
 Remove `YEAR_MARK` and `yearMarkSigns` (no other users).
 
-- [ ] **Step 4: Move the year marks** in `concepts/newsroom.ts` (inside the `timeline.forEach`):
+- [x] **Step 4: Move the year marks** in `concepts/newsroom.ts` (inside the `timeline.forEach`):
 
 ```ts
 // A low post on the road edge in the gap before the first post of the year (Round 7 F: no billboard in the camera path).
@@ -161,8 +163,8 @@ years.push({ year, at: { x: s.from.x - (STATION_SIZE.blog.along / 2 + DOCK.gap /
 
 `YEAR_POST_EDGE` must equal `YEAR_POST.edge`: import `YEAR_POST` from `../decor/signs` (pure module, no React) and import `DOCK`, `STATION_SIZE` from `../model`.
 
-- [ ] **Step 5: Run** `bunx vitest run tests/unit/floor-signs.test.ts tests/unit/library-*.test.ts` and expect PASS.
-- [ ] **Step 6: Commit** `feat(l4): one height rule for timeline signs, year marks on low posts`.
+- [x] **Step 5: Run** `bunx vitest run tests/unit/floor-signs.test.ts tests/unit/library-*.test.ts` and expect PASS.
+- [x] **Step 6: Commit** `feat(l4): one height rule for timeline signs, year marks on low posts`.
 
 ### Task 2: Pure placement rule
 
@@ -177,7 +179,7 @@ years.push({ year, at: { x: s.from.x - (STATION_SIZE.blog.along / 2 + DOCK.gap /
   - `LIBRARY_LABEL_MAX = { title: { wide: 6, narrow: 4 }, section: 4, year: 3 }`, `TITLE_RANGE = 28`
   - `placeLibraryLabels(labels: readonly LibraryLabel[], opts: { narrow: boolean; fixed?: readonly ScreenBox[] }): boolean[]`
 
-- [ ] **Step 1: Write the failing tests**:
+- [x] **Step 1: Write the failing tests**:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -222,8 +224,8 @@ describe("placeLibraryLabels", () => {
 });
 ```
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/library-sign-placement.test.ts`, expect FAIL.
-- [ ] **Step 3: Implement**:
+- [x] **Step 2: Run** `bunx vitest run tests/unit/library-sign-placement.test.ts`, expect FAIL.
+- [x] **Step 3: Implement**:
 
 ```ts
 import { boxesOverlap, LABEL_GAP, type ScreenBox } from "../../fx/labelPlacement";
@@ -251,7 +253,7 @@ export function placeLibraryLabels(labels, { narrow, fixed = [] }) {
 }
 ```
 
-- [ ] **Step 4: Run tests**, expect PASS. **Step 5: Commit** `feat(l4): placement rule for timeline signs (tiers, nearest first, caps)`.
+- [x] **Step 4: Run tests**, expect PASS. **Step 5: Commit** `feat(l4): placement rule for timeline signs (tiers, nearest first, caps)`.
 
 ### Task 3: Plate projection, the hook, the signs component and the decor wiring
 
@@ -268,12 +270,12 @@ export function placeLibraryLabels(labels, { narrow, fixed = [] }) {
   - `sceneProbes.library.labels: { text; kind; x0; y0; x1; y1; quad }[]`.
   - `LibrarySigns({ layout, zones, titles, titled, tier, reducedMotion })`: one `FloatingSigns` group named `library-signs`.
 
-- [ ] **Step 1: Failing test for `projectPlate`** (node, three `PerspectiveCamera`): a plate in front of a camera at the origin looking down -z gives a box centered on screen whose quad has 4 corners and width proportional to `half.w`; a plate behind the camera returns null; one far to the side returns `onScreen: false`.
-- [ ] **Step 2: Implement `projectPlate`** by moving the corner loop out of `useEndSignPlacement` (right vector `(cam.z - z, 0, x - cam.x) / d` with `d` the horizontal camera distance; corners `[-1,-1],[1,-1],[1,1],[-1,1]`). Refactor `useEndSignPlacement` to call it; keep its NEAR, priority and probe logic identical; after `placeLabels`, set `endPlazaScreen.boxes` to the boxes of shown signs; clear it on unmount.
-- [ ] **Step 3: `useLibrarySignPlacement({ signs, meta, group, reducedMotion })`**: per frame, for each sign: world center from the group origin; horizontal camera distance below `NEAR` (6 u) means no box; `projectPlate` with `BOX_PAD` 1.04; `distance` = horizontal distance from `roverRuntime`; `picked` = the store's picked topic includes `meta.room`; `placeLibraryLabels(candidates, { narrow: width < 600, fixed: endPlazaScreen.boxes })`; ease `alpha` toward shown (rate 8, cut under reduced motion); write `sceneProbes.library.labels` (shown with alpha above 0.5). Returns the alpha ref.
-- [ ] **Step 4: `LibrarySigns`** memoizes `librarySigns(...)`, calls the hook with a group ref, renders `<group ref><FloatingSigns signs name="library-signs" tier visibility={alpha} /></group>`.
-- [ ] **Step 5: `NewsroomDecor`**: drop `StationLabels` and `ZoneSigns`; render `<LibrarySigns layout zones titles titled={others} tier reducedMotion />`; add `yearPostSegments(layout.extras.years ?? [])` into the wall's `LineBatch` (color `ZONE_TONE.blog`, no new draw call).
-- [ ] **Step 6: Run** `bun run typecheck && bunx vitest run tests/unit` and `bun run lint`. Commit `feat(l4): place timeline signs on screen, one sign group for the floor`.
+- [x] **Step 1: Failing test for `projectPlate`** (node, three `PerspectiveCamera`): a plate in front of a camera at the origin looking down -z gives a box centered on screen whose quad has 4 corners and width proportional to `half.w`; a plate behind the camera returns null; one far to the side returns `onScreen: false`.
+- [x] **Step 2: Implement `projectPlate`** by moving the corner loop out of `useEndSignPlacement` (right vector `(cam.z - z, 0, x - cam.x) / d` with `d` the horizontal camera distance; corners `[-1,-1],[1,-1],[1,1],[-1,1]`). Refactor `useEndSignPlacement` to call it; keep its NEAR, priority and probe logic identical; after `placeLabels`, set `endPlazaScreen.boxes` to the boxes of shown signs; clear it on unmount.
+- [x] **Step 3: `useLibrarySignPlacement({ signs, meta, group, reducedMotion })`**: per frame, for each sign: world center from the group origin; horizontal camera distance below `NEAR` (6 u) means no box; `projectPlate` with `BOX_PAD` 1.04; `distance` = horizontal distance from `roverRuntime`; `picked` = the store's picked topic includes `meta.room`; `placeLibraryLabels(candidates, { narrow: width < 600, fixed: endPlazaScreen.boxes })`; ease `alpha` toward shown (rate 8, cut under reduced motion); write `sceneProbes.library.labels` (shown with alpha above 0.5). Returns the alpha ref.
+- [x] **Step 4: `LibrarySigns`** memoizes `librarySigns(...)`, calls the hook with a group ref, renders `<group ref><FloatingSigns signs name="library-signs" tier visibility={alpha} /></group>`.
+- [x] **Step 5: `NewsroomDecor`**: drop `StationLabels` and `ZoneSigns`; render `<LibrarySigns layout zones titles titled={others} tier reducedMotion />`; add `yearPostSegments(layout.extras.years ?? [])` into the wall's `LineBatch` (color `ZONE_TONE.blog`, no new draw call).
+- [x] **Step 6: Run** `bun run typecheck && bunx vitest run tests/unit` and `bun run lint`. Commit `feat(l4): place timeline signs on screen, one sign group for the floor`.
 
 ### Task 4: E2E label-overlap gate, captures and budgets
 
@@ -281,13 +283,13 @@ export function placeLibraryLabels(labels, { narrow, fixed = [] }) {
 - Create: `e2e/library-labels.spec.ts`
 - Modify: `scripts/e2e-plan.ts` (`ALL_SPECS`, the `floors/library` and `FloatingSign` rules)
 
-- [ ] **Step 1:** For `desktop` (1440x900, tier full) and `phone` (390x844 at DPR 2, touch, tier lite): enter `/en/library`, then visit poses `approach` (arrival), `posts` (x 8, z 0), `mid` (x 24, z 0), `research` (research station `from`), `models` (models `from`), `talks` (talks `from`). At each: `waitForCameraSettle`, 30 frames, read `__hq.probes.library.labels` plus `__hq.probes.topics.labels`; assert no pair overlaps by more than 2 percent of the smaller quad (`polygonOverlap`, `polygonArea`), titles shown at most 6 or 4, no text shown twice. At `research`, `models` and `talks` the zone's own sign is in the shown list. `expectRenderBudget` at `mid`.
-- [ ] **Step 2:** Opt-in captures and numbers (`L4_SHOTS=<dir>`): screenshot each pose and write `{ pose, sceneCalls, triangles, programs }` to `<dir>/<device>.json`; reading the library probe falls back to `[]` so the block also runs against the old export (`E2E_DIR=out-main`).
-- [ ] **Step 3:** Add `library-labels` to `ALL_SPECS` and to the rules for `src/experience/floors/library/` and `fx/(FloatingSign|signLayout|holoFx)` and `fx/labelPlacement|plateProjection`. Run `bunx vitest run tests/unit/e2e-plan.test.ts`.
-- [ ] **Step 4:** `bun run verify:quick`, then `E2E_PORT=<port> bunx playwright test e2e/library-labels.spec.ts e2e/spectacle.spec.ts e2e/topics.spec.ts e2e/library-roof.spec.ts e2e/walk.spec.ts`. Commit `test(l4): label overlap gate over the timeline`.
+- [x] **Step 1:** For `desktop` (1440x900, tier full) and `phone` (390x844 at DPR 2, touch, tier lite): enter `/en/library`, then visit poses `approach` (arrival), `posts` (x 8, z 0), `mid` (x 24, z 0), `research` (research station `from`), `models` (models `from`), `talks` (talks `from`). At each: `waitForCameraSettle`, 30 frames, read `__hq.probes.library.labels` plus `__hq.probes.topics.labels`; assert no pair overlaps by more than 2 percent of the smaller quad (`polygonOverlap`, `polygonArea`), titles shown at most 6 or 4, no text shown twice. At `research`, `models` and `talks` the zone's own sign is in the shown list. `expectRenderBudget` at `mid`.
+- [x] **Step 2:** Opt-in captures and numbers (`L4_SHOTS=<dir>`): screenshot each pose and write `{ pose, sceneCalls, triangles, programs }` to `<dir>/<device>.json`; reading the library probe falls back to `[]` so the block also runs against the old export (`E2E_DIR=out-main`).
+- [x] **Step 3:** Add `library-labels` to `ALL_SPECS` and to the rules for `src/experience/floors/library/` and `fx/(FloatingSign|signLayout|holoFx)` and `fx/labelPlacement|plateProjection`. Run `bunx vitest run tests/unit/e2e-plan.test.ts`.
+- [x] **Step 4:** `bun run verify:quick`, then `E2E_PORT=<port> bunx playwright test e2e/library-labels.spec.ts e2e/spectacle.spec.ts e2e/topics.spec.ts e2e/library-roof.spec.ts e2e/walk.spec.ts`. Commit `test(l4): label overlap gate over the timeline`.
 
 ### Task 5: Measurements, docs and PR
 
-- [ ] Before and after: run the capture block against `out-main` and `out`; compare scene calls and triangles per pose (after must not exceed before). Run `PERF=1 E2E_PORT=<port> bunx playwright test e2e/perf/floors.spec.ts -g L4` and `e2e/perf/bytes-3d.spec.ts` (L4 chunk cap once #157 is in).
-- [ ] Docs: `AGENTS.md` (L4 Writing paragraph: one sign per section, `LibrarySigns`, placement, year posts, height rule) and `docs/features.md` (L4 section and status log).
-- [ ] After #157 merges: rebase on `origin/main`, re-run verify, check `gh run list -s in_progress` and `-s queued`, push, open the PR with captures, overlap results and numbers.
+- [x] Before and after: run the capture block against `out-main` and `out`; compare scene calls and triangles per pose (after must not exceed before). Run `PERF=1 E2E_PORT=<port> bunx playwright test e2e/perf/floors.spec.ts -g L4` and `e2e/perf/bytes-3d.spec.ts` (L4 chunk cap once #157 is in).
+- [x] Docs: `AGENTS.md` (L4 Writing paragraph: one sign per section, `LibrarySigns`, placement, year posts, height rule) and `docs/features.md` (L4 section and status log).
+- [x] After #157 merges: rebase on `origin/main`, re-run verify, check `gh run list -s in_progress` and `-s queued`, push, open the PR with captures, overlap results and numbers.

@@ -1,5 +1,7 @@
 # R3-D: Title Case Titles and Gallery-First Project Order Implementation Plan
 
+Status: shipped in #52 (2c013bc), 2026-10-12. Later removed in #167: the "Tour my projects" walk whose order Task 6 set (gallery-first order stays everywhere else)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Store every heading-style title (projects, posts, publications, talks, side projects, awards, principles) in Title Case in EN and ID, guard it with a test, and list projects with a gallery first in every project list (Page View, Home, Cmd-K, L3 docking, wing boards, "Tour my projects", Ask question bank).
@@ -28,14 +30,14 @@
 
 ## Before you start
 
-- [ ] Clone or update your own checkout (never the read-only reference clone) and branch from the latest `main`:
+- [x] Clone or update your own checkout (never the read-only reference clone) and branch from the latest `main`:
 
 ```bash
 rtk git fetch origin && rtk git switch -c feat/content-casing-ordering origin/main
 bun install
 ```
 
-- [ ] If `main` moved past `2f986ab`, other sessions may have added titles or pods. That is fine: Task 3 lists and fixes whatever is there, and the ordering tasks derive from data. Re-check the counts in the "Expected" lines against `bun scripts/title-case.ts` output instead of the numbers below when they differ.
+- [x] If `main` moved past `2f986ab`, other sessions may have added titles or pods. That is fine: Task 3 lists and fixes whatever is there, and the ordering tasks derive from data. Re-check the counts in the "Expected" lines against `bun scripts/title-case.ts` output instead of the numbers below when they differ.
 
 ## File Structure
 
@@ -78,7 +80,7 @@ Deliberately unchanged: `tests/ask/golden.json` (its facts are matched case-inse
 - Consumes: nothing.
 - Produces: `titleCase(input: string): string`, `isTitleCase(input: string): boolean`, `MINOR_WORDS: ReadonlySet<string>`, `BRAND_CASING: Readonly<Record<string, string>>` (lowercase key to canonical casing), `TITLE_CASE_KEEP: ReadonlySet<string>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/title-case.test.ts`:
 
@@ -142,12 +144,12 @@ describe("titleCase", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/title-case.test.ts`
 Expected: FAIL, `Failed to resolve import "@/content/title-case"` (the module does not exist yet).
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/content/title-case.ts`:
 
@@ -246,12 +248,12 @@ export function isTitleCase(input: string): boolean {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/title-case.test.ts`
 Expected: PASS, `Tests  11 passed (11)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/content/title-case.ts tests/unit/title-case.test.ts
@@ -279,7 +281,7 @@ rtk git commit -m "feat(content): add titleCase rules for EN and ID titles"
   - `withFrontmatterTitle(source: string, title: string): string`
   - CLI `bun scripts/title-case.ts [--write]`: prints one line per title, then `N title(s) not in Title Case` (exit 1 when N > 0) or `N title(s) rewritten`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/titles.test.ts`:
 
@@ -337,12 +339,12 @@ describe("MDX frontmatter titles", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/titles.test.ts`
 Expected: FAIL, `Failed to resolve import "@/content/titles"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/content/titles.ts`:
 
@@ -429,12 +431,12 @@ export function withFrontmatterTitle(source: string, title: string): string {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/titles.test.ts`
 Expected: PASS, `Tests  4 passed (4)`.
 
-- [ ] **Step 5: Write the fix script**
+- [x] **Step 5: Write the fix script**
 
 Create `scripts/title-case.ts`:
 
@@ -487,12 +489,12 @@ console.log(`${lines.length} title(s) ${write ? "rewritten" : "not in Title Case
 if (!write && lines.length > 0) process.exit(1);
 ```
 
-- [ ] **Step 6: Dry-run the script (no writes yet)**
+- [x] **Step 6: Dry-run the script (no writes yet)**
 
 Run: `bun scripts/title-case.ts; echo "exit=$?"`
 Expected: 108 lines such as `content/site-content.json floors.labs.pods[11](voice-ai-contact-center).title.en: "Realtime voice AI contact center" -> "Realtime Voice AI Contact Center"`, then `108 title(s) not in Title Case` and `exit=1`. Run `rtk git status --short` and confirm nothing under `content/` changed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/content/titles.ts scripts/title-case.ts tests/unit/titles.test.ts
@@ -511,7 +513,7 @@ rtk git commit -m "feat(content): add title slots, MDX title helpers and the tit
 - Consumes: `titleSlots`, `titleCaseChanges`, `frontmatterTitle` (Task 2), `isTitleCase` (Task 1).
 - Produces: content in Title Case; a content test and `bun run validate:content` that fail on any future title not in Title Case. Later tasks and parallel sessions read titles from content unchanged.
 
-- [ ] **Step 1: Write the failing content test**
+- [x] **Step 1: Write the failing content test**
 
 Create `tests/content/title-case.test.ts`:
 
@@ -552,12 +554,12 @@ describe("Title Case content titles (fix with: bun scripts/title-case.ts --write
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/content/title-case.test.ts`
 Expected: FAIL, `Tests  9 failed | 2 passed (11)`: "has every title in site-content.json in Title Case" lists 100 titles (for example `floors.labs.pods[11](voice-ai-contact-center).title.en: "Realtime voice AI contact center" should be "Realtime Voice AI Contact Center"`), and 8 MDX files fail (`the-sun-the-moon-and-the-dark-sea.id.mdx` passes because its title is in `TITLE_CASE_KEEP`).
 
-- [ ] **Step 3: Apply Title Case to the content**
+- [x] **Step 3: Apply Title Case to the content**
 
 Run: `bun scripts/title-case.ts --write`
 Expected: last line `108 title(s) rewritten`.
@@ -574,12 +576,12 @@ rtk git diff -U0 -- content/site-content.json | grep '^[-+] ' | grep -v '"en":\|
 
 Expected: `content/site-content.json | 200 +++---` (100 lines out, 100 in) plus 8 MDX files with `2 +-` each, and `non-title lines: 1` (grep found no other changed lines). Compare a few rows against Appendix A.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/content/title-case.test.ts tests/content/dataset.test.ts tests/content/safety.test.ts tests/content/fonts.test.ts`
 Expected: PASS, no failures (the dataset test "translates prose instead of copying English into id" still passes: no EN and ID title became equal).
 
-- [ ] **Step 5: Make `validate:content` check titles too**
+- [x] **Step 5: Make `validate:content` check titles too**
 
 In `scripts/validate-fragment.ts`, replace the usage line and the imports:
 
@@ -616,7 +618,7 @@ if (!parsed.success) {
 }
 ```
 
-- [ ] **Step 6: Verify the validator both ways**
+- [x] **Step 6: Verify the validator both ways**
 
 Run: `bun run validate:content`
 Expected: `OK: content/site-content.json is a valid full fragment (N blocklist terms checked)`.
@@ -632,7 +634,7 @@ mv content/site-content.json.bak content/site-content.json
 
 Expected: `floors.labs.pods[11](voice-ai-contact-center).title.en: not in Title Case, expected "Realtime Voice AI Contact Center" (bun scripts/title-case.ts --write)` and a non-zero exit. After the `mv`, `rtk git diff --stat -- content/site-content.json` shows the same 200-line change as Step 3.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add tests/content/title-case.test.ts scripts/validate-fragment.ts content/site-content.json content/blog
@@ -651,7 +653,7 @@ rtk git commit -m "feat(content): write project, post, talk and other titles in 
 - Consumes: `messages/en.json` and `messages/id.json` `common.wing` (`software: "Product Engineering"`, `ai: "AI Engineering"`).
 - Produces: mission labels "Explore my Product Engineering work" / "Lihat karya Product Engineering saya" and "Explore my AI Engineering work" / "Lihat karya AI Engineering saya". e2e specs read labels from content, so no spec changes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/content/dataset.test.ts`, after `import { SiteContentSchema, type LocalizedText } from "@/content/schema";` add:
 
@@ -673,12 +675,12 @@ and insert this test right before `it("starts every mission with a known step an
 
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/content/dataset.test.ts -t "names the L3 wings"`
 Expected: FAIL, `best-swe: expected 'Explore my software engineering work' to contain 'Product Engineering'`.
 
-- [ ] **Step 3: Update the four label strings**
+- [x] **Step 3: Update the four label strings**
 
 In `content/site-content.json` replace exactly (each string occurs once):
 
@@ -691,12 +693,12 @@ In `content/site-content.json` replace exactly (each string occurs once):
 
 Mission steps stay as they are (see Open risks: `best-swe` still opens `digital-banking-integrations`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/content tests/hud/MissionHud.test.tsx tests/hud/CommandPalette.test.tsx tests/unit/ui-copy.test.ts && bun run validate:content`
 Expected: PASS, no failures; `OK: content/site-content.json is a valid full fragment ...`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add content/site-content.json tests/content/dataset.test.ts
@@ -722,7 +724,7 @@ rtk git commit -m "fix(content): name the Product Engineering and AI Engineering
   - `orderPods(pods: readonly Pod[]): Pod[]` (new array, stable)
   - `sortPods` is removed. `getPods(wing?)` now returns site order, so the Work page (`/labs` key projects and "All projects"), Home, Quick view, `/labs/[slug]` siblings, drawer prev/next (`buildLabsViews`) and the Cmd-K catalog (`buildRoomCatalog`) follow it without further edits.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/selectors.test.ts`, replace lines 1 to 15 (the imports and the whole `describe("sortPods", ...)` block) with:
 
@@ -778,12 +780,12 @@ describe("orderPods", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/selectors.test.ts`
 Expected: FAIL, `TypeError: ... orderPods is not a function` (and `comparePods` / `podHasGallery` likewise).
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `src/content/selectors.ts` replace:
 
@@ -833,12 +835,12 @@ In `src/experience/missions/rooms.ts` change the import to `import { clientKeywo
 
 Confirm nothing else uses the old name: `grep -rn "sortPods" src tests e2e scripts functions` prints nothing.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/selectors.test.ts tests/unit/room-views.test.ts tests/unit/missions-rooms.test.ts tests/unit/search.test.ts tests/hud/RoomDrawer.test.tsx tests/hud/WorkIndex.test.tsx tests/unit/pageview.test.ts`
 Expected: PASS, no failures. `room-views` "chains prev/next within each wing" now follows site order through `getPods(wing)`.
 
-- [ ] **Step 5: Check the new order on the Work page data**
+- [x] **Step 5: Check the new order on the Work page data**
 
 Run:
 
@@ -848,7 +850,7 @@ bun -e 'import("./src/content/load.ts").then(({ getPods }) => { for (const w of 
 
 Expected (Appendix B): `software anime-figure-ecommerce > vulnerability-scanning-automation > university-alumni-platforms > digital-banking-integrations > ...` and `ai voice-ai-contact-center > ai-code-security-platform > fraud-review-platform > ai-cv-screening-platform > ...`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/content/selectors.ts src/content/load.ts src/experience/missions/rooms.ts tests/unit/selectors.test.ts
@@ -875,7 +877,7 @@ rtk git commit -m "feat(content): list projects with a gallery first (orderPods)
   - `LABS.slot = 12`: every docked pod reserves one 12 u slot, so slot `i` has the same x in both wings (equal billing) whatever the tiers. The L3 slab grows from x 127 to x 139 with today's pods.
   - `buildLabsLayout(pods).directory[wing]`: overflow, then listed pods sorted with `comparePods`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/labs-layout.test.ts`, add `hasGallery: false,` to the `pod()` helper so it reads:
 
@@ -960,12 +962,12 @@ In `tests/unit/walk.test.ts`, replace the test `it("tours hero pods, then featur
 
 In `tests/unit/missions-host3d.test.ts:42`, change `order: 0, hasHologramView: true }],` to `order: 0, hasHologramView: true, hasGallery: true }],`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/walk.test.ts`
 Expected: FAIL on "docks a featured pod with a gallery ahead of a hero pod without one" (`expected [ 'hero-plain', 'featured-shots' ] to deeply equal [ 'featured-shots', 'hero-plain' ]`) and on "tours gallery pods first, ..." (`L3:h1` comes before `L3:g1`).
 
-- [ ] **Step 3: Add `hasGallery` to the 3D payload**
+- [x] **Step 3: Add `hasGallery` to the 3D payload**
 
 In `src/experience/types.ts`, inside `interface LabPod`, after `hasHologramView: boolean;` add:
 
@@ -988,7 +990,7 @@ In `src/content/experience.ts` change `import { FIRST_CORRIDOR_YEAR } from "./se
   }));
 ```
 
-- [ ] **Step 4: Dock in site order, one slot per pod**
+- [x] **Step 4: Dock in site order, one slot per pod**
 
 In `src/experience/floors/labs/layout.ts`:
 
@@ -1057,7 +1059,7 @@ export function tourOrder(pods: readonly LabPod[]): LabPod[] {
 
 (replacing `const x = cursor[row] + w / 2;` and `cursor[row] += w + L.gap;`).
 
-- [ ] **Step 5: Update the doc comments that describe the old order**
+- [x] **Step 5: Update the doc comments that describe the old order**
 
 `src/experience/missions/walks.ts` module doc, replace
 
@@ -1087,12 +1089,12 @@ and the `labsWalk` doc comment with
 
 `src/experience/floors/labs/Hub.tsx` `BoardFace` doc: change `the top entries (hero, then featured) in large type` to `the top entries (docking order, gallery first) in large type`. If a parallel "pads" session changed `Hub.tsx`, keep their version and apply only this phrase.
 
-- [ ] **Step 6: Run the unit tests to verify they pass**
+- [x] **Step 6: Run the unit tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/walk.test.ts tests/unit/missions-host3d.test.ts tests/unit/experience-data.test.ts tests/unit/doors.test.ts tests/unit/proximity.test.ts`
 Expected: PASS, no failures ("passes the space rules with the real pods" and "keeps pods inside the slab, on forecourts off the road, at least 6 u apart" still pass with the wider slots).
 
-- [ ] **Step 7: Derive the e2e tour start from data**
+- [x] **Step 7: Derive the e2e tour start from data**
 
 In `e2e/walk.spec.ts`, add after `import en from "../messages/en.json";`:
 
@@ -1111,12 +1113,12 @@ const firstSoftwareStop = `L3:${orderPods((data.floors.labs.pods as unknown as P
 
 rename the test `"L3: the tour starts at the first software hero pod, filters by wing and Prev steps back"` to `"L3: the tour starts at the first software pod in site order, filters by wing and Prev steps back"`, and replace both `expect(await waitForArrival(page)).toBe("L3:digital-banking-integrations");` lines with `expect(await waitForArrival(page)).toBe(firstSoftwareStop);`. (`e2e/career.spec.ts` keeps `digital-banking-integrations`: that test follows the Jenius career room link, not the tour.)
 
-- [ ] **Step 8: Typecheck**
+- [x] **Step 8: Typecheck**
 
 Run: `bun run typecheck`
 Expected: exits 0 (`Knowledge pack <hash>: ... chunks`, `Types generated successfully`, no `tsc` errors). A missing `hasGallery` anywhere a `LabPod` literal is built would fail here.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/types.ts src/content/experience.ts src/experience/floors/labs/layout.ts src/experience/missions/walks.ts src/experience/floors/labs/Hub.tsx tests/unit/labs-layout.test.ts tests/unit/walk.test.ts tests/unit/missions-host3d.test.ts e2e/walk.spec.ts
@@ -1135,7 +1137,7 @@ rtk git commit -m "feat(l3): dock and tour projects gallery first, keeping the w
 - Consumes: `orderPods` (Task 5), `getContent` from `@/content/load`.
 - Produces: within each topic, questions about one project (`expect` holds `project-<slug>`) appear in `orderPods` order by their first mention. `topicQuestions` shows the first four of a topic, so the `work` pills now lead with the vulnerability scanning project (gallery) and the `ai` pills with voice, code security, fraud review and CV screening (all with galleries).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/ask/suggestions.test.ts`, replace `import { findBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";` with:
 
@@ -1162,12 +1164,12 @@ and insert before `it("passes the public-safety lint (no client names, em dashes
 
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/ask/suggestions.test.ts -t "site order"`
 Expected: FAIL, `work: project-digital-banking-integrations, project-ticket-marketplace-backend, project-vendor-management-portal, project-vulnerability-scanning-automation: expected [ 15, 16, 17, 7 ] to deeply equal [ 7, 15, 16, 17 ]`.
 
-- [ ] **Step 3: Reorder the bank (formatting preserved)**
+- [x] **Step 3: Reorder the bank (formatting preserved)**
 
 The file uses a hand-formatted layout (inline `"q": { ... }` objects), so move whole item blocks instead of re-serializing. Run from the repo root:
 
@@ -1197,12 +1199,12 @@ rtk git diff --stat -- content/ask/suggestions.json
 
 Expected: the id list starts `work-best work-security work-banking work-tickets work-vendor work-stack work-github work-side ai-voice ai-security ai-fraud ai-documents ai-voice-latency ...` and ends with the unchanged `career-*` and `contact-*` ids; the diff is about `31 insertions(+), 31 deletions(-)` (moved blocks only, `followUps` untouched).
 
-- [ ] **Step 4: Run the Ask tests to verify they pass**
+- [x] **Step 4: Run the Ask tests to verify they pass**
 
 Run: `bunx vitest run tests/ask tests/hud/AskDock.test.tsx`
 Expected: PASS, no failures (every pill still retrieves its expected chunks in EN and ID; the golden drift check still finds every fact, since facts are matched lowercase and none quotes a title).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add content/ask/suggestions.json tests/ask/suggestions.test.ts
@@ -1222,7 +1224,7 @@ rtk git commit -m "feat(ask): order project questions gallery first in the quest
 - Consumes: names from Tasks 1 to 7 (`titleCase`, `BRAND_CASING`, `TITLE_CASE_KEEP`, `scripts/title-case.ts`, `orderPods`, `comparePods`, `tourOrder`, `LABS.slot`).
 - Produces: documentation only.
 
-- [ ] **Step 1: AGENTS.md, add the "Content style" section**
+- [x] **Step 1: AGENTS.md, add the "Content style" section**
 
 Insert this block directly before the line `## Missions and HUD`:
 
@@ -1237,7 +1239,7 @@ Insert this block directly before the line `## Missions and HUD`:
 
 ```
 
-- [ ] **Step 2: AGENTS.md, update the three ordering descriptions**
+- [x] **Step 2: AGENTS.md, update the three ordering descriptions**
 
 Replace each exact fragment (each occurs once):
 
@@ -1248,7 +1250,7 @@ Replace each exact fragment (each occurs once):
 | ``` Per wing, hero then featured pods (`tourOrder`, at most `LABS.maxPerWing`; the rest and every listed pod stay on the board) dock along the road from the hub, alternating the outer and the inner side, 7 u apart ``` | ``` Per wing, hero and featured pods in site order (`tourOrder`, which sorts with `comparePods`: gallery first; at most `LABS.maxPerWing`; the rest and every listed pod stay on the board) dock along the road from the hub, one `LABS.slot` (12 u) each so both wings stay mirror images whatever their tiers, alternating the outer and the inner side, 7 u apart ``` |
 | ``` wing by wing in docking order, hero then featured pods, then both wing directory boards ``` | ``` wing by wing in docking order (gallery pods first), then both wing directory boards ``` |
 
-- [ ] **Step 3: README.md, Content section**
+- [x] **Step 3: README.md, Content section**
 
 After the bullet `- Blog posts are MDX files in \`content/blog/<slug>.<locale>.mdx\`. A missing translation falls back to the original with a note.` add:
 
@@ -1257,7 +1259,7 @@ After the bullet `- Blog posts are MDX files in \`content/blog/<slug>.<locale>.m
 - Projects with a gallery come first in every project list (Work, Home, Cmd-K, the L3 wing roads and the project tour), then hero, featured and listed pods by `order` (`orderPods` in `src/content/selectors.ts`).
 ```
 
-- [ ] **Step 4: Spec appendix 01, section 4 (L3)**
+- [x] **Step 4: Spec appendix 01, section 4 (L3)**
 
 In `docs/superpowers/specs/agent-hq/01-world-and-layout.md` replace each exact fragment:
 
@@ -1268,18 +1270,18 @@ In `docs/superpowers/specs/agent-hq/01-world-and-layout.md` replace each exact f
 | ``| Docked pods (per wing) | Hero pods (12 × 9 u) by `order`, then featured pods (8 × 7 u) by `order`, alternating the outer side (away from the other wing) and the inner side (between the wing roads), starting at x = 14 (outer) and x = 20 (inner), 7 u apart along the road.`` | ``| Docked pods (per wing) | Hero (12 × 9 u) and featured (8 × 7 u) pods in site order (owner decision 2026-10-12, `comparePods`: pods with a gallery first, then hero before featured, then `order`), one 12 u slot each so both wings stay mirror images whatever the tier in each slot, alternating the outer side (away from the other wing) and the inner side (between the wing roads), starting at x = 14 (outer) and x = 20 (inner), 7 u between slots along the road.`` |
 | `in docking order (hero first), then both directory boards` | `in docking order (gallery pods first), then both directory boards` |
 
-- [ ] **Step 5: Copy this plan into the repo**
+- [x] **Step 5: Copy this plan into the repo**
 
 ```bash
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r3-d-content-casing-ordering.md docs/superpowers/plans/2026-10-12-content-casing-ordering.md
 ```
 
-- [ ] **Step 6: Verify docs pass the repo-wide lint**
+- [x] **Step 6: Verify docs pass the repo-wide lint**
 
 Run: `bunx vitest run tests/content/safety.test.ts`
 Expected: PASS (no em dash in any doc, including the copied plan). Also run `grep -c "titleCase.ts\|sortPods" AGENTS.md README.md docs/superpowers/specs/agent-hq/01-world-and-layout.md` and expect `0` for every file.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add AGENTS.md README.md docs/superpowers/specs/agent-hq/01-world-and-layout.md docs/superpowers/plans/2026-10-12-content-casing-ordering.md
@@ -1298,7 +1300,7 @@ rtk git commit -m "docs: content style guide (Title Case, gallery-first order) a
 - Consumes: everything above.
 - Produces: a green branch, captures for the owner, an open PR.
 
-- [ ] **Step 1: Rebase on the latest main and re-run the title check**
+- [x] **Step 1: Rebase on the latest main and re-run the title check**
 
 ```bash
 rtk git fetch origin && rtk git rebase origin/main
@@ -1307,7 +1309,7 @@ bun scripts/title-case.ts; echo "exit=$?"
 
 Expected: `0 title(s) not in Title Case`, `exit=0`. If parallel sessions added titles in the meantime, run `bun scripts/title-case.ts --write`, review the diff, and commit it as `fix(content): Title Case for new titles`. If a rebase conflict hits `content/site-content.json`, take `origin/main`'s file and re-run `--write` plus the four mission label edits from Task 4 instead of hand-merging.
 
-- [ ] **Step 2: Regenerate the Ask knowledge pack and check Ask**
+- [x] **Step 2: Regenerate the Ask knowledge pack and check Ask**
 
 ```bash
 bun scripts/build-knowledge.ts
@@ -1317,12 +1319,12 @@ grep -n "Realtime voice AI contact center\|Digital banking integrations" tests/a
 
 Expected: `Knowledge pack <hash>: <n> chunks, ... KB, as of <date>.` (the pack now carries the Title Case titles; it is gitignored and rebuilt by `typecheck` and `build`), Ask tests pass, and `quoted old titles: 1` (no golden, red-team or pill text quotes an old title, so `tests/ask/golden.json` needs no edit). No `PROMPT_VERSION` bump: the prompt did not change.
 
-- [ ] **Step 3: Quick verification**
+- [x] **Step 3: Quick verification**
 
 Run: `rm -rf .next && bun run verify:quick`
 Expected: typecheck, lint and every unit test pass, and the build ends with `defer-scripts: N of N HTML files now load Next.js chunks after first paint`.
 
-- [ ] **Step 4: Check the built pages**
+- [x] **Step 4: Check the built pages**
 
 ```bash
 grep -c "Realtime Voice AI Contact Center" out/en/labs.html out/en.html out/en/labs/voice-ai-contact-center.html
@@ -1340,12 +1342,12 @@ bun -e 'const h = require("node:fs").readFileSync("out/en/labs.html", "utf8"); c
 
 Expected: `ai-cv-screening-platform > bank-statement-analyzer > anime-figure-ecommerce > ai-app-accelerator > vulnerability-scanning-automation > fabric-forecasting-dashboard > ai-solutions-assistant > university-alumni-platforms`.
 
-- [ ] **Step 5: Run the e2e specs that cover the change**
+- [x] **Step 5: Run the e2e specs that cover the change**
 
 Run: `bun run e2e:changed --dry` and then `bun run e2e:changed`
 Expected: `e2e specs: ask, boot-first, deploy, experience, gallery, labs, library-roof, missions, pageview, seo, static-routes, walk` (plus `No e2e mapping for: scripts/title-case.ts (smoke specs added).`); all pass. Do not run two e2e suites at once on the machine (parallel sessions share it). If `walk` fails on the first stop, print `firstSoftwareStop` and compare with Appendix B before touching the test.
 
-- [ ] **Step 6: Screenshots for the owner**
+- [x] **Step 6: Screenshots for the owner**
 
 ```bash
 bun run screenshots:pages -g "1440x900|390x844"
@@ -1354,7 +1356,7 @@ ls screenshots/pageview/work-1440x900*.png screenshots/pageview/work-390x844*.pn
 
 Expected: the Work page (desktop and mobile, full page and fold) and the Writing page (blog list) captures exist. Look at them: project titles and post titles are in Title Case, "All projects" starts with gallery projects. Also open `/en/labs?tier=lite` with `bun run serve` and confirm the Product Engineering road now starts with the anime figure e-commerce and vulnerability scanning pods and the wing boards list them first.
 
-- [ ] **Step 7: Push and open the PR**
+- [x] **Step 7: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/content-casing-ordering

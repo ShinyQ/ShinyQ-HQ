@@ -1,5 +1,7 @@
 # Phase 0: Foundation and Content Implementation Plan
 
+Status: shipped in #1 (28fd2b5), 2026-10-09. Later replaced: the generated per-locale CV PDF in #24 by the owner's own PDF, the KAW monogram in #142 by the rover brand mark
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship a statically exported, bilingual (EN/ID) Next.js site that renders the full public-safe career dataset as accessible HTML pages, with a per-locale CV PDF and CI, as the permanent no-WebGL fallback for Agent HQ.
@@ -62,11 +64,11 @@ e2e/*.spec.ts                Playwright smoke and screenshots
 
 **Files:** `package.json`, `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.ts`, `playwright.config.ts`, `src/app/globals.css`, `.gitignore`.
 
-- [ ] Run `bunx create-next-app@latest` into a temp dir (TypeScript, Tailwind, ESLint, App Router, `src/`, alias `@/*`, Bun), move files in, keep the existing `docs/`, `README.md`, `.gitignore`.
-- [ ] `next.config.ts`: `output: "export"`, `images.unoptimized: true`, next-intl plugin.
-- [ ] Add deps: `next-intl zod next-mdx-remote`; dev deps: `vitest @playwright/test`.
-- [ ] Scripts: `dev`, `build` (`next build && bun scripts/build-cv.ts`), `build:web`, `typecheck` (`tsc --noEmit`), `lint`, `test` (`vitest run`), `e2e` (`playwright test`), `serve` (`bun scripts/serve-static.ts`).
-- [ ] Verify `bun run typecheck && bun run lint && bun run build:web`. Commit `chore: scaffold Next.js static export with Bun`.
+- [x] Run `bunx create-next-app@latest` into a temp dir (TypeScript, Tailwind, ESLint, App Router, `src/`, alias `@/*`, Bun), move files in, keep the existing `docs/`, `README.md`, `.gitignore`.
+- [x] `next.config.ts`: `output: "export"`, `images.unoptimized: true`, next-intl plugin.
+- [x] Add deps: `next-intl zod next-mdx-remote`; dev deps: `vitest @playwright/test`.
+- [x] Scripts: `dev`, `build` (`next build && bun scripts/build-cv.ts`), `build:web`, `typecheck` (`tsc --noEmit`), `lint`, `test` (`vitest run`), `e2e` (`playwright test`), `serve` (`bun scripts/serve-static.ts`).
+- [x] Verify `bun run typecheck && bun run lint && bun run build:web`. Commit `chore: scaffold Next.js static export with Bun`.
 
 ### Task 2: Content schema, accessors and safety tooling
 
@@ -80,64 +82,64 @@ e2e/*.spec.ts                Playwright smoke and screenshots
 
 Schema matches appendix 06, with these documented additions: `PostRef.url?` (external canonical URL for Medium posts), `Confidence` also accepts `"self-reported"` (C4), `Profile.currentRole` `{ title, org, since }`, `Contact.medium?`, `Mission.steps` typed per appendix 02.
 
-- [ ] Write `tests/content/schema.test.ts` that parses a minimal fixture and rejects a missing `id` translation; run, see it fail.
-- [ ] Implement schema, accessors, selectors; run tests to pass.
-- [ ] Commit `feat(content): zod schema, typed accessors and safety helpers`.
+- [x] Write `tests/content/schema.test.ts` that parses a minimal fixture and rejects a missing `id` translation; run, see it fail.
+- [x] Implement schema, accessors, selectors; run tests to pass.
+- [x] Commit `feat(content): zod schema, typed accessors and safety helpers`.
 
 ### Task 3: Public-safe dataset (parallel agents)
 
 **Files:** `content/site-content.json`, `content/.safety-blocklist.local.txt` (gitignored), `public/brand/kaw-monogram.svg`.
 
-- [ ] Agent A writes Software Wing pods; agent B writes AI Wing pods; agent C writes profile, stats, skills, certifications, career archive, library, roof, side projects, public repos, missions and the local blocklist. Each validates its fragment against the zod schema.
-- [ ] Merge fragments into `content/site-content.json`; review against C1 to C9 and main spec section 3.2.
-- [ ] Commit `feat(content): public-safe bilingual dataset`.
+- [x] Agent A writes Software Wing pods; agent B writes AI Wing pods; agent C writes profile, stats, skills, certifications, career archive, library, roof, side projects, public repos, missions and the local blocklist. Each validates its fragment against the zod schema.
+- [x] Merge fragments into `content/site-content.json`; review against C1 to C9 and main spec section 3.2.
+- [x] Commit `feat(content): public-safe bilingual dataset`.
 
 ### Task 4: Content tests
 
 **Files:** `tests/content/dataset.test.ts`, `tests/content/safety.test.ts`, `tests/content/assets.test.ts`.
 
-- [ ] Dataset validates; every `LocalizedText.id` is non-empty; ids and slugs unique; `podRef` and `timelineRef` resolve; hero pods have an architecture with at least 3 nodes; 3 hero pods per wing.
-- [ ] Safety: no blocklisted term, no em dash in JSON, MDX or `messages/*.json`; no money pattern; no phone pattern; no Master's degree; no 2026 hackathon entry; no photo assets.
-- [ ] Assets: every `Asset.src` exists in `public/`, no remote URLs.
-- [ ] Run `bun run test`. Commit `test(content): schema, translation, safety and asset checks`.
+- [x] Dataset validates; every `LocalizedText.id` is non-empty; ids and slugs unique; `podRef` and `timelineRef` resolve; hero pods have an architecture with at least 3 nodes; 3 hero pods per wing.
+- [x] Safety: no blocklisted term, no em dash in JSON, MDX or `messages/*.json`; no money pattern; no phone pattern; no Master's degree; no 2026 hackathon entry; no photo assets.
+- [x] Assets: every `Asset.src` exists in `public/`, no remote URLs.
+- [x] Run `bun run test`. Commit `test(content): schema, translation, safety and asset checks`.
 
 ### Task 5: i18n and layout shell
 
 **Files:** `src/i18n/*`, `messages/*.json`, `src/app/(root)/*`, `src/app/[locale]/layout.tsx`, `src/components/SiteHeader.tsx`, `SiteFooter.tsx`, `LocaleSwitch.tsx`, `src/app/globals.css` (Neon Grid tokens from appendix 05 as CSS variables and Tailwind theme).
 
-- [ ] Root redirect page: inline script reads `localStorage["hq:locale"]` then `navigator.language` (`id*` to `id`, else `en`), `location.replace`; `<noscript>` and link fallback to `/en`.
-- [ ] Layout: Inter + JetBrains Mono via `next/font/google`, `setRequestLocale`, `hreflang` alternates, skip link, header with "Back to HQ" brand link, nav, EN/ID switch preserving the path.
-- [ ] Commit `feat(web): i18n routing and Neon Grid shell`.
+- [x] Root redirect page: inline script reads `localStorage["hq:locale"]` then `navigator.language` (`id*` to `id`, else `en`), `location.replace`; `<noscript>` and link fallback to `/en`.
+- [x] Layout: Inter + JetBrains Mono via `next/font/google`, `setRequestLocale`, `hreflang` alternates, skip link, header with "Back to HQ" brand link, nav, EN/ID switch preserving the path.
+- [x] Commit `feat(web): i18n routing and Neon Grid shell`.
 
 ### Task 6: Static pages
 
 **Files:** pages listed in File Structure plus shared components, `src/lib/format.ts`, `tests/unit/format.test.ts`, `tests/unit/selectors.test.ts`.
 
-- [ ] TDD `formatYearMonth("2024-06", "id")` gives `Jun 2024`, `formatPeriod` handles `present`.
-- [ ] Build each page from accessors only; `generateStaticParams` for locale x slug; `generateMetadata` with localized title and description.
-- [ ] Blog: MDX via `next-mdx-remote/rsc`; missing translation shows the original with a language note.
-- [ ] Commit per page group.
+- [x] TDD `formatYearMonth("2024-06", "id")` gives `Jun 2024`, `formatPeriod` handles `present`.
+- [x] Build each page from accessors only; `generateStaticParams` for locale x slug; `generateMetadata` with localized title and description.
+- [x] Blog: MDX via `next-mdx-remote/rsc`; missing translation shows the original with a language note.
+- [x] Commit per page group.
 
 ### Task 7: CV PDF
 
 **Files:** `src/app/[locale]/cv/page.tsx` (print CSS), `scripts/serve-static.ts`, `scripts/build-cv.ts`.
 
-- [ ] Serve `out/` on a free port, open `/{locale}/cv` in Chromium, `page.pdf({ format: "A4", printBackground: true })` to `out/cv/kurniadi-ahmad-wijaya-cv-{locale}.pdf`. `SKIP_CV=1` skips.
-- [ ] Commit `feat(cv): build-time PDF per locale`.
+- [x] Serve `out/` on a free port, open `/{locale}/cv` in Chromium, `page.pdf({ format: "A4", printBackground: true })` to `out/cv/kurniadi-ahmad-wijaya-cv-{locale}.pdf`. `SKIP_CV=1` skips.
+- [x] Commit `feat(cv): build-time PDF per locale`.
 
 ### Task 8: E2E smoke and CI
 
 **Files:** `playwright.config.ts`, `e2e/static-routes.spec.ts`, `e2e/screenshots.spec.ts`, `.github/workflows/ci.yml`.
 
-- [ ] Smoke: each route returns 200 with an `h1` and real content in both locales; `/` redirects; CV PDFs exist.
-- [ ] Screenshots (opt-in via `SCREENSHOTS=1`): `/en`, `/en/quick`, `/en/labs/<hero>` at 1440x900 and 390x844.
-- [ ] CI: `check` job (install, typecheck, lint, unit), `build` job (Playwright Chromium, `bun run build`, e2e, upload `out/`), `preview` job that deploys `out/` to a separate Cloudflare Pages project `shinyq-hq` as a branch preview only when both secrets exist.
-- [ ] Commit `ci: typecheck, lint, test, build, e2e and preview deploy`.
+- [x] Smoke: each route returns 200 with an `h1` and real content in both locales; `/` redirects; CV PDFs exist.
+- [x] Screenshots (opt-in via `SCREENSHOTS=1`): `/en`, `/en/quick`, `/en/labs/<hero>` at 1440x900 and 390x844.
+- [x] CI: `check` job (install, typecheck, lint, unit), `build` job (Playwright Chromium, `bun run build`, e2e, upload `out/`), `preview` job that deploys `out/` to a separate Cloudflare Pages project `shinyq-hq` as a branch preview only when both secrets exist.
+- [x] Commit `ci: typecheck, lint, test, build, e2e and preview deploy`.
 
 ### Task 9: Docs and PR
 
 **Files:** `README.md`, `AGENTS.md`.
 
-- [ ] README: setup, scripts, structure, content workflow, safety blocklist. AGENTS.md: conventions for later phases.
-- [ ] Final verification: `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`.
-- [ ] Push, open PR "Phase 0: foundation and content" with screenshots, report to the creator session.
+- [x] README: setup, scripts, structure, content workflow, safety blocklist. AGENTS.md: conventions for later phases.
+- [x] Final verification: `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`.
+- [x] Push, open PR "Phase 0: foundation and content" with screenshots, report to the creator session.

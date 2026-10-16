@@ -1,5 +1,7 @@
 # Free Camera Rotation, Wheel Zoom and First-Person View Implementation Plan (Round 5, P7)
 
+Status: shipped in #66 (d96f436), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Visitors turn the camera all the way around the rover on every floor (L2 included), tilt it from just above the floor to near top-down, zoom with the mouse wheel, trackpad scroll and pinch instead of changing floors, and zoom all the way in to drive in a first-person view through the rover's eyes, while every third-person pose that exists today renders the same pixels.
@@ -88,7 +90,7 @@ REPORT.md references: draw-call budget row and F5.2 (L1 is closest to the cap an
 - Consumes: `asReturningVisitor`, `waitForCameraSettle`, `waitForFrames`, `waitForHQ`, `waitForPhase`, `waitForSceneLive` from `e2e/hq.ts`; `window.__hq.rover.drawCalls/triangles`; after Task 8 also `window.__hq.rover.cameraBlend`.
 - Produces: `CAMERA_SHOTS=baseline|compare` captures in `screenshots/camera/<mode>/` (`<floor>-<pose>-<w>x<h>.png`, `metrics-<floor>-<w>x<h>.json`, compare mode also `fp-<floor>-<w>x<h>.png` and `metrics-fp-<w>x<h>.json`). `screenshots/` is already gitignored.
 
-- [ ] **Step 1: Create the worktree and copy the plan**
+- [x] **Step 1: Create the worktree and copy the plan**
 
 ```bash
 # Your normal clone of ShinyQ/ShinyQ-HQ (never files/hq-local); clone it first if it does not exist.
@@ -104,7 +106,7 @@ cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/fil
 
 Expected: `Preparing worktree (new branch 'feat/camera-first-person')`, then `bun install` ends with `packages installed` or `no changes`.
 
-- [ ] **Step 2: Write the failing unit test**
+- [x] **Step 2: Write the failing unit test**
 
 In `tests/unit/e2e-plan.test.ts`, change the filter in "knows every spec in e2e/" and add a test after it:
 
@@ -122,12 +124,12 @@ In `tests/unit/e2e-plan.test.ts`, change the filter in "knows every spec in e2e/
   });
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: FAIL in "never runs the opt-in camera look gate" (the path is unmatched, so the plan falls back to the smoke specs: `expected [ 'boot-first', 'deploy', ... ] to deeply equal []`).
 
-- [ ] **Step 4: Add the rule and the harness**
+- [x] **Step 4: Add the rule and the harness**
 
 In `scripts/e2e-plan.ts` replace the screenshot rule:
 
@@ -299,12 +301,12 @@ for (const v of VIEWPORTS) {
 }
 ```
 
-- [ ] **Step 5: Run the unit test to verify it passes**
+- [x] **Step 5: Run the unit test to verify it passes**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: PASS (all tests in the file).
 
-- [ ] **Step 6: Capture the baseline (before any camera change)**
+- [x] **Step 6: Capture the baseline (before any camera change)**
 
 Run:
 
@@ -317,7 +319,7 @@ E2E_PORT=4436 bunx playwright test e2e/camera-visual.spec.ts --workers=1
 
 Expected: the capture run ends with `15 passed` and `3 skipped`; `ls ... | wc -l` prints `57` (14 PNG and 5 JSON per viewport); the run without `CAMERA_SHOTS` reports `18 skipped`. Keep `screenshots/camera/baseline/` until Task 11 (it is gitignored). Copy the three `metrics-L1-*.json` numbers into a scratch note for the PR body.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add e2e/camera-visual.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts docs/superpowers/plans/2026-10-13-camera-freedom-first-person.md
@@ -347,7 +349,7 @@ rtk git commit -m "test: add the opt-in camera look gate and the P7 plan"
   - `railPose(cls, roverX, floorY, zoom = 1, roverZ = 0, yaw = 0, axisZ = 0, pitch = 0): CameraPose`
   - `sceneSettings(tier, "first").fog` is `{ near: 14, far: 64 }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/rigs.test.ts` replace the import block with:
 
@@ -456,12 +458,12 @@ describe("round 5 orbit limits", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/rigs.test.ts`
 Expected: FAIL with `SyntaxError`/`TypeError` style messages such as `orbitOffset is not a function` (the new exports do not exist yet).
 
-- [ ] **Step 3: Implement the rig math**
+- [x] **Step 3: Implement the rig math**
 
 In `src/experience/camera/rigs.ts`:
 
@@ -587,17 +589,17 @@ const FOG_RANGE: Record<RigKind, [number, number]> = {
 };
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/rigs.test.ts tests/unit/lobby-title.test.ts tests/unit/labs-layout.test.ts tests/unit/roof-layout.test.ts tests/unit/highlights-layout.test.ts`
 Expected: PASS (the layout tests call `followPose`, whose numbers must not change).
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 Run: `bun run typecheck`
 Expected: exit 0, no errors (`railPose` only gained an optional parameter).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/camera/rigs.ts src/experience/scene/settings.ts tests/unit/rigs.test.ts
@@ -620,7 +622,7 @@ rtk git commit -m "feat(camera): 360 degree L2 orbit, wide pitch limits and firs
   - `cameraBlocked(p: Vec3, w: CameraWorld): boolean`
   - `clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target): Vec3` (returns the same `camera` array when nothing blocks it)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/camera-collision.test.ts`:
 
@@ -687,12 +689,12 @@ describe("camera collision", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/camera-collision.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/camera/collision"`.
 
-- [ ] **Step 3: Implement the module**
+- [x] **Step 3: Implement the module**
 
 Create `src/experience/camera/collision.ts`:
 
@@ -776,12 +778,12 @@ export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Ve
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bunx vitest run tests/unit/camera-collision.test.ts`
 Expected: PASS (6 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/camera/collision.ts tests/unit/camera-collision.test.ts
@@ -807,7 +809,7 @@ rtk git commit -m "feat(camera): cheap camera collision with the floor, slab edg
   - `roverOpacity(blend: number): number`
   - `interface ViewHold { phase: string; ride: boolean; beam: boolean; mission: boolean; driving: boolean }`, `viewSuspended(i: ViewHold): boolean`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/first-person.test.ts`:
 
@@ -893,12 +895,12 @@ describe("holding third person", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/first-person.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/camera/firstPerson"`.
 
-- [ ] **Step 3: Implement the module**
+- [x] **Step 3: Implement the module**
 
 Create `src/experience/camera/firstPerson.ts`:
 
@@ -998,12 +1000,12 @@ export function viewSuspended(i: ViewHold): boolean {
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bunx vitest run tests/unit/first-person.test.ts`
 Expected: PASS (7 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/camera/firstPerson.ts tests/unit/first-person.test.ts
@@ -1027,7 +1029,7 @@ rtk git commit -m "feat(camera): first-person pose, eased glide, body fade and h
   - `rotate(s, dyaw, dpitch = 0, rail = false)`: in first person `dpitch` moves `look` (the opposite sign: a downward drag looks down).
   - `rotateStep(s, direction, rail = false)`, `resetView(s)` (also leaves first person), `zoomBy(s, factor, allowFirst = true)`, `stepOrbit(s, dt, reduced, hold = false)`, `updateZone`, `zoneAt`, `VIEW_ZONES`, `ViewZone`, `wrapPi`, `nearestAngle` (unchanged signatures).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `tests/unit/orbit.test.ts` with:
 
@@ -1298,12 +1300,12 @@ describe("wall auto-face", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/orbit.test.ts`
 Expected: FAIL: `setPitchRange is not a function` and assertions on `firstPerson`/`blend` (undefined).
 
-- [ ] **Step 3: Rewrite the orbit module**
+- [x] **Step 3: Rewrite the orbit module**
 
 Replace `src/experience/camera/orbit.ts` with:
 
@@ -1587,17 +1589,17 @@ export function stepOrbit(s: OrbitState, dt: number, reduced: boolean, hold = fa
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/orbit.test.ts tests/unit/highlights-layout.test.ts tests/unit/labs-layout.test.ts tests/unit/roof-layout.test.ts`
 Expected: PASS. (The layout tests import `ViewZone` and zone yaws from `orbit.ts`.)
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 Run: `bun run typecheck`
 Expected: exit 0. `CameraDirector.tsx` still compiles: it only uses `createOrbitState`, `KEY_ROTATE_SPEED`, `resetView`, `rotate`, `rotateStep`, `stepOrbit`, `updateZone`, `zoneAt` and `zoomBy`, whose old call shapes are still valid. If the comment in `rover/runtime.ts` mentions `RAIL_MAX_YAW`, it is only a comment (fixed in Task 7).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/camera/orbit.ts tests/unit/orbit.test.ts
@@ -1622,7 +1624,7 @@ rtk git commit -m "feat(camera): orbit state with 360 degree L2 yaw, wide pitch 
   - `KEY_ZOOM_IN = 0.8`; `keyToIntent("+" | "=")` is `{ type: "zoom", factor: KEY_ZOOM_IN }`, `keyToIntent("-" | "_")` is `{ type: "zoom", factor: 1 / KEY_ZOOM_IN }`
   - `isPitchKey(key: string): boolean`, `pitchAxisFromKeys(held: Iterable<string>): number` (R = -1, F = +1, Shift doubles)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/gestures.test.ts` replace the import block with:
 
@@ -1702,12 +1704,12 @@ Inside the `describe` that holds "maps 0 and Home to a view reset", add after th
 
 In `tests/unit/intents.test.ts` remove `createWheelGate,` from the import list and delete the whole `describe("wheel gate", ...)` block (three tests).
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/gestures.test.ts tests/unit/intents.test.ts`
 Expected: FAIL: `wheelZoomFactor is not a function`, `expected 'elevator' to be 'zoom'`.
 
-- [ ] **Step 3: Implement the intents**
+- [x] **Step 3: Implement the intents**
 
 In `src/experience/input/intents.ts`:
 
@@ -1826,12 +1828,12 @@ import {
     };
 ```
 
-- [ ] **Step 4: Run the unit tests to verify they pass**
+- [x] **Step 4: Run the unit tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/gestures.test.ts tests/unit/intents.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Update the floor e2e test**
+- [x] **Step 5: Update the floor e2e test**
 
 In `e2e/experience.spec.ts` replace the test "wheel and PageUp/PageDown move one floor at a time" with:
 
@@ -1855,7 +1857,7 @@ In `e2e/experience.spec.ts` replace the test "wheel and PageUp/PageDown move one
   });
 ```
 
-- [ ] **Step 6: Typecheck, build and run the e2e test**
+- [x] **Step 6: Typecheck, build and run the e2e test**
 
 Run:
 
@@ -1867,7 +1869,7 @@ E2E_PORT=4436 bunx playwright test e2e/experience.spec.ts -g "PageUp/PageDown|tr
 
 Expected: typecheck exit 0; build ends with the static export summary; Playwright `2 passed`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/input/intents.ts src/experience/input/useInputSources.ts tests/unit/gestures.test.ts tests/unit/intents.test.ts e2e/experience.spec.ts
@@ -1890,7 +1892,7 @@ rtk git commit -m "feat(input): the wheel zooms instead of changing floors; +/- 
   - `prepareFade(root: Object3D): Material[]`, `setFadeOpacity(materials: readonly Material[], opacity: number): void`
   - `roverRuntime.cameraMode: "third" | "first"`, `cameraBlend: number`, `cameraZoom: number`, `cameraLook: number`, `cameraElevation: number`, `driving: boolean` (written by CameraDirector and the Director in Task 8; read by Rover here and by e2e as `window.__hq.rover.*`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/rover-fade.test.ts`:
 
@@ -1933,12 +1935,12 @@ describe("rover body fade", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/rover-fade.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/rover/fade"`.
 
-- [ ] **Step 3: Implement the fade helper**
+- [x] **Step 3: Implement the fade helper**
 
 Create `src/experience/rover/fade.ts`:
 
@@ -1972,12 +1974,12 @@ export function setFadeOpacity(materials: readonly Material[], opacity: number):
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bunx vitest run tests/unit/rover-fade.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Add the runtime probes**
+- [x] **Step 5: Add the runtime probes**
 
 In `src/experience/rover/runtime.ts` replace the `cameraRailYaw` field (with its comment) by:
 
@@ -1998,7 +2000,7 @@ In `src/experience/rover/runtime.ts` replace the `cameraRailYaw` field (with its
   driving: false,
 ```
 
-- [ ] **Step 6: Fade and hide the body in `Rover.tsx`**
+- [x] **Step 6: Fade and hide the body in `Rover.tsx`**
 
 1. Imports: change the React import to `import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";`, add `type Material,` to the `three` import list, and add:
 
@@ -2048,7 +2050,7 @@ import { prepareFade, setFadeOpacity } from "./fade";
   };
 ```
 
-- [ ] **Step 7: Typecheck, build and check that third person is untouched**
+- [x] **Step 7: Typecheck, build and check that third person is untouched**
 
 Run:
 
@@ -2060,7 +2062,7 @@ E2E_PORT=4436 bunx playwright test e2e/experience.spec.ts -g "mouse drag rotates
 
 Expected: typecheck exit 0; Playwright `1 passed` (dragging still rotates, and a click still drives; `cameraBlend` stays 0 until Task 8, so the body is fully opaque and clickable).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/rover/fade.ts src/experience/rover/Rover.tsx src/experience/rover/runtime.ts tests/unit/rover-fade.test.ts
@@ -2082,7 +2084,7 @@ rtk git commit -m "feat(rover): hashed-alpha body fade for first person and came
 - Consumes: everything from Tasks 2 to 7: `orbitOffset`-based `followPose`/`railPose`, `pitchRange`, `followForward`, `railForward`, `scrubSign`, `clampCamera`, `CameraWorld`, `FIRST_PERSON`, `CAMERA_NEAR`, `CAMERA_FAR`, `firstPersonPose`, `blendPoses`, `easeBlend`, `viewSuspended`, the orbit API, `pitchAxisFromKeys`, the runtime probes.
 - Produces: the visible behaviour; `roverRuntime.driving` (Director) and every camera probe (CameraDirector) each frame; the `camera` e2e spec.
 
-- [ ] **Step 1: Map the new spec in the e2e plan (failing unit test first)**
+- [x] **Step 1: Map the new spec in the e2e plan (failing unit test first)**
 
 In `tests/unit/e2e-plan.test.ts` add:
 
@@ -2099,7 +2101,7 @@ In `tests/unit/e2e-plan.test.ts` add:
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: FAIL (`"camera"` is not a known spec yet).
 
-- [ ] **Step 2: Write the camera e2e spec**
+- [x] **Step 2: Write the camera e2e spec**
 
 Create `e2e/camera.spec.ts`:
 
@@ -2459,7 +2461,7 @@ In `e2e/experience.spec.ts` replace the test "the L2 rail keeps its side view wi
   });
 ```
 
-- [ ] **Step 3: Register the spec and its rules**
+- [x] **Step 3: Register the spec and its rules**
 
 In `scripts/e2e-plan.ts` add `"camera",` to `ALL_SPECS` between `"boot-first",` and `"career",`. Replace the camera rule and add one rule right after it:
 
@@ -2472,7 +2474,7 @@ In `scripts/e2e-plan.ts` add `"camera",` to `ALL_SPECS` between `"boot-first",` 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Build and run the new spec to see it fail**
+- [x] **Step 4: Build and run the new spec to see it fail**
 
 Run:
 
@@ -2483,7 +2485,7 @@ E2E_PORT=4436 bunx playwright test e2e/camera.spec.ts -g "the wheel zooms"
 
 Expected: FAIL at `expect.poll(... blend).toBe(1)` in `enterFirstPerson` (`Received: 0`): the orbit state enters first person, but the camera does not draw it yet.
 
-- [ ] **Step 5: Rewrite `CameraDirector.tsx`**
+- [x] **Step 5: Rewrite `CameraDirector.tsx`**
 
 Replace `src/experience/camera/CameraDirector.tsx` with:
 
@@ -2737,7 +2739,7 @@ export function CameraDirector({
 }
 ```
 
-- [ ] **Step 6: Publish `driving` and flip L2 scrubs in the Director**
+- [x] **Step 6: Publish `driving` and flip L2 scrubs in the Director**
 
 In `src/experience/scene/Director.tsx`:
 
@@ -2756,7 +2758,7 @@ In `src/experience/scene/Director.tsx`:
     roverRuntime.driving = controller.following;
 ```
 
-- [ ] **Step 7: Typecheck, lint, build and run the camera e2e**
+- [x] **Step 7: Typecheck, lint, build and run the camera e2e**
 
 Run:
 
@@ -2769,12 +2771,12 @@ E2E_PORT=4436 bunx playwright test e2e/camera.spec.ts
 
 Expected: typecheck and lint exit 0; Playwright `13 passed`. If "first person on L1 stays under 140" fails, read the reported count: lower `FIRST_PERSON.far` to 64 (the fog end, still invisible) and rerun before touching anything else.
 
-- [ ] **Step 8: Run the existing camera, career and interact specs**
+- [x] **Step 8: Run the existing camera, career and interact specs**
 
 Run: `E2E_PORT=4436 bunx playwright test e2e/experience.spec.ts e2e/career.spec.ts e2e/interact.spec.ts`
 Expected: all pass (third-person defaults, the L2 scrub at yaw 0 and point-and-go are unchanged; the L2 test now checks 360 degrees).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/camera/CameraDirector.tsx src/experience/scene/Director.tsx e2e/camera.spec.ts e2e/experience.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -2796,7 +2798,7 @@ rtk git commit -m "feat(camera): free 360 degree orbit with camera collision, wh
 - Consumes: the spotlight convention (`data-onboard` name, `Spotlight.tsx`), `say()` lines.
 - Produces: `OnboardingCopy.cameraFine`, `OnboardingCopy.cameraCoarse`; a `camera` line (key `camera`, spotlight `view`) right after `moved` in both the full and the short tour.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 In `tests/unit/onboarding.test.ts`:
 
@@ -2849,12 +2851,12 @@ with
     await vi.waitFor(() => expect(dialog.view.line?.key).toBe("ask-rover"));
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/onboarding.test.ts tests/hud/OnboardingLayer.test.tsx`
 Expected: FAIL (the keys lists lack `camera`; TypeScript-level extra keys in `copy` are accepted by Vitest at runtime).
 
-- [ ] **Step 3: Add the line, the copy and the spotlight target**
+- [x] **Step 3: Add the line, the copy and the spotlight target**
 
 In `src/hud/dialog/onboarding.ts` add to `OnboardingCopy` after `moved: string;`:
 
@@ -2915,12 +2917,12 @@ In `messages/id.json`:
 
 (Lengths: 90, 95, 108 and 108 characters, under the 110 limit.)
 
-- [ ] **Step 4: Run the unit tests to verify they pass**
+- [x] **Step 4: Run the unit tests to verify they pass**
 
 Run: `bun run test`
 Expected: all Vitest files pass, including `tests/unit/dialog-copy.test.ts` (line length), `tests/unit/ui-copy.test.ts` (EN/ID key parity), the em-dash scan and the onboarding tests.
 
-- [ ] **Step 5: Walk the new line in the onboarding e2e**
+- [x] **Step 5: Walk the new line in the onboarding e2e**
 
 In `e2e/onboarding.spec.ts`, after each of the four places where the tour leaves `"moved"`, insert the camera line:
 
@@ -2966,7 +2968,7 @@ In `e2e/screenshots.spec.ts` (opt-in), after `await expect(box).toHaveAttribute(
       await advance();
 ```
 
-- [ ] **Step 6: Build and run the onboarding e2e**
+- [x] **Step 6: Build and run the onboarding e2e**
 
 Run:
 
@@ -2977,7 +2979,7 @@ E2E_PORT=4436 bunx playwright test e2e/onboarding.spec.ts
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add messages/en.json messages/id.json src/hud/dialog/onboarding.ts src/hud/dialog/OnboardingLayer.tsx src/hud/ViewControls.tsx tests/unit/onboarding.test.ts tests/hud/OnboardingLayer.test.tsx e2e/onboarding.spec.ts e2e/screenshots.spec.ts
@@ -2998,7 +3000,7 @@ rtk git commit -m "feat(hud): camera controls in the hint, the canvas descriptio
 - Consumes: the names and numbers from Tasks 2 to 9.
 - Produces: documentation only.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 In the "Try it" paragraph replace `change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About), the mouse wheel or PageUp/PageDown.` with:
 
@@ -3008,7 +3010,7 @@ In the same paragraph replace `driving and boost, point-and-go, the Highlights H
 
 In the scripts table replace `camera rigs, URL sync, GPU tier |` with `camera rigs, orbit, collision and first person, URL sync, GPU tier |`.
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Replace the bullet starting `- Camera: \`camera/orbit.ts\` holds the orbit state` with:
 
@@ -3027,7 +3029,7 @@ In the Onboarding bullet replace `there is no click-the-floor driving), the High
 
 In "Fast verification" replace `` `src/hud/dialog/**` and `src/experience/hints/**` to `onboarding`, `experience` and `walk`). `` with `` `src/hud/dialog/**` and `src/experience/hints/**` to `onboarding`, `experience` and `walk`, `src/experience/camera/**` to `camera`, `experience` and `career`, `src/experience/input/**`, the rover mesh, fade and runtime and `src/hud/ViewControls.tsx` to `camera` and `experience`). ``
 
-- [ ] **Step 3: Spec appendix 03**
+- [x] **Step 3: Spec appendix 03**
 
 In section 2's rig table replace the Rail row and add a First person row after it:
 
@@ -3062,11 +3064,11 @@ In section 3's intent table replace the `elevator`, `orbit` and `zoom` rows with
 | `zoom` | factor | Mouse wheel, trackpad scroll and pinch, two-finger pinch, `+`/`-`; past the closest distance it enters first person |
 ```
 
-- [ ] **Step 4: Spec appendix 02**
+- [x] **Step 4: Spec appendix 02**
 
 In the state diagram replace `  explore --> elevator: elevator panel / wheel / swipe` with `  explore --> elevator: elevator panel / call pad / PgUp PgDn / swipe`.
 
-- [ ] **Step 5: Check the docs for em dashes and stale wheel wording**
+- [x] **Step 5: Check the docs for em dashes and stale wheel wording**
 
 Run:
 
@@ -3077,7 +3079,7 @@ grep -n "mouse wheel or PageUp\|reserved for the elevator\|limited to ±35" READ
 
 Expected: every Vitest file passes (the repo-wide em-dash scan and `tests/content/safety.test.ts` included); the `grep` prints nothing.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/specs/agent-hq/03-rover-camera-input.md docs/superpowers/specs/agent-hq/02-interaction-and-states.md
@@ -3095,7 +3097,7 @@ rtk git commit -m "docs: free camera, wheel zoom and first person in README, AGE
 - Consumes: everything above; `screenshots/camera/baseline/` from Task 1.
 - Produces: the PR with numbers, captures and notes.
 
-- [ ] **Step 1: Fast verification**
+- [x] **Step 1: Fast verification**
 
 Run:
 
@@ -3108,7 +3110,7 @@ E2E_PORT=4436 bun run e2e:changed
 
 Expected: `verify:quick` passes (typecheck, lint, unit tests, `next build`); the dry run lists `camera`, `career`, `experience`, `onboarding`, `pageview`, `seo`, `static-routes`, `walk` (plus `hud`, `missions` or `drawer-solid` if the plan maps `src/hud/**` there); the real run ends with all tests passed.
 
-- [ ] **Step 2: Third-person look gate (same method as the baseline)**
+- [x] **Step 2: Third-person look gate (same method as the baseline)**
 
 Run:
 
@@ -3118,7 +3120,7 @@ E2E_PORT=4436 CAMERA_SHOTS=compare bunx playwright test e2e/camera-visual.spec.t
 
 Expected: `18 passed` (15 third-person comparisons, each at most 0.5% of pixels changed by more than 24/255, and three first-person capture runs). If a pose fails, open `screenshots/camera/baseline/<name>.png` and `screenshots/camera/compare/<name>.png` side by side. Never raise the threshold. Rollback order: (1) comment out the `prepareFade` call in `Rover.tsx` and rerun (hashed alpha); (2) skip `clampCamera` for third person and rerun (collision); (3) revert the near/far/fog switch in `CameraDirector.tsx`. Fix the cause in its task, recommit, rerun.
 
-- [ ] **Step 3: Before and after numbers**
+- [x] **Step 3: Before and after numbers**
 
 Run:
 
@@ -3139,11 +3141,11 @@ cat screenshots/camera/numbers.md
 
 Expected: a Markdown table; third-person draw calls and triangles identical before and after; every first-person row under its floor cap (L1 140, RF 80, others 150) and under 30k triangles.
 
-- [ ] **Step 4: Manual check on real hardware (owner machines)**
+- [x] **Step 4: Manual check on real hardware (owner machines)**
 
 With `bun run serve` (or the PR preview): on the MacBook (trackpad) and the Windows PC (Brave, 2560x1440, mouse wheel) check: wheel notches zoom and about four notches enter first person; one notch out leaves; trackpad scroll and pinch zoom smoothly; dragging up stops just above the floor, never below; L2 turns all the way around and reset returns to the side view; WASD in first person drives where you look; a point-and-go click in first person pulls back during the drive and returns; an elevator ride pulls back and returns; `?perf=1` (if P4 has landed) shows no extra draw calls in first person. On a phone (390x844 class): pinch in to first person and out again. Note anything odd in the PR.
 
-- [ ] **Step 5: Push and open the PR**
+- [x] **Step 5: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/camera-first-person

@@ -1,5 +1,7 @@
 # Agent HQ: Game-First Load, Prototype Look and Feel, and Page View Revamp: Implementation Plan
 
+Status: shipped in #17 (cbef913), 2026-10-10, #19 (96decf2), 2026-10-10, #20 (94db17d), 2026-10-10, #18 (1dd23f4), 2026-10-10 and #16 (ac7814d), 2026-10-10. Sub-project A in #17 with follow-ups #19 and #20, B in #18, C through its own plan in #16. Later removed in #62: the click marker (point-and-go replaced click-to-move)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > This plan lives in the coordinator session (plan mode). At execution it is committed to the repo as `docs/superpowers/plans/2026-10-10-game-first-lookfeel-pageview.md`.
@@ -66,7 +68,7 @@
 **Interfaces:**
 - Produces: `shouldBootFirst(input: BootFirstInput): boolean`, `bootFirstScript(): string`, `releaseBootCover(reason: "ready" | "page" | "static" | "timeout"): void`, constants `BOOT_ATTR = "data-hq-boot"` and `BOOT_TIMEOUT_MS = 8000`.
 
-- [ ] **Step 1: Write the failing test** (`src/lib/boot-first.test.ts`)
+- [x] **Step 1: Write the failing test** (`src/lib/boot-first.test.ts`)
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -109,12 +111,12 @@ describe("shouldBootFirst", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `bunx vitest run src/lib/boot-first.test.ts`
 Expected: FAIL with "Cannot find module './boot-first'".
 
-- [ ] **Step 3: Implement** (`src/lib/boot-first.ts`)
+- [x] **Step 3: Implement** (`src/lib/boot-first.ts`)
 
 ```ts
 export const BOOT_ATTR = "data-hq-boot";
@@ -152,12 +154,12 @@ export function releaseBootCover(reason: "ready" | "page" | "static" | "timeout"
 }
 ```
 
-- [ ] **Step 4: Run the test and confirm it passes**
+- [x] **Step 4: Run the test and confirm it passes**
 
 Run: `bunx vitest run src/lib/boot-first.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/lib/boot-first.ts src/lib/boot-first.test.ts
@@ -170,7 +172,7 @@ rtk git commit -m "feat(boot): decide 3D-first before first paint"
 - Consumes: `bootFirstScript()`, `releaseBootCover()` and `BOOT_ATTR` from A1.
 - Produces: `<BootCover locale name monogram />`, rendering `#hq-boot-cover` with `data-testid="boot-cover"`. `Experience` gains the prop `onFirstFrame?: () => void`.
 
-- [ ] **Step 1: Write the failing e2e test** (`e2e/boot-first.spec.ts`)
+- [x] **Step 1: Write the failing e2e test** (`e2e/boot-first.spec.ts`)
 
 ```ts
 import { expect, test } from "@playwright/test";
@@ -200,12 +202,12 @@ test("non-gated pages are unaffected", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `bun run e2e -- e2e/boot-first.spec.ts`
 Expected: FAIL (no `#hq-boot-cover`).
 
-- [ ] **Step 3: Create the cover** (`src/components/BootCover.tsx`), styled like the prototype intro
+- [x] **Step 3: Create the cover** (`src/components/BootCover.tsx`), styled like the prototype intro
 
 ```tsx
 import { getTranslations } from "next-intl/server";
@@ -236,7 +238,7 @@ export async function BootCover({ locale, name, monogram }: { locale: Locale; na
 
 Add `hud.bootEyebrow` to `messages/en.json` ("Agent HQ · booting") and `messages/id.json` ("Agent HQ · memulai").
 
-- [ ] **Step 4: Add the CSS** (append to `src/app/globals.css`)
+- [x] **Step 4: Add the CSS** (append to `src/app/globals.css`)
 
 ```css
 .hq-boot-cover { display: none; }
@@ -256,14 +258,14 @@ html[data-hq-boot] #site-shell { visibility: hidden; }
 
 (`.eyebrow` comes from B5 step 7. If A lands first, define `.eyebrow { font: 11px var(--font-mono); letter-spacing: .3em; text-transform: uppercase; color: var(--color-ink-3); }` here and B reuses it.)
 
-- [ ] **Step 5: Wire it into the layout** (`src/app/[locale]/layout.tsx`)
+- [x] **Step 5: Wire it into the layout** (`src/app/[locale]/layout.tsx`)
   - Add `suppressHydrationWarning` to `<html>`: the attribute is set before hydration.
   - Add `<head><script dangerouslySetInnerHTML={{ __html: bootFirstScript() }} /></head>`.
   - In `<body>`, before `#site-shell`, add `<BootCover locale={locale} name={profile.name} monogram={profile.monogram} />`.
   - Check `public/_headers`. If `script-src` disallows inline scripts, add a build step `scripts/csp-hash.ts` that computes the sha256 of `bootFirstScript()` and writes it into `out/_headers`.
   - Add a unit test asserting that the hash in the generated headers matches the current script.
 
-- [ ] **Step 6: Release the cover from the gate** (`src/experience/ExperienceGate.tsx`, `src/experience/Experience.tsx`)
+- [x] **Step 6: Release the cover from the gate** (`src/experience/ExperienceGate.tsx`, `src/experience/Experience.tsx`)
 
 ```tsx
 // ExperienceGate.tsx, module scope: start the 3D chunk download right away on boot-first visits.
@@ -290,16 +292,16 @@ function FirstFrame({ onFrame }: { onFrame?: () => void }) {
 }
 ```
 
-- [ ] **Step 7: Make the handoff seamless.** Keep `BootOverlay`'s behavior: the Boot button on a first visit, auto-skip on return visits. Restyle it to the same card, eyebrow, log and scan bar as `BootCover`, in the same position, so removing the cover reveals an identical overlay. Use the prototype's primary button style: `bg-[#6366f1] text-white shadow-[0_0_30px_rgba(99,102,241,.55)] rounded-xl px-6 py-3`.
+- [x] **Step 7: Make the handoff seamless.** Keep `BootOverlay`'s behavior: the Boot button on a first visit, auto-skip on return visits. Restyle it to the same card, eyebrow, log and scan bar as `BootCover`, in the same position, so removing the cover reveals an identical overlay. Use the prototype's primary button style: `bg-[#6366f1] text-white shadow-[0_0_30px_rgba(99,102,241,.55)] rounded-xl px-6 py-3`.
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bun run e2e -- e2e/boot-first.spec.ts e2e/experience.spec.ts`, then the full AGENTS.md suite.
 Expected: PASS.
 
-- [ ] **Step 9: Verify there's no flash.** Record a Playwright trace of `/en?tier=lite` with screenshots enabled, and confirm no frame shows `#site-shell` before `[data-testid=hq]`. Attach the filmstrip to the PR.
+- [x] **Step 9: Verify there's no flash.** Record a Playwright trace of `/en?tier=lite` with screenshots enabled, and confirm no frame shows `#site-shell` before `[data-testid=hq]`. Attach the filmstrip to the PR.
 
-- [ ] **Step 10: Commit and open a PR** "Game-first load: boot cover before first paint".
+- [x] **Step 10: Commit and open a PR** "Game-first load: boot cover before first paint".
 
 ---
 
@@ -324,8 +326,8 @@ Expected: PASS.
 
 ### Task B0: Commit the prototype reference
 
-- [ ] Copy `agent-hq.html` (as `agent-hq-v0.html`) and `content.js` from the reference path into `docs/prototypes/`.
-- [ ] Write `docs/prototypes/README.md` with the port inventory and exact values:
+- [x] Copy `agent-hq.html` (as `agent-hq-v0.html`) and `content.js` from the reference path into `docs/prototypes/`.
+- [x] Write `docs/prototypes/README.md` with the port inventory and exact values:
   - **Tone mapping:** ACES, exposure 1.05.
   - **Fog:** linear `#0a0a0f`, 38 to 80.
   - **Bloom (Unreal):** strength 0.5, radius 0.4, threshold 0.32.
@@ -340,7 +342,7 @@ Expected: PASS.
   - **Camera:** smoothing `1-exp(-dt*4)`, offset scaled by aspect (×1, ×1.35, ×1.75).
   - **Boot screen:** eyebrow, `[ok]` log lines every 300 ms, indigo glowing button.
   - **HUD glass CSS:** blur 18 px with saturate 140%, radius 16, layered shadow, inset highlight.
-- [ ] Commit: `docs: add Agent HQ v0 prototype as design reference`.
+- [x] Commit: `docs: add Agent HQ v0 prototype as design reference`.
 
 ### Task B1: Shared FX materials
 
@@ -352,7 +354,7 @@ Expected: PASS.
   - `neonColor(hex: string, k: number, tier: GpuTier): Color`, which boosts above 1.0 on `full` only so that only neon blooms.
   - `useUniformTime(materials: ShaderMaterial[]): void`.
 
-- [ ] **Step 1: Write the failing test** (`src/experience/fx/materials.test.ts`)
+- [x] **Step 1: Write the failing test** (`src/experience/fx/materials.test.ts`)
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -382,12 +384,12 @@ describe("fx materials", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `bunx vitest run src/experience/fx/materials.test.ts`
 Expected: FAIL (module not found).
 
-- [ ] **Step 3: Implement** (`src/experience/fx/materials.ts`, ported from the prototype)
+- [x] **Step 3: Implement** (`src/experience/fx/materials.ts`, ported from the prototype)
 
 ```ts
 import { AdditiveBlending, Color, DoubleSide, ShaderMaterial } from "three";
@@ -465,12 +467,12 @@ export function useUniformTime(materials: ShaderMaterial[]): void {
 }
 ```
 
-- [ ] **Step 4: Run the test and confirm it passes**
+- [x] **Step 4: Run the test and confirm it passes**
 
 Run: `bunx vitest run src/experience/fx/materials.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/fx
@@ -482,7 +484,7 @@ rtk git commit -m "feat(fx): prototype glass, grid floor and lane shaders"
 **Interfaces:**
 - Produces: `sceneSettings(tier: GpuTier): SceneSettings`, where `SceneSettings = { fog: { color: string; near: number; far: number }; exposure: number; hemisphere: [string, string, number]; directional: { color: string; intensity: number; position: [number, number, number] }; bloom: { intensity: number; threshold: number; radius: number } | null }`.
 
-- [ ] **Step 1: Write the failing test** (`src/experience/scene/settings.test.ts`)
+- [x] **Step 1: Write the failing test** (`src/experience/scene/settings.test.ts`)
 
 ```ts
 import { expect, it } from "vitest";
@@ -500,9 +502,9 @@ it("matches the prototype on full and drops bloom on lite", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails.** Run `bunx vitest run src/experience/scene/settings.test.ts`. Expected: FAIL.
+- [x] **Step 2: Run it and confirm it fails.** Run `bunx vitest run src/experience/scene/settings.test.ts`. Expected: FAIL.
 
-- [ ] **Step 3: Implement** `src/experience/scene/settings.ts`
+- [x] **Step 3: Implement** `src/experience/scene/settings.ts`
 
 ```ts
 import type { GpuTier } from "../types";
@@ -532,8 +534,8 @@ Then wire it in:
 - **`Effects.tsx`:** render `<Bloom mipmapBlur luminanceThreshold={b.threshold} intensity={b.intensity} radius={b.radius} />` from the settings.
 - **Neon materials:** keep `toneMapped={false}` and take their color from `neonColor(hex, k, tier)`. Body text keeps `toneMapped` true and unboosted, so it does not wash out.
 
-- [ ] **Step 4: Run the test (PASS).** Then screenshot L1 at 1440×900 with `?tier=full` on a real GPU and attach it to the PR.
-- [ ] **Step 5: Commit** `feat(scene): prototype lighting, fog, ACES and bloom`.
+- [x] **Step 4: Run the test (PASS).** Then screenshot L1 at 1440×900 with `?tier=full` on a real GPU and attach it to the PR.
+- [x] **Step 5: Commit** `feat(scene): prototype lighting, fog, ACES and bloom`.
 
 ### Task B3: Grid floors, glass rooms, lanes and motes on every floor
 
@@ -546,7 +548,7 @@ Then wire it in:
   - `<Motes count={260} area={50} height={6} />`
   - `getGlassMaterial(color, opacity)`: a module-level cache keyed by `${color}|${opacity}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 // src/experience/tower/primitives.test.ts
@@ -561,8 +563,8 @@ it("shares one glass material per color and opacity", () => {
 
 Extend the existing e2e draw-call test so every floor (L1 to RF, `?tier=lite`) asserts `__hq.renderer.calls < 150` after this change.
 
-- [ ] **Step 2: Run them and confirm the unit test fails.** The e2e budget test may still pass at this point.
-- [ ] **Step 3: Implement**
+- [x] **Step 2: Run them and confirm the unit test fails.** The e2e budget test may still pass at this point.
+- [x] **Step 3: Implement**
   - **`GridFloor`:** a `planeGeometry` rotated -90° on x, using `createGridFloorMaterial({ line: "#4f46e5", bg: "#0a0a0f", radius })`. Replace `GridLines` in `FloorLevel.tsx`, with radius equal to half the floor diagonal.
   - **`GlassBox`:**
     - Render four side planes, not top or bottom, sharing `getGlassMaterial(color, fillOpacity)`, with `renderOrder={2}`.
@@ -572,15 +574,15 @@ Extend the existing e2e draw-call test so every floor (L1 to RF, `?tier=lite`) a
     - Replace `FloorLine` lanes in `floors/lobby/Lanes.tsx` and `floors/labs/PacketLanes.tsx` (keep the packets).
     - Add lanes between doors on L4 (`floors/library/layout.ts` door points) and RF (`floors/roof/layout.ts`).
   - **`Motes`:** a `points` object with `count` random positions in the `area × height` box, `pointsMaterial` color `#818cf8`, size 0.06, additive, `depthWrite={false}`, and `rotation.y += dt * 0.01`. Render it only when `tier === "full" && !reducedMotion`, with one instance on the current floor.
-- [ ] **Step 4: Run the unit and e2e tests (PASS)**, then take screenshots of L1, L2, L3, L4 and RF at 3 viewports.
-- [ ] **Step 5: Commit** `feat(floors): glass shader rooms, AA grid floors, animated lanes and motes`.
+- [x] **Step 4: Run the unit and e2e tests (PASS)**, then take screenshots of L1, L2, L3, L4 and RF at 3 viewports.
+- [x] **Step 5: Commit** `feat(floors): glass shader rooms, AA grid floors, animated lanes and motes`.
 
 ### Task B4: Rover glow, click marker and camera feel
 
 **Interfaces:**
 - Produces: `cameraOffsetScale(aspect: number): number` in `src/experience/camera/offset.ts`, and `__hq.marker: { visible: boolean; opacity: number }` for tests.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 // src/experience/camera/offset.test.ts
@@ -605,8 +607,8 @@ test("click marker appears and fades", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run them and confirm they fail.**
-- [ ] **Step 3: Implement**
+- [x] **Step 2: Run them and confirm they fail.**
+- [x] **Step 3: Implement**
   - **`offset.ts`:** `export const cameraOffsetScale = (a: number) => (a < 0.8 ? 1.75 : a < 1.2 ? 1.35 : 1);`. Multiply the follow-rig offset by it. Target easing uses `1 - Math.exp(-dt * (reduced ? 8 : 4))`. Keep the PR #13 orbit and pitch clamp.
   - **`Rover.tsx`:**
     - **Glow pad:** an additive glow pad from a 128 px radial `CanvasTexture` (`rgba(103,232,249,.55)` to transparent) on a 2.6 u plane at y 0.025.
@@ -615,26 +617,26 @@ test("click marker appears and fades", async ({ page }) => {
     - **Neon accents:** boost the screen face and antenna tip with `neonColor(..., 3, tier)`. Add a thruster disc (cylinder 0.22 to 0.12, neon ×2.5) under the chassis.
     - **Idle bob:** amplitude 0.04 at 1.6 Hz, added to the existing tilt.
   - **Click marker:** a ring 0.3 to 0.42, opacity 1 at click, `scale *= 1 + dt * 1.5`, `opacity -= dt * 1.2`. Expose it as `__hq.marker`.
-- [ ] **Step 4: Run the tests (PASS)** and take screenshots.
-- [ ] **Step 5: Commit** `feat(rover): prototype glow, click marker and camera feel`.
+- [x] **Step 4: Run the tests (PASS)** and take screenshots.
+- [x] **Step 5: Commit** `feat(rover): prototype glow, click marker and camera feel`.
 
 ### Task B5: Polish pass ("wow") and taller skills wall
 
 Each step attaches before/after screenshots at 1440×900 and 390×844 to the PR and stays within the draw-call budget.
 
-- [ ] **Step 1: Taller skills wall (owner request)**
+- [x] **Step 1: Taller skills wall (owner request)**
   - **Write the failing test** (`src/experience/floors/lobby/layout.test.ts`): `expect(LOBBY.skillsWall.h).toBeGreaterThanOrEqual(8.5)`, plus the text block bottom: `h - ITEM_TOP - maxItems * ITEM_SIZE * ITEM_LINE >= 0.6`.
   - **`config.ts`:** `skillsWall: { x: 6, z: -22.5, w: 40, d: 1, h: 8.5, plinth: 0.35 }`.
   - **`SkillsWall.tsx`:** `ITEM_SIZE = 0.4`, `ITEM_LINE = 1.35`, `ITEM_TOP = 1.4`, `ICON = 0.4`, `ICON_GAP = 0.55`, `LABEL_SIZE = 0.46`. Raise the whole wall group by `plinth` onto a glowing plinth: a `GlassBox` 40 × 0.35 × 1.4 in green with the rim on.
   - **`camera/orbit.ts`:** raise the `L1:skills` zone `zoom` until a screenshot on arrival shows the full wall at 1440×900 and 390×844.
   - Update appendix 01 section 2. The Lobby overlap test stays green, since the footprint does not change.
   - **Commit** `feat(lobby): taller, more readable skills wall`.
-- [ ] **Step 2: Shared proximity glow**
+- [x] **Step 2: Shared proximity glow**
   - **Write the failing test** for the `proximityLevel(distance)` helper: it returns 0.15 at 6 u or more, 0.8 at 1.5 u or less, and is linear between.
   - **Implement** `ProximityGlow.tsx`: a floor pad (ring plus fill) whose opacity is `proximityLevel(distance from roverRuntime)`.
   - Put one at every `FloorLayout.doors[]` entry on every floor (it replaces the static door pads).
   - **Commit.**
-- [ ] **Step 3: Lobby**
+- [x] **Step 3: Lobby**
   - **Stats tiles:**
     - Glass shader panels with an accent top glow line.
     - **Count-up animation**, via a `countUp(value: string, t: number): string` helper with a unit test: `"800+"` at t=0.5 gives `"400+"`, `"7,350"` at t=1 gives `"7,350"`. Numeric parts animate from 0 over 900 ms on the first view of L1, and are instant under reduced motion.
@@ -643,24 +645,24 @@ Each step attaches before/after screenshots at 1440×900 and 390×844 to the PR 
   - **Cert wall:** a badge plate per certification with an issuer logo (`getTechLogo` or org logos) and a verify glyph. A plate brightens when the rover is within 5 u.
   - **Mission kiosk:** a screen texture that slowly scrolls the mission labels.
   - **Commit.**
-- [ ] **Step 4: L2 Career corridor**
+- [x] **Step 4: L2 Career corridor**
   - **Year gates:** neon arches boosted ×2 on full. They pulse once (`scale 1 → 1.04 → 1`, 400 ms) when the rover crosses the gate x.
   - **Trophy cups:** rotate at 0.3 rad/s with a glint sweep (an additive plane sliding across).
   - **Workshop bench screens:** a subtle glow.
   - **Commit.**
-- [ ] **Step 5: L3 Labs**
+- [x] **Step 5: L3 Labs**
   - **Pods:** use `GlassBox` with the shader. Add a lit door frame (neon ×1.6). Holograms brighten from 0.6 to 1 and rotate from 0.4 to 0.9 rad/s when the rover is within 6 u.
   - **Atrium boards:** a scanline.
   - **Hologram view:** nodes pop in with a scale ease over 180 ms, staggered by 60 ms, with brighter packets.
   - **Commit.**
-- [ ] **Step 6: L4, Roof and elevator**
+- [x] **Step 6: L4, Roof and elevator**
   - **Book spines:** lift 0.1 u and add an edge glow when hovered or near.
   - **Research plates:** a slow DOI shimmer.
   - **Roof beacon:** an additive cone (open cylinder, gradient alpha) plus expanding pulse rings every 2 s.
   - **Comms terminals:** blinking status LEDs.
   - **Elevator shaft:** the glass shader, light bands that travel with the cab while riding, and a floor indicator on each landing.
   - **Commit.**
-- [ ] **Step 7: HUD glass from the prototype**
+- [x] **Step 7: HUD glass from the prototype**
   - **Add to `globals.css`:**
     - `.glass { background: rgb(14 14 24 / .62); backdrop-filter: blur(18px) saturate(140%); border: 1px solid var(--color-glass-border); border-radius: 16px; box-shadow: 0 12px 40px rgb(0 0 0 / .45), inset 0 1px 0 rgb(255 255 255 / .05); }`, with `@media (pointer: coarse) { .glass { backdrop-filter: none; background: rgb(14 14 24 / .9); } }`.
     - `.eyebrow { font: 11px var(--font-mono); letter-spacing: .3em; text-transform: uppercase; color: var(--color-ink-3); }`
@@ -669,10 +671,10 @@ Each step attaches before/after screenshots at 1440×900 and 390×844 to the PR 
   - **Apply them to:** ProfileCard, ElevatorPanel, ViewControls, RoomDrawer, RoverTerminal (prototype trace-panel styling for the mission list), CommandPalette and Controls.
   - **Accessibility:** axe must stay at zero serious violations.
   - **Commit.**
-- [ ] **Step 8: Verify**
+- [x] **Step 8: Verify**
   - Run the full AGENTS.md suite and the per-floor draw-call budget.
   - On a real GPU (Chrome, `?tier=full`), record fps for each floor in the PR; target at least 55.
-- [ ] **Step 9: Open a PR** "3D look and feel: prototype effects and component polish".
+- [x] **Step 9: Open a PR** "3D look and feel: prototype effects and component polish".
 
 ---
 
@@ -692,11 +694,11 @@ The Page View covers the `static` tier and the "Page view" toggle (`src/app/[loc
 - **URLs stay the same.** Only the nav labels and page structure change.
 
 ### Task C1: Design exploration and spec (coordinator session, with the owner)
-- [ ] Use superpowers:brainstorming with the visual companion, using real content:
+- [x] Use superpowers:brainstorming with the visual companion, using real content:
   - the nav and IA map
   - mockups for Home, Work index, Case study, Journey, Writing, and About/Contact, on desktop and mobile
   - iterate until the owner approves
-- [ ] Write `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md`, covering:
+- [x] Write `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md`, covering:
   - IA and nav
   - grid, type scale and spacing
   - color tokens shared with the HUD
@@ -705,13 +707,13 @@ The Page View covers the `static` tier and the "Page view" toggle (`src/app/[loc
   - accessibility
   - placement of "Explore in 3D" and "Back to 3D"
   - empty and loading states
-- [ ] Get the owner's approval of the spec.
+- [x] Get the owner's approval of the spec.
 
 ### Task C2: Page View implementation plan
-- [ ] Use superpowers:writing-plans on the approved spec to write `docs/superpowers/plans/2026-10-10-pageview-revamp.md`. It must include task-by-task code and tests (Testing Library, axe, and Playwright visuals at 3 viewports) and keep URLs stable.
+- [x] Use superpowers:writing-plans on the approved spec to write `docs/superpowers/plans/2026-10-10-pageview-revamp.md`. It must include task-by-task code and tests (Testing Library, axe, and Playwright visuals at 3 viewports) and keep URLs stable.
 
 ### Task C3: Build (child session "Page View revamp")
-- [ ] Execute the C2 plan, in a PR titled "Page View revamp: editorial Neon Grid". It reuses the `.glass`, `.eyebrow`, `.chip` and `.card` tokens from B5 step 7. If B has not merged yet, C adds those tokens first and B rebases onto them.
+- [x] Execute the C2 plan, in a PR titled "Page View revamp: editorial Neon Grid". It reuses the `.glass`, `.eyebrow`, `.chip` and `.card` tokens from B5 step 7. If B has not merged yet, C adds those tokens first and B rebases onto them.
 
 ---
 

@@ -1,5 +1,7 @@
 # L3 Project Roads and "Tour my projects"
 
+Status: shipped in #41 (7b9ff5b), 2026-10-11. Later removed in #167: the "Tour my projects" walk
+
 Phase plan for the L3 part of the walkable floors work (part 2 of the coordinator plan). Built on the road kit, space rules and walk engine from PR #36.
 
 ## Owner request and decisions

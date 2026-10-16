@@ -1,5 +1,7 @@
 # Motion setting and "Classic site" rename Implementation Plan
 
+Status: shipped in #86 (f9139e7), 2026-10-13. Later removed in #97: the one-time motion hint (Full became the default)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let visitors override the OS reduced-motion flag (System / Full / Reduced) across the 3D HQ and the HTML pages, and rename the user-facing "Page view" to "Classic site" ("Situs klasik").
@@ -61,11 +63,11 @@ motion: MotionPref; systemReducedMotion: boolean; reducedMotion: boolean (derive
 setMotion(pref: MotionPref): void; setReducedMotion(systemReduced: boolean): void // records the OS flag
 ```
 
-- [ ] Step 1: unit tests for `resolveReducedMotion` (6 cases), `storedMotion` (valid, system, garbage JSON, null), store: default `system`, `setMotion("full")` with OS reduce gives `reducedMotion false`, persisted JSON has `motion` and `version: 2`, a v1 payload (`{state:{visited,firstVisit,locale},version:1}`) migrates to `motion: "system"` keeping `visited`, an invalid stored motion falls back to `system`.
-- [ ] Step 2: run `bunx vitest run tests/unit/motion.test.ts`, expect FAIL (module missing).
-- [ ] Step 3: implement `src/lib/motion.ts`; store: `persist` `version: 2`, `migrate: (s) => ({ ...s, motion: "system" })` for v1, `merge` validates `motion` and recomputes `reducedMotion`; `partialize` adds `motion`; `setMotion` calls `applyMotionAttr`. Initial `systemReducedMotion` reads `prefersReducedMotion()` (guarded) so the Page View store is right too.
-- [ ] Step 4: head script: `var m=(${storedMotion})(localStorage.getItem("hq:v1"));if(m)d.setAttribute("data-motion",m);` (in a try), before the boot decision so every page gets it. Unit test asserts the script contains `data-motion` and runs it in a fake DOM.
-- [ ] Step 5: CSS. In `globals.css` after `@import "tailwindcss"`:
+- [x] Step 1: unit tests for `resolveReducedMotion` (6 cases), `storedMotion` (valid, system, garbage JSON, null), store: default `system`, `setMotion("full")` with OS reduce gives `reducedMotion false`, persisted JSON has `motion` and `version: 2`, a v1 payload (`{state:{visited,firstVisit,locale},version:1}`) migrates to `motion: "system"` keeping `visited`, an invalid stored motion falls back to `system`.
+- [x] Step 2: run `bunx vitest run tests/unit/motion.test.ts`, expect FAIL (module missing).
+- [x] Step 3: implement `src/lib/motion.ts`; store: `persist` `version: 2`, `migrate: (s) => ({ ...s, motion: "system" })` for v1, `merge` validates `motion` and recomputes `reducedMotion`; `partialize` adds `motion`; `setMotion` calls `applyMotionAttr`. Initial `systemReducedMotion` reads `prefersReducedMotion()` (guarded) so the Page View store is right too.
+- [x] Step 4: head script: `var m=(${storedMotion})(localStorage.getItem("hq:v1"));if(m)d.setAttribute("data-motion",m);` (in a try), before the boot decision so every page gets it. Unit test asserts the script contains `data-motion` and runs it in a fake DOM.
+- [x] Step 5: CSS. In `globals.css` after `@import "tailwindcss"`:
 ```css
 @custom-variant motion-reduce {
   :root[data-motion="reduced"] & { @slot; }
@@ -77,7 +79,7 @@ setMotion(pref: MotionPref): void; setReducedMotion(systemReduced: boolean): voi
 }
 ```
 Each `@media (prefers-reduced-motion: reduce) { rules }` block becomes `@variant motion-reduce { rules }` where the selector is a descendant of `html`; the `html { scroll-behavior }` rule gets `:root[data-motion="reduced"]` and `:root:not([data-motion="full"])` forms. Verify the compiled CSS in `out/_next/static/chunks/*.css`.
-- [ ] Step 6: run unit tests, typecheck; commit `feat(motion): System, Full and Reduced motion preference with an html[data-motion] override`.
+- [x] Step 6: run unit tests, typecheck; commit `feat(motion): System, Full and Reduced motion preference with an html[data-motion] override`.
 
 ### Task 2: HUD control, palette actions, terminal
 
@@ -85,11 +87,11 @@ Each `@media (prefers-reduced-motion: reduce) { rules }` block becomes `@variant
 
 **Interfaces:** `MotionChoices({ idPrefix? })`: `<fieldset>` with `<legend>` "Motion" / "Gerak", 3 native radios (`name` unique per instance), labels "System / Full / Reduced" and "Sistem / Penuh / Dikurangi", checked segment `bg-cyan/15 text-cyan` (LangToggle style), focus ring via `has-[:focus-visible]`. `MotionMenu()`: 44 px glass icon button (`aria-label` "Motion", `aria-expanded`, `aria-controls`, `data-onboard="motion"`, `data-testid="motion-menu"`), popover `glass glass-solid` under it with a one-line description and `MotionChoices`; Esc and outside pointerdown close it and return focus. Palette ids `motion-system | motion-full | motion-reduced` with keywords (motion, animation, reduce, gerak, animasi).
 
-- [ ] Step 1: Testing Library test: radios render with names in EN, picking Full calls the store, Esc closes the popover, focus returns to the trigger.
-- [ ] Step 2: implement; mount `MotionMenu` after `SoundToggle` in `TopBar`, `MotionChoices` in `MobileMenu`'s panel.
-- [ ] Step 3: palette actions in `STATIC_ACTIONS` (Page View and 3D) with a toast "Motion: Full" etc.
-- [ ] Step 4: `RoverTerminal` animates unless `resolveReducedMotion(store motion, OS)`.
-- [ ] Step 5: unit tests, lint; commit `feat(hud): Motion control beside Sound, in the phone menu and in Cmd-K`.
+- [x] Step 1: Testing Library test: radios render with names in EN, picking Full calls the store, Esc closes the popover, focus returns to the trigger.
+- [x] Step 2: implement; mount `MotionMenu` after `SoundToggle` in `TopBar`, `MotionChoices` in `MobileMenu`'s panel.
+- [x] Step 3: palette actions in `STATIC_ACTIONS` (Page View and 3D) with a toast "Motion: Full" etc.
+- [x] Step 4: `RoverTerminal` animates unless `resolveReducedMotion(store motion, OS)`.
+- [x] Step 5: unit tests, lint; commit `feat(hud): Motion control beside Sound, in the phone menu and in Cmd-K`.
 
 ### Task 3: one-time hint
 
@@ -97,7 +99,7 @@ Each `@media (prefers-reduced-motion: reduce) { rules }` block becomes `@variant
 
 Behavior: when the phase is `explore`, no ride, the tour is settled (`useOnboardingSettled`), `systemReducedMotion` and `motion === "system"` and the flag is unset, wait `START_DELAY_MS`, then `say({ key: "motion-hint", text, choices: [{ id: "full", label }, { id: "keep", label, cancel: true }] }, { id: "motion" })`. Any resolution marks the flag; `full` calls `setMotion("full")` and says the `on` line with `spotlight: "motion"`. Never on the Page View (the layer lives in the 3D HUD) and never during boot or intro (phase gate).
 
-- [ ] Step 1: implement, unit copy test; commit with Task 2 group.
+- [x] Step 1: implement, unit copy test; commit with Task 2 group.
 
 ### Task 4: e2e
 
@@ -111,18 +113,18 @@ Tests (all `?tier=lite`, `page.emulateMedia({ reducedMotion: "reduce" })` where 
 5. Holograms animate under Full: open a hero pod's architecture view and see packets move (or `__hq` probe) with OS reduce + Full.
 6. axe on the open popover and on the phone menu.
 
-- [ ] Step 1: write the spec, build, run `E2E_PORT=4445 bunx playwright test e2e/motion.spec.ts`.
+- [x] Step 1: write the spec, build, run `E2E_PORT=4445 bunx playwright test e2e/motion.spec.ts`.
 
 ### Task 5: rename "Page view" to "Classic site"
 
 **Files:** `messages/en.json`, `messages/id.json` (`hud.pageView`, `hud.canvasDescription`, `hud.staticNotice`, `hud.constructionHint`, `directoryIntro`, dev `sheetTitle`), tests that query the name (`e2e/experience.spec.ts`, `e2e/screenshots.spec.ts`, `tests/hud/*`), README, AGENTS.md, specs (`agent-hq/02`, pageview revamp note), comments that quote the label (`BootCard.tsx`, `PageViewIcon.tsx`, `Controls.tsx`).
 
-- [ ] Step 1: change values: EN "Classic site", hint "Show this page as a classic website, without the 3D tower"; ID "Situs klasik", "Tampilkan halaman ini sebagai situs klasik, tanpa menara 3D"; notices "Showing the classic site." / "Situs klasik dibuka."; construction hint "Open this floor on the classic site" / "Buka lantai ini di situs klasik"; directory intro "Every floor also has a classic site page." / "Setiap lantai juga punya halaman di situs klasik."; canvas description last sentence "Classic site shows the portfolio as a regular website." / "Situs klasik menampilkan portofolio sebagai situs biasa."
-- [ ] Step 2: grep for leftover user-facing "Page view" / "Tampilan halaman"; update tests by name.
-- [ ] Step 3: measure the top bar at 1024 (EN, ID, Mac, Windows) and capture before/after shots at 390, 1024, 1440.
-- [ ] Step 4: commit `feat(copy): rename Page view to Classic site (Situs klasik)` plus docs commit.
+- [x] Step 1: change values: EN "Classic site", hint "Show this page as a classic website, without the 3D tower"; ID "Situs klasik", "Tampilkan halaman ini sebagai situs klasik, tanpa menara 3D"; notices "Showing the classic site." / "Situs klasik dibuka."; construction hint "Open this floor on the classic site" / "Buka lantai ini di situs klasik"; directory intro "Every floor also has a classic site page." / "Setiap lantai juga punya halaman di situs klasik."; canvas description last sentence "Classic site shows the portfolio as a regular website." / "Situs klasik menampilkan portofolio sebagai situs biasa."
+- [x] Step 2: grep for leftover user-facing "Page view" / "Tampilan halaman"; update tests by name.
+- [x] Step 3: measure the top bar at 1024 (EN, ID, Mac, Windows) and capture before/after shots at 390, 1024, 1440.
+- [x] Step 4: commit `feat(copy): rename Page view to Classic site (Situs klasik)` plus docs commit.
 
 ### Task 6: verification and PR
 
-- [ ] `bun run verify:quick`, `E2E_PORT=4445 bun run e2e:changed`, `E2E_PORT=4445 bun run e2e:perf e2e/perf/bytes-3d.spec.ts` (3D bytes), Page View gzip of `/en` scripts before and after.
-- [ ] Push, open the PR, wait for "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates"; fix until green; do not merge.
+- [x] `bun run verify:quick`, `E2E_PORT=4445 bun run e2e:changed`, `E2E_PORT=4445 bun run e2e:perf e2e/perf/bytes-3d.spec.ts` (3D bytes), Page View gzip of `/en` scripts before and after.
+- [x] Push, open the PR, wait for "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates"; fix until green; do not merge.

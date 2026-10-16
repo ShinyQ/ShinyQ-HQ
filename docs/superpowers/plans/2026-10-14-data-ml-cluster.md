@@ -1,5 +1,7 @@
 # Data and ML Project Cluster Implementation Plan
 
+Status: shipped in #96 (b49ea73), 2026-10-14. Later replaced in #164: the east annex, data plaza and third directory panel, by the Data and ML spine. Later removed in #167: the data wing walk
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a third L3 wing, "Data and ML" (`data`), with 5 to 6 real project pods built from the owner's public GitHub repos, docked in an east annex past the Tech Reactor, lit by the reactor's Data ring, filterable on the Classic `/labs` page, reachable from Cmd-K and deep links, and known to Ask the HQ.
@@ -51,19 +53,19 @@
 
 **Interfaces:** Produces `Wing = "software" | "ai" | "data"`, `Pod.repos?: string[]` (1 to 4, https, `github.com/ShinyQ/<repo>` roots only), `Pod.publications?: string[]` (ids that must exist in `floors.library.publications`).
 
-- [ ] Write failing schema tests: a pod with `wing: "data"` parses; `repos: ["https://gitlab.com/x"]` and `repos: ["https://github.com/other/x"]` fail; dataset test: every `publications` id resolves; every data pod has `repos`.
-- [ ] Run `bunx vitest run tests/unit/schema.test.ts tests/content/dataset.test.ts`: FAIL.
-- [ ] Implement `WingSchema = z.enum(["software", "ai", "data"])`, `GITHUB_REPO = /^https:\/\/github\.com\/ShinyQ\/[A-Za-z0-9._-]+$/`, `repos: z.array(httpsUrl.regex(GITHUB_REPO)).min(1).max(4).optional()`, `publications: z.array(SlugSchema).min(1).optional()`, cross-ref in `SiteContentSchema` superRefine.
-- [ ] Fix every `Record<Wing, ...>` the compiler flags (`bun run typecheck`) with the data entries named in the File Structure table.
-- [ ] Run tests: PASS. Commit `feat(content): data wing, pod repo and publication links`.
+- [x] Write failing schema tests: a pod with `wing: "data"` parses; `repos: ["https://gitlab.com/x"]` and `repos: ["https://github.com/other/x"]` fail; dataset test: every `publications` id resolves; every data pod has `repos`.
+- [x] Run `bunx vitest run tests/unit/schema.test.ts tests/content/dataset.test.ts`: FAIL.
+- [x] Implement `WingSchema = z.enum(["software", "ai", "data"])`, `GITHUB_REPO = /^https:\/\/github\.com\/ShinyQ\/[A-Za-z0-9._-]+$/`, `repos: z.array(httpsUrl.regex(GITHUB_REPO)).min(1).max(4).optional()`, `publications: z.array(SlugSchema).min(1).optional()`, cross-ref in `SiteContentSchema` superRefine.
+- [x] Fix every `Record<Wing, ...>` the compiler flags (`bun run typecheck`) with the data entries named in the File Structure table.
+- [x] Run tests: PASS. Commit `feat(content): data wing, pod repo and publication links`.
 
 ### Task 2: Tech rings and logos for data techs
 
 **Files:** Modify `src/content/tech-rings.ts`, `src/content/tech.ts`, `public/tech/README.md`; Test `tests/unit/tech-index.test.ts`, `tests/unit/tech.test.ts`.
 
-- [ ] Failing test: every `data` wing pod has at least one tech on the `data` ring (`getTechIndex()`), and every other tech of a data pod is on `data`, `ai` or (Python only, a CV language) `backend`.
-- [ ] Add `EXTRA_RING` entries (data: pandas, numpy, jupyter, plotly, streamlit, pulp, scipy, matplotlib, beautiful soup, selenium, requests; ai: indobert, indobertweet, transformers, pytorch, tensorflow, keras, scikit-learn, n-beats) limited to the techs the pods really use (stale-entry test), and logos or `TEXT_ONLY_TECH` entries.
-- [ ] PASS; commit `feat(reactor): data and ML techs on the Data and AI rings`.
+- [x] Failing test: every `data` wing pod has at least one tech on the `data` ring (`getTechIndex()`), and every other tech of a data pod is on `data`, `ai` or (Python only, a CV language) `backend`.
+- [x] Add `EXTRA_RING` entries (data: pandas, numpy, jupyter, plotly, streamlit, pulp, scipy, matplotlib, beautiful soup, selenium, requests; ai: indobert, indobertweet, transformers, pytorch, tensorflow, keras, scikit-learn, n-beats) limited to the techs the pods really use (stale-entry test), and logos or `TEXT_ONLY_TECH` entries.
+- [x] PASS; commit `feat(reactor): data and ML techs on the Data and AI rings`.
 
 ### Task 3: Data pods content
 
@@ -78,9 +80,9 @@ Facts source: `files/repo-facts.md` (session artifact, from `gh` reads of each r
 5. `kampus-merdeka-reports-crawler`
 6. No sixth pod: the DAC 2022 repo has no placing and holds personal data (student IDs, photos); the real estate map is already an L2 side project.
 
-- [ ] Failing dataset test: exactly the planned data slugs exist, all `featured`, each with `repos`, `pickFeaturedPods` top 3 unchanged (`voice-ai-contact-center`, `ai-code-security-platform`, `fraud-review-platform`), `real-estate-cluster-map` is not a pod.
-- [ ] Add the pods (EN and ID), `podRef` on the linked timeline entries where the schema allows.
-- [ ] `bun run validate:content`, `bun scripts/title-case.ts`, safety and first-person tests: PASS. Commit `feat(content): Data and ML pods from public repos`.
+- [x] Failing dataset test: exactly the planned data slugs exist, all `featured`, each with `repos`, `pickFeaturedPods` top 3 unchanged (`voice-ai-contact-center`, `ai-code-security-platform`, `fraud-review-platform`), `real-estate-cluster-map` is not a pod.
+- [x] Add the pods (EN and ID), `podRef` on the linked timeline entries where the schema allows.
+- [x] `bun run validate:content`, `bun scripts/title-case.ts`, safety and first-person tests: PASS. Commit `feat(content): Data and ML pods from public repos`.
 
 ### Task 4: L3 data annex layout
 
@@ -88,45 +90,45 @@ Facts source: `files/repo-facts.md` (session artifact, from `gh` reads of each r
 
 **Interfaces:** Produces `HUB_WINGS: readonly ["software", "ai"]`, `WING_SIDE: Record<HubWing, -1 | 1>`, `WING_TINT: Record<Wing, string>` (data `#fbbf24`), `LABS.data = { start, plaza: 18, maxPods: 8 }`, `LabsLayout.boards: Record<Wing, DirectoryBoard>`, `LabsLayout.signs: Record<Wing, ...>`, `LabsLayout.dataPlaza: Plaza | null`, `FloorLayout.directoryStops?: Partial<Record<Wing, Vec2>>`, `directoryStop(wing, layout?)`.
 
-- [ ] Failing tests: software and ai placements, roads, bounds-x up to the old slab end, boards, view zones and the return pad equal the layout built without data pods (geometry unchanged); data pods dock east of `LABS.east` rim + margin, alternate north and south, at least 6 u apart, doors face the data road; the data road starts on the ring road's east point and ends at the data plaza; the data board stands east of the plaza with its stop on the plaza; nothing intersects the inner pocket (x 91..103, |z| 9..20) or the return pad; `expectSpaceRules` and `padViolations` pass; `roadGlow` lights the data road from the ring to the westmost lit data spur.
-- [ ] Implement; PASS; commit `feat(l3): Data and ML annex east of the Tech Reactor`.
+- [x] Failing tests: software and ai placements, roads, bounds-x up to the old slab end, boards, view zones and the return pad equal the layout built without data pods (geometry unchanged); data pods dock east of `LABS.east` rim + margin, alternate north and south, at least 6 u apart, doors face the data road; the data road starts on the ring road's east point and ends at the data plaza; the data board stands east of the plaza with its stop on the plaza; nothing intersects the inner pocket (x 91..103, |z| 9..20) or the return pad; `expectSpaceRules` and `padViolations` pass; `roadGlow` lights the data road from the ring to the westmost lit data spur.
+- [x] Implement; PASS; commit `feat(l3): Data and ML annex east of the Tech Reactor`.
 
 ### Task 5: Directory panel, wing sign, interactions, walk
 
 **Files:** Modify `directory.ts`, `Hub.tsx`, `interact/registry.ts`, `missions/walks.ts`, `missions/host3d.ts`, `hud/walk/WalkLayer.tsx`; Test `tests/unit/labs-directory.test.ts`, `tests/unit/interact-registry.test.ts`, `tests/unit/walk.test.ts`, `tests/unit/missions-host3d.test.ts`.
 
-- [ ] Failing tests: `wallSolids(layout.boards)` has three panels, data panel lines in amber, data labels list the data pods (compact phones top 3); registry has `L3:board:data`; `labsWalk` tours software, ai, data then three board stops; `roomTarget` for a listed data pod returns the data board stop.
-- [ ] Implement (functions take `boards` from the layout; Hub draws three panels in the same three calls and three wing signs in the same sign group); PASS; commit.
+- [x] Failing tests: `wallSolids(layout.boards)` has three panels, data panel lines in amber, data labels list the data pods (compact phones top 3); registry has `L3:board:data`; `labsWalk` tours software, ai, data then three board stops; `roomTarget` for a listed data pod returns the data board stop.
+- [x] Implement (functions take `boards` from the layout; Hub draws three panels in the same three calls and three wing signs in the same sign group); PASS; commit.
 
 ### Task 6: Classic site and drawer
 
 **Files:** `pageview.ts`, `WorkIndex.tsx`, `labs/page.tsx`, `labs/[slug]/page.tsx`, `quick/page.tsx`, `room-views/labs.ts`, `lib/accent.ts`, `lib/jsonld.ts`, `messages/*.json`; Test `tests/unit/pageview.test.ts`, `tests/hud/WorkIndex.test.tsx`, `tests/unit/room-views.test.ts`, `tests/unit/seo-copy.test.ts`.
 
-- [ ] Failing tests: `parsePodFilter("?wing=data")` keeps `data`; `wingCounts` counts data; WorkIndex shows a "Data and ML" chip; pod room view of a data pod has a "Code and research" section with the GitHub link and the publication links.
-- [ ] Implement: wing chips order `all, ai, data, software`; labs page wing cards 3 columns; case page "View code on GitHub" button and a "Research" chapter (paper preview triggers for papers and the thesis, links for models); quick view data section; PASS; commit.
+- [x] Failing tests: `parsePodFilter("?wing=data")` keeps `data`; `wingCounts` counts data; WorkIndex shows a "Data and ML" chip; pod room view of a data pod has a "Code and research" section with the GitHub link and the publication links.
+- [x] Implement: wing chips order `all, ai, data, software`; labs page wing cards 3 columns; case page "View code on GitHub" button and a "Research" chapter (paper preview triggers for papers and the thesis, links for models); quick view data section; PASS; commit.
 
 ### Task 7: Cmd-K and deep links
 
 **Files:** `src/hud/index-data.ts` and the palette; Test palette tests.
 
-- [ ] Failing test: the HUD index has wing rows (`L3` wings) with static path `/labs?wing=<wing>` and a 3D target (the wing's board stop); "Data and ML projects" matches "data", "ml", "machine learning".
-- [ ] Implement following the `HudIndex.techs` pattern; PASS; commit.
+- [x] Failing test: the HUD index has wing rows (`L3` wings) with static path `/labs?wing=<wing>` and a 3D target (the wing's board stop); "Data and ML projects" matches "data", "ml", "machine learning".
+- [x] Implement following the `HudIndex.techs` pattern; PASS; commit.
 
 ### Task 8: Ask the HQ
 
 **Files:** `src/ask/pack.ts`, `functions/_lib/tags.ts`, `functions/_lib/askStats.ts`, `tests/ask/golden.json`, `content/ask/suggestions.json` (optional), `docs/ask-runbook.md`.
 
-- [ ] Failing tests: pack has a chunk per data pod with wing name "Data and ML"; tags map data pods to `data` (or the closest allowlisted tag); two new golden questions (data projects overview, the IndoBERT thesis model) retrieve the data chunks; pack under 200 KB.
-- [ ] Trim (deviation 8: repo or post text first), record before/after sizes in the runbook; PASS; commit.
+- [x] Failing tests: pack has a chunk per data pod with wing name "Data and ML"; tags map data pods to `data` (or the closest allowlisted tag); two new golden questions (data projects overview, the IndoBERT thesis model) retrieve the data chunks; pack under 200 KB.
+- [x] Trim (deviation 8: repo or post text first), record before/after sizes in the runbook; PASS; commit.
 
 ### Task 9: E2E and measurement
 
 **Files:** `e2e/labs-data.spec.ts`, `scripts/e2e-plan.ts`, existing e2e fixes.
 
-- [ ] Spec: deep link `/en/labs/<data pod>?tier=lite` opens its drawer; point-and-go on the data board opens the palette; `/en/labs?wing=data&tier=static` shows only data rows; reactor Data ring pick of `pandas` (or the shared data tech) lights every data pod (`__hq.probes.reactor.lit`).
-- [ ] `bun run verify:quick`, `E2E_PORT=4457 bun run e2e:changed`, `E2E_PORT=4457 bun run e2e:perf` (L3 floors and peaks), visual gate for the unchanged hub and wings, captures at 1440x900 full, 2560x1440 full, 390x844 lite.
+- [x] Spec: deep link `/en/labs/<data pod>?tier=lite` opens its drawer; point-and-go on the data board opens the palette; `/en/labs?wing=data&tier=static` shows only data rows; reactor Data ring pick of `pandas` (or the shared data tech) lights every data pod (`__hq.probes.reactor.lit`).
+- [x] `bun run verify:quick`, `E2E_PORT=4457 bun run e2e:changed`, `E2E_PORT=4457 bun run e2e:perf` (L3 floors and peaks), visual gate for the unchanged hub and wings, captures at 1440x900 full, 2560x1440 full, 390x844 lite.
 
 ### Task 10: Docs and PR
 
-- [ ] README, AGENTS.md (schema additions, L3 paragraph, Tech Reactor rings), specs 01 (world layout), 07 (content map), 08 (acceptance), runbook pack size.
-- [ ] Push, open the PR, get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green. Do not merge.
+- [x] README, AGENTS.md (schema additions, L3 paragraph, Tech Reactor rings), specs 01 (world layout), 07 (content map), 08 (acceptance), runbook pack size.
+- [x] Push, open the PR, get "Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates" green. Do not merge.

@@ -1,5 +1,7 @@
 # Page View revamp Implementation Plan
 
+Status: shipped in #16 (ac7814d), 2026-10-10. Later replaced in #142: the monogram brand square in the header, by the rover brand mark
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rebuild the HTML Page View (`src/app/[locale]/**`, `src/components/**`) to the editorial Neon Grid design in `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md`, keeping URLs, anchors, the 3D gate and Back to 3D working.
@@ -52,7 +54,7 @@
 
 **Produces:** CSS variables `--font-display`, `--color-line`, `--color-line-2`, `--color-surface`, `--color-surface-2`; classes `.glass .eyebrow .chip .card` and the page layer `.pv-wrap .pv-grid .pv-sec .pv-sidehead .pv-d-xl .pv-d-l .pv-h2 .pv-h3 .pv-lead .pv-body .pv-small .pv-data .pv-num .pv-mark .pv-btn .pv-btn-primary .pv-btn-ghost .pv-go .pv-uline .pv-rows .pv-row .pv-stretch .pv-logos .pv-tags`.
 
-- [ ] **Step 1: Archivo**
+- [x] **Step 1: Archivo**
 
 ```ts
 // src/app/fonts.ts
@@ -65,9 +67,9 @@ export const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo",
 export const fontClassName = `${inter.variable} ${jetbrains.variable} ${archivo.variable}`;
 ```
 
-- [ ] **Step 2: tokens in `@theme`**: add `--font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;` and the four `line`/`surface` colors with the values from the spec section 4.
+- [x] **Step 2: tokens in `@theme`**: add `--font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;` and the four `line`/`surface` colors with the values from the spec section 4.
 
-- [ ] **Step 3: body background**: replace the fixed full-page grid with the hero-only grid. `body { position: relative; background-color: var(--color-void); }` plus
+- [x] **Step 3: body background**: replace the fixed full-page grid with the hero-only grid. `body { position: relative; background-color: var(--color-void); }` plus
 
 ```css
 body::before {
@@ -88,13 +90,13 @@ body::before {
 
 Body font size moves to 16/1.65.
 
-- [ ] **Step 4: HUD tokens**: `.glass` uses the prototype values (spec section 4) and `@media (pointer: coarse) { .glass { backdrop-filter: none; background: rgb(14 14 24 / 0.9); } }`. Add `.eyebrow`, `.chip` (with `[aria-pressed="true"]` inverted state and `.chip-count`), `.card`.
+- [x] **Step 4: HUD tokens**: `.glass` uses the prototype values (spec section 4) and `@media (pointer: coarse) { .glass { backdrop-filter: none; background: rgb(14 14 24 / 0.9); } }`. Add `.eyebrow`, `.chip` (with `[aria-pressed="true"]` inverted state and `.chip-count`), `.card`.
 
-- [ ] **Step 5: page layer**: port `docs/design/pageview/pageview.css` classes under the `pv-` prefix inside `@layer components` (type scale, grid helpers, rows, marks, buttons, header and footer pieces, filters, case-study blocks, gallery mosaic, responsive rules at 1080 px and 760 px). Accent colors come from `var(--color-*)`.
+- [x] **Step 5: page layer**: port `docs/design/pageview/pageview.css` classes under the `pv-` prefix inside `@layer components` (type scale, grid helpers, rows, marks, buttons, header and footer pieces, filters, case-study blocks, gallery mosaic, responsive rules at 1080 px and 760 px). Accent colors come from `var(--color-*)`.
 
-- [ ] **Step 6: run** `bun run test` (safety and copy tests unaffected) and `bun run lint`. Expected: PASS.
+- [x] **Step 6: run** `bun run test` (safety and copy tests unaffected) and `bun run lint`. Expected: PASS.
 
-- [ ] **Step 7: commit** `feat(pageview): shared HUD tokens, Archivo and page CSS layer`.
+- [x] **Step 7: commit** `feat(pageview): shared HUD tokens, Archivo and page CSS layer`.
 
 ### Task 2: Pure helpers
 
@@ -116,7 +118,7 @@ export function typeCounts(entries: readonly Pick<TimelineEntry, "type">[]): Rec
 export function navMatch(pathname: string, href: string): boolean;     // locale-less paths
 ```
 
-- [ ] **Step 1: failing tests**
+- [x] **Step 1: failing tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -168,10 +170,10 @@ describe("navMatch", () => {
 });
 ```
 
-- [ ] **Step 2: run** `bunx vitest run tests/unit/pageview.test.ts`, expected FAIL (module missing).
-- [ ] **Step 3: implement** (`URLSearchParams`; `navMatch` treats `/blog` as part of `/library` and `/cv` as its own; `stackOptions` sorts by `count desc, name asc`).
-- [ ] **Step 4: run** again, expected PASS.
-- [ ] **Step 5: commit** `feat(pageview): pure filter and nav helpers`.
+- [x] **Step 2: run** `bunx vitest run tests/unit/pageview.test.ts`, expected FAIL (module missing).
+- [x] **Step 3: implement** (`URLSearchParams`; `navMatch` treats `/blog` as part of `/library` and `/cv` as its own; `stackOptions` sorts by `count desc, name asc`).
+- [x] **Step 4: run** again, expected PASS.
+- [x] **Step 5: commit** `feat(pageview): pure filter and nav helpers`.
 
 ### Task 3: Layout primitives, header, footer and nav
 
@@ -194,11 +196,11 @@ describe("navMatch", () => {
 | `footer.pages` | Pages | Halaman |
 | `footer.elsewhere` | Elsewhere | Tautan lain |
 
-- [ ] **Step 1: failing test** (`tests/hud/NavLink.test.tsx`, jsdom): mock `@/i18n/navigation` (`usePathname` returns `"/labs/voice-ai-contact-center"`, `Link` renders `<a>`); render `NavLink href="/labs"` and `href="/journey"`; expect the first to have `aria-current="page"` and the second none.
-- [ ] **Step 2: run**, FAIL.
-- [ ] **Step 3: implement** `NavLink`, then rewrite `SiteHeader` to the spec section 2 (brand with `Monogram`-styled square, desktop `<nav aria-label={t("label")}>` with 4 `NavLink`s, tools: `HudLaunchers compact`, `LocaleSwitch`; mobile `<nav aria-label={t("mobile")}>` row). Keep the skip link and `no-print`. Footer per spec. `LocaleSwitch` keeps `aria-label={label}` and `aria-current` semantics (e2e uses `navigation "Language"` and link `ID`).
-- [ ] **Step 4: run** `bunx vitest run tests/hud/NavLink.test.tsx tests/unit/ui-copy.test.ts`, PASS.
-- [ ] **Step 5: commit** `feat(pageview): header, footer and layout primitives`.
+- [x] **Step 1: failing test** (`tests/hud/NavLink.test.tsx`, jsdom): mock `@/i18n/navigation` (`usePathname` returns `"/labs/voice-ai-contact-center"`, `Link` renders `<a>`); render `NavLink href="/labs"` and `href="/journey"`; expect the first to have `aria-current="page"` and the second none.
+- [x] **Step 2: run**, FAIL.
+- [x] **Step 3: implement** `NavLink`, then rewrite `SiteHeader` to the spec section 2 (brand with `Monogram`-styled square, desktop `<nav aria-label={t("label")}>` with 4 `NavLink`s, tools: `HudLaunchers compact`, `LocaleSwitch`; mobile `<nav aria-label={t("mobile")}>` row). Keep the skip link and `no-print`. Footer per spec. `LocaleSwitch` keeps `aria-label={label}` and `aria-current` semantics (e2e uses `navigation "Language"` and link `ID`).
+- [x] **Step 4: run** `bunx vitest run tests/hud/NavLink.test.tsx tests/unit/ui-copy.test.ts`, PASS.
+- [x] **Step 5: commit** `feat(pageview): header, footer and layout primitives`.
 
 ### Task 4: Work index (`/labs`)
 
@@ -227,11 +229,11 @@ describe("navMatch", () => {
 | `wingShort.software` | Software | Software |
 | `wingShort.ai` | AI | AI |
 
-- [ ] **Step 1: failing test** (`WorkIndex.test.tsx`): render `WorkIndex` with three children `<li data-pod data-wing="ai" data-stack="FastAPI|Azure OpenAI">A</li>` etc.; click "AI" chip, expect `B` hidden and status "Showing 2 of 3"; choose stack "Node.js" with AI pressed, expect the empty state and "Clear filters"; click it, all visible and `window.location.search === ""`.
-- [ ] **Step 2: run**, FAIL.
-- [ ] **Step 3: implement** components and the page: `PageIntro` (floor L3, title `work.title`, lead `labs.intro`, aside with wing counts and `labs.softwareIntro` / `labs.aiIntro`), `WorkIndex` wrapping "Key projects" (6 hero pods, AI first, as `WorkFeature size="grid"` alternating 7/5 and 5/7 spans) and "All projects" (featured then listed as `WorkRow`). Metadata title `work.title`. Keep `ExperienceGate startFloor="L3"`. The gallery e2e expects an `article` containing the pod title link and its `.thumb.webp` cover on `/labs`, which `WorkFeature` satisfies.
-- [ ] **Step 4: run** `bunx vitest run tests/hud/WorkIndex.test.tsx`, PASS.
-- [ ] **Step 5: commit** `feat(pageview): Work index with wing and stack filters`.
+- [x] **Step 1: failing test** (`WorkIndex.test.tsx`): render `WorkIndex` with three children `<li data-pod data-wing="ai" data-stack="FastAPI|Azure OpenAI">A</li>` etc.; click "AI" chip, expect `B` hidden and status "Showing 2 of 3"; choose stack "Node.js" with AI pressed, expect the empty state and "Clear filters"; click it, all visible and `window.location.search === ""`.
+- [x] **Step 2: run**, FAIL.
+- [x] **Step 3: implement** components and the page: `PageIntro` (floor L3, title `work.title`, lead `labs.intro`, aside with wing counts and `labs.softwareIntro` / `labs.aiIntro`), `WorkIndex` wrapping "Key projects" (6 hero pods, AI first, as `WorkFeature size="grid"` alternating 7/5 and 5/7 spans) and "All projects" (featured then listed as `WorkRow`). Metadata title `work.title`. Keep `ExperienceGate startFloor="L3"`. The gallery e2e expects an `article` containing the pod title link and its `.thumb.webp` cover on `/labs`, which `WorkFeature` satisfies.
+- [x] **Step 4: run** `bunx vitest run tests/hud/WorkIndex.test.tsx`, PASS.
+- [x] **Step 5: commit** `feat(pageview): Work index with wing and stack filters`.
 
 ### Task 5: Case study (`/labs/[slug]`)
 
@@ -246,11 +248,11 @@ describe("navMatch", () => {
 
 **New messages:** `case.onThisPage` "On this page" / "Di halaman ini"; `case.more` "More from the {wing}" / "Lainnya dari {wing}".
 
-- [ ] **Step 1: failing test** (`CaseToc.test.tsx`): stub `IntersectionObserver` capturing the callback; render with two items and matching `<section id>` elements; fire the callback with the second entry intersecting; expect its link `aria-current="true"`. Second test: delete `window.IntersectionObserver`, render, expect two links and no throw.
-- [ ] **Step 2: run**, FAIL.
-- [ ] **Step 3: implement** components and the page per spec section 6. Keep `#results li` (results ledger), `#architecture`, `#gallery`, `#stack img[src^='/tech/']` (logo chips), JSON-LD, `ExperienceGate startRoom`. Related nav uses `adjacent()` within the wing.
-- [ ] **Step 4: run** `bunx vitest run tests/hud/CaseToc.test.tsx tests/hud/Gallery.test.tsx`, PASS.
-- [ ] **Step 5: commit** `feat(pageview): case study template`.
+- [x] **Step 1: failing test** (`CaseToc.test.tsx`): stub `IntersectionObserver` capturing the callback; render with two items and matching `<section id>` elements; fire the callback with the second entry intersecting; expect its link `aria-current="true"`. Second test: delete `window.IntersectionObserver`, render, expect two links and no throw.
+- [x] **Step 2: run**, FAIL.
+- [x] **Step 3: implement** components and the page per spec section 6. Keep `#results li` (results ledger), `#architecture`, `#gallery`, `#stack img[src^='/tech/']` (logo chips), JSON-LD, `ExperienceGate startRoom`. Related nav uses `adjacent()` within the wing.
+- [x] **Step 4: run** `bunx vitest run tests/hud/CaseToc.test.tsx tests/hud/Gallery.test.tsx`, PASS.
+- [x] **Step 5: commit** `feat(pageview): case study template`.
 
 ### Task 6: Journey and journey entry
 
@@ -262,11 +264,11 @@ describe("navMatch", () => {
 
 **New messages** (`journey`): `show` "Show" / "Tampilkan", `jumpTo` "Jump to" / "Lompat ke", `filters` "Filter entries" / "Filter entri", `entries` "{count, plural, one {# entry} other {# entries}}" / "{count, plural, other {# entri}}", `all` "All" / "Semua", `navTitle` "Journey" / "Perjalanan".
 
-- [ ] **Step 1: failing test**: render `JourneyFilter` above two `[data-year]` blocks with rows of types job and award; click "Awards"; expect the job row hidden, the job-only year block hidden, `aria-pressed` on Awards.
-- [ ] **Step 2: run**, FAIL.
-- [ ] **Step 3: implement**. Journey page: `PageIntro` (floor L2, title `journey.navTitle`, lead `journey.intro`, aside: year jump chips with `#y{year}` and `#workshop`), sticky glass filter, `<ol>` of years newest first (`id="y{year}"`, `data-year`), rows newest first, "Prologue" note kept, workshop annex as rows (side projects, repos with stars). Entry page per spec section 6.
-- [ ] **Step 4: run** the test, PASS.
-- [ ] **Step 5: commit** `feat(pageview): Journey timeline with type filter`.
+- [x] **Step 1: failing test**: render `JourneyFilter` above two `[data-year]` blocks with rows of types job and award; click "Awards"; expect the job row hidden, the job-only year block hidden, `aria-pressed` on Awards.
+- [x] **Step 2: run**, FAIL.
+- [x] **Step 3: implement**. Journey page: `PageIntro` (floor L2, title `journey.navTitle`, lead `journey.intro`, aside: year jump chips with `#y{year}` and `#workshop`), sticky glass filter, `<ol>` of years newest first (`id="y{year}"`, `data-year`), rows newest first, "Prologue" note kept, workshop annex as rows (side projects, repos with stars). Entry page per spec section 6.
+- [x] **Step 4: run** the test, PASS.
+- [x] **Step 5: commit** `feat(pageview): Journey timeline with type filter`.
 
 ### Task 7: Writing and blog post
 
@@ -274,10 +276,10 @@ describe("navMatch", () => {
 
 **New messages:** `writing.title` "Writing" / "Tulisan", `writing.sections` "Sections" / "Bagian", `writing.readPost` "Read the post" / "Baca tulisan".
 
-- [ ] **Step 1:** page blocks are async server components, so they are covered in e2e (Task 10). Implement `PostLead`, `PostRow` (date, title link or Medium external link with the `common.external` sr hint, excerpt, tags, language badges), `ModelRow`, `TalkRow`.
-- [ ] **Step 2:** Library page: `PageIntro` (floor L4, title `writing.title`, lead `library.intro`, aside section chips with counts), `SectionSplit`s `#posts` (lead plus rows), `#research`, `#publications`, `#talks`. Blog post: crumb to `/library`, date, languages, `display-l` title, prose.
-- [ ] **Step 3: run** `bun run build:web` then `bunx playwright test e2e/library-roof.spec.ts -g "static Library"`, PASS.
-- [ ] **Step 4: commit** `feat(pageview): Writing page and post template`.
+- [x] **Step 1:** page blocks are async server components, so they are covered in e2e (Task 10). Implement `PostLead`, `PostRow` (date, title link or Medium external link with the `common.external` sr hint, excerpt, tags, language badges), `ModelRow`, `TalkRow`.
+- [x] **Step 2:** Library page: `PageIntro` (floor L4, title `writing.title`, lead `library.intro`, aside section chips with counts), `SectionSplit`s `#posts` (lead plus rows), `#research`, `#publications`, `#talks`. Blog post: crumb to `/library`, date, languages, `display-l` title, prose.
+- [x] **Step 3: run** `bun run build:web` then `bunx playwright test e2e/library-roof.spec.ts -g "static Library"`, PASS.
+- [x] **Step 4: commit** `feat(pageview): Writing page and post template`.
 
 ### Task 8: About and contact
 
@@ -287,9 +289,9 @@ describe("navMatch", () => {
 
 **New messages:** `about.title` "About and contact" / "Tentang dan kontak".
 
-- [ ] **Step 1:** implement; page sections: intro (story lead + `ContactPanel` aside), `#how`, `#skills`, `#certifications`, `#cv` (EN and ID PDF buttons with `hrefLang`, CV page link).
-- [ ] **Step 2: run** `bunx playwright test e2e/static-routes.spec.ts`, PASS.
-- [ ] **Step 3: commit** `feat(pageview): About and contact page`.
+- [x] **Step 1:** implement; page sections: intro (story lead + `ContactPanel` aside), `#how`, `#skills`, `#certifications`, `#cv` (EN and ID PDF buttons with `hrefLang`, CV page link).
+- [x] **Step 2: run** `bunx playwright test e2e/static-routes.spec.ts`, PASS.
+- [x] **Step 3: commit** `feat(pageview): About and contact page`.
 
 ### Task 9: Home, Quick view, CV chrome, 404
 
@@ -297,16 +299,16 @@ describe("navMatch", () => {
 
 **New messages** (`home`): `seeWork` "See the work" / "Lihat karya", `selectedWork` "Selected work" / "Karya pilihan", `allProjects` "All {count} projects" / "Semua {count} proyek", `fullJourney` "Full journey" / "Perjalanan lengkap", `writingTitle` "Writing" / "Tulisan", `allWriting` "All writing" / "Semua tulisan", `aboutContact` "About and contact" / "Tentang dan kontak", `openTo` "Open to" / "Terbuka untuk", `since` "since {date}" / "sejak {date}", `location` "Location" / "Lokasi".
 
-- [ ] **Step 1:** Home per spec section 6 (hero with status card, `#stats` ledger, selected work: AI hero pods lead + pair, software hero pods as rows, recent work rows, writing rows, compact `#skills` and `#certifications`, closing). Remove the tower directory box.
-- [ ] **Step 2:** Quick view: `PageIntro`, sticky glass ToC, sections with `SectionSplit` and the new rows (keeps all existing ids). CV: screen header and download buttons restyled; print sheet untouched.
-- [ ] **Step 3: run** `bun run test && bun run build:web && bunx playwright test e2e/static-routes.spec.ts e2e/seo.spec.ts`, PASS.
-- [ ] **Step 4: commit** `feat(pageview): Home, Quick view and CV chrome`.
+- [x] **Step 1:** Home per spec section 6 (hero with status card, `#stats` ledger, selected work: AI hero pods lead + pair, software hero pods as rows, recent work rows, writing rows, compact `#skills` and `#certifications`, closing). Remove the tower directory box.
+- [x] **Step 2:** Quick view: `PageIntro`, sticky glass ToC, sections with `SectionSplit` and the new rows (keeps all existing ids). CV: screen header and download buttons restyled; print sheet untouched.
+- [x] **Step 3: run** `bun run test && bun run build:web && bunx playwright test e2e/static-routes.spec.ts e2e/seo.spec.ts`, PASS.
+- [x] **Step 4: commit** `feat(pageview): Home, Quick view and CV chrome`.
 
 ### Task 10: E2E, axe and visual captures; docs; cleanup
 
 **Files:** Create `e2e/pageview.spec.ts`, `e2e/pageview-visual.spec.ts`. Modify `AGENTS.md` (folder layout: `src/components/page/`, `src/content/pageview.ts`; Styling: Archivo, `pv-` layer, HUD tokens), `package.json` script `screenshots:pages`. Delete components left unused (`PodCard`, `TimelineItem`, `Section` if unreferenced).
 
-- [ ] **Step 1: e2e** (all with `hq:terminal-seen` set and `?tier=static`):
+- [x] **Step 1: e2e** (all with `hq:terminal-seen` set and `?tier=static`):
 
 ```ts
 const TEMPLATES = ["/en", "/en/labs", `/en/labs/${heroPod.slug}`, "/en/journey", `/en/journey/${firstEntry.slug}`, "/en/library", "/en/contact", "/en/quick", "/id"];
@@ -342,9 +344,9 @@ test("no horizontal overflow on phones", async ({ browser }) => {
 });
 ```
 
-- [ ] **Step 2: visual** (`pageview-visual.spec.ts`, opt-in with `SCREENSHOTS=1`): for 1440x900, 1024x1366, 390x844 capture full-page `screenshots/pageview/{page}-{w}x{h}.png` for Home, Work, Case study, Journey, Writing, About with `?tier=static`, reduced motion, fonts ready.
-- [ ] **Step 3: run** `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`, all PASS.
-- [ ] **Step 4: commit** `test(pageview): axe, filters and visual captures` and `docs: AGENTS.md Page View conventions`.
+- [x] **Step 2: visual** (`pageview-visual.spec.ts`, opt-in with `SCREENSHOTS=1`): for 1440x900, 1024x1366, 390x844 capture full-page `screenshots/pageview/{page}-{w}x{h}.png` for Home, Work, Case study, Journey, Writing, About with `?tier=static`, reduced motion, fonts ready.
+- [x] **Step 3: run** `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`, all PASS.
+- [x] **Step 4: commit** `test(pageview): axe, filters and visual captures` and `docs: AGENTS.md Page View conventions`.
 
 ## Self-review
 
