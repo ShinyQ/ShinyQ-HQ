@@ -11,7 +11,7 @@ export interface BootWho {
   role: string;
 }
 
-/** The small "Classic site" link: a real `?view=page` link (works before hydration, see takePageViewParam). */
+/** The small "Classic site" link: a real `?view=classic` link (works before hydration). */
 export interface BootPageLink {
   href: string;
   label: string;

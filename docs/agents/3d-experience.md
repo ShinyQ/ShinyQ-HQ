@@ -35,10 +35,11 @@ Index: [AGENTS.md](../../AGENTS.md).
 - An inline head script (`bootFirstScript()` from `src/lib/boot-first.ts`, in the locale layout) sets `html[data-hq-boot]` before first paint on gated routes when all of these hold:
   - WebGL2 exists.
   - `?tier=static` is absent.
-  - `hq:view` is not `page`.
+  - The decided view is 3D: an explicit `?view=` (`classic` and `page` are Classic, `3d` and `architecture` are 3D), then this tab (`sessionStorage["hq:view"]`), then the remembered preference (`localStorage["hq:view"]`), then 3D. See [page-view.md](page-view.md#shareable-links).
   - Save-Data is off.
   - The visitor is not bot-like: `isBotLike(navigator, search)` matches crawler, preview and audit user agents, or `navigator.webdriver` without a `?tier=lite|full` override, which covers Lighthouse 12. The gate uses the same check and stays on the page, so these never load the 3D chunk.
   - This session has not already probed static (`sessionStorage["hq:probe"]`, written by the gate; `?tier=lite|full` overrides it).
+- It always pins the decided view into `sessionStorage["hq:view"]` and rewrites the URL in place: Classic shows `?view=classic` (`?view=page` is normalized, other parameters kept), 3D drops `view=classic|page|3d` and keeps `view=architecture`.
 - CSS then hides `#site-shell` behind the SSR `BootCover` (`src/components/BootCover.tsx`).
 - Keep the route regex in `shouldBootFirst` in sync with the routes that mount `ExperienceGate`.
 - Its sha256 lands in the page's script policy through `scripts/csp-hashes.ts` (see the CSP rules in [ask.md](ask.md)).
@@ -47,7 +48,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - The boot card names the owner at first paint: name, headline, motto and current role from content (`BootWho`, the role line from `roleLine` in `@/content/selectors`).
 - It carries a small "Classic site" link (`hud.pageView`, with the HUD's `PageViewIcon`):
-  - A real `?view=page` link that the head script turns into the stored Page View choice (`takePageViewParam`, the parameter is removed from the URL).
+  - A real `?view=classic` link (works before hydration): the head script decides Classic from the explicit parameter and keeps it in the URL.
   - `ExperienceGate` handles it without a reload once hydrated (`data-hq-page-link`).
   - It leaves the 3D view; it does not skip the boot or the intro.
 - `BootOverlay` renders the same `BootCard`, so the handoff does not move.
@@ -397,7 +398,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 
   | Key | Meaning |
   |---|---|
-  | `hq:view` | page view |
+  | `hq:view` | this tab's view (`page` or `3d`), pinned on every load by the head script |
   | `hq:resume` | language switch resumes the floor; after the boot and intro when this session has not seen them |
   | `hq:intro` | boot and intro played this session |
   | `hq:gfx` | the quality safety net's level for this session (`scene/qualityStore.ts`) |

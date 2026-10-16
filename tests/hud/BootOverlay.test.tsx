@@ -65,7 +65,7 @@ describe("BootOverlay", () => {
     const block = screen.getByTestId("boot-who");
     for (const text of [who.name, who.headline, who.motto, who.role]) expect(block).toHaveTextContent(text);
     const link = screen.getByRole("link", { name: en.hud.pageView });
-    expect(link).toHaveAttribute("href", "?view=page");
+    expect(link).toHaveAttribute("href", "?view=classic");
     expect(link).toHaveAttribute("data-hq-page-link");
   });
 });

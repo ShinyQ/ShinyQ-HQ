@@ -114,7 +114,9 @@ describe("RoomDrawer", () => {
     const { unmount } = render(<Harness view={hero} onHologram={onHologram} />);
     await user.click(screen.getByRole("button", { name: /View architecture/ }));
     expect(onHologram).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("href", `/en${hero.page}`);
+    // Drawer page links open the Classic site and say so; ViewParamSync leaves them alone in 3D.
+    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("href", `/en${hero.page}?view=classic`);
+    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("data-hq-view", "page");
     unmount();
     render(<Harness view={listed} />);
     expect(screen.queryByRole("button", { name: /View architecture/ })).toBeNull();
@@ -214,6 +216,14 @@ describe("RoomDrawer", () => {
     expect(items).toHaveLength(2);
     await user.click(items[1]);
     expect(onLink).toHaveBeenCalledWith(hero.link!.room);
+  });
+
+  it("offers Copy Classic link and Copy 3D link in the overflow menu", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={hero} />);
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("button", { name: en.common.copyClassicLink })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: en.common.copy3dLink })).toBeInTheDocument();
   });
 
   it("puts Visit live site right after Read case study and before the cross-floor link, in a new tab (R4-J)", () => {

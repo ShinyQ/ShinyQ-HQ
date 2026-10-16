@@ -68,7 +68,7 @@ describe("Library rooms in the drawer", () => {
     const drawer = open("L4:the-sun-the-moon-and-the-dark-sea");
     expect(drawer).toHaveTextContent("ID");
     expect(within(drawer).getByText(en.drawer.rooms.writtenIn.replace("{languages}", "ID"))).toBeInTheDocument();
-    expect(within(drawer).getByRole("link", { name: "Read post" })).toHaveAttribute("href", "/en/blog/the-sun-the-moon-and-the-dark-sea");
+    expect(within(drawer).getByRole("link", { name: "Read post" })).toHaveAttribute("href", "/en/blog/the-sun-the-moon-and-the-dark-sea?view=classic");
   });
 
   it("a bilingual post has no translation note", () => {
@@ -76,7 +76,7 @@ describe("Library rooms in the drawer", () => {
     const drawer = open(`L4:${post.slug}` as RoomId, "id");
     expect(drawer).toHaveTextContent("EN/ID");
     expect(within(drawer).queryByText(id.drawer.rooms.writtenIn.replace("{languages}", "EN/ID"))).toBeNull();
-    expect(within(drawer).getByRole("link", { name: "Baca tulisan" })).toHaveAttribute("href", `/id/blog/${post.slug}`);
+    expect(within(drawer).getByRole("link", { name: "Baca tulisan" })).toHaveAttribute("href", `/id/blog/${post.slug}?view=classic`);
   });
 
   it("a Medium post opens externally in a new tab", () => {

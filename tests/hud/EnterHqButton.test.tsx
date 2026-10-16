@@ -44,9 +44,9 @@ afterEach(() => {
 });
 
 describe("EnterHqButton", () => {
-  it("is a real link that forces the lite tier, so it works before hydration and without the island", () => {
+  it("is a real link that forces the lite tier and picks 3D, so it works before hydration and without the island", () => {
     const link = renderButton();
-    expect(link).toHaveAttribute("href", "/en?tier=lite");
+    expect(link).toHaveAttribute("href", "/en?tier=lite&view=3d");
     expect(link).toHaveAttribute("title", "Drive a rover through the five-floor tower");
     expect(link).toHaveAttribute("data-testid", "enter-hq");
   });

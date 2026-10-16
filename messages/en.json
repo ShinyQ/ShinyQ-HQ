@@ -32,6 +32,10 @@
     "RF": "Roof · Comms"
   },
   "common": {
+    "share": "Share",
+    "copyClassicLink": "Copy Classic link",
+    "copy3dLink": "Copy 3D link",
+    "linkCopied": "Link copied",
     "present": "Present",
     "caseStudy": "Read case study",
     "stack": "Tech stack",
@@ -527,6 +531,14 @@
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console"
+    },
+    "settings": {
+      "openLinks": {
+        "label": "Open links in",
+        "hint": "New tabs and links without a view open here",
+        "page": "Classic site",
+        "3d": "3D"
+      }
     }
   },
   "drawer": {

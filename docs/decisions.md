@@ -136,3 +136,4 @@ month is known); the PR column links the PR that shipped it, when known.
 | 2026-10 | L4 Writing | Owner review: no label on the end plaza may cover another; signs are placed on screen every frame. |  |
 | 2026-10 | Page View | The static pages are called Classic site (ID Situs klasik) wherever a visitor reads it; "Page View" stays the internal name. | [#86](https://github.com/ShinyQ/ShinyQ-HQ/pull/86) |
 | 2026-10 | Page View | The landing hero has no illustration beside the name. |  |
+| 2026-10-17 | Page View | `?view=classic` stays in the URL and carries through navigation (`?view=page` is an alias); case studies, posts and the drawer get Copy Classic link and Copy 3D link; the choice is remembered across tabs; an explicit `?view=` always wins. | [#181](https://github.com/ShinyQ/ShinyQ-HQ/pull/181) |

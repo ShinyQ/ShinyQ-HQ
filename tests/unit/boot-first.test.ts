@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { ambientStill, bootFirstScript, canOffer3D, isBotLike, MOTION_STORE_KEY, shouldBootFirst, splitBootLine, takePageViewParam, type BootFirstInput } from "@/lib/boot-first";
+import { ambientStill, bootFirstScript, canOffer3D, isBotLike, MOTION_STORE_KEY, shouldBootFirst, splitBootLine, type BootFirstInput } from "@/lib/boot-first";
 import { STORE_KEY } from "@/store/useHQStore";
 
 const base: BootFirstInput = { path: "/en", search: "", storedView: null, hasWebGL2: true, saveData: false };
@@ -50,7 +50,7 @@ function runScript(input: ScriptInput) {
     (fn: () => void) => frames.push(fn),
     win,
     history,
-    { getItem: (k: string) => local.get(k) ?? null },
+    { getItem: (k: string) => local.get(k) ?? null, setItem: (k: string, v: string) => local.set(k, v) },
   );
   /** Runs the first animation frame and the probe it schedules. */
   const paint = () => {
@@ -257,26 +257,32 @@ describe("isBotLike", () => {
   });
 });
 
-describe("takePageViewParam", () => {
-  it("removes only view=page and keeps other parameters", () => {
-    expect(takePageViewParam("?view=page")).toBe("");
-    expect(takePageViewParam("?tier=lite&view=page")).toBe("?tier=lite");
-    expect(takePageViewParam("?view=page&tier=lite")).toBe("?tier=lite");
-  });
-
-  it("ignores other views and empty queries", () => {
-    expect(takePageViewParam("?view=architecture")).toBeNull();
-    expect(takePageViewParam("")).toBeNull();
-  });
-});
-
-describe("bootFirstScript ?view=page", () => {
-  it("stores the Page View, skips the boot and cleans the URL", () => {
-    const r = runScript({ path: "/en", search: "?view=page" });
+describe("bootFirstScript view choice", () => {
+  it("?view=classic opens the Classic site, stays in the URL and pins the tab", () => {
+    const r = runScript({ path: "/en/labs", search: "?view=classic" });
     expect(r.attrs.has("data-hq-boot")).toBe(false);
-    expect(r.attrs.get("data-hq-3d")).toBe("1");
     expect(r.session.get("hq:view")).toBe("page");
-    expect(r.replaced).toEqual(["/en"]);
+    expect(r.replaced).toEqual([]);
+  });
+  it("?view=page is normalized to ?view=classic", () => {
+    const r = runScript({ path: "/en", search: "?tier=lite&view=page" });
+    expect(r.attrs.has("data-hq-boot")).toBe(false);
+    expect(r.replaced).toEqual(["/en?tier=lite&view=classic"]);
+  });
+  it("the remembered Classic choice adds the parameter; an explicit ?view=3d wins and is dropped", () => {
+    const classic = runScript({ path: "/en", local: { "hq:view": "page" } });
+    expect(classic.attrs.has("data-hq-boot")).toBe(false);
+    expect(classic.replaced).toEqual(["/en?view=classic"]);
+    const game = runScript({ path: "/en", search: "?view=3d", local: { "hq:view": "page" }, stored: "page" });
+    expect(game.attrs.get("data-hq-boot")).toBe("1");
+    expect(game.session.get("hq:view")).toBe("3d");
+    expect(game.replaced).toEqual(["/en"]);
+  });
+  it("a plain visit pins 3D and leaves the URL alone", () => {
+    const r = runScript({ path: "/en" });
+    expect(r.attrs.get("data-hq-boot")).toBe("1");
+    expect(r.session.get("hq:view")).toBe("3d");
+    expect(r.replaced).toEqual([]);
   });
 });
 

@@ -20,7 +20,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
 [![Bun](https://img.shields.io/badge/Bun-1.4.1-000000?logo=bun&logoColor=white)](https://bun.sh)
 
-**[Live site](https://kurniadi.pages.dev)** · **[Classic site](https://kurniadi.pages.dev/en?view=page)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
+**[Live site](https://kurniadi.pages.dev)** · **[Classic site](https://kurniadi.pages.dev/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
 <br>
 
