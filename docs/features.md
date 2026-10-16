@@ -121,6 +121,12 @@ Open `/en` and press **Boot rover**.
 - **Menu** opens a sheet with the profile (name, title and current floor), the actions (**Classic site**, Search, Ask Rover, Rotate left and right, Map) and every setting (language, motion, graphics quality, minimap, sound and music).
 - Desktops keep the top bar, the profile card and the elevator; a gear button above the view controls opens the same settings. The **,** key opens the settings on every device.
 
+### Minimap and floor overview
+
+- A round minimap shows the floor around the rover, north up: roads, plazas, the elevator (cyan square), the floor's places as dots in the floor color (visited ones dimmed) and the rover as a cyan arrow. Phones and tablets have it under the top right buttons, desktops bottom right above the settings gear.
+- Tap it, press **N** or pick **Map** in the menu to open the overview: the whole floor with its places named, and a list of the places (visited ones marked). Picking a place drives the rover there and opens it, like clicking it in the world.
+- The minimap can be switched off in the settings (**N** still opens the overview); phones hide it while a room sheet is open. It is plain HTML and SVG over the canvas, so it costs no 3D draw call.
+
 ### Ask Rover and the Classic site
 
 - **Ask Rover** (top bar, the menu on phones and tablets, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
