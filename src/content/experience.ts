@@ -46,6 +46,7 @@ export function labPods(locale: Locale): LabPod[] {
     id: p.id,
     slug: p.slug,
     title: p.title[locale],
+    ...(p.shortTitle ? { shortTitle: p.shortTitle[locale] } : {}),
     tier: p.tier,
     wing: p.wing,
     accent: p.accent,

@@ -122,6 +122,8 @@ export interface LabPod {
   id: string;
   slug: string;
   title: string;
+  /** One-line L3 directory board title, only on pods that set `Pod.shortTitle`; boards read `shortTitle ?? title`. */
+  shortTitle?: string;
   tier: Tier;
   wing: Wing;
   accent: Accent;

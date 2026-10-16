@@ -99,11 +99,12 @@ describe("L3 Project Roads layout", () => {
     expect(layout.east.center).toEqual({ x: Math.max(...turns, lastSpineEdge + LABS.tail + LABS.east / 2), z: 0 });
   });
 
-  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods (without spine pods)", () => {
+  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods or the Ops room (without spine pods)", () => {
     const hubOnly = buildLabsLayout(pods.filter((p) => p.wing !== "data"));
     const lastEdge = Math.max(...hubOnly.placed.map((p) => p.rect.maxX));
+    const lastTurn = Math.max(lastEdge + LABS.tail, hubOnly.ops.rect.maxX + LABS.road / 2);
     expect(hubOnly.floor.bounds.maxX).toBe(hubOnly.east.center.x + LABS.east / 2 + LABS.margin);
-    expect(hubOnly.floor.bounds.maxX - lastEdge).toBe(LABS.tail + LABS.east / 2 + LABS.margin);
+    expect(hubOnly.floor.bounds.maxX - lastTurn).toBe(LABS.east / 2 + LABS.margin);
   });
 
   it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing cutting across to the plaza", () => {

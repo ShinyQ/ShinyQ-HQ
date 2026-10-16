@@ -31,6 +31,7 @@ describe("first-person rule for headline and titles", () => {
     const texts = [
       { at: "profile.headline", value: profile.headline },
       ...floors.labs.pods.map((p) => ({ at: `${p.slug}.title`, value: p.title })),
+      ...floors.labs.pods.flatMap((p) => (p.shortTitle ? [{ at: `${p.slug}.shortTitle`, value: p.shortTitle }] : [])),
       ...floors.library.posts.map((p) => ({ at: `${p.slug}.title`, value: p.title })),
     ];
     const offenders = texts.flatMap(({ at, value }) => LOCALES.filter((l) => hasFirstPerson(value[l], l)).map((l) => `${at}.${l}: ${value[l]}`));

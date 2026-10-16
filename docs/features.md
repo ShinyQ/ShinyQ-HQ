@@ -176,7 +176,7 @@ Route `/en/labs`.
 
 - **Hub and directory wall**: a hub plaza in front of the elevator and, where the three roads fork, a raised directory wall of three boards on posts. It is the first thing you see on arrival: each wing's name, project count and top projects; click a board for the full list. The Data and ML board is a gate that the rover drives under.
 - **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road and meet it in a loop right after their last pods, with every key and featured project docked along them. One floating sign over each road names it.
-- **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories docked on both sides, spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
+- **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories and the demand forecasting work on Microsoft Fabric (on-premise data into a medallion lakehouse) docked on both sides, spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners.
 - **Browse my projects** (Ask Rover or Cmd-K) rides to L3 and opens the full project list.
 
