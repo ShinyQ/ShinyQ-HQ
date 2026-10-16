@@ -351,6 +351,7 @@
     "floor": "Floor",
     "elevator": "Elevator",
     "goToFloor": "{floor} {label}: go to floor ({name})",
+    "goToFloorFull": "{floor} {label} {name}: go to floor",
     "floorChip": "{floor} {label}: change floor ({name})",
     "floorChipFull": "{floor} {label} {name}: change floor",
     "currentFloor": "Current floor: {floor}, {name}",

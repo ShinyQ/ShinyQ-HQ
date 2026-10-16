@@ -64,7 +64,8 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
         }}
         onPointerEnter={() => floorChunks.prefetch(id)}
         onFocus={() => floorChunks.prefetch(id)}
-        aria-label={t("goToFloor", { floor: id, label, name })}
+        // Sheet rows show the floor name too, so their name starts with all of the visible text (label in name).
+        aria-label={t(sheet ? "goToFloorFull" : "goToFloor", { floor: id, label, name })}
         aria-current={current ? "true" : undefined}
         data-autofocus={sheet && current ? "" : undefined}
         data-floor={id}
@@ -75,7 +76,7 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
         {variant !== "rail-codes" && " "}
         {sheet ? (
           <span aria-hidden="true" className="flex min-w-0 flex-1 flex-col">
-            <span className={`text-sm leading-5 font-semibold ${current ? "text-ink" : "text-ink-2 group-hover:text-ink"}`}>{label}</span>
+            <span className={`text-sm leading-5 font-semibold ${current ? "text-ink" : "text-ink-2 group-hover:text-ink"}`}>{label}</span>{" "}
             <span className="truncate text-[13px] leading-5 text-ink-3">{name}</span>
           </span>
         ) : (

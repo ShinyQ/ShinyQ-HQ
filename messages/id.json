@@ -351,6 +351,7 @@
     "floor": "Lantai",
     "elevator": "Lift",
     "goToFloor": "{floor} {label}: ke lantai ini ({name})",
+    "goToFloorFull": "{floor} {label} {name}: ke lantai ini",
     "floorChip": "{floor} {label}: ganti lantai ({name})",
     "floorChipFull": "{floor} {label} {name}: ganti lantai",
     "currentFloor": "Lantai saat ini: {floor}, {name}",

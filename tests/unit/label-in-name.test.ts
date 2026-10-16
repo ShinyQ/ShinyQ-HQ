@@ -19,6 +19,13 @@ describe.each([
     }
   });
 
+  it("floor sheet rows start with the code, the floor label and the floor name", () => {
+    for (const [floor, label] of Object.entries(messages.hud.floorLabel)) {
+      const name = fill(messages.hud.goToFloorFull, { floor, label, name: "Lobby" });
+      expect(name.startsWith(`${floor} ${label} Lobby`), name).toBe(true);
+    }
+  });
+
   it("the floor chip starts with the code and the floor label", () => {
     for (const [floor, label] of Object.entries(messages.hud.floorLabel)) {
       const name = fill(messages.hud.floorChip, { floor, label, name: "Lobby" });

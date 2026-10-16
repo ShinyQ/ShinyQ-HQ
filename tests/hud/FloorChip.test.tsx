@@ -90,6 +90,17 @@ describe("FloorChip", () => {
     expect(chip).toHaveFocus();
   });
 
+  it("names each floor sheet row with all of its visible text (code, nav label, floor name)", async () => {
+    const user = userEvent.setup();
+    await user.click(mount());
+    const dialog = screen.getByRole("dialog", { name: en.hud.elevator });
+    for (const row of dialog.querySelectorAll<HTMLButtonElement>("[data-floor]")) {
+      const visible = row.textContent?.replace(/\s+/g, " ").trim() ?? "";
+      expect(row.getAttribute("aria-label")?.startsWith(visible), `${row.getAttribute("aria-label")} / ${visible}`).toBe(true);
+    }
+    expect(within(dialog).getByRole("button", { name: "L3 Work Labs: go to floor" })).toBeInTheDocument();
+  });
+
   it("closes on Escape without riding and returns focus", async () => {
     const user = userEvent.setup();
     const chip = mount();
