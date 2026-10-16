@@ -8,10 +8,23 @@ type ScreenPoint = { x: number; y: number };
  * Point-and-go runtime, written by InteractLayer and never read during React render: the current
  * floor's targets (built-in plus extras), a world-to-screen projection and the highlight opacity drawn
  * this frame. Exposed to Playwright as `window.__hq.interact`; scene-side features may read `items`,
- * and the HUD minimap reads it through `useSyncExternalStore` (InteractLayer replaces the array).
+ * and the HUD minimap reads it through `useSyncExternalStore` (`subscribe` fires when `setItems` replaces the array).
  */
+const listeners = new Set<() => void>();
+
 export const interactRuntime = {
   items: [] as Interactable[],
+  /** Replaces `items` and tells the subscribers (InteractLayer's write; plain assignment stays silent). */
+  setItems(items: Interactable[]): void {
+    interactRuntime.items = items;
+    for (const l of [...listeners]) l();
+  },
+  subscribe(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  },
   /** World y of the current floor (targets are floor-local). */
   floorY: 0,
   /** Highlight opacity drawn this frame (test probe: constant under reduced motion). */

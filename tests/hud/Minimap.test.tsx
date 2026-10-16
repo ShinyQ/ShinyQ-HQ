@@ -136,6 +136,28 @@ describe("Minimap", () => {
     expect(within(screen.getByTestId("map-overview")).getAllByTestId("map-room")).toHaveLength(2);
   });
 
+  it("follows the point-and-go targets without any store change", () => {
+    mount();
+    const svg = () => screen.getByTestId("minimap").querySelector("svg")!;
+    expect(svg().querySelectorAll("[data-map='room']")).toHaveLength(2);
+    act(() => interactRuntime.setItems([items[0]]));
+    expect(svg().querySelectorAll("[data-map='room']")).toHaveLength(1);
+    act(() => interactRuntime.setItems([...items, door("extra", "L1:extra", "Extra", 30, 0)]));
+    expect(svg().querySelectorAll("[data-map='room']")).toHaveLength(3);
+  });
+
+  it("returns focus to the opener when the minimap button is off", () => {
+    minimapPref.set("off");
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    mount();
+    opener.focus();
+    act(() => intents.emit({ type: "toggle", what: "map" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close map" }));
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
   it("speaks Indonesian", () => {
     getHQStore().setState({ visited: ["L1:stats"] });
     mount("id");

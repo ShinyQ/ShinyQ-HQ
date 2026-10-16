@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { forwardRef, useEffect, useId, useRef, useSyncExternalStore } from "react";
+import { forwardRef, useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
@@ -26,13 +26,25 @@ export function Minimap({ data, layouts, size, hidden = false }: { data: Experie
   const [open, setOpen] = useHudToggle("map");
   const button = useRef<HTMLButtonElement>(null);
 
+  // The last focused element while the overview is closed; a layout effect, so the listener is gone before the Modal moves focus in.
+  const opener = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (open) return;
+    opener.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    const track = (e: FocusEvent) => {
+      opener.current = e.target instanceof HTMLElement ? e.target : null;
+    };
+    document.addEventListener("focusin", track);
+    return () => document.removeEventListener("focusin", track);
+  }, [open]);
+
   useEffect(() => {
     if (blocked && open) setOpen(false);
   }, [blocked, open, setOpen]);
 
-  // Focus moves back before the overview unmounts, so it never drops to the body.
+  // Focus moves back before the overview unmounts (to the button, else to whatever opened it).
   const close = () => {
-    button.current?.focus({ preventScroll: true });
+    (button.current ?? opener.current)?.focus({ preventScroll: true });
     setOpen(false);
   };
 

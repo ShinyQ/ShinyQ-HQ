@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { memo, useMemo, useSyncExternalStore } from "react";
 import type { Accent, FloorId } from "@/content/schema";
 import { interactRuntime } from "@/experience/interact/runtime";
 import type { Interactable } from "@/experience/interact/registry";
 import type { FloorLayouts } from "@/experience/types";
 import { FLOOR_ACCENT } from "@/lib/accent";
-import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { useHQStore } from "@/store/useHQStore";
 import { arrowRotation, buildFloorMap, type FloorMap } from "./model";
 
 /** SVG fills per accent (static, like the Tailwind class maps). */
@@ -20,12 +20,8 @@ const ACCENT_FILL: Record<Accent, string> = {
   white: "var(--color-white)",
 };
 
-/**
- * `interactRuntime` is not reactive: InteractLayer replaces `items` when the floor's targets change.
- * The store changes on every floor change, ride stage and rover move (the 10 Hz mirror), so its
- * listener re-reads the list, and a re-render only follows when the list itself was replaced.
- */
-const subscribeItems = (onChange: () => void) => getHQStore().subscribe(onChange);
+/** `interactRuntime.setItems` (InteractLayer, extras) notifies; the floor itself comes from the store. */
+const subscribeItems = (onChange: () => void) => interactRuntime.subscribe(onChange);
 const itemsSnapshot = () => interactRuntime.items;
 
 /** The current floor's point-and-go targets (labels already localized). */
@@ -49,7 +45,21 @@ export function useFloorMap(layouts: FloorLayouts): FloorMap {
  * must stay crisp at any zoom use `non-scaling-stroke`.
  */
 export function MapLayers({ map, labels = false, roomRadius }: { map: FloorMap; labels?: boolean; roomRadius: number }) {
+  return (
+    <>
+      <StaticLayers map={map} labels={labels} roomRadius={roomRadius} />
+      <RoverArrow />
+    </>
+  );
+}
+
+/** Only the arrow follows the 10 Hz rover mirror; the floor shapes re-render when the map changes. */
+function RoverArrow() {
   const rover = useHQStore((s) => s.rover);
+  return <path data-map="rover" d="M 0 -1.8 L 1.3 1.4 L 0 0.7 L -1.3 1.4 Z" fill="var(--color-cyan)" stroke="var(--color-void)" strokeWidth={0.3} transform={`translate(${rover.x} ${rover.z}) rotate(${Math.round(arrowRotation(rover.heading) * 10) / 10})`} />;
+}
+
+const StaticLayers = memo(function StaticLayers({ map, labels, roomRadius }: { map: FloorMap; labels: boolean; roomRadius: number }) {
   const fill = ACCENT_FILL[FLOOR_ACCENT[map.floor]];
   const { elevator: e, slab } = map;
   return (
@@ -78,7 +88,6 @@ export function MapLayers({ map, labels = false, roomRadius }: { map: FloorMap; 
           )}
         </g>
       ))}
-      <path data-map="rover" d="M 0 -1.8 L 1.3 1.4 L 0 0.7 L -1.3 1.4 Z" fill="var(--color-cyan)" stroke="var(--color-void)" strokeWidth={0.3} transform={`translate(${rover.x} ${rover.z}) rotate(${Math.round(arrowRotation(rover.heading) * 10) / 10})`} />
     </>
   );
-}
+});

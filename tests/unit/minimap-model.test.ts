@@ -44,7 +44,12 @@ describe("minimap model", () => {
     expect(map.roads.slice(road.roads.length).every((r) => r.d.split(" L ").length === 2)).toBe(true);
     expect(map.plazas).toHaveLength(road.plazas.length);
   });
-  it("keeps only the map kinds and floors without a road network still get a view", () => {
+  it("keeps only the map kinds", () => {
+    const stray = { ...door("L1:other:x", "L1:stats", 4, 0), kind: "decoration" } as unknown as Interactable;
+    const map = buildFloorMap(layouts.L1, [door("L1:door:a", "L1:profile", 2, 0), stray], []);
+    expect(map.rooms.map((r) => r.id)).toEqual(["L1:door:a"]);
+  });
+  it("floors without a road network still get a view", () => {
     const map = buildFloorMap(layouts.L2, [], []);
     expect(map.roads).toEqual([]);
     expect(map.view.width).toBeGreaterThan(0);
