@@ -98,7 +98,7 @@ Satu paket melewati dua jalur di platform ini:
 2. Backend menjalankan OCR dengan Document Intelligence.
 3. Agent dari Agent Framework me-review setiap dokumen, lalu seluruh paket, lewat Azure OpenAI, dengan input yang disaring Prompt Shields. Hasilnya adalah temuan dan verdict yang dilihat reviewer.
 4. Backend menyimpan riwayat review dan laporan di Cosmos DB dan Blob Storage.
-5. Secara paralel, backend menjalankan engine risiko hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
+5. Secara paralel, backend menjalankan risk engine hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
 
 Catatan rollout mencatat 0 dari 3.780 run ketika shadow engine mengubah output pengguna. Bagi saya, itu bukti jalur shadow terisolasi. Bukan bukti engine-nya akurat.
 

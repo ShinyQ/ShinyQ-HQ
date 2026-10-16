@@ -28,14 +28,14 @@ Langkah ketiga mudah terlewat. Model bisa sudah menghasilkan satu paragraf, seme
 
 ## Di mana barge-in terjadi
 
-<Architecture pod="voice-ai-contact-center" caption="Arsitektur agent saat ini, dari studi kasusnya. Saat A/B di bawah dijalankan, audio panggilan masih lewat Azure Communication Services, bukan LiveKit." />
+<Architecture pod="voice-ai-contact-center" caption="Arsitektur agent saat ini, dari studi kasusnya. Saat perbaikan di bawah dirilis, audio panggilan masih lewat Azure Communication Services, bukan LiveKit." />
 
-Pada desain yang sudah diperbaiki, interupsi dari penelepon melewati jalur ini:
+Saat ini, interupsi dari penelepon melewati jalur ini:
 
 1. Audio penelepon masuk ke media layer lewat WebRTC, lalu diteruskan sebagai stream ke backend realtime FastAPI.
 2. Backend meneruskannya ke Azure OpenAI Realtime dan membaca setiap event dari model di satu receive loop.
 3. Saat model memanggil tool, misalnya pencarian knowledge di Azure AI Search, tool itu berjalan sebagai task tersendiri yang bisa di-cancel, dengan batas waktu 2,5 detik. Receive loop tetap membaca event.
-4. Begitu event "penelepon mulai bicara" masuk, backend menghentikan audio di media channel, membatalkan response jika masih dihasilkan, lalu memotong percakapan sampai bagian yang sudah didengar penelepon.
+4. Begitu event "penelepon mulai bicara" masuk, backend menghentikan audio di media channel, membatalkan response jika masih dihasilkan, lalu melakukan truncate percakapan sampai bagian yang sudah didengar penelepon.
 
 Masalah pertama di bawah merusak langkah 4. Masalah kedua membuat receive loop di langkah 2 berhenti membaca.
 

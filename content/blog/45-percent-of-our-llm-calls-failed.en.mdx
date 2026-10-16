@@ -20,7 +20,7 @@ Each evaluation ran as an Azure Durable Functions activity. It called a reasonin
 
 The parsing path was simple: strip markdown code fences from the reply, then call `json.loads`. If parsing worked, everything downstream worked. If it failed, that candidate and job pair was lost.
 
-<Architecture pod="ai-cv-screening-platform" caption="The platform's architecture today, from its case study. The evaluation harness came months after the batch in this post." />
+<Architecture pod="ai-cv-screening-platform" caption="The platform's architecture today, from its case study." />
 
 One evaluation takes this path:
 
@@ -28,7 +28,8 @@ One evaluation takes this path:
 2. The web app calls the FastAPI backend with HMAC-signed requests, and Document Intelligence parses the CVs.
 3. Each candidate and job pair runs as a Durable Functions activity that asks the model for structured JSON.
 4. The activity parses the reply. This is where the results in this batch were lost: when parsing failed, the pair had no result.
-5. Months later, the evaluation harness began running a golden set against the model as a deployment gate in CI.
+
+The evaluation harness in the diagram came months after this batch. Today it runs a golden set against the model as a deployment gate in CI.
 
 ## Two error strings, two places to look
 

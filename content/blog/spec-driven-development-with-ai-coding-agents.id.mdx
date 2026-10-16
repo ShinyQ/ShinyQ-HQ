@@ -34,7 +34,7 @@ Setiap fitur melewati jalur yang sama:
 
 1. Saya menulis spec bernomor dengan ID task, acceptance criteria, dan business rule.
 2. Agent membacanya bersama constitution dan file konvensi agent.
-3. Agent mengerjakannya di git worktree sendiri, lalu membuka pull request.
+3. Agent mengerjakannya di git worktree sendiri, lalu saya membuka pull request untuk branch-nya.
 4. CI gate memeriksa pull request itu.
 5. Saya me-review dan memutuskan apakah pull request itu di-merge.
 6. Deploy ke Azure App Service hanya berjalan setelah CI hijau.
@@ -69,10 +69,10 @@ Two-boundary rule menentukan alur request setelah login:
 
 1. Vendor dan approver internal memakai portal Next.js. Portal ini menyajikan UI sekaligus menjadi backend-for-frontend, dan menyimpan sesi dalam sealed HttpOnly cookie.
 2. Staf login dengan Entra ID lewat backend FastAPI, yang menulis sesi ke PostgreSQL.
-3. Setiap request dari portal masuk ke backend FastAPI lewat REST. Backend menurunkan ulang permission user dari database pada setiap request, jadi cookie cukup menyimpan yang dibutuhkan UI untuk gating.
+3. Setiap request API dari portal masuk ke backend FastAPI lewat REST. Backend menurunkan ulang permission user dari database pada setiap request, jadi cookie cukup menyimpan yang dibutuhkan UI untuk gating.
 4. Browser mengunggah dokumen langsung ke Blob Storage, dan backend mengolahnya di sana.
 
-Bug cookie di bawah ada di langkah 1 dan 3. Bug waktu commit ada di langkah 2.
+Bug cookie di bawah ada di langkah 1 dan 3. Bug waktu commit pertama kali terlihat di langkah 2.
 
 ## Yang tetap lolos
 

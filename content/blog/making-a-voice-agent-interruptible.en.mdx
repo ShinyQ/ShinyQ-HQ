@@ -28,9 +28,9 @@ The third step is easy to miss. Suppose the model generated a whole paragraph, b
 
 ## Where barge-in happens
 
-<Architecture pod="voice-ai-contact-center" caption="The agent's architecture today, from its case study. At the time of the A/B below, Azure Communication Services carried the call audio instead of LiveKit." />
+<Architecture pod="voice-ai-contact-center" caption="The agent's architecture today, from its case study. When the fixes below shipped, Azure Communication Services carried the call audio instead of LiveKit." />
 
-In the fixed design, an interruption takes this path:
+Today, an interruption takes this path:
 
 1. The caller's audio reaches the media layer over WebRTC and streams on to the FastAPI realtime backend.
 2. The backend relays it to Azure OpenAI Realtime and reads every event the model sends back on one receive loop.

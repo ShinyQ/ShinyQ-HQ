@@ -34,7 +34,7 @@ Every feature went through the same path:
 
 1. I wrote a numbered spec with task, acceptance-criteria and business-rule IDs.
 2. An agent read it together with the constitution and the agent conventions file.
-3. The agent implemented it in its own git worktree and opened a pull request.
+3. The agent implemented it in its own git worktree, and I opened a pull request for its branch.
 4. CI gates checked the pull request.
 5. I reviewed it and decided whether it merged.
 6. Deployment to Azure App Service ran only after CI was green.
@@ -69,10 +69,10 @@ The two-boundary rule shapes how a signed-in request flows:
 
 1. Vendors and internal approvers use the Next.js portal. It serves the UI and acts as the backend-for-frontend, holding the session in a sealed HttpOnly cookie.
 2. Staff sign in with Entra ID through the FastAPI backend, which writes the session to PostgreSQL.
-3. Every portal request reaches the FastAPI backend over REST. The backend re-derives the user's permissions from the database on every request, so the cookie only needs what the UI uses for gating.
+3. Every API request from the portal reaches the FastAPI backend over REST. The backend re-derives the user's permissions from the database on every request, so the cookie only needs what the UI uses for gating.
 4. Browsers upload documents straight to Blob Storage, and the backend works with them there.
 
-The cookie bug below lived in steps 1 and 3. The commit-timing bug lived in step 2.
+The cookie bug below lived in steps 1 and 3. The commit-timing bug first showed up in step 2.
 
 ## What got through anyway
 
