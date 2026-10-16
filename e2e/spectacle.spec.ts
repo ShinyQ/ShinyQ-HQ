@@ -42,15 +42,18 @@ async function expectNoFlatText(page: Page) {
   expect(flat).toEqual([]);
 }
 
-for (const [floor, path, group, min] of [
-  ["L2", "/en/journey", "career-year-markers", 1],
-  ["L3", "/en/labs", "labs-wing-signs", 2],
-  // L4 signs are placed on screen (Round 7 F): only signs in the frame draw, and the arrival view frames one.
-  ["L4", "/en/library", "library-signs", 1],
+for (const [floor, path, group, min, at] of [
+  ["L2", "/en/journey", "career-year-markers", 1, null],
+  ["L3", "/en/labs", "labs-wing-signs", 2, null],
+  // L4 signs are placed on screen (Round 7 F): only signs in the frame draw. The arrival frames none since the
+  // section signs hang over the back of each zone's first desk (the posts sign sits at the camera's foot), so
+  // the check runs mid-timeline, where the year plates and the nearest titles are in view.
+  ["L4", "/en/library", "library-signs", 1, { x: 24, z: 0 }],
 ] as const) {
   test(`${floor}: floor words float as signs that face the camera from the default and a rotated view`, async ({ page }) => {
     const errors = collectErrors(page);
     await enterFloorRoute(page, path);
+    if (at) await driveTo(page, at);
     await waitForCameraSettle(page);
     await expectNoFlatText(page);
     await expectSignsFaceCamera(page, group, min);
