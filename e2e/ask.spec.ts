@@ -51,6 +51,56 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
   };
 }
 
+/**
+ * A real stream for `/api/ask` POSTs (route.fulfill sends the body at once): the page's fetch returns
+ * a ReadableStream that emits one SSE frame every `everyMs`, after `firstMs`. GETs still go to the route mock.
+ * An array `firstMs` sets the wait per POST in order (the last value repeats).
+ */
+async function slowAsk(page: Page, { deltas, firstMs = 300, everyMs = 120, tags = ["ai", "voice"] }: { deltas: string[]; firstMs?: number | number[]; everyMs?: number; tags?: string[] }) {
+  await page.addInitScript(
+    ({ deltas, waits, everyMs, tags, asOf }) => {
+      const real = window.fetch.bind(window);
+      let posts = 0;
+      window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (!url.endsWith("/api/ask") || (init?.method ?? "GET") !== "POST") return real(input, init);
+        const firstMs = waits[Math.min(posts++, waits.length - 1)];
+        const frames = [...deltas.map((delta) => ({ delta })), { done: true, outcome: "answer", source: "primary", asOf, tags }];
+        const encoder = new TextEncoder();
+        const body = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            await new Promise((r) => setTimeout(r, firstMs));
+            for (const frame of frames) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(frame)}\n\n`));
+              await new Promise((r) => setTimeout(r, everyMs));
+            }
+            controller.close();
+          },
+        });
+        return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+      }) as typeof window.fetch;
+    },
+    { deltas, waits: Array.isArray(firstMs) ? firstMs : [firstMs], everyMs, tags, asOf: AS_OF },
+  );
+}
+
+// Long enough to overflow the side panel well before the stream ends, at the 14 px chat text.
+const LONG_ANSWER = Array.from({ length: 20 }, (_, i) => `Sentence ${i + 1} explains how the voice agent handles calls in production. `);
+
+/** The first line of the last answer sits inside the thread's visible area. */
+async function expectAnswerStartInView(page: Page) {
+  const scroller = dock(page).getByTestId("ask-scroll");
+  const answer = thread(page).locator("[data-role='assistant']").last();
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const s = (await scroller.boundingBox())!;
+      const a = (await answer.boundingBox())!;
+      return a.y >= s.y - 1 && a.y + 24 <= s.y + s.height;
+    })
+    .toBe(true);
+}
+
 const enabled = (turnstileSiteKey: string | null = null) => ({ enabled: true, turnstileSiteKey, asOf: AS_OF, maxLength: 300 });
 
 const dock = (page: Page) => page.getByRole("dialog", { name: "Ask the HQ" });
@@ -113,6 +163,13 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
 
   const followUps = dock(page).getByTestId("ask-followups");
   await expect(followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true })).toBeVisible();
+  // Owner request 2026-10-16: smaller text, one compact row of follow-ups, 44 px targets.
+  expect(await thread(page).locator("[data-role='assistant'] p").first().evaluate((n) => getComputedStyle(n).fontSize)).toBe("14px");
+  const pill = followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true });
+  expect(await pill.evaluate((n) => getComputedStyle(n).fontSize)).toBe("13px");
+  expect((await pill.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect((await followUps.boundingBox())!.height).toBeLessThan(80);
+  await expect(dock(page).getByTestId("ask-mark").locator("svg[data-brand-mark]")).toBeVisible();
   await followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true }).click();
   await expect.poll(() => api.posts().length).toBe(2);
   expect(api.bodies()[1]).toMatchObject({ q: "What latency did the voice agent reach?", source: "followup" });
@@ -185,8 +242,72 @@ test("teaser shows once per session next to the launcher", async ({ page }) => {
   await expect(teaser).toHaveCount(0);
 });
 
+test("a long answer keeps its first line in view after the follow-ups appear", async ({ page }) => {
+  await mockAsk(page, { status: enabled(), deltas: LONG_ANSWER });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByTestId("ask-topics").getByRole("button", { name: "AI" }).click();
+  await dock(page).getByRole("button", { name: "How does the voice AI contact center work?", exact: true }).click();
+  await expectAnswerStartInView(page);
+});
+
+test("scrolling up while an answer streams is never overridden", async ({ page }) => {
+  await mockAsk(page, { status: enabled() });
+  await slowAsk(page, { deltas: LONG_ANSWER, everyMs: 150 });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  const scroller = dock(page).getByTestId("ask-scroll");
+  await dock(page).getByRole("textbox", { name: "Your question" }).fill("How does the voice agent work?");
+  await dock(page).getByRole("textbox", { name: "Your question" }).press("Enter");
+  await expect(dock(page).getByTestId("ask-thinking")).toContainText(en.ask.thinking);
+  // Wait until the thread overflows and the panel has followed the stream down, then scroll up.
+  await expect.poll(() => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(20);
+  await expect(dock(page).getByTestId("ask-followups")).toHaveCount(0);
+  await scroller.evaluate((node) => node.scrollTo({ top: 0 }));
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBeLessThan(5);
+});
+
+test("scrolling up while Rover thinks survives the answer; the next question follows again", async ({ page }) => {
+  await mockAsk(page, { status: enabled() });
+  await slowAsk(page, { deltas: LONG_ANSWER, firstMs: [300, 1500], everyMs: 40 });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  const scroller = dock(page).getByTestId("ask-scroll");
+  const input = dock(page).getByRole("textbox", { name: "Your question" });
+  const askNow = async (q: string) => {
+    await input.fill(q);
+    await input.press("Enter");
+    await expect(dock(page).getByTestId("ask-thinking")).toContainText(en.ask.thinking);
+  };
+  await askNow("How does the voice agent work?");
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  // The thread already overflows; the second question follows it down, then the visitor scrolls up
+  // while Rover still thinks (the answer, appended on its first chunk, must not pull the thread back).
+  await askNow("Which stack does it use?");
+  await expect.poll(() => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(20);
+  await scroller.evaluate((node) => node.scrollTo({ top: 0 }));
+  await expect.poll(() => scroller.evaluate((node) => node.scrollTop)).toBeLessThan(5);
+  await expect(dock(page).getByTestId("ask-thinking")).toBeVisible();
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBeLessThan(5);
+  // A new question follows again.
+  await askNow("Where does it run?");
+  await expectAnswerStartInView(page);
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(20);
+});
+
 test.describe("phones", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("bottom sheet: a long answer keeps its first line in view", async ({ page }) => {
+    await mockAsk(page, { status: enabled(), deltas: LONG_ANSWER });
+    await openPage(page, "/en/labs?tier=static");
+    await page.getByTestId("ask-launcher").click();
+    await dock(page).getByTestId("ask-topics").getByRole("button", { name: "AI" }).click();
+    await dock(page).getByRole("button", { name: "How does the voice AI contact center work?", exact: true }).click();
+    await expectAnswerStartInView(page);
+  });
 
   test("bottom sheet: modal, closes with the button and the handle", async ({ page }) => {
     await mockAsk(page, { status: enabled() });
@@ -217,6 +338,24 @@ test.describe("phones", () => {
     await page.mouse.wheel(0, 1200);
     await expect(page.getByTestId("ask-launcher")).toBeVisible();
   });
+});
+
+test("markdown answer: a bullet list with site links, blocked links as text, axe passes", async ({ page }) => {
+  await mockAsk(page, {
+    status: enabled(),
+    deltas: ["Two projects fit:\n", "- **Voice AI Contact Center** ([case study](/labs/voice-ai-contact-center))\n", "- Fraud review [x](javascript:alert(1))\n"],
+  });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByRole("textbox", { name: "Your question" }).fill("Which AI projects?");
+  await dock(page).getByRole("textbox", { name: "Your question" }).press("Enter");
+  const answer = thread(page).locator("[data-role='assistant']").last();
+  await expect(answer.locator("ul > li")).toHaveCount(2);
+  await expect(answer.getByRole("link", { name: "case study" })).toHaveAttribute("href", "/en/labs/voice-ai-contact-center");
+  await expect(answer.locator("a[href^='javascript' i]")).toHaveCount(0);
+  await expect(answer).toContainText("Fraud review x");
+  const axe = await new AxeBuilder({ page }).include("[data-testid='ask-dock']").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(axe.violations).toEqual([]);
 });
 
 test("axe: open side panel with an answer", async ({ page }) => {

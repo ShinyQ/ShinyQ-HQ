@@ -204,6 +204,40 @@ describe("Ask dock chat", () => {
     expect(within(panel).getByTestId("ask-thread")).toHaveAttribute("aria-live", "polite");
   });
 
+  it("renders a markdown answer: lists, bold and allowlisted links only", async () => {
+    answerWith("Projects:\n- **Voice AI** [case study](/labs/voice-ai-contact-center)\n- [x](javascript:alert(1)) and <b>raw</b>\n- [repo](https://github.com/ShinyQ/ShinyQ-HQ)");
+    await ready();
+    act(() => openAsk("Which projects?", { source: "hero" }));
+    const panel = await dock();
+    const answer = await vi.waitFor(() => {
+      const node = panel.querySelector("[data-role='assistant']");
+      expect(node?.querySelectorAll("li")).toHaveLength(3);
+      return node as HTMLElement;
+    });
+    expect(answer.querySelector("strong")).toHaveTextContent("Voice AI");
+    expect(within(answer).getByRole("link", { name: "case study" })).toHaveAttribute("href", "/en/labs/voice-ai-contact-center");
+    const repo = within(answer).getByRole("link", { name: /^repo/ });
+    expect(repo).toHaveAttribute("target", "_blank");
+    expect(repo).toHaveAttribute("rel", "noopener noreferrer");
+    expect(within(answer).queryByRole("link", { name: "x" })).toBeNull();
+    expect(answer.querySelector("b")).toBeNull();
+    expect(answer.innerHTML).not.toMatch(/javascript:/i);
+  });
+
+  it("shows the rover mark in the header and 'Rover is thinking . . .' while waiting", async () => {
+    let finish: (value: AskResult) => void = () => {};
+    askMock.ask.mockImplementation(() => new Promise<AskResult>((resolve) => (finish = resolve)));
+    await ready();
+    act(() => openAsk("What is he building now?", { source: "hero" }));
+    const panel = await dock();
+    const mark = within(panel).getByTestId("ask-mark");
+    expect(mark.querySelector("svg[data-brand-mark]")).toHaveAttribute("aria-hidden", "true");
+    const thinking = await within(panel).findByTestId("ask-thinking");
+    expect(thinking).toHaveTextContent(en.ask.thinking);
+    expect(en.ask.thinking).toBe("Rover is thinking . . .");
+    await act(async () => finish({ outcome: "answer", source: "primary", asOf: "2026-10-11" }));
+  });
+
   it("expands a topic, asks a pill, then offers that question's follow-ups", async () => {
     answerWith("The voice agent answers calls.");
     await ready();

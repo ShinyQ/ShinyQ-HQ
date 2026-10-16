@@ -1,14 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { prepareAsk } from "@/ask/client";
 import { ASK_MAX_QUESTION, type AskEntry, type AskStatus } from "@/ask/protocol";
 import { ASK_TOPICS, pickFollowUps, topicQuestions, type AskTopic, type Suggestion } from "@/ask/suggestions";
 import type { ThreadMessage } from "@/ask/thread";
+import { RoverMark } from "@/components/RoverMark";
 import type { Locale } from "@/content/schema";
 import type { DrawerLayout } from "@/hud/drawer/layout";
-import { CloseIcon, EditIcon, SendIcon, SparkIcon } from "./icons";
+import { AskMarkdown } from "./AskMarkdown";
+import { CloseIcon, EditIcon, SendIcon } from "./icons";
+import { anchoredScrollTop, askReducedMotion, scrolledAway } from "./scroll";
 import { AskAsOf, AskCiteLink, AskContactCard, useAskErrorMessage } from "./ui";
 import { useAskThread, type AskFn } from "./useAskThread";
 
@@ -99,12 +102,52 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Keep the newest message in view while it streams.
+  // Owner request 2026-10-16: follow the answer as it streams, but never past its first line, and
+  // stop following once the visitor scrolls the thread; a new question, an open or a pill mode
+  // change follows again.
   const last = messages.at(-1);
+  // Keyed on the newest question, not the message count: the answer (first delta) and an error line
+  // append mid-exchange, and must not undo a visitor's scroll made while Rover thinks.
+  let questionId: string | undefined;
+  for (let i = messages.length - 1; i >= 0 && questionId === undefined; i--) if (messages[i].role === "user") questionId = messages[i].id;
+  const follow = useRef(true);
+  const lastSet = useRef<number | null>(null);
+  const prevPhase = useRef(phase);
+  const scrollThread = useCallback((top: number, smooth: boolean) => {
+    const node = scrollRef.current;
+    if (!node) return;
+    lastSet.current = top;
+    if (smooth && typeof node.scrollTo === "function" && !askReducedMotion()) node.scrollTo({ top, behavior: "smooth" });
+    else node.scrollTop = top;
+  }, []);
+  const onThreadScroll = () => {
+    const node = scrollRef.current;
+    if (node && scrolledAway(node.scrollTop, lastSet.current)) follow.current = false;
+  };
+  useLayoutEffect(() => {
+    follow.current = true;
+    // Content may shrink in this commit (pills hide) and clamp scrollTop: not the visitor's scroll.
+    lastSet.current = null;
+  }, [questionId, open]);
   useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (node) node.scrollTop = node.scrollHeight;
-  }, [messages.length, last?.text, phase, mode, open]);
+    if (!node) return;
+    follow.current = true;
+    scrollThread(Math.max(0, node.scrollHeight - node.clientHeight), false);
+  }, [mode, scrollThread]);
+  useLayoutEffect(() => {
+    const node = scrollRef.current;
+    const finished = prevPhase.current !== "idle" && phase === "idle";
+    prevPhase.current = phase;
+    if (!node) return;
+    // The scroll event of a visitor's scroll can arrive after this commit: read the position too.
+    if (scrolledAway(node.scrollTop, lastSet.current)) follow.current = false;
+    if (!follow.current) return;
+    const answers = threadRef.current?.querySelectorAll<HTMLElement>("[data-role='assistant']");
+    const answer = last?.role === "assistant" && answers?.length ? answers[answers.length - 1] : null;
+    const answerTop = answer ? answer.getBoundingClientRect().top - node.getBoundingClientRect().top + node.scrollTop : null;
+    scrollThread(anchoredScrollTop(node, answerTop), finished);
+  }, [messages.length, last?.text, last?.role, phase, open, scrollThread]);
 
   const followUps = useMemo(() => {
     if (busy || !last || last.role !== "assistant") return [];
@@ -196,8 +239,8 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
         )}
 
         <header className="flex shrink-0 items-center gap-3 border-b border-line py-2 pr-2 pl-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full border border-cyan/35 bg-cyan/10 text-cyan">
-            <SparkIcon />
+          <span className="grid size-9 shrink-0 place-items-center rounded-full border border-cyan/35 bg-cyan/10" data-testid="ask-mark">
+            <RoverMark id="hq-ask-mark" size={26} variant="glyph" />
           </span>
           <div className="min-w-0 flex-1">
             <h2 id={`${id}-title`} className="text-[15px] leading-5 font-semibold text-ink">
@@ -220,11 +263,11 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
           </button>
         </header>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-3">
+        <div ref={scrollRef} onScroll={onThreadScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-3" data-testid="ask-scroll">
           <div ref={threadRef} tabIndex={-1} role="log" aria-live="polite" aria-busy={busy} aria-label={td("threadLabel")} className="focus:outline-none" data-testid="ask-thread">
             <ol className="flex flex-col gap-3">
               {messages.length === 0 && (
-                <li className="max-w-[92%] self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5 text-[15px] leading-6 text-ink">
+                <li className="max-w-[92%] self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5 text-sm leading-[22px] text-ink">
                   {td("welcome")}
                 </li>
               )}
@@ -232,13 +275,8 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                 <Message key={m.id} message={m} locale={locale} errorText={errorMessage} labels={{ you: td("you"), hq: td("hq") }} onCite={layout === "sheet" ? onClose : undefined} />
               ))}
               {phase === "thinking" && (
-                <li className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-2" data-testid="ask-thinking">
-                  <span aria-hidden="true" className="mr-2 inline-flex gap-1 align-middle">
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} className="size-1.5 rounded-full bg-cyan/80 motion-safe:animate-pulse" style={{ animationDelay: `${i * 160}ms` }} />
-                    ))}
-                  </span>
-                  {t("thinking")}
+                <li className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5 text-[13px] leading-5 text-ink-2" data-testid="ask-thinking">
+                  <ThinkingLabel text={t("thinking")} />
                 </li>
               )}
             </ol>
@@ -255,11 +293,11 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                   {showFollowUps ? td("followUpsLabel") : topic ? td("topicQuestions", { topic: t(`topics.${topic}`) }) : td("topicsLabel")}
                 </h3>
                 {showFollowUps ? (
-                  <ul className="flex flex-col items-start gap-2" data-testid="ask-followups">
+                  <ul className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pt-1.5 pb-1 [scrollbar-width:thin]" data-testid="ask-followups">
                     {followUps.map((s) => (
-                      <QuestionPill key={s.id} suggestion={s} locale={locale} onAsk={() => ask_(s.q[locale], "followup", s.id)} onEdit={() => edit(s)} editLabel={td("edit", { q: s.q[locale] })} />
+                      <QuestionPill key={s.id} compact suggestion={s} locale={locale} onAsk={() => ask_(s.q[locale], "followup", s.id)} onEdit={() => edit(s)} editLabel={td("edit", { q: s.q[locale] })} />
                     ))}
-                    <li>
+                    <li className="shrink-0">
                       <button type="button" onClick={() => setMode("topics")} className="chip min-h-11 text-ink-2">
                         {td("moreTopics")}
                       </button>
@@ -285,7 +323,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                           type="button"
                           aria-expanded={false}
                           onClick={() => setMode(key)}
-                          className="group flex min-h-12 w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3.5 text-left text-sm font-medium text-ink transition hover:border-cyan/45 hover:bg-cyan/5"
+                          className="group flex min-h-12 w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3.5 text-left text-[13px] font-medium text-ink transition hover:border-cyan/45 hover:bg-cyan/5"
                         >
                           {t(`topics.${key}`)}
                           <span aria-hidden="true" className="text-ink-3 transition group-hover:translate-x-0.5 group-hover:text-cyan">
@@ -365,7 +403,7 @@ function Message({
 }) {
   if (message.role === "user") {
     return (
-      <li className="max-w-[85%] self-end rounded-2xl rounded-br-md border border-cyan/25 bg-cyan/10 px-3.5 py-2 text-[15px] leading-6 break-words text-ink" data-role="user">
+      <li className="max-w-[85%] self-end rounded-2xl rounded-br-md border border-cyan/25 bg-cyan/10 px-3.5 py-2 text-sm leading-[22px] break-words text-ink" data-role="user">
         <span className="sr-only">{labels.you}: </span>
         {message.text}
       </li>
@@ -373,28 +411,63 @@ function Message({
   }
   if (message.role === "system") {
     return (
-      <li className="self-stretch rounded-xl border border-amber/30 bg-amber/5 px-3.5 py-2.5 text-sm leading-5 text-ink" data-role="system">
+      <li className="self-stretch rounded-xl border border-amber/30 bg-amber/5 px-3.5 py-2.5 text-[13px] leading-5 text-ink" data-role="system">
         {errorText(message)}
       </li>
     );
   }
   return (
     <li className="max-w-[92%] self-start rounded-2xl rounded-bl-md border border-line bg-surface px-3.5 py-2.5" data-role="assistant">
-      <p className="text-[15px] leading-6 break-words whitespace-pre-wrap text-ink">
-        <span className="sr-only">{labels.hq}: </span>
-        {message.text}
-      </p>
-      {message.cite && <AskCiteLink path={message.cite} locale={locale} onNavigate={onCite} className="mt-1.5 text-[13px] leading-5" />}
+      <span className="sr-only">{labels.hq}: </span>
+      <AskMarkdown text={message.text} locale={locale} onNavigate={onCite} className="text-sm leading-[22px] text-ink" />
+      {message.cite && <AskCiteLink path={message.cite} locale={locale} onNavigate={onCite} className="mt-1.5 text-xs leading-5" />}
       {message.contact && <AskContactCard contact={message.contact} locale={locale} onNavigate={onCite} className="mt-2" />}
       {message.outcome && message.outcome !== "fallback" && <AskAsOf asOf={message.asOf} locale={locale} className="mt-1.5 text-[11px] leading-4 text-ink-3" />}
     </li>
   );
 }
 
-function QuestionPill({ suggestion, locale, onAsk, onEdit, editLabel }: { suggestion: Suggestion; locale: Locale; onAsk: () => void; onEdit: () => void; editLabel: string }) {
+/** "Rover is thinking . . .": the words stay put and the trailing dots pulse in turn (still under reduced motion). */
+function ThinkingLabel({ text }: { text: string }) {
+  const words = text.replace(/[\s.]+$/, "");
+  const dots = text.slice(words.length).match(/\./g)?.length ?? 0;
   return (
-    <li className="flex max-w-full items-stretch rounded-[22px] border border-line bg-surface-2 transition hover:border-cyan/45" data-qid={suggestion.id}>
-      <button type="button" onClick={onAsk} className="min-h-11 min-w-0 rounded-l-[22px] py-2 pr-2 pl-4 text-left text-sm leading-5 text-ink hover:text-cyan">
+    <>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true">
+        {words}
+        {Array.from({ length: dots }, (_, i) => (
+          <span key={i} className="text-cyan motion-safe:animate-pulse" style={{ animationDelay: `${i * 160}ms` }}>
+            {" ."}
+          </span>
+        ))}
+      </span>
+    </>
+  );
+}
+
+function QuestionPill({
+  suggestion,
+  locale,
+  onAsk,
+  onEdit,
+  editLabel,
+  compact = false,
+}: {
+  suggestion: Suggestion;
+  locale: Locale;
+  onAsk: () => void;
+  onEdit: () => void;
+  editLabel: string;
+  /** Follow-up row: the pill keeps its width and sits in one horizontally scrolling row. */
+  compact?: boolean;
+}) {
+  return (
+    <li
+      className={`flex items-stretch rounded-[22px] border border-line bg-surface-2 transition hover:border-cyan/45 ${compact ? "w-max max-w-[15rem] shrink-0" : "max-w-full"}`}
+      data-qid={suggestion.id}
+    >
+      <button type="button" onClick={onAsk} className="min-h-11 min-w-0 rounded-l-[22px] py-1.5 pr-2 pl-4 text-left text-[13px] leading-[18px] text-ink hover:text-cyan">
         {suggestion.q[locale]}
       </button>
       <button

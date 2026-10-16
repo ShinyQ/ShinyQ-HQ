@@ -3,6 +3,7 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
+import { findBlocked } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
 import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
@@ -294,6 +295,17 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
     kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "He worked for Mitsubishi." }));
     const list = await frames(await call());
     expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
+    expect(modelCalls).toHaveLength(1);
+  });
+
+  it("ignores a cached markdown answer whose blocklisted phrase is split by marks", async () => {
+    const text = "He built a dashboard for Sari **Roti**.";
+    expect(findBlocked(text, safety.blocklist)).toEqual([]);
+    const { call, kv, modelCalls } = setup();
+    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text }));
+    const list = await frames(await call());
+    expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
+    expect(doneOf(list).source).not.toBe("cache");
     expect(modelCalls).toHaveLength(1);
   });
 

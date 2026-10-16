@@ -262,3 +262,12 @@ Owner request: "i also want you to inserting additional knowledge when user is a
 - Prompt: rule 1's scope names "how this site and its assistant were built" (`PROMPT_VERSION` 2026-10-15.site-build.1).
 - Citation: an answer to a site question carries `cite` = `https://github.com/ShinyQ/ShinyQ-HQ` (`ASK_REPO_CITE`), the only external value `isAskCite` accepts; the dock renders it as "Source: The ShinyQ HQ source code on GitHub" in a new tab.
 - Evaluation: golden q45 to q47 (two EN, one ID), nightly threshold 45/47; the curated pill `work-site` ("How was this site built?").
+
+## 15. Markdown answers (owner request 2026-10-16)
+
+Amends section 5 (rule 4), section 8 ("Text only") and T6. Answers may now use a safe markdown subset; nothing else about scope or safety changes.
+
+- Prompt: rule 4 allows at most 3 short sentences, or one short sentence and a bullet list of at most 5 short items when listing projects, skills, posts or roles, with **bold** titles and markdown links only to a link given in CONTEXT; no headings, tables, images or other links (`PROMPT_VERSION` 2026-10-16.markdown.1). Context lines end with `[link: <url>]` for chunks whose url is a site page or the repository.
+- Server: `sanitizeAnswer` keeps newlines, list markers, `**`, `*`, `_` and single backticks; drops HTML, images, heading marks, code fence markers and em dashes; rewrites every `[label](url)` to a normalized locale-less path only when it is a retrieved chunk's page, a top page (`ASK_LINK_PAGES`) or the repository, else to its label. Blocklist, forbidden patterns and secrets are scanned on that markdown (link URLs included) and on its plain text (`markdownToPlain`, so marks cannot split a term); every other check reads the plain text.
+- Dock: `src/ask/markdown.ts` parses the subset into plain data and `src/hud/ask/AskMarkdown.tsx` renders React elements (never `innerHTML`); `src/ask/links.ts` allowlists link targets again on the client (site pages in the visitor's language, the repository and the public live sites in a new tab).
+- Evaluation: `scoreGolden` and the red-team match read `markdownToPlain`, so "**Voice AI**" still matches "Voice AI".
