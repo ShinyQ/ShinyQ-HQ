@@ -398,7 +398,12 @@
     "menu": "Menu",
     "menuTitle": "Menu",
     "map": {
-      "open": "Peta"
+      "open": "Peta",
+      "label": "Peta {floor} {name}: buka ikhtisar",
+      "title": "{floor} {name}",
+      "rooms": "Tempat di lantai ini",
+      "visited": "sudah dikunjungi",
+      "close": "Tutup peta"
     },
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",

@@ -398,7 +398,12 @@
     "menu": "Menu",
     "menuTitle": "Menu",
     "map": {
-      "open": "Map"
+      "open": "Map",
+      "label": "Map of {floor} {name}: open overview",
+      "title": "{floor} {name}",
+      "rooms": "Places on this floor",
+      "visited": "visited",
+      "close": "Close map"
     },
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",

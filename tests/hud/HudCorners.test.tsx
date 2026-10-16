@@ -6,7 +6,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import { buildExperienceData } from "@/content/experience";
+import { buildFloorLayouts } from "@/experience/config";
+import { minimapPref } from "@/hud/minimap/pref";
 import { Hud } from "@/hud/Hud";
+import { intents } from "@/experience/input/intents";
 import { getHQStore } from "@/store/useHQStore";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -34,11 +37,12 @@ vi.mock("@/hud/dialog/HintLayer", () => ({ HintLayer: () => null }));
 vi.mock("@/hud/drawer/DrawerHost", () => ({ DrawerHost: () => null }));
 
 const data = buildExperienceData("en", en.floors);
+const layouts = buildFloorLayouts(data.years.length);
 
 function mount() {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <Hud data={data} onExit={vi.fn()} onToggleLang={vi.fn()} />
+      <Hud data={data} layouts={layouts} onExit={vi.fn()} onToggleLang={vi.fn()} />
     </NextIntlClientProvider>,
   );
 }
@@ -51,6 +55,7 @@ function device(viewport: "mobile" | "tablet" | "desktop", coarse: boolean) {
 const onboardTargets = (name: string) => document.querySelectorAll(`[data-testid='hud'] [data-onboard='${name}']`);
 
 beforeEach(() => {
+  minimapPref.set("on");
   device("desktop", false);
 });
 
@@ -59,7 +64,7 @@ afterEach(() => {
 });
 
 describe("Hud composition", () => {
-  it("desktop keeps the profile card, the top bar and the elevator rail, with the settings gear above the view controls", () => {
+  it("desktop keeps the profile card, the top bar and the elevator rail, with the minimap and the settings gear above the view controls", () => {
     mount();
     expect(screen.getByRole("region", { name: en.hud.profile })).toBeInTheDocument();
     expect(screen.getByTestId("elevator-panel")).toBeInTheDocument();
@@ -67,9 +72,13 @@ describe("Hud composition", () => {
     expect(screen.queryByTestId("floor-chip")).toBeNull();
     expect(screen.queryByTestId("hud-menu")).toBeNull();
     const corner = screen.getByTestId("hud-corner");
+    const minimap = within(corner).getByTestId("minimap");
     const gear = within(corner).getByTestId("settings-open");
     const view = within(corner).getByTestId("view-controls");
+    expect(minimap.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gear.compareDocumentPosition(view) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(minimap).toHaveClass("size-24");
+    expect(screen.getAllByTestId("minimap")).toHaveLength(1);
     expect(within(view).getAllByRole("button")).toHaveLength(3);
     expect(screen.getByTestId("hud-bottom")).toContainElement(corner);
     expect(screen.queryByTestId("joystick")).toBeNull();
@@ -94,6 +103,37 @@ describe("Hud composition", () => {
     expect(document.documentElement.dataset.hqHud).toBe("phone");
     for (const name of ["elevator", "view", "ask-rover"]) expect(onboardTargets(name)).toHaveLength(1);
     expect(onboardTargets("ask-rover")[0]).toBe(screen.getByTestId("hud-menu"));
+    const place = screen.getByTestId("hud-minimap");
+    expect(place).toHaveClass("top-[64px]", "right-3");
+    expect(within(place).getByTestId("minimap")).toHaveClass("size-[72px]");
+    expect(screen.getAllByTestId("minimap")).toHaveLength(1);
+  });
+
+  it("phones hide the minimap while a room sheet is open, tablets keep it; N still opens the overview", () => {
+    device("mobile", true);
+    mount();
+    act(() => getHQStore().setState({ phase: "room" }));
+    expect(screen.queryByTestId("minimap")).toBeNull();
+    act(() => intents.emit({ type: "toggle", what: "map" }));
+    expect(screen.getByTestId("map-overview")).toBeInTheDocument();
+    act(() => intents.emit({ type: "toggle", what: "map" }));
+    act(() => device("tablet", true));
+    act(() => getHQStore().setState({ phase: "room" }));
+    expect(screen.getByTestId("minimap")).toHaveClass("size-28");
+    expect(screen.getByTestId("hud-minimap")).toHaveClass("top-[76px]", "right-4");
+  });
+
+  it("the L2 year chip sits clear of the floor chip and the minimap", () => {
+    device("mobile", true);
+    act(() => getHQStore().setState({ floor: "L2", rover: { ...getHQStore().getState().rover, x: 0 } }));
+    const { unmount } = mount();
+    expect(screen.getByTestId("year-chip")).toHaveClass("top-[64px]", "left-3");
+    expect(screen.getByTestId("year-chip")).not.toHaveClass("left-1/2");
+    unmount();
+    device("desktop", false);
+    act(() => getHQStore().setState({ floor: "L2" }));
+    mount();
+    expect(screen.getByTestId("year-chip")).toHaveClass("top-[84px]", "left-1/2");
   });
 
   it("tablets (and coarse desktops) add search to the bar and the floor name to the chip", () => {

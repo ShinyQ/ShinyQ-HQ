@@ -586,7 +586,7 @@ export default function Experience({
         {t("canvasDescription")}
       </p>
       <FloorChunkPrefetch />
-      <Hud data={data} onExit={onExit} onToggleLang={toggleLang} />
+      <Hud data={data} layouts={layouts} onExit={onExit} onToggleLang={toggleLang} />
       {perf && <PerfOverlay />}
     </div>
   );

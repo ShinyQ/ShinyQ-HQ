@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { createElement, Suspense, useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { READY_FLOORS } from "@/experience/config";
 import { floorChunks } from "@/experience/floors/floorChunks";
-import type { ExperienceData } from "@/experience/types";
+import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { BootOverlay } from "./BootOverlay";
@@ -26,6 +26,7 @@ import { FloorChip } from "./FloorChip";
 import { HudLaunchers } from "./HudLaunchers";
 import { useHudLayout, type HudLayout } from "./layout";
 import { HudMenu } from "./menu/HudMenu";
+import { Minimap } from "./minimap/Minimap";
 import { SettingsLauncher } from "./menu/SettingsSheet";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
 import { Joystick } from "./Joystick";
@@ -73,14 +74,21 @@ function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   );
 }
 
-function FloorNotice({ data, mobile }: { data: ExperienceData; mobile: boolean }) {
+/** Under the floor chip in Corners (narrow enough to clear the minimap on the right), under the profile card on desktops. */
+const NOTICE_PLACE: Record<HudLayout, string> = {
+  phone: "top-[64px] left-3 w-[min(280px,calc(100vw-7.5rem))]",
+  tablet: "top-[76px] left-4 w-[min(280px,calc(100vw-11rem))]",
+  desktop: "top-[168px] left-4 w-[min(280px,calc(100vw-5.5rem))]",
+};
+
+function FloorNotice({ data, layout }: { data: ExperienceData; layout: HudLayout }) {
   const t = useTranslations("hud");
   const floor = useHQStore((s) => s.floor);
   const exploring = useHQStore((s) => s.phase === "explore");
   if (!exploring || READY_FLOORS.includes(floor)) return null;
   const { name, route } = data.floors[floor];
   return (
-    <div className={`glass glass-solid pointer-events-auto absolute left-3 w-[min(280px,calc(100vw-5.5rem))] p-3 text-sm md:left-4 ${mobile ? "top-[116px]" : "top-[168px]"}`}>
+    <div className={`glass glass-solid pointer-events-auto absolute p-3 text-sm ${NOTICE_PLACE[layout]}`}>
       <p className="text-ink-2">{t("underConstruction", { name })}</p>
       <Link href={route} className="link mt-1 inline-flex min-h-11 items-center">
         {t("openFloorPage", { name })}
@@ -138,10 +146,14 @@ function CornersTopBar({ data, layout, onExit }: { data: ExperienceData; layout:
   );
 }
 
-/** Desktop bottom right: the settings gear above the view controls (Task 7 adds the minimap here). */
-function DesktopCorner({ explorable }: { explorable: boolean }) {
+/** Corners minimap: under the top-right cluster. */
+const MINIMAP_PLACE: Record<Exclude<HudLayout, "desktop">, string> = { phone: "top-[64px] right-3", tablet: "top-[76px] right-4" };
+
+/** Desktop bottom right: the minimap and the settings gear above the view controls. */
+function DesktopCorner({ data, layouts, explorable }: { data: ExperienceData; layouts: FloorLayouts; explorable: boolean }) {
   return (
     <div className="flex flex-col items-end gap-2" data-testid="hud-corner">
+      <Minimap data={data} layouts={layouts} size="desktop" />
       <SettingsLauncher showButton={explorable} />
       {explorable && <ViewControls />}
     </div>
@@ -151,15 +163,16 @@ function DesktopCorner({ explorable }: { explorable: boolean }) {
 /**
  * HTML HUD over the canvas. It talks to the scene only through the store and intents. Desktops keep
  * the profile card, the top bar and the elevator rail; phones and tablets get the Corners HUD (floor
- * chip top left, Ask AI and the menu top right, the joystick and one reset button at the bottom).
+ * chip top left, Ask AI and the menu top right with the minimap under them, the joystick and one reset
+ * button at the bottom). Desktops show the minimap bottom right, above the settings gear and the view
+ * controls. `N` opens the floor overview on every layout.
  */
-export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onExit: () => void; onToggleLang: () => void }) {
+export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceData; layouts: FloorLayouts; onExit: () => void; onToggleLang: () => void }) {
   const phase = useHQStore((s) => s.phase);
-  const viewport = useHQStore((s) => s.device.viewport);
   const coarse = useHQStore((s) => s.device.coarse);
   const layout = useHudLayout();
   const desktop = layout === "desktop";
-  const mobile = viewport === "mobile";
+  const phone = layout === "phone";
   const speaking = useDialog((v) => v.line !== null);
   const explorable = phase !== "intro" && phase !== "room";
   const drive = coarse && phase !== "intro";
@@ -196,17 +209,21 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
                 <FloorChip data={data} layout={layout} />
               </div>
               <CornersTopBar data={data} layout={layout} onExit={onExit} />
+              <div className={`pointer-events-none absolute ${MINIMAP_PLACE[layout]}`} data-testid="hud-minimap">
+                {/* A phone's room sheet covers the lower screen: the minimap steps aside, the overview (N) still opens. */}
+                <Minimap data={data} layouts={layouts} size={layout} hidden={phone && phase === "room"} />
+              </div>
             </>
           )}
-          <FloorNotice data={data} mobile={mobile} />
-          {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && phase === "room"} />}
+          <FloorNotice data={data} layout={layout} />
+          {phase !== "intro" && <YearChip career={data.career} layout={layout} hidden={phone && phase === "room"} />}
           <BottomBand
             // Coarse pointers always get the Corners HUD, which has no Boost button: a double tap on the joystick toggles boost.
             left={drive ? <Joystick boost /> : null}
-            right={desktop ? <DesktopCorner explorable={explorable} /> : explorable ? <ResetView /> : null}
+            right={desktop ? <DesktopCorner data={data} layouts={layouts} explorable={explorable} /> : explorable ? <ResetView /> : null}
           >
             <InteractStatus coarse={coarse} />
-            {explorable && !speaking && <HintBar coarse={coarse} mobile={mobile} />}
+            {explorable && !speaking && <HintBar coarse={coarse} mobile={phone} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />
         </>
