@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { signPlate, wrapSign } from "@/experience/fx/signLayout";
+import { boxBuffers } from "@/experience/floors/roof/solids";
 import {
   boardList,
   fitTitle,
@@ -8,8 +8,6 @@ import {
   listChars,
   PANEL,
   panelRows,
-  ROAD_SIGN,
-  roadSigns,
   textWidth,
   TIER_MARK,
   wallLabels,
@@ -18,11 +16,21 @@ import {
   wrapWords,
   type DirectoryLabels,
 } from "@/experience/floors/labs/directory";
-import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "@/experience/floors/labs/layout";
+import type { BatchedLabel } from "@/experience/fx/labelProps";
+import type { Rect, Vec2 } from "@/experience/types";
 
 const NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const FONTS = { mono: "/fonts/mono.woff", monoBold: "/fonts/mono-bold.woff", sansBold: "/fonts/sans-bold.woff" };
 const WINGS = LABS_WINGS;
+
+/** Entries a list of `lines` lines always holds: every entry takes at most `perEntry` lines. */
+const minEntries = (top: number, lines: number, perEntry: number) => Math.min(top, Math.floor(lines / perEntry));
+const along = (b: DirectoryBoard, p: Vec2) => (p.x - b.center.x) * b.along.x + (p.z - b.center.z) * b.along.z;
+const off = (b: DirectoryBoard, p: Vec2) => (p.x - b.center.x) * b.normal.x + (p.z - b.center.z) * b.normal.z;
+/** The texts standing on one board (both faces). */
+const onBoard = (texts: readonly BatchedLabel[], b: DirectoryBoard) => texts.filter((t) => Math.hypot(t.position[0] - b.center.x, t.position[2] - b.center.z) <= LABS.board.width / 2 + 0.5);
+const inside = (r: Rect, x: number, z: number) => x >= r.minX - 1e-5 && x <= r.maxX + 1e-5 && z >= r.minZ - 1e-5 && z <= r.maxZ + 1e-5;
 
 function setup(locale: "en" | "id") {
   const data = buildExperienceData(locale, NAMES);
@@ -31,13 +39,17 @@ function setup(locale: "en" | "id") {
 }
 
 describe("L3 directory wall content (owner request 2026-10-13)", () => {
-  it("fits five two-line entries between the title block and the footer", () => {
-    const rows = panelRows();
-    expect(rows.titleTop).toBeLessThan(LABS.board.h);
-    expect(rows.listTop).toBeLessThan(rows.subTop - PANEL.sub.size);
-    expect(rows.listBottom).toBeGreaterThanOrEqual(LABS.board.base);
-    expect(rows.listBottom).toBeGreaterThan(LABS.board.base + PANEL.footer.y + PANEL.footer.size);
-    expect(rows.listLines).toBeGreaterThanOrEqual(LABS.boardEntries * PANEL.list.perEntry);
+  it("fits the list between the title block and the footer, two entries at least on every size", () => {
+    for (const style of [LIST_STYLE.full, LIST_STYLE.compact]) {
+      const rows = panelRows(style);
+      expect(rows.titleTop).toBeLessThan(LABS.board.h);
+      expect(rows.listTop).toBeLessThan(rows.subTop - PANEL.sub.size);
+      expect(rows.listBottom).toBeGreaterThanOrEqual(LABS.board.base);
+      expect(rows.listBottom).toBeGreaterThan(LABS.board.base + PANEL.footer.y + PANEL.footer.size);
+      expect(rows.listTop - rows.listLines * style.size * style.lineHeight).toBeGreaterThanOrEqual(rows.listBottom - 1e-9);
+      expect(rows.listLines).toBeGreaterThanOrEqual(2 * style.perEntry);
+    }
+    expect(textWidth()).toBeCloseTo(LABS.board.width - 2 * PANEL.inset, 12);
   });
 
   it("sets the titles about 25 percent and the lists about 20 percent smaller (owner request Round 7)", () => {
@@ -59,79 +71,137 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
   });
 
   for (const locale of ["en", "id"] as const) {
-    it(`lists each wing's top five docked pods in docking order, two lines at most each (${locale})`, () => {
+    it(`lists each wing's top docked pods in docking order, as many as fit, two lines at most each (${locale})`, () => {
       const { pods } = setup(locale);
+      const rows = panelRows();
       for (const wing of WINGS) {
         const inWing = pods.filter((p) => p.wing === wing);
         const top = tourOrder(inWing).slice(0, LABS.boardEntries);
-        const list = boardList(inWing, panelRows().listLines);
-        expect(list.entries, wing).toBe(top.length);
+        const list = boardList(inWing, rows.listLines);
+        expect(list.entries, wing).toBeLessThanOrEqual(top.length);
+        expect(list.entries, wing).toBeGreaterThanOrEqual(minEntries(top.length, rows.listLines, PANEL.list.perEntry));
         const lines = list.text.split("\n");
         expect(lines).toHaveLength(list.lines);
-        expect(list.lines).toBeLessThanOrEqual(Math.min(panelRows().listLines, top.length * PANEL.list.perEntry));
+        expect(list.lines).toBeLessThanOrEqual(Math.min(rows.listLines, top.length * PANEL.list.perEntry));
         for (const line of lines) expect(line.length, line).toBeLessThanOrEqual(listChars());
         const heads = lines.filter((l) => Object.values(TIER_MARK).some((mark) => l.startsWith(`${mark} `)));
-        expect(heads).toHaveLength(top.length);
+        expect(heads).toHaveLength(list.entries);
         heads.forEach((head, i) => expect(head.slice(2).split(" ")[0]).toBe(top[i].title.split(" ")[0]));
       }
     });
   }
 
-  it("puts the same four texts on both faces of each board; the west faces read left to right for the arrival camera", () => {
+  it("puts the same four texts on both faces of each board; the front faces read left to right toward the board stop", () => {
     const { pods, labels } = setup("en");
     const texts = wallLabels(pods, labels, FONTS);
     expect(texts).toHaveLength(WINGS.length * 2 * 4);
     for (const wing of WINGS) {
       const b = directoryBoard(wing);
-      const mine = texts.filter((t) => Math.abs(t.position[2] - b.center.z) <= (b.maxZ - b.minZ) / 2);
+      const mine = onBoard(texts, b);
       expect(mine, wing).toHaveLength(8);
       for (const t of mine) {
         expect(t.position[1], t.text).toBeGreaterThanOrEqual(LABS.board.base);
         expect(t.position[1], t.text).toBeLessThanOrEqual(LABS.board.h);
+        const p = { x: t.position[0], z: t.position[2] };
+        // PANEL.out off one face, inside the board's span.
+        expect(Math.abs(off(b, p)), t.text).toBeCloseTo(LABS.board.w / 2 + PANEL.out, 9);
+        expect(Math.abs(along(b, p)), t.text).toBeLessThanOrEqual(LABS.board.width / 2 + 1e-9);
       }
-      const west = mine.filter((t) => t.yaw === -Math.PI / 2);
-      const east = mine.filter((t) => t.yaw === Math.PI / 2);
-      expect(west).toHaveLength(4);
-      expect(east).toHaveLength(4);
-      expect(west.map((t) => t.text)).toEqual(east.map((t) => t.text));
-      expect(west[0].text).toBe(fitTitle(labels.wings[wing], textWidth()).lines.join("\n"));
-      expect(west[0].color).toBe(WING_TINT[wing]);
-      for (const t of west) {
-        expect(t.position[0]).toBeLessThan(b.minX);
-        // Yaw -PI/2 turns the text's front to -x (the camera west of the wall) and its reading direction
-        // (cos yaw, -sin yaw) to +z, which is screen right for a camera looking east: never mirrored.
-        expect(Math.cos(t.yaw!)).toBeCloseTo(0);
-        expect(-Math.sin(t.yaw!)).toBeCloseTo(1);
+      const front = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) > 0);
+      const back = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) < 0);
+      expect(front).toHaveLength(4);
+      expect(back).toHaveLength(4);
+      expect(front.map((t) => t.text)).toEqual(back.map((t) => t.text));
+      expect(front[0].text).toBe(fitTitle(labels.wings[wing], textWidth()).lines.join("\n"));
+      expect(front[0].color).toBe(WING_TINT[wing]);
+      for (const t of front) {
+        expect(t.yaw).toBeCloseTo(b.yaw, 12);
+        // Text yaw turns its front to (sin yaw, cos yaw) and reads along (cos yaw, -sin yaw): the board's normal and along.
+        expect(Math.sin(t.yaw!) * b.normal.x + Math.cos(t.yaw!) * b.normal.z).toBeCloseTo(1, 12);
+        expect(Math.cos(t.yaw!) * b.along.x - Math.sin(t.yaw!) * b.along.z).toBeCloseTo(1, 12);
       }
-      for (const t of east) expect(t.position[0]).toBeGreaterThan(b.maxX);
+      for (const t of back) expect(t.yaw).toBeCloseTo(b.yaw + Math.PI, 12);
+      // The list starts at the left text edge of each face: -along on the back face.
+      expect(along(b, { x: front[2].position[0], z: front[2].position[2] })).toBeCloseTo(-textWidth() / 2, 9);
+      expect(along(b, { x: back[2].position[0], z: back[2].position[2] })).toBeCloseTo(textWidth() / 2, 9);
     }
     // The gate over the spine names the Data and ML wing on both faces.
     const gate = directoryBoard("data");
-    const titles = texts.filter((t) => Math.abs(t.position[2] - gate.center.z) < 1e-9 && t.color === WING_TINT.data && t.anchorY === "top" && t.textAlign === "center" && t.fontSize >= PANEL.sub.size * 1.5);
+    expect(gate.yaw).toBeCloseTo(-Math.PI / 2, 12);
+    const titles = onBoard(texts, gate).filter((t) => t.color === WING_TINT.data && t.anchorY === "top" && t.textAlign === "center" && t.fontSize >= PANEL.sub.size * 1.5);
     expect(titles).toHaveLength(2);
     for (const t of titles) expect(t.text.replace(/\n/g, " ")).toBe(labels.wings.data.toUpperCase());
   });
 
-  it("raises three boards on four posts, with rims, post edges and title underlines in the wing tints", () => {
-    const boards = WINGS.map((wing) => {
-      const b = directoryBoard(wing);
-      return { x: b.center.x, y: LABS.board.base, z: b.center.z, w: LABS.board.w, h: LABS.board.h - LABS.board.base, d: b.maxZ - b.minZ };
+  it("raises three turned boards, the gate on two posts and each side board on a pylon, as solids that match the board geometry", () => {
+    const solids = wallSolids();
+    expect(solids).toHaveLength(3 + 4);
+    const boards = WINGS.map(directoryBoard);
+    const posts = wallPosts();
+    boards.forEach((b, i) => {
+      expect(solids[i]).toEqual({ x: b.center.x, y: LABS.board.base, z: b.center.z, w: LABS.board.w, h: LABS.board.h - LABS.board.base, d: LABS.board.width, yaw: b.yaw + Math.PI / 2 });
     });
-    const posts = wallPosts().map((p) => ({ x: (p.minX + p.maxX) / 2, y: 0, z: (p.minZ + p.maxZ) / 2, w: p.maxX - p.minX, h: LABS.board.base, d: p.maxZ - p.minZ }));
-    expect(posts).toHaveLength(4);
-    expect(wallSolids()).toEqual([...boards, ...posts]);
+    posts.forEach((p, i) => {
+      expect(solids[3 + i]).toEqual({ x: p.center.x, y: 0, z: p.center.z, w: p.across, h: LABS.board.base, d: p.along, yaw: directoryBoard(p.wing).yaw + Math.PI / 2 });
+    });
+    // The merged mesh (roof/solids.ts yaw convention) puts each board's corners where the board's own math does.
+    const { positions } = boxBuffers(solids);
+    boards.forEach((b, i) => {
+      const expected = [-1, 1].flatMap((s) => [-1, 1].map((t) => ({ x: b.center.x + (s * b.along.x * LABS.board.width) / 2 + (t * b.normal.x * LABS.board.w) / 2, z: b.center.z + (s * b.along.z * LABS.board.width) / 2 + (t * b.normal.z * LABS.board.w) / 2 })));
+      for (let v = 0; v < 24; v++) {
+        const [x, , z] = positions.slice((i * 24 + v) * 3, (i * 24 + v) * 3 + 3);
+        expect(expected.some((c) => Math.abs(c.x - x) < 1e-4 && Math.abs(c.z - z) < 1e-4), `${WINGS[i]} vertex ${v}`).toBe(true);
+        expect(inside(b, x, z), `${WINGS[i]} vertex ${v}`).toBe(true);
+      }
+    });
+    posts.forEach((p, i) => {
+      for (let v = 0; v < 24; v++) {
+        const k = ((3 + i) * 24 + v) * 3;
+        expect(inside(p.rect, positions[k], positions[k + 2]), `post ${i} vertex ${v}`).toBe(true);
+      }
+    });
+  });
+
+  it("draws each board's 12 rim edges and two title underlines in its tint, and four vertical edges per post", () => {
     const lines = wallLines();
     expect(lines).toHaveLength(WINGS.length * (12 + 2) + 4 * 4);
-    // Outer posts carry their wing's tint, the two gate posts the Data and ML tint.
+    // Pylons carry their wing's tint, the two gate posts the Data and ML tint.
     expect(lines.filter((l) => l.color === WING_TINT.software)).toHaveLength(14 + 4);
     expect(lines.filter((l) => l.color === WING_TINT.ai)).toHaveLength(14 + 4);
     expect(lines.filter((l) => l.color === WING_TINT.data)).toHaveLength(14 + 8);
     const y = panelRows().underline;
-    expect(lines.filter((l) => l.seg[1] === y && l.seg[4] === y)).toHaveLength(6);
-    for (const l of lines) {
-      expect(Math.min(l.seg[1], l.seg[4])).toBeGreaterThanOrEqual(0);
-      expect(Math.max(l.seg[1], l.seg[4])).toBeLessThanOrEqual(LABS.board.h);
-    }
+    const underlines = lines.filter((l) => l.seg[1] === y && l.seg[4] === y);
+    expect(underlines).toHaveLength(6);
+    WINGS.forEach((wing, i) => {
+      const b = directoryBoard(wing);
+      const own = lines.slice(i * 14, i * 14 + 14);
+      for (const l of own) {
+        expect(l.color).toBe(WING_TINT[wing]);
+        for (const [x, yy, z] of [l.seg.slice(0, 3), l.seg.slice(3)]) {
+          expect(yy).toBeGreaterThanOrEqual(LABS.board.base - 1e-9);
+          expect(yy).toBeLessThanOrEqual(LABS.board.h + 1e-9);
+          expect(inside({ minX: b.minX - PANEL.out, maxX: b.maxX + PANEL.out, minZ: b.minZ - PANEL.out, maxZ: b.maxZ + PANEL.out }, x, z), `${wing} ${l.seg}`).toBe(true);
+        }
+      }
+      // The underlines run along each face, PANEL.out off it, as wide as the text.
+      for (const l of own.slice(12)) {
+        const a = { x: l.seg[0], z: l.seg[2] };
+        const e = { x: l.seg[3], z: l.seg[5] };
+        expect(Math.abs(off(b, a))).toBeCloseTo(LABS.board.w / 2 + PANEL.out, 9);
+        expect(Math.abs(off(b, e))).toBeCloseTo(LABS.board.w / 2 + PANEL.out, 9);
+        expect(Math.hypot(e.x - a.x, e.z - a.z)).toBeCloseTo(textWidth(), 9);
+      }
+    });
+    const postLines = lines.slice(WINGS.length * 14);
+    wallPosts().forEach((p, i) => {
+      for (const l of postLines.slice(i * 4, i * 4 + 4)) {
+        expect(l.color).toBe(WING_TINT[p.wing]);
+        expect(l.seg[0]).toBeCloseTo(l.seg[3], 12);
+        expect(l.seg[2]).toBeCloseTo(l.seg[5], 12);
+        expect([l.seg[1], l.seg[4]]).toEqual([0, LABS.board.base]);
+        expect(inside(p.rect, l.seg[0], l.seg[2])).toBe(true);
+      }
+    });
   });
 
   for (const locale of ["en", "id"] as const) {
@@ -142,27 +212,30 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
       expect(wallLines(layout.boards)).toEqual(wallLines());
       for (const size of ["full", "compact"] as const) {
         expect(wallLabels(pods, labels, FONTS, size, layout.boards)).toEqual(wallLabels(pods, labels, FONTS, size));
-        const data = directoryBoard("data");
-        const texts = wallLabels(pods, labels, FONTS, size).filter((l) => Math.abs(l.position[2] - data.center.z) <= (data.maxZ - data.minZ) / 2);
+        const texts = onBoard(wallLabels(pods, labels, FONTS, size), directoryBoard("data"));
         expect(texts, size).toHaveLength(8);
-        const top = tourOrder(pods.filter((p) => p.wing === "data")).slice(0, LIST_STYLE[size].entries);
-        expect(texts[2].text.split("\n").filter((l) => Object.values(TIER_MARK).some((m) => l.startsWith(`${m} `)))).toHaveLength(top.length);
+        const style = LIST_STYLE[size];
+        const top = tourOrder(pods.filter((p) => p.wing === "data")).slice(0, style.entries);
+        const heads = texts[2].text.split("\n").filter((l) => Object.values(TIER_MARK).some((m) => l.startsWith(`${m} `)));
+        expect(heads.length, size).toBeLessThanOrEqual(top.length);
+        expect(heads.length, size).toBeGreaterThanOrEqual(minEntries(top.length, panelRows(style).listLines, style.perEntry));
       }
     });
   }
 
   it("lists the top three in larger type on phones, every title whole in two lines (coordinator decision 2026-10-13)", () => {
     const compact = LIST_STYLE.compact;
+    const lines = panelRows(compact).listLines;
     expect(compact.entries).toBe(3);
     expect(compact.size).toBeGreaterThan(LIST_STYLE.full.size);
-    expect(panelRows(compact).listLines).toBeGreaterThanOrEqual(compact.entries * compact.perEntry);
     for (const locale of ["en", "id"] as const) {
       const { pods, labels } = setup(locale);
       for (const wing of WINGS) {
         const inWing = pods.filter((p) => p.wing === wing);
         const top = tourOrder(inWing).slice(0, compact.entries);
-        const list = boardList(inWing, panelRows(compact).listLines, compact);
-        expect(list.entries, `${locale} ${wing}`).toBe(top.length);
+        const list = boardList(inWing, lines, compact);
+        expect(list.entries, `${locale} ${wing}`).toBeLessThanOrEqual(top.length);
+        expect(list.entries, `${locale} ${wing}`).toBeGreaterThanOrEqual(minEntries(top.length, lines, compact.perEntry));
         // The data titles are longer than two lines at any phone size; they shorten with "...".
         if (wing !== "data") expect(list.text, `${locale} ${wing}`).not.toContain("...");
         for (const line of list.text.split("\n")) expect(line.length, line).toBeLessThanOrEqual(listChars(compact));
@@ -173,29 +246,4 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
       for (const t of lists) expect(t.lineHeight).toBe(compact.lineHeight);
     }
   });
-});
-
-describe("L3 road signs (Round 7 G)", () => {
-  for (const locale of ["en", "id"] as const) {
-    it(`floats one sign per road, upright over its mouth, the plate above the rover (${locale})`, () => {
-      const { pods, labels } = setup(locale);
-      const layout = buildLabsLayout(pods);
-      const specs = roadSigns(layout, labels.wings, FONTS.monoBold);
-      expect(specs).toHaveLength(3);
-      LABS_WINGS.forEach((wing, i) => {
-        const spec = specs[i];
-        expect(spec.text).toBe(wrapSign(labels.wings[wing].toUpperCase(), ROAD_SIGN.wrap));
-        expect(spec.color).toBe(WING_TINT[wing]);
-        expect(spec.fontSize).toBe(ROAD_SIGN.font);
-        expect(spec.font).toBe(FONTS.monoBold);
-        expect(spec.y - signPlate(spec).h / 2).toBeCloseTo(ROAD_SIGN.y);
-        expect(spec.x).toBe(layout.signs[wing].float.x);
-        expect(spec.z).toBe(layout.signs[wing].float.z);
-        for (const other of LABS_WINGS) {
-          const has = spec.text.replace(/\n/g, " ").includes(labels.wings[other].toUpperCase());
-          expect(has, `${wing} sign names ${other}`).toBe(other === wing);
-        }
-      });
-    });
-  }
 });

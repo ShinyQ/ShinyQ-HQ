@@ -282,6 +282,7 @@ function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsLayout; wings: R
       })}
       {(["software", "ai"] as const).map((wing) => {
         const b = labs.boards[wing];
+        const mouth = labs.network.roads.find((r) => r.id === wing)!.points[1];
         return (
           <group key={wing}>
             <mesh position={[b.center.x, 2, b.center.z]}>
@@ -295,7 +296,7 @@ function LabsDecor({ labs, wings, labels, onRoom }: { labs: LabsLayout; wings: R
               color={WING_COLOR[wing]}
               anchorX="center"
               anchorY="middle"
-              position={[labs.signs[wing].at.x, 0.05, labs.signs[wing].at.z]}
+              position={[mouth.x, 0.05, mouth.z]}
               rotation={[-Math.PI / 2, 0, 0]}
               material-toneMapped={false}
             >

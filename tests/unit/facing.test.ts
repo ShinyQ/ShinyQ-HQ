@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
-import { buildLabsLayout, LABS, LABS_WINGS, SIDE_WINGS } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS, SIDE_WINGS } from "@/experience/floors/labs/layout";
 import { yawTowards } from "@/experience/fx/facing";
 import type { Vec2 } from "@/experience/types";
 
@@ -40,7 +40,7 @@ describe("yawTowards", () => {
   });
 });
 
-describe("L3 floating wing signs (owner request 2026-10-13)", () => {
+describe("L3 side boards face the arrival camera (plan 2026-10-16)", () => {
   const pods = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" }).labs.pods;
   const layout = buildLabsLayout(pods);
   const zone = zoneAt("L3", LABS.overview, layout.floor.viewZones)!;
@@ -48,26 +48,14 @@ describe("L3 floating wing signs (owner request 2026-10-13)", () => {
   const [x, , z] = followPose("desktop", [LABS.overview.x + FOLLOW_LOOK_AHEAD.desktop, 0, LABS.overview.z], zone.yaw, zone.zoom).position;
   const eye = { x, z };
 
-  it("stand on the line from the hub centre through their road mouth, LABS.signAlong from the mouth", () => {
-    const hub = layout.hub.center;
+  it("turns each side board's front to the arrival camera, its text reading left to right", () => {
     for (const wing of SIDE_WINGS) {
-      const { at, float } = layout.signs[wing];
-      const out = Math.hypot(at.x - hub.x, at.z - hub.z);
-      expect(float.x).toBeCloseTo(at.x + ((at.x - hub.x) / out) * LABS.signAlong);
-      expect(float.z).toBeCloseTo(at.z + ((at.z - hub.z) / out) * LABS.signAlong);
-    }
-  });
-
-  it("showed the AI Engineering sign's back to the arrival camera with the old fixed yaw of PI/4 (the mirrored text)", () => {
-    expect(dot(front(Math.PI / 4), toward(layout.signs.ai.float, eye))).toBeLessThan(0);
-  });
-
-  it("face the arrival camera and read left to right once turned with yawTowards", () => {
-    for (const wing of LABS_WINGS) {
-      const s = layout.signs[wing].float;
-      const yaw = yawTowards(s, eye);
-      expect(dot(front(yaw), toward(s, eye))).toBeCloseTo(1, 9);
-      expect(dot(reading(yaw), screenRight(eye, s))).toBeCloseTo(1, 9);
+      const b = layout.boards[wing];
+      expect(dot(b.normal, toward(b.center, eye)), wing).toBeGreaterThan(0.9);
+      expect(dot(b.along, screenRight(eye, b.center)), wing).toBeGreaterThan(0.9);
+      // The front text yaw puts the text's front and reading direction on the board's normal and along.
+      expect(dot(front(b.yaw), b.normal)).toBeCloseTo(1, 12);
+      expect(dot(reading(b.yaw), b.along)).toBeCloseTo(1, 12);
     }
   });
 });

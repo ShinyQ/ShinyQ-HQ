@@ -1,19 +1,19 @@
 import type { Wing } from "@/content/schema";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { LabPod } from "../../types";
+import type { Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
-import { signPlate, wrapSign, type SignSpec } from "../../fx/signLayout";
-import { directoryBoard, LABS, LABS_WINGS, SIDE_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard, type LabsLayout } from "./layout";
+import { directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "./layout";
 
 /**
- * Pure content of the L3 directory wall where the three roads fork (owner request 2026-10-13: noticeable
- * on arrival; Round 7 G: one raised board per wing on four posts, the Data and ML board a gate over the
- * spine). Boards and posts are one merged mesh, their rims, post edges and title underlines one line
- * batch, every text one troika BatchedText (3 draw calls). Each board shows the same text on its west
- * face (the arrival camera and the board stop) and its east face (rovers coming back from the wings).
- * Text is pre-wrapped here, so the line count is known and the list never runs into the footer. Phones
- * get the `compact` wall: the top three projects in larger type instead of five. Also the floating road
- * signs over each road mouth. Vitest runs it in node.
+ * Pure content of the L3 directory boards where the three roads fork (owner request 2026-10-13: noticeable
+ * on arrival; plan 2026-10-16: three free-standing boards, the Data and ML board a gate over the spine on
+ * two posts, each side board on one pylon, turned toward the axis). Boards and posts are one merged mesh,
+ * their rims, post edges and title underlines one line batch, every text one troika BatchedText (3 draw
+ * calls). Each board shows the same text on its front face (the arrival camera and the board stop) and
+ * its back face (rovers coming back from the roads). Text is pre-wrapped here, so the line count is known
+ * and the list never runs into the footer. Phones get the `compact` boards: the top three projects in
+ * larger type instead of five. Vitest runs it in node.
  */
 
 export interface DirectoryLabels {
@@ -85,14 +85,26 @@ export const LIST_STYLE: Record<WallSize, ListStyle> = {
 const MONO_EM = 0.6;
 const SANS_EM = 0.58;
 const INK = { sub: "#d4d4d8", list: "#f4f4f5" } as const;
-/** West face: toward the arrival camera and the board stop, reads along +z. East face: reads along -z. */
-const FACES = [
-  { side: -1, yaw: -Math.PI / 2, along: 1 },
-  { side: 1, yaw: Math.PI / 2, along: -1 },
-] as const;
 
-/** Text width on a face: the same on every board (the gate is wider than the text). */
-export const textWidth = (): number => LABS.board.d - 2 * PANEL.inset;
+/** One face of a board: where its text plane stands (`PANEL.out` off the face), its troika yaw and reading direction. */
+interface Face {
+  origin: Vec2;
+  yaw: number;
+  along: Vec2;
+}
+
+/** The front face (toward the arrival camera and the board stop, reading along `b.along`), then the back face (reading the other way). */
+function faces(b: DirectoryBoard): Face[] {
+  const out = LABS.board.w / 2 + PANEL.out;
+  return [1, -1].map((s) => ({
+    origin: { x: b.center.x + s * b.normal.x * out, z: b.center.z + s * b.normal.z * out },
+    yaw: s > 0 ? b.yaw : b.yaw + Math.PI,
+    along: { x: s * b.along.x, z: s * b.along.z },
+  }));
+}
+
+/** Text width on a face: the same on every board. */
+export const textWidth = (): number => LABS.board.width - 2 * PANEL.inset;
 
 /** Characters per list line at the list size (conservative average advance). */
 export const listChars = (style: ListStyle = LIST_STYLE.full): number => Math.floor(textWidth() / (SANS_EM * style.size));
@@ -160,35 +172,30 @@ export function boardList(list: readonly LabPod[], maxLines: number, style: List
   return { text: out.join("\n"), entries: out.length, lines };
 }
 
-/** Every board, then the four posts under them, as solids (one merged mesh; `y` is the bottom). */
+/** Every board, then the posts under them, as turned solids (one merged mesh; `y` is the bottom). A box's local x runs along the board's normal, its local z along the face. */
 export function wallSolids(boards: WallBoards = WALL_BOARDS): Box[] {
-  const { base, h, w } = LABS.board;
-  const raised = panels(boards).map(({ b }) => ({ x: b.center.x, y: base, z: b.center.z, w, h: h - base, d: b.maxZ - b.minZ }));
-  const posts = wallPosts().map((p) => ({ x: (p.minX + p.maxX) / 2, y: 0, z: (p.minZ + p.maxZ) / 2, w: p.maxX - p.minX, h: base, d: p.maxZ - p.minZ }));
+  const { base, h, w, width } = LABS.board;
+  const raised = panels(boards).map(({ b }) => ({ x: b.center.x, y: base, z: b.center.z, w, h: h - base, d: width, yaw: b.yaw + Math.PI / 2 }));
+  const posts = wallPosts().map((p) => ({ x: p.center.x, y: 0, z: p.center.z, w: p.across, h: base, d: p.along, yaw: p.yaw + Math.PI / 2 }));
   return [...raised, ...posts];
 }
 
-/** The wing whose board sits on a post: the outer posts carry their side board, the gate posts the Data and ML board. */
-function postWing(post: { minZ: number; maxZ: number }): Wing {
-  const z = (post.minZ + post.maxZ) / 2;
-  if (Math.abs(z) <= LABS.board.gate / 2) return "data";
-  return SIDE_WINGS.find((wing) => z >= directoryBoard(wing).minZ && z <= directoryBoard(wing).maxZ) ?? "data";
+/** Corner of a box (roof/solids.ts convention: local x turns to (cos yaw, -sin yaw), local z to (sin yaw, cos yaw)); `sy` -1 is the bottom. */
+function corner(b: Box, sx: number, sy: number, sz: number): [number, number, number] {
+  const lx = (sx * b.w) / 2;
+  const lz = (sz * b.d) / 2;
+  const c = Math.cos(b.yaw ?? 0);
+  const s = Math.sin(b.yaw ?? 0);
+  return [b.x + lx * c + lz * s, b.y + ((sy + 1) / 2) * b.h, b.z - lx * s + lz * c];
 }
 
-/** Box edges from `y0` to `y1` over a floor rect. */
-function boxEdges(r: { minX: number; maxX: number; minZ: number; maxZ: number }, y0: number, y1: number): WallLine["seg"][] {
-  const c: [number, number, number][] = [
-    [r.minX, y0, r.minZ],
-    [r.maxX, y0, r.minZ],
-    [r.maxX, y0, r.maxZ],
-    [r.minX, y0, r.maxZ],
-    [r.minX, y1, r.minZ],
-    [r.maxX, y1, r.minZ],
-    [r.maxX, y1, r.maxZ],
-    [r.minX, y1, r.maxZ],
-  ];
-  const edges = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]] as const;
-  return edges.map(([a, e]) => [...c[a], ...c[e]]);
+const BOX_CORNERS = [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1], [-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]] as const;
+const BOX_EDGES = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]] as const;
+
+/** The 12 edges of a box; the last four are the vertical ones. */
+function boxEdges(b: Box): WallLine["seg"][] {
+  const c = BOX_CORNERS.map(([x, y, z]) => corner(b, x, y, z));
+  return BOX_EDGES.map(([a, e]) => [...c[a], ...c[e]]);
 }
 
 /** Each board's 12 rim edges and a title underline on both faces in its wing tint, and each post's four vertical edges in the tint of the board above it (one line batch). */
@@ -196,22 +203,21 @@ export function wallLines(boards: WallBoards = WALL_BOARDS): WallLine[] {
   const out: WallLine[] = [];
   const { underline } = panelRows();
   const half = textWidth() / 2;
-  for (const { wing, b } of panels(boards)) {
+  const solids = wallSolids(boards);
+  panels(boards).forEach(({ wing, b }, i) => {
     const color = WING_TINT[wing];
-    for (const seg of boxEdges(b, LABS.board.base, LABS.board.h)) out.push({ seg, color });
-    for (const face of FACES) {
-      const x = b.center.x + face.side * (LABS.board.w / 2 + PANEL.out);
-      out.push({ seg: [x, underline, b.center.z - half, x, underline, b.center.z + half], color });
-    }
-  }
-  for (const post of wallPosts()) {
-    const color = WING_TINT[postWing(post)];
-    for (const seg of boxEdges(post, 0, LABS.board.base).slice(8)) out.push({ seg, color });
-  }
+    for (const seg of boxEdges(solids[i])) out.push({ seg, color });
+    for (const { origin: o, along: a } of faces(b)) out.push({ seg: [o.x - a.x * half, underline, o.z - a.z * half, o.x + a.x * half, underline, o.z + a.z * half], color });
+  });
+  const posts = wallPosts();
+  posts.forEach((post, i) => {
+    const color = WING_TINT[post.wing];
+    for (const seg of boxEdges(solids[solids.length - posts.length + i]).slice(8)) out.push({ seg, color });
+  });
   return out;
 }
 
-/** Every text of the wall, both faces of every board (one BatchedText). Wing names come from `labels.wings`, never literals. */
+/** Every text of the boards, both faces of every board (one BatchedText). Wing names come from `labels.wings`, never literals. */
 export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts, size: WallSize = "full", boards: WallBoards = WALL_BOARDS): BatchedLabel[] {
   const style = LIST_STYLE[size];
   const rows = panelRows(style);
@@ -224,9 +230,8 @@ export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fon
     const sub = `${labels.directory.toUpperCase()} \u00B7 ${labels.count(inWing.length).toUpperCase()}`;
     const footer = `\u25B8 ${labels.open.toUpperCase()}`;
     const color = WING_TINT[wing];
-    for (const face of FACES) {
-      const x = b.center.x + face.side * (LABS.board.w / 2 + PANEL.out);
-      const at = (u: number, y: number): [number, number, number] => [x, y, b.center.z + face.along * u];
+    for (const face of faces(b)) {
+      const at = (u: number, y: number): [number, number, number] => [face.origin.x + face.along.x * u, y, face.origin.z + face.along.z * u];
       out.push(
         { text: title.lines.join("\n"), position: at(0, rows.titleTop), yaw: face.yaw, font: fonts.monoBold, fontSize: title.size, color, anchorX: "center", anchorY: "top", textAlign: "center", lineHeight: PANEL.title.lineHeight },
         { text: sub, position: at(0, rows.subTop), yaw: face.yaw, font: fonts.mono, fontSize: PANEL.sub.size, color: INK.sub, anchorX: "center", anchorY: "top", textAlign: "center" },
@@ -236,16 +241,4 @@ export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fon
     }
   }
   return out.filter((l) => l.text.trim().length > 0);
-}
-
-/** The floating road signs (Round 7 G): one per road, upright over its mouth, plate bottom above the rover. */
-export const ROAD_SIGN = { font: 0.8, y: 3, wrap: 12 } as const;
-
-export function roadSigns(layout: Pick<LabsLayout, "signs">, wings: Record<Wing, string>, font: string): SignSpec[] {
-  return LABS_WINGS.map((wing) => {
-    const text = wrapSign(wings[wing].toUpperCase(), ROAD_SIGN.wrap);
-    const { h } = signPlate({ text, fontSize: ROAD_SIGN.font });
-    const at = layout.signs[wing].float;
-    return { text, x: at.x, y: ROAD_SIGN.y + h / 2, z: at.z, color: WING_TINT[wing], fontSize: ROAD_SIGN.font, font };
-  });
 }

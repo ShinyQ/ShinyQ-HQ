@@ -44,7 +44,7 @@ async function expectNoFlatText(page: Page) {
 
 for (const [floor, path, group, min, at] of [
   ["L2", "/en/journey", "career-year-markers", 1, null],
-  ["L3", "/en/labs", "labs-wing-signs", 2, null],
+  ["L3", "/en/labs", "labs-reactor-signs", 2, null],
   // L4 signs are placed on screen (Round 7 F): only signs in the frame draw. The arrival frames none since the
   // section signs hang over the back of each zone's first desk (the posts sign sits at the camera's foot), so
   // the check runs mid-timeline, where the year plates and the nearest titles are in view.

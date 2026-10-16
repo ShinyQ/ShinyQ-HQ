@@ -186,19 +186,4 @@ describe("L3 Data and ML spine", () => {
     expect(WING_TINT.data).toBe("#fbbf24");
     expect(WING_SIDE).toEqual({ software: -1, ai: 1 });
   });
-
-  it("puts one floating sign at each road: wing signs past their mouths, the spine sign over the spine before the wall", () => {
-    for (const wing of ["software", "ai"] as const) {
-      const road = network.roads.find((r) => r.id === wing)!;
-      expect(layout.signs[wing].at).toEqual(road.points[1]);
-      expect(Math.hypot(layout.signs[wing].float.x - road.points[1].x, layout.signs[wing].float.z - road.points[1].z)).toBeCloseTo(Math.abs(LABS.signAlong));
-      // A negative signAlong pulls the sign back toward the hub centre, along the hub-to-mouth line.
-      const hub = road.points[0];
-      const fromHub = Math.hypot(layout.signs[wing].float.x - hub.x, layout.signs[wing].float.z - hub.z);
-      expect(fromHub).toBeCloseTo(Math.hypot(road.points[1].x - hub.x, road.points[1].z - hub.z) + LABS.signAlong);
-    }
-    expect(layout.signs.data.float).toEqual({ x: LABS.spineSignX, z: 0 });
-    expect(layout.signs.data.float.x).toBeLessThan(layout.boards.data.minX);
-    expect(Object.keys(layout.signs).sort()).toEqual(["ai", "data", "software"]);
-  });
 });
