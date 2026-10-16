@@ -8328,18 +8328,18 @@
                 "en": "The Clean up confirm bar: 152 emails go to Trash and 34 to Archive, nothing is permanently deleted, and groups below the threshold stay for review",
                 "id": "Bar konfirmasi Clean up: 152 email ke Trash dan 34 ke Archive, tidak ada yang dihapus permanen, dan grup di bawah threshold tetap menunggu ditinjau"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
-              "src": "/media/clearbox/03-unsure-group.webp",
+              "src": "/media/clearbox/03-accounts.webp",
               "alt": {
-                "en": "An unsure sender group left for the owner to check, with its latest emails and Trash, Archive and Keep actions",
-                "id": "Grup pengirim berstatus unsure yang diserahkan ke pemilik untuk dicek, dengan email terbarunya serta aksi Trash, Archive, dan Keep"
+                "en": "Accounts: Gmail and Outlook mailboxes with backfill progress, Scan now, Pause, Reconnect and Disconnect; Clearbox can never permanently delete or send email",
+                "id": "Accounts: mailbox Gmail dan Outlook dengan progres backfill, Scan now, Pause, Reconnect, dan Disconnect; Clearbox tidak pernah bisa menghapus permanen atau mengirim email"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
@@ -8348,8 +8348,8 @@
                 "en": "Insights: agreement with trash decisions against the 98% target, the tuned threshold, emails cleaned per week and the daily free-tier budget; one cost figure blurred",
                 "id": "Insights: kesesuaian dengan keputusan trash terhadap target 98%, threshold yang disetel, email yang dibersihkan per minggu, dan anggaran harian free tier; satu angka biaya diburamkan"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
@@ -8358,18 +8358,18 @@
                 "en": "Activity: every Clean up, undo, rule change, threshold tuning and nightly cleanup, with Undo on recent batches",
                 "id": "Activity: setiap Clean up, undo, perubahan aturan, penyetelan threshold, dan pembersihan malam hari, dengan Undo untuk batch terbaru"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/clearbox/06-rules.webp",
               "alt": {
-                "en": "Rules: always-keep and always-OK-to-trash senders, scan history, the locked guardrails and record words",
-                "id": "Rules: pengirim yang selalu disimpan dan selalu boleh dibuang, riwayat pemindaian, guardrail yang terkunci, dan kata-kata penanda dokumen"
+                "en": "Rules: always-keep and always-OK-to-trash senders, the recent-mail window, the locked guardrails and record words",
+                "id": "Rules: pengirim yang selalu disimpan dan selalu boleh dibuang, jendela email terbaru, guardrail yang terkunci, dan kata-kata penanda dokumen"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
