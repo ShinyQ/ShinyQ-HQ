@@ -106,6 +106,8 @@ export function SkyController({ tier }: { tier: GpuTier }) {
     skyRuntime.day = state.day;
     skyRuntime.stars = state.stars;
     skyRuntime.source = m.source;
+    skyRuntime.fog = state.fog.getHex();
+    skyRuntime.applied += 1;
   });
 
   return (

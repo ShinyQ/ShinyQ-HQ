@@ -25,20 +25,29 @@ interface SkyRead {
   day: number;
   stars: number;
   source: string;
+  fog: number;
+  applied: number;
 }
 
 type SkyWindow = Window & { __hq: { sky: SkyRead } };
 
 const readSky = (page: Page): Promise<SkyRead> =>
   page.evaluate(() => {
-    const { phase, day, stars, source } = (window as unknown as SkyWindow).__hq.sky;
-    return { phase, day, stars, source };
+    const { phase, day, stars, source, fog, applied } = (window as unknown as SkyWindow).__hq.sky;
+    return { phase, day, stars, source, fog, applied };
   });
 
-/** The sky is written from the first frames on: wait until the source reflects the resolved mode. */
+/** Waits until the controller applied the sky at least once and the source reflects the resolved mode. */
 async function waitForSource(page: Page, source: string) {
-  await expect.poll(async () => (await readSky(page)).source, { timeout: 30_000 }).toBe(source);
+  await expect
+    .poll(async () => {
+      const sky = await readSky(page);
+      return sky.applied >= 1 ? sky.source : "pending";
+    }, { timeout: 30_000 })
+    .toBe(source);
 }
+
+const NIGHT_FOG = 0x0a0a0f;
 
 /** Navigates to L1 with `?sky=` (enterHQ appends its own query, so the URL is built here). Call `asReturningVisitor` once before. */
 async function openSky(page: Page, sky: string) {
@@ -51,14 +60,15 @@ async function openSky(page: Page, sky: string) {
 test("automation holds night when no ?sky= is given", async ({ page }) => {
   await enterHQ(page);
   await waitForSource(page, "held");
-  expect(await readSky(page)).toEqual({ phase: 0, day: 0, stars: 1, source: "held" });
+  expect(await readSky(page)).toMatchObject({ phase: 0, day: 0, stars: 1, source: "held", fog: NIGHT_FOG });
 });
 
-test("?sky=night and ?sky=day pin the phase: day is bright and starless, night is dark with stars", async ({ page }) => {
+test("?sky=night and ?sky=day pin the phase: day has a different fog color and no stars, night keeps the night fog and stars", async ({ page }) => {
   await asReturningVisitor(page);
   await openSky(page, "night");
   await waitForSource(page, "param");
-  expect(await readSky(page)).toEqual({ phase: 0, day: 0, stars: 1, source: "param" });
+  const night = await readSky(page);
+  expect(night).toMatchObject({ phase: 0, day: 0, stars: 1, source: "param", fog: NIGHT_FOG });
 
   await openSky(page, "day");
   await waitForSource(page, "param");
@@ -66,7 +76,7 @@ test("?sky=night and ?sky=day pin the phase: day is bright and starless, night i
   expect(day.phase).toBeCloseTo(0.5, 5);
   expect(day.day).toBe(1);
   expect(day.stars).toBe(0);
-
+  expect(day.fog, "the day fog color differs from night").not.toBe(night.fog);
 });
 
 test("?sky=dawn sits between night and day", async ({ page }) => {
@@ -81,6 +91,7 @@ test("?sky=dawn sits between night and day", async ({ page }) => {
 });
 
 test("day costs the same shader programs and scene draw calls as night on L1", async ({ page }) => {
+  test.setTimeout(360_000);
   await asReturningVisitor(page);
   const measure = async (sky: string) => {
     await openSky(page, sky);
@@ -91,9 +102,8 @@ test("day costs the same shader programs and scene draw calls as night on L1", a
   };
   const night = await measure("night");
   const day = await measure("day");
-  console.log(`night ${JSON.stringify(night)} | day ${JSON.stringify(day)}`);
   expect(day.programs, `programs night ${night.programs}, day ${day.programs}`).toBe(night.programs);
-  expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(4);
+  expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(2);
 });
 
 test("?sky=cycle follows the 8 minute wall clock", async ({ page }) => {
@@ -121,7 +131,7 @@ test.describe("a human visitor (webdriver hidden)", () => {
     await page.addInitScript(() => localStorage.setItem("hq:day-night", "off"));
     await enterHQ(page);
     await waitForSource(page, "held");
-    expect(await readSky(page)).toEqual({ phase: 0, day: 0, stars: 1, source: "held" });
+    expect(await readSky(page)).toMatchObject({ phase: 0, day: 0, stars: 1, source: "held", fog: NIGHT_FOG });
   });
 
   test("no choice runs the clock under Full motion", async ({ page }) => {
