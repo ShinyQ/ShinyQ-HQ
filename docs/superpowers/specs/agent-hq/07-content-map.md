@@ -69,6 +69,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Spec-Driven, Agent-Orchestrated Delivery | How the work is delivered: specs in, parallel agents, human review gates |
 | featured | AI Presentation Authoring and Hosting (MII Deck, featured since 2026-10-16) | 134 of 136 commits; 20 releases with automatic rollback; 32 slide blueprints |
 | featured | MII Cowork UI Revamp and Deck Studio (2026-10-16; the platform is led by a colleague) | 194 commits in 10 merged PRs; 133-file frontend revamp with no backend change; 57% of frontend source lines |
+| featured | Clearbox AI Inbox Cleanup for Gmail and Outlook (2026-10-16; solo open-source build, public repository, no live link: self-hosted behind Cloudflare Access) | 1,589 automated tests on a fresh clone; 179 commits in two days; model evaluation on 40 synthetic labeled emails |
 | listed | From Apps to Products (managed-app packaging) · Operating a Shared Azure AI Estate · Fraud Review Dashboard and Security Remediation · AI Ticketing Assistant Re-platform · Chart-of-Accounts AI Assistant · Explainable In-Browser Credit Scoring · Governance for a Bank's GenAI Portal · Enterprise AI Contact Center Architecture | |
 
 ### Data and ML wing (annex east of the Tech Reactor; owner request 2026-10-14)

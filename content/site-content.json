@@ -8209,6 +8209,182 @@
           ]
         },
         {
+          "id": "clearbox",
+          "slug": "clearbox",
+          "order": 19,
+          "tier": "featured",
+          "accent": "cyan",
+          "wing": "ai",
+          "title": {
+            "en": "Clearbox AI Inbox Cleanup for Gmail and Outlook",
+            "id": "Clearbox, Pembersih Inbox AI untuk Gmail dan Outlook"
+          },
+          "shortTitle": {
+            "en": "Clearbox AI Inbox Cleanup",
+            "id": "Clearbox Pembersih Inbox AI"
+          },
+          "tagline": {
+            "en": "A self-hosted inbox assistant for Gmail and Outlook: Microsoft-Decision-1 pre-sorts every email into trash, archive, keep or unsure with its reasons, and nothing moves until the owner confirms one Clean up.",
+            "id": "Asisten inbox self-hosted untuk Gmail dan Outlook: Microsoft-Decision-1 memilah setiap email ke trash, archive, keep, atau unsure beserta alasannya, dan tidak ada email yang dipindahkan sebelum pemiliknya mengonfirmasi satu Clean up."
+          },
+          "period": {
+            "start": "2026-10",
+            "end": "2026-10"
+          },
+          "role": {
+            "en": "Solo builder: product design, implementation, infrastructure and tests (open source, MIT)",
+            "id": "Pembangun tunggal: desain produk, implementasi, infrastruktur, dan pengujian (open source, MIT)"
+          },
+          "problem": {
+            "en": "Cleaning a busy inbox means reading email by email. Simple filter rules either miss bulk mail or trash something that mattered, and hosted cleanup services need broad access to the mailbox.",
+            "id": "Membersihkan inbox yang ramai berarti membaca email satu per satu. Aturan filter sederhana sering melewatkan email massal atau justru membuang email penting, sementara layanan pembersih yang di-host pihak lain membutuhkan akses luas ke mailbox."
+          },
+          "approach": [
+            {
+              "en": "I built a pipeline per email: signals from headers and history, guardrails that cap the allowed action, Microsoft-Decision-1 on Microsoft Foundry for trash, archive, keep and unsure probabilities, per-sender priors, then a deterministic fusion that suggests trash only above a calibrated threshold.",
+              "id": "Saya membangun pipeline untuk setiap email: sinyal dari header dan riwayat, guardrail yang membatasi aksi yang diizinkan, Microsoft-Decision-1 di Microsoft Foundry untuk probabilitas trash, archive, keep, dan unsure, prior per pengirim, lalu fusion deterministik yang hanya menyarankan trash di atas threshold yang sudah dikalibrasi."
+            },
+            {
+              "en": "Review groups email by sender with a confidence band and up to three reasons from real signals; one Clean up moves only approved mail to Trash or Archive, with Undo for 24 hours and no permanent delete path.",
+              "id": "Halaman Review mengelompokkan email per pengirim dengan tingkat keyakinan dan hingga tiga alasan dari sinyal nyata; satu Clean up hanya memindahkan email yang disetujui ke Trash atau Archive, dengan Undo selama 24 jam dan tanpa jalur penghapusan permanen."
+            },
+            {
+              "en": "A nightly job tunes the trash threshold to the lowest value that keeps agreement with the owner's trash decisions at or above 98%, so every approval and override teaches it.",
+              "id": "Job malam hari menyetel threshold trash ke nilai terendah yang menjaga kesesuaian dengan keputusan trash pemilik di 98% atau lebih, sehingga setiap persetujuan dan koreksi menjadi bahan belajar."
+            },
+            {
+              "en": "It runs on Cloudflare Workers and D1 (EU jurisdiction) behind Cloudflare Access, with least-privilege OAuth, AES-256-GCM encrypted tokens, metadata and snippets only, and a Bicep deployment for the model in Sweden Central.",
+              "id": "Aplikasi ini berjalan di Cloudflare Workers dan D1 (yurisdiksi EU) di balik Cloudflare Access, dengan OAuth least-privilege, token terenkripsi AES-256-GCM, hanya metadata dan cuplikan email, serta deployment Bicep untuk model di Sweden Central."
+            }
+          ],
+          "results": [
+            {
+              "value": "1,589",
+              "label": {
+                "en": "Automated tests passing",
+                "id": "Pengujian otomatis yang lolos"
+              },
+              "context": {
+                "en": "Vitest suites for the core, Worker, web app and evaluation harness plus the script tests, run on a fresh clone, 16 Oct 2026.",
+                "id": "Suite Vitest untuk core, Worker, aplikasi web, dan harness evaluasi ditambah pengujian skrip, dijalankan pada clone baru, 16 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "179",
+              "label": {
+                "en": "Commits by Kurniadi in two days",
+                "id": "Commit oleh Kurniadi dalam dua hari"
+              },
+              "context": {
+                "en": "Repository history, 15 to 16 Oct 2026.",
+                "id": "Riwayat repositori, 15 hingga 16 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "40",
+              "label": {
+                "en": "Synthetic labeled emails in the model evaluation",
+                "id": "Email sintetis berlabel untuk evaluasi model"
+              },
+              "context": {
+                "en": "The evaluation reports delete precision and recall, calibration and latency against the real model deployment.",
+                "id": "Evaluasi melaporkan precision dan recall penghapusan, kalibrasi, dan latensi terhadap deployment model yang sebenarnya."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "TypeScript",
+            "React",
+            "Vite",
+            "Tailwind CSS",
+            "Hono",
+            "Cloudflare Workers",
+            "Cloudflare D1",
+            "Microsoft Foundry",
+            "Bicep",
+            "Vitest"
+          ],
+          "hologram": "pipeline",
+          "repos": [
+            "https://github.com/ShinyQ/Clearbox"
+          ],
+          "assets": [
+            {
+              "src": "/media/clearbox/01-review.webp",
+              "alt": {
+                "en": "Clearbox Review on synthetic data: 186 emails ready to clean up, sender groups with verdicts and confidence bands, and the reasons for one group in the detail panel",
+                "id": "Review Clearbox dengan data sintetis: 186 email siap dibersihkan, grup pengirim dengan verdict dan tingkat keyakinan, serta alasan untuk satu grup di panel detail"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/02-clean-up.webp",
+              "alt": {
+                "en": "The Clean up confirm bar: 152 emails go to Trash and 34 to Archive, nothing is permanently deleted, and groups below the threshold stay for review",
+                "id": "Bar konfirmasi Clean up: 152 email ke Trash dan 34 ke Archive, tidak ada yang dihapus permanen, dan grup di bawah threshold tetap menunggu ditinjau"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/03-unsure-group.webp",
+              "alt": {
+                "en": "An unsure sender group left for the owner to check, with its latest emails and Trash, Archive and Keep actions",
+                "id": "Grup pengirim berstatus unsure yang diserahkan ke pemilik untuk dicek, dengan email terbarunya serta aksi Trash, Archive, dan Keep"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/04-insights.webp",
+              "alt": {
+                "en": "Insights: agreement with trash decisions against the 98% target, the tuned threshold, emails cleaned per week and the daily free-tier budget; one cost figure blurred",
+                "id": "Insights: kesesuaian dengan keputusan trash terhadap target 98%, threshold yang disetel, email yang dibersihkan per minggu, dan anggaran harian free tier; satu angka biaya diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/05-activity.webp",
+              "alt": {
+                "en": "Activity: every Clean up, undo, rule change, threshold tuning and nightly cleanup, with Undo on recent batches",
+                "id": "Activity: setiap Clean up, undo, perubahan aturan, penyetelan threshold, dan pembersihan malam hari, dengan Undo untuk batch terbaru"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/06-rules.webp",
+              "alt": {
+                "en": "Rules: always-keep and always-OK-to-trash senders, scan history, the locked guardrails and record words",
+                "id": "Rules: pengirim yang selalu disimpan dan selalu boleh dibuang, riwayat pemindaian, guardrail yang terkunci, dan kata-kata penanda dokumen"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/clearbox/07-mobile.webp",
+              "alt": {
+                "en": "Phone layouts: Review with the Clean up button, a sender group's reasons and latest emails, and Insights",
+                "id": "Tampilan ponsel: Review dengan tombol Clean up, alasan dan email terbaru satu grup pengirim, serta Insights"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
+        },
+        {
           "id": "solutions-marketing-site",
           "slug": "solutions-marketing-site",
           "order": 11,
