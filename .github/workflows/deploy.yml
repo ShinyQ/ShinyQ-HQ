@@ -9,7 +9,8 @@ name: Deploy
 #   - by hand: Actions > Deploy > Run workflow, or `gh workflow run deploy.yml --ref main [-f sha=<commit>]`.
 # The sha must be on main. The deploy does not rerun e2e on a tested commit: `Reuse the CI result`
 # (scripts/ci-status.ts) waits for CI's `Build, CV and e2e` check on the sha, or finds a green CI run on
-# a commit with the same tree (the facts PR, tested before its squash merge). Only complete runs are
+# a commit with the same tree (a push to main or a same-repository PR run only; the facts merge finds
+# none, since its PR was tested by a workflow_dispatch run, so it runs the e2e shards). Only complete runs are
 # reused: those with the `ci-full` artifact (every e2e shard, the perf gates and Lighthouse ran); a
 # selective PR run never is, and older runs without the marker are not reused. A red CI fails the deploy.
 # Only without a complete CI result, or with the `rerun_e2e` input, does it build without the analytics beacon

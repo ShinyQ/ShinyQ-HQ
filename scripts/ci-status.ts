@@ -11,8 +11,9 @@
  * older runs without the marker are not reused either (the deploy then runs the e2e shards itself).
  * A red CI on the commit fails the deploy, marker or not.
  * - reuse=true: CI's aggregate check `Build, CV and e2e` passed on this commit in a complete run, or a
- *   successful complete CI run tested a commit with the same tree (the weekly facts PR before its squash
- *   merge: a GITHUB_TOKEN merge starts no push CI on main).
+ *   successful complete CI run from a push to main or a same-repository pull request tested a commit
+ *   with the same tree. The weekly facts merge (a GITHUB_TOKEN merge starts no push CI on main) finds
+ *   none: its PR was tested by a workflow_dispatch run, which is never reused by tree.
  * - reuse=false: no complete CI result for this commit or its tree after the grace period, or
  *   --force-rerun true: the deploy runs the e2e shards itself.
  * While a CI run on the sha is unfinished (its aggregate check does not exist yet), it waits.

@@ -77,7 +77,7 @@ runs the fast checks always and the heavy jobs only when its changed paths need 
 - The aggregate required check `Build, CV and e2e`:
   - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, Lighthouse);
   - merged HTML report, the tests that passed only on retry, and the 3D perf summary against the last green main run (when the perf gates ran);
-  - uploads the `ci-full` artifact when the run was complete (every e2e shard, the perf gates and Lighthouse), the marker the deploy gate needs.
+  - uploads the `ci-full` artifact when the plan ran every heavy job (every e2e shard, the perf gates and Lighthouse), even if the run then turns red; the marker the deploy gate needs, which still treats a red run as red.
 - A Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
 - PR runs replace each other; runs on `main` are never cancelled (the deploy reuses them).
 
@@ -91,13 +91,14 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 |---|---|---|---|---|
 | `ci` | `.github/workflows/`, `.github/actions/`, `package.json`, `bun.lock`, `bunfig.toml`, `next.config.ts`, `playwright.config.ts`, `tsconfig.json`, `lighthouserc.json`, `postcss.config.*`, `e2e/{hq,routes,budgets}.ts`, `e2e/perf/`, `scripts/{ci-plan,e2e-plan,e2e-shard,perf-*,serve-static,flaky-report}` | full run | full run | full run |
 | `code3d` | `src/experience/`, `src/hud/`, `src/store/`, `src/assets/`, `public/floors/`, `public/fonts/` | every shard | yes | yes |
-| `ui` | other `src/`, `messages/`, other `public/`, the build scripts (`build-knowledge`, `defer-scripts`, `root-redirect`, `check-client-chunks`, `csp-hashes`, `csp-policy`) | mapped specs | only for `src/` files the 3D roots import | yes |
-| `functions` | `functions/`, `workers/`, `wrangler.toml` | mapped specs | no | no |
-| `e2e` | other `e2e/` files (specs, helpers) | mapped specs (a changed spec runs itself) | no | no |
-| `tooling` | other `scripts/` | mapped specs | no | no |
-| `content` | `content/`, `public/media/`, `public/papers/`, `public/cv/` | none | no | no |
-| `docs` | `docs/`, other `.github/`, `*.md`, `LICENSE`, root dotfiles | none | no | no |
 | `tests` | `tests/`, `e2e/durations.json`, `vitest.config.mts`, `eslint.config.mjs` | none | no | no |
+| `e2e` | other `e2e/` files (specs, helpers) | mapped specs (a changed spec runs itself) | no | no |
+| `content` | `content/`, `public/media/`, `public/papers/`, `public/cv/` | none | no | no |
+| `functions` | `functions/`, `workers/`, `wrangler.toml` | mapped specs | no | no |
+| `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts` | mapped specs | no | yes |
+| `tooling` | other `scripts/` | mapped specs | no | no |
+| `ui` | other `src/`, `messages/`, other `public/` | mapped specs | only for `src/` files the 3D roots import | yes |
+| `docs` | `docs/`, other `.github/`, `*.md`, `LICENSE`, root dotfiles | none | no | no |
 | `other` | anything unmatched | full run | full run | full run |
 
 - Mapped specs: `specsForChanges` in `scripts/e2e-plan.ts` (the `e2e:changed` map) over the `ui`, `functions`, `e2e` and `tooling` files; when the map asks for the full suite, every shard runs.
@@ -116,7 +117,7 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 
 - Pushes to `main`, `workflow_dispatch` and the nightly schedule always run everything.
 - Nightly: cron `15 20 * * *` (03:15 WIB) on `main`, in its own concurrency group so it never replaces a pending `main` push. It adds two jobs:
-  - `Visual gate (nightly)`: `scripts/visual-gate.ts --profile strict` of this commit against the previous scheduled run's commit (skipped when there is none or it is the same commit); diffs in the `visual-gate-diffs` artifact on failure.
+  - `Visual gate (nightly)`: `scripts/visual-gate.ts --profile strict` of this commit against the previous scheduled run's commit (skipped when there is none, it is the same commit, or that commit is not in this repository's history); diffs in the `visual-gate-diffs` artifact on failure.
   - `Nightly report` (`scripts/ci-nightly.ts`): opens one issue labelled `ci-nightly` when a job failed, updates it while the nightly keeps failing (a comment only when the failed jobs change) and closes it once a later nightly is green. It writes only on `main`; elsewhere it is a dry run.
 - Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`).
 
@@ -127,12 +128,13 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 - Triggers: by hand, or from `refresh-facts.yml` after it merges the weekly live-facts PR (`AUTO_DEPLOY_FACTS=false` stops that).
 - A push to `main` never deploys.
 - Steps:
-  1. Reuses CI's green `Build, CV and e2e` for the commit (or for a commit with the same tree).
+  1. Reuses CI's green `Build, CV and e2e` for the commit (or for a commit with the same tree, from a push to `main` or a same-repository PR run only).
      - Only a complete run counts: one that carries the `ci-full` artifact (pushes to `main`, dispatches and the nightly always do). Selective PR runs and runs without the marker are never reused.
      - `scripts/ci-status.ts` waits up to 40 minutes while CI runs.
      - It keeps waiting past its 3-minute grace while a CI run for the commit is still unfinished.
      - It fails the deploy on a red CI, marker or not.
      - Without a complete CI result, or with the `rerun_e2e` input, it runs the 4 e2e shards itself first.
+     - The weekly facts merge always lands here: it gets no push CI, and its PR was tested by a `workflow_dispatch` run, never reused by tree (`refresh-facts.yml` already gated the merge on that full run).
   2. Builds, deploys `out/` plus `functions/`.
   3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
