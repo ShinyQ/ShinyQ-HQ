@@ -57,7 +57,7 @@ interface Sim {
 export const sim: Sim = { controller: new RoverController({ x: -21, z: 0 }, Math.PI / 2), keys: new Set(), leg: null, cameraForward: { x: 0, z: -1 } };
 
 /** Ends the running leg (manual input, a new leg or a reset). */
-export function cancelLeg() {
+function cancelLeg() {
   sim.leg?.resolve("cancelled");
   sim.leg = null;
   sim.controller.clearPath();
