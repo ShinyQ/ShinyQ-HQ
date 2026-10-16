@@ -30,7 +30,10 @@ export function FloorIntroLayer({ data }: { data: ExperienceData }) {
   const floor = useHQStore((s) => s.floor);
   const exploring = useHQStore((s) => s.phase === "explore" && !s.ride && s.mission?.status !== "running");
   const [prompt, setPrompt] = useState<FloorId | null>(null);
-  const showing = prompt === floor;
+  // A line cut short by a floor change, a ride or a mission is not seen: it waits for its next chance
+  // (the delay and the checks again) and never speaks at once on return.
+  if (prompt !== null && (prompt !== floor || !exploring)) setPrompt(null);
+  const showing = prompt === floor && exploring;
 
   // Pending: wait for the rover to settle on a floor whose line was not spoken yet.
   useEffect(() => {
