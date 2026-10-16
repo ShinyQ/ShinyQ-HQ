@@ -493,3 +493,8 @@ Bug cookie di bawah ada di langkah 1 dan 3. Bug waktu commit ada di langkah 2.
 - [ ] Byte deltas: HTML and RSC `.txt` sizes (raw and gzip) of every `out/*/blog/*` file against the baseline build; client chunk total unchanged.
 - [ ] Captures of every post figure at 1440x900 and 390x844 (Playwright, `?tier=static`), saved in the session files folder.
 - [ ] Check CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), push, open the PR (not merged), report to the coordinator.
+
+## Execution notes (2026-10-16)
+
+- The committed post text supersedes this plan's draft copy where they differ. Reviews corrected it against the posts: the owner (not the agents) opened the pull requests, the commit-timing bug "first showed up" in step 2, portal API requests (not all requests) go through FastAPI, the CV evaluation harness moved out of the numbered steps, the voice caption names "the two barge-in fixes", and two Indonesian terms match their posts ("risk engine hybrid", "melakukan truncate").
+- The new 390 px axe runs exposed a pre-existing `scrollable-region-focusable` violation on code blocks; MDX `pre` now renders with `tabIndex={0}` (`src/components/blog/mdx.tsx`).
