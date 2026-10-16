@@ -161,6 +161,9 @@ export function CameraDirector({
     } else if (l.glide) {
       l.glide.t += dt;
     }
+    // This sees the ride end on the frame the Director ends it (rover on the arrival point, `cameraSnap` set): both
+    // `useFrame`s use the default priority 0 and R3F runs equal priorities in subscription order, which is mount
+    // order here (Scene.tsx mounts the Director just before the CameraDirector).
     if (!s.ride && l.prevStage !== null && l.prevStage !== "toDoor" && s.reducedMotion) {
       const zone = arrivalZone(layouts?.[s.floor]);
       if (zone && zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones)?.id === zone.id) {
@@ -175,7 +178,10 @@ export function CameraDirector({
     const glide = l.glide;
 
     // The arrival view holds while the camera glides and the rover rolls on to the arrival point, so it parks in the primed zone.
-    const rollingOn = roverRuntime.autopilot?.arrival && roverRuntime.autopilot.state !== "done";
+    // A roll-on still pending while the visitor steers does not start (the Director waits for the keys or the stick to
+    // let go), so it releases the hold: the zones follow the steered rover.
+    const arrival = roverRuntime.autopilot?.arrival ? roverRuntime.autopilot.state : null;
+    const rollingOn = arrival === "driving" || (arrival === "pending" && !roverRuntime.steering);
     if (exploring && !s.ride && !glide && !rollingOn) {
       updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), orbit), s.reducedMotion, cls, rail);
     }
@@ -196,6 +202,14 @@ export function CameraDirector({
     /** The rig the drawn pose belongs to: during a glide the destination's (the store still holds the origin floor until the ride ends). */
     const drawRail = glide ? glide.to === "L2" : rail;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
+    // The settled rail or follow pose: one helper for the glide's end and the normal branches, so the handover never pops.
+    const rigPose = (onRail: boolean, forward: Vec2): CameraPose => {
+      if (onRail) return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
+      // Look slightly ahead of the rover so more of the floor in front is visible.
+      const ahead = FOLLOW_LOOK_AHEAD[cls];
+      const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
+      return followPose(cls, [roverTarget[0] + forward.x * ahead, roverTarget[1], roverTarget[2] + forward.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
+    };
     // Boost: widen and pull back a little (third person), a smaller FOV kick in first person; never under reduced motion.
     boostView(roverRuntime.boost, orbit.blend, !s.reducedMotion && !focus && rig !== "intro", l.boost);
     roverRuntime.boostFov = l.boost.fovKick;
@@ -224,29 +238,15 @@ export function CameraDirector({
         }
       }
     } else if (glide) {
-      // The settled arrival view, as the follow or rail branch below draws it, then over the shoulder toward it.
-      let end: CameraPose;
-      if (drawRail) {
-        end = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
-      } else {
-        const ahead = FOLLOW_LOOK_AHEAD[cls];
-        const f = followForward(cls, orbit.yaw);
-        const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-        end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
-      }
+      // The settled arrival view of the destination's rig (with its settled look-ahead), then over the shoulder toward it.
+      const end = rigPose(drawRail, followForward(cls, orbit.yaw));
       // In the car the rover leaves east (on the frame the doors start to open it still faces the ride's back wall).
       const heading = s.ride ? ARRIVAL_HEADING : roverRuntime.heading;
       const start = shoulderPose([roverRuntime.x, roverRuntime.y, roverRuntime.z], heading, end.fov);
       desired = glidePose(start, end, glideProgress(glide.t));
       snap = true;
-    } else if (rail) {
-      desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
     } else {
-      // Look slightly ahead of the rover so more of the floor in front is visible.
-      const ahead = FOLLOW_LOOK_AHEAD[cls];
-      const f = roverRuntime.cameraForward;
-      const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
+      desired = rigPose(rail, roverRuntime.cameraForward);
     }
     // A low third-person camera stays above the floor, on the slab and out of obstacles: pulled in along its view ray. High poses never move.
     if (world && !focus && rig !== "intro" && !glide) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget) };
@@ -280,7 +280,7 @@ export function CameraDirector({
     l.outPos.copy(l.pos);
     l.outTarget.copy(l.target);
     if (fp) {
-      const look = rail ? railForward(orbit.railYaw) : followForward(cls, orbit.yaw);
+      const look = drawRail ? railForward(orbit.railYaw) : followForward(cls, orbit.yaw);
       const eye = firstPersonPose(cls, [roverRuntime.x, roverRuntime.y, roverRuntime.z], look, orbit.look);
       const mixed = blendPoses({ position: toVec3(l.pos), target: toVec3(l.target), fov: desired.fov }, eye, orbit.blend);
       const position = world ? clampCamera(eye.position, mixed.position, world) : mixed.position;
