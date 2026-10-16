@@ -15,7 +15,7 @@ function corpus(): string[] {
     for (const text of [e.title.en, e.title.id, ...e.keywords, e.subtitle?.en ?? "", e.subtitle?.id ?? ""]) for (const w of text.split(/\s+/)) if (w) words.add(w);
   }
   const list = [...words].sort();
-  const queries = ["", "   ", "voice ai contact center", "tur singkat", "kontak", "Caf\u00e9 ", "what did you build?", "siapa kamu", "copy email", "2021", "zz", "qxj", "a", "ai ml", "rag llm azure", "View CV!"];
+  const queries = ["", "   ", "voice ai contact center", "sorotan utama", "kontak", "Caf\u00e9 ", "what did you build?", "siapa kamu", "copy email", "2021", "zz", "qxj", "a", "ai ml", "rag llm azure", "View CV!"];
   list.forEach((w, i) => {
     if (i % 3 === 0) queries.push(w, w.slice(0, 2), w.slice(0, 4), w.toUpperCase());
     if (i % 5 === 0 && w.length > 3) queries.push(w.slice(0, 1) + w.slice(2));

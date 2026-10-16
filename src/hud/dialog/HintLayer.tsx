@@ -20,9 +20,9 @@ const pickedItem = () => hintRuntime.target?.item ?? null;
  * The "!" bubble over the nearest point-and-go target (HintProbe moves it every frame, above the
  * target's hover label). Enter, a tap or a click opens Rover's one-line dialog about it; its Go choice
  * emits point-and-go's `interact` intent, so the rover drives there and runs the action exactly as a
- * click on the object would. Hidden while hints are off, during missions, rides,
- * beams, pickers, drawers, the Ask panel, while Rover is already talking, and while point-and-go has
- * a hovered or tap-selected target (its label, live text and "Go to" chip own that moment).
+ * click on the object would. Hidden while hints are off, during missions, rides, beams, pickers,
+ * drawers, the Ask panel, while Rover is already talking, and while point-and-go has a hovered or
+ * tap-selected target (its label, live text and "Go to" chip own that moment).
  */
 export function HintLayer({ name }: { name: string }) {
   const t = useTranslations("dialog.hints");
