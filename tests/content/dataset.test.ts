@@ -133,13 +133,15 @@ describe("content/site-content.json", () => {
     expect([jenius?.start, jenius?.end]).toEqual(["2024-06", "2025-12"]);
   });
 
-  it("does not show 2026 hackathon entries (C1)", () => {
+  it("does not show 2026 hackathon entries except the ones the owner approved (C1)", () => {
+    // Owner-approved exceptions, each named openly as a hackathon entry (Sewise Fashion Labs: owner decision 2026-10-16).
+    const approved = new Set(["sewise-fashion-labs"]);
     const hackathon2026 = [
       ...entries.filter((e) => e.start >= "2026" && /hackathon/i.test(JSON.stringify(e))).map((e) => e.id),
       ...content.floors.library.talks.filter((t) => t.date >= "2026" && /hackathon/i.test(JSON.stringify(t))).map((t) => t.id),
       ...content.awards.filter((a) => a.date >= "2026").map((a) => a.id),
       ...pods.filter((p) => /hackathon/i.test(JSON.stringify(p))).map((p) => p.id),
-    ];
+    ].filter((id) => !approved.has(id));
     expect(hackathon2026).toEqual([]);
   });
 

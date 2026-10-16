@@ -1,0 +1,158 @@
+---
+title: "Memilah Inbox dengan Microsoft-Decision-1"
+date: "2026-10-16"
+excerpt: "Clearbox memilah inbox saya ke trash, archive, keep, dan unsure, sehingga pembersihan mingguan cukup beberapa menit. Microsoft-Decision-1 menilai setiap email, kode deterministik menambahkan guardrail dan alasan, dan tidak ada email yang dipindahkan sebelum saya setujui. Berikut arsitekturnya, serta apa yang ditunjukkan dan tidak ditunjukkan oleh evaluasi 40 email."
+tags: ["microsoft-decision-1", "microsoft-foundry", "cloudflare-workers", "evaluation", "case-study"]
+readingTime: "14 min"
+---
+
+Clearbox adalah asisten inbox self-hosted yang saya bangun untuk akun Gmail dan Outlook saya sendiri. Aplikasi ini memilah setiap email di inbox ke trash, archive, keep, atau unsure, mengelompokkan saran per pengirim beserta tingkat keyakinan dan hingga tiga alasan, lalu hanya memindahkan email yang saya setujui. Trash selalu berarti dipindahkan ke Trash atau Deleted Items dan masih bisa dipulihkan, tidak pernah dihapus permanen. Model yang melakukan pemilahan ini adalah Microsoft-Decision-1 di Microsoft Foundry.
+
+Kodenya terbuka dengan lisensi MIT di [github.com/ShinyQ/Clearbox](https://github.com/ShinyQ/Clearbox), dan proyek ini punya ruangannya sendiri di [lantai Labs](/id/labs/clearbox). Repositorinya berisi 179 commit dari 15 dan 16 Oktober 2026, dan clone baru lolos 1.589 pengujian otomatis. Tulisan ini membahas use case-nya, alasan saya memilih decision model alih-alih chatbot, arsitekturnya secara rinci, dan pelajaran yang saya dapat. Tulisan ini juga menyebutkan apa yang belum saya ukur.
+
+## Use case: Clean up mingguan
+
+Banyak email di inbox yang tidak punya nilai ke depan: promosi, notifikasi yang sudah kedaluwarsa, newsletter yang tidak pernah dibuka, dan alert otomatis yang sudah digantikan alert baru. Membersihkannya secara manual berarti membaca email satu per satu. Saya ingin AI melakukan pemilahan itu sebelum saya membuka inbox, dan saya ingin akses ke mailbox tetap berada di akun saya sendiri.
+
+Saya merancang Clearbox untuk satu sesi: Clean up mingguan selama lima sampai sepuluh menit di browser desktop. Saat saya membukanya, email baru sudah dipilah di latar belakang. Halaman Review mengelompokkan saran per pengirim. Setiap grup menampilkan verdict, tingkat keyakinan (Very sure, Sure, Likely, Unsure), dan hingga tiga alasan, misalnya "You trashed 41 of 44 from this sender". Saya cukup memindai grup, mengoreksi yang terlihat salah, lalu menekan Clean up. Semua saran di atas threshold keyakinan masuk ke satu batch, dan satu konfirmasi memindahkannya ke Trash atau Archive.
+
+<a href="/media/clearbox/01-review.webp"><img src="/media/clearbox/01-review.webp" alt="Review Clearbox dengan data sintetis: 186 email siap dibersihkan, grup pengirim dengan verdict dan tingkat keyakinan, serta alasan untuk satu grup di panel detail" width="1600" height="1000" loading="lazy" decoding="async" /></a>
+
+*Halaman Review dengan data dev sintetis dari repositori. Semua pengirim, alamat, dan subjek adalah rekaan.*
+
+Ada empat aturan yang membentuk sesi itu:
+
+- **Tidak ada yang dipindahkan tanpa persetujuan.** Tidak ada jalur kode yang memindahkan email ke Trash atau Archive kecuali saya menyetujui saran pending untuk email itu dalam request yang sama.
+- **Trash bisa dipulihkan.** Undo berlaku selama 24 jam dari halaman Activity, dan setelah itu Gmail serta Outlook masih menyimpan Trash sekitar 30 hari.
+- **Ketidakpastian ditampilkan, bukan disembunyikan.** Jika buktinya lemah, sarannya unsure dan menunggu keputusan saya.
+- **Setiap keputusan menjadi bahan belajar.** Persetujuan dan koreksi memperbarui prior per pengirim dan threshold trash.
+
+## Mengapa decision model, bukan chatbot
+
+Memilah email adalah tugas klasifikasi. Untuk setiap email, saya butuh satu dari empat label, angka yang bisa diberi threshold, dan jawaban yang tidak bisa diarahkan oleh email yang berniat jahat. Saya tidak butuh prosa.
+
+Microsoft-Decision-1 dibuat untuk tugas seperti ini. [Microsoft Learn](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) menjelaskannya sebagai model untuk klasifikasi, routing, ranking, grading, dan keputusan biner yang tidak menghasilkan respons bebas atau penjelasan tertulis. Model ini mengembalikan keputusan numerik yang bertipe. Satu request berisi `state` (teks atau JSON) dan beberapa pertanyaan bertipe:
+
+- `choice` memilih satu opsi dan mengembalikan probabilitas untuk setiap opsi.
+- `score` menempatkan input pada skala yang berurutan.
+- `noul` mengembalikan probabilitas bahwa sebuah pernyataan benar.
+
+[Daftar model](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#microsoft-models-sold-by-azure) dari Microsoft menyebut output-nya sebagai skor probabilitas terkalibrasi untuk setiap opsi jawaban, dari satu kali pemanggilan model dengan input hingga 32K token. Clearbox mengajukan lima pertanyaan dalam satu request per email:
+
+```
+action         choice  delete, archive, keep, unsure
+importance     score   Noise, Low, Moderate, High, Critical
+is_record      noul    a record the owner may need later?
+is_expired     noul    time-bound content whose time has passed?
+is_from_human  noul    written personally by a human to the owner?
+```
+
+Bentuk ini cocok untuk kebutuhan Clearbox karena tiga hal.
+
+1. **Probabilitas yang bisa diberi threshold.** Clearbox hanya menyarankan trash jika probabilitas trash melewati threshold yang sudah dikalibrasi dengan selisih yang cukup. Threshold menjadi keputusan produk ("saran trash harus sesuai dengan pilihan saya minimal 98% dari waktu") dan bukan hasil mengutak-atik prompt.
+2. **Tidak ada teks yang dihasilkan.** Model hanya mengembalikan probabilitas yang terbatas, sehingga email berbahaya tidak bisa membuatnya mengatakan atau melakukan apa pun. Email itu masih bisa mencoba menggeser angkanya, karena itu guardrail dan langkah persetujuan berada di luar model.
+3. **Alasan yang jujur.** Karena model tidak memberi penjelasan, alasan di setiap grup berasal dari sinyal nyata (header, riwayat pengirim, keputusan saya sebelumnya), bukan dari penjelasan yang ditulis model.
+
+Best practice di Learn sejalan dengan desain ini. Sertakan opsi abstain: di Clearbox, opsi itu adalah `unsure`. Tentukan threshold berdasarkan biaya false positive dan false negative. Pertimbangkan untuk mengacak urutan opsi: Clearbox mengacak urutan keempat opsi action per pesan dengan seed dari akun dan id pesan, sehingga retry mengirim urutan yang sama.
+
+Satu catatan sejak awal: Clearbox memperlakukan Microsoft-Decision-1 sebagai model Preview, dan katalog model di Azure Resource Manager mencantumkan tanggal pensiun inference versi 1 pada 4 Februari 2027 (Microsoft Learn belum mencantumkan kedua detail ini saat saya periksa). Runbook-nya sudah punya rencana migrasi, yang saya bahas di bawah.
+
+## Arsitektur
+
+<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg" alt="Arsitektur Clearbox: browser pemilik hanya bisa menjangkau Worker melalui Cloudflare Access; Worker di Cloudflare Workers Free menyajikan API Hono dan aplikasi React, menjalankan cron tick setiap menit dan job malam hari, menyimpan state di D1 dengan yurisdiksi EU, membaca Gmail dan Microsoft Graph melalui OAuth client milik pemilik, dan meminta probabilitas dari Microsoft-Decision-1 di Sweden Central; GitHub Actions menguji dan membangun tetapi tidak pernah melakukan deploy" width="960" height="1150" loading="lazy" decoding="async" /></a>
+
+Semuanya berjalan di akun saya sendiri. Tidak ada layanan bersama dan tidak ada kredensial bersama: siapa pun yang meng-host sendiri membawa akun Cloudflare, OAuth client Google dan Microsoft, serta deployment Foundry miliknya.
+
+**Cloudflare Access di depan.** Aplikasi Access di level Worker melindungi setiap hostname Worker, dengan policy yang hanya mengizinkan email saya. Worker tidak hanya mengandalkan itu. Worker memverifikasi header `Cf-Access-Jwt-Assertion` sendiri dengan jose (signature, issuer, audience, masa berlaku, dan email pemilik), dan menolak semua request jika konfigurasinya tidak lengkap.
+
+**Satu Worker untuk API dan aplikasi.** Worker berisi API Hono 4 dan aset statis aplikasi React 19 (React Router, TanStack Query, Tailwind CSS 4), yang dibangun sebagai satu proyek Vite 8. Panggilan yang mengubah data wajib membawa header `X-Clearbox-CSRF`, CORS tidak pernah diaktifkan, dan email hanya ditampilkan sebagai teks biasa, tidak pernah sebagai HTML, di bawah Content Security Policy yang ketat.
+
+**D1 untuk state.** Satu database D1 yang dibuat dengan yurisdiksi EU menyimpan pesan (metadata dan cuplikan), saran, label, prior pengirim, anggaran penulisan harian, dan audit log yang hanya bisa ditambah. Baris pesan dihapus 30 hari setelah ada keputusan, atau 90 hari jika tidak pernah ditinjau.
+
+**Cron Triggers, bukan Workflows.** Satu cron menjalankan tick setiap menit dan satu lagi menjalankan job malam hari pada pukul 02.00 UTC. Saya memilih cron tick karena Workflows di paket Free hanya mengizinkan 50 subrequest eksternal per instance, sehingga scan banyak halaman menjadi tidak aman. Satu tick memproses satu halaman lalu selesai, dan retry cukup berupa tick berikutnya.
+
+**Email melalui OAuth client saya sendiri.** Gmail memakai scope `gmail.modify`, dan Microsoft Graph memakai `Mail.ReadWrite` yang didelegasikan. Keduanya terhubung dengan authorization code dan PKCE, dan verifier PKCE dibawa dalam cookie yang ditandatangani dengan HMAC. Refresh token dan access token dienkripsi dengan AES-256-GCM, dengan IV acak untuk setiap nilai dan associated data yang terikat ke akun, jenis token, dan versi kunci.
+
+**Deployment Foundry.** File Bicep dan skrip az di `infra/azure/` membuat deployment bernama `decision-1` dari Microsoft-Decision-1 di Sweden Central. Deployment ini memakai SKU DataZoneStandard, kapasitas 300 (satu unit kapasitas setara satu request per menit untuk model ini), dan tanpa upgrade versi otomatis agar kalibrasi tetap stabil. Menurut Learn, [DataZoneStandard tersedia di Sweden Central](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability#data-zone-standard) dan menjaga pemrosesan inference tetap di dalam data zone tersebut. Worker memanggil endpoint decision dengan header api-key, dan field `model` pada request berisi nama deployment. Deployment tidak boleh dinamai `Microsoft-Decision-1`, karena nama itu dicadangkan.
+
+**CI tidak pernah melakukan deploy.** GitHub Actions menjalankan lint, pengecekan format, typecheck, semua suite pengujian, dan production build, ditambah ShellCheck, dry run skrip deploy, dan build Bicep. CodeQL berjalan di setiap pull request. Deploy dilakukan manual: skrip Azure untuk model, dan `pnpm setup:cf` untuk Cloudflare, yang membuat database EU dan melakukan deploy dengan provisioning dimatikan, sehingga CLI tidak bisa diam-diam membuat database di luar EU.
+
+## Perjalanan satu email melalui pipeline
+
+<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg" alt="Pipeline Clearbox untuk satu email: mengambil satu halaman, mengekstrak sinyal, menerapkan guardrail yang menetapkan batas aksi, membangun state yang ringkas, mengajukan lima pertanyaan ke Microsoft-Decision-1, memvalidasi jawaban, menggabungkannya dengan prior pengirim dan batas aksi, lalu menghasilkan saran dengan hingga tiga alasan; pemilik mengonfirmasi, dan setiap keputusan memperbarui prior dan threshold malam hari" width="960" height="1470" loading="lazy" decoding="async" /></a>
+
+Intinya adalah paket TypeScript murni tanpa import Cloudflare, Hono, atau DOM. Setiap tick menjalankannya untuk setiap pesan baru dalam satu halaman.
+
+1. **Sinyal.** Hanya dari header dan riwayat: List-Unsubscribe, header bulk dan auto-submitted, hasil SPF, DKIM, dan DMARC dari provider penerima, kategori provider, umur email, status dibaca, seberapa sering saya membuka email dari pengirim itu, apakah saya pernah mengirim email kepadanya, dan apakah saya membalas di thread tersebut.
+2. **Guardrail.** Guardrail menghasilkan ceiling, yaitu aksi tertinggi yang diizinkan. Email yang diberi bintang atau flag, thread yang pernah saya balas, pengirim always-keep, email yang umurnya kurang dari tiga hari, dan koresponden yang dikenal dibatasi di keep. Lampiran dan kata penanda dokumen (receipt, invoice, tax, statement, contract, medical, legal) dibatasi di archive. Menandai pengirim sebagai always OK to trash hanya mencabut tiga batasan terakhir. Guardrail membaca header dan riwayat, sehingga isi email berbahaya tidak bisa menaikkan ceiling-nya sendiri.
+3. **State.** Clearbox membangun JSON ringkas untuk model: pengirim, subjek, cuplikan dari provider, sinyal, riwayat pengirim, dan hingga lima keputusan serupa sebelumnya. Panjangnya dibatasi 1.750 karakter dan dipangkas dengan urutan tetap (keputusan sebelumnya, lalu cuplikan, lalu subjek) sampai muat.
+4. **Decision-1.** Satu request per email dengan lima pertanyaan, maksimal empat berjalan bersamaan per tick, dengan timeout 10 detik.
+5. **Validasi.** Skema zod memeriksa setiap jawaban. Clearbox mengabaikan field `confidence` pada respons dan memakai probabilitas yang sudah dinormalisasi ulang. Respons 401, 403, atau 404 berarti masalah konfigurasi: tick berhenti dan aplikasi menampilkan banner. Timeout, 429, dan 5xx dicoba lagi setelah 5 dan 30 menit, lalu jatuh ke unsure dengan alasan "Model unavailable".
+6. **Fusion.** Perhitungan deterministik. Probabilitas trash digabung dengan prior Beta dari keputusan saya sebelumnya untuk pengirim itu (atau domainnya), dan bobot prior naik seiring jumlah keputusan n sebesar n / (n + 5). Flag yang kuat lalu menggeser probabilitas: email yang kemungkinan besar dokumen penting memindahkan separuh massa trash ke archive, email yang kemungkinan besar ditulis manusia memindahkan separuhnya ke keep, dan notifikasi kedaluwarsa yang bukan dari manusia memindahkan 30% massa archive ke trash. Terakhir, setiap aksi di atas ceiling guardrail dilipat ke ceiling tersebut.
+7. **Threshold.** Trash hanya disarankan jika probabilitasnya minimal `tau_delete` (default 0,80, tidak pernah lebih rendah) dan unggul minimal 0,20 dari aksi berikutnya. Jika tidak, Clearbox memilih yang terbaik di antara keep, archive, dan unsure, dan apa pun di bawah 0,55 menjadi unsure.
+8. **Alasan.** Hingga tiga, dengan prioritas tetap: model tidak tersedia, guardrail, keyakinan rendah, prior pengirim ("You trashed 41 of 44 from this sender"), lalu sinyal pendukung seperti open rate yang rendah atau header unsubscribe.
+
+Learning loop menutup lingkarannya. Setiap persetujuan, koreksi, atau Clean up menulis label dan memperbarui prior pengirim dan domain, dan Undo membatalkan pembaruan itu. Setiap malam, job kalibrasi membaca 500 label terbaru. Setelah minimal 50 di antaranya akan menjadi saran trash pada 0,80, job ini mencoba setiap threshold dari 0,80 sampai 0,99 dan memilih yang terkecil dengan minimal 20 label pendukung dan kesesuaian minimal 98% dengan keputusan trash saya. Jika tidak ada yang memenuhi, threshold menjadi 0,99. Halaman Insights menampilkan kesesuaian itu terhadap target 98%.
+
+## Scan di paket Free
+
+Clearbox berjalan di Cloudflare Workers Free, dan batasan itu paling banyak membentuk cara kerja scanner-nya.
+
+Setiap menit, tick mengambil lease satu mailbox yang sudah waktunya diproses, mengambil satu halaman berisi hingga 25 pesan (hanya metadata dan cuplikan), memutuskan pesan yang baru, dan menulis semuanya dalam satu batch D1. Tombol Scan now di halaman Accounts menjalankan tick yang sama sesuai permintaan. Satu tick tetap di bawah 45 subrequest, termasuk panggilan D1, dan pengujian benchmark menjaga batas CPU 10 ms per invocation di paket Free. Jika sebuah tick dihentikan paksa, klaim berikutnya membagi dua ukuran halaman mailbox itu (minimal 5), dan tick yang berhasil menaikkannya kembali.
+
+Setiap mailbox melewati tiga fase:
+
+1. **Email terkirim lebih dulu**, hingga 1.000 pesan, untuk mengetahui siapa saja koresponden saya dan thread mana yang pernah saya balas.
+2. **Backfill inbox**, dari yang terbaru ke yang terlama, dalam jendela scan history: default 90 hari terakhir, atau 30 hari, satu tahun, atau semua email di halaman Rules. Memperlebar jendela nanti akan melanjutkan backfill dari titik terakhirnya.
+3. **Email baru**, melalui Gmail history dan delta link Graph, diperiksa setiap 30 menit setelah mailbox selesai mengejar backlog. Cursor incremental dicatat saat akun terhubung, sebelum backfill dimulai.
+
+Batas sebenarnya adalah penulisan ke D1, bukan jumlah tick. Paket Free mengizinkan 100.000 baris ditulis per hari. Satu email membutuhkan sekitar 4,8 baris untuk masuk dan sekitar 13 baris sepanjang umurnya, dari masuk, diputuskan, sampai dihapus. Clearbox berhenti mengklaim tick di 65.000 baris, menghentikan purge malam hari di 80.000, dan menolak aksi saya sendiri di 90.000, sehingga selalu ada ruang untuk sesi review. Hasilnya sekitar 13.000 email per hari saat backfill pertama dan sekitar 6.800 per hari secara berkelanjutan, jadi semua email di inbox besar butuh beberapa hari. Backfill juga berhenti sementara di 450 MB dari batas 500 MB per database. Di Workers Paid, mengatur `FREE_TIER=false` mencabut batasan itu dan menaikkan ukuran halaman ke 100 tanpa perubahan kode.
+
+## Aturan keamanan
+
+Sebagian besar keamanan Clearbox berada di luar model.
+
+- **Tidak ada penghapusan permanen.** Interface mail provider tidak punya method hard delete, dan scope `gmail.modify` milik Gmail memang tidak bisa menghapus permanen. Trash berarti Trash di Gmail atau Deleted Items di Outlook.
+- **Persetujuan ditegakkan di server.** Sebuah aksi menargetkan id saran yang persis, grup pengirim yang dibatasi waktu yang ditampilkan layar, atau threshold yang ditampilkan layar. Server memastikan setiap saran masih pending dan milik akunnya, membatasi satu request maksimal 100 item, dan mengeksekusinya secara idempoten.
+- **Satu pemilik per deployment.** Cloudflare Access ditambah pengecekan token oleh Worker sendiri, dengan klaim email yang harus sama dengan pemilik yang dikonfigurasi.
+- **Hanya cuplikan.** Model hanya melihat cuplikan dari provider, maksimal 255 karakter, tidak pernah isi lengkapnya. Penyimpanan cuplikan dan subjek label bisa dimatikan di halaman Rules.
+- **Data seminimal mungkin.** Log hanya berisi id buram dan hitungan, tidak pernah alamat, subjek, atau token. D1 berada di yurisdiksi EU, dan model berjalan di data zone EU.
+
+## Biaya dan batasan
+
+Cloudflare Workers, D1, Cron Triggers, Workers Logs, dan Access semuanya berjalan di paket gratis, dan Gmail API serta Microsoft Graph tidak memungut biaya untuk dipanggil. Microsoft-Decision-1 hanya menagih token input; token output gratis. Teks pertanyaan juga dihitung sebagai input. Saya merencanakan 450 sampai 800 token input per email, yang di README menjadi estimasi biaya kurang dari satu dolar per sepuluh ribu email. Evaluasi live memakai lebih sedikit: rata-rata sekitar 387 token dan paling banyak 412.
+
+Batasan yang saya terima:
+
+- Hanya Gmail dan Outlook, tanpa IMAP, dan satu pemilik per deployment.
+- Tidak ada penghapusan permanen dan tidak ada otomatisasi unsubscribe, memang dirancang begitu.
+- Saran berasal dari cuplikan, bukan isi email lengkap.
+- Clearbox memakai 2 dari 5 Cron Trigger yang didapat satu akun Cloudflare di paket Free.
+- OAuth app Google pribadi menampilkan peringatan aplikasi yang belum diverifikasi, dan akun Microsoft kantor atau sekolah mungkin butuh admin consent.
+- CLI `cf` dan Cloudflare Vite plugin masih beta, jadi versinya dikunci.
+- Modelnya masih Preview. Untuk masa pensiunnya, runbook meminta saya men-deploy versi baru dengan nama baru, menjalankan evaluasi terhadap kedua deployment pada fixture sintetis dan label saya yang diekspor, mengganti secret deployment, lalu membiarkan kalibrasi malam hari menyetel ulang threshold. Interface `DecisionEngine` mengisolasi model, dan fake engine yang deterministik menjaga aplikasi serta pengujian tetap berjalan tanpa model.
+
+## Apa yang ditunjukkan evaluasi
+
+`pnpm eval` menjalankan pipeline yang sebenarnya (sinyal, guardrail, Microsoft-Decision-1, dan fusion) pada 40 email sintetis berlabel: 18 berlabel trash, 10 archive, dan 12 keep. Pada 16 Oktober 2026 saya menjalankannya terhadap deployment live:
+
+- **Clearbox secara keseluruhan:** precision trash 100%, dengan batas bawah Wilson 95% sebesar 77,2%, recall 72,2%, dan tanpa penghapusan yang merugikan (tidak ada saran trash untuk email berlabel keep).
+- **Model saja:** precision 88,9% dan recall 88,9%.
+- **Kalibrasi:** 15% saran berakhir unsure, dengan expected calibration error 0,096 dan Brier score 0,069.
+- **Ketahanan:** mengacak urutan opsi tidak mengubah satu keputusan pun. Dari 80 panggilan, latensinya 368 ms di p50 dan 404 ms di p95, tanpa kegagalan.
+
+Hasil ini perlu dibaca apa adanya. Guardrail dan threshold menukar recall dengan precision, dan itulah pertukaran yang saya inginkan untuk trash. Tetapi 40 email sintetis tidak bisa membuktikan target 98%: batas bawah 77,2% adalah angka yang jujur. Email-email itu sintetis, bukan inbox saya, dan saya belum punya angka precision dari penggunaan nyata. Kalibrasi malam hari baru menggeser threshold setelah 50 saran trash diputuskan; sampai saat itu threshold tetap 0,80. Saat saya mencatat pengecekan live, akun Gmail saya sudah terhubung dan Outlook belum.
+
+## Pelajaran yang saya dapat
+
+**Perlakukan API Preview sebagai target yang terus bergerak.** Sebelum menulis kode, saya mendokumentasikan setiap fakta API beserta tingkat buktinya: Microsoft Learn, Azure Resource Manager, atau tangkapan live dari pihak ketiga. Beberapa detail tidak seperti yang saya duga. Field `model` pada request berisi nama deployment, deployment tidak boleh dinamai `Microsoft-Decision-1`, field tingkat atas yang tidak dikenal ditolak, dan arti `confidence` tidak didokumentasikan, sehingga Clearbox mengabaikannya. Skema respons menoleransi field tambahan, dan upgrade versi otomatis pada deployment dimatikan.
+
+**Hitung juga token untuk pertanyaannya.** Teks pertanyaan ditagih sebagai input, sehingga state punya batas karakter. Pemakaian token nyata ternyata lebih rendah dari rencana, tetapi batas itulah yang menjaganya tetap begitu untuk subjek dan cuplikan yang panjang.
+
+**Biarkan paket gratis membentuk desain sejak awal.** Anggaran penulisan D1, bukan model atau cron, yang menentukan seberapa cepat Clearbox bisa memilah inbox besar. Merancang batasan, ukuran halaman, dan jendela scan history di sekitarnya sejak awal lebih murah daripada menambalnya belakangan.
+
+**Jauhkan keamanan dari model.** Decision model lebih mudah dibatasi daripada chatbot karena ia mengembalikan angka, bukan teks. Jaminannya tetap datang dari kode: guardrail, persetujuan wajib, aksi yang hanya memindahkan ke Trash, dan Undo.
+
+**Deploy menemukan hal yang tidak bisa ditemukan pengujian.** Deploy live pertama menemukan masalah yang tidak tertangkap oleh 1.589 pengujian. Deploy pertama ditolak karena secret audience Access belum ada, jadi fallback yang didokumentasikan adalah deploy sekali dengan placeholder. Menempelkan key Azure lewat prompt tersembunyi di terminal yang lambat pernah menyimpan key Azure yang rusak; tick gagal dengan aman disertai banner autentikasi dan tidak memasukkan apa pun sampai key-nya saya ganti. Selain itu, consent screen Google yang masih dalam mode Testing hanya mengizinkan test user yang terdaftar untuk login dan membuat refresh token kedaluwarsa setelah 7 hari, sehingga deployment pribadi perlu mengatur aplikasinya ke In production.
+
+AI menyiapkan, saya yang mengonfirmasi. Pembagian itu adalah inti seluruh desainnya: model mengerjakan pemilahan yang membosankan, dan setiap langkah yang memindahkan email tetap berada di tangan manusia dan tetap bisa dibatalkan.

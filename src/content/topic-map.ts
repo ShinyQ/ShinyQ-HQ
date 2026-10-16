@@ -42,8 +42,11 @@ export const TOPIC_TAGS: Record<TopicSlug, readonly string[]> = {
   personal: ["personal", "growth"],
 };
 
-/** Post tags left out of the constellation on purpose (none today). */
-export const TOPIC_SKIP_TAGS: ReadonlySet<string> = new Set<string>();
+/**
+ * Post tags left out of the constellation on purpose: product and platform names of the Clearbox post
+ * (2026-10-16), which reaches the constellation through `evaluation` and `case-study`. No topic names them.
+ */
+export const TOPIC_SKIP_TAGS: ReadonlySet<string> = new Set<string>(["microsoft-decision-1", "microsoft-foundry", "cloudflare-workers"]);
 
 /** Papers, theses, models and talks (no tags in content) by id. */
 export const ITEM_TOPICS: Record<string, readonly TopicSlug[]> = {

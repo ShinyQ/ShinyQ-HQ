@@ -51,6 +51,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Vulnerability-scanning automation for a national agency | 2023 | Freelance, anonymized |
 | featured | Serupa Ticket Hub: event ticketing platform (attendee site, organizer dashboard, Express API) | 2025 | Freelance (Serupa), two-person team; commit shares verified from git (added 2026-10-12) |
 | featured | MII Microsoft Solutions Website: MII's public bilingual Microsoft Solutions site, built from 17 specs | 2026 | Metrodata. Live link (R4-J). Moved from the AI list. |
+| featured | Sewise Fashion Labs: made-to-measure sewing patterns (2026 hackathon entry, owner approved 2026-10-16; planned for a four-person team, all code by Kurniadi; private repository, no live link) | 2026 | 118 commits in 40 PRs; 1,390 backend tests on a fresh clone; 9 feature specs |
 | listed | Limited-quota event ticketing with inventory locking | 2025 | Freelance (DariOrdal); listed since 2026-10-12 to keep 6 featured pods per wing |
 | listed | Digital products and training e-commerce platform; University alumni and counseling platforms; Event-tech search relevance and feedback analytics backend (listed since R4-J, at most 6 featured per wing) | | |
 
@@ -69,6 +70,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Spec-Driven, Agent-Orchestrated Delivery | How the work is delivered: specs in, parallel agents, human review gates |
 | featured | AI Presentation Authoring and Hosting (MII Deck, featured since 2026-10-16) | 134 of 136 commits; 20 releases with automatic rollback; 32 slide blueprints |
 | featured | MII Cowork UI Revamp and Deck Studio (2026-10-16; the platform is led by a colleague) | 194 commits in 10 merged PRs; 133-file frontend revamp with no backend change; 57% of frontend source lines |
+| featured | Clearbox AI Inbox Cleanup for Gmail and Outlook (2026-10-16; solo open-source build, public repository, no live link: self-hosted behind Cloudflare Access) | 1,589 automated tests on a fresh clone; 179 commits in two days; model evaluation on 40 synthetic labeled emails |
 | listed | From Apps to Products (managed-app packaging) · Operating a Shared Azure AI Estate · Fraud Review Dashboard and Security Remediation · AI Ticketing Assistant Re-platform · Chart-of-Accounts AI Assistant · Explainable In-Browser Credit Scoring · Governance for a Bank's GenAI Portal · Enterprise AI Contact Center Architecture | |
 
 ### Data and ML wing (annex east of the Tech Reactor; owner request 2026-10-14)
@@ -108,7 +110,7 @@ These override anything above that conflicts with them.
 
 | # | Topic | Decision |
 |---|---|---|
-| C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). |
+| C1 | Hackathons | Still in progress: **do not show** 2026 hackathon entries anywhere (remove from the 2026 year room and the Library talks). **Revised 2026-10-16:** an entry the owner approves explicitly may appear, named openly as a hackathon entry (approved: Sewise Fashion Labs, a Product Engineering pod; allowlist in `tests/content/dataset.test.ts`). |
 | C2 | Current role wording | "Technical Consultant, Software & AI" at "Metrodata (PT Mitra Integrasi Informatika)", Feb 2026 to present |
 | C3 | Client names | **Revised 2026-10-10:** client companies of the owner's employers are **never named** on the site (text, alt text, slugs, metadata, OG cards, JSON-LD, search, room views, 3D labels); use sector labels ("a national digital bank", "an automotive manufacturer", "a national bakery brand", "a coal mining group", "a regional lender", "an insurer"). Employers stay named (Jenius (SMBC Indonesia) only for the 2024 to 2025 job). **Product names are allowed**, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck and MII Cowork (the owner's UI revamp and Deck Studio; the platform is led by a colleague), MII AI Ticketing, MII AI Dashboard Template); client products (ATLAS, FREDDY) keep a sector label. The owner's CV PDF is used as-is. Supersedes the earlier "Allowed" decision. |
 | C4 | Pre-2026 metrics | **Allowed**: use the conservative values from the newest CV (Oct 13, 2026), with no confidence label on the site (revised 2026-10-11: the owner removed every Verified / Self-reported / Strongly inferred label and the "Self-reported in my CV" notes; `confidence` stays in the dataset for internal review only). No money amounts. |
