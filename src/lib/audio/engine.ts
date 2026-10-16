@@ -1,14 +1,20 @@
 import { createSpaceMusic, type MusicVoice } from "./music";
 import { ONE_SHOTS, createRumble, type RumbleVoice } from "./synth";
-import type { AudioEngine, AudioEngineDeps, SoundName } from "./types";
+import type { AudioEngine, AudioEngineDeps, AudioSettings, SoundName } from "./types";
 
 export const SOUND_STORAGE_KEY = "hq:sound";
+export const EFFECTS_STORAGE_KEY = "hq:sfx";
+export const MUSIC_STORAGE_KEY = "hq:music";
+export const MUSIC_VOLUME_STORAGE_KEY = "hq:music-volume";
 export const CLICK_RATE_LIMIT = 20;
 const CLICK_WINDOW_MS = 1000;
 /** Time constant of the master fade when muting or unmuting (seconds). */
 const FADE_TIME_CONSTANT = 0.03;
 /** Delay before suspending the context after a mute, so the fade can finish (ms). */
 const SUSPEND_DELAY_MS = 150;
+/** Time constant of the music volume glide (seconds). */
+const VOLUME_TIME_CONSTANT = 0.05;
+const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
 /**
  * User-activation events. Browsers only let an AudioContext start inside one of these; on touch screens
  * that is the end of a tap (pointerup, touchend, click), not touchstart, so all of them are listened to.
@@ -53,12 +59,14 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const listeners = new Set<() => void>();
   let muted = readMuted();
+  let settings: AudioSettings = readSettings();
   /** Paused while the 3D view is closed (Page View, static tier): silent without touching the stored preference. */
   let paused = deps.paused ?? true;
   let disposed = false;
   let unavailable = false;
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
+  let musicBus: GainNode | null = null;
   let music: MusicVoice | null = null;
   let rumble: RumbleVoice | null = null;
   let rumbleSpeed = 0;
@@ -72,6 +80,45 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     } catch {
       return false;
     }
+  }
+
+  function readSettings(): AudioSettings {
+    const get = (key: string) => {
+      try {
+        return storage?.getItem(key) ?? null;
+      } catch {
+        return null;
+      }
+    };
+    const volume = get(MUSIC_VOLUME_STORAGE_KEY);
+    return {
+      effects: get(EFFECTS_STORAGE_KEY) !== "off",
+      music: get(MUSIC_STORAGE_KEY) !== "off",
+      musicVolume: volume === null ? 1 : clamp01(Number(volume)),
+    };
+  }
+
+  function write(key: string, value: string): void {
+    try {
+      storage?.setItem(key, value);
+    } catch {
+      // The in-memory setting still applies.
+    }
+  }
+
+  /** Replaces the settings object only when a value changes, so subscribers see a stable snapshot. */
+  function update(patch: Partial<AudioSettings>): boolean {
+    const next = { ...settings, ...patch };
+    if (
+      next.effects === settings.effects &&
+      next.music === settings.music &&
+      next.musicVolume === settings.musicVolume
+    ) {
+      return false;
+    }
+    settings = next;
+    notify();
+    return true;
   }
 
   const silent = () => muted || paused || disposed;
@@ -97,7 +144,9 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   /** Starts the background music on the master bus if it is not playing. */
   function startMusic(): void {
-    if (!music && ctx && master && !silent() && ctx.state !== "closed") music = createSpaceMusic(ctx, master);
+    if (!music && settings.music && ctx && musicBus && !silent() && ctx.state !== "closed") {
+      music = createSpaceMusic(ctx, musicBus);
+    }
   }
 
   /** Cancels every scheduled note and disconnects the music graph. */
@@ -122,6 +171,9 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
     master.connect(ctx.destination);
+    musicBus = ctx.createGain();
+    musicBus.gain.setValueAtTime(settings.musicVolume, ctx.currentTime);
+    musicBus.connect(master);
     startMusic();
     return ctx;
   }
@@ -214,7 +266,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const engine: AudioEngine = {
     play(name: SoundName) {
-      if (silent()) return;
+      if (silent() || !settings.effects) return;
       if ((name === "click" || name === "blip") && !allowClick()) return;
       const context = ensureContext();
       if (!context || !master) return;
@@ -225,6 +277,10 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     setRumble(speed: number) {
       rumbleSpeed = speed;
       if (silent()) return;
+      if (!settings.effects) {
+        rumble?.setSpeed(0);
+        return;
+      }
       if (!rumble && !(speed > 1)) return;
       if (!ensureContext()) return;
       ensureRumble()?.setSpeed(rumbleSpeed);
@@ -244,7 +300,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
           master.gain.setTargetAtTime(1, context.currentTime, FADE_TIME_CONSTANT);
           if (context.state !== "closed") ignore(context.resume());
           startMusic();
-          if (rumble) rumble.setSpeed(rumbleSpeed);
+          if (rumble) rumble.setSpeed(settings.effects ? rumbleSpeed : 0);
         }
       } else {
         fadeOut();
@@ -265,7 +321,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
       resume();
       startMusic();
-      rumble?.setSpeed(rumbleSpeed);
+      rumble?.setSpeed(settings.effects ? rumbleSpeed : 0);
     },
 
     isPaused() {
@@ -278,6 +334,34 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
     isMuted() {
       return muted;
+    },
+
+    getSettings() {
+      return settings;
+    },
+
+    setEffects(on: boolean) {
+      if (!update({ effects: on })) return;
+      write(EFFECTS_STORAGE_KEY, on ? "on" : "off");
+      if (!on) rumble?.setSpeed(0);
+      else if (!silent() && rumble) rumble.setSpeed(rumbleSpeed);
+    },
+
+    setMusic(on: boolean) {
+      if (!update({ music: on })) return;
+      write(MUSIC_STORAGE_KEY, on ? "on" : "off");
+      if (on) startMusic();
+      else stopMusic();
+    },
+
+    setMusicVolume(volume: number) {
+      const v = clamp01(volume);
+      if (!update({ musicVolume: v })) return;
+      write(MUSIC_VOLUME_STORAGE_KEY, String(v));
+      if (ctx && musicBus) {
+        musicBus.gain.cancelScheduledValues(ctx.currentTime);
+        musicBus.gain.setTargetAtTime(v, ctx.currentTime, VOLUME_TIME_CONSTANT);
+      }
     },
 
     subscribe(listener: () => void) {
@@ -298,6 +382,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       rumble?.stop();
       rumble = null;
       master = null;
+      musicBus = null;
       if (ctx && ctx.state !== "closed") ignore(ctx.close());
       ctx = null;
     },

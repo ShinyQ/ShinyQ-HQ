@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAudioEngine, useAudio, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
+import { createAudioEngine, useAudio, useAudioSettings, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
 import { rumbleTargets } from "@/lib/audio/synth";
 import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
 
@@ -44,9 +44,10 @@ interface Setup {
   ctx: () => FakeAudioContext;
 }
 
-function setup(stored?: string): Setup {
+function setup(stored?: string, initial: Record<string, string> = {}): Setup {
   const storage = new FakeStorage();
   if (stored !== undefined) storage.map.set("hq:sound", stored);
+  for (const [key, value] of Object.entries(initial)) storage.map.set(key, value);
   const doc = new FakeDoc();
   const clock = { t: 0 };
   const createContext = vi.fn(() => new FakeAudioContext() as unknown as AudioContext);
@@ -511,5 +512,136 @@ describe("audio engine: SSR and missing Web Audio", () => {
       return createElement("span", null, muted ? "muted" : "on");
     }
     expect(renderToString(createElement(Probe))).toContain("muted");
+  });
+});
+
+describe("audio settings", () => {
+  /** Live music voices: each voice is three drones, stopped ones are gone. */
+  const musicVoices = (ctx: FakeAudioContext) =>
+    ctx.oscillators.filter((o) => o.type === "triangle" && o.stop.mock.calls.length === 0).length / 3;
+  const start = (s: Setup) => s.doc.fire("pointerdown");
+
+  it("defaults to effects on, music on, full volume, and reads stored values", () => {
+    const { engine } = setup();
+    expect(engine.getSettings()).toEqual({ effects: true, music: true, musicVolume: 1 });
+    const stored = setup(undefined, { "hq:sfx": "off", "hq:music": "off", "hq:music-volume": "0.4" });
+    expect(stored.engine.getSettings()).toEqual({ effects: false, music: false, musicVolume: 0.4 });
+    expect(setup(undefined, { "hq:music-volume": "junk" }).engine.getSettings().musicVolume).toBe(1);
+  });
+
+  it("persists changes, clamps the volume and notifies once per change", () => {
+    const { engine, storage } = setup();
+    const fn = vi.fn();
+    engine.subscribe(fn);
+    engine.setEffects(false);
+    engine.setMusic(false);
+    engine.setMusicVolume(3);
+    expect(storage.map.get("hq:sfx")).toBe("off");
+    expect(storage.map.get("hq:music")).toBe("off");
+    expect(engine.getSettings().musicVolume).toBe(1);
+    engine.setMusicVolume(0.25);
+    expect(storage.map.get("hq:music-volume")).toBe("0.25");
+    expect(fn).toHaveBeenCalledTimes(3);
+    engine.setEffects(false);
+    expect(fn).toHaveBeenCalledTimes(3);
+    const a = engine.getSettings();
+    expect(engine.getSettings()).toBe(a);
+    engine.setMusicVolume(0.5);
+    expect(engine.getSettings()).not.toBe(a);
+  });
+
+  it("effects off silences one-shots and the rumble but keeps the context for music", () => {
+    const s = setup();
+    const { engine } = s;
+    start(s);
+    const ctx = s.ctx();
+    engine.setRumble(9);
+    engine.setEffects(false);
+    const before = ctx.oscillators.length;
+    engine.play("beep");
+    expect(ctx.oscillators.length).toBe(before);
+    const rumbleGain = ctx.bufferSources.find((b) => b.loop)!.connected[0] as FakeFilter;
+    const gain = rumbleGain.connected[0] as FakeGain;
+    expect(gain.gain.setTargetAtTime.mock.lastCall![0]).toBe(0);
+    engine.setRumble(10);
+    expect(gain.gain.setTargetAtTime.mock.lastCall![0]).toBe(0);
+    expect(musicVoices(ctx)).toBe(1);
+    engine.setEffects(true);
+    expect(gain.gain.setTargetAtTime.mock.lastCall![0]).toBeCloseTo(rumbleTargets(10).gain);
+    engine.play("beep");
+    expect(ctx.oscillators.length).toBeGreaterThan(before);
+  });
+
+  it("effects back on while muted does not restore the rumble", () => {
+    const s = setup();
+    const { engine } = s;
+    start(s);
+    engine.setRumble(9);
+    engine.setEffects(false);
+    engine.setMuted(true);
+    const gain = (s.ctx().bufferSources.find((b) => b.loop)!.connected[0] as FakeFilter).connected[0] as FakeGain;
+    const calls = gain.gain.setTargetAtTime.mock.calls.length;
+    engine.setEffects(true);
+    expect(gain.gain.setTargetAtTime.mock.calls.length).toBe(calls);
+  });
+
+  it("music off stops the music voice, on starts a fresh one", () => {
+    const s = setup();
+    const { engine } = s;
+    start(s);
+    expect(musicVoices(s.ctx())).toBe(1);
+    engine.setMusic(false);
+    expect(musicVoices(s.ctx())).toBe(0);
+    engine.setMusic(true);
+    expect(musicVoices(s.ctx())).toBe(1);
+    expect(s.ctx().oscillators.filter((o) => o.type === "triangle")).toHaveLength(6);
+  });
+
+  it("a stored music off never starts a voice, but effects still work", () => {
+    const s = setup(undefined, { "hq:music": "off" });
+    start(s);
+    expect(s.ctx().oscillators.filter((o) => o.type === "triangle")).toHaveLength(0);
+    s.engine.play("beep");
+    expect(s.ctx().oscillators.length).toBeGreaterThan(0);
+  });
+
+  it("setMusic(true) while muted only records the setting; the music starts on unmute", () => {
+    const s = setup(undefined, { "hq:music": "off" });
+    start(s);
+    s.engine.setMuted(true);
+    s.engine.setMusic(true);
+    expect(s.engine.getSettings().music).toBe(true);
+    expect(s.ctx().oscillators.filter((o) => o.type === "triangle")).toHaveLength(0);
+    s.engine.setMuted(false);
+    expect(musicVoices(s.ctx())).toBe(1);
+  });
+
+  it("the volume glides on a bus between the music and the master, and a stored volume seeds it", () => {
+    const s = setup(undefined, { "hq:music-volume": "0.4" });
+    start(s);
+    const ctx = s.ctx();
+    const master = masterOf(ctx);
+    const bus = ctx.gains.find((g) => g.connected.includes(master) && g !== master)!;
+    expect(bus.gain.setValueAtTime).toHaveBeenCalledWith(0.4, expect.any(Number));
+    const output = ctx.gains.find((g) => g.connected.includes(bus) && g !== bus)!;
+    expect(output).toBeDefined();
+    s.engine.setMusicVolume(0.2);
+    expect(bus.gain.cancelScheduledValues).toHaveBeenCalled();
+    expect(bus.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.2, expect.any(Number), 0.05);
+  });
+
+  it("the master mute still wins and useAudioSettings reports the defaults on the server", () => {
+    const s = setup(undefined, { "hq:sfx": "off", "hq:music": "off", "hq:music-volume": "0.1" });
+    function Probe() {
+      const { effects, music, musicVolume } = useAudioSettings(s.engine);
+      return createElement("span", null, `${effects}-${music}-${musicVolume}`);
+    }
+    expect(renderToString(createElement(Probe))).toContain("true-true-1");
+    const m = setup("off");
+    m.engine.setMusic(true);
+    m.engine.setEffects(true);
+    m.engine.play("beep");
+    start(m);
+    expect(FakeAudioContext.instances).toHaveLength(0);
   });
 });
