@@ -396,6 +396,10 @@
       "musicVolume": { "label": "Volume musik" }
     },
     "menu": "Menu",
+    "menuTitle": "Menu",
+    "map": {
+      "open": "Peta"
+    },
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
     "hintCoarse": "Kemudi: joystick · Turbo: ketuk dua kali joystick · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Zoom: cubit · Lantai: geser ke atas atau bawah",

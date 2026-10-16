@@ -66,7 +66,7 @@ Open `/en` and press **Boot rover**.
 
 - Drive with WASD or the arrow keys.
 - Hold **Shift** to boost to about twice the speed: twin light trails follow the path, the rover squats and leans, the view widens, and speed streaks and wheel sparks rush past.
-- On touch screens use the joystick and tap the boost button next to it to toggle boost on or off.
+- On touch screens use the joystick; double-tap it to toggle boost on or off (the joystick glows while boost is on).
 
 ### Point-and-go
 
@@ -103,7 +103,7 @@ Open `/en` and press **Boot rover**.
 
 ### Motion setting
 
-- The **Motion** button right of Sound (in the menu on phones, and in Cmd-K) picks System, Full or Reduced.
+- The **Motion** button right of Sound (on phones and tablets in the menu's settings, and in Cmd-K) picks System, Full or Reduced.
 - Full is the default on every device (owner decision 2026-10-14; Windows reports reduced motion whenever its animation effects are off), so the device's reduced motion setting no longer applies by default.
 - Pick System to follow it again, or Reduced to keep rides as a short cut and the intro still.
 
@@ -115,10 +115,15 @@ Open `/en` and press **Boot rover**.
 - The cycle follows the Motion setting: it runs unless reduced motion is on, and reduced motion holds night. A "Day and night" switch is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, display group, order 30) and shows in the settings panel once the HUD settings work renders it; the choice is kept in this browser (`localStorage["hq:day-night"]`).
 - Automated browsers hold a still night (today's exact frame: no stars, moon, sun or drawn sky, so visual baselines stay valid); a visitor's held night keeps the moon and stars; `?sky=night|dawn|day|dusk|<0..1>` pins a phase and `?sky=cycle` runs the clock.
 - The Classic site is unchanged. Rules: [`agents/3d-experience.md`](agents/3d-experience.md).
+### Phones and tablets ("Corners" HUD)
+
+- The four corners hold the controls: the floor chip top left (tap it to pick a floor), Ask AI, search (tablets) and the **Menu** top right, the joystick bottom left and **Reset view** bottom right.
+- **Menu** opens a sheet with the profile (name, title and current floor), the actions (**Classic site**, Search, Ask Rover, Rotate left and right, Map) and every setting (language, motion, graphics quality, minimap, sound and music).
+- Desktops keep the top bar, the profile card and the elevator; a gear button above the view controls opens the same settings. The **,** key opens the settings on every device.
 
 ### Ask Rover and the Classic site
 
-- **Ask Rover** (top bar, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
+- **Ask Rover** (top bar, the menu on phones and tablets, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
 - **Classic site** (highlighted, with **Ask AI** on its right; ID **Situs klasik**) shows the same content as a regular website without 3D, and **Back to 3D** returns.
 
 ## Classic site

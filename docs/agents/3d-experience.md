@@ -97,8 +97,8 @@ The same script sets these on every page before first paint:
 
 ## Boost
 
-- Input: hold Shift, or toggle the boost button beside the joystick on coarse pointers (`src/hud/BoostButton.tsx`, `setBoost` in `input/joystick.ts`).
-  - The button toggles: one tap on, the next off, `aria-pressed` (owner decision).
+- Input: hold Shift, or double-tap the joystick on coarse pointers (`Joystick boost`, `useBoostToggle` in `src/hud/boost.ts`, `setBoost` in `input/joystick.ts`).
+  - A double tap is a short first tap (released within 250 ms, moved under 12 px), then a pointer down within 300 ms of its release (`DOUBLE_TAP_MS`); each double tap toggles. `BoostButton` (one tap on, the next off, `aria-pressed`) stays available but the Corners HUD does not render it.
   - A floor change, a ride start and unmount reset it; never persisted.
 - Effect: 2x top speed and acceleration (`BOOST`, `boostOn`, `boostTuning`, `stepBoostLevel` in `rover/boost.ts`, pure).
 - Manual driving only: the autopilot (missions, the elevator approach, point-and-go drives) keeps its speed.

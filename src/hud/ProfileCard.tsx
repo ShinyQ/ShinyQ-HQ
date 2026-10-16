@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { brandPhotoSrc, brandPhotoSrcSet } from "@/lib/brand-photo";
 import { ACCENT_TEXT, FLOOR_ACCENT } from "@/lib/accent";
 import { useHQStore } from "@/store/useHQStore";
 import type { ExperienceData } from "@/experience/types";
 
 /** Round photo badge (owner request): a 2 px cyan to violet ring like the old KAW monogram's edge. Decorative: the name is next to it. */
-function ProfilePhoto({ size }: { size: number }) {
+export function ProfilePhoto({ size }: { size: number }) {
   return (
     <span
       className="block shrink-0 rounded-full bg-[linear-gradient(135deg,var(--color-cyan),var(--color-violet))] p-[2px] shadow-[0_0_14px_-4px_var(--color-cyan)]"
@@ -31,29 +30,13 @@ function ProfilePhoto({ size }: { size: number }) {
 }
 
 /**
- * Top-left card: name, title and current floor (appendix 04: collapses to a pill on mobile). Visited
- * rooms stay in the store for missions, but the card no longer counts them (owner decision).
+ * Desktop top-left card: name, title and current floor (phones and tablets show the profile in the menu
+ * sheet instead). Visited rooms stay in the store for missions, but the card no longer counts them (owner decision).
  */
-export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: boolean }) {
+export function ProfileCard({ data }: { data: ExperienceData }) {
   const t = useTranslations("hud");
   const floor = useHQStore((s) => s.floor);
-  const [open, setOpen] = useState(false);
   const accent = ACCENT_TEXT[FLOOR_ACCENT[floor]];
-
-  if (mobile && !open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-expanded={false}
-        aria-label={`${t("profile")}: ${data.profile.name}, ${floor} ${data.floors[floor].name}`}
-        className="glass glass-solid pointer-events-auto absolute top-3 left-3 flex min-h-11 items-center gap-2 rounded-full py-1 pr-4 pl-1"
-      >
-        <ProfilePhoto size={36} />
-        <span className={`label ${accent}`}>{floor}</span>
-      </button>
-    );
-  }
 
   return (
     <section
@@ -74,16 +57,6 @@ export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: bo
           {data.floors[floor].name}
         </dd>
       </dl>
-      {mobile && (
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-expanded
-          className="label mt-2 inline-flex min-h-11 items-center text-ink-2 hover:text-ink"
-        >
-          &#x2715; {t("profile")}
-        </button>
-      )}
     </section>
   );
 }

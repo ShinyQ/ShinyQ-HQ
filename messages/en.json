@@ -396,6 +396,10 @@
       "musicVolume": { "label": "Music volume" }
     },
     "menu": "Menu",
+    "menuTitle": "Menu",
+    "map": {
+      "open": "Map"
+    },
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
     "hintCoarse": "Drive: joystick · Boost: double-tap the joystick · Go: tap a glowing object twice · Rotate: drag · Zoom: pinch · Floors: swipe up or down",

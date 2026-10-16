@@ -18,7 +18,7 @@ describe("ProfileCard", () => {
     getHQStore().setState({ floor: "L1", visited: ["L1:skills", "L1:stats"] });
     render(
       <NextIntlClientProvider locale="en" messages={en}>
-        <ProfileCard data={data} mobile={false} />
+        <ProfileCard data={data} />
       </NextIntlClientProvider>,
     );
     const card = screen.getByRole("region", { name: en.hud.profile });
@@ -33,7 +33,7 @@ describe("ProfileCard", () => {
     getHQStore().setState({ floor: "L3" });
     render(
       <NextIntlClientProvider locale="en" messages={en}>
-        <ProfileCard data={data} mobile={false} />
+        <ProfileCard data={data} />
       </NextIntlClientProvider>,
     );
     const badge = screen.getByTestId("profile-photo");
@@ -45,16 +45,5 @@ describe("ProfileCard", () => {
     expect(img).toHaveAttribute("width", "40");
     expect(img).toHaveAttribute("height", "40");
     expect(screen.getByRole("region", { name: en.hud.profile }).querySelector("svg text")).toBeNull();
-  });
-
-  it("uses the same photo in the collapsed phone pill", () => {
-    getHQStore().setState({ floor: "L1" });
-    render(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <ProfileCard data={data} mobile />
-      </NextIntlClientProvider>,
-    );
-    const pill = screen.getByRole("button", { name: new RegExp(`^${en.hud.profile}: ${data.profile.name}`) });
-    expect(pill.querySelector("[data-testid='profile-photo'] img")).toHaveAttribute("sizes", "36px");
   });
 });

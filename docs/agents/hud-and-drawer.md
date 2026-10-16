@@ -106,7 +106,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 ### Ask Rover name
 
 - User-facing name (owner decision): the Rover Terminal and its missions are **Ask Rover** (ID **Tanya Rover**) wherever a visitor reads them:
-  - the 3D top bar and Page View header button (`hud.launcher.askRover`);
+  - the desktop 3D top bar, the Corners menu sheet's actions and the Page View header button (`hud.launcher.askRover`);
   - the terminal title and prompt (`./ask-rover`);
   - the Cmd-K group, aria labels and the Lobby kiosk.
 - Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`.
@@ -124,7 +124,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 
 - Full is the default for every visitor on every OS. The OS preference (`prefers-reduced-motion`) is not the default.
 - The Motion menu restores it: System follows the OS again, Reduced always reduces.
-- That menu is the only way to reduce motion, so keep it easy to find: the HUD icon, the phone menu and the three Cmd-K actions.
+- That menu is the only way to reduce motion, so keep it easy to find: the desktop HUD icon, the settings panel (the Corners menu sheet and the desktop settings sheet) and the three Cmd-K actions.
 - Existing visitors: store version 3 migrates a stored `system` (the old default, never a choice) to `full` and keeps `reduced` as is (`migrateMotion`); a System picked from version 3 on stays.
 - Without JavaScript the page CSS still follows the OS (no `data-motion` attribute).
 
@@ -154,7 +154,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `MotionMenu` (`src/hud/MotionControl.tsx`): a round icon button right of Sound in the 3D top bar (`data-testid="motion-menu"`, `data-onboard="motion"`).
   - It opens a small popover with `MotionChoices`: a fieldset of three native radios (legend "Motion", arrow keys move and select).
   - Esc and an outside click close it and return focus.
-- Phones show `MotionChoices` inline in the menu under language and sound.
+- Phones and tablets (the Corners HUD) set Motion in the menu sheet's settings panel (`setting-motion`); desktops also have it in the settings sheet (gear button or `,`).
 - Cmd-K has `motion-system`, `motion-full` and `motion-reduced` on every page (a toast confirms).
 - There is no motion hint: the one-time "turn on full motion" Rover line (`MotionHintLayer`, copy `dialog.motion`) was removed with the Full default; do not reintroduce it. A stale `hq:motion-hint` key in old browsers is ignored.
 
@@ -164,7 +164,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `e2e/motion.spec.ts` (`page.emulateMedia({ reducedMotion: "reduce" })`):
   - `lastRide.distinctY` at least 12 and a moving intro by default;
   - the cut under System and under Reduced;
-  - the version 2 migration, axe, the phone menu, Cmd-K on the Classic site.
+  - the version 2 migration, axe, the Corners menu, Cmd-K on the Classic site.
 - Specs that test reduced motion by emulating the OS flag pick System first with `chooseMotion(page | context, "system")` from `e2e/hq.ts` (it rewrites `hq:v1` before every navigation), so the flag decides as before.
 
 ## Rover dialog, onboarding and hints
