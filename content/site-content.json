@@ -9711,10 +9711,6 @@
         {
           "kind": "elevator",
           "floor": "L2"
-        },
-        {
-          "kind": "drive",
-          "to": "L2:prologue-2016"
         }
       ]
     },

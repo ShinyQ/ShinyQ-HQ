@@ -197,16 +197,13 @@ describe("MissionHud on static pages", () => {
     expect(options).toHaveLength(index.rooms.filter((r) => r.kind === "pod").length);
   });
 
-  it("runs the journey mission as the journey page (first year) on static pages", async () => {
+  it("runs the journey mission as the journey page on static pages", async () => {
     renderHud();
     act(() => openTerminal());
     const journey = index.missions.find((m) => m.id === "journey")!;
-    expect(journey.steps).toEqual([
-      { kind: "elevator", floor: "L2" },
-      { kind: "drive", to: "L2:prologue-2016" },
-    ]);
+    expect(journey.steps).toEqual([{ kind: "elevator", floor: "L2" }]);
     await userEvent.click(screen.getByRole("option", { name: journey.label.en }));
-    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/journey#y2019"));
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/journey"));
   });
 
   it("runs the highlights mission as the landing intro on static pages", async () => {

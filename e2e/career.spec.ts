@@ -9,7 +9,7 @@ const journey = content.missions.find((m) => m.id === "journey")!;
 test.describe.configure({ timeout: 180_000 });
 
 type HQWindow = Window & {
-  __hq: { store: { getState: () => { activeRoom: string | null; phase: string; floor: string; rover: { x: number; z: number }; mission: { status: string } | null } } };
+  __hq: { store: { getState: () => { activeRoom: string | null; phase: string; floor: string; rover: { x: number; z: number } } } };
 };
 
 /** Opens an L2 route in 3D as a returning visitor; floor routes skip boot and intro. */
@@ -113,34 +113,18 @@ test.describe("Career Road (L2)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("Follow my career rides from the Lobby to L2 and drives to the first room without opening it", async ({ page }) => {
+  test("Follow my career rides from the Lobby to L2 and leaves the rover exploring there", async ({ page }) => {
     const errors = collectErrors(page);
     await skipFloorLines(page);
     await enterHQ(page);
     const label = journey.label.en;
-    const first = journey.steps.flatMap((step) => (step.kind === "drive" && "to" in step ? [String(step.to)] : []))[0];
     await page.keyboard.press("Control+k");
     await page.keyboard.type(label);
     await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: new RegExp(label) }).first().click();
     await waitForFloor(page, "L2", 90_000);
-    // The mission ends once the rover reaches the first room's door: no drawer opens.
-    await page.waitForFunction(
-      () => {
-        const s = (window as unknown as HQWindow).__hq.store.getState();
-        return s.mission?.status === "done" && s.phase === "explore";
-      },
-      undefined,
-      { timeout: 120_000 },
-    );
-    const door = await page.evaluate(
-      (room) => (window as unknown as { __hq: { layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }> } }).__hq.layouts.L2.doors?.find((d) => d.room === room)?.at ?? null,
-      first,
-    );
-    expect(door).not.toBeNull();
-    const { rover } = await snapshot(page);
-    expect(Math.hypot(rover.x - door!.x, rover.z - door!.z)).toBeLessThan(1.5);
-    // A few more frames, so a door pad or a late step that would open the room has had its chance.
-    await waitForFrames(page, 20);
+    await waitForSceneLive(page);
+    // A few more frames, so a late mission step (an open after the ride) would have run by now.
+    await waitForFrames(page, 10);
     expect(await activeRoom(page)).toBeNull();
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
     await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);

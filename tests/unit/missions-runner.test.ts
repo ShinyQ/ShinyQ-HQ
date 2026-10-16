@@ -46,7 +46,7 @@ describe("mission runner: catalog", () => {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
     highlights: ["elevator L1", "drive L1:highlights-about", "open L1:highlights-about"],
-    journey: ["elevator L2", "drive L2:prologue-2016"],
+    journey: ["elevator L2"],
     projects: ["elevator L3", "palette pods"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],
