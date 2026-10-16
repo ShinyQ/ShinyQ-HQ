@@ -52,7 +52,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Guided walks** on every floor (Walk my journey, Tour my projects, Read my writing, Meet me, Quick tour).
 - **Rover's onboarding**: a handheld-RPG text box tour, "!" hint bubbles and first-visit floor lines.
-- **Ask the HQ**: grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks.
+- **Ask the HQ**: grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a rollup every 4 hours by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
@@ -64,8 +64,8 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 |---|---|---|---|
 | <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Ask Rover kiosk and the Visitor Observatory. Behind it, the Highlights Hall. |
 | <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://kurniadi.pages.dev/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
-| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Product Engineering, AI Engineering and Data and ML wings, the Tech Reactor and the Ops Control Room. |
-| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts, research, models and talks desks, and the Topic Constellation. |
+| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past a raised directory wall: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor. Plus the Ops Control Room. |
+| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts with year posts and one sign per section, research, models and talks desks, and the Topic Constellation. |
 | <img src="docs/readme/floor-RF.jpg" width="300" alt="RF Roof deck"> | **RF Roof deck** | [`/en/contact`](https://kurniadi.pages.dev/en/contact) | Comms mast with the availability sign, contact station, CV kiosk and a courier drone. |
 
 Controls, floor-by-floor details and the full status log: **[docs/features.md](docs/features.md)**.
@@ -233,14 +233,15 @@ The full annotated layout is in [`AGENTS.md`](AGENTS.md#folder-layout).
 
 - **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
 - **CI** (`ci.yml`): check and build in parallel, Playwright in 4 shards and the 3D perf gates in 2 shards against one build, plus a blocking Lighthouse CI job. `main` accepts changes only through PRs with green checks.
-- **Scheduled**: Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check.
+- **Scheduled**: Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
+- **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export scan, the deploy smoke check and e2e; gitleaks, a public-safety lint over the export and SHA-pinned actions.
 
 | Gate | Budget |
 |---|---|
 | Scene draw calls per floor | under 150 (L1 at most 125) |
 | Post-processing passes | at most 20 |
 | Triangles per floor | under 30k |
-| JS after the 3D gate | under 450 KB gzip per tier |
+| JS after the 3D gate | under 450 KB gzip per tier; floor chunks L3 20 KB, L4 16 KB, RF 8 KB |
 | Shader programs | committed baseline + 2 |
 | GPU memory | round trips return to baseline |
 | Lighthouse (Classic site) | LCP under 2 s, CLS under 0.01, TBT under 200 ms |
