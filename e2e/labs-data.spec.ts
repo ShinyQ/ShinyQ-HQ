@@ -6,7 +6,7 @@ import { asReturningVisitor, skipFloorLines, collectErrors, driveTo, enterFloorR
 /**
  * L3 Data and ML spine (owner request 2026-10-14; Round 7 G: three paths): the data pods dock along the
  * centre road from the hub fork to the Tech Reactor plaza, open their drawers with code and research
- * links, the Data ring lights them all, the Data and ML board at the fork opens the project list, Cmd-K
+ * links, the Data ring lights the repo pods through pandas, the Data and ML board at the fork opens the project list, Cmd-K
  * rides to that board, and the Classic /labs page filters by the wing.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -89,13 +89,16 @@ test("every data pod docks along the spine, and a data pod door opens its drawer
   await expectRenderBudget(page);
 });
 
-test("the Data ring lights every data pod through pandas", async ({ page }) => {
+// The Fabric forecasting pod (moved to Data and ML, owner 2026-10-16) has no pandas: it lights from its lakehouse pipeline.
+const pandasPods = dataPods.filter((p) => p.repos?.length);
+
+test("the Data ring lights every repo data pod through pandas", async ({ page }) => {
   await enterFloorRoute(page, "/en/labs");
   await page.evaluate(() => (window as unknown as RW).__hq.store.getState().openRoom("L3:reactor"));
   await waitForRoom(page, "L3:reactor");
   await page.locator("button[data-ring=data]").click();
   await page.locator("[data-testid=reactor-techs] [data-tech=pandas]").click();
-  await expect.poll(() => lit(page)).toEqual(expect.arrayContaining(dataPods.map((p) => p.slug).sort()));
+  await expect.poll(() => lit(page)).toEqual(expect.arrayContaining(pandasPods.map((p) => p.slug).sort()));
   await waitForFrames(page, 20);
   await expectRenderBudget(page);
 });

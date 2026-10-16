@@ -25,6 +25,7 @@ import {
 import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
+import { directoryBoard, LABS } from "../src/experience/floors/labs/layout";
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -259,6 +260,12 @@ for (const tier of ["lite", "full"] as const) {
   });
 }
 
+type FaceWindow = Window & {
+  __hq: { interact: { floorY: number; project: ((p: { x: number; y: number; z: number }) => { x: number; y: number } | null) | null } };
+};
+type TapWindow = Window & {
+  __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null; hitAt: (x: number, y: number) => string | null } };
+};
 type PanelWindow = Window & { __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null } } };
 
 /** The L3 arrival as a returning visitor (no first-visit floor line covers the floor), camera settled. */
@@ -285,21 +292,30 @@ async function panelBox(page: Page, wing: "software" | "data" | "ai") {
 }
 
 /**
- * The on-screen part of a board that may run off the screen edge (phones): its pick volume sampled at 21
- * points across its width, top and bottom; `shown` is the share of samples on screen (a corner off screen
- * projects to null, so `panelBox` cannot measure it).
+ * The on-screen part of a board that may run off the screen edge (phones): its front face (`directoryBoard`)
+ * sampled at 101 columns across its width, top and bottom; `shown` is the share of columns whose both ends
+ * are on screen (fine enough to measure the design's 35 percent floor) (a point off screen projects to null, so `panelBox` cannot measure it).
  */
 async function visiblePanel(page: Page, wing: "software" | "ai") {
-  return page.evaluate((id) => {
-    const { interact } = (window as unknown as PanelWindow).__hq;
-    const steps = Array.from({ length: 21 }, (_, i) => i / 20);
-    const columns = steps.map((fz) => [0, 1].flatMap((fx) => [0.02, 0.98].map((lift) => interact.screenAt(id, fx, fz, lift))));
-    const visible = columns.filter((c) => c.every(Boolean)).flat() as { x: number; y: number }[];
-    if (!visible.length) return null;
-    const xs = visible.map((p) => p.x);
-    const ys = visible.map((p) => p.y);
-    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys), shown: visible.length / (columns.length * 4) };
-  }, `L3:board:${wing}`);
+  const board = directoryBoard(wing);
+  // The face spans `base` to `h` (the top edge, not a height).
+  const { w, width, base, h } = LABS.board;
+  const columns = Array.from({ length: 101 }, (_, i) => {
+    const t = (i / 100 - 0.5) * width;
+    return { x: board.center.x + board.normal.x * (w / 2) + board.along.x * t, z: board.center.z + board.normal.z * (w / 2) + board.along.z * t };
+  });
+  return page.evaluate(
+    ({ columns, base, top }) => {
+      const { interact } = (window as unknown as FaceWindow).__hq;
+      const projected = columns.map((c) => [base, top].map((y) => interact.project!({ x: c.x, y: interact.floorY + y, z: c.z })));
+      const visible = projected.filter((c) => c.every(Boolean)).flat() as { x: number; y: number }[];
+      if (!visible.length) return null;
+      const xs = visible.map((p) => p.x);
+      const ys = visible.map((p) => p.y);
+      return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys), shown: visible.length / (projected.length * 2) };
+    },
+    { columns, base, top: h },
+  );
 }
 
 test.describe("L3 directory wall (round 5 consolidation)", () => {
@@ -307,9 +323,10 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
     { width: 1440, height: 900, safe: DESKTOP_SAFE, phone: false },
     { width: 390, height: 844, safe: PHONE_SAFE, phone: true },
   ] as const) {
-    // Phones (owner review 2026-10-16): the camera stays east of the elevator shaft, so the 22 u wall cannot be
-    // whole; the gate board is, and each side board keeps at least three quarters of its width on screen.
-    test(`${size.phone ? "the gate board is whole and the side boards mostly" : "all three directory boards are whole and"} unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
+    // Phones (owner review 2026-10-16): the camera stays east of the elevator shaft, so three separate 9 u boards
+    // cannot all be whole; the gate board is, and each side board keeps its inner part on screen (the design's
+    // 35 percent floor, `tests/unit/labs-arrival.test.ts`).
+    test(`${size.phone ? "the gate board is whole and unobstructed, the side boards show their inner part" : "all three directory boards are whole and unobstructed"} on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, isMobile: size.phone, hasTouch: size.phone });
       const page = await context.newPage();
       await openLabsArrival(page);
@@ -319,7 +336,7 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
         const box: { minX: number; maxX: number; minY: number; maxY: number; shown?: number } | null = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
         expect(box, wing).not.toBeNull();
         if (side) {
-          expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.75);
+          expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.35);
         } else {
           expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
           expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);
@@ -328,8 +345,16 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
         expect(box!.maxY, wing).toBeLessThanOrEqual(size.height - size.safe.bottom);
         const minX = Math.max(box!.minX, size.safe.side);
         const maxX = Math.min(box!.maxX, size.width - size.safe.side);
-        const middle = { x: (minX + maxX) / 2, y: (box!.minY + box!.maxY) / 2 };
-        expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, middle), `${wing}: HUD over the panel`).toBe("CANVAS");
+        const y = (box!.minY + box!.maxY) / 2;
+        if (side) {
+          // A phone side board shows only a strip at the screen edge, where the elevator panel may cover part of
+          // it: some of the strip must still be bare canvas (the tap test below picks a point there).
+          const xs = Array.from({ length: 11 }, (_, i) => minX + ((maxX - minX) * i) / 10);
+          const tags = await page.evaluate(({ xs, y }) => xs.map((x) => document.elementFromPoint(x, y)?.tagName), { xs, y });
+          expect(tags, `${wing}: HUD over the whole visible strip`).toContain("CANVAS");
+        } else {
+          expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, { x: (minX + maxX) / 2, y }), `${wing}: HUD over the panel`).toBe("CANVAS");
+        }
       }
       await context.close();
     });
@@ -355,8 +380,22 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
     const page = await context.newPage();
     await openLabsArrival(page);
     const id = "L3:board:ai";
-    const point = await targetPoint(page, id);
-    await page.touchscreen.tap(point.x, point.y);
+    // The AI board shows only its inner part on a phone: tap the first point across it that is on the bare
+    // canvas inside the safe box and that the click raycast gives to this board.
+    const point = await page.evaluate(
+      ({ id, safe }) => {
+        const { interact } = (window as unknown as TapWindow).__hq;
+        for (let i = 0; i <= 20; i++) {
+          const p = interact.screenAt(id, 0.5, i / 20, 0.6);
+          if (!p || p.x < safe.side || p.x > window.innerWidth - safe.side || p.y < safe.top || p.y > window.innerHeight - safe.bottom) continue;
+          if (document.elementFromPoint(p.x, p.y)?.tagName === "CANVAS" && interact.hitAt(p.x, p.y) === id) return p;
+        }
+        return null;
+      },
+      { id, safe: PHONE_SAFE },
+    );
+    expect(point, `${id} on screen`).not.toBeNull();
+    await page.touchscreen.tap(point!.x, point!.y);
     await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "tap" });
     await page.getByTestId("interact-go").tap();
     await expect(page.getByRole("dialog", { name: en.hud.palette.title })).toBeVisible({ timeout: 60_000 });
