@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { BloomEffect } from "postprocessing";
 import { Color, DirectionalLight, HemisphereLight, Fog, InstancedBufferAttribute, Object3D, PlaneGeometry, SphereGeometry, type Group, type InstancedMesh } from "three";
 import { readDayNight, subscribeDayNight } from "@/lib/day-night";
@@ -34,6 +34,8 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const orbMesh = useRef<InstancedMesh>(null);
   const hemi = useRef<HemisphereLight>(null);
   const dir = useRef<DirectionalLight>(null);
+  // Full tier: the dome and orbs mount only once the composer exists. Precompile compiles every mounted object (hidden ones too) for the current target, so mounting them earlier pins a second holo program built for the canvas (sRGB) instead of the composer's linear input.
+  const [meshesLive, setMeshesLive] = useState(tier !== "full");
 
   // The sky color is computed per pixel from the view direction, so a coarse dome (48 triangles) looks the same; its nearest face plane stays about 340 u from the camera, beyond every opaque piece of the scene.
   const domeGeometry = useMemo(() => new SphereGeometry(DOME_RADIUS, 8, 4), []);
@@ -69,23 +71,23 @@ export function SkyController({ tier }: { tier: GpuTier }) {
     resolve();
     return subscribeDayNight(resolve);
   }, [reduced]);
+  // Freshly mounted meshes take the sky on the next frame even when the phase has not moved.
+  useEffect(() => {
+    if (meshesLive) last.current = null;
+  }, [meshesLive]);
 
   const state = useMemo(() => createSkyState(), []);
   const scratch = useMemo(() => new Object3D(), []);
 
   useFrame(({ scene }) => {
     const sky = group.current;
-    if (sky) {
-      sky.position.copy(camera.position);
-      // Full tier: hold the dome and orbs back until the composer exists, or they compile a second holo program against the canvas (sRGB) instead of the composer's linear input.
-      const show = tier !== "full" || postHandle.get()?.composer() != null;
-      if (sky.visible !== show) sky.visible = show;
-    }
+    if (sky) sky.position.copy(camera.position);
+    if (!meshesLive && postHandle.get()?.composer()) setMeshesLive(true);
     // The full tier's composer mounts lazily (and can remount): write the bloom into whichever instance is live.
-    const live = postHandle.get()?.bloom() ?? null;
-    if (live && live !== bloomWritten.current) {
-      live.intensity = state.bloom;
-      bloomWritten.current = live;
+    const bloom = postHandle.get()?.bloom() ?? null;
+    if (bloom && bloom !== bloomWritten.current) {
+      bloom.intensity = state.bloom;
+      bloomWritten.current = bloom;
     }
     const m = mode.current;
     const phase = m.phase ?? clockPhase(Date.now());
@@ -104,7 +106,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
       dir.current.color.copy(state.directional.color);
       dir.current.intensity = state.directional.intensity;
     }
-    if (live) live.intensity = state.bloom;
+    if (bloom) bloom.intensity = state.bloom;
 
     applyDome(domeMaterial, state);
     if (orbMesh.current) applyOrbs(orbMesh.current, orbAlpha, state, scratch);
@@ -122,12 +124,16 @@ export function SkyController({ tier }: { tier: GpuTier }) {
       <hemisphereLight ref={hemi} args={settings.hemisphere} />
       <directionalLight ref={dir} color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
       <group ref={group} name="sky-dome">
-        <instancedMesh args={[domeGeometry, domeMaterial, 1]} renderOrder={-100} frustumCulled={false} raycast={NO_RAYCAST}>
-          <instancedBufferAttribute attach="instanceColor" args={[domeColor, 3]} />
-        </instancedMesh>
-        <instancedMesh ref={orbMesh} args={[orbGeometry, orbMaterial, 2]} renderOrder={-99} frustumCulled={false} raycast={NO_RAYCAST}>
-          <instancedBufferAttribute attach="instanceColor" args={[orbColor, 3]} />
-        </instancedMesh>
+        {meshesLive && (
+          <>
+            <instancedMesh args={[domeGeometry, domeMaterial, 1]} renderOrder={-100} frustumCulled={false} raycast={NO_RAYCAST}>
+              <instancedBufferAttribute attach="instanceColor" args={[domeColor, 3]} />
+            </instancedMesh>
+            <instancedMesh ref={orbMesh} args={[orbGeometry, orbMaterial, 2]} renderOrder={-99} frustumCulled={false} raycast={NO_RAYCAST}>
+              <instancedBufferAttribute attach="instanceColor" args={[orbColor, 3]} />
+            </instancedMesh>
+          </>
+        )}
       </group>
     </>
   );
