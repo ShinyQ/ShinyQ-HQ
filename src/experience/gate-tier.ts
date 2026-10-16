@@ -50,9 +50,6 @@ export function useGateTier(): GpuTier | null {
   return useSyncExternalStore(subscribeTier, readDetectedTier, readServerTier);
 }
 
-/** True when the probe saw a valid `?tier=` in the URL (it then beats the graphics quality setting). */
-export const tierOverridden = () => overridden;
-
 /** The effective tier: the probe's, adjusted by the Settings panel's graphics quality (applies at once). */
 export function useQualityTier(detected: GpuTier | null): GpuTier | null {
   const pref = useSyncExternalStore(qualityPref.subscribe, qualityPref.get, () => "auto" as const);

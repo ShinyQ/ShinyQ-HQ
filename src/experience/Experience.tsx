@@ -25,6 +25,7 @@ import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { CanvasBoundary } from "./CanvasBoundary";
+import { isQualityRemount } from "./qualityRemount";
 import { buildFloorLayouts, LOBBY, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
@@ -98,10 +99,13 @@ export interface ExperienceStart {
 function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor, startRoom }: ExperienceStart) {
   const store = getHQStore();
   const s = store.getState();
+  const prevTier = s.tier;
   s.setTier(tier);
   s.setLocale(data.locale);
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
+  // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
+  if (isQualityRemount(!started, prevTier, tier)) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
     // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); every other start turns toward the default follow camera.
     const spawn = layouts.L1.spawn;
