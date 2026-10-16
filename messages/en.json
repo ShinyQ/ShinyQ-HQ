@@ -538,6 +538,10 @@
         "hint": "New tabs and links without a view open here",
         "page": "Classic site",
         "3d": "3D"
+      },
+      "dayNight": {
+        "label": "Day and night",
+        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
       }
     }
   },
