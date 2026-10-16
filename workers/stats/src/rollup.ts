@@ -68,6 +68,21 @@ export function buildPerf(date: string, rows: readonly PerfRow[]): DayPerf {
   return perf;
 }
 
+/**
+ * Whether the Web Analytics rows of `date` are safe to store forever: every row unsampled (average
+ * `sampleInterval` 1) and the three groups agreeing on the day's page views (they share one filter, so
+ * unsampled answers always add up to the same total). The adaptive API can answer from a coarse sample
+ * under load: on 2026-10-16 it returned 700 page views, 0 visits and 1000 per floor for a day with 333
+ * page views and 36 visits, and the ledger kept that.
+ */
+export function waExact(date: string, wa: WaRows): boolean {
+  const unsampled = (r: { date: string; sampleInterval?: number }) => r.date !== date || (r.sampleInterval ?? 1) === 1;
+  if (!wa.days.every(unsampled) || !wa.countries.every(unsampled) || !wa.paths.every(unsampled)) return false;
+  const total = (rows: readonly { date: string; count: number }[]) => rows.reduce((sum, r) => (r.date === date ? sum + r.count : sum), 0);
+  const days = total(wa.days);
+  return Number.isFinite(days) && total(wa.countries) === days && total(wa.paths) === days;
+}
+
 export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, chipTopics: ReadonlyMap<string, StatsTopic>): DayRollup[] {
   return dates.map((date) => {
     let visits = 0;

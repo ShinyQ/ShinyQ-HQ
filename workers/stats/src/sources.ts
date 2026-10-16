@@ -23,13 +23,16 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 const FILTER = "{ AND: [{ datetime_geq: $start, datetime_lt: $end }, { siteTag: $siteTag }, { bot: 0 }, { requestHost_in: $hosts }] }";
 
-/** One request, three groups per UTC day: totals, countries, paths. */
+/**
+ * One request, three groups per UTC day: totals, countries, paths. `avg { sampleInterval }` tells whether
+ * the adaptive API answered from a sample (above 1); the run never finalizes a day from a sampled answer.
+ */
 export const WA_QUERY = `query HqStats($accountTag: string!, $siteTag: string!, $start: Time!, $end: Time!, $hosts: [string!]) {
   viewer {
     accounts(filter: { accountTag: $accountTag }) {
-      days: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count sum { visits } dimensions { date } }
-      countries: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count sum { visits } dimensions { date countryName } }
-      paths: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count dimensions { date requestPath } }
+      days: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count sum { visits } avg { sampleInterval } dimensions { date } }
+      countries: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count sum { visits } avg { sampleInterval } dimensions { date countryName } }
+      paths: rumPageloadEventsAdaptiveGroups(limit: ${WA_LIMIT}, filter: ${FILTER}) { count avg { sampleInterval } dimensions { date requestPath } }
     }
   }
 }`;
@@ -47,6 +50,8 @@ function groups(account: Record<string, unknown>, name: string): Record<string, 
 
 const dims = (row: Record<string, unknown>) => (isRecord(row.dimensions) ? row.dimensions : {});
 const visitsOf = (row: Record<string, unknown>) => num(isRecord(row.sum) ? row.sum.visits : undefined);
+/** NaN when the API left it out, which `waExact` treats as sampled. */
+const intervalOf = (row: Record<string, unknown>) => num(isRecord(row.avg) ? row.avg.sampleInterval : undefined);
 
 /** Web Analytics rows for the UTC days in [start, end) (YYYY-MM-DD, at most 93 days apart). */
 export async function fetchWebAnalytics(cfg: SourceConfig, start: string, end: string, fetcher: Fetcher): Promise<WaRows> {
@@ -67,9 +72,9 @@ export async function fetchWebAnalytics(cfg: SourceConfig, start: string, end: s
   if (!isRecord(account)) throw new Error("Web Analytics: no account in the response");
   const date = (row: Record<string, unknown>) => str(dims(row).date);
   return {
-    days: groups(account, "days").map((r) => ({ date: date(r), count: num(r.count), visits: visitsOf(r) })),
-    countries: groups(account, "countries").map((r) => ({ date: date(r), country: str(dims(r).countryName), count: num(r.count), visits: visitsOf(r) })),
-    paths: groups(account, "paths").map((r) => ({ date: date(r), path: str(dims(r).requestPath), count: num(r.count) })),
+    days: groups(account, "days").map((r) => ({ date: date(r), count: num(r.count), visits: visitsOf(r), sampleInterval: intervalOf(r) })),
+    countries: groups(account, "countries").map((r) => ({ date: date(r), country: str(dims(r).countryName), count: num(r.count), visits: visitsOf(r), sampleInterval: intervalOf(r) })),
+    paths: groups(account, "paths").map((r) => ({ date: date(r), path: str(dims(r).requestPath), count: num(r.count), sampleInterval: intervalOf(r) })),
   };
 }
 

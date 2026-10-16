@@ -3,7 +3,7 @@
  *
  *   bun scripts/uptime.ts [--site https://kurniadi.pages.dev] [--repo owner/name] [--force-fail] [--dry]
  *
- * Checks / and /en (200 with og tags), GET /api/ask (status only: no model call, no AI quota),
+ * Checks / and /en (200 with og tags, no Cloudflare-injected analytics beacon), GET /api/ask (status only: no model call, no AI quota),
  * GET /api/stats (a valid snapshot at most 12 h old) and the newest deploy.yml result on main. A failing
  * check is retried once after 60 s. Then one issue labelled `uptime` is opened or updated, and closed
  * with a recovery comment once every check passes (GitHub emails the owner). Uses fetch and GH_TOKEN
@@ -11,6 +11,7 @@
  */
 import { appendFileSync, readFileSync } from "node:fs";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
+import { injectedAnalytics } from "./injected-analytics";
 import { parseSocialMeta } from "./og-meta";
 
 export type CheckId = "home" | "en" | "ask" | "stats" | "deploy" | "forced";
@@ -56,7 +57,9 @@ export function pageCheck(id: "home" | "en", obs: PageObs): CheckResult {
   if (obs.code !== 200) return result(id, false, `HTTP ${obs.code}, expected 200`);
   const og = parseSocialMeta(obs.html).og;
   const missing = REQUIRED_OG.filter((tag) => !og[tag]);
-  return missing.length ? result(id, false, `HTTP 200 but missing ${missing.join(", ")}`) : result(id, true, "HTTP 200 with og tags");
+  if (missing.length) return result(id, false, `HTTP 200 but missing ${missing.join(", ")}`);
+  const injected = injectedAnalytics(obs.html);
+  return injected ? result(id, false, `HTTP 200 but carries ${injected}`) : result(id, true, "HTTP 200 with og tags");
 }
 
 /** The committed kill switch: production's `enabled()` is also false for a missing AI binding or Turnstile secret. */

@@ -11,6 +11,11 @@ describe("pageCheck", () => {
   it("passes on 200 with og:title, og:image and og:url", () => expect(pageCheck("en", { code: 200, html: OG }).ok).toBe(true));
   it("fails on a non-200", () => expect(pageCheck("home", { code: 500, html: OG })).toMatchObject({ ok: false, detail: expect.stringContaining("HTTP 500") }));
   it("names missing og tags", () => expect(pageCheck("en", { code: 200, html: "<html></html>" }).detail).toContain("og:title"));
+  it("fails when Cloudflare injects its own Web Analytics beacon", () =>
+    expect(pageCheck("en", { code: 200, html: `${OG}<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{}'></script>` })).toMatchObject({
+      ok: false,
+      detail: expect.stringContaining("Cloudflare-injected Web Analytics beacon"),
+    }));
   it("fails on a network error", () => expect(pageCheck("en", { error: "timeout" })).toMatchObject({ ok: false, detail: expect.stringContaining("timeout") }));
 });
 
