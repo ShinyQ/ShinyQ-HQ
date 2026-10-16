@@ -1044,14 +1044,14 @@
   "stats": {
     "title": "Kunjungan",
     "observatory": "Observatorium Pengunjung",
-    "intro": "Jumlah kunjungan dan pertanyaan ke AI dihitung secara anonim, lalu diperbarui setiap hari dari data satu hari penuh sebelumnya.",
+    "intro": "Jumlah kunjungan dan pertanyaan ke AI dihitung secara anonim dan diperbarui setiap 4 jam, termasuk data hari ini.",
     "approx": "sekitar {n}",
     "window": {
-      "d30": "30 hari penuh terakhir",
+      "d30": "30 hari terakhir, termasuk hari ini",
       "all": "Sejak {date}"
     },
     "source": "Cloudflare Web Analytics, estimasi sampel",
-    "updated": "Diperbarui setiap hari",
+    "updated": "Diperbarui setiap 4 jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
     "offline": "Statistik belum tersedia",
@@ -1129,7 +1129,7 @@
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
       "sessions": "{count} sesi 3D dalam sampel, 30 hari terakhir",
-      "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap hari.",
+      "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap 4 jam.",
       "offline": "Angka terkini belum tersedia."
     },
     "explore": {

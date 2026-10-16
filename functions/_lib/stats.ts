@@ -3,7 +3,7 @@ import type { PagesContext, StatsEnv } from "./types";
 
 /** Seconds a KV read stays cached at the reading location. */
 export const STATS_KV_CACHE_TTL = 300;
-const OK_CACHE = "public, max-age=600, stale-while-revalidate=86400";
+const OK_CACHE = "public, max-age=600, stale-while-revalidate=3600";
 const EMPTY_CACHE = "public, max-age=300";
 
 const empty = () => new Response(null, { status: 204, headers: { "Cache-Control": EMPTY_CACHE } });
@@ -16,7 +16,7 @@ async function etagOf(body: string): Promise<string> {
 
 /**
  * `GET /api/stats`: the public visit stats snapshot (`StatsSnapshotV1`, src/lib/stats/protocol.ts) that
- * the hq-stats Cron Worker writes to KV once a day. No parameters. Validated again here, so a broken
+ * the hq-stats Cron Worker writes to KV every 4 hours. No parameters. Validated again here, so a broken
  * value never reaches a page; 204 (no body) when the kill switch is off or nothing valid is stored.
  */
 export function createStatsHandler() {

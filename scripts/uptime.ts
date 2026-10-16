@@ -4,7 +4,7 @@
  *   bun scripts/uptime.ts [--site https://kurniadi.pages.dev] [--repo owner/name] [--force-fail] [--dry]
  *
  * Checks / and /en (200 with og tags), GET /api/ask (status only: no model call, no AI quota),
- * GET /api/stats (a valid snapshot at most 48 h old) and the newest deploy.yml result on main. A failing
+ * GET /api/stats (a valid snapshot at most 12 h old) and the newest deploy.yml result on main. A failing
  * check is retried once after 60 s. Then one issue labelled `uptime` is opened or updated, and closed
  * with a recovery comment once every check passes (GitHub emails the owner). Uses fetch and GH_TOKEN
  * only (issues: write, actions: read); no dependencies, so the workflow skips `bun install`.
@@ -33,7 +33,7 @@ export const PAGE_PATHS = { home: "/", en: "/en" } as const;
 export const REQUIRED_OG = ["og:title", "og:image", "og:url"] as const;
 export const RETRY_DELAY_MS = 60_000;
 /** Same threshold as the site's "delayed" note (DELAYED_AFTER_MS in src/lib/visits/model.ts). */
-export const STATS_MAX_AGE_MS = 48 * 3_600_000;
+export const STATS_MAX_AGE_MS = 12 * 3_600_000;
 export const DEPLOY_WORKFLOW = "deploy.yml";
 const FETCH_TIMEOUT_MS = 20_000;
 /** The deploy check ignores cancelled, skipped, neutral and stale runs: they say nothing about production (as in scripts/ci-status.ts). */
@@ -83,7 +83,7 @@ export function statsCheck(obs: JsonObs, now: number): CheckResult {
   const snapshot = parseStatsSnapshot(obs.body);
   if (!snapshot) return result("stats", false, "HTTP 200 but the snapshot fails the contract");
   const ageMs = now - Date.parse(snapshot.updatedAt);
-  if (!(ageMs <= STATS_MAX_AGE_MS)) return result("stats", false, `snapshot is ${Math.round(ageMs / 3_600_000)} h old (updatedAt ${snapshot.updatedAt}), limit 48 h`);
+  if (!(ageMs <= STATS_MAX_AGE_MS)) return result("stats", false, `snapshot is ${Math.round(ageMs / 3_600_000)} h old (updatedAt ${snapshot.updatedAt}), limit 12 h`);
   return result("stats", true, `updatedAt ${snapshot.updatedAt}`);
 }
 

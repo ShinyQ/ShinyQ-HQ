@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseStatsSnapshot, STATS_KEY } from "@/lib/stats/protocol";
-import { BACKFILL_DAYS, LEDGER_KEY, runStats } from "../../workers/stats/src/run";
+import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, runStats } from "../../workers/stats/src/run";
 import worker from "../../workers/stats/src/index";
 import type { Fetcher, Ledger, StatsWorkerEnv } from "../../workers/stats/src/types";
 
@@ -8,6 +8,7 @@ const TOKEN = "test-token-never-logged-0123456789";
 const ACCOUNT = "0123456789abcdef0123456789abcdef";
 const SITE = "4134db56168b4eb58d19fc1ead78b131";
 const AT = (day: string) => Date.parse(`${day}T01:00:00Z`);
+const ATH = (day: string, hour: number) => Date.parse(`${day}T${String(hour).padStart(2, "0")}:00:00Z`);
 
 class MemoryKv {
   store = new Map<string, string>();
@@ -98,11 +99,12 @@ describe("hq-stats run", () => {
     const log = vi.fn();
     const result = await runStats(e, AT("2026-10-14"), fetcher, log);
     expect(result.added).toEqual(["2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13"]);
+    expect(result.provisional).toEqual(["2026-10-14"]);
     expect(ledgerOf(e).days.map((d) => d.date)).toEqual(result.added);
     const snap = snapshotOf(e)!;
     expect(snap).not.toBeNull();
     expect(snap.since).toBe("2026-10-10");
-    expect(snap.updatedAt).toBe("2026-10-14T00:00:00.000Z");
+    expect(snap.updatedAt).toBe("2026-10-14T01:00:00.000Z");
     expect(snap.visits).toEqual({ d30: 10, all: 10 });
     expect(snap.pageViews).toEqual({ d30: 120, all: 120 });
     expect(snap.countries.all).toEqual(["ID", "SG"]);
@@ -110,7 +112,7 @@ describe("hq-stats run", () => {
     expect(snap.mode.all).toEqual({ threeD: 4, classic: 0 });
     expect(snap.asks.all.total).toBe(3);
     expect(snap.asks.all.chips).toEqual([{ id: "work-best", topic: "work", n: 3 }]);
-    // 183 days in windows of at most 90 days: 3 GraphQL requests; 3 SQL queries (asks, visits, perf).
+    // 184 days (183 of history plus today) in windows of at most 90 days: 3 GraphQL requests; 3 SQL queries (asks, visits, perf).
     expect(calls.graphql).toHaveLength(Math.ceil(BACKFILL_DAYS / 90));
     expect(calls.sql).toHaveLength(3);
     expect(e.STATS_KV.puts).toEqual([LEDGER_KEY, STATS_KEY]);
@@ -129,27 +131,91 @@ describe("hq-stats run", () => {
     expect(calls.auth.every((h) => h === `Bearer ${TOKEN}`)).toBe(true);
   });
 
-  it("does nothing more the same day and never rewrites a finalized day", async () => {
+  it("a second run the same day rebuilds the snapshot from fresh provisional rows and never rewrites a finalized day", async () => {
     const e = env();
-    await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher, () => {});
+    await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 }, "2026-10-14": { count: 4, visits: 2 } } }).fetcher, () => {});
     const before = e.STATS_KV.store.get(LEDGER_KEY);
-    const again = fakeApi({ wa: { "2026-10-13": { count: 999, visits: 999 } } });
-    const same = await runStats(e, AT("2026-10-14") + 3_600_000, again.fetcher, () => {});
-    expect(same.added).toEqual([]);
-    expect(again.calls.graphql).toHaveLength(0);
-    expect(e.STATS_KV.store.get(LEDGER_KEY)).toBe(before);
+    expect(snapshotOf(e)!.pageViews.all).toBe(14);
+    e.STATS_KV.puts.length = 0;
 
-    // Next day: only 2026-10-14 is fetched and appended; 2026-10-13 keeps its first numbers.
+    const again = fakeApi({ wa: { "2026-10-13": { count: 999, visits: 999 }, "2026-10-14": { count: 9, visits: 5 } } });
+    const same = await runStats(e, ATH("2026-10-14", 5), again.fetcher, () => {});
+    expect(same).toMatchObject({ added: [], provisional: ["2026-10-14"], snapshot: true });
+    // Only the days after the ledger's last day are fetched.
+    expect(again.calls.graphql).toHaveLength(1);
+    expect(again.calls.graphql[0].variables).toMatchObject({ start: "2026-10-14T00:00:00Z", end: "2026-10-15T00:00:00Z" });
+    expect(e.STATS_KV.store.get(LEDGER_KEY)).toBe(before);
+    expect(e.STATS_KV.puts).toEqual([STATS_KEY]);
+    const snap = snapshotOf(e)!;
+    expect(snap.updatedAt).toBe("2026-10-14T05:00:00.000Z");
+    expect(snap.pageViews.all).toBe(19);
+
+    // Next day: 2026-10-14 is finalized with its latest numbers; 2026-10-13 keeps its first numbers.
     const next = fakeApi({ wa: { "2026-10-13": { count: 999, visits: 999 }, "2026-10-14": { count: 20, visits: 10 } } });
     const result = await runStats(e, AT("2026-10-15"), next.fetcher, () => {});
     expect(result.added).toEqual(["2026-10-14"]);
-    expect(next.calls.graphql[0].variables).toMatchObject({ start: "2026-10-14T00:00:00Z", end: "2026-10-15T00:00:00Z" });
-    const ledger = ledgerOf(e);
-    expect(ledger.days.map((d) => [d.date, d.pageViews])).toEqual([
+    expect(next.calls.graphql[0].variables).toMatchObject({ start: "2026-10-14T00:00:00Z", end: "2026-10-16T00:00:00Z" });
+    expect(ledgerOf(e).days.map((d) => [d.date, d.pageViews])).toEqual([
       ["2026-10-13", 10],
       ["2026-10-14", 20],
     ]);
     expect(snapshotOf(e)!.pageViews.all).toBe(30);
+  });
+
+  it("finalizes a day only an hour after it ends", () => {
+    expect(finalizedThrough(Date.parse("2026-11-16T00:00:00Z"))).toBe("2026-11-14");
+    expect(finalizedThrough(Date.parse("2026-11-16T00:59:59Z"))).toBe("2026-11-14");
+    expect(finalizedThrough(Date.parse("2026-11-16T01:00:00Z"))).toBe("2026-11-15");
+    expect(finalizedThrough(Date.parse("2026-11-16T04:00:00Z"))).toBe("2026-11-15");
+  });
+
+  it("includes today so far in the snapshot every 4 hours without storing it", async () => {
+    const e = env();
+    await runStats(e, AT("2026-11-16"), fakeApi({ wa: { "2026-11-15": { count: 10, visits: 4 } } }).fetcher, () => {});
+    const before = e.STATS_KV.store.get(LEDGER_KEY);
+    const api = fakeApi({ wa: { "2026-11-16": { count: 6, visits: 3, country: "SG" } } });
+    const result = await runStats(e, ATH("2026-11-16", 8), api.fetcher, () => {});
+    expect(result).toMatchObject({ added: [], provisional: ["2026-11-16"], days: 1, snapshot: true });
+    expect(e.STATS_KV.store.get(LEDGER_KEY)).toBe(before);
+    expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-11-15"]);
+    const snap = snapshotOf(e)!;
+    expect(snap.updatedAt).toBe("2026-11-16T08:00:00.000Z");
+    expect(snap.visits).toEqual({ d30: 7, all: 7 });
+    expect(snap.pageViews).toEqual({ d30: 16, all: 16 });
+    expect(snap.countries.all).toEqual(["ID", "SG"]);
+  });
+
+  it("keeps yesterday provisional during the 00:00 UTC run and stores it at 04:00", async () => {
+    const e = env();
+    await runStats(e, AT("2026-11-15"), fakeApi({ wa: { "2026-11-14": { count: 10, visits: 4 } } }).fetcher, () => {});
+    expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-11-14"]);
+    e.STATS_KV.puts.length = 0;
+    const wa = { "2026-11-15": { count: 8, visits: 5 }, "2026-11-16": { count: 2, visits: 1 } };
+
+    const midnight = await runStats(e, ATH("2026-11-16", 0), fakeApi({ wa }).fetcher, () => {});
+    expect(midnight).toMatchObject({ added: [], provisional: ["2026-11-15", "2026-11-16"] });
+    expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-11-14"]);
+    expect(e.STATS_KV.puts).toEqual([STATS_KEY]);
+    expect(snapshotOf(e)!.visits.all).toBe(10);
+
+    const settled = await runStats(e, ATH("2026-11-16", 4), fakeApi({ wa }).fetcher, () => {});
+    expect(settled).toMatchObject({ added: ["2026-11-15"], provisional: ["2026-11-16"] });
+    expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-11-14", "2026-11-15"]);
+    expect(snapshotOf(e)!.visits.all).toBe(10);
+  });
+
+  it("queries the provisional days in the same requests: one Web Analytics call and three SQL queries", async () => {
+    const e = env();
+    await runStats(e, AT("2026-11-16"), fakeApi({ wa: { "2026-11-15": { count: 10, visits: 4 } } }).fetcher, () => {});
+    const api = fakeApi({ wa: { "2026-11-16": { count: 6, visits: 3 } } });
+    await runStats(e, ATH("2026-11-16", 8), api.fetcher, () => {});
+    expect(api.calls.graphql).toHaveLength(1);
+    expect(api.calls.graphql[0].variables).toMatchObject({ start: "2026-11-16T00:00:00Z", end: "2026-11-17T00:00:00Z" });
+    expect(api.calls.sql).toHaveLength(3);
+    for (const q of api.calls.sql) {
+      expect(q).toContain("toDateTime('2026-11-16 00:00:00')");
+      expect(q).toContain("toDateTime('2026-11-17 00:00:00')");
+    }
   });
 
   it("catches up every missed day after a failed run", async () => {
@@ -157,17 +223,6 @@ describe("hq-stats run", () => {
     await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher, () => {});
     const result = await runStats(e, AT("2026-10-17"), fakeApi({}).fetcher, () => {});
     expect(result.added).toEqual(["2026-10-14", "2026-10-15", "2026-10-16"]);
-  });
-
-  it("rewrites a missing or stale snapshot from the ledger without fetching", async () => {
-    const e = env();
-    await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher, () => {});
-    e.STATS_KV.store.delete(STATS_KEY);
-    const api = fakeApi({});
-    const result = await runStats(e, AT("2026-10-14"), api.fetcher, () => {});
-    expect(result).toMatchObject({ added: [], snapshot: true });
-    expect(api.calls.graphql).toHaveLength(0);
-    expect(snapshotOf(e)!.pageViews.all).toBe(10);
   });
 
   it("writes nothing when an API answers with errors, and never logs the token", async () => {
@@ -193,7 +248,7 @@ describe("hq-stats run", () => {
   it("stores no snapshot while there is no data at all", async () => {
     const e = env();
     const result = await runStats(e, AT("2026-10-14"), fakeApi({}).fetcher, () => {});
-    expect(result).toEqual({ added: [], days: 0, snapshot: false });
+    expect(result).toEqual({ added: [], provisional: [], days: 0, snapshot: false });
     expect(e.STATS_KV.puts).toEqual([]);
   });
 
@@ -233,18 +288,21 @@ describe("hq-stats run", () => {
     "2026-10-13": [{ fps50: "30-44", explore: "8-12s", n: 3 }],
   };
 
-  it("fills perf once for stored days inside the Analytics Engine retention when the ledger is up to date", async () => {
+  it("fills perf once for stored days inside the Analytics Engine retention", async () => {
     const e = env();
     const legacy = legacyLedger(["2026-07-10", "2026-07-16", "2026-10-12", "2026-10-13"]);
     e.STATS_KV.store.set(LEDGER_KEY, JSON.stringify(legacy));
     const api = fakeApi({ perf: PERF_ROWS });
     const result = await runStats(e, AT("2026-10-14"), api.fetcher, () => {});
-    expect(result).toEqual({ added: [], days: 4, snapshot: true });
-    expect(api.calls.graphql).toHaveLength(0);
-    expect(api.calls.sql).toHaveLength(1);
+    expect(result).toEqual({ added: [], provisional: ["2026-10-14"], days: 4, snapshot: true });
+    // One Web Analytics call and the three provisional queries for today, plus one perf backfill query.
+    expect(api.calls.graphql).toHaveLength(1);
+    expect(api.calls.sql).toHaveLength(4);
     // AE keeps 90 days: 2026-07-16 is the first day inside the window on 2026-10-14.
-    expect(api.calls.sql[0]).toContain("toDateTime('2026-07-16 00:00:00')");
-    expect(api.calls.sql[0]).toContain("toDateTime('2026-10-14 00:00:00')");
+    const backfill = api.calls.sql.filter((q) => q.includes("toDateTime('2026-07-16 00:00:00')"));
+    expect(backfill).toHaveLength(1);
+    expect(backfill[0]).toContain("FROM perf_events");
+    expect(backfill[0]).toContain("toDateTime('2026-10-14 00:00:00')");
     const ledger = ledgerOf(e);
     expect(ledger.days.map((d) => d.perf?.sessions ?? null)).toEqual([null, 2, 0, 3]);
     expect(ledger.days.map(stripPerf)).toEqual(legacy.days);
@@ -255,9 +313,11 @@ describe("hq-stats run", () => {
 
     // Filled days are never queried again.
     const again = fakeApi({ perf: PERF_ROWS });
-    const same = await runStats(e, AT("2026-10-14") + 3_600_000, again.fetcher, () => {});
-    expect(same).toEqual({ added: [], days: 4, snapshot: false });
-    expect(again.calls.sql).toHaveLength(0);
+    const same = await runStats(e, ATH("2026-10-14", 5), again.fetcher, () => {});
+    expect(same).toEqual({ added: [], provisional: ["2026-10-14"], days: 4, snapshot: true });
+    expect(again.calls.sql).toHaveLength(3);
+    expect(again.calls.sql.some((q) => q.includes("toDateTime('2026-07-16 00:00:00')"))).toBe(false);
+    expect(ledgerOf(e).days.map((d) => d.perf?.sessions ?? null)).toEqual([null, 2, 0, 3]);
   });
 
   it("fills perf for stored days with one extra query while appending new days", async () => {
@@ -305,10 +365,10 @@ describe("hq-stats run", () => {
     const e = env();
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher(String(input), init));
     try {
-      await worker.scheduled({ cron: "0 1 * * *", scheduledTime: AT("2026-10-14") }, e);
+      await worker.scheduled({ cron: "0 */4 * * *", scheduledTime: AT("2026-10-14") }, e);
     } finally {
       spy.mockRestore();
     }
-    expect(snapshotOf(e)!.updatedAt).toBe("2026-10-14T00:00:00.000Z");
+    expect(snapshotOf(e)!.updatedAt).toBe("2026-10-14T01:00:00.000Z");
   });
 });

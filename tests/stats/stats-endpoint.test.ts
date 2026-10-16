@@ -30,7 +30,7 @@ describe("GET /api/stats", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=600, stale-while-revalidate=86400");
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=600, stale-while-revalidate=3600");
     expect(res.headers.get("ETag")).toMatch(/^"[0-9a-f]{32}"$/);
     expect(await res.json()).toEqual(STATS_FIXTURE);
     expect(reads).toEqual([{ key: STATS_KEY, options: { cacheTtl: 300 } }]);

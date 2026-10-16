@@ -275,8 +275,8 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
 | Analytics Engine | `perf_events` | Anonymous performance beacon, one point per sampled 3D session (created on first write) |
 | Analytics Engine | `visit_events` | Public visit stats beacon, one point per page lifetime (created on first write) |
-| KV | `STATS_KV` | Public visit stats: daily ledger `stats:days:v1` and snapshot `stats:v1` |
-| Worker | `hq-stats` | Public visit stats Cron Worker (`0 1 * * *` UTC, no route), `workers/stats/` |
+| KV | `STATS_KV` | Public visit stats: ledger of finalized days `stats:days:v1` and snapshot `stats:v1` |
+| Worker | `hq-stats` | Public visit stats Cron Worker (`0 */4 * * *` UTC, every 4 hours, no route), `workers/stats/` |
 | Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
@@ -301,7 +301,7 @@ Multiply by 4 for an estimate of 3D sessions (25% sampling). Other useful groupi
 Pipeline and contract: appendix 06 section 4.1 and [`workers/stats/README.md`](../workers/stats/README.md). Pieces:
 
 - `POST /api/visit` (`functions/api/visit.ts`) writes one point per page lifetime to Analytics Engine `visit_events` (binding `VISIT_EVENTS`).
-- The Cron Worker `hq-stats` (`workers/stats/`, cron `0 1 * * *` UTC) reads Web Analytics (GraphQL) and Analytics Engine (`ask_events`, `visit_events`) and writes KV `STATS_KV`: the daily ledger `stats:days:v1` and the snapshot `stats:v1`.
+- The Cron Worker `hq-stats` (`workers/stats/`, cron `0 */4 * * *` UTC: 00, 04, 08, 12, 16 and 20 o'clock) reads Web Analytics (GraphQL) and Analytics Engine (`ask_events`, `visit_events`, `perf_events`) and writes KV `STATS_KV`: the ledger `stats:days:v1` (a UTC day is appended once, an hour after it ended, and never recomputed) and the snapshot `stats:v1` (every run, over the ledger plus the provisional days after it, today so far, which are never stored). A routine run makes 1 GraphQL request, 3 SQL queries, 1 KV read and at most 2 KV writes (12 a day, inside the free plan's 1,000 writes a day per account); see `workers/stats/README.md` for the limits.
 - `GET /api/stats` (`functions/api/stats.ts`) serves the snapshot (204 until the first one exists).
 - Kill switch: `STATS_ENABLED = "false"` in `wrangler.toml`, then deploy.
 
@@ -310,6 +310,10 @@ Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only)
 `CF_STATS_TOKEN`: Cloudflare dashboard > My Profile > API Tokens > Create Custom Token, permission Account / Account Analytics / Read only, your account, TTL 90 days; then `gh secret set CF_STATS_TOKEN --env production --repo ShinyQ/ShinyQ-HQ` and run a deploy (it rewrites `WA_TOKEN`).
 
 If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+
+Rollout order for the 4-hour cadence (uptime now allows a snapshot at most 12 h old, while the old daily Worker keeps running until it is redeployed, so merging first would fail the hourly check from about 12:17 UTC on merge day): 1. deploy the new Worker first (`cd workers/stats && bunx wrangler deploy`; safe because the current site accepts the new snapshot, whose shape is unchanged), 2. confirm a fresh `updatedAt` with `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` (after the next 4-hour slot), 3. merge and deploy the site. `GET /api/stats` is cached `public, max-age=600, stale-while-revalidate=3600`, so a returning visitor never sees a snapshot much older than the Worker's cadence (the stale window must stay well under the 12 h "delayed" threshold).
+
+Manual deploy (what runs today, `STATS_WORKER_DEPLOY=false`, because the CI deploy token lacks Workers permissions): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next 4-hour slot `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
 
 Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
 
@@ -381,7 +385,7 @@ Facts, not a recommendation to move now (section 7 explains the `kurniadi.dev` b
 |---|---|
 | Page `/` and `/en` | HTTP 200 (no redirect) with `og:title`, `og:image` and `og:url` |
 | `GET /api/ask` | 200 with `enabled: true`. A 503 with `enabled: false` passes only while `wrangler.toml` sets `ASK_ENABLED` to `"false"` (the kill switch, switched off on purpose); otherwise a disabled Ask fails, which catches a lost AI binding or Turnstile secret (production's `enabled()` is false for those too). Status only: no model call, no AI quota |
-| `GET /api/stats` | 200 with a valid snapshot whose `updatedAt` is at most 48 h old (the site's "delayed" threshold; the Worker writes daily at 01:00 UTC). 204 fails |
+| `GET /api/stats` | 200 with a valid snapshot whose `updatedAt` is at most 12 h old (the site's "delayed" threshold; the Worker writes every 4 hours, at minute 0 UTC). 204 fails |
 | Latest `deploy.yml` run on main | the newest completed run that is not cancelled, skipped, neutral or stale succeeded (those runs are ignored) |
 
 A failing check is retried once after 60 s. Then the script opens one issue labelled `uptime` ("Uptime: production checks failing") listing the failing checks, rewrites its body on later failing runs (a comment, and so an email, only when the set of failing checks changes) and closes it with a recovery comment once every check passes. GitHub emails the owner on the new issue, on comments and on the close. The run stays green when checks fail (the issue is the alert, so there are no hourly failure emails); it turns red only when the script cannot talk to GitHub.
@@ -392,7 +396,7 @@ Prove the issue path: `gh workflow run uptime.yml -R ShinyQ/ShinyQ-HQ -f force_f
 
 Things to know:
 
-- `updatedAt` is midnight UTC of the Worker's run day. If one daily Worker run is missed, the 00:17 UTC check two days later finds a snapshot just over 48 h old and fails, and the issue stays open for about an hour until the Worker's 01:00 UTC catch-up run. That is two emails per missed Worker run, by design: the site shows "delayed" in that hour too.
+- `updatedAt` is the time of the Worker's last run. If three 4-hour runs in a row are missed, the next hourly check finds a snapshot over 12 h old and fails, and the issue stays open until the next successful Worker run. That is two emails per outage, by design: the site shows "delayed" in that period too.
 - GitHub disables scheduled workflows in public repositories after 60 days without repository activity. Re-enable it from Actions > Uptime.
 - Removing the `uptime` label from an open issue hides it from the script, so the next failing run opens a new issue.
 

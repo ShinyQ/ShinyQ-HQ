@@ -155,7 +155,7 @@ export interface ObservatoryState {
   /** Visits since launch. */
   allVisits: number;
   freshness: Freshness;
-  /** The last complete day, formatted for the locale ("13 Oct 2026"). */
+  /** The UTC day of the snapshot's last data, formatted for the locale ("13 Oct 2026"). */
   lastDay: string;
 }
 

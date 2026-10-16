@@ -26,12 +26,12 @@ describe("parseStatsSnapshot (S1 contract, as the display uses it)", () => {
 
 describe("freshness", () => {
   const u = STATS_FIXTURE.updatedAt;
-  it("is fresh within 48 hours of the last update", () => {
+  it("is fresh within 12 hours of the last update", () => {
     expect(freshness(STATS_FIXTURE, at(u, 1))).toBe("fresh");
-    expect(freshness(STATS_FIXTURE, at(u, 47))).toBe("fresh");
+    expect(freshness(STATS_FIXTURE, at(u, 11))).toBe("fresh");
   });
-  it("is delayed after 48 hours and hidden after 7 days", () => {
-    expect(freshness(STATS_FIXTURE, at(u, 49))).toBe("delayed");
+  it("is delayed after 12 hours and hidden after 7 days", () => {
+    expect(freshness(STATS_FIXTURE, at(u, 13))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 - 1))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 + 1))).toBe("hidden");
   });
@@ -39,7 +39,7 @@ describe("freshness", () => {
     expect(freshness(null, Date.now())).toBe("hidden");
     expect(freshness(STATS_FIXTURE, at(u, -3))).toBe("fresh");
   });
-  it("names the last complete day (updatedAt is its exclusive end)", () => {
+  it("names the UTC day of the last data (a midnight run reports the previous day)", () => {
     expect(lastUpdatedDay(STATS_FIXTURE)).toBe("2026-11-14");
   });
 });

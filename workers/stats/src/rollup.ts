@@ -197,11 +197,12 @@ function aggregate(days: readonly DayRollup[], chipTopics: ReadonlyMap<string, S
 }
 
 /**
- * The public snapshot over the ledger up to `lastDay` (the last complete UTC day): `d30` is the 30 days
- * ending on `lastDay`, `all` every day since the first rollup. Null for an empty ledger. `perf` only when
- * at least one day carries it (days without it count as no data).
+ * The public snapshot over `days` up to `lastDay`: `d30` is the 30 days ending on `lastDay` (which may be
+ * today so far), `all` every day since the first rollup. Null for no days. `updatedAt` is the run time;
+ * it defaults to the end of `lastDay`. `perf` only when at least one day carries it (days without it
+ * count as no data).
  */
-export function buildSnapshot(days: readonly DayRollup[], lastDay: string, chipTopics: ReadonlyMap<string, StatsTopic>): StatsSnapshotV1 | null {
+export function buildSnapshot(days: readonly DayRollup[], lastDay: string, chipTopics: ReadonlyMap<string, StatsTopic>, updatedAt: string = `${addDays(lastDay, 1)}T00:00:00.000Z`): StatsSnapshotV1 | null {
   const upTo = days.filter((d) => d.date <= lastDay);
   if (!upTo.length) return null;
   const start = addDays(lastDay, -29);
@@ -212,7 +213,7 @@ export function buildSnapshot(days: readonly DayRollup[], lastDay: string, chipT
   const all = aggregate(upTo, chipTopics);
   return {
     v: 1,
-    updatedAt: `${addDays(lastDay, 1)}T00:00:00.000Z`,
+    updatedAt,
     since: upTo[0].date,
     sampled: true,
     visits: { d30: d30.visits, all: all.visits },

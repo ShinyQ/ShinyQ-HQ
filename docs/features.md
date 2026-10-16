@@ -132,9 +132,9 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 `L1:visits`, `/en#visits` or the old `/en/contact#visits`, also in Cmd-K. It is also the first thing in view when you step out of the elevator.
 
 - A hologram globe with a dot for every country visits came from (dots only, never a number per country).
-- A panel with visits in the last 30 complete days and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
+- A panel with visits in the last 30 days (today included) and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
 - Its drawer filters by Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch).
-- The numbers come from the daily snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates, updated daily). A snapshot older than 48 hours shows a "delayed" note; one older than 7 days hides every stats surface.
+- The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates, refreshed every 4 hours with today so far). A snapshot older than 12 hours shows a "delayed" note; one older than 7 days hides every stats surface.
 - The observatory drawer carries a **Don't count my visits** switch, stored only in this browser.
 
 ## L1 Highlights Hall
@@ -190,7 +190,7 @@ Route `/en/labs`.
 `L3:ops`, also in Cmd-K. It stands in the AI wing's inner pocket beside the reactor.
 
 - Three screens styled like Grafana and Application Insights panels (Metrics, Traces, Alerts) built from the proof tiles of "How I run AI in production".
-- A live panel of this site's own telemetry from the daily stats snapshot: visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
+- A live panel of this site's own telemetry from the stats snapshot (refreshed every 4 hours): visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
 - Its drawer shows the section with the case studies that prove it.
 
 ## L4 Newsroom
@@ -238,7 +238,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
   - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board) with the "Meet me" walk.
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
-- `/api/stats`: the daily public visit stats snapshot (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
+- `/api/stats`: the public visit stats snapshot, refreshed every 4 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
 
 ## Search and link previews
 
@@ -314,7 +314,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - Cloudflare Web Analytics runs on production builds only.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
-- Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up once a day into KV, and `GET /api/stats` serves the snapshot.
+- Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 4 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
 - "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off.
 - `deploy.yml` also deploys the Worker after checking its tokens.
 - Details, secrets, variables and the Cloudflare resource inventory: [`deploy.md`](deploy.md).
