@@ -427,6 +427,9 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           // reduced motion cuts straight to the arrival point instead, and the camera cuts with it.
           const rollOn = to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done") ? to.arrival : null;
           const at = rollOn && s.reducedMotion ? rollOn : to.approach;
+          // The car boards within 0.8 u of the door, so the drive there can leave the tail of its path: drop it, or the
+          // rover would follow it back toward the shaft on the new floor.
+          controller.clearPath();
           controller.teleport(at, at === rollOn ? ARRIVAL_HEADING : Math.PI / 2);
           // The pad under the rover (the elevator pad; none at the arrival point) stays quiet until the rover leaves it.
           local.pad = primedPadLatch(to.pads, at);
