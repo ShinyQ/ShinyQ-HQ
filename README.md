@@ -50,8 +50,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 
 - **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator and five themed floors.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
-- **Guided walks** on every floor (Walk my journey, Tour my projects, Read my writing, Meet me, Quick tour).
-- **Rover's onboarding**: a handheld-RPG text box tour, "!" hint bubbles and first-visit floor lines.
+- **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles.
 - **Ask the HQ**: grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a rollup every 4 hours by a Cron Worker, shown as a hologram globe in the Lobby.
@@ -198,8 +197,8 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/quick` | Quick view: everything on one page | |
 | `/{locale}/journey`, `/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop | L2 Career Road; a slug opens that room |
 | `/{locale}/labs`, `/labs/{slug}` | Case studies, `?wing=software\|ai\|data` filter | L3 Project Roads; a slug opens that pod |
-| `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, `?topic=` filter | L4 Newsroom with the "Read my writing" walk |
-| `/{locale}/contact` | About, contact, "How I run AI in production", visit stats, CV, certifications | RF roof deck with the "Meet me" walk |
+| `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, `?topic=` filter | L4 Newsroom and the Topic Constellation |
+| `/{locale}/contact` | About, contact, "How I run AI in production", visit stats, CV, certifications | RF roof deck |
 | `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
 | `/api/stats` | Public visit stats snapshot, refreshed every 4 hours (200 or 204) | |
@@ -217,7 +216,7 @@ src/
   app/           routes ([locale] pages, "/" redirect, OG cards, 404)
   components/    Classic site UI, modals, CV and paper viewers
   content/       schema, accessors, selectors, room views, safety lint
-  experience/    3D tower: scene, floors, rover, camera, input, nav, missions, walks
+  experience/    3D tower: scene, floors, rover, camera, input, nav, missions
   hud/           HTML HUD over the canvas: drawer, dialog, Ask dock, pickers
   ask/           Ask client, protocol, knowledge pack
   lib/ store/ i18n/
