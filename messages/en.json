@@ -826,7 +826,7 @@
       "showMe": "Take me there",
       "later": "Later",
       "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
-      "askRover": "Not sure where to go? Ask Rover has guided tours.",
+      "askRover": "Not sure where to go? Ask Rover has shortcuts to the best rooms.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
       "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
@@ -850,7 +850,7 @@
       },
       "object": {
         "highlights": "The Highlights Hall: {name}'s selected work in one place.",
-        "askRover": "The Ask Rover kiosk: guided tours around the HQ.",
+        "askRover": "The Ask Rover kiosk: shortcuts to the best rooms in the HQ.",
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",

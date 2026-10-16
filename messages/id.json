@@ -826,7 +826,7 @@
       "showMe": "Antar saya ke sana",
       "later": "Nanti saja",
       "elevator": "Lift ini menuju semua lantai. Berhenti di pad panggil yang menyala di depannya untuk memilih lantai.",
-      "askRover": "Belum tahu mau ke mana? Tanya Rover punya tur terpandu.",
+      "askRover": "Belum tahu mau ke mana? Tanya Rover punya jalan pintas ke ruang-ruang terbaik.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
       "closingShort": "Itu dasarnya! Tur lengkap bisa diputar ulang dari Tanya Rover kapan saja."
@@ -850,7 +850,7 @@
       },
       "object": {
         "highlights": "Aula Sorotan: karya pilihan {name} di satu tempat.",
-        "askRover": "Kios Tanya Rover: tur terpandu keliling HQ.",
+        "askRover": "Kios Tanya Rover: jalan pintas ke ruang terbaik di HQ.",
         "cv": "Kios CV: baca atau unduh CV.",
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: makalah lengkap dengan abstrak dan sitasi.",
