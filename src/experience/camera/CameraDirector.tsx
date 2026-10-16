@@ -204,7 +204,11 @@ export function CameraDirector({
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
     // The settled rail or follow pose: one helper for the glide's end and the normal branches, so the handover never pops.
     const rigPose = (onRail: boolean, forward: Vec2): CameraPose => {
-      if (onRail) return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
+      // In an arrival zone the rail looks down the road behind the rover: the look-ahead runs into the screen, so the rover sits centered.
+      if (onRail) {
+        const axisZ = roadZAt(railAxis, roverRuntime.x);
+        return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null);
+      }
       // Look slightly ahead of the rover so more of the floor in front is visible.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));

@@ -86,7 +86,7 @@ function settledPose(floor: FloorId, w: number, h: number): { pose: CameraPose; 
   const zoom = zoneView(zone, cls).zoom ?? 1;
   if (rigOf(floor) === "rail") {
     const axis = layout.road?.roads[0]?.points ?? [];
-    return { pose: railPose(cls, arrival.x, 0, zoom, arrival.z, zone.railYaw, roadZAt(axis, arrival.x), 0), cls, zoom };
+    return { pose: railPose(cls, arrival.x, 0, zoom, arrival.z, zone.railYaw, roadZAt(axis, arrival.x), 0, true), cls, zoom };
   }
   const forward = followForward(cls, zoneView(zone, cls).yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];

@@ -118,15 +118,28 @@ export function railShift(roverZ: number): number {
  * L2 camera (round 5: a full orbit). At yaw 0 and pitch 0 it is the spec's side view, looking at
  * (roverX + 4, floor, road). `yaw` (unbounded) swings the camera and its look-ahead around the rover;
  * `pitch` tilts it within PITCH_LIMITS. `axisZ` is the road's z at the rover (the Career Road
- * meanders), so the camera follows the road's curves.
+ * meanders), so the camera follows the road's curves. The look-ahead runs to the screen's right;
+ * `aheadAlongView` runs it into the screen instead (`railForward`), which centers the rover when the rail
+ * looks down the road (the arrival view behind the rover).
  */
-export function railPose(cls: ViewportClass, roverX: number, floorY: number, zoom = 1, roverZ = 0, yaw = 0, axisZ = 0, pitch = 0): CameraPose {
+export function railPose(
+  cls: ViewportClass,
+  roverX: number,
+  floorY: number,
+  zoom = 1,
+  roverZ = 0,
+  yaw = 0,
+  axisZ = 0,
+  pitch = 0,
+  aheadAlongView = false,
+): CameraPose {
   const { fov, y, z } = RAIL[cls];
   const shift = axisZ + railShift(roverZ - axisZ);
   const [ox, oy, oz] = orbitOffset([0, y, z], yaw, pitch);
+  const ahead = aheadAlongView ? railForward(yaw) : { x: Math.cos(yaw), z: -Math.sin(yaw) };
   return {
     position: [roverX + ox * zoom, floorY + oy * zoom, shift + oz * zoom],
-    target: [roverX + RAIL_LOOK_AHEAD * Math.cos(yaw), floorY, shift - RAIL_LOOK_AHEAD * Math.sin(yaw)],
+    target: [roverX + RAIL_LOOK_AHEAD * ahead.x, floorY, shift + RAIL_LOOK_AHEAD * ahead.z],
     fov,
   };
 }
