@@ -55,7 +55,7 @@ That shape fits the job for three reasons.
 
 The best practices on Learn match the design. Include an abstention option: in Clearbox that is `unsure`. Set thresholds from the cost of false positives and false negatives. Consider randomizing option order: Clearbox shuffles the four action options per message, seeded by the account and message id, so a retry sends the same order.
 
-One caveat up front: Microsoft-Decision-1 is a Preview model, and the Azure model list gives version 1 an inference retirement date of 4 February 2027. The runbook already has a migration plan, covered below.
+One caveat up front: Clearbox treats Microsoft-Decision-1 as a Preview model, and the model catalog in Azure Resource Manager gives version 1 an inference retirement date of 4 February 2027 (Microsoft Learn did not list either detail when I checked). The runbook already has a migration plan, covered below.
 
 ## Architecture
 
@@ -153,6 +153,6 @@ Read it for what it is. The guardrails and the threshold traded recall for preci
 
 **Keep safety out of the model.** A decision model is easier to bound than a chatbot because it returns numbers, not text. The guarantees still come from code: guardrails, mandatory approval, trash-only actions and Undo.
 
-**Deploying finds what tests cannot.** The first live deploy found problems that 1,589 tests could not. The first deploy was refused because the Access audience secret did not exist yet, so the documented fallback is to deploy once with a placeholder. A hidden-prompt paste stored a malformed Azure key; ticks failed safely with an authentication banner and ingested nothing until I replaced the key. And a Google consent screen left in Testing mode only lets listed test users sign in and expires refresh tokens after 7 days, so a personal deployment needs the app set to In production.
+**Deploying finds what tests cannot.** The first live deploy found problems that 1,589 tests could not. The first deploy was refused because the Access audience secret did not exist yet, so the documented fallback is to deploy once with a placeholder. Pasting the Azure key into a hidden prompt over a slow terminal once stored a malformed key; ticks failed safely with an authentication banner and ingested nothing until I replaced the key. And a Google consent screen left in Testing mode only lets listed test users sign in and expires refresh tokens after 7 days, so a personal deployment needs the app set to In production.
 
 The AI prepares, and I confirm. That split is the whole design: the model does the tedious sorting, and every step that moves mail stays with a person and stays reversible.

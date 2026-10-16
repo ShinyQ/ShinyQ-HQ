@@ -55,7 +55,7 @@ Bentuk ini cocok untuk kebutuhan Clearbox karena tiga hal.
 
 Best practice di Learn sejalan dengan desain ini. Sertakan opsi abstain: di Clearbox, opsi itu adalah `unsure`. Tentukan threshold berdasarkan biaya false positive dan false negative. Pertimbangkan untuk mengacak urutan opsi: Clearbox mengacak urutan keempat opsi action per pesan dengan seed dari akun dan id pesan, sehingga retry mengirim urutan yang sama.
 
-Satu catatan sejak awal: Microsoft-Decision-1 adalah model Preview, dan daftar model Azure mencantumkan tanggal pensiun inference versi 1 pada 4 Februari 2027. Runbook-nya sudah punya rencana migrasi, yang saya bahas di bawah.
+Satu catatan sejak awal: Clearbox memperlakukan Microsoft-Decision-1 sebagai model Preview, dan katalog model di Azure Resource Manager mencantumkan tanggal pensiun inference versi 1 pada 4 Februari 2027 (Microsoft Learn belum mencantumkan kedua detail ini saat saya periksa). Runbook-nya sudah punya rencana migrasi, yang saya bahas di bawah.
 
 ## Arsitektur
 
@@ -153,6 +153,6 @@ Hasil ini perlu dibaca apa adanya. Guardrail dan threshold menukar recall dengan
 
 **Jauhkan keamanan dari model.** Decision model lebih mudah dibatasi daripada chatbot karena ia mengembalikan angka, bukan teks. Jaminannya tetap datang dari kode: guardrail, persetujuan wajib, aksi yang hanya memindahkan ke Trash, dan Undo.
 
-**Deploy menemukan hal yang tidak bisa ditemukan pengujian.** Deploy live pertama menemukan masalah yang tidak tertangkap oleh 1.589 pengujian. Deploy pertama ditolak karena secret audience Access belum ada, jadi fallback yang didokumentasikan adalah deploy sekali dengan placeholder. Menempelkan key lewat prompt tersembunyi pernah menyimpan key Azure yang rusak; tick gagal dengan aman disertai banner autentikasi dan tidak memasukkan apa pun sampai key-nya saya ganti. Selain itu, consent screen Google yang masih dalam mode Testing hanya mengizinkan test user yang terdaftar untuk login dan membuat refresh token kedaluwarsa setelah 7 hari, sehingga deployment pribadi perlu mengatur aplikasinya ke In production.
+**Deploy menemukan hal yang tidak bisa ditemukan pengujian.** Deploy live pertama menemukan masalah yang tidak tertangkap oleh 1.589 pengujian. Deploy pertama ditolak karena secret audience Access belum ada, jadi fallback yang didokumentasikan adalah deploy sekali dengan placeholder. Menempelkan key Azure lewat prompt tersembunyi di terminal yang lambat pernah menyimpan key Azure yang rusak; tick gagal dengan aman disertai banner autentikasi dan tidak memasukkan apa pun sampai key-nya saya ganti. Selain itu, consent screen Google yang masih dalam mode Testing hanya mengizinkan test user yang terdaftar untuk login dan membuat refresh token kedaluwarsa setelah 7 hari, sehingga deployment pribadi perlu mengatur aplikasinya ke In production.
 
 AI menyiapkan, saya yang mengonfirmasi. Pembagian itu adalah inti seluruh desainnya: model mengerjakan pemilahan yang membosankan, dan setiap langkah yang memindahkan email tetap berada di tangan manusia dan tetap bisa dibatalkan.
