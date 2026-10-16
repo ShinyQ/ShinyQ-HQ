@@ -24,7 +24,7 @@
 
 ## Gate (owner decision needed)
 
-Sewise is documented in its own repository as a 2026 hackathon entry (`docs/README.md` "Hackathon alignment", `docs/gform-answer.md` entry form with a four-person team plan), while git shows every commit and PR by ShinyQ. AGENTS.md forbids committing 2026 hackathon entries. Tasks 5 and 6 run only after the coordinator relays the owner's decision; Tasks 1 to 4 do not depend on it.
+Sewise is documented in its own repository as a 2026 hackathon entry (`docs/README.md` "Hackathon alignment", `docs/gform-answer.md` entry form with a four-person team plan), while git shows every commit and PR by ShinyQ. AGENTS.md forbids committing 2026 hackathon entries. **Decision (owner, 2026-10-16): option B.** Add Sewise as a Product Engineering featured pod, named openly as a 2026 hackathon entry (Deep Domain AI direction), planned for a four-person team with all code by Kurniadi; narrow the AGENTS.md rule and the C1 test to owner-approved exceptions. Clearbox approved as proposed. Later additions: Clearbox gallery from the repository README screenshots, and a Clearbox blog post on Microsoft-Decision-1 and its architecture.
 
 ## Evidence (fresh clones, 16 Oct 2026)
 
