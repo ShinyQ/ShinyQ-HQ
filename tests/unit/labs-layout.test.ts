@@ -63,7 +63,7 @@ describe("L3 Project Roads layout", () => {
       expect(road.points[2]).toEqual({ x: LABS.wingStartX, z: side * layout.wingZ });
     }
     // They end on the ring road around the reactor core in the east plaza (spectacle round), where the line from
-    // their turn meets it: due north or south for the later wing, at an angle for a shorter one.
+    // their turn meets it: both turn at the plaza's x, so due north and due south (owner request 2026-10-16).
     for (const [road, side] of [[north, -1], [south, 1]] as const) {
       const entry = road.points.at(-1)!;
       expect(entry).toEqual(ringEntry(layout.east.center, road.points.at(-2)!));
@@ -77,26 +77,27 @@ describe("L3 Project Roads layout", () => {
     for (const p of path!) expect(onNetwork(network, p)).toBe(true);
   });
 
-  it("ends each wing road one tail past its last docked pod, so no stretch of road runs on empty (owner request 2026-10-13)", () => {
+  it("turns both wing roads at the reactor plaza, a tail past the longer wing's last pod (owner requests 2026-10-13 and 2026-10-16)", () => {
     const spine = layout.placed.filter((p) => p.pod.wing === "data");
     const spineEdge = Math.max(-Infinity, ...spine.map((p) => p.rect.maxX));
+    // Where each wing alone needs its road to run: a tail past its own last pod, the last spine pod beside it, or (AI) the Ops Control Room.
+    const need = (wing: "software" | "ai") => {
+      const lastEdge = Math.max(...layout.placed.filter((p) => p.pod.wing === wing).map((p) => p.rect.maxX));
+      const opsTurn = wing === "ai" ? layout.ops.rect.maxX + LABS.road / 2 : -Infinity;
+      return Math.max(lastEdge + LABS.tail, spineEdge + LABS.tail, opsTurn, LABS.wingStartX + LABS.east + LABS.margin);
+    };
+    // The east plaza sits on the later of the two (and a tail plus its radius past the last spine pod), on the axis between the wings.
+    expect(layout.east.center).toEqual({ x: Math.max(need("software"), need("ai"), spineEdge + LABS.tail + LABS.east / 2), z: 0 });
     for (const wing of ["software", "ai"] as const) {
       const road = network.roads.find((r) => r.id === wing)!;
-      const docked = layout.placed.filter((p) => p.pod.wing === wing);
-      const lastEdge = Math.max(...docked.map((p) => p.rect.maxX));
-      // The turn is a tail past the wing's own last pod, the last spine pod beside it, or (AI) the Ops Control Room.
-      const opsTurn = wing === "ai" ? layout.ops.rect.maxX + LABS.road / 2 : -Infinity;
-      expect(road.points[3].x, wing).toBe(Math.max(lastEdge + LABS.tail, spineEdge + LABS.tail, opsTurn, LABS.wingStartX + LABS.east + LABS.margin));
-      // From the last door along it (its own pods, the spine pods beside it, the Ops room) to the turn is at most half a hero pod plus the tail.
-      const doors = [...docked, ...spine].map((p) => p.door.x);
-      if (wing === "ai") doors.push(layout.ops.door.x);
-      expect(road.points[3].x - Math.max(...doors), wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
+      expect(road.points[3].x, wing).toBe(layout.east.center.x);
       expect(road.points.at(-1)).toEqual(ringEntry(layout.east.center, road.points[3]));
     }
-    // The east plaza sits on the later of the two turns (and a tail plus its radius past the last spine pod), on the axis between the wings.
-    const turns = network.roads.filter((r) => r.id === "software" || r.id === "ai").map((r) => r.points[3].x);
-    const lastSpineEdge = Math.max(...layout.placed.filter((p) => p.pod.wing === "data").map((p) => p.rect.maxX));
-    expect(layout.east.center).toEqual({ x: Math.max(...turns, lastSpineEdge + LABS.tail + LABS.east / 2), z: 0 });
+    // The wing that sets the plaza runs at most half a hero pod plus the tail past its last door (its own pods, the spine pods beside it, the Ops room).
+    const later = need("software") >= need("ai") ? "software" : "ai";
+    const doors = [...layout.placed.filter((p) => p.pod.wing === later), ...spine].map((p) => p.door.x);
+    if (later === "ai") doors.push(layout.ops.door.x);
+    if (need(later) === layout.east.center.x) expect(layout.east.center.x - Math.max(...doors)).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
   });
 
   it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods or the Ops room (without spine pods)", () => {
@@ -107,7 +108,7 @@ describe("L3 Project Roads layout", () => {
     expect(hubOnly.floor.bounds.maxX - lastTurn).toBe(LABS.east / 2 + LABS.margin);
   });
 
-  it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing cutting across to the plaza", () => {
+  it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing running on to the plaza", () => {
     const lopsided = buildLabsLayout([
       ...Array.from({ length: 9 }, (_, i) => pod(`s${i}`, "software", i % 3 ? "featured" : "hero", i)),
       ...Array.from({ length: 3 }, (_, i) => pod(`a${i}`, "ai", "hero", i)),
@@ -116,13 +117,49 @@ describe("L3 Project Roads layout", () => {
     const ai = lopsided.network.roads.find((r) => r.id === "ai")!;
     const software = lopsided.network.roads.find((r) => r.id === "software")!;
     const aiEdge = Math.max(...lopsided.placed.filter((p) => p.pod.wing === "ai").map((p) => p.rect.maxX));
-    expect(ai.points[3].x).toBe(aiEdge + LABS.tail);
-    expect(ai.points[3].x).toBeLessThan(software.points[3].x);
+    expect(aiEdge + LABS.tail).toBeLessThan(software.points[3].x);
+    expect(ai.points[3].x).toBe(software.points[3].x);
+    expect(ai.points[3].x).toBe(lopsided.east.center.x);
     expect(ai.points.at(-1)).toEqual(ringEntry(lopsided.east.center, ai.points[3]));
+    expect(ai.points.at(-1)!.x).toBeCloseTo(lopsided.east.center.x);
     expect(Math.hypot(ai.points.at(-1)!.x - lopsided.east.center.x, ai.points.at(-1)!.z - lopsided.east.center.z)).toBeCloseTo(REACTOR.ring);
     const empty = buildLabsLayout([]);
     expectSpaceRules({ bounds: empty.floor.bounds, obstacles: empty.floor.obstacles, doors: empty.floor.doors ?? [], network: empty.network, start: empty.floor.approach });
     expect(empty.east.center.x).toBe(LABS.wingStartX + LABS.east + LABS.margin);
+  });
+
+  it("mirrors the reactor end about the spine axis (owner request 2026-10-16), the Return pad on the axis", () => {
+    const aiDocked = tourOrder(pods.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
+    const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
+    const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
+    const cases: [string, LabPod[]][] = [
+      ["real pods", pods],
+      ["an 11-pod AI wing", [...pods, ...extraAi]],
+      ["short side wings with eight hero spine pods", [...shortSides, ...eightHero]],
+      ["empty floor", []],
+    ];
+    for (const [name, set] of cases) {
+      const l = buildLabsLayout(set);
+      const c = l.east.center;
+      const north = l.network.roads.find((r) => r.id === "software")!.points;
+      const south = l.network.roads.find((r) => r.id === "ai")!.points;
+      for (const k of [-2, -1]) {
+        expect(Math.abs(north.at(k)!.x - south.at(k)!.x), `${name} x ${k}`).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(north.at(k)!.z + south.at(k)!.z), `${name} z ${k}`).toBeLessThanOrEqual(0.5);
+      }
+      expect(north.at(-2)!.x, name).toBe(c.x);
+      expect(south.at(-2)!.x, name).toBe(c.x);
+      expect(north.at(-1)!.x, name).toBeCloseTo(c.x);
+      expect(north.at(-1)!.z, name).toBeCloseTo(c.z - REACTOR.ring);
+      expect(south.at(-1)!.x, name).toBeCloseTo(c.x);
+      expect(south.at(-1)!.z, name).toBeCloseTo(c.z + REACTOR.ring);
+      expect(l.network.roads.find((r) => r.id === "data")!.points.at(-1)!.z, name).toBeCloseTo(0);
+      expect(l.floor.returnPad!.z, name).toBe(0);
+      expect(l.floor.returnPad!.x, name).toBeGreaterThan(c.x + REACTOR.ring + LABS.road / 2);
+      const pads = buildFloorLayouts(8, { labs: set }).L3.pads ?? [];
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach, pads });
+    }
   });
 
   it("paints no chevrons on L3 (owner request 2026-10-13) while every other walkable floor keeps them", () => {

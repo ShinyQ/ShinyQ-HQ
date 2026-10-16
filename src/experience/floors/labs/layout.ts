@@ -14,8 +14,10 @@ import { REACTOR_ROOM, reactorStop } from "./techReactor";
  * into a round hub plaza. Three roads leave the hub: the Data and ML spine runs straight east along z = 0
  * to the ring road's west point around the reactor core; the `software` wing road (north, z < 0) and the
  * `ai` wing road (south, z > 0) leave the hub rim `mouthAngle` (30 degrees) off the spine, run out to
- * |z| = `wingZ`, turn east, turn again `tail` past their last pod and end on the ring road, so the floor
- * is one loop without dead ends or empty road ends. Where the three roads fork stand three free-standing
+ * |z| = `wingZ`, turn east and run to the reactor plaza's x, where both turn toward the axis and meet the
+ * ring road due north and south of the core (owner request 2026-10-16: the end is mirror-symmetric about
+ * the spine), so the floor is one loop without dead ends. The Express Return pad sits on the axis east of
+ * the ring. Where the three roads fork stand three free-standing
  * directory boards (owner request 2026-10-16: a neat entrance, one name per path, no floating road signs):
  * the Data and ML board a gate over the spine on two posts, facing west; the Product (north) and AI
  * (south) boards each on one pylon beside their road mouth, turned toward the axis so their fronts face
@@ -59,10 +61,12 @@ export const LABS = {
   /** Pod front wall to door pad center (the rover fits on the pad). */
   padInset: 1.1,
   spurWidth: 4,
-  /** Road past the far edge of a wing's last pod before it turns into the east plaza: half the road plus a forecourt. */
+  /** Road past the far edge of a wing's last pod (or the last spine pod) before the reactor plaza can start: half the road plus a forecourt. */
   tail: 7,
   /** Diameter of the east plaza where the wing roads meet: room for the ring road around the reactor core. */
   east: 22,
+  /** The Express Return pad stands on the spine axis this far east of the reactor center: past the ring road's driving width, inside the slab. */
+  returnPadX: 13,
   /**
    * Directory boards where the three roads fork (plan 2026-10-16): three free-standing boards, `width`
    * along their face, `w` thick, raised from `base` (the rover, 2.8 u, drives under) to `h`. The Data and
@@ -252,8 +256,8 @@ export function tourOrder(pods: readonly LabPod[]): LabPod[] {
 /**
  * Places pods from data (`ExperienceData.labs.pods`). Per side wing, hero and featured pods dock in
  * `tourOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
- * inner side; each wing road turns `tail` past its own last pod and all three roads meet at one east
- * plaza. Data pods dock alternating north and south of the spine, spread to the plaza the side wings set
+ * inner side; the reactor plaza sits a `tail` past the longer wing's last pod (and the last spine pod),
+ * and both wing roads turn at its x, so all three roads meet the ring road symmetrically. Data pods dock alternating north and south of the spine, spread to the plaza the side wings set
  * (see the module comment).
  */
 export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
@@ -314,9 +318,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       lastEdge[wing] = Math.max(lastEdge[wing], p.rect.maxX);
     });
   }
-  // Each wing road turns `tail` past its own last pod; the east plaza sits on the later turn, so a
-  // shorter wing cuts across to it instead of running on empty. An empty wing still reaches a plaza
-  // and a margin past the point where the wing roads start.
+  // Each wing needs the road to run `tail` past its own last pod; the reactor plaza sits on the later of
+  // the two, and both wing roads run on to it, so the end stays mirror-symmetric. An empty wing still
+  // reaches a plaza and a margin past the point where the wing roads start.
   // The Ops Control Room docks in the AI wing's inner row, `OPS.gap` past its last inner pod (or where the
   // inner row starts); the AI road turns at least half a road width past it, so the room always fits.
   const aiInner = placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX);
@@ -337,7 +341,7 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     spineEdge = Math.max(spineEdge, p.rect.maxX);
   });
 
-  // With spine pods, every side wing also turns `tail` past the last spine pod, so its last leg into the
+  // With spine pods, every side wing also runs `tail` past the last spine pod, so its last leg into the
   // ring never cuts diagonally through the spine rows.
   const spineTurn = Number.isFinite(spineEdge) ? spineEdge + L.tail : -Infinity;
   const turnX = (wing: SideWing) => Math.max(sideTurn(wing), spineTurn);
@@ -346,9 +350,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const r = L.hub.size / 2;
   const mouth = (wing: SideWing): Vec2 => ({ x: hubC.x + r * Math.cos(L.mouthAngle), z: hubC.z + WING_SIDE[wing] * r * Math.sin(L.mouthAngle) });
   // All three roads end on the ring road around the reactor core (spectacle round), never at its center.
+  // Both wing roads turn at the plaza's x, so they meet the ring due north and south (mirror images).
   const wingRoad = (wing: SideWing): Road => {
     const z = WING_SIDE[wing] * wingZ;
-    const turn = { x: turnX(wing), z };
+    const turn = { x: loopEnd.x, z };
     return { id: wing, points: [hubC, mouth(wing), { x: L.wingStartX, z }, turn, ringEntry(loopEnd, turn)], width: L.road };
   };
   const spine: Road = { id: "data", points: [hubC, ringEntry(loopEnd, hubC)], width: L.road };
@@ -452,8 +457,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       doors,
       road: network,
       viewZones,
-      // Fast return (F1): south-east of the reactor core, outside the ring road's driving width.
-      returnPad: { x: loopEnd.x + 10, z: 9 },
+      // Fast return (F1): on the spine axis east of the reactor core, outside the ring road's driving width,
+      // so the reactor stop view (camera east, looking west) shows it centered below the rover.
+      returnPad: { x: loopEnd.x + L.returnPadX, z: 0 },
       stops: { [REACTOR_ROOM]: reactorStop(loopEnd) },
       directoryStops: { software: boards.software.stop, ai: boards.ai.stop, data: boards.data.stop },
     },

@@ -104,7 +104,7 @@ describe("L3 Data and ML spine", () => {
     expect(layout.east.center).toEqual({ x: Math.max(...turns, spineEdge + LABS.tail + LABS.east / 2), z: 0 });
     const lastInner = Math.max(...layout.placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX));
     expect(layout.ops.rect.minX).toBe(lastInner + OPS.gap);
-    expect(floor.returnPad).toEqual({ x: layout.east.center.x + 10, z: 9 });
+    expect(floor.returnPad).toEqual({ x: layout.east.center.x + LABS.returnPadX, z: 0 });
     expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
     expect(floor.stops!["L3:reactor"]).toEqual({ x: layout.east.center.x + REACTOR.ring, z: 0 });
   });
