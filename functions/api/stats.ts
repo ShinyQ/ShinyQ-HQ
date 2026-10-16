@@ -8,3 +8,5 @@ import type { PagesContext, StatsEnv } from "../_lib/types";
 const handler = createStatsHandler();
 
 export const onRequest = (context: PagesContext<StatsEnv>) => handler(context);
+
+// Smart CI timing probe (throwaway).
