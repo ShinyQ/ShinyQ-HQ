@@ -18,6 +18,17 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 - `buildFloorLayouts(yearCount, extras: LayoutExtras = {})` builds every floor layout.
 - Each floor adds its own optional input field to `LayoutExtras` (`types.ts`; for example `labs` and `career`), never a new positional parameter.
 
+### Arrival
+
+- Every floor sets `FloorLayout.arrival` (Round 8 J): where the rover rolls on after an elevator ride, heading east along the floor's main axis. Ride, glide and camera rules: [Elevator arrival](3d-experience.md#elevator-arrival).
+  - L1 (-6, 0), L2 x = 6 in the 2019 plaza, L3 `LABS.overview`, L4 (-4, 0), RF (-8, 0).
+- Its view zone is `<floor>:arrival`, in the floor's `viewZones`:
+  - a 4 u box at the arrival point, `yaw` looking east (`yawLooking({ x: 1, z: 0 })`), with `travel` east so only an eastbound rover matches;
+  - `arrivalOnly`: active only once an arrival or a deep-link spawn primed it, so driving back through never swings the camera;
+  - the L2 zone adds `railYaw` (the rail camera due west of the rover, looking down the Career Road).
+- Zooms are the widest view whose camera stays east of the elevator shaft: constants in each floor's config, capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
+- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`). L1 keeps the kiosk spawn and L2 the approach.
+
 ## Doors
 
 - Door triggers are generic: fill `FloorLayout.doors` with `{ room, at, size?, facing? }`.

@@ -11,9 +11,10 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md).
   - the stations: centerpiece, comms north, CV east, about south-west, each flush with a slab edge;
   - `stops` and `channelSlots`.
 - `ROOF_DECK.callPad` (x -20 to -12, z -4 to 4) stays free for the elevator call pad.
-- `ROOF_DECK.signYaw` turns the availability sign square to the overview camera (`overviewYaw`).
+- `ROOF_DECK.signYaw` turns the availability sign square to the availability stop's camera (`RF:availability`, `overviewYaw`).
 - The layout feeds the navgrid, the door triggers, `roomTarget` and the R3F components, so scene and autopilot never disagree.
-- Deep links spawn in front of the content (`spawn` in `buildFloorLayouts`).
+- Deep links spawn on the arrival point and elevator arrivals roll on to it (`ROOF_DECK.spawn`, (-8, 0): the end of the lead road at the plaza rim; `FloorLayout.arrival` is the same point).
+- Zone `RF:arrival` (`arrivalOnly`, `travel` east) replaces the old overview zone: the camera stands behind the rover and looks east over the plaza at the centerpiece mast; zoom 0.95, phones 0.8 (the widest views that keep the camera east of the glass shaft).
 - In-world targets are point-and-go registry entries (see [Point-and-go](floors.md#point-and-go)); floors add no click handlers of their own.
 
 ## Scenery: Signal Garden

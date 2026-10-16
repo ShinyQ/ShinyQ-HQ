@@ -1,6 +1,6 @@
 # 3D experience
 
-How the 3D tower mounts, boots and runs: gate and tiers, boot and intro, boost, data flow, elevator ride, camera, frame loop, render budget, crash recovery, quality, precompile, batched text, ride cull, day and night, store and `window.__hq`.
+How the 3D tower mounts, boots and runs: gate and tiers, boot and intro, boost, data flow, elevator ride, elevator arrival, camera, frame loop, render budget, crash recovery, quality, precompile, batched text, ride cull, day and night, store and `window.__hq`.
 Floor content lives in [floors.md](floors.md) and the per-floor files.
 
 Index: [AGENTS.md](../../AGENTS.md).
@@ -165,6 +165,23 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 - Ride stats: the Director measures each ride (`tower/rideStats.ts`): `window.__hq.ridePrep.lastRide`, and with `?perf=1` one `[hq ride]` console line per ride.
 - Tests: `e2e/ride.spec.ts` (6x CPU throttle, reduced-motion cut, no compile while moving; it samples the live ride through `__hq.motion()`).
 
+## Elevator arrival
+
+Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the car heading east and the camera ends behind it, looking east. Pure math in `camera/arrival.ts`; floor points and zones in [floors.md](floors.md#arrival).
+
+- The Director rolls every elevator arrival on from the shaft to `FloorLayout.arrival` (the request carries `arrival: true`); a queued mission drive still replaces it.
+- Glide (`CameraDirector`): it starts when the ride's stage becomes `opening`, not under reduced motion.
+  - It primes the destination's arrival zone (`primeZone`) and draws from `shoulderPose` (`ARRIVAL_GLIDE.start`: low behind the rover, inside the car, looking east) to the destination rig's settled pose (`rigPose`: follow, or the L2 rail), eased by `glideProgress` over `ARRIVAL_GLIDE.duration` (1.5 s).
+  - The pose is snapped (no spring) and skips the collision clamp.
+  - It uses the destination's rig and fog range from its first frame, so nothing pops when the ride ends.
+  - It ends at 1.5 s, on an `orbit`, `zoom` or `view` intent, held Q/E/R/F, drive input (`roverRuntime.steering`), a beam, a new ride, or a phase other than explore or elevator. The normal camera then eases on from the drawn pose.
+- Zone hold: no `updateZone` runs while the glide runs or the arrival roll-on drives (`autopilot.arrival`), so the camera parks in the primed zone. Steering releases the hold.
+- Reduced motion: no glide. The Director teleports the rover to the arrival point heading east and sets `cameraSnap`; the camera primes the arrival zone on the frame the ride ends.
+- Floor deep links that spawn on an arrival point (L4, RF) and the first-frame prime pass open on the arrival view too: the pass primes an `arrivalOnly` zone under the rover.
+- Zones: `ViewZone.arrivalOnly` and `ViewZone.railYaw` (see [Orbit](#orbit)). Zooms are capped per camera class by `shaftClearZoom`, so the camera stays east of the shaft (`SHAFT_CLEAR_X`).
+- Probes on `roverRuntime`: `arrivalGlide` (0 to 1, -1 when not gliding), `cameraBehind` (heading of the vector from the camera to the rover) and `steering`.
+- Tests: `tests/unit/arrivals.test.ts` (per floor point, zone and shaft clearance), `arrival-glide.test.ts` (glide math, Director and camera rules), `orbit-arrival-only.test.ts`; `e2e/arrivals.spec.ts` (camera behind the rover within 0.1 rad of east and the rover heading east on every floor, glide cancel on input, reduced-motion cut); `scripts/arrival-shots.ts` captures the arrivals at four sizes.
+
 ## Pure modules
 
 - Config, elevator, rigs, orbit, camera collision, first person, movement, faces, navgrid, collision, intents, url-sync, gpu-tier and viewport must stay free of React and three side effects, so Vitest can run them in node.
@@ -189,6 +206,8 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
   - Zoom 0.6 to 1.5.
   - Eased steps, reset, wall auto-face via `VIEW_ZONES`.
   - A `ViewZone.travel` direction limits a zone to a rover facing within 90 degrees of it; `zoneAt` takes the heading.
+  - `ViewZone.railYaw` (L2 rail rig only) turns the rail like `yaw` turns the follow camera; leaving such a zone eases the rail back to the side view, unless the visitor turned it by hand.
+  - `ViewZone.arrivalOnly` zones are active only once an arrival or a floor deep-link spawn primed them (`activeZone`): driving into one later does nothing.
 - Add a floor's view zones there.
 - `orbit` intents carry a `source`, so a floor can filter (for example L2 scrubbing on one-finger drags; `scrubSign` flips a scrub when the L2 view faces the other way).
 - Controls per device: appendix 03 section 2 ([03-rover-camera-input.md](../superpowers/specs/agent-hq/03-rover-camera-input.md)).
