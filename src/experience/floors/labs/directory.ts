@@ -4,7 +4,7 @@ import type { BatchedLabel } from "../../fx/labelProps";
 import type { LabPod } from "../../types";
 import type { Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
-import { directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "./layout";
+import { directoryBoard, LABS, LABS_WINGS, dockingOrder, wallPosts, WING_TINT, type DirectoryBoard } from "./layout";
 
 /**
  * Pure content of the L3 directory boards where the three roads fork (owner request 2026-10-13: noticeable
@@ -175,7 +175,7 @@ export function boardList(list: readonly LabPod[], maxLines: number, style: List
   const marks: string[] = [];
   const text: string[] = [];
   let entries = 0;
-  for (const pod of tourOrder(list).slice(0, style.entries)) {
+  for (const pod of dockingOrder(list).slice(0, style.entries)) {
     const lines = entryLines(pod.shortTitle ?? pod.title, style);
     if (text.length + lines.length > maxLines) break;
     lines.forEach((line, i) => {

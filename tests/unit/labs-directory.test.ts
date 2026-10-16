@@ -17,7 +17,7 @@ import {
   INK,
   type DirectoryLabels,
 } from "@/experience/floors/labs/directory";
-import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, dockingOrder, wallPosts, WING_TINT, type DirectoryBoard } from "@/experience/floors/labs/layout";
 import { batchColor, type BatchedLabel } from "@/experience/fx/labelProps";
 import { sceneSettings } from "@/experience/scene/settings";
 import { interWidth } from "@/experience/fx/interWidth";
@@ -109,7 +109,7 @@ describe("L3 directory wall content (owner request 2026-10-13, clean board text 
         const limit = 0.97 * listWidthEm(style);
         for (const wing of WINGS) {
           const inWing = pods.filter((p) => p.wing === wing);
-          const top = tourOrder(inWing).slice(0, style.entries);
+          const top = dockingOrder(inWing).slice(0, style.entries);
           const list = boardList(inWing, rows.listLines, style);
           expect(list.entries, wing).toBe(top.length);
           expect(list.more, wing).toBe(inWing.length - list.entries);
@@ -323,7 +323,7 @@ describe("L3 directory wall content (owner request 2026-10-13, clean board text 
         expect(wallLabels(pods, labels, FONTS, size, layout.boards)).toEqual(wallLabels(pods, labels, FONTS, size));
         const texts = onBoard(wallLabels(pods, labels, FONTS, size), directoryBoard("data"));
         expect(texts, size).toHaveLength(10);
-        const top = tourOrder(pods.filter((p) => p.wing === "data")).slice(0, LIST_STYLE[size].entries);
+        const top = dockingOrder(pods.filter((p) => p.wing === "data")).slice(0, LIST_STYLE[size].entries);
         expect(texts[3].text.split("\n"), size).toEqual(top.map(shown));
         expect(texts[2].text.split("\n").every((m) => MARKS.includes(m)), size).toBe(true);
       }

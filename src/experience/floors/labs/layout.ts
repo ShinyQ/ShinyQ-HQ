@@ -104,7 +104,7 @@ export const LABS = {
 /** The two wings beside the spine; the `data` wing is the spine itself. */
 export const SIDE_WINGS = ["software", "ai"] as const;
 export type SideWing = (typeof SIDE_WINGS)[number];
-/** Every wing in tour order: Product, AI, then Data and ML. */
+/** Every wing in listing order: Product, AI, then Data and ML. */
 export const LABS_WINGS: readonly Wing[] = ["software", "ai", "data"];
 /** -1 = north (`software` wing), +1 = south (`ai` wing); display names come from messages (`common.wing`). */
 export const WING_SIDE: Record<SideWing, -1 | 1> = { software: -1, ai: 1 };
@@ -219,7 +219,7 @@ export function directoryBoard(wing: Wing): DirectoryBoard {
   return { ...footprint(center, normal, w, width), center, normal, along: along(normal), yaw: Math.atan2(normal.x, normal.z), stop: offset(center, normal, w / 2 + LABS.boardStop) };
 }
 
-/** Where `drive` stops for a listed item, and the tour's "More projects here" stop: in front of its wing's board. */
+/** Where `drive` stops for a listed item: in front of its wing's board. */
 export function directoryStop(wing: Wing): Vec2 {
   return directoryBoard(wing).stop;
 }
@@ -248,14 +248,14 @@ export function boardSize(layers: number, rows: number): { width: number; height
   return { width: width * scale, height: height * scale, scale };
 }
 
-/** Hero and featured pods in site order (`comparePods`: gallery first): the docking order along a wing road and the tour order. */
-export function tourOrder(pods: readonly LabPod[]): LabPod[] {
+/** Hero and featured pods in site order (`comparePods`: gallery first): the docking order along a wing road and on the boards. */
+export function dockingOrder(pods: readonly LabPod[]): LabPod[] {
   return pods.filter((p) => p.tier !== "listed").sort(comparePods);
 }
 
 /**
  * Places pods from data (`ExperienceData.labs.pods`). Per side wing, hero and featured pods dock in
- * `tourOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
+ * `dockingOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
  * inner side; the reactor plaza sits a `tail` past the longer wing's last pod (and the last spine pod),
  * and both wing roads turn at its x, so all three roads meet the ring road symmetrically. Data pods dock alternating north and south of the spine, spread to the plaza the side wings set
  * (see the module comment).
@@ -271,10 +271,10 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const docked: Record<Wing, LabPod[]> = { software: [], ai: [], data: [] };
   for (const wing of LABS_WINGS) {
     const inWing = pods.filter((p) => p.wing === wing);
-    const tour = tourOrder(inWing);
+    const order = dockingOrder(inWing);
     const cap = wing === "data" ? L.data.maxPods : L.maxPerWing;
-    docked[wing] = tour.slice(0, cap);
-    directory[wing] = [...tour.slice(cap), ...inWing.filter((p) => p.tier === "listed").sort(comparePods)];
+    docked[wing] = order.slice(0, cap);
+    directory[wing] = [...order.slice(cap), ...inWing.filter((p) => p.tier === "listed").sort(comparePods)];
   }
   const depthOf = (p: LabPod) => (p.tier === "hero" ? L.hero.d : L.featured.d);
   const spineDepth = Math.max(0, ...docked.data.map(depthOf));

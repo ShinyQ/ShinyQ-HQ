@@ -6,7 +6,7 @@ import { buildFloorLayouts, ROVER, ROVER_HEIGHT, SHAFT, SHAFT_EAST_FACE } from "
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { chevronMarks } from "@/experience/nav/roadGeometry";
-import { buildLabsLayout, directoryBoard, directoryStop, LABS, LABS_WINGS, lookAlong, SIDE_WINGS, tourOrder, wallPosts, WING_SIDE } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, directoryBoard, directoryStop, LABS, LABS_WINGS, lookAlong, SIDE_WINGS, dockingOrder, wallPosts, WING_SIDE } from "@/experience/floors/labs/layout";
 import { REACTOR, ringEntry } from "@/experience/floors/labs/reactor";
 import { HINT } from "@/experience/hints/select";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -129,7 +129,7 @@ describe("L3 Project Roads layout", () => {
   });
 
   it("mirrors the reactor end about the spine axis (owner request 2026-10-16), the Return pad on the axis", () => {
-    const aiDocked = tourOrder(pods.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const aiDocked = dockingOrder(pods.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
     const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
     const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
     const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
@@ -185,7 +185,7 @@ describe("L3 Project Roads layout", () => {
   it("docks pods in site order (gallery pods nearest the hub), alternating sides of the wing road", () => {
     for (const wing of ["software", "ai"] as const) {
       const docked = layout.placed.filter((p) => p.pod.wing === wing);
-      expect(docked.map((p) => p.pod.slug)).toEqual(tourOrder(pods.filter((p) => p.wing === wing)).map((p) => p.slug));
+      expect(docked.map((p) => p.pod.slug)).toEqual(dockingOrder(pods.filter((p) => p.wing === wing)).map((p) => p.slug));
       docked.forEach((p, i) => expect(p.row).toBe(i % 2 === 0 ? "outer" : "inner"));
       for (const row of ["outer", "inner"] as const) {
         const inRow = docked.filter((p) => p.row === row);

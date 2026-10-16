@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
-import { buildLabsLayout, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS, dockingOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
 import { OPS } from "@/experience/floors/labs/ops";
 import { REACTOR } from "@/experience/floors/labs/reactor";
 import { roadGlow } from "@/experience/floors/labs/techReactor";
@@ -42,7 +42,7 @@ describe("L3 Data and ML spine", () => {
   });
 
   it("turns short side wings past the last spine pod, so their last leg never crosses the spine rows", () => {
-    const software = tourOrder(real.filter((p) => p.wing === "software"));
+    const software = dockingOrder(real.filter((p) => p.wing === "software"));
     const nonSoftware = real.filter((p) => p.wing !== "software");
     const sets: [string, LabPod[]][] = [
       ["one Product pod", [...nonSoftware, software[0]]],
@@ -72,7 +72,7 @@ describe("L3 Data and ML spine", () => {
   });
 
   it("docks spine pods alternating north and south from x = 24 in even steps, doors facing the spine, 6 u from the inner wing rows", () => {
-    expect(spinePods.map((p) => p.pod.slug)).toEqual(tourOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
+    expect(spinePods.map((p) => p.pod.slug)).toEqual(dockingOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
     spinePods.forEach((p, i) => {
       expect(Math.sign(p.center.z), p.room).toBe(i % 2 === 0 ? -1 : 1);
       expect(p.roadZ).toBe(0);
@@ -111,7 +111,7 @@ describe("L3 Data and ML spine", () => {
 
   it("spreads the spine pods from x = 24 to the reactor plaza, and packs them at the minimum pitch when there are many", () => {
     // Pad the AI wing to 11 docked pods (PR #163's floor), whatever today's content docks there.
-    const aiDocked = tourOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const aiDocked = dockingOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
     const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
     const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
     const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
