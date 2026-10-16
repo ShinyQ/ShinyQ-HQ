@@ -12,7 +12,7 @@ import { cancelAllDialogs, cancelDialog, dialog } from "@/hud/dialog/store";
 import { getHQStore } from "@/store/useHQStore";
 
 const data = { profile: { name: "Kurniadi Ahmad Wijaya" } } as unknown as ExperienceData;
-const ride: Ride = { from: "L1", to: "L2", stage: "dolly", t: 0 };
+const ride: Ride = { from: "L1", to: "L2", stage: "moving", t: 0 };
 
 function renderLayer() {
   return render(
