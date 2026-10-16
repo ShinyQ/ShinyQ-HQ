@@ -13,11 +13,11 @@ name: CI
 # run everything. A heavy job never skips at the job level (a skipped matrix job would report an
 # unexpanded check name and block the required checks): its steps skip and one "Not needed" step
 # passes. Complete runs upload the `ci-full` artifact for the deploy gate (scripts/ci-status.ts).
-# The nightly schedule runs the full pipeline on main every night, plus two nightly-only jobs (also on a
-# dispatch with the `nightly` input): `visual`, the strict look-preserving gate (scripts/visual-gate.ts)
-# of this commit against the previous nightly's commit, and `nightly`, which reads every job's result
-# and opens, updates or closes the one `ci-nightly` issue (scripts/ci-nightly.ts; writes only on main,
-# a dry run elsewhere).
+# The nightly schedule runs the full pipeline on main every night, plus the nightly-only `nightly` job
+# (also on a dispatch with the `nightly` input), which reads every job's result and opens, updates or
+# closes the one `ci-nightly` issue (scripts/ci-nightly.ts; writes only on main, a dry run elsewhere).
+# The strict visual gate (scripts/visual-gate.ts) is not here: it needs a real GPU and times out on the
+# hosted runners' SwiftShader, so it stays a local gate (docs/agents/performance.md).
 
 on:
   pull_request:
@@ -29,13 +29,9 @@ on:
   workflow_dispatch:
     inputs:
       nightly:
-        description: Also run the nightly visual gate and the ci-nightly issue report
+        description: Also run the ci-nightly issue report
         type: boolean
         default: false
-      visual_base:
-        description: With nightly, compare the visual gate against this commit or ref instead of the previous nightly
-        type: string
-        default: ""
 
 concurrency:
   # The nightly gets its own group so it never replaces a pending main push.
@@ -439,87 +435,12 @@ jobs:
           include-hidden-files: true
           retention-days: 14
 
-  visual:
-    # Nightly only: the strict look-preserving gate (scripts/visual-gate.ts) of this commit against the
-    # previous nightly's commit, so a look change is flagged once and the next night compares from it.
-    name: Visual gate (nightly)
-    if: github.event_name == 'schedule' || inputs.nightly
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    permissions:
-      contents: read
-      # Reads the previous scheduled ci.yml run for the base commit.
-      actions: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          # The base commit is built in a sibling worktree.
-          fetch-depth: 0
-      - name: Previous nightly commit
-        id: base
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          HEAD_SHA: ${{ github.sha }}
-          VISUAL_BASE: ${{ inputs.visual_base }}
-        run: |
-          if [ -n "$VISUAL_BASE" ]; then
-            if ! base=$(git rev-parse --verify --quiet --end-of-options "$VISUAL_BASE^{commit}"); then
-              echo "::error::visual_base \"$VISUAL_BASE\" is not a commit in this repository."
-              exit 1
-            fi
-            echo "Visual gate base (visual_base input): $base"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "sha=$base" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if ! runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=schedule&per_page=5"); then
-            echo "::error::Could not look up the previous nightly run (GitHub API call failed); this is not a look change."
-            exit 1
-          fi
-          base=$(jq -r --argjson id "$RUN_ID" '[.workflow_runs[] | select(.id != $id)][0].head_sha // empty' <<< "$runs")
-          if [ -z "$base" ]; then
-            echo "::notice::No previous nightly run: the visual gate has no base and is skipped."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          elif [ "$base" = "$HEAD_SHA" ]; then
-            echo "::notice::The previous nightly ran on this commit ($base): nothing to compare."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          elif ! git cat-file -e "$base^{commit}" 2> /dev/null; then
-            echo "::notice::The previous nightly commit $base is not in this repository's history: skipped."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Visual gate base: $base"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "sha=$base" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: ./.github/actions/setup
-        if: steps.base.outputs.skip != 'true'
-        with:
-          playwright: "true"
-      - name: Strict visual gate against the previous nightly
-        # Builds the base in ../<repo>-visual-<sha8> and the head in place; diffs land in test-results/.
-        if: steps.base.outputs.skip != 'true'
-        env:
-          CI: ""
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-          BASE: ${{ steps.base.outputs.sha }}
-        run: bun scripts/visual-gate.ts --base "$BASE" --profile strict
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with:
-          name: visual-gate-diffs
-          path: test-results/
-          retention-days: 7
-          if-no-files-found: ignore
-
   nightly:
     # Nightly only: one `ci-nightly` issue opened on a failing night, updated while it keeps failing and
     # closed by the next green nightly (scripts/ci-nightly.ts). APPLY is true only on main; a dispatch
     # with `nightly` on another branch is a dry run that prints the action.
     name: Nightly report
-    needs: [changes, check, secrets, site, e2e, perf, lighthouse, build, visual]
+    needs: [changes, check, secrets, site, e2e, perf, lighthouse, build]
     if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.nightly) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5

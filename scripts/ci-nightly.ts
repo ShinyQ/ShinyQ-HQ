@@ -17,7 +17,7 @@ const LABEL_COLOR = "B60205";
 const LABEL_DESCRIPTION = "Nightly full CI run failing on main (ci.yml schedule)";
 const MARKER = /<!-- ci-nightly:failed=([\w,-]*) -->/;
 const FETCH_TIMEOUT_MS = 20_000;
-/** Results that are not failures: a job skipped by its own condition (the visual gate on a dispatch without `nightly`, the preview). */
+/** Results that are not failures: a job skipped by its own condition (the preview). */
 const PASSING = new Set(["success", "skipped"]);
 
 export type Needs = Record<string, { result: string; outputs?: Record<string, string> }>;
@@ -62,9 +62,6 @@ export function nightlyBody(failed: readonly string[], ctx: NightlyContext): str
     ...failed.map((id) => `| \`${id}\` | ${ctx.results?.[id] ?? "failure"} |`),
     "",
   ];
-  if (failed.includes("visual")) {
-    lines.push("A `visual` failure can be an intended look change: review the `visual-gate-diffs` artifact of the run. The next night compares against this commit.", "");
-  }
   lines.push(`Last run ${ctx.checkedAt} ([run](${ctx.runUrl})). The next green nightly closes this issue.`);
   return lines.join("\n");
 }

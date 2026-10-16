@@ -77,7 +77,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [MII Cowork and MII Deck Implementation Plan](plans/2026-10-16-mii-cowork-and-deck.md) | shipped | [#163](https://github.com/ShinyQ/ShinyQ-HQ/pull/163) |
 | [Remove Guided Walks Implementation Plan](plans/2026-10-16-remove-guided-walks.md) | shipped | [#167](https://github.com/ShinyQ/ShinyQ-HQ/pull/167) |
 | [Public Visit Stats Every 4 Hours Implementation Plan](plans/2026-10-16-stats-every-4h.md) | shipped | [#161](https://github.com/ShinyQ/ShinyQ-HQ/pull/161) |
-| [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review |  |
+| [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review | [#176](https://github.com/ShinyQ/ShinyQ-HQ/pull/176) |
 
 ## Specs
 

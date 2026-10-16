@@ -232,7 +232,7 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 
 - **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
 - **CI** (`ci.yml`): check and build in parallel; on a PR, smart CI runs Playwright (4 shards), the 3D perf gates (2 shards) and a blocking Lighthouse CI job only when the changed paths need them; `main` and the nightly run everything. `main` accepts changes only through PRs with green checks.
-- **Scheduled**: a full CI run with a strict visual gate, Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
+- **Scheduled**: a full CI run, Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
 - **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export scan, the deploy smoke check and e2e; gitleaks, a public-safety lint over the export and SHA-pinned actions.
 
 | Gate | Budget |

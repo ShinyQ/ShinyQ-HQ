@@ -5,7 +5,7 @@ const ctx = { runUrl: "https://x/runs/1", sha: "abc1234def", checkedAt: "2026-10
 
 describe("nightly CI issue", () => {
   it("lists failed and cancelled jobs, not skipped ones", () => {
-    expect(failedJobs({ e2e: { result: "failure" }, perf: { result: "success" }, visual: { result: "skipped" }, lighthouse: { result: "cancelled" } })).toEqual(["e2e", "lighthouse"]);
+    expect(failedJobs({ e2e: { result: "failure" }, perf: { result: "skipped" }, lighthouse: { result: "cancelled" } })).toEqual(["e2e", "lighthouse"]);
   });
   it("opens one issue on failure", () => {
     const a = nightlyAction(["e2e"], null, ctx);
@@ -24,9 +24,9 @@ describe("nightly CI issue", () => {
     const body = nightlyBody(["e2e", "perf"], ctx);
     const same = nightlyAction(["perf", "e2e"], { number: 7, body }, ctx);
     expect(same).toEqual({ kind: "update", number: 7, body: nightlyBody(["perf", "e2e"], ctx) });
-    const changed = nightlyAction(["visual"], { number: 7, body }, ctx);
+    const changed = nightlyAction(["lighthouse"], { number: 7, body }, ctx);
     expect(changed).toMatchObject({ kind: "update", number: 7 });
-    if (changed.kind === "update") expect(changed.comment).toContain("`visual`");
+    if (changed.kind === "update") expect(changed.comment).toContain("`lighthouse`");
     const unknown = nightlyAction(["perf"], { number: 7 }, ctx);
     if (unknown.kind === "update") expect(unknown.comment).toBeDefined();
   });
@@ -40,8 +40,6 @@ describe("nightly CI issue", () => {
     expect(body).not.toContain("abc1234def");
     expect(body).toContain("2026-10-18T20:40:00Z");
     expect(body).toContain("The next green nightly closes this issue.");
-    expect(body).not.toContain("visual-gate-diffs");
-    expect(nightlyBody(["visual"], ctx)).toContain("visual-gate-diffs");
     expect(ISSUE_TITLE).toBe("Nightly CI failed on main");
   });
 
