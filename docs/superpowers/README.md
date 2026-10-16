@@ -70,7 +70,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Ask the HQ: "ShinyQ" Is Kurniadi's Nickname Implementation Plan](plans/2026-10-16-ask-shinyq-nickname.md) | shipped | [#160](https://github.com/ShinyQ/ShinyQ-HQ/pull/160) |
 | [Blog Architecture Diagrams Implementation Plan](plans/2026-10-16-blog-architecture-diagrams.md) | shipped | [#172](https://github.com/ShinyQ/ShinyQ-HQ/pull/172) |
 | [Clearbox and Sewise Fashion Labs Pods Implementation Plan](plans/2026-10-16-clearbox-and-sewise.md) | shipped | [#173](https://github.com/ShinyQ/ShinyQ-HQ/pull/173) |
-| [Deep Space Ambient Background Music Implementation Plan](plans/2026-10-16-deep-space-ambient.md) | in progress |  |
+| [Deep Space Ambient Background Music Implementation Plan](plans/2026-10-16-deep-space-ambient.md) | shipped | [#175](https://github.com/ShinyQ/ShinyQ-HQ/pull/175) |
 | [L3 Neat Entrance and Symmetric End Implementation Plan](plans/2026-10-16-l3-neat-entrance-symmetric-end.md) | shipped | [#168](https://github.com/ShinyQ/ShinyQ-HQ/pull/168) |
 | [L3 Three Paths (Round 7 G) Implementation Plan](plans/2026-10-16-l3-three-paths.md) | shipped, later removed | [#164](https://github.com/ShinyQ/ShinyQ-HQ/pull/164); later [#168](https://github.com/ShinyQ/ShinyQ-HQ/pull/168) |
 | [L4 Declutter (Round 7 F) Implementation Plan](plans/2026-10-16-l4-declutter.md) | shipped | [#165](https://github.com/ShinyQ/ShinyQ-HQ/pull/165) |

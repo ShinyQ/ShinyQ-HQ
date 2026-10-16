@@ -1,5 +1,7 @@
 # Deep Space Ambient Background Music Implementation Plan
 
+Status: shipped in #175, 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the tower's ambient hum with the procedural "Deep Space Ambient" music the owner picked, at today's ambient loudness, with a robust lookahead scheduler and no leaks.
