@@ -8,7 +8,9 @@ const expected: Expected = { asOf: "2026-10-18", contributions: "7,600", beacon:
 const SITE = sitePolicy(readFileSync(path.join(process.cwd(), "public", "_headers"), "utf8"));
 /** A production /en page around `body`, with the script policy the build adds (scripts/csp-hashes.ts). */
 const enPage = (body: string) => addScriptPolicy(`<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/></head><body>${body}</body></html>`, SITE);
-const html = enPage('<p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{}"></script>');
+/** The site's beacon comes from its inline opt-out guard (src/components/Analytics.tsx), never a parser-inserted tag. */
+const GUARD = '<script id="hq-cf-beacon">(function(){var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{}");document.body.appendChild(s)})()</script>';
+const html = enPage(`<p>7,600</p>${GUARD}`);
 const card = (path: string) =>
   `<html><head><link rel="canonical" href="https://kurniadi.pages.dev${path}"/><meta property="og:title" content="T"/><meta property="og:description" content="D"/><meta property="og:url" content="https://kurniadi.pages.dev${path}"/><meta property="og:image" content="https://kurniadi.pages.dev/og/en.jpg"/></head>`;
 const jpeg = { code: 200, type: "image/jpeg" };
@@ -36,6 +38,13 @@ describe("post-deploy smoke check", () => {
     ]);
   });
 
+  it("reports a beacon that Cloudflare injected (Pages Web Analytics), which steals the site's page loads", () => {
+    const pages = enPage(`<p>7,600</p>${GUARD}<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "x"}'></script><!-- Cloudflare Pages Analytics -->`);
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: pages } })).toEqual([expect.stringMatching(/^\/en carries a Cloudflare-injected Web Analytics beacon/)]);
+    const zone = enPage(`<p>7,600</p>${GUARD}<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{}'></script>`);
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: zone } })).toHaveLength(1);
+  });
+
   it("reports a missing RUM Function (the static 404 page)", () => {
     expect(smokeProblems(expected, { ...healthy, rum: { code: 404 } })).toEqual(["GET /api/rum returned HTTP 404, expected 405 (the performance beacon Function is missing)"]);
   });
@@ -56,7 +65,7 @@ describe("post-deploy smoke check", () => {
     const bare = '<html><head><meta charSet="utf-8"/></head><body><p>7,600</p><script defer src="https://static.cloudflareinsights.com/beacon.min.js"></script></body></html>';
     expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: bare } })).toEqual(["/en: no data-hq-csp script policy"]);
     const injected = html.replace("</body>", "<script>injected()</script></body>");
-    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: injected } })).toEqual(['/en: missing hash for inline script #1 "injected()"']);
+    expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: injected } })).toEqual(['/en: missing hash for inline script #2 "injected()"']);
   });
 
   it("accepts external scripts Cloudflare injects into production HTML", () => {

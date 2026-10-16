@@ -6,7 +6,8 @@
  * Expected values come from the checkout that was just deployed: the knowledge pack date
  * (functions/_generated/knowledge.json, so run scripts/build-knowledge.ts first), the live GitHub
  * contributions (content/generated/dynamic-facts.json) and, when NEXT_PUBLIC_CF_BEACON_TOKEN is set,
- * the Web Analytics beacon. /en must also carry its per-page script policy (scripts/csp-hashes.ts).
+ * the Web Analytics beacon. /en must also carry its per-page script policy (scripts/csp-hashes.ts) and no
+ * Cloudflare-injected beacon (scripts/injected-analytics.ts).
  * Polls until everything matches or the timeout passes, because the production alias can take a
  * moment to switch to the new deployment.
  */
@@ -17,6 +18,7 @@ import troikaFonts from "../src/experience/troika-fonts.json";
 import cvPages from "../content/generated/cv-pages.json";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
 import { scriptPolicyProblems } from "./csp-hashes";
+import { injectedAnalytics } from "./injected-analytics";
 import { LINKEDIN_UA, lateShareTags, parseSocialMeta } from "./og-meta";
 
 /** Entry points a visitor pastes into LinkedIn (Featured, posts): each must answer LinkedInBot with a full card. */
@@ -79,6 +81,8 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
     if (expected.contributions && !p.html.includes(expected.contributions)) problems.push(`/en does not show ${expected.contributions} contributions`);
     const hasBeacon = p.html.includes("static.cloudflareinsights.com/beacon.min.js");
     if (expected.beacon && !hasBeacon) problems.push("/en has no Web Analytics beacon");
+    const injected = injectedAnalytics(p.html);
+    if (injected) problems.push(`/en carries ${injected}`);
     // No site policy to compare with: Cloudflare may inject external scripts into production HTML.
     for (const problem of scriptPolicyProblems(p.html)) problems.push(`/en: ${problem}`);
   }
