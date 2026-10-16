@@ -49,8 +49,8 @@ export const ALL_SPECS = [
   "spectacle",
   "static-routes",
   "topics",
-  "visit",
   "view-links",
+  "visit",
   "visits",
   "workshop",
 ] as const;
@@ -192,7 +192,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
   { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
-  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
+  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding", "view-links"] },
   // Measurement in the 3D view: render counters, the ?perf=1 overlay, timeline marks, the RUM probe.
   { test: /^src\/experience\/perf\/|^src\/lib\/(perf-marks\.ts|rum\/)/, specs: ["perf-probes", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$|^src\/hud\/BootOverlay\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
@@ -206,7 +206,7 @@ export const RULES: Rule[] = [
   { test: /^src\/store\//, specs: ["experience", "lifecycle", "motion"] },
 
   // HUD over the canvas.
-  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle"] },
+  { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.

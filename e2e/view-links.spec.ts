@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { waitForHQ, waitForHydration } from "./hq";
+import { asReturningVisitor, enterFloorRoute, waitForHQ, waitForHydration, waitForRoom } from "./hq";
 import { heroPod, hostedPost } from "./routes";
 import en from "../messages/en.json";
 
@@ -42,11 +42,11 @@ test("navigation keeps ?view=classic and every internal page link carries it", a
   const page = await context.newPage();
   await page.goto("/en?view=classic&tier=lite");
   await waitForHydration(page);
-  const nav = page.getByRole("navigation", { name: "Main navigation" });
-  await nav.getByRole("link", { name: /Journey/ }).click();
+  const nav = page.getByRole("navigation", { name: en.nav.label });
+  await nav.getByRole("link", { name: en.nav.journey, exact: true }).click();
   await expect(page).toHaveURL(/\/en\/journey\?.*view=classic/);
   await expect(page.getByTestId("hq")).toHaveCount(0);
-  await nav.getByRole("link", { name: /Work/ }).click();
+  await nav.getByRole("link", { name: en.nav.work, exact: true }).click();
   await expect(page).toHaveURL(/\/en\/labs\?.*view=classic/);
   await page.locator(`#site-shell a[href*="/labs/${heroPod.slug}"]`).first().click();
   await expect(page).toHaveURL(new RegExp(`/en/labs/${heroPod.slug}\\?.*view=classic`));
@@ -129,16 +129,76 @@ test("copy buttons put the Classic and 3D addresses on the clipboard", async ({ 
   await expect(share.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
   expect(await read()).toMatch(new RegExp(`^https?://[^/]+/en/labs/${slug}$`));
 
-  if (hostedPost) {
-    await page.goto(`/en/blog/${hostedPost.slug}?view=classic&tier=lite`);
-    await waitForHydration(page);
-    const postShare = page.getByRole("group", { name: en.common.share });
-    await postShare.getByRole("button", { name: en.common.copyClassicLink }).click();
-    await expect(postShare.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
-    expect(await read()).toMatch(new RegExp(`^https?://[^/]+/en/blog/${hostedPost.slug}\\?view=classic$`));
-    await postShare.getByRole("button", { name: en.common.copy3dLink }).click();
-    await expect(postShare.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
-    expect(await read()).toMatch(/^https?:\/\/[^/]+\/en\/library$/);
-  }
+  expect(hostedPost, "a hosted post exists in the dataset").toBeDefined();
+  const post = hostedPost!;
+  await page.goto(`/en/blog/${post.slug}?view=classic&tier=lite`);
+  await waitForHydration(page);
+  const postShare = page.getByRole("group", { name: en.common.share });
+  await postShare.getByRole("button", { name: en.common.copyClassicLink }).click();
+  await expect(postShare.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
+  expect(await read()).toMatch(new RegExp(`^https?://[^/]+/en/blog/${post.slug}\\?view=classic$`));
+  await postShare.getByRole("button", { name: en.common.copy3dLink }).click();
+  await expect(postShare.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
+  expect(await read()).toMatch(/^https?:\/\/[^/]+\/en\/library$/);
+  await context.close();
+});
+
+/** Opens a pod route in 3D as a returning visitor: the deep link opens the room drawer for that pod. */
+async function openPodDrawer(page: Page, slug = heroPod.slug) {
+  await asReturningVisitor(page);
+  await page.goto(`/en/labs/${slug}?tier=lite`);
+  await waitForHQ(page);
+  await waitForRoom(page, `L3:${slug}`);
+  return page.getByTestId("room-drawer");
+}
+
+/** Drops the query (keeps the path) the way Next's own history sync would, so the drawer link lands on the same URL. */
+const dropQuery = (page: Page) => page.evaluate(() => window.history.replaceState(window.history.state, "", window.location.pathname));
+
+async function expectClassicHere(page: Page, path: RegExp) {
+  await expect(page.getByTestId("hq")).toHaveCount(0);
+  await expect(page.locator("#site-shell")).toBeVisible();
+  await expect(page).toHaveURL(path);
+  await expect(page.getByRole("navigation", { name: en.nav.label }).getByRole("link", { name: en.nav.work, exact: true })).toHaveAttribute(
+    "href",
+    /^\/en\/labs\?view=classic$/,
+  );
+}
+
+test("Read case study from the drawer lands on the Classic site with ?view=classic, even on the same URL", async ({ page }) => {
+  const slug = heroPod.slug;
+  const drawer = await openPodDrawer(page, slug);
+  await dropQuery(page);
+  await expect(page).toHaveURL(new RegExp(`/en/labs/${slug}$`));
+  await drawer.getByTestId("drawer-footer").getByRole("link", { name: en.common.caseStudy }).click();
+  await expectClassicHere(page, new RegExp(`/en/labs/${slug}\\?view=classic$`));
+  expect(await stored(page, "session")).toBe("page");
+});
+
+test("Read post from the Writing floor lands on the Classic site with ?view=classic", async ({ page }) => {
+  expect(hostedPost, "a hosted post exists in the dataset").toBeDefined();
+  const slug = hostedPost!.slug;
+  await enterFloorRoute(page, "/en/library");
+  await page.evaluate((room) => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom(room), `L4:${slug}`);
+  await waitForRoom(page, `L4:${slug}`);
+  await expect(page).toHaveURL(new RegExp(`/en/blog/${slug}(\\?|$)`));
+  await dropQuery(page);
+  await page.getByTestId("drawer-footer").getByRole("link", { name: en.drawer.rooms.readPost }).click();
+  await expectClassicHere(page, new RegExp(`/en/blog/${slug}\\?view=classic$`));
+});
+
+test("the drawer menu copies the Classic and 3D addresses of the open room", async ({ browser }) => {
+  const context = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+  const page = await context.newPage();
+  const read = () => page.evaluate(() => navigator.clipboard.readText());
+  const slug = heroPod.slug;
+  const drawer = await openPodDrawer(page, slug);
+  await drawer.getByRole("button", { name: en.drawer.more }).click();
+  await drawer.getByRole("button", { name: en.common.copyClassicLink }).click();
+  await expect(drawer.getByRole("button", { name: en.common.linkCopied })).toBeVisible();
+  expect(await read()).toMatch(new RegExp(`^https?://[^/]+/en/labs/${slug}\\?view=classic$`));
+  await drawer.getByRole("button", { name: en.common.copy3dLink }).click();
+  await expect(drawer.getByRole("button", { name: en.common.linkCopied })).toHaveCount(1);
+  await expect.poll(read).toMatch(new RegExp(`^https?://[^/]+/en/labs/${slug}$`));
   await context.close();
 });
