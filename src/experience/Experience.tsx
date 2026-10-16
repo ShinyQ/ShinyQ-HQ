@@ -36,6 +36,7 @@ import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
 import { beamNow, rideNow } from "./tower/rideClock";
+import { skyRuntime } from "./sky/skyRuntime";
 import { renderStats, resetPeaks } from "./perf/renderStats";
 import { perfOverlayOn } from "./perf/lines";
 import { usePerfMarks } from "./perf/usePerfMarks";
@@ -165,6 +166,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
     rideCull: rideCullStats,
     render: renderProbe,
+    sky: skyRuntime,
     quality: qualityHandle,
     frames: () => framePacer.frames,
     motion: () => {
