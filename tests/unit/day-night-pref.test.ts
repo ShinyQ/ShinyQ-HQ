@@ -87,12 +87,21 @@ describe("day and night preference", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it("reads null and does not throw when storage is blocked", () => {
+  it("keeps the choice in memory and does not throw when storage is blocked", () => {
     vi.stubGlobal("localStorage", broken);
     const listener = vi.fn();
     subscribe(listener);
-    expect(readDayNight()).toBeNull();
     expect(() => setDayNight(false)).not.toThrow();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(readDayNight()).toBe("off");
+    setDayNight(true);
+    expect(readDayNight()).toBe("on");
+  });
+
+  it("notifies when storage is cleared in another tab (null key)", () => {
+    const listener = vi.fn();
+    subscribe(listener);
+    window.dispatchEvent(Object.assign(new Event("storage"), { key: null }));
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
