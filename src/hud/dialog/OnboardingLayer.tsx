@@ -9,7 +9,7 @@ import { runMissionSteps } from "@/experience/missions/bridge";
 import { roverRuntime } from "@/experience/rover/runtime";
 import type { ExperienceData } from "@/experience/types";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { firstName, highlightsTarget, runOnboarding, waitForRoverMove, type OnboardingCopy, type OnboardingVariant } from "./onboarding";
+import { firstName, HIGHLIGHTS_ROOM, highlightsTarget, runOnboarding, waitForRoverMove, type OnboardingCopy, type OnboardingVariant } from "./onboarding";
 import { markOnboarded, onboarded } from "./storage";
 import { cancelAllDialogs, say } from "./store";
 import { registerTutorial } from "./tutorial";
@@ -76,9 +76,13 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
           waitForMove: (signal) => waitForRoverMove(getHQStore(), signal),
           // The hall registers its stations as L1 extras, so they are found from any floor (replay).
           highlights: () => highlightsTarget(extraItems("L1")),
+          // A mission latches the door pad it ends on, so the station's drawer opens as its own step.
           showMe: async (hall) => {
-            const drive: MissionStep = { kind: "drive", to: hall.at };
-            const steps: MissionStep[] = getHQStore().getState().floor === hall.floor ? [drive] : [{ kind: "elevator", floor: hall.floor }, drive];
+            const visit: MissionStep[] = [
+              { kind: "drive", to: hall.at },
+              { kind: "open", room: HIGHLIGHTS_ROOM },
+            ];
+            const steps: MissionStep[] = getHQStore().getState().floor === hall.floor ? visit : [{ kind: "elevator", floor: hall.floor }, ...visit];
             await runMissionSteps("onboarding:highlights", steps);
           },
           askAi: () => document.querySelector("[data-testid='hud'] [data-onboard='ask-ai']") !== null,
