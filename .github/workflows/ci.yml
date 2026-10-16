@@ -258,36 +258,36 @@ jobs:
         shard: [1, 2]
     steps:
       - name: Not needed
-        if: needs.changes.outputs.perf != 'true'
+        if: needs.changes.outputs.perf == 'false'
         run: |
           echo "Smart CI: this change cannot move the 3D perf gates (see Plan CI)."
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         with:
           playwright: "true"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         with:
           name: site
           path: out
       - name: 3D perf gates (shard ${{ matrix.shard }}/2)
         # Same duration-balanced split as the e2e shards (perf lane timings in e2e/durations.json), not
         # Playwright's contiguous --shard, which put all four slow full-tier floors into shard 1.
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         run: bun run e2e:perf:shard ${{ matrix.shard }}/2
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ !cancelled() && needs.changes.outputs.perf == 'true' }}
+        if: ${{ !cancelled() && needs.changes.outputs.perf != 'false' }}
         with:
           name: perf-report-${{ matrix.shard }}
           path: perf-report/
           retention-days: 3
           if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ failure() && needs.changes.outputs.perf == 'true' }}
+        if: ${{ failure() && needs.changes.outputs.perf != 'false' }}
         with:
           name: perf-test-results-${{ matrix.shard }}
           path: test-results/
@@ -339,22 +339,22 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         with:
           pattern: perf-report-*
           path: perf-report
           merge-multiple: true
       - name: Main baseline for the 3D perf summary
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash scripts/perf-base.sh perf-report base-perf ci.yml push
       - name: 3D perf summary
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         run: bun scripts/perf-summary.ts gates --head perf-report --base base-perf
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: needs.changes.outputs.perf == 'true'
+        if: needs.changes.outputs.perf != 'false'
         with:
           # The next run's baseline when this run is on main.
           name: perf-report
@@ -398,37 +398,37 @@ jobs:
       actions: read
     steps:
       - name: Not needed
-        if: needs.changes.outputs.lighthouse != 'true'
+        if: needs.changes.outputs.lighthouse == 'false'
         run: |
           echo "Smart CI: this change cannot move the Classic site budgets (see Plan CI)."
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: needs.changes.outputs.lighthouse == 'true'
+        if: needs.changes.outputs.lighthouse != 'false'
         with:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: needs.changes.outputs.lighthouse == 'true'
+        if: needs.changes.outputs.lighthouse != 'false'
         with:
           name: site
           path: out
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        if: needs.changes.outputs.lighthouse == 'true'
+        if: needs.changes.outputs.lighthouse != 'false'
         with:
           bun-version-file: package.json
       - name: Run Lighthouse CI
         # Uses the preinstalled Google Chrome and lighthouserc.json.
-        if: needs.changes.outputs.lighthouse == 'true'
+        if: needs.changes.outputs.lighthouse != 'false'
         run: bunx @lhci/cli@0.15.1 autorun
       - name: Main baseline for the JS chunk diff
-        if: ${{ !cancelled() && needs.changes.outputs.lighthouse == 'true' }}
+        if: ${{ !cancelled() && needs.changes.outputs.lighthouse != 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash scripts/perf-base.sh lighthouse-reports base-lhci ci.yml push
       - name: Page View JS per chunk (job summary)
-        if: ${{ !cancelled() && needs.changes.outputs.lighthouse == 'true' }}
+        if: ${{ !cancelled() && needs.changes.outputs.lighthouse != 'false' }}
         run: bun scripts/perf-summary.ts lhci --head .lighthouseci --base base-lhci
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ always() && needs.changes.outputs.lighthouse == 'true' }}
+        if: ${{ always() && needs.changes.outputs.lighthouse != 'false' }}
         with:
           name: lighthouse-reports
           path: .lighthouseci/
@@ -460,7 +460,10 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           HEAD_SHA: ${{ github.sha }}
         run: |
-          runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=schedule&per_page=5")
+          if ! runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=schedule&per_page=5"); then
+            echo "::error::Could not look up the previous nightly run (GitHub API call failed); this is not a look change."
+            exit 1
+          fi
           base=$(jq -r --argjson id "$RUN_ID" '[.workflow_runs[] | select(.id != $id)][0].head_sha // empty' <<< "$runs")
           if [ -z "$base" ]; then
             echo "::notice::No previous nightly run: the visual gate has no base and is skipped."

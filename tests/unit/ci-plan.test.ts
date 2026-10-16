@@ -103,4 +103,9 @@ describe("ci-plan planFor", () => {
   it("runs a changed spec by itself", () => {
     expect(planFor(["e2e/topics.spec.ts"], none).e2e).toEqual(["topics"]);
   });
+
+  it("runs every e2e shard for a changed e2e helper", () => {
+    expect(planFor(["e2e/edge-audit.ts"], none)).toMatchObject({ e2e: "all", perf: false, lighthouse: false });
+    expect(planFor(["e2e/topics.spec.ts", "e2e/edge-audit.ts"], none).e2e).toBe("all");
+  });
 });

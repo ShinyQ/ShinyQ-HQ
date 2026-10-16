@@ -79,7 +79,7 @@ runs the fast checks always and the heavy jobs only when its changed paths need 
   - merged HTML report, the tests that passed only on retry, and the 3D perf summary against the last green main run (when the perf gates ran);
   - uploads the `ci-full` artifact when the plan ran every heavy job (every e2e shard, the perf gates and Lighthouse), even if the run then turns red; the marker the deploy gate needs, which still treats a red run as red.
 - A Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
-- PR runs replace each other; runs on `main` are never cancelled (the deploy reuses them).
+- PR runs replace each other; in-progress runs on `main` are never cancelled (a newer push can replace a queued one; the deploy reuses them).
 
 ### What a pull request runs
 
@@ -92,7 +92,7 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 | `ci` | `.github/workflows/`, `.github/actions/`, `package.json`, `bun.lock`, `bunfig.toml`, `next.config.ts`, `playwright.config.ts`, `tsconfig.json`, `lighthouserc.json`, `postcss.config.*`, `e2e/{hq,routes,budgets}.ts`, `e2e/perf/`, `scripts/{ci-plan,e2e-plan,e2e-shard,perf-*,serve-static,flaky-report}` | full run | full run | full run |
 | `code3d` | `src/experience/`, `src/hud/`, `src/store/`, `src/assets/`, `public/floors/`, `public/fonts/` | every shard | yes | yes |
 | `tests` | `tests/`, `e2e/durations.json`, `vitest.config.mts`, `eslint.config.mjs` | none | no | no |
-| `e2e` | other `e2e/` files (specs, helpers) | mapped specs (a changed spec runs itself) | no | no |
+| `e2e` | other `e2e/` files (specs, helpers) | specs: mapped (a changed spec runs itself); helpers: every shard | no | no |
 | `content` | `content/`, `public/media/`, `public/papers/`, `public/cv/` | none | no | no |
 | `functions` | `functions/`, `workers/`, `wrangler.toml` | mapped specs | no | no |
 | `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts` | mapped specs | no | yes |

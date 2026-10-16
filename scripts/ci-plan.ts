@@ -98,9 +98,11 @@ export function planFor(files: readonly string[] | null, in3d: (file: string) =>
     e2e = "all";
     reasons.push("3D code changed: every e2e shard, the perf gates and Lighthouse");
   } else {
+    // A changed e2e helper (not a spec) may be imported by any spec; the mapping would fall back to smoke.
+    const helpers = (classes.e2e ?? []).filter((f) => !/^e2e\/[^/]+\.spec\.ts$/.test(f));
     const narrow = files.filter((f) => NARROW.has(classify(f)));
-    const mapped = narrow.length ? specsForChanges(narrow).specs : [];
-    e2e = mapped;
+    e2e = helpers.length ? "all" : narrow.length ? specsForChanges(narrow).specs : [];
+    if (helpers.length) reasons.push(`e2e helpers changed: ${helpers.join(", ")} (every e2e shard)`);
     if (shared3d.length) reasons.push(`imported by the 3D roots: ${shared3d.join(", ")} (perf gates)`);
     if (lighthouse) reasons.push("page code, strings or assets changed: Lighthouse");
     reasons.push(e2e === "all" ? "the e2e mapping asks for the full suite" : e2e.length ? `e2e specs: ${e2e.join(", ")}` : "no e2e specs cover these changes");
@@ -127,6 +129,8 @@ async function prFiles(repo: string, pr: string, token: string): Promise<string[
   for (let page = 1; page <= MAX_FILES / 100; page++) {
     const response = await fetch(`https://api.github.com/repos/${repo}/pulls/${pr}/files?per_page=100&page=${page}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      // A hung API call falls back to a full run (main's catch) instead of hitting the job timeout.
+      signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) throw new Error(`GitHub API pulls/${pr}/files: HTTP ${response.status}`);
     const batch = (await response.json()) as { filename: string; previous_filename?: string }[];

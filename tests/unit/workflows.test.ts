@@ -59,6 +59,16 @@ describe("smart CI (ci.yml)", () => {
 
   it("marks complete runs for the deploy gate", () => {
     expect(job("build")).toContain("name: ci-full");
+    expect(job("build")).toContain("if: needs.changes.outputs.full == 'true'");
+  });
+
+  it("passes skipped heavy jobs with a Not needed step and fails safe on a missing plan output", () => {
+    for (const id of ["e2e", "perf", "lighthouse"]) expect(job(id)).toContain("name: Not needed");
+    expect(job("perf")).not.toContain("outputs.perf == 'true'");
+    expect(job("perf")).toContain("if: needs.changes.outputs.perf == 'false'");
+    expect(job("lighthouse")).not.toContain("outputs.lighthouse == 'true'");
+    expect(job("lighthouse")).toContain("if: needs.changes.outputs.lighthouse == 'false'");
+    expect(job("build")).not.toContain("outputs.perf == 'true'");
   });
 
   it("runs the visual gate and the ci-nightly report only on the nightly schedule or the nightly input", () => {
