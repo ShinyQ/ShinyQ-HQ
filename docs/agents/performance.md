@@ -142,6 +142,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
+| `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |
 | `src/experience/camera/**` | `camera`, `experience`, `career` and `ride` |
 | `src/experience/input/**`, the rover mesh, fade and runtime and `src/hud/ViewControls.tsx` | `camera` and `experience` |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |

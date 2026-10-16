@@ -28,6 +28,7 @@ export const ALL_SPECS = [
   "gpu",
   "highlights",
   "hud",
+  "hud-corners",
   "interact",
   "labs",
   "labs-data",
@@ -210,6 +211,10 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\//, specs: ["experience"] },
   { test: /^src\/store\//, specs: ["experience", "lifecycle", "motion"] },
 
+  // Corners HUD (Round 8 I): the menu and settings sheets, the minimap and overview, the floor chip and sheet, the
+  // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
+  { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
+  { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|FloorButtons)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },

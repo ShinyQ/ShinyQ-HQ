@@ -169,6 +169,25 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride", "spectacle"]);
   });
 
+  it("maps the Corners HUD (menu, settings, minimap, floor chip, layout, joystick boost, preferences) to hud-corners", () => {
+    const corners = ["hud", "hud-corners", "onboarding"];
+    for (const file of [
+      "src/hud/menu/HudMenu.tsx",
+      "src/hud/minimap/Minimap.tsx",
+      "src/hud/settings/defs/motion.ts",
+      "src/hud/FloorChip.tsx",
+      "src/hud/FloorButtons.tsx",
+      "src/hud/layout.ts",
+      "src/lib/local-pref.ts",
+      "src/lib/quality-pref.ts",
+    ]) {
+      expect(specsForChanges([file]).specs, file).toEqual(corners);
+    }
+    expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);
+  });
+
   it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {
     expect(specsForChanges(["e2e/visual-gate.spec.ts"]).specs).toEqual([]);
     expect(specsForChanges(["e2e/vclock.ts"]).specs).toEqual([]);
