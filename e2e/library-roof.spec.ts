@@ -3,9 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
-import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
+import { buildRoofLayout } from "../src/experience/floors/roof/layout";
 
 test.describe.configure({ timeout: 150_000 });
+
+/** The roof stops (the door pads of RF:contact and RF:cv). */
+const ROOF_STOPS = buildRoofLayout().stops;
 
 const BLOG_POST = "the-sun-the-moon-and-the-dark-sea";
 

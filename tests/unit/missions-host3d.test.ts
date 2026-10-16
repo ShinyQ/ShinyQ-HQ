@@ -4,10 +4,12 @@ import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { isAutoOpenClaimed, claimAutoOpen, register3DHost, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
 import { directoryStop } from "@/experience/floors/labs/layout";
-import { ROOF_STOPS } from "@/experience/floors/roof/layout";
+import { buildRoofLayout } from "@/experience/floors/roof/layout";
 import { create3DHost, roomTarget, type RoverChannel } from "@/experience/missions/host3d";
 import type { RoomInfo } from "@/experience/missions/rooms";
 import { createHQStore } from "@/store/useHQStore";
+
+const ROOF_STOPS = buildRoofLayout().stops;
 
 const memory = (): StateStorage => {
   const data = new Map<string, string>();

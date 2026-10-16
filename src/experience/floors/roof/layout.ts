@@ -159,6 +159,3 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     callPad: plain(D.callPad),
   };
 }
-
-/** Mission stops on the roof (the door pads for RF:contact and RF:cv). */
-export const ROOF_STOPS: Record<RoofStop, Vec2> = buildRoofLayout().stops;

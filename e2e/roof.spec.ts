@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
-import { buildRoofLayout, ROOF_STOPS } from "../src/experience/floors/roof/layout";
+import { buildRoofLayout } from "../src/experience/floors/roof/layout";
 import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, skipFloorLines, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 
@@ -11,6 +11,9 @@ import { FLOOR_SCENE_CAPS } from "./budgets";
  * The first-visit floor line is skipped, so it never races the palette.
  */
 test.describe.configure({ timeout: 150_000 });
+
+/** The roof stops (the door pads of RF:contact and RF:cv). */
+const ROOF_STOPS = buildRoofLayout().stops;
 
 const CHANNELS = { linkedin: "LinkedIn", github: "GitHub", huggingface: "Hugging Face", medium: "Medium", googleScholar: "Google Scholar", ieeeXplore: "IEEE Xplore" } as const;
 
