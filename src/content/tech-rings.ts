@@ -38,6 +38,8 @@ export const TECH_ALIASES: Readonly<Record<string, string>> = {
   express: "express.js",
   "vue.js": "vue",
   "azure openai realtime": "azure openai",
+  "microsoft foundry": "azure ai foundry",
+  "azure cosmos db": "cosmos db",
 };
 
 /** Pod techs the CV skill groups do not list, by ring. Every key must be used by some pod (unit test). */
@@ -99,12 +101,14 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   datatables: "frontend",
   ckeditor: "frontend",
   "chart.js": "frontend",
+  vite: "frontend",
   // Data
   minio: "data",
   lakehouse: "data",
   "spark notebooks": "data",
   "fabric data pipelines": "data",
   "data api builder": "data",
+  "cloudflare d1": "data",
   // Data: the Data and ML wing's analysis, charting and collection tools (owner request 2026-10-14)
   pandas: "data",
   jupyter: "data",
@@ -119,6 +123,7 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   // DevOps
   opentelemetry: "devops",
   nginx: "devops",
+  "cloudflare workers": "devops",
   prometheus: "devops",
   grafana: "devops",
   jest: "devops",

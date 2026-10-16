@@ -42,10 +42,22 @@ export interface Ledger {
   days: DayRollup[];
 }
 
+/** `sampleInterval`: the adaptive API's average sample interval of the row (1 is unsampled; missing counts as 1 in pure tests). */
 export interface WaRows {
-  days: { date: string; count: number; visits: number }[];
-  countries: { date: string; country: string; count: number; visits: number }[];
-  paths: { date: string; path: string; count: number }[];
+  days: { date: string; count: number; visits: number; sampleInterval?: number }[];
+  countries: { date: string; country: string; count: number; visits: number; sampleInterval?: number }[];
+  paths: { date: string; path: string; count: number; sampleInterval?: number }[];
+}
+
+/**
+ * KV `stats:wa-extra:v1`: Web Analytics rows of a retired site (final estimates, no sample interval), added
+ * to the rows of the same days. Used once for the Pages-injected site of 2026-10-15/16 (README, "Repair").
+ */
+export interface WaExtra {
+  v: 1;
+  /** Where the rows came from (site tag and window); for people, never read by the run. */
+  note: string;
+  rows: WaRows;
 }
 
 export interface AeRows {
