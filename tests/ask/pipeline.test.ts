@@ -179,10 +179,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 63 unique items with a 60 pass threshold", () => {
-    expect(golden.items).toHaveLength(63);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(63);
-    expect(golden.passThreshold).toBe(60);
+  it("has 64 unique items with a 61 pass threshold", () => {
+    expect(golden.items).toHaveLength(64);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(64);
+    expect(golden.passThreshold).toBe(61);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {

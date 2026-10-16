@@ -7799,7 +7799,7 @@
           "id": "agent-deck-platform",
           "slug": "agent-deck-platform",
           "order": 16,
-          "tier": "listed",
+          "tier": "featured",
           "accent": "green",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -7808,32 +7808,52 @@
             "id": "Penyusunan dan Hosting Presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. AI agents in MII Cowork draft decks in sandboxes, an owner approves each change, and private decks stay behind their own passwords.",
-            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan deck privat tetap terlindungi password masing-masing."
+            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. Agents in MII Cowork draft decks in sandboxes, an owner approves each change, and each publish ships through a checked pull request.",
+            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan setiap publikasi dirilis lewat pull request yang lolos pemeriksaan."
           },
           "period": {
             "start": "2026-07",
             "end": "2026-10"
           },
           "role": {
-            "en": "Owner of the Deck Studio subsystem inside MII Cowork (platform led by a colleague), with sole engineering responsibility for hosting",
-            "id": "Owner subsistem Deck Studio di dalam MII Cowork (platform dipimpin rekan), dengan tanggung jawab engineering tunggal untuk hosting"
+            "en": "Sole engineer of MII Deck and of its Deck Studio integration in MII Cowork, from agent authoring to CI/CD and hosting (the Cowork platform is led by a colleague)",
+            "id": "Engineer tunggal MII Deck dan integrasi Deck Studio-nya di MII Cowork, dari penyusunan oleh agent hingga CI/CD dan hosting (platform Cowork dipimpin rekan)"
           },
           "problem": {
-            "en": "Teams needed AI-authored client presentations with safe execution and automated publication.",
-            "id": "Tim membutuhkan presentasi klien yang disusun AI agent dengan eksekusi aman dan publikasi otomatis."
+            "en": "MII teams needed client-ready presentations that AI agents could draft without breaking the MII design, with every change approved by a person and private decks kept behind their own passwords.",
+            "id": "Tim MII membutuhkan presentasi siap klien yang dapat disusun AI agent tanpa merusak desain MII, dengan setiap perubahan disetujui manusia dan deck privat tetap terlindungi password masing-masing."
           },
           "approach": [
             {
-              "en": "I built isolated previews and a trust boundary for agent-authored content in container sandboxes, with QA and critic gates and editable PPTX export.",
-              "id": "Saya membangun preview terisolasi dan trust boundary untuk konten buatan agent di container sandbox, dengan gate QA dan critic serta ekspor PPTX yang dapat diedit."
+              "en": "I built the MII Deck kit: light and dark slide components, 32 slide blueprints with motion, and QA gates for layout, contrast and text depth, plus a critic that scores each deck against a rubric.",
+              "id": "Saya membangun kit MII Deck: komponen slide terang dan gelap, 32 blueprint slide dengan animasi, serta gate QA untuk layout, kontras, dan kedalaman teks, ditambah critic yang menilai setiap deck dengan rubrik."
             },
             {
-              "en": "I built git-backed hosting with exact-commit deployments and automatic rollback.",
-              "id": "Saya membangun hosting berbasis git dengan deployment berdasarkan commit yang tepat dan rollback otomatis."
+              "en": "I built Deck Studio inside MII Cowork: agents draft decks in the conversation's sandbox, the owner approves stages and locks slides, and decks export to editable PPTX.",
+              "id": "Saya membangun Deck Studio di dalam MII Cowork: agent menyusun deck di sandbox percakapan, owner menyetujui setiap tahap dan mengunci slide, dan deck dapat diekspor ke PPTX yang bisa diedit."
+            },
+            {
+              "en": "I built the publish path: Cowork opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
+              "id": "Saya membangun alur publikasi: Cowork membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang sehat jika gagal."
+            },
+            {
+              "en": "I added private decks with generated passwords, shared password links and rate limits on failed attempts.",
+              "id": "Saya menambahkan deck privat dengan password yang dibuat otomatis, tautan berbagi dengan password, dan rate limit untuk percobaan yang gagal."
             }
           ],
           "results": [
+            {
+              "value": "134 of 136",
+              "label": {
+                "en": "MII Deck commits by Kurniadi",
+                "id": "Commit MII Deck oleh Kurniadi"
+              },
+              "context": {
+                "en": "Repository history, Sep to Oct 2026; the other two came from the publishing GitHub App and a coding agent.",
+                "id": "Riwayat repositori, Sep hingga Okt 2026; dua lainnya berasal dari GitHub App penerbit dan coding agent."
+              },
+              "confidence": "verified"
+            },
             {
               "value": "20 releases",
               "label": {
@@ -7845,12 +7865,28 @@
                 "id": "Berdasarkan riwayat repositori."
               },
               "confidence": "verified"
+            },
+            {
+              "value": "32 blueprints",
+              "label": {
+                "en": "Slide blueprints with motion and QA",
+                "id": "Blueprint slide dengan animasi dan QA"
+              },
+              "context": {
+                "en": "Counted in the kit, Oct 2026.",
+                "id": "Dihitung dari kit, Okt 2026."
+              },
+              "confidence": "verified"
             }
           ],
           "stack": [
+            "Next.js",
+            "TypeScript",
+            "Python",
             "Azure Container Apps",
+            "Azure App Service",
             "GitHub Apps",
-            "Next.js"
+            "GitHub Actions"
           ],
           "hologram": "template",
           "assets": [
@@ -7969,6 +8005,182 @@
               "alt": {
                 "en": "Vendor portal explainer deck: cover slide with page previews",
                 "id": "Deck penjelasan portal vendor: slide sampul dengan pratinjau halaman"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
+        },
+        {
+          "id": "mii-cowork",
+          "slug": "mii-cowork",
+          "order": 17,
+          "tier": "featured",
+          "accent": "blue",
+          "wing": "ai",
+          "timelineRef": "metrodata-2026",
+          "title": {
+            "en": "MII Cowork UI Revamp and Deck Studio",
+            "id": "Revamp UI MII Cowork dan Deck Studio"
+          },
+          "tagline": {
+            "en": "MII Cowork, MII's AI agent workspace where every conversation runs in its own Azure Container Apps sandbox: its interface rebuilt on MII light and dark themes, plus Deck Studio for drafting MII Deck presentations beside the chat.",
+            "id": "MII Cowork, workspace AI agent milik MII tempat setiap percakapan berjalan di sandbox Azure Container Apps sendiri: antarmukanya dibangun ulang dengan tema terang dan gelap MII, ditambah Deck Studio untuk menyusun presentasi MII Deck di samping chat."
+          },
+          "period": {
+            "start": "2026-09",
+            "end": "2026-10"
+          },
+          "role": {
+            "en": "Frontend revamp lead and Deck Studio engineer (the platform and backend are led by a colleague)",
+            "id": "Pemimpin revamp frontend dan engineer Deck Studio (platform dan backend dipimpin rekan)"
+          },
+          "problem": {
+            "en": "MII Cowork already ran agents in per-conversation sandboxes, but its interface still relied on browser confirm dialogs and mixed icon sets, and there was no path from a conversation to a finished MII presentation.",
+            "id": "MII Cowork sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih memakai dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
+          },
+          "approach": [
+            {
+              "en": "I rebuilt the frontend on an MII design system with MII Light (default) and MII Dark themes, official MII brand assets, and shared dialog, sheet, menu and toast components in place of browser confirm dialogs.",
+              "id": "Saya membangun ulang frontend di atas design system MII: MII Light sebagai default dan MII Dark, aset brand resmi MII, serta komponen dialog, sheet, menu, dan toast bersama sebagai pengganti dialog konfirmasi bawaan browser."
+            },
+            {
+              "en": "I redesigned the layout: a navigation rail with a context panel, a files and tasks panel that overlays the chat or docks beside it, a centered chat column, and tool steps shown as activity rows.",
+              "id": "Saya mendesain ulang tata letak: navigation rail dengan context panel, panel files dan tasks yang dapat menimpa chat atau berdampingan dengannya, kolom chat di tengah, dan langkah tool yang ditampilkan sebagai baris aktivitas."
+            },
+            {
+              "en": "I integrated MII Deck as Deck Studio: a Decks hub and a Deck mode on the home page, a studio panel beside the chat, and publishing through the MII Deck pipeline.",
+              "id": "Saya mengintegrasikan MII Deck sebagai Deck Studio: hub Decks dan mode Deck di halaman utama, panel studio di samping chat, serta publikasi melalui pipeline MII Deck."
+            },
+            {
+              "en": "I checked AA contrast in every theme, focus traps, keyboard focus and reduced motion, and tested the revamp at 1440, 1100, 768 and 390 px without changing a backend file or API contract.",
+              "id": "Saya memeriksa kontras AA di setiap tema, focus trap, fokus keyboard, dan reduced motion, lalu menguji revamp di 1440, 1100, 768, dan 390 px tanpa mengubah file backend atau kontrak API."
+            }
+          ],
+          "results": [
+            {
+              "value": "194",
+              "label": {
+                "en": "Commits by Kurniadi, merged in 10 pull requests",
+                "id": "Commit oleh Kurniadi, di-merge dalam 10 pull request"
+              },
+              "context": {
+                "en": "Repository history, 23 Sep to 6 Oct 2026.",
+                "id": "Riwayat repositori, 23 Sep hingga 6 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "133 files",
+              "label": {
+                "en": "Changed by the frontend revamp, with no backend or API change",
+                "id": "Diubah oleh revamp frontend, tanpa perubahan backend atau API"
+              },
+              "context": {
+                "en": "Pull request record.",
+                "id": "Catatan pull request."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "57%",
+              "label": {
+                "en": "Frontend source lines written by Kurniadi",
+                "id": "Baris kode frontend yang ditulis Kurniadi"
+              },
+              "context": {
+                "en": "Line authorship (git blame) on the main branch, 15 Oct 2026.",
+                "id": "Kepemilikan baris (git blame) di branch main, 15 Okt 2026."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Next.js",
+            "TypeScript",
+            "Tailwind CSS",
+            "Python",
+            "Microsoft Agent Framework",
+            "Azure Container Apps"
+          ],
+          "hologram": "template",
+          "assets": [
+            {
+              "src": "/media/mii-cowork/01-home.webp",
+              "alt": {
+                "en": "MII Cowork home in the MII Light theme: navigation rail and workspace panel, a greeting, the agent composer with Chat and Deck modes, starter ideas and the MII Deck promo; email blurred",
+                "id": "Halaman utama MII Cowork dengan tema MII Light: navigation rail dan panel workspace, sapaan, composer agent dengan mode Chat dan Deck, ide awal, dan promo MII Deck; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/02-deck-composer.webp",
+              "alt": {
+                "en": "Deck mode on the home page: the composer turns a prompt into a deck request with title, slug, privacy, theme and archetype chips, plus Enhance for a structured brief; email blurred",
+                "id": "Mode Deck di halaman utama: composer mengubah prompt menjadi permintaan deck dengan chip judul, slug, privasi, tema, dan archetype, serta Enhance untuk brief terstruktur; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/03-conversation-files.webp",
+              "alt": {
+                "en": "A conversation from a certification study workspace with the agent's summary in the centered chat column and the workspace files panel beside it; email blurred",
+                "id": "Percakapan dari workspace belajar sertifikasi dengan ringkasan agent di kolom chat tengah dan panel file workspace di sampingnya; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/04-conversation-tasks.webp",
+              "alt": {
+                "en": "The same conversation with the Tasks panel: the agent's plan with progress, done and pending steps; email blurred",
+                "id": "Percakapan yang sama dengan panel Tasks: rencana agent beserta progres, langkah selesai, dan langkah tertunda; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/05-deck-studio-brief.webp",
+              "alt": {
+                "en": "Deck Studio beside the chat: a demo deck brief, the agent's first steps and the stage rail from ingest to ready, with a blueprint slide in the live preview; email blurred",
+                "id": "Deck Studio di samping chat: brief deck demo, langkah awal agent, dan rail tahap dari ingest hingga ready, dengan slide blueprint di preview live; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/06-deck-studio-ready.webp",
+              "alt": {
+                "en": "The demo deck ready in Deck Studio: critic scores after three rounds, QA warnings per slide, PPTX download and Publish, with the QA and critic loop slide in the preview; email blurred",
+                "id": "Deck demo yang siap di Deck Studio: skor critic setelah tiga putaran, peringatan QA per slide, unduhan PPTX dan Publish, dengan slide loop QA dan critic di preview; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/07-home-dark.webp",
+              "alt": {
+                "en": "MII Cowork home in the MII Dark theme with the navigation rail, composer, starter ideas and MII Deck promo; email blurred",
+                "id": "Halaman utama MII Cowork dengan tema MII Dark beserta navigation rail, composer, ide awal, dan promo MII Deck; email diburamkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/mii-cowork/08-mobile.webp",
+              "alt": {
+                "en": "Phone layouts: the home page with Chat and Deck modes, a conversation, and Deck Studio with its stage rail and slide preview",
+                "id": "Tampilan ponsel: halaman utama dengan mode Chat dan Deck, sebuah percakapan, dan Deck Studio dengan rail tahap dan preview slide"
               },
               "width": 1600,
               "height": 1000,

@@ -5,6 +5,7 @@ import { isPublicLiveUrl } from "@/content/live-links";
 import { getPods } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
 import { SiteContentSchema, type LocalizedText } from "@/content/schema";
+import { LABS } from "@/experience/floors/labs/layout";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
 
@@ -73,12 +74,14 @@ describe("content/site-content.json", () => {
     expect(pods.filter((p) => p.timelineRef && !entryIds.has(p.timelineRef)).map((p) => p.id)).toEqual([]);
   });
 
-  it("has 3 Product Engineering and 4 AI Engineering hero pods (hologram view) and at most 6 featured per wing", () => {
+  it("has 3 Product Engineering and 4 AI Engineering hero pods (hologram view), at most 7 featured per wing, all docked on L3", () => {
     // AI has a fourth hero since the owner made the Full-Stack AI Application Template a key project (2026-10-16).
     const heroes = { software: 3, ai: 4 } as const;
     for (const wing of ["software", "ai"] as const) {
       expect(pods.filter((p) => p.wing === wing && p.tier === "hero")).toHaveLength(heroes[wing]);
-      expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(6);
+      // 6 until MII Deck and MII Cowork joined the AI wing as featured pods (owner request 2026-10-16).
+      expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(7);
+      expect(pods.filter((p) => p.wing === wing && p.tier !== "listed").length).toBeLessThanOrEqual(LABS.maxPerWing);
     }
     expect(pods.find((p) => p.slug === "ai-app-accelerator")?.tier).toBe("hero");
   });
@@ -277,6 +280,20 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
     const pods = getPods();
     expect(pickFeaturedPods(pods).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant"]);
     expect(pods.findIndex((p) => p.slug === "vendor-management-portal")).toBe(3);
+  });
+});
+
+describe("MII Deck and MII Cowork (owner request 2026-10-16)", () => {
+  it("MII Deck and MII Cowork are featured AI pods without repos or live links", () => {
+    const pods = getPods("ai");
+    for (const slug of ["agent-deck-platform", "mii-cowork"]) {
+      const pod = pods.find((p) => p.slug === slug);
+      expect(pod?.tier, slug).toBe("featured");
+      expect(pod?.repos ?? [], slug).toEqual([]);
+      expect(pod?.liveUrl, slug).toBeUndefined();
+      expect(pod?.client, slug).toBeUndefined();
+      expect(pod?.assets.length, slug).toBeGreaterThan(0);
+    }
   });
 });
 
