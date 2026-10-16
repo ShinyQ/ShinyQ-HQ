@@ -1,8 +1,8 @@
 import { SUGGESTIONS } from "../../../src/ask/suggestions";
 import { parseStatsSnapshot, STATS_KEY, type StatsSnapshotV1, type StatsTopic } from "../../../src/lib/stats/protocol";
-import { addDays, buildPerf, buildRollups, buildSnapshot, dayRange, trimLeadingEmpty } from "./rollup";
+import { addDays, buildPerf, buildRollups, buildSnapshot, dayRange, trimLeadingEmpty, waExact } from "./rollup";
 import { fetchAnalyticsEngine, fetchPerf, fetchWebAnalytics, type SourceConfig } from "./sources";
-import type { DayRollup, Fetcher, Ledger, StatsWorkerEnv } from "./types";
+import type { DayRollup, Fetcher, Ledger, StatsWorkerEnv, WaExtra, WaRows } from "./types";
 
 /** A UTC day is finalized (written to the ledger once, never recomputed) an hour after it ends, so late events land first. */
 export const SETTLE_MS = 3_600_000;
@@ -11,6 +11,13 @@ export const SETTLE_MS = 3_600_000;
 export function finalizedThrough(now: number): string {
   return addDays(new Date(now - SETTLE_MS).toISOString().slice(0, 10), -1);
 }
+
+/**
+ * A finalized day whose Web Analytics answer is sampled or inconsistent (`waExact`) stays provisional and
+ * is fetched again on the next runs; once it ended this many days before the last finalized day it is
+ * stored anyway (logged), so a site that is always sampled still moves on.
+ */
+export const EXACT_GRACE_DAYS = 3;
 
 /** KV key of the ledger: every finalized day (written once, never recomputed). */
 export const LEDGER_KEY = "stats:days:v1";
@@ -61,6 +68,41 @@ function readLedger(raw: string | null): Ledger {
   return ledger as Ledger;
 }
 
+/**
+ * KV key of Web Analytics rows kept from a retired site (`WaExtra`), added to the fetched rows of the days
+ * being rolled up. Written by hand once (README, "Repair"); days already in the ledger never read it again.
+ */
+export const WA_EXTRA_KEY = "stats:wa-extra:v1";
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const COUNT = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+/** Validated extra rows, empty when the key is missing. A malformed value throws: nothing is written. */
+export function readWaExtra(raw: string | null): WaRows {
+  const empty: WaRows = { days: [], countries: [], paths: [] };
+  if (raw === null) return empty;
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    throw new Error("hq-stats: the extra Web Analytics rows in KV are not JSON");
+  }
+  const extra = value as Partial<WaExtra> | null;
+  const rows = extra?.rows;
+  const ok =
+    extra?.v === 1 &&
+    !!rows &&
+    Array.isArray(rows.days) &&
+    Array.isArray(rows.countries) &&
+    Array.isArray(rows.paths) &&
+    rows.days.every((r) => DAY.test(r?.date) && COUNT(r.count) && COUNT(r.visits)) &&
+    rows.countries.every((r) => DAY.test(r?.date) && typeof r.country === "string" && COUNT(r.count) && COUNT(r.visits)) &&
+    rows.paths.every((r) => DAY.test(r?.date) && typeof r.path === "string" && COUNT(r.count));
+  if (!ok || !rows) throw new Error("hq-stats: the extra Web Analytics rows in KV have an unknown shape");
+  const strip = <T extends { sampleInterval?: number }>(r: T): T => ({ ...r, sampleInterval: undefined });
+  return { days: rows.days.map(strip), countries: rows.countries.map(strip), paths: rows.paths.map(strip) };
+}
+
 /** Valid, and the perf block (when built) survived validation instead of being dropped. */
 function validSnapshot(snapshot: StatsSnapshotV1 | null): snapshot is StatsSnapshotV1 {
   if (!snapshot) return false;
@@ -83,7 +125,8 @@ async function backfillPerf(cfg: SourceConfig, days: readonly DayRollup[], missi
  * One run (every 4 hours, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
  * backfill window on the first run) from one Web Analytics pass and the same Analytics Engine queries.
  * Days that ended at least `SETTLE_MS` ago are finalized: appended to the ledger once and never fetched
- * again. The later days (at most yesterday, within the hour after midnight, and today so far) are
+ * again, but only from an unsampled, consistent Web Analytics answer (`waExact`; else they stay provisional
+ * for up to `EXACT_GRACE_DAYS`). The later days (at most yesterday, within the hour after midnight, and today so far) are
  * provisional: they enter the public snapshot but are never stored, and the next run recomputes them.
  * The snapshot is rewritten on every run with `updatedAt` set to the run time. Any API error throws before
  * anything is written, so the last good snapshot stays; the next run catches up every missed day. Stored
@@ -109,13 +152,24 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
     wa.countries.push(...part.countries);
     wa.paths.push(...part.paths);
   }
+  const extra = readWaExtra(await env.STATS_KV.get(WA_EXTRA_KEY));
+  const inRange = (r: { date: string }) => r.date >= from && r.date < end;
+  wa.days.push(...extra.days.filter(inRange));
+  wa.countries.push(...extra.countries.filter(inRange));
+  wa.paths.push(...extra.paths.filter(inRange));
   const ae = await fetchAnalyticsEngine(cfg, from, end, fetcher);
   const stored = await backfillPerf(cfg, ledger.days, missingPerf, fetcher);
 
   const rolled = buildRollups(dayRange(from, today), wa, ae, CHIP_TOPICS);
   const days = stored.length ? rolled : trimLeadingEmpty(rolled);
-  const added = days.filter((d) => d.date <= lastFinal);
-  const provisional = days.filter((d) => d.date > lastFinal);
+  // The ledger stays contiguous: the first day that may not be stored keeps every later day provisional too.
+  const graceEnd = addDays(lastFinal, -EXACT_GRACE_DAYS);
+  const storable = (d: DayRollup) => d.date <= lastFinal && (waExact(d.date, wa) || d.date <= graceEnd);
+  const cut = days.findIndex((d) => !storable(d));
+  const added = cut === -1 ? days : days.slice(0, cut);
+  const provisional = cut === -1 ? [] : days.slice(cut);
+  const deferred = provisional.filter((d) => d.date <= lastFinal && !waExact(d.date, wa)).map((d) => d.date);
+  const forced = added.filter((d) => !waExact(d.date, wa)).map((d) => d.date);
   if (!stored.length && !days.length) {
     log(`hq-stats: no data from ${from} to ${today} yet`);
     return { added: [], provisional: [], days: 0, snapshot: false };
@@ -129,6 +183,8 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
   await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
   const range = (list: readonly DayRollup[]) => (list.length ? `${list[0].date} to ${list.at(-1)?.date}` : "none");
   const filled = missingPerf.length ? `, filled perf for ${missingPerf.length} stored days` : "";
-  log(`hq-stats: added ${added.length} days (${range(added)})${filled}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days`);
+  const held = deferred.length ? `, held back ${deferred.join(", ")} (sampled or inconsistent Web Analytics answer)` : "";
+  const late = forced.length ? `, stored ${forced.join(", ")} sampled after ${EXACT_GRACE_DAYS} days` : "";
+  log(`hq-stats: added ${added.length} days (${range(added)})${filled}${held}${late}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days`);
   return { added: added.map((d) => d.date), provisional: provisional.map((d) => d.date), days: ledgerDays.length, snapshot: true };
 }

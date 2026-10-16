@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStatsSnapshot, type StatsTopic } from "@/lib/stats/protocol";
-import { addDays, buildRollups, buildSnapshot, dayRange, MODE_FREEZE, PERF_FREEZE, trimLeadingEmpty } from "../../workers/stats/src/rollup";
+import { addDays, buildRollups, buildSnapshot, dayRange, MODE_FREEZE, PERF_FREEZE, trimLeadingEmpty, waExact } from "../../workers/stats/src/rollup";
 import type { AeRows, DayRollup, WaRows } from "../../workers/stats/src/types";
 
 const CHIPS = new Map<string, StatsTopic>([
@@ -20,6 +20,43 @@ describe("dates", () => {
     expect(dayRange("2026-11-02", "2026-11-01")).toEqual([]);
     expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+  });
+});
+
+describe("waExact", () => {
+  const exact: WaRows = {
+    days: [{ date: "2026-10-15", count: 333, visits: 36, sampleInterval: 1 }],
+    countries: [
+      { date: "2026-10-15", country: "ID", count: 300, visits: 30, sampleInterval: 1 },
+      { date: "2026-10-15", country: "DE", count: 33, visits: 6, sampleInterval: 1 },
+    ],
+    paths: [
+      { date: "2026-10-15", path: "/en", count: 233, sampleInterval: 1 },
+      { date: "2026-10-15", path: "/en/labs", count: 100, sampleInterval: 1 },
+    ],
+  };
+
+  it("accepts an unsampled answer whose groups add up, and a day with no rows", () => {
+    expect(waExact("2026-10-15", exact)).toBe(true);
+    expect(waExact("2026-10-16", exact)).toBe(true);
+    expect(waExact("2026-10-15", noWa)).toBe(true);
+  });
+
+  it("rejects a sampled row, a missing interval and groups that disagree (the 2026-10-16 ledger incident)", () => {
+    expect(waExact("2026-10-15", { ...exact, paths: [{ date: "2026-10-15", path: "/en", count: 333, sampleInterval: 100 }] })).toBe(false);
+    expect(waExact("2026-10-15", { ...exact, days: [{ date: "2026-10-15", count: 333, visits: 36, sampleInterval: Number.NaN }] })).toBe(false);
+    expect(
+      waExact("2026-10-15", {
+        days: [{ date: "2026-10-15", count: 700, visits: 0 }],
+        countries: [{ date: "2026-10-15", country: "ID", count: 700, visits: 0 }],
+        paths: [
+          { date: "2026-10-15", path: "/en", count: 1000 },
+          { date: "2026-10-15", path: "/en/contact", count: 1000 },
+        ],
+      }),
+    ).toBe(false);
+    // Other days' rows never count against this day.
+    expect(waExact("2026-10-15", { ...exact, paths: [...exact.paths, { date: "2026-10-14", path: "/en", count: 5, sampleInterval: 10 }] })).toBe(true);
   });
 });
 

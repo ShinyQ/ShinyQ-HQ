@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseStatsSnapshot, STATS_KEY } from "@/lib/stats/protocol";
-import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, runStats } from "../../workers/stats/src/run";
+import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, runStats, WA_EXTRA_KEY } from "../../workers/stats/src/run";
 import worker from "../../workers/stats/src/index";
 import type { Fetcher, Ledger, StatsWorkerEnv } from "../../workers/stats/src/types";
 
@@ -28,10 +28,13 @@ interface Calls {
   auth: string[];
 }
 
+const avg = (interval: number | null | undefined) => (interval === null ? {} : { avg: { sampleInterval: interval ?? 1 } });
+
 /** Fake Cloudflare APIs: Web Analytics rows per day, Analytics Engine rows per day. */
 function fakeApi(
   data: {
-    wa?: Record<string, { count: number; visits: number; country?: string; path?: string }>;
+    /** `interval`: average sample interval of the day's rows (default 1, `null` leaves `avg` out); `pathCount` overrides the paths group's count. */
+    wa?: Record<string, { count: number; visits: number; country?: string; path?: string; interval?: number | null; pathCount?: number }>;
     asks?: Record<string, number>;
     visits?: Record<string, number>;
     /** perf_events rows per day; the fake honors the query's date range. */
@@ -56,9 +59,9 @@ function fakeApi(
             viewer: {
               accounts: [
                 {
-                  days: rows.map(([date, r]) => ({ count: r.count, sum: { visits: r.visits }, dimensions: { date } })),
-                  countries: rows.map(([date, r]) => ({ count: r.count, sum: { visits: r.visits }, dimensions: { date, countryName: r.country ?? "ID" } })),
-                  paths: rows.map(([date, r]) => ({ count: r.count, dimensions: { date, requestPath: r.path ?? "/en/labs" } })),
+                  days: rows.map(([date, r]) => ({ count: r.count, sum: { visits: r.visits }, ...avg(r.interval), dimensions: { date } })),
+                  countries: rows.map(([date, r]) => ({ count: r.count, sum: { visits: r.visits }, ...avg(r.interval), dimensions: { date, countryName: r.country ?? "ID" } })),
+                  paths: rows.map(([date, r]) => ({ count: r.pathCount ?? r.count, ...avg(r.interval), dimensions: { date, requestPath: r.path ?? "/en/labs" } })),
                 },
               ],
             },
@@ -215,6 +218,99 @@ describe("hq-stats run", () => {
     for (const q of api.calls.sql) {
       expect(q).toContain("toDateTime('2026-11-16 00:00:00')");
       expect(q).toContain("toDateTime('2026-11-17 00:00:00')");
+    }
+  });
+
+  it("never stores a day from a sampled Web Analytics answer and stores the exact numbers on a later run", async () => {
+    // Incident 2026-10-16: the 04:00 run got 700 page views, 0 visits and 1000 per floor for a day with 333 and 36.
+    const e = env();
+    await runStats(e, AT("2026-10-15"), fakeApi({ wa: { "2026-10-14": { count: 9, visits: 3 } } }).fetcher, () => {});
+    e.STATS_KV.puts.length = 0;
+    const log = vi.fn();
+    const sampled = fakeApi({ wa: { "2026-10-15": { count: 700, visits: 0, interval: 100, pathCount: 2000, path: "/en" }, "2026-10-16": { count: 4, visits: 2 } } });
+    const held = await runStats(e, ATH("2026-10-16", 4), sampled.fetcher, log);
+    expect(held).toMatchObject({ added: [], provisional: ["2026-10-15", "2026-10-16"], days: 1 });
+    expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-10-14"]);
+    expect(e.STATS_KV.puts).toEqual([STATS_KEY]);
+    expect(log.mock.calls.at(-1)?.[0]).toContain("held back 2026-10-15");
+
+    const exact = fakeApi({ wa: { "2026-10-15": { count: 333, visits: 36 }, "2026-10-16": { count: 6, visits: 3 } } });
+    const stored = await runStats(e, ATH("2026-10-16", 8), exact.fetcher, () => {});
+    expect(exact.calls.graphql[0].variables).toMatchObject({ start: "2026-10-15T00:00:00Z" });
+    expect(stored).toMatchObject({ added: ["2026-10-15"], provisional: ["2026-10-16"] });
+    expect(ledgerOf(e).days.map((d) => [d.date, d.visits, d.pageViews])).toEqual([
+      ["2026-10-14", 3, 9],
+      ["2026-10-15", 36, 333],
+    ]);
+    expect(snapshotOf(e)!.visits.all).toBe(42);
+  });
+
+  it("holds back a day whose groups disagree or whose rows carry no sample interval", async () => {
+    for (const day of [{ count: 333, visits: 36, pathCount: 2000 }, { count: 333, visits: 36, interval: null }]) {
+      const e = env();
+      const result = await runStats(e, AT("2026-10-16"), fakeApi({ wa: { "2026-10-14": { count: 9, visits: 3 }, "2026-10-15": day } }).fetcher, () => {});
+      expect(result).toMatchObject({ added: ["2026-10-14"], provisional: ["2026-10-15", "2026-10-16"] });
+      expect(snapshotOf(e)!.visits.all).toBe(39);
+    }
+  });
+
+  it("stores a sampled day after the grace period so the ledger keeps moving", async () => {
+    const e = env();
+    await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 9, visits: 3 } } }).fetcher, () => {});
+    const log = vi.fn();
+    const wa = { "2026-10-14": { count: 500, visits: 100, interval: 10 }, "2026-10-15": { count: 4, visits: 2 } };
+    const early = await runStats(e, AT("2026-10-17"), fakeApi({ wa }).fetcher, () => {});
+    expect(early.added).toEqual([]);
+    const late = await runStats(e, AT("2026-10-18"), fakeApi({ wa }).fetcher, log);
+    expect(late.added).toEqual(["2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17"]);
+    expect(log.mock.calls.at(-1)?.[0]).toContain("stored 2026-10-14 sampled after 3 days");
+  });
+
+  it("adds the extra rows of a retired Web Analytics site to the days it covers, only while they are rolled up", async () => {
+    const e = env();
+    await runStats(e, AT("2026-10-15"), fakeApi({ wa: { "2026-10-14": { count: 9, visits: 3 } } }).fetcher, () => {});
+    e.STATS_KV.store.set(
+      WA_EXTRA_KEY,
+      JSON.stringify({
+        v: 1,
+        note: "retired site",
+        rows: {
+          days: [
+            { date: "2026-10-14", count: 50, visits: 50 },
+            { date: "2026-10-15", count: 5, visits: 3 },
+            { date: "2026-10-16", count: 120, visits: 3, sampleInterval: 1.02 },
+          ],
+          countries: [
+            { date: "2026-10-15", country: "ID", count: 5, visits: 3 },
+            { date: "2026-10-16", country: "SG", count: 120, visits: 3 },
+          ],
+          paths: [
+            { date: "2026-10-15", path: "/en/labs", count: 5 },
+            { date: "2026-10-16", path: "/en/journey", count: 120 },
+          ],
+        },
+      }),
+    );
+    const result = await runStats(e, ATH("2026-10-16", 12), fakeApi({ wa: { "2026-10-15": { count: 333, visits: 36 }, "2026-10-16": { count: 4, visits: 2, path: "/en/journey" } } }).fetcher, () => {});
+    expect(result).toMatchObject({ added: ["2026-10-15"], provisional: ["2026-10-16"] });
+    // 2026-10-14 is in the ledger already: its extra row is never read again.
+    expect(ledgerOf(e).days.map((d) => [d.date, d.visits, d.pageViews])).toEqual([
+      ["2026-10-14", 3, 9],
+      ["2026-10-15", 39, 338],
+    ]);
+    const snap = snapshotOf(e)!;
+    expect(snap.visits.all).toBe(3 + 39 + 5);
+    expect(snap.pageViews.all).toBe(9 + 338 + 124);
+    expect(snap.countries.all).toEqual(["ID", "SG"]);
+    expect(snap.topFloor.all).toBe("L3");
+  });
+
+  it("refuses malformed extra rows and writes nothing", async () => {
+    for (const bad of ["{nope", JSON.stringify({ v: 2, rows: { days: [], countries: [], paths: [] } }), JSON.stringify({ v: 1, note: "", rows: { days: [{ date: "x", count: 1, visits: 1 }], countries: [], paths: [] } })]) {
+      const kv = new MemoryKv();
+      kv.store.set(WA_EXTRA_KEY, bad);
+      await expect(runStats(env(kv), AT("2026-10-14"), fakeApi({}).fetcher, () => {})).rejects.toThrow(/extra Web Analytics rows/);
+      expect(kv.puts).toEqual([]);
     }
   });
 

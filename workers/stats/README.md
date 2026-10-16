@@ -18,7 +18,7 @@ flowchart LR
   in the Function).
 - Sources: `src/sources.ts`. Web Analytics `rumPageloadEventsAdaptiveGroups` filtered by siteTag,
   `bot: 0` and the production hosts (`WA_HOSTS`; local `127.0.0.1` traffic shares the siteTag), grouped
-  by `date`. Analytics Engine `ask_events` (blob8 topic, blob9 chip, Turnstile rejects excluded),
+  by `date`, each group with `avg { sampleInterval }`. Analytics Engine `ask_events` (blob8 topic, blob9 chip, Turnstile rejects excluded),
   `visit_events` (blob2 mode) and `perf_events` (the RUM beacon: blob4 median FPS bucket, blob6
   explore time bucket, `blob1 = '1'`), counted with `SUM(_sample_interval)`. Bucket strings outside the
   RUM contract (`src/lib/rum/protocol.ts`) are ignored.
@@ -34,7 +34,12 @@ flowchart LR
   fetches the whole backfill window again on every run until the first day finalizes (bootstrap only).
 - Finalized and provisional days: a UTC day is finalized (`finalizedThrough(now)`) once it ended at least
   `SETTLE_MS` (1 hour) ago, so late events land first. Finalized days are appended to the ledger once and
-  never recomputed. Every run also rolls up the days after that from the same queries: yesterday during
+  never recomputed, so a finalized day is stored only from an exact Web Analytics answer (`waExact` in
+  `src/rollup.ts`): every row unsampled (average `sampleInterval` 1) and the totals, countries and paths
+  groups adding up to the same page views. Otherwise the day (and every later day, the ledger stays
+  contiguous) stays provisional and is fetched again on the next runs; after `EXACT_GRACE_DAYS` (3) it
+  is stored anyway and the run log says so. Why: on 2026-10-16 the 04:00 run got a coarse answer (700
+  page views, 0 visits, 1000 per floor) for a day that had 333 page views and 36 visits, and kept it. Every run also rolls up the days after that from the same queries: yesterday during
   the 00:00 run (it is not settled yet) and today so far. These provisional days enter the public
   snapshot but are never stored; the next run recomputes them. `d30` is the 30 days ending today (today
   partial) and `updatedAt` is the run time. A failed run writes nothing, so the last good snapshot stays,
@@ -43,7 +48,7 @@ flowchart LR
   Engine retention (90 days) get `perf` filled once from one extra `perf_events` query; nothing else of
   those days changes, and older days stay without it (no data).
 - Run budget (routine run): 1 Web Analytics GraphQL request, 3 Analytics Engine SQL queries (asks,
-  visits, perf; plus one perf backfill query at most), 1 KV read, and the snapshot write every run. The
+  visits, perf; plus one perf backfill query at most), 2 KV reads (ledger and extra rows), and the snapshot write every run. The
   ledger is written only when a day finalizes or perf is filled, so at most 2 KV writes per run and 12
   a day.
 
@@ -97,4 +102,24 @@ Workers Scripts Edit on the account.
 - Reset (never needed in normal operation): deleting `stats:days:v1` makes the next run backfill again
   from the sources, which by then only keep the last 6 months (Web Analytics) and 3 months (Analytics
   Engine), so older history would be lost.
-- Logs: Workers Logs (observability on) show one line per run with dates and counts only.
+- Logs: Workers Logs (observability on) show one line per run with dates and counts only (and the days
+  held back or stored after the grace period).
+- One beacon only: Pages Web Analytics (project Metrics tab) and zone automatic setups must stay off.
+  Cloudflare injects its own beacon tag into every HTML page, only one beacon per page reports, and the
+  injected one wins: from 2026-10-15 19:35 UTC to 2026-10-16 about 12:00 UTC every page load went to a
+  second site (`ee28fc...`), so `WA_SITE_TAG` saw none, and that beacon ignored "Don't count my visits".
+  `scripts/deploy-smoke.ts` and the hourly uptime check fail on an injected beacon
+  (`scripts/injected-analytics.ts`). To turn it off: Workers & Pages > kurniadi > Metrics > Web
+  Analytics > Disable, or `PATCH /accounts/<id>/pages/projects/kurniadi` with
+  `{"build_config":{"web_analytics_tag":null,"web_analytics_token":null}}`; either way the injection
+  stops with the next deployment.
+- Repair a bad finalized day: save the ledger (`bunx wrangler kv key get stats:days:v1 --namespace-id
+  <id> --remote`), put it back without that day and every later day, and the next run rolls them up
+  again from the sources (Web Analytics 184 days, Analytics Engine 90). Preview first with a copy of the
+  repaired ledger in an in-memory KV (like `scripts/stats-dry-run.ts`).
+- Extra rows (`stats:wa-extra:v1`, `WaExtra` in `src/types.ts`): Web Analytics rows of a retired site,
+  added to the fetched rows of the days they cover while those days are rolled up (never again once
+  stored). Used once: the rows of the Pages-injected site for 2026-10-15 and 2026-10-16 (its page loads
+  are not in `WA_SITE_TAG`; both sites saw disjoint page loads, so nothing is counted twice; they include
+  visitors who had opted out, because that beacon ignored the switch). A malformed value stops the run
+  before anything is written.
