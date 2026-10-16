@@ -382,7 +382,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
 - Probe: `__hq.sky` is `{ phase, day, stars, source, fog, applied }` (`source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications), read from `skyRuntime`.
 - Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (held night under automation, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
 - Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite).
-- Measured: L1 full settled at 88 scene calls (cap 125); lite ride L3 to L2 peaks at 29,940 triangles (cap 30k); 3D JS 426.2 KB full and 402.6 KB lite, session 453.4 KB of 470 (full) and 429.7 KB of 446.4 (lite) gzip.
+- Budgets are authoritative in `e2e/budgets.ts` (3D bytes, draw calls, triangles) and `e2e/perf/baseline.json` (shader programs, memory); this section keeps only the invariants above.
 
 ## Store additions beyond appendix 06
 
