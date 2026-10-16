@@ -20,7 +20,7 @@ import { REACTOR_ROOM, reactorStop } from "./techReactor";
  * the middle as a gate the spine road passes under, AI south. Hero and featured pods dock on both sides
  * of their wing road in site order (`comparePods`: gallery pods nearest the hub), one `slot` each, so
  * both wings stay mirror images whatever their tiers; spine pods dock alternating north and south of the
- * spine. Each pod has a forecourt and a spur to its door, at least 6 u apart. `wingZ` grows past its
+ * spine, spread evenly from `data.start` to the reactor plaza. Each pod has a forecourt and a spur to its door, at least 6 u apart. `wingZ` grows past its
  * minimum just enough for the spine pods, the row gap and the deepest inner wing pod. Listed pods stay
  * on the directory. L3 paints no road chevrons (`RoadNetwork.chevrons`).
  * Pure module (no React or three): Vitest runs it in node.
@@ -92,7 +92,10 @@ export const LABS = {
   /** Hologram stage disc inside hero pods (6 u diameter). */
   stageRadius: 3,
   wallHeight: 2.6,
-  /** Data and ML spine: pods dock from `start` (north row; the south row half a pitch later), at most `maxPods`. */
+  /**
+   * Data and ML spine: pods dock from `start` alternating north and south, half a pitch apart, at most `maxPods`.
+   * The pitch spreads them to the reactor plaza (never below `slot + gap`, where they pack and push the plaza east).
+   */
   data: { maxPods: 8, start: 24 },
 } as const;
 
@@ -217,7 +220,8 @@ export function tourOrder(pods: readonly LabPod[]): LabPod[] {
  * Places pods from data (`ExperienceData.labs.pods`). Per side wing, hero and featured pods dock in
  * `tourOrder` along the wing road from the hub eastward, one slot each, alternating the outer and the
  * inner side; each wing road turns `tail` past its own last pod and all three roads meet at one east
- * plaza. Data pods dock alternating north and south of the spine (see the module comment).
+ * plaza. Data pods dock alternating north and south of the spine, spread to the plaza the side wings set
+ * (see the module comment).
  */
 export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   const L = LABS;
@@ -277,17 +281,6 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       lastEdge[wing] = Math.max(lastEdge[wing], p.rect.maxX);
     });
   }
-  // The spine: north row from `data.start`, south row half a pitch later (the wings' outer and inner offsets).
-  const spineCursor = { outer: L.data.start as number, inner: L.data.start + L.innerStart - L.outerStart };
-  let spineEdge = -Infinity;
-  docked.data.forEach((pod, i) => {
-    const row = i % 2 === 0 ? "outer" : "inner";
-    const p = dock(pod, 0, row === "outer" ? -1 : 1, spineCursor[row], row);
-    spineCursor[row] += L.slot + L.gap;
-    placed.push(p);
-    spineEdge = Math.max(spineEdge, p.rect.maxX);
-  });
-
   // Each wing road turns `tail` past its own last pod; the east plaza sits on the later turn, so a
   // shorter wing cuts across to it instead of running on empty. An empty wing still reaches a plaza
   // and a margin past the point where the wing roads start.
@@ -295,11 +288,26 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   // inner row starts); the AI road turns at least half a road width past it, so the room always fits.
   const aiInner = placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX);
   const opsMinX = aiInner.length ? Math.max(...aiInner) + OPS.gap : L.innerStart;
+  const sideTurn = (wing: SideWing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail, wing === "ai" ? opsMinX + OPS.w + half : -Infinity);
+
+  // The spine: pods alternate north (even index) and south (odd), one even step of half a pitch apart from
+  // `data.start`, spread so the last slot ends a `tail` before the reactor plaza the side wings alone set.
+  // With many pods the pitch stops at a slot and a gap: they pack and push the plaza east.
+  const spineEnd = Math.max(sideTurn("software"), sideTurn("ai")) - L.east / 2 - L.tail;
+  const n = docked.data.length;
+  const pitch = Math.max(L.slot + L.gap, n > 1 ? (2 * (spineEnd - L.data.start - L.slot)) / (n - 1) : 0);
+  let spineEdge = -Infinity;
+  docked.data.forEach((pod, i) => {
+    const row = i % 2 === 0 ? "outer" : "inner";
+    const p = dock(pod, 0, row === "outer" ? -1 : 1, L.data.start + (i * pitch) / 2, row);
+    placed.push(p);
+    spineEdge = Math.max(spineEdge, p.rect.maxX);
+  });
+
   // With spine pods, every side wing also turns `tail` past the last spine pod, so its last leg into the
   // ring never cuts diagonally through the spine rows.
   const spineTurn = Number.isFinite(spineEdge) ? spineEdge + L.tail : -Infinity;
-  const minTurn: Record<SideWing, number> = { software: spineTurn, ai: Math.max(opsMinX + OPS.w + half, spineTurn) };
-  const turnX = (wing: SideWing) => Math.max(L.wingStartX + L.east + L.margin, lastEdge[wing] + L.tail, minTurn[wing]);
+  const turnX = (wing: SideWing) => Math.max(sideTurn(wing), spineTurn);
   // The reactor plaza sits on the later wing turn, and a `tail` plus its radius past the last spine pod.
   const loopEnd: Vec2 = { x: Math.max(turnX("software"), turnX("ai"), spineEdge + L.tail + L.east / 2), z: 0 };
   const r = L.hub.size / 2;

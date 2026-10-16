@@ -71,7 +71,7 @@ describe("L3 Data and ML spine", () => {
     }
   });
 
-  it("docks spine pods alternating north and south from x = 24, doors facing the spine, 6 u from the inner wing rows", () => {
+  it("docks spine pods alternating north and south from x = 24 in even steps, doors facing the spine, 6 u from the inner wing rows", () => {
     expect(spinePods.map((p) => p.pod.slug)).toEqual(tourOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
     spinePods.forEach((p, i) => {
       expect(Math.sign(p.center.z), p.room).toBe(i % 2 === 0 ? -1 : 1);
@@ -79,10 +79,14 @@ describe("L3 Data and ML spine", () => {
       expect(Math.sign(0 - p.center.z)).toBe(p.facing);
       expect(Math.min(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))).toBeCloseTo(LABS.road / 2 + LABS.forecourt);
     });
-    const north = spinePods.filter((p) => p.center.z < 0);
-    const south = spinePods.filter((p) => p.center.z > 0);
-    expect(north[0].center.x).toBe(LABS.data.start + LABS.slot / 2);
-    expect(south[0].center.x - north[0].center.x).toBe(LABS.innerStart - LABS.outerStart);
+    expect(spinePods[0].center.z).toBeLessThan(0);
+    expect(spinePods[0].center.x).toBe(LABS.data.start + LABS.slot / 2);
+    // One even step (half a pitch) from pod to pod, so each row keeps a full pitch of at least a slot and a gap.
+    const steps = spinePods.slice(1).map((p, i) => p.center.x - spinePods[i].center.x);
+    for (const step of steps) {
+      expect(step).toBeCloseTo(steps[0]);
+      expect(step).toBeGreaterThanOrEqual((LABS.slot + LABS.gap) / 2);
+    }
     const inner = layout.placed.filter((p) => p.pod.wing !== "data" && p.row === "inner");
     for (const s of spinePods) for (const w of inner) expect(rectGap(s.rect, w.rect), `${s.room} ${w.room}`).toBeGreaterThanOrEqual(LABS.rowGap);
     expect(Math.min(...inner.map((w) => Math.min(Math.abs(w.rect.minZ), Math.abs(w.rect.maxZ)))) - Math.max(...spinePods.map((s) => Math.max(Math.abs(s.rect.minZ), Math.abs(s.rect.maxZ))))).toBeCloseTo(LABS.rowGap);
@@ -96,6 +100,51 @@ describe("L3 Data and ML spine", () => {
     expect(floor.returnPad).toEqual({ x: 117, z: 9 });
     expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
     expect(floor.stops!["L3:reactor"]).toEqual({ x: layout.east.center.x + REACTOR.ring, z: 0 });
+  });
+
+  it("spreads the spine pods from x = 24 to the reactor plaza, and packs them at the minimum pitch when there are many", () => {
+    // Pad the AI wing to 11 docked pods (PR #163's floor), whatever today's content docks there.
+    const aiDocked = tourOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
+    const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
+    const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
+    const cases: [string, LabPod[], LabPod[]][] = [
+      ["today's content", real, sidePods],
+      ["an 11-pod AI wing", [...real, ...extraAi], [...sidePods, ...extraAi]],
+      // Short side wings: eight hero spine pods cannot spread, so they pack and push the plaza east.
+      ["eight hero spine pods", [...shortSides, ...eightHero], shortSides],
+    ];
+    const minPitch = LABS.slot + LABS.gap;
+    for (const [name, pods, sides] of cases) {
+      const l = buildLabsLayout(pods);
+      const spine = l.placed.filter((p) => p.pod.wing === "data");
+      if (name === "an 11-pod AI wing") expect(l.placed.filter((p) => p.pod.wing === "ai").length, name).toBeGreaterThanOrEqual(11);
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      expect(spine[0].center.x, name).toBe(LABS.data.start + LABS.slot / 2);
+      for (const row of ["outer", "inner"] as const) {
+        const xs = spine.filter((p) => p.row === row).map((p) => p.center.x);
+        xs.slice(1).forEach((x, i) => expect(x - xs[i], `${name} ${row}`).toBeGreaterThanOrEqual(minPitch - 1e-9));
+      }
+      const plazaWest = l.east.center.x - LABS.east / 2;
+      const lastEdge = Math.max(...spine.map((p) => p.rect.maxX));
+      expect(plazaWest - lastEdge, name).toBeLessThanOrEqual(LABS.tail + LABS.slot);
+      expect(plazaWest - lastEdge, name).toBeGreaterThanOrEqual(LABS.tail);
+      // Where the side wings alone put the plaza, the spine's last slot ends a tail before its west rim.
+      const spineEnd = buildLabsLayout(sides).east.center.x - LABS.east / 2 - LABS.tail;
+      const pitch = 2 * (spine[1].center.x - spine[0].center.x);
+      const lastSlotEnd = Math.max(...spine.map((p) => p.center.x)) + LABS.slot / 2;
+      if (pitch > minPitch + 1e-9) {
+        expect(lastSlotEnd, name).toBeCloseTo(spineEnd);
+        expect(l.east.center.x, name).toBe(buildLabsLayout(sides).east.center.x);
+      } else {
+        // Packed: the spine pushes the plaza east past where the side wings alone would put it.
+        expect(pitch, name).toBeCloseTo(minPitch);
+        expect(lastSlotEnd, name).toBeGreaterThanOrEqual(spineEnd);
+        expect(l.east.center.x, name).toBe(lastEdge + LABS.tail + LABS.east / 2);
+      }
+      if (name === "eight hero spine pods") expect(pitch, name).toBeCloseTo(minPitch);
+      else expect(pitch, name).toBeGreaterThan(minPitch);
+    }
   });
 
   it("reaches every spine door along the road from the elevator, the camera turning at each", () => {
