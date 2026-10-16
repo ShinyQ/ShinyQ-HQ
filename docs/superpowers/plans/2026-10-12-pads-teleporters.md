@@ -1,5 +1,7 @@
 # Elevator Call Pads and L2 Year Teleporters Implementation Plan
 
+Status: shipped in #53 (176140d), 2026-10-12
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Put a glowing call pad in front of the elevator door on every floor (L1, L2, L3, L4, RF) that opens a floor-picker modal, and a teleporter pad on every L2 year plaza that opens a year picker and beams the rover to the chosen plaza.
@@ -98,7 +100,7 @@ Pad geometry (verified against the real content at main @ 2f986ab): every floor'
   - `primedPadLatch(pads, p: Vec2): DoorLatch<string>`.
   - `DoorLatch<K extends string = RoomId>`, `DoorStep<K>` with `dwell?: number`, `stepDoorLatch<K>(...)`.
 
-- [ ] **Step 1: Create the branch and commit this plan into the repo**
+- [x] **Step 1: Create the branch and commit this plan into the repo**
 
 Work in a writable ShinyQ-HQ checkout (never in the read-only reference clone `hq-local`).
 
@@ -112,7 +114,7 @@ rtk git commit -m "docs: plan for elevator call pads and L2 year teleporters"
 
 Expected: a new branch with one commit.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Create `tests/unit/pads.test.ts`:
 
@@ -185,12 +187,12 @@ describe("floor pads", () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 Run: `bunx vitest run tests/unit/pads.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/nav/pads"`.
 
-- [ ] **Step 4: Add the pad types**
+- [x] **Step 4: Add the pad types**
 
 In `src/experience/types.ts`, insert after the closing `}` of `interface DoorTrigger`:
 
@@ -221,7 +223,7 @@ In the same file, inside `interface FloorLayout`, add after the `doors?: DoorTri
   pads?: PadTrigger[];
 ```
 
-- [ ] **Step 5: Make the door latch generic and give it an optional dwell**
+- [x] **Step 5: Make the door latch generic and give it an optional dwell**
 
 In `src/experience/nav/doors.ts`, replace the block from `/** Room whose zone the rover already used; ...` through the end of `stepDoorLatch` with:
 
@@ -306,7 +308,7 @@ export function stepDoorLatch<K extends string = RoomId>(
 }
 ```
 
-- [ ] **Step 6: Write the pad module**
+- [x] **Step 6: Write the pad module**
 
 Create `src/experience/nav/pads.ts`:
 
@@ -387,17 +389,17 @@ export function primedPadLatch(pads: readonly PadTrigger[] | undefined, p: Vec2)
 }
 ```
 
-- [ ] **Step 7: Run the new and the existing door tests**
+- [x] **Step 7: Run the new and the existing door tests**
 
 Run: `bunx vitest run tests/unit/pads.test.ts tests/unit/doors.test.ts`
 Expected: PASS, `Test Files  2 passed (2)`, 7 pads tests plus every existing doors test green.
 
-- [ ] **Step 8: Typecheck**
+- [x] **Step 8: Typecheck**
 
 Run: `bun run typecheck`
 Expected: exits 0, no TypeScript errors (the Director keeps `DoorLatch` with its `RoomId` default).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/types.ts src/experience/nav/doors.ts src/experience/nav/pads.ts tests/unit/pads.test.ts
@@ -421,7 +423,7 @@ rtk git commit -m "feat(3d): floor pad model on the shared door latch"
   - `padViolations(input: PadSpaceInput, rules?: SpaceRules): SpaceViolation[]` with rules `"pad-bounds" | "pad-blocked" | "pad-door" | "pad-spur" | "pad-road" | "pad-gap"`.
   - `expectPadRules(input: PadSpaceInput, rules?: Partial<SpaceRules>)` in `tests/helpers/space.ts`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/pad-space.test.ts`:
 
@@ -482,12 +484,12 @@ describe("pad space rules", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `bunx vitest run tests/unit/pad-space.test.ts`
 Expected: FAIL with `SyntaxError: The requested module '@/experience/nav/space' does not provide an export named 'padViolations'` (or `expectPadRules` is not exported).
 
-- [ ] **Step 3: Implement the pad rules**
+- [x] **Step 3: Implement the pad rules**
 
 In `src/experience/nav/space.ts`:
 
@@ -638,7 +640,7 @@ export function padViolations(input: PadSpaceInput, rules: SpaceRules = SPACE_RU
 }
 ```
 
-- [ ] **Step 4: Add the test helper**
+- [x] **Step 4: Add the test helper**
 
 Replace `tests/helpers/space.ts` with:
 
@@ -666,12 +668,12 @@ export function expectPadRules(input: PadSpaceInput, rules: Partial<SpaceRules> 
 }
 ```
 
-- [ ] **Step 5: Run the pad and the existing space tests**
+- [x] **Step 5: Run the pad and the existing space tests**
 
 Run: `bunx vitest run tests/unit/pad-space.test.ts tests/unit/road.test.ts tests/unit/career-layout.test.ts tests/unit/labs-layout.test.ts`
 Expected: PASS, `Test Files  4 passed (4)` (the `reachFrom` refactor keeps every existing door-gap result).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/nav/space.ts tests/helpers/space.ts tests/unit/pad-space.test.ts
@@ -695,7 +697,7 @@ rtk git commit -m "feat(3d): space rules for floor pads"
   - `CareerRoadLayout.pads: PadTrigger[]` (one `teleport:<year>` pad per year, `face: 0`).
   - `buildFloorLayouts(...)[id].pads`: `[elevator:<id> at approach, ...L2 teleporters]` on every floor.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/career-layout.test.ts`:
 
@@ -799,12 +801,12 @@ describe("floor pads in the real layouts", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/career-layout.test.ts tests/unit/floor-pads.test.ts`
 Expected: FAIL: `c.pads` is undefined (`TypeError: Cannot read properties of undefined (reading 'map')`) and the floor pad tests find no pads.
 
-- [ ] **Step 3: Add teleporters to the Career Road**
+- [x] **Step 3: Add teleporters to the Career Road**
 
 In `src/experience/floors/career/layout.ts`:
 
@@ -886,7 +888,7 @@ with:
 
 In the returned object, after `doors,` add `pads,`.
 
-- [ ] **Step 4: Put the elevator pad on every floor**
+- [x] **Step 4: Put the elevator pad on every floor**
 
 In `src/experience/config.ts`:
 
@@ -958,12 +960,12 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
 }
 ```
 
-- [ ] **Step 5: Run the layout tests**
+- [x] **Step 5: Run the layout tests**
 
 Run: `bunx vitest run tests/unit/career-layout.test.ts tests/unit/floor-pads.test.ts tests/unit/lobby-layout.test.ts tests/unit/labs-layout.test.ts tests/unit/library-roof-layout.test.ts tests/unit/doors.test.ts`
 Expected: PASS, `Test Files  6 passed (6)`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/floors/career/layout.ts src/experience/config.ts tests/unit/career-layout.test.ts tests/unit/floor-pads.test.ts
@@ -993,7 +995,7 @@ rtk git commit -m "feat(3d): elevator call pad on every floor and a teleporter p
   - Intent `{ type: "teleport"; pad: string }`.
   - Store: `picker: PickerRequest | null`, `beam: Beam | null`, `openPicker(picker)` (explore only, no ride, no beam), `closePicker()`, `setBeam(beam)`; `requestElevator` clears `picker` when it starts a ride.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/teleport.test.ts`:
 
@@ -1081,12 +1083,12 @@ In `tests/unit/store.test.ts`, add these cases at the end of `describe("HQ store
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/teleport.test.ts tests/unit/store.test.ts`
 Expected: FAIL: `Failed to resolve import "@/experience/nav/teleport"` and `TypeError: store.getState(...).openPicker is not a function`.
 
-- [ ] **Step 3: Write the beam module**
+- [x] **Step 3: Write the beam module**
 
 Create `src/experience/nav/teleport.ts`:
 
@@ -1141,7 +1143,7 @@ export function beamGlow(beam: Beam | null, reduced: boolean): { at: Vec2; level
 }
 ```
 
-- [ ] **Step 4: Add the intent**
+- [x] **Step 4: Add the intent**
 
 In `src/experience/input/intents.ts`, replace:
 
@@ -1157,7 +1159,7 @@ with:
   | { type: "teleport"; pad: string }
 ```
 
-- [ ] **Step 5: Add the store state**
+- [x] **Step 5: Add the store state**
 
 In `src/store/useHQStore.ts`:
 
@@ -1219,12 +1221,12 @@ After the `notify: (notice) => set({ notice }),` line add:
 
 `partialize` stays unchanged (neither field persists).
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/unit/teleport.test.ts tests/unit/store.test.ts tests/unit/intents.test.ts tests/unit/elevator.test.ts`
 Expected: PASS, `Test Files  4 passed (4)`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/nav/teleport.ts src/experience/input/intents.ts src/store/useHQStore.ts tests/unit/teleport.test.ts tests/unit/store.test.ts
@@ -1249,7 +1251,7 @@ rtk git commit -m "feat(3d): teleport beam timeline, pad picker and beam state, 
   - `<PadGlow pads floorY interactive />`: 1 draw call for all pads of a floor, plus 1 icon draw call per kind present (2 on the full tier).
   - `<TeleportBeam />`: invisible unless a beam runs (1 draw call while visible).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/holo-icons.test.ts`, replace the import line with:
 
@@ -1277,12 +1279,12 @@ and add inside `describe("career type icons", ...)`:
   });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `bunx vitest run tests/unit/holo-icons.test.ts`
 Expected: FAIL, `PAD_ICONS` is undefined (`TypeError: Cannot convert undefined or null to object`).
 
-- [ ] **Step 3: Add the pad icons**
+- [x] **Step 3: Add the pad icons**
 
 In `src/experience/fx/holoIcons.ts`, replace `import type { CareerType } from "../types";` with:
 
@@ -1313,12 +1315,12 @@ export const PAD_ICONS: Record<PadKind, Stroke[]> = {
 export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6" };
 ```
 
-- [ ] **Step 4: Run the icon test**
+- [x] **Step 4: Run the icon test**
 
 Run: `bunx vitest run tests/unit/holo-icons.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Write PadGlow**
+- [x] **Step 5: Write PadGlow**
 
 Create `src/experience/fx/PadGlow.tsx`:
 
@@ -1444,7 +1446,7 @@ export function PadGlow({ pads, floorY, interactive }: { pads: PadTrigger[]; flo
 }
 ```
 
-- [ ] **Step 6: Write TeleportBeam**
+- [x] **Step 6: Write TeleportBeam**
 
 Create `src/experience/fx/TeleportBeam.tsx`:
 
@@ -1496,7 +1498,7 @@ export function TeleportBeam() {
 }
 ```
 
-- [ ] **Step 7: Mount both**
+- [x] **Step 7: Mount both**
 
 In `src/experience/tower/FloorLevel.tsx`, after `import { ProximityGlow } from "../fx/ProximityGlow";` add:
 
@@ -1530,12 +1532,12 @@ and replace `      <Rover tier={tier} />` with:
       <TeleportBeam />
 ```
 
-- [ ] **Step 8: Typecheck and lint**
+- [x] **Step 8: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: both exit 0 with no errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/fx/holoIcons.ts src/experience/fx/PadGlow.tsx src/experience/fx/TeleportBeam.tsx src/experience/tower/FloorLevel.tsx src/experience/scene/Scene.tsx tests/unit/holo-icons.test.ts
@@ -1563,7 +1565,7 @@ rtk git commit -m "feat(3d): glowing floor pads with neon icons and the teleport
   - `e2e/hq.ts`: `interface PadSnapshot { id: string; kind: "elevator" | "teleport"; at: { x: number; z: number }; year?: number }`, `padsOf(page, floor): Promise<PadSnapshot[]>`, `driveTo(page, point, timeout?)`.
   - `scripts/e2e-plan.ts`: spec `"pads"`.
 
-- [ ] **Step 1: Register the spec in the e2e plan (failing test first)**
+- [x] **Step 1: Register the spec in the e2e plan (failing test first)**
 
 In `tests/unit/e2e-plan.test.ts`, replace:
 
@@ -1593,7 +1595,7 @@ and add a case inside `describe("specsForChanges", ...)`:
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: FAIL (career maps to `["career"]`, pads paths fall back to the smoke specs).
 
-- [ ] **Step 2: Add the rules**
+- [x] **Step 2: Add the rules**
 
 In `scripts/e2e-plan.ts`:
 
@@ -1638,7 +1640,7 @@ with:
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads"] },
 ```
 
-- [ ] **Step 3: Write the failing e2e spec**
+- [x] **Step 3: Write the failing e2e spec**
 
 Create `e2e/pads.spec.ts`:
 
@@ -1728,7 +1730,7 @@ test.describe("floor pads on the Career Road (L2)", () => {
 });
 ```
 
-- [ ] **Step 4: Add the e2e helpers**
+- [x] **Step 4: Add the e2e helpers**
 
 Append to `e2e/hq.ts`:
 
@@ -1766,7 +1768,7 @@ export async function driveTo(page: Page, point: { x: number; z: number }, timeo
 }
 ```
 
-- [ ] **Step 5: Expose the layouts to Playwright**
+- [x] **Step 5: Expose the layouts to Playwright**
 
 In `src/experience/Experience.tsx`, replace:
 
@@ -1780,7 +1782,7 @@ with:
   (window as unknown as { __hq?: unknown }).__hq = { store, rover: roverRuntime, marker: roverRuntime.marker, camera: () => [...roverRuntime.cameraPosition], layouts };
 ```
 
-- [ ] **Step 6: Add the camera cut flag**
+- [x] **Step 6: Add the camera cut flag**
 
 In `src/experience/rover/runtime.ts`, after the `cameraPosition: [0, 0, 0] as [number, number, number],` line add:
 
@@ -1806,7 +1808,7 @@ with:
     l.desiredPos.set(...desired.position);
 ```
 
-- [ ] **Step 7: Wire the Director**
+- [x] **Step 7: Wire the Director**
 
 In `src/experience/scene/Director.tsx`:
 
@@ -1955,22 +1957,22 @@ with:
     }
 ```
 
-- [ ] **Step 8: Run unit checks**
+- [x] **Step 8: Run unit checks**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts && bun run typecheck && bun run lint`
 Expected: e2e-plan PASS; typecheck and lint exit 0.
 
-- [ ] **Step 9: Build and run the new spec**
+- [x] **Step 9: Build and run the new spec**
 
 Run: `bun run build && bun run e2e e2e/pads.spec.ts`
 Expected: `2 passed`.
 
-- [ ] **Step 10: Run the neighbouring 3D specs**
+- [x] **Step 10: Run the neighbouring 3D specs**
 
 Run: `bun run e2e e2e/career.spec.ts e2e/experience.spec.ts e2e/walk.spec.ts`
 Expected: all pass (deep links, rides, walks and missions unchanged; render budgets hold with the pads).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/experience/scene/Director.tsx src/experience/rover/runtime.ts src/experience/camera/CameraDirector.tsx src/experience/Experience.tsx e2e/hq.ts e2e/pads.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -1997,7 +1999,7 @@ rtk git commit -m "feat(3d): pads open pickers, teleport beam with a camera cut,
   - `nextIndex(index: number, key: string, count: number): number | null`.
   - Messages `hud.pads.floorTitle`, `floorHint`, `yearTitle`, `yearHint`, `close`, `here`, `floorDesc.{L1,L2,L3,L4,RF}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/hud/Modal.test.tsx`:
 
@@ -2082,12 +2084,12 @@ describe("pad picker options", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/hud/Modal.test.tsx tests/unit/pad-picker.test.ts`
 Expected: FAIL: the Modal panel has no `data-sheet`, and `Failed to resolve import "@/hud/pads/picker"`.
 
-- [ ] **Step 3: Add the bottom sheet to Modal**
+- [x] **Step 3: Add the bottom sheet to Modal**
 
 In `src/components/Modal.tsx`:
 
@@ -2142,7 +2144,7 @@ Replace the returned portal (from `return createPortal(` to the end of the funct
 
 Update the component doc comment's first sentence to: `Shared modal dialog for the CV viewer, paper and certification previews and the floor pad pickers: ...` (keep the rest).
 
-- [ ] **Step 4: Write the picker helpers**
+- [x] **Step 4: Write the picker helpers**
 
 Create `src/hud/pads/picker.ts`:
 
@@ -2207,7 +2209,7 @@ export function nextIndex(index: number, key: string, count: number): number | n
 }
 ```
 
-- [ ] **Step 5: Add the copy**
+- [x] **Step 5: Add the copy**
 
 In `messages/en.json`, replace the end of the `hud` object:
 
@@ -2291,12 +2293,12 @@ with:
   },
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/hud/Modal.test.tsx tests/unit/pad-picker.test.ts tests/hud/Dialogs.test.tsx tests/unit/ui-copy.test.ts tests/content/fonts.test.ts tests/content/safety.test.ts`
 Expected: PASS, `Test Files  6 passed (6)` (the CV, paper and certification dialogs keep their full-screen phone sheet; copy keys align; every new character is in the font cuts).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/components/Modal.tsx src/hud/pads/picker.ts messages/en.json messages/id.json tests/hud/Modal.test.tsx tests/unit/pad-picker.test.ts
@@ -2318,7 +2320,7 @@ rtk git commit -m "feat(hud): bottom sheet modal option, pad picker options and 
 - Consumes: `floorThumb` (Task 7), `FLOOR_IDS`; pads render in the captures (Tasks 5 and 6).
 - Produces: committed `public/floors/{id}.webp` (lossy VP8, 320 x 180, at most 16 KB each); `bun run floor:thumbs`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/content/floor-thumbs.test.ts`:
 
@@ -2346,12 +2348,12 @@ describe("floor picker thumbnails", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `bunx vitest run tests/content/floor-thumbs.test.ts`
 Expected: FAIL with `ENOENT: no such file or directory, open '.../public/floors/L1.webp'`.
 
-- [ ] **Step 3: Add the captures**
+- [x] **Step 3: Add the captures**
 
 In `e2e/screenshots.spec.ts`, append at the end of the file:
 
@@ -2385,7 +2387,7 @@ for (const floor of FLOOR_THUMBS) {
 }
 ```
 
-- [ ] **Step 4: Write the converter and the script**
+- [x] **Step 4: Write the converter and the script**
 
 Create `scripts/floor-thumbs.ts`:
 
@@ -2420,19 +2422,19 @@ In `package.json` `scripts`, after the `"cv:pages": "bun scripts/cv-pages.ts",` 
     "floor:thumbs": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"floor thumbnail\" --workers=1 && bun scripts/floor-thumbs.ts",
 ```
 
-- [ ] **Step 5: Generate the thumbnails**
+- [x] **Step 5: Generate the thumbnails**
 
 Run: `which cwebp || brew install webp`, then `bun run build && bun run floor:thumbs`
 Expected: `5 passed` from Playwright, then five lines such as `public/floors/L1.webp 8.4 KB` (each at most 16 KB). If one is over 16 KB, lower `-q` in `scripts/floor-thumbs.ts` to `55` and rerun `bun scripts/floor-thumbs.ts`.
 
 Open the five files and check each shows its floor (L1 hologram plaza, L2 first plaza with the road, L3 hub, L4 shelves, RF beacon) without HUD panels.
 
-- [ ] **Step 6: Run the test**
+- [x] **Step 6: Run the test**
 
 Run: `bunx vitest run tests/content/floor-thumbs.test.ts tests/content/assets.test.ts tests/unit/e2e-plan.test.ts`
 Expected: PASS, `Test Files  3 passed (3)`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts scripts/floor-thumbs.ts package.json public/floors tests/content/floor-thumbs.test.ts
@@ -2456,7 +2458,7 @@ rtk git commit -m "feat(hud): floor preview thumbnails for the elevator picker"
   - `<BeamFade />`: `data-testid="beam-fade"`, opaque only while `reducedMotion && beam`.
   - `e2e/hq.ts`: `railScreenPoint(page, p)` (moved unchanged from `career.spec.ts`).
 
-- [ ] **Step 1: Write the failing component test**
+- [x] **Step 1: Write the failing component test**
 
 Create `tests/hud/PadPicker.test.tsx`:
 
@@ -2607,12 +2609,12 @@ describe("pad pickers", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `bunx vitest run tests/hud/PadPicker.test.tsx`
 Expected: FAIL with `Failed to resolve import "@/hud/pads/PadPicker"`.
 
-- [ ] **Step 3: Write the picker component**
+- [x] **Step 3: Write the picker component**
 
 Create `src/hud/pads/PadPicker.tsx`:
 
@@ -2770,7 +2772,7 @@ export function BeamFade() {
 }
 ```
 
-- [ ] **Step 4: Mount it in the HUD**
+- [x] **Step 4: Mount it in the HUD**
 
 In `src/hud/Hud.tsx` (only these three lines; nothing else in this file changes):
 
@@ -2794,12 +2796,12 @@ Replace `      <FloorAnnouncer data={data} />` with:
       <PadPicker data={data} />
 ```
 
-- [ ] **Step 5: Run the component tests**
+- [x] **Step 5: Run the component tests**
 
 Run: `bunx vitest run tests/hud/PadPicker.test.tsx tests/hud/Modal.test.tsx tests/hud/Dialogs.test.tsx`
 Expected: PASS, `Test Files  3 passed (3)`.
 
-- [ ] **Step 6: Move `railScreenPoint` into the shared e2e helpers**
+- [x] **Step 6: Move `railScreenPoint` into the shared e2e helpers**
 
 In `e2e/hq.ts`, add at the top, after `import { expect, type Page } from "@playwright/test";`:
 
@@ -2839,7 +2841,7 @@ In `e2e/career.spec.ts`: delete the line `import { RAIL, RAIL_LOOK_AHEAD } from 
 import { asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, railScreenPoint, snapshot, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 ```
 
-- [ ] **Step 7: Add the UI flows to the pads spec**
+- [x] **Step 7: Add the UI flows to the pads spec**
 
 In `e2e/pads.spec.ts`, replace the import lines:
 
@@ -2996,12 +2998,12 @@ test.describe("pad pickers", () => {
 });
 ```
 
-- [ ] **Step 8: Typecheck, lint, build and run the specs**
+- [x] **Step 8: Typecheck, lint, build and run the specs**
 
 Run: `bun run typecheck && bun run lint && bun run build && bun run e2e e2e/pads.spec.ts e2e/career.spec.ts`
 Expected: typecheck and lint exit 0; Playwright reports every test passed (6 in `pads.spec.ts` plus the career specs).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/hud/pads/PadPicker.tsx src/hud/Hud.tsx tests/hud/PadPicker.test.tsx e2e/hq.ts e2e/career.spec.ts e2e/pads.spec.ts
@@ -3018,7 +3020,7 @@ rtk git commit -m "feat(hud): floor and year pickers for the elevator pads and L
 - Consumes: `open3DAt`, `shot`, `VIEWPORTS` (already in `screenshots.spec.ts`); `driveTo`, `padsOf` (Task 6); `PadPicker` with `testId="pad-picker"` (Task 9).
 - Produces: `screenshots/hq-pad-floors-{w}x{h}.png`, `screenshots/hq-pad-years-{w}x{h}.png`, `screenshots/hq-pad-teleporter-{w}x{h}.png` for 1440x900, 1024x1366 and 390x844 (opt-in, `SCREENSHOTS=1`; also in the nightly and `screenshots`-label CI runs).
 
-- [ ] **Step 1: Add the captures**
+- [x] **Step 1: Add the captures**
 
 In `e2e/screenshots.spec.ts`, replace:
 
@@ -3066,14 +3068,14 @@ for (const viewport of VIEWPORTS) {
 }
 ```
 
-- [ ] **Step 2: Capture and review**
+- [x] **Step 2: Capture and review**
 
 Run: `bun run build && SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "pad pickers" --workers=1`
 Expected: `3 passed`; nine PNG files in `screenshots/` (`hq-pad-floors-*`, `hq-pad-years-*`, `hq-pad-teleporter-*`).
 
 Open every file and check: the floor list shows five rows with thumbnails, names and descriptions, "You are here" on L2; the year list shows every year with the prologue note on the first; on 390x844 both pickers are bottom sheets; the teleporter shot shows the pink pad ring with its icon beside the road and the cyan elevator pad is not covering any road marking or door pad. `screenshots/` is gitignored, so nothing is committed from it.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts
@@ -3092,7 +3094,7 @@ rtk git commit -m "test(e2e): screenshots of the floor pads and pickers"
 - Consumes: everything above.
 - Produces: the documented feature and an open PR (label `screenshots`).
 
-- [ ] **Step 1: Update AGENTS.md**
+- [x] **Step 1: Update AGENTS.md**
 
 Make these edits (no em dashes):
 
@@ -3174,7 +3176,7 @@ with
 
 11. In the e2e list line of the folder layout (`e2e/                            Playwright: ...`), add `floor pads and pickers (pads.spec.ts), ` right after `guided walks (walk.spec.ts: the L3 tour by default, other walks with ?walk=on), `.
 
-- [ ] **Step 2: Update README.md**
+- [x] **Step 2: Update README.md**
 
 1. In "Try it", replace
 
@@ -3202,34 +3204,34 @@ the mouse wheel or PageUp/PageDown. Every floor also has a glowing call pad in f
 
 4. In Structure, replace `scripts/      static server, e2e planning, content validator, CV page renderer (cv:pages)` with `scripts/      static server, e2e planning, content validator, CV page renderer (cv:pages), floor thumbnails (floor:thumbs)`.
 
-- [ ] **Step 3: Check every changed text file for em dashes**
+- [x] **Step 3: Check every changed text file for em dashes**
 
 Run: `git --no-pager diff --name-only origin/main -- '*.ts' '*.tsx' '*.json' '*.md' | xargs perl -CSD -ne 'print "$ARGV:$.: $_" if /\x{2014}/; close ARGV if eof'`
 Expected: no output.
 
-- [ ] **Step 4: Commit the docs**
+- [x] **Step 4: Commit the docs**
 
 ```bash
 rtk git add AGENTS.md README.md
 rtk git commit -m "docs: floor pads, pickers, teleporters and floor:thumbs"
 ```
 
-- [ ] **Step 5: Rebase on main and resolve coordination conflicts**
+- [x] **Step 5: Rebase on main and resolve coordination conflicts**
 
 Run: `rtk git fetch origin && rtk git rebase origin/main`
 Expected: a clean rebase. If `src/hud/Hud.tsx` conflicts with the parallel HUD session, keep their version of the file and re-add only the `BeamFade`/`PadPicker` import and the two mount lines from Task 9 Step 4. If their L1 alignment fix changed `standard()` door constants or `LOBBY`, keep their values: the L1 pad follows `layout.approach`, and `tests/unit/floor-pads.test.ts` still asserts it sits 3 u in front of the door.
 
-- [ ] **Step 6: Quick verification**
+- [x] **Step 6: Quick verification**
 
 Run: `bun run verify:quick`
 Expected: typecheck, lint, every Vitest file and `next build` pass (no em dash, copy alignment, fonts, safety and e2e-plan failures).
 
-- [ ] **Step 7: Full e2e (this change touches `e2e/hq.ts` and `package.json`)**
+- [x] **Step 7: Full e2e (this change touches `e2e/hq.ts` and `package.json`)**
 
 Run: `bun run e2e:full`
 Expected: the whole suite passes, including `pads.spec.ts` and every `expectRenderBudget` check (each floor under 150 draw calls and 30k triangles with the pads mounted). Fix any failure before continuing; do not add retries.
 
-- [ ] **Step 8: Push and open the PR**
+- [x] **Step 8: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/elevator-pads-teleporters

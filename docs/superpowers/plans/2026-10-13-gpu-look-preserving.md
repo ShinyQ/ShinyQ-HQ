@@ -1,5 +1,7 @@
 # P2 GPU and Rendering (look-preserving) Implementation Plan
 
+Status: shipped in #75 (bef59b7), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the 3D tower cheaper on the GPU (Retina laptops, big monitors, weak iGPUs, phones) and remove first-visit shader stalls, without changing a single visible design decision: same rover, neon, bloom, holograms, missions and intro.
@@ -122,7 +124,7 @@ Turns the global rule "every visual change is gated by a screenshot diff" into o
 - Consumes: `asReturningVisitor`, `waitForHQ`, `waitForPhase`, `waitForSceneLive` from `e2e/hq.ts`; `bun scripts/serve-static.ts --port <n> --dir <dir>`.
 - Produces: `bun scripts/visual-gate.ts --base <ref> --profile <strict|msaa|batching|release> [--self] [--grep <text>]` (exit 0 = within thresholds). Device names `full-1440x900@2`, `full-2560x1440@1`, `lite-390x844@3`; pose names `l1-spawn`, `l2-journey`, `l3-labs`, `l4-library`, `rf-contact`, `intro-still`, `ride-up-l1-l2`, `ride-down-rf-l1`. Later tasks run it with the profile named in their gate step.
 
-- [ ] **Step 1: Write the failing unit test for the e2e plan rules**
+- [x] **Step 1: Write the failing unit test for the e2e plan rules**
 
 In `tests/unit/e2e-plan.test.ts`, change the on-disk filter in "knows every spec in e2e/" and add a test:
 
@@ -143,12 +145,12 @@ In `tests/unit/e2e-plan.test.ts`, change the on-disk filter in "knows every spec
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/e2e-plan.test.ts`
 Expected: FAIL in "never runs the visual gate..." (`e2e/vclock.ts` and the scripts fall back to the smoke specs, so `specs` is not `[]`).
 
-- [ ] **Step 3: Add the rules**
+- [x] **Step 3: Add the rules**
 
 In `scripts/e2e-plan.ts`, replace the two lines after `{ test: /^e2e\/(hq|routes)\.ts$/, specs: "all" },`:
 
@@ -165,12 +167,12 @@ Append to `.gitignore`:
 e2e/visual-gate.spec.ts-snapshots/
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bun run test tests/unit/e2e-plan.test.ts`
 Expected: PASS (the on-disk check still passes because `visual-gate.spec.ts` is excluded and does not exist yet).
 
-- [ ] **Step 5: Write the virtual clock**
+- [x] **Step 5: Write the virtual clock**
 
 Create `e2e/vclock.ts`:
 
@@ -293,7 +295,7 @@ export async function driveUntil(page: Page, check: () => boolean, { maxFrames, 
 }
 ```
 
-- [ ] **Step 6: Write the gate spec**
+- [x] **Step 6: Write the gate spec**
 
 Create `e2e/visual-gate.spec.ts`:
 
@@ -437,7 +439,7 @@ for (const device of DEVICES) {
 }
 ```
 
-- [ ] **Step 7: Write the orchestrating script**
+- [x] **Step 7: Write the orchestrating script**
 
 Create `scripts/visual-gate.ts`:
 
@@ -518,17 +520,17 @@ console.log(code === 0 ? `visual gate: PASS (profile ${profile}, base ${base} ${
 process.exit(code);
 ```
 
-- [ ] **Step 8: Measure the harness noise floor**
+- [x] **Step 8: Measure the harness noise floor**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --self --profile strict`
 Expected: `visual gate: PASS (profile strict, ...)` with 32 tests (24 compared, 8 info captures). If a pose fails against itself, raise its settle frames in `settle()` (`stepFrames(page, 120)` to `240`, or the ride `stepFrames(page, 24)` stays and the pre-ride `waitForTimeout(1000)` goes to `2000`) and rerun until the self-diff passes. Record the slowest pose time and the total run time in the PR body.
 
-- [ ] **Step 9: Typecheck and lint**
+- [x] **Step 9: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: no errors.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add e2e/vclock.ts e2e/visual-gate.spec.ts scripts/visual-gate.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts .gitignore
@@ -560,7 +562,7 @@ Spikes SP4 (full tier at DPR 2) and SP9 (intro and ride peaks, first-visit compi
 - Produces: `Effects({ multisampling, levels })`; `Scene` prop `budget: RenderBudget`.
 - Produces: `bun scripts/perf-gpu.ts sp4|sp9 [...]` and `e2e/gpu.spec.ts` (spec name `gpu`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/render-probe.test.ts`:
 
@@ -628,12 +630,12 @@ it("keeps the desktop look and renders fewer pixels on touch devices", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bun run test tests/unit/render-probe.test.ts tests/unit/scene-settings.test.ts`
 Expected: FAIL: cannot resolve `@/experience/scene/renderProbe`; `parseGfxOverride is not a function`; `bloomLevels` missing.
 
-- [ ] **Step 3: Implement the probe and the override**
+- [x] **Step 3: Implement the probe and the override**
 
 Create `src/experience/scene/renderProbe.ts`:
 
@@ -741,12 +743,12 @@ export function withOverride(budget: RenderBudget, o: GfxOverride): RenderBudget
 }
 ```
 
-- [ ] **Step 4: Run them to verify they pass**
+- [x] **Step 4: Run them to verify they pass**
 
 Run: `bun run test tests/unit/render-probe.test.ts tests/unit/scene-settings.test.ts`
 Expected: PASS (3 + 5 tests).
 
-- [ ] **Step 5: Wire the probe, the override and the bloom levels**
+- [x] **Step 5: Wire the probe, the override and the bloom levels**
 
 In `src/experience/scene/Director.tsx`, add the import `import { renderProbe } from "./renderProbe";` and, right after `info.reset();` inside `useFrame`:
 
@@ -825,12 +827,12 @@ In `src/experience/Experience.tsx`:
 
 5. Pass the budget to the scene: `<Scene data={data} tier={tier} labels={labels} held={held} onToggleLang={toggleLang} budget={budget} />`.
 
-- [ ] **Step 6: Typecheck, lint and unit tests**
+- [x] **Step 6: Typecheck, lint and unit tests**
 
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: no type or lint errors; all unit tests PASS.
 
-- [ ] **Step 7: Add the `gpu` spec to the e2e plan**
+- [x] **Step 7: Add the `gpu` spec to the e2e plan**
 
 In `scripts/e2e-plan.ts`, add `"gpu",` to `ALL_SPECS` between `"gallery",` and `"highlights",`, and insert before `{ test: /^src\/experience\//, specs: ["experience"] },`:
 
@@ -848,7 +850,7 @@ Append to the describe block in `tests/unit/e2e-plan.test.ts`:
   });
 ```
 
-- [ ] **Step 8: Write the CI measurement spec**
+- [x] **Step 8: Write the CI measurement spec**
 
 Create `e2e/gpu.spec.ts`:
 
@@ -945,12 +947,12 @@ test("programs added on the first arrival at each floor (full tier)", async ({ p
 });
 ```
 
-- [ ] **Step 9: Build and run the spec (baseline numbers)**
+- [x] **Step 9: Build and run the spec (baseline numbers)**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts --reporter=list`
 Expected: 2 passed. Copy the `[gpu] peaks` and `[gpu] programs-added` lines into `docs/perf/r5-gpu.md` (Step 11) as the "before" SwiftShader counters. If the intro or any ride peak is >= 150, that confirms SP9's risk; Task 9 fixes it.
 
-- [ ] **Step 10: Write the local real-GPU script**
+- [x] **Step 10: Write the local real-GPU script**
 
 Create `scripts/perf-gpu.ts`:
 
@@ -1168,7 +1170,7 @@ console.log(`| ${cols.join(" | ")} |\n|${cols.map(() => "---").join("|")}|\n${ro
 console.log(`\nJSON: ${file}`);
 ```
 
-- [ ] **Step 11: Record the baseline on real hardware**
+- [x] **Step 11: Record the baseline on real hardware**
 
 With the build from Step 9 served (`bun scripts/serve-static.ts --port 4431`), run on the M-series Mac, and, when the owner can, on the Windows PC in Chrome (`--channel chrome`). Brave cannot be driven by this script; on Brave use P4's `?perf=1` overlay by hand on the same routes and note its fps next to the Chrome rows:
 
@@ -1209,7 +1211,7 @@ Method: `scripts/perf-gpu.ts` (headed Chrome, real GPU, `?gfx=monitor-off`), `e2
 
 Replace each `(paste ...)` line with the printed table and each `<...>` with the real sha, machine and version before committing (they are measurement data, not prose). SP4 pass rule: `frameP95 <= 18` on every floor; SP9 pass rule: scene peak < 150, no long task > 50 ms while `ride:moving`.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 rtk git add src/experience/scene/renderProbe.ts src/experience/scene/settings.ts src/experience/scene/Director.tsx src/experience/scene/Scene.tsx src/experience/scene/Effects.tsx src/experience/Experience.tsx tests/unit/render-probe.test.ts tests/unit/scene-settings.test.ts scripts/perf-gpu.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts e2e/gpu.spec.ts docs/perf/r5-gpu.md
@@ -1236,7 +1238,7 @@ F5.1 and F7.4: composer MSAA 4 HalfFloat at DPR 2 is the dominant GPU and memory
 - Produces: `ScreenSize { width: number; height: number; dpr: number }`, `PIXEL_BUDGET = 8_300_000`, `RETINA_DPR = 1.5`, `budgetDpr(cssWidth: number, cssHeight: number, max: number): number`, `renderBudget(tier: GpuTier, coarse: boolean, screen: ScreenSize): RenderBudget`.
 - Produces: `postHandle.get(): PostHandle | null`, `postHandle.set(h: PostHandle | null)`, `PostHandle { composer: () => EffectComposer | null; bloom: () => BloomEffect | null }`, `sceneTarget(): WebGLRenderTarget | null`, `renderProbe.graphics(): { pixelRatio: number; multisampling: number | null; bloomLevels: number | null }`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/scene-settings.test.ts`, replace the test "keeps the desktop look and renders fewer pixels on touch devices" with (and import `PIXEL_BUDGET, budgetDpr` too):
 
@@ -1275,12 +1277,12 @@ it("keeps the touch and lite budgets", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bun run test tests/unit/scene-settings.test.ts`
 Expected: FAIL: `budgetDpr` / `PIXEL_BUDGET` not exported; Retina case returns `multisampling: 4`.
 
-- [ ] **Step 3: Implement the budget**
+- [x] **Step 3: Implement the budget**
 
 In `src/experience/scene/settings.ts`, replace the `renderBudget` doc comment and function with:
 
@@ -1323,12 +1325,12 @@ export function renderBudget(tier: GpuTier, coarse: boolean, screen: ScreenSize)
 }
 ```
 
-- [ ] **Step 4: Run them to verify they pass**
+- [x] **Step 4: Run them to verify they pass**
 
 Run: `bun run test tests/unit/scene-settings.test.ts`
 Expected: PASS (9 tests).
 
-- [ ] **Step 5: Composer handle and graphics probe**
+- [x] **Step 5: Composer handle and graphics probe**
 
 Create `src/experience/scene/postHandle.ts`:
 
@@ -1420,7 +1422,7 @@ and change the budget line to:
   const budget = useMemo(() => withOverride(renderBudget(tier, coarse, readScreen()), gfx), [tier, coarse, gfx]);
 ```
 
-- [ ] **Step 6: Write the e2e budget gate**
+- [x] **Step 6: Write the e2e budget gate**
 
 Append to `e2e/gpu.spec.ts` (add `asReturningVisitor` to the `./hq` import):
 
@@ -1451,23 +1453,23 @@ for (const c of BUDGET_CASES) {
 }
 ```
 
-- [ ] **Step 7: Build and run the gate**
+- [x] **Step 7: Build and run the gate**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts -g "pixel budget" --reporter=list`
 Expected: 4 passed.
 
-- [ ] **Step 8: Screenshot-diff gate (profile `msaa`)**
+- [x] **Step 8: Screenshot-diff gate (profile `msaa`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile msaa`
 Expected: `visual gate: PASS (profile msaa ...)`. Thresholds: `full-1440x900@2` poses threshold 0.2, maxDiffPixelRatio 0.004 (only line and edge antialiasing may differ); `full-2560x1440@1` and `lite-390x844@3` poses strict (threshold 0.1, maxDiffPixelRatio 0.001: nothing may change there). Open `test-results/**/*-diff.png` for any Retina pose and confirm differences sit only on thin lines. Compare `test-results/visual-gate-info/base` and `.../head` `full-1920x1080@1.5-*` side by side at 100% and note in the PR body whether the 150% Windows captures look identical to the eye.
 Rollback: if a Retina pose fails or line edges look visibly jagged at 100% zoom, change `RETINA_DPR` to `2` (MSAA then drops only at true 2x screens), rerun the gate; if that still fails, set `multisampling` back to `tier === "full" && !coarse ? 4 : 0` and keep only the pixel budget.
 
-- [ ] **Step 9: Measure**
+- [x] **Step 9: Measure**
 
 Run: `bun scripts/perf-gpu.ts sp4 --size 1440x900 --dpr 2 --variants current` against the new build.
 Expected: `msaa` column 0 and lower `gpuP95` and `estMB` than the Task 2 `current` rows (REPORT est.: GPU ms about 3x lower, render-target memory about 400 MB to about 100 MB at 1440x900@2). Paste into the PR body.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/experience/scene/settings.ts src/experience/scene/postHandle.ts src/experience/scene/renderProbe.ts src/experience/scene/Effects.tsx src/experience/Experience.tsx tests/unit/scene-settings.test.ts e2e/gpu.spec.ts
@@ -1490,7 +1492,7 @@ SP5 and Area 8: there is no runtime adaptation today. This task builds the two p
 - Produces (quality.ts): `type QualityStep = "dpr-85" | "dpr-70" | "msaa-off" | "bloom-lite"`; `interface QualityState { level: number; dpr: number; multisampling: number; bloomLevels: number }`; `startDpr(base: RenderBudget, deviceDpr: number): number`; `bloomLevelsFor(scale: number, levels?: number): number`; `qualityLadder(base: RenderBudget, tier: GpuTier, deviceDpr: number): QualityStep[]`; `qualityAt(base: RenderBudget, tier: GpuTier, deviceDpr: number, level: number): QualityState`.
 - Produces (frameMonitor.ts): `interface MonitorConfig`; `MONITOR_FULL`, `MONITOR_LITE`; `type MonitorAction = "down" | "up"`; `interface FrameMonitor { readonly level: number; readonly locked: boolean; readonly flipTimes: readonly number[]; push(dtMs: number, nowMs: number): MonitorAction | null; hold(nowMs: number): void }`; `percentile(sorted: readonly number[], p: number): number`; `createMonitor(config: MonitorConfig, maxLevel: number, start?: { level: number; locked: boolean }): FrameMonitor`.
 
-- [ ] **Step 1: Write the failing ladder tests**
+- [x] **Step 1: Write the failing ladder tests**
 
 Create `tests/unit/quality-ladder.test.ts`:
 
@@ -1548,7 +1550,7 @@ it("walks the phone ladder down to DPR 1", () => {
 });
 ```
 
-- [ ] **Step 2: Write the failing monitor tests**
+- [x] **Step 2: Write the failing monitor tests**
 
 Create `tests/unit/frame-monitor.test.ts`:
 
@@ -1647,12 +1649,12 @@ describe("createMonitor (lite tier)", () => {
 });
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bun run test tests/unit/quality-ladder.test.ts tests/unit/frame-monitor.test.ts`
 Expected: FAIL: cannot resolve `@/experience/scene/quality` and `@/experience/scene/frameMonitor`.
 
-- [ ] **Step 4: Implement the ladder**
+- [x] **Step 4: Implement the ladder**
 
 Create `src/experience/scene/quality.ts`:
 
@@ -1717,7 +1719,7 @@ export function qualityAt(base: RenderBudget, tier: GpuTier, deviceDpr: number, 
 }
 ```
 
-- [ ] **Step 5: Implement the monitor**
+- [x] **Step 5: Implement the monitor**
 
 Create `src/experience/scene/frameMonitor.ts`:
 
@@ -1837,12 +1839,12 @@ export function createMonitor(config: MonitorConfig, maxLevel: number, start: { 
 }
 ```
 
-- [ ] **Step 6: Run them to verify they pass**
+- [x] **Step 6: Run them to verify they pass**
 
 Run: `bun run test tests/unit/quality-ladder.test.ts tests/unit/frame-monitor.test.ts`
 Expected: PASS (7 + 10 tests). If "steps back up after 20 s" lands a few hundred ms before 23,000 because of float accumulation, keep the assertion and check the settle start: the first `push` sets `settleUntil = now + 3000`, so the earliest up is 3,000 + 10 x 2,000 = 23,000 ms.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/scene/quality.ts src/experience/scene/frameMonitor.ts tests/unit/quality-ladder.test.ts tests/unit/frame-monitor.test.ts
@@ -1868,7 +1870,7 @@ Wires Task 4 into the scene: the monitor runs only in explore, room and hologram
 - Produces: `QualitySnapshot { level: number; locked: boolean; flips: number; last: MonitorAction | null }`; `qualityStore.get()`, `.set(next)`, `.subscribe(listener)`, `.setApplied(q: QualityState | null)`, `.applied()`, `.reset()`; `qualityDebug.simulateFrameMs`; `qualityHandle` exposed as `window.__hq.quality` with `snapshot()` and `simulate(ms: number | null)`; `QualityController({ tier, coarse, gfx })`; `Scene` is `memo`ized and takes `gfx`.
 - sessionStorage key: `hq:gfx` (`{"level":n,"locked":bool}`).
 
-- [ ] **Step 1: Write the failing store test**
+- [x] **Step 1: Write the failing store test**
 
 Create `tests/unit/quality-store.test.ts`:
 
@@ -1913,12 +1915,12 @@ it("notifies subscribers on level and applied-DPR changes only", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/quality-store.test.ts`
 Expected: FAIL: cannot resolve `@/experience/scene/qualityStore`.
 
-- [ ] **Step 3: Implement the store**
+- [x] **Step 3: Implement the store**
 
 Create `src/experience/scene/qualityStore.ts`:
 
@@ -2003,12 +2005,12 @@ export const qualityHandle = {
 };
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bun run test tests/unit/quality-store.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Write the controller**
+- [x] **Step 5: Write the controller**
 
 Create `src/experience/scene/QualityController.tsx`:
 
@@ -2078,7 +2080,7 @@ export function QualityController({ tier, coarse, gfx }: { tier: GpuTier; coarse
 }
 ```
 
-- [ ] **Step 6: Mount it and feed the Canvas DPR**
+- [x] **Step 6: Mount it and feed the Canvas DPR**
 
 In `src/experience/scene/Scene.tsx`:
 1. Change the React import to `import { lazy, memo, Suspense, useMemo, type RefObject } from "react";` and the settings import to `import { sceneSettings, type GfxOverride, type RenderBudget } from "./settings";`; add `import { QualityController } from "./QualityController";`.
@@ -2108,12 +2110,12 @@ In `src/experience/Experience.tsx`:
 4. Pass `gfx={gfx}` to `<Scene ... />`.
 5. Extend the test handle in `startSession`: `render: renderProbe, quality: qualityHandle`.
 
-- [ ] **Step 7: Typecheck, lint, unit tests**
+- [x] **Step 7: Typecheck, lint, unit tests**
 
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: all PASS. If lint flags `window.devicePixelRatio` during render in `QualityController`, keep it: the component only renders inside the client-only canvas (ssr false), same as `Experience`'s `readScreen()`.
 
-- [ ] **Step 8: Write the e2e safety-net gate**
+- [x] **Step 8: Write the e2e safety-net gate**
 
 Append to `e2e/gpu.spec.ts`:
 
@@ -2152,22 +2154,22 @@ test("the safety net steps down on sustained slow frames, at most twice a minute
 });
 ```
 
-- [ ] **Step 9: Build and run**
+- [x] **Step 9: Build and run**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts -g "safety net|pixel budget" --reporter=list`
 Expected: 6 passed.
 
-- [ ] **Step 10: Screenshot-diff gate (profile `strict`)**
+- [x] **Step 10: Screenshot-diff gate (profile `strict`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile strict`
 Expected: PASS: under automation the monitor is off, so nothing may change (threshold 0.1, maxDiffPixelRatio 0.001 on every pose). Rollback: if anything differs, the controller is changing state at level 0; revert `Scene.tsx` and `Experience.tsx` hunks of this task and investigate `qualityAt(..., 0)` against the Task 3 budget.
 
-- [ ] **Step 11: Manual check on real hardware (hysteresis)**
+- [x] **Step 11: Manual check on real hardware (hysteresis)**
 
 On the Mac with the served build, open `/en?tier=full&gfx=monitor-on` in Chrome, open DevTools > Performance > CPU 6x slowdown for 20 s, then turn it off for 60 s. In the console: `__hq.quality.snapshot()`.
 Expected: `level` rose by at most 2 within the minute, `flips <= 2`, and the scene shows no visible pop other than slightly softer edges. Record the snapshot in the PR body.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 rtk git add src/experience/scene/qualityStore.ts src/experience/scene/QualityController.tsx src/experience/scene/Scene.tsx src/experience/Experience.tsx tests/unit/quality-store.test.ts e2e/gpu.spec.ts
@@ -2189,7 +2191,7 @@ The stats ring and the L2 labels need three things the current `BatchedLabels` l
 - Produces: `BatchedLabel` gains `outlineWidth?: number`, `outlineColor?: string`, `fillOpacity?: number`; `LabelTarget` gains `outlineWidth`, `outlineColor`, `fillOpacity`, `outlineOpacity`.
 - Produces: `interface BatchedLabelsHandle { readonly batch: BatchedText; readonly members: readonly Text[] }`; `BatchedLabels({ labels, name?, renderOrder?, toneMapped?: boolean, ref?: Ref<BatchedLabelsHandle> })`. `members[i]` matches `labels[i]`. Callers may set `members[i].matrixAutoUpdate = false` and write `matrix`, or change `fillOpacity`/`outlineOpacity`, or set `text` and call `sync()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/label-props.test.ts`, extend `target()` with the new fields and add a test:
 
@@ -2224,12 +2226,12 @@ function target(): LabelTarget {
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/label-props.test.ts`
 Expected: FAIL (type errors on the new fields, then `outlineWidth` stays 0.5).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/types/troika-three-text.d.ts`, add to `class Text` after `letterSpacing: number;`:
 
@@ -2345,17 +2347,17 @@ export function BatchedLabels({
 }
 ```
 
-- [ ] **Step 4: Run tests, typecheck, lint**
+- [x] **Step 4: Run tests, typecheck, lint**
 
 Run: `bun run test tests/unit/label-props.test.ts && bun run typecheck && bun run lint`
 Expected: PASS (3 tests); no type or lint errors.
 
-- [ ] **Step 5: Screenshot-diff gate (profile `strict`)**
+- [x] **Step 5: Screenshot-diff gate (profile `strict`)**
 
 Run: `bun run build && E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile strict --no-build`
 Expected: PASS on every pose (existing batches keep outline 0, fill 1, toneMapped false: nothing may change). Rollback: revert this task's `BatchedLabels.tsx` and `labelProps.ts`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/types/troika-three-text.d.ts src/experience/fx/labelProps.ts src/experience/fx/BatchedLabels.tsx tests/unit/label-props.test.ts
@@ -2378,7 +2380,7 @@ F5.2: the stats ring is 6 billboard tiles x (plate, edges, glow strip, value Tex
 - Consumes: `BatchedLabels`, `BatchedLabelsHandle`, `BatchedLabel` (Task 6); `LOBBY.statsTile`, `LOBBY.statsRadius` from `config.ts`.
 - Produces: `TILE_W`, `TILE_H`, `TILE_Y`, `TILE_STAGGER`, `VALUE_OFFSET`, `LABEL_OFFSET`, `GLOW_OFFSET` (`Matrix4`), `GLOW_SIZE: [number, number]`, `tileAngle(i, n)`, `tileBase(i, n): [number, number, number]`, `boxEdgeVertices(w, h, d): Float32Array`, `TILE_EDGES`, `writeEdges(out, i, m)`, `backToFront(distances): number[]`, `composeTile(out, x, y, z, facing, scale): Matrix4`. The ring's outer group is named `stats-ring`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/stats-ring-layout.test.ts`:
 
@@ -2431,12 +2433,12 @@ it("collapses a tile that has shrunk away (the old `visible = scale > 0.01`)", (
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/stats-ring-layout.test.ts`
 Expected: FAIL: cannot resolve `@/experience/floors/lobby/statsRingLayout`.
 
-- [ ] **Step 3: Implement the layout module**
+- [x] **Step 3: Implement the layout module**
 
 Create `src/experience/floors/lobby/statsRingLayout.ts`:
 
@@ -2501,12 +2503,12 @@ export function composeTile(out: Matrix4, x: number, y: number, z: number, facin
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bun run test tests/unit/stats-ring-layout.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Rewrite the component**
+- [x] **Step 5: Rewrite the component**
 
 Replace `src/experience/floors/lobby/StatsRing.tsx` with:
 
@@ -2706,7 +2708,7 @@ export function StatsRing({ stats }: { stats: ExperienceData["stats"] }) {
 
 Merge the two `../../config` imports into one line: `import { COLORS, LOBBY } from "../../config";`.
 
-- [ ] **Step 6: Write the structure gate**
+- [x] **Step 6: Write the structure gate**
 
 Append to `e2e/gpu.spec.ts`:
 
@@ -2734,18 +2736,18 @@ test("the L1 stats ring draws in 5 objects (full tier)", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 7: Build and run the L1 specs**
+- [x] **Step 7: Build and run the L1 specs**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts e2e/highlights.spec.ts e2e/experience.spec.ts --reporter=list`
 Expected: all pass; the highlights L1 budget log shows L1 about 25 calls lower than Task 2's numbers (REPORT est. 134 to about 109 full, 115 to about 90 lite). Record both in the PR body.
 
-- [ ] **Step 8: Screenshot-diff gate (profile `batching`)**
+- [x] **Step 8: Screenshot-diff gate (profile `batching`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile batching --no-build`
 Expected: PASS. Thresholds: `l1-spawn` (and `intro-still`, which shows the Lobby) threshold 0.1, maxDiffPixelRatio 0.002 on all three devices (allows sorting differences where two tiles overlap); every other pose strict. Also open `test-results/**/l1-spawn*-diff.png` and confirm any red pixels sit on tile overlaps or text edges only.
 Rollback: if the diff shows the tiles over the profile hologram, set the three `renderOrder` values back to `0` and rerun; if counting or lifting looks different on the Mac by eye (`/en?tier=full`, first explore of the session), revert `StatsRing.tsx` to main and keep only `statsRingLayout.ts`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/statsRingLayout.ts src/experience/floors/lobby/StatsRing.tsx tests/unit/stats-ring-layout.test.ts e2e/gpu.spec.ts
@@ -2769,7 +2771,7 @@ F5.7: L2 typesets about 60 to 165 troika texts on the main thread and draws each
 - Consumes: `BatchedLabels`, `BatchedLabelsHandle`, `BatchedLabel` (Task 6); `labelFade`, `CareerRoom`, `CareerRoadLayout`, `CAREER_ROAD` from `career/layout.ts`.
 - Produces: `interface LabelSet { labels: BatchedLabel[]; xs: number[] }`; `roomLabelSet(rooms: readonly CareerRoom[], entries: ReadonlyMap<string, CareerEntryView>): LabelSet`; `signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count: number) => string): LabelSet`; `ROOM_LABEL_Y = 4.7`; `useMemberFade(handle: RefObject<BatchedLabelsHandle | null>, xs: readonly number[]): void` (exported from `CareerRooms.tsx`). Group names: `career-room-labels`, `career-signposts`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/career-labels.test.ts`:
 
@@ -2820,12 +2822,12 @@ it("builds one signpost per year gate, in front of the arch", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/career-labels.test.ts`
 Expected: FAIL: cannot resolve `@/experience/floors/career/labels`.
 
-- [ ] **Step 3: Implement the builders**
+- [x] **Step 3: Implement the builders**
 
 Create `src/experience/floors/career/labels.ts`:
 
@@ -2891,12 +2893,12 @@ export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bun run test tests/unit/career-labels.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Use the batches**
+- [x] **Step 5: Use the batches**
 
 In `src/experience/floors/career/CareerRooms.tsx`:
 1. Change the React import to `import { useLayoutEffect, useMemo, useRef, type RefObject } from "react";` and add:
@@ -2968,7 +2970,7 @@ and change `import { useLabelFade } from "./CareerRooms";` to `import { useLabel
       <BatchedLabels ref={signpostBatch} labels={signposts.labels} name="career-signposts" toneMapped />
 ```
 
-- [ ] **Step 6: Write the structure gate**
+- [x] **Step 6: Write the structure gate**
 
 Append to `e2e/gpu.spec.ts`:
 
@@ -2994,18 +2996,18 @@ test("L2 room labels and signposts are batched (full tier)", async ({ page }) =>
 });
 ```
 
-- [ ] **Step 7: Build and run the L2 specs**
+- [x] **Step 7: Build and run the L2 specs**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts e2e/career.spec.ts e2e/pads.spec.ts --reporter=list`
 Expected: all pass; career's render budget log shows lower calls on L2 (REPORT: up to 99 full before); the triangle count stays < 30k (the batch draws every glyph quad, about 2 triangles x 2 passes per glyph; expected under 12k extra). Record calls and triangles in the PR body.
 
-- [ ] **Step 8: Screenshot-diff gate (profile `batching`)**
+- [x] **Step 8: Screenshot-diff gate (profile `batching`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile batching --no-build`
 Expected: PASS. Thresholds: `l2-journey` and `ride-up-l1-l2` threshold 0.1, maxDiffPixelRatio 0.002 on all three devices (sorting of the batch against glass and icons); every other pose strict.
 Rollback: if labels appear behind glass or icons they used to cover, add `renderOrder={1}` to both career `BatchedLabels` and rerun; if a label's fade differs by eye while driving the road on the Mac, revert `CareerRooms.tsx` and `YearGates.tsx` hunks and keep `labels.ts` for a later attempt.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/floors/career/labels.ts src/experience/floors/career/CareerRooms.tsx src/experience/floors/career/YearGates.tsx tests/unit/career-labels.test.ts e2e/gpu.spec.ts
@@ -3027,7 +3029,7 @@ F5.4 and SP9: the e2e budget samples only settled spots, while the intro shows e
 - Consumes: `FLOOR_GAP` from `config.ts`; `renderProbe.peakCalls` (Task 2).
 - Produces: `interface VisibilityInput { id: FloorId; floorY: number; roverY: number; exterior: boolean; rideTo: FloorId | null }`; `RIDE_BELOW_REACH: number`; `contentVisible(input: VisibilityInput): boolean`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/tower-visibility.test.ts`:
 
@@ -3067,12 +3069,12 @@ it("ride: floors above the car stay hidden until the car reaches them", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/tower-visibility.test.ts`
 Expected: FAIL: cannot resolve `@/experience/tower/visibility`.
 
-- [ ] **Step 3: Implement the rule**
+- [x] **Step 3: Implement the rule**
 
 Create `src/experience/tower/visibility.ts`:
 
@@ -3109,12 +3111,12 @@ export function contentVisible({ id, floorY, roverY, exterior, rideTo }: Visibil
 }
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [x] **Step 4: Run it to verify it passes**
 
 Run: `bun run test tests/unit/tower-visibility.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Use it in FloorLevel**
+- [x] **Step 5: Use it in FloorLevel**
 
 In `src/experience/tower/FloorLevel.tsx`, add `import { contentVisible } from "./visibility";` and replace the `useFrame` body with:
 
@@ -3132,7 +3134,7 @@ In `src/experience/tower/FloorLevel.tsx`, add `import { contentVisible } from ".
   });
 ```
 
-- [ ] **Step 6: Turn the peak measurement into a gate**
+- [x] **Step 6: Turn the peak measurement into a gate**
 
 In `e2e/gpu.spec.ts`, in the test "intro and ride draw-call peaks (full tier)", replace the final loop with:
 
@@ -3140,18 +3142,18 @@ In `e2e/gpu.spec.ts`, in the test "intro and ride draw-call peaks (full tier)", 
   for (const [name, value] of Object.entries(peaks)) expect(value, `${name} peak (all render passes)`).toBeLessThan(150);
 ```
 
-- [ ] **Step 7: Build and run**
+- [x] **Step 7: Build and run**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts -g "peaks" --reporter=list`
 Expected: PASS with every peak < 150. If a one-floor ascent (`L1-L2` or `L2-L1`) is still >= 150, set `RIDE_BELOW_REACH = FLOOR_GAP / 2` in `visibility.ts` (the source floor stops drawing once the car is halfway up; the unit tests are written against the constant, so they still pass), rebuild and rerun. If the intro is >= 150, the Lobby alone is too dense in the exterior: the stats ring from Task 7 is the lever already pulled, so record the number and open an issue instead of hiding Lobby content (the intro look is fixed).
 
-- [ ] **Step 8: Screenshot-diff gate (profile `batching`)**
+- [x] **Step 8: Screenshot-diff gate (profile `batching`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile batching --no-build`
 Expected: PASS. Thresholds: `intro-still`, `ride-up-l1-l2`, `ride-down-rf-l1` threshold 0.1, maxDiffPixelRatio 0.002 (the L2 shell's grid and pad glows fade out of the far exterior; a passing floor 42 u below the car sits deep in fog); settled poses strict (the rule does not change explore).
 Rollback: if `intro-still` fails, change the exterior line to `if (exterior) return id === "L1" || id === "L2";` (keeps the L2 shell, which is only 3 to 5 calls) and rerun; if a ride pose fails, set `RIDE_BELOW_REACH = Infinity` (today's behaviour) and record the measured peak instead.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/tower/visibility.ts src/experience/tower/FloorLevel.tsx tests/unit/tower-visibility.test.ts e2e/gpu.spec.ts
@@ -3183,7 +3185,7 @@ Note for three r186: `WebGLRenderer.compile` walks every child (`scene.traverse`
 - Produces: `PrecompileOptions { target?: WebGLRenderTarget | null; timeoutMs?: number; pin?: boolean }`, `PrecompileReport`, `FloorPrecompileReport`, `precompileObject(gl, object, camera, scene, options?)`, `precompileFloor(id, options?)`, `precompileScene(options?)` (signatures in "Interfaces handed to other workstreams").
 - Produces: `isFloorWarm(id)`, `markWarm(id)`, `resetWarm()`; `registerFloorContent(id, group | null)`, `getFloorContent(id)`, `FLOOR_ROOT: Record<FloorId, string>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/helpers/fake-renderer.ts` (helpers are not collected as tests, `vitest.config.mts` includes only `*.test.ts`):
 
@@ -3356,12 +3358,12 @@ it("marks a floor warm only when its main content was mounted", async () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bun run test tests/unit/program-pins.test.ts tests/unit/precompile.test.ts`
 Expected: FAIL: cannot resolve `@/experience/scene/programPins`, `precompile`, `warmState`, `@/experience/tower/floorRegistry`.
 
-- [ ] **Step 3: Implement the registry and warm state**
+- [x] **Step 3: Implement the registry and warm state**
 
 Create `src/experience/tower/floorRegistry.ts`:
 
@@ -3406,7 +3408,7 @@ export function resetWarm(): void {
 }
 ```
 
-- [ ] **Step 4: Implement the pins**
+- [x] **Step 4: Implement the pins**
 
 Create `src/experience/scene/programPins.ts`:
 
@@ -3565,7 +3567,7 @@ export const programPins = {
 };
 ```
 
-- [ ] **Step 5: Implement the precompile API**
+- [x] **Step 5: Implement the precompile API**
 
 Create `src/experience/scene/precompile.ts`:
 
@@ -3665,12 +3667,12 @@ export async function precompileScene(options: Omit<PrecompileOptions, "target">
 }
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `bun run test tests/unit/program-pins.test.ts tests/unit/precompile.test.ts`
 Expected: PASS (5 + 3 tests).
 
-- [ ] **Step 7: Register floor content and clean up**
+- [x] **Step 7: Register floor content and clean up**
 
 In `src/experience/tower/FloorLevel.tsx`, change the React import to `import { useEffect, useMemo, useRef, type ReactNode } from "react";`, add `import { registerFloorContent } from "./floorRegistry";`, and after the `useFrame` block:
 
@@ -3697,12 +3699,12 @@ In `src/experience/Experience.tsx`, add imports `import { programPins } from "./
   );
 ```
 
-- [ ] **Step 8: Typecheck, lint, all unit tests**
+- [x] **Step 8: Typecheck, lint, all unit tests**
 
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS (the new helper in `tests/helpers/` is not collected as a test file).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/scene/programPins.ts src/experience/scene/precompile.ts src/experience/scene/warmState.ts src/experience/tower/floorRegistry.ts src/experience/tower/FloorLevel.tsx src/experience/Experience.tsx tests/unit/program-pins.test.ts tests/unit/precompile.test.ts tests/helpers/fake-renderer.ts
@@ -3731,7 +3733,7 @@ plan.md's ride diagnosis: first visits to a floor compile its programs (and type
 - Consumes: `precompileFloor`, `precompileScene` (Task 10); `isFloorWarm`, `markWarm` (Task 10); `contentVisible` (Task 9, which already hides every non-Lobby floor in the exterior).
 - Produces: `warmingFloor { get(): FloorId | null; set(id: FloorId | null): void; subscribe(l): () => void }`, `useWarmingFloor(): FloorId | null`, `warmQueue(current: FloorId): FloorId[]`, `listWarm(): FloorId[]`; `nearFloors(floor, target, exterior, reach = 1, warm: FloorId | null = null)`; `ProgramWarmup({ tier })`, `STAGED_WARM_TIERS`; `renderProbe.warmFloors(): string[]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/warm-state.test.ts`:
 
@@ -3772,12 +3774,12 @@ it("adds the floor being warmed during boot", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bun run test tests/unit/warm-state.test.ts tests/unit/tower-near.test.ts`
 Expected: FAIL: `warmQueue`, `listWarm`, `warmingFloor` not exported; `nearFloors` ignores the 5th argument.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `src/experience/scene/warmState.ts` (and add `import { useSyncExternalStore } from "react";` at the top):
 
@@ -3835,12 +3837,12 @@ export function nearFloors(floor: FloorId, target: FloorId | null, exterior: boo
 }
 ```
 
-- [ ] **Step 4: Run them to verify they pass**
+- [x] **Step 4: Run them to verify they pass**
 
 Run: `bun run test tests/unit/warm-state.test.ts tests/unit/tower-near.test.ts`
 Expected: PASS (2 + 3 tests).
 
-- [ ] **Step 5: Mount the warming floor, precompile neighbours, orchestrate boot**
+- [x] **Step 5: Mount the warming floor, precompile neighbours, orchestrate boot**
 
 In `src/experience/tower/Tower.tsx`, add `import { useWarmingFloor } from "../scene/warmState";` and replace the `near` line:
 
@@ -3943,7 +3945,7 @@ In `src/experience/scene/renderProbe.ts`, add `import { listWarm } from "./warmS
   },
 ```
 
-- [ ] **Step 6: Tighten the programs gate**
+- [x] **Step 6: Tighten the programs gate**
 
 In `e2e/gpu.spec.ts`, add `warmFloors(): string[];` to `RenderHandle` and replace the test "programs added on the first arrival at each floor (full tier)" with:
 
@@ -3971,12 +3973,12 @@ test("boot warms every floor: first arrivals add at most 2 programs each (full t
 });
 ```
 
-- [ ] **Step 7: Build and run**
+- [x] **Step 7: Build and run**
 
 Run: `bun run build && E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts e2e/onboarding.spec.ts e2e/boot-first.spec.ts e2e/experience.spec.ts --reporter=list`
 Expected: all pass. If a floor adds more than 2 programs, the assertion message lists them (`Material#hash`): a name present only after arrival means that object mounts only on that floor in explore (for example the hover label or a hologram stage). Mount it in warm mode too if it is cheap, or raise that floor's allowance in the test with a comment naming the program and why; never raise it above 4.
 
-- [ ] **Step 8: Measure SP9 after, decide the staged tiers**
+- [x] **Step 8: Measure SP9 after, decide the staged tiers**
 
 With the build served on 4431, run:
 
@@ -3987,12 +3989,12 @@ bun scripts/perf-gpu.ts sp9 --tier lite --cpu 4 --size 390x844 --dpr 3
 
 Expected: `newPrograms` 0 to 2 per ride; `movingLongTasks` lower than the Task 2 baseline. Decision rule: if the lite `boot` row shows `maxLongTask` above 200 ms (a visible stall of the boot card's typing on phones), set `STAGED_WARM_TIERS = ["full"]` in `ProgramWarmup.tsx`, rebuild and rerun both commands; the lite tier then relies on neighbour precompile and P6's prepare. Paste both tables into `docs/perf/r5-gpu.md` under "After".
 
-- [ ] **Step 9: Screenshot-diff gate (profile `strict`)**
+- [x] **Step 9: Screenshot-diff gate (profile `strict`)**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base HEAD --profile strict --no-build`
 Expected: PASS on every pose (compiling and hidden mounts never draw). Rollback: if `intro-still` differs, a warm floor drew in the exterior: check that `FloorLevel` uses `contentVisible` (Task 9) and that `RoadMarkings`, `PadGlow` or other floor-level children are inside the `content` group; if it cannot be found quickly, set `STAGED_WARM_TIERS = []` and keep the scene and neighbour precompile.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/experience/scene/warmState.ts src/experience/scene/ProgramWarmup.tsx src/experience/scene/Scene.tsx src/experience/scene/renderProbe.ts src/experience/tower/near.ts src/experience/tower/Tower.tsx src/experience/tower/FloorLevel.tsx src/experience/floors/CareerArchive.tsx tests/unit/warm-state.test.ts tests/unit/tower-near.test.ts e2e/gpu.spec.ts docs/perf/r5-gpu.md
@@ -4013,18 +4015,18 @@ rtk git commit -m "perf: warm every floor's shader programs during boot, neighbo
 **Interfaces:**
 - Consumes: everything above; no new code.
 
-- [ ] **Step 1: Full verification**
+- [x] **Step 1: Full verification**
 
 Run: `bun run verify:quick && E2E_PORT=4431 bun run e2e:changed`
 Expected: typecheck, lint, unit tests and build pass; `e2e:changed` runs `experience`, `gpu`, `highlights`, `career`, `pads` (and whatever the plan maps) with 0 failures.
 
-- [ ] **Step 2: Release screenshot gate against main**
+- [x] **Step 2: Release screenshot gate against main**
 
 Run: `E2E_PORT=4431 bun scripts/visual-gate.ts --base origin/main --profile release --no-build`
 Expected: PASS. Thresholds: `full-1440x900@2` poses threshold 0.2, maxDiffPixelRatio 0.005 (MSAA-only edges plus batching); `l1-*`, `l2-*`, `intro-*`, `ride-*` on the other devices threshold 0.1, maxDiffPixelRatio 0.002; `l3-labs`, `l4-library`, `rf-contact` on `full-2560x1440@1` and `lite-390x844@3` strict (0.1, 0.001). Attach the three worst diff images (by pixel count) and the `full-1920x1080@1.5` base/head info captures to the PR.
 Rollback: a failing pose names the task to revert through its own rollback note (Retina poses: Task 3; L1: Task 7; L2: Task 8; intro or ride: Task 9; any pose after warm-up: Task 11).
 
-- [ ] **Step 3: After-measurements with the same method**
+- [x] **Step 3: After-measurements with the same method**
 
 Run the four commands from Task 2 Step 11 and `E2E_PORT=4431 bunx playwright test e2e/gpu.spec.ts --reporter=list` on the same machines and browser versions. Fill "After" in `docs/perf/r5-gpu.md` with the same five blocks and add a summary table:
 
@@ -4045,7 +4047,7 @@ Run the four commands from Task 2 Step 11 and `E2E_PORT=4431 bunx playwright tes
 
 Write the real numbers into every "from ..." cell before committing (copy them from the tables above in the same file). The same table goes into the PR body.
 
-- [ ] **Step 4: Update AGENTS.md**
+- [x] **Step 4: Update AGENTS.md**
 
 In the "Floors above the rover render as ghosts" bullet, replace the sentence starting `Pixel budget per tier and device:` up to `the canvas never multisamples).` with:
 
@@ -4069,7 +4071,7 @@ In "Fast verification", after the Screenshots bullet, add:
 - Look-preserving changes (render budget, batching, visibility, anything that may move pixels): `E2E_PORT=<port> bun scripts/visual-gate.ts --base HEAD --profile strict|msaa|batching|release` builds the base ref in a sibling worktree, captures 3 devices (full 1440x900@2, full 2560x1440@1, lite 390x844) x 8 poses with a virtual frame clock (`e2e/vclock.ts`) and compares the working tree build within the profile's thresholds (strict: per-pixel 0.1, at most 0.1% of pixels). About 20 to 30 minutes; one run at a time. `--self` measures the harness noise. GPU timings on a real GPU: `bun scripts/perf-gpu.ts sp4|sp9` (results in `docs/perf/r5-gpu.md`).
 ```
 
-- [ ] **Step 5: Update README.md**
+- [x] **Step 5: Update README.md**
 
 Replace line 159 with:
 
@@ -4077,7 +4079,7 @@ Replace line 159 with:
 In 3D every floor stays under 150 draw calls and 30k triangles (`expectRenderBudget` in the e2e suite), and so do the intro and elevator rides at their peaks (`e2e/gpu.spec.ts`). The pixel budget (`renderBudget` in `src/experience/scene/settings.ts`) keeps desktops at DPR up to 2 within 8.3 MP and skips composer MSAA from DPR 1.5 up; touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite). A runtime safety net lowers DPR, then MSAA, then bloom only on sustained frame drops, at most twice a minute. Every floor's shader programs compile during the boot, neighbouring floors mount on idle after the first frames, and the nav grids build in about a millisecond. Measurements: [`docs/perf/r5-gpu.md`](docs/perf/r5-gpu.md).
 ```
 
-- [ ] **Step 6: Update the spec appendices**
+- [x] **Step 6: Update the spec appendices**
 
 In `05-visual-audio-tokens.md` section 2, replace the table rows from `| Room walls |` to `| Fog |` with (spec gap 15: the implementation is cheaper than the old text):
 
@@ -4105,17 +4107,17 @@ In section 2, replace the "Frame rate" and "Draw calls per floor" rows with:
 | Draw calls per floor | < 150, all render passes counted, at settled spots and at the intro and elevator ride peaks | `expectRenderBudget` (e2e) and `e2e/gpu.spec.ts` (peaks) |
 ```
 
-- [ ] **Step 7: No em dashes, no stray placeholders**
+- [x] **Step 7: No em dashes, no stray placeholders**
 
 Run: `grep -rn "$(printf '\342\200\224')" AGENTS.md README.md docs/perf docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md src/experience e2e/gpu.spec.ts e2e/visual-gate.spec.ts e2e/vclock.ts scripts/visual-gate.ts scripts/perf-gpu.ts; grep -n "from Task 2\|from this run\|(paste" docs/perf/r5-gpu.md` (the `printf` builds the em dash character, U+2014)
 Expected: no output from either grep.
 
-- [ ] **Step 8: Lighthouse budgets**
+- [x] **Step 8: Lighthouse budgets**
 
 Run: `bunx lhci autorun` (the repo's `lighthouserc.json`, same as CI)
 Expected: all assertions pass (P2 adds code only to the lazily loaded 3D chunk; the Page View JS stays at its Task 2 size). If the CI JS line moves, compare `out/_next/static/chunks` sizes before and after; nothing in this plan imports from `src/experience` into page code.
 
-- [ ] **Step 9: Commit and open the PR**
+- [x] **Step 9: Commit and open the PR**
 
 ```bash
 rtk git add AGENTS.md README.md docs/perf/r5-gpu.md docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md

@@ -1,7 +1,7 @@
 /**
  * Flaky tests for CI job pages: every test that failed and then passed on its retry (Playwright status
  * "flaky") in a merged JSON report. Never fails the job: the tests stay blocking, and a flaky test gets an
- * issue with an owner instead of a quarantine or more retries (AGENTS.md "Fast verification").
+ * issue with an owner instead of a quarantine or more retries (docs/agents/performance.md, "Fast verification").
  *
  *   bun scripts/flaky-report.ts <report.json> [--lane E2E]
  *

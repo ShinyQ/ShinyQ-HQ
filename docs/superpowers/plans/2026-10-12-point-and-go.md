@@ -1,5 +1,7 @@
 # Point-and-Go Interactables Implementation Plan
 
+Status: shipped in #62 (e3d02e7), 2026-10-12
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace free click/tap-to-move with point-and-go: hovering (or a first tap on) a glowing in-world target highlights it with its name, and clicking it (or a second tap, or the Go chip) drives the rover there along the road and runs the target's action, all driven by one shared interactables registry.
@@ -153,7 +155,7 @@ Task order: 1 registry, 2 pick logic, 3 intent, store and Director, 4 the hit la
 - Consumes: `buildFloorLayouts`, `LOBBY`, `FLOOR_IDS`, `ROVER` (`src/experience/config.ts`); `buildCareerRoad`, `careerLayoutInput`, `REPO_WALL` (`floors/career/layout.ts`); `buildLabsLayout`, `LABS` (`floors/labs/layout.ts`); `buildLibraryLayout` (`floors/library/layout.ts`); `libraryLayoutInput`, `LibraryZone` (`floors/library/model.ts`); `buildRoofLayout` (`floors/roof/layout.ts`); `roomTarget(room, id, layouts, years)` (`missions/host3d.ts`); `StructuralRoom` (`missions/rooms.ts`); `padHalf(door)` (`nav/doors.ts`); `PAD`, `padRadius(pad)` (`nav/pads.ts`); `ExperienceData`, `DoorTrigger`, `PadTrigger`, `Rect`, `Vec2` (`types.ts`).
 - Produces: everything in "Shared interface contract" above, plus `export type FloorLayouts = Record<FloorId, FloorLayout>` in `src/experience/types.ts`.
 
-- [ ] **Step 1: Create the branch and commit this plan into the repo**
+- [x] **Step 1: Create the branch and commit this plan into the repo**
 
 ```bash
 rtk git fetch origin && rtk git switch -c feat/point-and-go origin/main
@@ -165,7 +167,7 @@ rtk git commit -m "docs: point-and-go implementation plan"
 
 Expected: a new branch `feat/point-and-go` with one commit (if you read this plan from another location, copy it from there).
 
-- [ ] **Step 2: Add the label messages**
+- [x] **Step 2: Add the label messages**
 
 In `messages/en.json`, the `hud` object ends with `"boost": "Boost"`. Replace
 
@@ -209,7 +211,7 @@ with
   "drawer": {
 ```
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 Create `tests/unit/interact-registry.test.ts`:
 
@@ -420,12 +422,12 @@ describe("registerExtraInteractables", () => {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [x] **Step 4: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/interact-registry.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/interact/registry" from "tests/unit/interact-registry.test.ts". Does the file exist?`
 
-- [ ] **Step 5: Add the `FloorLayouts` type**
+- [x] **Step 5: Add the `FloorLayouts` type**
 
 Append to `src/experience/types.ts` (after the `FloorLayout` interface):
 
@@ -434,7 +436,7 @@ Append to `src/experience/types.ts` (after the `FloorLayout` interface):
 export type FloorLayouts = Record<FloorId, FloorLayout>;
 ```
 
-- [ ] **Step 6: Write the registry**
+- [x] **Step 6: Write the registry**
 
 Create `src/experience/interact/registry.ts`:
 
@@ -749,19 +751,19 @@ export function interactablesFor(floor: FloorId, layouts: FloorLayouts, data: In
 }
 ```
 
-- [ ] **Step 7: Run the test to verify it passes**
+- [x] **Step 7: Run the test to verify it passes**
 
 Run: `rtk bunx vitest run tests/unit/interact-registry.test.ts`
 Expected: PASS, `Test Files  1 passed (1)`, `Tests  12 passed (12)`.
 
 If "keeps ids unique, footprints on the slab ..." fails on a bound, print the offending item (`console.log(item)`) and fix the footprint source in `baseInteractables` (never loosen the test). If it fails on the approach distance for one item, check that `at` comes from `roomTarget` or the layout stop exactly.
 
-- [ ] **Step 8: Typecheck, lint and the copy test**
+- [x] **Step 8: Typecheck, lint and the copy test**
 
 Run: `rtk bun run typecheck && rtk bun run lint && rtk bunx vitest run tests/unit/ui-copy.test.ts tests/content/safety.test.ts`
 Expected: no type or lint errors; both test files PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/types.ts src/experience/interact/registry.ts tests/unit/interact-registry.test.ts messages/en.json messages/id.json
@@ -788,7 +790,7 @@ rtk git commit -m "feat: interactables registry for point-and-go targets"
   - `interface InteractDeps { rover: () => Vec2; goToRoom: (room: RoomId) => void; runSteps: (id: string, steps: readonly MissionStep[]) => Promise<MissionStatus>; openPicker: (picker: PickerRequest) => void; command: (command: InteractCommand) => void }`.
   - `reach(item: Pick<Interactable, "action">): number`, `performInteract(item: Interactable, deps: InteractDeps): Promise<"done" | "cancelled">`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/interact-pick.test.ts`:
 
@@ -1003,12 +1005,12 @@ describe("performInteract", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/interact-pick.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/interact/pick" from "tests/unit/interact-pick.test.ts". Does the file exist?`
 
-- [ ] **Step 3: Write the pick logic**
+- [x] **Step 3: Write the pick logic**
 
 Create `src/experience/interact/pick.ts`:
 
@@ -1141,17 +1143,17 @@ export async function performInteract(item: Interactable, deps: InteractDeps): P
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `rtk bunx vitest run tests/unit/interact-pick.test.ts`
 Expected: PASS, `Tests  20 passed (20)`.
 
-- [ ] **Step 5: Typecheck and lint**
+- [x] **Step 5: Typecheck and lint**
 
 Run: `rtk bun run typecheck && rtk bun run lint`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/interact/pick.ts tests/unit/interact-pick.test.ts
@@ -1177,7 +1179,7 @@ rtk git commit -m "feat: point-and-go pick logic and actions"
   - Director: on `interact`, cancels a running mission, cancels an elevator approach (`toDoor`), then runs `performInteract` with the real deps (pickers close an open room first and beep; commands: `terminal` emits the `terminal` intent, `palette` calls `openPalette(filter)`, `cv` calls `openCv()`).
   - WalkLayer: an `interact` intent pauses a driving walk, like `move`.
 
-- [ ] **Step 1: Write the failing store test**
+- [x] **Step 1: Write the failing store test**
 
 In `tests/unit/store.test.ts`, add the import under the existing ones:
 
@@ -1218,12 +1220,12 @@ and add inside `describe("HQ store", () => { ... })`, after the test `"holds the
   });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/store.test.ts -t "point-and-go"`
 Expected: FAIL with `expected undefined to be null` (the store has no `hover` yet).
 
-- [ ] **Step 3: Add the store state**
+- [x] **Step 3: Add the store state**
 
 In `src/store/useHQStore.ts`, add under `import type { Beam } from "@/experience/nav/teleport";`:
 
@@ -1300,12 +1302,12 @@ with
 
 (`partialize` already persists only `visited`, `firstVisit` and `locale`; do not change it.)
 
-- [ ] **Step 4: Run the store tests to verify they pass**
+- [x] **Step 4: Run the store tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/store.test.ts`
 Expected: PASS, every test in the file including the new one.
 
-- [ ] **Step 5: Add the `interact` intent**
+- [x] **Step 5: Add the `interact` intent**
 
 In `src/experience/input/intents.ts`, replace
 
@@ -1336,7 +1338,7 @@ with
   | { type: "interact"; item: Interactable }
 ```
 
-- [ ] **Step 6: Handle `interact` in the Director**
+- [x] **Step 6: Handle `interact` in the Director**
 
 In `src/experience/scene/Director.tsx`, replace
 
@@ -1408,7 +1410,7 @@ and insert this case right before `case "elevator":`:
 
 Why the picker cannot open twice: the drive is a mission leg, so the pad latch sees `following` while it runs; `performInteract` resolves in the same animation frame callback that sees the drive done, before the Director's next frame, so the picker is already open (`explore` false) when the latch next looks and it simply latches the pad.
 
-- [ ] **Step 7: Pause a walk on `interact`**
+- [x] **Step 7: Pause a walk on `interact`**
 
 In `src/hud/walk/WalkLayer.tsx`, replace
 
@@ -1422,12 +1424,12 @@ with
       if (intent.type === "move" || intent.type === "goto" || intent.type === "interact" || intent.type === "scrub") {
 ```
 
-- [ ] **Step 8: Verify**
+- [x] **Step 8: Verify**
 
 Run: `rtk bun run typecheck && rtk bun run lint && rtk bunx vitest run tests/unit/store.test.ts tests/unit/intents.test.ts tests/unit/interact-pick.test.ts`
 Expected: no errors; all three files PASS. Nothing emits `interact` yet, so the tower behaves exactly as before.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/input/intents.ts src/store/useHQStore.ts src/experience/scene/Director.tsx src/hud/walk/WalkLayer.tsx tests/unit/store.test.ts
@@ -1459,7 +1461,7 @@ rtk git commit -m "feat: interact intent, hover state and the Director's point-a
   - e2e helpers in `e2e/hq.ts`: `InteractSnapshot`, `TargetQuery`, `DESKTOP_SAFE`, `PHONE_SAFE`, `interactablesOf(page)`, `visibleTarget(page, query)`, `targetPoint(page, id, lift?)`, `hoveredTarget(page)`, `hoverTarget(page, id)`, `emptyFloorPoint(page)`, `highlightOf(page)`.
   - e2e plan: spec `interact`; `src/experience/interact/**` and `src/hud/InteractStatus.tsx` map to `career`, `experience`, `interact`, `pads`.
 
-- [ ] **Step 1: Add the e2e helpers**
+- [x] **Step 1: Add the e2e helpers**
 
 Append to `e2e/hq.ts`:
 
@@ -1589,7 +1591,7 @@ export async function highlightOf(page: Page): Promise<number> {
 }
 ```
 
-- [ ] **Step 2: Write the failing e2e spec**
+- [x] **Step 2: Write the failing e2e spec**
 
 Create `e2e/interact.spec.ts`:
 
@@ -1685,7 +1687,7 @@ test.describe("point and go with a mouse", () => {
 });
 ```
 
-- [ ] **Step 3: A teleporter click now drives there first**
+- [x] **Step 3: A teleporter click now drives there first**
 
 In `e2e/pads.spec.ts`, replace `  railScreenPoint,` in the import list from `./hq` with `  targetPoint,` (keep the list alphabetical: after `padsOf`). Then replace
 
@@ -1727,7 +1729,7 @@ with
 
 (The rest of that test, from `await expect(dialog.locator("[data-option]")).toHaveCount(teleports.length);` on, stays as it is.)
 
-- [ ] **Step 4: Register the spec in the e2e plan**
+- [x] **Step 4: Register the spec in the e2e plan**
 
 In `scripts/e2e-plan.ts`, add `"interact",` to `ALL_SPECS` right after `"hud",`, and insert this rule right after the "Floor pads" rule:
 
@@ -1749,12 +1751,12 @@ In `tests/unit/e2e-plan.test.ts`, add inside `describe("specsForChanges", ...)`:
 Run: `rtk bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: PASS (the spec file exists and the rule matches).
 
-- [ ] **Step 5: Run the new e2e spec to verify it fails**
+- [x] **Step 5: Run the new e2e spec to verify it fails**
 
 Run: `rtk bun run build && E2E_PORT=4391 rtk bunx playwright test e2e/interact.spec.ts`
 Expected: FAIL in every test with `TypeError: Cannot read properties of undefined (reading 'project')` from `visibleTarget` (`__hq.interact` does not exist yet).
 
-- [ ] **Step 6: Write the runtime probe**
+- [x] **Step 6: Write the runtime probe**
 
 Create `src/experience/interact/runtime.ts`:
 
@@ -1788,7 +1790,7 @@ export const interactRuntime = {
 };
 ```
 
-- [ ] **Step 7: Write the hook**
+- [x] **Step 7: Write the hook**
 
 Create `src/experience/interact/useInteractables.ts`:
 
@@ -1810,7 +1812,7 @@ export function useInteractables(floor: FloorId, layouts: FloorLayouts, data: In
 }
 ```
 
-- [ ] **Step 8: Write the layer**
+- [x] **Step 8: Write the layer**
 
 Create `src/experience/interact/InteractLayer.tsx`:
 
@@ -2041,7 +2043,7 @@ export function InteractLayer({ layouts, data, tier }: { layouts: FloorLayouts; 
 
 Notes for the implementer: three's raycaster ignores `visible`, so the invisible instanced mesh still receives R3F events and costs no draw call (the roof `HitBox` relied on the same rule). The instance count is fixed at creation, so the `key` remounts the mesh when a floor change changes the number of targets.
 
-- [ ] **Step 9: Mount the layer in the scene**
+- [x] **Step 9: Mount the layer in the scene**
 
 In `src/experience/scene/Scene.tsx`, add the imports:
 
@@ -2087,7 +2089,7 @@ with
       <InteractLayer layouts={layouts} data={interactData} tier={tier} />
 ```
 
-- [ ] **Step 10: Labels and the test probe in Experience**
+- [x] **Step 10: Labels and the test probe in Experience**
 
 In `src/experience/Experience.tsx`, add the import:
 
@@ -2141,7 +2143,7 @@ with
     }),
 ```
 
-- [ ] **Step 11: Targets behind the rover never light up**
+- [x] **Step 11: Targets behind the rover never light up**
 
 In `src/experience/rover/Rover.tsx`, replace
 
@@ -2176,14 +2178,14 @@ with
       <group ref={root} name="rover" onClick={onClick} onPointerOver={stopHover} onPointerMove={stopHover}>
 ```
 
-- [ ] **Step 12: Run the specs to verify they pass**
+- [x] **Step 12: Run the specs to verify they pass**
 
 Run: `rtk bun run build && E2E_PORT=4391 rtk bunx playwright test e2e/interact.spec.ts e2e/pads.spec.ts`
 Expected: PASS, `4 passed` in `interact.spec.ts` plus every `pads.spec.ts` test.
 
 If `visibleTarget` throws "No door target on screen" on `/en/labs`, print the candidates (`await interactablesOf(page)` and `targetPoint` for each) and adjust `DESKTOP_SAFE` to the real HUD boxes at 1280 x 720 (measure with `page.getByTestId("hud-bottom").boundingBox()` and the top bar); never click through the HUD.
 
-- [ ] **Step 13: Quick verification**
+- [x] **Step 13: Quick verification**
 
 Run: `rtk bun run verify:quick`
 Expected: typecheck, lint, all unit tests and `next build` succeed.
@@ -2191,7 +2193,7 @@ Expected: typecheck, lint, all unit tests and `next build` succeed.
 Run: `E2E_PORT=4391 rtk bun run e2e:changed`
 Expected: the full suite runs (this task changes `e2e/hq.ts`) and passes. Old click-to-move tests still pass: the floor slab click is untouched until Task 5.
 
-- [ ] **Step 14: Commit**
+- [x] **Step 14: Commit**
 
 ```bash
 rtk git add src/experience/interact src/experience/scene/Scene.tsx src/experience/Experience.tsx src/experience/rover/Rover.tsx e2e/hq.ts e2e/interact.spec.ts e2e/pads.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -2214,7 +2216,7 @@ rtk git commit -m "feat: point-and-go hit layer with hover highlight and floatin
 - Consumes: Task 4 (`emptyFloorPoint`, `targetPoint`, the registry targets for every former click handler).
 - Produces: the `Intent` union without `goto`; `FloorLevel({ layout, near, children })` (no `interactive`); `PadGlow({ pads, floorY })` (no click); `DecorProps.onStation?` and `StationShells({ stations, tier, onStation? })` (optional: only the dev L4 prototype passes it); `roverRuntime` without `marker`; `window.__hq` without `marker`.
 
-- [ ] **Step 1: Write the failing e2e changes**
+- [x] **Step 1: Write the failing e2e changes**
 
 In `e2e/experience.spec.ts`, add `emptyFloorPoint,` to the import list from `./hq` (after `collectErrors,`). Replace
 
@@ -2311,12 +2313,12 @@ with
     await page.mouse.click(room.x, room.y);
 ```
 
-- [ ] **Step 2: Run them to verify the empty-floor tests fail**
+- [x] **Step 2: Run them to verify the empty-floor tests fail**
 
 Run: `rtk bun run build && E2E_PORT=4391 rtk bunx playwright test e2e/experience.spec.ts -g "empty floor"`
 Expected: FAIL in both tests at `toBeLessThan(0.05)`: the floor click still drives the rover.
 
-- [ ] **Step 3: Remove the `goto` intent**
+- [x] **Step 3: Remove the `goto` intent**
 
 In `src/experience/input/intents.ts`, delete the line `import type { Vec2 } from "../types";` and the line `  | { type: "goto"; point: Vec2 }`.
 
@@ -2364,7 +2366,7 @@ with
       if (intent.type === "move" || intent.type === "interact" || intent.type === "scrub") {
 ```
 
-- [ ] **Step 4: The floor slab and the pads stop taking clicks**
+- [x] **Step 4: The floor slab and the pads stop taking clicks**
 
 Replace the whole of `src/experience/tower/FloorLevel.tsx` with:
 
@@ -2464,7 +2466,7 @@ In `src/experience/fx/PadGlow.tsx`:
 - delete the whole `const onClick = (e: ThreeEvent<MouseEvent>) => { ... };` block (from `const onClick` to its closing `};`)
 - replace `<instancedMesh ref={mesh} args={[geometry, undefined, pads.length]} frustumCulled={false} {...(interactive ? { onClick } : { raycast: () => null })}>` with `<instancedMesh ref={mesh} args={[geometry, undefined, pads.length]} frustumCulled={false} raycast={() => null}>`
 
-- [ ] **Step 5: Remove the click marker**
+- [x] **Step 5: Remove the click marker**
 
 In `src/experience/rover/Rover.tsx`:
 
@@ -2540,7 +2542,7 @@ and delete
 
 In `src/experience/Experience.tsx`, replace `marker: roverRuntime.marker, ` inside the `__hq` assignment with nothing, so it reads `{ store, rover: roverRuntime, camera: () => [...roverRuntime.cameraPosition], layouts, interact: interactRuntime }`.
 
-- [ ] **Step 6: Remove the per-object click handlers on the floors**
+- [x] **Step 6: Remove the per-object click handlers on the floors**
 
 `src/experience/floors/career/CareerRooms.tsx`: replace `import { useFrame, type ThreeEvent } from "@react-three/fiber";` with `import { useFrame } from "@react-three/fiber";`, delete `import { intents } from "../../input/intents";`, delete
 
@@ -2730,7 +2732,7 @@ and replace `<mesh onClick={onClick}>` with `<mesh>`.
 
 Delete the now unused helper: `rtk git rm src/experience/floors/interact.ts`.
 
-- [ ] **Step 7: Comments that still say click-to-move**
+- [x] **Step 7: Comments that still say click-to-move**
 
 - `src/experience/rover/boost.ts`: `* screens. Manual driving only; the autopilot (missions, walks, the elevator approach) and` / `* click-to-move keep their speed. Pure, so Vitest runs it in node.` becomes `* screens. Manual driving only; the autopilot (missions, walks, the elevator approach and` / `* point-and-go drives) keeps its speed. Pure, so Vitest runs it in node.`
 - `tests/unit/boost.test.ts`: `// Autopilot (missions, walks, elevator approach) and click-to-move have no manual input.` becomes `// Autopilot (missions, walks, elevator approach, point-and-go drives) has no manual input.`
@@ -2738,11 +2740,11 @@ Delete the now unused helper: `rtk git rm src/experience/floors/interact.ts`.
 - `src/experience/nav/pads.ts`: `/** The rover follows a path (click-to-move, autopilot) or a mission runs. */` becomes `/** The rover follows a path (scrub, autopilot) or a mission runs. */`
 - `src/experience/fx/BatchedLabels.tsx`: `* label a fixed `yaw` toward where it is read from. Not raycast: wrap clickable signs in a `HitBox`.` becomes `* label a fixed `yaw` toward where it is read from. Not raycast: make clickable signs point-and-go targets (interact/registry.ts).`
 
-- [ ] **Step 8: Drop the rail click helper from the e2e helpers**
+- [x] **Step 8: Drop the rail click helper from the e2e helpers**
 
 In `e2e/hq.ts`, delete `import { RAIL, RAIL_LOOK_AHEAD } from "../src/experience/camera/rigs";` and the whole `railScreenPoint` function with its doc comment (no spec uses it after Step 1).
 
-- [ ] **Step 9: Verify nothing still refers to the removed pieces**
+- [x] **Step 9: Verify nothing still refers to the removed pieces**
 
 Run: `rtk git grep -n -E '"goto"|roomHandlers|HitBox|railScreenPoint|roverRuntime\.marker|__hq\.marker|click-to-move|onFloorClick' -- src e2e tests`
 Expected: no matches.
@@ -2750,12 +2752,12 @@ Expected: no matches.
 Run: `rtk bun run verify:quick`
 Expected: typecheck, lint, unit tests and `next build` all succeed.
 
-- [ ] **Step 10: Run the affected specs**
+- [x] **Step 10: Run the affected specs**
 
 Run: `E2E_PORT=4391 rtk bunx playwright test e2e/experience.spec.ts e2e/career.spec.ts e2e/pads.spec.ts e2e/interact.spec.ts e2e/labs.spec.ts e2e/library-roof.spec.ts e2e/roof.spec.ts e2e/walk.spec.ts`
 Expected: all PASS (empty clicks and taps no longer move the rover; the L2 room, teleporter, pods, boards, stations and kiosk are clicked through the registry).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add -A src e2e tests
@@ -2780,7 +2782,7 @@ rtk git commit -m "feat: remove click-to-move; in-world clicks go through point-
   - `<InteractStatus coarse={boolean} />` and `POINT_HINT_MS = 4000` (`src/hud/InteractStatus.tsx`); test ids `interact-live`, `interact-go`, `point-hint`.
   - Messages `hud.interact.live`, `liveTap`, `go`, `hintFine`, `hintCoarse` (plus Task 1's `teleporter`, `board`, `archive`).
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 Create `tests/unit/interact-missed.test.ts`:
 
@@ -2927,12 +2929,12 @@ describe("InteractStatus", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/interact-missed.test.ts tests/hud/InteractStatus.test.tsx`
 Expected: FAIL with `Failed to resolve import "@/experience/interact/missed"` and `Failed to resolve import "@/hud/InteractStatus"`.
 
-- [ ] **Step 3: Add the copy**
+- [x] **Step 3: Add the copy**
 
 In `messages/en.json`, replace the `hud.interact` object from Task 1
 
@@ -2996,7 +2998,7 @@ and change:
 - `"hintCoarse": "Gerak: ketuk lantai · Kemudi: joystick · Turbo: tahan tombol turbo · Putar: seret · Lantai: geser ke atas atau bawah",` becomes `"hintCoarse": "Kemudi: joystick · Turbo: tahan tombol turbo · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Lantai: geser ke atas atau bawah",`
 - in `"canvasDescription"`, the text `(tahan Shift untuk turbo), atau klik titik di lantai.` becomes `(tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana.`
 
-- [ ] **Step 4: Write the empty-click handler**
+- [x] **Step 4: Write the empty-click handler**
 
 Create `src/experience/interact/missed.ts`:
 
@@ -3029,7 +3031,7 @@ export function onWorldMissed(event: MouseEvent) {
 }
 ```
 
-- [ ] **Step 5: Write the HUD status**
+- [x] **Step 5: Write the HUD status**
 
 Create `src/hud/InteractStatus.tsx`:
 
@@ -3090,12 +3092,12 @@ export function InteractStatus({ coarse }: { coarse: boolean }) {
 }
 ```
 
-- [ ] **Step 6: Run the unit tests to verify they pass**
+- [x] **Step 6: Run the unit tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/interact-missed.test.ts tests/hud/InteractStatus.test.tsx tests/unit/ui-copy.test.ts tests/content/safety.test.ts tests/content/fonts.test.ts`
 Expected: PASS (7 new tests; the copy, safety and font coverage tests still pass with the new strings).
 
-- [ ] **Step 7: Wire them in**
+- [x] **Step 7: Wire them in**
 
 In `src/experience/Experience.tsx`, add the import `import { onWorldMissed } from "./interact/missed";` and add the prop to `<Canvas`, right after `aria-describedby="hq-desc"`:
 
@@ -3116,7 +3118,7 @@ with
             {explorable && !walking && <HintBar coarse={coarse} mobile={mobile} />}
 ```
 
-- [ ] **Step 8: Cover the wired feedback end to end**
+- [x] **Step 8: Cover the wired feedback end to end**
 
 Append to `e2e/interact.spec.ts` (and add `emptyFloorPoint`, `highlightOf` and `PHONE_SAFE` to its import list from `./hq`, plus `import en from "../messages/en.json";` under the Playwright import):
 
@@ -3203,12 +3205,12 @@ test.describe("point and go with reduced motion", () => {
 Run: `rtk bun run build && E2E_PORT=4391 rtk bunx playwright test e2e/interact.spec.ts`
 Expected: PASS, `9 passed`. (The failing tests of this task are the unit tests of Step 1; to see these e2e tests fail first, run them on a build without Step 7: they time out waiting for `interact-live`, `point-hint` and `interact-go`.)
 
-- [ ] **Step 9: Quick verification**
+- [x] **Step 9: Quick verification**
 
 Run: `rtk bun run verify:quick && E2E_PORT=4391 rtk bun run e2e:changed`
 Expected: everything passes (`e2e:changed` runs `experience`, `hud`, `missions`, `drawer-solid`, `interact`, `pads`, `career`, the smoke specs for messages and any spec the earlier commits on this branch touched).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/experience/interact/missed.ts src/hud/InteractStatus.tsx src/hud/Hud.tsx src/experience/Experience.tsx messages/en.json messages/id.json tests/unit/interact-missed.test.ts tests/hud/InteractStatus.test.tsx e2e/interact.spec.ts
@@ -3225,7 +3227,7 @@ rtk git commit -m "feat: point-and-go status, Go chip, empty-click hint and cont
 - Consumes: `visibleTarget`, `hoverTarget`, `targetPoint`, `emptyFloorPoint`, `PHONE_SAFE` (Task 4); test ids `point-hint`, `interact-go` (Task 6).
 - Produces: `screenshots/hq-point-hover-1440x900.png`, `screenshots/hq-point-hint-1440x900.png`, `screenshots/hq-point-tap-390x844.png` (gitignored; CI uploads them as the `screenshots` artifact on a PR labelled `screenshots`).
 
-- [ ] **Step 1: Add the captures**
+- [x] **Step 1: Add the captures**
 
 In `e2e/screenshots.spec.ts`, replace
 
@@ -3287,14 +3289,14 @@ test.describe("point and go", () => {
 });
 ```
 
-- [ ] **Step 2: Capture and review**
+- [x] **Step 2: Capture and review**
 
 Run: `rtk bun run build && SCREENSHOTS=1 E2E_PORT=4391 rtk bunx playwright test e2e/screenshots.spec.ts -g "point and go"`
 Expected: `2 passed`; three PNGs in `screenshots/`.
 
 Open each PNG and check: the cyan outline sits on the hovered pod, the destination ring sits on its door pad, the name floats above the pod and reads clearly (white with a dark outline), nothing overlaps the HUD; the hint pill sits in the bottom band center above the controls hint; on the phone the Go chip sits in the bottom band between the joystick and the view controls without overlapping either. If the label is hard to read, raise `fontSize` in `Label` (InteractLayer.tsx) in steps of 0.1 and capture again.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts
@@ -3312,7 +3314,7 @@ rtk git commit -m "test: point-and-go screenshots"
 - Consumes: the final names from Tasks 1 to 6 (keep them identical in prose).
 - Produces: documentation only.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 In the status table, after the row `| Walkable floors 3 | RF as a walkable roof deck: Signal Garden with the courier drone and the "Meet me" walk | Done |`, add:
 
@@ -3332,7 +3334,7 @@ with
 drive with WASD or the arrow keys (hold **Shift** to boost to about twice the speed; on touch screens use the joystick and hold the boost button next to it), point at a glowing object (a room, a pad, a board, the kiosk) to see its name and click it to drive there and open it (on touch screens tap it, then tap again or press **Go**; empty floor never moves the rover), and change floors with the elevator panel
 ```
 
-- [ ] **Step 2: AGENTS.md, folder layout and lists**
+- [x] **Step 2: AGENTS.md, folder layout and lists**
 
 Apply these exact replacements:
 
@@ -3348,7 +3350,7 @@ pads.ts (floor pads, the pad latch), teleport.ts (L2 teleport beam timeline)
 4. `drawer layout and URL, ASCII, hologram` becomes `drawer layout and URL, ASCII, hologram, interact registry and pick logic`
 5. `floor pads and pickers (pads.spec.ts), opt-in screenshots` becomes `floor pads and pickers (pads.spec.ts), point-and-go (interact.spec.ts: hover, click, empty floor, touch, reduced motion), opt-in screenshots`
 
-- [ ] **Step 3: AGENTS.md, behavior bullets**
+- [x] **Step 3: AGENTS.md, behavior bullets**
 
 6. `Manual driving only: the autopilot (missions, walks, the elevator approach) and click-to-move keep their speed.` becomes `Manual driving only: the autopilot (missions, walks, the elevator approach, point-and-go drives) keeps its speed.`
 7. `Data flow: input sources (`input/useInputSources.ts`, HUD buttons, joystick) emit intents on the `intents` bus.` becomes `Data flow: input sources (`input/useInputSources.ts`, HUD buttons, joystick, the point-and-go layer) emit intents on the `intents` bus; a click on the floor emits nothing (there is no `goto` intent).`
@@ -3363,7 +3365,7 @@ pads.ts (floor pads, the pad latch), teleport.ts (L2 teleport beam timeline)
 16. `` `picker` (floor pad picker) and `beam` (L2 teleport beam); actions `openPicker(picker)` `` becomes `` `picker` (floor pad picker), `beam` (L2 teleport beam), `hover` (point-and-go target, `HoverState`) and `pointHint` (its one-time hint); actions `setHover(hover)`, `setPointHint(on)`, `openPicker(picker)` ``
 17. In "Fast verification", `(for example `src/experience/floors/labs/**` to `labs`, `gallery` and `walk`,` becomes `(for example `src/experience/floors/labs/**` to `labs`, `gallery` and `walk`, `src/experience/interact/**` to `interact`, `experience`, `pads` and `career`,`
 
-- [ ] **Step 4: AGENTS.md, new section**
+- [x] **Step 4: AGENTS.md, new section**
 
 Insert right before the line `## Glass Drawer (shared room panel, Phase 4)`:
 
@@ -3377,7 +3379,7 @@ Insert right before the line `## Glass Drawer (shared room panel, Phase 4)`:
 - Tests: `tests/unit/interact-registry.test.ts` (real content on every floor), `tests/unit/interact-pick.test.ts`, `tests/unit/interact-missed.test.ts`, `tests/hud/InteractStatus.test.tsx`, `e2e/interact.spec.ts`.
 ```
 
-- [ ] **Step 5: Input spec, design spec and acceptance**
+- [x] **Step 5: Input spec, design spec and acceptance**
 
 In `docs/superpowers/specs/agent-hq/03-rover-camera-input.md`:
 
@@ -3398,7 +3400,7 @@ In `docs/superpowers/specs/2026-10-09-agent-hq-design.md`, apply the same replac
 
 In `docs/superpowers/specs/agent-hq/08-quality-acceptance.md`, `- The rover drives with keyboard, click-to-move, tap-to-move and joystick, with collision.` becomes `- The rover drives with keyboard and joystick, with collision (click and tap to move were replaced by point-and-go in October 2026, see appendix 03).`
 
-- [ ] **Step 6: Verify the docs**
+- [x] **Step 6: Verify the docs**
 
 Run: `rtk git grep -n -i -E "click the floor|click-to-move|tap-to-move|tap to move|click to move" -- README.md AGENTS.md docs/superpowers/specs`
 Expected: only the historical phase rows and plans remain (the README Phase 2 status row, files under `docs/superpowers/plans/`); no current-behavior text in README "Try it", AGENTS or the specs.
@@ -3406,7 +3408,7 @@ Expected: only the historical phase rows and plans remain (the README Phase 2 st
 Run: `rtk bunx vitest run tests/content/safety.test.ts`
 Expected: PASS (no em dashes or forbidden patterns in the new text).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/specs
@@ -3423,17 +3425,17 @@ rtk git commit -m "docs: point-and-go in README, AGENTS and the input spec"
 - Consumes: the whole branch.
 - Produces: one PR against `main`, labelled `screenshots`.
 
-- [ ] **Step 1: Quick checks**
+- [x] **Step 1: Quick checks**
 
 Run: `rtk bun run verify:quick`
 Expected: exit code 0 (typecheck, lint, every unit test including the em dash scan, `next build`).
 
-- [ ] **Step 2: Full e2e (this branch changed `e2e/hq.ts`)**
+- [x] **Step 2: Full e2e (this branch changed `e2e/hq.ts`)**
 
 Run: `E2E_PORT=4391 rtk bun run e2e:full`
 Expected: every spec passes, including `walk`, `missions`, `pads`, `career`, `labs`, `library-roof`, `roof`, `hud`, `drawer-solid` and `interact`. A failure in a walk, mission or deep-link spec means a click handler still fires or the drive cancels too eagerly: reproduce it alone (`E2E_PORT=4391 rtk bun run e2e:full e2e/walk.spec.ts -g "<title>"`) and fix the cause, never add retries.
 
-- [ ] **Step 3: Push and open the PR**
+- [x] **Step 3: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/point-and-go

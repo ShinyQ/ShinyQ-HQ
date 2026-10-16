@@ -1,5 +1,7 @@
 # Ask the HQ: "ShinyQ" Is Kurniadi's Nickname Implementation Plan
 
+Status: shipped in #160 (5366a23), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ask the HQ treats "ShinyQ" (any case, also "Shiny Q", "Shiny-Q") as Kurniadi's nickname, so "Who is ShinyQ?", "What does ShinyQ do?" and "Apa itu ShinyQ?" are answered as questions about him, while "ShinyQ HQ" still means this site.
@@ -30,7 +32,7 @@
 **Interfaces:**
 - Produces: `resolveNickname(question: string): string` (pure).
 
-- [ ] **Step 1: Write the failing tests** in `tests/ask/scope.test.ts`:
+- [x] **Step 1: Write the failing tests** in `tests/ask/scope.test.ts`:
 
 ```ts
 describe("resolveNickname (owner 2026-10-16: ShinyQ is Kurniadi's nickname)", () => {
@@ -57,9 +59,9 @@ describe("resolveNickname (owner 2026-10-16: ShinyQ is Kurniadi's nickname)", ()
 
 (Adjust imports to the file's existing ones; the GitHub URL case must not change because "ShinyQ/" is a path segment: treat a nickname followed by `/` or preceded by `/` as a URL part and leave it.) In `tests/ask/pipeline.test.ts`, using the file's existing fake model and pack, add: "Who is ShinyQ?" and "Apa itu ShinyQ?" retrieve the `profile` chunk and reach the model (not a decline), and "How was ShinyQ HQ built?" still retrieves `site-build`.
 
-- [ ] **Step 2: Run** `bunx vitest run tests/ask/scope.test.ts tests/ask/pipeline.test.ts`. Expected: FAIL.
+- [x] **Step 2: Run** `bunx vitest run tests/ask/scope.test.ts tests/ask/pipeline.test.ts`. Expected: FAIL.
 
-- [ ] **Step 3: Implement** in `functions/_lib/scope.ts`:
+- [x] **Step 3: Implement** in `functions/_lib/scope.ts`:
 
 ```ts
 /**
@@ -75,9 +77,9 @@ export function resolveNickname(question: string): string {
 
 Verify the possessive case ("ShinyQ's" becomes "Kurniadi's"): `'` is not in `[\w/]`, so the lookahead passes. In `functions/_lib/pipeline.ts`, apply `resolveNickname` once to the cleaned, PII-scrubbed question and pass the result to every scope function, routing and retrieval call (read the file first; keep the cache key, analytics fields and the rate limiter on the existing values). In `functions/_lib/checks.ts` add `shiny` to the known word list next to `shinyq`.
 
-- [ ] **Step 4: Run** `bunx vitest run tests/ask`. Expected: PASS.
+- [x] **Step 4: Run** `bunx vitest run tests/ask`. Expected: PASS.
 
-- [ ] **Step 5: Commit** `feat(ask): treat ShinyQ as Kurniadi's nickname`.
+- [x] **Step 5: Commit** `feat(ask): treat ShinyQ as Kurniadi's nickname`.
 
 ### Task 2: Grounding and golden cases
 
@@ -86,7 +88,7 @@ Verify the possessive case ("ShinyQ's" becomes "Kurniadi's"): `'` is not in `[\w
 - Modify: `tests/ask/golden.json` (q60 to q63), `tests/ask/pack.test.ts` (assert the profile chunk carries the nickname)
 - Modify: `docs/ask-runbook.md` (one line in the scope section), `AGENTS.md` ("Ask the HQ" bullet: nickname alias)
 
-- [ ] **Step 1: Write the failing test** in `tests/ask/pack.test.ts`:
+- [x] **Step 1: Write the failing test** in `tests/ask/pack.test.ts`:
 
 ```ts
 it("names the ShinyQ nickname in the profile chunk (owner 2026-10-16)", () => {
@@ -99,9 +101,9 @@ it("names the ShinyQ nickname in the profile chunk (owner 2026-10-16)", () => {
 
 (Follow the file's existing pattern for building the pack and reading chunks.)
 
-- [ ] **Step 2: Run** `bunx vitest run tests/ask/pack.test.ts`. Expected: FAIL.
+- [x] **Step 2: Run** `bunx vitest run tests/ask/pack.test.ts`. Expected: FAIL.
 
-- [ ] **Step 3: Implement** the profile chunk sentence (read `src/ask/pack.ts` to find where the profile chunk text is assembled; the sentence comes from code, not content, so it stays one place), then add golden items:
+- [x] **Step 3: Implement** the profile chunk sentence (read `src/ask/pack.ts` to find where the profile chunk text is assembled; the sentence comes from code, not content, so it stays one place), then add golden items:
 
 ```json
 {"id": "q60", "lang": "en", "q": "Who is ShinyQ?", "facts": ["ShinyQ"], "expect": {"any": ["kurniadi"]}},
@@ -112,8 +114,8 @@ it("names the ShinyQ nickname in the profile chunk (owner 2026-10-16)", () => {
 
 Match the shape of existing items exactly (look at q01 and the ID items); update the `$comment` count sentence and raise `passThreshold` by the same share the file uses (read how 56 relates to the item count and keep the ratio).
 
-- [ ] **Step 4: Run** `bunx vitest run tests/ask` (golden drift and retrieval checks, pack size). Expected: PASS.
+- [x] **Step 4: Run** `bunx vitest run tests/ask` (golden drift and retrieval checks, pack size). Expected: PASS.
 
-- [ ] **Step 5: Docs and verify.** One line in `docs/ask-runbook.md` scope section and the AGENTS.md "Ask the HQ" bullet. `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed`.
+- [x] **Step 5: Docs and verify.** One line in `docs/ask-runbook.md` scope section and the AGENTS.md "Ask the HQ" bullet. `bun run verify:quick`, then `E2E_PORT=<port> bun run e2e:changed`.
 
-- [ ] **Step 6: Commit** `feat(ask): ground the ShinyQ nickname and add golden cases`.
+- [x] **Step 6: Commit** `feat(ask): ground the ShinyQ nickname and add golden cases`.

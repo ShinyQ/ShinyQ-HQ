@@ -1,5 +1,7 @@
 # R5-P4: Measurement and CI Gates Implementation Plan
 
+Status: shipped in #79 (a9e1638), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn every performance budget that CI can measure deterministically into a blocking gate (3D bytes after the gate, scene draw calls and post passes, peaks in the intro, rides and hover, shader programs, memory after round trips), make what CI cannot measure visible (a `?perf=1` overlay, a nightly game-first timeline, an anonymous sampled RUM beacon), make CI budgets authoritative in the spec, and stop `deploy.yml` from rerunning e2e on a commit CI already passed.
@@ -28,14 +30,14 @@
 
 ## Before you start
 
-- [ ] Branch from the latest `main` and install:
+- [x] Branch from the latest `main` and install:
 
 ```bash
 rtk git fetch origin && rtk git switch -c feat/r5-p4-measurement-gates origin/main
 bun install
 ```
 
-- [ ] Build `main` once into `out-main/` for every before/after comparison in this plan (the look check, the 3D bytes A/B, the draw call A/B):
+- [x] Build `main` once into `out-main/` for every before/after comparison in this plan (the look check, the 3D bytes A/B, the draw call A/B):
 
 ```bash
 bun run build
@@ -44,7 +46,7 @@ rm -rf out-main && cp -R out out-main
 
 Expected: `bun run build` ends with the `defer-scripts` line and exit code 0; `ls out-main/en.html` prints the path.
 
-- [ ] Record today's draw calls with the existing gate (the "before" numbers for the PR body):
+- [x] Record today's draw calls with the existing gate (the "before" numbers for the PR body):
 
 ```bash
 E2E_PORT=4433 bunx playwright test e2e/highlights.spec.ts -g "headroom" --reporter=list 2>&1 | grep "^L1 "
@@ -52,7 +54,7 @@ E2E_PORT=4433 bunx playwright test e2e/highlights.spec.ts -g "headroom" --report
 
 Expected (numbers from REPORT F5.2, plus or minus a few calls): ten lines such as `L1 lite at spawn: 115 calls, 15876 triangles` and `L1 full at spawn: 134 calls, 16103 triangles`. Paste them into a scratch note for Task 13.
 
-- [ ] Check the rest of round 5 for already merged work this plan touches (see "Cross-workstream contracts" below): `rtk git log --oneline origin/main -20`. If P3 merged its memory test or P1 merged the boot card headline, read their diff first and follow the rebase notes.
+- [x] Check the rest of round 5 for already merged work this plan touches (see "Cross-workstream contracts" below): `rtk git log --oneline origin/main -20`. If P3 merged its memory test or P1 merged the boot card headline, read their diff first and follow the rebase notes.
 
 ## Decisions made in this plan
 
@@ -160,7 +162,7 @@ Adds a Playwright lane for perf specs that the default suite and its shards neve
 - Consumes: `enterHQ`, `openPage`, `waitForCameraSettle`, `waitForFrames` from `e2e/hq.ts` (existing).
 - Produces: env `PERF=1` (perf lane on), env `E2E_DIR` (static dir served by the Playwright web server, default `out`), scripts `e2e:perf`, `e2e:timeline`, `e2e:look`; tags `@look` and `@nightly` (excluded from `e2e:perf`); look snapshots under `e2e/perf/look.spec.ts-snapshots/` (gitignored).
 
-- [ ] **Step 1: Write the failing e2e-plan tests**
+- [x] **Step 1: Write the failing e2e-plan tests**
 
 In `tests/unit/e2e-plan.test.ts`, add inside `describe("specsForChanges", ...)`:
 
@@ -173,12 +175,12 @@ In `tests/unit/e2e-plan.test.ts`, add inside `describe("specsForChanges", ...)`:
   });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `bun run test tests/unit/e2e-plan.test.ts`
 Expected: FAIL in "keeps the perf lane out of the regular suite": `e2e/perf/look.spec.ts` falls back to the smoke specs, `e2e/budgets.ts` is not `"all"`.
 
-- [ ] **Step 3: Add the rules**
+- [x] **Step 3: Add the rules**
 
 In `scripts/e2e-plan.ts`, replace:
 
@@ -200,12 +202,12 @@ with:
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|floor-thumbs|perf-|ci-status)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
 ```
 
-- [ ] **Step 4: Run the test to see it pass**
+- [x] **Step 4: Run the test to see it pass**
 
 Run: `bun run test tests/unit/e2e-plan.test.ts`
 Expected: PASS (all tests).
 
-- [ ] **Step 5: Add the lane and `E2E_DIR` to the Playwright config**
+- [x] **Step 5: Add the lane and `E2E_DIR` to the Playwright config**
 
 In `playwright.config.ts`, replace:
 
@@ -262,7 +264,7 @@ with:
     command: `bun scripts/serve-static.ts --port ${PORT} --dir ${DIR}`,
 ```
 
-- [ ] **Step 6: Add the scripts**
+- [x] **Step 6: Add the scripts**
 
 In `package.json` `scripts`, after `"e2e:shard": "bun scripts/e2e-shard.ts",` add:
 
@@ -272,7 +274,7 @@ In `package.json` `scripts`, after `"e2e:shard": "bun scripts/e2e-shard.ts",` ad
     "e2e:look": "PERF=1 playwright test e2e/perf/look.spec.ts --workers=1",
 ```
 
-- [ ] **Step 7: Ignore local outputs**
+- [x] **Step 7: Ignore local outputs**
 
 Append to `.gitignore`:
 
@@ -283,7 +285,7 @@ Append to `.gitignore`:
 e2e/perf/*-snapshots/
 ```
 
-- [ ] **Step 8: Write the look check**
+- [x] **Step 8: Write the look check**
 
 Create `e2e/perf/look.spec.ts`:
 
@@ -347,7 +349,7 @@ for (const width of [1440, 390]) {
 }
 ```
 
-- [ ] **Step 9: Record the baselines from main and prove the check is stable**
+- [x] **Step 9: Record the baselines from main and prove the check is stable**
 
 ```bash
 lsof -i :4433 || true
@@ -357,7 +359,7 @@ E2E_DIR=out-main E2E_PORT=4433 bun run e2e:look
 
 Expected: `lsof` prints nothing (no server on the port). The first run writes 8 snapshots (`8 passed`, snapshot files under `e2e/perf/look.spec.ts-snapshots/`). The second run, main against itself, prints `8 passed`. If it fails, the scene is not still under reduced motion: open the diff in `test-results/`, and if the noise ratio shown is above 0.001, set `maxDiffPixelRatio` in `LOOK` to twice that ratio and write the measured ratio in the PR body. Do not continue with a check that fails against itself.
 
-- [ ] **Step 10: Typecheck, lint and commit**
+- [x] **Step 10: Typecheck, lint and commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -395,7 +397,7 @@ Splits `renderer.info` into scene calls and post passes per frame with peaks and
   - `e2e/budgets.ts`: `RENDER_BUDGET`, `RenderBudget`, `FLOOR_SCENE_CAPS`, `BUDGET_WINDOW`, `BYTES_3D_BUDGET`, `PAGE_JS_BUDGET`, `WARN_RATIO`, `PROGRAM_HEADROOM`, `GPU_MEMORY_BUDGET`.
   - `e2e/hq.ts`: `RenderPeaks`, `resetRenderPeaks(page)`, `readRenderPeaks(page)`, `expectPeaksWithinBudget(peaks, label, budget?)`, `expectRenderBudget(page): Promise<RenderPeaks>`, `GpuCounters`, `readGpuCounters(page)`, `expectNoGpuGrowth(before, after, budget?)`, `readJsHeapAfterGc(page)`, `waitForFrames(page, count?, minMs?)`, `HQSnapshot.sceneCalls`, `HQSnapshot.postCalls`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Create `tests/unit/render-stats.test.ts`:
 
@@ -498,12 +500,12 @@ describe("render stats", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `bun run test tests/unit/render-stats.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/perf/renderStats"`.
 
-- [ ] **Step 3: Implement the counters**
+- [x] **Step 3: Implement the counters**
 
 Create `src/experience/perf/renderStats.ts`:
 
@@ -633,12 +635,12 @@ export function closeFrame(): void {
 }
 ```
 
-- [ ] **Step 4: Run the unit test to see it pass**
+- [x] **Step 4: Run the unit test to see it pass**
 
 Run: `bun run test tests/unit/render-stats.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Mount the counter and switch the Director to it**
+- [x] **Step 5: Mount the counter and switch the Director to it**
 
 Create `src/experience/perf/RenderCounter.tsx`:
 
@@ -772,12 +774,12 @@ with:
   };
 ```
 
-- [ ] **Step 6: Typecheck and lint**
+- [x] **Step 6: Typecheck and lint**
 
 Run: `bun run typecheck && bun run lint`
 Expected: exit 0. If lint reports `three` unused in `Director.tsx`, it is wrong: `three.clock.elapsedTime` still uses it; re-read the edit.
 
-- [ ] **Step 7: Put the thresholds in one file**
+- [x] **Step 7: Put the thresholds in one file**
 
 Create `e2e/budgets.ts`:
 
@@ -824,7 +826,7 @@ export const PROGRAM_HEADROOM = 2;
 export const GPU_MEMORY_BUDGET = { geometries: 0, textures: 0, programs: 0, heapBytes: 2 * 1024 * 1024, roundTrips: 10 } as const;
 ```
 
-- [ ] **Step 8: Rewrite the budget helpers in `e2e/hq.ts`**
+- [x] **Step 8: Rewrite the budget helpers in `e2e/hq.ts`**
 
 At the top of `e2e/hq.ts`, replace:
 
@@ -1041,7 +1043,7 @@ export async function waitForFrames(page: Page, count = 10, minMs = 0) {
 }
 ```
 
-- [ ] **Step 9: Move the floor caps to scene calls**
+- [x] **Step 9: Move the floor caps to scene calls**
 
 In `e2e/highlights.spec.ts`, replace:
 
@@ -1118,7 +1120,7 @@ with:
 
 `snapshot` stays imported in both files (other tests use it).
 
-- [ ] **Step 10: Run the affected e2e specs**
+- [x] **Step 10: Run the affected e2e specs**
 
 ```bash
 bun run build
@@ -1127,17 +1129,17 @@ E2E_PORT=4433 bunx playwright test e2e/highlights.spec.ts e2e/roof.spec.ts e2e/l
 
 Expected: every selected test passes; the `L1` lines read about `115 scene calls + 0 post passes` on lite and about `116 scene calls + 18 post passes` on full (full total 134 as in "Before you start"; the split is new). If an L1 line is above 125 scene calls, stop: per-frame peaks found a spike the 5 samples missed. Record the spot and the numbers, do not raise `FLOOR_SCENE_CAPS`, and raise it with the owner and P2 in the PR (P2's stats ring batching removes about 25 calls). Delete `perf-budget.log` afterwards.
 
-- [ ] **Step 11: Full suite once (shared test infrastructure changed)**
+- [x] **Step 11: Full suite once (shared test infrastructure changed)**
 
 Run: `E2E_PORT=4433 bun run e2e:full`
 Expected: the whole suite passes (6 to 10 minutes on an idle machine). Any `expectRenderBudget` failure prints the peaks JSON; treat it as in Step 10.
 
-- [ ] **Step 12: Look check (render path touched)**
+- [x] **Step 12: Look check (render path touched)**
 
 Run: `E2E_PORT=4433 bun run e2e:look`
 Expected: `8 passed` against the main baselines from Task 1 (wrapping `render` changes no pixel). Rollback if not: revert this task's commit.
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 rtk git add src/experience/perf/renderStats.ts src/experience/perf/RenderCounter.tsx tests/unit/render-stats.test.ts src/experience/scene/Scene.tsx src/experience/scene/Director.tsx src/experience/rover/runtime.ts src/experience/Experience.tsx e2e/budgets.ts e2e/hq.ts e2e/highlights.spec.ts e2e/roof.spec.ts
@@ -1166,7 +1168,7 @@ One JSON entry per measurement (`perf-report/<id>.json`) and a dependency-free C
   - `bash scripts/perf-base.sh <artifact> <dir> [workflow] [event]` (env `REPO`, `GH_TOKEN`).
   - `writePerfEntry(entry)`, `waitForStablePrograms(page, timeout?)`, `PERF_REPORT_DIR` in `e2e/perf/helpers.ts`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/perf-report.test.ts`:
 
@@ -1301,12 +1303,12 @@ describe("program baseline", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bun run test tests/unit/perf-report.test.ts`
 Expected: FAIL with `Cannot find module '../../scripts/perf-report'` (or "Failed to resolve import").
 
-- [ ] **Step 3: Implement the report module**
+- [x] **Step 3: Implement the report module**
 
 Create `scripts/perf-report.ts`:
 
@@ -1562,12 +1564,12 @@ export function programBaseline(entries: readonly PerfEntry[], previous?: Progra
 }
 ```
 
-- [ ] **Step 4: Run the tests to see them pass**
+- [x] **Step 4: Run the tests to see them pass**
 
 Run: `bun run test tests/unit/perf-report.test.ts`
 Expected: PASS (11 tests).
 
-- [ ] **Step 5: Write the CLI and the baseline downloader**
+- [x] **Step 5: Write the CLI and the baseline downloader**
 
 Create `scripts/perf-summary.ts`:
 
@@ -1685,7 +1687,7 @@ exit 0
 chmod +x scripts/perf-base.sh
 ```
 
-- [ ] **Step 6: Write the e2e helpers and the empty baseline**
+- [x] **Step 6: Write the e2e helpers and the empty baseline**
 
 Create `e2e/perf/helpers.ts`:
 
@@ -1733,7 +1735,7 @@ Create `e2e/perf/baseline.json`:
 }
 ```
 
-- [ ] **Step 7: Try the CLI locally**
+- [x] **Step 7: Try the CLI locally**
 
 ```bash
 bun scripts/perf-summary.ts gates --head perf-report
@@ -1742,7 +1744,7 @@ bun scripts/perf-summary.ts nope; echo "exit $?"
 
 Expected: the first prints `### 3D perf gates` and `No perf entries found.`; the second prints the usage line and `exit 2`.
 
-- [ ] **Step 8: Typecheck, lint, commit**
+- [x] **Step 8: Typecheck, lint, commit**
 
 ```bash
 bun run typecheck && bun run lint && bun run test tests/unit/perf-report.test.ts tests/unit/e2e-plan.test.ts
@@ -1766,7 +1768,7 @@ SP6: the JS a visitor downloads after the gate on `?tier=lite` and `?tier=full`,
 - Consumes: `asReturningVisitor`, `openPage`, `waitForHQ`, `waitForPhase`, `waitForSceneLive` (`e2e/hq.ts`); `BYTES_3D_BUDGET` (`e2e/budgets.ts`); `writePerfEntry` (`e2e/perf/helpers.ts`); `chunkName`, `kb`, `sum`, `ChunkMap` (`scripts/perf-report.ts`); `scripts/perf-summary.ts`, `scripts/perf-base.sh`.
 - Produces: perf entries `bytes3d-lite`, `bytes3d-full`; CI job `perf` ("3D perf gates 1/2", "3D perf gates 2/2") with artifacts `perf-report-1`, `perf-report-2`; merged artifact `perf-report` (30 days) from the aggregate job; summaries "3D perf gates" (aggregate job) and "Page View JavaScript per chunk" (Lighthouse job).
 
-- [ ] **Step 1: Write the gate**
+- [x] **Step 1: Write the gate**
 
 Create `e2e/perf/bytes-3d.spec.ts`:
 
@@ -1863,7 +1865,7 @@ for (const tier of ["lite", "full"] as const) {
 }
 ```
 
-- [ ] **Step 2: Run it against the branch build**
+- [x] **Step 2: Run it against the branch build**
 
 ```bash
 bun run build
@@ -1873,7 +1875,7 @@ bun scripts/perf-summary.ts gates --head perf-report
 
 Expected: `2 passed`; the log shows about `3D JS after the gate (lite): 36x.x KB gzip` and `(full): 38x.x KB gzip` (production measured 370.6 and 394.3 KB with Cloudflare gzip, REPORT section 2; Bun's default gzip level reads within about 3% of that); the summary prints both chunk tables with "no main baseline" and an "Other 3D-path bytes" line that includes `font` (about 136 KB of troika WOFF) and `json` (rooms data). Record both totals for the PR body.
 
-- [ ] **Step 3: Prove the gate fails**
+- [x] **Step 3: Prove the gate fails**
 
 Temporarily change `failAt: 450 * 1024` in `e2e/budgets.ts` to `failAt: 300 * 1024`, then:
 
@@ -1883,7 +1885,7 @@ E2E_PORT=4433 bun run e2e:perf e2e/perf/bytes-3d.spec.ts -g lite
 
 Expected: FAIL with `3D JS 36x.x KB is over the 300.0 KB CI budget (spec ceiling 600.0 KB)`. Restore `450 * 1024` and confirm `rtk git diff e2e/budgets.ts` is empty.
 
-- [ ] **Step 4: Measure main the same way (before/after)**
+- [x] **Step 4: Measure main the same way (before/after)**
 
 ```bash
 E2E_DIR=out-main E2E_PORT=4433 PERF_REPORT_DIR=perf-report-main bun run e2e:perf e2e/perf/bytes-3d.spec.ts
@@ -1893,7 +1895,7 @@ rm -rf perf-report-main
 
 Expected: `2 passed` on main; the branch summary now shows `main ...` and a delta. At this task the delta is about +1 KB (the render counter and `__hq.perf`). Record it.
 
-- [ ] **Step 5: Add the CI job, the aggregate summary and the Lighthouse chunk diff**
+- [x] **Step 5: Add the CI job, the aggregate summary and the Lighthouse chunk diff**
 
 In `.github/workflows/ci.yml`, replace the header comment:
 
@@ -2048,7 +2050,7 @@ and after the `Run Lighthouse CI` step (before the upload) add:
         run: bun scripts/perf-summary.ts lhci --head .lighthouseci --base base-lhci
 ```
 
-- [ ] **Step 6: Check the workflow parses and the summary script needs no dependencies**
+- [x] **Step 6: Check the workflow parses and the summary script needs no dependencies**
 
 ```bash
 bun -e "const y = require('node:fs').readFileSync('.github/workflows/ci.yml', 'utf8'); for (const job of ['perf:', 'lighthouse:', 'build:']) if (!y.includes('  ' + job)) throw new Error(job); console.log('jobs present')"
@@ -2058,7 +2060,7 @@ bun scripts/perf-summary.ts lhci --head .lighthouseci
 
 Expected: `jobs present`; the imports are only `node:fs`, `node:path`, `./perf-report` and `../e2e/budgets` (so the Lighthouse job, which has no `bun install`, can run it); the `lhci` command prints `### Page View JavaScript per chunk` and `No Lighthouse reports found.` without a local `.lighthouseci/` (or real tables after a local `bunx @lhci/cli@0.15.1 autorun`). The workflow's YAML is validated for real by the PR's own CI run: if GitHub reports "Invalid workflow file", fix the indentation it names.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add e2e/perf/bytes-3d.spec.ts .github/workflows/ci.yml
@@ -2078,7 +2080,7 @@ Every floor on both tiers (today the full tier is checked on L1 only, REPORT Are
 - Consumes: `enterFloorRoute`, `expectRenderBudget`, `readGpuCounters`, `waitForCameraSettle` (`e2e/hq.ts`); `FLOOR_SCENE_CAPS`, `PROGRAM_HEADROOM` (`e2e/budgets.ts`); `writePerfEntry`, `waitForStablePrograms` (`e2e/perf/helpers.ts`); `bun scripts/perf-summary.ts baseline`.
 - Produces: perf entries `floor-<tier>-<floor>` for 5 floors x 2 tiers; `e2e/perf/baseline.json` with `programs.lite` and `programs.full` per floor.
 
-- [ ] **Step 1: Write the spec**
+- [x] **Step 1: Write the spec**
 
 Create `e2e/perf/floors.spec.ts`:
 
@@ -2136,7 +2138,7 @@ for (const tier of ["lite", "full"] as const) {
 }
 ```
 
-- [ ] **Step 2: Run it to see the baseline assertion fail**
+- [x] **Step 2: Run it to see the baseline assertion fail**
 
 ```bash
 rm -rf perf-report
@@ -2145,7 +2147,7 @@ E2E_PORT=4433 bun run e2e:perf e2e/perf/floors.spec.ts
 
 Expected: `10 failed`, each with `no shader program baseline for <tier> <floor>`, and every budget assertion before it passing (if a budget assertion fails instead, it is a real finding: record the printed peaks and stop for the owner and P2). `perf-report/` now holds ten `floor-*.json` files.
 
-- [ ] **Step 3: Generate the baseline and rerun**
+- [x] **Step 3: Generate the baseline and rerun**
 
 ```bash
 bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json
@@ -2156,12 +2158,12 @@ bun scripts/perf-summary.ts gates --head perf-report
 
 Expected: `baseline.json` lists five floors per tier (L1 is about 26 lite and 52 full per REPORT F5.6); the rerun prints `10 passed`; the summary shows the "Settled floors" table. Copy the console lines into the PR notes.
 
-- [ ] **Step 4: Rerun twice more for determinism**
+- [x] **Step 4: Rerun twice more for determinism**
 
 Run: `E2E_PORT=4433 bun run e2e:perf e2e/perf/floors.spec.ts --repeat-each=2 --reporter=list 2>&1 | grep -E " (lite|full): "`
 Expected: for each floor and tier the program count is the same in every repeat and scene calls differ by at most 2 between repeats (counters are deterministic, REPORT Area 12). If programs differ between repeats on one floor, `waitForStablePrograms` is not waiting long enough: raise its frame gap from 30 to 60 in `e2e/perf/helpers.ts` and repeat.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add e2e/perf/floors.spec.ts e2e/perf/baseline.json
@@ -2181,7 +2183,7 @@ The settled gate misses the moments with the most content on screen: boot plus i
 - Consumes: `asReturningVisitor`, `enterFloorRoute`, `enterHQ`, `expectPeaksWithinBudget`, `hoverTarget`, `readRenderPeaks`, `resetRenderPeaks`, `visibleTarget`, `waitForCameraSettle`, `waitForFloor`, `waitForFrames`, `waitForHQ`, `waitForPhase` (`e2e/hq.ts`); `writePerfEntry` (`e2e/perf/helpers.ts`).
 - Produces: perf entries `peak-<tier>-intro`, `peak-<tier>-ride-<from>-<to>`, `peak-<tier>-hover`; the `KNOWN_OVER` ratchet that P2's rebase empties.
 
-- [ ] **Step 1: Write the spec**
+- [x] **Step 1: Write the spec**
 
 Create `e2e/perf/peaks.spec.ts`:
 
@@ -2296,7 +2298,7 @@ for (const { tier, from, to } of RIDES) {
 }
 ```
 
-- [ ] **Step 2: Measure on the branch**
+- [x] **Step 2: Measure on the branch**
 
 ```bash
 E2E_PORT=4433 bun run e2e:perf e2e/perf/peaks.spec.ts --reporter=list 2>&1 | tee peaks.log | grep -E "(lite|full) (intro|hover|ride)|passed|failed"
@@ -2310,12 +2312,12 @@ const KNOWN_OVER = new Set<string>(["lite intro", "full intro"]);
 
 Any other failure (post passes above 20, triangles, non-finite counts, fewer than 3 frames, a timeout) is a bug in this task or a real regression: fix or report it, never add it to `KNOWN_OVER`.
 
-- [ ] **Step 3: Rerun with the ratchet**
+- [x] **Step 3: Rerun with the ratchet**
 
 Run: `E2E_PORT=4433 bun run e2e:perf e2e/perf/peaks.spec.ts`
 Expected: every test passes, the `KNOWN_OVER` ones as "expected to fail" (Playwright counts them as passed). Copy the peak lines from `peaks.log` into the PR notes, then `rm peaks.log`.
 
-- [ ] **Step 4: Run the whole perf lane in its CI shape**
+- [x] **Step 4: Run the whole perf lane in its CI shape**
 
 ```bash
 E2E_PORT=4433 bun run e2e:perf --shard=1/2 && E2E_PORT=4433 bun run e2e:perf --shard=2/2
@@ -2324,7 +2326,7 @@ bun scripts/perf-summary.ts gates --head perf-report
 
 Expected: both shards pass; each shard takes under about 5 minutes on an idle machine with 2 workers (the CI job must not become the critical path: the slowest e2e shard is about 5.3 minutes). If one shard runs over 6 minutes, change the matrix to `shard: [1, 2, 3]` and `--shard=${{ matrix.shard }}/3` in `ci.yml` and say so in the PR.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add e2e/perf/peaks.spec.ts
@@ -2361,7 +2363,7 @@ User Timing marks for the game-first timeline and RUM (`hq:boot-release`, `hq:fi
   - Lazy chunk `src/experience/perf/PerfOverlay.tsx`: default export `PerfOverlay` (HTML panel, `data-testid="perf-overlay"`), named `PerfProbe` (R3F).
   - Default-suite spec `perf-probes` (`e2e/perf-probes.spec.ts`) and its `e2e-plan` rule.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 Create `tests/unit/perf-marks.test.ts`:
 
@@ -2480,12 +2482,12 @@ import { afterEach, describe, expect, it } from "vitest";
   });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bun run test tests/unit/perf-marks.test.ts tests/unit/perf-frames.test.ts tests/unit/boot-first.test.ts`
 Expected: FAIL: the two new modules do not resolve, and "marks the boot release" finds no mark.
 
-- [ ] **Step 3: Implement the marks**
+- [x] **Step 3: Implement the marks**
 
 Create `src/lib/perf-marks.ts`:
 
@@ -2570,7 +2572,7 @@ export function releaseBootCover(reason: BootReleaseReason): void {
 }
 ```
 
-- [ ] **Step 4: Implement the sampler, the overlay lines and the store marks**
+- [x] **Step 4: Implement the sampler, the overlay lines and the store marks**
 
 Create `src/experience/perf/frames.ts`:
 
@@ -2685,12 +2687,12 @@ export function usePerfMarks(): void {
 
 Confirm `Phase` is exported from `src/store/useHQStore.ts` (`export type Phase = ...`, it is at main @ f61fbba).
 
-- [ ] **Step 5: Run the unit tests to see them pass**
+- [x] **Step 5: Run the unit tests to see them pass**
 
 Run: `bun run test tests/unit/perf-marks.test.ts tests/unit/perf-frames.test.ts tests/unit/boot-first.test.ts`
 Expected: PASS (all tests, including the existing boot-first ones and "has no em dashes or closing script tags").
 
-- [ ] **Step 6: Write the overlay chunk**
+- [x] **Step 6: Write the overlay chunk**
 
 Create `src/experience/perf/PerfOverlay.tsx`:
 
@@ -2758,7 +2760,7 @@ export default function PerfOverlay() {
 }
 ```
 
-- [ ] **Step 7: Wire marks and the overlay into `Experience`**
+- [x] **Step 7: Wire marks and the overlay into `Experience`**
 
 In `src/experience/Experience.tsx`:
 
@@ -2889,7 +2891,7 @@ with:
     </div>
 ```
 
-- [ ] **Step 8: Map the new paths and add the spec to the plan**
+- [x] **Step 8: Map the new paths and add the spec to the plan**
 
 In `scripts/e2e-plan.ts`, add `"perf-probes",` to `ALL_SPECS` between `"pageview",` and `"roof",`, and add these rules before `{ test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|...`:
 
@@ -2908,7 +2910,7 @@ In `tests/unit/e2e-plan.test.ts`, add:
   });
 ```
 
-- [ ] **Step 9: Write the e2e spec (overlay and marks)**
+- [x] **Step 9: Write the e2e spec (overlay and marks)**
 
 Create `e2e/perf-probes.spec.ts`:
 
@@ -2952,7 +2954,7 @@ test("the 3D view writes the timeline marks", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 10: Verify**
+- [x] **Step 10: Verify**
 
 ```bash
 bun run typecheck && bun run lint && bun run test tests/unit
@@ -2964,7 +2966,7 @@ E2E_PORT=4433 bun run e2e:perf e2e/perf/bytes-3d.spec.ts
 
 Expected: everything passes; the look check prints `8 passed` (marks and a hidden overlay change no pixel); the 3D bytes stay within about +1.5 KB of Task 4 (the overlay is a separate chunk that the gate never loads: `bun scripts/perf-summary.ts gates --head perf-report` lists no new chunk above 1 KB).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/lib/perf-marks.ts tests/unit/perf-marks.test.ts src/lib/boot-first.ts tests/unit/boot-first.test.ts src/experience/perf/usePerfMarks.ts src/experience/perf/frames.ts src/experience/perf/lines.ts tests/unit/perf-frames.test.ts src/experience/perf/PerfOverlay.tsx src/experience/Experience.tsx e2e/perf-probes.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -2994,7 +2996,7 @@ The field half of SP12: one coarse data point per sampled 3D session. The wire c
   - `src/experience/perf/rum.ts`: `RUM_ENDPOINT` (`"/api/rum"`), `RUM_WARMUP_MS` (2000), `RUM_WINDOW_FRAMES` (600), `RUM_MIN_FRAMES` (60), `class RumSession` (`frame(dtMs, now, exploreAt, visible)`, `contextLost()`, `sampled`, `payload({ released, exploreAt })`).
   - Lazy default export `RumProbe({ tier, path })`.
 
-- [ ] **Step 1: Write the failing protocol tests**
+- [x] **Step 1: Write the failing protocol tests**
 
 Create `tests/unit/rum-protocol.test.ts`:
 
@@ -3108,12 +3110,12 @@ describe("RUM session", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bun run test tests/unit/rum-protocol.test.ts tests/unit/rum-client.test.ts`
 Expected: FAIL: `@/lib/rum/protocol`, `@/experience/perf/rum` and `@/experience/perf/rumDecision` do not resolve.
 
-- [ ] **Step 3: Implement the protocol**
+- [x] **Step 3: Implement the protocol**
 
 Create `src/lib/rum/protocol.ts`:
 
@@ -3196,7 +3198,7 @@ export function rumDataPoint(p: RumPayload): { blobs: string[]; doubles: number[
 }
 ```
 
-- [ ] **Step 4: Implement the decision and the session**
+- [x] **Step 4: Implement the decision and the session**
 
 Create `src/experience/perf/rumDecision.ts`:
 
@@ -3325,12 +3327,12 @@ export class RumSession {
 }
 ```
 
-- [ ] **Step 5: Run the unit tests to see them pass**
+- [x] **Step 5: Run the unit tests to see them pass**
 
 Run: `bun run test tests/unit/rum-protocol.test.ts tests/unit/rum-client.test.ts`
 Expected: PASS (5 + 7 tests).
 
-- [ ] **Step 6: Write the probe and mount it in sampled sessions**
+- [x] **Step 6: Write the probe and mount it in sampled sessions**
 
 Create `src/experience/perf/RumProbe.tsx`:
 
@@ -3460,7 +3462,7 @@ with:
         </Canvas>
 ```
 
-- [ ] **Step 7: Add the e2e checks**
+- [x] **Step 7: Add the e2e checks**
 
 In `e2e/perf-probes.spec.ts`, replace the first import with `import { expect, test, type Page } from "@playwright/test";`, add `import { parseRumPayload } from "../src/lib/rum/protocol";`, and append:
 
@@ -3523,7 +3525,7 @@ test("automation is never sampled without ?rum=1", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 8: Verify**
+- [x] **Step 8: Verify**
 
 ```bash
 bun run typecheck && bun run lint && bun run test tests/unit
@@ -3536,7 +3538,7 @@ bun scripts/perf-summary.ts gates --head perf-report
 
 Expected: all pass; look check `8 passed`; the 3D JS total grows by under 1.5 KB against Task 4's number (SP12 pass criterion: "< 1.5 KB gz in 3D chunk"); the summary lists no new chunk for `RumProbe` (it never loads under automation without `?rum=1`). Record the delta.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/lib/rum/protocol.ts tests/unit/rum-protocol.test.ts src/experience/perf/rumDecision.ts src/experience/perf/rum.ts src/experience/perf/RumProbe.tsx tests/unit/rum-client.test.ts src/experience/Experience.tsx e2e/perf-probes.spec.ts
@@ -3563,7 +3565,7 @@ The server half of SP12: a same-origin Function that accepts only the exact prot
 - Consumes: `parseRumPayload`, `rumDataPoint`, `RUM_MAX_BYTES` (Task 8); `originAllowed` (`functions/_lib/security.ts`); `AnalyticsEngineDataset` (`functions/_lib/types.ts`).
 - Produces: `PagesContext<E = AskEnv>`, `RumEnv { RUM_ENABLED?; ASK_ALLOWED_ORIGINS?; PERF_EVENTS? }`; `createRumHandler({ now? })`, `RUM_ISOLATE_CAP` (600), `resetRumWindow()`; binding `PERF_EVENTS` (dataset `perf_events`), var `RUM_ENABLED = "true"`; smoke `Observed.rum`.
 
-- [ ] **Step 1: Write the failing endpoint tests**
+- [x] **Step 1: Write the failing endpoint tests**
 
 Create `tests/unit/rum-endpoint.test.ts`:
 
@@ -3652,12 +3654,12 @@ describe("POST /api/rum", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `bun run test tests/unit/rum-endpoint.test.ts`
 Expected: FAIL: `../../functions/_lib/rum` does not resolve.
 
-- [ ] **Step 3: Implement the handler and the Function**
+- [x] **Step 3: Implement the handler and the Function**
 
 In `functions/_lib/types.ts`, replace:
 
@@ -3793,12 +3795,12 @@ and in `[vars]`, after `ASK_DAILY_CAP = "600"` add:
 RUM_ENABLED = "true"
 ```
 
-- [ ] **Step 4: Run the tests to see them pass**
+- [x] **Step 4: Run the tests to see them pass**
 
 Run: `bun run test tests/unit/rum-endpoint.test.ts tests/ask/handler.test.ts tests/unit/provision-ask.test.ts`
 Expected: PASS (7 new tests; the Ask handler and wrangler tests are unchanged and pass with the generic `PagesContext`).
 
-- [ ] **Step 5: Extend the deploy smoke check**
+- [x] **Step 5: Extend the deploy smoke check**
 
 In `scripts/deploy-smoke.ts`, replace:
 
@@ -3881,7 +3883,7 @@ describe("post-deploy smoke check", () => {
 });
 ```
 
-- [ ] **Step 6: Keep the RUM Function out of the Ask e2e mapping**
+- [x] **Step 6: Keep the RUM Function out of the Ask e2e mapping**
 
 In `scripts/e2e-plan.ts`, add before `{ test: /^functions\//, specs: ["ask"] },`:
 
@@ -3899,7 +3901,7 @@ In `tests/unit/e2e-plan.test.ts`, add:
   });
 ```
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 ```bash
 bun run typecheck && bun run lint && bun run test
@@ -3925,7 +3927,7 @@ SP2: the path real WebGL2 visitors take, which Lighthouse never sees (it is bot-
 - Consumes: `PERF_MARKS` (`src/lib/perf-marks.ts`); `asHumanBrowser`, `waitForHQ`, `waitForPhase` (`e2e/hq.ts`); `writePerfEntry` (`e2e/perf/helpers.ts`); `renderTimeline` through `bun scripts/perf-summary.ts timeline`; `scripts/perf-base.sh`.
 - Produces: entries `timeline-<profile>-<scenario>-<run>` with `marks.coverFcp`, `headline`, `bootRelease`, `firstFrame`, `introStart`, `introEnd`, `explore`, `firstDrawer` (ms or null) and `release`; workflow `Perf timeline` with artifact `perf-timeline` (90 days).
 
-- [ ] **Step 1: Write the timeline spec**
+- [x] **Step 1: Write the timeline spec**
 
 Create `e2e/perf/timeline.spec.ts`:
 
@@ -4021,7 +4023,7 @@ for (const profile of Object.keys(PROFILES) as (keyof typeof PROFILES)[]) {
 }
 ```
 
-- [ ] **Step 2: Run one profile locally**
+- [x] **Step 2: Run one profile locally**
 
 ```bash
 bun run build
@@ -4032,7 +4034,7 @@ bun scripts/perf-summary.ts timeline --head perf-report
 
 Expected: `4 passed` (home and deeplink, 2 runs each); the summary shows one row per scenario with `release` `ready`, `headline` `-` (until P1 lands), `firstDrawer` `-` for home and a number for deeplink. If `firstDrawer` is `-` on deeplink, the first-session Rover Terminal or tour blocked the continuation: record it in the PR (it is a product finding, not a test bug) and leave the spec as is.
 
-- [ ] **Step 3: Add the nightly workflow**
+- [x] **Step 3: Add the nightly workflow**
 
 Create `.github/workflows/perf-nightly.yml`:
 
@@ -4102,7 +4104,7 @@ jobs:
           if-no-files-found: ignore
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 bun run typecheck && bun run lint
@@ -4128,7 +4130,7 @@ After the PR merges, run it once by hand (`gh workflow run perf-nightly.yml --re
 - Consumes: GitHub REST (`/repos/{repo}/commits/{sha}/check-runs`, `/repos/{repo}/commits/{sha}`, `/repos/{repo}/actions/workflows/ci.yml/runs`), env `GH_TOKEN`, `GITHUB_OUTPUT`, `GITHUB_STEP_SUMMARY`.
 - Produces: `CI_CHECK` (`"Build, CV and e2e"`), `CI_WORKFLOW` (`"ci.yml"`), `CheckRun`, `Verdict`, `verdictFromChecks(runs)`, `TestedRun`, `sameTreeRun(tree, runs)`; CLI `bun scripts/ci-status.ts --repo <owner/name> --sha <sha> [--wait-minutes 40] [--grace-minutes 3] [--force-rerun true|false]` writing `reuse=true|false`; workflow input `rerun_e2e`; job output `needs.verify.outputs.reuse`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/ci-status.test.ts`:
 
@@ -4174,12 +4176,12 @@ describe("deploy reuses the CI result", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `bun run test tests/unit/ci-status.test.ts`
 Expected: FAIL: `../../scripts/ci-status` does not resolve.
 
-- [ ] **Step 3: Implement the gate**
+- [x] **Step 3: Implement the gate**
 
 Create `scripts/ci-status.ts`:
 
@@ -4313,12 +4315,12 @@ if (import.meta.main) {
 }
 ```
 
-- [ ] **Step 4: Run the test to see it pass**
+- [x] **Step 4: Run the test to see it pass**
 
 Run: `bun run test tests/unit/ci-status.test.ts`
 Expected: PASS (6 tests).
 
-- [ ] **Step 5: Try it against the real repository**
+- [x] **Step 5: Try it against the real repository**
 
 ```bash
 GH_TOKEN=$(gh auth token) bun scripts/ci-status.ts --repo ShinyQ/ShinyQ-HQ --sha "$(git rev-parse origin/main)" --wait-minutes 1 --grace-minutes 0
@@ -4326,7 +4328,7 @@ GH_TOKEN=$(gh auth token) bun scripts/ci-status.ts --repo ShinyQ/ShinyQ-HQ --sha
 
 Expected: `reused CI on this commit (https://github.com/ShinyQ/ShinyQ-HQ/runs/...).` when the last main push CI is green; otherwise the red or "no CI result" line. Nothing is written to `GITHUB_OUTPUT` locally.
 
-- [ ] **Step 6: Rewrite `deploy.yml`**
+- [x] **Step 6: Rewrite `deploy.yml`**
 
 In `.github/workflows/deploy.yml`, replace the header comment (lines 3 to 13) with:
 
@@ -4446,7 +4448,7 @@ with:
 
 In the `report` job, replace `needs: [resolve, site, e2e, deploy]` with `needs: [resolve, verify, site, e2e, deploy]`.
 
-- [ ] **Step 7: Never cancel main CI runs**
+- [x] **Step 7: Never cancel main CI runs**
 
 In `.github/workflows/ci.yml`, replace:
 
@@ -4465,7 +4467,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
-- [ ] **Step 8: Check the workflow logic and commit**
+- [x] **Step 8: Check the workflow logic and commit**
 
 ```bash
 rtk grep -n "needs:\|if:" .github/workflows/deploy.yml
@@ -4494,7 +4496,7 @@ Spec 06 section 4 gains the beacon and a privacy note (spec gap 4 and 6); spec 0
 - Consumes: every name above (documentation only), `useTranslations` keys.
 - Produces: message key `footer.privacy` (EN and ID); `data-testid="footer-privacy"`.
 
-- [ ] **Step 1: Write the failing footer check**
+- [x] **Step 1: Write the failing footer check**
 
 Append to `e2e/perf-probes.spec.ts` (add `openPage` and the messages import: `import en from "../messages/en.json";` and `import id from "../messages/id.json";`, plus `openPage` in the `./hq` import):
 
@@ -4510,7 +4512,7 @@ test("the footer tells visitors what the performance beacon sends, in both langu
 Run: `bun run build; E2E_PORT=4433 bunx playwright test e2e/perf-probes.spec.ts -g footer`
 Expected: FAIL: TypeScript reports `Property 'privacy' does not exist` on `en.footer` (or the locator is not found).
 
-- [ ] **Step 2: Add the copy and the footer line**
+- [x] **Step 2: Add the copy and the footer line**
 
 In `messages/en.json`, replace:
 
@@ -4559,7 +4561,7 @@ with:
         </p>
 ```
 
-- [ ] **Step 3: Run the checks**
+- [x] **Step 3: Run the checks**
 
 ```bash
 bun run test tests/unit/ui-copy.test.ts tests/content
@@ -4570,7 +4572,7 @@ E2E_PORT=4433 bun run e2e:look
 
 Expected: unit tests pass (keys aligned, ASCII only, no em dash); e2e passes; the look check prints `8 passed` (the Page View `#main` column is unchanged; the footer is not compared). Open `screenshots/look/footer-1440.png` and `footer-390.png`: one new small line under the source link, nothing else moved. Attach both images to the PR. The HTML budget headroom of `/en/quick` (12.8 KB) easily absorbs about 0.4 KB of text in HTML plus RSC payload. Rollback: revert the footer commit; the beacon keeps working (the spec note stays the source of truth).
 
-- [ ] **Step 4: Amend spec 06 section 4**
+- [x] **Step 4: Amend spec 06 section 4**
 
 In `docs/superpowers/specs/agent-hq/06-data-contracts.md`, replace the whole section:
 
@@ -4614,7 +4616,7 @@ The beacon leaves on the first of: tab hidden, page left, 3D view closed (Page V
 - Visitors see the same promise in one footer line (`footer.privacy`, EN and ID).
 ```
 
-- [ ] **Step 5: Make CI budgets authoritative in spec 08**
+- [x] **Step 5: Make CI budgets authoritative in spec 08**
 
 In `docs/superpowers/specs/agent-hq/08-quality-acceptance.md`, replace section 2 (from `## 2. Performance budgets` up to, not including, `## 3. Test strategy`) with:
 
@@ -4652,7 +4654,7 @@ with:
 | Performance | Lighthouse CI; Playwright perf lane (`bun run e2e:perf`, CI job `3D perf gates`); nightly timeline; `?perf=1` and RUM for real devices | Budgets in section 2 on `/en`, `/en/quick`, `/en/journey`, `/en/labs/{hero}` and every 3D floor on both tiers |
 ```
 
-- [ ] **Step 6: Update the main spec's analytics rows**
+- [x] **Step 6: Update the main spec's analytics rows**
 
 In `docs/superpowers/specs/2026-10-09-agent-hq-design.md`, replace:
 
@@ -4678,7 +4680,7 @@ with:
 | Analytics | Cloudflare Web Analytics, cookieless, no consent banner; anonymous sampled performance beacon (appendix 06 section 4, owner approval 2026-10-13) |
 ```
 
-- [ ] **Step 7: Update AGENTS.md**
+- [x] **Step 7: Update AGENTS.md**
 
 Replace:
 
@@ -4775,7 +4777,7 @@ In "Fast verification", after the bullet that starts `- Before every push:`, add
 
 In the "Ask the HQ" section, in the bullet that starts `- Bindings and vars live in \`wrangler.toml\`:`, replace `` `ASK_EVENTS` (Analytics Engine `ask_events`), optional `ASK_RL`; `` with `` `ASK_EVENTS` (Analytics Engine `ask_events`), `PERF_EVENTS` (Analytics Engine `perf_events`, the RUM beacon, kill switch `RUM_ENABLED`), optional `ASK_RL`; ``.
 
-- [ ] **Step 8: Update README.md**
+- [x] **Step 8: Update README.md**
 
 Replace the CI paragraph (starts `GitHub Actions runs typecheck, lint and unit tests`) with:
 
@@ -4797,7 +4799,7 @@ Replace the 3D paragraph (starts `In 3D every floor stays under 150 draw calls`)
 In 3D every floor stays under 150 scene draw calls (L1 at most 125), at most 20 post-processing passes and 30k triangles, including the peaks of the intro, every elevator ride and hover; shader programs stay at their committed baseline and the JavaScript after the 3D gate stays under 450 KB gzip per tier (`e2e/budgets.ts`, `bun run e2e:perf`). Real-device frame rate is checked with `?perf=1`. Touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite, no composer MSAA; `renderBudget` in `src/experience/scene/settings.ts`), neighbouring floors mount on idle after the first frames, and the nav grids build in about a millisecond.
 ```
 
-- [ ] **Step 9: Update docs/deploy.md**
+- [x] **Step 9: Update docs/deploy.md**
 
 Replace the paragraph under the `gh workflow run` block in "Deploy from GitHub Actions (preferred)" (starts `Or Actions > Deploy > Run workflow.`) with:
 
@@ -4835,7 +4837,7 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_
 Multiply by 4 for an estimate of 3D sessions (25% sampling). Other useful groupings: `blob3` (load path), `blob6` (time to explore), `SUM(double1)` (context losses), `SUM(double2)` (boot timeouts). `CF_EVAL_TOKEN` needs Account Analytics Read, like the Ask content-gap report.
 ````
 
-- [ ] **Step 10: Check and commit**
+- [x] **Step 10: Check and commit**
 
 ```bash
 python3 -c "import pathlib,sys; files=[p for d in ['docs','src','e2e','scripts','functions','messages','.github'] for p in pathlib.Path(d).rglob('*') if p.is_file() and p.suffix in {'.md','.ts','.tsx','.json','.yml','.sh','.toml'}]+[pathlib.Path(f) for f in ['AGENTS.md','README.md','wrangler.toml']]; bad=[str(p) for p in files if chr(0x2014) in p.read_text(errors='ignore')]; print(bad or 'no em dashes'); sys.exit(1 if bad else 0)"
@@ -4857,7 +4859,7 @@ Expected: `no em dashes`; tests pass.
 - Consumes: the whole branch, `out-main/`.
 - Produces: a green branch and a PR with measured before/after numbers.
 
-- [ ] **Step 1: Fast verification**
+- [x] **Step 1: Fast verification**
 
 ```bash
 rm -rf .next
@@ -4867,7 +4869,7 @@ E2E_PORT=4433 bun run e2e:changed
 
 Expected: `verify:quick` exits 0. `e2e:changed` runs the full suite (this branch changes `e2e/hq.ts`, `playwright.config.ts` and `package.json`) and every test passes.
 
-- [ ] **Step 2: The perf lane, both CI shards**
+- [x] **Step 2: The perf lane, both CI shards**
 
 ```bash
 rm -rf perf-report
@@ -4877,7 +4879,7 @@ bun scripts/perf-summary.ts gates --head perf-report > perf-gates.md
 
 Expected: both shards pass (`KNOWN_OVER` scenarios as expected failures). Keep `perf-gates.md` for the PR body, then delete it after pasting.
 
-- [ ] **Step 3: Before/after on the same method**
+- [x] **Step 3: Before/after on the same method**
 
 ```bash
 E2E_DIR=out-main E2E_PORT=4433 PERF_REPORT_DIR=perf-report-main bun run e2e:perf e2e/perf/bytes-3d.spec.ts
@@ -4890,11 +4892,11 @@ rm -rf perf-report-main
 
 Expected: 3D JS grows by less than 2 KB per tier against main (render counter, marks, RUM decision; the overlay and the probe are lazy chunks); the main L1 lines show whole-frame totals (`134 calls` full), the branch lines the split (`116 scene calls + 18 post passes`), with equal sums; the look check prints `8 passed`. Also run `bunx @lhci/cli@0.15.1 autorun` once (local Chrome) and compare `/en` script bytes with CI's latest main run: the Page View grows by under 0.3 KB (only `perf-marks.ts` reaches the initial bundle, through `boot-first.ts`).
 
-- [ ] **Step 4: Security review**
+- [x] **Step 4: Security review**
 
 Dispatch the security-review agent on the branch diff with this focus: `/api/rum` (origin check, size limit, exact-schema parsing, no header reaches the data point, per-isolate cap, kill switch), the client never sends identifiers (`src/lib/rum/protocol.ts`, `RumProbe.tsx`), the CSP is unchanged (`tests/unit/csp.test.ts` untouched), `scripts/ci-status.ts` and `deploy.yml` (a red or missing CI can never deploy without e2e; permissions are read-only), `scripts/perf-base.sh` (no secrets in logs). Fix any finding with a test first.
 
-- [ ] **Step 5: Push and open the PR**
+- [x] **Step 5: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/r5-p4-measurement-gates
@@ -4935,7 +4937,7 @@ BODY
 
 Expected: `gh` prints the PR URL. Do not merge; the owner reviews.
 
-- [ ] **Step 6: After the owner merges (follow-up, same session or the next)**
+- [x] **Step 6: After the owner merges (follow-up, same session or the next)**
 
 ```bash
 gh workflow run perf-nightly.yml --ref main

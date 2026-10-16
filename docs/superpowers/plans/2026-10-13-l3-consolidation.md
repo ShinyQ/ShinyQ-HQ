@@ -1,5 +1,7 @@
 # R5 P8: L3 Layout Consolidation Implementation Plan
 
+Status: shipped in #71 (b751c71), 2026-10-13. Later replaced in #164 and #168: the road layout by the three paths, the directory wall and the floating wing signs by three separate boards
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Consolidate L3 Project Roads so each wing road ends right after its last pod, drop the L3 floor arrows and floor-painted wing names, make the floating wing signs readable (never mirrored) from any camera yaw, and turn the two wing directory boards into a prominent directory wall that fills the arrival view, without raising the L3 render cost.
@@ -88,7 +90,7 @@ Baseline for every later comparison (REPORT M47 for the 64/82 calls; global rule
 - Consumes: `__hq.rover.drawCalls` / `triangles` via `snapshot(page)`, `__hq.layouts.L3.road`, `interactablesOf(page)`, `driveTo`, `waitForCameraSettle`, `waitForSceneLive` (all in `e2e/hq.ts`).
 - Produces: `screenshots/r5-p8/{before,after}/*.png` and `metrics.jsonl`; local diff baselines `e2e/screenshots.spec.ts-snapshots/r5-p8-*.png`; the `L3_ARRIVAL_CALLS` caps used in Task 7 and Task 8.
 
-- [ ] **Step 1: Branch from main**
+- [x] **Step 1: Branch from main**
 
 ```bash
 rtk git fetch origin && rtk git switch -c r5/p8-l3-consolidation origin/main
@@ -96,7 +98,7 @@ rtk git fetch origin && rtk git switch -c r5/p8-l3-consolidation origin/main
 
 Expected: `Switched to a new branch 'r5/p8-l3-consolidation'`.
 
-- [ ] **Step 2: Ignore local diff baselines**
+- [x] **Step 2: Ignore local diff baselines**
 
 Append to `.gitignore`:
 
@@ -105,7 +107,7 @@ Append to `.gitignore`:
 /e2e/*-snapshots/
 ```
 
-- [ ] **Step 3: Add the L3 arrival draw-call caps to `e2e/labs.spec.ts`**
+- [x] **Step 3: Add the L3 arrival draw-call caps to `e2e/labs.spec.ts`**
 
 Change the `./hq` import (line 3) to:
 
@@ -136,7 +138,7 @@ for (const tier of ["lite", "full"] as const) {
 }
 ```
 
-- [ ] **Step 4: Add the opt-in `r5-p8` capture block to `e2e/screenshots.spec.ts`**
+- [x] **Step 4: Add the opt-in `r5-p8` capture block to `e2e/screenshots.spec.ts`**
 
 Change the imports at the top to:
 
@@ -238,7 +240,7 @@ for (const v of P8_VIEWPORTS) {
 }
 ```
 
-- [ ] **Step 5: Build and measure the L3 arrival draw calls**
+- [x] **Step 5: Build and measure the L3 arrival draw calls**
 
 ```bash
 rtk bun run build && E2E_PORT=4437 bunx playwright test e2e/labs.spec.ts -g "pre-consolidation draw calls" --workers=1
@@ -246,7 +248,7 @@ rtk bun run build && E2E_PORT=4437 bunx playwright test e2e/labs.spec.ts -g "pre
 
 Expected: 2 passed, and the log prints `L3 arrival draw calls (lite): 64` and `L3 arrival draw calls (full): 82`. If the printed numbers differ (another merge moved them), set `L3_ARRIVAL_CALLS` to the printed values, re-run the command and expect 2 passed. Record both numbers for the PR body.
 
-- [ ] **Step 6: Capture the baseline (L3 review poses and the unchanged-floor snapshots)**
+- [x] **Step 6: Capture the baseline (L3 review poses and the unchanged-floor snapshots)**
 
 ```bash
 rm -rf screenshots/r5-p8/before && E2E_PORT=4437 SCREENSHOTS=1 P8_PHASE=before bunx playwright test e2e/screenshots.spec.ts -g "r5-p8" --workers=1 --update-snapshots
@@ -254,7 +256,7 @@ rm -rf screenshots/r5-p8/before && E2E_PORT=4437 SCREENSHOTS=1 P8_PHASE=before b
 
 Expected: 15 passed (3 review + 12 unchanged); `screenshots/r5-p8/before/` holds `l3-arrival-*`, `l3-end-software-*`, `l3-end-ai-*`, `l3-board-software-*` at 1440x900, 2560x1440 and 390x844 plus `metrics.jsonl`; `e2e/screenshots.spec.ts-snapshots/` holds 12 `r5-p8-*` baselines.
 
-- [ ] **Step 7: Prove the diff gate's noise floor on the unchanged build**
+- [x] **Step 7: Prove the diff gate's noise floor on the unchanged build**
 
 ```bash
 E2E_PORT=4437 SCREENSHOTS=1 P8_PHASE=before bunx playwright test e2e/screenshots.spec.ts -g "r5-p8 unchanged" --workers=1
@@ -262,7 +264,7 @@ E2E_PORT=4437 SCREENSHOTS=1 P8_PHASE=before bunx playwright test e2e/screenshots
 
 Expected: 12 passed against the baselines written in Step 6. If a floor fails on this identical build, raise `maxDiffPixelRatio` for all floors to the smallest value of 0.015 or 0.02 that passes twice in a row, note the value in the PR body, and never go above 0.02 (above that the gate cannot tell noise from a change; capture that floor at the lite tier instead).
 
-- [ ] **Step 8: Capture the top-down plan view of the current layout**
+- [x] **Step 8: Capture the top-down plan view of the current layout**
 
 The dev prototype draws the real `buildLabsLayout` from above. Start it in the background and capture:
 
@@ -278,7 +280,7 @@ bun scripts/capture-dev.ts --base http://localhost:4438 --out screenshots/r5-p8/
 
 Expected: `screenshots/r5-p8/before/top/l3-top-{1440x900,834x1112,390x844}.png` and `metrics.json`. Stop the dev server (kill its PID).
 
-- [ ] **Step 9: Commit the harness (captures stay local, `screenshots/` is git-ignored)**
+- [x] **Step 9: Commit the harness (captures stay local, `screenshots/` is git-ignored)**
 
 ```bash
 rtk git add .gitignore e2e/labs.spec.ts e2e/screenshots.spec.ts && rtk git commit -m "test(l3): baseline captures, unchanged-floor diff gate and arrival draw-call caps for the L3 consolidation"
@@ -296,7 +298,7 @@ Owner: "the end of each section is just empty". Each wing road now turns `LABS.t
 - Consumes: `LabPod`, `tourOrder`, `WING_SIDE`, `expectSpaceRules`.
 - Produces: `LABS.tail = 7` (meaning changed: road past the last pod's far edge), `LABS.loop` removed. Each wing road is `[hub center, (wingStartX, ±wingZ), (turn(wing), ±wingZ), east.center]` where `turn(wing) = max(wingStartX + east + margin, lastPodMaxX(wing) + tail)` and `east.center = (max(turn(software), turn(ai)), 0)`. `floor.bounds.maxX = east.center.x + east / 2 + margin` (unchanged formula).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/labs-layout.test.ts`, add inside `describe("L3 Project Roads layout", ...)` right after the test `"has a round hub of at least 20 u and wing roads that loop at the east plaza"`:
 
@@ -341,12 +343,12 @@ In `tests/unit/labs-layout.test.ts`, add inside `describe("L3 Project Roads layo
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/labs-layout.test.ts`
 Expected: FAIL in the three new tests, for example `expected 110 to be 107` (today the roads turn at `farX + 8`) and `expected 139 to be 122`-style mismatches; the 17 existing tests still pass.
 
-- [ ] **Step 3: Implement the road ends in `src/experience/floors/labs/layout.ts`**
+- [x] **Step 3: Implement the road ends in `src/experience/floors/labs/layout.ts`**
 
 Replace the module doc comment (lines 7 to 16) with:
 
@@ -451,12 +453,12 @@ with:
   };
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/labs-layout.test.ts tests/unit/interact-registry.test.ts tests/unit/walk.test.ts tests/unit/pad-space.test.ts`
 Expected: PASS (labs layout 20 tests, the others unchanged).
 
-- [ ] **Step 5: Typecheck and commit**
+- [x] **Step 5: Typecheck and commit**
 
 ```bash
 rtk bun run typecheck && rtk git add src/experience/floors/labs/layout.ts tests/unit/labs-layout.test.ts && rtk git commit -m "feat(l3): end each wing road right after its last pod and move the east plaza in"
@@ -478,7 +480,7 @@ Owner decision: no floor arrows on L3 only. The switch is data on the road netwo
 **Interfaces:**
 - Produces: `RoadNetwork.chevrons?: boolean` (absent or `true` draws chevrons, `false` draws none); `chevronMarks(net, spacing)` returns `[]` when `net.chevrons === false`. `buildLabsLayout(...).network.chevrons === false`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/road.test.ts`, add after the test `"points chevrons forward and skips plazas"`:
 
@@ -517,12 +519,12 @@ and this test inside the describe block:
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/road.test.ts tests/unit/labs-layout.test.ts`
 Expected: FAIL. `road.test.ts` fails with `expected [ { x: 2, ... }, ... ] to deeply equal []` (chevrons are still drawn); the L3 test fails with `expected undefined to be false`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/experience/nav/road.ts` replace:
 
@@ -606,12 +608,12 @@ with:
   const network: RoadNetwork = { roads: [lead, wingRoad("software"), wingRoad("ai")], plazas: [hub, east], spurs, chevrons: false };
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/road.test.ts tests/unit/labs-layout.test.ts tests/unit/fx-geometry.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk bun run typecheck && rtk git add src/experience/nav/road.ts src/experience/nav/roadGeometry.ts src/experience/fx/RoadMarkings.tsx src/experience/floors/labs/layout.ts tests/unit/road.test.ts tests/unit/labs-layout.test.ts && rtk git commit -m "feat(l3): no road chevrons on L3 through a per-network switch, other floors unchanged"
@@ -631,7 +633,7 @@ Owner: the wing words "dont need to show in the floor" and the floating ones are
 - Produces: `yawTowards(from: Vec2, viewer: Vec2): number` (rotation about +y that turns a +z-facing plane toward `viewer`; 0 when they coincide). `LabsLayout.signs: Record<Wing, { at: Vec2; heading: Vec2; float: Vec2 }>` where `float = at + heading * 5` is where the floating sign stands.
 - Consumes: `zoneAt`, `followPose`, `FOLLOW_LOOK_AHEAD` (test only).
 
-- [ ] **Step 1: Write the failing test `tests/unit/facing.test.ts`**
+- [x] **Step 1: Write the failing test `tests/unit/facing.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -707,12 +709,12 @@ describe("L3 floating wing signs (owner request 2026-10-13)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `rtk bunx vitest run tests/unit/facing.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/fx/facing"`.
 
-- [ ] **Step 3: Create `src/experience/fx/facing.ts`**
+- [x] **Step 3: Create `src/experience/fx/facing.ts`**
 
 ```ts
 import type { Vec2 } from "../types";
@@ -729,7 +731,7 @@ export function yawTowards(from: Vec2, viewer: Vec2): number {
 }
 ```
 
-- [ ] **Step 4: Add the sign float point in `src/experience/floors/labs/layout.ts`**
+- [x] **Step 4: Add the sign float point in `src/experience/floors/labs/layout.ts`**
 
 In `interface LabsLayout` replace:
 
@@ -762,12 +764,12 @@ with:
     return { at, heading, float: { x: at.x + heading.x * 5, z: at.z + heading.z * 5 } };
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `rtk bunx vitest run tests/unit/facing.test.ts tests/unit/labs-layout.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Rewrite `src/experience/floors/labs/Hub.tsx` (signs face the camera, no floor text; boards as before)**
+- [x] **Step 6: Rewrite `src/experience/floors/labs/Hub.tsx` (signs face the camera, no floor text; boards as before)**
 
 Replace the whole file with:
 
@@ -943,7 +945,7 @@ export function Hub({ layout, labels, pods }: { layout: LabsLayout; labels: HubL
 }
 ```
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 Run: `rtk bun run typecheck && rtk bun run lint && rtk bunx vitest run tests/unit/facing.test.ts tests/unit/labs-layout.test.ts`
 Expected: clean typecheck and lint, tests PASS.
@@ -965,7 +967,7 @@ Owner: the directory boards "near elevator ... not noticable". They stand behind
 - Consumes: Task 2 roads, Task 3 `chevrons: false`, Task 4 `signs[wing].float`.
 - Produces: `LABS.board = { x: 17, z: 3.75, w: 0.6, d: 7.5, h: 9.5 }` (`z` = each panel's |z| center, `d` = width along z), `LABS.boardStop = 3` (in front of the WEST face now), `LABS.boardZoom = 0.9`, `LABS.innerStart = 24`, `LABS.overview = { x: 8.5, z: 0 }`; `directoryBoard(wing)` returns the panel rect, `center` and `stop = { x: board.x - board.w / 2 - boardStop, z: center.z }`; view zones in this order: `L3:directory:software`, `L3:directory:ai` (yaw -3PI/4, zoom 0.9), `L3:overview` (yaw -3PI/4, zoom 1.3, x 4.5..9.5, |z| <= 4), then one per door.
 
-- [ ] **Step 1: Write the failing projection test `tests/unit/labs-arrival.test.ts`**
+- [x] **Step 1: Write the failing projection test `tests/unit/labs-arrival.test.ts`**
 
 ```ts
 import { PerspectiveCamera, Vector3 } from "three";
@@ -1055,7 +1057,7 @@ describe("L3 arrival frames the wing directory wall (owner request 2026-10-13)",
 });
 ```
 
-- [ ] **Step 2: Replace two tests and add one in `tests/unit/labs-layout.test.ts`**
+- [x] **Step 2: Replace two tests and add one in `tests/unit/labs-layout.test.ts`**
 
 Change the rigs import to `import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";` and add `import { HINT } from "@/experience/hints/select";`.
 
@@ -1140,12 +1142,12 @@ Add after the test `"keeps every packet lane off every door pad"`:
   });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/labs-arrival.test.ts tests/unit/labs-layout.test.ts`
 Expected: FAIL. `labs-arrival` fails with off-screen panels (for example `software arrival 1440x900: expected -1104 to be greater than or equal to 40`) and wrong zones; the wall test fails with `expected 9.5 to be close to 0`; the overview test fails on `inPlaza` and the hint distance; the spine test fails with `expected [ 10, 0 ] to deeply equal [ 18.3, 0 ]`.
 
-- [ ] **Step 4: Replace `src/experience/floors/labs/layout.ts` with the final layout**
+- [x] **Step 4: Replace `src/experience/floors/labs/layout.ts` with the final layout**
 
 ```ts
 import type { RoomId, Wing } from "@/content/schema";
@@ -1452,12 +1454,12 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/labs-arrival.test.ts tests/unit/labs-layout.test.ts tests/unit/facing.test.ts tests/unit/interact-registry.test.ts tests/unit/interact-pick.test.ts tests/unit/walk.test.ts tests/unit/pad-space.test.ts tests/unit/road.test.ts`
 Expected: PASS. `labs-arrival` 6 tests; `interact-registry` still finds `L3:board:software|ai` with `at` equal to the new stops; the tour still ends at both directory stops.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk bun run typecheck && rtk git add src/experience/floors/labs/layout.ts tests/unit/labs-layout.test.ts tests/unit/labs-arrival.test.ts && rtk git commit -m "feat(l3): directory wall where the wing roads fork, framed by the arrival view on every screen size"
@@ -1479,7 +1481,7 @@ The wall's content becomes a pure module, rendered like the L1 Highlights Hall: 
 - Consumes: `directoryBoard`, `LABS`, `tourOrder`, `WING_TINT` (layout.ts); `BatchedLabel` (`fx/labelProps.ts`); `Box` (`floors/roof/solids.ts`); `MergedBoxes` (`floors/roof/kit.tsx`); `LineBatch` (`floors/labs/lines.ts`); `yawTowards` (Task 4).
 - Produces (directory.ts): `PANEL`, `TIER_MARK`, `interface DirectoryLabels { wings: Record<Wing, string>; directory: string; open: string; count: (count: number) => string }`, `interface DirectoryFonts { mono: string; monoBold: string; sansBold: string }`, `interface WallLine { seg: [number, number, number, number, number, number]; color: string }`, `textWidth(): number`, `listChars(): number`, `panelRows(): { titleTop; underline; subTop; listTop; listBottom; listLines }`, `wrapWords(text: string, first: number, rest?: number): string[]`, `fitTitle(name: string, width: number): { lines: string[]; size: number }`, `boardList(list: readonly LabPod[], maxLines: number): { text: string; entries: number; lines: number }`, `wallSolids(): Box[]`, `wallLines(): WallLine[]`, `wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts): BatchedLabel[]`. Hub.tsx: `export type HubLabels = DirectoryLabels`.
 
-- [ ] **Step 1: Write the failing test `tests/unit/labs-directory.test.ts`**
+- [x] **Step 1: Write the failing test `tests/unit/labs-directory.test.ts`**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1619,12 +1621,12 @@ describe("L3 directory wall legibility (owner request 2026-10-13)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `rtk bunx vitest run tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts`
 Expected: FAIL with `Failed to resolve import "@/experience/floors/labs/directory"`.
 
-- [ ] **Step 3: Create `src/experience/floors/labs/directory.ts`**
+- [x] **Step 3: Create `src/experience/floors/labs/directory.ts`**
 
 ```ts
 import type { Wing } from "@/content/schema";
@@ -1825,12 +1827,12 @@ export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fon
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `rtk bunx vitest run tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts`
 Expected: PASS (labs-directory 7 tests, labs-arrival 8 tests). Measured margins: titles 14.2 px (phone) and 25.6 px (laptop) on arrival, list 12.0 px (1440x900) and 19.2 px (2560x1440) on arrival, 10.1 px from the stop on a phone.
 
-- [ ] **Step 5: Rewrite `src/experience/floors/labs/Hub.tsx` with the wall**
+- [x] **Step 5: Rewrite `src/experience/floors/labs/Hub.tsx` with the wall**
 
 Replace the whole file with:
 
@@ -1953,7 +1955,7 @@ export function Hub({ layout, labels, pods }: { layout: LabsLayout; labels: HubL
 }
 ```
 
-- [ ] **Step 6: Memoize the hub labels in `src/experience/floors/Labs.tsx`**
+- [x] **Step 6: Memoize the hub labels in `src/experience/floors/Labs.tsx`**
 
 Replace:
 
@@ -1983,12 +1985,12 @@ with:
         <Hub layout={layout} pods={data.labs.pods} labels={hubLabels} />
 ```
 
-- [ ] **Step 7: Verify the whole unit suite and the build**
+- [x] **Step 7: Verify the whole unit suite and the build**
 
 Run: `rtk bun run verify:quick`
 Expected: typecheck, lint, all unit tests (including the em-dash scan) and `next build` pass.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/floors/labs/directory.ts src/experience/floors/labs/Hub.tsx src/experience/floors/Labs.tsx tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts && rtk git commit -m "feat(l3): larger, brighter directory wall panels in three draw calls with pre-wrapped top projects"
@@ -2003,7 +2005,7 @@ rtk git add src/experience/floors/labs/directory.ts src/experience/floors/labs/H
 - Consumes: `__hq.interact.screenAt(id, fx, fz, lift)` (CSS px of a point inside a target's pick volume), `hoverTarget`, `hoveredTarget`, `targetPoint`, `interactablesOf`, `snapshot`, `DESKTOP_SAFE`, `PHONE_SAFE`, `waitForSceneLive`, `waitForCameraSettle` from `e2e/hq.ts`; registry ids `L3:board:software|ai`; the palette dialog `en.hud.palette.title` ("Command palette").
 - Produces: e2e proof that both panels are whole and unobstructed on arrival at 1440x900 and 390x844, and that click (desktop) and tap + Go (phone) drive to the panel and open the full project list.
 
-- [ ] **Step 1: Extend the `./hq` import of `e2e/labs.spec.ts`**
+- [x] **Step 1: Extend the `./hq` import of `e2e/labs.spec.ts`**
 
 ```ts
 import {
@@ -2028,7 +2030,7 @@ import {
 } from "./hq";
 ```
 
-- [ ] **Step 2: Append the wall tests to `e2e/labs.spec.ts`**
+- [x] **Step 2: Append the wall tests to `e2e/labs.spec.ts`**
 
 ```ts
 type PanelWindow = Window & { __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null } } };
@@ -2108,7 +2110,7 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
 });
 ```
 
-- [ ] **Step 3: Build and run the changed e2e specs**
+- [x] **Step 3: Build and run the changed e2e specs**
 
 ```bash
 rtk bun run verify:quick && E2E_PORT=4437 rtk bun run e2e:changed --dry && E2E_PORT=4437 rtk bun run e2e:changed
@@ -2126,7 +2128,7 @@ Expected: all pass. `visibleTarget` only returns targets the raycast hits first,
 
 If a cap fails: the wall adds 3 calls in view while the change removes the 2 floor texts and the chevron mesh, and the signs leave the arrival frame. Bisect in a local build by removing `<DirectoryWall />`, then `<WingSigns />`, from `Hub` and re-running the cap test to find the extra call; fix it in code (the wall must stay 3 meshes: `MergedBoxes`, the line batch and one `BatchedLabels`); do not raise the cap.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add e2e/labs.spec.ts && rtk git commit -m "test(l3): directory wall framing, click and tap to the full list on arrival"
@@ -2142,7 +2144,7 @@ rtk git add e2e/labs.spec.ts && rtk git commit -m "test(l3): directory wall fram
 - Consumes: Task 1 harness and baselines.
 - Produces: the PR with before/after captures, metrics and the diff-gate result.
 
-- [ ] **Step 1: Capture after-state and run the unchanged-floor diff gate**
+- [x] **Step 1: Capture after-state and run the unchanged-floor diff gate**
 
 ```bash
 rtk bun run build && rm -rf screenshots/r5-p8/after && E2E_PORT=4437 SCREENSHOTS=1 P8_PHASE=after bunx playwright test e2e/screenshots.spec.ts -g "r5-p8" --workers=1
@@ -2158,7 +2160,7 @@ bun scripts/capture-dev.ts --base http://localhost:4438 --out screenshots/r5-p8/
 
 Expected: `screenshots/r5-p8/after/top/l3-top-*.png`; the road ends now meet the east plaza right after the last pods and the slab ends 17 u earlier.
 
-- [ ] **Step 2: Summarize the metrics for the PR body**
+- [x] **Step 2: Summarize the metrics for the PR body**
 
 ```bash
 bun -e 'import { readFileSync, writeFileSync } from "node:fs"; const read = (p) => readFileSync(`screenshots/r5-p8/${p}/metrics.jsonl`, "utf8").trim().split("\n").map((l) => JSON.parse(l)); const before = read("before"); const rows = read("after").map((a) => { const b = before.find((x) => x.name === a.name && x.viewport === a.viewport); return `| ${a.name} | ${a.viewport} | ${a.tier} | ${b?.drawCalls ?? "n/a"} | ${a.drawCalls} | ${b?.triangles ?? "n/a"} | ${a.triangles} |`; }); writeFileSync("screenshots/r5-p8/metrics.md", ["| Pose | Viewport | Tier | Calls before | Calls after | Triangles before | Triangles after |", "|---|---|---|---|---|---|---|", ...rows].join("\n") + "\n"); console.log(rows.length, "rows");'
@@ -2166,7 +2168,7 @@ bun -e 'import { readFileSync, writeFileSync } from "node:fs"; const read = (p) 
 
 Expected: `24 rows` (3 viewports x (4 L3 poses + 4 unchanged floors)); fewer means a pose failed to record, re-run Step 1. Every unchanged floor shows equal calls before and after; the L3 arrival shows calls after <= before (the caps); the other L3 poses are reported as measured (the wing-end and board-stop views are new compositions, so they are compared against the 150-call budget, not the old pose).
 
-- [ ] **Step 3: Regenerate the L3 elevator picker thumbnail**
+- [x] **Step 3: Regenerate the L3 elevator picker thumbnail**
 
 ```bash
 E2E_PORT=4437 SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "floor thumbnail L3" --workers=1 && cwebp -quiet -noalpha -q 62 -m 6 -resize 320 180 -metadata none screenshots/floor-thumbs/L3.png -o public/floors/L3.webp && ls -l public/floors/L3.webp
@@ -2174,7 +2176,7 @@ E2E_PORT=4437 SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "flo
 
 Expected: 1 passed; `public/floors/L3.webp` rewritten (a few KB, same settings as `scripts/floor-thumbs.ts`), showing the directory wall at the fork. Other floors' thumbnails stay untouched.
 
-- [ ] **Step 4: Update `AGENTS.md`**
+- [x] **Step 4: Update `AGENTS.md`**
 
 Replace the line
 
@@ -2210,7 +2212,7 @@ Replace the whole bullet that starts with `- L3 Project Roads (` with:
 
 In the `tests/unit/` line, replace `labs layout,` with `labs layout, arrival framing and directory wall, sign facing,`.
 
-- [ ] **Step 5: Update `README.md`**
+- [x] **Step 5: Update `README.md`**
 
 Replace
 
@@ -2224,7 +2226,7 @@ with
 On L3 (Labs) the floor is **Project Roads**: a hub plaza in front of the elevator, a wing directory wall where the two wing roads fork (the first thing you see on arrival: each wing's name, project count and top projects; click a panel for the full list), and two wing roads that run east and meet in a loop right after their last pods, with every key and featured project docked along them.
 ```
 
-- [ ] **Step 6: Update appendix 01 section 4 (`docs/superpowers/specs/agent-hq/01-world-and-layout.md`)**
+- [x] **Step 6: Update appendix 01 section 4 (`docs/superpowers/specs/agent-hq/01-world-and-layout.md`)**
 
 Replace the sentence `The footprint follows the content: with today's 18 docked pods it is about 163 × 92 u, from x = -24 to about 139 and z = -46 to 46.` with `The footprint follows the content: with today's 18 docked pods it is about 146 × 92 u, from x = -24 to 122 and z = -46 to 46 (round 5 consolidation, owner request 2026-10-13: the wing roads used to run on to x = 139 past their last pods).`
 
@@ -2242,7 +2244,7 @@ Replace the table rows `Hub plaza`, `Wing roads`, `East plaza`, `Docked pods (pe
 | Camera | View zones turn the follow camera at each door so the pod is in front of the rover, and look east at a directory panel from its stop (zoom 0.9, the whole panel under the HUD). |
 ```
 
-- [ ] **Step 7: Verify docs and commit**
+- [x] **Step 7: Verify docs and commit**
 
 ```bash
 rtk bun run verify:quick && rtk git add public/floors/L3.webp README.md AGENTS.md docs/superpowers/specs/agent-hq/01-world-and-layout.md && rtk git commit -m "docs(l3): consolidated Project Roads, directory wall and camera-facing signs; new L3 thumbnail"
@@ -2250,7 +2252,7 @@ rtk bun run verify:quick && rtk git add public/floors/L3.webp README.md AGENTS.m
 
 Expected: the em-dash scan and all checks pass.
 
-- [ ] **Step 8: Push and open the PR**
+- [x] **Step 8: Push and open the PR**
 
 ```bash
 rtk git push -u origin r5/p8-l3-consolidation

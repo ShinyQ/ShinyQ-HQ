@@ -1,5 +1,7 @@
 # Phase 5a: L4 Library and RF Roof Implementation Plan
 
+Status: shipped in #12 (f97fa6f), 2026-10-10. Later replaced: the L4 Library scene in #56 by the Newsroom, the RF Roof scene in #58 by the Signal Garden deck
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the L4 Library and the RF Roof as real 3D floors generated from `content/site-content.json`, give the `blog`, `hire` and `cv` missions real target points, and deep link `/{locale}/library` and `/{locale}/contact` straight into those floors.
@@ -60,9 +62,9 @@ Modified: `config.ts` (READY_FLOORS, L4/RF obstacles, doors, spawns), `types.ts`
 - `spineSlots(n): { index, row, x, z }[]` (spine center on the shelf front), `postStop(i, n): Vec2` (1.6 u in front of the spine), `LIBRARY_STOPS: { publications, talks }`, `libraryObstacles(): Rect[]`.
 - `ROOF = { beacon: { x: 0, z: -6, r: 1.2 }, arc: 10, terminal: { w: 1.8, d: 0.8 }, kiosk: { x: 10, z: 6, w: 3, d: 2 } }`, `terminalSlots(n): { x, z, angle }[]`, `ROOF_STOPS: { contact, cv }`, `roofObstacles(n)`.
 
-- [ ] Write failing tests: slots alternate rows and stay on the shelf, stops are walkable on the floor navgrid and reachable from the elevator approach (`findPath`), terminals sit on the arc of radius 10 around the beacon, every stop is outside every inflated obstacle.
-- [ ] Implement both modules; wire `buildFloorLayouts` L4/RF obstacles; append `"L4", "RF"` to `READY_FLOORS`.
-- [ ] `bun run test tests/unit/library-roof-layout.test.ts` passes; commit `feat: L4 and RF layouts`.
+- [x] Write failing tests: slots alternate rows and stay on the shelf, stops are walkable on the floor navgrid and reachable from the elevator approach (`findPath`), terminals sit on the arc of radius 10 around the beacon, every stop is outside every inflated obstacle.
+- [x] Implement both modules; wire `buildFloorLayouts` L4/RF obstacles; append `"L4", "RF"` to `READY_FLOORS`.
+- [x] `bun run test tests/unit/library-roof-layout.test.ts` passes; commit `feat: L4 and RF layouts`.
 
 ### Task 2: Experience data and mission targets
 
@@ -70,39 +72,39 @@ Modified: `config.ts` (READY_FLOORS, L4/RF obstacles, doors, spawns), `types.ts`
 
 **Produces:** `ExperienceData.library = { posts: { slug, title, excerpt, date, languages, tags, url }[], publications: { id, title, kind, venue, year, url }[], talks: { id, title, event, date, role }[] }`, `ExperienceData.roof = { availability, email, channels: { id, label, href }[], cv: { en, id, page } }`; `goToRoom(room)`.
 
-- [ ] Tests: posts follow `buildRoomCatalog` order; channels include LinkedIn, GitHub, Hugging Face, Medium; CV paths are `/cv/{fileName}-{locale}.pdf`. `roomTarget` sends `L4:the-sun-the-moon-and-the-dark-sea` to `postStop(i, n)`, `L4:publications`/`L4:talks`/`RF:contact`/`RF:cv` to their stops; `openRoom` on L4/RF sets `activeRoom`; `driveTo` closes an open room.
-- [ ] Implement; commit `feat: library and roof data, real mission stops`.
+- [x] Tests: posts follow `buildRoomCatalog` order; channels include LinkedIn, GitHub, Hugging Face, Medium; CV paths are `/cv/{fileName}-{locale}.pdf`. `roomTarget` sends `L4:the-sun-the-moon-and-the-dark-sea` to `postStop(i, n)`, `L4:publications`/`L4:talks`/`RF:contact`/`RF:cv` to their stops; `openRoom` on L4/RF sets `activeRoom`; `driveTo` closes an open room.
+- [x] Implement; commit `feat: library and roof data, real mission stops`.
 
 ### Task 3: L4 Library scene
 
-- [ ] `Library.tsx` + `BlogShelves` (glowing spines, hover title, EN/ID badge, Medium spines pink with an arrow), `Lectern` (newest hosted post, click opens it), `PublicationsShelf` (framed plates by kind: paper, thesis, model), `TalksStage` (stage and screen listing talks). Clicks call `goToRoom`.
-- [ ] Mount in `Tower.tsx` with labels from messages; commit `feat: L4 Library floor`.
+- [x] `Library.tsx` + `BlogShelves` (glowing spines, hover title, EN/ID badge, Medium spines pink with an arrow), `Lectern` (newest hosted post, click opens it), `PublicationsShelf` (framed plates by kind: paper, thesis, model), `TalksStage` (stage and screen listing talks). Clicks call `goToRoom`.
+- [x] Mount in `Tower.tsx` with labels from messages; commit `feat: L4 Library floor`.
 
 ### Task 4: RF Roof scene
 
-- [ ] `Roof.tsx` + `Sky` (stars + drifting clouds, `fog={false}`, frozen under reduced motion), `Beacon` (pulsing light + availability ribbon), `CommsTerminals` (email, LinkedIn, GitHub, Hugging Face, Medium), `CvKiosk`. Clicks call `goToRoom`.
-- [ ] Mount in `Tower.tsx`; commit `feat: RF Roof floor`.
+- [x] `Roof.tsx` + `Sky` (stars + drifting clouds, `fog={false}`, frozen under reduced motion), `Beacon` (pulsing light + availability ribbon), `CommsTerminals` (email, LinkedIn, GitHub, Hugging Face, Medium), `CvKiosk`. Clicks call `goToRoom`.
+- [x] Mount in `Tower.tsx`; commit `feat: RF Roof floor`.
 
 ### Task 5: Drawer content for L4 and RF
 
-- [ ] Tests first (`tests/hud/LibraryRoofRooms.test.tsx`): hosted post shows "Read post" linking to `/{locale}/blog/{slug}` and a note when untranslated; Medium post opens in a new tab; copy email writes to the clipboard and plays `click`; CV body links both PDFs (visitor's language first) and `/cv`.
-- [ ] Implement `RoofBody`, register it for kind `roof`, add the "Read post" footer label and the translation note; keep shelves and Medium posts on the floor URL (`hasPage`); commit.
+- [x] Tests first (`tests/hud/LibraryRoofRooms.test.tsx`): hosted post shows "Read post" linking to `/{locale}/blog/{slug}` and a note when untranslated; Medium post opens in a new tab; copy email writes to the clipboard and plays `click`; CV body links both PDFs (visitor's language first) and `/cv`.
+- [x] Implement `RoofBody`, register it for kind `roof`, add the "Read post" footer label and the translation note; keep shelves and Medium posts on the floor URL (`hasPage`); commit.
 
 ### Task 6: Deep links
 
-- [ ] Library and contact pages mount `ExperienceGate` with `startFloor="L4"`/`"RF"` (Phase 4 plumbing); spawns in front of the content; commit.
+- [x] Library and contact pages mount `ExperienceGate` with `startFloor="L4"`/`"RF"` (Phase 4 plumbing); spawns in front of the content; commit.
 
 ### Task 7: E2E, screenshots, docs
 
-- [ ] `e2e/library-roof.spec.ts`: blog, hire, cv missions end to end (`?tier=lite`), email copy, CV download link, deep links for both locales, Medium link target, draw call budget on L4 and RF.
-- [ ] Update `e2e/experience.spec.ts` (hire now stays in 3D), add L4/RF to `screenshots.spec.ts` (3 viewports).
-- [ ] `AGENTS.md` (READY_FLOORS, layout modules, goToRoom, startFloor, room panel); run the full check suite; commit; push; PR "Phase 5a: Library and Roof" with screenshots.
+- [x] `e2e/library-roof.spec.ts`: blog, hire, cv missions end to end (`?tier=lite`), email copy, CV download link, deep links for both locales, Medium link target, draw call budget on L4 and RF.
+- [x] Update `e2e/experience.spec.ts` (hire now stays in 3D), add L4/RF to `screenshots.spec.ts` (3 viewports).
+- [x] `AGENTS.md` (READY_FLOORS, layout modules, goToRoom, startFloor, room panel); run the full check suite; commit; push; PR "Phase 5a: Library and Roof" with screenshots.
 
 ### Task 8: Research (owner addition)
 
 The owner asked for research publications as a portfolio type of their own. Records verified by the coordinator (Crossref and Google Scholar); existing entries are updated, not duplicated, and nothing about the Master's degree is added.
 
-- [ ] Schema (additive, documented in AGENTS.md): research metadata on `Publication`, `library.researchMetrics` with `asOf`, `Contact.googleScholar` and `Contact.ieeeXplore`.
-- [ ] Content: the two IEEE papers (DOI, authors, venue, date, citations), the eProceedings paper (replaces the old Sentiboard paper entry), summaries in EN and ID, Scholar metrics as of Oct 2026.
-- [ ] Room `L4:research` (kind `research`) in the catalog and Cmd-K; `L4:publications` becomes the models shelf. 3D Research shelf east of the blog shelves with a door trigger; two more comms terminals (Google Scholar, IEEE Xplore).
-- [ ] Drawer `ResearchBody` (owner highlighted, venue, DOI, summary, dated citations, profiles); `/library` Research section and Quick view; tests. The CV page has no publications section, so it is unchanged. No `research` mission: the terminal maps missions to keys 1 to 8 and the catalog already has eight.
+- [x] Schema (additive, documented in AGENTS.md): research metadata on `Publication`, `library.researchMetrics` with `asOf`, `Contact.googleScholar` and `Contact.ieeeXplore`.
+- [x] Content: the two IEEE papers (DOI, authors, venue, date, citations), the eProceedings paper (replaces the old Sentiboard paper entry), summaries in EN and ID, Scholar metrics as of Oct 2026.
+- [x] Room `L4:research` (kind `research`) in the catalog and Cmd-K; `L4:publications` becomes the models shelf. 3D Research shelf east of the blog shelves with a door trigger; two more comms terminals (Google Scholar, IEEE Xplore).
+- [x] Drawer `ResearchBody` (owner highlighted, venue, DOI, summary, dated citations, profiles); `/library` Research section and Quick view; tests. The CV page has no publications section, so it is unchanged. No `research` mission: the terminal maps missions to keys 1 to 8 and the catalog already has eight.

@@ -1,5 +1,7 @@
 # Phase 4: Labs, Glass Drawer and Hologram Implementation Plan
 
+Status: shipped in #8 (cb8cb20), 2026-10-10. Later replaced in #41: the L3 Labs layout, by the Project Roads (the Glass Drawer and the hologram view stay)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the L3 Labs floor from content, the shared Glass Drawer for rooms on every floor, the hologram view for hero pods and the README easter egg.
@@ -54,36 +56,36 @@
 ## Tasks
 
 ### Task 1: Store, layout extras and door triggers
-- [ ] Store: `openRoom(room, tab?)`, `setDrawerTab`, `readme` + `toggleReadme`, `openHologram`, `closeHologram`; elevator blocked during `hologram`. Tests in `tests/unit/store.test.ts`.
-- [ ] `DoorTrigger`, `FloorLayout.doors?`, `LayoutExtras` in `types.ts`; `nav/doors.ts` (`doorAt(doors, p)`, `shouldTrigger`). Tests `tests/unit/doors.test.ts`.
-- [ ] Director: step the controller in `room`/`hologram` without manual input, door triggers, `open` intent, floor click in `room` closes and drives. host3d: generic door `roomTarget`, `openRoom` opens the drawer on ready floors, `driveTo` closes an open room first. Tests in `tests/unit/missions-host3d.test.ts`.
-- [ ] Commit `feat: drawer-ready store, door triggers and openRoom in 3D`.
+- [x] Store: `openRoom(room, tab?)`, `setDrawerTab`, `readme` + `toggleReadme`, `openHologram`, `closeHologram`; elevator blocked during `hologram`. Tests in `tests/unit/store.test.ts`.
+- [x] `DoorTrigger`, `FloorLayout.doors?`, `LayoutExtras` in `types.ts`; `nav/doors.ts` (`doorAt(doors, p)`, `shouldTrigger`). Tests `tests/unit/doors.test.ts`.
+- [x] Director: step the controller in `room`/`hologram` without manual input, door triggers, `open` intent, floor click in `room` closes and drives. host3d: generic door `roomTarget`, `openRoom` opens the drawer on ready floors, `driveTo` closes an open room first. Tests in `tests/unit/missions-host3d.test.ts`.
+- [x] Commit `feat: drawer-ready store, door triggers and openRoom in 3D`.
 
 ### Task 2: L3 layout generation
-- [ ] `buildLabsLayout(pods)` returns `{ floor: FloorLayout, pods: PlacedPod[], atrium, pillars, lanes }`. Tests `tests/unit/labs-layout.test.ts`: wing placement (software `z < 0`, AI `z > 0`), hero order nearest the atrium, featured row, listed not placed, doors reachable on the navgrid from the approach, door zones clear of obstacles, approach inside the atrium, shaft outside the slab, mirror symmetry.
-- [ ] `READY_FLOORS` gains `L3`; `buildFloorLayouts(yearCount, extras)` uses the labs layout when `extras.labs` is given; `ExperienceData.labs` from `buildExperienceData`. Commit.
+- [x] `buildLabsLayout(pods)` returns `{ floor: FloorLayout, pods: PlacedPod[], atrium, pillars, lanes }`. Tests `tests/unit/labs-layout.test.ts`: wing placement (software `z < 0`, AI `z > 0`), hero order nearest the atrium, featured row, listed not placed, doors reachable on the navgrid from the approach, door zones clear of obstacles, approach inside the atrium, shaft outside the slab, mirror symmetry.
+- [x] `READY_FLOORS` gains `L3`; `buildFloorLayouts(yearCount, extras)` uses the labs layout when `extras.labs` is given; `ExperienceData.labs` from `buildExperienceData`. Commit.
 
 ### Task 3: Room views and data export
-- [ ] `RoomView` types, builders for all floors, `/data/rooms/{locale}.json` route, `loadRoomViews`. Tests `tests/unit/room-views.test.ts`: every catalog room has a view in both locales, hero pods have architecture and `hologram: true`, prev/next within wing, no em dashes. Commit.
+- [x] `RoomView` types, builders for all floors, `/data/rooms/{locale}.json` route, `loadRoomViews`. Tests `tests/unit/room-views.test.ts`: every catalog room has a view in both locales, hero pods have architecture and `hologram: true`, prev/next within wing, no em dashes. Commit.
 
 ### Task 4: ASCII renderer
-- [ ] `renderAsciiArchitecture(arch)` and `renderReadme(view)`. Tests `tests/unit/ascii.test.ts`: boxes per node in layer columns, connectors, async marker, deterministic output, width bound. Commit.
+- [x] `renderAsciiArchitecture(arch)` and `renderReadme(view)`. Tests `tests/unit/ascii.test.ts`: boxes per node in layer columns, connectors, async marker, deterministic output, width bound. Commit.
 
 ### Task 5: Glass Drawer
-- [ ] `drawerLayout(width, height)` + `cameraShift(layout)`; `urlSync` controller with fake history. Tests `tests/unit/drawer-layout.test.ts`, `tests/unit/drawer-url.test.ts`.
-- [ ] `RoomDrawer` + `DrawerHost` + bodies + messages (`drawer` namespace, en and id). Testing Library `tests/hud/RoomDrawer.test.tsx`: focus moves in and is trapped, Esc closes, tabs switch with arrows, single pane for non-pods, metrics with context, prev/next, `t` toggles README, View architecture only on heroes. Commit.
+- [x] `drawerLayout(width, height)` + `cameraShift(layout)`; `urlSync` controller with fake history. Tests `tests/unit/drawer-layout.test.ts`, `tests/unit/drawer-url.test.ts`.
+- [x] `RoomDrawer` + `DrawerHost` + bodies + messages (`drawer` namespace, en and id). Testing Library `tests/hud/RoomDrawer.test.tsx`: focus moves in and is trapped, Esc closes, tabs switch with arrows, single pane for non-pods, metrics with context, prev/next, `t` toggles README, View architecture only on heroes. Commit.
 
 ### Task 6: L3 floor rendering
-- [ ] `Labs.tsx`: slab tints, atrium, signs, directory pillars, pods (merged edges + instanced fills), per-kind holograms (one instanced mesh), lanes with packets, door markers, labels; click a pod to drive to its door. Mount in `Tower.tsx`. Commit.
+- [x] `Labs.tsx`: slab tints, atrium, signs, directory pillars, pods (merged edges + instanced fills), per-kind holograms (one instanced mesh), lanes with packets, door markers, labels; click a pod to drive to its door. Mount in `Tower.tsx`. Commit.
 
 ### Task 7: Hologram view
-- [ ] `hologramPose` + camera focus in `CameraDirector`, drawer camera shift. Tests in `tests/unit/rigs.test.ts`.
-- [ ] `HologramDiagram` (3D) and `HologramOverlay` (HTML results, prev/next, Esc). Commit.
+- [x] `hologramPose` + camera focus in `CameraDirector`, drawer camera shift. Tests in `tests/unit/rigs.test.ts`.
+- [x] `HologramDiagram` (3D) and `HologramOverlay` (HTML results, prev/next, Esc). Commit.
 
 ### Task 8: Routes, deep links, docs
-- [ ] `ExperienceGate` on `/labs` and `/labs/[slug]` with `startFloor`/`startRoom`; `?view=architecture`.
-- [ ] Update appendix 01 section 4 and AGENTS.md (drawer API, L3 layout, store additions). Commit.
+- [x] `ExperienceGate` on `/labs` and `/labs/[slug]` with `startFloor`/`startRoom`; `?view=architecture`.
+- [x] Update appendix 01 section 4 and AGENTS.md (drawer API, L3 layout, store additions). Commit.
 
 ### Task 9: E2E and screenshots
-- [ ] `e2e/labs.spec.ts`: drive to a pod via Cmd-K, deep link, hologram with prev/next and Esc, README toggle, mobile bottom sheet, axe on the drawer. Screenshots: L3 with drawer and hologram at 1440x900, 1024x1366, 390x844.
-- [ ] Full check suite, push, PR "Phase 4: Labs, drawer and hologram".
+- [x] `e2e/labs.spec.ts`: drive to a pod via Cmd-K, deep link, hologram with prev/next and Esc, README toggle, mobile bottom sheet, axe on the drawer. Screenshots: L3 with drawer and hologram at 1440x900, 1024x1366, 390x844.
+- [x] Full check suite, push, PR "Phase 4: Labs, drawer and hologram".

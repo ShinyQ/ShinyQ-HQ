@@ -1,5 +1,7 @@
 # L3 Tech Reactor Implementation Plan
 
+Status: shipped in #92 (cc70075), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the decorative L3 Reactor core into a project filter: six selectable tech rings (the CV skill groups), a "Tech Reactor" drawer listing every tech with its project count, pod and road highlights, a floating count sign, Clear, Surprise me, a `#labs-tech=<slug>` deep link and Cmd-K entries.
@@ -57,10 +59,10 @@ export function buildTechIndex(pods: readonly Pick<Pod, "slug" | "stack">[], ski
 export function getTechIndex(): TechIndex; // server only, cached
 ```
 
-- [ ] Step 1: failing tests: every pod tech resolves to a ring or is in `MISC_TECH`; CV group mapping (`ai` to ai, `languages` per tech); aliases merge (`Next.js 15` with `Next.js`, `App Service` with `Azure App Service`); counts equal distinct pods; techs sorted by count then name; every `EXTRA_RING` and alias key is used by some pod (no stale entries); misc and mapped sets are disjoint; slugs unique.
-- [ ] Step 2: run `bunx vitest run tests/unit/tech-index.test.ts`, expect failure (module missing).
-- [ ] Step 3: implement (CV skill items win over `EXTRA_RING`; display name is the most used spelling, ties alphabetical; pods in site order via `orderPods`).
-- [ ] Step 4: tests pass. Commit `feat(content): build-time tech index for the L3 Tech Reactor`.
+- [x] Step 1: failing tests: every pod tech resolves to a ring or is in `MISC_TECH`; CV group mapping (`ai` to ai, `languages` per tech); aliases merge (`Next.js 15` with `Next.js`, `App Service` with `Azure App Service`); counts equal distinct pods; techs sorted by count then name; every `EXTRA_RING` and alias key is used by some pod (no stale entries); misc and mapped sets are disjoint; slugs unique.
+- [x] Step 2: run `bunx vitest run tests/unit/tech-index.test.ts`, expect failure (module missing).
+- [x] Step 3: implement (CV skill items win over `EXTRA_RING`; display name is the most used spelling, ties alphabetical; pods in site order via `orderPods`).
+- [x] Step 4: tests pass. Commit `feat(content): build-time tech index for the L3 Tech Reactor`.
 
 ### Task 2: Reactor model and layout
 
@@ -81,10 +83,10 @@ export function techFromHash(hash: string): string | null;
 export function techHash(slug: string | null): string;       // "" when null
 ```
 
-- [ ] Step 1: failing tests: stop lies on the ring road and outside the core; bands are ordered, contiguous, top under the core height; `litPods` keeps only placed pods; `roadGlow` covers the wing road from the ring entry to the westmost lit spur plus each lit spur, every segment on the road network (`onNetwork`), none for an empty selection; `surprisePod` never returns `current` when another exists; hash round trip, rejects bad slugs.
-- [ ] Step 2: run, expect failure.
-- [ ] Step 3: implement; layout adds `stops: { "L3:reactor": stop }` and a view zone `L3:reactor` at the stop (camera east of the rover, looking west over the core to both wings).
-- [ ] Step 4: tests pass (plus `tests/unit/labs-*.test.ts`). Commit.
+- [x] Step 1: failing tests: stop lies on the ring road and outside the core; bands are ordered, contiguous, top under the core height; `litPods` keeps only placed pods; `roadGlow` covers the wing road from the ring entry to the westmost lit spur plus each lit spur, every segment on the road network (`onNetwork`), none for an empty selection; `surprisePod` never returns `current` when another exists; hash round trip, rejects bad slugs.
+- [x] Step 2: run, expect failure.
+- [x] Step 3: implement; layout adds `stops: { "L3:reactor": stop }` and a view zone `L3:reactor` at the stop (camera east of the rover, looking west over the core to both wings).
+- [x] Step 4: tests pass (plus `tests/unit/labs-*.test.ts`). Commit.
 
 ### Task 3: Store slice
 

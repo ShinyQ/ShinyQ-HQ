@@ -1,5 +1,7 @@
 # Phase 1-2: Tower Shell, Screen Rover and Lobby Implementation Plan
 
+Status: shipped in #5 (6f2afad), 2026-10-09. Later replaced in #142: the KAW monogram on the Lobby hologram, by the rover brand mark
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Mount an explorable React Three Fiber tower on `/{locale}` (five neon floors, a glass elevator, camera rigs, input intents, GPU tier gate) with a drivable Screen Rover and a content-driven L1 Lobby, while the existing HTML page stays underneath for SEO and the static tier.
@@ -90,9 +92,9 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 - `decideTier(i: TierInputs): Tier` where `TierInputs = { override?: string | null; webgl2: boolean; renderer?: string; saveData?: boolean; coarse: boolean; deviceMemory?: number; cores?: number }`.
 - `parseHQUrl(pathname, search): { locale, floor, activeRoom, view } | null`, `serializeHQUrl(state): string`, `floorRoute(floor)`.
 
-- [ ] Write tests: tier override wins for valid values, ignored for junk; no WebGL2 or `saveData` gives `static`; SwiftShader renderer gives `static`; coarse + `deviceMemory 2` gives `lite`; desktop default `full`. URL: `/en` to L1, `/id/journey` to L2, `/en/journey/x` to `L2:x`, `/en/labs/y?view=architecture` to `L3:y` + hologram view, `/en/blog/z` to `L4:z`, `/en/contact` to RF; serialize round-trips; unknown paths return null. Viewport: 390x844 mobile, 844x390 mobile with tablet camera, 1024x1366 desktop width rule, 800x1000 tablet.
-- [ ] Run `bun run test` and see them fail, implement, see them pass.
-- [ ] Commit `feat: tower config, gpu tier gate and url sync helpers`.
+- [x] Write tests: tier override wins for valid values, ignored for junk; no WebGL2 or `saveData` gives `static`; SwiftShader renderer gives `static`; coarse + `deviceMemory 2` gives `lite`; desktop default `full`. URL: `/en` to L1, `/id/journey` to L2, `/en/journey/x` to `L2:x`, `/en/labs/y?view=architecture` to `L3:y` + hologram view, `/en/blog/z` to `L4:z`, `/en/contact` to RF; serialize round-trips; unknown paths return null. Viewport: 390x844 mobile, 844x390 mobile with tablet camera, 1024x1366 desktop width rule, 800x1000 tablet.
+- [x] Run `bun run test` and see them fail, implement, see them pass.
+- [x] Commit `feat: tower config, gpu tier gate and url sync helpers`.
 
 ### Task 2: Store
 
@@ -100,8 +102,8 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 
 **Interfaces:** `createHQStore(storage?: StateStorage)`, `useHQStore` (singleton, browser storage). State per appendix 06 plus decision 6. Actions: `setPhase`, `goToFloor(floor)`, `requestElevator(dir | floor)`, `setElevator(ride | null)`, `arriveFloor(floor)`, `openRoom`, `closeRoom`, `startMission`, `cancelMission`, `markVisited`, `setLocale`, `toggleSound`, `setTier`, `setRover(partial)`, `setDevice`, `notify(text)`, `finishIntro()`.
 
-- [ ] Tests: defaults; `requestElevator("up")` from L1 creates a ride L1 to L2 in stage `toDoor`; ignored at RF; ignored while a ride is moving; `finishIntro` sets phase `explore` and `firstVisit false`; `markVisited` dedupes; persistence partializes only the four keys (inspect a memory storage after `setState`).
-- [ ] Implement, pass, commit `feat: zustand HQ store`.
+- [x] Tests: defaults; `requestElevator("up")` from L1 creates a ride L1 to L2 in stage `toDoor`; ignored at RF; ignored while a ride is moving; `finishIntro` sets phase `explore` and `firstVisit false`; `markVisited` dedupes; persistence partializes only the four keys (inspect a memory storage after `setState`).
+- [x] Implement, pass, commit `feat: zustand HQ store`.
 
 ### Task 3: Input intents
 
@@ -109,8 +111,8 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 
 **Interfaces:** `type Intent = { type: "move"; x; y } | { type: "goto"; point: Vec2 } | { type: "elevator"; to: "up" | "down" | FloorId } | { type: "scrub"; dx } | { type: "open"; room } | { type: "cancel" } | { type: "palette" } | { type: "terminal" } | { type: "toggle"; what: "sound" | "lang" | "readme" } | { type: "zoom"; factor } | { type: "orbit"; dyaw }`. `createIntentBus()` with `emit`, `on`. Pure mappers: `keyToIntent(key, {ctrl, meta, inText})`, `moveVectorFromKeys(held: Set<string>)`, `createWheelGate({ threshold, cooldownMs })`, `classifySwipe({dx, dy, ms})`, `applyDeadZone(x, y, dz)`.
 
-- [ ] Tests: WASD/arrows to vectors (diagonals normalized); PageUp to elevator up; Esc to cancel; `m`, `l`, `t` toggles; `/` and Ctrl+K palette; anything ignored in text inputs; wheel gate fires once per gesture and respects cooldown; swipe > 60 px under 400 ms vertical up gives `up`, slow or short gives null, horizontal gives scrub; dead zone 12%.
-- [ ] Implement, pass, commit `feat: input intents layer`.
+- [x] Tests: WASD/arrows to vectors (diagonals normalized); PageUp to elevator up; Esc to cancel; `m`, `l`, `t` toggles; `/` and Ctrl+K palette; anything ignored in text inputs; wheel gate fires once per gesture and respects cooldown; swipe > 60 px under 400 ms vertical up gives `up`, slow or short gives null, horizontal gives scrub; dead zone 12%.
+- [x] Implement, pass, commit `feat: input intents layer`.
 
 ### Task 4: Navigation (collision + navgrid A*)
 
@@ -118,8 +120,8 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 
 **Interfaces:** `resolveCircle(p: Vec2, r, obstacles: Rect[], bounds: Rect): Vec2`. `buildNavGrid({ bounds, obstacles }, radius, cell = 1): NavGrid`, `isWalkable(grid, p)`, `findPath(grid, from, to): Vec2[] | null` (8-way, octile heuristic, no corner cutting, snap to nearest reachable cell, string-pulled).
 
-- [ ] Tests: circle slides along a wall (tangential motion kept); circle inside a box pushed out by the shortest axis; bounds clamp. Path around a wall exists and never enters inflated obstacles; straight line in open space collapses to one waypoint; target inside an obstacle snaps to the closest reachable cell; target in a sealed pocket snaps to the reachable side; Lobby layout spawn to elevator approach reachable.
-- [ ] Implement, pass, commit `feat: navgrid A* and circle collision`.
+- [x] Tests: circle slides along a wall (tangential motion kept); circle inside a box pushed out by the shortest axis; bounds clamp. Path around a wall exists and never enters inflated obstacles; straight line in open space collapses to one waypoint; target inside an obstacle snaps to the closest reachable cell; target in a sealed pocket snaps to the reachable side; Lobby layout spawn to elevator approach reachable.
+- [x] Implement, pass, commit `feat: navgrid A* and circle collision`.
 
 ### Task 5: Rover logic (movement, faces, controller)
 
@@ -127,8 +129,8 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 
 **Interfaces:** `stepRover(pose: RoverPose, desire: { x; z } | null, dt, tuning, world: { obstacles; bounds }): RoverPose` with `RoverPose = { x; z; heading; speed; tilt }`, forward = `(sin h, cos h)`. `cameraRelative(input: {x, y}, cameraForward: Vec2): Vec2`. `faceFor({ phase, speed, autopilot, blockedUntil, arrivedUntil, elevatorDir, now }): RoverFace`, `faceText(face, t)`. `RoverController` with `pose`, `setPath(points)`, `clearPath()`, `update(dt, manual, ctx): { arrived: boolean }`.
 
-- [ ] Tests: accelerates at 18 u/s2 to the cap; brakes at 26 u/s2; turn rate capped at 3.5 rad/s; never exceeds max speed; collides with a wall without crossing it; camera-relative W points away from the camera; faces: driving `>>>`, elevator up glyph, blocked `o_o`, idle blink frames.
-- [ ] Implement, pass, commit `feat: rover movement, faces and controller`.
+- [x] Tests: accelerates at 18 u/s2 to the cap; brakes at 26 u/s2; turn rate capped at 3.5 rad/s; never exceeds max speed; collides with a wall without crossing it; camera-relative W points away from the camera; faces: driving `>>>`, elevator up glyph, blocked `o_o`, idle blink frames.
+- [x] Implement, pass, commit `feat: rover movement, faces and controller`.
 
 ### Task 6: Elevator ride machine and camera rigs
 
@@ -136,41 +138,41 @@ e2e/screenshots.spec.ts          + 1024x1366 and 3D captures
 
 **Interfaces:** `type RideStage = "toDoor" | "boarding" | "closing" | "moving" | "opening" | "exiting"`; `advanceRide(ride, dt, { atDoor, reduced }): Ride | null`; `rideDuration(from, to)`; `carY(ride)`; `easeInOutCubic`. Rigs: `selectRig(phase, floor): "intro" | "follow" | "rail"`, `followPose(cls, target, yaw, zoom)`, `railPose(cls, roverX, floorY)`, `introPose(cls, t)`, `springFactor(dt, halfLife = 0.18)`.
 
-- [ ] Tests: stage order; dolly lasts 0.8 s for one floor; reduced motion collapses to a 150 ms cut; `carY` is eased between floor heights; rail camera on L2, follow elsewhere; follow offsets per class; intro sweeps 120 degrees; spring factor 0.5 at one half-life.
-- [ ] Implement, pass, commit `feat: elevator ride machine and camera rigs`.
+- [x] Tests: stage order; dolly lasts 0.8 s for one floor; reduced motion collapses to a 150 ms cut; `carY` is eased between floor heights; rail camera on L2, follow elsewhere; follow offsets per class; intro sweeps 120 degrees; spring factor 0.5 at one half-life.
+- [x] Implement, pass, commit `feat: elevator ride machine and camera rigs`.
 
 ### Task 7: Experience data and gate
 
 **Files:** `src/content/experience.ts`, `src/experience/ExperienceGate.tsx`, `src/lib/reduced-motion.ts`, `src/lib/audio.ts`; modify `src/app/[locale]/layout.tsx` (wrap header/main/footer in `#site-shell`), `src/app/[locale]/page.tsx` (render the gate), `messages/*.json` (`hud` namespace); test `tests/unit/experience-data.test.ts`.
 
-- [ ] Test `getExperienceData("id")` returns Indonesian labels, 6 stats, 4 skill groups, every certification, verify URLs only for those with `credentialUrl`, floor names, year count and room count.
-- [ ] Gate: decides tier on mount, respects `?tier`, page view, lazy loads `Experience` with `next/dynamic`, portals into `document.body`, sets `inert` on `#site-shell` and locks scroll while active, listens for `hq:static` (context loss) to fall back with a toast.
-- [ ] Commit `feat: experience gate and data bridge`.
+- [x] Test `getExperienceData("id")` returns Indonesian labels, 6 stats, 4 skill groups, every certification, verify URLs only for those with `credentialUrl`, floor names, year count and room count.
+- [x] Gate: decides tier on mount, respects `?tier`, page view, lazy loads `Experience` with `next/dynamic`, portals into `document.body`, sets `inert` on `#site-shell` and locks scroll while active, listens for `hq:static` (context loss) to fall back with a toast.
+- [x] Commit `feat: experience gate and data bridge`.
 
 ### Task 8: Tower scene (Phase 1)
 
 **Files:** `Experience.tsx`, `scene/*`, `tower/*`, `camera/CameraDirector.tsx`, `input/useInputSources.ts`, HUD `ElevatorPanel`, `TopBar`, `HintBar`, `ProfileCard`, `BootOverlay`, `IntroSkip`, `Toast`.
 
-- [ ] Five slabs with accent edges and grid, glass shaft with car and doors, wireframe frame; neighbours render full detail, others silhouettes.
-- [ ] Director runs elevator stages; wheel, PageUp/PageDown, vertical swipe and the panel all emit `elevator` intents.
-- [ ] Follow, rail (L2 placeholder), dolly and intro rigs with spring smoothing; drag yaw and Ctrl+wheel/pinch zoom.
-- [ ] Bloom on `full` only; DPR `[1, 2]` full, `[1, 1.5]` lite; context loss falls back to static.
-- [ ] Commit `feat: tower shell, elevator and camera rigs`.
+- [x] Five slabs with accent edges and grid, glass shaft with car and doors, wireframe frame; neighbours render full detail, others silhouettes.
+- [x] Director runs elevator stages; wheel, PageUp/PageDown, vertical swipe and the panel all emit `elevator` intents.
+- [x] Follow, rail (L2 placeholder), dolly and intro rigs with spring smoothing; drag yaw and Ctrl+wheel/pinch zoom.
+- [x] Bloom on `full` only; DPR `[1, 2]` full, `[1, 1.5]` lite; context loss falls back to static.
+- [x] Commit `feat: tower shell, elevator and camera rigs`.
 
 ### Task 9: Rover and Lobby (Phase 2)
 
 **Files:** `rover/Rover.tsx`, `rover/faceTexture.ts`, `floors/Lobby.tsx`, `floors/lobby/*`, HUD `Joystick`.
 
-- [ ] Procedural rover per appendix 03 with CanvasTexture face (128 x 96, redrawn only when the frame changes), treads rolling with speed, tilt, antenna blink, dust on acceleration (not under reduced motion), arrival flag.
-- [ ] Keyboard (camera-relative), click/tap-to-move via navgrid, joystick on coarse pointers, collision against Lobby obstacles.
-- [ ] Lobby: hologram (KAW monogram, name, headline), stats ring, skills wall, certifications wall (badges open Microsoft Learn links), mission kiosk placeholder, lanes with packets.
-- [ ] Commit `feat: screen rover and L1 Lobby`.
+- [x] Procedural rover per appendix 03 with CanvasTexture face (128 x 96, redrawn only when the frame changes), treads rolling with speed, tilt, antenna blink, dust on acceleration (not under reduced motion), arrival flag.
+- [x] Keyboard (camera-relative), click/tap-to-move via navgrid, joystick on coarse pointers, collision against Lobby obstacles.
+- [x] Lobby: hologram (KAW monogram, name, headline), stats ring, skills wall, certifications wall (badges open Microsoft Learn links), mission kiosk placeholder, lanes with packets.
+- [x] Commit `feat: screen rover and L1 Lobby`.
 
 ### Task 10: E2E, screenshots, docs, PR
 
 **Files:** `playwright.config.ts` (SwiftShader args), `e2e/experience.spec.ts`, `e2e/helpers.ts`, `e2e/screenshots.spec.ts`, `AGENTS.md`, `README.md`.
 
-- [ ] E2E: first visit boot overlay then intro skip; return visit has no boot; elevator via panel, wheel, PageUp/PageDown and swipe reaches every floor; WASD moves the rover and collision keeps it inside the Lobby; click-to-move and tap-to-move move the rover; joystick moves the rover on a touch context; `?tier=static` and a WebGL-less browser show the HTML only; no page errors.
-- [ ] Screenshots at 1440x900, 1024x1366 and 390x844: Lobby 3D, L2 rail placeholder, plus the existing HTML pages (`?tier=static`).
-- [ ] Docs: AGENTS.md sections for the experience layout, store additions, deviations above.
-- [ ] Full check suite, push, PR "Phase 1-2: tower shell, rover and Lobby", local preview on port 4310.
+- [x] E2E: first visit boot overlay then intro skip; return visit has no boot; elevator via panel, wheel, PageUp/PageDown and swipe reaches every floor; WASD moves the rover and collision keeps it inside the Lobby; click-to-move and tap-to-move move the rover; joystick moves the rover on a touch context; `?tier=static` and a WebGL-less browser show the HTML only; no page errors.
+- [x] Screenshots at 1440x900, 1024x1366 and 390x844: Lobby 3D, L2 rail placeholder, plus the existing HTML pages (`?tier=static`).
+- [x] Docs: AGENTS.md sections for the experience layout, store additions, deviations above.
+- [x] Full check suite, push, PR "Phase 1-2: tower shell, rover and Lobby", local preview on port 4310.

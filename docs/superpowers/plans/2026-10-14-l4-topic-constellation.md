@@ -1,5 +1,7 @@
 # L4 Topic Constellation Implementation Plan
 
+Status: shipped in #98 (f54e436), 2026-10-14
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fill the empty end of L4 (Writing) with a Topic Constellation (a topic filter like the L3 Tech Reactor), a research-metrics monument and an Express Return pad, and give the Classic `/library` page the same topic filter.
@@ -63,9 +65,9 @@ Topics (orbit order), the tags that fold into them (`TOPIC_TAGS`), and the non-p
 - `filterFromHash(hash: string, key: string): string | null`, `filterHash(key: string, slug: string | null): string` (no imports).
 - `createFilterHashSync<V, P extends { slug: string }>({ store, env, floor, key, picked, select, fromView })` returning a disposer; `createReactorHashSync` becomes a thin wrapper.
 
-- [ ] Write tests for the new helpers (same numbers as `ringPoints`/`ringEntry` today, hash parse and build), run, see them fail.
-- [ ] Implement, make `reactor.ts` and `techHash.ts` delegate, run all reactor and labs tests.
-- [ ] Commit `refactor: shared ring road and filter hash helpers`.
+- [x] Write tests for the new helpers (same numbers as `ringPoints`/`ringEntry` today, hash parse and build), run, see them fail.
+- [x] Implement, make `reactor.ts` and `techHash.ts` delegate, run all reactor and labs tests.
+- [x] Commit `refactor: shared ring road and filter hash helpers`.
 
 ### Task 2: Topic index (build time)
 
@@ -85,8 +87,8 @@ export function topicsOfItem(index: TopicIndex, id: string): TopicSlug[];
 ```
 Rooms: posts `L4:<slug>`, papers and theses `L4:research`, models and datasets `L4:publications`, talks `L4:talks`.
 
-- [ ] Tests: every post, paper, thesis, model and talk maps to at least one topic or is in `TOPIC_UNMAPPED`; every post tag is in a topic's `TOPIC_TAGS` or `TOPIC_SKIP_TAGS`; no stale map entries (every tag and item id exists); every topic has at least one item; every topic has EN and ID labels; slugs are kebab case; real counts (`case-study` 5 posts, `sentiment-analysis` 6 items).
-- [ ] Implement, run, commit `feat(library): build-time topic index`.
+- [x] Tests: every post, paper, thesis, model and talk maps to at least one topic or is in `TOPIC_UNMAPPED`; every post tag is in a topic's `TOPIC_TAGS` or `TOPIC_SKIP_TAGS`; no stale map entries (every tag and item id exists); every topic has at least one item; every topic has EN and ID labels; slugs are kebab case; real counts (`case-study` 5 posts, `sentiment-analysis` 6 items).
+- [x] Implement, run, commit `feat(library): build-time topic index`.
 
 ### Task 3: Payloads: 3D data, drawer view, HUD index, room catalog
 
@@ -99,7 +101,7 @@ Rooms: posts `L4:<slug>`, papers and theses `L4:research`, models and datasets `
 - `RoomTopics { topics: { slug; label; count; items: { room: RoomId; title: string; zone: LibraryZone }[] }[] }` on `RoomView.topics`.
 - `HudTopic { slug; label: LocalizedText; count; rooms: RoomId[]; title: LocalizedText }`, `HudIndex.topics`; `PaletteTarget { type: "topic"; slug }`.
 
-- [ ] Tests first (view exists with every topic and counts; Cmd-K row "Show writing about Voice AI" for a query, none for an empty query), then implement, run, commit `feat(library): topic payloads, drawer view, Cmd-K rows`.
+- [x] Tests first (view exists with every topic and counts; Cmd-K row "Show writing about Voice AI" for a query, none for an empty query), then implement, run, commit `feat(library): topic payloads, drawer view, Cmd-K rows`.
 
 ### Task 4: Store slice and drawer body
 
@@ -108,7 +110,7 @@ Rooms: posts `L4:<slug>`, papers and theses `L4:research`, models and datasets `
 - Create: `src/hud/drawer/TopicsBody.tsx`, `src/hud/drawer/filterParts.tsx` (shared `FilterOption`, `ClearButton`; `ReactorBody` uses them)
 - Test: `tests/unit/store.test.ts`, `tests/hud/TopicsBody.test.tsx`, `tests/hud/ReactorBody.test.tsx` (unchanged, still green)
 
-- [ ] Tests, implement, run, commit `feat(library): topic selection store and drawer`.
+- [x] Tests, implement, run, commit `feat(library): topic selection store and drawer`.
 
 ### Task 5: L4 layout: end plaza, ring road, constellation stop, monument, Return pad, tall, camera zones
 
@@ -125,8 +127,8 @@ interface LibraryEnd {
 }
 LibraryLayout.end: LibraryEnd | null   // newsroom only
 ```
-- [ ] Tests: space rules with the real content and with 20 posts (board present); routes from the elevator to every station, the monument stop and the board stop avoid the core; Return pad > 25 u from the elevator and off the ring road; monument absent without metrics.
-- [ ] Implement, run, commit `feat(library): end plaza with constellation core, monument, Return pad`.
+- [x] Tests: space rules with the real content and with 20 posts (board present); routes from the elevator to every station, the monument stop and the board stop avoid the core; Return pad > 25 u from the elevator and off the ring road; monument absent without metrics.
+- [x] Implement, run, commit `feat(library): end plaza with constellation core, monument, Return pad`.
 
 ### Task 6: Point-and-go targets and commands
 
@@ -135,7 +137,7 @@ LibraryLayout.end: LibraryEnd | null   // newsroom only
 - Create: `src/experience/floors/library/topicHash.ts`, `src/experience/floors/library/topicUrl.ts`
 - Test: `tests/unit/interact-registry.test.ts`, `tests/unit/interact-pick.test.ts`, `tests/unit/topic-url.test.ts`
 
-- [ ] Tests, implement, run, commit `feat(library): constellation and monument targets, topic deep link`.
+- [x] Tests, implement, run, commit `feat(library): constellation and monument targets, topic deep link`.
 
 ### Task 7: Shared highlights and the 3D constellation
 
@@ -146,7 +148,7 @@ LibraryLayout.end: LibraryEnd | null   // newsroom only
 - Modify: `src/experience/floors/Library.tsx`, `src/experience/floors/library/decor/NewsroomDecor.tsx` (board stays)
 - Test: `tests/unit/library-topics.test.ts`, `tests/unit/floating-sign.test.ts`
 
-- [ ] Pure tests first (orb positions inside the plaza radius and above the rover, lit stations per topic, road glow segments, frozen angle under reduced motion), implement, run unit tests, commit `feat(library): Topic Constellation, monument and topic highlights`.
+- [x] Pure tests first (orb positions inside the plaza radius and above the rover, lit stations per topic, road glow segments, frozen angle under reduced motion), implement, run unit tests, commit `feat(library): Topic Constellation, monument and topic highlights`.
 
 ### Task 8: Classic `/library` topic filter
 
@@ -155,7 +157,7 @@ LibraryLayout.end: LibraryEnd | null   // newsroom only
 - Modify: `src/app/[locale]/library/page.tsx`, `src/components/LibraryBlocks.tsx` (`data-topics`, `data-topic-row`), `src/hud/MissionHud.tsx` (topic target: 3D picks and rides to `L4:topics`; Classic pushes `/library?topic=<slug>#topics`)
 - Test: `tests/hud/MissionHud.test.tsx`, e2e `pageview.spec.ts` gains a filter case in `e2e/topics.spec.ts`
 
-- [ ] Implement, run, commit `feat(library): Classic topic filter and Cmd-K rows`.
+- [x] Implement, run, commit `feat(library): Classic topic filter and Cmd-K rows`.
 
 ### Task 9: E2E, perf and docs
 
@@ -164,4 +166,4 @@ LibraryLayout.end: LibraryEnd | null   // newsroom only
 - Modify: `scripts/e2e-plan.ts`, `tests/unit/e2e-plan.test.ts`, `e2e/perf/baseline.json` (only if programs move), README, AGENTS.md, specs 01, 02, 08
 - E2E cases: pick a topic in the drawer (probe lit rooms, roads, count sign, hash), orb click, Clear, deep link `/en/library#library-topic=voice-ai`, Cmd-K in 3D and on the Classic site, monument click opens the Research drawer, Return pad beam, reduced motion (orbit frozen), L4 render budget.
 
-- [ ] `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=4458 bun run e2e:perf`, visual gate for the unchanged parts, captures, PR.
+- [x] `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=4458 bun run e2e:perf`, visual gate for the unchanged parts, captures, PR.

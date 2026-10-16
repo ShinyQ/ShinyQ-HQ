@@ -1,5 +1,7 @@
 # R4-J: Live Links for the MII Microsoft Sites Implementation Plan
 
+Status: shipped in #60 (9165c9e), 2026-10-12
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Document the owner's two public MII Microsoft sites (https://mii-microsoft.azurewebsites.net and https://mii-microsoft-ai.azurewebsites.net) as named, refreshed L3 projects with a guarded "Visit live site" link on the case study page, the project rows and the 3D Glass Drawer, and keep every derived surface (L3 placement, Ask pack and golden set, OG titles, docs) in step.
@@ -31,14 +33,14 @@
 
 ## Before you start
 
-- [ ] Work in your own checkout (never the read-only reference clone `files/hq-local`), branched from the latest `main`:
+- [x] Work in your own checkout (never the read-only reference clone `files/hq-local`), branched from the latest `main`:
 
 ```bash
 rtk git fetch origin && rtk git switch -c feat/r4-live-links-mii-microsoft origin/main
 bun install
 ```
 
-- [ ] If `main` moved past `e2a6c53`, re-run these checks; the Task 3 script refuses to run when the starting titles differ:
+- [x] If `main` moved past `e2a6c53`, re-run these checks; the Task 3 script refuses to run when the starting titles differ:
 
 ```bash
 jq -r '.floors.labs.pods[] | select(.id=="solutions-marketing-site" or .id=="ai-solutions-assistant" or .id=="event-tech-search-backend") | [.id,.wing,.tier,.order,.title.en] | @tsv' content/site-content.json
@@ -112,7 +114,7 @@ Deliberately unchanged: slugs, `src/experience/floors/labs/layout.ts` (docking d
   - `isPublicLiveUrl(url: string): boolean`
   - `Pod["liveUrl"]: string | undefined` (via `z.infer`)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/live-links.test.ts`:
 
@@ -168,12 +170,12 @@ describe("Pod.liveUrl (R4-J)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/live-links.test.ts tests/unit/schema.test.ts`
 Expected: FAIL. `live-links.test.ts` with `Failed to resolve import "@/content/live-links"`; `schema.test.ts` fails to compile `makePod({ liveUrl })` or reports `Unrecognized key: "liveUrl"` (strict object).
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/content/live-links.ts`:
 
@@ -246,12 +248,12 @@ with
 
 (The existing hero architecture check stays below it inside the same `superRefine`.)
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/live-links.test.ts tests/unit/schema.test.ts tests/content/dataset.test.ts`
 Expected: PASS (the dataset has no `liveUrl` yet, so it stays valid).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/content/live-links.ts src/content/schema.ts tests/unit/live-links.test.ts tests/unit/schema.test.ts
@@ -270,7 +272,7 @@ rtk git commit -m "feat(content): optional Pod.liveUrl guarded by a public host 
 - Consumes: `isPublicLiveUrl(url)` from Task 1.
 - Produces: `leafForbiddenPatterns(leaf: StringLeaf): string[]` in `@/content/safety`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/safety.test.ts`, add `leafForbiddenPatterns` to the existing `import { ... } from "@/content/safety";` list, then append:
 
@@ -303,12 +305,12 @@ describe("public MII Microsoft app names (R4-J)", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/safety.test.ts`
 Expected: FAIL with `leafForbiddenPatterns is not a function` (or a TS import error), and the allowlist block fails with `expected [...] not to include 'mii-microsoft'`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `src/content/safety.ts`, add under the existing imports:
 
@@ -377,12 +379,12 @@ mii-microsoft
 mii-microsoft-ai
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/safety.test.ts tests/content/safety.test.ts && bun run validate:content`
 Expected: PASS, then `OK: content/site-content.json is a valid full fragment (N blocklist terms checked)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/content/safety.ts scripts/validate-fragment.ts content/safety-allowlist.txt tests/unit/safety.test.ts tests/content/safety.test.ts
@@ -422,7 +424,7 @@ Copy (verified against the two repos, read-only: README, AGENTS, `specs/`, `.age
 
 The full text of every field is in the script below; results, period, role, accent, hologram, timelineRef and assets stay as they are.
 
-- [ ] **Step 1: Write the failing content tests**
+- [x] **Step 1: Write the failing content tests**
 
 In `tests/content/dataset.test.ts`, add to the import block:
 
@@ -480,12 +482,12 @@ In `tests/unit/labs-layout.test.ts`, insert inside `describe("L3 Project Roads l
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/content/dataset.test.ts tests/unit/labs-layout.test.ts`
 Expected: FAIL: `expected {} to deeply equal { 'solutions-marketing-site': ... }`, the title assertion shows `"Bilingual AI Solutions Site"`, and the layout test shows `solutions-marketing-site` missing from the software dock.
 
-- [ ] **Step 3: Apply the content change with a one-off script**
+- [x] **Step 3: Apply the content change with a one-off script**
 
 Create `r4j-content.ts` at the repo root (do not commit it):
 
@@ -601,7 +603,7 @@ rtk git diff --stat
 
 Expected: `R4-J content applied`, and the diff touches only `content/site-content.json`.
 
-- [ ] **Step 4: Update the Ask pill that names the old title**
+- [x] **Step 4: Update the Ask pill that names the old title**
 
 In `content/ask/suggestions.json`, replace
 
@@ -617,7 +619,7 @@ with
 
 (`id`, `tags`, `followUps` and `expect: ["project-ai-solutions-assistant"]` stay.)
 
-- [ ] **Step 5: Run the content, layout and Ask guards**
+- [x] **Step 5: Run the content, layout and Ask guards**
 
 Run:
 
@@ -627,12 +629,12 @@ bun run validate:content && bun scripts/title-case.ts && bunx vitest run tests/c
 
 Expected: `OK: content/site-content.json is a valid full fragment`, `title-case.ts` exits 0 with no titles listed, and all Vitest files PASS (the new dataset and layout tests included; `tests/ask/suggestions.test.ts` still finds `project-ai-solutions-assistant` for the new pill text in EN and ID; `tests/unit/tech.test.ts` resolves every new stack name: TypeScript, Tailwind CSS and FastAPI have logos, Microsoft Entra ID is in `TEXT_ONLY_TECH`). If `suggestions.test.ts` reports that the new pill no longer retrieves `project-ai-solutions-assistant`, use this wording instead (every content word is in that chunk's title or tagline) and re-run: EN "How does the multi-agent RAG assistant on his MII Microsoft AI portfolio work?", ID "Bagaimana cara kerja asisten RAG multi-agent di portofolio MII Microsoft AI miliknya?".
 
-- [ ] **Step 6: Confirm no test or spec matches the old titles**
+- [x] **Step 6: Confirm no test or spec matches the old titles**
 
 Run: `rg -n "Bilingual AI Solutions Site|Bilingual RAG Assistant with Citations|Situs Solusi AI Dwibahasa|Asisten RAG Dwibahasa dengan Sitasi" --glob '!docs/superpowers/plans/**' .`
 Expected: no output (old plans keep their history).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add content/site-content.json content/ask/suggestions.json tests/content/dataset.test.ts tests/unit/labs-layout.test.ts
@@ -655,7 +657,7 @@ rtk git commit -m "feat(content): name the MII Microsoft sites, add live links, 
   - `RoomView.live?: string` (absolute https URL, already allowlisted).
   - `podJsonLd(pod, locale).sameAs: string[]` when the pod has a live site.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/selectors.test.ts`, change the selectors import to
 
@@ -734,12 +736,12 @@ In `tests/unit/seo.test.ts`, append inside `describe("JSON-LD", ...)`:
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/room-views.test.ts tests/unit/seo.test.ts`
 Expected: FAIL: `podLiveLink is not a function` / not exported, `expected [] to have a length of 2`, `.live` is `undefined` for `solutions-marketing-site`, and `sameAs` is `undefined`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/content/selectors.ts`: add the import after the existing ones
 
@@ -835,12 +837,12 @@ and after `keywords: pod.stack.join(", "),` add:
     ...(live ? { sameAs: [live.href] } : {}),
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/room-views.test.ts tests/unit/seo.test.ts tests/unit/labs-layout.test.ts tests/unit/walk.test.ts tests/unit/missions-host3d.test.ts && bun run typecheck`
 Expected: PASS; `tsc` reports no errors (existing `LabPod` fixtures stay valid because `liveUrl` is optional).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/content/selectors.ts src/experience/types.ts src/content/experience.ts src/content/room-views/types.ts src/content/room-views/labs.ts src/lib/jsonld.ts tests/unit/selectors.test.ts tests/unit/experience-data.test.ts tests/unit/room-views.test.ts tests/unit/seo.test.ts
@@ -862,7 +864,7 @@ rtk git commit -m "feat(content): podLiveLink selector, live links in the 3D pay
   - Message key `common.visitLive` (EN "Visit live site", ID "Kunjungi situs live").
   - `livePods` from `e2e/routes.ts` (`{ slug, tier, wing, liveUrl?: string }[]`, only pods with a live link).
 
-- [ ] **Step 1: Write the failing component test**
+- [x] **Step 1: Write the failing component test**
 
 Create `tests/hud/LiveSiteLink.test.tsx`:
 
@@ -895,12 +897,12 @@ describe("LiveSiteLink (R4-J)", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/hud/LiveSiteLink.test.tsx`
 Expected: FAIL with `Failed to resolve import "@/components/LiveSiteLink"` (and `en.common.visitLive` is undefined).
 
-- [ ] **Step 3: Add the messages and the component**
+- [x] **Step 3: Add the messages and the component**
 
 In `messages/en.json`, inside `"common"`, after `"external": "opens in a new tab",` add:
 
@@ -968,12 +970,12 @@ export function LiveSiteLink({
 }
 ```
 
-- [ ] **Step 4: Run the component and copy tests**
+- [x] **Step 4: Run the component and copy tests**
 
 Run: `bunx vitest run tests/hud/LiveSiteLink.test.tsx tests/unit/ui-copy.test.ts tests/content/fonts.test.ts`
 Expected: PASS (keys aligned in both locales, ASCII only).
 
-- [ ] **Step 5: Write the failing e2e test**
+- [x] **Step 5: Write the failing e2e test**
 
 In `e2e/routes.ts`, change the pods type in `interface Content` to
 
@@ -1033,12 +1035,12 @@ test("Visit live site opens the public site in a new tab without an opener, on t
 });
 ```
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `bun run build && bunx playwright test e2e/pageview.spec.ts -g "Visit live site"`
 Expected: FAIL at `expect(cta).toHaveCount(1)` (received 0).
 
-- [ ] **Step 7: Render the link on the case study page, the rows and the cards**
+- [x] **Step 7: Render the link on the case study page, the rows and the cards**
 
 `src/app/[locale]/labs/[slug]/page.tsx`: add the imports
 
@@ -1148,12 +1150,12 @@ with
       {result && (
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [x] **Step 8: Run the tests to verify they pass**
 
 Run: `bun run typecheck && bun run lint && bun run build && bunx playwright test e2e/pageview.spec.ts e2e/static-routes.spec.ts e2e/gallery.spec.ts`
 Expected: PASS, including the new test and the existing axe checks per template (`TEMPLATES`), filters and gallery cards.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/components/LiveSiteLink.tsx tests/hud/LiveSiteLink.test.tsx messages/en.json messages/id.json "src/app/[locale]/labs/[slug]/page.tsx" src/components/page/Work.tsx src/components/page/Featured.tsx e2e/routes.ts e2e/pageview.spec.ts
@@ -1171,7 +1173,7 @@ rtk git commit -m "feat(pageview): Visit live site on the case study page and pr
 - Consumes: `RoomView.live` (Task 4), `LiveSiteLink` and `common.visitLive` (Task 5), `livePods` (Task 5).
 - Produces: footer element `data-testid="drawer-live-link"`; footer order `[primary, live, cross-floor link, View architecture]`.
 
-- [ ] **Step 1: Write the failing component tests**
+- [x] **Step 1: Write the failing component tests**
 
 In `tests/hud/RoomDrawer.test.tsx`, after `const skills = views["L1:skills"];` add:
 
@@ -1212,12 +1214,12 @@ with
       const primaries = (view.page ? 1 : 0) + (view.external ? 1 : 0) + (view.live ? 1 : 0);
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/hud/RoomDrawer.test.tsx`
 Expected: FAIL: `Unable to find an accessible element with the role "link" and name "Visit live site (opens in a new tab)"`.
 
-- [ ] **Step 3: Render the footer link**
+- [x] **Step 3: Render the footer link**
 
 In `src/hud/drawer/RoomDrawer.tsx`, add the import:
 
@@ -1266,12 +1268,12 @@ In the footer, between the `{view.external && ( ... )}` block and the `{link && 
           )}
 ```
 
-- [ ] **Step 4: Run the component tests to verify they pass**
+- [x] **Step 4: Run the component tests to verify they pass**
 
 Run: `bunx vitest run tests/hud/RoomDrawer.test.tsx tests/hud/LibraryRoofRooms.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Write the e2e drawer test**
+- [x] **Step 5: Write the e2e drawer test**
 
 In `e2e/labs.spec.ts`, change `import { content, heroPod } from "./routes";` to
 
@@ -1334,12 +1336,12 @@ for (const vp of [
 }
 ```
 
-- [ ] **Step 6: Run the e2e test**
+- [x] **Step 6: Run the e2e test**
 
 Run: `bun run build && bunx playwright test e2e/labs.spec.ts -g "Visit live site"`
 Expected: PASS (the drawer opens on the deep link because `openPod` marks the session as having seen the intro).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/hud/drawer/RoomDrawer.tsx tests/hud/RoomDrawer.test.tsx e2e/labs.spec.ts e2e/screenshots.spec.ts
@@ -1356,7 +1358,7 @@ rtk git commit -m "feat(drawer): Visit live site in the Glass Drawer footer next
 - Consumes: `podLiveLink` (Task 4); new titles and `liveUrl` data (Task 3).
 - Produces: project chunks `project-solutions-marketing-site` and `project-ai-solutions-assistant` with the sentence "Live site: public; the case study page links to it." (ID "Situs live: publik; halaman studi kasus menautkannya.") and keywords `live, site, sites, website, websites, situs`; golden item `q31`; golden set of 31 items with `passThreshold` 29.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/ask/golden.json` `items` (after `q30`, keep one item per line like the others):
 
@@ -1402,12 +1404,12 @@ Append inside `describe("knowledge pack", ...)` in `tests/ask/pack.test.ts`:
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/ask/pack.test.ts tests/ask/pipeline.test.ts`
 Expected: FAIL: the new pack test (`expected ... to contain "Live site: public"`); the drift check passes for q31 facts in the pack (the titles are in the chunk text since Task 3) but may report `retrieval no longer finds these golden facts: q31: ...` until the keywords exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `src/ask/pack.ts`, change `import { clientLabel } from "@/content/selectors";` to
 
@@ -1459,7 +1461,7 @@ and replace
   }
 ```
 
-- [ ] **Step 4: Run the Ask tests and regenerate the pack**
+- [x] **Step 4: Run the Ask tests and regenerate the pack**
 
 Run: `bunx vitest run tests/ask && bun run build:knowledge`
 Expected: all `tests/ask` files PASS (drift and retrieval checks include q31 in EN; `suggestions.test.ts` still passes), and `build-knowledge` prints the pack summary with no errors (it writes the gitignored `functions/_generated/`). If the retrieval check reports `q31` missing from the context, print the ranked chunk ids:
@@ -1470,7 +1472,7 @@ bun -e 'import { buildRepoPack } from "./src/ask/repo-pack"; import { retrieve }
 
 Expected: the list contains `project-solutions-marketing-site` and `project-ai-solutions-assistant` (or `projects-summary`, which names both). If one is missing, add `"mii"` to `LIVE_KEYWORDS` (both live pods are MII sites) and re-run Step 4.
 
-- [ ] **Step 5: Update the golden counts in docs and comments**
+- [x] **Step 5: Update the golden counts in docs and comments**
 
 - `scripts/ask-eval.ts` line 5: ` *   bun scripts/ask-eval.ts golden    # 30 questions, fails below passThreshold (28)` to ` *   bun scripts/ask-eval.ts golden    # 31 questions, fails below passThreshold (29)`.
 - `docs/ask-runbook.md` line 173: `golden set (fails below 28/30)` to `golden set (fails below 29/31)`.
@@ -1480,7 +1482,7 @@ Expected: the list contains `project-solutions-marketing-site` and `project-ai-s
 Run: `rg -n "golden set \(30|golden.json \(30|28/30|30 questions" README.md AGENTS.md docs/ask-runbook.md scripts/ask-eval.ts`
 Expected: no output.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/ask/pack.ts tests/ask/golden.json tests/ask/pipeline.test.ts tests/ask/pack.test.ts scripts/ask-eval.ts docs/ask-runbook.md README.md AGENTS.md
@@ -1500,7 +1502,7 @@ rtk git commit -m "feat(ask): live site facts for the MII Microsoft sites and go
 - Consumes: the names from Tasks 1 to 7 (`Pod.liveUrl`, `PUBLIC_LIVE_HOSTS`, `podLiveLink`, `LabPod.liveUrl`, `RoomView.live`, `LiveSiteLink`, `leafForbiddenPatterns`, `common.visitLive`).
 - Produces: documentation only.
 
-- [ ] **Step 1: AGENTS.md**
+- [x] **Step 1: AGENTS.md**
 
 1. Folder layout: after the line `  content/schema.ts             zod schemas, types via z.infer (appendix 06 + additions below)` add
 
@@ -1532,7 +1534,7 @@ a footer row (`drawer-footer`: primary action, then "Visit live site" for pods w
 - Live links (R4-J): the Azure hostname pattern stays forbidden in all copy, except a pod's `liveUrl` leaf whose URL passes `isPublicLiveUrl` (`leafForbiddenPatterns(leaf)` in `src/content/safety.ts`, used by the content test and `validate:content`). The public App Service names `mii-microsoft` and `mii-microsoft-ai` are in `content/safety-allowlist.txt`, so a private list naming them cannot flag the public URLs; every other resource name stays private and blocked.
 ```
 
-- [ ] **Step 2: README.md**
+- [x] **Step 2: README.md**
 
 After the line `- Projects with a gallery come first in every project list ...` (Content section) add:
 
@@ -1540,7 +1542,7 @@ After the line `- Projects with a gallery come first in every project list ...` 
 - Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the MII Microsoft Solutions Website and the MII Microsoft AI Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer. It opens a new tab with `rel="noopener noreferrer"`; internal apps never get a link.
 ```
 
-- [ ] **Step 3: Data contract and content map**
+- [x] **Step 3: Data contract and content map**
 
 `docs/superpowers/specs/agent-hq/06-data-contracts.md`, in `interface Pod`, replace `  assets: Asset[];` (the line inside `interface Pod`) with
 
@@ -1559,7 +1561,7 @@ After the line `- Projects with a gallery come first in every project list ...` 
   `| featured | MII Microsoft AI Portfolio and Assistant: portfolio site, multi-agent RAG assistant, /dashboard Studio (live link, R4-J) | Prompt tokens -23%, model calls per turn 3 to 2 |`
 - In the AI `listed` row remove `Bilingual Solutions Marketing Site · `.
 
-- [ ] **Step 4: Plan copy**
+- [x] **Step 4: Plan copy**
 
 Copy this plan into the repo (convention: phase plans live in `docs/superpowers/plans/`):
 
@@ -1567,12 +1569,12 @@ Copy this plan into the repo (convention: phase plans live in `docs/superpowers/
 cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/files/plans/r4-j-live-links-mii-microsoft.md docs/superpowers/plans/2026-10-12-live-links-mii-microsoft.md
 ```
 
-- [ ] **Step 5: Run the doc guards**
+- [x] **Step 5: Run the doc guards**
 
 Run: `bunx vitest run tests/content/safety.test.ts && rg -n "\x{2014}" AGENTS.md README.md docs/superpowers/specs/agent-hq docs/superpowers/plans/2026-10-12-live-links-mii-microsoft.md`
 Expected: PASS and no `rg` output.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add AGENTS.md README.md docs/superpowers/specs/agent-hq/06-data-contracts.md docs/superpowers/specs/agent-hq/07-content-map.md docs/superpowers/plans/2026-10-12-live-links-mii-microsoft.md
@@ -1590,12 +1592,12 @@ rtk git commit -m "docs: live links, podLiveLink and the MII Microsoft sites in 
 - Consumes: everything above.
 - Produces: a green branch, screenshots and the PR.
 
-- [ ] **Step 1: Quick verification**
+- [x] **Step 1: Quick verification**
 
 Run: `rm -rf .next && bun run verify:quick`
 Expected: typecheck, lint, all Vitest files and `next build` PASS (the build runs `build-knowledge` first).
 
-- [ ] **Step 2: Check the built output**
+- [x] **Step 2: Check the built output**
 
 ```bash
 grep -c 'href="https://mii-microsoft.azurewebsites.net"' out/en/labs/solutions-marketing-site.html
@@ -1607,12 +1609,12 @@ ls out/og/en/labs/solutions-marketing-site.png out/og/id/labs/ai-solutions-assis
 
 Expected: the first two print at least `1`; the titles read `MII Microsoft Solutions Website` and `MII Microsoft AI Portfolio and Assistant` (with the site suffix from `pageMetadata`); the vendor portal page prints `0` (no live link rendered; its inlined 3D payload may still contain the two hostnames through `LabPod.liveUrl`, which is expected); both OG PNGs exist (rebuilt from the new titles).
 
-- [ ] **Step 3: Targeted e2e**
+- [x] **Step 3: Targeted e2e**
 
 Run: `bun scripts/e2e-changed.ts --dry && bun run e2e:changed`
 Expected: the plan lists at least `pageview`, `static-routes`, `seo`, `gallery`, `labs`, `drawer-solid` and `deploy` (content and `src/hud/drawer` changes); all PASS, including `e2e/deploy.spec.ts` (`scanBuildOutput` finds no blocklisted term in `out/`) and both new live link tests.
 
-- [ ] **Step 4: Screenshots**
+- [x] **Step 4: Screenshots**
 
 ```bash
 SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "live site" --workers=1
@@ -1621,12 +1623,12 @@ ls screenshots/live-link-*.png
 
 Expected: four PNGs (`live-link-page-1440x900`, `live-link-page-390x844`, `live-link-drawer-1440x900`, `live-link-drawer-390x844`). Attach them to the PR. Add the `screenshots` label to the PR so CI captures the L3 floor and wing boards (the Product Engineering board now lists the MII Microsoft Solutions Website among its top five; the AI board drops it).
 
-- [ ] **Step 5: Full suite before the PR**
+- [x] **Step 5: Full suite before the PR**
 
 Run: `bun run e2e:full`
 Expected: PASS (about 6 to 10 minutes locally). Do not run it in parallel with another e2e run.
 
-- [ ] **Step 6: Push and open the PR**
+- [x] **Step 6: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/r4-live-links-mii-microsoft

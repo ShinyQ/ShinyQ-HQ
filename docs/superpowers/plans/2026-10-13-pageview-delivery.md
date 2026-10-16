@@ -1,5 +1,7 @@
 # Round 5 P1: Page View and Delivery Implementation Plan
 
+Status: shipped in #83 (b5e27da), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the Page View and the game-first boot lighter and clearer without changing the 3D look: zod off the client, a stable Lighthouse gate, cached and subset delivery assets, a quiet boot that only downloads what the first 3D frame needs, a boot card that says who the owner is, a silent Page View, a cleaner landing (motto, portrait, equal-height featured cards, sharp images).
@@ -78,7 +80,7 @@ Measures main before any change and adds the tools every later task uses. No pro
 **Interfaces:**
 - Produces: `bucketOf(url: string): string`, `sumByBucket(rows: readonly ResourceRow[], until?: number): Record<string, number>`, `lhciSummary(dir: string): LhciRow[]` (`scripts/measure-delivery.ts`); CLI `bun scripts/measure-delivery.ts --base <url> --label <name> [--lhci .lighthouseci] [--throttle]` and `--compare <a.json> <b.json>`; CLI `bun scripts/shot-diff.ts <dirA> <dirB> [--delta 24] [--max 0.005] [--only <prefix>]` (exit 1 when any pair is over `--max`); captures `screenshots/delivery/<SHOT_LABEL>/{3d-<floor>-<view>,page-<w>x<h>,boot-<w>x<h>}.png`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 `tests/unit/measure-delivery.test.ts`:
 
@@ -109,12 +111,12 @@ describe("measure-delivery", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/measure-delivery.test.ts`
 Expected: FAIL, "Failed to load url ../../scripts/measure-delivery".
 
-- [ ] **Step 3: Write `scripts/measure-delivery.ts`**
+- [x] **Step 3: Write `scripts/measure-delivery.ts`**
 
 ```ts
 /**
@@ -275,12 +277,12 @@ if (import.meta.main) {
 }
 ```
 
-- [ ] **Step 4: Run the unit test**
+- [x] **Step 4: Run the unit test**
 
 Run: `bunx vitest run tests/unit/measure-delivery.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Write `scripts/shot-diff.ts`**
+- [x] **Step 5: Write `scripts/shot-diff.ts`**
 
 ```ts
 /**
@@ -347,7 +349,7 @@ async function main() {
 if (import.meta.main) void main();
 ```
 
-- [ ] **Step 6: Write the opt-in capture spec `e2e/delivery-visual.spec.ts`**
+- [x] **Step 6: Write the opt-in capture spec `e2e/delivery-visual.spec.ts`**
 
 ```ts
 import { mkdirSync } from "node:fs";
@@ -429,7 +431,7 @@ for (const v of PAGES) {
 }
 ```
 
-- [ ] **Step 7: Register the spec as a screenshot spec**
+- [x] **Step 7: Register the spec as a screenshot spec**
 
 `playwright.config.ts:10`:
 
@@ -452,7 +454,7 @@ const SCREENSHOT_SPECS = ["**/screenshots.spec.ts", "**/pageview-visual.spec.ts"
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts tests/unit/measure-delivery.test.ts`
 Expected: PASS.
 
-- [ ] **Step 8: Build main as the baseline worktree**
+- [x] **Step 8: Build main as the baseline worktree**
 
 ```bash
 git fetch origin
@@ -461,7 +463,7 @@ git worktree add ../hq-p1-base origin/main
 ```
 Expected: `../hq-p1-base/out/en.html` exists.
 
-- [ ] **Step 9: Capture and measure the baseline**
+- [x] **Step 9: Capture and measure the baseline**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir ../hq-p1-base/out &   # note the PID
@@ -477,7 +479,7 @@ kill $SERVER
 ```
 Expected: 45 PNGs in `screenshots/delivery/before`; the main-versus-main 3D diff prints the SwiftShader noise floor (expected 0.000% to 0.05%). If any noise ratio exceeds 0.25%, note it: the 3D threshold for later tasks is `--max 0.005` (0.5%) and must stay at least twice the noise floor. The measure script prints initial JS about 230 to 241 KB, bytes before the first frame (report: about 726 KB br equivalent; locally gzip) and the 4 LHCI rows (report: `/en` LCP 1.73 to 1.81 s, script 240.9 KB). Paste the Markdown into a scratch note for the PR body.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add scripts/measure-delivery.ts scripts/shot-diff.ts e2e/delivery-visual.spec.ts tests/unit/measure-delivery.test.ts playwright.config.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -495,7 +497,7 @@ zod plus 46 schemas (33.7 KB gz, chunk `2j24jjyl372c-`) ship to every page becau
 **Interfaces:**
 - Produces: `LOCALES: readonly ["en", "id"]`, `DEFAULT_LOCALE: "en"`, `type Locale` from `@/content/locales` (schema re-exports both values; `Locale` from schema stays identical). `chunkLeaks(files: readonly { name: string; text: string }[]): string[]` and `LEAK_PATTERNS` from `scripts/check-client-chunks.ts`; the script exits 1 on any leak and runs at the end of `bun run build`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/client-chunks.test.ts`:
 
@@ -549,12 +551,12 @@ describe("locales", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/client-chunks.test.ts tests/unit/locales.test.ts`
 Expected: FAIL ("Failed to load url ../../scripts/check-client-chunks" and "@/content/locales").
 
-- [ ] **Step 3: Write `src/content/locales.ts`**
+- [x] **Step 3: Write `src/content/locales.ts`**
 
 ```ts
 /**
@@ -577,7 +579,7 @@ export const LocaleSchema = z.enum(LOCALES);
 
 (Move the new `import` line up to the import block at the top of the file, after `import { liveUrlProblem } from "./live-links";`.)
 
-- [ ] **Step 4: Point the client importers at the new module**
+- [x] **Step 4: Point the client importers at the new module**
 
 - `src/hud/Controls.tsx:5`: `import { LOCALES } from "@/content/locales";` plus `import type { Locale } from "@/content/schema";`
 - `src/components/LocaleSwitch.tsx:4`: `import { LOCALES } from "@/content/locales";`
@@ -587,7 +589,7 @@ export const LocaleSchema = z.enum(LOCALES);
 
 Server-only importers (`sitemap.ts`, `og-cards.ts`, `blog.ts`, route pages, `data/[...path]/route.ts`) may stay on the schema re-export.
 
-- [ ] **Step 5: Write `scripts/check-client-chunks.ts`**
+- [x] **Step 5: Write `scripts/check-client-chunks.ts`**
 
 ```ts
 /**
@@ -637,17 +639,17 @@ if (import.meta.main) {
 "build:web": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts && bun scripts/check-client-chunks.ts",
 ```
 
-- [ ] **Step 6: Prove the gate catches main's leak**
+- [x] **Step 6: Prove the gate catches main's leak**
 
 Run (on the base worktree build from Task 0): `(cd ../hq-p1-base && bun "$OLDPWD/scripts/check-client-chunks.ts")`
 Expected: exit 1 listing one chunk with `zod (_zod)`.
 
-- [ ] **Step 7: Run unit tests and the full quick verification**
+- [x] **Step 7: Run unit tests and the full quick verification**
 
 Run: `bunx vitest run tests/unit/client-chunks.test.ts tests/unit/locales.test.ts && bun run verify:quick`
 Expected: PASS; the build ends with `check-client-chunks: N chunks clean`.
 
-- [ ] **Step 8: Measure**
+- [x] **Step 8: Measure**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -656,12 +658,12 @@ kill $SERVER
 ```
 Expected: initial JS about 30 to 34 KB below the Task 0 baseline (SP1 pass mark: `/en` initial JS <= 195 KB gz on the production measure; locally at most baseline minus 28 KB).
 
-- [ ] **Step 9: e2e**
+- [x] **Step 9: e2e**
 
 Run: `E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS (maps to static-routes, pageview, seo, experience and others for `src/lib`, `src/hud`, `src/i18n`).
 
-- [ ] **Step 10: Docs**
+- [x] **Step 10: Docs**
 
 `AGENTS.md`:
 - Folder layout, after the `content/schema.ts` line: `  content/locales.ts            LOCALES, DEFAULT_LOCALE, Locale with no imports: the only place client code reads locale values from`
@@ -670,7 +672,7 @@ Expected: PASS (maps to static-routes, pageview, seo, experience and others for 
 
 Main spec sections 3.3 and 4.1: after "zod validation at build time" add "(enforced: `scripts/check-client-chunks.ts` fails the build when zod reaches a client chunk)".
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/content/locales.ts src/content/schema.ts src/hud/Controls.tsx src/components/LocaleSwitch.tsx src/lib/url-sync.ts src/i18n/routing.ts src/lib/site.ts scripts/check-client-chunks.ts tests/unit/client-chunks.test.ts tests/unit/locales.test.ts package.json AGENTS.md docs/superpowers/specs/2026-10-09-agent-hq-design.md
@@ -688,7 +690,7 @@ rtk git commit -m "perf: keep zod off the client (locales module) and gate clien
 **Interfaces:**
 - Produces: first collect URL `http://127.0.0.1:4320/en?lhci-warmup=1`; one `assertMatrix` entry with `matchingUrlPattern` `^[^?]+$` (URLs without a query), same budgets.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -731,12 +733,12 @@ describe("lighthouserc", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/lighthouserc.test.ts`
 Expected: FAIL, `expected 'http://127.0.0.1:4320/en' to be 'http://127.0.0.1:4320/en?lhci-warmup=1'`.
 
-- [ ] **Step 3: Edit `lighthouserc.json`**
+- [x] **Step 3: Edit `lighthouserc.json`**
 
 ```json
 {
@@ -784,25 +786,25 @@ Expected: FAIL, `expected 'http://127.0.0.1:4320/en' to be 'http://127.0.0.1:432
 }
 ```
 
-- [ ] **Step 4: Run the test and a local LHCI**
+- [x] **Step 4: Run the test and a local LHCI**
 
 Run: `bunx vitest run tests/unit/lighthouserc.test.ts && bun run build && bunx @lhci/cli@0.15.1 autorun`
 Expected: PASS; LHCI collects 15 runs, prints assertion results only for the 4 real URLs, "All results processed!" with no error-level failure. The warm-up adds about 30 to 45 s to the job (3 runs); accepted.
 
-- [ ] **Step 5: Docs**
+- [x] **Step 5: Docs**
 
 `docs/deploy.md` section 8, "Pages:" bullet becomes: "Pages: a warm-up run of `/en?lhci-warmup=1` (never asserted; it absorbs the cold first Chrome and server run that used to spike `/en` TBT), then `/en`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device). Assertions live in one `assertMatrix` entry for URLs without a query string."
 `AGENTS.md` Workflow CI bullet: after "`lighthouserc.json`: LCP 2 s, ..." add "; the first URL is a warm-up that is never asserted".
 Spec 08 section 3: replace the LHCI URL list with the same five URLs and the sentence "The warm-up URL is excluded from assertions. CI budgets in `lighthouserc.json` are authoritative."
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add lighthouserc.json tests/unit/lighthouserc.test.ts docs/deploy.md AGENTS.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md
 rtk git commit -m "ci: warm up Lighthouse CI before the asserted URLs"
 ```
 
-- [ ] **Step 7: Verify on CI after push**
+- [x] **Step 7: Verify on CI after push**
 
 Open the PR's `lighthouse-reports` artifact; for `/en`, list the 3 runs' TBT. Expected: all three <= 200 ms (before: the first run 555 to 4,311 ms). Record the three values in the PR body. If one run is still over 200 ms, record it; the median gate still holds and REPORT A4.4 option 2 (idle-gated islands) goes to a follow-up issue.
 
@@ -816,7 +818,7 @@ Open the PR's `lighthouse-reports` artifact; for `/en`, list the 3 runs' TBT. Ex
 **Interfaces:**
 - Produces: `AudioEngineDeps.paused?: boolean` (default `true`); `createAudioEngine()` starts paused; `isPaused()` is `true` until `setPaused(false)`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Add to `tests/unit/audio.test.ts`, after the "paused outside the 3D view" describe:
 
@@ -852,12 +854,12 @@ In `setup()` (the shared helper at line 175), pass `paused: false` so every exis
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/audio.test.ts`
 Expected: FAIL on "starts paused" (`expected false to be true`), and a TypeScript error in the editor for the unknown `paused` dep (vitest still runs).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/lib/audio/types.ts`, inside `AudioEngineDeps`:
 
@@ -873,12 +875,12 @@ Expected: FAIL on "starts paused" (`expected false to be true`), and a TypeScrip
   let paused = deps.paused ?? true;
 ```
 
-- [ ] **Step 4: Run the unit tests**
+- [x] **Step 4: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/audio.test.ts`
 Expected: PASS (all describes).
 
-- [ ] **Step 5: Write the e2e (Page View creates no AudioContext)**
+- [x] **Step 5: Write the e2e (Page View creates no AudioContext)**
 
 Add to `e2e/pageview.spec.ts`:
 
@@ -912,17 +914,17 @@ test("the Page View stays silent: clicks and the CV dialog create no AudioContex
 
 and change line 119 to `{ test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },`.
 
-- [ ] **Step 6: Run the e2e and the 3D sound path**
+- [x] **Step 6: Run the e2e and the 3D sound path**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS for `pageview` (new test) and `experience` (the HUD sound toggle and Director sounds still work because `Experience` unpauses on mount). Run the same e2e on the base build first (`bun scripts/serve-static.ts --port 4430 --dir ../hq-p1-base/out` then `E2E_PORT=4430 bunx playwright test e2e/pageview.spec.ts -g "stays silent"`) to see it fail: `Expected: 0, Received: 1`.
 
-- [ ] **Step 7: Docs**
+- [x] **Step 7: Docs**
 
 `src/lib/audio/README.md`, "Paused outside 3D" bullet: "**Paused outside 3D.** The engine starts paused, so the Page View and the static tier never create a context, even after a click or a dialog sound. `Experience` unpauses on mount and pauses again on unmount; `setPaused(true)` fades out and suspends like a mute but keeps the setting." Also fix line 41 ("The static tier never creates the engine") to "The static tier and the Page View never create a context (the engine starts paused)."
 `AGENTS.md` Workflow, Audio bullet: replace "`Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent without changing the stored choice." with "The engine starts paused; `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent (no AudioContext at all) without changing the stored choice."
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/lib/audio/types.ts src/lib/audio/engine.ts src/lib/audio/README.md tests/unit/audio.test.ts e2e/pageview.spec.ts scripts/e2e-plan.ts AGENTS.md
@@ -941,7 +943,7 @@ Troika loads five WOFFs (139,216 B, `max-age=0`). It cannot read WOFF2 (troika 0
 **Interfaces:**
 - Produces: `src/experience/troika-fonts.json` `{ "sans", "sansBold", "mono", "monoBold", "symbols" }` with `/fonts/3d/<name>.<sha256 first 8 hex>.woff` URLs; `FONTS` in `primitives.tsx` keeps its keys (`sans`, `sansBold`, `mono`, `monoBold`); `inWorldCodePoints(root?)`, `latinCodePoints()`, `symbolCodePoints(used)`, `inLatin(cp)`, `toUnicodes(cps)`, `LAYOUT_FEATURES` from `scripts/troika-glyphs.ts`; `woffCodePoints(buf)`, `woffTables(buf)` from `tests/helpers/woff.ts`.
 
-- [ ] **Step 1: Write the WOFF helper and the failing test**
+- [x] **Step 1: Write the WOFF helper and the failing test**
 
 `tests/helpers/woff.ts`:
 
@@ -1055,12 +1057,12 @@ describe("troika fonts", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/content/troika-fonts.test.ts`
 Expected: FAIL ("Failed to load url ../../src/experience/troika-fonts.json").
 
-- [ ] **Step 3: Write `scripts/troika-glyphs.ts`**
+- [x] **Step 3: Write `scripts/troika-glyphs.ts`**
 
 ```ts
 /**
@@ -1129,7 +1131,7 @@ export function inWorldCodePoints(root = process.cwd()): Map<number, string> {
 }
 ```
 
-- [ ] **Step 4: Write `scripts/troika-fonts.ts`**
+- [x] **Step 4: Write `scripts/troika-fonts.ts`**
 
 ```ts
 /**
@@ -1188,7 +1190,7 @@ console.log(`total ${total} bytes (was 139,216 for the five unsubset WOFFs)`);
 
 (`run` from `scripts/pdf-pages.ts` mentions poppler and webp in its error text; fine for a missing `pyftsubset` too.)
 
-- [ ] **Step 5: Move the sources and generate**
+- [x] **Step 5: Move the sources and generate**
 
 ```bash
 mkdir -p src/assets/fonts/troika
@@ -1197,7 +1199,7 @@ bun scripts/troika-fonts.ts
 ```
 Expected: five lines, total about 58,000 bytes, `src/experience/troika-fonts.json` with five `/fonts/3d/...` URLs.
 
-- [ ] **Step 6: Use the manifest**
+- [x] **Step 6: Use the manifest**
 
 `src/experience/tower/primitives.tsx:9-14`:
 
@@ -1227,17 +1229,17 @@ configureTextBuilder({ useWorker: false, defaultFontURL: troikaFonts.symbols });
   { test: /^public\/fonts\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first"] },
 ```
 
-- [ ] **Step 7: Run tests**
+- [x] **Step 7: Run tests**
 
 Run: `bunx vitest run tests/content/troika-fonts.test.ts tests/content/fonts.test.ts tests/unit/label-props.test.ts && bun run verify:quick`
 Expected: PASS (5 troika tests).
 
-- [ ] **Step 8: e2e and render budgets**
+- [x] **Step 8: e2e and render budgets**
 
 Run: `E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS for experience (render budgets), highlights (L1 cap 140), boot-first. No console error about fonts; `collectErrors` stays empty (no CDN request: the symbols fallback covers every in-world symbol).
 
-- [ ] **Step 9: Screenshot diff (pixels must not change)**
+- [x] **Step 9: Screenshot diff (pixels must not change)**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -1247,7 +1249,7 @@ bun scripts/shot-diff.ts screenshots/delivery/before screenshots/delivery/t4 --o
 ```
 Expected: every `3d-*` pair `ok`, at most 0.5% changed pixels (target: within the Task 0 noise floor). Rollback: if any floor exceeds the threshold, rerun `troika-fonts.ts` with `LAYOUT_FEATURES` replaced by `["*"]` (keeps every OpenType feature, about +4 KB per Inter cut) and diff again; if still over, revert this task's commit (fonts move back to `public/fonts/`) and keep only the cache rule for the old names at `max-age=604800` in Task 5.
 
-- [ ] **Step 10: Docs**
+- [x] **Step 10: Docs**
 
 `src/assets/fonts/README.md`, new section at the end:
 
@@ -1262,7 +1264,7 @@ Troika (3D text) cannot read WOFF2, so the 3D chunk loads its own WOFF cuts. Sou
 and add under `scripts/`: `  troika-fonts.ts, troika-glyphs.ts  subset the in-world fonts (fonttools) to the characters 3D text uses; tests/content/troika-fonts.test.ts checks coverage`.
 Spec 05 line 57: replace "In-world 3D text uses drei `Text` (troika) with the same font files." with "In-world 3D text uses drei `Text` (troika), which cannot read WOFF2: it loads separate WOFF cuts of Inter and JetBrains Mono, subset to the in-world characters and served under content-hashed names (about 58 KB, `src/assets/fonts/README.md`)."
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add scripts/troika-glyphs.ts scripts/troika-fonts.ts tests/helpers/woff.ts tests/content/troika-fonts.test.ts src/experience/troika-fonts.json public/fonts src/assets/fonts src/experience/tower/primitives.tsx src/experience/text-config.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md
@@ -1291,7 +1293,7 @@ Cloudflare joins header values when two rules match one path, so no two blocks m
 **Interfaces:**
 - Produces: `CACHE_RULES: readonly { prefix: string; value: string }[]`, `cacheProblems(observed: Record<string, string | null>): string[]`, `cacheSamples(root?: string): string[]` from `scripts/deploy-smoke.ts`; `Observed.cache?: Record<string, string | null>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -1340,12 +1342,12 @@ describe("cache rules for unhashed public assets", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/cache-headers.test.ts`
 Expected: FAIL (`CACHE_RULES` is not exported; `/fonts/*` block missing).
 
-- [ ] **Step 3: Edit `public/_headers`**
+- [x] **Step 3: Edit `public/_headers`**
 
 Replace the `/brand/*` block's neighbourhood so the file has these blocks (keep `/*`, `/_next/static/*`, `/brand/*`, `/og/*`, `/data/*` as they are; `/cv/*` and `/papers/*` only change their `Cache-Control` line):
 
@@ -1371,7 +1373,7 @@ Replace the `/brand/*` block's neighbourhood so the file has these blocks (keep 
 
 In the `/cv/*` block: `  Cache-Control: public, max-age=3600, must-revalidate`. In the `/papers/*` block: `  Cache-Control: public, max-age=86400, must-revalidate`.
 
-- [ ] **Step 4: Extend `scripts/deploy-smoke.ts`**
+- [x] **Step 4: Extend `scripts/deploy-smoke.ts`**
 
 Add after the imports:
 
@@ -1419,29 +1421,29 @@ Add `cache?: Record<string, string | null>;` to `Observed`. In `smokeProblems`, 
   }
 ```
 
-- [ ] **Step 5: Run tests**
+- [x] **Step 5: Run tests**
 
 Run: `bunx vitest run tests/unit/cache-headers.test.ts tests/unit/csp.test.ts && bun run verify:quick`
 Expected: PASS (the CSP test is unchanged; `/cv/*` still detaches the CSP).
 
-- [ ] **Step 6: e2e (export carries the rules)**
+- [x] **Step 6: e2e (export carries the rules)**
 
 Run: `E2E_PORT=4430 bunx playwright test e2e/deploy.spec.ts`
 Expected: PASS (it checks `out/_headers` is exported).
 
-- [ ] **Step 7: Docs**
+- [x] **Step 7: Docs**
 
 `docs/deploy.md` section 9, replace the `/brand/*` bullet with:
 "- Caching of unhashed files: `/brand/*` one week; `/fonts/*` one year `immutable` (troika cuts are content-hashed, Task 4 of round 5 P1); `/tech/*` one week plus `stale-while-revalidate` one day; `/media/*`, `/floors/*`, `/logos/*` one day plus `stale-while-revalidate` one week; `/cv/*` one hour and `/papers/*` one day, both `must-revalidate` so a replaced CV or paper never shows stale; `/og/*` one day. Two rules must never both set `Cache-Control` for one file (Cloudflare joins the values; `tests/unit/cache-headers.test.ts`). `scripts/deploy-smoke.ts` checks one file per prefix after each deploy."
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add public/_headers scripts/deploy-smoke.ts tests/unit/cache-headers.test.ts docs/deploy.md
 rtk git commit -m "perf: cache rules for fonts, logos, media, floors, CV and papers"
 ```
 
-- [ ] **Step 9: Verify after deploy**
+- [x] **Step 9: Verify after deploy**
 
 Run: `bun scripts/deploy-smoke.ts --site https://kurniadi.pages.dev`
 Expected after the round 5 deploy: "Smoke check passed." (before deploy it lists the five cache problems).
@@ -1461,7 +1463,7 @@ While the boot cover is up, the hidden Page View still downloads about 580 KB th
 **Interfaces:**
 - Produces: `markFirstFrame(): void`, `resetFirstFrame(): void`, `hasFirstFrame(): boolean`, `afterFirstFrameIdle(cb: () => void, options?: { timeoutMs?: number; idle?: IdleScheduler }): () => void`, `type IdleScheduler = (cb: () => void, timeoutMs: number) => () => void` (`src/experience/boot-signals.ts`, pure, no React or three); `useRoomViews(locale: Locale, wanted?: boolean)` (default `true`, so `HologramOverlay` is unchanged); `QuietLink` (same props as `Link` from `@/i18n/navigation`), `useQuietNav(): boolean`, `isQuiet(root?: Element | null): boolean`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 `tests/unit/boot-signals.test.ts`:
 
@@ -1524,12 +1526,12 @@ describe("boot signals", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/boot-signals.test.ts`
 Expected: FAIL ("Failed to load url @/experience/boot-signals").
 
-- [ ] **Step 3: Write `src/experience/boot-signals.ts`**
+- [x] **Step 3: Write `src/experience/boot-signals.ts`**
 
 ```ts
 /**
@@ -1588,12 +1590,12 @@ export function afterFirstFrameIdle(cb: () => void, { timeoutMs = 2000, idle = b
 }
 ```
 
-- [ ] **Step 4: Run the unit test**
+- [x] **Step 4: Run the unit test**
 
 Run: `bunx vitest run tests/unit/boot-signals.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Mark the first frame in `Experience.tsx`**
+- [x] **Step 5: Mark the first frame in `Experience.tsx`**
 
 `src/experience/Experience.tsx:111-119`:
 
@@ -1614,7 +1616,7 @@ function FirstFrame({ onFrame }: { onFrame?: () => void }) {
 
 In the audio effect (`Experience.tsx:205-215`) cleanup, add `resetFirstFrame();` after `audio.setPaused(true);`. Import: `import { markFirstFrame, resetFirstFrame } from "./boot-signals";`.
 
-- [ ] **Step 6: Room data on idle or on open (`DrawerHost.tsx`)**
+- [x] **Step 6: Room data on idle or on open (`DrawerHost.tsx`)**
 
 ```tsx
 /** Room views for the locale, loaded once when `wanted` (null until ready, "error" when the fetch failed). */
@@ -1652,7 +1654,7 @@ In `DrawerHost`, move `const open = Boolean(activeRoom) && phase === "room";` ab
 
 Import `afterFirstFrameIdle` from `@/experience/boot-signals`.
 
-- [ ] **Step 7: Skip the hidden page (`globals.css`)**
+- [x] **Step 7: Skip the hidden page (`globals.css`)**
 
 Replace the rule at `globals.css:316-321`:
 
@@ -1667,7 +1669,7 @@ Replace the rule at `globals.css:316-321`:
   }
 ```
 
-- [ ] **Step 8: `QuietLink`**
+- [x] **Step 8: `QuietLink`**
 
 `src/components/QuietLink.tsx`:
 
@@ -1713,7 +1715,7 @@ Use it:
 
 `scripts/e2e-plan.ts`: add `|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$` to the boot-first rule at line 101 (`specs: ["boot-first", "experience", "onboarding"]`), and put a `{ test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] }` rule above it so pageview still runs for the header.
 
-- [ ] **Step 9: Write the e2e**
+- [x] **Step 9: Write the e2e**
 
 Add to `e2e/boot-first.spec.ts` (imports: `asHumanBrowser` is already imported):
 
@@ -1776,7 +1778,7 @@ test("quiet boot: the timeout release shows the skipped page without layout shif
 
 (Task 7 adds the release-by-link variant of the CLS check.)
 
-- [ ] **Step 10: Run the e2e on the base build to see it fail, then on the branch**
+- [x] **Step 10: Run the e2e on the base build to see it fail, then on the branch**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir ../hq-p1-base/out & SERVER=$!
@@ -1786,7 +1788,7 @@ bun run verify:quick && E2E_PORT=4430 bun run e2e:changed
 ```
 Expected: base FAIL (lists `/media/...` and `.txt` requests before the frame, and `/data/rooms/en.json`); branch PASS for boot-first, experience, onboarding, labs (deep-link drawers still open: `open` triggers the fetch at once), drawer specs, pageview.
 
-- [ ] **Step 11: Measure and diff**
+- [x] **Step 11: Measure and diff**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -1800,13 +1802,13 @@ bun scripts/shot-diff.ts screenshots/delivery/before screenshots/delivery/t6 --o
 ```
 Expected: bytes before the first frame at least 300 KB lower than `before.json` (SP3 pass mark), `images` and `rsc-prefetch` buckets 0 before the frame; with `--throttle` the first frame at least 0.8 s earlier than a `before` throttled run (`bun scripts/measure-delivery.ts --label before-p1 --throttle` against the base build); all diffs `ok`. Rollback: if a Page View diff fails, the `content-visibility` line is the suspect (remove it and rely on `QuietLink` plus a `loading` swap); if a 3D diff fails, nothing in this task draws 3D, so rerun to rule out noise.
 
-- [ ] **Step 12: Docs**
+- [x] **Step 12: Docs**
 
 `AGENTS.md` "3D experience", game-first bullet: after "`#site-shell` also stays `visibility: hidden` while `html[data-hq]` is set (tower open), so the page never paints under it and never becomes a late LCP." add: "Both states also set `content-visibility: hidden`, so the hidden page's lazy images and link prefetches never start (quiet boot); header, nav, crumb and hero links use `QuietLink` (`prefetch={false}` while hidden). The Glass Drawer data loads after the first frame on idle (`afterFirstFrameIdle` in `src/experience/boot-signals.ts`) or at once when a room opens."
 `AGENTS.md` "Glass Drawer", "The drawer fetches it once (`loadRoomViews`)" becomes "The drawer fetches it once (`loadRoomViews`), after the first 3D frame on idle or when a room opens first".
 Spec 08 section 2: add a row "Bytes before the first 3D frame (game-first `/en`, lite): only the HTML, CSS, page fonts, initial JS and the 3D chunks; no Page View images, link prefetch or room data (`e2e/boot-first.spec.ts` quiet boot)".
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 rtk git add src/experience/boot-signals.ts src/experience/Experience.tsx src/hud/drawer/DrawerHost.tsx src/app/globals.css src/components/QuietLink.tsx src/components/NavLink.tsx src/components/SiteHeader.tsx src/components/page/Hero.tsx src/components/page/Layout.tsx tests/unit/boot-signals.test.ts e2e/boot-first.spec.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md
@@ -1826,7 +1828,7 @@ The link must work before hydration: it is a real link to `?view=page`. The inli
 - Consumes: Task 6 quiet-boot CSS (the shell is skipped under the cover).
 - Produces: `takePageViewParam(search: string): string | null` (`src/lib/boot-first.ts`, self-contained for `toString()`); `roleLine(role: { title: LocalizedText; org: string }, locale: Locale): string` (`src/content/selectors.ts`); `BootWho { name; headline; motto?; role }`, `BootPageLink { href; label; hint }` and props `who?`, `pageView?` on `BootCard`; `BootCover({ locale, monogram, who })`; `BootOverlay({ monogram, who })`; `ExperienceData.profile.motto?: string`; link marker attribute `data-hq-page-link`.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 `tests/unit/boot-first.test.ts`: import `takePageViewParam`, extend the `runScript` harness with a `history` fake, and add tests.
 
@@ -1869,12 +1871,12 @@ describe("roleLine", () => {
 
 (add `roleLine` to the existing `@/content/selectors` import).
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/boot-first.test.ts tests/unit/selectors.test.ts`
 Expected: FAIL (`takePageViewParam` and `roleLine` are not exported).
 
-- [ ] **Step 3: Implement `takePageViewParam` and the head script line**
+- [x] **Step 3: Implement `takePageViewParam` and the head script line**
 
 `src/lib/boot-first.ts`, before `bootFirstScript`:
 
@@ -1916,12 +1918,12 @@ export function roleLine(role: { title: LocalizedText; org: string }, locale: Lo
 
 (`LocalizedText` and `Locale` as type imports from `./schema`.) `src/content/experience.ts:93`: `role: roleLine(profile.currentRole, locale),` and add `motto: profile.subheadline[locale],` next to it. `src/experience/types.ts:138`: `profile: { name: string; monogram: string; headline: string; role: string; location: string; motto?: string };`.
 
-- [ ] **Step 4: Run the unit tests**
+- [x] **Step 4: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/boot-first.test.ts tests/unit/selectors.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Boot card markup**
+- [x] **Step 5: Boot card markup**
 
 `src/components/BootCard.tsx` (whole file):
 
@@ -2112,7 +2114,7 @@ export async function BootCover({ locale, monogram, who }: { locale: Locale; mon
         />
 ```
 
-- [ ] **Step 6: `ExperienceGate` handles the link without a reload**
+- [x] **Step 6: `ExperienceGate` handles the link without a reload**
 
 Replace the inline `onExit` with a shared callback and add the click listener:
 
@@ -2145,7 +2147,7 @@ and `onExit={toPage}` on `<Experience>`. The existing effect releases the cover 
 
 `scripts/e2e-plan.ts:101`: append `|^src\/hud\/BootOverlay\.tsx$` to the regex.
 
-- [ ] **Step 7: Write the e2e**
+- [x] **Step 7: Write the e2e**
 
 `e2e/boot-first.spec.ts` (add `import data from "../content/site-content.json";`):
 
@@ -2194,12 +2196,12 @@ test("boot card: the overlay keeps the card in place, Boot rover stays required,
 });
 ```
 
-- [ ] **Step 8: Run**
+- [x] **Step 8: Run**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS for boot-first (old and new tests: the first test still sees the overlay after `ready`), experience, onboarding (Boot rover still starts the intro), hud.
 
-- [ ] **Step 9: Screenshot diff (intended change on the boot card only)**
+- [x] **Step 9: Screenshot diff (intended change on the boot card only)**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -2210,12 +2212,12 @@ bun scripts/shot-diff.ts screenshots/delivery/t6 screenshots/delivery/t7 --only 
 ```
 Expected: `3d-*` and `page-*` `ok`; `boot-*` differ on purpose: attach `screenshots/delivery/t6/boot-*.png` and `t7/boot-*.png` (1440x900, 1999x1129, 834x1112, 390x844) to the PR. Check by eye: the card fits the 390x844 screen without scrolling, the owner block reads Name / headline / motto / role, the "Page view" link sits right of the (invisible on the cover) Boot rover button. Rollback: revert this task's commit; the cover returns to the name-only log.
 
-- [ ] **Step 10: Docs**
+- [x] **Step 10: Docs**
 
 `AGENTS.md` game-first bullet: after "CSS then hides `#site-shell` behind the SSR `BootCover` (`src/components/BootCover.tsx`)." add: "The boot card names the owner at first paint (name, headline, motto and current role from content; `BootWho`) and carries a small \"Page view\" link: a real `?view=page` link that the head script turns into the stored Page View choice (`takePageViewParam`, the parameter is removed from the URL), and that `ExperienceGate` handles without a reload once hydrated (`data-hq-page-link`). It leaves the 3D view; it does not skip the boot or the intro."
 Spec 02 section 2, Boot row: add "The boot card shows the owner's name, headline, motto and current role (server-rendered, visible at first paint) and a small \"Page view\" link that leaves the 3D view; Boot rover is still required and the intro still plays in full (owner decision, round 5)."
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/components/BootCard.tsx src/components/BootCover.tsx src/hud/BootOverlay.tsx src/hud/Hud.tsx "src/app/[locale]/layout.tsx" src/lib/boot-first.ts src/experience/ExperienceGate.tsx src/experience/types.ts src/content/experience.ts src/content/selectors.ts src/app/globals.css tests/unit/boot-first.test.ts tests/unit/selectors.test.ts e2e/boot-first.spec.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/agent-hq/02-interaction-and-states.md
@@ -2233,7 +2235,7 @@ rtk git commit -m "feat(boot): name the owner on the boot card and offer a Page 
 **Interfaces:**
 - Produces: `hoistRootRedirect(html: string): string` (idempotent; throws when the script is missing); the page script carries `id="hq-root-redirect"`, the hoisted copy `data-hq-hoisted=""`; `window.__hqRedirect` guard.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -2265,12 +2267,12 @@ Add to `tests/unit/cache-headers.test.ts`:
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/root-redirect.test.ts tests/unit/cache-headers.test.ts`
 Expected: FAIL (module missing; `/` block missing).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `scripts/root-redirect.ts`:
 
@@ -2321,7 +2323,7 @@ and line 17: `<script id="hq-root-redirect" dangerouslySetInnerHTML={{ __html: R
   Link: </en>; rel="alternate"; hreflang="en", </id>; rel="alternate"; hreflang="id", </en>; rel="alternate"; hreflang="x-default"
 ```
 
-- [ ] **Step 4: e2e**
+- [x] **Step 4: e2e**
 
 `e2e/static-routes.spec.ts`:
 
@@ -2335,12 +2337,12 @@ test("root: the language redirect runs before the stylesheet; hreflang alternate
 });
 ```
 
-- [ ] **Step 5: Run**
+- [x] **Step 5: Run**
 
 Run: `bunx vitest run tests/unit/root-redirect.test.ts tests/unit/cache-headers.test.ts && bun run verify:quick && E2E_PORT=4430 bunx playwright test e2e/static-routes.spec.ts e2e/seo.spec.ts`
 Expected: PASS, including the existing "root redirects by browser language".
 
-- [ ] **Step 6: Measure the hop (manual, for the PR body)**
+- [x] **Step 6: Measure the hop (manual, for the PR body)**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -2349,11 +2351,11 @@ kill $SERVER
 ```
 Run the same against the base build (`--dir ../hq-p1-base/out`). Expected: at least 150 ms faster on the branch (REPORT spike S2 variant b).
 
-- [ ] **Step 7: Docs**
+- [x] **Step 7: Docs**
 
 `AGENTS.md` i18n bullet: "`/` is a static page that redirects using `localStorage[\"hq:locale\"]`, then `navigator.language`; `scripts/root-redirect.ts` (part of `build`) copies the redirect above the stylesheet in `out/index.html`, and `public/_headers` sends hreflang `Link` alternates for `/`." Add `root-redirect.ts` to the `scripts/` folder list. Spec 04 line 48: append "The redirect runs before the stylesheet loads (post-build hoist) and `/` sends hreflang alternates as an HTTP `Link` header." `docs/deploy.md` section 9: add a bullet "`/`: `Link` hreflang alternates (en, id, x-default)."
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add scripts/root-redirect.ts tests/unit/root-redirect.test.ts "src/app/(root)/page.tsx" package.json public/_headers tests/unit/cache-headers.test.ts e2e/static-routes.spec.ts AGENTS.md docs/superpowers/specs/agent-hq/04-hud-responsive-i18n.md docs/deploy.md
@@ -2374,7 +2376,7 @@ Name size one step down: `.hx-name` `clamp(48px, 9.6vw, 132px)` to `clamp(44px, 
 - Consumes: Task 4 (3D font cut covers the motto: ASCII only), Task 7 (boot card shows `profile.subheadline`).
 - Produces: `FIRST_PERSON: Record<"en" | "id", RegExp>` in `tests/content/taglines.test.ts`.
 
-- [ ] **Step 1: Write the failing content test**
+- [x] **Step 1: Write the failing content test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -2404,12 +2406,12 @@ describe("mottos and taglines", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/content/taglines.test.ts`
 Expected: FAIL listing `profile.subheadline.en`, `profile.subheadline.id`, `pods.vendor-management-portal.tagline.id`, `pods.digital-products-ecommerce.tagline.id`.
 
-- [ ] **Step 3: Update content**
+- [x] **Step 3: Update content**
 
 `content/site-content.json`:
 - `profile.subheadline.en`: `"Production-grade AI and software for banking, fintech and enterprise."`
@@ -2420,7 +2422,7 @@ Expected: FAIL listing `profile.subheadline.en`, `profile.subheadline.id`, `pods
 Run: `bunx vitest run tests/content/taglines.test.ts && bun run validate:content`
 Expected: PASS; validation clean (safety lint, Title Case not affected: these are not titles).
 
-- [ ] **Step 4: Hero markup and CSS**
+- [x] **Step 4: Hero markup and CSS**
 
 `src/components/page/Hero.tsx`: delete the `tm` translations line and the eyebrow paragraph, so the left column starts with the name:
 
@@ -2474,7 +2476,7 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
 
 `messages/en.json` and `messages/id.json`: delete the `"welcome"` entry under `home.hero` (keys stay identical in both files).
 
-- [ ] **Step 5: e2e**
+- [x] **Step 5: e2e**
 
 Add to `e2e/pageview.spec.ts`:
 
@@ -2510,12 +2512,12 @@ test("landing: the hero name is still the LCP element on a phone", async ({ brow
 });
 ```
 
-- [ ] **Step 6: Run**
+- [x] **Step 6: Run**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS (pageview, static-routes, seo, gallery, highlights for content; the Ask tests still pass: no golden answer quotes the old motto).
 
-- [ ] **Step 7: Screenshot diff and Lighthouse**
+- [x] **Step 7: Screenshot diff and Lighthouse**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -2526,11 +2528,11 @@ bunx @lhci/cli@0.15.1 autorun
 ```
 Expected: `page-*` and `boot-*` differ on purpose (hero and motto), attach the four `page-*` pairs (1440x900, 1999x1129, 834x1112, 390x844) and the boot cards; `3d-*` `ok` except where the RF about card or the L1 hall about station is in view (the motto is in-world text there): list those files in the PR as intended. LHCI: `/en` LCP element `h1#hero-title`, LCP <= 2000 ms and not above the Task 0 baseline by more than 50 ms, CLS 0. Rollback: revert the commit (content, hero and CSS move together).
 
-- [ ] **Step 8: Docs**
+- [x] **Step 8: Docs**
 
 `AGENTS.md` "Content style": add a bullet "**No first person in mottos and taglines** (owner rule, round 5): `profile.subheadline` (the motto) and every pod `tagline` avoid I, me, my (EN) and saya, aku (ID); body text and stories keep the first person. `tests/content/taglines.test.ts` checks it." In "Page View", landing bullet: replace "`HomeHero` (`src/components/page/Hero.tsx`) composes ..." opening with "`HomeHero` (`src/components/page/Hero.tsx`) starts with the name (no eyebrow, `.hx-name` up to 112 px), the headline and the motto (`profile.subheadline`), then composes ...".
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add content/site-content.json tests/content/taglines.test.ts src/components/page/Hero.tsx src/app/landing.css messages/en.json messages/id.json e2e/pageview.spec.ts AGENTS.md
@@ -2550,7 +2552,7 @@ LCP: the h1 (`clamp` up to 112 px, two lines) has a far larger area than a 128 p
 **Interfaces:**
 - Produces: `PORTRAIT_SIZES = [160, 320, 640] as const`, `portraitSrc(size: number): string`, `PORTRAIT_SRCSET: string` (`src/lib/portrait.ts`, client-safe); `<Portrait name size sizes eager? className? />` (server component, plain `img`); `webpSize(buf): { width; height }`, `webpChunks(buf): string[]` (`tests/helpers/webp.ts`, also used by Task 12).
 
-- [ ] **Step 1: Write the WebP helper and the failing test**
+- [x] **Step 1: Write the WebP helper and the failing test**
 
 `tests/helpers/webp.ts`:
 
@@ -2612,12 +2614,12 @@ describe("owner portrait (C5 revised 2026-10-13)", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/portrait.test.ts`
 Expected: FAIL ("Failed to load url @/lib/portrait").
 
-- [ ] **Step 3: Implement the module, the script and generate**
+- [x] **Step 3: Implement the module, the script and generate**
 
 `src/lib/portrait.ts`:
 
@@ -2722,12 +2724,12 @@ export function Portrait({ name, size, sizes, eager = false, className = "" }: {
 
 `scripts/e2e-plan.ts`: `{ test: /^public\/brand\/|^src\/lib\/portrait\.ts$|^src\/components\/page\/Portrait\.tsx$/, specs: ["pageview", "seo", "static-routes"] },` above the generic `src/(app|components)` rule.
 
-- [ ] **Step 4: Run the unit tests**
+- [x] **Step 4: Run the unit tests**
 
 Run: `bunx vitest run tests/unit/portrait.test.ts tests/unit/seo.test.ts tests/content/safety.test.ts tests/content/assets.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: e2e**
+- [x] **Step 5: e2e**
 
 `e2e/pageview.spec.ts`:
 
@@ -2760,25 +2762,25 @@ for (const v of [{ viewport: { width: 1440, height: 900 }, dpr: 2 }, { viewport:
 
 (add `type Locator` to the `@playwright/test` import). The LCP test from Task 9 must still pass with the portrait.
 
-- [ ] **Step 6: Run**
+- [x] **Step 6: Run**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS (pageview, seo, static-routes; the quiet-boot test still sees no `/brand/kurniadi` request before the first frame).
 
-- [ ] **Step 7: Lighthouse decision (eager or lazy)**
+- [x] **Step 7: Lighthouse decision (eager or lazy)**
 
 Run: `bunx @lhci/cli@0.15.1 autorun && bun scripts/measure-delivery.ts --base http://127.0.0.1:4430 --label t10 --lhci .lighthouseci` (serve `out` on 4430 first).
 Expected: `/en` LCP element `h1#hero-title`, median LCP <= 2000 ms and at most 50 ms above the Task 9 run, CLS 0. If either fails, change the hero `Portrait` to `eager={false}` (lazy, no fetch priority), rebuild and rerun; record both runs in the PR.
 
-- [ ] **Step 8: Screenshot diff (intended)**
+- [x] **Step 8: Screenshot diff (intended)**
 
 Capture `SHOT_LABEL=t10` as in Task 9. Expected: `3d-*` `ok` against `t9`; `page-*` differ in the hero only: attach the four sizes. Check by eye: the ring reads as the site's cyan, the photo does not crowd the name on 390x844 (the name wraps beside a 72 px photo). Rollback: revert the commit (images, component, CSS and JSON-LD together).
 
-- [ ] **Step 9: Docs**
+- [x] **Step 9: Docs**
 
 `AGENTS.md` Hard rules, Public repo bullet: replace "or any photo." with "or any photo other than the owner's portrait (`public/brand/kurniadi-ahmad-wijaya-*.webp`, C5 revised by the owner on 2026-10-13; regenerate with `bun scripts/portrait.ts <png>`, never commit the source photo)." Folder layout: `public/brand/                   committed brand assets (KAW monogram) and the owner portrait (160, 320, 640 px WebP, src/lib/portrait.ts)`. Appendix 07 section 7, C5 row: "**Owner portrait (revised 2026-10-13).** A round portrait beside the name on the landing hero and on About, and as the JSON-LD Person image. The 3D world keeps the KAW monogram hologram; no other photo is published."
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add scripts/portrait.ts src/lib/portrait.ts src/components/page/Portrait.tsx public/brand tests/helpers/webp.ts tests/unit/portrait.test.ts src/components/page/Hero.tsx "src/app/[locale]/contact/page.tsx" src/app/pageview.css src/lib/jsonld.ts tests/unit/seo.test.ts tests/content/safety.test.ts e2e/pageview.spec.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/agent-hq/07-content-map.md
@@ -2795,7 +2797,7 @@ Owner (screenshot of `/en`, "Selected work"): "there is blank space". The landin
 **Interfaces:**
 - Produces: `FeaturedProject({ pod, locale })` (the `lead` prop is removed); `data-testid="featured-grid"` on the landing list; `expectAlignedGrid(page, selector, columns)` and `columnsFor(width)` helpers in `e2e/pageview.spec.ts` (Task 12 reuses them).
 
-- [ ] **Step 1: Write the failing e2e**
+- [x] **Step 1: Write the failing e2e**
 
 `e2e/pageview.spec.ts` (`Page` and `Locator` types from `@playwright/test`):
 
@@ -2847,12 +2849,12 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1999, height: 112
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run build && E2E_PORT=4430 bunx playwright test e2e/pageview.spec.ts -g "featured cards line up"`
 Expected: FAIL at 1440x900 and 1999x1129 ("row 0 bottom" or "height" differs by more than 100 px); 390x844 fails on height.
 
-- [ ] **Step 3: Landing grid**
+- [x] **Step 3: Landing grid**
 
 `src/app/[locale]/page.tsx`: delete `const [lead, ...side] = featured;` and replace the featured block with:
 
@@ -2950,7 +2952,7 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
   }
 ```
 
-- [ ] **Step 4: `/labs` Key projects grid**
+- [x] **Step 4: `/labs` Key projects grid**
 
 `src/app/[locale]/labs/page.tsx`: delete `const SPANS = [...]` (line 22) and render:
 
@@ -2966,12 +2968,12 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
 
 `src/components/page/Work.tsx` `WorkFeature`: wrap everything after the tagline paragraph (`<PodLiveCta ... />`, the `size === "lead"` `<dl>`, and `{size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}`) in `<div className="mt-auto flex flex-col gap-4">...</div>`, so the stack logos and links sit at the card bottom.
 
-- [ ] **Step 5: Run**
+- [x] **Step 5: Run**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: PASS: the new alignment tests at all four sizes, the existing "landing: three featured projects with their screenshots" (cover `src` unchanged), the WorkIndex filter tests on `/labs` (rows keep `data-pod`), axe per template.
 
-- [ ] **Step 6: Screenshot diff and Lighthouse**
+- [x] **Step 6: Screenshot diff and Lighthouse**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -2982,11 +2984,11 @@ bunx @lhci/cli@0.15.1 autorun
 ```
 Expected: `page-*` differ only in "Selected work" (intended; attach the four sizes, owner view 1999x1129 included; crop `#work` if the PR viewer is too small); 3D `ok`. LHCI `/en`: LCP element `h1#hero-title`, CLS 0, LCP not above the Task 10 run by more than 50 ms (the section is below the first screen and its images stay lazy). Rollback: revert the commit (grid, card and CSS together).
 
-- [ ] **Step 7: Docs**
+- [x] **Step 7: Docs**
 
 `AGENTS.md` "Page View", landing bullet: replace "Featured projects: `pickFeaturedPods(getPods())` (the first three pods with a gallery, in `orderPods` order) rendered by `FeaturedProject` (`src/components/page/Featured.tsx`); other key projects follow as `WorkRow`s." with "Featured projects: `pickFeaturedPods(getPods())` (the first three pods with a gallery, in `orderPods` order) rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as equal-height cards in one grid (3 columns from 1024 px, 2 from 768 px, 1 on phones; screenshot, three filmstrip slots, text, then the live link and key result pinned to the bottom); never stagger or span cards (owner request, round 5). `/labs` Key projects use the same grid. Other key projects follow as full-width `WorkRow`s."
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add "src/app/[locale]/page.tsx" "src/app/[locale]/labs/page.tsx" src/components/page/Featured.tsx src/components/page/Work.tsx src/app/landing.css e2e/pageview.spec.ts AGENTS.md
@@ -3005,7 +3007,7 @@ Owner: "cant you make the selected project image not low quality". Cause: cards 
 - Consumes: `webpSize`, `webpChunks` (Task 10), `expectSharp` (Task 10), `columnsFor` (Task 11).
 - Produces: `THUMB_WIDTH = 480`, `MID_WIDTH = 1200`, `midSrc(src: string): string`, `GalleryImage.mid?: string`, `imageSrcSet(image: Pick<GalleryImage, "src" | "thumb" | "mid" | "width">): string`, `CARD_SIZES` (`src/content/media.ts`, client-safe).
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 ```ts
 import { existsSync, readFileSync } from "node:fs";
@@ -3058,12 +3060,12 @@ describe("responsive project images", () => {
 
 (If `Asset` in `schema.ts` has more required fields, add them to the two literal assets; the cast keeps the test focused on `src`, `alt`, `width`, `height`.)
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/media-sizes.test.ts`
 Expected: FAIL (`MID_WIDTH`, `imageSrcSet`, `midSrc` not exported).
 
-- [ ] **Step 3: Implement the helpers**
+- [x] **Step 3: Implement the helpers**
 
 `src/content/media.ts`:
 
@@ -3123,7 +3125,7 @@ export function coverImage(assets: readonly Asset[], locale: Locale): GalleryIma
 }
 ```
 
-- [ ] **Step 4: Write `scripts/media-sizes.ts` and generate**
+- [x] **Step 4: Write `scripts/media-sizes.ts` and generate**
 
 ```ts
 /**
@@ -3153,7 +3155,7 @@ console.log(`media-sizes: ${written} renditions written`);
 Run: `bun scripts/media-sizes.ts && du -sh public/media && bunx vitest run tests/unit/media-sizes.test.ts tests/content/assets.test.ts`
 Expected: about 116 renditions; `public/media` about 13 to 15 MB; PASS (if `assets.test.ts` lists files under `public/media` that no asset references, allow the `.w1200.webp` suffix next to `.thumb.webp` in that check).
 
-- [ ] **Step 5: Use `srcset` in cards and gallery**
+- [x] **Step 5: Use `srcset` in cards and gallery**
 
 `Featured.tsx` cover image:
 
@@ -3198,7 +3200,7 @@ Expected: about 116 renditions; `public/media` about 13 to 15 MB; PASS (if `asse
 
 `scripts/e2e-plan.ts:116`: the gallery rule regex already covers `src/content/media.ts` and `public/media/`.
 
-- [ ] **Step 6: e2e sharpness**
+- [x] **Step 6: e2e sharpness**
 
 `e2e/pageview.spec.ts` (reuses `expectSharp` from Task 10):
 
@@ -3216,12 +3218,12 @@ for (const v of [{ viewport: { width: 1440, height: 900 }, dpr: 2 }, { viewport:
 }
 ```
 
-- [ ] **Step 7: Run on the base build to see it fail, then on the branch**
+- [x] **Step 7: Run on the base build to see it fail, then on the branch**
 
 Run: `bun scripts/serve-static.ts --port 4430 --dir ../hq-p1-base/out & SERVER=$!; E2E_PORT=4430 bunx playwright test e2e/pageview.spec.ts -g "sharp"; kill $SERVER` then `bun run verify:quick && E2E_PORT=4430 bun run e2e:changed`
 Expected: base FAIL at 1440@2 on `/en/labs` (480 px thumb in a slot of about 700 px times 2); branch PASS for pageview and gallery (Lightbox still opens full images).
 
-- [ ] **Step 8: Lighthouse and bytes**
+- [x] **Step 8: Lighthouse and bytes**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -3231,11 +3233,11 @@ bunx @lhci/cli@0.15.1 autorun
 ```
 Expected: LHCI all four URLs within budgets, LCP elements unchanged (`h1#hero-title`, `section#profile p.pv-body`, `header p.pv-lead`, `header p.pv-lead`), LCP median not above the Task 11 run by more than 50 ms, CLS 0. `page-*` captures differ only by sharper images (intended; attach crops of `#work` at 1440x900 before and after). Note the LHCI "image" bytes for `/en/labs/voice-ai-contact-center` (the mosaic cover now picks 1200 px instead of 1600 px on the Lighthouse phone, so it should not grow). Rollback: revert the commit; renditions can stay on disk unused.
 
-- [ ] **Step 9: Docs**
+- [x] **Step 9: Docs**
 
 `AGENTS.md` Content access, pod galleries: "Images live in `public/media/<pod-slug>/` with a `.thumb.webp` sibling (480 px) and, when wider than 1200 px, a `.w1200.webp` rendition (`bun scripts/media-sizes.ts` after adding images; `tests/unit/media-sizes.test.ts` fails until it exists). Render project images with `srcSet={imageSrcSet(image)}` and a `sizes` that matches the slot (`CARD_SIZES` for cards), so DPR 2 and 3 screens get a sharp file." Folder layout `public/media/<pod-slug>/`: append "+ NN-name.w1200.webp (1200 wide, scripts/media-sizes.ts)".
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/content/media.ts scripts/media-sizes.ts tests/unit/media-sizes.test.ts public/media src/components/page/Featured.tsx src/components/page/Work.tsx src/components/Gallery.tsx e2e/pageview.spec.ts AGENTS.md
@@ -3247,12 +3249,12 @@ rtk git commit -m "feat(pageview): responsive project images with a 1200 px rend
 **Files:**
 - Modify: `README.md` ("Performance"), `docs/superpowers/specs/agent-hq/08-quality-acceptance.md` section 2, `docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md` section 5, `docs/deploy.md` section 8 (medians), `docs/superpowers/specs/2026-10-09-agent-hq-design.md` lines 14 and 176
 
-- [ ] **Step 1: Full verification**
+- [x] **Step 1: Full verification**
 
 Run: `bun run verify:quick && E2E_PORT=4430 bun run e2e:full`
 Expected: PASS (the full suite runs because `package.json` and `playwright.config.ts` changed).
 
-- [ ] **Step 2: Final measurement**
+- [x] **Step 2: Final measurement**
 
 ```bash
 bun scripts/serve-static.ts --port 4430 --dir out & SERVER=$!
@@ -3266,12 +3268,12 @@ bun scripts/shot-diff.ts screenshots/delivery/before screenshots/delivery/after 
 ```
 Expected targets (fail the PR self-check if missed): LHCI `/en` script bytes at least 28 KB below `before` (SP1); bytes before the first 3D frame at least 300 KB below `before` (SP3); troika fonts 139 KB to about 58 KB (SP10); LCP/TBT/CLS for the 4 URLs within budgets and LCP elements unchanged; 3D diffs within 0.5% except the captures that show the motto in-world (listed in Task 9).
 
-- [ ] **Step 3: Docs**
+- [x] **Step 3: Docs**
 
 `README.md` "Performance", add a paragraph: "Delivery (round 5): zod stays on the server (`src/content/locales.ts`; the build fails when `_zod`, `readFileSync` or `site-content` reaches a client chunk); Lighthouse CI warms up on a throwaway URL first; unhashed files have explicit cache rules (`public/_headers`, troika fonts are content-hashed and immutable); the game-first boot downloads only what the first 3D frame needs (the hidden page is skipped with `content-visibility`, header links do not prefetch, room data waits for the first frame and idle); the boot card names the owner and offers the Page View; the Page View never starts audio. Numbers: initial JS <before> to <after> KB, bytes before the first 3D frame <before> to <after> KB, troika fonts 139 to <after> KB."
 Spec 08 section 2: add rows "Client chunks contain no zod or content loader (post-build gate)", "Troika font cuts at most 64 KB, every in-world character covered (`tests/content/troika-fonts.test.ts`)", "Bytes before the first 3D frame: no Page View images, link prefetch or room data". Spec 05 section 5: replace the Opus/AAC and `public/audio/CREDITS.md` clauses with "All sounds are synthesized (Web Audio, `src/lib/audio`), no audio files; the engine starts paused, so the Page View and the static tier never create an AudioContext." (spec gap 1 and 2). `docs/deploy.md` section 8: replace the "Medians at the time of writing" line with the LHCI medians from Step 2. Main spec line 14 (goal 1): append "On the game-first path the boot card shows the owner's name, headline, motto and role at first paint." Line 176: "`/` is a static language redirect page (hreflang alternates); the tower and the server-rendered summary live at `/{locale}`."
 
-- [ ] **Step 4: Commit and push**
+- [x] **Step 4: Commit and push**
 
 ```bash
 rtk git add README.md docs
@@ -3281,11 +3283,11 @@ bun run verify:quick
 rtk git push -u origin HEAD
 ```
 
-- [ ] **Step 5: PR body**
+- [x] **Step 5: PR body**
 
 Title: `Round 5 P1: Page View and delivery (zod off the client, quiet boot, boot card, cached fonts, landing cards and sharp images)`. Body sections: Summary (one line per task with REPORT ids); Numbers (the `--compare` Markdown: initial JS, first frame, bytes before the first frame per bucket, P1-throttled first frame, LHCI LCP/TBT/CLS/script per URL, troika font bytes, `/` to `/en` hop); Screenshots (3D diff table, intended diffs: boot card, hero, featured cards, sharp images, motto in-world on L1 hall and RF); Owner decisions applied (boot card content and link, motto, no first person in taglines, portrait and C5 revision, equal-height cards); Rebase notes (the table at the top of this plan); Follow-ups (Early Hints `Link` per route, ExperienceData and message trimming A2.4, 3D chunk preload after FCP A1.4).
 
-- [ ] **Step 6: Clean up**
+- [x] **Step 6: Clean up**
 
 ```bash
 git worktree remove ../hq-p1-base

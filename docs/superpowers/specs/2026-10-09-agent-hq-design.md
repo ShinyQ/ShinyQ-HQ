@@ -1,5 +1,7 @@
 # ShinyQ HQ: Agent HQ Portfolio Design
 
+Status: implemented across #1 to #173: phases 0 to 5 in #1 to #12, phase 6 polish in #4 and the later rounds (the phase 3 corridor was later replaced in #40 by the L2 Career Road); the appendices in `agent-hq/` hold the current design
+
 - **Date:** 2026-10-09
 - **Owner:** Kurniadi Ahmad Wijaya (GitHub `ShinyQ`)
 - **Status:** Approved design, pending implementation plan
@@ -213,7 +215,7 @@ Rules:
 - **GPU tier check** on load: `full` (bloom, all effects), `lite` (no bloom, fewer lights and particles, DPR ≤ 1.5), `static` (no WebGL; HTML-only experience with the same content and navigation).
 - Only the current floor and its neighbours render in full detail; other floors are low-cost silhouettes.
 - Instanced meshes for repeated geometry; procedural geometry only; lazy-loaded 3D chunks.
-- Reduced motion: no camera sway, instant elevator cuts, no particles. Owner decision 2026-10-14: it follows the visitor's Motion setting, default Full on every OS; `prefers-reduced-motion` applies only after the visitor picks System (or always with Reduced) in the Motion menu (AGENTS.md "Motion setting").
+- Reduced motion: no camera sway, instant elevator cuts, no particles. Owner decision 2026-10-14: it follows the visitor's Motion setting, default Full on every OS; `prefers-reduced-motion` applies only after the visitor picks System (or always with Reduced) in the Motion menu (`docs/agents/hud-and-drawer.md`, "Motion setting").
 - Budgets: LCP < 2.5 s on 4G mid-range mobile, initial JS < 350 KB gzipped before 3D chunks, 3D chunk < 600 KB gzipped.
 
 ### 4.5 Accessibility

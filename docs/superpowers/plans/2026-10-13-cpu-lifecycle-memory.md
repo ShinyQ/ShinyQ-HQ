@@ -1,5 +1,7 @@
 # Round 5 P3: CPU, lifecycle and memory Implementation Plan
 
+Status: shipped in #81 (7336303), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the 3D HQ cheaper on the CPU, the GPU clock and memory without changing a single visible pixel of the look: no geometry leaks across floor round trips (with a deterministic memory e2e), no frames while an opaque panel hides the world, at most 60 fps on 90/120/144 Hz displays, a bounded `findPath`, a palette search that does not re-normalize ~1.4k strings per keystroke, store and `localStorage` writes only on real changes, no `backdrop-filter` under near-opaque panels, and a WebGL crash path that retries once and offers "Retry 3D" instead of stranding visitors on the static page.
@@ -128,7 +130,7 @@ The gate every pixel-sensitive task uses. It captures fixed poses from any build
 - Consumes: `asReturningVisitor`, `waitForHQ`, `waitForSceneLive`, `waitForCameraSettle`, `waitForFrames` from `e2e/hq.ts`; `heroPod` from `e2e/routes.ts`.
 - Produces: `decodePng(file: Uint8Array): Rgba`, `diffRatio(a: Rgba, b: Rgba, tolerance?: number): number`, `gate(base, base2, head, max?, tolerance?): GateRow[]` in `scripts/shot-diff.ts`; CLI `bun scripts/shot-diff.ts --base <dir> --base2 <dir> --head <dir> [--max 0.01] [--tolerance 8]` (exit 1 on any FAIL); capture names `desktop-*`, `wide-*`, `phone-*`, `pattern-*` written by `VISUAL_GATE=<dir> bunx playwright test e2e/visual-gate.spec.ts`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Create `tests/unit/shot-diff.test.ts`:
 
@@ -225,12 +227,12 @@ describe("gate", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/shot-diff.test.ts`
 Expected: FAIL, `Failed to resolve import "../../scripts/shot-diff"`.
 
-- [ ] **Step 3: Write `scripts/shot-diff.ts`**
+- [x] **Step 3: Write `scripts/shot-diff.ts`**
 
 ```ts
 /**
@@ -375,12 +377,12 @@ if (import.meta.main) {
 }
 ```
 
-- [ ] **Step 4: Run the unit test to verify it passes**
+- [x] **Step 4: Run the unit test to verify it passes**
 
 Run: `bun run test tests/unit/shot-diff.test.ts`
 Expected: PASS (8 tests). If the `gate` row's `limit` float differs in the last digit on your Node, compare with `toBeCloseTo` for `limit` only; the other fields stay exact.
 
-- [ ] **Step 5: Write the opt-in capture spec**
+- [x] **Step 5: Write the opt-in capture spec**
 
 Create `e2e/visual-gate.spec.ts`:
 
@@ -496,7 +498,7 @@ for (const pose of POSES) {
 }
 ```
 
-- [ ] **Step 6: Keep the gate out of the default suite and the change plan**
+- [x] **Step 6: Keep the gate out of the default suite and the change plan**
 
 In `playwright.config.ts` replace lines 9-10 and 20:
 
@@ -530,7 +532,7 @@ Append to `.gitignore`:
 /.visual/
 ```
 
-- [ ] **Step 7: Capture the baseline from main twice**
+- [x] **Step 7: Capture the baseline from main twice**
 
 Run (two terminals or async shells; the server keeps running):
 
@@ -546,7 +548,7 @@ bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .vi
 
 Expected: 24 passed per capture run (Playwright reuses the server on 4432 because `reuseExistingServer` is on locally); the diff prints 24 rows, all `pass`, and the `noise` column is the animation floor (expect `pattern-*` near 0.00%, live poses a few percent at most). Then stop the base server (`stop_bash`/Ctrl+C). Keep `.visual/base-a` and `.visual/base-b` for every later gate run.
 
-- [ ] **Step 8: Document the gate**
+- [x] **Step 8: Document the gate**
 
 In `AGENTS.md` "Fast verification", add after the "Screenshots" bullet:
 
@@ -554,12 +556,12 @@ In `AGENTS.md` "Fast verification", add after the "Screenshots" bullet:
 - Visual gate (round 5, opt-in): for any change that may move pixels of the 3D view or the HUD over it. Build the base commit in a second worktree and serve it (`bun scripts/serve-static.ts --port 4432 --dir ../base/out`), capture it twice (`VISUAL_GATE=.visual/base-a E2E_PORT=4432 bunx playwright test e2e/visual-gate.spec.ts --workers=1`, then `.visual/base-b`), stop it, build the branch and capture `.visual/head` the same way, then `bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .visual/head`. A capture passes when at most 1% more pixels differ (any RGB channel by more than 8/255) than between the two base runs; `pattern-*` captures hide the canvas behind a fixed stripe pattern so panel changes are measured strictly. Poses: desktop full 1440x900 and 2560x1440, phone lite 390x844, reduced motion. Paste the table into the PR.
 ```
 
-- [ ] **Step 9: Run the plan tests and lint**
+- [x] **Step 9: Run the plan tests and lint**
 
 Run: `bun run test tests/unit/e2e-plan.test.ts tests/unit/shot-diff.test.ts && bun run lint`
 Expected: PASS, no lint errors.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add scripts/shot-diff.ts e2e/visual-gate.spec.ts tests/unit/shot-diff.test.ts playwright.config.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts .gitignore AGENTS.md
@@ -597,7 +599,7 @@ No pixels change (disposal runs only on unmount), so no visual gate.
 - Consumes: Task 1 nothing; `enterHQ`, `waitForFloor`, `waitForFrames`, `waitForHQ`, `waitForSceneLive` from `e2e/hq.ts`.
 - Produces: `trackRenderer(gl: WebGLRenderer | null): void`, `memoryCounts(): MemoryCounts | null` with `MemoryCounts = { geometries: number; textures: number; programs: number }` (`scene/memoryProbe.ts`); `window.__hq.memory()`; `useDispose(resource: { dispose(): void } | null | undefined): void` (`fx/useDispose.ts`); spec name `memory` in `ALL_SPECS`.
 
-- [ ] **Step 1: Add the renderer probe**
+- [x] **Step 1: Add the renderer probe**
 
 Create `src/experience/scene/memoryProbe.ts`:
 
@@ -662,7 +664,7 @@ and add this effect after the "Cover the page" effect (after line 166):
   useEffect(() => () => trackRenderer(null), []);
 ```
 
-- [ ] **Step 2: Write the failing memory e2e**
+- [x] **Step 2: Write the failing memory e2e**
 
 Create `e2e/memory.spec.ts`:
 
@@ -766,12 +768,12 @@ Register the spec in `scripts/e2e-plan.ts`: add `"memory",` to `ALL_SPECS` betwe
   { test: /^src\/experience\/(fx\/useDispose\.ts|scene\/memoryProbe\.ts|tower\/(Tower|near|FloorLevel)\.tsx?)$/, specs: ["experience", "memory"] },
 ```
 
-- [ ] **Step 3: Run it to verify it fails (and record the "before" numbers)**
+- [x] **Step 3: Run it to verify it fails (and record the "before" numbers)**
 
 Run: `bun run build && E2E_PORT=4432 bunx playwright test e2e/memory.spec.ts`
 Expected: the round-trip test FAILS with `geometries` about 110 above the baseline (`+~11` per trip, the per-trip list grows by about 11 each entry); `textures` and `programs` equal. The toggle test is expected to PASS already (each toggle builds a fresh renderer); it guards the remount path. Copy the `measure` annotation lines (shown in the list reporter output) into your notes as the "before" row of the Task 10 table.
 
-- [ ] **Step 4: Write the failing hook test**
+- [x] **Step 4: Write the failing hook test**
 
 Create `tests/unit/use-dispose.test.tsx`:
 
@@ -806,7 +808,7 @@ describe("useDispose", () => {
 Run: `bun run test tests/unit/use-dispose.test.tsx`
 Expected: FAIL, `Failed to resolve import "@/experience/fx/useDispose"`.
 
-- [ ] **Step 5: Write the hook**
+- [x] **Step 5: Write the hook**
 
 Create `src/experience/fx/useDispose.ts`:
 
@@ -829,7 +831,7 @@ export function useDispose(resource: { dispose(): void } | null | undefined): vo
 Run: `bun run test tests/unit/use-dispose.test.tsx`
 Expected: PASS (2 tests).
 
-- [ ] **Step 6: Write the disposal lint test**
+- [x] **Step 6: Write the disposal lint test**
 
 Create `tests/unit/three-disposal.test.ts`:
 
@@ -941,7 +943,7 @@ src/experience/tower/primitives.tsx: geometry
 
 If the list holds an entry not named here, fix it the same way as Step 7 (add `useDispose(<name>)` right after its `useMemo`) and mention it in the PR.
 
-- [ ] **Step 7: Dispose every flagged resource**
+- [x] **Step 7: Dispose every flagged resource**
 
 Each edit adds one import and one `useDispose` call per resource, directly after the `useMemo` (before any early `return`).
 
@@ -1030,12 +1032,12 @@ and after the `sight` memo (`}, [d, windowX, labs.maxX, labs.maxZ]);`):
   useDispose(edges);
 ```
 
-- [ ] **Step 8: Run the unit tests, the memory e2e and the floor specs**
+- [x] **Step 8: Run the unit tests, the memory e2e and the floor specs**
 
 Run: `bun run test tests/unit/three-disposal.test.ts tests/unit/use-dispose.test.tsx && bun run build && E2E_PORT=4432 bunx playwright test e2e/memory.spec.ts e2e/career.spec.ts e2e/roof.spec.ts e2e/highlights.spec.ts`
 Expected: all PASS. The memory annotation shows `after` equal to `base` and heap growth under 2048 KB; record it as the "after" row. If `after` still differs, the per-trip list shows which counter grows: open the floor that mounts in that trip in a dev build, call `__hq.memory()` before and after `goToFloor`, and look for a `useMemo` resource the lint missed (for example a material with a texture map); dispose it with `useDispose` and add its pattern to `PRODUCER` with a unit case.
 
-- [ ] **Step 9: Document the rule**
+- [x] **Step 9: Document the rule**
 
 In `AGENTS.md` "3D experience", add after the "Pure modules" bullet:
 
@@ -1053,7 +1055,7 @@ In `docs/superpowers/specs/agent-hq/08-quality-acceptance.md` section 2 replace 
 
 In `README.md` "Performance", append to the 3D paragraph: "Floor content is disposed when it unmounts: `e2e/memory.spec.ts` drives 10 Lobby to Roof round trips and 5 Page View toggles and expects the renderer's geometries, textures and shader programs back at their baseline."
 
-- [ ] **Step 10: Lint, typecheck and commit**
+- [x] **Step 10: Lint, typecheck and commit**
 
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
@@ -1083,7 +1085,7 @@ Pixel impact: none for a still frame (the same scene renders at the same poses);
 - Consumes: Task 2's `__hq` object shape (adds a key).
 - Produces (`scene/framePacer.ts`): `FRAME_CAP_FPS = 60`, `FRAME_INTERVAL_MS`, `FRAME_SLACK_MS = 2`, `interface Pacer { last; next; elapsed; paused; frames }`, `createPacer(): Pacer`, `resetPacer(p: Pacer): void`, `pacerTick(p: Pacer, now: number): number | null` (seconds for R3F, or null to skip), `setPacerPaused(p: Pacer, paused: boolean, now: number): boolean`, singleton `framePacer`, `pauseFrames(paused: boolean, now?: number): void`, `onPacerChange(listener: (paused: boolean) => void): () => void`. `FrameLoop` component (no props). `window.__hq.frames(): number`. Spec name `lifecycle`.
 
-- [ ] **Step 1: Write the failing pacer test**
+- [x] **Step 1: Write the failing pacer test**
 
 Create `tests/unit/frame-pacer.test.ts`:
 
@@ -1159,12 +1161,12 @@ describe("pacerTick", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bun run test tests/unit/frame-pacer.test.ts`
 Expected: FAIL, `Failed to resolve import "@/experience/scene/framePacer"`.
 
-- [ ] **Step 3: Write the pacer**
+- [x] **Step 3: Write the pacer**
 
 Create `src/experience/scene/framePacer.ts`:
 
@@ -1254,12 +1256,12 @@ export function pauseFrames(paused: boolean, now = performance.now()): void {
 }
 ```
 
-- [ ] **Step 4: Run the pacer test to verify it passes**
+- [x] **Step 4: Run the pacer test to verify it passes**
 
 Run: `bun run test tests/unit/frame-pacer.test.ts`
 Expected: PASS (12 tests).
 
-- [ ] **Step 5: Drive the canvas from the pacer**
+- [x] **Step 5: Drive the canvas from the pacer**
 
 Create `src/experience/scene/FrameLoop.tsx`:
 
@@ -1320,7 +1322,7 @@ and mount the loop next to `FirstFrame`:
           <FrameLoop />
 ```
 
-- [ ] **Step 6: Write the lifecycle spec with the first loop test**
+- [x] **Step 6: Write the lifecycle spec with the first loop test**
 
 Create `e2e/lifecycle.spec.ts`:
 
@@ -1389,12 +1391,12 @@ Register the spec in `scripts/e2e-plan.ts`: add `"lifecycle",` to `ALL_SPECS` be
   { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts|tower\/rideClock\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
 ```
 
-- [ ] **Step 7: Build and run the loop test plus the specs that render most**
+- [x] **Step 7: Build and run the loop test plus the specs that render most**
 
 Run: `bun run test && bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts e2e/experience.spec.ts e2e/highlights.spec.ts e2e/roof.spec.ts e2e/pads.spec.ts`
 Expected: all PASS (render budgets unchanged: L1 under 140, RF under 80; the elevator, intro and beam tests pass because `useFrame` deltas are unchanged at 60 Hz).
 
-- [ ] **Step 8: Run the visual gate**
+- [x] **Step 8: Run the visual gate**
 
 Run (no server on 4432 must be running; Playwright serves `out/`):
 
@@ -1405,7 +1407,7 @@ bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .vi
 
 Expected: every row `pass`. Keep the table for the PR. If a live pose fails, rerun `.visual/head` once (a failing pose that passes on rerun was animation phase); a pose that fails twice is a real change: stop and inspect the two PNGs.
 
-- [ ] **Step 9: Document**
+- [x] **Step 9: Document**
 
 In `AGENTS.md` "3D experience", add after the Disposal bullet:
 
@@ -1423,7 +1425,7 @@ In `docs/superpowers/specs/agent-hq/08-quality-acceptance.md` section 2, replace
 
 In `README.md` "Performance", append: "The canvas renders at most 60 frames per second (`scene/framePacer.ts`), so 90 to 144 Hz screens do not do twice the work."
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/experience/scene/framePacer.ts src/experience/scene/FrameLoop.tsx src/experience/Experience.tsx tests/unit/frame-pacer.test.ts e2e/lifecycle.spec.ts scripts/e2e-plan.ts AGENTS.md README.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md
@@ -1452,7 +1454,7 @@ Pixel impact: none while visible; the covered frame stays as it was (the panels 
 - Consumes: `pauseFrames(paused, now?)` from Task 3; `audio.setRumble(level: number)` from `@/lib/audio`.
 - Produces: `COVER_ATTR = "data-hq-cover"`, `COVER_PAUSE = 0.9`, `interface Box { left; top; right; bottom }`, `coveredFraction(width: number, height: number, boxes: readonly Box[]): number`, `isCovered(width, height, boxes): boolean` (`scene/cover.ts`); `watchCover(onChange: (covered: boolean) => void): () => void` (`scene/coverWatch.ts`). Rule for every future opaque full-screen panel: add `data-hq-cover`.
 
-- [ ] **Step 1: Write the failing cover test**
+- [x] **Step 1: Write the failing cover test**
 
 Create `tests/unit/cover.test.ts`:
 
@@ -1485,7 +1487,7 @@ describe("coveredFraction", () => {
 Run: `bun run test tests/unit/cover.test.ts`
 Expected: FAIL, `Failed to resolve import "@/experience/scene/cover"`.
 
-- [ ] **Step 2: Write the cover math and the watcher**
+- [x] **Step 2: Write the cover math and the watcher**
 
 Create `src/experience/scene/cover.ts`:
 
@@ -1578,7 +1580,7 @@ export function watchCover(onChange: (covered: boolean) => void): () => void {
 Run: `bun run test tests/unit/cover.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 3: Mount the watcher in the frame loop**
+- [x] **Step 3: Mount the watcher in the frame loop**
 
 Replace `src/experience/scene/FrameLoop.tsx` with:
 
@@ -1622,7 +1624,7 @@ export function FrameLoop() {
 }
 ```
 
-- [ ] **Step 4: Mark the covering panels**
+- [x] **Step 4: Mark the covering panels**
 
 `src/hud/CommandPalette.tsx`, the panel `div` (line 147-152): add the attribute after `onKeyDown={onDialogKeyDown}`:
 
@@ -1654,7 +1656,7 @@ export function FrameLoop() {
 
 Only the measured rectangle decides: the desktop palette (640 px), desktop modals, the side drawer and the 55% sheet stay under 90% and never pause.
 
-- [ ] **Step 5: Write the failing pause e2e tests**
+- [x] **Step 5: Write the failing pause e2e tests**
 
 In `e2e/lifecycle.spec.ts` change the imports at the top to:
 
@@ -1755,12 +1757,12 @@ test.describe("rendering pauses while an opaque panel covers the canvas", () => 
 Run: `bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts -g "pauses"` against a build WITHOUT Step 3 and Step 4 if you want to see it fail first (stash them: `rtk git stash push src/experience/scene/FrameLoop.tsx src/hud src/components`, build, run, `rtk git stash pop`).
 Expected without the watcher: the three phone tests FAIL with `drawsOver` well above 0 (record this number per second as the "before" for frames under covers); the desktop test passes.
 
-- [ ] **Step 6: Run the pause tests and the HUD specs**
+- [x] **Step 6: Run the pause tests and the HUD specs**
 
 Run: `bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts e2e/labs.spec.ts e2e/gallery.spec.ts e2e/hud.spec.ts e2e/drawer-solid.spec.ts e2e/missions.spec.ts`
 Expected: all PASS.
 
-- [ ] **Step 7: Map the paths to the lifecycle spec**
+- [x] **Step 7: Map the paths to the lifecycle spec**
 
 In `scripts/e2e-plan.ts`:
 
@@ -1785,13 +1787,13 @@ In `tests/unit/e2e-plan.test.ts` line 52:
 Run: `bun run test tests/unit/e2e-plan.test.ts`
 Expected: PASS.
 
-- [ ] **Step 8: Document**
+- [x] **Step 8: Document**
 
 In `AGENTS.md`, extend the Frame loop bullet from Task 3 with: "Rendering pauses while an opaque panel marked `data-hq-cover` hides more than 90% of the canvas (`scene/cover.ts`, `scene/coverWatch.ts`): the full-screen phone palette and modals, the drawer sheet at its 92% snap and the lightbox. The desktop side drawer, the 55% sheet and desktop overlays keep the world animated. Mark any new opaque full-screen panel with `data-hq-cover`; the rumble drops to 0 on pause."
 
 In `docs/superpowers/specs/2026-10-09-agent-hq-design.md` section 2.6, append to the Glass Drawer bullet: "Rendering pauses only while an opaque panel hides more than 90% of the canvas (the 92% sheet, the full-screen phone palette and modals, the lightbox); the side panel and the 55% sheet keep the pod animated."
 
-- [ ] **Step 9: Run the visual gate**
+- [x] **Step 9: Run the visual gate**
 
 Run:
 
@@ -1803,7 +1805,7 @@ bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .vi
 
 Expected: every row `pass` (`pattern-phone-palette` and `pattern-phone-cv` are paused on the branch; their panels are opaque, so they match).
 
-- [ ] **Step 10: Lint and commit**
+- [x] **Step 10: Lint and commit**
 
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
@@ -1834,7 +1836,7 @@ No pixels change (same paths). No visual gate.
 - Consumes: `buildExperienceData`, `buildFloorLayouts`, `careerLayoutInput`, `libraryLayoutInput`, `ROVER`, `buildRoadGraph`, `roadRoute`, `roadZAt`.
 - Produces: unchanged public API (`buildNavGrid`, `isWalkable`, `nearestWalkable`, `segmentWalkable`, `findPath`), plus `componentsOf(g: NavGrid): Int32Array` (region label per cell, -1 when blocked, cached per grid; grids are immutable after `buildNavGrid`) and `pathStats: { expanded: number; scanned: number }` (work of the last `findPath`). Test helpers `realLayouts(): Record<FloorId, FloorLayout>` and `farthestWalkable(g: NavGrid, from: Vec2): Vec2`. Script `bun run bench`.
 
-- [ ] **Step 1: Freeze the current implementation as the oracle**
+- [x] **Step 1: Freeze the current implementation as the oracle**
 
 Run (before touching `navgrid.ts`):
 
@@ -1845,7 +1847,7 @@ bun run typecheck
 
 Expected: typecheck passes; `tests/helpers/navgrid-legacy.ts` exports `buildNavGrid`, `isWalkable`, `nearestWalkable`, `segmentWalkable`, `findPath`.
 
-- [ ] **Step 2: Add the real-layout helper**
+- [x] **Step 2: Add the real-layout helper**
 
 Create `tests/helpers/real-layouts.ts`:
 
@@ -1882,7 +1884,7 @@ export function farthestWalkable(g: NavGrid, from: Vec2): Vec2 {
 }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 Create `tests/unit/navgrid-bounded.test.ts`:
 
@@ -1953,7 +1955,7 @@ describe("findPath does bounded work", () => {
 Run: `bun run test tests/unit/navgrid-bounded.test.ts`
 Expected: FAIL, `componentsOf` and `pathStats` are not exported (`TypeError: ... is not a function` or a missing export error).
 
-- [ ] **Step 4: Implement the bounded search**
+- [x] **Step 4: Implement the bounded search**
 
 In `src/experience/nav/navgrid.ts` replace the `DIRS` constant (lines 14-23) with:
 
@@ -2229,12 +2231,12 @@ export function findPath(g: NavGrid, from: Vec2, to: Vec2): Vec2[] | null {
 
 `center`, `cellIndex`, `isWalkable` and `buildNavGrid` (lines 25-80) stay as they are.
 
-- [ ] **Step 5: Run the navgrid tests**
+- [x] **Step 5: Run the navgrid tests**
 
 Run: `bun run test tests/unit/navgrid-bounded.test.ts tests/unit/navgrid.test.ts tests/unit/road.test.ts tests/unit/walk.test.ts tests/unit/missions-host3d.test.ts`
 Expected: PASS. An equivalence failure prints the floor and the pair; the usual cause is a changed tie-break (check `consider` keeps the lowest index on equal distance and `neighbor` keeps the `DI`/`DJ` order).
 
-- [ ] **Step 6: Add the bench**
+- [x] **Step 6: Add the bench**
 
 In `vitest.config.mts`, inside `test`:
 
@@ -2319,7 +2321,7 @@ for (const id of Object.keys(layouts) as FloorId[]) {
 Run: `bun run bench tests/bench/navgrid.bench.ts`
 Expected: a table per group; in every `findPath` group `current` is faster than `legacy` (vitest prints "current ... x faster than legacy"). Pass rule (SP11): every `current` mean at most 2 ms on an M-class laptop, which is 8 ms at 4x CPU. If the farthest-cell `findPath` on L2 or L3 is above 2 ms while the scrub and roadRoute rows are under it, record it: A* over a whole floor is inherent, and no autopilot drive uses an unroaded whole-floor path (L2 to L4 drives follow `roadRoute`). Paste the table into the PR.
 
-- [ ] **Step 7: Map the path and document**
+- [x] **Step 7: Map the path and document**
 
 In `scripts/e2e-plan.ts`, add before the road rule:
 
@@ -2335,7 +2337,7 @@ In `README.md` Scripts table, add after the `bun run test` row:
 
 In `AGENTS.md` "Fast verification", add: "`bun run bench` runs the Vitest benches in `tests/bench/` (path finding on the real layouts, palette typing) against frozen copies of the old code in `tests/helpers/*-legacy.ts`; use it for CPU changes and paste the table into the PR."
 
-- [ ] **Step 8: Verify and commit**
+- [x] **Step 8: Verify and commit**
 
 Run: `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4432 bunx playwright test e2e/missions.spec.ts e2e/walk.spec.ts e2e/career.spec.ts`
 Expected: PASS.
@@ -2364,7 +2366,7 @@ No pixels change. No visual gate.
 - Consumes: `buildHudIndex`, `getContent`, `buildPaletteEntries`.
 - Produces: unchanged exports `normalize`, `fuzzyScore(query, text)`, `scoreEntry(entry, tokens)`, `searchPalette(entries, query, options)`, `looksLikeQuestion`, `askEntry`, `buildPaletteEntries`. Internal: `prepare(text): Prepared`, `prepared(entry): PreparedEntry` (WeakMap cache), `scoreText(q, prepared)`, `scoreTokens(entry, normalizedTokens)`.
 
-- [ ] **Step 1: Freeze the current search as the oracle**
+- [x] **Step 1: Freeze the current search as the oracle**
 
 ```bash
 { echo '// Frozen copy of src/hud/search.ts before round 5 P3: the oracle for tests/unit/search-equivalence.test.ts and tests/bench/search.bench.ts. Do not edit.'; rtk git show HEAD:src/hud/search.ts | sed -e 's#"\./index-data"#"@/hud/index-data"#' -e 's#"\./palette-types"#"@/hud/palette-types"#'; } > tests/helpers/search-legacy.ts
@@ -2373,7 +2375,7 @@ bun run typecheck
 
 Expected: typecheck passes.
 
-- [ ] **Step 2: Write the equivalence test**
+- [x] **Step 2: Write the equivalence test**
 
 Create `tests/unit/search-equivalence.test.ts`:
 
@@ -2430,7 +2432,7 @@ describe("palette search returns exactly what the pre-round-5 implementation ret
 Run: `bun run test tests/unit/search-equivalence.test.ts`
 Expected: PASS already (both are the same code at this point); it becomes the guard for Step 3. Note the query count printed in the test name.
 
-- [ ] **Step 3: Pre-normalize**
+- [x] **Step 3: Pre-normalize**
 
 In `src/hud/search.ts` replace lines 95-178 (from `const isWordChar` through the end of `scoreEntry`) with:
 
@@ -2577,12 +2579,12 @@ In `searchPalette` (the `scored` block, lines 239-242) normalize the tokens once
 
 (`texts` moves above `tokenScore` but stays after `prepared`; it is only called at search time, after the module initialized.)
 
-- [ ] **Step 4: Run the search tests**
+- [x] **Step 4: Run the search tests**
 
 Run: `bun run test tests/unit/search-equivalence.test.ts tests/unit/search.test.ts tests/hud/CommandPalette.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Bench typing**
+- [x] **Step 5: Bench typing**
 
 Create `tests/bench/search.bench.ts`:
 
@@ -2611,11 +2613,11 @@ describe(`palette: typing "${typed}" (${keys.length} searches per iteration)`, (
 Run: `bun run bench tests/bench/search.bench.ts`
 Expected: `current` faster than `legacy`; `current` mean divided by 23 keys at most 4 ms. Paste the table into the PR.
 
-- [ ] **Step 6: Document**
+- [x] **Step 6: Document**
 
 In `docs/superpowers/specs/agent-hq/02-interaction-and-states.md` section 5, append to the Search bullet: "Entry texts are normalized once per index; a keystroke normalizes only the query (budget: p95 under 16 ms per keystroke at 4x CPU, `tests/bench/search.bench.ts`)."
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 Run: `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4432 bunx playwright test e2e/missions.spec.ts e2e/ask.spec.ts`
 Expected: PASS.
@@ -2651,7 +2653,7 @@ No pixels change (the car, doors and beam read the same progress through `rideNo
 - Consumes: `advanceRide`, `Ride` (`tower/elevator.ts`), `advanceBeam`, `startBeam`, `Beam` (`nav/teleport.ts`), `PersistStorage`, `StorageValue` (`zustand/middleware`).
 - Produces: `skipUnchanged<S extends object>(inner: PersistStorage<S> | undefined): PersistStorage<S> | undefined`; `rideNow(stored: Ride): Ride`, `keepRide(stored: Ride, next: Ride): void`, `clearRide(): void`, `beamNow(stored: Beam): Beam`, `keepBeam(stored: Beam, next: Beam): void`, `clearBeam(): void`; `sameRover(current: RoverState, patch: Partial<RoverState>): boolean` and `POSE_EPSILON = 1e-4` exported from `useHQStore.ts`; `window.__hq.motion(): { ride: Ride | null; beam: Beam | null }` (live progress for tests, P6's throttled ride e2e and P4's overlay). `store.ride.t` and `store.beam.t` now hold the value at the last stage change, not live progress.
 
-- [ ] **Step 1: Write the failing storage and store tests**
+- [x] **Step 1: Write the failing storage and store tests**
 
 Create `tests/unit/persist-storage.test.ts`:
 
@@ -2751,7 +2753,7 @@ Append to `tests/unit/store.test.ts` inside `describe("HQ store", ...)` (the fil
 Run: `bun run test tests/unit/persist-storage.test.ts tests/unit/store.test.ts`
 Expected: FAIL: `@/store/persist-storage` cannot be resolved; in the store test `sets` is 2 instead of 0 and `writes` is base + 22 instead of base.
 
-- [ ] **Step 2: Implement the storage wrapper and the rover check**
+- [x] **Step 2: Implement the storage wrapper and the rover check**
 
 Create `src/store/persist-storage.ts`:
 
@@ -2844,7 +2846,7 @@ Replace lines 231-233:
 Run: `bun run test tests/unit/persist-storage.test.ts tests/unit/store.test.ts`
 Expected: PASS.
 
-- [ ] **Step 3: Write the failing ride clock test**
+- [x] **Step 3: Write the failing ride clock test**
 
 Create `tests/unit/ride-clock.test.ts`:
 
@@ -2920,7 +2922,7 @@ describe("beam clock", () => {
 Run: `bun run test tests/unit/ride-clock.test.ts`
 Expected: FAIL, `Failed to resolve import "@/experience/tower/rideClock"`.
 
-- [ ] **Step 4: Implement the clock and switch the readers**
+- [x] **Step 4: Implement the clock and switch the readers**
 
 Create `src/experience/tower/rideClock.ts`:
 
@@ -3051,7 +3053,7 @@ In `src/experience/Experience.tsx` add `import { beamNow, rideNow } from "./towe
     },
 ```
 
-- [ ] **Step 5: Write the store-write e2e probes**
+- [x] **Step 5: Write the store-write e2e probes**
 
 Append to `e2e/lifecycle.spec.ts` (add `waitForCameraSettle` to the `./hq` import):
 
@@ -3137,7 +3139,7 @@ test.describe("store writes", () => {
 });
 ```
 
-- [ ] **Step 6: Record "before" on main, then verify on the branch**
+- [x] **Step 6: Record "before" on main, then verify on the branch**
 
 Run the probes against main's build first (they fail there and print the before numbers):
 
@@ -3154,7 +3156,7 @@ Expected on main: both FAIL; the `measure` annotations read about 30 store sets 
 Run: `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts e2e/pads.spec.ts e2e/experience.spec.ts e2e/career.spec.ts e2e/missions.spec.ts`
 Expected: PASS; the annotations read 0 to 2 parked sets with 0 writes, and about 15 to 25 ride sets with 0 writes. Record them.
 
-- [ ] **Step 7: Map the store path and document**
+- [x] **Step 7: Map the store path and document**
 
 In `scripts/e2e-plan.ts` change the store rule:
 
@@ -3176,7 +3178,7 @@ In `docs/superpowers/specs/agent-hq/06-data-contracts.md` section 2, after the "
 Update rate (round 5): per-frame state (rover pose, ride and beam progress) lives in runtime objects mutated in `useFrame`; the store mirrors the rover at most every 100 ms and only when a value changed (tolerance 1e-4), and stores the ride and the beam only when a stage starts or ends. `persist` writes `localStorage` only when a persisted key changed; `sound` is persisted by the audio engine (`localStorage["hq:sound"]`), not by the store.
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/store/persist-storage.ts src/store/useHQStore.ts src/experience/tower/rideClock.ts src/experience/scene/Director.tsx src/experience/tower/ElevatorShaft.tsx src/experience/fx/TeleportBeam.tsx src/experience/Experience.tsx tests/unit/persist-storage.test.ts tests/unit/ride-clock.test.ts tests/unit/store.test.ts e2e/lifecycle.spec.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/agent-hq/06-data-contracts.md
@@ -3213,7 +3215,7 @@ Rollback: revert this commit (CSS and class names only).
 - Consumes: the visual gate from Task 1 (`pattern-*` captures).
 - Produces: the blur policy: no `backdrop-filter` under a panel at least 94% opaque, none on a scrim hidden behind a full-screen panel, none on coarse pointers.
 
-- [ ] **Step 1: Write the failing CSS assertion**
+- [x] **Step 1: Write the failing CSS assertion**
 
 Append to `e2e/lifecycle.spec.ts`:
 
@@ -3249,7 +3251,7 @@ test.describe("no backdrop blur under near-opaque panels", () => {
 Run: `bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts -g "backdrop"`
 Expected: the three tests FAIL with a `blur(...)` value instead of `"none"` (18 px for the drawer and the terminal, 4 px for the scrim).
 
-- [ ] **Step 2: Remove the blurs**
+- [x] **Step 2: Remove the blurs**
 
 `src/app/globals.css`, replace the `.glass-solid` block (lines 135-137):
 
@@ -3286,12 +3288,12 @@ Expected: the three tests FAIL with a `blur(...)` value instead of `"none"` (18 
       <div aria-hidden="true" className={`absolute inset-0 bg-void/80 ${sheet ? "backdrop-blur-sm" : "sm:backdrop-blur-sm"}`} onClick={() => close.current()} />
 ```
 
-- [ ] **Step 3: Run the assertions and the HUD specs**
+- [x] **Step 3: Run the assertions and the HUD specs**
 
 Run: `bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts e2e/drawer-solid.spec.ts e2e/hud.spec.ts e2e/gallery.spec.ts e2e/pageview.spec.ts`
 Expected: PASS (`drawer-solid` checks the drawer fill, which is unchanged).
 
-- [ ] **Step 4: Run the visual gate**
+- [x] **Step 4: Run the visual gate**
 
 Run:
 
@@ -3302,7 +3304,7 @@ bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .vi
 
 Expected: every row `pass`; the `pattern-desktop-drawer`, `pattern-desktop-palette`, `pattern-desktop-terminal`, `pattern-desktop-lightbox` and `pattern-wide-drawer` rows show the blur removal as a small non-zero diff under 1.00% (the 5 to 6% show-through changes by less than 8/255 per channel). If one of those rows fails, restore the blur for that element only (put its utility back), rerun, and list it in the PR as kept.
 
-- [ ] **Step 5: Document**
+- [x] **Step 5: Document**
 
 In `AGENTS.md` "Styling", replace the `.glass-solid` bullet's first sentence with: "`.glass-solid` (add next to `.glass`) makes a panel near-opaque (`rgb(10 10 18 / .94)`, solid on coarse pointers) while keeping the glass edge, and drops the backdrop blur." and add a bullet:
 
@@ -3316,7 +3318,7 @@ In `docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md` section 1, after 
 Blur: translucent `.glass` panels (64% fill) blur the canvas behind them on fine pointers only. Panels at least 94% opaque (`.glass-solid`, the terminal, the lightbox) and scrims hidden behind full-screen phone panels use no `backdrop-filter`, because a blur over the live canvas is recomputed every frame.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/app/globals.css src/hud/RoverTerminal.tsx src/components/Lightbox.tsx src/hud/CommandPalette.tsx src/components/Modal.tsx e2e/lifecycle.spec.ts AGENTS.md docs/superpowers/specs/agent-hq/05-visual-audio-tokens.md
@@ -3349,7 +3351,7 @@ Pixel impact: the static notice gains a button (new UI, shown only after a failu
 - Consumes: `GpuTier`, `useGateTier()`, `releaseBootCover`, the `lost` derivation in the gate.
 - Produces: `type RecoveryStatus = "ok" | "retrying" | "failed"`, `interface Recovery { failures: number; status: RecoveryStatus }`, `AUTO_RETRIES = 1`, `RECOVERY_START`, `afterFailure(r): Recovery`, `manualRetry(r): Recovery`, `settled(r): Recovery`, `interface VisibilitySource`, `whenVisible(run: () => void, doc?: VisibilitySource): () => void` (`recovery.ts`); `CanvasBoundary` (`{ onError: () => void; children: ReactNode }`); store action `recover(tier: GpuTier): void`; `Experience` prop `onCrash: () => void`; message key `hud.retry3d`; test id `retry-3d`.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 Create `tests/unit/recovery.test.ts`:
 
@@ -3486,7 +3488,7 @@ Append to `tests/unit/store.test.ts` inside `describe("HQ store", ...)`:
 Run: `bun run test tests/unit/recovery.test.ts tests/hud/CanvasBoundary.test.tsx tests/unit/store.test.ts`
 Expected: FAIL: `@/experience/recovery` and `@/experience/CanvasBoundary` cannot be resolved; `recover is not a function`.
 
-- [ ] **Step 2: Implement the pure recovery module, the boundary and the store action**
+- [x] **Step 2: Implement the pure recovery module, the boundary and the store action**
 
 Create `src/experience/recovery.ts`:
 
@@ -3597,7 +3599,7 @@ and the action after `setTier: ...`:
 Run: `bun run test tests/unit/recovery.test.ts tests/hud/CanvasBoundary.test.tsx tests/unit/store.test.ts`
 Expected: PASS.
 
-- [ ] **Step 3: Report crashes from the 3D view**
+- [x] **Step 3: Report crashes from the 3D view**
 
 In `src/experience/Experience.tsx`:
 
@@ -3654,7 +3656,7 @@ Wrap the `<Canvas>` (lines 340-364) in the boundary and replace the context-loss
 
 `getHQStore` stays imported (other effects use it).
 
-- [ ] **Step 4: Recover in the gate**
+- [x] **Step 4: Recover in the gate**
 
 In `src/experience/ExperienceGate.tsx`:
 
@@ -3747,7 +3749,7 @@ In `messages/id.json`, directly above its `"staticNotice"` line:
     "retry3d": "Coba 3D lagi",
 ```
 
-- [ ] **Step 5: Update the context-loss e2e and add the creation-failure e2e**
+- [x] **Step 5: Update the context-loss e2e and add the creation-failure e2e**
 
 In `e2e/experience.spec.ts` replace the test at lines 441-451 (add `waitForFrames`, `waitForHQ` and `waitForPhase` to its `./hq` import if they are missing):
 
@@ -3829,12 +3831,12 @@ In `scripts/e2e-plan.ts` add before the shared gate rule (`ExperienceGate\.tsx|g
   { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding"] },
 ```
 
-- [ ] **Step 6: Run the recovery tests and the gate specs**
+- [x] **Step 6: Run the recovery tests and the gate specs**
 
 Run: `bun run typecheck && bun run lint && bun run test && bun run build && E2E_PORT=4432 bunx playwright test e2e/lifecycle.spec.ts e2e/experience.spec.ts e2e/boot-first.spec.ts e2e/onboarding.spec.ts e2e/static-routes.spec.ts`
 Expected: PASS. Against main's build (serve `../hq-r5-p3-base/out` on 4432 as in Task 1) the two recovery tests FAIL (main shows the notice after the first loss and has no Retry 3D button): that is the "before".
 
-- [ ] **Step 7: Document**
+- [x] **Step 7: Document**
 
 In `AGENTS.md` "3D experience", add after the Frame loop bullet:
 
@@ -3850,7 +3852,7 @@ In `docs/superpowers/specs/2026-10-09-agent-hq-design.md` section 4.6, replace t
 
 In `docs/superpowers/specs/agent-hq/08-quality-acceptance.md` section 1, in the `static` row, change "or a WebGL error" to "or a WebGL error that survives one automatic remount (the notice offers Retry 3D)".
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/recovery.ts src/experience/CanvasBoundary.tsx src/store/useHQStore.ts src/experience/Experience.tsx src/experience/ExperienceGate.tsx messages/en.json messages/id.json tests/unit/recovery.test.ts tests/hud/CanvasBoundary.test.tsx tests/unit/store.test.ts e2e/experience.spec.ts e2e/lifecycle.spec.ts scripts/e2e-plan.ts AGENTS.md docs/superpowers/specs/2026-10-09-agent-hq-design.md docs/superpowers/specs/agent-hq/08-quality-acceptance.md
@@ -3869,7 +3871,7 @@ rtk git commit -m "feat: remount the 3D view once after a WebGL crash, then offe
 - Consumes: every earlier task; the base build in `../hq-r5-p3-base/out`; `.visual/base-a`, `.visual/base-b`.
 - Produces: PR `r5-p3-cpu-lifecycle-memory` with the measurement table, the visual gate table and the bench tables.
 
-- [ ] **Step 1: Mention the new specs in the change-plan docs**
+- [x] **Step 1: Mention the new specs in the change-plan docs**
 
 In `AGENTS.md` "Fast verification", in the `e2e:changed` bullet's list of examples, add: "`src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` to `lifecycle`, `experience` and `pads`, `fx/useDispose`, `scene/memoryProbe` and floor mounting to `memory` and `experience`". Commit:
 
@@ -3878,22 +3880,22 @@ rtk git add AGENTS.md
 rtk git commit -m "docs: map the round 5 lifecycle and memory specs in the change plan"
 ```
 
-- [ ] **Step 2: Quick verification**
+- [x] **Step 2: Quick verification**
 
 Run: `rm -rf .next && bun run verify:quick`
 Expected: typecheck, lint, all unit tests and `next build` pass.
 
-- [ ] **Step 3: The e2e suite**
+- [x] **Step 3: The e2e suite**
 
 Run: `E2E_PORT=4432 bun run e2e:changed`
 Expected: the plan is "all" (this branch changes `playwright.config.ts` and `package.json`), every spec passes, including `memory`, `lifecycle`, the render budgets (`highlights` L1 under 140, `roof` under 80, `expectRenderBudget` under 150 calls and 30k triangles) and the elevator, beam and mission specs.
 
-- [ ] **Step 4: Benches**
+- [x] **Step 4: Benches**
 
 Run: `bun run bench`
 Expected: every `current` row faster than its `legacy` row; `findPath` scrub and `roadRoute` rows at most 2 ms; palette typing at most 4 ms per key. Save the output for the PR.
 
-- [ ] **Step 5: Visual gate on the final branch**
+- [x] **Step 5: Visual gate on the final branch**
 
 Run:
 
@@ -3904,7 +3906,7 @@ bun scripts/shot-diff.ts --base .visual/base-a --base2 .visual/base-b --head .vi
 
 Expected: 24 rows, all `pass`. Save the table.
 
-- [ ] **Step 6: Initial JS and CSS of the Page View**
+- [x] **Step 6: Initial JS and CSS of the Page View**
 
 Run:
 
@@ -3921,7 +3923,7 @@ for (const ext of ["js", "css"]) {
 
 Expected: JS delta at most +1.0 KB gz (the gate's recovery state and notice button; everything else is in the lazy 3D chunk), CSS delta within +0.2 KB. CI's Lighthouse job stays the authority for the 240 KB JS and 20 KB CSS budgets; if this branch rebases onto P1 (zod off the client) the headroom grows by about 34 KB.
 
-- [ ] **Step 7: Manual check of the 60 fps cap on a high-refresh display**
+- [x] **Step 7: Manual check of the 60 fps cap on a high-refresh display**
 
 On a 120 Hz device (ProMotion MacBook in Chrome, or a 120 Hz Android phone through remote DevTools), open the production-like build (`bun run serve`, then `http://<host>:4173/en?tier=lite`) and run in the console, parked on L1:
 
@@ -3931,7 +3933,7 @@ On a 120 Hz device (ProMotion MacBook in Chrome, or a 120 Hz Android phone throu
 
 Expected: about 60 fps (main renders at the display rate; read main's rate from DevTools > Rendering > Frame Rendering Stats on the base build). Then open the palette on the phone and confirm the Frame Rendering Stats show no new frames. Record both.
 
-- [ ] **Step 8: Fill in the measurement table and open the PR**
+- [x] **Step 8: Fill in the measurement table and open the PR**
 
 Run: `rtk git push -u origin r5-p3-cpu-lifecycle-memory`, then open the PR with this body (fill every value from Tasks 2 to 9; "before" comes from main's build `../hq-r5-p3-base/out` measured with the same spec or bench):
 
@@ -3973,7 +3975,7 @@ Each commit reverts on its own: disposal (no pixel effect), frame loop and cover
 
 Expected: CI green (`Build, CV and e2e`, `Lighthouse CI`).
 
-- [ ] **Step 9: Clean up**
+- [x] **Step 9: Clean up**
 
 Run: `rtk git worktree remove ../hq-r5-p3-base && rm -rf .visual`
 Expected: the base worktree is gone; `.visual/` was never committed (`.gitignore`).

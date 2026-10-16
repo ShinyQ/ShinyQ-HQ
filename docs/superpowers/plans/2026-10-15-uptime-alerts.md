@@ -1,5 +1,7 @@
 # Uptime and Error Alerts Implementation Plan
 
+Status: shipped in #146 (f4ed8a1), 2026-10-15
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An hourly GitHub Actions check of production that opens, updates and closes one `uptime` issue.
@@ -54,7 +56,7 @@
   - `checkWithRetry(deps: UptimeDeps, opts: { forceFail: boolean; sleep: (ms: number) => Promise<void> }): Promise<CheckResult[]>`
   - constants `RETRY_DELAY_MS = 60_000`, `STATS_MAX_AGE_MS = 48 * 3_600_000`, `REQUIRED_OG`, `PAGE_PATHS`
 
-- [ ] **Step 1: Write the failing tests** in `tests/unit/uptime.test.ts`
+- [x] **Step 1: Write the failing tests** in `tests/unit/uptime.test.ts`
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
@@ -153,12 +155,12 @@ describe("runChecks and checkWithRetry", () => {
 
 (Check `@/lib/stats/fixtures` exports a valid snapshot constant; use its real name if it differs from `STATS_FIXTURE`.)
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts`
 Expected: FAIL, cannot resolve `../../scripts/uptime`.
 
-- [ ] **Step 3: Implement** the check half of `scripts/uptime.ts`
+- [x] **Step 3: Implement** the check half of `scripts/uptime.ts`
 
 ```ts
 /**
@@ -327,12 +329,12 @@ export async function checkWithRetry(deps: UptimeDeps, opts: { forceFail: boolea
 
 Note: the fake fetch in the test keys `pages.dev/?` and `pages.dev/en?`; the page URL is `${site}${path}?uptime=...`, so `/` becomes `https://kurniadi.pages.dev/?uptime=...` and `/en` becomes `.../en?uptime=...`. `/api/ask` must not match `pages.dev/?`: it does not (no `?` directly after `pages.dev/`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add scripts/uptime.ts tests/unit/uptime.test.ts
@@ -360,7 +362,7 @@ rtk git commit -m "feat(uptime): production checks with one retry"
   - `findOpenIssue(gh: GitHubCall, repo: string): Promise<OpenIssue | null>`
   - `applyIssueAction(gh: GitHubCall, repo: string, action: IssueAction): Promise<string>` (returns a one-line description for the summary)
 
-- [ ] **Step 1: Write the failing tests** (append to `tests/unit/uptime.test.ts`; add the new names to the import)
+- [x] **Step 1: Write the failing tests** (append to `tests/unit/uptime.test.ts`; add the new names to the import)
 
 ```ts
 describe("issueAction", () => {
@@ -464,12 +466,12 @@ describe("applyIssueAction and findOpenIssue", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts`
 Expected: FAIL, `issueAction` (and others) not exported.
 
-- [ ] **Step 3: Implement** (append to `scripts/uptime.ts`)
+- [x] **Step 3: Implement** (append to `scripts/uptime.ts`)
 
 ```ts
 export const UPTIME_LABEL = "uptime";
@@ -583,12 +585,12 @@ export async function applyIssueAction(gh: GitHubCall, repo: string, action: Iss
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add scripts/uptime.ts tests/unit/uptime.test.ts
@@ -607,7 +609,7 @@ rtk git commit -m "feat(uptime): open, update and close one uptime issue"
 - Consumes: everything from Tasks 1 and 2.
 - Produces: `summaryMarkdown(results: readonly CheckResult[], outcome: string): string`; the workflow `uptime.yml` with input `force_fail` and env `UPTIME_FORCE_FAIL`.
 
-- [ ] **Step 1: Write the failing tests** (append)
+- [x] **Step 1: Write the failing tests** (append)
 
 ```ts
 // Move this import to the top of the file:
@@ -641,12 +643,12 @@ describe("uptime.yml", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts`
 Expected: FAIL (`summaryMarkdown` missing, workflow file missing).
 
-- [ ] **Step 3: Implement `summaryMarkdown` and `main`** (append to `scripts/uptime.ts`)
+- [x] **Step 3: Implement `summaryMarkdown` and `main`** (append to `scripts/uptime.ts`)
 
 ```ts
 export function summaryMarkdown(results: readonly CheckResult[], outcome: string): string {
@@ -689,7 +691,7 @@ if (import.meta.main) {
 }
 ```
 
-- [ ] **Step 4: Create `.github/workflows/uptime.yml`**
+- [x] **Step 4: Create `.github/workflows/uptime.yml`**
 
 ```yaml
 name: Uptime
@@ -744,7 +746,7 @@ jobs:
         run: bun scripts/uptime.ts
 ```
 
-- [ ] **Step 5: Run tests and a live dry run**
+- [x] **Step 5: Run tests and a live dry run**
 
 Run: `bunx vitest run tests/unit/uptime.test.ts tests/unit/workflows.test.ts`
 Expected: PASS.
@@ -753,7 +755,7 @@ Expected: five `pass` lines against production and "Dry run (--dry): issue left 
 Run: `bun scripts/uptime.ts --dry --force-fail`
 Expected: the five passes plus `FAIL  Forced failure (force_fail input)`, no 60 s wait.
 
-- [ ] **Step 6: Docs**
+- [x] **Step 6: Docs**
 
 `docs/deploy.md`, append:
 
@@ -787,7 +789,7 @@ and in the "CI around it" bullet add `hourly \`uptime.yml\` (docs/deploy.md sect
 
 `README.md` line 236: change to `- **Nightly**: Ask evals against the real models, the game-first timeline trend and screenshots; weekly live facts and content-gap reports; an hourly uptime check.`
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 Run: `bunx vitest run tests/unit` (includes the em dash scan and workflow pinning) and `bun run typecheck` and `bun run lint`.
 Expected: PASS.

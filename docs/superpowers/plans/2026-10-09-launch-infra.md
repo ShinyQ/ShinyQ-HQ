@@ -1,5 +1,7 @@
 # Launch Infrastructure Implementation Plan
 
+Status: shipped in #4 (3a1a2ed), 2026-10-09
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the launch plumbing for ShinyQ HQ: SEO (sitemap, robots, canonical, hreflang, JSON-LD, OG/Twitter), build-time OG images, a procedural audio engine, Cloudflare Web Analytics, a gated production deploy with Pages headers and redirects, and non-blocking Lighthouse CI.
@@ -44,45 +46,45 @@
 
 **Interfaces produced:** `pageMetadata({ locale, path, title?, description?, type?, publishedTime?, tags?, image?, imageAlt? }): Metadata`; `ogImagePath(target: OgTarget): string`; `allPagePaths(): string[]`; `personJsonLd(locale)`, `websiteJsonLd(locale)`, `podJsonLd(pod, locale)`, `postJsonLd(post, locale, contentLocale)`, `serializeJsonLd(data)`.
 
-- [ ] Write `tests/unit/seo.test.ts` (site config fallbacks, `pageMetadata` canonical/hreflang/OG/Twitter, sitemap entry count and alternates, robots, JSON-LD shapes and `<` escaping). Run `bunx vitest run tests/unit/seo.test.ts`, expect failures.
-- [ ] Implement `site.ts` helpers, `routes.ts`, `sitemap.ts`, `robots.ts` (both `export const dynamic = "force-static"`), `jsonld.ts`, `JsonLd.tsx`.
-- [ ] Render `Person` + `WebSite` in `src/app/[locale]/layout.tsx`, `CreativeWork` on `labs/[slug]`, `BlogPosting` on `blog/[slug]`; pass `type: "article"` and the pod/post OG image to `pageMetadata`. Give the `(root)` layout `metadataBase` and the default card.
-- [ ] Run the unit test, expect PASS. Commit `feat: add sitemap, robots, JSON-LD and complete share metadata`.
+- [x] Write `tests/unit/seo.test.ts` (site config fallbacks, `pageMetadata` canonical/hreflang/OG/Twitter, sitemap entry count and alternates, robots, JSON-LD shapes and `<` escaping). Run `bunx vitest run tests/unit/seo.test.ts`, expect failures.
+- [x] Implement `site.ts` helpers, `routes.ts`, `sitemap.ts`, `robots.ts` (both `export const dynamic = "force-static"`), `jsonld.ts`, `JsonLd.tsx`.
+- [x] Render `Person` + `WebSite` in `src/app/[locale]/layout.tsx`, `CreativeWork` on `labs/[slug]`, `BlogPosting` on `blog/[slug]`; pass `type: "article"` and the pod/post OG image to `pageMetadata`. Give the `(root)` layout `metadataBase` and the default card.
+- [x] Run the unit test, expect PASS. Commit `feat: add sitemap, robots, JSON-LD and complete share metadata`.
 
 ### Task 2: Build-time OG images
 
-- [ ] Add dev dependencies `@fontsource/inter` and `@fontsource/jetbrains-mono` (satori needs WOFF or TTF, not WOFF2).
-- [ ] Implement `og.tsx` (1200x630, void background, vignette, 60 px grid drawn as 1 px lines since satori does not tile gradients, glass card, accent bar, mono eyebrow, Inter 800 title with length-based size, clamped subtitle, monogram footer from profile) and `og-cards.ts`.
-- [ ] Implement the `og/[...path]` route with `force-static`, `dynamicParams = false` and `generateStaticParams` from `allOgTargets()`.
-- [ ] Extend `seo.test.ts` with target count (2 x (1 + pods + hosted posts)) and segment round-trip. Run, expect PASS.
-- [ ] `bun run build:web`, then `file out/og/en.png` must report `PNG image data, 1200 x 630`. Inspect a long Indonesian card visually.
-- [ ] Commit `feat: generate Neon Grid OG images at build time`.
+- [x] Add dev dependencies `@fontsource/inter` and `@fontsource/jetbrains-mono` (satori needs WOFF or TTF, not WOFF2).
+- [x] Implement `og.tsx` (1200x630, void background, vignette, 60 px grid drawn as 1 px lines since satori does not tile gradients, glass card, accent bar, mono eyebrow, Inter 800 title with length-based size, clamped subtitle, monogram footer from profile) and `og-cards.ts`.
+- [x] Implement the `og/[...path]` route with `force-static`, `dynamicParams = false` and `generateStaticParams` from `allOgTargets()`.
+- [x] Extend `seo.test.ts` with target count (2 x (1 + pods + hosted posts)) and segment round-trip. Run, expect PASS.
+- [x] `bun run build:web`, then `file out/og/en.png` must report `PNG image data, 1200 x 630`. Inspect a long Indonesian card visually.
+- [x] Commit `feat: generate Neon Grid OG images at build time`.
 
 Decision note: `opengraph-image.tsx` file conventions were tried first; the static export writes them as extensionless files (`out/en/opengraph-image`), which Cloudflare Pages would serve as `application/octet-stream`. The route-handler approach emits `.png` files instead.
 
 ### Task 3: Analytics beacon
 
-- [ ] `Analytics.tsx` renders `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"...","spa":true}'>` only when `NEXT_PUBLIC_CF_BEACON_TOKEN` passes `resolveBeaconToken` (alphanumeric, 16 to 64 chars). Mount at the end of the locale layout body.
-- [ ] Tests in `seo.test.ts`: null without token, correct attributes with token. Commit `feat: add optional Cloudflare Web Analytics beacon`.
+- [x] `Analytics.tsx` renders `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"...","spa":true}'>` only when `NEXT_PUBLIC_CF_BEACON_TOKEN` passes `resolveBeaconToken` (alphanumeric, 16 to 64 chars). Mount at the end of the locale layout body.
+- [x] Tests in `seo.test.ts`: null without token, correct attributes with token. Commit `feat: add optional Cloudflare Web Analytics beacon`.
 
 ### Task 4: Audio engine
 
 **Interfaces produced (consumed by the 3D and HUD sessions):** `import { audio, useAudio, createAudioEngine, type SoundName } from "@/lib/audio"`; `audio.play(name: "beep" | "ding" | "whoosh" | "click")`, `audio.setRumble(speed: number)`, `audio.setMuted(muted: boolean)`, `audio.toggleMuted()`, `audio.isMuted()`, `audio.subscribe(listener)`, `audio.dispose()`; `useAudio(engine?) => { muted, setMuted, toggleMuted, play, setRumble }`.
 
-- [ ] Write `tests/unit/audio.test.ts` with a fake `AudioContext` (muted default, lazy context, persistence key `hq:sound`, click rate limit 20/s, rumble threshold 1 u/s and clamp 12, visibility suspend/resume, subscribe, dispose, SSR safety). Expect failures.
-- [ ] Implement `types.ts`, `synth.ts`, `engine.ts`, `singleton.ts`, `useAudio.ts`, `index.ts`, `README.md`. Run tests, expect PASS. Commit `feat: add procedural Web Audio engine`.
+- [x] Write `tests/unit/audio.test.ts` with a fake `AudioContext` (muted default, lazy context, persistence key `hq:sound`, click rate limit 20/s, rumble threshold 1 u/s and clamp 12, visibility suspend/resume, subscribe, dispose, SSR safety). Expect failures.
+- [x] Implement `types.ts`, `synth.ts`, `engine.ts`, `singleton.ts`, `useAudio.ts`, `index.ts`, `README.md`. Run tests, expect PASS. Commit `feat: add procedural Web Audio engine`.
 
 ### Task 5: Deploy pipeline, Pages config, Lighthouse CI
 
-- [ ] `public/_headers`: security headers and CSP (allows `static.cloudflareinsights.com` script and `cloudflareinsights.com` connect), immutable cache for `/_next/static/*`, day cache for `/og/*`.
-- [ ] `public/_redirects`: `/cv.pdf` (and `/en/cv.pdf`, `/id/cv.pdf`) 301 to the generated CV PDFs.
-- [ ] `scripts/serve-static.ts`: honor simple `_redirects` rules so e2e can verify them. `e2e/deploy.spec.ts`: redirect status and Location, exported `_headers`.
-- [ ] `.github/workflows/deploy.yml`: build + e2e on `main`, deploy with `wrangler pages deploy out --branch=main` only when both secrets and `vars.CF_PAGES_PROJECT` exist. `ci.yml`: pass `vars.CF_BEACON_TOKEN` / `vars.SITE_URL`, preview project from `vars.CF_PREVIEW_PROJECT` (default `shinyq-hq`), non-blocking `lighthouse` job.
-- [ ] `lighthouserc.json`: three URLs, 3 runs, error assertions for LCP/CLS/TBT budgets, warn for script size (358400 bytes), performance, accessibility, SEO.
-- [ ] `docs/deploy.md`: owner runbook. Commit `ci: add production deploy, Pages headers and redirects, Lighthouse CI`.
+- [x] `public/_headers`: security headers and CSP (allows `static.cloudflareinsights.com` script and `cloudflareinsights.com` connect), immutable cache for `/_next/static/*`, day cache for `/og/*`.
+- [x] `public/_redirects`: `/cv.pdf` (and `/en/cv.pdf`, `/id/cv.pdf`) 301 to the generated CV PDFs.
+- [x] `scripts/serve-static.ts`: honor simple `_redirects` rules so e2e can verify them. `e2e/deploy.spec.ts`: redirect status and Location, exported `_headers`.
+- [x] `.github/workflows/deploy.yml`: build + e2e on `main`, deploy with `wrangler pages deploy out --branch=main` only when both secrets and `vars.CF_PAGES_PROJECT` exist. `ci.yml`: pass `vars.CF_BEACON_TOKEN` / `vars.SITE_URL`, preview project from `vars.CF_PREVIEW_PROJECT` (default `shinyq-hq`), non-blocking `lighthouse` job.
+- [x] `lighthouserc.json`: three URLs, 3 runs, error assertions for LCP/CLS/TBT budgets, warn for script size (358400 bytes), performance, accessibility, SEO.
+- [x] `docs/deploy.md`: owner runbook. Commit `ci: add production deploy, Pages headers and redirects, Lighthouse CI`.
 
 ### Task 6: Docs and verification
 
-- [ ] Update `AGENTS.md` (folder layout, env vars, audio, OG, deploy).
-- [ ] Add `e2e/seo.spec.ts` (sitemap/robots served, canonical, hreflang, Twitter card, OG PNG served as `image/png`, JSON-LD types, blog post card, root default card).
-- [ ] Run `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`. Push and open the PR "Launch infra: SEO, OG images, audio engine, deploy".
+- [x] Update `AGENTS.md` (folder layout, env vars, audio, OG, deploy).
+- [x] Add `e2e/seo.spec.ts` (sitemap/robots served, canonical, hreflang, Twitter card, OG PNG served as `image/png`, JSON-LD types, blog post card, root default card).
+- [x] Run `bun run typecheck && bun run lint && bun run test && bun run build && bun run e2e`. Push and open the PR "Launch infra: SEO, OG images, audio engine, deploy".

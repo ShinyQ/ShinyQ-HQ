@@ -1,5 +1,7 @@
 # L3 Three Paths (Round 7 G) Implementation Plan
 
+Status: shipped in #164 (ba497d8), 2026-10-16. Later replaced in #168: the joined three-board wall and the floating road signs, by three separate boards
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn L3 into three paths that all start at the hub fork (Product north, Data and ML straight along the centre spine, AI south) and meet at the Tech Reactor plaza, with a three-board directory wall at the fork whose titles are about 25 percent and list values about 20 percent smaller.
@@ -54,7 +56,7 @@ Measured with the harness (wall, mouths, signs; final numbers come from the test
 **Interfaces:**
 - Produces: `ViewZone.travel?: Vec2` and `zoneAt(floor: FloorId, p: Vec2 & { heading?: number }, extra?: readonly ViewZone[]): ViewZone | null`. A zone with `travel` applies only when `p.heading` is undefined (pure callers, tests) or the rover forward `(sin h, cos h)` has a non-negative dot with `travel`. `CameraDirector` already passes `roverRuntime` (it carries `heading`), so no call site changes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -82,12 +84,12 @@ describe("directional view zones (Round 7 G)", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/orbit-travel.test.ts`
 Expected: FAIL (`travel` is not a `ViewZone` property; the against-travel case returns the zone).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `ViewZone` add after `prime?`:
 
@@ -118,12 +120,12 @@ export function zoneAt(floor: FloorId, p: Vec2 & { heading?: number }, extra: re
 
 Import `Vec2` if `orbit.ts` does not already (it uses `Vec2` in `ViewZone.area`'s `Rect`; check the imports).
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `bunx vitest run tests/unit/orbit-travel.test.ts tests/unit/orbit.test.ts tests/unit/camera*.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add src/experience/camera/orbit.ts tests/unit/orbit-travel.test.ts
@@ -150,7 +152,7 @@ rtk git commit -m "feat(camera): view zones with an optional travel direction"
   - `LabsLayout`: `boards: Record<Wing, DirectoryBoard>`, `signs: Record<Wing, WingSign>`, `wingZ: number`, no `dataPlaza`; roads `lead`, `data`, `software`, `ai`, `east-ring` (no `directory`).
   - `FloorLayout.directoryStops` has all three wings.
 
-- [ ] **Step 1: Rewrite the layout tests first (failing)**
+- [x] **Step 1: Rewrite the layout tests first (failing)**
 
 Update `tests/unit/labs-layout.test.ts`:
 - Replace `LABS.wingZ` with `layout.wingZ` (and `lopsided.wingZ` etc.) everywhere; replace `HUB_WINGS` with `SIDE_WINGS`.
@@ -381,12 +383,12 @@ Other test files:
 - `tests/unit/missions-host3d.test.ts`: `directoryStop("software")` unchanged; add `roomTarget` for a listed data pod returns `directoryStop("data")`.
 - `tests/unit/interact-registry.test.ts`: `L3:board:software|ai|data` exist with `base: LABS.board.base`, `height: LABS.board.h`.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/labs-spine.test.ts tests/unit/labs-reactor.test.ts tests/unit/labs-ops.test.ts tests/unit/facing.test.ts tests/unit/missions-host3d.test.ts tests/unit/interact-registry.test.ts`
 Expected: FAIL (missing exports `SIDE_WINGS`, `wallPosts`, `layout.wingZ`, the spine road).
 
-- [ ] **Step 3: Implement `layout.ts`**
+- [x] **Step 3: Implement `layout.ts`**
 
 Constants (replace the `LABS` fields named here; keep the others):
 
@@ -618,7 +620,7 @@ export function wallPosts(): Rect[] {
 
 Rewrite the module comment (no em dashes): hub, lead road, three roads from the hub (spine straight to the ring's west point; wing roads leave the rim 30 degrees off the spine, run out to `wingZ`, turn east and end on the ring), wall at the fork (three raised boards on four posts, gate over the spine), docking per wing and on the spine, `wingZ` rule, no chevrons.
 
-- [ ] **Step 4: `roadGlow`, host3d, registry**
+- [x] **Step 4: `roadGlow`, host3d, registry**
 
 `techReactor.ts` `roadGlow` (keep the doc comment, reworded "from the reactor out: per road with a lit pod ..."):
 
@@ -655,12 +657,12 @@ Import `LABS_WINGS` from `./layout` (replace the `HubWing` type import).
 
 `registry.ts` `labsBoards`: add `base: LABS.board.base,` before `height`.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/labs-spine.test.ts tests/unit/labs-reactor.test.ts tests/unit/labs-ops.test.ts tests/unit/facing.test.ts tests/unit/missions-host3d.test.ts tests/unit/interact-registry.test.ts tests/unit/floor-pads.test.ts tests/unit/tech-reactor.test.ts tests/unit/walk.test.ts tests/unit/hint*.test.ts`
 Expected: PASS. Then `bun run typecheck` (fix every `HUB_WINGS`, `HubWing`, `dataPlaza`, `LABS.data.plaza` reference; `src/experience/prototype/FloorsPrototype.tsx` uses `labs.signs[wing]` and `labs.east`, both still exist).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add -A src/experience tests/unit
@@ -680,7 +682,7 @@ rtk git commit -m "feat(l3): three paths, Data and ML spine from the hub fork to
 - Consumes: `LABS.board`, `directoryBoard`, `wallPosts`, `LabsLayout.signs` (Task 2).
 - Produces: `PANEL` (title 0.6, list 0.37), `LIST_STYLE.compact.size` 0.45, `ROAD_SIGN = { font: 0.8, y: 3, wrap: 12 }`, `roadSigns(layout: LabsLayout, wings: Record<Wing, string>, font: string): SignSpec[]`, `wallSolids(boards?)`, `wallLines(boards?)`, `wallLabels(...)` (same signatures; `boards` defaults to all three fixed boards).
 
-- [ ] **Step 1: Update the tests (failing)**
+- [x] **Step 1: Update the tests (failing)**
 
 `tests/unit/labs-directory.test.ts`:
 - `panelRows().titleTop < LABS.board.h`, `listBottom >= LABS.board.base`, `listLines >= LABS.boardEntries * PANEL.list.perEntry` (10).
@@ -733,12 +735,12 @@ with `LIST_Y = LABS.board.base + 1.2` and `TITLE_Y = LABS.board.h - 1.4`. Add th
 
 `signBox` projects the four corners of the plate (`signPlate(spec)` width and height, centred on `spec.x, spec.y, spec.z`, turned to the camera with `yawTowards`), `overlap` is a strict box intersection, `WING_NAMES = { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }`. Also check the board stops: from each stop no sign overlaps that stop's board.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts`
 Expected: FAIL (old sizes, two boards, no `roadSigns`).
 
-- [ ] **Step 3: Implement `directory.ts`**
+- [x] **Step 3: Implement `directory.ts`**
 
 - `PANEL.title.size` 0.6, `PANEL.list.size` 0.37, `LIST_STYLE.compact` `{ size: 0.45, lineHeight: 1.25, perEntry: 2, entries: 3 }`; update the comments (owner request Round 7: titles about 25 percent and values about 20 percent smaller).
 - `textWidth = () => LABS.board.d - 2 * PANEL.inset` (6.0, the same on every face).
@@ -765,16 +767,16 @@ export function roadSigns(layout: Pick<LabsLayout, "signs">, wings: Record<Wing,
 
 `Hub.tsx`: `WingSigns` uses `roadSigns(layout, labels.wings, FONTS.monoBold)` (drop `SIGN_Y`, `SIGN_FONT`); the wall comment: three raised boards on four posts, the middle a gate over the spine; still three draw calls. Pass `layout.boards` as today.
 
-- [ ] **Step 4: Tune if a framing or overlap check fails**
+- [x] **Step 4: Tune if a framing or overlap check fails**
 
 Allowed knobs, in this order: `LABS.spineSignX` (11 to 13), `ROAD_SIGN.y` (3 to 3.4), `LABS.signAlong` (0 to 3), `LABS.overviewZoomPhone` (1.8 to 2.1), `LABS.boardZoom` (0.9 to 1.1). Never change the font sizes. Re-run until green.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `bunx vitest run tests/unit/labs-*.test.ts tests/unit/floating-sign.test.ts tests/unit/floor-text.test.ts tests/unit/floor-signs.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/floors/labs tests/unit
@@ -794,7 +796,7 @@ rtk git commit -m "feat(l3): three-board directory wall with smaller text and on
 **Interfaces:**
 - Consumes: `__hq.layouts.L3` (`road`, `stops`, `directoryStops`, `arrival`), `__hq.probes.signs["labs-wing-signs"]`, `__hq.rover` (`drawCalls`, `triangles`), helpers in `e2e/hq.ts` (`enterFloorRoute`, `waitForSceneLive`, `waitForCameraSettle`, `driveTo`, `expectRenderBudget`).
 
-- [ ] **Step 1: Write `e2e/labs-paths.spec.ts`**
+- [x] **Step 1: Write `e2e/labs-paths.spec.ts`**
 
 For `[{ size: 1440x900, tier: "full" }, { size: 390x844, tier: "lite", isMobile: true, hasTouch: true }]`:
 1. Arrival: `enterFloorRoute(page, "/en/labs?tier=<tier>")`, `waitForCameraSettle`. Assert the camera zone is `L3:overview` (read `__hq.rover` or the orbit probe the existing labs spec uses), `__hq.probes.signs["labs-wing-signs"]` has exactly three entries whose texts (spaces collapsed) are `PRODUCT ENGINEERING`, `DATA AND ML`, `AI ENGINEERING`, and `expectRenderBudget`.
@@ -802,16 +804,16 @@ For `[{ size: 1440x900, tier: "full" }, { size: 390x844, tier: "lite", isMobile:
 3. Reactor plaza: drive to `__hq.layouts.L3.stops["L3:reactor"]`, settle, assert the budget.
 4. When `LABS_SHOTS=<dir>` is set, save `page.screenshot` for each pose as `<dir>/<size>-<pose>.png` (arrival, entrance-software, entrance-data, entrance-ai, reactor). The capture code only reads `__hq.layouts`, so the same spec captures a main build too ("before").
 
-- [ ] **Step 2: Update `e2e/labs-data.spec.ts`**
+- [x] **Step 2: Update `e2e/labs-data.spec.ts`**
 
 Replace the annex expectations (data plaza, panel past the plaza, sign past the reactor) with: the data directory stop equals `__hq.layouts.L3.directoryStops.data` and lies west of x = 17; a data pod door is reachable and opens its drawer; the Cmd-K "Data and ML projects" row rides to the data board at the fork.
 
-- [ ] **Step 3: Run**
+- [x] **Step 3: Run**
 
 Run: `bun run build && E2E_PORT=4410 bunx playwright test e2e/labs-paths.spec.ts e2e/labs-data.spec.ts e2e/labs.spec.ts e2e/reactor.spec.ts e2e/production.spec.ts e2e/walk.spec.ts e2e/fast-return.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add e2e scripts tests/unit
@@ -826,15 +828,15 @@ rtk git commit -m "test(l3): e2e for the three paths: arrival, road entrances, r
 - Modify: `AGENTS.md` (L3 Project Roads, L3 Data and ML annex (rename to "L3 Data and ML spine"), L3 Ops Control Room numbers (z 23 to 29 today), Fast return, "hub-only code uses `HUB_WINGS`" to `SIDE_WINGS`, `ViewZone.travel` in the camera paragraph, the `labs-data-annex` test name)
 - Modify: `docs/features.md` (L3 section and the status log line for Round 7 G)
 
-- [ ] **Step 1: Edit** both files: three paths, the raised three-board wall with the gate, smaller text (titles about 25 percent, values about 20 percent), one sign per road, `wingZ` rule, the travel-direction zones. No em dashes (`bun run test tests/content/em-dash*` or the repo scan test).
-- [ ] **Step 2: Commit** `rtk git commit -am "docs: L3 three paths (Round 7 G)"`.
+- [x] **Step 1: Edit** both files: three paths, the raised three-board wall with the gate, smaller text (titles about 25 percent, values about 20 percent), one sign per road, `wingZ` rule, the travel-direction zones. No em dashes (`bun run test tests/content/em-dash*` or the repo scan test).
+- [x] **Step 2: Commit** `rtk git commit -am "docs: L3 three paths (Round 7 G)"`.
 
 ---
 
 ### Task 6: Verification, measurements, PR
 
-- [ ] `rm -rf tests/scratch`; `bun run verify:quick`; `bun run e2e:changed`.
-- [ ] Perf lane (render path, floor mounting): `E2E_PORT=<port> bun run e2e:perf`; L3 scene calls, triangles and programs before (main) and after from `perf-report/`. If the L3 counts in `e2e/perf/baseline.json` move by design (no new program), regenerate per AGENTS.md and say why.
-- [ ] Visual gate (other floors unchanged): `E2E_PORT=<port> bun scripts/visual-gate.ts --base origin/main --profile strict`; L3 poses differ by design, every other pose within strict.
-- [ ] Captures: build main in a sibling worktree, serve, run `LABS_SHOTS=<before dir> bunx playwright test e2e/labs-paths.spec.ts` against it; same on this branch into `<after dir>`.
-- [ ] After #157 merges: `rtk git fetch && rtk git rebase origin/main`, rerun `verify:quick` and the L3 chunk byte gate (`e2e/perf/bytes-3d`), check CI capacity, push, open the PR (do not merge), message the coordinator with the PR link, captures, the before/after numbers and test results.
+- [x] `rm -rf tests/scratch`; `bun run verify:quick`; `bun run e2e:changed`.
+- [x] Perf lane (render path, floor mounting): `E2E_PORT=<port> bun run e2e:perf`; L3 scene calls, triangles and programs before (main) and after from `perf-report/`. If the L3 counts in `e2e/perf/baseline.json` move by design (no new program), regenerate per AGENTS.md and say why.
+- [x] Visual gate (other floors unchanged): `E2E_PORT=<port> bun scripts/visual-gate.ts --base origin/main --profile strict`; L3 poses differ by design, every other pose within strict.
+- [x] Captures: build main in a sibling worktree, serve, run `LABS_SHOTS=<before dir> bunx playwright test e2e/labs-paths.spec.ts` against it; same on this branch into `<after dir>`.
+- [x] After #157 merges: `rtk git fetch && rtk git rebase origin/main`, rerun `verify:quick` and the L3 chunk byte gate (`e2e/perf/bytes-3d`), check CI capacity, push, open the PR (do not merge), message the coordinator with the PR link, captures, the before/after numbers and test results.

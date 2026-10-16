@@ -4,7 +4,7 @@ import { scanCss, scanFile, scanTree } from "../helpers/edge-accents";
 /**
  * Ratchet for R5 P10 (owner, 2026-10-13: "I dont like the left side border colored or top colored"):
  * colored edge stripes allowed in `src`. Empty: every stripe is gone (P9 removed the OG left bar).
- * Any new stripe fails; mark state with a dot or icon chip and `hq-glow` instead (AGENTS.md "Styling").
+ * Any new stripe fails; mark state with a dot or icon chip and `hq-glow` instead (docs/agents/styling-and-i18n.md, "Styling").
  */
 const KNOWN: string[] = [];
 

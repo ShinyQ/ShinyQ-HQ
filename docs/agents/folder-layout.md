@@ -1,0 +1,356 @@
+# Folder layout
+
+Where things live in the repository: one entry per path with a short description. Index: [AGENTS.md](../../AGENTS.md).
+
+Paths are relative to the repository root. Two paths are not in a fresh checkout on purpose (both gitignored): `content/.safety-blocklist.local.txt` (private, kept by the owner) and `functions/_generated/` (written by the build).
+
+## content/
+
+- `content/site-content.json`: public dataset (validated by `src/content/schema.ts`).
+- `content/ask/suggestions.json`: curated Ask the HQ question pills (EN/ID, topics, tags, follow-ups). See "Ask the HQ" in [ask.md](ask.md).
+- `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only (no page). See "Ask the HQ" in [ask.md](ask.md).
+- `content/perspectives.json`: Kurniadi's professional Q&A (EN/ID), Ask knowledge only once approved (no page). See "Content access" in [content.md](content.md).
+- `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
+- `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
+- `content/safety-blocklist.default.txt`: committed blocklist: client company names (C3), personal data, Azure resource names.
+- `content/safety-allowlist.txt`: product names the lint must never flag (removed from the merged blocklist).
+- `content/.safety-blocklist.local.txt`: PRIVATE, gitignored; private repo and cloud resource names.
+- `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only), written by `scripts/refresh-facts.ts`.
+- `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
+- `content/generated/paper-pages.json`: paper PDF page image manifest (sizes, PDF sha256), written by `scripts/paper-pages.ts`.
+
+## functions/, wrangler.toml and workers/
+
+- `functions/api/ask.ts`: Ask the HQ Pages Function (POST /api/ask).
+- `functions/api/rum.ts`: anonymous performance beacon (POST /api/rum to Analytics Engine perf_events; `functions/_lib/rum.ts`).
+- `functions/api/visit.ts`, `functions/api/stats.ts`: public visit stats.
+  - Beacon: POST /api/visit to visit_events (`functions/_lib/visit.ts`).
+  - Snapshot: GET /api/stats from KV STATS_KV (`functions/_lib/stats.ts`).
+- `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval.
+- `functions/_generated/`: gitignored: knowledge pack + safety lists from `scripts/build-knowledge.ts`.
+- `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit and /api/stats (source of truth once deployed; no secrets).
+- `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
+
+## messages/
+
+- `messages/{en,id}.json`: UI strings (next-intl).
+
+## public/
+
+- `public/brand/`: committed brand assets.
+  - The rover brand mark (owner decision): `rover-mark.svg` tile, `-glyph`, `-mono`, `rover-lockup{,-light}.svg`; written by `bun scripts/brand-marks.ts` from `src/lib/brand-mark.ts` (see its README).
+  - The owner portrait: 160, 320, 640 px square WebP, `src/lib/brand-photo.ts`; HUD profile card, L1 Highlights Hall, and the landing hero and About through `Portrait`.
+- `public/fonts/3d/`: in-world troika fonts.
+  - Subset WOFF cuts under content-hashed names (`bun scripts/troika-fonts.ts` from `src/assets/fonts/troika/`, manifest `src/experience/troika-fonts.json`).
+  - The symbols cut is the troika fallback (arrows, shapes), so nothing loads from a CDN.
+  - LICENSE files stay in `public/fonts/`.
+- `public/tech/`: tech logos (svg/webp, see its README for sources), resolved by `src/content/tech.ts`.
+- `public/logos/`: company and school logos (TimelineEntry.logo), 128 px webp.
+- `public/media/<pod-slug>/`: pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide) + NN-name.w1200.webp (1200 wide, `scripts/media-sizes.ts`).
+- `public/media/production/`: the masked Grafana probe dashboard of "How I run AI in production" (same three sizes as the pod galleries; `scripts/media-sizes.ts` covers it).
+- `public/cv/`: the owner's CV PDF, committed as-is (one file for both locales, never generated).
+- `public/cv/pages/`: CV page images for the in-site viewer (1600, 1200 and 800 px lossless webp), output of `bun run cv:pages`, committed.
+- `public/papers/`: self-hosted paper PDFs and their page images, output of `bun run paper:pages`, committed.
+  - `{file}.pdf`: redacted or authors' manuscript (see "Content access" in [content.md](content.md)).
+  - `{file}/{file}-N.webp`: page images, 1400 px.
+- `public/floors/`: elevator picker thumbnails (320 x 180 webp, one per floor), output of `bun run floor:thumbs`, committed.
+- `public/og-assets/`: share card inputs, output of `bun run og:stills`, committed (the build never needs WebGL).
+  - One 1200x630 still per floor (floor-{L1,L2,L3,L4,RF}.jpg).
+  - The owner's photo (400 px PNG).
+- `public/_headers`, `public/_redirects`: Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*) and redirects (old CV paths).
+
+## scripts/
+
+### Build and post-build
+
+- `scripts/serve-static.ts`: serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, Lighthouse).
+- `scripts/defer-scripts.ts`: post-build (part of `build`): swaps the Next.js chunk tags in out/**/*.html for one loader that requests them after first contentful paint (LCP).
+- `scripts/root-redirect.ts`: post-build (part of `build`): copies the `/` language redirect (`#hq-root-redirect`) to the top of <head> in out/index.html, so it runs before the stylesheet (`__hqRedirect` guard).
+- `scripts/check-client-chunks.ts`: post-build (part of `build`): fails when zod (`_zod`), `readFileSync` or `site-content` appears in out/_next/static/chunks.
+- `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
+- `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
+- `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+
+### Fonts, brand and content
+
+- `scripts/subset-fonts.sh`: subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); `tests/content/fonts.test.ts` checks coverage.
+- `scripts/troika-fonts.ts`, `scripts/troika-glyphs.ts`: subset the in-world fonts (fonttools) to the characters 3D text uses; `tests/content/troika-fonts.test.ts` checks coverage.
+- `scripts/validate-fragment.ts`: schema + safety check for content files.
+- `scripts/brand-marks.ts`: writes the rover brand mark files (public/brand/, src/app/icon.svg, apple-icon.png, favicon.ico) from `src/lib/brand-mark.ts`; the lockup wordmark is outlined by brand-wordmark.py (fonttools).
+- `scripts/title-case.ts`: lists content titles not in Title Case; `--write` fixes site-content.json and the MDX frontmatter.
+- `scripts/pdf-pages.ts`: shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts.
+- `scripts/cv-pages.ts`: `cv:pages`: renders the CV PDF to page webps + content/generated/cv-pages.json (needs poppler and webp locally).
+- `scripts/paper-pages.ts`: `paper:pages`: checks each paper PDF's text for personal data (PERSONAL_DATA_PATTERNS) and blocklisted names, then renders page webps + content/generated/paper-pages.json.
+- `scripts/floor-thumbs.ts`: `floor:thumbs` step 2: converts the "floor thumbnail" captures (e2e/screenshots.spec.ts) into public/floors/*.webp (needs webp).
+
+### E2E planning and perf reports
+
+- `scripts/e2e-plan.ts`: pure path-to-spec map, duration-balanced shard split and CI log timing parser (unit tested, including the shard union against the real `--list`).
+- `scripts/e2e-changed.ts`: `e2e:changed`: runs the specs that cover your changed paths.
+- `scripts/e2e-shard.ts`: `e2e:shard i/N` and `e2e:perf:shard i/N`: duration-balanced CI shard (e2e/durations.json) with a blob report; `--dry` prints the plan.
+- `scripts/e2e-durations.ts`: `e2e:durations`: refreshes e2e/durations.json from the E2E shard and 3D perf gates logs of the last green main CI runs (needs `gh`).
+- `scripts/perf-report.ts`, `scripts/perf-summary.ts`: pure summary logic and CLI: per-chunk JS diffs, 3D gate tables, timeline trend, program baseline (no dependencies).
+- `scripts/perf-base.sh`: downloads the newest main artifact as a summary baseline (never fails).
+- `scripts/flaky-report.ts`: tests that passed only on retry, from the merged e2e JSON report, in the `Build, CV and e2e` job summary (warnings, never fails).
+
+### Deploy, Ask and stats operations
+
+- `scripts/ci-status.ts`: deploy gate: reuse the green CI result for a commit or its tree.
+- `scripts/ask-eval.ts`: real-model golden and red-team runs (ask-eval.yml).
+- `scripts/provision-ask.ts`: idempotent Cloudflare provisioning (dry run unless --apply).
+- `scripts/refresh-facts.ts`, `scripts/ask-staleness.ts`, `scripts/content-gap.ts`, `scripts/purge-ask-logs.ts`: live facts, freshness warning, unanswered-question report, gateway log purge.
+- `scripts/deploy-smoke.ts`: post-deploy production check (Ask status and pack date, live facts on /en, analytics beacon, /api/rum and /api/visit 405, /api/stats 204 or a valid snapshot).
+- `scripts/uptime.ts`: hourly production check (uptime.yml): / and /en with og tags, /api/ask status, /api/stats freshness, last deploy.yml; one retry, then one `uptime` issue opened, updated or closed.
+- `scripts/stats-token-check.ts`: CI probes before the hq-stats deploy: the analytics token (CF_STATS_TOKEN, else CF_EVAL_TOKEN) reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers (KV advisory; never prints a token).
+- `scripts/stats-dry-run.ts`: runs the hq-stats pipeline against production data into an in-memory KV and prints the snapshot (WA_TOKEN, WA_ACCOUNT_ID from the environment).
+
+### Captures
+
+- `scripts/dev-shots.ts`: captures the dev-only L4 concepts prototype at 1440x900, 834x1112 and 390x844 (needs bun run dev; CONCEPTS, SHOTS, WIDTHS, BASE_URL).
+- `scripts/capture-dev.ts`: owner review captures (dev routes or the served export) at 1440x900, 834x1112 and 390x844 with draw call metrics.
+- `scripts/readme-hero.ts`: README media from the served export on the virtual frame clock (`e2e/vclock.ts`): the hero GIF (ffmpeg plus gifsicle, under 6 MB), its still and the floor stills in docs/readme/.
+
+## src/
+
+### src/app/
+
+- `src/app/(root)/`: "/" language redirect (own root layout).
+- `src/app/[locale]/`: all localized routes (root layout with <html lang>).
+- `src/app/global-not-found.tsx`: 404.html.
+- `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
+- `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
+- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json.
+
+### src/assets/
+
+- `src/assets/fonts/`: self-hosted page fonts for next/font/local (`src/app/fonts.ts`): cuts narrowed to the used axes, characters and features (`scripts/subset-fonts.sh`), see its README.
+
+### src/components/
+
+- `src/components/`: static-page UI (server components unless noted).
+- `src/components/Modal.tsx`: shared modal dialog (portal, focus trap, Esc, full-screen sheet on phones); DialogHost.tsx mounts the site-wide modals.
+- `src/components/diagram/`: architecture diagrams as build-time SVG: layout.ts (pure grid layout, edge router and order search), DiagramSvg.tsx (boxes, arrows, labels).
+- `src/components/blog/`: blog post MDX components: `mdx.tsx` (`postMdxComponents`: the `Architecture` tag and a focusable `pre`), `PostArchitecture.tsx` (the figure: `ArchitectureDiagram` plus a figcaption, server only).
+- `src/components/LiveSiteLink.tsx`: "Visit live site" link (new tab, noopener noreferrer, external icon, data-live-link), shared by pages and the drawer.
+- `src/components/certs/`: Certifications.
+  - Certifications (server: featured cards + rows).
+  - CertIndex (client island: preview clicks, issuer/status/search filter).
+  - CertDialog (lazy preview modal in DialogHost), IssuerMark.
+- `src/components/docs/PageViewer.tsx`: shared page image viewer (zoom, page count, download, new tab, lazy pages) behind the CV viewer and the paper reader.
+- `src/components/cv/`: CV viewer: CvViewer (PageViewer with the CV pages), CvDialog (lazy modal), CvButton (every CV entry point).
+- `src/components/paper/`: paper preview.
+  - PaperDialog (lazy modal: abstract, APA/IEEE/BibTeX, DOI and Scholar links, "Read the paper").
+  - PaperReader (PageViewer with a paper PDF, PaperNotice), PaperTrigger, PaperReadLink.
+- `src/components/page/`: Page View building blocks.
+  - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
+  - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
+  - Client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state).
+- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home ticker item), OptOutToggle + optOutStore ("Don't count my visits").
+
+### src/content/
+
+- `src/content/schema.ts`: zod schemas, types via z.infer (appendix 06 + additions, see [content.md](content.md)).
+- `src/content/locales.ts`: LOCALES, DEFAULT_LOCALE, Locale with no imports: the only place client code reads locale values from.
+- `src/content/live-links.ts`: PUBLIC_LIVE_HOSTS, PUBLIC_LIVE_NAMES, liveUrlProblem, isPublicLiveUrl: the public live link allowlist for Pod.liveUrl (pure).
+- `src/content/load.ts`: getContent() and typed accessors (getStats() overlays live facts).
+- `src/content/dynamic-facts.ts`: DynamicFactsSchema for content/generated/dynamic-facts.json.
+- `src/content/selectors.ts`: pure sorting and grouping helpers (`orderPods`: site order for projects, gallery first).
+- `src/content/title-case.ts`: `titleCase` rules for content titles; content/titles.ts lists the title fields (see "Content style" in [content-style-and-safety.md](content-style-and-safety.md)).
+- `src/content/pageview.ts`: pure Page View helpers (pod and timeline filters, URL params, nav matching), client-safe.
+- `src/content/blog.ts`: MDX discovery with translation fallback.
+- `src/content/citation.ts`: PaperPreview type and pure APA, IEEE and BibTeX formatters (client-safe); content/papers.ts builds previews on the server.
+- `src/content/experience.ts`: buildExperienceData(locale, floorNames): small payload for the 3D chunk (labPods for L3).
+- `src/content/tech.ts`: getTechLogo(name) registry (aliases, text-only allowlist), client-safe.
+- `src/content/tech-rings.ts`, `src/content/tech-index.ts`: L3 Tech Reactor: six rings from the CV skill groups, explicit ring map, aliases and misc allowlist; pure `buildTechIndex` (read it through `getTechIndex()` from `@/content/load`).
+- `src/content/topic-map.ts`, `src/content/topic-index.ts`: L4 Topic Constellation: the topic list, tag folds, item-to-topic map and allowlists; pure `buildTopicIndex` (read it through `getTopicIndex()` from `@/content/load`).
+- `src/content/certs.ts`: pure certification helpers and the CertView type (sort, featured, issuer counts and wall tabs, filter, issuer logos), client-safe.
+- `src/content/cert-views.ts`: certViews(locale) / toCertViews: serializable CertView[] for the island, the preview card and the 3D wall.
+- `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
+- `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.
+- `src/content/safety.ts`: blocklist loading and forbidden patterns.
+
+### src/ask/ and src/i18n/
+
+- `src/ask/`: Ask the HQ client, wire protocol and pack builder (shared with functions/).
+- `src/i18n/`: next-intl routing, request config, navigation, assertLocale.
+
+### src/lib/
+
+- `src/lib/`: format (Intl dates), accent class maps, gpu-tier, url-sync, viewport.
+- `src/lib/boot-first.ts`: game-first load: inline head script, shouldBootFirst, releaseBootCover.
+- `src/lib/perf-marks.ts`: User Timing marks of the game-first timeline (hq:boot-release, hq:first-frame, hq:intro-start, hq:intro-end, hq:explore, hq:first-drawer).
+- `src/lib/visits/`: public visit stats display (S2).
+  - contract.ts (re-exports S1's StatsSnapshotV1, validator and fixtures).
+  - model.ts (freshness, formatCount, visitsView).
+  - store.ts (one GET /api/stats per page: requestStats, useStats).
+  - geo.ts + generated geo-data.ts (Natural Earth land grid and country points, `bun scripts/visits-geo.ts`).
+  - labels.ts (server: chip and floor labels).
+- `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
+- `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts.
+- `src/lib/brand-mark.ts`: the rover brand mark (owner decision).
+  - Geometry, colors and SVG bodies for every variant.
+  - `RoverMark` (src/components/RoverMark.tsx) inlines it in the header.
+  - The boot card shows `/brand/rover-mark.svg` as a lazy image, so the mark module stays out of the 3D chunk.
+- `src/lib/site.ts`: SITE_URL, pageMetadata (absolute titles), ogImagePath, OG_PAGES, beacon token.
+- `src/lib/seo.ts`: every page's title, description and share card: seoFor, seoMetadata, fitDescription, keyResult.
+- `src/lib/routes.ts`: allPagePaths() for the sitemap (keep in sync with generateStaticParams).
+- `src/lib/jsonld.ts`: schema.org Person (employer, address, university, skills, profiles), WebSite, ProfilePage (About), CreativeWork with SoftwareSourceCode parts (pods), BlogPosting (posts), BreadcrumbList (pageJsonLd).
+- `src/lib/og.tsx`, `og-layout.ts`, `og-assets.ts`, `og-encode.ts`, `og-cards.ts` (all in `src/lib/`): neon cinematic OG renderer, pure layout rules, build-time inputs (floor stills, photo, pod covers), JPEG encoder (baseline with a JFIF header, never progressive: link unfurlers), list of cards.
+- `src/lib/first-person.ts`: hasFirstPerson (owner rule: no first person in mottos, taglines and titles).
+- `src/lib/audio/`: procedural Web Audio engine + useAudio hook (see its README).
+
+### src/experience/
+
+- `src/experience/`: 3D experience (see "3D experience" in [3d-experience.md](3d-experience.md)).
+
+#### Perf
+
+- `src/experience/perf/`: render counters (renderStats, RenderCounter), FrameSampler, the ?perf=1 overlay, timeline marks, the RUM decision and probe.
+  - perfOverlayOn is the one flag parser, also for the Director's ride console line.
+  - Overlay and probe are static imports in the 3D chunk that mount only with the flag or in a sampled session: a dynamic import inside the 3D chunk can make Turbopack regroup shared modules into the Page View bundle.
+  - The floor chunks were measured against that risk and cost the Classic site +381 B (see "Floor chunks" in [floors.md](floors.md)).
+
+#### Floor chunks
+
+- `src/experience/floors/floorChunks.ts`: pure, no React.
+  - `LAZY_FLOORS` (L3, L4, RF), `createFloorChunks` (state machine eager/idle/loading/ready/failed; failed counts as settled, a later load retries).
+  - The app instance `floorChunks`, `speculativePrefetchOn` (`?prefetch=off`), `rideChunkHold`, `floorChunksHandle` (`window.__hq.floorChunks`).
+- `src/experience/floors/chunks/`: one entry per lazy floor, the only importers of `Labs` / `Library` / `Roof` and their floor-only HUD pieces.
+  - `labs.ts` (L3: Labs, OpsBody, ReactorBody, HologramOverlay).
+  - `library.ts` (L4: Library, ResearchBody, TopicsBody).
+  - `roof.ts` (RF: Roof).
+- `src/experience/floors/lazyFloors.tsx`: `labsFloor()`, `libraryFloor()`, `roofFloor()` getters from `floorGetters`, and `useFloorChunks(near)`.
+  - A getter returns the loaded component, null while the chunk loads, React.lazy for a failed floor without a module; a rejection drops the wrapper, so the canvas remount retries (`tests/unit/lazy-floors.test.ts`).
+  - Beside it: floorPrefetch.ts (pure `prefetchFor`) and FloorChunkPrefetch.tsx (the triggers).
+
+#### Floors
+
+- `src/experience/floors/career/`: L2 Career Road.
+  - Pure layout.ts (buildCareerRoad, placeAt, labelFade, roadZAt, scrubTarget).
+  - R3F CareerRooms, YearGates (road, arches), WorkshopAnnex.
+  - Pure workshopLayout.ts (forecourt, console, gateway, benches, skyline stops, camera zones) and skyline.ts (log star scale, language colors).
+- `src/experience/floors/labs/`: L3 Project Roads.
+  - Pure layout.ts, directory.ts (directory board content), board.ts, hologramParts.ts.
+  - ops.ts (Ops Control Room numbers, screens, lines, labels), opsLive.ts (live panel rows), opsHash.ts (`L3:ops`, `#production`, import-free).
+  - R3F Hub, Pods, PacketLanes, HologramStage, OpsRoom.
+- `src/experience/floors/library/`: L4 Writing.
+  - Pure model.ts (LibraryLayout contract, dockAlong, signsFor, paperSlots, tagLinks, `YEAR_POST`).
+  - signPlacement.ts (`placeLibraryLabels`: which timeline signs show).
+  - concepts/ (atrium, newsroom, constellation builders), layout.ts (buildLibraryLayout: the owner's pick).
+  - decor/ (R3F decor per concept, BookHolograms.tsx shared turning book, pure flipBooks.ts).
+- `src/experience/floors/roof/`: RF roof deck.
+  - Pure layout.ts (buildRoofLayout, ROOF_DECK, roofActive), solids.ts (merged boxes, lattice, scatter).
+  - kit.tsx (MergedBoxes, MergedEdges, PulseRings, HitBox, aboutCard).
+  - SignalGarden.tsx (the picked scenery with the courier drone) and Sky.
+- `src/experience/floors/lobby/`: L1.
+  - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP).
+  - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
+  - kiosk.ts (Ask Rover kiosk parts, lines, the radial spoke end and the spawn stop).
+  - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
+  - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
+  - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
+  - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT, stationOf, gatePillars).
+  - hallGallery.ts (gallery shapes: faces, pedestal and tiles, monoliths, lit arch, beacon, gateway arch, fountain, lights, `hallTall`, `gateCrossed`).
+  - hallSolids.ts (merged boxes, prisms and neon lines), hallContent.ts (labels, screenshot atlas).
+  - hallStage.ts (stage effect instances for the holo program's `stage` mode), gateSweep.ts (`hq:hall-gate`), hallInteract.ts (station targets).
+  - R3F walls, kiosk, HighlightsHall and HallFx.
+
+#### Systems
+
+- `src/experience/missions/`: pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring).
+- `src/experience/nav/`: pure navigation.
+  - navgrid, collision, doors.
+  - road.ts (road kit, pathBetween, roadRoute), roadGeometry.ts (road mesh data), space.ts (space rules, pad rules).
+  - pads.ts (floor pads, the pad latch), teleport.ts (L2 teleport beam timeline).
+- `src/experience/hints/`: "!" hint bubbles: source.ts (the only registry read), pure select.ts (nearestHint, hintAnchor), runtime.ts, HintProbe.tsx (no draw calls).
+- `src/experience/interact/`: point-and-go.
+  - Pure registry.ts (Interactable, interactablesFor, registerExtraInteractables).
+  - pick.ts (pick volumes, name tag anchor, click versus tap, performInteract, commands) and runtime.ts (`__hq.interact` probe).
+  - InteractLayer.tsx (one invisible instanced hit mesh, outline, destination ring, name tag), useInteractables.ts, missed.ts (empty clicks).
+
+#### Effects (fx)
+
+- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
+- `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx).
+- `src/experience/fx/BatchedLabels.tsx`: all labels of a floor in one draw call (troika BatchedText; labelProps.ts holds the pure label type).
+- `src/experience/fx/FloatingSign.tsx`: floating signs (every word that would lie on a floor).
+  - `FloatingSigns`; pure placement in signLayout.ts (`SignSpec`, `signPlate`, `signFacing`, `wrapSign`).
+  - plateProjection.ts (`projectPlate`: a sign's plate in CSS pixels, shared by the L4 and end plaza placement hooks).
+- `src/experience/fx/holoFx.ts`: the one spectacle shader (`createHoloMaterial`, `HOLO_MODE`: plate, skyline, glow, flow, pillar, fall, core, ring, strip); HoloMesh.tsx draws a single one as a one-instance mesh.
+- `src/experience/fx/BoostFx.tsx`: boost effects: twin path-following trails, speed streaks, wheel sparks (pure parts: boostConfig.ts, boostTrail.ts, streaks.ts, sparks.ts).
+- `src/experience/fx/PadGlow.tsx`: floor pads: one instanced glow per floor plus a neon icon per kind (PAD_ICONS); clicks go through point-and-go (the rover drives onto the pad, then the picker opens). TeleportBeam.tsx draws the beam.
+
+#### Dev prototypes
+
+- `src/experience/prototype/`: dev-only walkable floors prototype (L2 and L3 use the real Career Road and Project Roads layouts; type icons); route src/app/[locale]/dev/floors/page.dev.tsx.
+- `src/experience/prototype/certs/`: dev-only certification harness: CERT_FIXTURE (the live 7 plus 23 FICTIONAL entries, tests and dev only) and the real Page View and 3D wall at /{locale}/dev/certs?view=3d&n=7|30&tier=lite|full.
+- `src/experience/prototype/library/`: dev-only L4 concepts prototype (all three concepts on the real content, Glass Drawer and paper modal); route src/app/[locale]/dev/library/page.dev.tsx?concept=atrium|newsroom|constellation&view=rover|top&tier=full|lite&motion=reduce&posts=N.
+
+### src/hud/
+
+- `src/hud/`: HUD over the canvas.
+  - Profile card, elevator panel with named floors from `hud.floorLabel`, controls, boot, bottom band with joystick and BoostButton.
+  - Plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events, HologramOverlay, InteractStatus (point-and-go: aria-live target, Go chip, one-time hint).
+- `src/hud/ask/`: Ask the HQ dock: AskDock (launcher, teaser, mounted in the layout), AskChat (lazy panel), AskPill (3D), useAskThread, availability (status, tower, layout).
+- `src/hud/dialog/`: Rover's dialog.
+  - Pure engine.ts (say, queue, typewriter), store.ts (singleton, useDialog).
+  - onboarding.ts, floorIntro.ts, hintLines.ts, storage.ts, tutorial.ts, placement.ts.
+  - DialogBox, DialogLayer (3D chunk only), Spotlight, OnboardingLayer, HintLayer.
+- `src/hud/pads/`: floor pad pickers: PadPicker (floor and year lists on the shared Modal, a bottom sheet on phones), BeamFade; pure picker.ts (options, roving focus, floorThumb).
+- `src/hud/drawer/`: Glass Drawer: RoomDrawer (UI), DrawerHost (store, data, audio), bodies, layout, urlSync, data, ascii (README).
+
+### src/store/
+
+- `src/store/useHQStore.ts`: zustand store (appendix 06 section 2 plus documented additions, see [3d-experience.md](3d-experience.md)).
+
+## tests/
+
+- `tests/helpers/space.ts`: expectSpaceRules(...) for walkable floor layouts.
+- `tests/helpers/edge-accents.ts`: static scanner for colored left/top edge stripes (`tests/unit/edge-accents.test.ts`).
+- `tests/unit/`: Vitest.
+  - Schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors.
+  - Career layout, labs layout, arrival framing and directory boards, sign facing, library concepts and layout.
+  - Room views, drawer layout and URL, ASCII, hologram, interact registry and pick logic.
+- `tests/hud/`: Vitest + Testing Library (jsdom per file): terminal, palette, MissionHud, AskDock, RoomDrawer, L4/RF rooms.
+- `tests/content/`: Vitest: dataset, public safety, assets.
+- `tests/ask/`: Vitest: Ask pipeline, checks, handler, pack, curated pills (retrieval gate); golden.json and redteam.json sets (the counts and the golden `passThreshold` live in the files).
+
+## e2e/
+
+### e2e/ specs (Playwright)
+
+| Area | Spec and what it covers |
+|---|---|
+| Static routes | static routes |
+| Page View | `pageview.spec.ts`: axe per template, filters, anchors, phone overflow |
+| 3D experience | `experience.spec.ts` |
+| Career Archive | `career.spec.ts` |
+| Labs + drawer + hologram | `labs.spec.ts` |
+| L3 Data and ML spine | `labs-data.spec.ts` |
+| L3 three paths | `labs-paths.spec.ts`: arrival, road entrances, board stops, reactor plaza, the mirrored end |
+| Library + Roof | `library-roof.spec.ts` |
+| L4 label overlap and caps | `library-labels.spec.ts` |
+| Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
+| Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget |
+| RF roof deck | `roof.spec.ts` |
+| Missions + axe | missions |
+| Floor pads and pickers | `pads.spec.ts` |
+| Point-and-go | `interact.spec.ts`: hover, click, empty floor, touch, reduced motion |
+| How I run AI in production | `production.spec.ts`: the About section and axe, Cmd-K, the L3 Ops Control Room, its drawer, live panel, deep link and reduced motion |
+| Zero CSP violations | `csp.spec.ts`: Classic routes, 404, the `/` redirect, the CV viewer, 3D boot, intro, a ride and a deep link |
+| Opt-in screenshots | `screenshots.spec.ts`, `pageview-visual.spec.ts` |
+
+### e2e/ support and perf lane
+
+- `e2e/budgets.ts`: every 3D CI threshold (render, bytes, programs, memory).
+- `e2e/durations.json`: median seconds per test of both lanes from CI logs (`bun run e2e:durations`), for the CI shard split.
+- `e2e/perf/`: perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`).
+  - bytes-3d, floors (+ baseline.json), peaks, memory-full (the memory gate on the full tier with Motion Full), nightly timeline, local look check.
+  - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the default suite.
+- `e2e/perf-probes.spec.ts`: default suite: ?perf=1 overlay on and off, timeline marks, RUM beacon.
+
+## docs/
+
+- `docs/features.md`: feature reference by floor (controls, floors, Ask, CI, performance, status log); the README links here.
+- `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, safety lint).
+- `docs/readme/`: README media: hero.gif, hero.jpg, floor-{L1,L2,L3,L4,RF}.jpg (output of `scripts/readme-hero.ts`, committed).

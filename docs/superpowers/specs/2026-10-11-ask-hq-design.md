@@ -1,6 +1,8 @@
 # Ask the HQ: design and implementation plan
 
-Status: approved by the owner on 2026-10-11 (decisions in section 12). Implementation notes and deviations: `docs/ask-runbook.md`.
+Status: implemented in #28 (5708e0a), 2026-10-11; extended in #38, #59, #94, #139, #143, #160 and #162
+
+Approved by the owner on 2026-10-11 (decisions in section 12). Implementation notes and deviations: `docs/ask-runbook.md`.
 
 ## 1. Scope (confirmed)
 - Visitors ask questions **about Kurniadi only** (his work, projects, career, skills, education, writing, how to reach him).
@@ -98,7 +100,7 @@ Rules:
 - **Golden set drift check:** every golden question's expected facts must exist in the pack. If content changes remove a fact, CI fails until the golden set is updated, so tests never silently go stale.
 - **"As of" in answers:** time-sensitive answers (stats, current role) include "as of {date}" from the chunk's `updatedAt`.
 - **Unanswered-question log:** when the model says "not on this site", store an anonymized event (question text with emails, phones and URLs stripped, locale, date) in Workers Analytics Engine (free tier, 30-day retention). A **monthly content-gap report** (a script reading Analytics Engine via the CF API) lists the top unanswered topics, so the owner can decide what to add to the site.
-- **Content release checklist** in AGENTS.md: when the owner changes jobs, earns a cert, ships a project or publishes a post, update `site-content.json` and the golden set in the same PR.
+- **Content release checklist** in `docs/agents/ask.md`: when the owner changes jobs, earns a cert, ships a project or publishes a post, update `site-content.json` and the golden set in the same PR.
 
 ## 7. Security (threat model and controls)
 
@@ -168,7 +170,7 @@ Rules:
 - **⌘K:** typing a sentence shows an "Ask: '…'" row at the top that opens the same panel.
 - **Sound:** a soft `click` per streamed chunk, throttled, respecting mute.
 - **Text only:** answers are plain text, with no links rendered from the model output.
-- **Revamp (2026-10-11, owner approved):** the Terminal ask mode and the Page View panel are replaced by one shared chat dock (`src/hud/ask/`): a floating "Ask AI" launcher on every page (a pill in the 3D top-right cluster), a home hero ask bar, a once-per-session teaser, a side panel or bottom sheet with a sessionStorage thread, topic pills that expand into curated questions (`content/ask/suggestions.json`) and deterministic follow-ups from the answer's allowlisted source `tags`. The Rover Terminal option, the ⌘K row and `openAsk` all open the dock. The server still answers each question on its own; the request gains an optional `source` for analytics. Details: AGENTS.md "Ask the HQ".
+- **Revamp (2026-10-11, owner approved):** the Terminal ask mode and the Page View panel are replaced by one shared chat dock (`src/hud/ask/`): a floating "Ask AI" launcher on every page (a pill in the 3D top-right cluster), a home hero ask bar, a once-per-session teaser, a side panel or bottom sheet with a sessionStorage thread, topic pills that expand into curated questions (`content/ask/suggestions.json`) and deterministic follow-ups from the answer's allowlisted source `tags`. The Rover Terminal option, the ⌘K row and `openAsk` all open the dock. The server still answers each question on its own; the request gains an optional `source` for analytics. Details: `docs/agents/ask.md`.
 
 ## 9. Testing and evaluation
 - **Unit:** retrieval (synonyms, always-included chunks, token cap), prompt builder, cache keys (`packVersion` and `PROMPT_VERSION` invalidate), post-check blocklist, fallback state machine (timeouts, errors, empty), rate limiter.

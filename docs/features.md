@@ -1,6 +1,6 @@
 # Feature reference
 
-What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is the short overview; implementation rules live in [`AGENTS.md`](../AGENTS.md), content rules in [`content.md`](content.md).
+What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is the short overview; implementation rules live in [`AGENTS.md`](../AGENTS.md) and [`agents/`](agents/), content rules in [`content.md`](content.md).
 
 ## Contents
 
@@ -289,7 +289,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### Freshness and operations
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
-- `ask-eval.yml` runs the golden set (47 questions) and the red-team set (52 attacks) against the real models nightly.
+- `ask-eval.yml` runs the golden set and the red-team set against the real models nightly.
 - `content-gap.yml` reports unanswered questions weekly.
 - `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
@@ -297,7 +297,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ## Visual language
 
 - The Neon Grid tokens of spec appendix 05.
-- Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see `AGENTS.md`, "Styling").
+- Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see [`agents/styling-and-i18n.md`](agents/styling-and-i18n.md)).
 
 ## CI and deploys
 

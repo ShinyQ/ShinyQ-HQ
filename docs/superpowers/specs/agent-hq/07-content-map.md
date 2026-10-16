@@ -1,5 +1,7 @@
 # Appendix 07: Content Map
 
+Status: living appendix, implemented across #1 to #12 (phases 0 to 5) and the later rounds, kept current with the code (last updated in #173)
+
 Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 This maps the consolidated career evidence onto the tower. Titles are **public-safe labels**. The source dataset (`site-content.json`) and the private dossier live outside the repo; Phase 0 transforms the public dataset into the schema in appendix 06 (adding `id` translations, `wing`, `timelineRef`/`podRef` links and committed assets).

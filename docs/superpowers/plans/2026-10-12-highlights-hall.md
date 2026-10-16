@@ -1,5 +1,7 @@
 # L1 Highlights Hall Implementation Plan
 
+Status: shipped in #65 (f61fbba), 2026-10-12. Later replaced in #88: the hall scenery, by the gallery. Later removed in #167: the Quick tour walk
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Extend the L1 Lobby east, behind the certifications wall, into a short walk-through "Highlights Hall" with four stations (about me, top 3 projects, work experience, contact), each a Glass Drawer room, plus a "Quick tour" guided walk startable from Ask Rover and Cmd-K; register the stations as point-and-go targets; lower the floating Lobby title so it clears the HUD top bar at 1440x900; and rebuild the Ask Rover kiosk as one straight unit.
@@ -105,7 +107,7 @@ Stations: about x 32 to 42, z -21 to -18; projects x 48 to 64, z -21 to -18; exp
 - Consumes: `enterHQ(page, { tier })`, `driveTo(page, point)`, `snapshot(page)`, `expectRenderBudget(page)` from `e2e/hq.ts`.
 - Produces: the `highlights` e2e spec name (later tasks add tests to `e2e/highlights.spec.ts`); e2e-plan rules that map `src/experience/floors/lobby/(stations|hallLayout|hallContent|HighlightsHall|hallInteract)`, `src/content/(highlights|room-views/highlights).ts` and `src/hud/drawer/HighlightsBody.tsx` to `["experience", "highlights", "walk"]`.
 
-- [ ] **Step 1: Check the prerequisites, branch and copy the plan**
+- [x] **Step 1: Check the prerequisites, branch and copy the plan**
 
 This plan builds on R4-I point-and-go (registry, no click-to-move) and R4-J live links (`podLiveLink`, `LabPod.liveUrl`). Both merge first.
 
@@ -120,7 +122,7 @@ cp /Users/shinyq/.copilot/session-state/d439b68f-b2e6-4b77-9feb-f9099e8cd824/fil
 
 Expected: `R4-I present` and `R4-J present`. On a STOP, wait for that PR and pull again; do not stub the missing APIs. Read `src/experience/interact/registry.ts` (the contract quoted in Global Constraints) and `e2e/hq.ts` (`targetPoint`, `hoverTarget`, `hoveredTarget`, `interactablesOf`) before Task 3.
 
-- [ ] **Step 2: Write the failing e2e-plan test**
+- [x] **Step 2: Write the failing e2e-plan test**
 
 Add inside the existing `describe` of `tests/unit/e2e-plan.test.ts` (next to the other `specsForChanges` cases):
 
@@ -134,12 +136,12 @@ Add inside the existing `describe` of `tests/unit/e2e-plan.test.ts` (next to the
   });
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: FAIL (the new case gets `["experience", "labs", ...]` or `["experience"]`; and the "every spec is known" case fails once `e2e/highlights.spec.ts` exists in Step 5).
 
-- [ ] **Step 4: Register the spec and its rules in `scripts/e2e-plan.ts`**
+- [x] **Step 4: Register the spec and its rules in `scripts/e2e-plan.ts`**
 
 In `ALL_SPECS`, insert `"highlights",` between `"gallery",` and `"hud",`.
 
@@ -165,7 +167,7 @@ with
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
 ```
 
-- [ ] **Step 5: Create `e2e/highlights.spec.ts` with the baseline probe**
+- [x] **Step 5: Create `e2e/highlights.spec.ts` with the baseline probe**
 
 ```ts
 import { test } from "@playwright/test";
@@ -192,7 +194,7 @@ test("L1 draw calls: plaza and passage", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 6: Run the unit test and the probe; record the baseline**
+- [x] **Step 6: Run the unit test and the probe; record the baseline**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts`
 Expected: PASS.
@@ -200,7 +202,7 @@ Expected: PASS.
 Run: `bun run build && bunx playwright test e2e/highlights.spec.ts --reporter=list`
 Expected: PASS, with two lines like `L1 lite: spawn N calls, T triangles; passage M calls, U triangles`. Copy both lines into the PR description draft (Task 14 "Budget" section). Task 8 Step 9 saves 8 calls by batching the skills wall text; if any number here is already above 140, flag it in the PR description and ask the owner before Task 8, because the hall adds about 10 calls.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add docs/superpowers/plans/2026-10-12-highlights-hall.md e2e/highlights.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -225,7 +227,7 @@ rtk git commit -m "test: L1 draw-call probe and the highlights e2e spec"
 
 Context: at 1440x900 the name's top (y 7.6 + 0.78 x 1.2 = 8.54) projects to about 27 px from the top of the screen at the spawn, inside the HUD top bar (it ends at 76 px). With y 6.4 and a 0.58 name it projects to about 85 px. The title must stay above the stats tiles (top 5.85) and the monogram (top 5.85), so 6.4 is close to the floor: the box bottom is 6.4 - 0.12 - 0.3 x 1.2 = 5.92.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/unit/lobby-title.test.ts`:
 
@@ -281,12 +283,12 @@ describe("Lobby title", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/lobby-title.test.ts`
 Expected: FAIL to compile/import: `FOLLOW_LOOK_AHEAD` and `TITLE_TOP` are not exported.
 
-- [ ] **Step 3: Move `FOLLOW_LOOK_AHEAD` into the pure rigs module**
+- [x] **Step 3: Move `FOLLOW_LOOK_AHEAD` into the pure rigs module**
 
 In `src/experience/camera/rigs.ts`, below `export const FOLLOW ...` add:
 
@@ -303,7 +305,7 @@ const FOLLOW_LOOK_AHEAD = { desktop: 6, tablet: 6, mobile: 5 } as const;
 
 and add `FOLLOW_LOOK_AHEAD` to the existing import list from `./rigs` (the same statement that imports `followPose`).
 
-- [ ] **Step 4: Change the title constants**
+- [x] **Step 4: Change the title constants**
 
 In `src/experience/config.ts`, replace
 
@@ -354,7 +356,7 @@ with
     box("title", h.x, h.z, TITLE_HALF_WIDTH, TITLE_HALF_WIDTH, TITLE_BOTTOM, TITLE_TOP),
 ```
 
-- [ ] **Step 5: Render the new sizes**
+- [x] **Step 5: Render the new sizes**
 
 In `src/experience/floors/lobby/ProfileHologram.tsx`, replace the `<Billboard position={[0, LOBBY.titleY, 0]}>` block with:
 
@@ -379,12 +381,12 @@ In `src/experience/floors/lobby/ProfileHologram.tsx`, replace the `<Billboard po
       </Billboard>
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/unit/lobby-title.test.ts tests/unit/lobby-layout.test.ts tests/unit/rigs.test.ts`
 Expected: PASS (the title test reports about 85 px; the Lobby layout test keeps the tiles below the title).
 
-- [ ] **Step 7: Update appendix 01**
+- [x] **Step 7: Update appendix 01**
 
 In `docs/superpowers/specs/agent-hq/01-world-and-layout.md`, replace the row
 
@@ -398,7 +400,7 @@ with
 | Name and headline | Above the hologram, height 6.4 (name 0.58 u, headline 0.3 u) | Text block up to 14 wide | Billboarded, always above the stats tiles and the monogram, and below the HUD top bar at 1440 x 900 (`tests/unit/lobby-title.test.ts`) |
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/config.ts src/experience/floors/lobby/layout.ts src/experience/floors/lobby/ProfileHologram.tsx src/experience/camera/rigs.ts src/experience/camera/CameraDirector.tsx tests/unit/lobby-title.test.ts docs/superpowers/specs/agent-hq/01-world-and-layout.md
@@ -431,7 +433,7 @@ Decision: square to the grid, facing east (`yaw = PI / 2`). The default follow c
   - `KIOSK` constants (`yaw`, `body`, `stand`, `screen`, `font`, `visible`, `stopGap`).
   - `kioskFacing(): Vec2`, `kioskParts(k?): KioskParts` (group-local `body`, `stand`, `screen`), `kioskStop(k?): Vec2` (`{ x: 5.5, z: 19.3 }`), `fitLine(text, max)`, `kioskMaxChars(width)`, `kioskAllLines(labels, title, hint)`, `kioskLines(labels, title, hint, offset, width)`, `kioskFontSize(lines, width)`.
 
-- [ ] **Step 1: Capture "before" screenshots**
+- [x] **Step 1: Capture "before" screenshots**
 
 In `e2e/screenshots.spec.ts`, add `interactablesOf` to the `./hq` import and, after the `FLOOR_THUMBS` loop, add:
 
@@ -459,7 +461,7 @@ mkdir -p screenshots/kiosk-before && cp screenshots/hq-l1-kiosk-*.png screenshot
 
 Expected: three PNGs in `screenshots/kiosk-before/` showing the crooked screen.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `tests/unit/kiosk.test.ts`:
 
@@ -554,12 +556,12 @@ describe("Ask Rover kiosk", () => {
 });
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/kiosk.test.ts`
 Expected: FAIL with "Failed to resolve import "@/experience/floors/lobby/kiosk"".
 
-- [ ] **Step 4: Create `src/experience/floors/lobby/kiosk.ts`**
+- [x] **Step 4: Create `src/experience/floors/lobby/kiosk.ts`**
 
 ```ts
 import { LOBBY } from "../../config";
@@ -656,7 +658,7 @@ export function kioskFontSize(lines: readonly string[], width: number): number {
 }
 ```
 
-- [ ] **Step 5: Move the footprint and fix the Lobby element box**
+- [x] **Step 5: Move the footprint and fix the Lobby element box**
 
 In `src/experience/config.ts`, replace `  kiosk: { x: 2, z: 19, w: 3, d: 2 },` with:
 
@@ -681,7 +683,7 @@ with
 
 In `src/experience/floors/lobby/Lanes.tsx`, replace `    spoke([LOBBY.kiosk.x + 1.2, LOBBY.kiosk.z - 1.2]),` with `    spoke([LOBBY.kiosk.x + LOBBY.kiosk.w / 2 + 0.4, LOBBY.kiosk.z]),`.
 
-- [ ] **Step 6: Render the kiosk as one unit**
+- [x] **Step 6: Render the kiosk as one unit**
 
 Replace the body of `src/experience/floors/lobby/MissionKiosk.tsx` (R4-I's version, already without the click handler) with:
 
@@ -756,7 +758,7 @@ export function MissionKiosk({ missions, labels }: { missions: ExperienceData["m
 }
 ```
 
-- [ ] **Step 7: Point the registry's kiosk target at the new stop**
+- [x] **Step 7: Point the registry's kiosk target at the new stop**
 
 In `src/experience/interact/registry.ts` (R4-I), add `import { kioskStop } from "../floors/lobby/kiosk";`, change `const KIOSK_HEIGHT = 3.2;` to `const KIOSK_HEIGHT = 3.4;`, and in `lobbyItems` replace
 
@@ -774,12 +776,12 @@ with
 
 (`bounds: rectAround(kiosk, kiosk.w, kiosk.d)` already follows `LOBBY.kiosk`.) If R4-I's `PICK_HEIGHT.kiosk` in `pick.ts` is 3.2, set it to 3.4 too.
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/unit/kiosk.test.ts tests/unit/lobby-layout.test.ts tests/unit/interact-registry.test.ts tests/unit/floor-pads.test.ts tests/unit/pad-space.test.ts`
 Expected: PASS. The Lobby walkway test keeps at least 4 u between the lane ring and the kiosk box (about 4.3 u), and the box stays on the slab (z up to 21).
 
-- [ ] **Step 9: Capture "after" screenshots and compare**
+- [x] **Step 9: Capture "after" screenshots and compare**
 
 ```bash
 bun run build && SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "hq-l1-kiosk|3D lobby" --workers=1
@@ -788,7 +790,7 @@ mkdir -p screenshots/kiosk-after && cp screenshots/hq-l1-kiosk-*.png screenshots
 
 Expected: in `screenshots/kiosk-after/` the screen sits square on its stand, centered on the body, its edges parallel to the body's, every line straight and unwrapped, at 1440x900, 834x1112 and 390x844. Put each before/after pair side by side in the PR (Task 14).
 
-- [ ] **Step 10: Update appendix 01**
+- [x] **Step 10: Update appendix 01**
 
 In `docs/superpowers/specs/agent-hq/01-world-and-layout.md`, replace the row
 
@@ -802,7 +804,7 @@ with
 | Ask Rover kiosk | (2, 19.3), touching the south edge | 2 × 3.4 | Diegetic mirror of Ask Rover: body, stand and screen as one unit square to the grid, facing east (`floors/lobby/kiosk.ts`); lines never wrap |
 ```
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/kiosk.ts src/experience/config.ts src/experience/floors/lobby/layout.ts src/experience/floors/lobby/MissionKiosk.tsx src/experience/floors/lobby/Lanes.tsx src/experience/interact/registry.ts e2e/screenshots.spec.ts tests/unit/kiosk.test.ts docs/superpowers/specs/agent-hq/01-world-and-layout.md
@@ -835,7 +837,7 @@ rtk git commit -m "fix(lobby): straighten the Ask Rover kiosk into one unit with
   - `highlightProjects(pods?: readonly Pod[]): Pod[]`, `highlightEntries(entries): { employment: TimelineEntry[]; freelance: TimelineEntry[] }`, `buildHighlightsData(locale): HighlightsData`
   - `interface HighlightsData { projects: { slug: string; title: string; wing: Wing; thumb: string }[] }`, `ExperienceData.highlights: HighlightsData` (live links stay on `LabPod.liveUrl` from R4-J; station names come from messages in the client, not the payload)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/unit/highlights-data.test.ts`:
 
@@ -916,12 +918,12 @@ describe("Highlights rooms", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/highlights-data.test.ts`
 Expected: FAIL with "Failed to resolve import "@/content/highlights"".
 
-- [ ] **Step 3: Create `src/experience/floors/lobby/stations.ts`**
+- [x] **Step 3: Create `src/experience/floors/lobby/stations.ts`**
 
 ```ts
 import type { RoomId } from "@/content/schema";
@@ -959,7 +961,7 @@ export function experienceRows(career: CareerData): { employment: CareerEntryVie
 }
 ```
 
-- [ ] **Step 4: Add the payload type**
+- [x] **Step 4: Add the payload type**
 
 In `src/experience/types.ts`:
 
@@ -994,7 +996,7 @@ export interface HighlightsData {
 }
 ```
 
-- [ ] **Step 5: Add the station names to messages** (used by the catalog in Task 5 and the point-and-go labels in Tasks 8 and 11)
+- [x] **Step 5: Add the station names to messages** (used by the catalog in Task 5 and the point-and-go labels in Tasks 8 and 11)
 
 In `messages/en.json` under `hud.rooms`, after `"research": "Research shelf"` add (mind the comma on the previous line):
 
@@ -1014,7 +1016,7 @@ In `messages/id.json` under `hud.rooms`, after `"research": "Rak riset"` add:
       "highlightsContact": "Sorotan: kontak"
 ```
 
-- [ ] **Step 6: Create `src/content/highlights.ts`**
+- [x] **Step 6: Create `src/content/highlights.ts`**
 
 ```ts
 import type { HighlightsData } from "@/experience/types";
@@ -1049,7 +1051,7 @@ export function buildHighlightsData(locale: Locale): HighlightsData {
 }
 ```
 
-- [ ] **Step 7: Ship it in `ExperienceData`**
+- [x] **Step 7: Ship it in `ExperienceData`**
 
 In `src/content/experience.ts` add the import
 
@@ -1063,7 +1065,7 @@ and in `buildExperienceData`, after `roof: buildRoofData(locale),` add:
     highlights: buildHighlightsData(locale),
 ```
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/unit/highlights-data.test.ts tests/unit/experience-data.test.ts tests/unit/ui-copy.test.ts`
 Expected: PASS.
@@ -1071,7 +1073,7 @@ Expected: PASS.
 Run: `bun run typecheck`
 Expected: no errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/stations.ts src/content/highlights.ts src/experience/types.ts src/content/experience.ts messages/en.json messages/id.json tests/unit/highlights-data.test.ts
@@ -1102,7 +1104,7 @@ rtk git commit -m "feat(highlights): station ids, content selectors and the 3D p
   - `contactItems(locale): RoomLinkItem[]`, `cvItems(locale): RoomLinkItem[]` from `room-views/roof.ts`.
   - Messages `hall.{hall, about, projects, projectsSub, experience, counts, contact, more, cvHint, fullProfile, openProject, openRole}`. The experience groups reuse the career type labels `common.type.job` ("Employment" / "Pekerjaan") and `common.type.freelance` ("Freelance"), the same labels as the L2 type icons and the `/journey` chips.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/unit/room-views.test.ts` (inside the top-level `describe`, after the last `it`):
 
@@ -1164,12 +1166,12 @@ Append to `tests/unit/missions-rooms.test.ts`, inside `describe("room catalog", 
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/room-views.test.ts tests/unit/missions-rooms.test.ts`
 Expected: FAIL (`views["L1:highlights-about"]` is undefined; no `highlights` rooms).
 
-- [ ] **Step 3: Add the catalog rooms**
+- [x] **Step 3: Add the catalog rooms**
 
 In `src/experience/missions/rooms.ts`:
 
@@ -1236,7 +1238,7 @@ In `buildRoomCatalog`, directly after the `L1:certifications` `add(...)` line, a
   add({ floor: "L1", slug: "highlights-contact", kind: "highlights", title: labels.highlightsContact, subtitle: content.floors.roof.availability, keywords: [...hall, "contact", "kontak", "email", "cv"], path: "/#contact", floorPath: "/#contact", surpriseWeight: 0 });
 ```
 
-- [ ] **Step 4: Add `RoomCard` to the drawer contract**
+- [x] **Step 4: Add `RoomCard` to the drawer contract**
 
 In `src/content/room-views/types.ts`, above `export interface RoomView {` add:
 
@@ -1266,7 +1268,7 @@ and in `RoomView`, after the `research?: ...` field add:
   cards?: RoomCard[];
 ```
 
-- [ ] **Step 5: Share the contact and CV items from the roof builder**
+- [x] **Step 5: Share the contact and CV items from the roof builder**
 
 Replace the body of `src/content/room-views/roof.ts` with:
 
@@ -1330,7 +1332,7 @@ export function buildRoofViews(locale: Locale): RoomView[] {
 }
 ```
 
-- [ ] **Step 6: Add the `hall` messages**
+- [x] **Step 6: Add the `hall` messages**
 
 In `messages/en.json`, add a top-level key after `"walk": { ... },`:
 
@@ -1370,7 +1372,7 @@ In `messages/id.json`, at the same place:
   },
 ```
 
-- [ ] **Step 7: Create `src/content/room-views/highlights.ts`**
+- [x] **Step 7: Create `src/content/room-views/highlights.ts`**
 
 ```ts
 import { formatPeriod } from "@/lib/format";
@@ -1463,7 +1465,7 @@ export function buildHighlightsViews(locale: Locale): RoomView[] {
 
 In `src/content/room-views/index.ts` add `import { buildHighlightsViews } from "./highlights";` and insert `...buildHighlightsViews(locale),` right after `...buildLobbyViews(locale),`.
 
-- [ ] **Step 8: Give the landing's closing section the contact anchor**
+- [x] **Step 8: Give the landing's closing section the contact anchor**
 
 In `src/app/[locale]/page.tsx`, replace
 
@@ -1477,7 +1479,7 @@ with
       <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec">
 ```
 
-- [ ] **Step 9: Name the new structural rooms for point-and-go**
+- [x] **Step 9: Name the new structural rooms for point-and-go**
 
 `StructuralRoom` grew, so R4-I's `InteractLabels.rooms` (a `Record<StructuralRoom, string>`) needs the four names. In `src/experience/Experience.tsx`, inside the `interact: { ... rooms: { ... } }` labels object, after the last existing entry add:
 
@@ -1491,12 +1493,12 @@ with
 Run: `bun run typecheck`
 Expected: no errors (a missing key fails here).
 
-- [ ] **Step 10: Run the tests**
+- [x] **Step 10: Run the tests**
 
 Run: `bunx vitest run tests/unit/room-views.test.ts tests/unit/missions-rooms.test.ts tests/unit/search.test.ts tests/unit/ui-copy.test.ts tests/unit/interact-registry.test.ts tests/content/safety.test.ts tests/content/fonts.test.ts`
 Expected: PASS (the catalog test "has a view for every room" now covers the four stations).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 rtk git add src/experience/missions/rooms.ts src/content/room-views messages/en.json messages/id.json "src/app/[locale]/page.tsx" src/experience/Experience.tsx tests/unit/room-views.test.ts tests/unit/missions-rooms.test.ts
@@ -1520,7 +1522,7 @@ rtk git commit -m "feat(highlights): catalog rooms, drawer content and landing a
 - Consumes: `RoomView.cards` and `RoomCard` (Task 5, including `live`); `goToRoom(room)` (`missions/bridge.ts`); `TypeIcon`, `CAREER_TONE`; `LiveSiteLink({ href, label, srHint, className?, testId? })` (R4-J, `@/components/LiveSiteLink`); messages `hall.openProject`, `hall.openRole`, `common.visitLive`, `common.external`.
 - Produces: `MetricTiles`, `Sections`, `Chips` exported from `src/hud/drawer/blocks.tsx`; `HighlightsBody` registered for kind `highlights`; cards render as `button[data-testid="highlight-card"][data-room]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/hud/HighlightsRooms.test.tsx`:
 
@@ -1666,12 +1668,12 @@ import { buildRoomViews } from "@/content/room-views";
 import en from "../../messages/en.json";
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/hud/HighlightsRooms.test.tsx tests/unit/ascii.test.ts`
 Expected: FAIL (no `highlight-card` elements; the README misses the cards).
 
-- [ ] **Step 3: Move the shared blocks out of `RoomDrawer.tsx`**
+- [x] **Step 3: Move the shared blocks out of `RoomDrawer.tsx`**
 
 Create `src/hud/drawer/blocks.tsx` with the four components moved verbatim from `RoomDrawer.tsx` (`MetricTiles` with its JSDoc, `ItemLink`, `Sections`, `Chips`), now exported:
 
@@ -1810,11 +1812,11 @@ export { MetricTiles, Sections };
 
 Keep `Link` imported in `RoomDrawer.tsx` (the overflow menu and footer still use it). Run `bun run lint` after the move: an unused import means a block was not moved completely.
 
-- [ ] **Step 4: Export the roof bodies**
+- [x] **Step 4: Export the roof bodies**
 
 In `src/hud/drawer/RoofBody.tsx`, change `function ContactBody(` to `export function ContactBody(` and `function CvBody(` to `export function CvBody(`.
 
-- [ ] **Step 5: Create `src/hud/drawer/HighlightsBody.tsx`**
+- [x] **Step 5: Create `src/hud/drawer/HighlightsBody.tsx`**
 
 ```tsx
 "use client";
@@ -1918,7 +1920,7 @@ export function HighlightsBody({ view }: RoomBodyProps) {
 
 In `src/hud/drawer/bodies.tsx`, add `import { HighlightsBody } from "./HighlightsBody";` and the entry `highlights: HighlightsBody,` to `ROOM_BODIES`.
 
-- [ ] **Step 6: List cards in the README view**
+- [x] **Step 6: List cards in the README view**
 
 In `src/hud/drawer/ascii.ts`, in `renderReadme`, directly after the `if (view.sections.length > 0) { ... }` block, add:
 
@@ -1936,7 +1938,7 @@ In `src/hud/drawer/ascii.ts`, in `renderReadme`, directly after the `if (view.se
   }
 ```
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `bunx vitest run tests/hud/HighlightsRooms.test.tsx tests/hud/RoomDrawer.test.tsx tests/hud/LibraryRoofRooms.test.tsx tests/unit/ascii.test.ts`
 Expected: PASS.
@@ -1944,7 +1946,7 @@ Expected: PASS.
 Run: `bun run lint && bun run typecheck`
 Expected: no errors.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/hud/drawer tests/hud/HighlightsRooms.test.tsx tests/unit/ascii.test.ts
@@ -1974,7 +1976,7 @@ rtk git commit -m "feat(highlights): drawer body with cards that ride to their r
   - `FloorLayout.roadZone?: Rect`; `routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect }, from: Vec2, to: Vec2): boolean`
   - L1 layout: `bounds` x -24 to 64, `doors` (4 stations), `road`, `roadZone`, `viewZones`, obstacles extended by the 4 station rects.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/highlights-layout.test.ts`:
 
@@ -2081,12 +2083,12 @@ Append to `tests/unit/road.test.ts`, inside `describe("roadRoute", ...)`, and ad
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/highlights-layout.test.ts tests/unit/road.test.ts`
 Expected: FAIL with "Failed to resolve import "@/experience/floors/lobby/hallLayout"" and "routeUsesRoad is not a function".
 
-- [ ] **Step 3: Add `routeUsesRoad` and `FloorLayout.roadZone`**
+- [x] **Step 3: Add `routeUsesRoad` and `FloorLayout.roadZone`**
 
 In `src/experience/types.ts`, in `interface FloorLayout`, after the `road?: RoadNetwork;` field add:
 
@@ -2137,7 +2139,7 @@ with
   );
 ```
 
-- [ ] **Step 4: Create `src/experience/floors/lobby/hallLayout.ts`**
+- [x] **Step 4: Create `src/experience/floors/lobby/hallLayout.ts`**
 
 ```ts
 import type { FloorId, RoomId } from "@/content/schema";
@@ -2286,7 +2288,7 @@ export function shouldLoadShots(floor: FloorId, x: number): boolean {
 }
 ```
 
-- [ ] **Step 5: Wire L1 in `src/experience/config.ts`**
+- [x] **Step 5: Wire L1 in `src/experience/config.ts`**
 
 Add the import below the other floor imports:
 
@@ -2333,7 +2335,7 @@ In `buildFloorLayouts`, replace the `L1: standard(...)` entry with:
     },
 ```
 
-- [ ] **Step 6: Follow the new slab in the e2e bound check**
+- [x] **Step 6: Follow the new slab in the e2e bound check**
 
 In `e2e/experience.spec.ts`, test "WASD drives the rover and walls keep it inside the Lobby", replace
 
@@ -2351,12 +2353,12 @@ with
     expect(rover.x).toBeLessThan(63.01);
 ```
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `bunx vitest run tests/unit/highlights-layout.test.ts tests/unit/road.test.ts tests/unit/lobby-layout.test.ts tests/unit/doors.test.ts tests/unit/floor-pads.test.ts tests/unit/pad-space.test.ts tests/unit/missions-host3d.test.ts tests/unit/navgrid.test.ts`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/hallLayout.ts src/experience/types.ts src/experience/nav/road.ts src/experience/scene/Director.tsx src/experience/config.ts e2e/experience.spec.ts tests/unit/highlights-layout.test.ts tests/unit/road.test.ts
@@ -2383,7 +2385,7 @@ rtk git commit -m "feat(highlights): hall layout east of the cert wall with a pa
   - `HALL_ROWS = 6`, `SHOT`, `SHOT_CELL`, `onPanel(s, u, y, out?)`, `hallSolids(projectCount): Box[]`, `hallLabels(input, labels, fonts): BatchedLabel[]`, `hallShots(count): ShotQuad[]`, `shotQuadBuffers(quads, count)`, `coverCrop(iw, ih, cw, ch)`
   - `<HighlightsHall data labels tier />`; `LobbyLabels.hall: HallLabels`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/unit/hall-content.test.ts`:
 
@@ -2531,12 +2533,12 @@ describe("Highlights Hall scenery", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/hall-content.test.ts`
 Expected: FAIL with "Failed to resolve import "@/experience/floors/lobby/hallContent"".
 
-- [ ] **Step 3: Create `src/experience/floors/lobby/hallContent.ts`**
+- [x] **Step 3: Create `src/experience/floors/lobby/hallContent.ts`**
 
 ```ts
 import { CAREER_TONE } from "../../fx/holoIcons";
@@ -2735,12 +2737,12 @@ export function coverCrop(iw: number, ih: number, cw: number, ch: number): { sx:
 }
 ```
 
-- [ ] **Step 4: Run the unit test**
+- [x] **Step 4: Run the unit test**
 
 Run: `bunx vitest run tests/unit/hall-content.test.ts`
 Expected: PASS. If "keeps every station label on its own panel" fails for a stat label or a role line, shorten that label's `maxWidth` in `hallLabels`, never the panel width (the panel width comes from the layout and the space rules).
 
-- [ ] **Step 5: Create `src/experience/floors/lobby/HighlightsHall.tsx`**
+- [x] **Step 5: Create `src/experience/floors/lobby/HighlightsHall.tsx`**
 
 ```tsx
 "use client";
@@ -2855,7 +2857,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
 }
 ```
 
-- [ ] **Step 6: Mount it in the Lobby**
+- [x] **Step 6: Mount it in the Lobby**
 
 In `src/experience/floors/Lobby.tsx`:
 
@@ -2919,11 +2921,11 @@ In `src/experience/Experience.tsx`, add `const tHall = useTranslations("hall");`
 
 and add `tHall` to the memo's dependency array.
 
-- [ ] **Step 7: Describe L1 in the floor picker**
+- [x] **Step 7: Describe L1 in the floor picker**
 
 In `messages/en.json` replace `"L1": "Profile, stats, skills and certifications"` (under `hud.pads.floorDesc`) with `"L1": "Profile, the Highlights Hall, skills and certifications"`; in `messages/id.json` replace `"L1": "Profil, statistik, keahlian dan sertifikasi"` with `"L1": "Profil, Aula Sorotan, keahlian dan sertifikasi"`.
 
-- [ ] **Step 8: Verify and look at it**
+- [x] **Step 8: Verify and look at it**
 
 Run: `bun run verify:quick`
 Expected: typecheck, lint, unit tests and the build pass.
@@ -2933,7 +2935,7 @@ Expected: PASS, and the printed passage numbers are at most about 10 calls above
 
 Visual check: `bun run dev`, open `http://localhost:3000/en?tier=full`, press Boot rover, then drive east past the south end of the certification wall. Expected: chevrons on the passage, the "HIGHLIGHTS HALL" floor sign, four lit panels that read from their pads, the three screenshots appearing once you pass x = 18, and the certification wall unchanged from the plaza. Task 13 captures the review sizes.
 
-- [ ] **Step 9: Pay for the hall: batch the skills wall text (saves 8 draw calls on L1)**
+- [x] **Step 9: Pay for the hall: batch the skills wall text (saves 8 draw calls on L1)**
 
 The skills wall draws its title and two texts per group as separate drei `<Text>` meshes (9 draw calls with 4 groups). They never billboard, so one `BatchedLabels` draws them in one call, which more than pays for the hall's road markings. In `src/experience/floors/lobby/SkillsWall.tsx`:
 
@@ -2993,7 +2995,7 @@ and replace everything between `<GlassBox size={[w, h, d]} ... />` and `<group p
 
 Re-run Step 8. Expected: the skills wall looks the same (title, headings in their group colors, one item per line next to its logo), and the probe's spawn number is at or below the Task 1 baseline even with the hall mounted.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/hallContent.ts src/experience/floors/lobby/HighlightsHall.tsx src/experience/floors/lobby/SkillsWall.tsx src/experience/floors/Lobby.tsx src/experience/Experience.tsx messages/en.json messages/id.json tests/unit/hall-content.test.ts
@@ -3026,7 +3028,7 @@ rtk git commit -m "feat(highlights): hall scenery with merged solids, one text b
   - `WALK_FLOORS = ["L1", "L2", "L3", "L4", "RF"]`, `NO_WALK_PROMPT: readonly FloorId[] = ["L1"]`.
   - Mission `highlights` (order 2): `elevator L1`, `walk highlights`; label "Quick tour: the highlights" / "Tur singkat: sorotan utama". The terminal shows up to 9 missions (keys 1 to 9).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/walk.test.ts`: add `highlightsWalk` to the import from `@/experience/missions/walks`, change `import { WALK_FLOORS } from "@/experience/config";` to `import { NO_WALK_PROMPT, WALK_FLOORS } from "@/experience/config";`, change the roof test's last line to
 
@@ -3099,12 +3101,12 @@ In `tests/hud/MissionHud.test.tsx`, after the test "runs the journey walk missio
   });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/walk.test.ts tests/unit/missions-runner.test.ts tests/unit/search.test.ts tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx`
 Expected: FAIL (`highlightsWalk` is not exported; no `highlights` mission; the terminal still caps at 8).
 
-- [ ] **Step 3: Add the walk id and its floor**
+- [x] **Step 3: Add the walk id and its floor**
 
 In `src/content/schema.ts`, replace
 
@@ -3132,7 +3134,7 @@ with
 export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4", highlights: "L1" };
 ```
 
-- [ ] **Step 4: Add the mission**
+- [x] **Step 4: Add the mission**
 
 In `content/site-content.json`, `missions`: insert after the `best-ai` mission object:
 
@@ -3162,7 +3164,7 @@ and shift the later orders by one: `journey` 2 to 3, `projects` 3 to 4, `hire` 4
 Run: `bun run validate:content`
 Expected: no errors.
 
-- [ ] **Step 5: Up to nine terminal missions**
+- [x] **Step 5: Up to nine terminal missions**
 
 In `src/hud/terminal.ts`, replace
 
@@ -3180,7 +3182,7 @@ and `return [...lead, ...rest].slice(0, 8);` with `return [...lead, ...rest].sli
 
 In `src/hud/RoverTerminal.tsx`, replace `/** Already ordered for this visit (see `orderTerminalMissions`), at most 8. */` with `/** Already ordered for this visit (see `orderTerminalMissions`), at most 9. */` and, in the component doc comment, `Keys 1 to 8` with `Keys 1 to 9` (the key handler already accepts 1 to 9).
 
-- [ ] **Step 6: Offer the walk on L1 without the prompt**
+- [x] **Step 6: Offer the walk on L1 without the prompt**
 
 In `src/experience/config.ts`, replace
 
@@ -3200,7 +3202,7 @@ export const WALK_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
 export const NO_WALK_PROMPT: readonly FloorId[] = ["L1"];
 ```
 
-- [ ] **Step 7: Define the walk**
+- [x] **Step 7: Define the walk**
 
 In `src/experience/missions/walks.ts`, add the import
 
@@ -3244,7 +3246,7 @@ export function highlightsWalk(data: Pick<ExperienceData, "profile" | "roof" | "
 }
 ```
 
-- [ ] **Step 8: Register it in the Walk HUD**
+- [x] **Step 8: Register it in the Walk HUD**
 
 In `src/hud/walk/WalkLayer.tsx`:
 
@@ -3291,7 +3293,7 @@ with
       launcher={promptSeen(floor) || NO_WALK_PROMPT.includes(floor) ? t(`${walk.definition.id}.start`) : undefined}
 ```
 
-- [ ] **Step 9: Walk messages**
+- [x] **Step 9: Walk messages**
 
 In `messages/en.json` under `walk`, after the `"meet": { ... },` block add:
 
@@ -3315,16 +3317,16 @@ In `messages/id.json` at the same place:
     },
 ```
 
-- [ ] **Step 10: Follow the terminal key shift in e2e**
+- [x] **Step 10: Follow the terminal key shift in e2e**
 
 `hire` moves from key 5 to key 6. In `e2e/missions.spec.ts`, test "terminal runs hire with its number key", replace `.nth(4)` with `.nth(5)` and `page.keyboard.press("5")` with `page.keyboard.press("6")`. In `e2e/experience.spec.ts`, test "the HUD Ask Rover button runs hire through the tower", replace `await page.keyboard.press("5");` with `await page.keyboard.press("6");`.
 
-- [ ] **Step 11: Run the tests**
+- [x] **Step 11: Run the tests**
 
 Run: `bunx vitest run tests/unit/walk.test.ts tests/unit/missions-runner.test.ts tests/unit/missions-static-host.test.ts tests/unit/missions-rooms.test.ts tests/unit/search.test.ts tests/content/dataset.test.ts tests/unit/ui-copy.test.ts tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx tests/hud/WalkBar.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 rtk git add src/content/schema.ts src/experience/missions/rooms.ts src/experience/missions/walks.ts content/site-content.json src/experience/config.ts src/hud/walk/WalkLayer.tsx src/hud/terminal.ts src/hud/RoverTerminal.tsx messages/en.json messages/id.json e2e/missions.spec.ts e2e/experience.spec.ts tests/unit/walk.test.ts tests/unit/missions-runner.test.ts tests/unit/search.test.ts tests/hud/RoverTerminal.test.tsx tests/hud/MissionHud.test.tsx
@@ -3345,7 +3347,7 @@ rtk git commit -m "feat(highlights): Quick tour walk on L1, its Ask Rover and Cm
 - Consumes: `highlightsRoomFromHash`, `isHighlightRoom` (Task 4); L1 doors (Task 7); `introTarget`, `continuationSteps` (`introContinue.ts`).
 - Produces: `gateStartRoom(startFloor?: FloorId, startRoom?: RoomId, hash: string): RoomId | undefined`. URL convention: `/{locale}#highlights` and `/{locale}#highlights-<about|projects|experience|contact>` open the station in 3D (first visit: after the intro, as the usual `intro:continue` mission); an open station keeps `/{locale}` and lives in the history entry (`hasPage` false), like the L4 shelves. The static tier uses each room's landing anchor (`/#intro`, `/#work`, `/#journey`, `/#contact`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `tests/unit/highlights-data.test.ts`, add `gateStartRoom` to the import from `@/experience/floors/lobby/stations` and add inside `describe("Highlights rooms", ...)`:
 
@@ -3394,7 +3396,7 @@ test("a #highlights-<station> link on the landing opens that station at its door
 });
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `bunx vitest run tests/unit/highlights-data.test.ts tests/unit/intro-session.test.ts`
 Expected: FAIL (`gateStartRoom` is not exported); the intro test passes already (it pins existing behavior for the new rooms).
@@ -3402,7 +3404,7 @@ Expected: FAIL (`gateStartRoom` is not exported); the intro test passes already 
 Run: `bun run build && bunx playwright test e2e/highlights.spec.ts -g "#highlights" --reporter=list`
 Expected: FAIL (timeout in `waitForRoom`: the hash is ignored).
 
-- [ ] **Step 3: Add `gateStartRoom`**
+- [x] **Step 3: Add `gateStartRoom`**
 
 In `src/experience/floors/lobby/stations.ts`, change the first import to `import type { FloorId, RoomId } from "@/content/schema";` and append:
 
@@ -3414,7 +3416,7 @@ export function gateStartRoom(startFloor: FloorId | undefined, startRoom: RoomId
 }
 ```
 
-- [ ] **Step 4: Read the hash in the gate**
+- [x] **Step 4: Read the hash in the gate**
 
 In `src/experience/ExperienceGate.tsx`, add `import { gateStartRoom } from "./floors/lobby/stations";` and, below the `const [view, setView] = useState...` line, add:
 
@@ -3425,7 +3427,7 @@ In `src/experience/ExperienceGate.tsx`, add `import { gateStartRoom } from "./fl
 
 and in the `<Experience ... />` element replace `startRoom={startRoom}` with `startRoom={startRoom ?? hashRoom}`.
 
-- [ ] **Step 5: Start at the station's door and keep `/{locale}` while it is open**
+- [x] **Step 5: Start at the station's door and keep `/{locale}` while it is open**
 
 In `src/experience/Experience.tsx`, add `import { isHighlightRoom } from "./floors/lobby/stations";`. In `startSession`, replace
 
@@ -3458,7 +3460,7 @@ and replace the `hasPage` memo with:
 
 (and update the comment above it to "On L4 only hosted posts have their own route (/blog/{slug}); shelves, Medium posts and the L1 Highlights Hall stations keep the floor URL.").
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/unit/highlights-data.test.ts tests/unit/intro-session.test.ts tests/unit/drawer-url.test.ts`
 Expected: PASS.
@@ -3466,7 +3468,7 @@ Expected: PASS.
 Run: `bun run build && bunx playwright test e2e/highlights.spec.ts e2e/boot-first.spec.ts --reporter=list`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/stations.ts src/experience/ExperienceGate.tsx src/experience/Experience.tsx tests/unit/highlights-data.test.ts tests/unit/intro-session.test.ts e2e/highlights.spec.ts
@@ -3486,7 +3488,7 @@ rtk git commit -m "feat(highlights): #highlights deep links open a station at it
 - Consumes (R4-I, `src/experience/interact/registry.ts`): `Interactable` (`label` is one resolved string), `InteractData`, `InteractLabels`, `interactablesFor(floor, layouts, data)`, `registerExtraInteractables(floor, items): () => void`; `padHalf(door)` (`nav/doors.ts`); `HALL_LAYOUT`, `HALL`, `HighlightsHallLayout` (Task 7); `HallLabels.stations` (Task 8); `roomTarget` (`missions/host3d.ts`).
 - Produces: `highlightsInteractables(hall: HighlightsHallLayout, labels: Record<HighlightStation, string>): Interactable[]` with ids `L1:station:highlights-about|projects|experience|contact` (the registry's `${floor}:${short kind}:${key}` rule, like `L1:station:profile`), kind `station`, `at` the door pad (= `roomTarget`), `bounds` the station footprint plus its door pad, `height` `HALL.panel.h`, action `{ type: "open-room", room }`. `HighlightsHall` registers them while L1 is mounted and disposes them on unmount.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/unit/hall-interact.test.ts`:
 
@@ -3563,12 +3565,12 @@ describe("Highlights Hall point-and-go targets", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/hall-interact.test.ts`
 Expected: FAIL with "Failed to resolve import "@/experience/floors/lobby/hallInteract"".
 
-- [ ] **Step 3: Create `src/experience/floors/lobby/hallInteract.ts`**
+- [x] **Step 3: Create `src/experience/floors/lobby/hallInteract.ts`**
 
 ```ts
 import type { Interactable } from "../../interact/registry";
@@ -3610,7 +3612,7 @@ export function highlightsInteractables(hall: HighlightsHallLayout, labels: Reco
 }
 ```
 
-- [ ] **Step 4: Register them from the hall**
+- [x] **Step 4: Register them from the hall**
 
 In `src/experience/floors/lobby/HighlightsHall.tsx`, add the imports
 
@@ -3628,7 +3630,7 @@ import { highlightsInteractables } from "./hallInteract";
 
 (`registerExtraInteractables` returns its dispose function, which the effect returns.)
 
-- [ ] **Step 5: Run the tests, including the registry's own**
+- [x] **Step 5: Run the tests, including the registry's own**
 
 Run: `bunx vitest run tests/unit/hall-interact.test.ts tests/unit/interact-registry.test.ts tests/unit/interact-pick.test.ts`
 Expected: PASS.
@@ -3636,7 +3638,7 @@ Expected: PASS.
 Run: `bun run build && bunx playwright test e2e/interact.spec.ts e2e/highlights.spec.ts --reporter=list`
 Expected: PASS (R4-I's own point-and-go spec still passes with the extra L1 targets).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add src/experience/floors/lobby/hallInteract.ts src/experience/floors/lobby/HighlightsHall.tsx tests/unit/hall-interact.test.ts
@@ -3654,7 +3656,7 @@ rtk git commit -m "feat(highlights): the four stations are point-and-go targets"
 - Consumes: everything above; `stationOf` (Task 7), `highlightRoom` (Task 4), `pickFeaturedPods`, `orderPods`, `podLiveLink`; e2e helpers `enterHQ`, `driveTo` (setup drives only; visitors point and go), `waitForRoom`, `waitForFloor`, `snapshot`, `expectRenderBudget`, `openPage`, `asReturningVisitor`, `waitForHQ`, `waitForPhase`, `waitForSceneLive`, `waitForCameraSettle`, `waitForRoverMove`, `collectErrors`, and R4-I's `interactablesOf`, `targetPoint`, `hoveredTarget`.
 - Produces: `L1_MAX_DRAW_CALLS = 140` (the hall's headroom rule) and the e2e contract for the hall.
 
-- [ ] **Step 1: Replace `e2e/highlights.spec.ts` with the full spec**
+- [x] **Step 1: Replace `e2e/highlights.spec.ts` with the full spec**
 
 ```ts
 import AxeBuilder from "@axe-core/playwright";
@@ -3903,19 +3905,19 @@ test.describe("Highlights Hall", () => {
 });
 ```
 
-- [ ] **Step 2: Build and run the spec**
+- [x] **Step 2: Build and run the spec**
 
 Run: `bun run build && bunx playwright test e2e/highlights.spec.ts --reporter=list`
 Expected: all tests PASS; the budget tests print the L1 numbers per spot. Copy them into the PR description "Budget" section next to the Task 1 baseline.
 
 If a budget test fails above 140 calls: the printed spot tells where. In the hall, check that `MergedEdges`, `MergedBoxes` and `BatchedLabels` each appear once in the R3F tree (React DevTools, or `__hq` + `renderer.info`); on the plaza, re-check Task 8 Step 9 (the skills wall must be one `BatchedLabels`).
 
-- [ ] **Step 3: Run the specs this branch touches**
+- [x] **Step 3: Run the specs this branch touches**
 
 Run: `bun run e2e:changed`
 Expected: PASS (it maps the changed paths to `experience`, `highlights`, `walk`, `missions`, `hud`, `pageview`, `static-routes` and the drawer specs).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add e2e/highlights.spec.ts
@@ -3934,7 +3936,7 @@ rtk git commit -m "test(highlights): e2e for stations, cards, Quick tour, deep l
 - Consumes: `stationOf` (Task 7); `open3D`, `shot`, `L4_VIEWPORTS` (1440x900, 834x1112, 390x844) in `e2e/screenshots.spec.ts`; `bun run floor:thumbs` (needs `cwebp`).
 - Produces: `screenshots/hq-l1-plaza-*.png`, `hq-l1-hall-*.png`, `hq-l1-projects-*.png` (gitignored, for the PR) and the committed picker thumbnail.
 
-- [ ] **Step 1: Add the hall captures**
+- [x] **Step 1: Add the hall captures**
 
 In `e2e/screenshots.spec.ts`, add `import { stationOf } from "../src/experience/floors/lobby/hallLayout";` and, after the `FLOOR_THUMBS` loop, add:
 
@@ -3958,12 +3960,12 @@ for (const viewport of L4_VIEWPORTS) {
 }
 ```
 
-- [ ] **Step 2: Capture and review**
+- [x] **Step 2: Capture and review**
 
 Run: `bun run build && SCREENSHOTS=1 bunx playwright test e2e/screenshots.spec.ts -g "hq-l1-hall|3D lobby" --workers=1`
 Expected: PASS; nine `screenshots/hq-l1-*` PNGs plus the existing `3D lobby` captures. Check: at 1440x900 the name and headline sit fully below the top bar; on 834x1112 and 390x844 the panels read and the walk pill does not cover them; the certification wall still faces the plaza with nothing in front of it.
 
-- [ ] **Step 3: Regenerate the L1 picker thumbnail**
+- [x] **Step 3: Regenerate the L1 picker thumbnail**
 
 Run: `bun run build && bun run floor:thumbs`
 Expected: five `public/floors/*.webp` lines with sizes. Keep only L1 (the other floors did not change; SwiftShader output is not byte-stable):
@@ -3975,7 +3977,7 @@ git checkout -- public/floors/L2.webp public/floors/L3.webp public/floors/L4.web
 Run: `bunx vitest run tests/content` (the asset tests check thumbnail size and format)
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add e2e/screenshots.spec.ts public/floors/L1.webp
@@ -3993,7 +3995,7 @@ rtk git commit -m "test(highlights): hall captures at 1440x900, 834x1112 and 390
 - Consumes: everything above.
 - Produces: docs that match the code; one PR.
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 In the roadmap table, after the row `| Walkable floors 3 | ... | Done |`, add:
 
@@ -4009,7 +4011,7 @@ Behind the certifications wall, a road past its south end leads into the **Highl
 
 In the routes table, in the `/{locale}` row, append before the final `|`: ` In 3D, the Lobby and the Highlights Hall (`#highlights-<station>` opens a station).`
 
-- [ ] **Step 2: AGENTS.md**
+- [x] **Step 2: AGENTS.md**
 
 Make these edits (each keeps the surrounding style; no em dashes):
 
@@ -4042,7 +4044,7 @@ Make these edits (each keeps the surrounding style; no em dashes):
 - L1 Ask Rover kiosk (`floors/lobby/kiosk.ts`, owner review "the line is not straight"): body, stand and screen are one group turned by one yaw (`KIOSK.yaw`, square to the grid, facing east toward the default follow camera); the screen is centered on the body and only tilts back; lines never wrap (`kioskFontSize` fits the longest line, `fitLine` ends longer ones in "..."). The footprint `LOBBY.kiosk` (x 1 to 3, z 17.6 to 21) touches the south slab edge, and the point-and-go stop `kioskStop()` sits centered in front of the screen. `tests/unit/kiosk.test.ts` checks the shared yaw and the centering.
 ```
 
-- [ ] **Step 3: Appendix 01**
+- [x] **Step 3: Appendix 01**
 
 In `docs/superpowers/specs/agent-hq/01-world-and-layout.md`, section 2: replace the footprint sentence's start "Footprint: 52 × 42 u, x from -24 to 28 and z from -21 to 21." with "Footprint: 88 × 42 u, x from -24 to 64 and z from -21 to 21 (the plaza ends at x = 28; the Highlights Hall fills x 28 to 64)." and add rows to the element table:
 
@@ -4055,19 +4057,19 @@ In `docs/superpowers/specs/agent-hq/01-world-and-layout.md`, section 2: replace 
 | Contact station | x 40 to 54, z 18 to 21 | 14 × 3 | Availability, email, channels, CV hint; room `L1:highlights-contact` |
 ```
 
-- [ ] **Step 4: Em dash scan and full local verification**
+- [x] **Step 4: Em dash scan and full local verification**
 
 Run: `rg -n "\x{2014}" README.md AGENTS.md docs src tests e2e messages content scripts` (expect no output; the pattern is the em dash code point, so this plan never contains the character itself), then `bun run verify:quick`, then `bun run e2e:changed`.
 Expected: no em dashes; all green.
 
-- [ ] **Step 5: Commit the docs**
+- [x] **Step 5: Commit the docs**
 
 ```bash
 rtk git add README.md AGENTS.md docs/superpowers/specs/agent-hq/01-world-and-layout.md
 rtk git commit -m "docs: L1 Highlights Hall, Quick tour, deep links, the kiosk and the L1 budget"
 ```
 
-- [ ] **Step 6: Push and open the PR**
+- [x] **Step 6: Push and open the PR**
 
 Write the PR body to `screenshots/pr-body.md` (the folder is gitignored):
 

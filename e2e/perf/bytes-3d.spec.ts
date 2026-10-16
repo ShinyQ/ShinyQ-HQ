@@ -46,7 +46,7 @@ async function recordTransfers(page: Page, load: () => Promise<unknown>, quietMs
   page.on("response", onResponse);
   await load();
   const deadline = Date.now() + timeout;
-  // Proving that nothing more arrives is the one place a timed wait belongs (AGENTS.md, writing 3D tests).
+  // Proving that nothing more arrives is the one place a timed wait belongs (docs/agents/performance.md, writing 3D tests).
   while (Date.now() - last < quietMs) {
     if (Date.now() > deadline) throw new Error(`the network never went quiet for ${quietMs} ms`);
     await page.waitForTimeout(250);

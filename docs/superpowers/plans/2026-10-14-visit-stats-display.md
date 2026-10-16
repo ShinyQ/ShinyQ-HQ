@@ -1,5 +1,7 @@
 # Public Visit Stats, Layer 1: Display (S2) Implementation Plan
 
+Status: shipped in #90 (e02fc31), 2026-10-14. Later replaced in #104: the RF Visitor Observatory, by the L1 Lobby station. Later removed in #141: the footer opt-out (it stays in the L1:visits drawer)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show the daily public visit snapshot (`StatsSnapshotV1` from `GET /api/stats`, built by S1) in the 3D tower (RF "Visitor Observatory" station, one L1 stats ring tile) and on the Classic site (home ticker item, a lazy "Visits" section on Contact), with Topic and Period filters and a "Don't count my visits" toggle.
@@ -69,8 +71,8 @@ export function visitsView(s: StatsSnapshotV1, period: StatsPeriod, topic: Topic
 ```
 Topic "all" lists every topic share of `asks.total` (shares from `largestRemainder` over topic counts) and every chip; a single topic narrows `asks.total` to that topic's count and its chips. Visits, countries, floor and mode ignore the topic.
 
-- [ ] Write failing tests: freshness at 47 h, 49 h, 8 days and for null; `formatCount` EN/ID at 950, 1234, 12345, 1234567; `largestRemainder([1,1,1])` sums to 100; `visitsView(STATS_FIXTURE, "d30", "work")` narrows chips; `parseStatsSnapshot` rejects `{v:2}`, missing keys, `countries` with `XX`.
-- [ ] Run `bun x vitest run tests/unit/visits-model.test.ts` (fail), implement, pass, commit `feat(stats): snapshot model, formatting and freshness`.
+- [x] Write failing tests: freshness at 47 h, 49 h, 8 days and for null; `formatCount` EN/ID at 950, 1234, 12345, 1234567; `largestRemainder([1,1,1])` sums to 100; `visitsView(STATS_FIXTURE, "d30", "work")` narrows chips; `parseStatsSnapshot` rejects `{v:2}`, missing keys, `countries` with `XX`.
+- [x] Run `bun x vitest run tests/unit/visits-model.test.ts` (fail), implement, pass, commit `feat(stats): snapshot model, formatting and freshness`.
 
 ### Task 2: Geo data (land grid and country points)
 
@@ -78,9 +80,9 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 
 **Interfaces:** `LAND = { cols: 96, rows: 48, bits: string /* base64 */ }`, `COUNTRY_POINTS: Record<string, [lat: number, lon: number]>`; `landCells(step = 1): { lat: number; lon: number }[]`, `countryPoint(code): [number, number] | null`, `latLonToVec3(lat, lon, r): [x, y, z]` (y up, lon 0 at +x... matching the globe), `dotMapPath(w, h): string` (`M x yh0` per land cell).
 
-- [ ] Script: fetch `ne_110m_land.geojson` and `ne_50m_admin_0_countries.geojson` from the Natural Earth vector repo (public domain), even-odd point-in-polygon per cell center, `ISO_A2_EH` (fallback `ISO_A2`) with `LABEL_Y/LABEL_X` rounded to 1 dp, Indonesia override `[-2.5, 118]`, write the TS module with a header naming the source and license.
-- [ ] Tests: about 30 to 45% of cells are land, Jakarta and Paris cells are land, mid-Pacific is not; `COUNTRY_POINTS` has at least 230 codes including every fixture country; `dotMapPath` count of `h0` equals land cells.
-- [ ] Commit `feat(stats): Natural Earth land grid and country points`.
+- [x] Script: fetch `ne_110m_land.geojson` and `ne_50m_admin_0_countries.geojson` from the Natural Earth vector repo (public domain), even-odd point-in-polygon per cell center, `ISO_A2_EH` (fallback `ISO_A2`) with `LABEL_Y/LABEL_X` rounded to 1 dp, Indonesia override `[-2.5, 118]`, write the TS module with a header naming the source and license.
+- [x] Tests: about 30 to 45% of cells are land, Jakarta and Paris cells are land, mid-Pacific is not; `COUNTRY_POINTS` has at least 230 codes including every fixture country; `dotMapPath` count of `h0` equals land cells.
+- [x] Commit `feat(stats): Natural Earth land grid and country points`.
 
 ### Task 3: Client store and opt-out
 
@@ -88,8 +90,8 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 
 **Interfaces:** `requestStats(): Promise<StatsState>` (one fetch per page; `cache: "no-cache"` is not needed, the ETag and max-age are S1's), `type StatsState = { status: "idle" | "loading" | "ready" | "hidden"; snapshot: StatsSnapshotV1 | null; freshness: Freshness }`, `useStats(): StatsState`, `__resetStatsForTests()`. 204, non-2xx, network error, invalid JSON, invalid contract, freshness "hidden" all give `hidden`. `isStatsOptedOut()`, `setStatsOptOut(on)`, `useStatsOptOut()` (`useSyncExternalStore` over the `storage` and `hq:stats-optout` events).
 
-- [ ] Tests with a mocked `fetch`: 200 fresh, 200 stale 3 days (delayed), 200 stale 8 days (hidden), 204, 500, bad JSON; one fetch for two calls. Toggle test: checking writes `"1"` and fires the event, unchecking removes the key.
-- [ ] Commit `feat(stats): stats store and the "Don't count my visits" toggle`.
+- [x] Tests with a mocked `fetch`: 200 fresh, 200 stale 3 days (delayed), 200 stale 8 days (hidden), 204, 500, bad JSON; one fetch for two calls. Toggle test: checking writes `"1"` and fires the event, unchecking removes the key.
+- [x] Commit `feat(stats): stats store and the "Don't count my visits" toggle`.
 
 ### Task 4: Shared panel (Classic section and drawer body)
 
@@ -97,8 +99,8 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 
 **Interfaces:** `VisitsPanel({ locale, labels: VisitsLabels, chipLabels: Record<string,string>, floorLabels: Record<FloorId,string>, compact?: boolean, optOut?: ReactNode })`. Renders: scope line (window, source, "Updated daily", delayed note), two `<fieldset>` radio groups (Topic: All, Work, AI, Career; Period: Last 30 days, Since launch), a polite `role="status"` line, counters (visits, countries, questions asked, top floor), `DotMap`, the 3D vs Classic bar, topic shares (bars with whole percents), chip counts, `<details>` "View as table" (country names via `Intl.DisplayNames`, never numbers per country). Hidden state renders nothing; loading renders a skeleton line.
 
-- [ ] Tests (jsdom, store primed with the fixture): arrow keys move between radios and the status text changes; Topic "Work" filters chips; Period "Since launch" shows "Since 12 Oct 2026"-style window; the table lists country names and no per-country numbers; delayed note appears for a 3-day-old snapshot; hidden renders null.
-- [ ] Commit `feat(stats): visits panel with Topic and Period radio groups`.
+- [x] Tests (jsdom, store primed with the fixture): arrow keys move between radios and the status text changes; Topic "Work" filters chips; Period "Since launch" shows "Since 12 Oct 2026"-style window; the table lists country names and no per-country numbers; delayed note appears for a 3-day-old snapshot; hidden renders null.
+- [x] Commit `feat(stats): visits panel with Topic and Period radio groups`.
 
 ### Task 5: Classic placements
 
@@ -107,14 +109,14 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 - `VisitsSection` (server): `SectionSplit id="visits"`, chip labels from `content/ask/suggestions.json` for the locale, floor labels, renders `VisitsLazy` which loads `VisitsPanel` with `import()` after hydration on idle (or when `#visits` is in the URL) and calls `requestStats()`. The section hides itself (`hidden`) when the store says hidden.
 - `TickerVisits` (client): one `<li className="hx-tick-item">` per track once ready: value `formatCount(visits.d30)`, label "visits, last 30 days", the `hx-tick-live` marker; nothing otherwise.
 - Footer: `OptOutToggle` after the privacy sentence.
-- [ ] e2e (route `/api/stats` mocked with the fixture): Contact shows the section, radios change the status, "View as table" opens; 204 hides it; footer toggle writes the key. Home ticker shows the visits item.
-- [ ] Commit `feat(stats): Classic ticker item, Contact "Visits" section and footer toggle`.
+- [x] e2e (route `/api/stats` mocked with the fixture): Contact shows the section, radios change the status, "View as table" opens; 204 hides it; footer toggle writes the key. Home ticker shows the visits item.
+- [x] Commit `feat(stats): Classic ticker item, Contact "Visits" section and footer toggle`.
 
 ### Task 6: Room `RF:visits` (catalog, Cmd-K, deep link, drawer, walk)
 
 **Files:** Modify `missions/rooms.ts` (`StructuralRoom` "visits", `RoomKind` "visits", catalog entry with keywords visits/kunjungan/stats/statistik/analytics), `Experience.tsx` and test label maps, `content/room-views/roof.ts` (view with `visits` payload: chip and floor labels), `room-views/types.ts` (`RoomView.visits?`), `room-views/lobby.ts` (L1:stats `link` to RF:visits), `hud/drawer/bodies.tsx` + new `VisitsBody.tsx` (panel compact plus `OptOutToggle`), `ExperienceGate.tsx` (+ pure `visitsRoomFromHash` in `floors/roof/visitsRoom.ts`), `messages` `hud.rooms.visits`, `walk` copy; Tests `tests/unit/missions-rooms.test.ts`, `room-views` test, `walks` test.
 
-- [ ] Commit `feat(stats): RF:visits room, drawer body, deep link and Cmd-K entry`.
+- [x] Commit `feat(stats): RF:visits room, drawer body, deep link and Cmd-K entry`.
 
 ### Task 7: RF layout and station geometry
 
@@ -122,8 +124,8 @@ Topic "all" lists every topic share of `asks.total` (shares from `largestRemaind
 
 Layout: `ROOF_DECK.visits = { minX: 14, maxX: 22, minZ: -20, maxZ: -14 }` (flush with the north and east slab edges, 6 u from comms, 11 u from the CV station), door pad 1.1 u south (`{x: 18, z: -12.9}`, facing north), spur from the plaza rim, stop `visits`, view zone `RF:visits` (camera south-west, yaw -PI/4), `tall: [{ ...visits, h: 8 }]` for the globe column, `roofActive` returns "visits". Registry: `RF:station:visits` footprint height 8.
 
-- [ ] Tests: `expectSpaceRules` still passes with the station, the corner rect does not overlap the call pad, plaza, comms, CV or about; the door has a facing; the registry lists `RF:station:visits`.
-- [ ] Commit `feat(stats): RF Visitor Observatory footprint, door and view zone`.
+- [x] Tests: `expectSpaceRules` still passes with the station, the corner rect does not overlap the call pad, plaza, comms, CV or about; the door has a facing; the registry lists `RF:station:visits`.
+- [x] Commit `feat(stats): RF Visitor Observatory footprint, door and view zone`.
 
 ### Task 8: 3D station rendering and L1 tile
 
@@ -132,11 +134,11 @@ Layout: `ROOF_DECK.visits = { minX: 14, maxX: 22, minZ: -20, maxZ: -14 }` (flush
 - Globe: body `HoloMesh` on `IcosahedronGeometry(2.2, 3)` (1,280 triangles), land dots one instanced plane per land cell (full every cell, lite every other column; under 2,600 triangles), country dots one instanced mesh (count from the snapshot, 0 when hidden), all `createHoloMaterial` (one program). Rotation 0.12 rad/s, static under reduced motion (Indonesia toward the plaza), faster while `RF:visits` is open.
 - Panel: one instanced holo `plate` mesh (backing and the 3D vs Classic bar) and one `BatchedLabels` (title, visits 30 days, since launch, countries, questions asked, top floor, 3D vs Classic, source and updated line; "Stats offline" when hidden; "Delayed" note).
 - L1: `useVisitsTile(label)` appends `{ id: "visits", value, label }` to the ring stats when ready; `StatsRing` keyed by tile count.
-- [ ] Commit `feat(stats): Visitor Observatory globe and panel, L1 visits tile`.
+- [x] Commit `feat(stats): Visitor Observatory globe and panel, L1 visits tile`.
 
 ### Task 9: E2E, budgets, docs, evidence
 
 **Files:** `e2e/visits.spec.ts` (3D: point-and-go to the station opens the drawer, radios change the status, reduced motion freezes the globe, deep link `/en/contact#visits?tier=lite`), `scripts/e2e-plan.ts` rules, `README.md`, `docs/superpowers/specs/agent-hq/01-*.md` (RF layout), `08-*.md` (budgets), `AGENTS.md` (layout and content notes).
 
-- [ ] `bun run verify:quick`, `E2E_PORT=4449 bun run e2e:changed`, `E2E_PORT=4449 bun run e2e:perf`, visual gate for RF and L1 (`scripts/visual-gate.ts --profile strict` expecting changes only at the station and the ring), captures at 1440x900 full, 2560x1440 full, 390x844 lite with the fixture.
-- [ ] Open the PR (draft until S1 merges), post the evidence comment, get the four required checks green.
+- [x] `bun run verify:quick`, `E2E_PORT=4449 bun run e2e:changed`, `E2E_PORT=4449 bun run e2e:perf`, visual gate for RF and L1 (`scripts/visual-gate.ts --profile strict` expecting changes only at the station and the ring), captures at 1440x900 full, 2560x1440 full, 390x844 lite with the fixture.
+- [x] Open the PR (draft until S1 merges), post the evidence comment, get the four required checks green.

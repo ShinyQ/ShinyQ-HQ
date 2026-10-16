@@ -1,5 +1,7 @@
 # Appendix 06: Data Contracts
 
+Status: living appendix, implemented across #1 to #12 (phases 0 to 5) and the later rounds, kept current with the code (last updated in #171)
+
 Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 TypeScript types below are the source of truth. The zod schemas in `src/content/schema.ts` must match them exactly (types are inferred from the schemas with `z.infer`).
@@ -124,7 +126,7 @@ interface HQState {
 }
 ```
 
-Actions: `setPhase`, `goToFloor`, `openRoom`, `closeRoom`, `startMission`, `cancelMission`, `markVisited`, `setLocale`, `toggleSound`, `setTier`. Only `visited`, `firstVisit`, `locale`, `motion` and `sound` persist (`localStorage`, key `hq:v1`, version 2 since `motion`, the Motion setting `system | full | reduced`, was added, version 3 since Full became the default (owner decision 2026-10-14: older payloads migrate a stored or missing `system` to `full` and keep `reduced`); `reducedMotion` is resolved from it and the OS flag, AGENTS.md "Motion setting").
+Actions: `setPhase`, `goToFloor`, `openRoom`, `closeRoom`, `startMission`, `cancelMission`, `markVisited`, `setLocale`, `toggleSound`, `setTier`. Only `visited`, `firstVisit`, `locale`, `motion` and `sound` persist (`localStorage`, key `hq:v1`, version 2 since `motion`, the Motion setting `system | full | reduced`, was added, version 3 since Full became the default (owner decision 2026-10-14: older payloads migrate a stored or missing `system` to `full` and keep `reduced`); `reducedMotion` is resolved from it and the OS flag, `docs/agents/hud-and-drawer.md`, "Motion setting").
 
 Update rate (round 5): per-frame state (rover pose, ride and beam progress) lives in runtime objects mutated in `useFrame`; the store mirrors the rover at most every 100 ms and only when a value changed (tolerance 1e-4), and stores the ride and the beam only when a stage starts or ends. `persist` writes `localStorage` only when a persisted key changed; `sound` is persisted by the audio engine (`localStorage["hq:sound"]`), not by the store.
 

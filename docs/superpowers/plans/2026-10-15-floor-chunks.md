@@ -1,5 +1,7 @@
 # Floor Chunks (Round 7 B: 3D bundle split) Implementation Plan
 
+Status: shipped in #157 (7a19129), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Load the L3 (Labs), L4 (Library) and RF (Roof) floor code as on-demand chunks so the 3D JS a visitor downloads before the first frame drops by at least 15 KB gzip, with no blank floor on any ride.
@@ -72,7 +74,7 @@ The floor components alone compress to about 12.5 KB in context (layout builders
   - `speculativePrefetchOn(search: string): boolean` (false for `?prefetch=off`)
   - `floorChunks` (app instance), `type FloorChunkModules`, `floorChunksHandle` (`{ state, snapshot, requestedAt, load(id): Promise<void> }`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/floor-chunks.test.ts
@@ -185,12 +187,12 @@ describe("floor chunks", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/floor-chunks.test.ts`
 Expected: FAIL, cannot resolve `@/experience/floors/floorChunks`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```ts
 // src/experience/floors/floorChunks.ts
@@ -332,12 +334,12 @@ export { TopicsBody } from "@/hud/drawer/TopicsBody";
 export { Roof } from "../Roof";
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bunx vitest run tests/unit/floor-chunks.test.ts && bunx tsc --noEmit -p .`
 Expected: PASS, no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/experience/floors/floorChunks.ts src/experience/floors/chunks tests/unit/floor-chunks.test.ts
@@ -360,7 +362,7 @@ git commit -m "feat(3d): floor chunk loader for L3, L4 and RF"
 - Consumes: `floorChunks.load(id)` and `FloorChunkModules` from Task 1.
 - Produces: `lazyLabs()`, `lazyLibrary()`, `lazyRoof()`: getters returning the current `LazyExoticComponent` for `Labs`, `Library`, `Roof` (same props).
 
-- [ ] **Step 1: Write the failing import graph test**
+- [x] **Step 1: Write the failing import graph test**
 
 ```ts
 // tests/helpers/import-graph.ts
@@ -455,12 +457,12 @@ describe("floor chunk boundaries (Round 7 B)", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/floor-chunks-graph.test.ts`
 Expected: FAIL in the first test, listing `Labs.tsx`, `Library.tsx`, `Roof.tsx`, the four bodies, `HologramOverlay.tsx` and `VisitsPanel.tsx`.
 
-- [ ] **Step 3: Implement the lazy wrappers and switch the Tower**
+- [x] **Step 3: Implement the lazy wrappers and switch the Tower**
 
 ```tsx
 // src/experience/floors/lazyFloors.tsx
@@ -522,7 +524,7 @@ and inside `Tower`, before `return`:
 
 Keep the JSX of the floor switch as it is (`<Labs data={data} labels={labels.labs} tier={tier} />` and so on), inside the existing `<Suspense fallback={null}>` with `ReturnPadSign` and `FloorPrep` after the floor (FloorPrep must keep mounting only once the floor has committed).
 
-- [ ] **Step 4: Lazy floor bodies, hologram overlay and visits panel**
+- [x] **Step 4: Lazy floor bodies, hologram overlay and visits panel**
 
 `src/hud/drawer/bodies.tsx`:
 
@@ -606,7 +608,7 @@ and render
 
 (`t` is the `stats` namespace; `stats.loading` exists in both message files.)
 
-- [ ] **Step 5: Run the guard and the HUD tests**
+- [x] **Step 5: Run the guard and the HUD tests**
 
 Run: `bunx vitest run tests/unit/floor-chunks-graph.test.ts tests/hud`
 Expected: the graph test passes. HUD tests that open `L4:research`, `L4:topics`, `L3:reactor`, `L3:ops` or `L1:visits` through `RoomDrawer` and query synchronously fail; switch those queries to `await within(drawer).findAllByTestId(...)` / `findByTestId` (for example `tests/hud/LibraryRoofRooms.test.tsx` lines 85 to 107) and make the test functions `async`. Tests that render `ReactorBody`, `TopicsBody` directly stay as they are.
@@ -614,12 +616,12 @@ Expected: the graph test passes. HUD tests that open `L4:research`, `L4:topics`,
 Run again: `bunx vitest run tests/unit/floor-chunks-graph.test.ts tests/hud`
 Expected: PASS.
 
-- [ ] **Step 6: Build and measure**
+- [x] **Step 6: Build and measure**
 
 Run: `bun run build && E2E_PORT=4791 PERF=1 bunx playwright test e2e/perf/bytes-3d.spec.ts --workers=1`
 Expected: both tests pass; the log shows lite at most 405 KB and full at most 429 KB (spike: 404.2 and 427.9).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/experience/floors/lazyFloors.tsx src/experience/tower/Tower.tsx src/hud tests/helpers/import-graph.ts tests/unit/floor-chunks-graph.test.ts tests/hud
@@ -641,7 +643,7 @@ git commit -m "feat(3d): load L3, L4 and RF floors and their HUD bodies on deman
 - Consumes: `floorChunks.ensure(id)`, `floorChunks.settled(id)`, `floorChunks.load(id)`, `isLazyFloor` (Task 1).
 - Produces: `RideOptions.hold?: boolean`; `Ride.chunkHeld?: number` (seconds held for the chunk); `RideSummary.chunkHeld: number`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to the `describe("destination gate", ...)` block in `tests/unit/elevator.test.ts`:
 
@@ -681,12 +683,12 @@ In `tests/unit/ride-stats.test.ts`, add (match the file's existing helper names;
 
 (If the module's finishing function has another name, use it; the summary must carry `chunkHeld`, and the existing summary assertions get `chunkHeld: 0`.)
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `bunx vitest run tests/unit/elevator.test.ts tests/unit/ride-stats.test.ts`
 Expected: FAIL (`hold` ignored, `chunkHeld` undefined).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/experience/tower/elevator.ts`:
 
@@ -750,12 +752,12 @@ In `src/experience/scene/ProgramWarmup.tsx`, inside the `for (const id of warmQu
 
 (imports: `import { floorChunks, isLazyFloor } from "../floors/floorChunks";`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/elevator.test.ts tests/unit/ride-stats.test.ts tests/unit/ride-prep.test.ts && bunx tsc --noEmit -p .`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/experience/tower/elevator.ts src/experience/tower/rideStats.ts src/experience/scene/Director.tsx src/experience/scene/ProgramWarmup.tsx tests/unit/elevator.test.ts tests/unit/ride-stats.test.ts
@@ -777,7 +779,7 @@ git commit -m "feat(3d): the car holds at the shaft until the destination floor 
 - Consumes: `floorChunks.prefetch`, `prefetchAll`, `ensure`, `LAZY_FLOORS`, `floorChunksHandle` (Task 1); `afterFirstFrameIdle` (`src/experience/boot-signals.ts`).
 - Produces: `prefetchFor(s: PrefetchSnapshot): { need: FloorId[]; soon: FloorId[] }` with `PrefetchSnapshot = { ride: { to: FloorId } | null; picker: { kind: string } | null; hover: { item: { kind: string } } | null }`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/floor-prefetch.test.ts
@@ -805,12 +807,12 @@ describe("floor chunk prefetch triggers", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/floor-prefetch.test.ts`
 Expected: FAIL, module not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 // src/experience/floors/floorPrefetch.ts
@@ -887,12 +889,12 @@ In `src/hud/ElevatorPanel.tsx`, on the floor `<button>` that emits `intents.emit
 
 with `import { floorChunks } from "@/experience/floors/floorChunks";`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bunx vitest run tests/unit/floor-prefetch.test.ts tests/unit/floor-chunks.test.ts tests/unit/floor-chunks-graph.test.ts tests/hud && bunx tsc --noEmit -p . && bun run lint`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/experience/floors/floorPrefetch.ts src/experience/floors/FloorChunkPrefetch.tsx src/experience/Experience.tsx src/hud/ElevatorPanel.tsx tests/unit/floor-prefetch.test.ts
@@ -913,7 +915,7 @@ git commit -m "feat(3d): prefetch floor chunks after the first frame, on elevato
 - Consumes: `window.__hq.floorChunks.load(id)` and `?prefetch=off` (Tasks 1 and 4).
 - Produces: `BYTES_3D_BUDGET.floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 }`; perf entry `{ kind: "bytes3d"; tier; js; other; floors?: Partial<Record<"L3" | "L4" | "RF", number>> }`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/unit/perf-report.test.ts`, add:
 
@@ -927,12 +929,12 @@ In `tests/unit/perf-report.test.ts`, add:
 
 (Match the `kb()` formatting used by the existing "Total 380.0 KB" assertion.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bunx vitest run tests/unit/perf-report.test.ts`
 Expected: FAIL (no floor line; `floors` not in the entry type).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `e2e/budgets.ts`:
 
@@ -994,12 +996,12 @@ Move `const seen = ...` above this block (it is built from the Page View transfe
 
 Note: on a main build (before/after runs) `__hq.floorChunks` is missing; guard the loop with `const hasChunks = await page.evaluate(() => Boolean((window as any).__hq?.floorChunks))` and skip the floor block when false (write the type without `any`, like the `postPasses` read).
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `bunx vitest run tests/unit/perf-report.test.ts && bun run build && E2E_PORT=4791 PERF=1 bunx playwright test e2e/perf/bytes-3d.spec.ts --workers=1 && bun scripts/perf-summary.ts gates --head perf-report`
 Expected: PASS; the summary shows the main totals (lite about 404 KB, full about 428 KB) and the floor chunk line with each floor under its cap. Record the numbers for the PR.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add e2e/budgets.ts e2e/perf/bytes-3d.spec.ts scripts/perf-report.ts tests/unit/perf-report.test.ts
@@ -1020,9 +1022,9 @@ Measured after Task 5: main path lite 405.2 KB, full 428.8 KB, a 14.9 KB drop (T
 - Consumes: `renderReadme(view, labels)` from `./ascii` (unchanged).
 - Produces: nothing new; the README view renders the same text once the module has loaded.
 
-- [ ] **Step 1: Write the failing tests.** Add `"src/hud/drawer/ascii.ts"` to `LAZY_ONLY` in `tests/unit/floor-chunks-graph.test.ts`. In `tests/hud/RoomDrawer.test.tsx`, make every README assertion wait with `findBy*` (the text arrives after the module loads). Run `bunx vitest run tests/unit/floor-chunks-graph.test.ts tests/hud/RoomDrawer.test.tsx`: the graph test fails (ascii is in the main closure).
+- [x] **Step 1: Write the failing tests.** Add `"src/hud/drawer/ascii.ts"` to `LAZY_ONLY` in `tests/unit/floor-chunks-graph.test.ts`. In `tests/hud/RoomDrawer.test.tsx`, make every README assertion wait with `findBy*` (the text arrives after the module loads). Run `bunx vitest run tests/unit/floor-chunks-graph.test.ts tests/hud/RoomDrawer.test.tsx`: the graph test fails (ascii is in the main closure).
 
-- [ ] **Step 2: Implement.** In `RoomDrawer.tsx` drop the static import and load the renderer the first time README opens:
+- [x] **Step 2: Implement.** In `RoomDrawer.tsx` drop the static import and load the renderer the first time README opens:
 
 ```tsx
 type RenderReadme = (typeof import("./ascii"))["renderReadme"];
@@ -1044,9 +1046,9 @@ function useReadmeRenderer(open: boolean): RenderReadme | null {
 
 Use it in the drawer: `const renderReadme = useReadmeRenderer(readme);` and compute `readmeText` with `readme && renderReadme ? renderReadme(view, {...same labels}) : ""`. While `readme` is on and the renderer is not loaded yet, the README branch shows `<p className="pv-small text-ink-2" role="status">{t("loading")}</p>` instead of the `<pre>` (same `drawer.loading` string as the lazy bodies). Keep everything else (focus, `aria-pressed`, the `t` key) unchanged.
 
-- [ ] **Step 3: Verify.** `bunx vitest run tests/unit tests/hud`, `bun run typecheck`, `bun run lint`, then `bun run build && E2E_PORT=4791 PERF=1 bunx playwright test e2e/perf/bytes-3d.spec.ts --workers=1`. Expected: main path lite at most 405.1 KB and full at most 428.7 KB (a drop of at least 15 KB from 420.1 and 443.7); record the numbers. Also run `E2E_PORT=4791 bunx playwright test e2e/labs.spec.ts -g -i readme` (the README e2e) and keep it green.
+- [x] **Step 3: Verify.** `bunx vitest run tests/unit tests/hud`, `bun run typecheck`, `bun run lint`, then `bun run build && E2E_PORT=4791 PERF=1 bunx playwright test e2e/perf/bytes-3d.spec.ts --workers=1`. Expected: main path lite at most 405.1 KB and full at most 428.7 KB (a drop of at least 15 KB from 420.1 and 443.7); record the numbers. Also run `E2E_PORT=4791 bunx playwright test e2e/labs.spec.ts -g -i readme` (the README e2e) and keep it green.
 
-- [ ] **Step 4: Commit** `perf(hud): load the drawer README renderer on demand`.
+- [x] **Step 4: Commit** `perf(hud): load the drawer README renderer on demand`.
 
 ---
 
@@ -1060,7 +1062,7 @@ Use it in the drawer: `const renderReadme = useReadmeRenderer(readme);` and comp
 **Interfaces:**
 - Consumes: `__hq.floorChunks` (`state`, `snapshot`, `requestedAt`), `__hq.motion()`, `__hq.ridePrep` (Tasks 1, 3, 4).
 
-- [ ] **Step 1: Write the spec**
+- [x] **Step 1: Write the spec**
 
 ```ts
 // e2e/floor-chunks.spec.ts
@@ -1144,7 +1146,7 @@ test("the car holds at closed doors until a slow floor chunk arrives, then the f
 
 Check `waitForHQ` is exported from `e2e/hq.ts` (the bytes spec imports it); if the elevator navigation's accessible name differs, copy the selector from `e2e/ride.spec.ts` (`rideTo`).
 
-- [ ] **Step 2: Register the spec and the paths**
+- [x] **Step 2: Register the spec and the paths**
 
 In `scripts/e2e-plan.ts` add `"floor-chunks"` to `ALL_SPECS` (alphabetical, after `"fast-return"`), and add this rule before the first rule that matches `src/experience/floors/` (rules are first-match):
 
@@ -1161,12 +1163,12 @@ In `tests/unit/e2e-plan.test.ts` add:
   });
 ```
 
-- [ ] **Step 3: Run**
+- [x] **Step 3: Run**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts && E2E_PORT=4791 bunx playwright test e2e/floor-chunks.spec.ts e2e/ride.spec.ts`
 Expected: PASS (uses the build from Task 5; rebuild with `bun run build` first if the source changed since).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add e2e/floor-chunks.spec.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -1183,9 +1185,9 @@ git commit -m "test(e2e): floor chunks load on idle and deep links, rides hold f
 - Modify: `docs/superpowers/specs/agent-hq/08-*.md` section 2 (per-floor chunk caps; owner-approved in the Round 7 design)
 - Modify: `docs/deploy.md` only if it states the 3D bytes numbers
 
-- [ ] **Step 1: Write the docs** (no em dashes; keep each addition to a few bullets). The AGENTS.md "Floor chunks" bullet must state: L3, L4, RF load through `floorChunks` (`src/experience/floors/floorChunks.ts`, one dynamic import each, chunk entries in `floors/chunks/` carry the floor and its floor-only HUD pieces); never import `Labs`, `Library`, `Roof` or those HUD pieces statically (`tests/unit/floor-chunks-graph.test.ts`); prefetch triggers; the car holds with `hold`/`chunkHeld` (no timeout, a failed import settles and the canvas crash path takes over); Suspense fallback is `null` (the slab); `?prefetch=off` turns speculative prefetches off; G and F keep the floor component props.
+- [x] **Step 1: Write the docs** (no em dashes; keep each addition to a few bullets). The AGENTS.md "Floor chunks" bullet must state: L3, L4, RF load through `floorChunks` (`src/experience/floors/floorChunks.ts`, one dynamic import each, chunk entries in `floors/chunks/` carry the floor and its floor-only HUD pieces); never import `Labs`, `Library`, `Roof` or those HUD pieces statically (`tests/unit/floor-chunks-graph.test.ts`); prefetch triggers; the car holds with `hold`/`chunkHeld` (no timeout, a failed import settles and the canvas crash path takes over); Suspense fallback is `null` (the slab); `?prefetch=off` turns speculative prefetches off; G and F keep the floor component props.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 Run: `bun run verify:quick`
 Expected: PASS.
@@ -1198,6 +1200,6 @@ Expected: PASS (bytes, floors, peaks, memory-full). Compare `bun scripts/perf-su
 
 Run (first frame, base vs head, same session): `E2E_DIR=<main out> E2E_PORT=4792 PERF=1 bunx playwright test e2e/perf/timeline.spec.ts` and the same on the head build; record `firstFrame` medians.
 
-- [ ] **Step 3: Commit docs, push and open the PR**
+- [x] **Step 3: Commit docs, push and open the PR**
 
 Before pushing: `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`; wait while another PR's CI run is active (poll every 5 minutes). PR body: before/after bytes (main path lite and full, each floor chunk), Classic site JS delta, ride and first-frame measurements, test results. Do not merge.

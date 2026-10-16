@@ -1,5 +1,7 @@
 # Realistic Boost Implementation Plan
 
+Status: shipped in #82 (831c6e5), 2026-10-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the rover boost feel fast and physical (owner pick: "Full package: path-following light trails, rover leans and squats, camera widens and pulls back, speed streaks, wheel sparks") and turn the touch BOOST button into a toggle (owner: "also can you makr in mobile or tab the speed is toggle on off instead").
@@ -74,10 +76,10 @@ export function stepBody(s: BodyState, input: { speed: number; heading: number; 
 export function boostView(level: number, blend: number, enabled: boolean): { fovKick: number; pull: number }
 ```
 
-- [ ] Write failing tests: ring buffer keeps the newest `capacity` samples, spacing gate, reset on a jump over `TRAIL_JUMP` (3 u) or a y change; the ribbon centerline follows a curved path exactly; alpha falls with age and position and is 0 at level 0; springs converge without overshoot and stay stable at `MAX_FRAME_DT`; body pitch is nose-up (negative x rotation) under acceleration, nose-down under braking, roll follows yaw rate times speed, everything is 0 when disabled and on normal unboosted driving; spark pool caps at `max` and expires; `boostFxConfig` gates reduced motion and lite.
-- [ ] Run `bunx vitest run tests/unit/boost-*.test.ts`: FAIL (modules missing).
-- [ ] Implement the modules (no allocations in per-frame functions).
-- [ ] Run the tests: PASS. Commit `feat(rover): pure boost trail, sparks, body and camera helpers`.
+- [x] Write failing tests: ring buffer keeps the newest `capacity` samples, spacing gate, reset on a jump over `TRAIL_JUMP` (3 u) or a y change; the ribbon centerline follows a curved path exactly; alpha falls with age and position and is 0 at level 0; springs converge without overshoot and stay stable at `MAX_FRAME_DT`; body pitch is nose-up (negative x rotation) under acceleration, nose-down under braking, roll follows yaw rate times speed, everything is 0 when disabled and on normal unboosted driving; spark pool caps at `max` and expires; `boostFxConfig` gates reduced motion and lite.
+- [x] Run `bunx vitest run tests/unit/boost-*.test.ts`: FAIL (modules missing).
+- [x] Implement the modules (no allocations in per-frame functions).
+- [x] Run the tests: PASS. Commit `feat(rover): pure boost trail, sparks, body and camera helpers`.
 
 ### Task 2: BoostFx meshes and rover body
 
@@ -89,14 +91,14 @@ export function boostView(level: number, blend: number, enabled: boolean): { fov
 - Every mesh is `visible = false` unless `fxActive(level)` (sparks: while any is alive). Warm compile: a hook records the renderer target from the always-drawn ring's `onBeforeRender`; the next frame compiles the boost group into that target once per tier (`gl.compile` traverses hidden objects).
 - Body: `stepBody` drives `body.rotation.x` (squat and dip), adds to `rotation.z` (lean) and `position.y` (buzz, full tier).
 - Probes on `roverRuntime`: `trail` (kept), `streaks`, `sparks`, `boostFx` (visible boost meshes), `boostPitch`, `boostRoll`.
-- [ ] Implement, `bun run typecheck && bun run lint`, commit `feat(rover): path-following twin trails, streaks, sparks and body dynamics`.
+- [x] Implement, `bun run typecheck && bun run lint`, commit `feat(rover): path-following twin trails, streaks, sparks and body dynamics`.
 
 ### Task 3: Camera boost response
 
 **Files:** modify `src/experience/camera/CameraDirector.tsx`, `src/experience/rover/runtime.ts` (`boostFov`, `boostPull`).
 
 - Follow and rail rigs multiply the zoom by `pull` (1 to 1.08) before `clampCamera`, so collision still wins; `fov += fovKick` (7 degrees third person, 3 in first person, blended by `orbit.blend`); nothing in the intro or focus rigs; 0 under reduced motion. No shake.
-- [ ] Implement, typecheck, unit tests, commit `feat(camera): widen and pull back while boosting`.
+- [x] Implement, typecheck, unit tests, commit `feat(camera): widen and pull back while boosting`.
 
 ### Task 4: Touch boost toggle
 
@@ -105,7 +107,7 @@ export function boostView(level: number, blend: number, enabled: boolean): { fov
 - A real `<button type="button" aria-pressed aria-label={t("boost")}>`; pointerdown toggles (works while another finger holds the joystick), keyboard click toggles; on state: cyan text, `hq-glow` lit hairline (`aria-pressed="true"` lights it) and a glowing `AccentDot`. No edge stripes.
 - Resets to off on floor change, when an elevator ride starts, on unmount (Page view, hologram) and on reload (not persisted). Shift stays hold-to-boost.
 - Copy: `hud.hintCoarse` and `dialog.onboarding.moveCoarse` say "tap to toggle" in EN and ID.
-- [ ] Failing jsdom tests (tap on, tap off, floor change and ride reset, unmount reset), implement, pass, commit `feat(hud): touch boost button toggles`.
+- [x] Failing jsdom tests (tap on, tap off, floor change and ride reset, unmount reset), implement, pass, commit `feat(hud): touch boost button toggles`.
 
 ### Task 5: E2E, measurements, docs, PR
 

@@ -1,5 +1,7 @@
 # Appendix 01: World and Layout
 
+Status: living appendix, implemented across #1 to #12 (phases 0 to 5) and the later rounds, kept current with the code (last updated in #168)
+
 Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 All units are world units (1 u ≈ 1 m). Y is up. Each floor is a separate group positioned at `y = floorIndex * FLOOR_GAP`.
@@ -77,7 +79,7 @@ A door trigger is the pad in front of a door: 1.6 u deep along the approach (`DO
 
 The wings were renamed on 2026-10-11 (owner: AI work is software too). Display names come from `common.wing` in `messages/*.json` ("Product Engineering", "AI Engineering" in both locales); ids, keys and URLs (`wing: "software" | "ai"`, `?wing=`) are unchanged. A third wing, Data and ML (`wing: "data"`, `common.wing.data` "Data and ML" / "Data dan ML", amber `#fbbf24`, the Tech Reactor's Data ring color), was added on 2026-10-14 (owner request: the personal data projects on GitHub). Since Round 7 G (2026-10-16, "three paths") it is the middle road, the spine from the hub to the reactor; the old annex east of the reactor is gone.
 
-Rebuilt as walkable Project Roads (walkable floors plan, part 2; owner decisions: roomy roads with open plazas (the guided project tour was removed on 2026-10-16); neat entrance and symmetric end, owner request 2026-10-16). The footprint follows the content: with today's 25 docked pods (9 Product Engineering, 10 AI Engineering, 6 Data and ML) it is 167 × 116 u, from x = -24 to 143 and z = -58 to 58. Accent: violet `#a78bfa` for the floor and the roads, cyan `#22d3ee` for the Product Engineering wing, violet for the AI Engineering wing and amber for Data and ML, each pod with its own accent. The global elevator shaft stays at x = -28. Product Engineering and AI Engineering are mirror images about the spine, the same distance from the elevator (equal billing). Code: `src/experience/floors/labs/layout.ts`; the numbers below are today's content, the rules in `AGENTS.md` ("L3 Project Roads", "L3 Data and ML spine").
+Rebuilt as walkable Project Roads (walkable floors plan, part 2; owner decisions: roomy roads with open plazas (the guided project tour was removed on 2026-10-16); neat entrance and symmetric end, owner request 2026-10-16). The footprint follows the content: with today's 25 docked pods (9 Product Engineering, 10 AI Engineering, 6 Data and ML) it is 167 × 116 u, from x = -24 to 143 and z = -58 to 58. Accent: violet `#a78bfa` for the floor and the roads, cyan `#22d3ee` for the Product Engineering wing, violet for the AI Engineering wing and amber for Data and ML, each pod with its own accent. The global elevator shaft stays at x = -28. Product Engineering and AI Engineering are mirror images about the spine, the same distance from the elevator (equal billing). Code: `src/experience/floors/labs/layout.ts`; the numbers below are today's content, the rules in `docs/agents/floor-l3-labs.md` ("L3 Project Roads", "L3 Data and ML spine").
 
 | Element | Spec |
 |---|---|

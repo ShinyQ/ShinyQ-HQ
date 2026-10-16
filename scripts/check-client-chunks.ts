@@ -1,6 +1,6 @@
 /**
  * Post-build gate (part of `bun run build`): build-time code must never reach the browser.
- * Scans out/_next/static/chunks for zod, the content loader and the dataset (AGENTS.md, REPORT SP1).
+ * Scans out/_next/static/chunks for zod, the content loader and the dataset (docs/agents/content.md, REPORT SP1).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";

@@ -1,5 +1,7 @@
 # Package Upgrades (Round 7, sub-project A) Implementation Plan
 
+Status: shipped in #149 (00eade0), 2026-10-15, #151 (19aa09c), 2026-10-15, #153 (99305f0), 2026-10-15, #155 (dc2eb94), 2026-10-15 and #158 (3d0ddc0), 2026-10-15 (A1b)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Upgrade every package to its latest version in tiers (A1 minor and patch, then one PR per major) and leave no open Dependabot PR without a decision.
@@ -80,7 +82,7 @@ Known risks from peer ranges (checked with `npm view`, 2026-10-15):
 **Interfaces:**
 - Produces: `docs/deploy.md` section 17 with a table headed `| Package | Pinned to | Latest | Reason | Revisit |` (empty body row `| none | | | | |` while nothing is pinned), and `tests/unit/dependabot.test.ts`, which later pin tasks extend only through data (YAML plus doc row), never through code.
 
-- [ ] **Step 1: Write the failing guard test**
+- [x] **Step 1: Write the failing guard test**
 
 `tests/unit/dependabot.test.ts`:
 
@@ -144,12 +146,12 @@ describe("dependabot pins", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `bunx vitest run tests/unit/dependabot.test.ts`
 Expected: FAIL in "documents every pin" (`expect(start).toBeGreaterThan(-1)`: section 17 does not exist yet). The other three pass vacuously (no ignore entries).
 
-- [ ] **Step 3: Add `docs/deploy.md` section 17**
+- [x] **Step 3: Add `docs/deploy.md` section 17**
 
 Append after section 15 (end of file):
 
@@ -165,12 +167,12 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 | none | | | | |
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `bunx vitest run tests/unit/dependabot.test.ts`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Upgrade within ranges**
+- [x] **Step 5: Upgrade within ranges**
 
 ```bash
 bun update
@@ -178,7 +180,7 @@ bun update
 
 Expected `bun.lock` moves: @react-three/fiber 9.8.2, @react-three/postprocessing 3.2.0, zod 4.6.7, @playwright/test 1.64.1, @testing-library/user-event 14.6.8, @types/bun 1.4.3, jsdom 30.1.3, vitest 5.0.4, plus transitive updates. `bun update` without `--latest` keeps majors.
 
-- [ ] **Step 6: Bump exact pins and widen floors**
+- [x] **Step 6: Bump exact pins and widen floors**
 
 Edit `package.json` (exact pins to the new patch, caret floors to the resolved version so the range states what is tested):
 
@@ -207,7 +209,7 @@ bun outdated
 
 Expected `bun outdated`: only `@types/node` (26.6.5), `eslint` (10.12.0) and `typescript` (7.0.2) remain, each with Update equal to Current. If a newer patch appeared since the baseline, take it the same way.
 
-- [ ] **Step 7: Playwright browser**
+- [x] **Step 7: Playwright browser**
 
 `@playwright/test` moved a patch, so the cached Chromium may differ:
 
@@ -215,7 +217,7 @@ Expected `bun outdated`: only `@types/node` (26.6.5), `eslint` (10.12.0) and `ty
 bunx playwright install chromium
 ```
 
-- [ ] **Step 8: Quick gates**
+- [x] **Step 8: Quick gates**
 
 ```bash
 rm -rf .next && bun run verify:quick
@@ -223,7 +225,7 @@ rm -rf .next && bun run verify:quick
 
 Expected: typecheck, lint, all unit tests (including `tests/unit/workflows.test.ts` with the new `wranglerVersion`), build, `og:check` pass.
 
-- [ ] **Step 9: Full e2e (package.json changed, so `e2e:changed` runs the full suite)**
+- [x] **Step 9: Full e2e (package.json changed, so `e2e:changed` runs the full suite)**
 
 ```bash
 E2E_PORT=4517 bun run e2e:changed
@@ -231,7 +233,7 @@ E2E_PORT=4517 bun run e2e:changed
 
 Expected: all specs pass (about 6 to 10 minutes; one suite at a time on this machine).
 
-- [ ] **Step 10: 3D gates (fiber patch and @react-three/postprocessing minor touch the render path)**
+- [x] **Step 10: 3D gates (fiber patch and @react-three/postprocessing minor touch the render path)**
 
 ```bash
 E2E_PORT=4517 bun run e2e:perf
@@ -240,18 +242,18 @@ E2E_PORT=4518 bun scripts/visual-gate.ts --base main --profile strict
 
 Expected: perf lane green (3D bytes under 450 KB gzip per tier, floors within `e2e/perf/baseline.json` + 2 programs, peaks, `memory-full`); visual gate within strict thresholds (per-pixel 0.1, at most 0.1% of pixels). If the program count changes because postprocessing compiles a different effect pass, stop and report instead of regenerating the baseline.
 
-- [ ] **Step 11: Docs**
+- [x] **Step 11: Docs**
 
 Add a "Dependencies" subsection to "CI and deploys" in `docs/features.md`: weekly grouped minor and patch PR, one PR per major, 3D majors need the strict visual gate, perf lane and memory gates, pins with a dated reason in `.github/dependabot.yml` and `docs/deploy.md` section 17.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 rtk git add docs/superpowers/plans/2026-10-15-package-upgrades.md tests/unit/dependabot.test.ts docs/deploy.md docs/features.md package.json bun.lock .github/workflows/deploy.yml
 rtk git commit -m "chore(deps): A1 minor and patch upgrades, dependency pin policy"
 ```
 
-- [ ] **Step 13: Push and open the PR (CI capacity check first)**
+- [x] **Step 13: Push and open the PR (CI capacity check first)**
 
 ```bash
 gh run list -R ShinyQ/ShinyQ-HQ -s in_progress; gh run list -R ShinyQ/ShinyQ-HQ -s queued
@@ -262,7 +264,7 @@ gh pr create -R ShinyQ/ShinyQ-HQ --title "chore(deps): Round 7 A1, minor and pat
 
 PR body: before and after table, local gate results (verify:quick, full e2e, perf lane, strict visual gate), the plan link, and "Supersedes nothing; majors follow in A2 to A4".
 
-- [ ] **Step 14: Watch CI, report, wait**
+- [x] **Step 14: Watch CI, report, wait**
 
 `gh pr checks <n> --watch`. Fix failures (one rerun at a time, capacity check first). When green, message the coordinator and wait for "merge". On "merge": `gh pr merge <n> --squash`, then `gh workflow run deploy.yml -R ShinyQ/ShinyQ-HQ --ref main`, watch it, and confirm the `main` CI run is green.
 
@@ -276,18 +278,18 @@ PR body: before and after table, local gate results (verify:quick, full e2e, per
 - Modify: `package.json` (`"@types/node": "^26"`), `bun.lock`
 - Modify: any file with a new type error (Node 26 typings: `Buffer` generic, `fetch`/`Response` globals, timer return types)
 
-- [ ] **Step 1: Upgrade**
+- [x] **Step 1: Upgrade**
 
 ```bash
 bun add -d @types/node@^26
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 Run: `bun run typecheck`
 Expected: pass. If errors appear, fix each at its source with the narrowest change (for example `ReturnType<typeof setTimeout>` instead of `NodeJS.Timeout`, `Uint8Array` where Node 26 tightened `Buffer`), never with `any` or `@ts-expect-error`. Bun's own types (`@types/bun`) depend on `@types/node`; if they conflict, record the error and pin (Step 6b).
 
-- [ ] **Step 3: Quick gates**
+- [x] **Step 3: Quick gates**
 
 ```bash
 rm -rf .next && bun run verify:quick
@@ -295,18 +297,18 @@ rm -rf .next && bun run verify:quick
 
 Expected: pass. Types do not reach the bundle, so the e2e and 3D lanes are not needed beyond CI; still run `E2E_PORT=4517 bun run e2e:smoke` (fast) because `package.json` changed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add package.json bun.lock <fixed files>
 rtk git commit -m "chore(deps): @types/node 26"
 ```
 
-- [ ] **Step 5: PR, close #80**
+- [x] **Step 5: PR, close #80**
 
 Capacity check, push, `gh pr create` with body "Replaces Dependabot #80." After CI is green, close the Dependabot PR: `gh pr close 80 -R ShinyQ/ShinyQ-HQ --comment "Superseded by #<n> (Round 7 A2), which upgrades @types/node to 26 with the gates green."` Report to the coordinator and wait for "merge" (then squash, deploy, main CI, as in Task 1 Step 14).
 
-- [ ] **Step 6b (only if it cannot pass): pin**
+- [x] **Step 6b (only if it cannot pass): pin**
 
 Revert the upgrade (`rtk git checkout origin/main -- package.json bun.lock`), then follow "Pin procedure" below with package `@types/node`, Dependabot PR 80.
 
@@ -320,7 +322,7 @@ Revert the upgrade (`rtk git checkout origin/main -- package.json bun.lock`), th
 - Modify: `package.json` (`"eslint": "^10"`), `bun.lock`, `eslint.config.mjs` (only if ESLint 10 needs a config change), `README.md` Tooling row only if it names a version
 - Or (pin): `.github/dependabot.yml`, `docs/deploy.md` section 17
 
-- [ ] **Step 1: Upgrade**
+- [x] **Step 1: Upgrade**
 
 ```bash
 bun add -d eslint@^10
@@ -328,7 +330,7 @@ bun add -d eslint@^10
 
 Bun prints peer warnings for `eslint-plugin-react`, `eslint-plugin-import` and `eslint-plugin-jsx-a11y` (peers stop at `^9`). Note them for the PR.
 
-- [ ] **Step 2: Lint with every plugin loaded**
+- [x] **Step 2: Lint with every plugin loaded**
 
 Run: `bun run lint`
 Expected outcomes:
@@ -336,7 +338,7 @@ Expected outcomes:
 - Crash such as `TypeError: context.getFilename is not a function`, `context.getScope is not a function`, `sourceCode.getAncestors` or a config schema error from a bundled plugin: ESLint 10 is not supported by `eslint-config-next` 16.4.1's plugins. Do not patch `node_modules`, do not drop the Next.js rule sets, do not add `@eslint/compat` shims (that would silently weaken the gate). Go to Step 5b and pin.
 - New findings from ESLint 10 rule changes (for example `no-unused-vars` defaults, `eslint:recommended` additions): fix the code where the rule is right; never disable a rule globally.
 
-- [ ] **Step 3: Prove the rules still fire**
+- [x] **Step 3: Prove the rules still fire**
 
 A crash-free run is not enough; make sure the plugins actually lint:
 
@@ -347,17 +349,17 @@ bunx eslint src/__lint_probe.tsx; rm src/__lint_probe.tsx
 
 Expected: `react-hooks/exhaustive-deps` and `@next/next/no-img-element` (and `jsx-a11y/alt-text`) are reported. If any is missing, the plugin is not running correctly under ESLint 10: pin (Step 5b).
 
-- [ ] **Step 4: Quick gates**
+- [x] **Step 4: Quick gates**
 
 ```bash
 rm -rf .next && bun run verify:quick
 ```
 
-- [ ] **Step 5: Docs, commit, PR, close #31**
+- [x] **Step 5: Docs, commit, PR, close #31**
 
 Commit `chore(deps): ESLint 10`. Capacity check, push, PR body "Replaces Dependabot #31." After green: `gh pr close 31 -R ShinyQ/ShinyQ-HQ --comment "Superseded by #<n> (Round 7 A3)."` Report and wait.
 
-- [ ] **Step 5b (if it cannot pass): pin**
+- [x] **Step 5b (if it cannot pass): pin**
 
 Follow "Pin procedure" with package `eslint`, Dependabot PR 31, reason naming the failing plugin and error (for example "eslint-config-next 16.4.1 bundles eslint-plugin-react 7.37.5, eslint-plugin-import 2.32.0 and eslint-plugin-jsx-a11y 6.10.2, which support ESLint up to 9; lint crashes with <error>"), revisit `2027-01-15`.
 
@@ -373,18 +375,18 @@ Probe result (2026-10-15, scratch worktree with A1 to A3 applied): TypeScript 7.
 - Modify: `package.json` (`"typescript": "~6.0.3"`: tilde, because typescript-eslint stops below 6.1), `bun.lock`, `tsconfig.json` (`"types": ["bun"]`)
 - Modify: `.github/dependabot.yml` (ignore `typescript` majors), `docs/deploy.md` section 17 (pin row)
 
-- [ ] **Step 1: Upgrade to 6.0**
+- [x] **Step 1: Upgrade to 6.0**
 
 ```bash
 bun add -d typescript@~6.0.3
 ```
 
-- [ ] **Step 2: Typecheck fails without `types`**
+- [x] **Step 2: Typecheck fails without `types`**
 
 Run: `bun run typecheck`
 Expected: FAIL with `TS2868: Cannot find name 'Bun'` in `scripts/*.ts` and `TS2339: Property 'dir' does not exist on type 'ImportMeta'`.
 
-- [ ] **Step 3: Name the global types**
+- [x] **Step 3: Name the global types**
 
 In `tsconfig.json` `compilerOptions`, after `"incremental": true,`:
 
@@ -395,7 +397,7 @@ In `tsconfig.json` `compilerOptions`, after `"incremental": true,`:
 Run: `bun run typecheck`
 Expected: PASS.
 
-- [ ] **Step 4: Pin TypeScript 7** (Pin procedure Steps 1 to 3)
+- [x] **Step 4: Pin TypeScript 7** (Pin procedure Steps 1 to 3)
 
 `.github/dependabot.yml` entry:
 
@@ -415,7 +417,7 @@ Expected: PASS.
 Run: `bunx vitest run tests/unit/dependabot.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Gates, commit, PR, close #30**
+- [x] **Step 5: Gates, commit, PR, close #30**
 
 `rm -rf .next && bun run verify:quick` and `E2E_PORT=4517 bun run e2e:smoke`. Commit `chore(deps): TypeScript 6.0, pin TypeScript 7`. Capacity check, push, PR. After green: `gh pr close 30 -R ShinyQ/ShinyQ-HQ --comment "Pinned in #<n>: <reason>. TypeScript moves to 6.0.3 instead; Dependabot ignores typescript majors until the revisit on 2027-01-15 (docs/deploy.md section 17)."` Report and wait.
 
@@ -425,7 +427,7 @@ Expected: PASS.
 
 **Files:** `.github/dependabot.yml`, `docs/deploy.md` section 17
 
-- [ ] **Step 1: Add the ignore entry**
+- [x] **Step 1: Add the ignore entry**
 
 Under the `bun` ecosystem in `.github/dependabot.yml`, after `groups:` (keep 4-space indentation):
 
@@ -438,18 +440,18 @@ Under the `bun` ecosystem in `.github/dependabot.yml`, after `groups:` (keep 4-s
 
 (One `ignore:` key; add further entries under it, each with its own comment line.)
 
-- [ ] **Step 2: Add the doc row** (replace the `| none | | | | |` row the first time)
+- [x] **Step 2: Add the doc row** (replace the `| none | | | | |` row the first time)
 
 ```markdown
 | `<package>` | <current major, for example 9.x> | <latest, for example 10.12.0> | <reason> | 2027-01-15 |
 ```
 
-- [ ] **Step 3: Run the guard**
+- [x] **Step 3: Run the guard**
 
 Run: `bunx vitest run tests/unit/dependabot.test.ts`
 Expected: PASS (the entry has a dated reason, ignores only majors, and the doc lists exactly the ignored names).
 
-- [ ] **Step 4: Gates, commit, PR, close the Dependabot PR**
+- [x] **Step 4: Gates, commit, PR, close the Dependabot PR**
 
 `bun run verify:quick`. Commit `chore(deps): pin <package> major (<short reason>)`. Capacity check, push, PR. Close the Dependabot PR with the reason: `gh pr close <dependabot n> -R ShinyQ/ShinyQ-HQ --comment "Pinned in #<n>: <reason>. Dependabot now ignores <package> majors until the revisit on 2027-01-15 (docs/deploy.md section 17)."` Report and wait.
 
@@ -457,6 +459,6 @@ Expected: PASS (the entry has a dated reason, ignores only majors, and the doc l
 
 ### Task 5: Close-out check
 
-- [ ] **Step 1:** On `main` after the last merge: `bun outdated`. Expected: only the pinned majors, each in `docs/deploy.md` section 17. If a new major appeared for three, @types/three, drei, fiber, postprocessing, @react-three/postprocessing, Next, next-intl, vitest or jsdom, give it its own Task (3D libraries: strict visual gate, `bun run e2e:perf`, memory gates) or pin it.
-- [ ] **Step 2:** `gh pr list -R ShinyQ/ShinyQ-HQ --author app/dependabot --state open`. Expected: empty, or only PRs opened after this round, each answered by a merge or a pin.
-- [ ] **Step 3:** Final report to the coordinator: every PR, before and after versions, pins with reasons and revisit dates.
+- [x] **Step 1:** On `main` after the last merge: `bun outdated`. Expected: only the pinned majors, each in `docs/deploy.md` section 17. If a new major appeared for three, @types/three, drei, fiber, postprocessing, @react-three/postprocessing, Next, next-intl, vitest or jsdom, give it its own Task (3D libraries: strict visual gate, `bun run e2e:perf`, memory gates) or pin it.
+- [x] **Step 2:** `gh pr list -R ShinyQ/ShinyQ-HQ --author app/dependabot --state open`. Expected: empty, or only PRs opened after this round, each answered by a merge or a pin.
+- [x] **Step 3:** Final report to the coordinator: every PR, before and after versions, pins with reasons and revisit dates.

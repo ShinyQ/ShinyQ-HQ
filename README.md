@@ -226,7 +226,7 @@ e2e/             Playwright suites, budgets and the perf lane
 docs/            features, content guide, design specs, plans, deploy, runbooks
 ```
 
-The full annotated layout is in [`AGENTS.md`](AGENTS.md#folder-layout).
+The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/folder-layout.md).
 
 ## Testing and CI
 
@@ -246,7 +246,7 @@ The full annotated layout is in [`AGENTS.md`](AGENTS.md#folder-layout).
 | Lighthouse (Classic site) | LCP under 2 s, CLS under 0.01, TBT under 200 ms |
 | Page weight (Classic site) | fonts 60 KB, HTML 80 KB, CSS 20 KB, JS 240 KB |
 
-Details: [docs/features.md](docs/features.md#performance) and [`AGENTS.md`](AGENTS.md#fast-verification).
+Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/performance.md`](docs/agents/performance.md).
 
 ## Deploy
 
@@ -261,10 +261,12 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 |---|---|
 | [`docs/features.md`](docs/features.md) | Every feature floor by floor, controls, Ask the HQ, CI, performance, status log |
 | [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, public-safety lint |
-| [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, folder layout, content style, fast verification |
+| [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, workflow, key commands, budgets, index of the detail docs |
+| [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, performance, CI |
+| [`docs/decisions.md`](docs/decisions.md) | Dated log of owner decisions |
 | [Design spec](docs/superpowers/specs/2026-10-09-agent-hq-design.md) | Agent HQ design and appendices `agent-hq/01..08` |
 | [Ask the HQ design](docs/superpowers/specs/2026-10-11-ask-hq-design.md) | Models, security threat model, data freshness |
-| [`docs/superpowers/plans/`](docs/superpowers/plans/) | Implementation plans, one per feature PR |
+| [`docs/superpowers/`](docs/superpowers/README.md) | Implementation plans and design specs with their status and PRs |
 | [`docs/deploy.md`](docs/deploy.md) | Deploys, secrets and variables, analytics, Cloudflare resources, Lighthouse budgets, headers |
 | [`docs/ask-runbook.md`](docs/ask-runbook.md) | Ask the HQ operations: provisioning, kill switch, cache purge, secret rotation, evals |
 | [`workers/stats/README.md`](workers/stats/README.md) | hq-stats Cron Worker runbook |

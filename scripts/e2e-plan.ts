@@ -65,7 +65,7 @@ interface Rule {
 
 /**
  * First matching rule wins, so specific paths come before their parent folders.
- * Keep this in sync with the "Fast verification" section of AGENTS.md.
+ * Keep this in sync with the "Fast verification" section of docs/agents/performance.md.
  */
 export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.

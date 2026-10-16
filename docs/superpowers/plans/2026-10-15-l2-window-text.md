@@ -1,5 +1,7 @@
 # L2 Workshop window text removal (Round 7 H)
 
+Status: shipped in #154 (654e9a5), 2026-10-15
+
 Owner decision 2026-10-15 (option 3 of the Round 7 design, section 9, chosen after a "Now" plate prototype read badly in captures): remove the "▲ L3 Labs above" label at the L2 Workshop window and keep the window clean.
 
 ## Change

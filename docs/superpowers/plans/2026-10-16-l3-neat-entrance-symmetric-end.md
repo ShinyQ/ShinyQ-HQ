@@ -1,5 +1,7 @@
 # L3 Neat Entrance and Symmetric End Implementation Plan
 
+Status: shipped in #168 (5085fa2), 2026-10-16
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the L3 arrival neat (three separate directory boards, one name per path, clean one-line board text) and make the Tech Reactor end mirror-symmetric about the spine axis; move the Fabric forecasting pod to the Data and ML wing.
@@ -46,7 +48,7 @@
 **Interfaces:**
 - Produces: `INTER_400_FILE: string`, `interWidth(text: string): number` (advance width in em, sum of per-character advances; unknown characters count 0.6).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -69,9 +71,9 @@ describe("interWidth (Inter 400 advances)", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**: `bunx vitest run tests/unit/inter-width.test.ts` (module missing).
+- [x] **Step 2: Run it to verify it fails**: `bunx vitest run tests/unit/inter-width.test.ts` (module missing).
 
-- [ ] **Step 3: Generate the table and implement.** Run:
+- [x] **Step 3: Generate the table and implement.** Run:
 
 ```bash
 python3 - <<'EOF'
@@ -103,8 +105,8 @@ export function interWidth(text: string): number {
 }
 ```
 
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/inter-width.test.ts` (PASS).
-- [ ] **Step 5: Commit** `feat(l3): Inter 400 advance table for in-world text measurement`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/inter-width.test.ts` (PASS).
+- [x] **Step 5: Commit** `feat(l3): Inter 400 advance table for in-world text measurement`.
 
 ---
 
@@ -117,11 +119,11 @@ export function interWidth(text: string): number {
 **Interfaces:**
 - Produces: `Pod.shortTitle?: LocalizedText`; `LabPod.shortTitle?: string` (only when set, locale-resolved). Board code reads `pod.shortTitle ?? pod.title`; nothing else reads it (Classic site, Cmd-K, drawer, OG, JSON-LD, Ask keep `title`).
 
-- [ ] **Step 1: Failing tests** in `tests/content/short-title.test.ts`: `PodSchema` accepts a pod with `shortTitle` `{ en: "Serupa Ticket Hub", id: "Serupa Ticket Hub" }`; rejects a `shortTitle` longer than 32 characters in either locale, and one not shorter than the title in the same locale; `labPods("en")` carries `shortTitle` only for pods that set it. Build the pod from a real pod of `getContent()` with `structuredClone`.
-- [ ] **Step 2: Run, verify FAIL.**
-- [ ] **Step 3: Implement.** Schema: `shortTitle: LocalizedTextSchema.optional()` after `title`, documented ("Board title on the L3 directory (one line); every other surface keeps `title`."); in `superRefine` add issues at `["shortTitle", locale]` for length > 32 or `>= title[locale].length`. `titleSlots`: add `localized(...shortTitle...)` for pods that set it (Title Case applies). First-person test: include `shortTitle` values. `labPods`: `...(p.shortTitle ? { shortTitle: p.shortTitle[locale] } : {})`.
-- [ ] **Step 4: Fabric.** Set `"wing": "data"` on `fabric-forecasting-dashboard`. Update tests that pin wings: `tests/content/dataset.test.ts` (Data and ML block: the five repo pods keep their checks by slug, plus the Fabric pod moved by the owner on 2026-10-16 with a sector-label client and a gallery; AI hero count unchanged), `tests/unit/tech-index.test.ts` (data pods off the Data and AI rings now also include Fabric's Next.js, App Service, Bicep, Key Vault and Microsoft 365 Copilot style entries: compute the expected list from the real stack; pandas lights the five repo pods, Fabric reaches the Data ring through Lakehouse, Spark notebooks and Fabric Data Pipelines). Run `bun run validate:content`, `bunx vitest run tests/content tests/unit/tech-index.test.ts tests/unit/labs-*.test.ts tests/ask` and fix count pins (for example "an 11-pod AI wing" stays a padded synthetic case). Grep `tests/ask/golden.json` and `content/ask/` for a Fabric wing claim and keep them true.
-- [ ] **Step 5: Commit** `feat(content): optional pod shortTitle; Fabric forecasting moves to Data and ML (owner 2026-10-16)`.
+- [x] **Step 1: Failing tests** in `tests/content/short-title.test.ts`: `PodSchema` accepts a pod with `shortTitle` `{ en: "Serupa Ticket Hub", id: "Serupa Ticket Hub" }`; rejects a `shortTitle` longer than 32 characters in either locale, and one not shorter than the title in the same locale; `labPods("en")` carries `shortTitle` only for pods that set it. Build the pod from a real pod of `getContent()` with `structuredClone`.
+- [x] **Step 2: Run, verify FAIL.**
+- [x] **Step 3: Implement.** Schema: `shortTitle: LocalizedTextSchema.optional()` after `title`, documented ("Board title on the L3 directory (one line); every other surface keeps `title`."); in `superRefine` add issues at `["shortTitle", locale]` for length > 32 or `>= title[locale].length`. `titleSlots`: add `localized(...shortTitle...)` for pods that set it (Title Case applies). First-person test: include `shortTitle` values. `labPods`: `...(p.shortTitle ? { shortTitle: p.shortTitle[locale] } : {})`.
+- [x] **Step 4: Fabric.** Set `"wing": "data"` on `fabric-forecasting-dashboard`. Update tests that pin wings: `tests/content/dataset.test.ts` (Data and ML block: the five repo pods keep their checks by slug, plus the Fabric pod moved by the owner on 2026-10-16 with a sector-label client and a gallery; AI hero count unchanged), `tests/unit/tech-index.test.ts` (data pods off the Data and AI rings now also include Fabric's Next.js, App Service, Bicep, Key Vault and Microsoft 365 Copilot style entries: compute the expected list from the real stack; pandas lights the five repo pods, Fabric reaches the Data ring through Lakehouse, Spark notebooks and Fabric Data Pipelines). Run `bun run validate:content`, `bunx vitest run tests/content tests/unit/tech-index.test.ts tests/unit/labs-*.test.ts tests/ask` and fix count pins (for example "an 11-pod AI wing" stays a padded synthetic case). Grep `tests/ask/golden.json` and `content/ask/` for a Fabric wing claim and keep them true.
+- [x] **Step 5: Commit** `feat(content): optional pod shortTitle; Fabric forecasting moves to Data and ML (owner 2026-10-16)`.
 
 ---
 
@@ -141,15 +143,15 @@ export function interWidth(text: string): number {
   - `LabsLayout.signs` and `WingSign` removed.
 - Produces in `directory.ts`: `wallSolids(boards?)` returns boxes with `yaw` (board box yaw = `board.yaw + PI / 2`, post box yaw the same as its board), `wallLines(boards?)` rotated rims and underlines, label positions on both faces from `center ± normal * (w/2 + PANEL.out) + along * u` (back face: `-along`, yaw + PI). `roadSigns` and `ROAD_SIGN` removed.
 
-- [ ] **Step 1: Failing tests** (pure, node):
+- [x] **Step 1: Failing tests** (pure, node):
   - `labs-layout.test.ts`: three boards; data board normal (-1, 0), centered on z = 0, posts outside the road's driving width and the rover fits under `base`; side boards mirror images (`center.z`, `normal.z` negated), each normal within 0.35 rad of west and pointing toward the axis; each board's stop is `center + normal * (w/2 + boardStop)`; neighbouring boards' face end points at least 2 u apart; the side stop's spur starts on the spine at (stop.x, 0) and ends at the stop; the road route from the arrival spot to each side stop never heads west of the arrival x and is under 16 u; `expectSpaceRules` still passes with real pods, an empty floor and a lopsided floor (existing cases); `layout.floor.tall` holds each board's bounds with `h` 9.6; `lookAlong(d)` round-trips through `followForward` for every camera class and 8 directions.
   - `labs-arrival.test.ts`: replace the projection helpers so a face is projected from `center ± along * width/2` at `base` and `h`, offset by `normal * w/2`. Desktop 1440x900 and 2560x1440: all three faces inside the safe box, ordered Product, Data and ML, AI left to right, on-screen gaps at least 40 px (1440) and 60 px (2560). 390x844: Data and ML face inside the safe box; each side face at least 35 percent on screen; the three road mouths on screen. From each stop at the three sizes: the board's face inside the safe box. Legibility: title em at least 15 px on arrival at 1440x900; list em (0.37) at least 9.2 px at 1440x900 and 14.4 px at 2560x1440 on arrival; compact list (0.45) at least 9.6 px from the stop at 390x844. Remove every sign case.
   - `facing.test.ts`: replace "L3 floating wing signs" with "L3 side boards face the arrival camera": for each side board, `dot(normal, toward(center, eye)) > 0.9` and the front reading direction `along` points screen right for that camera.
   - `labs-directory.test.ts` (geometry part): `wallSolids()` has 3 boards and 4 posts with the yaws above; every solid corner lies within its board's or post's bounds; `wallLines()` per board 12 rim edges plus 2 underlines in the wing tint, 4 vertical edges per post; label positions sit `PANEL.out` off a face and inside the board's span. Drop the road signs block.
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/labs-arrival.test.ts tests/unit/facing.test.ts tests/unit/labs-directory.test.ts` (FAIL).
-- [ ] **Step 3: Implement.** In `directoryBoard`: data `{ center: { x: dataX, z: 0 }, normal: { x: -1, z: 0 } }`; side `{ center: { x: side.x, z: WING_SIDE[wing] * side.z }, normal: { x: -Math.cos(turn), z: -WING_SIDE[wing] * Math.sin(turn) } }`; bounds from the four corners `center ± along * width/2 ± normal * w/2`; `stop = center + normal * (w/2 + boardStop)`. `wallPosts`: gate posts at `center ± along * (width/2 - post/2)`, `across = w`, `along = post`; pylons at the side centers with `pylon`; rect = bounds of the rotated footprint. In `buildLabsLayout`: side stop spurs `from` = `{ x: stop.x, z: 0 }` (on the spine); side board zones `{ id: "L3:directory:<wing>", area: stop ± 1.5, yaw: lookAlong({ x: -normal.x, z: -normal.z }), zoom: boardZoom, classView: { mobile: { zoom: boardZoomPhone } } }`; data zone as before with `minZ/maxZ = ±width/2`; lanes start at `dataX + w/2 + 1`; `tall` from board bounds with `h`. Update the module comment and `LABS` doc comments. `Hub.tsx`: render only `DirectoryWall`. Update `src/experience/floors/labs/directory.ts` geometry functions and `textWidth() = width - 2 * inset`.
-- [ ] **Step 4: Run** the four test files plus `bunx vitest run tests/unit/labs-*.test.ts tests/unit/interact-registry.test.ts tests/unit/floor-pads.test.ts tests/unit/tech-reactor.test.ts` and `bun run typecheck` (PASS).
-- [ ] **Step 5: Commit** `feat(l3): three separate directory boards at their road mouths, no duplicate road signs`.
+- [x] **Step 2: Run** `bunx vitest run tests/unit/labs-layout.test.ts tests/unit/labs-arrival.test.ts tests/unit/facing.test.ts tests/unit/labs-directory.test.ts` (FAIL).
+- [x] **Step 3: Implement.** In `directoryBoard`: data `{ center: { x: dataX, z: 0 }, normal: { x: -1, z: 0 } }`; side `{ center: { x: side.x, z: WING_SIDE[wing] * side.z }, normal: { x: -Math.cos(turn), z: -WING_SIDE[wing] * Math.sin(turn) } }`; bounds from the four corners `center ± along * width/2 ± normal * w/2`; `stop = center + normal * (w/2 + boardStop)`. `wallPosts`: gate posts at `center ± along * (width/2 - post/2)`, `across = w`, `along = post`; pylons at the side centers with `pylon`; rect = bounds of the rotated footprint. In `buildLabsLayout`: side stop spurs `from` = `{ x: stop.x, z: 0 }` (on the spine); side board zones `{ id: "L3:directory:<wing>", area: stop ± 1.5, yaw: lookAlong({ x: -normal.x, z: -normal.z }), zoom: boardZoom, classView: { mobile: { zoom: boardZoomPhone } } }`; data zone as before with `minZ/maxZ = ±width/2`; lanes start at `dataX + w/2 + 1`; `tall` from board bounds with `h`. Update the module comment and `LABS` doc comments. `Hub.tsx`: render only `DirectoryWall`. Update `src/experience/floors/labs/directory.ts` geometry functions and `textWidth() = width - 2 * inset`.
+- [x] **Step 4: Run** the four test files plus `bunx vitest run tests/unit/labs-*.test.ts tests/unit/interact-registry.test.ts tests/unit/floor-pads.test.ts tests/unit/tech-reactor.test.ts` and `bun run typecheck` (PASS).
+- [x] **Step 5: Commit** `feat(l3): three separate directory boards at their road mouths, no duplicate road signs`.
 
 ---
 
@@ -162,11 +164,11 @@ export function interWidth(text: string): number {
 **Interfaces:**
 - Produces: `LABS.returnPadX = 13`; both wing roads `[hubC, mouth, (wingStartX, ±wingZ), (loopEnd.x, ±wingZ), (loopEnd.x, ∓REACTOR.ring)]`; `floor.returnPad = { x: loopEnd.x + LABS.returnPadX, z: 0 }`.
 
-- [ ] **Step 1: Failing test** "mirrors the reactor end about the spine axis" for the real pods, an 11-pod AI wing, short side wings with eight hero spine pods and an empty floor: the last two points of the `software` and `ai` roads are mirror images (x equal within 0.5, z negated within 0.5); the turn x equals `layout.east.center.x`; the ring entries are due north and south of the reactor center; the spine's last point is at z = 0; the return pad has z = 0 and x > the ring's outer edge; pad and space rules pass.
-- [ ] **Step 2: Run, verify FAIL** (Product turns at 113 today).
-- [ ] **Step 3: Implement**: compute `loopEnd` first, then `turn = { x: loopEnd.x, z }` for both wings. Update the "places the reactor plaza ... Return pad" expectation in `labs-spine.test.ts`.
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/labs-*.test.ts tests/unit/floor-pads.test.ts tests/unit/fast-return.test.ts tests/unit/interact-registry.test.ts` (PASS).
-- [ ] **Step 5: Commit** `feat(l3): mirror-symmetric reactor end, Return pad on the axis`.
+- [x] **Step 1: Failing test** "mirrors the reactor end about the spine axis" for the real pods, an 11-pod AI wing, short side wings with eight hero spine pods and an empty floor: the last two points of the `software` and `ai` roads are mirror images (x equal within 0.5, z negated within 0.5); the turn x equals `layout.east.center.x`; the ring entries are due north and south of the reactor center; the spine's last point is at z = 0; the return pad has z = 0 and x > the ring's outer edge; pad and space rules pass.
+- [x] **Step 2: Run, verify FAIL** (Product turns at 113 today).
+- [x] **Step 3: Implement**: compute `loopEnd` first, then `turn = { x: loopEnd.x, z }` for both wings. Update the "places the reactor plaza ... Return pad" expectation in `labs-spine.test.ts`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/labs-*.test.ts tests/unit/floor-pads.test.ts tests/unit/fast-return.test.ts tests/unit/interact-registry.test.ts` (PASS).
+- [x] **Step 5: Commit** `feat(l3): mirror-symmetric reactor end, Return pad on the axis`.
 
 ---
 
@@ -179,11 +181,11 @@ export function interWidth(text: string): number {
 **Interfaces:**
 - Produces: `fitTitle(name, width): { text: string; size: number }` (one line, uppercase, size `min(PANEL.title.size, width / (0.6 * length))`); `boardList(list, maxLines, style?): { marks: string; text: string; entries: number; lines: number; more: number }` (marks and text have the same line count; continuation lines of the marks column are `\u00A0`; `more` = `list.length - entries`); `listWidthEm(style): number`.
 
-- [ ] **Step 1: Failing tests**: every wing name in both locales fits one line at `PANEL.title.size`; for both locales and both styles, every shown entry (`shortTitle ?? title`) is one line within 97 percent of `listWidthEm(style)` and never contains "..."; marks and text have equal line counts and the marks column starts each entry; the footer reads `▸ OPEN THE FULL LIST · +N MORE` when N > 0 and fits `textWidth()` in mono at `PANEL.footer.size`; each face has five labels (title, sub, marks, list, footer), list labels use `fonts.sans` and the list ink, titles the wing tint; panel rows keep the list between the underline block and the footer with room for `entries` lines in both styles; legibility tests from Task 3 still pass.
-- [ ] **Step 2: Run, verify FAIL.**
-- [ ] **Step 3: Implement** per the Decisions table; wrapping fallback (only for content that does not fit): wrap at word boundaries by `interWidth`, at most `perEntry` (2) lines, the last line ends on a whole word followed by "..." if more remained. Add the `shortTitle` values the test asks for (Title Case, at most 32 characters, faithful to the title; for example "Serupa Ticket Hub", "Anime Figure E-Commerce" / "E-Commerce Figure Anime", "Platform Keamanan Kode AI", "Review Dokumen Fraud AI", "Fabric Demand Forecasting" / "Forecasting Permintaan Fabric", "IFEST 2021 E-Wallet Sentiment" / "Sentimen E-Wallet IFEST 2021", "COVID-19 Herd Immunity Forecast" / "Prediksi Herd Immunity COVID-19", "Sentiboard (IndoBERT)"), each only where the fit test needs it. Run `bun run validate:content`.
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts tests/content tests/unit/client-namespaces.test.ts` and `bun run typecheck` (PASS).
-- [ ] **Step 5: Commit** `feat(l3): one-line board text, short titles, +N more, quieter list`.
+- [x] **Step 1: Failing tests**: every wing name in both locales fits one line at `PANEL.title.size`; for both locales and both styles, every shown entry (`shortTitle ?? title`) is one line within 97 percent of `listWidthEm(style)` and never contains "..."; marks and text have equal line counts and the marks column starts each entry; the footer reads `▸ OPEN THE FULL LIST · +N MORE` when N > 0 and fits `textWidth()` in mono at `PANEL.footer.size`; each face has five labels (title, sub, marks, list, footer), list labels use `fonts.sans` and the list ink, titles the wing tint; panel rows keep the list between the underline block and the footer with room for `entries` lines in both styles; legibility tests from Task 3 still pass.
+- [x] **Step 2: Run, verify FAIL.**
+- [x] **Step 3: Implement** per the Decisions table; wrapping fallback (only for content that does not fit): wrap at word boundaries by `interWidth`, at most `perEntry` (2) lines, the last line ends on a whole word followed by "..." if more remained. Add the `shortTitle` values the test asks for (Title Case, at most 32 characters, faithful to the title; for example "Serupa Ticket Hub", "Anime Figure E-Commerce" / "E-Commerce Figure Anime", "Platform Keamanan Kode AI", "Review Dokumen Fraud AI", "Fabric Demand Forecasting" / "Forecasting Permintaan Fabric", "IFEST 2021 E-Wallet Sentiment" / "Sentimen E-Wallet IFEST 2021", "COVID-19 Herd Immunity Forecast" / "Prediksi Herd Immunity COVID-19", "Sentiboard (IndoBERT)"), each only where the fit test needs it. Run `bun run validate:content`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/labs-directory.test.ts tests/unit/labs-arrival.test.ts tests/content tests/unit/client-namespaces.test.ts` and `bun run typecheck` (PASS).
+- [x] **Step 5: Commit** `feat(l3): one-line board text, short titles, +N more, quieter list`.
 
 ---
 
@@ -192,18 +194,18 @@ export function interWidth(text: string): number {
 **Files:**
 - Modify: `e2e/labs-paths.spec.ts`
 
-- [ ] **Step 1**: Arrival: assert no floating sign group on L3 names a wing (`__hq.probes.signs` values: no text equal to an uppercase wing name), the board bounds in `__hq.layouts.L3.tall` (the three entries with `h` equal to the board height) are pairwise at least 1.5 u apart, and `__hq.interact.screenOf("L3:board:<wing>")` centers order Product, Data and ML, AI left to right on desktop. End: the `software` and `ai` road junction points mirror within 0.5 u, the spine ends on z = 0, the `return:L3` pad (`__hq.layouts.L3.pads`) sits on z = 0. Keep the capture poses (`board-<wing>`, `reactor-approach`, `reactor-top`).
-- [ ] **Step 2**: `bun run build`, then `E2E_PORT=<port> bunx playwright test e2e/labs-paths.spec.ts e2e/spectacle.spec.ts e2e/reactor.spec.ts e2e/labs-data.spec.ts e2e/labs.spec.ts e2e/fast-return.spec.ts e2e/production.spec.ts` (PASS).
-- [ ] **Step 3: Commit** `test(l3): separate boards, one name per path and a mirrored end`.
+- [x] **Step 1**: Arrival: assert no floating sign group on L3 names a wing (`__hq.probes.signs` values: no text equal to an uppercase wing name), the board bounds in `__hq.layouts.L3.tall` (the three entries with `h` equal to the board height) are pairwise at least 1.5 u apart, and `__hq.interact.screenOf("L3:board:<wing>")` centers order Product, Data and ML, AI left to right on desktop. End: the `software` and `ai` road junction points mirror within 0.5 u, the spine ends on z = 0, the `return:L3` pad (`__hq.layouts.L3.pads`) sits on z = 0. Keep the capture poses (`board-<wing>`, `reactor-approach`, `reactor-top`).
+- [x] **Step 2**: `bun run build`, then `E2E_PORT=<port> bunx playwright test e2e/labs-paths.spec.ts e2e/spectacle.spec.ts e2e/reactor.spec.ts e2e/labs-data.spec.ts e2e/labs.spec.ts e2e/fast-return.spec.ts e2e/production.spec.ts` (PASS).
+- [x] **Step 3: Commit** `test(l3): separate boards, one name per path and a mirrored end`.
 
 ---
 
 ### Task 7: Docs
 
-- [ ] `AGENTS.md`: L3 Project Roads (boards, no road signs, symmetric turns), Data and ML spine (Fabric first, 6 pods, pandas lights the five repo pods), Fast return (L3 pad on the axis), schema additions (`Pod.shortTitle`), Tech Reactor note. `docs/features.md` L3 section and status log. `docs/content.md` (`shortTitle`). Commit `docs: L3 neat entrance, symmetric end, short titles`.
+- [x] `AGENTS.md`: L3 Project Roads (boards, no road signs, symmetric turns), Data and ML spine (Fabric first, 6 pods, pandas lights the five repo pods), Fast return (L3 pad on the axis), schema additions (`Pod.shortTitle`), Tech Reactor note. `docs/features.md` L3 section and status log. `docs/content.md` (`shortTitle`). Commit `docs: L3 neat entrance, symmetric end, short titles`.
 
 ### Task 8: Verification, measurements, PR
 
-- [ ] `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=<port> bun run e2e:perf` (L3 chunk, floors, peaks).
-- [ ] After captures: `LABS_SHOTS=<files>/shots/after E2E_PORT=<port> bunx playwright test e2e/labs-paths.spec.ts`; compare with `shots/before` (main 4bb8579a).
-- [ ] Check CI capacity, push, open the PR (not merged), report to the coordinator with captures and numbers.
+- [x] `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=<port> bun run e2e:perf` (L3 chunk, floors, peaks).
+- [x] After captures: `LABS_SHOTS=<files>/shots/after E2E_PORT=<port> bunx playwright test e2e/labs-paths.spec.ts`; compare with `shots/before` (main 4bb8579a).
+- [x] Check CI capacity, push, open the PR (not merged), report to the coordinator with captures and numbers.

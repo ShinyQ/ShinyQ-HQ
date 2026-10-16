@@ -1,5 +1,7 @@
 # R4-K: Serupa and DariOrdal Ticketing Projects Implementation Plan
 
+Status: shipped in #61 (ca9c5e8), 2026-10-12
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the Serupa event ticketing platform (attendee site, organizer dashboard, Express API) as a new Product Engineering pod with its own Journey entry, refresh the existing DariOrdal ticketing pod from its repository, and give both pods a privacy-reviewed screenshot gallery captured from local runs on sample data.
@@ -125,7 +127,7 @@ Scratch only (never committed, deleted in Task 10), all under `$SCRATCH`:
 
 ## Before You Start
 
-- [ ] **Step 1: Branch from the latest `main` in your own checkout**
+- [x] **Step 1: Branch from the latest `main` in your own checkout**
 
 Run inside your working checkout of `ShinyQ/ShinyQ-HQ` (never `files/hq-local`):
 
@@ -134,14 +136,14 @@ rtk git fetch origin && rtk git switch -c feat/r4-k-ticketing-projects origin/ma
 bun install
 ```
 
-- [ ] **Step 2: Set the shared variables (repeat in every fresh shell)**
+- [x] **Step 2: Set the shared variables (repeat in every fresh shell)**
 
 ```bash
 export HQ="$PWD" SCRATCH=/tmp/hq-r4-k   # or SCRATCH=$HOME/hq-scratch/r4-k if /tmp is not allowed
 mkdir -p "$SCRATCH"/{tools,apps,shots,logs}
 ```
 
-- [ ] **Step 3: Record the starting state (decides the R4-J branches later)**
+- [x] **Step 3: Record the starting state (decides the R4-J branches later)**
 
 ```bash
 jq -r '.floors.labs.pods[] | select(.wing=="software" and .tier=="featured") | [.id,.order] | @tsv' content/site-content.json
@@ -164,7 +166,7 @@ R4-J not merged
 
 If R4-J merged first: `event-tech-search-backend` is gone from the list, `solutions-marketing-site	11` is in it, the golden count is `31` and the last line is `R4-J merged`. Both are fine; the scripts below handle either.
 
-- [ ] **Step 4: Tools present**
+- [x] **Step 4: Tools present**
 
 ```bash
 docker info --format '{{.ServerVersion}}' && which cwebp magick tesseract gh && gh auth status 2>&1 | head -2
@@ -187,7 +189,7 @@ Expected: a Docker server version, four paths, and `Logged in to github.com`. If
 - Consumes: nothing from other tasks.
 - Produces: pod id and slug `event-ticketing-platform` (wing `software`, tier `featured`, `client: "Serupa"`, `timelineRef: "serupa-2025"`, `assets: []`); career entry id and slug `serupa-2025` (`podRef: "event-ticketing-platform"`); room ids `L3:event-ticketing-platform` and `L2:serupa-2025`; Page View routes `/{locale}/labs/event-ticketing-platform` and `/{locale}/journey/serupa-2025`; `limited-quota-event-ticketing.tier === "listed"`. The test block `describe("ticketing projects (owner request 2026-10-12)")` in `tests/content/dataset.test.ts` with the consts `ticketPods`, `ticketEntries`, `serupa`, `serupaEntry`, `dariordal` that Tasks 2, 6 and 8 extend.
 
-- [ ] **Step 1: Check the merged blocklist for the new names**
+- [x] **Step 1: Check the merged blocklist for the new names**
 
 Run from `$HQ` (uses the committed list, your gitignored `content/.safety-blocklist.local.txt` if present, and `SAFETY_BLOCKLIST` if exported):
 
@@ -204,7 +206,7 @@ Serupa Ticket Hub
 
 Re-run the command; expected `[]`. CI reads its own `SAFETY_BLOCKLIST` secret, which you cannot see: if CI's "public safety" test later flags a Serupa term, add the same two lines then.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Append to the end of `tests/content/dataset.test.ts`:
 
@@ -247,12 +249,12 @@ describe("ticketing projects (owner request 2026-10-12)", () => {
 });
 ```
 
-- [ ] **Step 3: Run it to make sure it fails**
+- [x] **Step 3: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/content/dataset.test.ts`
 Expected: FAIL, 3 failed in "ticketing projects (owner request 2026-10-12)" (for example `expected undefined to match object { wing: 'software', ... }`); the other dataset tests pass.
 
-- [ ] **Step 4: Write the content edit script**
+- [x] **Step 4: Write the content edit script**
 
 Create `$SCRATCH/tools/edit-serupa.ts`:
 
@@ -435,17 +437,17 @@ const featured = pods.filter((p) => p.wing === "software" && p.tier === "feature
 console.log(`added event-ticketing-platform (order ${order}) and serupa-2025; software featured pods: ${featured}`);
 ```
 
-- [ ] **Step 5: Run the script**
+- [x] **Step 5: Run the script**
 
 Run: `bun "$SCRATCH/tools/edit-serupa.ts"`
 Expected (R4-J not merged): `added event-ticketing-platform (order 11) and serupa-2025; software featured pods: 6`. With R4-J merged first the order is `12`; the featured count is `6` either way.
 
-- [ ] **Step 6: Run the dataset test and the content suites**
+- [x] **Step 6: Run the dataset test and the content suites**
 
 Run: `bunx vitest run tests/content tests/unit/tech.test.ts`
 Expected: `tests/content/dataset.test.ts` PASS (including the 3 new tests); `tests/unit/tech.test.ts` FAIL in "resolves every stack and skill name in content or allowlists it as text-only" with `Drizzle ORM` in the unresolved list. Everything else PASS.
 
-- [ ] **Step 7: Allowlist "Drizzle ORM" as a text-only tech name**
+- [x] **Step 7: Allowlist "Drizzle ORM" as a text-only tech name**
 
 In `src/content/tech.ts`, inside `TEXT_ONLY_TECH`, change:
 
@@ -462,12 +464,12 @@ to:
   "datatables",
 ```
 
-- [ ] **Step 8: Run the tests again**
+- [x] **Step 8: Run the tests again**
 
 Run: `bunx vitest run tests/content tests/unit/tech.test.ts tests/unit/schema.test.ts && bun run validate:content`
 Expected: all PASS (title case, safety, assets, dataset, tech); `validate:content` prints no errors.
 
-- [ ] **Step 9: Update the content map appendix**
+- [x] **Step 9: Update the content map appendix**
 
 In `docs/superpowers/specs/agent-hq/07-content-map.md`:
 
@@ -484,7 +486,7 @@ In `docs/superpowers/specs/agent-hq/07-content-map.md`:
 Run: `rg -n "Serupa" docs/superpowers/specs/agent-hq/07-content-map.md`
 Expected: 3 matching lines (2025 row, the featured row, C8).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 rtk git add content/site-content.json src/content/tech.ts tests/content/dataset.test.ts docs/superpowers/specs/agent-hq/07-content-map.md
@@ -504,7 +506,7 @@ rtk git commit -m "feat(content): add the Serupa event ticketing platform pod an
 - Consumes: the `describe("ticketing projects (owner request 2026-10-12)")` block and its `dariordal` const from Task 1.
 - Produces: DariOrdal pod copy that names Next.js 15, credits the teammate's iPaymu integration, and reports the non-merge commit share. Slug, id, title, tagline, problem, role, period, tier (`listed`, from Task 1) and `timelineRef` unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/content/dataset.test.ts`, inside the Task 1 block, after the test "keeps the client name out of the slug and frees a featured slot with the sibling ticketing pod", add:
 
@@ -518,12 +520,12 @@ In `tests/content/dataset.test.ts`, inside the Task 1 block, after the test "kee
   });
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/content/dataset.test.ts -t "refreshes DariOrdal"`
 Expected: FAIL with `expected '{"id":"limited-quota-event-ticketing",...' not to contain 'Next.js 14'`.
 
-- [ ] **Step 3: Write the refresh script**
+- [x] **Step 3: Write the refresh script**
 
 Create `$SCRATCH/tools/refresh-dariordal.ts`:
 
@@ -580,22 +582,22 @@ writeFileSync(FILE, JSON.stringify(data, null, 2) + "\n");
 console.log(`refreshed limited-quota-event-ticketing; stack: ${pod.stack.join(", ")}`);
 ```
 
-- [ ] **Step 4: Run the script**
+- [x] **Step 4: Run the script**
 
 Run: `bun "$SCRATCH/tools/refresh-dariordal.ts"`
 Expected: `refreshed limited-quota-event-ticketing; stack: Next.js 15, TypeScript, Prisma, PostgreSQL, Redis, iPaymu, AWS S3, TanStack Table, Tailwind CSS, shadcn/ui, GitHub Actions, Bun`
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `bunx vitest run tests/content tests/unit/tech.test.ts && bun run validate:content`
 Expected: all PASS, including "refreshes DariOrdal from its repository...".
 
-- [ ] **Step 6: Review the diff for accuracy**
+- [x] **Step 6: Review the diff for accuracy**
 
 Run: `rtk git diff --stat && git --no-pager diff -U0 content/site-content.json | rg '^[+-] ' | cut -c1-160`
 Expected: only the six fields named in **Files** change (sublabel, three approach entries, `results[0]`, stack). No em dash: `rg -n $'\u2014' content/site-content.json` prints nothing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add content/site-content.json tests/content/dataset.test.ts
@@ -616,7 +618,7 @@ rtk git commit -m "fix(content): refresh the DariOrdal ticketing pod from its re
 - Consumes: the pod titles "Serupa Ticket Hub: Event Ticketing Platform" (Task 1) and "Limited-Quota Event Ticketing" (existing), both listed in the `projects-summary` chunk. The Ask pack is rebuilt from content by `scripts/build-knowledge.ts` (gitignored output).
 - Produces: golden item `qN` (N = current item count + 1: `q31` on `e2a6c53`, `q32` if R4-J merged first), item count N, `passThreshold` N - 2.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/ask/pipeline.test.ts`, the test "has 30 unique items with a 28 pass threshold" currently reads (on `e2a6c53`):
 
@@ -640,12 +642,12 @@ Replace it with (R4-J not merged):
 
 If R4-J merged first, the test already says 31 and 29; change it to 32 and 30 (title "has 32 unique items with a 30 pass threshold").
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `bunx vitest run tests/ask/pipeline.test.ts -t "unique items"`
 Expected: FAIL with `expected [ ... ] to have a length of 31 but got 30` (or 32 / 31).
 
-- [ ] **Step 3: Add the golden item**
+- [x] **Step 3: Add the golden item**
 
 In `tests/ask/golden.json`, after the last item line (`q30` on `e2a6c53`, `q31` if R4-J merged), add a comma to that line and append (use `q32` if R4-J merged):
 
@@ -655,7 +657,7 @@ In `tests/ask/golden.json`, after the last item line (`q30` on `e2a6c53`, `q31` 
 
 Then change `"passThreshold": 28,` to `"passThreshold": 29,` (or `29` to `30`), and in `$comment` change `18 benchmark questions plus 12 new.` to `18 benchmark questions plus 13 new.` (or `13` to `14`).
 
-- [ ] **Step 4: Run the Ask suites**
+- [x] **Step 4: Run the Ask suites**
 
 Run: `bun run build:knowledge && bunx vitest run tests/ask`
 Expected: all PASS (verified on a copy of `e2a6c53` with this plan's content: 6 files, 190 tests): `pipeline.test.ts` (31 or 32 items), `pack.test.ts` "finds every golden fact in the pack (drift check) and in the retrieved context" (both titles are in the `projects-summary` chunk), `suggestions.test.ts` (the `work-tickets` pill still retrieves `project-ticket-marketplace-backend`).
@@ -668,7 +670,7 @@ bun -e 'import { buildRepoPack } from "./src/ask/repo-pack"; import { retrieve }
 
 Expected: `profile, now, projects-summary, project-university-alumni-platforms, career-serupa-2025, project-event-ticketing-platform` (one per line). If `projects-summary` is missing, then make the question more specific instead of touching retrieval code: `"Which event ticketing platforms did Kurniadi build as a freelancer?"`, and re-run Step 4.
 
-- [ ] **Step 5: Update the golden set size in docs and comments**
+- [x] **Step 5: Update the golden set size in docs and comments**
 
 Replace (R4-J not merged; if merged, replace 31/29 with 32/30 in the same four places):
 
@@ -680,7 +682,7 @@ Replace (R4-J not merged; if merged, replace 31/29 with 32/30 in the same four p
 Run: `rg -n "golden set \(30|golden.json \(30|28/30|30 questions" README.md AGENTS.md docs/ask-runbook.md scripts/ask-eval.ts`
 Expected: no output (with R4-J merged, search for `31` variants instead and expect no output).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add tests/ask/golden.json tests/ask/pipeline.test.ts scripts/ask-eval.ts docs/ask-runbook.md README.md AGENTS.md
@@ -704,7 +706,7 @@ rtk git commit -m "feat(ask): golden question for the ticketing projects"
   - `bun ocr-check.ts <rawDir>`: prints OCR hits for emails, phones, hosts, dummy values, company legal names, "hackathon".
   - `bun add-gallery.ts <podSlug> <manifest.json>` (run from `$HQ`): replaces `pod.assets` with entries `{ src, alt, width, height, redacted: true }` read from the manifest `[{ "file": "01-home", "alt": { "en": "...", "id": "..." } }]`.
 
-- [ ] **Step 1: Write the failing self-test**
+- [x] **Step 1: Write the failing self-test**
 
 Create `$SCRATCH/tools/selftest.sh`:
 
@@ -743,12 +745,12 @@ rm -rf "$t"
 echo "toolkit selftest: OK"
 ```
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [x] **Step 2: Run it to make sure it fails**
 
 Run: `cd "$SCRATCH/tools" && bash selftest.sh`
 Expected: FAIL at the first command with `error: Module not found "fill-env.ts"` (exit code 1).
 
-- [ ] **Step 3: Set up the toolkit package and services file**
+- [x] **Step 3: Set up the toolkit package and services file**
 
 ```bash
 cd "$SCRATCH/tools" && bun init -y >/dev/null && bun add playwright@1.64.0
@@ -774,7 +776,7 @@ services:
     ports: ["51025:1025", "58025:8025"]
 ```
 
-- [ ] **Step 4: Write `fill-env.ts`**
+- [x] **Step 4: Write `fill-env.ts`**
 
 Create `$SCRATCH/tools/fill-env.ts`:
 
@@ -836,7 +838,7 @@ writeFileSync(outFile, [...env].map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
 console.log(`${outFile}: ${env.size} keys (${overrides.length} overrides)`);
 ```
 
-- [ ] **Step 5: Write `covers.ts`**
+- [x] **Step 5: Write `covers.ts`**
 
 Create `$SCRATCH/tools/covers.ts`:
 
@@ -864,7 +866,7 @@ Bun.serve({
 console.log("covers on http://localhost:3009/cover/<n>.svg");
 ```
 
-- [ ] **Step 6: Write `convert.sh`**
+- [x] **Step 6: Write `convert.sh`**
 
 Create `$SCRATCH/tools/convert.sh`:
 
@@ -897,12 +899,12 @@ fi
 ls -1 "$out"
 ```
 
-- [ ] **Step 7: Run the self-test (fill-env, convert, covers)**
+- [x] **Step 7: Run the self-test (fill-env, convert, covers)**
 
 Run: `cd "$SCRATCH/tools" && bash selftest.sh`
 Expected: the `fill-env` line `.../app/.env: 5 keys (1 overrides)`, the two converted file lists, the covers line, then `toolkit selftest: OK`.
 
-- [ ] **Step 8: Extend the self-test for capture and OCR (failing first)**
+- [x] **Step 8: Extend the self-test for capture and OCR (failing first)**
 
 Insert these lines just before the last two lines of `selftest.sh` (`rm -rf "$t"` and `echo "toolkit selftest: OK"`):
 
@@ -923,7 +925,7 @@ bun ocr-check.ts "$t/raw" | grep -q 'ocr.png: email'
 Run: `cd "$SCRATCH/tools" && bash selftest.sh`
 Expected: FAIL with `error: Module not found "capture.ts"`.
 
-- [ ] **Step 9: Write `capture.ts`**
+- [x] **Step 9: Write `capture.ts`**
 
 Create `$SCRATCH/tools/capture.ts`:
 
@@ -1169,7 +1171,7 @@ if (failed.length > 0) {
 }
 ```
 
-- [ ] **Step 10: Write `ocr-check.ts` and `add-gallery.ts`**
+- [x] **Step 10: Write `ocr-check.ts` and `add-gallery.ts`**
 
 Create `$SCRATCH/tools/ocr-check.ts`:
 
@@ -1238,12 +1240,12 @@ writeFileSync(FILE, JSON.stringify(data, null, 2) + "\n");
 console.log(`${slug}: ${pod.assets.length} assets, cover ${pod.assets[0]?.src}`);
 ```
 
-- [ ] **Step 11: Run the full self-test**
+- [x] **Step 11: Run the full self-test**
 
 Run: `cd "$SCRATCH/tools" && bash selftest.sh`
 Expected: `ok   01-cover`, `ok   m1-cover`, the OCR line is consumed by `grep -q`, and the last line is `toolkit selftest: OK`. Lines such as `selftest.sh: line 36: NNNN Terminated: 15 bun covers.ts` are the expected result of `kill` on the covers server. (Verified during planning on macOS with Bun 1.4.1, Playwright 1.64.0, ImageMagick 7 and Tesseract 5.5.)
 
-- [ ] **Step 12: No commit**
+- [x] **Step 12: No commit**
 
 The toolkit lives outside the repo on purpose. Confirm the HQ tree is untouched by this task:
 
@@ -1262,7 +1264,7 @@ Timebox: 45 minutes from Step 2 to a passing Step 9. If the backend cannot serve
 - Consumes: `compose.yml`, `fill-env.ts`, `covers.ts` (Task 4).
 - Produces: API on `http://localhost:3000` (`/api/v1/...`), attendee site on `http://localhost:3001`, dashboard on `http://localhost:3002`, covers on `http://localhost:3009`; demo logins `attendee@demo.test` and `organizer@demo.test` with the password in `$SCRATCH/demo-password`; `SERUPA_EVENT_SLUG` (a seeded, approved event with ticket tiers).
 
-- [ ] **Step 1: Write the failing smoke check**
+- [x] **Step 1: Write the failing smoke check**
 
 Create `$SCRATCH/tools/smoke-serupa.sh`:
 
@@ -1286,7 +1288,7 @@ echo "serupa smoke: OK"
 Run: `bash "$SCRATCH/tools/smoke-serupa.sh"`
 Expected: `FAIL api health` (nothing runs yet).
 
-- [ ] **Step 2: Start the services**
+- [x] **Step 2: Start the services**
 
 ```bash
 docker compose -f "$SCRATCH/tools/compose.yml" up -d
@@ -1295,7 +1297,7 @@ docker compose -f "$SCRATCH/tools/compose.yml" exec -T postgres sh -c 'until pg_
 
 Expected: three containers started (`postgres`, `redis`, `mailpit`), then `ready`.
 
-- [ ] **Step 3: Clone the three repositories read-only**
+- [x] **Step 3: Clone the three repositories read-only**
 
 ```bash
 cd "$SCRATCH/apps"
@@ -1308,7 +1310,7 @@ ls serupa-be/.env* serupa-fe/.env* serupa-dash/.env* 2>/dev/null
 
 Expected: only `serupa-be/.env.example` is listed (no real env file is committed in any of them). Pushing is disabled.
 
-- [ ] **Step 4: Install dependencies**
+- [x] **Step 4: Install dependencies**
 
 ```bash
 cd "$SCRATCH/apps/serupa-be" && HUSKY=0 bun install
@@ -1318,7 +1320,7 @@ cd "$SCRATCH/apps/serupa-dash" && HUSKY=0 bun install
 
 Expected: each ends with `N packages installed`. If `bcrypt` fails to build in the backend, run `bun pm trust bcrypt` then `bun install` again.
 
-- [ ] **Step 5: Write dummy env files (no real values anywhere)**
+- [x] **Step 5: Write dummy env files (no real values anywhere)**
 
 ```bash
 T="$SCRATCH/tools"
@@ -1342,7 +1344,7 @@ grep -l '<attendee-site-domain>' "$SCRATCH"/apps/serupa-*/.env* || echo "no prod
 
 Expected: three `...: N keys (M overrides)` lines, then `no production hosts in env files`.
 
-- [ ] **Step 6: Migrate, seed and prepare the demo data**
+- [x] **Step 6: Migrate, seed and prepare the demo data**
 
 ```bash
 cd "$SCRATCH/apps/serupa-be"
@@ -1410,7 +1412,7 @@ export SERUPA_EVENT_SLUG="$(cat "$SCRATCH/serupa-event-slug")" && echo "$SERUPA_
 
 Expected: the same slug as the last line of the SQL output.
 
-- [ ] **Step 7: Start the four processes (keep them running)**
+- [x] **Step 7: Start the four processes (keep them running)**
 
 Start each in the background (use your harness's async mode if it has one) and keep the pids:
 
@@ -1429,7 +1431,7 @@ tail -n 5 "$SCRATCH"/logs/serupa-*.log
 
 If the API exits with a missing-variable error, add that key to the Step 5 override list and restart it. If it exits on SMTP or Redis, check `docker compose -f "$SCRATCH/tools/compose.yml" ps` and the ports in the env file.
 
-- [ ] **Step 8: Warm the routes**
+- [x] **Step 8: Warm the routes**
 
 ```bash
 for u in http://localhost:3001/ http://localhost:3001/events "http://localhost:3001/event/$SERUPA_EVENT_SLUG" http://localhost:3001/login http://localhost:3001/my-tickets http://localhost:3002/login http://localhost:3002/user/events http://localhost:3002/user/events/create; do
@@ -1439,12 +1441,12 @@ done
 
 Expected: `200` for every URL (the protected pages render their client shell and redirect in the browser).
 
-- [ ] **Step 9: Run the smoke check**
+- [x] **Step 9: Run the smoke check**
 
 Run: `bash "$SCRATCH/tools/smoke-serupa.sh"`
 Expected: `serupa smoke: OK`
 
-- [ ] **Step 10: No commit** (scratch only). `cd "$HQ" && rtk git status --short` prints nothing.
+- [x] **Step 10: No commit** (scratch only). `cd "$HQ" && rtk git status --short` prints nothing.
 
 ---
 
@@ -1460,7 +1462,7 @@ Expected: `serupa smoke: OK`
 - Consumes: `capture.ts`, `convert.sh`, `ocr-check.ts`, `add-gallery.ts` (Task 4); the running apps, `DEMO_PASSWORD` and `SERUPA_EVENT_SLUG` (Task 5).
 - Produces: `pod.assets` for `event-ticketing-platform` (cover `01-home`), all `redacted: true`, 1600 x 1000.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/content/dataset.test.ts`, inside the Task 1 block, add:
 
@@ -1479,7 +1481,7 @@ If fewer than 5 desktop screens can be captured, lower `6` to the real count plu
 Run: `bunx vitest run tests/content/dataset.test.ts -t "Serupa gallery"`
 Expected: FAIL with `expected 0 to be greater than or equal to 6`.
 
-- [ ] **Step 2: Capture**
+- [x] **Step 2: Capture**
 
 ```bash
 cd "$SCRATCH/tools"
@@ -1489,16 +1491,16 @@ bun capture.ts serupa
 
 Expected: `ok   01-home` through `ok   m3-my-tickets` (10 lines). For any `FAIL <shot>`: open `$SCRATCH/shots/serupa/raw/_debug-<shot>.png`, read the dumped control labels, fix only that shot's `act` selector in `capture.ts`, and re-run just that shot (`bun capture.ts serupa 04-checkout`). Two attempts per shot; after that, drop the shot, renumber the remaining desktop PNGs contiguously (`mv 05-my-tickets-qr.png 04-my-tickets-qr.png`, and so on) and note it for the PR.
 
-- [ ] **Step 3: Review every raw capture by eye**
+- [x] **Step 3: Review every raw capture by eye**
 
 Open each PNG in `$SCRATCH/shots/serupa/raw/` (not the `_debug-*` files). Check: the UI is the real app (no error overlay, no Next.js dev error toast, no "Missing environment variable" banner, no empty states caused by the local setup); people's names are only "Demo ..." values; no email, phone number, address bar, `localhost` text, `dummy-` value, company legal name or production hostname is readable; no photo of a person. The Next.js dev indicator badge (bottom-left "N") must not be visible; if it is, add `devIndicators: false` to the clone's `next.config.mjs` (scratch clone only), restart that dev server and recapture. If dev mode keeps showing overlays, run the clone in production mode instead (`bun run build && bun run start`; both apps set `ignoreBuildErrors`).
 
-- [ ] **Step 4: OCR pass**
+- [x] **Step 4: OCR pass**
 
 Run: `bun "$SCRATCH/tools/ocr-check.ts" "$SCRATCH/shots/serupa/raw"`
 Expected: `no OCR hits`. For each hit, look at the image: blur the area (`magick in.png -region WxH+X+Y -blur 0x12 in.png`) or fix the data and recapture, then re-run until `no OCR hits`. Prices and the fictional event titles are fine.
 
-- [ ] **Step 5: Convert and copy into the repo**
+- [x] **Step 5: Convert and copy into the repo**
 
 ```bash
 bash "$SCRATCH/tools/convert.sh" "$SCRATCH/shots/serupa/raw" "$SCRATCH/shots/serupa/out"
@@ -1510,7 +1512,7 @@ du -sh "$HQ/public/media"
 
 Expected: 16 files (8 images and 8 thumbnails), `public/media` about 10 to 12 MB (well under 25 MB).
 
-- [ ] **Step 6: Write the manifest (alt text describes what each image shows)**
+- [x] **Step 6: Write the manifest (alt text describes what each image shows)**
 
 Create `$SCRATCH/tools/serupa-manifest.json` (drop entries for skipped shots and keep the file names in sync; if a screen differs from the description, change the words in both locales):
 
@@ -1527,24 +1529,24 @@ Create `$SCRATCH/tools/serupa-manifest.json` (drop entries for skipped shots and
 ]
 ```
 
-- [ ] **Step 7: Write the assets**
+- [x] **Step 7: Write the assets**
 
 Run: `cd "$HQ" && bun "$SCRATCH/tools/add-gallery.ts" event-ticketing-platform "$SCRATCH/tools/serupa-manifest.json"`
 Expected: `event-ticketing-platform: 8 assets, cover /media/event-ticketing-platform/01-home.webp`
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/content tests/unit/room-views.test.ts tests/unit/selectors.test.ts && bun run validate:content`
 Expected: all PASS, including "ships the Serupa gallery..." and the asset tests (files exist, thumbnails, `redacted`, pod-slug folder, 25 MB budget).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add public/media/event-ticketing-platform content/site-content.json tests/content/dataset.test.ts
 rtk git commit -m "feat(media): Serupa ticketing gallery from a local run with sample data"
 ```
 
-- [ ] **Step 10: Stop the Serupa processes**
+- [x] **Step 10: Stop the Serupa processes**
 
 ```bash
 for f in "$SCRATCH"/logs/serupa-*.pid; do kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; done
@@ -1565,7 +1567,7 @@ Timebox: 45 minutes from Step 2 to a passing Step 8. Fallback as in Task 5: skip
 - Consumes: Docker services, `fill-env.ts`, `DEMO_PASSWORD` and `HASH` (Task 5 Step 6; recompute `HASH` in a new shell with the same command).
 - Produces: DariOrdal on `http://localhost:3003` with demo logins `admin@demo.test` (role ADMIN) and `attendee@demo.test`, both with the password in `$SCRATCH/demo-password`.
 
-- [ ] **Step 1: Write the failing smoke check**
+- [x] **Step 1: Write the failing smoke check**
 
 Create `$SCRATCH/tools/smoke-dariordal.sh`:
 
@@ -1586,7 +1588,7 @@ echo "dariordal smoke: OK"
 Run: `bash "$SCRATCH/tools/smoke-dariordal.sh"`
 Expected: `FAIL home`.
 
-- [ ] **Step 2: Clone, install, create the database**
+- [x] **Step 2: Clone, install, create the database**
 
 ```bash
 cd "$SCRATCH/apps"
@@ -1599,7 +1601,7 @@ docker compose -f "$SCRATCH/tools/compose.yml" exec -T postgres createdb -U demo
 
 Expected: only `dariordal/.env.example` is listed; install ends with `N packages installed`; `createdb` prints nothing.
 
-- [ ] **Step 3: Dummy env file**
+- [x] **Step 3: Dummy env file**
 
 ```bash
 bun "$SCRATCH/tools/fill-env.ts" "$SCRATCH/apps/dariordal" "$SCRATCH/apps/dariordal/.env" \
@@ -1613,7 +1615,7 @@ grep -c 'dariordal\.com' "$SCRATCH/apps/dariordal/.env" || true
 
 Expected: `.../dariordal/.env: N keys (M overrides)`, then `0`. (Overrides for keys the app does not read are harmless.)
 
-- [ ] **Step 4: Migrate and seed**
+- [x] **Step 4: Migrate and seed**
 
 ```bash
 cd "$SCRATCH/apps/dariordal"
@@ -1622,7 +1624,7 @@ bunx prisma generate && bunx prisma migrate deploy && bunx prisma db seed
 
 Expected: `Generated Prisma Client`, `All migrations have been successfully applied.` (2 migrations), then the seeder's success lines for users, events, ticket types, tickets and transactions.
 
-- [ ] **Step 5: Demo data**
+- [x] **Step 5: Demo data**
 
 Create `$SCRATCH/tools/dariordal-demo.sql`:
 
@@ -1658,7 +1660,7 @@ docker compose -f "$SCRATCH/tools/compose.yml" exec -T postgres \
 
 Expected: `UPDATE n` lines, then `attendee tickets` above 0 and `events` above 0. On an unknown column, check `\d users`, `\d events`, `\d tickets` and adjust only that name.
 
-- [ ] **Step 6: Start the app (keep it running)**
+- [x] **Step 6: Start the app (keep it running)**
 
 ```bash
 cd "$SCRATCH/apps/dariordal" && (bun next dev -p 3003 > "$SCRATCH/logs/dariordal.log" 2>&1 & echo $! > "$SCRATCH/logs/dariordal.pid")
@@ -1667,7 +1669,7 @@ tail -n 5 "$SCRATCH/logs/dariordal.log"
 
 Expected: `Ready` on `http://localhost:3003` within a minute.
 
-- [ ] **Step 7: Warm the routes**
+- [x] **Step 7: Warm the routes**
 
 ```bash
 for u in / /login /tickets /dashboard /dashboard/transactions /dashboard/events/create; do
@@ -1677,12 +1679,12 @@ done
 
 Expected: `200` for `/` and `/login`; `307` for `/tickets` or `/dashboard*` without cookies is fine (middleware redirect to `/login`).
 
-- [ ] **Step 8: Run the smoke check**
+- [x] **Step 8: Run the smoke check**
 
 Run: `bash "$SCRATCH/tools/smoke-dariordal.sh"`
 Expected: `dariordal smoke: OK`
 
-- [ ] **Step 9: No commit** (scratch only). `cd "$HQ" && rtk git status --short` prints nothing.
+- [x] **Step 9: No commit** (scratch only). `cd "$HQ" && rtk git status --short` prints nothing.
 
 ---
 
@@ -1698,7 +1700,7 @@ Expected: `dariordal smoke: OK`
 - Consumes: the toolkit (Task 4), the running app and demo logins (Task 7).
 - Produces: `pod.assets` for `limited-quota-event-ticketing` (cover `01-home`), all `redacted: true`, 1600 x 1000.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `tests/content/dataset.test.ts`, inside the Task 1 block, add:
 
@@ -1717,7 +1719,7 @@ Same adjustment rule as Task 6 Step 1 when shots are skipped; skip the task and 
 Run: `bunx vitest run tests/content/dataset.test.ts -t "DariOrdal gallery"`
 Expected: FAIL with `expected 0 to be greater than or equal to 6`.
 
-- [ ] **Step 2: Capture**
+- [x] **Step 2: Capture**
 
 ```bash
 cd "$SCRATCH/tools" && export DEMO_PASSWORD="$(cat "$SCRATCH/demo-password")"
@@ -1726,16 +1728,16 @@ bun capture.ts dariordal
 
 Expected: `ok   01-home` through `ok   m3-my-tickets` (10 lines). The likely fragile shots are `02-event-detail` and `03-checkout` (the event opens as a dialog from a card; the ticket and checkout buttons are guessed by label). Fix a failing shot from its `_debug-<shot>.png` and the dumped control labels, re-run only that shot, two attempts each, then drop and renumber as in Task 6 Step 2.
 
-- [ ] **Step 3: Review every raw capture by eye**
+- [x] **Step 3: Review every raw capture by eye**
 
 Same checklist as Task 6 Step 3, plus: transaction and user tables show blurred name and email columns; invoice ids and amounts are fictional seed values (fine); the DariOrdal logo may show (named freelance client); no iPaymu error banner in the checkout (the channel list comes from the mocked response); the seeded stock images of the app itself are fine, but recapture with a different event if one shows a recognizable person's face.
 
-- [ ] **Step 4: OCR pass**
+- [x] **Step 4: OCR pass**
 
 Run: `bun "$SCRATCH/tools/ocr-check.ts" "$SCRATCH/shots/dariordal/raw"`
 Expected: `no OCR hits`, after the same blur or recapture loop as Task 6 Step 4.
 
-- [ ] **Step 5: Convert and copy into the repo**
+- [x] **Step 5: Convert and copy into the repo**
 
 ```bash
 bash "$SCRATCH/tools/convert.sh" "$SCRATCH/shots/dariordal/raw" "$SCRATCH/shots/dariordal/out"
@@ -1747,7 +1749,7 @@ du -sh "$HQ/public/media"
 
 Expected: 16 files; `public/media` about 12 to 15 MB.
 
-- [ ] **Step 6: Write the manifest**
+- [x] **Step 6: Write the manifest**
 
 Create `$SCRATCH/tools/dariordal-manifest.json` (same editing rules as Task 6 Step 6):
 
@@ -1764,24 +1766,24 @@ Create `$SCRATCH/tools/dariordal-manifest.json` (same editing rules as Task 6 St
 ]
 ```
 
-- [ ] **Step 7: Write the assets**
+- [x] **Step 7: Write the assets**
 
 Run: `cd "$HQ" && bun "$SCRATCH/tools/add-gallery.ts" limited-quota-event-ticketing "$SCRATCH/tools/dariordal-manifest.json"`
 Expected: `limited-quota-event-ticketing: 8 assets, cover /media/limited-quota-event-ticketing/01-home.webp`
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/content tests/unit/room-views.test.ts tests/unit/selectors.test.ts && bun run validate:content`
 Expected: all PASS, including "ships the DariOrdal gallery...".
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 rtk git add public/media/limited-quota-event-ticketing content/site-content.json tests/content/dataset.test.ts
 rtk git commit -m "feat(media): DariOrdal ticketing gallery from a local run with sample data"
 ```
 
-- [ ] **Step 10: Stop DariOrdal, the covers server and Docker**
+- [x] **Step 10: Stop DariOrdal, the covers server and Docker**
 
 ```bash
 for f in "$SCRATCH"/logs/*.pid; do kill "$(cat "$f")" 2>/dev/null || true; rm -f "$f"; done
@@ -1802,12 +1804,12 @@ Expected: `docker compose ... down -v` removes the three containers and the netw
 - Consumes: Tasks 1 to 8 content; `orderPods` (`src/content/selectors.ts`), `getYears` / `getPods` (`src/content/load.ts`), `buildCareerRoad` and `buildLabsLayout` via their unit tests; R4-J's `PUBLIC_LIVE_HOSTS` if merged.
 - Produces: evidence for the PR (ordering, 2025 plaza rooms, generated pages); optionally `liveUrl: "https://<attendee-site-domain>.com"` on the Serupa pod.
 
-- [ ] **Step 1: Layout, walk and catalog tests with the real content**
+- [x] **Step 1: Layout, walk and catalog tests with the real content**
 
 Run: `bunx vitest run tests/unit/career-layout.test.ts tests/unit/labs-layout.test.ts tests/unit/walk.test.ts tests/unit/experience-data.test.ts tests/unit/missions-rooms.test.ts tests/unit/search.test.ts tests/unit/seo.test.ts tests/unit/room-views.test.ts tests/unit/pads.test.ts tests/unit/pad-space.test.ts`
 Expected: all PASS. The real Career Road passes `expectSpaceRules` with the sixth 2025 room (the plaza grows by `plazaLength`), and the real Project Roads dock the Serupa pod on the Product Engineering road while DariOrdal moves to the wing board. If a space rule fails, do not edit layout constants in this PR: report the failing rule and the numbers in the PR and ask the owner (the layout code belongs to the L2/L3 plans).
 
-- [ ] **Step 2: Gallery-first order and the 2025 plaza**
+- [x] **Step 2: Gallery-first order and the 2025 plaza**
 
 ```bash
 bun -e 'import { getPods, getYears } from "./src/content/load"; console.log(getPods("software").map((p) => [p.slug, p.tier, p.assets.length].join(" ")).join("\n")); console.log("2025:", getYears().find((y) => y.year === 2025)?.entries.map((e) => e.id).join(", "))'
@@ -1833,7 +1835,7 @@ digital-products-ecommerce listed 0
 
 With R4-J merged, `solutions-marketing-site featured 7` comes right before `event-ticketing-platform` (order 11 versus 12) and `event-tech-search-backend` shows as `listed 0` just before `digital-products-ecommerce`. If a gallery was skipped, that pod moves down into the no-gallery part of its tier.
 
-- [ ] **Step 3: Build and check the generated pages, OG cards and sitemap**
+- [x] **Step 3: Build and check the generated pages, OG cards and sitemap**
 
 ```bash
 bun run build
@@ -1844,7 +1846,7 @@ rg -l 'Next\.js 14' out/en/labs/limited-quota-event-ticketing.html || echo "no N
 
 Expected: seven `ok` lines, a sitemap count of at least 4 (two routes in two locales), and `no Next.js 14 on the DariOrdal page`.
 
-- [ ] **Step 4: Scan the export with the merged blocklist**
+- [x] **Step 4: Scan the export with the merged blocklist**
 
 ```bash
 bun -e 'import { loadBlocklist, scanBuildOutput } from "./src/content/safety"; const hits = scanBuildOutput("out", loadBlocklist()); console.log(hits.length === 0 ? "export clean" : JSON.stringify(hits.slice(0, 5)))'
@@ -1852,7 +1854,7 @@ bun -e 'import { loadBlocklist, scanBuildOutput } from "./src/content/safety"; c
 
 Expected: `export clean`. A hit on a Serupa term means the allowlist step of Task 1 Step 1 is needed after all; add the two allowlist lines, rebuild, re-run, and amend the Task 1 commit with a new commit (`fix(content): allow the Serupa client and product names`).
 
-- [ ] **Step 5: Live link (only if R4-J merged AND the site is up)**
+- [x] **Step 5: Live link (only if R4-J merged AND the site is up)**
 
 ```bash
 test -f src/content/live-links.ts && echo "R4-J merged" || echo "skip: R4-J not merged"
@@ -1886,7 +1888,7 @@ rtk git commit -m "feat(content): live site link for the Serupa ticketing platfo
 
 Flag in the PR that adding a host to `PUBLIC_LIVE_HOSTS` is an owner decision (R4-J rule).
 
-- [ ] **Step 6: Commit only if something changed**
+- [x] **Step 6: Commit only if something changed**
 
 Run: `rtk git status --short`
 Expected: no output (Steps 1 to 4 only verify). If Step 4 added allowlist lines, commit them as described there.
@@ -1903,12 +1905,12 @@ Expected: no output (Steps 1 to 4 only verify). If Step 4 added allowlist lines,
 - Consumes: every earlier task.
 - Produces: a pushed branch `feat/r4-k-ticketing-projects` and one PR for the owner.
 
-- [ ] **Step 1: Content checks**
+- [x] **Step 1: Content checks**
 
 Run: `bun run validate:content && bun scripts/title-case.ts && rg -n $'\u2014' content tests src docs README.md AGENTS.md | head -3`
 Expected: `validate:content` without errors, `title-case.ts` reports no titles to fix, the `rg` prints nothing.
 
-- [ ] **Step 2: No private names in the branch**
+- [x] **Step 2: No private names in the branch**
 
 ```bash
 git --no-pager log --format='%s%n%b' origin/main..HEAD | rg -i '<private repo, teammate and host patterns>' || echo "commit messages clean"
@@ -1917,7 +1919,7 @@ git --no-pager diff origin/main...HEAD -- . ':!public/media' | rg -i '<private r
 
 Expected: `commit messages clean` and `diff clean`. (`<attendee-site-domain>.com` may appear in the diff only through the Task 9 Step 5 live link.)
 
-- [ ] **Step 3: Fast verification**
+- [x] **Step 3: Fast verification**
 
 ```bash
 bun run verify:quick
@@ -1926,7 +1928,7 @@ E2E_PORT=4410 bun run e2e:changed
 
 Expected: `verify:quick` passes (typecheck, lint, all unit tests including the new dataset tests, the Ask suites and the asset budget, then `next build`). `e2e:changed` runs the specs mapped from `content/`, `public/media/` and `src/content/tech.ts` (`static-routes`, `pageview`, `seo`, `gallery`; `tests/` and `docs/` map to nothing) and passes. If port 4410 is busy, pick another free port.
 
-- [ ] **Step 4: Final privacy review of the committed images**
+- [x] **Step 4: Final privacy review of the committed images**
 
 ```bash
 mkdir -p "$SCRATCH/review"
@@ -1940,7 +1942,7 @@ for f in "$HQ"/public/media/{event-ticketing-platform,limited-quota-event-ticket
 
 Expected: `no OCR hits`, no `METADATA` lines, then `metadata check done`. Open every committed image once more at full size and confirm: fictional "Demo" names only, emails and buyer columns blurred, no hostnames, no company legal name, no person photo, alt text matches the picture.
 
-- [ ] **Step 5: Delete the scratch directory and the clones**
+- [x] **Step 5: Delete the scratch directory and the clones**
 
 ```bash
 docker compose -f "$SCRATCH/tools/compose.yml" down -v 2>/dev/null || true
@@ -1950,7 +1952,7 @@ test -d "$SCRATCH" && echo "still there" || echo "scratch removed"
 
 Expected: `scratch removed`.
 
-- [ ] **Step 6: Push and open the PR**
+- [x] **Step 6: Push and open the PR**
 
 ```bash
 rtk git push -u origin feat/r4-k-ticketing-projects

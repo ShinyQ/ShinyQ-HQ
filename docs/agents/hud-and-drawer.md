@@ -1,0 +1,350 @@
+# HUD and drawer
+
+Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hint bubbles, and the Glass Drawer room panel. Index: [AGENTS.md](../../AGENTS.md).
+
+## Missions and HUD
+
+### Mission runner
+
+- The runner (`createMissionRunner`) is framework-free and talks to the world only through `MissionHost` (`src/experience/missions/host.ts`).
+  - The static tier uses `createStaticHost` (route navigation, one page load per mission).
+  - The 3D tier implements the same interface on top of the store.
+- Never import React, the store or three.js into `experience/missions/`.
+
+### Room catalog
+
+- Rooms come from `buildRoomCatalog` (`rooms.ts`).
+- Every room has a static `path` (open) and `floorPath` (drive).
+- Room ids beyond pods, career entries and posts:
+
+| Room | Kind | Static path | Notes |
+|---|---|---|---|
+| `L1:profile`, `L1:stats`, `L1:skills`, `L1:certifications` | | | |
+| `L1:highlights-about`, `L1:highlights-projects`, `L1:highlights-experience`, `L1:highlights-contact` | `highlights` | landing anchors `/#intro`, `/#work`, `/#journey`, `/#contact` | [Highlights Hall](floor-l1-lobby.md) stations |
+| `L1:visits` | `visits` | `/contact#visits` (the Classic section), also its floor path | Visitor Observatory, see below |
+| `L2:workshop` | | | its keywords list every project and repo |
+| `L3:reactor` | `reactor` | `/labs#all-projects` | the [Tech Reactor](floor-l3-labs.md); no route of its own, so it keeps `/labs` like the hall stations |
+| `L3:ops` | `ops` | `/contact#production` | the Ops Control Room, see below |
+| `L4:research` | `research` | | papers and the thesis, see `isResearch` in `content/selectors.ts` |
+| `L4:publications` | | | the models shelf: models and datasets |
+| `L4:talks` | | | |
+| `L4:topics` | `topics` | `/library#topics` | the [Topic Constellation](floor-l4-library.md); no route of its own, its pick in `#library-topic=<slug>` |
+| `RF:contact`, `RF:cv` | | | |
+
+- L2 Workshop bench and skyline rooms (`L2:side-<id>`, `L2:repo-<slug>`, helpers in `@/content/workshop`):
+  - They have drawer views but no catalog entry (they would push pods down in Cmd-K; the `L2:workshop` keywords list every project and repo).
+  - goToRoom and the drawer work without one.
+  - On L2 only career entries have a page (`hasPage` in `Experience.tsx`).
+- Retired benches: benches whose project became an L3 pod stay in `RETIRED_SIDE_ROOMS` (`@/content/workshop`).
+  - `currentRoom` sends an old `L2:side-<id>` to the pod (the mission runner's `goTo` and the drawer history use it).
+- `L1:visits`, the Visitor Observatory in the Lobby's south-west corner (owner decision):
+  - The old id was `RF:visits`.
+  - No route of its own (`hasPage` false, it keeps `/{locale}`).
+  - Deep links `/{locale}#visits` and the old `/{locale}/contact#visits` resolve through `visitsRoomFromHash` (`floors/lobby/visitsRoom.ts`).
+  - Drawer body: `VisitsBody`.
+- Moved room ids resolve through `canonicalRoom` (`missions/roomAliases.ts`): `RF:visits` to `L1:visits`, then `currentRoom` for retired benches.
+  - `openRoom`, `goToRoom` and the drawer history sync apply it, so old history entries, cached drawer links and recent rooms keep working.
+- `L3:ops`, the Ops Control Room ("How I run AI in production"):
+  - No route of its own (`hasPage` false, it keeps `/labs`).
+  - Deep link `/{locale}/contact#production` through `opsRoomFromHash`, which starts the gate on L3 (a hash room on another floor than the route's starts on its own floor).
+  - Drawer body: `OpsBody`.
+
+### HUD index
+
+- The HUD index (`HudIndex`: rooms, missions, years; `src/hud/index-data.ts`) is built on the server so zod and the dataset never ship to the client.
+- It is exported as a static file (`/data/hud/index.json`, from `src/app/data`), not as a layout prop: every layout client prop is inlined into every HTML file and sits on the LCP path.
+- `MissionHud` fetches it after hydration (`useHudIndex` in `src/hud/index-client.ts`) and sets `html[data-hydrated]` once it loaded.
+  - The URL carries `hudIndexVersion`, so the 1 h `/data/*` cache never outlives a deploy.
+- `goToRoom` and `runMissionSteps` wait up to 5 s for the runner.
+- HUD components get data through props.
+
+### Opening overlays and modals
+
+- From anywhere, through `src/hud/events.ts` (window `hq:hud` events):
+  - `openPalette(filter?)`, `openTerminal()`.
+  - `enterHq()`: Page View to the 3D tower, handled by `ExperienceGate` like Back to 3D.
+- `openCv()`, `openPaper(preview)` and `openCert(view)` open the site-wide modals in `DialogHost`.
+  - `DialogHost` is mounted in the locale layout outside `#site-shell`, so the modals work over the 3D tower and the room drawer; chunks load on first use.
+
+### Paper previews
+
+- Research rows (`ResearchList` on Page View, `ResearchBody` in the drawer) open `PaperDialog` from the title or the "Abstract and citation" button.
+- The dialog gets a `PaperPreview` built on the server by `buildPaperPreview(pub, locale)` (`src/content/papers.ts`):
+  - authors, venue, date, abstract, citation count;
+  - copyable APA / IEEE / BibTeX (`src/content/citation.ts`);
+  - DOI and Google Scholar (title search) links in a new tab with `rel="noopener noreferrer"`.
+- No third-party iframes (owner decision: credential, Medium and IEEE pages refuse framing or are paywalled); the CSP keeps `frame-src 'self'`.
+
+### Storage keys
+
+`localStorage` keys owned by the HUD:
+
+| Key | Meaning |
+|---|---|
+| `hq:terminal-seen` | set when the terminal first opens; nothing opens it on its own |
+| `hq:onboarded` | `done` or `skipped`: the first-session tour ran |
+| `hq:hints` | `off` hides the hint bubbles |
+| `hq:recent` | recent rooms on the static tier |
+| `hq:visits` | alternates best-swe and best-ai |
+| `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
+| `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
+
+`sessionStorage` keys:
+
+| Key | Owner | Meaning |
+|---|---|---|
+| `hq:intro` | `src/lib/intro-session.ts` | boot and intro played this session |
+| `hq:rum` | `src/experience/perf/rumDecision.ts` | performance beacon sampling for this session: `on`, `off` or `sent` |
+| `hq:point-hint` | `src/experience/interact/missed.ts` | the one-time point-and-go hint |
+| `hq:hall-gate` | `floors/lobby/gateSweep.ts` | the Highlights Hall gateway light curtain swept this session |
+| `hq:ask-thread` | Ask dock | chat thread, last 20 messages |
+| `hq:ask-teaser` | Ask dock | teaser shown this session |
+
+- Tests and screenshots that must not see the tour or the bubbles use `asReturningVisitor` (it sets `hq:onboarded=done` and `hq:hints=off`) or set `hq:onboarded` next to `hq:terminal-seen`.
+
+### Ask Rover name
+
+- User-facing name (owner decision): the Rover Terminal and its missions are **Ask Rover** (ID **Tanya Rover**) wherever a visitor reads them:
+  - the 3D top bar and Page View header button (`hud.launcher.askRover`);
+  - the terminal title and prompt (`./ask-rover`);
+  - the Cmd-K group, aria labels and the Lobby kiosk.
+- Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`.
+- Playwright finds the button with `{ name: "Ask Rover", exact: true }` (the Ask AI pill also starts with "Ask").
+
+## Motion setting
+
+### Why (owner decision)
+
+- Windows reports `prefers-reduced-motion: reduce` whenever Settings > Accessibility > Visual effects > Animation effects is off.
+- Following it made every elevator ride on such a PC the 150 ms cut and ran the whole HQ reduced.
+- Hence a Motion setting: System / Full / Reduced (ID Sistem / Penuh / Dikurangi).
+
+### Default Full (owner decision)
+
+- Full is the default for every visitor on every OS. The OS preference (`prefers-reduced-motion`) is not the default.
+- The Motion menu restores it: System follows the OS again, Reduced always reduces.
+- That menu is the only way to reduce motion, so keep it easy to find: the HUD icon, the phone menu and the three Cmd-K actions.
+- Existing visitors: store version 3 migrates a stored `system` (the old default, never a choice) to `full` and keeps `reduced` as is (`migrateMotion`); a System picked from version 3 on stays.
+- Without JavaScript the page CSS still follows the OS (no `data-motion` attribute).
+
+### Model
+
+- `src/lib/motion.ts` (pure):
+  - `MotionPref`, `DEFAULT_MOTION` (`full`);
+  - `resolveReducedMotion(pref, systemReduced)`: System follows the OS, Full and Reduced override it;
+  - `migrateMotion(motion, version)`;
+  - `storedMotion(raw)`: the head script's value: `full` for new visitors, an old System or unreadable storage, `reduced`, or none under a picked System.
+- The store persists `motion` and keeps `reducedMotion` resolved, so every 3D consumer (rides, intro, holograms, boost, camera glides, the dialog typewriter) keeps reading `reducedMotion`.
+- `Experience` still feeds the OS flag (`setReducedMotion` plus the `matchMedia` change listener).
+- The store hydrates synchronously when it is created, before the first 3D frame, so the intro already follows the setting.
+- `RoverTerminal` follows it too.
+
+### Page CSS
+
+- `setMotion` and the head script set `html[data-motion="full|reduced"]` (`full` by default, removed under System).
+- `globals.css` redefines Tailwind's `motion-reduce` and `motion-safe` variants on top of it (`@custom-variant`).
+  - Every `motion-reduce:` / `motion-safe:` utility and every `@variant motion-reduce { ... }` block (boot log, landing hero and ticker, Page View screenshots) applies under the OS setting unless `full`, and always under `reduced`.
+- Write new reduce rules as `.x { @variant motion-reduce { ... } }`, never as a bare `@media (prefers-reduced-motion: reduce)`.
+  - Top-level `@variant` blocks compile wrong, and `:is()` drops `::before` / `::after`, so the global duration rule is written out.
+- The landing ticker has no pause switch (owner decision); its duplicate track hides and the stats wrap under the effective reduced motion.
+
+### UI
+
+- `MotionMenu` (`src/hud/MotionControl.tsx`): a round icon button right of Sound in the 3D top bar (`data-testid="motion-menu"`, `data-onboard="motion"`).
+  - It opens a small popover with `MotionChoices`: a fieldset of three native radios (legend "Motion", arrow keys move and select).
+  - Esc and an outside click close it and return focus.
+- Phones show `MotionChoices` inline in the menu under language and sound.
+- Cmd-K has `motion-system`, `motion-full` and `motion-reduced` on every page (a toast confirms).
+- There is no motion hint: the one-time "turn on full motion" Rover line (`MotionHintLayer`, copy `dialog.motion`) was removed with the Full default; do not reintroduce it. A stale `hq:motion-hint` key in old browsers is ignored.
+
+### Tests
+
+- `tests/unit/motion.test.ts`, `tests/unit/boot-first.test.ts`, `tests/hud/Controls.test.tsx`.
+- `e2e/motion.spec.ts` (`page.emulateMedia({ reducedMotion: "reduce" })`):
+  - `lastRide.distinctY` at least 12 and a moving intro by default;
+  - the cut under System and under Reduced;
+  - the version 2 migration, axe, the phone menu, Cmd-K on the Classic site.
+- Specs that test reduced motion by emulating the OS flag pick System first with `chooseMotion(page | context, "system")` from `e2e/hq.ts` (it rewrites `hq:v1` before every navigation), so the flag decides as before.
+
+## Rover dialog, onboarding and hints
+
+- Purpose (owner decision): simple first-session guidance as a chat like old Pokemon games. Plan: `docs/superpowers/plans/2026-10-12-onboarding-dialog.md`.
+
+### Engine
+
+- `src/hud/dialog/engine.ts` (pure): `say(lines | line | string, { id?, skip? })` returns `Promise<{ status: "done" | "skipped" | "cancelled", choice }>`; requests queue.
+- A line has:
+  - `text`;
+  - `key` (`data-line`);
+  - `face` (portrait emote, a `RoverFace`);
+  - `choices` (2 to 3, one may be `cancel` for Esc);
+  - `spotlight` (`data-onboard` name of a HUD control to ring);
+  - `until` / `fallbackMs` (try-it lines that move on by themselves, with a Continue choice after the fallback).
+- `tick(ms)` types at `CHAR_MS` (28 ms); reduced motion sets `instant`.
+- Use the singleton from `store.ts` (`say`, `cancelDialog`, `useDialog` slice); never create another engine.
+
+### Dialog box
+
+- `DialogBox` and `DialogLayer` are both in the 3D chunk, which is itself lazy.
+  - Never a second dynamic import inside it: that made Turbopack regroup shared modules into the Page View bundle.
+- Non-modal `role="dialog"` named "Rover" over the canvas, `.hq-dialog` frame, JetBrains Mono.
+- The rover face drawn by `drawFace` is the portrait.
+- Input:
+  - an A button (keyboard "a" stays the strafe key);
+  - Enter and Space through a window capture listener (so the game's Enter does not open Ask Rover);
+  - arrows between focused choices.
+- A soft `blip` (`audio.play("blip")`, shares the click rate limit).
+- It pauses and hides during boot, intro, a room drawer, the hologram, the pad picker, the Ask panel and any `aria-modal` dialog.
+- The modal check (`useModalOpen`) is synchronous, from the first render on, and choices never take focus from a text field or another dialog, so typing in Cmd-K is never stolen when a floor line finishes.
+- Placement (`placement.ts`), always above the bottom band's center column (point-and-go's `InteractStatus` Go chip and one-time hint, and the controls hint):
+
+| Device | Offset |
+|---|---|
+| Fine pointers | 128 px above the bottom |
+| Touch tablets | 160 px |
+| Phones | 232 px, and 68 px from the right edge (clear of the elevator panel) |
+
+### Onboarding
+
+- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro.
+- Full form, in order:
+  1. welcome with Skip;
+  2. moving, with a try-it wait that teaches [point-and-go](floors.md) (desktop: point and click a glowing object; touch: tap twice or use its Go chip; there is no click-the-floor driving);
+  3. the camera (look around, zoom, first person; spotlight on the view controls, `data-onboard="view"`);
+  4. the Highlights Hall (registry extra `L1:station:highlights-about`, room `L1:highlights-about`) when it is registered;
+  5. elevator and call pads;
+  6. Ask Rover;
+  7. Ask AI when its pill shows;
+  8. closing.
+- After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
+- Onboarding replaces the Director's first-visit terminal auto-open.
+- Replay: Ask Rover "replay the tutorial" (`r`), Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
+
+### Floor lines
+
+- `FloorIntroLayer` (`src/hud/dialog/FloorIntroLayer.tsx`, mounted by `Hud`) speaks `dialog.floor.<id>` once on L2, L3, L4 and RF (`FLOOR_LINES`; never L1).
+  - After the first-session tour settled, 700 ms after arriving while exploring.
+  - As one line without choices (`floorIntroLine` in `floorIntro.ts`).
+- Done or skipped marks the floor seen (`floorIntroSeen`, `markFloorIntroSeen` in `storage.ts`, key `hq:floor-intro`).
+- Driving, a point-and-go action or a scrub dismisses it and marks it seen.
+- A line cancelled from elsewhere (a tutorial replay) waits for its next chance.
+- Tests that must not see a floor line call `skipFloorLines(page)` from `e2e/hq.ts`.
+
+### Hint bubbles
+
+- `HintProbe` (in the canvas, no draw calls) picks the nearest point-and-go target within 5 u of its `at` (`nearestHint`, sticky to 6 u).
+  - Source: `hintItems()` (`src/experience/hints/source.ts`: `interactRuntime.items`, the only read of the registry here).
+  - Every frame it moves the HUD bubble (`HintLayer`) over `hintAnchor`: above point-and-go's hover label; in first person at most 0.9 u above eye height, so a near target's bubble stays in view.
+- Enter, a tap or a click opens `dialog.hints.kind.<kind>` (with the registry `label`) or an object line (`HINT_OBJECTS`, keyed by registry id such as `L1:pad:elevator`, `RF:station:cv`, `L1:station:highlights-about`).
+- Go emits point-and-go's `{ type: "interact", item }`, so it drives and acts exactly like a click.
+- No bubble during missions, autopilot, rides, beams, pickers, drawers, the Ask panel, while Rover talks or while point-and-go has a hovered or tap-selected target.
+- Toggle: "hints: on/off" in Ask Rover (`h`) and Cmd-K.
+
+### Copy
+
+- Every spoken line is at most 110 characters (`tests/unit/dialog-copy.test.ts`).
+- Lines use the first name from `profile.name` (`firstName`), never a literal.
+
+### E2E
+
+- `e2e/onboarding.spec.ts` (helpers `freshVisit`, `expectLine`, `next`).
+- `scripts/e2e-plan.ts` (see [Fast verification](performance.md)) maps:
+  - the Ops Control Room files (`floors/labs/{OpsRoom,ops,opsLive,opsHash}`, `OpsBody`, `components/page/Production`, `AlertExcerpt`) to `production`, `labs` and `pageview`;
+  - `src/hud/dialog/**` and `src/experience/hints/**` to `onboarding`, `experience` and `camera`.
+
+## Glass Drawer (shared room panel)
+
+### Opening and closing
+
+- Every room on every floor renders through one drawer.
+- It shows `store.activeRoom` while the phase is `room` and closes with `closeRoom()`.
+- Open rooms with `store.getState().openRoom(id, tab?)`, or the `open` intent, a door trigger, or a mission `open` step.
+  - `host3d.openRoom` opens the drawer on READY floors and navigates to the room page elsewhere.
+
+### RoomView content
+
+Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/types.ts`):
+
+| Field | Content |
+|---|---|
+| header | `code`, `title`, `subtitle`, `meta`, `badges` (optional `type`: career badges draw the type icon in `CAREER_TONE`), `accent` |
+| `variant` | `"tabs"` for pods with Overview/Architecture/Results/Stack, `"single"` for everything else |
+| `sections` | body, bullets, link items, chips |
+| `metrics` | value, label, context |
+| `architecture` | |
+| `stack` | `{ name, logo? }`, logos from `getTechLogo` via `stackItems` |
+| `gallery` | `RoomImage` = `GalleryImage`, rendered with `Gallery` strip and `Lightbox` |
+| section `chipLogos` | aligned with `chips`; skills and post tags |
+| link item `logo` | Roof channels, research profiles, models |
+| header `logo` | career rooms: org logo; career `gallery` holds the linked pod's images or one cover per pod |
+| `page` | Full case study / Open page |
+| `external` | footer label `externalLabel`, default "Read post" |
+| `link` | room on another floor, run with `goToRoom` from `missions/bridge.ts` |
+| `hologram`, `prev`/`next` | |
+
+### Builders and data
+
+- One builder per floor in `src/content/room-views/` (`lobby`, `career`, `labs`, `library`, `roof`), aggregated by `buildRoomViews(locale)`.
+- Exported at build time to `/data/rooms/{locale}.json`.
+- The drawer fetches it once (`loadRoomViews`), after the first 3D frame on idle or when a room opens first, so pages do not grow.
+- A floor phase owns its builder file; a test checks that every catalog room has a view.
+
+### Custom bodies
+
+- Register `({ view, locale }) => JSX` per room kind in `src/hud/drawer/bodies.tsx`.
+- Rooms without one use the generic renderer (metrics, sections, stack, gallery).
+- Shared blocks (`MetricTiles`, `Sections`, `Chips`) live in `hud/drawer/blocks.tsx`.
+
+| Kind | Body |
+|---|---|
+| `roof` | `RoofBody`: email mailto plus copy with `click`, channels, the CV kiosk (page-one cover and "View CV" open the CV viewer modal, plus the PDF download with `click`) |
+| `highlights` | `HighlightsBody`: cards from `RoomView.cards` ride to their room with `goToRoom`; the contact station reuses `ContactBody` and `CvBody` from `RoofBody` |
+| `research` | `ResearchBody`, fed by the optional `RoomView.research`: `items` with authors, venue, DOI, summary, dated citations and `preview` (the paper preview modal data); `self` (the owner's name to highlight); `profiles`; `metrics` |
+| posts | the generic renderer with a "Read post" footer action (Medium posts: "Read the post" in a new tab) |
+
+### Layout
+
+- Side panel on desktop and landscape tablets at least 900 px wide, else a bottom sheet with snap points at 55% and 92% (`hud/drawer/layout.ts`).
+  - Scrolling the body of a half-open sheet expands it.
+- The side width is `--hq-drawer-w` in `globals.css`: 480 px, 560 px from 1280 px, 600 px from 1400 px.
+  - Mirrored by `SIDE_WIDTHS`/`sideWidth` for the camera (a unit test keeps them equal).
+  - While the [Ask](ask.md) side panel is open the drawer narrows to its 420 px so it sits exactly behind it.
+- The follow camera shifts the rover into the middle of the uncovered area with `setViewOffset` (`cameraShift(layout, width)`).
+
+### Structure
+
+- A slim bar that stays put: code, prev/next arrows, "..." menu with README and the cross-floor link, close.
+- One scrolling region (`drawer-body`): title, badges, subtitle and meta, then the tabs (sticky under the bar), then the tab body.
+- A footer row (`drawer-footer`), wrapping on phones:
+  1. primary action;
+  2. "Visit live site" for pods with `RoomView.live` (new tab, `drawer-live-link`);
+  3. the cross-floor link as a secondary amber button;
+  4. View architecture.
+- The "..." menu offers the cross-floor link too.
+- When the title scrolls away the bar condenses (`data-condensed`) and shows it.
+- Result cards use `MetricTiles fluid` (two columns by container width).
+
+### Keyboard
+
+- Focus moves in and is trapped; Esc closes.
+- `t` toggles the README terminal view (`hud/drawer/ascii.ts` renders the architecture with box-drawing characters).
+- The drawer is `aria-modal`, so world keys pause while it is open.
+- Clicking empty floor closes it; the rover does not move.
+
+### URL
+
+- `hud/drawer/urlSync.ts`, mounted by Experience:
+  - opening pushes the room URL;
+  - switching rooms and the hologram replace it (`?view=architecture`);
+  - closing replaces it with the floor URL;
+  - back/forward reopen or close rooms.
+- Other query params (`?tier=`) are kept.
+- Rooms without their own route (`hasPage`, from Experience: L4 shelves and Medium posts) keep the floor URL and are remembered in the history entry.
+
+### Hologram view
+
+- For hero pods with at least 3 nodes.
+- `HologramStage` draws the diagram on the pod's stage by `layer`/`row`: packets on edges at 2 u/s, async edges dashed, a veil dims the world.
+- `camera/focus.ts` flies the camera in (`hologramPose`); see [3D experience](3d-experience.md).
+- `HologramOverlay` shows the result cards, prev/next hero pods (arrows, buttons, horizontal swipe) and Esc back to the drawer.
+- E2E tests run WebGL on SwiftShader (`playwright.config.ts` launch args).
