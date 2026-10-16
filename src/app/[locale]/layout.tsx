@@ -8,6 +8,7 @@ import { DialogHost } from "@/components/DialogHost";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { ViewParamSync } from "@/components/ViewParamSync";
 import { getContent, getProfile } from "@/content/load";
 import { roleLine } from "@/content/selectors";
 import { AskDock } from "@/hud/ask/AskDock";
@@ -80,6 +81,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <MissionHud locale={locale} indexVersion={hudIndexVersion(buildHudIndex(getContent()))} />
           <AskDock locale={locale} />
           <DialogHost />
+          <ViewParamSync />
         </NextIntlClientProvider>
         <JsonLd data={[personJsonLd(locale), websiteJsonLd(locale)]} />
         <Analytics />
