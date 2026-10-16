@@ -246,6 +246,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         case "toggle":
           if (intent.what === "sound") audio.toggleMuted();
           else if (intent.what === "lang") onToggleLang();
+          // The HUD owns the other toggles (readme, map, settings).
           break;
         case "terminal":
           if (s.phase === "explore") {

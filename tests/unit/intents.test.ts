@@ -45,6 +45,15 @@ describe("keyboard mapping", () => {
     expect(keyToIntent("Enter")).toEqual({ type: "terminal" });
   });
 
+  it("maps N to the map overview and the comma to the settings panel", () => {
+    expect(keyToIntent("n")).toEqual({ type: "toggle", what: "map" });
+    expect(keyToIntent("N")).toEqual({ type: "toggle", what: "map" });
+    expect(keyToIntent(",")).toEqual({ type: "toggle", what: "settings" });
+    expect(keyToIntent("n", { inText: true })).toBeNull();
+    expect(keyToIntent(",", { inText: true })).toBeNull();
+    expect(keyToIntent("n", { ctrl: true })).toBeNull();
+  });
+
   it("leaves browser shortcuts, buttons and text fields alone", () => {
     expect(keyToIntent("l", { ctrl: true })).toBeNull();
     expect(keyToIntent("Enter", { inControl: true })).toBeNull();
