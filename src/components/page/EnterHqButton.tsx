@@ -22,7 +22,7 @@ export function EnterHqButton({ label, hint }: { label: string; hint: string }) 
     enterHq();
   };
   return (
-    <a href={`/${locale}?tier=lite`} onClick={onClick} title={hint} className="pv-btn hx-enter" data-testid="enter-hq">
+    <a href={`/${locale}?tier=lite`} onClick={onClick} title={hint} className="pv-btn hx-enter" data-testid="enter-hq" data-hq-view="3d">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z" />
         <path d="M3 7l9 5 9-5M12 12v10" />

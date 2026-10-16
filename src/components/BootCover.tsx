@@ -21,7 +21,7 @@ export async function BootCover({ locale, who }: { locale: Locale; who: BootWho 
         startLabel={t("bootStart")}
         placeholder
         who={who}
-        pageView={{ href: "?view=page", label: t("pageView"), hint: t("pageViewHint") }}
+        pageView={{ href: "?view=classic", label: t("pageView"), hint: t("pageViewHint") }}
       />
     </div>
   );

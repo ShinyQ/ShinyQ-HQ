@@ -5,10 +5,10 @@ import type { Locale, RoomId } from "@/content/schema";
 import type { RoomViews } from "@/content/room-views/types";
 import { afterFirstFrameIdle } from "@/experience/boot-signals";
 import { READY_FLOORS } from "@/experience/config";
-import { VIEW_KEY } from "@/experience/ExperienceGate";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useAskPanelOpen } from "@/hud/ask/availability";
 import { audio } from "@/lib/audio";
+import { setTabView } from "@/lib/view-pref";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { useTranslations } from "next-intl";
 import { loadRoomViews } from "./data";
@@ -148,11 +148,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
       }}
       onLeave={() => {
         // Full pages open as pages: the gate on the next route stays in page view.
-        try {
-          sessionStorage.setItem(VIEW_KEY, "page");
-        } catch {
-          // Without storage the next page opens in 3D, which still shows the room.
-        }
+        setTabView("page");
         leaveRoomForPage();
         getHQStore().getState().closeRoom();
       }}

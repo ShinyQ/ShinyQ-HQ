@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
+import { chooseView, currentView } from "@/lib/view-pref";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
@@ -23,17 +24,7 @@ const Experience = dynamic(loadExperience, { ssr: false });
 // during hydration instead of after the tier probe.
 if (typeof document !== "undefined" && document.documentElement.hasAttribute(BOOT_ATTR)) void loadExperience();
 
-export const VIEW_KEY = "hq:view";
-
 const onFirstFrame = () => releaseBootCover("ready");
-
-function readView(): "3d" | "page" {
-  try {
-    return sessionStorage.getItem(VIEW_KEY) === "page" ? "page" : "3d";
-  } catch {
-    return "3d";
-  }
-}
 
 /**
  * Decides the GPU tier on the client and lazy-loads the 3D experience on top
@@ -45,7 +36,7 @@ const loadRecovery = () => import("./recovery");
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
   const detectedTier = useGateTier();
-  const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : readView()));
+  const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : currentView()));
   // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}#visits` and
   // `/{locale}/contact#visits` the Visitor Observatory in the Lobby, and `/{locale}/contact#production` the L3 Ops Control Room (read once on the client; never on other
   // floor or room routes).
@@ -67,27 +58,19 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   const lost = useHQStore((s) => s.phase === "static" && s.tier === "static");
   const tier = detectedTier === null ? null : lost ? "static" : detectedTier;
   const back3D = useCallback(() => {
-    try {
-      sessionStorage.removeItem(VIEW_KEY);
-    } catch {
-      // Storage can be unavailable; the toggle still works for this render.
-    }
+    chooseView("3d");
     setView("3d");
   }, []);
   // Page View from the HUD, or from the boot card's "Classic site" link (cover or overlay).
   const toPage = useCallback(() => {
-    try {
-      sessionStorage.setItem(VIEW_KEY, "page");
-    } catch {
-      // Ignore storage errors; the view still switches.
-    }
+    chooseView("page");
     setView("page");
     // Hand focus to the page content; the Back to 3D button is the first stop on Tab.
     window.requestAnimationFrame(() => document.getElementById("main")?.focus({ preventScroll: true }));
   }, []);
   const immersive = tier !== null && tier !== "static" && view === "3d";
 
-  // The boot card's "Classic site" is a real `?view=page` link (works before hydration); once hydrated, switch without a reload.
+  // The boot card's "Classic site" is a real `?view=classic` link (works before hydration); once hydrated, switch without a reload.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
