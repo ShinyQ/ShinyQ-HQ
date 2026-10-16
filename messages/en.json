@@ -366,6 +366,33 @@
       "reduced": "Reduced",
       "note": "System follows the device's reduced motion setting."
     },
+    "settings": {
+      "title": "Settings",
+      "open": "Settings",
+      "close": "Close settings",
+      "percent": "{value} percent",
+      "groups": { "general": "General", "display": "Display", "sound": "Sound" },
+      "language": { "label": "Language", "en": "English", "id": "Bahasa Indonesia" },
+      "motion": {
+        "label": "Motion",
+        "hint": "System follows your device. Reduced cuts rides and glides.",
+        "system": "System",
+        "full": "Full",
+        "reduced": "Reduced"
+      },
+      "quality": {
+        "label": "Graphics quality",
+        "hint": "Lite saves battery. A change reloads the 3D view.",
+        "auto": "Auto",
+        "full": "Full",
+        "lite": "Lite"
+      },
+      "minimap": { "label": "Minimap" },
+      "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
+      "effects": { "label": "Sound effects" },
+      "music": { "label": "Music" },
+      "musicVolume": { "label": "Music volume" }
+    },
     "menu": "Menu",
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",

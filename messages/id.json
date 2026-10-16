@@ -366,6 +366,33 @@
       "reduced": "Dikurangi",
       "note": "Sistem mengikuti pengaturan pengurangan gerak di perangkat."
     },
+    "settings": {
+      "title": "Pengaturan",
+      "open": "Pengaturan",
+      "close": "Tutup pengaturan",
+      "percent": "{value} persen",
+      "groups": { "general": "Umum", "display": "Tampilan", "sound": "Suara" },
+      "language": { "label": "Bahasa", "en": "English", "id": "Bahasa Indonesia" },
+      "motion": {
+        "label": "Gerakan",
+        "hint": "Sistem mengikuti perangkat Anda. Dikurangi memotong perjalanan dan transisi kamera.",
+        "system": "Sistem",
+        "full": "Penuh",
+        "reduced": "Dikurangi"
+      },
+      "quality": {
+        "label": "Kualitas grafis",
+        "hint": "Lite menghemat baterai. Perubahan memuat ulang tampilan 3D.",
+        "auto": "Otomatis",
+        "full": "Penuh",
+        "lite": "Lite"
+      },
+      "minimap": { "label": "Peta mini" },
+      "sound": { "label": "Suara", "hint": "Mati membisukan semuanya (tombol M)." },
+      "effects": { "label": "Efek suara" },
+      "music": { "label": "Musik" },
+      "musicVolume": { "label": "Volume musik" }
+    },
     "menu": "Menu",
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
