@@ -9160,6 +9160,29 @@
     "library": {
       "posts": [
         {
+          "slug": "clearbox-inbox-cleanup-with-microsoft-decision-1",
+          "title": {
+            "en": "Clearbox: Inbox Cleanup with Microsoft-Decision-1",
+            "id": "Clearbox: Membersihkan Inbox dengan Microsoft-Decision-1"
+          },
+          "date": "2026-10-16",
+          "tags": [
+            "microsoft-decision-1",
+            "microsoft-foundry",
+            "cloudflare-workers",
+            "evaluation",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "Clearbox pre-sorts my inbox into trash, archive, keep and unsure, so a weekly cleanup takes minutes. Microsoft-Decision-1 scores each email, deterministic code adds guardrails and reasons, and nothing moves until I approve it. Here is the architecture, and what a 40-email evaluation did and did not show.",
+            "id": "Clearbox memilah inbox saya ke trash, archive, keep, dan unsure, sehingga pembersihan mingguan cukup beberapa menit. Microsoft-Decision-1 menilai setiap email, kode deterministik menambahkan guardrail dan alasan, dan tidak ada email yang dipindahkan sebelum saya setujui. Berikut arsitekturnya, serta apa yang ditunjukkan dan tidak ditunjukkan oleh evaluasi 40 email."
+          }
+        },
+        {
           "slug": "making-a-voice-agent-interruptible",
           "title": {
             "en": "How We Made a Voice Agent Interruptible",

@@ -1,0 +1,158 @@
+---
+title: "Clearbox: Inbox Cleanup with Microsoft-Decision-1"
+date: "2026-10-16"
+excerpt: "Clearbox pre-sorts my inbox into trash, archive, keep and unsure, so a weekly cleanup takes minutes. Microsoft-Decision-1 scores each email, deterministic code adds guardrails and reasons, and nothing moves until I approve it. Here is the architecture, and what a 40-email evaluation did and did not show."
+tags: ["microsoft-decision-1", "microsoft-foundry", "cloudflare-workers", "evaluation", "case-study"]
+readingTime: "14 min"
+---
+
+Clearbox is a self-hosted inbox assistant I built for my own Gmail and Outlook accounts. It pre-sorts every inbox email into trash, archive, keep or unsure, groups the suggestions by sender with a confidence and up to three reasons, and moves only what I approve. Trash always means a recoverable move to Trash or Deleted Items, never a permanent delete. The model behind the sorting is Microsoft-Decision-1 on Microsoft Foundry.
+
+The code is public under the MIT license at [github.com/ShinyQ/Clearbox](https://github.com/ShinyQ/Clearbox), and the project has its own room on the [Labs floor](/en/labs/clearbox). The repository holds 179 commits from 15 and 16 October 2026, and a fresh clone passes 1,589 automated tests. This post covers the use case, why I picked a decision model instead of a chatbot, the architecture in detail, and what I learned. It also says what I have not measured yet.
+
+## The use case: a weekly Clean up
+
+A lot of inbox mail has no future value: promotions, expired notifications, ignored newsletters, superseded automated alerts. Cleaning it by hand means reading email by email. I wanted the AI to do that sorting before I arrive, and I wanted the mailbox access to stay in my own accounts.
+
+I designed Clearbox around one session: a weekly Clean up of five to ten minutes in a desktop browser. By the time I open it, new mail has already been sorted in the background. The Review screen groups suggestions by sender. Each group shows a verdict, a confidence band (Very sure, Sure, Likely, Unsure) and up to three reasons, such as "You trashed 41 of 44 from this sender". I skim the groups, override what looks wrong and press Clean up. Everything above the confidence threshold goes into one batch, and one confirm moves it to Trash or Archive.
+
+<a href="/media/clearbox/01-review.webp"><img src="/media/clearbox/01-review.webp" alt="Clearbox Review on synthetic data: 186 emails ready to clean up, sender groups with verdicts and confidence bands, and the reasons for one group in the detail panel" width="1600" height="1000" loading="lazy" decoding="async" /></a>
+
+*The Review screen with the synthetic dev seed from the repository. Every sender, address and subject is made up.*
+
+Four rules shape that session:
+
+- **Nothing moves without approval.** No code path trashes or archives a message unless I approved its pending suggestion in that request.
+- **Trash is recoverable.** Undo works for 24 hours from the Activity page, and Gmail and Outlook keep Trash for about 30 days after that.
+- **Uncertainty is shown, not hidden.** When the evidence is weak, the suggestion is unsure and waits for me.
+- **Every decision teaches.** Approvals and overrides update per-sender priors and the trash threshold.
+
+## Why a decision model, not a chatbot
+
+Sorting email is classification. For each email I need one of four labels, a number I can put a threshold on, and an answer that a hostile email cannot steer. I do not need prose.
+
+Microsoft-Decision-1 is built for that kind of task. [Microsoft Learn](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) describes it as a model for classification, routing, ranking, grading and binary decisions that does not generate a free-form response or a written rationale. Instead, it returns a typed, numerical decision. A request carries a `state` (text or JSON) and typed questions:
+
+- `choice` selects one option and returns a probability for every option.
+- `score` places the input on an ordered scale.
+- `noul` returns the probability that a statement is true.
+
+Microsoft's [model list](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#microsoft-models-sold-by-azure) describes the output as a calibrated probability score for every answer option, from a single model invocation over inputs of up to 32K tokens. Clearbox asks five questions in one request per email:
+
+```
+action         choice  delete, archive, keep, unsure
+importance     score   Noise, Low, Moderate, High, Critical
+is_record      noul    a record the owner may need later?
+is_expired     noul    time-bound content whose time has passed?
+is_from_human  noul    written personally by a human to the owner?
+```
+
+That shape fits the job for three reasons.
+
+1. **Probabilities I can threshold.** Clearbox suggests trash only when the trash probability clears a calibrated threshold with a margin. The threshold becomes a product decision ("trash suggestions should match my own choices at least 98% of the time") rather than a prompt tweak.
+2. **No generated text.** The model returns bounded probabilities, so a hostile email cannot make it say or do anything. It can still try to nudge the numbers, which is why the guardrails and the approval step sit outside the model.
+3. **Honest reasons.** Because the model gives no rationale, the reasons on each group come from real signals (headers, sender history, my own past decisions), never from model-written explanations.
+
+The best practices on Learn match the design. Include an abstention option: in Clearbox that is `unsure`. Set thresholds from the cost of false positives and false negatives. Consider randomizing option order: Clearbox shuffles the four action options per message, seeded by the account and message id, so a retry sends the same order.
+
+One caveat up front: Microsoft-Decision-1 is a Preview model, and the Azure model list gives version 1 an inference retirement date of 4 February 2027. The runbook already has a migration plan, covered below.
+
+## Architecture
+
+<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg" alt="Clearbox architecture: the owner's browser reaches the Worker only through Cloudflare Access; the Worker on Cloudflare Workers Free serves the Hono API and the React app, runs a cron tick every minute and a nightly job, stores state in D1 in the EU jurisdiction, reads Gmail and Microsoft Graph through the owner's own OAuth clients, and asks Microsoft-Decision-1 in Sweden Central for probabilities; GitHub Actions tests and builds but never deploys" width="960" height="1150" loading="lazy" decoding="async" /></a>
+
+Everything runs in my own accounts. There is no shared service and no shared credential: anyone who self-hosts brings their own Cloudflare account, Google and Microsoft OAuth clients and Foundry deployment.
+
+**Cloudflare Access in front.** A Worker-level Access application protects every hostname of the Worker, with a policy that allows only my email. The Worker does not rely on that alone. It verifies the `Cf-Access-Jwt-Assertion` header itself with jose (signature, issuer, audience, expiry and the owner email), and it fails closed when the configuration is missing.
+
+**One Worker for the API and the app.** The Worker is a Hono 4 API plus the static assets of a React 19 app (React Router, TanStack Query, Tailwind CSS 4), built as one Vite 8 project. Mutating calls need an `X-Clearbox-CSRF` header, CORS is never enabled, and email is rendered as plain text only, never as HTML, under a strict Content Security Policy.
+
+**D1 for state.** One D1 database, created in the EU jurisdiction, holds messages (metadata and snippet), suggestions, labels, sender priors, the daily write budget and an append-only audit log. Message rows are purged 30 days after a decision, or 90 days if never reviewed.
+
+**Cron Triggers instead of Workflows.** One cron runs a tick every minute and another runs a nightly job at 02:00 UTC. I chose a cron tick because Workflows on the Free plan allows only 50 external subrequests per instance, which makes a multi-page scan unsafe. A tick processes one page and exits, and a retry is simply a later tick.
+
+**Mail through my own OAuth clients.** Gmail uses the `gmail.modify` scope, and Microsoft Graph uses delegated `Mail.ReadWrite`. Both connect with an authorization code and PKCE, and the PKCE verifier travels in an HMAC-signed cookie. Refresh and access tokens are encrypted with AES-256-GCM, with a random IV per value and associated data bound to the account, the token kind and the key version.
+
+**The Foundry deployment.** A Bicep file and an az script in `infra/azure/` create a deployment named `decision-1` of Microsoft-Decision-1 in Sweden Central. It uses the DataZoneStandard SKU, capacity 300 (one capacity unit is one request per minute for this model) and no automatic version upgrades, so calibration stays stable. According to Learn, [DataZoneStandard is available in Sweden Central](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability#data-zone-standard) and keeps inference processing within that data zone. The Worker calls the decision endpoint with an api-key header, and the request's `model` field is the deployment name. A deployment cannot be named `Microsoft-Decision-1` itself, because that name is reserved.
+
+**CI never deploys.** GitHub Actions runs lint, the format check, typecheck, every test suite and the production build, plus ShellCheck, a dry run of the deploy script and a Bicep build. CodeQL runs on every pull request. Deploys are manual: the Azure script for the model, and `pnpm setup:cf` for Cloudflare, which creates the EU database and deploys with provisioning turned off, so the CLI cannot quietly provision a database outside the EU.
+
+## One email through the pipeline
+
+<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg" alt="The Clearbox pipeline for one email: fetch one page, extract signals, apply guardrails that set a ceiling, build a compact state, ask Microsoft-Decision-1 five questions, validate the answer, fuse it with the sender prior and the ceiling, and produce a suggestion with up to three reasons; the owner confirms, and every decision updates the priors and the nightly threshold" width="960" height="1470" loading="lazy" decoding="async" /></a>
+
+The core is a pure TypeScript package with no Cloudflare, Hono or DOM imports. Each tick runs it on every new message of a page.
+
+1. **Signals.** Headers and history only: List-Unsubscribe, bulk and auto-submitted headers, the SPF, DKIM and DMARC results from the receiving provider, provider categories, age, read state, how often I open mail from the sender, whether I have written to them and whether I replied in the thread.
+2. **Guardrails.** They return a ceiling, the highest action allowed. Starred or flagged mail, threads I replied in, always-keep senders, mail younger than three days and known correspondents are capped at keep. Attachments and record words (receipt, invoice, tax, statement, contract, medical, legal) cap at archive. Marking a sender as always OK to trash lifts only the last three caps. Guardrails read headers and history, so a hostile email body cannot raise its own ceiling.
+3. **State.** Clearbox builds compact JSON for the model: sender, subject, the provider snippet, the signals, sender history and up to five similar past decisions. It is capped at 1,750 characters and trimmed in a fixed order (past decisions, then the snippet, then the subject) until it fits.
+4. **Decision-1.** One request per email with the five questions, at most four in flight per tick, with a 10-second timeout.
+5. **Validation.** A zod schema checks every answer. Clearbox ignores the response's `confidence` field and uses the renormalized probabilities. A 401, 403 or 404 means a configuration problem: the tick stops and the app shows a banner. Timeouts, 429 and 5xx responses retry after 5 and 30 minutes, then fall back to unsure with the reason "Model unavailable".
+6. **Fusion.** Deterministic math. The trash probability is blended with a Beta prior built from my past decisions for that sender (or its domain), and the prior's weight grows with the number of decisions n as n / (n + 5). Strong flags then move probability: a likely record moves half of the trash mass to archive, a likely human-written email moves half of it to keep, and an expired notification that is not from a human moves 30% of the archive mass to trash. Finally, every action above the guardrail ceiling folds into the ceiling.
+7. **Thresholds.** Trash only if its probability is at least `tau_delete` (0.80 by default, never lower) and it leads the next action by at least 0.20. Otherwise Clearbox takes the best of keep, archive and unsure, and anything below 0.55 becomes unsure.
+8. **Reasons.** Up to three, in a fixed priority: model unavailable, guardrails, low confidence, the sender prior ("You trashed 41 of 44 from this sender"), then supporting signals such as a low open rate or an unsubscribe header.
+
+The learning loop closes the circle. Every approval, override or Clean up writes a label and updates the sender and domain priors, and Undo reverses that update. Each night, a calibration job reads the newest 500 labels. Once at least 50 of them would have been trash suggestions at 0.80, it tries every threshold from 0.80 to 0.99 and keeps the smallest one with at least 20 supporting labels and at least 98% agreement with my trash decisions. If none qualifies, the threshold goes to 0.99. The Insights page shows that agreement against the 98% target.
+
+## Scanning on the Free plan
+
+Clearbox runs on Cloudflare Workers Free, and that constraint shaped the scanner more than anything else.
+
+Every minute, the tick leases one mailbox that is due, fetches one page of up to 25 messages (metadata and snippet only), decides the new ones and writes everything in one D1 batch. Scan now on the Accounts page runs the same tick on demand. A tick stays within 45 subrequests, D1 calls included, and a benchmark test guards the Free plan's 10 ms of CPU per invocation. If a tick is killed, the next claim halves that mailbox's page size (down to 5), and successful ticks grow it back.
+
+Each mailbox goes through three phases:
+
+1. **Sent mail first**, up to 1,000 messages, to learn who my correspondents are and which threads I replied in.
+2. **Inbox backfill**, newest to oldest, within the scan history window: the last 90 days by default, or 30 days, a year or all mail on the Rules page. Widening the window later resumes where the backfill stopped.
+3. **New mail**, through Gmail history and Graph delta links, checked every 30 minutes once a mailbox has caught up. The incremental cursor is recorded at connect time, before the backfill starts.
+
+The real limit is D1 writes, not ticks. The Free plan allows 100,000 rows written per day. An email costs about 4.8 rows to ingest and about 13 over its whole life of ingest, decision and purge. Clearbox stops claiming ticks at 65,000 rows, stops the nightly purge at 80,000 and refuses my own actions at 90,000, which keeps room for a review session. That works out to about 13,000 emails a day during the first backfill and about 6,800 a day sustained, so all mail in a large inbox takes days. The backfill also pauses at 450 MB of the 500 MB database limit. On Workers Paid, setting `FREE_TIER=false` lifts the gates and raises the page size to 100 without code changes.
+
+## Safety rules
+
+Most of Clearbox's safety lives outside the model.
+
+- **No permanent delete.** The mail provider interface has no hard-delete method, and Gmail's `gmail.modify` scope cannot delete permanently anyway. Trash is Gmail's Trash or Outlook's Deleted Items.
+- **Approval is enforced on the server.** An action targets exact suggestion ids, a sender group bounded by the time the screen showed, or the threshold the screen showed. The server checks that each suggestion is pending and belongs to its account, caps a request at 100 items and executes idempotently.
+- **One owner per deployment.** Cloudflare Access plus the Worker's own token check, where the email claim must equal the configured owner.
+- **Snippet only.** The model sees the provider snippet, up to 255 characters, never the body. Storing snippets and label subjects can be switched off on the Rules page.
+- **Minimal data.** Logs carry opaque ids and counts, never addresses, subjects or tokens. D1 sits in the EU jurisdiction, and the model runs in the EU data zone.
+
+## Costs and limits
+
+Cloudflare Workers, D1, Cron Triggers, Workers Logs and Access all run on free plans, and the Gmail API and Microsoft Graph cost nothing to call. Microsoft-Decision-1 bills input tokens only; output tokens are free. The question texts count as input too. I planned for 450 to 800 input tokens per email, which the README turns into an estimate of a fraction of a dollar per ten thousand emails. The live evaluation used fewer: about 387 tokens on average and 412 at most.
+
+The limits I accept:
+
+- Gmail and Outlook only, with no IMAP, and one owner per deployment.
+- No permanent deletion and no unsubscribe automation, by design.
+- Suggestions come from the snippet, not the full body.
+- Clearbox uses 2 of the 5 Cron Triggers a Cloudflare account gets on the Free plan.
+- A personal Google OAuth app shows the unverified app warning, and work or school Microsoft accounts may need admin consent.
+- The `cf` CLI and the Cloudflare Vite plugin are in beta, so their versions are pinned.
+- The model is in Preview. For the retirement, the runbook says to deploy the new version under a new name, run the evaluation against both deployments on the synthetic fixtures and on my exported labels, switch the deployment secret, and let the nightly calibration re-tune the threshold. A `DecisionEngine` interface isolates the model, and a deterministic fake engine keeps the app and the tests running without it.
+
+## What the evaluation showed
+
+`pnpm eval` runs the real pipeline (signals, guardrails, Microsoft-Decision-1 and fusion) on 40 synthetic labeled emails: 18 labeled trash, 10 archive and 12 keep. On 16 October 2026 I ran it against the live deployment:
+
+- **Clearbox as a whole:** trash precision 100%, with a Wilson 95% lower bound of 77.2%, recall 72.2%, and no harmful deletes (no trash suggestion for an email labeled keep).
+- **The model alone:** precision 88.9% and recall 88.9%.
+- **Calibration:** 15% of suggestions came back unsure, with an expected calibration error of 0.096 and a Brier score of 0.069.
+- **Robustness:** shuffling the option order flipped no decision. Across 80 calls, latency was 368 ms at p50 and 404 ms at p95, with no failures.
+
+Read it for what it is. The guardrails and the threshold traded recall for precision, which is the trade I want for trash. But 40 synthetic emails cannot prove a 98% target: the 77.2% lower bound is the honest number. The emails are synthetic, not my inbox, and I have no production precision yet. The nightly calibration only moves the threshold once 50 trash suggestions have been decided; until then it stays at 0.80. When I recorded the live checks, my Gmail account was connected and Outlook was not yet.
+
+## Lessons learned
+
+**Treat a Preview API as a moving target.** Before writing code, I documented every API fact with its evidence level: Microsoft Learn, Azure Resource Manager or third-party live captures. Several details were not where I expected. The request's `model` is the deployment name, the deployment cannot be called `Microsoft-Decision-1`, unknown top-level fields are rejected, and the meaning of `confidence` is undocumented, so Clearbox ignores it. The response schema tolerates extra fields, and the deployment has automatic version upgrades turned off.
+
+**Budget tokens for the questions too.** The question texts are billed as input, so the state has a character cap. Real token use turned out lower than planned, but the cap is what keeps that true for long subjects and snippets.
+
+**Let the free plan shape the design early.** The D1 write budget, not the model or the cron, decides how fast Clearbox can sort a large inbox. Designing the gates, the page size and the scan history window around it from the start was cheaper than retrofitting them.
+
+**Keep safety out of the model.** A decision model is easier to bound than a chatbot because it returns numbers, not text. The guarantees still come from code: guardrails, mandatory approval, trash-only actions and Undo.
+
+**Deploying finds what tests cannot.** The first live deploy found problems that 1,589 tests could not. The first deploy was refused because the Access audience secret did not exist yet, so the documented fallback is to deploy once with a placeholder. A hidden-prompt paste stored a malformed Azure key; ticks failed safely with an authentication banner and ingested nothing until I replaced the key. And a Google consent screen left in Testing mode only lets listed test users sign in and expires refresh tokens after 7 days, so a personal deployment needs the app set to In production.
+
+The AI prepares, and I confirm. That split is the whole design: the model does the tedious sorting, and every step that moves mail stays with a person and stays reversible.
