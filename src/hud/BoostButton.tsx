@@ -1,45 +1,24 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useRef, type MouseEvent, type PointerEvent } from "react";
 import { AccentDot } from "@/components/AccentDot";
-import { setBoost } from "@/experience/input/joystick";
-import { getHQStore } from "@/store/useHQStore";
+import { useBoostToggle } from "./boost";
 
 /**
  * Boost toggle for coarse pointers, beside the joystick (owner request: tap on, tap off; keyboard users
  * still hold Shift). It toggles on pointer down, so a second finger works while the first drives the
- * joystick, and ignores the click that follows. Boost only applies while driving by hand (`boostOn`),
- * so the rover still stops when the joystick is released. A floor change, an elevator ride and unmount
- * (Classic site, the hologram, reload) turn it off; it is never persisted.
+ * joystick, and ignores the click that follows. The state and its resets live in `useBoostToggle`.
  */
 export function BoostButton() {
   const t = useTranslations("hud");
-  const [on, setOn] = useState(false);
+  const { on, toggle } = useBoostToggle();
   const pointerToggled = useRef(false);
-
-  useEffect(() => () => setBoost(false), []);
-
-  useEffect(
-    () =>
-      getHQStore().subscribe((state, prev) => {
-        const rideStarted = state.ride !== null && prev.ride === null;
-        if (state.floor === prev.floor && !rideStarted) return;
-        setBoost(false);
-        setOn(false);
-      }),
-    [],
-  );
-
-  const apply = (next: boolean) => {
-    setBoost(next);
-    setOn(next);
-  };
 
   const press = (e: PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
     pointerToggled.current = true;
-    apply(!on);
+    toggle();
   };
 
   const click = (e: MouseEvent<HTMLButtonElement>) => {
@@ -48,7 +27,7 @@ export function BoostButton() {
       pointerToggled.current = false;
       return;
     }
-    apply(!on);
+    toggle();
   };
 
   return (
