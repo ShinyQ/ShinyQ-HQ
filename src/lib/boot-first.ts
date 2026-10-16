@@ -6,6 +6,7 @@
 import { SOFTWARE_RENDERER } from "./gpu-tier";
 import { MOTION_ATTR, storedMotion } from "./motion";
 import { markOnce, PERF_MARKS } from "./perf-marks";
+import { decideView, normalizeViewSearch, VIEW_KEY } from "./view-param";
 
 export const BOOT_ATTR = "data-hq-boot";
 export const BOOT_RELEASED_ATTR = "data-hq-boot-released";
@@ -33,6 +34,7 @@ export type BootReleaseReason = "ready" | "page" | "static" | "timeout";
 export interface BootFirstInput {
   path: string;
   search: string;
+  /** The decided view for this tab (decideView): "page" for the Classic site, "3d" otherwise; null when unknown. */
   storedView: string | null;
   hasWebGL2: boolean;
   saveData: boolean;
@@ -60,8 +62,9 @@ export function isBotLike(n: BotLikeNavigator, search: string): boolean {
 }
 
 /**
- * Self-contained (no imports, no closures, no TS-only syntax in the body) so it can be inlined via
- * toString(). Routes match the pages that mount ExperienceGate (docs/agents/3d-experience.md).
+ * `storedView` is the view the head script decided (decideView: "page" opens the Classic site, "3d" or
+ * null boots the game). Self-contained (no imports, no closures, no TS-only syntax in the body) so it can
+ * be inlined via toString(). Routes match the pages that mount ExperienceGate (docs/agents/3d-experience.md).
  */
 export function shouldBootFirst(i: BootFirstInput): boolean {
   if (!/^\/(en|id)(\/(journey|labs)(\/[^/]+)?|\/(library|contact))?\/?$/.test(i.path)) return false;
@@ -98,22 +101,9 @@ export function ambientStill(webdriver: boolean | undefined, bot: boolean, searc
 }
 
 /**
- * `?view=page` is the boot card's "Classic site" link (a real link, so it works before hydration): the
- * head script stores the Page View choice and drops the parameter. Returns the search without it, or
- * null when it is absent. Self-contained (no imports, no closures) for toString().
- */
-export function takePageViewParam(search: string): string | null {
-  if (!/[?&]view=page(&|$)/.test(search)) return null;
-  const rest = search
-    .replace(/^\?/, "")
-    .split("&")
-    .filter((part) => part !== "view=page")
-    .join("&");
-  return rest ? "?" + rest : "";
-}
-
-/**
- * Inline head script: sets data-hq-boot before first paint and arms a safety timeout. Right after
+ * Inline head script: first decides the view (decideView: `?view=`, then this tab, then the remembered
+ * choice, then 3D), pins it in sessionStorage and rewrites the URL to `?view=classic` or without `?view=3d`
+ * (normalizeViewSearch). Then it sets data-hq-boot before first paint and arms a safety timeout. Right after
  * the first paint (before hydration) it probes WebGL once and stores the result in
  * `window.__hqProbe` for the gate (readTierInputs). Without WebGL2 or on a software renderer it
  * releases the cover at once and remembers the verdict for the session, unless `?tier=` forces one.
@@ -121,8 +111,8 @@ export function takePageViewParam(search: string): string | null {
  * visitor's Motion setting, storedMotion: `full` by default, also without storage) on every page, before first paint.
  */
 export function bootFirstScript(): string {
-  return `(function(){try{var s=null,p=null;try{s=sessionStorage.getItem("hq:view");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}
-var q=(${takePageViewParam.toString()})(location.search);if(q!==null){s="page";try{sessionStorage.setItem("hq:view","page")}catch(e){}try{history.replaceState(history.state,"",location.pathname+q+location.hash)}catch(e){}}
+  return `(function(){try{var s=null,l=null,p=null;try{s=sessionStorage.getItem("${VIEW_KEY}");p=sessionStorage.getItem("${PROBE_KEY}")}catch(e){}try{l=localStorage.getItem("${VIEW_KEY}")}catch(e){}
+var v=(${decideView.toString()})(location.search,s,l);s=v.view;try{sessionStorage.setItem("${VIEW_KEY}",s)}catch(e){}var q=(${normalizeViewSearch.toString()})(location.search,s);if(q!==location.search){try{history.replaceState(history.state,"",location.pathname+q+location.hash)}catch(e){}}
 var d=document.documentElement,ms=null;try{ms=localStorage.getItem("${MOTION_STORE_KEY}")}catch(e){}var m=(${storedMotion.toString()})(ms);if(m)d.setAttribute("${MOTION_ATTR}",m);
 var c=navigator.connection,w=typeof WebGL2RenderingContext!=="undefined",sd=!!(c&&c.saveData),b=(${isBotLike.toString()})(navigator,location.search);
 if((${canOffer3D.toString()})({search:location.search,hasWebGL2:w,saveData:sd,bot:b}))d.setAttribute("${OFFER_3D_ATTR}","1");
