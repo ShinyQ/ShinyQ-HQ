@@ -27,7 +27,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 <a href="https://kurniadi.pages.dev">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
-    <img src="docs/readme/hero.gif" width="960" alt="Boot card, intro fly-in to the Lobby, a boosted drive past the profile hologram, and an elevator ride up to the L3 Project Roads directory wall">
+    <img src="docs/readme/hero.gif" width="960" alt="Boot card, intro fly-in to the Lobby, a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
   </picture>
 </a>
 
@@ -63,7 +63,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 |---|---|---|---|
 | <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Ask Rover kiosk and the Visitor Observatory. Behind it, the Highlights Hall. |
 | <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://kurniadi.pages.dev/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
-| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past a raised directory wall: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor. Plus the Ops Control Room. |
+| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
 | <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts with year posts and one sign per section, research, models and talks desks, and the Topic Constellation. |
 | <img src="docs/readme/floor-RF.jpg" width="300" alt="RF Roof deck"> | **RF Roof deck** | [`/en/contact`](https://kurniadi.pages.dev/en/contact) | Comms mast with the availability sign, contact station, CV kiosk and a courier drone. |
 
