@@ -375,6 +375,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
 - `SkyController` (`src/experience/sky/`, mounted by `Scene.tsx` in place of the two light elements) owns the lights and the sky meshes; `applySky.ts` writes the state into them.
   - One camera-centered dome (`SphereGeometry` 400, 8x4, 48 triangles; the color comes per pixel from the view direction, with procedural twinkling stars) and one two-instance sun and moon mesh.
   - Both use the shared instanced holo program: `HOLO_MODE.sky` (12) and `HOLO_MODE.orb` (13), uniforms `uSun` and `uGlow` (`fx/holoFx.ts`). That is +2 scene draw calls and no new shader program.
+  - First person has a 72 u far plane, so each frame the sky group scales uniformly about the camera by `min(1, 0.97 * camera.far / 400)`; directions and the sun and moon angular sizes stay the same.
   - The dome has `renderOrder` -100, is transparent and does not write depth.
   - On the full tier the two meshes mount only once the lazy composer is live; earlier, the frame-3 precompile would compile a canvas variant of the holo program.
 - Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
