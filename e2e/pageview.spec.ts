@@ -562,3 +562,74 @@ test("the Page View stays silent: clicks and the CV dialog create no AudioContex
   await page.keyboard.press("Escape");
   expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
 });
+
+test.describe("architecture diagrams", () => {
+  const FIGURE_POSTS: { slug: string; figures: number }[] = [
+    { slug: "making-a-voice-agent-interruptible", figures: 1 },
+    { slug: "45-percent-of-our-llm-calls-failed", figures: 1 },
+    { slug: "why-the-better-fraud-engine-shipped-in-shadow-mode", figures: 1 },
+    { slug: "spec-driven-development-with-ai-coding-agents", figures: 2 },
+    { slug: "clearbox-inbox-cleanup-with-microsoft-decision-1", figures: 2 },
+  ];
+
+  /** The visible SVG of each diagram: smallest rendered font size (px) and whether it fits its box. */
+  async function drawnDiagrams(scope: Locator) {
+    return scope.locator("[role=img]").evaluateAll((diagrams) =>
+      diagrams.map((diagram) => {
+        const svgs = [...diagram.querySelectorAll("svg")];
+        const visible = svgs.filter((svg) => getComputedStyle(svg).display !== "none");
+        const svg = visible[0];
+        const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+        const sizes = [...svg.querySelectorAll("text")].map((t) => Number(t.getAttribute("font-size")));
+        return {
+          label: diagram.getAttribute("aria-label") ?? "",
+          visible: visible.length,
+          minPx: Math.min(...sizes) * scale,
+          fits: svg.getBoundingClientRect().right <= diagram.getBoundingClientRect().right + 0.5,
+        };
+      }),
+    );
+  }
+
+  for (const { slug, figures } of FIGURE_POSTS) {
+    test(`/en/blog/${slug} draws ${figures} captioned diagram(s) that read on a phone`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openPage(page, staticTier(`/en/blog/${slug}`));
+      const figure = page.locator("figure[data-post-architecture]");
+      await expect(figure).toHaveCount(figures);
+      for (let i = 0; i < figures; i++) await expect(figure.nth(i).locator("figcaption")).toHaveText(/\S/);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+      for (const d of await drawnDiagrams(page.locator("article"))) {
+        expect(d.label).toMatch(/^Architecture diagram with \d+ components\./);
+        expect(d.visible).toBe(1);
+        expect(d.fits).toBe(true);
+        expect(d.minPx).toBeGreaterThanOrEqual(11.9);
+      }
+      await expectNoSeriousViolations(page);
+    });
+  }
+
+  test("desktop draws the wide diagram at full size, in posts and case studies", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const path of ["/id/blog/why-the-better-fraud-engine-shipped-in-shadow-mode", `/en/labs/${heroPod.slug}`]) {
+      await openPage(page, staticTier(path));
+      const diagrams = await drawnDiagrams(page.locator("main"));
+      expect(diagrams.length, path).toBeGreaterThan(0);
+      for (const d of diagrams) {
+        expect(d.visible, path).toBe(1);
+        expect(d.fits, path).toBe(true);
+        expect(d.minPx, path).toBeGreaterThanOrEqual(10.4);
+      }
+    }
+  });
+
+  test("a case study diagram reads on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openPage(page, staticTier(`/en/labs/${heroPod.slug}`));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    for (const d of await drawnDiagrams(page.locator("main"))) {
+      expect(d.visible).toBe(1);
+      expect(d.minPx).toBeGreaterThanOrEqual(11.9);
+    }
+  });
+});

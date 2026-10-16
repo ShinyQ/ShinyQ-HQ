@@ -59,7 +59,7 @@ One caveat up front: Clearbox treats Microsoft-Decision-1 as a Preview model, an
 
 ## Architecture
 
-<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg" alt="Clearbox architecture: the owner's browser reaches the Worker only through Cloudflare Access; the Worker on Cloudflare Workers Free serves the Hono API and the React app, runs a cron tick every minute and a nightly job, stores state in D1 in the EU jurisdiction, reads Gmail and Microsoft Graph through the owner's own OAuth clients, and asks Microsoft-Decision-1 in Sweden Central for probabilities; GitHub Actions tests and builds but never deploys" width="960" height="1150" loading="lazy" decoding="async" /></a>
+<Architecture diagram="architecture" caption="Clearbox architecture. Everything runs in the owner's own Cloudflare, Google, Microsoft and Azure accounts." />
 
 Everything runs in my own accounts. There is no shared service and no shared credential: anyone who self-hosts brings their own Cloudflare account, Google and Microsoft OAuth clients and Foundry deployment.
 
@@ -79,7 +79,7 @@ Everything runs in my own accounts. There is no shared service and no shared cre
 
 ## One email through the pipeline
 
-<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg" alt="The Clearbox pipeline for one email: fetch one page, extract signals, apply guardrails that set a ceiling, build a compact state, ask Microsoft-Decision-1 five questions, validate the answer, fuse it with the sender prior and the ceiling, and produce a suggestion with up to three reasons; the owner confirms, and every decision updates the priors and the nightly threshold" width="960" height="1470" loading="lazy" decoding="async" /></a>
+<Architecture diagram="pipeline" caption="One email through the pipeline. The dashed arrow is the learning loop: every decision updates the priors and the nightly threshold." />
 
 The core is a pure TypeScript package with no Cloudflare, Hono or DOM imports. Each tick runs it on every new message of a page.
 

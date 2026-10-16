@@ -1,63 +1,63 @@
+import type { CSSProperties } from "react";
 import { getTranslations } from "next-intl/server";
 import type { Architecture, Locale } from "@/content/schema";
-
-/** Node kinds tint the border and the kind label only; names stay neutral. */
-const KIND_STYLE: Record<Architecture["nodes"][number]["kind"], string> = {
-  client: "border-cyan/50 text-cyan",
-  service: "border-line-2 text-blue",
-  ai: "border-violet/50 text-violet",
-  data: "border-green/45 text-green",
-  human: "border-amber/45 text-amber",
-  external: "border-line-2 text-white",
-};
+import { DiagramSvg } from "./diagram/DiagramSvg";
+import { DIAGRAM_PRESETS, layoutArchitecture, type DiagramNode } from "./diagram/layout";
 
 /**
- * HTML rendering of the hologram data: nodes in a layer x row grid plus an
- * accessible list of edges. The 3D hologram (Phase 4) reuses the same data.
+ * Widest drawing (px) the left-to-right layout may have and still read at 85% scale or more from 1100 px:
+ * posts break out of the text column (up to 1180 px wide), case studies stay in their 8-column content.
  */
-export async function ArchitectureDiagram({ architecture, locale }: { architecture: Architecture; locale: Locale }) {
+export const WIDE_LIMIT = { breakout: 1180, column: 750 } as const;
+/** Card padding and border around the drawing (sm:p-6 plus 1 px borders). */
+const CARD_CHROME = 50;
+
+/**
+ * Architecture diagram drawn at build time as inline SVG (no client JS): left to right from 1100 px when it
+ * fits, top to bottom below that and on phones, one SVG per layout swapped by media queries. The figure is
+ * one image to assistive tech, named by a summary of its components and connections.
+ */
+export async function ArchitectureDiagram({
+  architecture,
+  locale,
+  breakout = false,
+}: {
+  architecture: Architecture;
+  locale: Locale;
+  /** Posts: from 1100 px the wide drawing may extend past the text column. */
+  breakout?: boolean;
+}) {
   const t = await getTranslations({ locale, namespace: "labs" });
-  const layers = Math.max(...architecture.nodes.map((n) => n.layer)) + 1;
-  const byId = new Map(architecture.nodes.map((n) => [n.id, n]));
+  const td = await getTranslations({ locale, namespace: "diagram" });
+  const texts = (n: DiagramNode) => ({
+    kind: t(`nodeKind.${n.kind}`).toLocaleUpperCase(locale),
+    label: n.label,
+    sublabel: n.sublabel?.[locale],
+  });
+  const wide = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.wide);
+  const column = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.column);
+  const phone = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.phone);
+  const useWide = wide.width <= (breakout ? WIDE_LIMIT.breakout : WIDE_LIMIT.column);
+
+  const byId = new Map(architecture.nodes.map((n) => [n.id, n.label]));
+  const flows = architecture.edges
+    .map((e) =>
+      [td("flow", { from: byId.get(e.from)!, to: byId.get(e.to)! }), e.label, e.async ? td("async") : undefined].filter(Boolean).join(", "),
+    )
+    .join("; ");
+  const summary = td("summary", { count: architecture.nodes.length, flows: `${flows}.` });
+  const breaks = useWide && breakout;
+
   return (
-    <div className="card space-y-6 p-4 sm:p-6">
-      <div className="overflow-x-auto pb-2">
-        <ol
-          className="grid min-w-[560px] gap-2.5"
-          style={{ gridTemplateColumns: `repeat(${layers}, minmax(0, 1fr))` }}
-          aria-label={t("architecture")}
-        >
-          {architecture.nodes.map((node) => (
-            <li
-              key={node.id}
-              className={`flex flex-col gap-1 rounded-lg border bg-surface-2 p-3 ${KIND_STYLE[node.kind]}`}
-              style={{ gridColumn: node.layer + 1, gridRow: node.row + 1 }}
-            >
-              <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase">{t(`nodeKind.${node.kind}`)}</span>
-              <span className="text-sm leading-5 font-semibold text-ink">{node.label}</span>
-              {node.sublabel && <span className="text-xs leading-4 text-ink-2">{node.sublabel[locale]}</span>}
-            </li>
-          ))}
-        </ol>
-      </div>
-      {architecture.edges.length > 0 && (
-        <div>
-          <h3 className="pv-data mb-3">{t("architectureFlow")}</h3>
-          <ul className="grid gap-1.5 font-mono text-[13px] leading-5 text-ink-2 sm:grid-cols-2">
-            {architecture.edges.map((edge, i) => (
-              <li key={`${edge.from}-${edge.to}-${i}`}>
-                <span className="text-ink">{byId.get(edge.from)?.label}</span>{" "}
-                <span aria-hidden="true" className="text-violet">
-                  {edge.async ? "⇢" : "→"}
-                </span>
-                <span className="sr-only">{edge.async ? " sends asynchronously to " : " to "}</span>{" "}
-                <span className="text-ink">{byId.get(edge.to)?.label}</span>
-                {edge.label && <span className="text-ink-3"> ({edge.label})</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+    <div
+      className={`not-prose card p-4 sm:p-6${breaks ? " arch-break" : ""}`}
+      style={breaks ? ({ "--arch-w": `${wide.width + CARD_CHROME}px` } as CSSProperties) : undefined}
+      role="img"
+      aria-label={summary}
+    >
+      {useWide && <DiagramSvg layout={wide} className="hidden min-[1100px]:block" />}
+      <DiagramSvg layout={column} className={useWide ? "hidden sm:max-[1100px]:block" : "hidden sm:block"} />
+      <DiagramSvg layout={phone} className="block sm:hidden" />
     </div>
   );
 }

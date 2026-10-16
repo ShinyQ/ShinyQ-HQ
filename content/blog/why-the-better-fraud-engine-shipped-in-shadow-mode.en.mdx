@@ -88,6 +88,16 @@ shadow = engine_v2(packet)  # stored only
 save_shadow(packet.id, shadow)
 ```
 
+<Architecture pod="fraud-review-platform" caption="The platform's architecture, from its case study. The dashed arrows are the shadow path: it runs asynchronously and only writes to storage." />
+
+A packet takes two paths through the platform:
+
+1. A reviewer uploads a document packet in the Next.js web app, which sends it to the FastAPI backend and shows live progress.
+2. The backend runs OCR with Document Intelligence.
+3. Agent Framework agents review each document, then the whole packet, through Azure OpenAI, with inputs screened by Prompt Shields. They produce the findings and the verdict the reviewer sees.
+4. The backend stores the review history and the report in Cosmos DB and Blob Storage.
+5. In parallel, the backend starts a shadow run of the hybrid risk engine. Its results go to storage for comparison and never return to the web app.
+
 The rollout record counts 0 of 3,780 runs in which the shadow engine changed user-visible output. That tells me the shadow path is isolated. It does not tell me the engine is accurate.
 
 Real case volume on this platform is still small, and my notes do not break down what those 3,780 runs were.

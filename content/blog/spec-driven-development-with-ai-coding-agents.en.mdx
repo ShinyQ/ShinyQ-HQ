@@ -30,13 +30,14 @@ On day four, an adversarial consistency review found 24 defects across the specs
 
 Every feature went through the same path:
 
-```
-numbered spec (task, AC and business-rule IDs)
-  -> constitution + agent conventions file
-  -> agent implements in its own worktree
-  -> pull request, CI gates
-  -> my review, my merge
-```
+<Architecture diagram="delivery-loop" caption="The delivery loop every feature went through." />
+
+1. I wrote a numbered spec with task, acceptance-criteria and business-rule IDs.
+2. An agent read it together with the constitution and the agent conventions file.
+3. The agent implemented it in its own git worktree, and I opened a pull request for its branch.
+4. CI gates checked the pull request.
+5. I reviewed it and decided whether it merged.
+6. Deployment to Azure App Service ran only after CI was green.
 
 The constitution and conventions file held rules I did not want agents to reinterpret. The two-boundary rule, for example, keeps presentation and a backend-for-frontend in Next.js, with all business logic in FastAPI. Permissions must be re-derived from the database on every request, never trusted from the client.
 
@@ -59,6 +60,19 @@ The useful part, for me, was seeing a document diff before a code diff. I could 
 That is my reasoning, not a measured time saving. I have no counterfactual.
 
 There was a cleanup cost, too. Superseded specs left unreachable code behind. I did not remove it until a dedicated test-debt and dead-code pass on 4 October. I had told agents what to build, but not what to delete.
+
+## The system the agents built
+
+<Architecture pod="vendor-management-portal" caption="The portal's architecture, from its case study." />
+
+The two-boundary rule shapes how a signed-in request flows:
+
+1. Vendors and internal approvers use the Next.js portal. It serves the UI and acts as the backend-for-frontend, holding the session in a sealed HttpOnly cookie.
+2. Staff sign in with Entra ID through the FastAPI backend, which writes the session to PostgreSQL.
+3. Every API request from the portal reaches the FastAPI backend over REST. The backend re-derives the user's permissions from the database on every request, so the cookie only needs what the UI uses for gating.
+4. Browsers upload documents straight to Blob Storage, and the backend works with them there.
+
+The cookie bug below lived in steps 1 and 3. The commit-timing bug first showed up in step 2.
 
 ## What got through anyway
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { postMdxComponents } from "@/components/blog/mdx";
 import { JsonLd } from "@/components/JsonLd";
 import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getPostSource } from "@/content/blog";
@@ -37,7 +38,11 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   const t = await getTranslations({ locale, namespace: "blog" });
   const tw = await getTranslations({ locale, namespace: "writing" });
   const tc = await getTranslations({ locale, namespace: "common" });
-  const { content } = await compileMDX({ source: found.source, options: { parseFrontmatter: true } });
+  const { content } = await compileMDX({
+    source: found.source,
+    components: postMdxComponents(slug, found.locale),
+    options: { parseFrontmatter: true },
+  });
 
   return (
     <>

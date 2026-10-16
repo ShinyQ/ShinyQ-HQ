@@ -26,6 +26,19 @@ Barge-in terjadi saat penelepon mulai bicara ketika agent sedang bicara, atau ba
 
 Langkah ketiga mudah terlewat. Model bisa sudah menghasilkan satu paragraf, sementara penelepon baru mendengar separuhnya. Tanpa koreksi conversation history, jawaban berikutnya menganggap sisa paragraf itu sudah didengar.
 
+## Di mana barge-in terjadi
+
+<Architecture pod="voice-ai-contact-center" caption="Arsitektur agent saat ini, dari studi kasusnya. Saat dua perbaikan barge-in di bawah dirilis, audio panggilan masih lewat Azure Communication Services, bukan LiveKit." />
+
+Saat ini, interupsi dari penelepon melewati jalur ini:
+
+1. Audio penelepon masuk ke media layer lewat WebRTC, lalu diteruskan sebagai stream ke backend realtime FastAPI.
+2. Backend meneruskannya ke Azure OpenAI Realtime dan membaca setiap event dari model di satu receive loop.
+3. Saat model memanggil tool, misalnya pencarian knowledge di Azure AI Search, tool itu berjalan sebagai task tersendiri yang bisa di-cancel, dengan batas waktu 2,5 detik. Receive loop tetap membaca event.
+4. Begitu event "penelepon mulai bicara" masuk, backend menghentikan audio di media channel, membatalkan response jika masih dihasilkan, lalu melakukan truncate percakapan sampai bagian yang sudah didengar penelepon.
+
+Masalah pertama di bawah merusak langkah 4. Masalah kedua membuat receive loop di langkah 2 berhenti membaca.
+
 ## Masalah pertama: selesai bagi model, masih diputar bagi penelepon
 
 Logika cancel kami langsung return begitu model melaporkan response selesai. Sekilas masuk akal. Masalahnya, selesai menghasilkan audio tidak sama dengan selesai memutarnya.

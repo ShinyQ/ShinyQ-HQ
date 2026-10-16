@@ -147,7 +147,6 @@
     "problem": "Problem",
     "approach": "Contribution",
     "architecture": "Architecture",
-    "architectureFlow": "Data flow",
     "results": "Results",
     "client": "Client",
     "role": "Role",
@@ -1079,5 +1078,10 @@
       "12-20s": "12 to 20 s",
       "20s+": "20 s or more"
     }
+  },
+  "diagram": {
+    "summary": "Architecture diagram with {count} components. {flows}",
+    "flow": "{from} to {to}",
+    "async": "asynchronous"
   }
 }

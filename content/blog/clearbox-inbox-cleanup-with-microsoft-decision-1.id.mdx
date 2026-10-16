@@ -59,7 +59,7 @@ Satu catatan sejak awal: Clearbox memperlakukan Microsoft-Decision-1 sebagai mod
 
 ## Arsitektur
 
-<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/architecture.svg" alt="Arsitektur Clearbox: browser pemilik hanya bisa menjangkau Worker melalui Cloudflare Access; Worker di Cloudflare Workers Free menyajikan API Hono dan aplikasi React, menjalankan cron tick setiap menit dan job malam hari, menyimpan state di D1 dengan yurisdiksi EU, membaca Gmail dan Microsoft Graph melalui OAuth client milik pemilik, dan meminta probabilitas dari Microsoft-Decision-1 di Sweden Central; GitHub Actions menguji dan membangun tetapi tidak pernah melakukan deploy" width="960" height="1150" loading="lazy" decoding="async" /></a>
+<Architecture diagram="architecture" caption="Arsitektur Clearbox. Semuanya berjalan di akun Cloudflare, Google, Microsoft, dan Azure milik pemilik." />
 
 Semuanya berjalan di akun saya sendiri. Tidak ada layanan bersama dan tidak ada kredensial bersama: siapa pun yang meng-host sendiri membawa akun Cloudflare, OAuth client Google dan Microsoft, serta deployment Foundry miliknya.
 
@@ -79,7 +79,7 @@ Semuanya berjalan di akun saya sendiri. Tidak ada layanan bersama dan tidak ada 
 
 ## Perjalanan satu email melalui pipeline
 
-<a href="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg"><img src="/blog/clearbox-inbox-cleanup-with-microsoft-decision-1/pipeline.svg" alt="Pipeline Clearbox untuk satu email: mengambil satu halaman, mengekstrak sinyal, menerapkan guardrail yang menetapkan batas aksi, membangun state yang ringkas, mengajukan lima pertanyaan ke Microsoft-Decision-1, memvalidasi jawaban, menggabungkannya dengan prior pengirim dan batas aksi, lalu menghasilkan saran dengan hingga tiga alasan; pemilik mengonfirmasi, dan setiap keputusan memperbarui prior dan threshold malam hari" width="960" height="1470" loading="lazy" decoding="async" /></a>
+<Architecture diagram="pipeline" caption="Satu email melalui pipeline. Panah putus-putus adalah learning loop: setiap keputusan memperbarui prior dan threshold malam hari." />
 
 Intinya adalah paket TypeScript murni tanpa import Cloudflare, Hono, atau DOM. Setiap tick menjalankannya untuk setiap pesan baru dalam satu halaman.
 

@@ -147,7 +147,6 @@
     "problem": "Masalah",
     "approach": "Kontribusi",
     "architecture": "Arsitektur",
-    "architectureFlow": "Alur data",
     "results": "Hasil",
     "client": "Klien",
     "role": "Peran",
@@ -1079,5 +1078,10 @@
       "12-20s": "12 hingga 20 detik",
       "20s+": "20 detik atau lebih"
     }
+  },
+  "diagram": {
+    "summary": "Diagram arsitektur dengan {count} komponen. {flows}",
+    "flow": "{from} ke {to}",
+    "async": "asinkron"
   }
 }
