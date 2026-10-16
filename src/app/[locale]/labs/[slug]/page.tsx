@@ -9,6 +9,7 @@ import { ChipList } from "@/components/Chip";
 import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
+import { ShareLinks } from "@/components/ShareLinks";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
 import { CaseToc } from "@/components/page/CaseToc";
 import { PodCodeResearch } from "@/components/page/PodCodeResearch";
@@ -83,6 +84,9 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
                 <LiveSiteLink href={live.href} label={tc("visitLive")} srHint={tc("external")} className="pv-btn pv-btn-primary" />
               </p>
             )}
+            <div className="mt-6">
+              <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }} />
+            </div>
           </div>
           <FactRow
             items={[

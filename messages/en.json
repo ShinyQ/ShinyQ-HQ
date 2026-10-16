@@ -32,6 +32,10 @@
     "RF": "Roof · Comms"
   },
   "common": {
+    "share": "Share",
+    "copyClassicLink": "Copy Classic link",
+    "copy3dLink": "Copy 3D link",
+    "linkCopied": "Link copied",
     "present": "Present",
     "caseStudy": "Read case study",
     "stack": "Tech stack",

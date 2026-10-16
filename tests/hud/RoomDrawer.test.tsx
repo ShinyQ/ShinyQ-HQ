@@ -216,6 +216,14 @@ describe("RoomDrawer", () => {
     expect(onLink).toHaveBeenCalledWith(hero.link!.room);
   });
 
+  it("offers Copy Classic link and Copy 3D link in the overflow menu", async () => {
+    const user = userEvent.setup();
+    render(<Harness view={hero} />);
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("button", { name: en.common.copyClassicLink })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: en.common.copy3dLink })).toBeInTheDocument();
+  });
+
   it("puts Visit live site right after Read case study and before the cross-floor link, in a new tab (R4-J)", () => {
     render(<Harness view={liveView} />);
     const footer = screen.getByTestId("drawer-footer");

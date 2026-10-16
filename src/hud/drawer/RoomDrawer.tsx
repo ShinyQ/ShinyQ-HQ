@@ -7,6 +7,7 @@ import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
 import { Gallery as ImageGallery } from "@/components/Gallery";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
+import { ShareLinks } from "@/components/ShareLinks";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
@@ -137,6 +138,7 @@ function useReadmeRenderer(open: boolean): RenderReadme | null {
 
 function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps) {
   const t = useTranslations("drawer");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
@@ -199,6 +201,11 @@ function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps
               </Link>
             </li>
           )}
+          <ShareLinks
+            variant="menu"
+            itemClassName={MENU_ITEM}
+            labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }}
+          />
         </ul>
       )}
     </div>

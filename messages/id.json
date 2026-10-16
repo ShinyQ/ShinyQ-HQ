@@ -32,6 +32,10 @@
     "RF": "Atap · Komunikasi"
   },
   "common": {
+    "share": "Bagikan",
+    "copyClassicLink": "Salin tautan situs klasik",
+    "copy3dLink": "Salin tautan 3D",
+    "linkCopied": "Tautan disalin",
     "present": "Sekarang",
     "caseStudy": "Baca studi kasus",
     "stack": "Tech stack",
