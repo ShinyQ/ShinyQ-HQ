@@ -5526,6 +5526,10 @@
             "en": "AI Fraud Document Review",
             "id": "Review Dokumen Fraud Berbasis AI"
           },
+          "shortTitle": {
+            "en": "Fraud Document Review",
+            "id": "Review Dokumen Fraud AI"
+          },
           "tagline": {
             "en": "MII Fraud Detection, MII's internal platform: OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.",
             "id": "MII Fraud Detection, platform internal MII: OCR dan review LLM dua tahap untuk paket dokumen pengadaan, dengan rilis risk engine ditentukan oleh gate evaluasi."

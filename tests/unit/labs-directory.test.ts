@@ -14,10 +14,12 @@ import {
   wallLines,
   wallSolids,
   wrapWords,
+  INK,
   type DirectoryLabels,
 } from "@/experience/floors/labs/directory";
 import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "@/experience/floors/labs/layout";
-import type { BatchedLabel } from "@/experience/fx/labelProps";
+import { batchColor, type BatchedLabel } from "@/experience/fx/labelProps";
+import { sceneSettings } from "@/experience/scene/settings";
 import { interWidth } from "@/experience/fx/interWidth";
 import type { LabPod, Rect, Vec2 } from "@/experience/types";
 
@@ -44,6 +46,18 @@ function setup(locale: "en" | "id") {
 }
 
 describe("L3 directory wall content (owner request 2026-10-13, clean board text 2026-10-16)", () => {
+  it("stores the quiet inks pre-converted, so they draw as #a1a1aa, #c4c4cc and #8b8b94 below the full tier's bloom threshold", () => {
+    // The batch packs each hex unchanged and its shader reads it as linear (no `exactColors`).
+    const drawn = { sub: "#a1a1aa", list: "#c4c4cc", mark: "#8b8b94" } as const;
+    const threshold = sceneSettings("full").bloom!.threshold;
+    for (const key of ["sub", "list", "mark"] as const) {
+      expect(INK[key]).toBe(`#${batchColor(drawn[key]).getHexString()}`);
+      const hex = Number.parseInt(INK[key].slice(1), 16);
+      const [r, g, b] = [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].map((c) => c / 255);
+      expect(0.2126 * r + 0.7152 * g + 0.0722 * b, key).toBeLessThan(threshold);
+    }
+  });
+
   it("keeps the list between the underline block and the footer, with a line for every entry in both styles", () => {
     const full = panelRows(LIST_STYLE.full);
     expect(full.titleTop).toBeCloseTo(9.2, 9);
@@ -175,7 +189,7 @@ describe("L3 directory wall content (owner request 2026-10-13, clean board text 
           expect(title.font).toBe(FONTS.monoBold);
           expect(title.color).toBe(WING_TINT[wing]);
           expect(sub.font).toBe(FONTS.mono);
-          expect(sub.color).toBe("#a1a1aa");
+          expect(sub.color).toBe(INK.sub);
           expect(sub.fontSize).toBe(PANEL.sub.size);
           expect(marks.text).toBe(listed.marks);
           expect(list.text).toBe(listed.text);
@@ -186,8 +200,8 @@ describe("L3 directory wall content (owner request 2026-10-13, clean board text 
             expect(t.anchorX).toBe("left");
             expect(t.position[1]).toBeCloseTo(rows.listTop, 9);
           }
-          expect(marks.color).toBe("#8b8b94");
-          expect(list.color).toBe("#c4c4cc");
+          expect(marks.color).toBe(INK.mark);
+          expect(list.color).toBe(INK.list);
           const more = inWing.length - listed.entries;
           expect(footer.text).toBe(`\u25B8 ${labels.open.toUpperCase()}${more > 0 ? ` \u00B7 ${labels.more(more).toUpperCase()}` : ""}`);
           expect(footer.font).toBe(FONTS.monoBold);

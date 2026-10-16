@@ -89,8 +89,12 @@ export const LIST_STYLE: Record<WallSize, ListStyle> = {
 const MONO_EM = 0.6;
 /** A list line fits when it measures at most this share of `listWidthEm` (troika and kerning margin). */
 const LIST_FIT = 0.97;
-/** Quiet greys: the list stays under the full tier's bloom threshold, so only the tinted title and footer glow. */
-const INK = { sub: "#a1a1aa", list: "#c4c4cc", mark: "#8b8b94" } as const;
+/**
+ * Quiet greys, so only the tinted title and footer glow on the full tier. The directory batch reads
+ * each hex as linear (no `exactColors`, see `batchColor` in fx/labelProps.ts), so these are stored
+ * pre-converted: they draw as sRGB `#a1a1aa` (sub), `#c4c4cc` (list) and `#8b8b94` (marks).
+ */
+export const INK = { sub: "#5b5b67", list: "#8d8d9a", mark: "#42424c" } as const;
 const CONTINUED = "\u00A0";
 
 /** One face of a board: where its text plane stands (`PANEL.out` off the face), its troika yaw and reading direction. */
