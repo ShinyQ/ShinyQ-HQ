@@ -1,0 +1,215 @@
+import { describe, expect, it } from "vitest";
+import { buildExperienceData } from "@/content/experience";
+import { zoneAt } from "@/experience/camera/orbit";
+import { buildFloorLayouts, ROVER } from "@/experience/config";
+import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
+import { OPS } from "@/experience/floors/labs/ops";
+import { REACTOR } from "@/experience/floors/labs/reactor";
+import { roadGlow } from "@/experience/floors/labs/techReactor";
+import { labsWalk } from "@/experience/missions/walks";
+import { distanceToRect } from "@/experience/nav/collision";
+import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
+import { roadRoute } from "@/experience/nav/roadRoute";
+import { padViolations, rectGap } from "@/experience/nav/space";
+import type { LabPod } from "@/experience/types";
+import { expectSpaceRules } from "../helpers/space";
+
+/** The Data and ML spine (Round 7 G, Option 1): the centre path from the hub fork to the Tech Reactor. */
+const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
+const real = buildExperienceData("en", FLOOR_NAMES).labs.pods;
+const sidePods = real.filter((p) => p.wing !== "data");
+const pod = (slug: string, wing: LabPod["wing"], tier: LabPod["tier"], order: number): LabPod => ({
+  id: slug, slug, title: slug, tier, wing, accent: "amber", hologram: "chart", order, hasHologramView: tier === "hero", hasGallery: false,
+});
+const layout = buildLabsLayout(real);
+const { floor, network } = layout;
+const spinePods = layout.placed.filter((p) => p.pod.wing === "data");
+
+describe("L3 Data and ML spine", () => {
+  it("passes the space rules and the pad rules with the real pods, six spine pods, a hero spine pod and none", () => {
+    const sets = [
+      real,
+      [...sidePods, ...Array.from({ length: 6 }, (_, i) => pod(`d${i}`, "data", "featured", i))],
+      [...sidePods, pod("hero-data", "data", "hero", 0), pod("f-data", "data", "featured", 1)],
+      sidePods,
+      [],
+    ];
+    for (const pods of sets) {
+      const l = buildLabsLayout(pods);
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      const pads = buildFloorLayouts(8, { labs: pods }).L3.pads ?? [];
+      expect(padViolations({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach, pads })).toEqual([]);
+    }
+  });
+
+  it("turns short side wings past the last spine pod, so their last leg never crosses the spine rows", () => {
+    const software = tourOrder(real.filter((p) => p.wing === "software"));
+    const nonSoftware = real.filter((p) => p.wing !== "software");
+    const sets: [string, LabPod[]][] = [
+      ["one Product pod", [...nonSoftware, software[0]]],
+      ["no Product pods", nonSoftware],
+      [
+        "two Product, two AI, four featured Data",
+        [
+          pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1),
+          pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1),
+          ...Array.from({ length: 4 }, (_, i) => pod(`d${i}`, "data", "featured", i)),
+        ],
+      ],
+      ["eight hero Data only", Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i))],
+      ["one Product, eight hero Data", [pod("s0", "software", "featured", 0), ...Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i))]],
+    ];
+    for (const [name, pods] of sets) {
+      const l = buildLabsLayout(pods);
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      const pads = buildFloorLayouts(8, { labs: pods }).L3.pads ?? [];
+      expect(padViolations({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach, pads }), name).toEqual([]);
+      const spineEdge = Math.max(-Infinity, ...l.placed.filter((p) => p.pod.wing === "data").map((p) => p.rect.maxX));
+      for (const wing of ["software", "ai"] as const) {
+        const turn = l.network.roads.find((r) => r.id === wing)!.points.at(-2)!;
+        if (Number.isFinite(spineEdge)) expect(turn.x, `${name} ${wing}`).toBeGreaterThanOrEqual(spineEdge + LABS.tail);
+      }
+    }
+  });
+
+  it("docks spine pods alternating north and south from x = 24 in even steps, doors facing the spine, 6 u from the inner wing rows", () => {
+    expect(spinePods.map((p) => p.pod.slug)).toEqual(tourOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
+    spinePods.forEach((p, i) => {
+      expect(Math.sign(p.center.z), p.room).toBe(i % 2 === 0 ? -1 : 1);
+      expect(p.roadZ).toBe(0);
+      expect(Math.sign(0 - p.center.z)).toBe(p.facing);
+      expect(Math.min(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))).toBeCloseTo(LABS.road / 2 + LABS.forecourt);
+    });
+    expect(spinePods[0].center.z).toBeLessThan(0);
+    expect(spinePods[0].center.x).toBe(LABS.data.start + LABS.slot / 2);
+    // One even step (half a pitch) from pod to pod, so each row keeps a full pitch of at least a slot and a gap.
+    const steps = spinePods.slice(1).map((p, i) => p.center.x - spinePods[i].center.x);
+    for (const step of steps) {
+      expect(step).toBeCloseTo(steps[0]);
+      expect(step).toBeGreaterThanOrEqual((LABS.slot + LABS.gap) / 2);
+    }
+    const inner = layout.placed.filter((p) => p.pod.wing !== "data" && p.row === "inner");
+    for (const s of spinePods) for (const w of inner) expect(rectGap(s.rect, w.rect), `${s.room} ${w.room}`).toBeGreaterThanOrEqual(LABS.rowGap);
+    expect(Math.min(...inner.map((w) => Math.min(Math.abs(w.rect.minZ), Math.abs(w.rect.maxZ)))) - Math.max(...spinePods.map((s) => Math.max(Math.abs(s.rect.minZ), Math.abs(s.rect.maxZ))))).toBeCloseTo(LABS.rowGap);
+  });
+
+  it("widens the wing roads just enough for the spine and places the reactor plaza, Ops Control Room and Return pad by their rules", () => {
+    const depth = (p: { depth: number }) => p.depth;
+    const spineDepth = Math.max(0, ...spinePods.map(depth));
+    const innerDepth = Math.max(OPS.d, ...layout.placed.filter((p) => p.pod.wing !== "data" && p.row === "inner").map(depth));
+    expect(layout.wingZ).toBe(Math.max(LABS.wingZ, 2 * (LABS.road / 2 + LABS.forecourt) + spineDepth + LABS.rowGap + innerDepth));
+    expect(buildLabsLayout([]).wingZ).toBeGreaterThanOrEqual(LABS.wingZ);
+    // The plaza sits on the later wing turn (or a tail and its radius past the last spine pod), on the spine axis.
+    const turns = (["software", "ai"] as const).map((w) => network.roads.find((r) => r.id === w)!.points.at(-2)!.x);
+    const spineEdge = Math.max(...spinePods.map((p) => p.rect.maxX));
+    expect(layout.east.center).toEqual({ x: Math.max(...turns, spineEdge + LABS.tail + LABS.east / 2), z: 0 });
+    const lastInner = Math.max(...layout.placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX));
+    expect(layout.ops.rect.minX).toBe(lastInner + OPS.gap);
+    expect(floor.returnPad).toEqual({ x: layout.east.center.x + 10, z: 9 });
+    expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
+    expect(floor.stops!["L3:reactor"]).toEqual({ x: layout.east.center.x + REACTOR.ring, z: 0 });
+  });
+
+  it("spreads the spine pods from x = 24 to the reactor plaza, and packs them at the minimum pitch when there are many", () => {
+    // Pad the AI wing to 11 docked pods (PR #163's floor), whatever today's content docks there.
+    const aiDocked = tourOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
+    const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
+    const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
+    const cases: [string, LabPod[], LabPod[]][] = [
+      ["today's content", real, sidePods],
+      ["an 11-pod AI wing", [...real, ...extraAi], [...sidePods, ...extraAi]],
+      // Short side wings: eight hero spine pods cannot spread, so they pack and push the plaza east.
+      ["eight hero spine pods", [...shortSides, ...eightHero], shortSides],
+    ];
+    const minPitch = LABS.slot + LABS.gap;
+    for (const [name, pods, sides] of cases) {
+      const l = buildLabsLayout(pods);
+      const spine = l.placed.filter((p) => p.pod.wing === "data");
+      if (name === "an 11-pod AI wing") expect(l.placed.filter((p) => p.pod.wing === "ai").length, name).toBeGreaterThanOrEqual(11);
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      expect(spine[0].center.x, name).toBe(LABS.data.start + LABS.slot / 2);
+      for (const row of ["outer", "inner"] as const) {
+        const xs = spine.filter((p) => p.row === row).map((p) => p.center.x);
+        xs.slice(1).forEach((x, i) => expect(x - xs[i], `${name} ${row}`).toBeGreaterThanOrEqual(minPitch - 1e-9));
+      }
+      const plazaWest = l.east.center.x - LABS.east / 2;
+      const lastEdge = Math.max(...spine.map((p) => p.rect.maxX));
+      expect(plazaWest - lastEdge, name).toBeLessThanOrEqual(LABS.tail + LABS.slot);
+      expect(plazaWest - lastEdge, name).toBeGreaterThanOrEqual(LABS.tail);
+      // Where the side wings alone put the plaza, the spine's last slot ends a tail before its west rim.
+      const spineEnd = buildLabsLayout(sides).east.center.x - LABS.east / 2 - LABS.tail;
+      const pitch = 2 * (spine[1].center.x - spine[0].center.x);
+      const lastSlotEnd = Math.max(...spine.map((p) => p.center.x)) + LABS.slot / 2;
+      if (pitch > minPitch + 1e-9) {
+        expect(lastSlotEnd, name).toBeCloseTo(spineEnd);
+        expect(l.east.center.x, name).toBe(buildLabsLayout(sides).east.center.x);
+      } else {
+        // Packed: the spine pushes the plaza east past where the side wings alone would put it.
+        expect(pitch, name).toBeCloseTo(minPitch);
+        expect(lastSlotEnd, name).toBeGreaterThanOrEqual(spineEnd);
+        expect(l.east.center.x, name).toBe(lastEdge + LABS.tail + LABS.east / 2);
+      }
+      if (name === "eight hero spine pods") expect(pitch, name).toBeCloseTo(minPitch);
+      else expect(pitch, name).toBeGreaterThan(minPitch);
+    }
+  });
+
+  it("reaches every spine door along the road from the elevator, the camera turning at each", () => {
+    const grid = buildNavGrid(floor, ROVER.radius);
+    for (const p of spinePods) {
+      expect(isWalkable(grid, p.door), p.room).toBe(true);
+      const route = roadRoute(network, grid, floor.approach, p.door)!;
+      expect(Math.hypot(route.at(-1)!.x - p.door.x, route.at(-1)!.z - p.door.z)).toBeLessThan(1);
+      expect(zoneAt("L3", p.door, floor.viewZones)?.id).toBe(p.room);
+      expect(distanceToRect(floor.returnPad!, p.rect)).toBeGreaterThanOrEqual(6);
+    }
+  });
+
+  it("sends spine pods past its capacity and listed data pods to the data directory", () => {
+    const many = Array.from({ length: LABS.data.maxPods + 2 }, (_, i) => pod(`m${i}`, "data", "featured", i));
+    const crowded = buildLabsLayout([...sidePods, ...many, pod("listed-data", "data", "listed", 99)]);
+    expect(crowded.placed.filter((p) => p.pod.wing === "data")).toHaveLength(LABS.data.maxPods);
+    expect(crowded.directory.data.map((p) => p.slug)).toEqual([`m${LABS.data.maxPods}`, `m${LABS.data.maxPods + 1}`, "listed-data"]);
+    expectSpaceRules({ bounds: crowded.floor.bounds, obstacles: crowded.floor.obstacles, doors: crowded.floor.doors ?? [], network: crowded.network, start: crowded.floor.approach });
+  });
+
+  it("glows the spine from the reactor ring back to the westmost lit spine pod", () => {
+    const lit = [spinePods[1], spinePods[3]];
+    const segs = roadGlow(layout, lit);
+    const entry = network.roads.find((r) => r.id === "data")!.points.at(-1)!;
+    expect(segs).toContainEqual({ a: entry, b: { x: Math.min(...lit.map((p) => p.door.x)), z: 0 } });
+    for (const p of lit) expect(segs).toContainEqual({ a: { x: p.door.x, z: 0 }, b: p.door });
+    expect(segs).toHaveLength(1 + lit.length);
+  });
+
+  it("tours Product, AI, then Data and ML, ending at all three boards of the wall", () => {
+    const walk = labsWalk(real, { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
+    const rooms = walk.stops.filter((s) => s.room).map((s) => s.room);
+    const by = (w: LabPod["wing"]) => layout.placed.filter((p) => p.pod.wing === w).map((p) => p.room);
+    expect(rooms).toEqual([...by("software"), ...by("ai"), ...by("data")]);
+    expect(walk.stops.slice(-3).map((s) => s.to)).toEqual([directoryStop("software"), directoryStop("ai"), directoryStop("data")]);
+    expect(WING_TINT.data).toBe("#fbbf24");
+    expect(WING_SIDE).toEqual({ software: -1, ai: 1 });
+  });
+
+  it("has no Product Engineering directory stop when there are only AI pods", () => {
+    const walk = labsWalk(real.filter((p) => p.wing === "ai"), { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
+    expect(walk.stops.some((s) => s.group === "Product Engineering" && s.title === "More projects here")).toBe(false);
+  });
+
+  it("puts one floating sign at each road: wing signs past their mouths, the spine sign over the spine before the wall", () => {
+    for (const wing of ["software", "ai"] as const) {
+      const road = network.roads.find((r) => r.id === wing)!;
+      expect(layout.signs[wing].at).toEqual(road.points[1]);
+      expect(Math.hypot(layout.signs[wing].float.x - road.points[1].x, layout.signs[wing].float.z - road.points[1].z)).toBeCloseTo(Math.abs(LABS.signAlong));
+      // A negative signAlong pulls the sign back toward the hub centre, along the hub-to-mouth line.
+      const hub = road.points[0];
+      const fromHub = Math.hypot(layout.signs[wing].float.x - hub.x, layout.signs[wing].float.z - hub.z);
+      expect(fromHub).toBeCloseTo(Math.hypot(road.points[1].x - hub.x, road.points[1].z - hub.z) + LABS.signAlong);
+    }
+    expect(layout.signs.data.float).toEqual({ x: LABS.spineSignX, z: 0 });
+    expect(layout.signs.data.float.x).toBeLessThan(layout.boards.data.minX);
+    expect(Object.keys(layout.signs).sort()).toEqual(["ai", "data", "software"]);
+  });
+});

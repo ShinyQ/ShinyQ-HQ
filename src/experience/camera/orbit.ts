@@ -187,6 +187,13 @@ export interface ViewZone {
   classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number }>>;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
   prime?: boolean;
+  /**
+   * Applies only while the rover faces within about 104 degrees of this direction (forward `(sin h, cos h)`,
+   * `TRAVEL_SLACK` past perpendicular), so a zone that looks along a road never turns the camera against a
+   * rover driving the other way, and a rover arriving square to it keeps the zone. Callers
+   * without a heading (pure tests, layout checks) always get the zone.
+   */
+  travel?: Vec2;
 }
 
 /** The yaw and zoom a zone asks for on a camera class. */
@@ -236,9 +243,21 @@ export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportCl
   s.easing = false;
 }
 
+/**
+ * Cosine slack past perpendicular for `ViewZone.travel`: a rover arriving square to the travel direction
+ * (the tour reaches the data board stop heading north) keeps the zone despite tiny heading errors.
+ */
+export const TRAVEL_SLACK = 0.25;
+
 /** The zone the rover is in: static `VIEW_ZONES` first, then the floor layout's own (`FloorLayout.viewZones`). */
-export function zoneAt(floor: FloorId, p: Vec2, extra: readonly ViewZone[] = []): ViewZone | null {
-  const inside = (z: ViewZone) => p.x >= z.area.minX && p.x <= z.area.maxX && p.z >= z.area.minZ && p.z <= z.area.maxZ;
+export function zoneAt(floor: FloorId, p: Vec2 & { heading?: number }, extra: readonly ViewZone[] = []): ViewZone | null {
+  const heading = p.heading;
+  const inside = (z: ViewZone) =>
+    p.x >= z.area.minX &&
+    p.x <= z.area.maxX &&
+    p.z >= z.area.minZ &&
+    p.z <= z.area.maxZ &&
+    (!z.travel || heading === undefined || Math.sin(heading) * z.travel.x + Math.cos(heading) * z.travel.z >= -TRAVEL_SLACK);
   return VIEW_ZONES[floor]?.find(inside) ?? extra.find(inside) ?? null;
 }
 

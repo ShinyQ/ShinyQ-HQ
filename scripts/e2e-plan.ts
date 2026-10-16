@@ -30,6 +30,7 @@ export const ALL_SPECS = [
   "interact",
   "labs",
   "labs-data",
+  "labs-paths",
   "library-roof",
   "lifecycle",
   "memory",
@@ -147,7 +148,7 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
-  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
+  { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "labs-paths", "gallery", "walk", "spectacle", "fast-return", "reactor", "production"] },
   { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
   // L4 Writing: its walk ("Read my writing") reads the layout, so the walk spec runs too.
   // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
@@ -182,6 +183,8 @@ export const RULES: Rule[] = [
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
   { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions"] },
+  // View zones (travel direction, class views): the L3 three paths arrival and road entrances read them too.
+  { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },

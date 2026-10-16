@@ -2,15 +2,18 @@ import type { Wing } from "@/content/schema";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { LabPod } from "../../types";
 import type { Box } from "../roof/solids";
-import { directoryBoard, LABS, LABS_WINGS, tourOrder, WING_TINT, type DirectoryBoard } from "./layout";
+import { signPlate, wrapSign, type SignSpec } from "../../fx/signLayout";
+import { directoryBoard, LABS, LABS_WINGS, SIDE_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard, type LabsLayout } from "./layout";
 
 /**
- * Pure content of the L3 wing directory wall (owner request 2026-10-13: noticeable on arrival) and of
- * the Data and ML panel past the data plaza (owner request 2026-10-14). All panels are one merged mesh, their rims and title underlines one line batch, every text one troika
- * BatchedText (3 draw calls). Each panel shows the same text on its west face (the arrival camera and
- * the board stop) and its east face (rovers coming back from the wings). Text is pre-wrapped here, so
- * the line count is known and the list never runs into the footer. Phones get the `compact` wall:
- * the top three projects in larger type instead of five. Vitest runs it in node.
+ * Pure content of the L3 directory wall where the three roads fork (owner request 2026-10-13: noticeable
+ * on arrival; Round 7 G: one raised board per wing on four posts, the Data and ML board a gate over the
+ * spine). Boards and posts are one merged mesh, their rims, post edges and title underlines one line
+ * batch, every text one troika BatchedText (3 draw calls). Each board shows the same text on its west
+ * face (the arrival camera and the board stop) and its east face (rovers coming back from the wings).
+ * Text is pre-wrapped here, so the line count is known and the list never runs into the footer. Phones
+ * get the `compact` wall: the top three projects in larger type instead of five. Also the floating road
+ * signs over each road mouth. Vitest runs it in node.
  */
 
 export interface DirectoryLabels {
@@ -36,23 +39,23 @@ export interface WallLine {
   color: string;
 }
 
-/** Directory panels by wing: the layout's `boards` (the data panel stands past the data plaza); the hub pair by default. */
+/** Directory boards by wing: the layout's `boards`; all three fixed boards by default. */
 export type WallBoards = Partial<Record<Wing, DirectoryBoard>>;
-const HUB_BOARDS: WallBoards = { software: directoryBoard("software"), ai: directoryBoard("ai") };
+const WALL_BOARDS: WallBoards = Object.fromEntries(LABS_WINGS.map((w) => [w, directoryBoard(w)]));
 const panels = (boards: WallBoards) => LABS_WINGS.flatMap((wing) => (boards[wing] ? [{ wing, b: boards[wing]! }] : []));
 export const TIER_MARK: Record<LabPod["tier"], string> = { hero: "\u25C6", featured: "\u25C7", listed: "\u00B7" };
 
-/** Panel text layout in u: heights from the floor, sizes as font em. */
+/** Board text layout in u: heights from the floor (the footer from the board's bottom edge), sizes as font em. Owner request Round 7: titles about 25 percent and lists about 20 percent smaller. */
 export const PANEL = {
   /** Text inset from each side edge of a face. */
   inset: 0.3,
   /** Text and underlines stand this far off the face (no z-fighting). */
   out: 0.03,
-  title: { top: 0.35, size: 0.8, lineHeight: 1, lines: 2 },
+  title: { top: 0.35, size: 0.6, lineHeight: 1, lines: 2 },
   /** Gap between the title block and its underline. */
   underline: 0.2,
   sub: { gap: 0.2, size: 0.3 },
-  list: { gap: 0.3, size: 0.46, lineHeight: 1.1, perEntry: 2 },
+  list: { gap: 0.3, size: 0.37, lineHeight: 1.1, perEntry: 2 },
   footer: { y: 0.75, size: 0.32, gap: 0.25 },
 } as const;
 
@@ -69,12 +72,13 @@ export interface ListStyle {
 
 /**
  * Desktops and tablets list the top `LABS.boardEntries` (5). Phones list the top 3 in larger type, so
- * they read from the arrival view and the panel stop; the panel width (21 characters per line at
- * 0.56 u) still fits every top-3 title in two lines, and the taller line height separates the entries.
+ * they read from the arrival view and the board stop; the text width (22 characters per line at
+ * 0.45 u) still fits every top-3 title in two lines, and the taller line height separates the entries.
+ * Both sizes are about 20 percent below the earlier 0.46 and 0.56 (owner request Round 7).
  */
 export const LIST_STYLE: Record<WallSize, ListStyle> = {
   full: { size: PANEL.list.size, lineHeight: PANEL.list.lineHeight, perEntry: PANEL.list.perEntry, entries: LABS.boardEntries },
-  compact: { size: 0.56, lineHeight: 1.25, perEntry: 2, entries: 3 },
+  compact: { size: 0.45, lineHeight: 1.25, perEntry: 2, entries: 3 },
 };
 
 /** Average advance per character in em: JetBrains Mono is 0.6; Inter ExtraBold measures 0.51 to 0.57 on the project titles. */
@@ -87,7 +91,7 @@ const FACES = [
   { side: 1, yaw: Math.PI / 2, along: -1 },
 ] as const;
 
-/** Text width on a face. */
+/** Text width on a face: the same on every board (the gate is wider than the text). */
 export const textWidth = (): number => LABS.board.d - 2 * PANEL.inset;
 
 /** Characters per list line at the list size (conservative average advance). */
@@ -99,7 +103,7 @@ export function panelRows(style: ListStyle = LIST_STYLE.full) {
   const underline = titleTop - PANEL.title.size * PANEL.title.lineHeight * PANEL.title.lines - PANEL.underline;
   const subTop = underline - PANEL.sub.gap;
   const listTop = subTop - PANEL.sub.size - PANEL.list.gap;
-  const listBottom = PANEL.footer.y + PANEL.footer.size + PANEL.footer.gap;
+  const listBottom = LABS.board.base + PANEL.footer.y + PANEL.footer.size + PANEL.footer.gap;
   const listLines = Math.floor((listTop - listBottom) / (style.size * style.lineHeight) + 1e-9);
   return { titleTop, underline, subTop, listTop, listBottom, listLines };
 }
@@ -156,43 +160,59 @@ export function boardList(list: readonly LabPod[], maxLines: number, style: List
   return { text: out.join("\n"), entries: out.length, lines };
 }
 
-/** Every panel as solids (one merged mesh). */
-export function wallSolids(boards: WallBoards = HUB_BOARDS): Box[] {
-  return panels(boards).map(({ b }) => {
-    return { x: b.center.x, y: 0, z: b.center.z, w: LABS.board.w, h: LABS.board.h, d: LABS.board.d };
-  });
+/** Every board, then the four posts under them, as solids (one merged mesh; `y` is the bottom). */
+export function wallSolids(boards: WallBoards = WALL_BOARDS): Box[] {
+  const { base, h, w } = LABS.board;
+  const raised = panels(boards).map(({ b }) => ({ x: b.center.x, y: base, z: b.center.z, w, h: h - base, d: b.maxZ - b.minZ }));
+  const posts = wallPosts().map((p) => ({ x: (p.minX + p.maxX) / 2, y: 0, z: (p.minZ + p.maxZ) / 2, w: p.maxX - p.minX, h: base, d: p.maxZ - p.minZ }));
+  return [...raised, ...posts];
 }
 
-/** Each panel's 12 rim edges and a title underline on both faces, in its wing tint (one line batch). */
-export function wallLines(boards: WallBoards = HUB_BOARDS): WallLine[] {
+/** The wing whose board sits on a post: the outer posts carry their side board, the gate posts the Data and ML board. */
+function postWing(post: { minZ: number; maxZ: number }): Wing {
+  const z = (post.minZ + post.maxZ) / 2;
+  if (Math.abs(z) <= LABS.board.gate / 2) return "data";
+  return SIDE_WINGS.find((wing) => z >= directoryBoard(wing).minZ && z <= directoryBoard(wing).maxZ) ?? "data";
+}
+
+/** Box edges from `y0` to `y1` over a floor rect. */
+function boxEdges(r: { minX: number; maxX: number; minZ: number; maxZ: number }, y0: number, y1: number): WallLine["seg"][] {
+  const c: [number, number, number][] = [
+    [r.minX, y0, r.minZ],
+    [r.maxX, y0, r.minZ],
+    [r.maxX, y0, r.maxZ],
+    [r.minX, y0, r.maxZ],
+    [r.minX, y1, r.minZ],
+    [r.maxX, y1, r.minZ],
+    [r.maxX, y1, r.maxZ],
+    [r.minX, y1, r.maxZ],
+  ];
+  const edges = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]] as const;
+  return edges.map(([a, e]) => [...c[a], ...c[e]]);
+}
+
+/** Each board's 12 rim edges and a title underline on both faces in its wing tint, and each post's four vertical edges in the tint of the board above it (one line batch). */
+export function wallLines(boards: WallBoards = WALL_BOARDS): WallLine[] {
   const out: WallLine[] = [];
   const { underline } = panelRows();
   const half = textWidth() / 2;
   for (const { wing, b } of panels(boards)) {
     const color = WING_TINT[wing];
-    const y1 = LABS.board.h;
-    const c: [number, number, number][] = [
-      [b.minX, 0, b.minZ],
-      [b.maxX, 0, b.minZ],
-      [b.maxX, 0, b.maxZ],
-      [b.minX, 0, b.maxZ],
-      [b.minX, y1, b.minZ],
-      [b.maxX, y1, b.minZ],
-      [b.maxX, y1, b.maxZ],
-      [b.minX, y1, b.maxZ],
-    ];
-    const edges = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]] as const;
-    for (const [a, e] of edges) out.push({ seg: [...c[a], ...c[e]], color });
+    for (const seg of boxEdges(b, LABS.board.base, LABS.board.h)) out.push({ seg, color });
     for (const face of FACES) {
       const x = b.center.x + face.side * (LABS.board.w / 2 + PANEL.out);
       out.push({ seg: [x, underline, b.center.z - half, x, underline, b.center.z + half], color });
     }
   }
+  for (const post of wallPosts()) {
+    const color = WING_TINT[postWing(post)];
+    for (const seg of boxEdges(post, 0, LABS.board.base).slice(8)) out.push({ seg, color });
+  }
   return out;
 }
 
-/** Every text of the wall, both faces of both panels (one BatchedText). Wing names come from `labels.wings`, never literals. */
-export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts, size: WallSize = "full", boards: WallBoards = HUB_BOARDS): BatchedLabel[] {
+/** Every text of the wall, both faces of every board (one BatchedText). Wing names come from `labels.wings`, never literals. */
+export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fonts: DirectoryFonts, size: WallSize = "full", boards: WallBoards = WALL_BOARDS): BatchedLabel[] {
   const style = LIST_STYLE[size];
   const rows = panelRows(style);
   const width = textWidth();
@@ -211,9 +231,21 @@ export function wallLabels(pods: readonly LabPod[], labels: DirectoryLabels, fon
         { text: title.lines.join("\n"), position: at(0, rows.titleTop), yaw: face.yaw, font: fonts.monoBold, fontSize: title.size, color, anchorX: "center", anchorY: "top", textAlign: "center", lineHeight: PANEL.title.lineHeight },
         { text: sub, position: at(0, rows.subTop), yaw: face.yaw, font: fonts.mono, fontSize: PANEL.sub.size, color: INK.sub, anchorX: "center", anchorY: "top", textAlign: "center" },
         { text: list.text, position: at(-width / 2, rows.listTop), yaw: face.yaw, font: fonts.sansBold, fontSize: style.size, color: INK.list, anchorX: "left", anchorY: "top", textAlign: "left", lineHeight: style.lineHeight },
-        { text: footer, position: at(0, PANEL.footer.y), yaw: face.yaw, font: fonts.monoBold, fontSize: PANEL.footer.size, color, anchorX: "center", anchorY: "bottom", textAlign: "center" },
+        { text: footer, position: at(0, LABS.board.base + PANEL.footer.y), yaw: face.yaw, font: fonts.monoBold, fontSize: PANEL.footer.size, color, anchorX: "center", anchorY: "bottom", textAlign: "center" },
       );
     }
   }
   return out.filter((l) => l.text.trim().length > 0);
+}
+
+/** The floating road signs (Round 7 G): one per road, upright over its mouth, plate bottom above the rover. */
+export const ROAD_SIGN = { font: 0.8, y: 3, wrap: 12 } as const;
+
+export function roadSigns(layout: Pick<LabsLayout, "signs">, wings: Record<Wing, string>, font: string): SignSpec[] {
+  return LABS_WINGS.map((wing) => {
+    const text = wrapSign(wings[wing].toUpperCase(), ROAD_SIGN.wrap);
+    const { h } = signPlate({ text, fontSize: ROAD_SIGN.font });
+    const at = layout.signs[wing].float;
+    return { text, x: at.x, y: ROAD_SIGN.y + h / 2, z: at.z, color: WING_TINT[wing], fontSize: ROAD_SIGN.font, font };
+  });
 }

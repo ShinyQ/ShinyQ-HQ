@@ -239,9 +239,11 @@ test("the Labs floor stays under the draw call budget", async ({ page }) => {
 
 /**
  * L3 arrival draw calls before the round 5 consolidation (P8 Task 1 baseline on SwiftShader, default
- * 1280x720 viewport, deep link to /en/labs): the directory wall in the arrival view must not raise them.
+ * 1280x720 viewport, deep link to /en/labs: lite 66, full 85): the directory wall in the arrival view must
+ * not raise them. Round 7 G three paths: the Data and ML spine pods and its road now sit in the arrival
+ * view, +2 calls on both tiers (main measured 65 and 85, the branch 67 and 87; owner note in the PR).
  */
-const L3_ARRIVAL_CALLS = { lite: 66, full: 85 } as const;
+const L3_ARRIVAL_CALLS = { lite: 67, full: 87 } as const;
 
 for (const tier of ["lite", "full"] as const) {
   test(`the Labs arrival view stays at or under its pre-consolidation draw calls (${tier})`, async ({ page }) => {
@@ -268,8 +270,8 @@ async function openLabsArrival(page: Page) {
   await waitForCameraSettle(page);
 }
 
-/** Screen box (CSS px) of a wing panel: the corners of its point-and-go pick volume. */
-async function panelBox(page: Page, wing: "software" | "ai") {
+/** Screen box (CSS px) of a directory board: the corners of its point-and-go pick volume. */
+async function panelBox(page: Page, wing: "software" | "data" | "ai") {
   return page.evaluate((id) => {
     const { interact } = (window as unknown as PanelWindow).__hq;
     const points = [0, 1].flatMap((fx) => [0, 1].flatMap((fz) => [0.02, 0.98].map((lift) => interact.screenAt(id, fx, fz, lift))));
@@ -280,23 +282,51 @@ async function panelBox(page: Page, wing: "software" | "ai") {
   }, `L3:board:${wing}`);
 }
 
+/**
+ * The on-screen part of a board that may run off the screen edge (phones): its pick volume sampled at 21
+ * points across its width, top and bottom; `shown` is the share of samples on screen (a corner off screen
+ * projects to null, so `panelBox` cannot measure it).
+ */
+async function visiblePanel(page: Page, wing: "software" | "ai") {
+  return page.evaluate((id) => {
+    const { interact } = (window as unknown as PanelWindow).__hq;
+    const steps = Array.from({ length: 21 }, (_, i) => i / 20);
+    const columns = steps.map((fz) => [0, 1].flatMap((fx) => [0.02, 0.98].map((lift) => interact.screenAt(id, fx, fz, lift))));
+    const visible = columns.filter((c) => c.every(Boolean)).flat() as { x: number; y: number }[];
+    if (!visible.length) return null;
+    const xs = visible.map((p) => p.x);
+    const ys = visible.map((p) => p.y);
+    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys), shown: visible.length / (columns.length * 4) };
+  }, `L3:board:${wing}`);
+}
+
 test.describe("L3 directory wall (round 5 consolidation)", () => {
   for (const size of [
     { width: 1440, height: 900, safe: DESKTOP_SAFE, phone: false },
     { width: 390, height: 844, safe: PHONE_SAFE, phone: true },
   ] as const) {
-    test(`both wing panels are whole and unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
+    // Phones (owner review 2026-10-16): the camera stays east of the elevator shaft, so the 22 u wall cannot be
+    // whole; the gate board is, and each side board keeps at least three quarters of its width on screen.
+    test(`${size.phone ? "the gate board is whole and the side boards mostly" : "all three directory boards are whole and"} unobstructed on arrival @ ${size.width}x${size.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, isMobile: size.phone, hasTouch: size.phone });
       const page = await context.newPage();
       await openLabsArrival(page);
-      for (const wing of ["software", "ai"] as const) {
-        const box = await panelBox(page, wing);
+      for (const wing of ["software", "data", "ai"] as const) {
+        const side = size.phone && wing !== "data";
+        // `shown` only comes from `visiblePanel` (phone side boards).
+        const box: { minX: number; maxX: number; minY: number; maxY: number; shown?: number } | null = side ? await visiblePanel(page, wing) : await panelBox(page, wing);
         expect(box, wing).not.toBeNull();
-        expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
-        expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);
+        if (side) {
+          expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.75);
+        } else {
+          expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
+          expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);
+        }
         expect(box!.minY, wing).toBeGreaterThanOrEqual(size.safe.top);
         expect(box!.maxY, wing).toBeLessThanOrEqual(size.height - size.safe.bottom);
-        const middle = { x: (box!.minX + box!.maxX) / 2, y: (box!.minY + box!.maxY) / 2 };
+        const minX = Math.max(box!.minX, size.safe.side);
+        const maxX = Math.min(box!.maxX, size.width - size.safe.side);
+        const middle = { x: (minX + maxX) / 2, y: (box!.minY + box!.maxY) / 2 };
         expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, middle), `${wing}: HUD over the panel`).toBe("CANVAS");
       }
       await context.close();

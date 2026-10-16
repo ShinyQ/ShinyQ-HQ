@@ -31,20 +31,24 @@ const pod = (slug: string, wing: LabPod["wing"], tier: LabPod["tier"], order: nu
 
 describe("L3 Ops Control Room placement", () => {
   it("docks in the inner pocket of the AI wing beside the Tech Reactor (owner pick 2026-10-14)", () => {
-    expect(ops.rect).toEqual({ minX: 116, maxX: 122, minZ: 11, maxZ: 17 });
+    // `OPS.gap` past the last inner AI pod; its front on the inner forecourt line of the AI wing road (|z| = layout.wingZ).
+    const lastInner = Math.max(...layout.placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX));
+    const front = layout.wingZ - LABS.road / 2 - LABS.forecourt;
+    expect(ops.rect).toEqual({ minX: lastInner + OPS.gap, maxX: lastInner + OPS.gap + OPS.w, minZ: front - OPS.d, maxZ: front });
     expect(ops.rect.maxX - ops.rect.minX).toBe(OPS.w);
     expect(ops.rect.maxZ - ops.rect.minZ).toBe(OPS.d);
-    // The room fits before the AI road turns to the plaza (x 97 to 103 and the turn at 107 before
-    // MII Deck and MII Cowork docked, 2026-10-16).
-    expect(layout.east.center).toEqual({ x: 126, z: 0 });
+    // The room fits before the AI road turns to the plaza, and the plaza lies east of that turn.
+    const turn = layout.network.roads.find((r) => r.id === "ai")!.points.at(-2)!;
+    expect(turn.x).toBeGreaterThanOrEqual(ops.rect.maxX + LABS.road / 2);
+    expect(layout.east.center.x).toBeGreaterThanOrEqual(turn.x);
   });
 
   it("is a room with a door pad, a spur from the AI wing road, an obstacle, a tall column, a camera zone and no stop", () => {
     const door = floor.doors?.find((d) => d.room === OPS_ROOM);
     expect(door).toEqual({ room: OPS_ROOM, at: ops.door, facing: { x: 0, z: -1 } });
-    expect(ops.door).toEqual({ x: 119, z: 17 + LABS.padInset });
+    expect(ops.door).toEqual({ x: (ops.rect.minX + ops.rect.maxX) / 2, z: ops.rect.maxZ + LABS.padInset });
     const spur = layout.network.spurs.find((s) => s.room === OPS_ROOM);
-    expect(spur?.from).toEqual({ x: 119, z: LABS.wingZ });
+    expect(spur?.from).toEqual({ x: ops.door.x, z: layout.wingZ });
     expect(spur?.to).toEqual(ops.door);
     expect(onNetwork(layout.network, spur!.from)).toBe(true);
     expect(floor.obstacles).toContainEqual(ops.rect);

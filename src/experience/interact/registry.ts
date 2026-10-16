@@ -249,6 +249,7 @@ function labsBoards(labs: LabsLayout, data: InteractData): Interactable[] {
       label: data.labels.board(data.experience.labs.wings[wing]),
       at: { x: board.stop.x, z: board.stop.z },
       bounds: bare(board),
+      base: LABS.board.base,
       height: LABS.board.h,
       action: { type: "command", command: "palette:pods" },
     };

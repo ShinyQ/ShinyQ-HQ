@@ -66,8 +66,8 @@ describe("L3 reactor core", () => {
   it("routes along the road from one wing end to the other around the core", () => {
     const north = network.roads.find((r) => r.id === "software")!;
     const south = network.roads.find((r) => r.id === "ai")!;
-    const from = north.points[2];
-    const to = south.points[2];
+    const from = north.points[3];
+    const to = south.points[3];
     const path = pathBetween(network, from, to)!;
     expect(path).not.toBeNull();
     expect(minDistance(along(from, path), reactor.rect)).toBeGreaterThan(LABS.road / 2 - 0.5);

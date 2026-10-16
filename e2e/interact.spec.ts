@@ -63,7 +63,8 @@ test.describe("point and go with a mouse", () => {
     await openFloor(page, "/en/labs");
     const target = await visibleTarget(page, { kinds: ["door", "board"] });
     await hoverTarget(page, target.id);
-    await page.mouse.move(4, 4, { steps: 4 });
+    const empty = await emptyFloorPoint(page);
+    await page.mouse.move(empty.x, empty.y, { steps: 4 });
     await expect.poll(() => hoveredTarget(page)).toBeNull();
     await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe("");
   });

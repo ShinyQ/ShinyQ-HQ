@@ -6,7 +6,7 @@ import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts, FLOOR_IDS, LOBBY, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { OPS } from "@/experience/floors/labs/ops";
-import { buildLabsLayout } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS } from "@/experience/floors/labs/layout";
 import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
 import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
@@ -199,11 +199,13 @@ describe("interactablesFor on the real content", () => {
     expect(kiosk.label).toBe(en.hud.launcher.askRover);
   });
 
-  it("adds both L3 wing directory boards, which open the projects palette from their stop", () => {
+  it("adds all three raised L3 directory boards, which open the projects palette from their stop", () => {
     const labs = buildLabsLayout(experience.labs.pods);
-    for (const wing of ["software", "ai"] as const) {
+    for (const wing of ["software", "ai", "data"] as const) {
       const board = find("L3", `L3:board:${wing}`)!;
       expect(board.kind).toBe("board");
+      expect(board.base).toBe(LABS.board.base);
+      expect(board.height).toBe(LABS.board.h);
       expect(board.action).toEqual({ type: "command", command: "palette:pods" });
       expect(board.at).toEqual(labs.boards[wing].stop);
       expect(board.label).toBe(`${experience.labs.wings[wing]} directory`);
