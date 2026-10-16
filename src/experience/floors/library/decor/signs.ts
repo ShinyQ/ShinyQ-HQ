@@ -38,7 +38,7 @@ export function stationBackEdge(s: LibraryStation): Vec2 {
  * One floating sign per zone that has a station, hung over the back edge of the zone's first station (a
  * storefront sign over the first desk; for the posts that is the featured stage). Off the road, so it is
  * never the plate between the follow camera and the rover. `layout.signs` (the zone anchors on the road)
- * stays for the dev concepts. Pure: the layout test reads it.
+ * stays in the layout contract for the tests; no decor reads it. Pure: the layout test reads it.
  */
 export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibraryZone, string>): SignSpec[] {
   return LIBRARY_ZONES.flatMap((zone) => {
