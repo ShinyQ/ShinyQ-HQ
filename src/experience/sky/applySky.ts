@@ -2,7 +2,7 @@ import { Color, InstancedBufferAttribute, Object3D, type InstancedMesh, type Sha
 import { SKY, type Orb, type SkyState } from "./dayNight";
 
 const ORB_RADIUS = 380;
-const SUN_SIZE = 46;
+const SUN_SIZE = 36;
 const MOON_SIZE = 30;
 
 function smoothstep(a: number, b: number, x: number): number {

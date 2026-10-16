@@ -227,10 +227,10 @@ void main(){
   } else if (uMode == 12) {
     vec3 d = normalize(vW - vC);
     float h = d.y - uParams.x;
-    col = mix(uFill, c, smoothstep(0., h > 0. ? .55 : .7, abs(h)));
+    col = mix(uFill, c, smoothstep(0., h > 0. ? .3 : .25, abs(h)));
     float s = max(dot(d, uSun), 0.);
     float hug = exp(-h * h * 60.);
-    col += uGlow * (pow(s, 4.) * (.18 + .5 * hug) + pow(s, 48.) * .5);
+    col += uGlow * (pow(s, 6.) * (.2 + .6 * hug) + pow(s, 64.) * .5);
     vec2 sp = vec2(atan(d.z, d.x), asin(clamp(d.y, -1., 1.))) * 160.;
     vec2 cell = floor(sp);
     float r = hash(cell.x * 91.7 + cell.y * 13.3);

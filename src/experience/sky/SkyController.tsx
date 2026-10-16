@@ -49,7 +49,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   useDispose(domeMaterial);
   useDispose(orbMaterial);
   const domeColor = useMemo(() => new Float32Array([1, 1, 1]), []);
-  const orbColor = useMemo(() => new Float32Array([...neonColor("#ffb070", 2.2, tier).toArray(), ...neonColor("#dfe6ff", 1.4, tier).toArray()]), [tier]);
+  const orbColor = useMemo(() => new Float32Array([...neonColor("#ffa860", 1.8, tier).toArray(), ...neonColor("#dfe6ff", 1.4, tier).toArray()]), [tier]);
   useUniformTime(useMemo(() => [domeMaterial, orbMaterial], [domeMaterial, orbMaterial]));
 
   const mode = useRef<SkyMode>({ source: "held", phase: 0 });

@@ -8,12 +8,14 @@ export const SKY_PHASES = { night: 0, dawn: 0.25, day: 0.5, dusk: 0.75 } as cons
 export type SkyPhaseName = keyof typeof SKY_PHASES;
 
 /**
- * Sky geometry in radians. `horizon`: elevation of the dome's horizon (the follow cameras look about
- * 38 degrees down, so the void the visitor sees sits below the true horizon). `arc`: how far the sun
- * and moon rise above (and sink below) it. `azimuth`: puts the night moon and the midday sun in front
- * of the L1 default camera (it looks toward -x, -z).
+ * Sky geometry in radians. `horizon`: elevation of the dome's horizon. The follow cameras look 44 to 47
+ * degrees down (the frame top sits about 22 to 24 degrees below level), so the void around the
+ * floating tower that a visitor sees lies well below the true horizon; the dome's horizon sits inside
+ * it. `arc`: how far the sun and moon rise above (and sink below) it. `azimuth`: puts the night moon
+ * and the midday sun at azimuth 0 (+z), in the open void on the left of the L1 desktop view (the camera
+ * looks along about -0.34 rad there).
  */
-export const SKY = { horizon: -0.42, arc: 0.07, azimuth: Math.PI / 4 } as const;
+export const SKY = { horizon: -0.6, arc: 0.09, azimuth: Math.PI } as const;
 
 export function clockPhase(nowMs: number): number {
   return (((nowMs % CYCLE_MS) + CYCLE_MS) % CYCLE_MS) / CYCLE_MS;
@@ -75,7 +77,7 @@ const NIGHT = sceneSettings("full");
 const C = {
   night: new Color(NIGHT.fog.color),
   dayZenith: new Color("#1a1547"),
-  dayHorizon: new Color("#0e4a5a"),
+  dayHorizon: new Color("#0a5868"),
   warmHorizon: new Color("#4a2350"),
   glow: new Color("#ff9a5c"),
   warmGlow: new Color("#ff7a45"),
@@ -135,7 +137,7 @@ export function skyState(phase: number, out: SkyState = createSkyState()): SkySt
   out.zenith.copy(C.night).lerp(C.dayZenith, day);
   out.horizon.copy(C.night).lerp(C.dayHorizon, day).lerp(C.warmHorizon, warm * 0.55);
   out.fog.copy(out.horizon).lerp(out.zenith, 0.25);
-  out.glow.copy(C.glow).lerp(C.warmGlow, warm).multiplyScalar(day);
+  out.glow.copy(C.glow).lerp(C.warmGlow, warm).multiplyScalar(0.16 * day + 0.41 * warm);
   out.hemisphere.sky.copy(C.hemiNight).lerp(C.hemiDay, day);
   out.hemisphere.ground.copy(out.fog);
   out.hemisphere.intensity = NIGHT.hemisphere[2] + 0.1 * day;
