@@ -531,6 +531,14 @@
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console"
+    },
+    "settings": {
+      "openLinks": {
+        "label": "Open links in",
+        "hint": "New tabs and links without a view open here",
+        "page": "Classic site",
+        "3d": "3D"
+      }
     }
   },
   "drawer": {
