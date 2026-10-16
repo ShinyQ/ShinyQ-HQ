@@ -26,14 +26,33 @@ export const REACH = { pad: PAD.radius, point: 0.8 } as const;
 export interface PickVolume {
   center: [number, number, number];
   size: [number, number, number];
+  /** Turn about the vertical axis (three's `rotation.y`); 0 for axis-aligned targets. */
+  yaw: number;
 }
 
-/** The box the pointer hits: the footprint from `base` (the floor by default) up to `height`. */
-export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind" | "base">): PickVolume {
+/**
+ * The box the pointer hits: the footprint from `base` (the floor by default) up to `height`. A target with
+ * an oriented `box` (the turned L3 directory boards) uses it, so the volume covers the object itself.
+ */
+export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind" | "base" | "box">): PickVolume {
   const top = item.height ?? PICK_HEIGHT[item.kind];
   const base = Math.min(item.base ?? 0, top);
+  const y = (base + top) / 2;
+  if (item.box) {
+    const { center, w, d, yaw } = item.box;
+    return { center: [center.x, y, center.z], size: [w, top - base, d], yaw };
+  }
   const { minX, maxX, minZ, maxZ } = item.bounds;
-  return { center: [(minX + maxX) / 2, (base + top) / 2, (minZ + maxZ) / 2], size: [maxX - minX, top - base, maxZ - minZ] };
+  return { center: [(minX + maxX) / 2, y, (minZ + maxZ) / 2], size: [maxX - minX, top - base, maxZ - minZ], yaw: 0 };
+}
+
+/** Floor-local point at fractions (0 to 1) of a pick volume along its local x, y and z, turned by its yaw. */
+export function volumePoint(v: PickVolume, fx: number, fy: number, fz: number): [number, number, number] {
+  const lx = (fx - 0.5) * v.size[0];
+  const lz = (fz - 0.5) * v.size[2];
+  const c = Math.cos(v.yaw);
+  const s = Math.sin(v.yaw);
+  return [v.center[0] + lx * c + lz * s, v.center[1] + (fy - 0.5) * v.size[1], v.center[2] - lx * s + lz * c];
 }
 
 /** Where the floating name tag stands (floor-local): over the approach point, where the rover will stop. */

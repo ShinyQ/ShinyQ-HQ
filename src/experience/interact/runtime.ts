@@ -1,4 +1,4 @@
-import { pickVolume } from "./pick";
+import { pickVolume, volumePoint } from "./pick";
 import type { Interactable } from "./registry";
 
 type Point3 = { x: number; y: number; z: number };
@@ -23,11 +23,11 @@ export const interactRuntime = {
   screenOf(id: string, lift = 0.85): ScreenPoint | null {
     return interactRuntime.screenAt(id, 0.5, 0.5, lift);
   },
-  /** CSS px of a point inside a target's pick volume: `fx`, `fz` across its footprint, `lift` up its height (0 to 1 each). */
+  /** CSS px of a point inside a target's pick volume: `fx`, `fz` across its (turned) footprint, `lift` up its height (0 to 1 each). */
   screenAt(id: string, fx: number, fz: number, lift: number): ScreenPoint | null {
     const item = interactRuntime.items.find((i) => i.id === id);
     if (!item || !interactRuntime.project) return null;
-    const { center, size } = pickVolume(item);
-    return interactRuntime.project({ x: center[0] + (fx - 0.5) * size[0], y: interactRuntime.floorY + center[1] - size[1] / 2 + size[1] * lift, z: center[2] + (fz - 0.5) * size[2] });
+    const [x, y, z] = volumePoint(pickVolume(item), fx, lift, fz);
+    return interactRuntime.project({ x, y: interactRuntime.floorY + y, z });
   },
 };

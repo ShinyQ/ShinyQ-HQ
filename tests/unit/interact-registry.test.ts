@@ -19,6 +19,7 @@ import {
   type InteractLabels,
   type Interactable,
 } from "@/experience/interact/registry";
+import { pickVolume, volumePoint } from "@/experience/interact/pick";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, nearestWalkable } from "@/experience/nav/navgrid";
 
@@ -209,6 +210,41 @@ describe("interactablesFor on the real content", () => {
       expect(board.action).toEqual({ type: "command", command: "palette:pods" });
       expect(board.at).toEqual(labs.boards[wing].stop);
       expect(board.label).toBe(`${experience.labs.wings[wing]} directory`);
+    }
+  });
+
+  it("gives every L3 board its turned footprint, so the pick volume and the outline cover the board itself", () => {
+    const labs = buildLabsLayout(experience.labs.pods);
+    for (const wing of ["software", "ai", "data"] as const) {
+      const b = labs.boards[wing];
+      const item = find("L3", `L3:board:${wing}`)!;
+      expect(item.box).toEqual({ center: b.center, w: LABS.board.w, d: LABS.board.width, yaw: b.yaw + Math.PI / 2 });
+      const v = pickVolume(item);
+      expect(v.size).toEqual([LABS.board.w, LABS.board.h - LABS.board.base, LABS.board.width]);
+      expect(v.yaw).toBe(b.yaw + Math.PI / 2);
+      expect(v.center).toEqual([b.center.x, (LABS.board.base + LABS.board.h) / 2, b.center.z]);
+      const corners = [0, 1].flatMap((fx) => [0, 1].map((fz) => volumePoint(v, fx, 0, fz)));
+      const expected = [-1, 1].flatMap((sn) =>
+        [-1, 1].map((sa) => ({
+          x: b.center.x + b.along.x * sa * (LABS.board.width / 2) + b.normal.x * sn * (LABS.board.w / 2),
+          z: b.center.z + b.along.z * sa * (LABS.board.width / 2) + b.normal.z * sn * (LABS.board.w / 2),
+        })),
+      );
+      for (const e of expected) {
+        const hit = corners.find(([x, , z]) => Math.abs(x - e.x) < 1e-6 && Math.abs(z - e.z) < 1e-6);
+        expect(hit, `${wing} corner ${e.x},${e.z}`).toBeDefined();
+      }
+      for (const [, y] of corners) expect(y).toBeCloseTo(LABS.board.base, 9);
+    }
+  });
+
+  it("keeps every other target axis-aligned (no box, yaw 0)", () => {
+    for (const floor of FLOOR_IDS) {
+      for (const item of items[floor]) {
+        if (item.kind === "board" && item.floor === "L3") continue;
+        expect(item.box, item.id).toBeUndefined();
+        expect(pickVolume(item).yaw, item.id).toBe(0);
+      }
     }
   });
 

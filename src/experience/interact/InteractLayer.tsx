@@ -42,7 +42,8 @@ function Highlight({ item, tier, reducedMotion }: { item: Interactable; tier: Gp
   const line = useRef<LineSegments>(null);
   const fill = useRef<Mesh>(null);
   const ring = useRef<Mesh>(null);
-  const { center, size } = pickVolume(item);
+  const { center, size, yaw } = pickVolume(item);
+  const rotation: [number, number, number] = [0, yaw, 0];
 
   useFrame(({ clock }) => {
     const opacity = highlightOpacity(clock.elapsedTime, reducedMotion);
@@ -54,11 +55,11 @@ function Highlight({ item, tier, reducedMotion }: { item: Interactable; tier: Gp
 
   return (
     <group name="interact-highlight">
-      <lineSegments ref={line} geometry={edges} position={center} scale={size} raycast={NO_RAYCAST}>
+      <lineSegments ref={line} geometry={edges} position={center} rotation={rotation} scale={size} raycast={NO_RAYCAST}>
         <lineBasicMaterial color={GLOW} transparent toneMapped={false} />
       </lineSegments>
       {tier === "full" && (
-        <mesh ref={fill} position={center} scale={size} raycast={NO_RAYCAST}>
+        <mesh ref={fill} position={center} rotation={rotation} scale={size} raycast={NO_RAYCAST}>
           <boxGeometry args={[1, 1, 1]} />
           <meshBasicMaterial color={GLOW} transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
         </mesh>
@@ -137,6 +138,7 @@ export function InteractLayer({ layouts, data, tier }: { layouts: FloorLayouts; 
     items.forEach((item, i) => {
       const v = pickVolume(item);
       d.position.set(...v.center);
+      d.rotation.set(0, v.yaw, 0);
       d.scale.set(...v.size);
       d.updateMatrix();
       m.setMatrixAt(i, d.matrix);
