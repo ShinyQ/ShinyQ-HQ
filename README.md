@@ -55,7 +55,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a rollup every 4 hours by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
-- **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR.
+- **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR that touches 3D code, on `main` and nightly.
 
 ## The tower
 
@@ -231,8 +231,8 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 ## Testing and CI
 
 - **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
-- **CI** (`ci.yml`): check and build in parallel, Playwright in 4 shards and the 3D perf gates in 2 shards against one build, plus a blocking Lighthouse CI job. `main` accepts changes only through PRs with green checks.
-- **Scheduled**: Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
+- **CI** (`ci.yml`): check and build in parallel; on a PR, smart CI runs Playwright (4 shards), the 3D perf gates (2 shards) and a blocking Lighthouse CI job only when the changed paths need them; `main` and the nightly run everything. `main` accepts changes only through PRs with green checks.
+- **Scheduled**: a full CI run with a strict visual gate, Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
 - **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export scan, the deploy smoke check and e2e; gitleaks, a public-safety lint over the export and SHA-pinned actions.
 
 | Gate | Budget |
