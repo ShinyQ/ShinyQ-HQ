@@ -5,11 +5,15 @@
  *   bun scripts/ci-status.ts --repo owner/name --sha <sha> [--wait-minutes 40] [--grace-minutes 3] [--force-rerun true]
  *
  * Writes `reuse=true|false` to $GITHUB_OUTPUT and one line to the job summary.
- * - reuse=true: CI's aggregate check `Build, CV and e2e` passed on this commit, or a successful CI run
- *   tested a commit with the same tree (the weekly facts PR before its squash merge: a GITHUB_TOKEN
- *   merge starts no push CI on main).
- * - reuse=false: no CI result for this commit or its tree after the grace period, or --force-rerun
- *   true: the deploy runs the e2e shards itself.
+ * Only complete CI runs are reused: runs that carry the `ci-full` artifact, uploaded by the aggregate job
+ * when the run ran every e2e shard, the perf gates and Lighthouse (pushes to main, dispatches and
+ * schedules always do). A selective PR run is never reused, even on the same tree; older runs without
+ * the marker are not reused either (the deploy then runs the e2e shards itself).
+ * - reuse=true: CI's aggregate check `Build, CV and e2e` passed on this commit in a complete run, or a
+ *   successful complete CI run tested a commit with the same tree (the weekly facts PR before its squash
+ *   merge: a GITHUB_TOKEN merge starts no push CI on main).
+ * - reuse=false: no complete CI result for this commit or its tree after the grace period, or
+ *   --force-rerun true: the deploy runs the e2e shards itself.
  * While a CI run on the sha is unfinished (its aggregate check does not exist yet), it waits.
  * Exits 1 when CI failed on the commit, or still runs after --wait-minutes.
  * Uses fetch and GH_TOKEN only (checks: read, actions: read, contents: read); no dependencies.
@@ -18,6 +22,8 @@ import { appendFileSync } from "node:fs";
 
 export const CI_CHECK = "Build, CV and e2e";
 export const CI_WORKFLOW = "ci.yml";
+/** Artifact the aggregate CI job uploads only when the run ran every heavy job (.github/workflows/ci.yml). */
+export const CI_FULL_ARTIFACT = "ci-full";
 
 export interface CheckRun {
   name: string;
@@ -31,13 +37,26 @@ export type Verdict = { kind: "reuse"; url: string } | { kind: "wait" } | { kind
 /** Cancelled or skipped runs (a superseded push, a manual cancel) say nothing about the commit. */
 const NO_RESULT = new Set(["cancelled", "skipped", "neutral", "stale"]);
 
-export function verdictFromChecks(runs: readonly CheckRun[]): Verdict {
-  const mine = runs.filter((r) => r.name === CI_CHECK && !(r.status === "completed" && NO_RESULT.has(r.conclusion ?? "")));
+const isCi = (r: CheckRun) => r.name === CI_CHECK && !(r.status === "completed" && NO_RESULT.has(r.conclusion ?? ""));
+
+/**
+ * `complete` says whether a finished check belongs to a complete CI run (the `ci-full` marker); finished
+ * checks of selective runs are ignored. Unfinished checks still mean wait (the marker is uploaded inside
+ * the aggregate job, before it finishes).
+ */
+export function verdictFromChecks(runs: readonly CheckRun[], complete: (check: CheckRun) => boolean = () => true): Verdict {
+  const mine = runs.filter((r) => isCi(r) && (r.status !== "completed" || complete(r)));
   if (mine.length === 0) return { kind: "missing" };
   const green = mine.find((r) => r.status === "completed" && r.conclusion === "success");
   if (green) return { kind: "reuse", url: green.html_url };
   if (mine.some((r) => r.status !== "completed")) return { kind: "wait" };
   return { kind: "red", url: mine[0].html_url, conclusion: mine[0].conclusion ?? "unknown" };
+}
+
+/** The workflow run id in an Actions check URL (`.../actions/runs/<run_id>/job/<job_id>`), or null. */
+export function runIdFromUrl(url: string): number | null {
+  const match = /\/actions\/runs\/(\d+)(?:[/?#]|$)/.exec(url);
+  return match ? Number(match[1]) : null;
 }
 
 export interface TestedRun {
@@ -63,6 +82,33 @@ async function gh<T>(path: string, token: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+const markers = new Map<number, boolean>();
+
+/** Whether CI run `runId` uploaded the `ci-full` marker (expired artifacts still count). An API error means no, not memoized. */
+async function hasFullMarker(repo: string, runId: number, token: string): Promise<boolean> {
+  const known = markers.get(runId);
+  if (known !== undefined) return known;
+  try {
+    const { total_count } = await gh<{ total_count: number }>(`/repos/${repo}/actions/runs/${runId}/artifacts?name=${CI_FULL_ARTIFACT}&per_page=1`, token);
+    const full = total_count > 0;
+    markers.set(runId, full);
+    return full;
+  } catch (error) {
+    console.warn(`::warning::could not read the ${CI_FULL_ARTIFACT} marker of CI run ${runId}: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+/** The html_urls of finished CI checks that belong to a complete run. */
+async function completeChecks(repo: string, checks: readonly CheckRun[], token: string): Promise<Set<string>> {
+  const urls = new Set<string>();
+  for (const check of checks.filter((c) => isCi(c) && c.status === "completed")) {
+    const runId = runIdFromUrl(check.html_url);
+    if (runId !== null && (await hasFullMarker(repo, runId, token))) urls.add(check.html_url);
+  }
+  return urls;
+}
+
 const treeOf = (repo: string, sha: string, token: string) => gh<{ commit: { tree: { sha: string } } }>(`/repos/${repo}/commits/${sha}`, token).then((c) => c.commit.tree.sha);
 
 async function checkRuns(repo: string, sha: string, token: string): Promise<CheckRun[]> {
@@ -75,7 +121,6 @@ async function ciRunsOn(repo: string, sha: string, token: string): Promise<{ sta
   return workflow_runs;
 }
 
-/** The newest successful CI runs (any event) whose commit has the same tree as `sha`. */
 export interface RunOrigin {
   event: string;
   head_branch: string | null;
@@ -89,12 +134,14 @@ export function trustedRun(run: RunOrigin, repo: string): boolean {
   return run.event === "pull_request";
 }
 
+/** The newest successful complete CI run (trusted origin, `ci-full` marker) whose commit has the same tree as `sha`. */
 async function runWithSameTree(repo: string, sha: string, token: string): Promise<TestedRun | undefined> {
   const tree = await treeOf(repo, sha, token);
-  const { workflow_runs } = await gh<{ workflow_runs: (RunOrigin & { head_sha: string; html_url: string })[] }>(`/repos/${repo}/actions/workflows/${CI_WORKFLOW}/runs?status=success&per_page=30`, token);
+  const { workflow_runs } = await gh<{ workflow_runs: (RunOrigin & { id: number; head_sha: string; html_url: string })[] }>(`/repos/${repo}/actions/workflows/${CI_WORKFLOW}/runs?status=success&per_page=30`, token);
   const tested: TestedRun[] = [];
   for (const run of workflow_runs.filter((r) => trustedRun(r, repo))) {
     const runTree = run.head_sha === sha ? tree : await treeOf(repo, run.head_sha, token).catch(() => "");
+    if (runTree === tree && !(await hasFullMarker(repo, run.id, token))) continue;
     tested.push({ head_sha: run.head_sha, tree: runTree, html_url: run.html_url });
     if (runTree === tree) break;
   }
@@ -123,17 +170,19 @@ async function main() {
   const deadline = Date.now() + Number(flag("--wait-minutes") ?? 40) * 60_000;
   const graceUntil = Date.now() + Number(flag("--grace-minutes") ?? 3) * 60_000;
   for (;;) {
-    const verdict = verdictFromChecks(await checkRuns(repo, sha, token));
-    if (verdict.kind === "reuse") return output(true, `reused CI on this commit (${verdict.url}).`);
+    const checks = await checkRuns(repo, sha, token);
+    const full = await completeChecks(repo, checks, token);
+    const verdict = verdictFromChecks(checks, (check) => full.has(check.html_url));
+    if (verdict.kind === "reuse") return output(true, `reused complete CI on this commit (${verdict.url}).`);
     if (verdict.kind === "red") {
       console.error(`::error::CI ended with "${verdict.conclusion}" on ${sha} (${verdict.url}). Fix main, or rerun CI, before deploying.`);
       process.exit(1);
     }
     if (verdict.kind === "missing") {
       const same = await runWithSameTree(repo, sha, token);
-      if (same) return output(true, `reused CI on ${same.head_sha.slice(0, 7)}, same tree (${same.html_url}).`);
+      if (same) return output(true, `reused complete CI on ${same.head_sha.slice(0, 7)}, same tree (${same.html_url}).`);
       // A push CI can take a moment to register its run after the merge.
-      if (!ciRunning(await ciRunsOn(repo, sha, token)) && Date.now() > graceUntil) return output(false, "no CI result for this commit or its tree: the deploy runs the e2e shards.");
+      if (!ciRunning(await ciRunsOn(repo, sha, token)) && Date.now() > graceUntil) return output(false, "no complete CI result for this commit or its tree: the deploy runs the e2e shards.");
     }
     if (Date.now() > deadline) {
       console.error(`::error::CI still runs on ${sha} after the wait; rerun the deploy when it finished.`);
