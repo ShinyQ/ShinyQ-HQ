@@ -97,7 +97,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Then the headline and the motto (`profile.subheadline`).
 - Then it composes:
   - the CSS-only backdrop
-  - `EnterHqButton` (client): a real link to `/{locale}?tier=lite` that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
+  - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
   - `AskHeroBar` (visible "Ask AI about my work" label) across the full width; no illustration beside the name (owner decision)
   - the `StatTicker` band
 
