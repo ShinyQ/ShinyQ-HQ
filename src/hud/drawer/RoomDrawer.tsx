@@ -120,11 +120,6 @@ interface OverflowProps {
 
 const MENU_ITEM = "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-ink transition hover:bg-white/5";
 
-/**
- * A drawer page link opens the Classic site, so it says so in the URL: the target never equals the URL the
- * room pushed (which would keep the 3D route mounted), and new tabs open Classic too. `data-hq-view` keeps
- * ViewParamSync from stripping it while the tab is in 3D.
- */
 /** Runs `onLeave` for plain clicks only: a new tab or window leaves this tab in 3D. */
 function leaveOnPlainClick(onLeave?: () => void) {
   return (event: ReactMouseEvent) => {
@@ -133,6 +128,11 @@ function leaveOnPlainClick(onLeave?: () => void) {
   };
 }
 
+/**
+ * A drawer page link opens the Classic site, so it says so in the URL: the target never equals the URL the
+ * room pushed (which would keep the 3D route mounted), and new tabs open Classic too. `data-hq-view` keeps
+ * ViewParamSync from stripping it while the tab is in 3D.
+ */
 function classicHref(page: string): string {
   const at = page.indexOf("#");
   return at < 0 ? `${page}?view=classic` : `${page.slice(0, at)}?view=classic${page.slice(at)}`;
