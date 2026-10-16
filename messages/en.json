@@ -370,6 +370,16 @@
       "note": "System follows the device's reduced motion setting."
     },
     "settings": {
+      "dayNight": {
+        "label": "Day and night",
+        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
+      },
+      "openLinks": {
+        "label": "Open links in",
+        "hint": "New tabs and links without a view open here",
+        "page": "Classic site",
+        "3d": "3D"
+      },
       "title": "Settings",
       "open": "Settings",
       "close": "Close settings",
@@ -570,18 +580,6 @@
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console"
-    },
-    "settings": {
-      "openLinks": {
-        "label": "Open links in",
-        "hint": "New tabs and links without a view open here",
-        "page": "Classic site",
-        "3d": "3D"
-      },
-      "dayNight": {
-        "label": "Day and night",
-        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
-      }
     }
   },
   "drawer": {

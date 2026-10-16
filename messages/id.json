@@ -370,6 +370,16 @@
       "note": "Sistem mengikuti pengaturan pengurangan gerak di perangkat."
     },
     "settings": {
+      "dayNight": {
+        "label": "Siang dan malam",
+        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
+      },
+      "openLinks": {
+        "label": "Buka tautan di",
+        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
+        "page": "Situs klasik",
+        "3d": "3D"
+      },
       "title": "Pengaturan",
       "open": "Pengaturan",
       "close": "Tutup pengaturan",
@@ -570,18 +580,6 @@
       "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
       "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
       "console": "Konsol waktu"
-    },
-    "settings": {
-      "openLinks": {
-        "label": "Buka tautan di",
-        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
-        "page": "Situs klasik",
-        "3d": "3D"
-      },
-      "dayNight": {
-        "label": "Siang dan malam",
-        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
-      }
     }
   },
   "drawer": {
