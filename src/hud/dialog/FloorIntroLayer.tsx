@@ -21,7 +21,7 @@ const dismisses = (intent: Intent) => intent.type === "move" || intent.type === 
 /**
  * First visit to L2, L3, L4 or RF: once the first-session tour is settled and the rover is free,
  * Rover says one line about the floor (`dialog.floor.<id>`). A finished or skipped line is
- * remembered (`hq:floor-intro`); a cancelled one shows again on the next visit.
+ * remembered (`hq:floor-intro`); a cancelled one shows again later, after the delay.
  */
 export function FloorIntroLayer({ data }: { data: ExperienceData }) {
   const tFloor = useTranslations("dialog.floor");
