@@ -78,3 +78,4 @@ A paper or thesis with `document` in `site-content.json` gets "Read the paper" (
 - The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret).
 - Product names in `content/safety-allowlist.txt` are never flagged.
 - `scripts/scan-export.ts` scans every text file of the built `out/` (JS, CSS, SVG and MD included) after the CI and production builds, and fails `main` and deploys when the private list is missing; an e2e check repeats the scan.
+
