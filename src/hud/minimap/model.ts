@@ -1,5 +1,5 @@
 import type { FloorId, RoomId } from "@/content/schema";
-import { SHAFT } from "@/experience/config";
+import { LOBBY, SHAFT } from "@/experience/config";
 import type { Interactable } from "@/experience/interact/registry";
 import type { FloorLayout, Vec2 } from "@/experience/types";
 
@@ -36,6 +36,10 @@ export interface FloorMap {
   roads: { d: string; width: number }[];
   /** Centers and sizes; `round` plazas are ellipses w x d. */
   plazas: { x: number; z: number; w: number; d: number; round: boolean }[];
+  /** Circular roads not in the road network (the Lobby's lane ring): center and centerline radius. */
+  rings: { x: number; z: number; r: number }[];
+  /** Obstacle footprints as top-left corner and size (walls, the certification wall, the kiosk, pods): faint axis-aligned rects that give a floor its structure. */
+  fixtures: { x: number; z: number; w: number; d: number }[];
   elevator: { x: number; z: number; size: number };
   /** De-duplicated by id, sorted west to east. */
   rooms: MapRoom[];
@@ -47,6 +51,12 @@ export const MINIMAP_RADIUS = 22;
 const PAD = 2;
 /** Spur width (u) when the network gives none. */
 const SPUR_WIDTH = 1.2;
+/** Road width (u) of a ring. */
+export const RING_WIDTH = 2.4;
+/** Overview labels for doors and teleporters only when the floor has at most this many of them. */
+export const DENSE_LABEL_LIMIT = 12;
+/** Distance (u) from a view edge within which a label anchors inward. */
+const LABEL_EDGE = 8;
 
 export const MAP_ROOM_KINDS: readonly Interactable["kind"][] = ["door", "station", "board", "kiosk", "elevator-pad", "return-pad", "teleporter"];
 
@@ -74,6 +84,9 @@ export function buildFloorMap(layout: FloorLayout, items: readonly Interactable[
   ];
   const plazas = (network?.plazas ?? []).map((p) => ({ x: p.center.x, z: p.center.z, w: p.w, d: p.d, round: !!p.round }));
 
+  const rings = layout.id === "L1" ? [{ x: LOBBY.hologram.x, z: LOBBY.hologram.z, r: LOBBY.laneRadius }] : [];
+  const fixtures = layout.obstacles.map((o) => ({ x: o.minX, z: o.minZ, w: o.maxX - o.minX, d: o.maxZ - o.minZ }));
+
   const seen = new Set<string>();
   const rooms: MapRoom[] = [];
   for (const item of items) {
@@ -90,6 +103,8 @@ export function buildFloorMap(layout: FloorLayout, items: readonly Interactable[
     slab: { x: bounds.minX, z: bounds.minZ, w: bounds.maxX - bounds.minX, d: bounds.maxZ - bounds.minZ },
     roads,
     plazas,
+    rings,
+    fixtures,
     elevator: { x: SHAFT.x, z: SHAFT.z, size: SHAFT.size },
     rooms,
   };
@@ -108,4 +123,16 @@ export function windowBox(center: { x: number; z: number }, radius: number): str
 /** viewBox of the whole floor (overview). */
 export function floorBox(view: MapView): string {
   return `${n(view.minX)} ${n(view.minZ)} ${n(view.width)} ${n(view.depth)}`;
+}
+
+/** Text anchor of an overview label: inward near a side edge, so it never runs off the map. */
+export function labelAnchor(x: number, view: MapView): "start" | "middle" | "end" {
+  if (x - view.minX < LABEL_EDGE) return "start";
+  if (view.minX + view.width - x < LABEL_EDGE) return "end";
+  return "middle";
+}
+
+/** Whether an overview labels its doors and teleporters (only when they are few; the list stays the full alternative). */
+export function labelsDoors(rooms: readonly MapRoom[]): boolean {
+  return rooms.filter((r) => r.kind === "door" || r.kind === "teleporter").length <= DENSE_LABEL_LIMIT;
 }

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, SHAFT } from "@/experience/config";
-import { arrowRotation, buildFloorMap, floorBox, windowBox } from "@/hud/minimap/model";
+import { buildFloorLayouts, LOBBY, SHAFT } from "@/experience/config";
+import { arrowRotation, buildFloorMap, floorBox, labelAnchor, labelsDoors, windowBox } from "@/hud/minimap/model";
 import type { Interactable } from "@/experience/interact/registry";
 import { ROOT, staticClosure } from "../helpers/import-graph";
 
@@ -54,6 +54,41 @@ describe("minimap model", () => {
     expect(map.roads).toEqual([]);
     expect(map.view.width).toBeGreaterThan(0);
     expect(map.view.depth).toBeGreaterThan(0);
+  });
+});
+
+describe("minimap structure", () => {
+  it("gives the Lobby its lane ring and no other floor one", () => {
+    expect(buildFloorMap(layouts.L1, [], []).rings).toEqual([{ x: LOBBY.hologram.x, z: LOBBY.hologram.z, r: LOBBY.laneRadius }]);
+    expect(buildFloorMap(layouts.L3, [], []).rings).toEqual([]);
+  });
+  it("draws one fixture per obstacle, inside the view", () => {
+    for (const id of ["L1", "L2", "L3", "L4", "RF"] as const) {
+      const map = buildFloorMap(layouts[id], [], []);
+      expect(map.fixtures).toHaveLength(layouts[id].obstacles.length);
+      const { view } = map;
+      for (const f of map.fixtures) {
+        expect(f.w).toBeGreaterThan(0);
+        expect(f.d).toBeGreaterThan(0);
+        expect(f.x).toBeGreaterThanOrEqual(view.minX);
+        expect(f.z).toBeGreaterThanOrEqual(view.minZ);
+        expect(f.x + f.w).toBeLessThanOrEqual(view.minX + view.width);
+        expect(f.z + f.d).toBeLessThanOrEqual(view.minZ + view.depth);
+      }
+    }
+  });
+  it("anchors labels inward within 8 u of a side edge", () => {
+    const view = { minX: 0, minZ: 0, width: 100, depth: 50 };
+    expect(labelAnchor(3, view)).toBe("start");
+    expect(labelAnchor(97, view)).toBe("end");
+    expect(labelAnchor(50, view)).toBe("middle");
+    expect(labelAnchor(8, view)).toBe("middle");
+    expect(labelAnchor(92, view)).toBe("middle");
+  });
+  it("labels doors and teleporters only on floors with at most 12 of them", () => {
+    const rooms = (count: number) => buildFloorMap(layouts.L1, Array.from({ length: count }, (_, i) => door(`L1:door:${i}`, `r${i}`, 0, i)), []).rooms;
+    expect(labelsDoors(rooms(12))).toBe(true);
+    expect(labelsDoors(rooms(13))).toBe(false);
   });
 });
 

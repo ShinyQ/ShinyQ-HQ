@@ -93,6 +93,20 @@ describe("Minimap", () => {
     expect(screen.getByTestId("minimap")).toHaveFocus();
   });
 
+  it("keeps the overview map from shrinking in the scrolling sheet", () => {
+    mount();
+    fireEvent.click(screen.getByTestId("minimap"));
+    expect(screen.getByTestId("map-overview-svg").getAttribute("class")).toContain("shrink-0");
+  });
+
+  it("labels kinds other than doors always, and doors only when few", () => {
+    interactRuntime.items = [...items, { ...items[0], id: "L1:kiosk:k", kind: "kiosk", label: "Ask" } as Interactable, ...Array.from({ length: 12 }, (_, i) => door(`d${i}`, `L1:d${i}`, `D${i}`, i, 8))];
+    mount();
+    fireEvent.click(screen.getByTestId("minimap"));
+    const texts = [...screen.getByTestId("map-overview-svg").querySelectorAll("text")].map((t) => t.textContent);
+    expect(texts).toEqual(["Ask"]);
+  });
+
   it("Esc and the close button close the overview and return focus to the minimap", () => {
     mount();
     fireEvent.click(screen.getByTestId("minimap"));

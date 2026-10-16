@@ -81,7 +81,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
           </clipPath>
         </defs>
         <g clipPath={`url(#${clipId})`}>
-          <MapLayers map={map} roomRadius={1.4} />
+          <MapLayers map={map} roomRadius={2} arrowScale={1.6} />
         </g>
       </svg>
     </button>
