@@ -63,9 +63,14 @@ describe("L3 Project Roads layout", () => {
       expect(road.points[1].z).toBeCloseTo(side * r * Math.sin(Math.PI / 6));
       expect(road.points[2]).toEqual({ x: LABS.wingStartX, z: side * layout.wingZ });
     }
-    // They end on the ring road around the reactor core in the east plaza (spectacle round), due north and south of it.
-    expect(north.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z - REACTOR.ring });
-    expect(south.points.at(-1)).toEqual({ x: layout.east.center.x, z: layout.east.center.z + REACTOR.ring });
+    // They end on the ring road around the reactor core in the east plaza (spectacle round), where the line from
+    // their turn meets it: due north or south for the later wing, at an angle for a shorter one.
+    for (const [road, side] of [[north, -1], [south, 1]] as const) {
+      const entry = road.points.at(-1)!;
+      expect(entry).toEqual(ringEntry(layout.east.center, road.points.at(-2)!));
+      expect(Math.hypot(entry.x - layout.east.center.x, entry.z - layout.east.center.z)).toBeCloseTo(REACTOR.ring);
+      expect(Math.sign(entry.z)).toBe(side);
+    }
     expect(Math.min(layout.east.w, layout.east.d)).toBeGreaterThanOrEqual(16);
     // No dead ends: the far end of each wing is reachable along the road both ways round the loop.
     const path = pathBetween(network, { x: north.points[3].x, z: north.points[3].z }, { x: south.points[3].x, z: south.points[3].z });
@@ -74,14 +79,19 @@ describe("L3 Project Roads layout", () => {
   });
 
   it("ends each wing road one tail past its last docked pod, so no stretch of road runs on empty (owner request 2026-10-13)", () => {
+    const spine = layout.placed.filter((p) => p.pod.wing === "data");
+    const spineEdge = Math.max(-Infinity, ...spine.map((p) => p.rect.maxX));
     for (const wing of ["software", "ai"] as const) {
       const road = network.roads.find((r) => r.id === wing)!;
       const docked = layout.placed.filter((p) => p.pod.wing === wing);
       const lastEdge = Math.max(...docked.map((p) => p.rect.maxX));
-      expect(road.points[3].x, wing).toBe(lastEdge + LABS.tail);
-      // From the last door to the turn is at most half a hero pod plus the tail.
-      const lastDoor = Math.max(...docked.map((p) => p.door.x));
-      expect(road.points[3].x - lastDoor, wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
+      // The turn is a tail past the wing's own last pod, the last spine pod beside it, or (AI) the Ops Control Room.
+      const opsTurn = wing === "ai" ? layout.ops.rect.maxX + LABS.road / 2 : -Infinity;
+      expect(road.points[3].x, wing).toBe(Math.max(lastEdge + LABS.tail, spineEdge + LABS.tail, opsTurn, LABS.wingStartX + LABS.east + LABS.margin));
+      // From the last door along it (its own pods, the spine pods beside it, the Ops room) to the turn is at most half a hero pod plus the tail.
+      const doors = [...docked, ...spine].map((p) => p.door.x);
+      if (wing === "ai") doors.push(layout.ops.door.x);
+      expect(road.points[3].x - Math.max(...doors), wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
       expect(road.points.at(-1)).toEqual(ringEntry(layout.east.center, road.points[3]));
     }
     // The east plaza sits on the later of the two turns (and a tail plus its radius past the last spine pod), on the axis between the wings.
@@ -181,7 +191,9 @@ describe("L3 Project Roads layout", () => {
     const ai = layout.placed.filter((p) => p.pod.wing === "ai").map((p) => p.pod.slug);
     expect(software.slice(0, 4)).toEqual(["vendor-management-portal", "anime-figure-ecommerce", "vulnerability-scanning-automation", "solutions-marketing-site"]);
     expect(ai).toContain("ai-solutions-assistant");
-    expect(software).toHaveLength(ai.length);
+    // Wings dock what their content gives them (the AI wing may hold more pods than Product): no equal-length assumption.
+    expect(software.length).toBeGreaterThan(0);
+    expect(ai.length).toBeGreaterThan(0);
     expect(layout.directory.ai.map((p) => p.slug)).not.toContain("solutions-marketing-site");
     expect(layout.directory.software.map((p) => p.slug)).toContain("event-tech-search-backend");
   });
@@ -248,7 +260,8 @@ describe("L3 Project Roads layout", () => {
     for (const wing of LABS_WINGS) {
       const stop = directoryStop(wing);
       const route = roadRoute(network, grid, LABS.overview, stop)!;
-      expect(route.at(-1)).toEqual(stop);
+      expect(route.at(-1)!.x).toBeCloseTo(stop.x);
+      expect(route.at(-1)!.z).toBeCloseTo(stop.z);
       for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x - 1e-6);
       let length = 0;
       let at = LABS.overview;

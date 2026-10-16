@@ -3,6 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
 import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
+import { OPS } from "@/experience/floors/labs/ops";
 import { REACTOR } from "@/experience/floors/labs/reactor";
 import { roadGlow } from "@/experience/floors/labs/techReactor";
 import { labsWalk } from "@/experience/missions/walks";
@@ -92,12 +93,19 @@ describe("L3 Data and ML spine", () => {
     expect(Math.min(...inner.map((w) => Math.min(Math.abs(w.rect.minZ), Math.abs(w.rect.maxZ)))) - Math.max(...spinePods.map((s) => Math.max(Math.abs(s.rect.minZ), Math.abs(s.rect.maxZ))))).toBeCloseTo(LABS.rowGap);
   });
 
-  it("widens the wing roads just enough for the spine and keeps the reactor plaza, Ops Control Room and Return pad x", () => {
-    expect(layout.wingZ).toBe(36);
+  it("widens the wing roads just enough for the spine and places the reactor plaza, Ops Control Room and Return pad by their rules", () => {
+    const depth = (p: { depth: number }) => p.depth;
+    const spineDepth = Math.max(0, ...spinePods.map(depth));
+    const innerDepth = Math.max(OPS.d, ...layout.placed.filter((p) => p.pod.wing !== "data" && p.row === "inner").map(depth));
+    expect(layout.wingZ).toBe(Math.max(LABS.wingZ, 2 * (LABS.road / 2 + LABS.forecourt) + spineDepth + LABS.rowGap + innerDepth));
     expect(buildLabsLayout([]).wingZ).toBeGreaterThanOrEqual(LABS.wingZ);
-    expect(layout.east.center).toEqual({ x: 107, z: 0 });
-    expect(layout.ops.rect.minX).toBe(97);
-    expect(floor.returnPad).toEqual({ x: 117, z: 9 });
+    // The plaza sits on the later wing turn (or a tail and its radius past the last spine pod), on the spine axis.
+    const turns = (["software", "ai"] as const).map((w) => network.roads.find((r) => r.id === w)!.points.at(-2)!.x);
+    const spineEdge = Math.max(...spinePods.map((p) => p.rect.maxX));
+    expect(layout.east.center).toEqual({ x: Math.max(...turns, spineEdge + LABS.tail + LABS.east / 2), z: 0 });
+    const lastInner = Math.max(...layout.placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX));
+    expect(layout.ops.rect.minX).toBe(lastInner + OPS.gap);
+    expect(floor.returnPad).toEqual({ x: layout.east.center.x + 10, z: 9 });
     expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
     expect(floor.stops!["L3:reactor"]).toEqual({ x: layout.east.center.x + REACTOR.ring, z: 0 });
   });
