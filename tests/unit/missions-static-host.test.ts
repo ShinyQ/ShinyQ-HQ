@@ -33,8 +33,8 @@ describe("static mission host", () => {
     ["hire", "id", ["nav /id/contact"]],
     ["cv", "en", ["nav /en/cv"]],
     ["blog", "en", ["nav /en/library", "palette posts"]],
-    ["journey", "en", ["nav /en/journey"]],
-    ["journey", "id", ["nav /id/journey"]],
+    ["journey", "en", ["nav /en/journey#y2019"]],
+    ["journey", "id", ["nav /id/journey#y2019"]],
     ["projects", "en", ["nav /en/labs", "palette pods"]],
     ["highlights", "en", ["nav /en#intro"]],
   ] as const)("maps %s (%s) to one navigation", async (mission, locale, expected) => {
