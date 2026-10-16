@@ -81,7 +81,12 @@ export function SkyController({ tier }: { tier: GpuTier }) {
 
   useFrame(({ scene }) => {
     const sky = group.current;
-    if (sky) sky.position.copy(camera.position);
+    if (sky) {
+      sky.position.copy(camera.position);
+      // First person has a 72 u far plane: shrink the sky uniformly about the camera so the dome stays inside it. Directions and the sun and moon angular sizes are unchanged; the shrunken dome sits around 60 to 70 u, where the fog (14 to 64 u) has already turned opaque geometry almost fully into the fog color, and holo effects draw after the dome (renderOrder -100).
+      const fit = Math.min(1, (0.97 * camera.far) / DOME_RADIUS);
+      if (sky.scale.x !== fit) sky.scale.setScalar(fit);
+    }
     if (!meshesLive && postHandle.get()?.composer()) setMeshesLive(true);
     // The full tier's composer mounts lazily (and can remount): write the bloom into whichever instance is live.
     const bloom = postHandle.get()?.bloom() ?? null;
