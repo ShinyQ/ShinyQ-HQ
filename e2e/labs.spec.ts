@@ -349,8 +349,8 @@ test.describe("L3 directory wall (round 5 consolidation)", () => {
           expect(box!.shown, `${wing}: share of the board on screen`).toBeGreaterThanOrEqual(0.35);
           // The Corners HUD (Round 8 I) has no elevator rail on the right edge, so the AI board's inner part is as
           // clear as the Product board's. Measured at mid-height: AI 0.376 (0.069 under the old rail), Product 0.376;
-          // the AI floor keeps a 20 percent margin under its measure.
-          expect(box!.clear, `${wing}: share of the board on screen and not under the HUD`).toBeGreaterThanOrEqual(wing === "ai" ? 0.3 : 0.35);
+          // both floors keep a 20 percent margin under their measure.
+          expect(box!.clear, `${wing}: share of the board on screen and not under the HUD`).toBeGreaterThanOrEqual(0.3);
         } else {
           expect(box!.minX, wing).toBeGreaterThanOrEqual(size.safe.side);
           expect(box!.maxX, wing).toBeLessThanOrEqual(size.width - size.safe.side);

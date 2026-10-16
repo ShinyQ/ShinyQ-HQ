@@ -401,7 +401,9 @@ test.describe("phone layout", () => {
     await expectLine(page, "skipped");
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
     await box(page).tap();
-    if ((await box(page).count()) > 0 && (await box(page).getAttribute("data-expanded")) === "true") await box(page).tap();
+    // The first tap either dismisses the line or expands it; wait for whichever happened, then act on it.
+    await expect.poll(async () => ((await box(page).count()) === 0 ? "gone" : await box(page).getAttribute("data-expanded"))).toMatch(/^(gone|true)$/);
+    if ((await box(page).count()) > 0) await box(page).tap();
     await expect(box(page)).toHaveCount(0);
     await context.close();
   });

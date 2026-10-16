@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { asReturningVisitor, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
+import { doubleTapJoystick } from "./touch";
 
 /**
  * Corners HUD (Round 8 I): phones and tablets show the floor chip top left, Ask AI and the menu top
@@ -71,26 +72,6 @@ async function expectNoSeriousViolations(page: Page, selector: string) {
   const results = await new AxeBuilder({ page }).include(selector).analyze();
   const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
-}
-
-/**
- * A double tap on the joystick's center: two 50 ms still taps, 120 ms apart (inside the 300 ms window).
- * The four touch events go out at once with their own input times, as a real finger's would: the
- * joystick times the gesture from them, so a slow SwiftShader frame between handlers cannot stretch it
- * (`page.touchscreen.tap` waits for each tap to be handled, which can take a second under load).
- */
-async function doubleTapJoystick(page: Page) {
-  const b = (await page.getByTestId("joystick").boundingBox())!;
-  const touchPoints = [{ x: b.x + b.width / 2, y: b.y + b.height / 2 }];
-  const t = Date.now() / 1000;
-  const cdp = await page.context().newCDPSession(page);
-  await Promise.all([
-    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints, timestamp: t }),
-    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.05 }),
-    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints, timestamp: t + 0.17 }),
-    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.22 }),
-  ]);
-  await cdp.detach();
 }
 
 const hudControl = (page: Page, id: string) => page.getByTestId("hud").getByTestId(id);

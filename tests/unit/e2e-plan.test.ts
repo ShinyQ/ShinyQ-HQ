@@ -176,13 +176,14 @@ describe("specsForChanges", () => {
       "src/hud/minimap/Minimap.tsx",
       "src/hud/settings/defs/motion.ts",
       "src/hud/FloorChip.tsx",
-      "src/hud/FloorButtons.tsx",
       "src/hud/layout.ts",
       "src/lib/local-pref.ts",
       "src/lib/quality-pref.ts",
     ]) {
       expect(specsForChanges([file]).specs, file).toEqual(corners);
     }
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["experience", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost", "hud-corners"]);
     expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);

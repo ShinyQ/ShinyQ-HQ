@@ -214,7 +214,11 @@ export const RULES: Rule[] = [
   // Corners HUD (Round 8 I): the menu and settings sheets, the minimap and overview, the floor chip and sheet, the
   // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
   { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
-  { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|FloorButtons)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
+  { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/FloorChip\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
+  // FloorButtons also renders the desktop elevator rail, which e2e/experience.spec.ts covers.
+  { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience"] },
+  // The shared joystick double-tap helper.
+  { test: /^e2e\/touch\.ts$/, specs: ["boost", "hud-corners"] },
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
