@@ -25,7 +25,7 @@ import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { CanvasBoundary } from "./CanvasBoundary";
-import { isQualityRemount } from "./qualityRemount";
+import { canvasReplacedInCommit, isQualityRemount, markCanvasReplaced } from "./qualityRemount";
 import { buildFloorLayouts, LOBBY, READY_FLOORS } from "./config";
 import { careerLayoutInput } from "./floors/career/layout";
 import { libraryLayoutInput } from "./floors/library/model";
@@ -105,7 +105,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
   // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
-  if (isQualityRemount(!started, prevTier, tier)) return;
+  if (isQualityRemount(!started, prevTier, tier, canvasReplacedInCommit())) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
     // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); every other start turns toward the default follow camera.
     const spawn = layouts.L1.spawn;
@@ -250,6 +250,8 @@ export default function Experience({
     () => buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) }),
     [data.years.length, data.labs.pods, data.career, data.library],
   );
+  // Declared before the session start so its cleanup is explicit; unmount cleanups run before the new tree's layout effects.
+  useLayoutEffect(() => markCanvasReplaced, []);
   useLayoutEffect(() => startSession(data, tier, layouts, { startFloor, startRoom }), [data, tier, layouts, startFloor, startRoom]);
 
   // Cover the page: the HTML stays in the DOM for SEO but is inert while the tower is open.
