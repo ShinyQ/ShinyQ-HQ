@@ -35,6 +35,7 @@ export function classify(file: string): ChangeClass {
 
 /** Roots of the 3D experience: anything they import (value imports) is 3D code for the perf gates. */
 export const ROOTS = /^src\/(experience|hud|store)\/.+\.(ts|tsx)$/;
+// Assumes semicolon-terminated statements (the codebase style): `[^;]*?` stops a static import at its `;`.
 const IMPORT = /(?:import|export)\s+(?!type\s)[^;]*?\sfrom\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)|import\s+["']([^"']+)["']/g;
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".mjs", ".json", "/index.ts", "/index.tsx"];
 
@@ -143,8 +144,12 @@ function repoReader(root: string): (f: string) => string | null {
 }
 
 function listRoots(root: string): string[] {
-  const out = Bun.spawnSync(["git", "ls-files", "src/experience", "src/hud", "src/store"], { cwd: root, stdout: "pipe" });
-  return out.stdout.toString().split("\n").filter((f) => ROOTS.test(f));
+  const out = Bun.spawnSync(["git", "ls-files", "src/experience", "src/hud", "src/store"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  // spawnSync does not throw on a non-zero exit; throw so main().catch plans a full run instead of perf: false.
+  if (out.exitCode !== 0) throw new Error(`git ls-files exited ${out.exitCode}: ${out.stderr.toString().trim()}`);
+  const roots = out.stdout.toString().split("\n").filter((f) => ROOTS.test(f));
+  if (roots.length === 0) throw new Error("git ls-files listed no 3D roots");
+  return roots;
 }
 
 async function main() {
