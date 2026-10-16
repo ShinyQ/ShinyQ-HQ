@@ -74,7 +74,13 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const scratch = useMemo(() => new Object3D(), []);
 
   useFrame(({ scene }) => {
-    group.current?.position.copy(camera.position);
+    const sky = group.current;
+    if (sky) {
+      sky.position.copy(camera.position);
+      // Full tier: hold the dome and orbs back until the composer exists, or they compile a second holo program against the canvas (sRGB) instead of the composer's linear input.
+      const show = tier !== "full" || postHandle.get()?.composer() != null;
+      if (sky.visible !== show) sky.visible = show;
+    }
     // The full tier's composer mounts lazily (and can remount): write the bloom into whichever instance is live.
     const live = postHandle.get()?.bloom() ?? null;
     if (live && live !== bloomWritten.current) {
