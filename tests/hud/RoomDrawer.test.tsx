@@ -114,7 +114,9 @@ describe("RoomDrawer", () => {
     const { unmount } = render(<Harness view={hero} onHologram={onHologram} />);
     await user.click(screen.getByRole("button", { name: /View architecture/ }));
     expect(onHologram).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("href", `/en${hero.page}`);
+    // Drawer page links open the Classic site and say so; ViewParamSync leaves them alone in 3D.
+    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("href", `/en${hero.page}?view=classic`);
+    expect(screen.getByRole("link", { name: en.common.caseStudy })).toHaveAttribute("data-hq-view", "page");
     unmount();
     render(<Harness view={listed} />);
     expect(screen.queryByRole("button", { name: /View architecture/ })).toBeNull();

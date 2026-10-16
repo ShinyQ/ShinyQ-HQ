@@ -27,11 +27,12 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - 3D drops `view=classic|page|3d` and keeps `view=architecture`.
   - The URL is rewritten with `replaceState`, never a navigation.
 - `ViewParamSync` (`src/components/ViewParamSync.tsx`, in the locale layout):
-  - After every client navigation it restores `?view=classic` on the URL while the tab is Classic.
+  - After every client navigation it restores `?view=classic` on the URL while the tab is Classic. Its effect also depends on the rendered route segments (`useSelectedLayoutSegments`), because a client navigation can land on the URL a 3D room already pushed.
   - It keeps every internal page `<a href>` in step (`viewHref`, `src/lib/view-links.ts`; a `MutationObserver` runs only on the Classic site), so copy link, new tab and middle click carry the view. The language switch carries it too.
   - It skips `[data-hq-page-link]`, `[data-hq-view]` and `[download]`, files (paths with an extension) and other origins.
   - The boot card's Classic site link is `?view=classic` (`data-hq-page-link`); Enter the 3D HQ has `data-hq-view="3d"`.
 - **Choosing a view:** `chooseView` (Classic site, Back to 3D) writes the tab and the remembered preference, normalizes the URL and fires the view events. `setTabView` (the drawer's Open page) writes the tab only.
+- **Drawer page links** (Read case study, Read post, Open page) point at the Classic page with `?view=classic` and carry `data-hq-view="page"`. The target never equals the URL the room pushed (a same-URL navigation would keep the 3D route mounted), and new tabs open Classic too.
 - **Share buttons** (`ShareLinks`, `src/components/ShareLinks.tsx`): "Copy Classic link" and "Copy 3D link" (copied state "Link copied", announced politely).
   - Where: the case study header (`/labs/<slug>`), posts (`/blog/<slug>`, after the tags) and the room drawer's overflow menu.
   - Classic: `${SITE_URL}${path}?view=classic${hash}`. 3D: `${SITE_URL}${threeDPath(path)}`; gated routes keep their path, posts open `/{locale}/library`, everything else the Lobby. Other query parameters are dropped.

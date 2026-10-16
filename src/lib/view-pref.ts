@@ -42,8 +42,15 @@ export function chooseView(view: ViewChoice): void {
   window.dispatchEvent(new Event(PREF_EVENT));
 }
 
-export function setTabView(view: ViewChoice): void {
+/**
+ * Sets this tab's view without touching the remembered preference (the drawer's page links). With `now`,
+ * the URL and the mounted gate switch at once: used when the link stays on the route already mounted.
+ */
+export function setTabView(view: ViewChoice, { now = false }: { now?: boolean } = {}): void {
   put(session, view);
+  if (!now) return;
+  syncViewUrl(view);
+  window.dispatchEvent(new Event(VIEW_EVENT));
 }
 
 export function getViewPreference(): ViewChoice | null {

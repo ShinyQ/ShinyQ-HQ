@@ -47,6 +47,13 @@ export function useRoomViews(locale: Locale, wanted = true): RoomViews | null | 
   return views;
 }
 
+const trim = (path: string) => (path.length > 1 ? path.replace(/\/$/, "") : path);
+
+/** True when `href` (root-relative, may carry a hash) points at the current pathname. */
+function samePath(href: string): boolean {
+  return trim(href.split("#")[0]) === trim(window.location.pathname);
+}
+
 /** True once the first 3D frame rendered and the main thread went idle (quiet boot, REPORT SP3). */
 function useAfterFirstFrameIdle(): boolean {
   const [ready, setReady] = useState(false);
@@ -147,8 +154,9 @@ export function DrawerHost({ locale }: { locale: Locale }) {
         goToRoom(room);
       }}
       onLeave={() => {
-        // Full pages open as pages: the gate on the next route stays in page view.
-        setTabView("page");
+        // Full pages open as pages: the gate on the next route stays in page view. A page on the route
+        // already mounted (the room's own URL) does not remount the gate, so it switches now.
+        setTabView("page", { now: view.page !== undefined && samePath(`/${locale}${view.page}`) });
         leaveRoomForPage();
         getHQStore().getState().closeRoom();
       }}

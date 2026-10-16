@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { chooseView, currentView, getViewPreference, setViewPreference, subscribeViewPreference, VIEW_EVENT } from "@/lib/view-pref";
+import { chooseView, currentView, getViewPreference, setTabView, setViewPreference, subscribeViewPreference, VIEW_EVENT } from "@/lib/view-pref";
 
 const cleanups: Array<() => void> = [];
 
@@ -42,6 +42,23 @@ describe("view-pref", () => {
     expect(sessionStorage.getItem("hq:view")).toBe("3d");
     expect(seen).toContain("tab");
     expect(seen).toContain("pref");
+  });
+
+  it("setTabView writes the tab only; with now it also rewrites the URL and tells listeners", () => {
+    let events = 0;
+    const onTab = () => events++;
+    window.addEventListener(VIEW_EVENT, onTab);
+    cleanups.push(() => window.removeEventListener(VIEW_EVENT, onTab));
+    history.replaceState(null, "", "/en/labs/clearbox?view=architecture");
+    setTabView("page");
+    expect(sessionStorage.getItem("hq:view")).toBe("page");
+    expect(location.search).toBe("?view=architecture");
+    expect(events).toBe(0);
+    setTabView("page", { now: true });
+    expect(location.search).toBe("?view=classic");
+    expect(currentView()).toBe("page");
+    expect(getViewPreference()).toBeNull();
+    expect(events).toBe(1);
   });
 
   it("setViewPreference only changes new tabs", () => {

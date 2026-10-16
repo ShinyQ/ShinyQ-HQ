@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
-import { chooseView, currentView } from "@/lib/view-pref";
+import { chooseView, currentView, VIEW_EVENT } from "@/lib/view-pref";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
@@ -81,6 +81,13 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, [toPage]);
+
+  // The tab's view changed elsewhere (the drawer's page link on this same route).
+  useEffect(() => {
+    const onView = () => setView(currentView());
+    window.addEventListener(VIEW_EVENT, onView);
+    return () => window.removeEventListener(VIEW_EVENT, onView);
+  }, []);
 
   // The boot cover hides the page until 3D draws its first frame; reveal the page when 3D is off.
   useEffect(() => {
