@@ -165,21 +165,26 @@ test.describe("existing visitors (store version 2 to 3)", () => {
   });
 });
 
-test("phones: Motion sits in the menu next to language and sound (Indonesian labels, axe)", async ({ browser }: { browser: Browser }) => {
+test("phones: Motion sits in the menu sheet's settings next to language and sound (Indonesian labels, axe)", async ({ browser }: { browser: Browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
   const page = await context.newPage();
   await enterHQ(page, { path: "/id" });
   await page.getByTestId("hud").getByRole("button", { name: id.hud.menu }).click();
-  const group = page.getByRole("group", { name: id.hud.motion.label });
+  const sheet = page.getByTestId("menu-sheet");
+  await expect(sheet.getByTestId("setting-language")).toBeVisible();
+  await expect(sheet.getByTestId("setting-sound")).toBeAttached();
+  const group = sheet.getByTestId("setting-motion");
+  await group.scrollIntoViewIfNeeded();
+  await expect(group).toHaveAccessibleName(id.hud.settings.motion.label);
   await expect(group.getByRole("radio")).toHaveCount(3);
-  for (const label of [id.hud.motion.system, id.hud.motion.full, id.hud.motion.reduced]) await expect(group.getByText(label, { exact: true })).toBeVisible();
-  await expect(group.getByRole("radio", { name: id.hud.motion.full })).toBeChecked();
+  for (const label of [id.hud.settings.motion.system, id.hud.settings.motion.full, id.hud.settings.motion.reduced]) await expect(group.getByText(label, { exact: true })).toBeVisible();
+  await expect(group.getByRole("radio", { name: id.hud.settings.motion.full })).toBeChecked();
   const box = (await group.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
-  await group.getByText(id.hud.motion.reduced, { exact: true }).click();
+  await group.getByText(id.hud.settings.motion.reduced, { exact: true }).click();
   expect(await motionState(page)).toMatchObject({ motion: "reduced", reduced: true });
-  await expectNoSeriousViolations(page, "[data-testid='motion-choices']");
+  await expectNoSeriousViolations(page, "[data-testid='setting-motion']");
   await context.close();
 });
 

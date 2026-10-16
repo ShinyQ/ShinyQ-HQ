@@ -3,8 +3,8 @@ import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, waitForCamera
 
 /**
  * Realistic boost (owner pick: "Full package: path-following light trails, rover leans and squats,
- * camera widens and pulls back, speed streaks, wheel sparks") and the touch boost toggle (owner: tap
- * on, tap off). Shift stays hold-to-boost on keyboards.
+ * camera widens and pulls back, speed streaks, wheel sparks") and the touch boost toggle (Round 8 I: a
+ * double tap on the joystick turns it on, the next double tap off). Shift stays hold-to-boost on keyboards.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -46,6 +46,26 @@ async function holdTouch(page: Page, points: { x: number; y: number }[], holdMs:
   for (const p of rest) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: next() });
   await page.waitForTimeout(holdMs);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: Date.now() / 1000 });
+  await cdp.detach();
+}
+
+/**
+ * A double tap on the joystick's center: two 50 ms still taps, 120 ms apart (inside the 300 ms window).
+ * The four touch events go out at once with their own input times, as a real finger's would: the
+ * joystick times the gesture from them, so a slow SwiftShader frame between handlers cannot stretch it
+ * (`page.touchscreen.tap` waits for each tap to be handled, which can take a second under load).
+ */
+async function doubleTapJoystick(page: Page) {
+  const b = (await page.getByTestId("joystick").boundingBox())!;
+  const touchPoints = [{ x: b.x + b.width / 2, y: b.y + b.height / 2 }];
+  const t = Date.now() / 1000;
+  const cdp = await page.context().newCDPSession(page);
+  await Promise.all([
+    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints, timestamp: t }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.05 }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints, timestamp: t + 0.17 }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.22 }),
+  ]);
   await cdp.detach();
 }
 
@@ -123,20 +143,21 @@ for (const vp of [
   test.describe(`boost toggle on a ${vp.name}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-    test("a tap turns boost on and it stays on while driving; the next tap turns it off; a floor change resets it", async ({ page }) => {
+    test("a double tap on the joystick turns boost on and it stays on while driving; the next double tap turns it off; a floor change resets it", async ({ page }) => {
       const errors = collectErrors(page);
       await enterHQ(page);
       await waitForCameraSettle(page);
-      const boost = page.getByTestId("boost");
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      const joystick = page.getByTestId("joystick");
+      await expect(page.getByTestId("boost")).toHaveCount(0);
+      await expect(joystick).toHaveAttribute("data-boost", "off");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       // On but parked: boost only applies while driving by hand.
       await waitForFrames(page, 20);
       expect((await liveFx(page)).boostFx).toBe(0);
 
       const fx = await trackFx(page);
-      const box = (await page.getByTestId("joystick").boundingBox())!;
+      const box = (await joystick.boundingBox())!;
       const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
       // Joystick down: drive toward the camera, onto open floor.
       await holdTouch(page, [c, { x: c.x, y: c.y + 30 }, { x: c.x, y: c.y + 55 }], 2500);
@@ -145,17 +166,17 @@ for (const vp of [
       expect(peak.trail).toBeGreaterThan(0);
       expect(peak.boostFx).toBeGreaterThan(0);
       // Still on after the joystick is released, with no effects once the rover stops.
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       await expect.poll(async () => (await liveFx(page)).boostFx, { timeout: 15_000 }).toBe(0);
 
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "off");
 
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       await page.keyboard.press("PageUp");
       await waitForFloor(page, "L2");
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
+      await expect(joystick).toHaveAttribute("data-boost", "off");
       expect(errors).toEqual([]);
     });
   });
