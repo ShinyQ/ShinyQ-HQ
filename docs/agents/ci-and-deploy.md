@@ -119,7 +119,7 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 - Nightly: cron `15 20 * * *` (03:15 WIB) on `main`, in its own concurrency group so it never replaces a pending `main` push. It adds two jobs:
   - `Visual gate (nightly)`: `scripts/visual-gate.ts --profile strict` of this commit against the previous scheduled run's commit (skipped when there is none, it is the same commit, or that commit is not in this repository's history); diffs in the `visual-gate-diffs` artifact on failure.
   - `Nightly report` (`scripts/ci-nightly.ts`): opens one issue labelled `ci-nightly` when a job failed, updates it while the nightly keeps failing (a comment only when the failed jobs change) and closes it once a later nightly is green. It writes only on `main`; elsewhere it is a dry run.
-- Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`).
+- Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`); add `-f visual_base=<commit or ref>` to compare the visual gate against that commit instead of the previous nightly.
 
 ## Production deploy
 

@@ -32,6 +32,10 @@ on:
         description: Also run the nightly visual gate and the ci-nightly issue report
         type: boolean
         default: false
+      visual_base:
+        description: With nightly, compare the visual gate against this commit or ref instead of the previous nightly
+        type: string
+        default: ""
 
 concurrency:
   # The nightly gets its own group so it never replaces a pending main push.
@@ -459,7 +463,18 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           HEAD_SHA: ${{ github.sha }}
+          VISUAL_BASE: ${{ inputs.visual_base }}
         run: |
+          if [ -n "$VISUAL_BASE" ]; then
+            if ! base=$(git rev-parse --verify --quiet --end-of-options "$VISUAL_BASE^{commit}"); then
+              echo "::error::visual_base \"$VISUAL_BASE\" is not a commit in this repository."
+              exit 1
+            fi
+            echo "Visual gate base (visual_base input): $base"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "sha=$base" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if ! runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=schedule&per_page=5"); then
             echo "::error::Could not look up the previous nightly run (GitHub API call failed); this is not a look change."
             exit 1
