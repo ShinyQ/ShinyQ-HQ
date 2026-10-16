@@ -254,3 +254,5 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
   };
   return Object.fromEntries(FLOOR_IDS.map((id) => [id, withFloorPads(layouts[id])])) as Record<FloorId, FloorLayout>;
 }
+
+// Smart CI timing probe (throwaway).
