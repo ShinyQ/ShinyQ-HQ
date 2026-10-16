@@ -146,7 +146,7 @@ for (const device of [
         return boxes;
       };
       /** True when a zone's sign shows (polled briefly: it fades in). */
-      const zoneSignShown = async (zone: Zone) => {
+      const zoneSignShown = async (zone: Zone, pose: string) => {
         try {
           await expect.poll(async () => (await shownLabels(page)).some((b) => b.kind === "section" && b.text === ZONE_SIGN[zone]), { timeout: 3_000 }).toBe(true);
           return true;
@@ -156,7 +156,7 @@ for (const device of [
             const lib = (window as unknown as { __hq: { probes: { library?: { hidden?: { text: string; x0: number; y0: number; x1: number; y1: number }[]; rover?: unknown } } } }).__hq.probes.library;
             return { sign: lib?.hidden?.find((b) => b.text === text) ?? null, rover: lib?.rover ?? null };
           }, ZONE_SIGN[zone]);
-          test.info().annotations.push({ type: `${device.id} ${zone} sign hidden`, description: JSON.stringify(why) });
+          test.info().annotations.push({ type: `${device.id} ${pose}: ${zone} sign hidden`, description: JSON.stringify(why) });
           return false;
         }
       };
@@ -170,22 +170,27 @@ for (const device of [
       if (!BASELINE) expect([...posts, ...mid].some((b) => b.kind === "title"), `${device.id}: a post title at posts or mid`).toBe(true);
       if (!SHOTS) await expectRenderBudget(page);
 
+      // A section sign is for spotting the zone on arrival: it must show at the approach 6 u before the zone,
+      // at the road pose or at the door pose (in that order; it hides where it would cover the rover).
       for (const zone of ["research", "models", "talks"] as const) {
         const spur = spurs[ZONE_ROOM[zone]];
-        await driveTo(page, spur.from);
-        await check(zone);
-        let shown = await zoneSignShown(zone);
-        // Captures always take the door pose too, so before and after runs list the same poses.
-        if (!shown || SHOTS) {
-          // The station's spur, short of the door pad (stopping on the pad would open the room).
-          const len = Math.hypot(spur.to.x - spur.from.x, spur.to.z - spur.from.z);
-          const k = Math.max(0, (len - 2) / len);
-          await driveTo(page, { x: spur.from.x + (spur.to.x - spur.from.x) * k, z: spur.from.z + (spur.to.z - spur.from.z) * k });
-          await check(`${zone}-door`);
-          shown ||= await zoneSignShown(zone);
+        // The station's spur, short of the door pad (stopping on the pad would open the room).
+        const len = Math.hypot(spur.to.x - spur.from.x, spur.to.z - spur.from.z);
+        const k = Math.max(0, (len - 2) / len);
+        const poses = [
+          { pose: `${zone}-approach`, at: { x: spur.from.x - 6, z: 0 } },
+          { pose: zone, at: spur.from },
+          { pose: `${zone}-door`, at: { x: spur.from.x + (spur.to.x - spur.from.x) * k, z: spur.from.z + (spur.to.z - spur.from.z) * k } },
+        ];
+        let shown = false;
+        for (const { pose, at } of poses) {
+          // Captures take every pose, so before and after runs list the same poses.
+          if (shown && !SHOTS) break;
+          await driveTo(page, at);
+          await check(pose);
+          shown ||= await zoneSignShown(zone, pose);
         }
-        // Soft: a missing sign still fails the test, but the remaining zones (and captures) still run.
-        if (!BASELINE) expect.soft(shown, `${device.id}: ${ZONE_SIGN[zone]} sign at the ${zone} zone`).toBe(true);
+        if (!BASELINE) expect(shown, `${device.id}: ${ZONE_SIGN[zone]} sign on the approach, road or door pose of the ${zone} zone`).toBe(true);
       }
 
       test.info().annotations.push({ type: "max overlap", description: `${device.id}: ${(worst * 100).toFixed(2)}% of the smaller plate` });
