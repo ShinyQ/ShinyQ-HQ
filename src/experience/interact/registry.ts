@@ -50,8 +50,13 @@ export interface Interactable {
   label: string;
   /** Approach point the rover drives to (door pad center, pad center, the stop in front of a board or station). */
   at: Vec2;
-  /** Hover and click footprint, floor-local x/z. */
+  /** Hover and click footprint, floor-local x/z (axis-aligned; also the footprint for consumers that ignore `box`). */
   bounds: Rect;
+  /**
+   * Oriented footprint for turned targets: `w` along local x, `d` along local z, turned by `yaw` about the
+   * vertical axis (three's `rotation.y`, roof/solids.ts `Box.yaw`). The pick volume and the hover outline use it.
+   */
+  box?: { center: Vec2; w: number; d: number; yaw: number };
   /** Pick volume height (u), the top of the volume; also places the floating label. Defaults per kind (`PICK_HEIGHT` in pick.ts). */
   height?: number;
   /** Bottom of the pick volume (u above the floor, default 0): stacked targets such as the Tech Reactor rings. */
@@ -249,6 +254,8 @@ function labsBoards(labs: LabsLayout, data: InteractData): Interactable[] {
       label: data.labels.board(data.experience.labs.wings[wing]),
       at: { x: board.stop.x, z: board.stop.z },
       bounds: bare(board),
+      // The same turned box as the board solid (`wallSolids` in floors/labs/directory.ts).
+      box: { center: board.center, w: LABS.board.w, d: LABS.board.width, yaw: board.yaw + Math.PI / 2 },
       base: LABS.board.base,
       height: LABS.board.h,
       action: { type: "command", command: "palette:pods" },

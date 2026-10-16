@@ -172,6 +172,9 @@ export const ArchitectureSchema = z
     });
   });
 
+/** Longest `Pod.shortTitle` in either locale (one line on an L3 directory board). */
+export const SHORT_TITLE_MAX = 32;
+
 export const PodSchema = z
   .strictObject({
     id: SlugSchema,
@@ -192,6 +195,8 @@ export const PodSchema = z
     client: z.union([nonEmpty, LocalizedTextSchema]).optional(),
     timelineRef: SlugSchema.optional(),
     title: LocalizedTextSchema,
+    /** Board title on the L3 directory (one line); every other surface keeps `title`. At most 32 characters, shorter than `title`. */
+    shortTitle: LocalizedTextSchema.optional(),
     tagline: LocalizedTextSchema,
     period: z.strictObject({ start: YearMonthSchema, end: YearMonthOrPresentSchema }),
     role: LocalizedTextSchema,
@@ -213,6 +218,17 @@ export const PodSchema = z
     if (pod.liveUrl) {
       const problem = liveUrlProblem(pod.liveUrl);
       if (problem) ctx.addIssue({ code: "custom", path: ["liveUrl"], message: problem });
+    }
+    if (pod.shortTitle) {
+      for (const locale of LOCALES) {
+        const short = pod.shortTitle[locale];
+        if (short.length > SHORT_TITLE_MAX) {
+          ctx.addIssue({ code: "custom", path: ["shortTitle", locale], message: `Short title is longer than ${SHORT_TITLE_MAX} characters` });
+        }
+        if (short.length >= pod.title[locale].length) {
+          ctx.addIssue({ code: "custom", path: ["shortTitle", locale], message: "Short title must be shorter than the title" });
+        }
+      }
     }
     if (pod.selected !== undefined && pod.assets.length === 0) {
       ctx.addIssue({ code: "custom", path: ["selected"], message: "Selected work needs at least one gallery image" });

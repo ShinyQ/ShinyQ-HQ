@@ -191,7 +191,9 @@ test.describe("fast return on Project Roads (L3)", () => {
     await openFloor(page, "/en/labs");
     const back = (await padsOf(page, "L3")).find((p) => p.id === "return:L3")!;
     expect(back).toBeTruthy();
-    await placeRover(page, { x: back.at.x - 8, z: back.at.z + 4 });
+    // The pad sits on the axis east of the reactor: from the west the core's ring targets would take the click,
+    // so the rover waits 8 u south of the pad and the follow camera looks past the core.
+    await placeRover(page, { x: back.at.x, z: back.at.z + 8 });
     await waitForCameraSettle(page);
     const record = await recordRide(page);
     const item = await visibleTarget(page, { kinds: ["return-pad"] });

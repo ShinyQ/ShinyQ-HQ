@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
-import { buildLabsLayout, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS, dockingOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
 import { OPS } from "@/experience/floors/labs/ops";
 import { REACTOR } from "@/experience/floors/labs/reactor";
 import { roadGlow } from "@/experience/floors/labs/techReactor";
@@ -42,7 +42,7 @@ describe("L3 Data and ML spine", () => {
   });
 
   it("turns short side wings past the last spine pod, so their last leg never crosses the spine rows", () => {
-    const software = tourOrder(real.filter((p) => p.wing === "software"));
+    const software = dockingOrder(real.filter((p) => p.wing === "software"));
     const nonSoftware = real.filter((p) => p.wing !== "software");
     const sets: [string, LabPod[]][] = [
       ["one Product pod", [...nonSoftware, software[0]]],
@@ -72,7 +72,7 @@ describe("L3 Data and ML spine", () => {
   });
 
   it("docks spine pods alternating north and south from x = 24 in even steps, doors facing the spine, 6 u from the inner wing rows", () => {
-    expect(spinePods.map((p) => p.pod.slug)).toEqual(tourOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
+    expect(spinePods.map((p) => p.pod.slug)).toEqual(dockingOrder(real.filter((p) => p.wing === "data")).map((p) => p.slug));
     spinePods.forEach((p, i) => {
       expect(Math.sign(p.center.z), p.room).toBe(i % 2 === 0 ? -1 : 1);
       expect(p.roadZ).toBe(0);
@@ -104,14 +104,14 @@ describe("L3 Data and ML spine", () => {
     expect(layout.east.center).toEqual({ x: Math.max(...turns, spineEdge + LABS.tail + LABS.east / 2), z: 0 });
     const lastInner = Math.max(...layout.placed.filter((p) => p.pod.wing === "ai" && p.row === "inner").map((p) => p.rect.maxX));
     expect(layout.ops.rect.minX).toBe(lastInner + OPS.gap);
-    expect(floor.returnPad).toEqual({ x: layout.east.center.x + 10, z: 9 });
+    expect(floor.returnPad).toEqual({ x: layout.east.center.x + LABS.returnPadX, z: 0 });
     expect(floor.bounds.maxX).toBe(layout.east.center.x + LABS.east / 2 + LABS.margin);
     expect(floor.stops!["L3:reactor"]).toEqual({ x: layout.east.center.x + REACTOR.ring, z: 0 });
   });
 
   it("spreads the spine pods from x = 24 to the reactor plaza, and packs them at the minimum pitch when there are many", () => {
     // Pad the AI wing to 11 docked pods (PR #163's floor), whatever today's content docks there.
-    const aiDocked = tourOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const aiDocked = dockingOrder(real.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
     const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
     const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
     const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
@@ -185,20 +185,5 @@ describe("L3 Data and ML spine", () => {
   it("tints the spine amber and keeps Product Engineering north, AI Engineering south", () => {
     expect(WING_TINT.data).toBe("#fbbf24");
     expect(WING_SIDE).toEqual({ software: -1, ai: 1 });
-  });
-
-  it("puts one floating sign at each road: wing signs past their mouths, the spine sign over the spine before the wall", () => {
-    for (const wing of ["software", "ai"] as const) {
-      const road = network.roads.find((r) => r.id === wing)!;
-      expect(layout.signs[wing].at).toEqual(road.points[1]);
-      expect(Math.hypot(layout.signs[wing].float.x - road.points[1].x, layout.signs[wing].float.z - road.points[1].z)).toBeCloseTo(Math.abs(LABS.signAlong));
-      // A negative signAlong pulls the sign back toward the hub centre, along the hub-to-mouth line.
-      const hub = road.points[0];
-      const fromHub = Math.hypot(layout.signs[wing].float.x - hub.x, layout.signs[wing].float.z - hub.z);
-      expect(fromHub).toBeCloseTo(Math.hypot(road.points[1].x - hub.x, road.points[1].z - hub.z) + LABS.signAlong);
-    }
-    expect(layout.signs.data.float).toEqual({ x: LABS.spineSignX, z: 0 });
-    expect(layout.signs.data.float.x).toBeLessThan(layout.boards.data.minX);
-    expect(Object.keys(layout.signs).sort()).toEqual(["ai", "data", "software"]);
   });
 });

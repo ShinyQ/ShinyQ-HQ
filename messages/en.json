@@ -186,7 +186,8 @@
       "selected": "Selected: {tech}"
     },
     "boardOpen": "Open the full list",
-    "boardCount": "{count, plural, one {# project} other {# projects}}"
+    "boardCount": "{count, plural, one {# project} other {# projects}}",
+    "boardMore": "+{count} more"
   },
   "library": {
     "title": "Library",

@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
-import { FOLLOW_LOOK_AHEAD, followPose } from "@/experience/camera/rigs";
+import { FOLLOW_LOOK_AHEAD, followForward, followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER, ROVER_HEIGHT, SHAFT, SHAFT_EAST_FACE } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { chevronMarks } from "@/experience/nav/roadGeometry";
-import { buildLabsLayout, directoryStop, LABS, LABS_WINGS, SIDE_WINGS, tourOrder, wallPosts, WING_SIDE } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, directoryBoard, directoryStop, LABS, LABS_WINGS, lookAlong, SIDE_WINGS, dockingOrder, wallPosts, WING_SIDE } from "@/experience/floors/labs/layout";
 import { REACTOR, ringEntry } from "@/experience/floors/labs/reactor";
 import { HINT } from "@/experience/hints/select";
 import { distanceToRect } from "@/experience/nav/collision";
 import { DOOR_WIDTH } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
-import { inPlaza, onNetwork, pathBetween } from "@/experience/nav/road";
+import { inPlaza, onNetwork, pathBetween, projectOnRoad } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { rectGap } from "@/experience/nav/space";
-import type { LabPod } from "@/experience/types";
+import type { LabPod, Vec2 } from "@/experience/types";
 import { expectSpaceRules } from "../helpers/space";
 
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
@@ -63,7 +63,7 @@ describe("L3 Project Roads layout", () => {
       expect(road.points[2]).toEqual({ x: LABS.wingStartX, z: side * layout.wingZ });
     }
     // They end on the ring road around the reactor core in the east plaza (spectacle round), where the line from
-    // their turn meets it: due north or south for the later wing, at an angle for a shorter one.
+    // their turn meets it: both turn at the plaza's x, so due north and due south (owner request 2026-10-16).
     for (const [road, side] of [[north, -1], [south, 1]] as const) {
       const entry = road.points.at(-1)!;
       expect(entry).toEqual(ringEntry(layout.east.center, road.points.at(-2)!));
@@ -77,36 +77,38 @@ describe("L3 Project Roads layout", () => {
     for (const p of path!) expect(onNetwork(network, p)).toBe(true);
   });
 
-  it("ends each wing road one tail past its last docked pod, so no stretch of road runs on empty (owner request 2026-10-13)", () => {
+  it("turns both wing roads at the reactor plaza, a tail past the longer wing's last pod (owner requests 2026-10-13 and 2026-10-16)", () => {
     const spine = layout.placed.filter((p) => p.pod.wing === "data");
     const spineEdge = Math.max(-Infinity, ...spine.map((p) => p.rect.maxX));
+    // Where each wing alone needs its road to run: a tail past its own last pod, the last spine pod beside it, or (AI) the Ops Control Room.
+    const need = (wing: "software" | "ai") => {
+      const lastEdge = Math.max(...layout.placed.filter((p) => p.pod.wing === wing).map((p) => p.rect.maxX));
+      const opsTurn = wing === "ai" ? layout.ops.rect.maxX + LABS.road / 2 : -Infinity;
+      return Math.max(lastEdge + LABS.tail, spineEdge + LABS.tail, opsTurn, LABS.wingStartX + LABS.east + LABS.margin);
+    };
+    // The east plaza sits on the later of the two (and a tail plus its radius past the last spine pod), on the axis between the wings.
+    expect(layout.east.center).toEqual({ x: Math.max(need("software"), need("ai"), spineEdge + LABS.tail + LABS.east / 2), z: 0 });
     for (const wing of ["software", "ai"] as const) {
       const road = network.roads.find((r) => r.id === wing)!;
-      const docked = layout.placed.filter((p) => p.pod.wing === wing);
-      const lastEdge = Math.max(...docked.map((p) => p.rect.maxX));
-      // The turn is a tail past the wing's own last pod, the last spine pod beside it, or (AI) the Ops Control Room.
-      const opsTurn = wing === "ai" ? layout.ops.rect.maxX + LABS.road / 2 : -Infinity;
-      expect(road.points[3].x, wing).toBe(Math.max(lastEdge + LABS.tail, spineEdge + LABS.tail, opsTurn, LABS.wingStartX + LABS.east + LABS.margin));
-      // From the last door along it (its own pods, the spine pods beside it, the Ops room) to the turn is at most half a hero pod plus the tail.
-      const doors = [...docked, ...spine].map((p) => p.door.x);
-      if (wing === "ai") doors.push(layout.ops.door.x);
-      expect(road.points[3].x - Math.max(...doors), wing).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
+      expect(road.points[3].x, wing).toBe(layout.east.center.x);
       expect(road.points.at(-1)).toEqual(ringEntry(layout.east.center, road.points[3]));
     }
-    // The east plaza sits on the later of the two turns (and a tail plus its radius past the last spine pod), on the axis between the wings.
-    const turns = network.roads.filter((r) => r.id === "software" || r.id === "ai").map((r) => r.points[3].x);
-    const lastSpineEdge = Math.max(...layout.placed.filter((p) => p.pod.wing === "data").map((p) => p.rect.maxX));
-    expect(layout.east.center).toEqual({ x: Math.max(...turns, lastSpineEdge + LABS.tail + LABS.east / 2), z: 0 });
+    // The wing that sets the plaza runs at most half a hero pod plus the tail past its last door (its own pods, the spine pods beside it, the Ops room).
+    const later = need("software") >= need("ai") ? "software" : "ai";
+    const doors = [...layout.placed.filter((p) => p.pod.wing === later), ...spine].map((p) => p.door.x);
+    if (later === "ai") doors.push(layout.ops.door.x);
+    if (need(later) === layout.east.center.x) expect(layout.east.center.x - Math.max(...doors)).toBeLessThanOrEqual(LABS.hero.w / 2 + LABS.tail);
   });
 
-  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods (without spine pods)", () => {
+  it("ends the slab one plaza radius and a margin past the east plaza, right after the last pods or the Ops room (without spine pods)", () => {
     const hubOnly = buildLabsLayout(pods.filter((p) => p.wing !== "data"));
     const lastEdge = Math.max(...hubOnly.placed.map((p) => p.rect.maxX));
+    const lastTurn = Math.max(lastEdge + LABS.tail, hubOnly.ops.rect.maxX + LABS.road / 2);
     expect(hubOnly.floor.bounds.maxX).toBe(hubOnly.east.center.x + LABS.east / 2 + LABS.margin);
-    expect(hubOnly.floor.bounds.maxX - lastEdge).toBe(LABS.tail + LABS.east / 2 + LABS.margin);
+    expect(hubOnly.floor.bounds.maxX - lastTurn).toBe(LABS.east / 2 + LABS.margin);
   });
 
-  it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing cutting across to the plaza", () => {
+  it("keeps a lopsided floor and an empty floor inside the space rules, a shorter wing running on to the plaza", () => {
     const lopsided = buildLabsLayout([
       ...Array.from({ length: 9 }, (_, i) => pod(`s${i}`, "software", i % 3 ? "featured" : "hero", i)),
       ...Array.from({ length: 3 }, (_, i) => pod(`a${i}`, "ai", "hero", i)),
@@ -115,13 +117,49 @@ describe("L3 Project Roads layout", () => {
     const ai = lopsided.network.roads.find((r) => r.id === "ai")!;
     const software = lopsided.network.roads.find((r) => r.id === "software")!;
     const aiEdge = Math.max(...lopsided.placed.filter((p) => p.pod.wing === "ai").map((p) => p.rect.maxX));
-    expect(ai.points[3].x).toBe(aiEdge + LABS.tail);
-    expect(ai.points[3].x).toBeLessThan(software.points[3].x);
+    expect(aiEdge + LABS.tail).toBeLessThan(software.points[3].x);
+    expect(ai.points[3].x).toBe(software.points[3].x);
+    expect(ai.points[3].x).toBe(lopsided.east.center.x);
     expect(ai.points.at(-1)).toEqual(ringEntry(lopsided.east.center, ai.points[3]));
+    expect(ai.points.at(-1)!.x).toBeCloseTo(lopsided.east.center.x);
     expect(Math.hypot(ai.points.at(-1)!.x - lopsided.east.center.x, ai.points.at(-1)!.z - lopsided.east.center.z)).toBeCloseTo(REACTOR.ring);
     const empty = buildLabsLayout([]);
     expectSpaceRules({ bounds: empty.floor.bounds, obstacles: empty.floor.obstacles, doors: empty.floor.doors ?? [], network: empty.network, start: empty.floor.approach });
     expect(empty.east.center.x).toBe(LABS.wingStartX + LABS.east + LABS.margin);
+  });
+
+  it("mirrors the reactor end about the spine axis (owner request 2026-10-16), the Return pad on the axis", () => {
+    const aiDocked = dockingOrder(pods.filter((p) => p.wing === "ai")).slice(0, LABS.maxPerWing).length;
+    const extraAi = Array.from({ length: Math.max(0, 11 - aiDocked) }, (_, i) => pod(`a-extra-${i}`, "ai", "featured", 100 + i));
+    const shortSides = [pod("s0", "software", "featured", 0), pod("s1", "software", "featured", 1), pod("a0", "ai", "featured", 0), pod("a1", "ai", "featured", 1)];
+    const eightHero = Array.from({ length: 8 }, (_, i) => pod(`h${i}`, "data", "hero", i));
+    const cases: [string, LabPod[]][] = [
+      ["real pods", pods],
+      ["an 11-pod AI wing", [...pods, ...extraAi]],
+      ["short side wings with eight hero spine pods", [...shortSides, ...eightHero]],
+      ["empty floor", []],
+    ];
+    for (const [name, set] of cases) {
+      const l = buildLabsLayout(set);
+      const c = l.east.center;
+      const north = l.network.roads.find((r) => r.id === "software")!.points;
+      const south = l.network.roads.find((r) => r.id === "ai")!.points;
+      for (const k of [-2, -1]) {
+        expect(Math.abs(north.at(k)!.x - south.at(k)!.x), `${name} x ${k}`).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(north.at(k)!.z + south.at(k)!.z), `${name} z ${k}`).toBeLessThanOrEqual(0.5);
+      }
+      expect(north.at(-2)!.x, name).toBe(c.x);
+      expect(south.at(-2)!.x, name).toBe(c.x);
+      expect(north.at(-1)!.x, name).toBeCloseTo(c.x);
+      expect(north.at(-1)!.z, name).toBeCloseTo(c.z - REACTOR.ring);
+      expect(south.at(-1)!.x, name).toBeCloseTo(c.x);
+      expect(south.at(-1)!.z, name).toBeCloseTo(c.z + REACTOR.ring);
+      expect(l.network.roads.find((r) => r.id === "data")!.points.at(-1)!.z, name).toBeCloseTo(0);
+      expect(l.floor.returnPad!.z, name).toBe(0);
+      expect(l.floor.returnPad!.x, name).toBeGreaterThan(c.x + REACTOR.ring + LABS.road / 2);
+      const pads = buildFloorLayouts(8, { labs: set }).L3.pads ?? [];
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach, pads });
+    }
   });
 
   it("paints no chevrons on L3 (owner request 2026-10-13) while every other walkable floor keeps them", () => {
@@ -147,7 +185,7 @@ describe("L3 Project Roads layout", () => {
   it("docks pods in site order (gallery pods nearest the hub), alternating sides of the wing road", () => {
     for (const wing of ["software", "ai"] as const) {
       const docked = layout.placed.filter((p) => p.pod.wing === wing);
-      expect(docked.map((p) => p.pod.slug)).toEqual(tourOrder(pods.filter((p) => p.wing === wing)).map((p) => p.slug));
+      expect(docked.map((p) => p.pod.slug)).toEqual(dockingOrder(pods.filter((p) => p.wing === wing)).map((p) => p.slug));
       docked.forEach((p, i) => expect(p.row).toBe(i % 2 === 0 ? "outer" : "inner"));
       for (const row of ["outer", "inner"] as const) {
         const inRow = docked.filter((p) => p.row === row);
@@ -254,21 +292,22 @@ describe("L3 Project Roads layout", () => {
     expect(onNetwork(network, directoryStop("data"))).toBe(true);
   });
 
-  it("drives from the arrival spot to every board stop without turning back toward the hub", () => {
+  it("drives from the arrival spot to every board stop along the spine, never back toward the hub", () => {
     const grid = buildNavGrid(floor, ROVER.radius);
+    const length = (route: Vec2[]) => route.reduce((sum, p, i) => sum + Math.hypot(p.x - (i ? route[i - 1] : LABS.overview).x, p.z - (i ? route[i - 1] : LABS.overview).z), 0);
     for (const wing of LABS_WINGS) {
       const stop = directoryStop(wing);
       const route = roadRoute(network, grid, LABS.overview, stop)!;
       expect(route.at(-1)!.x).toBeCloseTo(stop.x);
       expect(route.at(-1)!.z).toBeCloseTo(stop.z);
-      for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x - 1e-6);
-      let length = 0;
-      let at = LABS.overview;
-      for (const p of route) {
-        length += Math.hypot(p.x - at.x, p.z - at.z);
-        at = p;
+      if (wing === "data") {
+        for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x - 1e-6);
+        expect(length(route), wing).toBeLessThan(14);
+        continue;
       }
-      expect(length, wing).toBeLessThan(14);
+      // The side stops hang straight off the spine (plan amendment 2026-10-16), so the drive never turns back toward the hub.
+      for (const p of route) expect(p.x, `${wing} ${p.x},${p.z}`).toBeGreaterThanOrEqual(LABS.overview.x - 1e-6);
+      expect(length(route), wing).toBeLessThan(16);
     }
   });
 
@@ -286,8 +325,8 @@ describe("L3 Project Roads layout", () => {
     const laneZ = LABS.road / 2 + LABS.forecourt + Math.max(...layout.placed.filter((p) => p.pod.wing === "data").map((p) => p.depth)) + LABS.rowGap / 2;
     const spines = layout.lanes.filter((l) => l[0][1] === l[1][1]);
     expect(spines).toEqual([
-      [[LABS.board.x + LABS.board.w / 2 + 1, -laneZ], [layout.east.center.x - LABS.east / 2, -laneZ]],
-      [[LABS.board.x + LABS.board.w / 2 + 1, laneZ], [layout.east.center.x - LABS.east / 2, laneZ]],
+      [[LABS.board.dataX + LABS.board.w / 2 + 1, -laneZ], [layout.east.center.x - LABS.east / 2, -laneZ]],
+      [[LABS.board.dataX + LABS.board.w / 2 + 1, laneZ], [layout.east.center.x - LABS.east / 2, laneZ]],
     ]);
     const fed = layout.placed.filter((p) => p.pod.wing === "data" || p.row === "inner");
     expect(layout.lanes.length).toBe(2 + fed.length);
@@ -297,43 +336,138 @@ describe("L3 Project Roads layout", () => {
     }
   });
 
-  it("stands three raised boards at the fork, Product north, Data and ML over the spine, AI south, on four posts", () => {
-    const grid = buildNavGrid(floor, ROVER.radius);
-    expect(layout.boards.software.maxZ).toBeCloseTo(layout.boards.data.minZ);
-    expect(layout.boards.data.maxZ).toBeCloseTo(layout.boards.ai.minZ);
-    expect(layout.boards.data.center.z).toBe(0);
-    expect(layout.boards.data.maxZ - layout.boards.data.minZ).toBeCloseTo(LABS.board.gate);
+  it("pins the board decisions of the neat entrance (plan 2026-10-16)", () => {
+    expect(LABS.board).toEqual({ w: 0.6, base: 3.2, h: 9.6, width: 9, post: 0.4, pylon: { across: 0.4, along: 0.8 }, dataX: 18, side: { x: 16, z: 11.2 }, turn: 0.33 });
+  });
+
+  it("stands three free-standing boards: the Data and ML gate over the spine, the side boards turned toward the axis", () => {
+    const { data, software, ai } = layout.boards;
+    expect(data.normal).toEqual({ x: -1, z: 0 });
+    expect(data.center).toEqual({ x: LABS.board.dataX, z: 0 });
+    for (const b of Object.values(layout.boards)) {
+      expect(Math.hypot(b.normal.x, b.normal.z)).toBeCloseTo(1, 12);
+      expect(b.along.x).toBeCloseTo(b.normal.z, 12);
+      expect(b.along.z).toBeCloseTo(-b.normal.x, 12);
+      expect(b.yaw).toBeCloseTo(Math.atan2(b.normal.x, b.normal.z), 12);
+    }
+    // Mirror images across the spine.
+    expect(ai.center.x).toBeCloseTo(software.center.x, 12);
+    expect(ai.center.z).toBeCloseTo(-software.center.z, 12);
+    expect(ai.normal.x).toBeCloseTo(software.normal.x, 12);
+    expect(ai.normal.z).toBeCloseTo(-software.normal.z, 12);
     for (const wing of SIDE_WINGS) {
       const b = layout.boards[wing];
-      expect(b.maxZ - b.minZ).toBeCloseTo(LABS.board.d);
       expect(Math.sign(b.center.z)).toBe(WING_SIDE[wing]);
+      expect(Math.acos(-b.normal.x), wing).toBeLessThanOrEqual(0.35);
+      // Toward the axis: the normal points back across z = 0.
+      expect(Math.sign(b.normal.z), wing).toBe(-WING_SIDE[wing]);
     }
-    // The spine road passes between the gate posts; the rover (2.8 u) fits under the board.
-    const posts = wallPosts();
-    expect(posts).toHaveLength(4);
-    for (const p of posts) expect(floor.obstacles).toContainEqual(p);
-    const inner = posts.filter((p) => Math.abs(p.minZ + p.maxZ) / 2 < LABS.board.gate / 2);
-    for (const p of inner) expect(Math.min(Math.abs(p.minZ), Math.abs(p.maxZ))).toBeGreaterThan(LABS.road / 2);
-    expect(LABS.board.base).toBeGreaterThan(ROVER_HEIGHT);
-    // No board rect blocks the floor; each is a tall camera column.
     for (const wing of LABS_WINGS) {
       const b = layout.boards[wing];
+      expect(b).toEqual(directoryBoard(wing));
+      const corners = [-1, 1].flatMap((s) => [-1, 1].map((t) => ({ x: b.center.x + (s * b.along.x * LABS.board.width) / 2 + (t * b.normal.x * LABS.board.w) / 2, z: b.center.z + (s * b.along.z * LABS.board.width) / 2 + (t * b.normal.z * LABS.board.w) / 2 })));
+      expect(b.minX).toBeCloseTo(Math.min(...corners.map((c) => c.x)), 12);
+      expect(b.maxX).toBeCloseTo(Math.max(...corners.map((c) => c.x)), 12);
+      expect(b.minZ).toBeCloseTo(Math.min(...corners.map((c) => c.z)), 12);
+      expect(b.maxZ).toBeCloseTo(Math.max(...corners.map((c) => c.z)), 12);
+    }
+    // Neighbouring boards stand apart: their front faces' end points are at least 2 u from each other.
+    const ends = (wing: (typeof LABS_WINGS)[number]) => {
+      const b = layout.boards[wing];
+      const face = { x: b.center.x + (b.normal.x * LABS.board.w) / 2, z: b.center.z + (b.normal.z * LABS.board.w) / 2 };
+      return [-1, 1].map((s) => ({ x: face.x + (s * b.along.x * LABS.board.width) / 2, z: face.z + (s * b.along.z * LABS.board.width) / 2 }));
+    };
+    for (const wing of SIDE_WINGS)
+      for (const a of ends(wing)) for (const b of ends("data")) expect(Math.hypot(a.x - b.x, a.z - b.z), wing).toBeGreaterThanOrEqual(2);
+  });
+
+  it("carries the gate on two posts outside the spine road and each side board on one pylon, every post a floor obstacle", () => {
+    const posts = wallPosts();
+    expect(posts.map((p) => p.wing)).toEqual(["data", "data", "software", "ai"]);
+    for (const p of posts) {
+      expect(floor.obstacles).toContainEqual(p.rect);
+      const b = directoryBoard(p.wing);
+      expect(p.yaw).toBeCloseTo(b.yaw, 12);
+    }
+    for (const p of posts.filter((p) => p.wing === "data")) {
+      expect(p.across).toBe(LABS.board.w);
+      expect(p.along).toBe(LABS.board.post);
+      expect(Math.min(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))).toBeGreaterThan(LABS.road / 2);
+      expect(Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))).toBeCloseTo(LABS.board.width / 2, 12);
+    }
+    for (const wing of SIDE_WINGS) {
+      const p = posts.find((q) => q.wing === wing)!;
+      expect(p.center).toEqual(directoryBoard(wing).center);
+      expect({ across: p.across, along: p.along }).toEqual(LABS.board.pylon);
+    }
+    // The rover (2.8 u) drives under every board.
+    expect(LABS.board.base).toBeGreaterThan(ROVER_HEIGHT);
+  });
+
+  it("puts each board stop in front of its board, the side stops on spurs straight off the spine", () => {
+    const grid = buildNavGrid(floor, ROVER.radius);
+    for (const wing of LABS_WINGS) {
+      const b = layout.boards[wing];
+      // No board blocks the floor; each is a tall camera column up to its top.
       expect(floor.obstacles).not.toContainEqual({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ });
-      expect(floor.tall).toContainEqual({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: LABS.board.h });
+      expect(floor.tall).toContainEqual({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: 9.6 });
       const stop = directoryStop(wing);
       expect(stop).toEqual(b.stop);
-      expect(stop).toEqual({ x: b.minX - LABS.boardStop, z: b.center.z });
+      expect(stop.x).toBeCloseTo(b.center.x + b.normal.x * (LABS.board.w / 2 + LABS.boardStop), 12);
+      expect(stop.z).toBeCloseTo(b.center.z + b.normal.z * (LABS.board.w / 2 + LABS.boardStop), 12);
       expect(isWalkable(grid, stop), wing).toBe(true);
-      expect(onNetwork(network, directoryStop(wing)), wing).toBe(true);
+      expect(onNetwork(network, stop), wing).toBe(true);
       expect(Math.hypot(stop.x - LABS.overview.x, stop.z - LABS.overview.z), wing).toBeGreaterThan(HINT.radius);
-      const zone = zoneAt("L3", stop, floor.viewZones);
-      expect(zone?.id).toBe(`L3:directory:${wing}`);
-      expect(zone?.yaw).toBeCloseTo((-3 * Math.PI) / 4);
-      expect(zone?.zoom).toBe(LABS.boardZoom);
-      expect(zone?.classView?.mobile?.zoom).toBe(LABS.boardZoomPhone);
       for (const p of layout.placed) expect(rectGap(b, p.rect), p.room).toBeGreaterThanOrEqual(6);
     }
+    expect(directoryStop("data")).toEqual({ x: LABS.board.dataX - LABS.board.w / 2 - LABS.boardStop, z: 0 });
+    const spine = network.roads.find((r) => r.id === "data")!;
+    for (const wing of SIDE_WINGS) {
+      const spur = network.spurs.find((s) => s.room === `L3:directory:${wing}`)!;
+      expect(spur.from, wing).toEqual({ x: directoryStop(wing).x, z: 0 });
+      expect(projectOnRoad(spine, spur.from).distance, wing).toBeLessThan(1e-6);
+      expect(spur.to).toEqual(directoryStop(wing));
+    }
     expect(floor.directoryStops).toEqual({ software: directoryStop("software"), ai: directoryStop("ai"), data: directoryStop("data") });
+  });
+
+  it("frames each board from its stop: the side boards head on, the data board looking east", () => {
+    for (const wing of LABS_WINGS) {
+      const b = layout.boards[wing];
+      const zone = zoneAt("L3", b.stop, floor.viewZones);
+      expect(zone?.id).toBe(`L3:directory:${wing}`);
+      expect(zone?.zoom).toBe(LABS.boardZoom);
+      expect(zone?.classView?.mobile?.zoom).toBe(LABS.boardZoomPhone);
+      for (const cls of ["desktop", "tablet", "mobile"] as const) {
+        const forward = followForward(cls, zone!.yaw);
+        expect(forward.x, `${wing} ${cls}`).toBeCloseTo(-b.normal.x, 9);
+        expect(forward.z, `${wing} ${cls}`).toBeCloseTo(-b.normal.z, 9);
+      }
+      if (wing === "data") {
+        expect(zone?.yaw).toBeCloseTo((-3 * Math.PI) / 4);
+        expect(zone?.area).toEqual({ minX: b.stop.x - 1, maxX: b.minX, minZ: -LABS.board.width / 2, maxZ: LABS.board.width / 2 });
+      } else expect(zone?.area).toEqual({ minX: b.stop.x - 1.5, maxX: b.stop.x + 1.5, minZ: b.stop.z - 1.5, maxZ: b.stop.z + 1.5 });
+    }
+    expect(zoneAt("L3", LABS.overview, floor.viewZones)?.area.maxX).toBeCloseTo(directoryStop("data").x - 1);
+  });
+
+  it("lookAlong inverts followForward for every camera class", () => {
+    for (const cls of ["desktop", "tablet", "mobile"] as const)
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.1;
+        const d = { x: Math.cos(a), z: Math.sin(a) };
+        const f = followForward(cls, lookAlong(d));
+        expect(f.x, `${cls} ${i}`).toBeCloseTo(d.x, 9);
+        expect(f.z, `${cls} ${i}`).toBeCloseTo(d.z, 9);
+      }
+    expect(lookAlong({ x: 1, z: 0 })).toBeCloseTo((-3 * Math.PI) / 4, 12);
+  });
+
+  it("keeps the boards, pylons and gate posts inside the space rules on a lopsided and an empty floor", () => {
+    for (const l of [buildLabsLayout([]), buildLabsLayout([...Array.from({ length: 9 }, (_, i) => pod(`s${i}`, "software", "hero", i)), pod("d0", "data", "hero", 0)])]) {
+      expectSpaceRules({ bounds: l.floor.bounds, obstacles: l.floor.obstacles, doors: l.floor.doors ?? [], network: l.network, start: l.floor.approach });
+      for (const wing of LABS_WINGS) for (const p of l.placed) expect(rectGap(l.boards[wing], p.rect), `${wing} ${p.room}`).toBeGreaterThanOrEqual(6);
+    }
   });
 
   it("parks deep links and elevator arrivals on the hub's east rim facing the wall, with the shaft behind the camera", () => {

@@ -342,18 +342,34 @@ describe("AI Fraud Document Review gallery names its own product (R5-P11)", () =
 describe("Data and ML pods (owner request 2026-10-14)", () => {
   const content = parsed.data!;
   const pods = content.floors.labs.pods;
-  const data = pods.filter((p) => p.wing === "data");
   const DATA_SLUGS = ["university-sentiment-indobert", "ifest-2021-sentiment-analysis", "covid-herd-immunity-forecast", "stock-allocation-optimizer", "kampus-merdeka-reports-crawler"];
+  /** Moved from AI Engineering by the owner on 2026-10-16 (on-premise data into Fabric, medallion pattern). */
+  const FABRIC = "fabric-forecasting-dashboard";
+  const data = pods.filter((p) => DATA_SLUGS.includes(p.slug));
+
+  it("puts the five chosen repos and the Fabric forecasting pod on the Data and ML wing", () => {
+    const wing = pods.filter((p) => p.wing === "data").map((p) => p.slug);
+    expect(wing.sort()).toEqual([...DATA_SLUGS, FABRIC].sort());
+  });
 
   it("adds the five chosen repos as featured pods with their public repositories and no client", () => {
     expect(data.map((p) => p.slug)).toEqual(DATA_SLUGS);
     for (const pod of data) {
+      expect(pod.wing, pod.slug).toBe("data");
       expect(pod.tier, pod.slug).toBe("featured");
       expect(pod.client, pod.slug).toBeUndefined();
       expect(pod.repos?.length, pod.slug).toBeGreaterThan(0);
       expect(pod.liveUrl, pod.slug).toBeUndefined();
       for (const r of pod.results) expect(r.context?.en, `${pod.slug} ${r.value}`).toBeTruthy();
     }
+  });
+
+  it("keeps the Fabric forecasting pod as featured client work with a sector label and a gallery (owner 2026-10-16)", () => {
+    const fabric = pods.find((p) => p.slug === FABRIC)!;
+    expect(fabric.wing).toBe("data");
+    expect(fabric.tier).toBe("featured");
+    expect(fabric.client).toEqual({ en: "National bakery brand", id: "Merek roti nasional" });
+    expect(fabric.assets.length).toBeGreaterThan(0);
   });
 
   it("does not duplicate the real estate side project as a pod", () => {

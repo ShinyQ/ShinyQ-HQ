@@ -40,6 +40,7 @@ export function titleSlots(content: SiteContent): TitleSlot[] {
   const { labs, library } = content.floors;
   return [
     ...labs.pods.flatMap((p, i) => localized(`floors.labs.pods[${i}](${p.slug}).title`, p.title)),
+    ...labs.pods.flatMap((p, i) => (p.shortTitle ? localized(`floors.labs.pods[${i}](${p.slug}).shortTitle`, p.shortTitle) : [])),
     ...library.posts.flatMap((p, i) => localized(`floors.library.posts[${i}](${p.slug}).title`, p.title)),
     ...library.publications.map((p, i) => plain(`floors.library.publications[${i}](${p.id}).title`, p)),
     ...library.talks.flatMap((t, i) => localized(`floors.library.talks[${i}](${t.id}).title`, t.title)),

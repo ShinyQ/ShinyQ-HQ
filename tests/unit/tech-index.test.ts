@@ -98,13 +98,22 @@ describe("Data and ML wing on the reactor (owner request 2026-10-14)", () => {
     for (const pod of dataPods) expect(lit.has(pod.slug), pod.slug).toBe(true);
   });
 
-  it("maps every data pod tech to the Data or AI ring, except the CV languages and frameworks", () => {
+  it("maps every data pod tech to the Data or AI ring, except the CV languages, frameworks and the Fabric pod's app and cloud stack", () => {
     const off = dataPods.flatMap((pod) => pod.stack.filter((name) => !["data", "ai"].includes(ringOfKey.get(techKey(name)) ?? "")));
-    expect([...new Set(off)].sort()).toEqual(["Django", "Docker", "FastAPI", "Python"]);
+    // The Fabric forecasting pod (moved from AI Engineering, owner 2026-10-16) adds its web app, hosting and platform names.
+    expect([...new Set(off)].sort()).toEqual(["App Service", "Azure AI Foundry", "Bicep", "Django", "Docker", "FastAPI", "Key Vault", "Microsoft Fabric", "Next.js", "Python"]);
   });
 
-  it("lights every data pod from pandas, the cluster's shared tech", () => {
-    const pandas = index.rings.flatMap((r) => r.techs).find((t) => t.slug === "pandas")!;
-    expect(pandas.pods.filter((slug) => dataPods.some((p) => p.slug === slug)).sort()).toEqual(dataPods.map((p) => p.slug).sort());
+  it("lights every repo data pod from pandas, the cluster's shared tech, and the Fabric pod from its lakehouse pipeline", () => {
+    const techs = index.rings.flatMap((r) => r.techs);
+    const pandas = techs.find((t) => t.slug === "pandas")!;
+    const repoPods = dataPods.filter((p) => p.repos?.length);
+    expect(repoPods).toHaveLength(5);
+    expect(pandas.pods.filter((slug) => dataPods.some((p) => p.slug === slug)).sort()).toEqual(repoPods.map((p) => p.slug).sort());
+    for (const name of ["Lakehouse", "Spark notebooks", "Fabric Data Pipelines"]) {
+      const tech = techs.find((t) => techKey(t.name) === techKey(name));
+      expect(ringOfKey.get(techKey(name)), name).toBe("data");
+      expect(tech?.pods, name).toContain("fabric-forecasting-dashboard");
+    }
   });
 });

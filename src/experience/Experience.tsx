@@ -459,6 +459,7 @@ export default function Experience({
         directory: tDrawer("directory"),
         open: tLabs("boardOpen"),
         count: (count: number) => tLabs("boardCount", { count }),
+        more: (count: number) => tLabs("boardMore", { count }),
         rings: Object.fromEntries(REACTOR_RINGS.map((ring) => [ring, tReactor(`rings.${ring}`)])) as Record<ReactorRingId, string>,
         uses: (count: number, tech: string) => tReactor("uses", { count, tech }),
       },

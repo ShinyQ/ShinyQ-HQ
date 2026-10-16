@@ -16,7 +16,9 @@ describe("Title Case content titles (fix with: bun scripts/title-case.ts --write
     for (const prefix of ["floors.labs.pods[", "floors.library.posts[", "floors.library.publications[", "floors.library.talks[", "sideProjects[", "awards[", "profile.principles["]) {
       expect(paths.some((p) => p.startsWith(prefix)), prefix).toBe(true);
     }
-    expect(paths.filter((p) => p.startsWith("floors.labs.pods["))).toHaveLength(content.floors.labs.pods.length * 2);
+    // Title in both locales, plus the short title where a pod sets one.
+    const pods = content.floors.labs.pods;
+    expect(paths.filter((p) => p.startsWith("floors.labs.pods["))).toHaveLength((pods.length + pods.filter((p) => p.shortTitle).length) * 2);
   });
 
   it("has every title in site-content.json in Title Case", () => {

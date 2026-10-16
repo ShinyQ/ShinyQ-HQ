@@ -13,6 +13,7 @@ import {
   PICK_HEIGHT,
   pickVolume,
   REACH,
+  volumePoint,
   reach,
   type InteractDeps,
 } from "@/experience/interact/pick";
@@ -74,11 +75,29 @@ function deps(over: Partial<InteractDeps> = {}): InteractDeps {
 
 describe("pick volumes", () => {
   it("stands a box on the footprint, as tall as the target", () => {
-    expect(pickVolume(pod)).toEqual({ center: [10, 1.3, 6.5], size: [8, 2.6, 7] });
+    expect(pickVolume(pod)).toEqual({ center: [10, 1.3, 6.5], size: [8, 2.6, 7], yaw: 0 });
   });
 
   it("lifts stacked targets off the floor from their base", () => {
-    expect(pickVolume({ ...pod, base: 4, height: 6 })).toEqual({ center: [10, 5, 6.5], size: [8, 2, 7] });
+    expect(pickVolume({ ...pod, base: 4, height: 6 })).toEqual({ center: [10, 5, 6.5], size: [8, 2, 7], yaw: 0 });
+  });
+
+  it("turns the box with an oriented footprint, which wins over the bounds", () => {
+    const turned = { ...pod, box: { center: { x: 3, z: -2 }, w: 0.6, d: 9, yaw: 1.2 } };
+    expect(pickVolume(turned)).toEqual({ center: [3, 1.3, -2], size: [0.6, 2.6, 9], yaw: 1.2 });
+  });
+
+  it("maps volume fractions through the yaw (three's rotation.y: local x to (cos, -sin), local z to (sin, cos))", () => {
+    const flat = pickVolume(pod);
+    expect(volumePoint(flat, 0, 0, 1)).toEqual([6, 0, 10]);
+    const v = { center: [1, 2, 3] as [number, number, number], size: [2, 4, 6] as [number, number, number], yaw: Math.PI / 2 };
+    const [x, y, z] = volumePoint(v, 1, 1, 0.5);
+    expect(x).toBeCloseTo(1, 9);
+    expect(y).toBeCloseTo(4, 9);
+    expect(z).toBeCloseTo(2, 9);
+    const [x2, , z2] = volumePoint(v, 0.5, 0, 1);
+    expect(x2).toBeCloseTo(4, 9);
+    expect(z2).toBeCloseTo(3, 9);
   });
 
   it("falls back to the kind's height", () => {
