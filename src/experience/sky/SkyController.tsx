@@ -35,7 +35,8 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const hemi = useRef<HemisphereLight>(null);
   const dir = useRef<DirectionalLight>(null);
 
-  const domeGeometry = useMemo(() => new SphereGeometry(DOME_RADIUS, 24, 12), []);
+  // The sky color is computed per pixel from the view direction, so a coarse dome (48 triangles) looks the same; its nearest face plane stays about 340 u from the camera, beyond every opaque piece of the scene.
+  const domeGeometry = useMemo(() => new SphereGeometry(DOME_RADIUS, 8, 4), []);
   useDispose(domeGeometry);
   const orbAlpha = useMemo(() => new InstancedBufferAttribute(new Float32Array(2), 1), []);
   const orbGeometry = useMemo(() => {
