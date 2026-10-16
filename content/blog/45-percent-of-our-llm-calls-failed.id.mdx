@@ -20,6 +20,16 @@ Setiap evaluasi berjalan sebagai activity Azure Durable Functions yang memanggil
 
 Parser awalnya sederhana. Buang code fence markdown dari balasan, lalu panggil `json.loads`. Kalau parsing berhasil, proses setelahnya berjalan. Kalau gagal, pasangan kandidat dan lowongan itu hilang.
 
+<Architecture pod="ai-cv-screening-platform" caption="Arsitektur platform saat ini, dari studi kasusnya. Harness evaluasi baru ada beberapa bulan setelah batch dalam tulisan ini." />
+
+Satu evaluasi melewati jalur ini:
+
+1. Recruiter menyusun job post dan kandidatnya di web app Next.js.
+2. Web app memanggil backend FastAPI dengan request yang ditandatangani HMAC, lalu Document Intelligence mem-parsing CV.
+3. Setiap pasangan kandidat dan lowongan berjalan sebagai activity Durable Functions yang meminta JSON terstruktur dari model.
+4. Activity mem-parsing balasan model. Di titik inilah hasil dalam batch ini hilang: kalau parsing gagal, pasangan itu tidak punya hasil.
+5. Beberapa bulan kemudian, harness evaluasi mulai menjalankan golden set terhadap model sebagai deployment gate di CI.
+
 ## Dua pesan error, dua petunjuk
 
 "LLM kadang mengembalikan JSON rusak" belum cukup untuk menentukan apa yang harus diperbaiki. Diagnosis seperti itu mudah berujung pada utak-atik prompt tanpa arah.

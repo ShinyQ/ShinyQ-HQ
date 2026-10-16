@@ -1,1 +1,24 @@
-{}
+{
+  "spec-driven-development-with-ai-coding-agents": {
+    "delivery-loop": {
+      "nodes": [
+        { "id": "engineer", "label": "Engineer", "sublabel": { "en": "Writes specs, reviews and merges", "id": "Menulis spec, me-review, dan me-merge" }, "layer": 0, "row": 0, "kind": "human" },
+        { "id": "spec", "label": "Numbered spec", "sublabel": { "en": "Task, AC and business-rule IDs", "id": "ID task, AC, dan business rule" }, "layer": 1, "row": 0, "kind": "data" },
+        { "id": "constitution", "label": "Constitution and conventions", "sublabel": { "en": "Rules every agent follows", "id": "Aturan untuk setiap agent" }, "layer": 1, "row": 1, "kind": "data" },
+        { "id": "agents", "label": "Coding agents", "sublabel": { "en": "GitHub Copilot and Claude, one worktree each", "id": "GitHub Copilot dan Claude, satu worktree per agent" }, "layer": 2, "row": 0, "kind": "ai" },
+        { "id": "ci", "label": "CI gates", "sublabel": { "en": "Spec IDs, contracts, architecture tests", "id": "ID spec, kontrak, architecture test" }, "layer": 3, "row": 0, "kind": "service" },
+        { "id": "main", "label": "Main branch", "layer": 4, "row": 0, "kind": "external" },
+        { "id": "app-service", "label": "Azure App Service", "sublabel": { "en": "Deploys only after green CI", "id": "Deploy hanya setelah CI hijau" }, "layer": 4, "row": 1, "kind": "external" }
+      ],
+      "edges": [
+        { "from": "engineer", "to": "spec", "label": "write" },
+        { "from": "spec", "to": "agents", "label": "tasks" },
+        { "from": "constitution", "to": "agents", "label": "rules" },
+        { "from": "agents", "to": "ci", "label": "pull requests" },
+        { "from": "ci", "to": "engineer", "label": "review" },
+        { "from": "engineer", "to": "main", "label": "merge" },
+        { "from": "main", "to": "app-service", "label": "deploy" }
+      ]
+    }
+  }
+}

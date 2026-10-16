@@ -90,6 +90,16 @@ shadow = engine_v2(packet)  # stored only
 save_shadow(packet.id, shadow)
 ```
 
+<Architecture pod="fraud-review-platform" caption="Arsitektur platform, dari studi kasusnya. Di alur data, ⇢ menandai jalur shadow, yang berjalan secara asinkron dan hanya menulis ke storage." />
+
+Satu paket melewati dua jalur di platform ini:
+
+1. Reviewer mengunggah paket dokumen di web app Next.js. Web app mengirimnya ke backend FastAPI dan menampilkan progresnya secara live.
+2. Backend menjalankan OCR dengan Document Intelligence.
+3. Agent dari Agent Framework me-review setiap dokumen, lalu seluruh paket, lewat Azure OpenAI, dengan input yang disaring Prompt Shields. Hasilnya adalah temuan dan verdict yang dilihat reviewer.
+4. Backend menyimpan riwayat review dan laporan di Cosmos DB dan Blob Storage.
+5. Secara paralel, backend menjalankan engine risiko hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
+
 Catatan rollout mencatat 0 dari 3.780 run ketika shadow engine mengubah output pengguna. Bagi saya, itu bukti jalur shadow terisolasi. Bukan bukti engine-nya akurat.
 
 Volume kasus nyata di platform ini masih kecil. Catatan saya juga tidak merinci isi 3.780 run tersebut.

@@ -26,6 +26,19 @@ Barge-in means the caller starts talking while the agent is speaking, or about t
 
 The third step is easy to miss. Suppose the model generated a whole paragraph, but the caller heard only half of it. Unless you correct the conversation history, the next answer assumes the caller heard the rest.
 
+## Where barge-in happens
+
+<Architecture pod="voice-ai-contact-center" caption="The agent's architecture today, from its case study. At the time of the A/B below, Azure Communication Services carried the call audio instead of LiveKit." />
+
+In the fixed design, an interruption takes this path:
+
+1. The caller's audio reaches the media layer over WebRTC and streams on to the FastAPI realtime backend.
+2. The backend relays it to Azure OpenAI Realtime and reads every event the model sends back on one receive loop.
+3. When the model calls a tool, such as knowledge search over Azure AI Search, the tool runs as its own cancellable task under a 2.5 s budget, so the receive loop keeps reading.
+4. When the "caller started speaking" event arrives, the backend stops the audio on the media channel, cancels the response if it is still generating, and truncates the conversation at what the caller heard.
+
+Failure one below broke step 4. Failure two stopped the receive loop in step 2 from reading.
+
 ## Failure one: finished for the model, still playing for the caller
 
 Our cancel logic returned early once the model reported a response as done. That sounds reasonable until you separate generation from playback.
