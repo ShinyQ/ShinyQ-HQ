@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { followPose } from "@/experience/camera/rigs";
-import { SHAFT_EAST_FACE } from "@/experience/config";
 import { kioskBounds, kioskFacing } from "@/experience/floors/lobby/kiosk";
 import { globeInstances, OBSERVATORY, observatoryPanelYaw, observatoryParts, observatoryText, type ObservatoryLabels } from "@/experience/floors/lobby/observatory";
 import { OLD_VISITS_ROOM, VISITS_ROOM, visitsRoomFromHash } from "@/experience/floors/lobby/visitsRoom";
@@ -49,7 +48,7 @@ describe("Visitor Observatory parts", () => {
     expect(l1.tall).toContainEqual(o);
   });
 
-  it("turns the panel to the spawn view (back along the kiosk axis) and to the elevator arrival (north)", () => {
+  it("turns the panel to the spawn view (back along the kiosk axis) and north, toward the elevator lane", () => {
     const yaw = observatoryPanelYaw();
     const n = { x: Math.sin(yaw), z: Math.cos(yaw) };
     const f = kioskFacing();
@@ -124,7 +123,9 @@ describe("Visitor Observatory in the Lobby (owner decision 2026-10-14)", () => {
     const zones = l1.viewZones ?? [];
     expect(zoneAt("L1", door.at, zones)?.id).toBe("L1:visits");
     expect(zoneAt("L1", l1.spawn, zones)?.id).toBe("L1:kiosk");
-    expect(zoneAt("L1", l1.approach, zones)?.id).toBe("L1:arrival");
+    // Round 8 J: the arrival view moved from the elevator approach (looking south) to the arrival point (tests/unit/arrivals.test.ts).
+    expect(zoneAt("L1", l1.approach, zones)).toBeNull();
+    expect(zoneAt("L1", l1.arrival!, zones)?.id).toBe("L1:arrival");
     // Only the spawn view is applied at once (boot, intro, first frame); the others ease in like every zone.
     expect(zones.filter((z) => z.prime).map((z) => z.id)).toEqual(["L1:kiosk"]);
     // The hologram plaza, the skills wall and the certification wall keep their own views.
@@ -147,14 +148,13 @@ describe("Lobby views around the observatory", () => {
     return { angle: Math.abs(Math.atan2(Math.sin(to - look), Math.cos(to - look))), camera: { x: cx, z: cz } };
   };
 
-  it("frames the observatory ahead right after the elevator, from east of the glass shaft", () => {
+  it("looks east at the profile hologram after the elevator (Round 8 J, owner 2026-10-17)", () => {
+    // The settled camera with its look-ahead and shaft clearance: tests/unit/arrivals.test.ts.
     for (const cls of ["desktop", "mobile"] as const) {
-      const { angle, camera } = offAxis(cls, l1.approach, oc);
-      expect(angle, cls).toBeLessThan(0.1);
-      expect(camera.x, cls).toBeGreaterThan(SHAFT_EAST_FACE);
+      const { angle, camera } = offAxis(cls, l1.arrival!, LOBBY.hologram);
+      expect(angle, cls).toBeLessThan(0.05);
+      expect(camera.x, cls).toBeLessThan(l1.arrival!.x);
     }
-    // The kiosk stands in the wide frame too (desktop half angle about 30 degrees).
-    expect(offAxis("desktop", l1.approach, LOBBY.kiosk).angle).toBeLessThan(0.45);
   });
 
   it("starts the session on a view of the rover at the kiosk with the observatory behind it", () => {

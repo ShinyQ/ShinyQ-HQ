@@ -83,22 +83,23 @@ describe("RF roof deck layout", () => {
     }
   });
 
-  it("hangs the availability sign square to the spawn camera, the availability stop in front of it", () => {
-    const zone = (floor.viewZones ?? []).find((z) => z.id === "RF:overview")!;
-    const forward = forwardOf(followPose("desktop", [floor.spawn.x, 0, floor.spawn.z], zone.yaw, zone.zoom ?? 1));
+  it("hangs the availability sign square to the availability stop's camera, the stop in front of it", () => {
+    const s = layout.stops.availability;
+    const zone = (floor.viewZones ?? []).find((z) => z.id === "RF:availability")!;
+    expect(zone.yaw).toBe(ROOF_DECK.overviewYaw);
+    const forward = forwardOf(followPose("desktop", [s.x, 0, s.z], zone.yaw, zone.zoom ?? 1));
     const normal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
     expect(forward.x * normal.x + forward.z * normal.z).toBeCloseTo(-1, 3);
     const c = layout.centerpiece.center;
-    const s = layout.stops.availability;
     const d = Math.hypot(s.x - c.x, s.z - c.z);
     expect(((s.x - c.x) / d) * normal.x + ((s.z - c.z) / d) * normal.z).toBeGreaterThan(0.999);
   });
 
-  it("has view zones that never overlap, with the overview around the spawn", () => {
+  it("has view zones that never overlap, with the arrival view around the spawn", () => {
     const zones = floor.viewZones ?? [];
     for (let i = 0; i < zones.length; i++)
       for (let j = i + 1; j < zones.length; j++) expect(overlaps(zones[i].area, zones[j].area), `${zones[i].id} ${zones[j].id}`).toBe(false);
-    expect(zones.find((z) => inside(floor.spawn, z.area))?.id).toBe("RF:overview");
+    expect(zones.find((z) => inside(floor.spawn, z.area))?.id).toBe("RF:arrival");
   });
 
   it("spreads the channel anchors across the comms station", () => {

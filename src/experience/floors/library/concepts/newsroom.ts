@@ -33,6 +33,14 @@ import {
  */
 export const NEWSROOM = {
   plaza: { x: -2, z: 0, w: 24, d: 20 },
+  /**
+   * Elevator arrivals and floor deep links (Round 8 J, like L3): on the plaza axis, west of its center. The
+   * camera stands behind the rover and looks east down the timeline lane at its first stations. Zooms: the
+   * widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   */
+  arrival: { x: -4, z: 0 },
+  arrivalZoom: 1.12,
+  arrivalZoomPhone: 0.96,
   wall: { x: -3, z: -15, w: 18, d: 1, h: 7 },
   /** Featured stage: docked on the south side from the plaza center. */
   featuredStart: 2,
@@ -58,7 +66,7 @@ export const NEWSROOM = {
     monument: { w: 6, d: 1.5, h: 6.5, gap: 3, stopInset: 1.5 },
     /** Express Return pad, from the plaza center: south of the plaza, on the side toward the elevator. */
     returnPad: { dx: -4, dz: 15 },
-    /** Camera zones: straight north at the monument, straight east at the constellation and the board. */
+    /** Camera zones: straight north at the monument, straight east at the arrival, the constellation and the board. */
     lookNorth: -Math.PI / 4,
     lookEast: (-3 * Math.PI) / 4,
     /** Zoom out at the constellation stop so the whole cloud fits. */
@@ -140,7 +148,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     { x: returnPad.x, z: returnPad.z + 1.5 },
   ];
   const bounds = floorBounds([...stations.map((s) => s.rect), ...extra], points, LIBRARY_FLOOR.margin);
-  const spawn = { x: P.x - 4, z: P.z + 3 };
+  const spawn: Vec2 = { x: N.arrival.x, z: N.arrival.z };
   const floor = libraryFloor({
     bounds,
     stations,
@@ -148,6 +156,15 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     network,
     spawn,
     viewZones: [
+      // The arrival: behind a rover heading east, looking down the timeline lane (eastbound rovers only).
+      {
+        id: "L4:arrival",
+        area: around(spawn, 2),
+        yaw: E.lookEast,
+        zoom: N.arrivalZoom,
+        classView: { mobile: { zoom: N.arrivalZoomPhone } },
+        travel: { x: 1, z: 0 },
+      },
       // In front of the headline wall: look north at it, zoomed out so the whole wall fits.
       { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4 },
       // The end plaza: look east over the constellation from where the timeline meets the ring road.

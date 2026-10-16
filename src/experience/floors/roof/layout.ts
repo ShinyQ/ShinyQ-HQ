@@ -37,13 +37,17 @@ export const ROOF_DECK = {
   aboutStop: 3.5,
   /** Rover stop south of the centerpiece, on the line the availability sign faces (`signYaw`). */
   availability: { x: 4.5, z: 6.1 },
-  /** Deep links spawn here and elevator arrivals roll on here: south-east of the plaza, looking north-west over it. */
-  spawn: { x: 8, z: 7 },
-  /** Overview zoom at the spawn: the plaza, the comms station and the CV station in frame. */
-  overviewZoom: 1.25,
-  /** Overview yaw at the spawn (offset from the default angle): looks north-north-west, the comms station near the middle. */
+  /**
+   * Deep links spawn here and elevator arrivals roll on here (Round 8 J, like L3): the end of the lead road at
+   * the plaza rim. The camera stands behind the rover and looks east over the plaza at the centerpiece mast.
+   */
+  spawn: { x: -8, z: 0 },
+  /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`). */
+  arrivalZoom: 0.95,
+  arrivalZoomPhone: 0.8,
+  /** View yaw at the availability stop (offset from the default angle): looks north-north-west at the mast. */
   overviewYaw: -Math.PI / 8,
-  /** The availability sign on the mast faces the overview camera head on (yaw PI/4 is the default camera's direction). */
+  /** The availability sign on the mast faces the availability stop's camera head on (yaw PI/4 is the default camera's direction). */
   signYaw: Math.PI / 8,
 } as const;
 
@@ -122,16 +126,22 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   const spawn: Vec2 = { x: D.spawn.x, z: D.spawn.z };
   const box = (p: Vec2, r = 2): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
   const viewZones: ViewZone[] = [
-    // Spawn and arrival: turned a little north of the default angle and zoomed out, so the mast, its
-    // availability sign and the comms station all fit, also on portrait phones.
-    { id: "RF:overview", area: box(spawn, 1.5), yaw: D.overviewYaw, zoom: D.overviewZoom },
+    // Spawn and arrival: behind a rover heading east, looking over the plaza at the mast (eastbound rovers only).
+    {
+      id: "RF:arrival",
+      area: box(spawn),
+      yaw: (-3 * Math.PI) / 4,
+      zoom: D.arrivalZoom,
+      classView: { mobile: { zoom: D.arrivalZoomPhone } },
+      travel: { x: 1, z: 0 },
+    },
     // Comms (facing south): the camera south of the rover, looking north at the station and the channels above it.
     { id: "RF:contact", area: { minX: comms.minX, maxX: comms.maxX, minZ: contactPad.z - 2, maxZ: contactPad.z + 2 }, yaw: -Math.PI / 4 },
     // CV station (facing west): the camera west of the rover, looking east.
     { id: "RF:cv", area: { minX: cvPad.x - 2, maxX: cv.minX, minZ: cv.minZ, maxZ: cv.maxZ }, yaw: (-3 * Math.PI) / 4 },
     // About board (facing north): the camera north of the rover, looking south.
     { id: "RF:about", area: { minX: about.minX, maxX: about.maxX, minZ: stops.about.z - 2, maxZ: about.minZ }, yaw: (3 * Math.PI) / 4 },
-    // Availability sign on the mast (facing `signYaw`): the overview angle, looking straight at it.
+    // Availability sign on the mast (facing `signYaw`): looking straight at it.
     { id: "RF:availability", area: box(stops.availability, 1.8), yaw: D.overviewYaw },
   ];
   return {
