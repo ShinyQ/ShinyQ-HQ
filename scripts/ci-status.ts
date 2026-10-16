@@ -5,17 +5,18 @@
  *   bun scripts/ci-status.ts --repo owner/name --sha <sha> [--wait-minutes 40] [--grace-minutes 3] [--force-rerun true]
  *
  * Writes `reuse=true|false` to $GITHUB_OUTPUT and one line to the job summary.
- * Only complete CI runs are reused: runs that carry the `ci-full` artifact, uploaded by the aggregate job
- * when the run ran every e2e shard, the perf gates and Lighthouse (pushes to main, dispatches and
- * schedules always do). A selective PR run is never reused, even on the same tree; older runs without
- * the marker are not reused either (the deploy then runs the e2e shards itself).
+ * A green CI run is reused only when it is complete: it carries the `ci-full` artifact, uploaded by the
+ * aggregate job when the run ran every e2e shard, the perf gates and Lighthouse (pushes to main,
+ * dispatches and schedules always do). A green selective PR run is never reused, even on the same tree;
+ * older runs without the marker are not reused either (the deploy then runs the e2e shards itself).
+ * A red CI on the commit fails the deploy, marker or not.
  * - reuse=true: CI's aggregate check `Build, CV and e2e` passed on this commit in a complete run, or a
  *   successful complete CI run tested a commit with the same tree (the weekly facts PR before its squash
  *   merge: a GITHUB_TOKEN merge starts no push CI on main).
  * - reuse=false: no complete CI result for this commit or its tree after the grace period, or
  *   --force-rerun true: the deploy runs the e2e shards itself.
  * While a CI run on the sha is unfinished (its aggregate check does not exist yet), it waits.
- * Exits 1 when CI failed on the commit, or still runs after --wait-minutes.
+ * Exits 1 when CI failed on the commit (complete or selective run), or still runs after --wait-minutes.
  * Uses fetch and GH_TOKEN only (checks: read, actions: read, contents: read); no dependencies.
  */
 import { appendFileSync } from "node:fs";
@@ -39,18 +40,21 @@ const NO_RESULT = new Set(["cancelled", "skipped", "neutral", "stale"]);
 
 const isCi = (r: CheckRun) => r.name === CI_CHECK && !(r.status === "completed" && NO_RESULT.has(r.conclusion ?? ""));
 
+const isGreen = (r: CheckRun) => r.status === "completed" && r.conclusion === "success";
+
 /**
- * `complete` says whether a finished check belongs to a complete CI run (the `ci-full` marker); finished
- * checks of selective runs are ignored. Unfinished checks still mean wait (the marker is uploaded inside
- * the aggregate job, before it finishes).
+ * `complete` says whether a green check belongs to a complete CI run (the `ci-full` marker); green checks
+ * of selective runs are ignored. A finished red check means red whether or not its run has the marker, and
+ * unfinished checks still mean wait (the marker is uploaded inside the aggregate job, before it finishes).
+ * A green complete check wins over a red one (a rerun after a flake).
  */
 export function verdictFromChecks(runs: readonly CheckRun[], complete: (check: CheckRun) => boolean = () => true): Verdict {
-  const mine = runs.filter((r) => isCi(r) && (r.status !== "completed" || complete(r)));
-  if (mine.length === 0) return { kind: "missing" };
-  const green = mine.find((r) => r.status === "completed" && r.conclusion === "success");
+  const mine = runs.filter(isCi);
+  const green = mine.find((r) => isGreen(r) && complete(r));
   if (green) return { kind: "reuse", url: green.html_url };
   if (mine.some((r) => r.status !== "completed")) return { kind: "wait" };
-  return { kind: "red", url: mine[0].html_url, conclusion: mine[0].conclusion ?? "unknown" };
+  const red = mine.find((r) => !isGreen(r));
+  return red ? { kind: "red", url: red.html_url, conclusion: red.conclusion ?? "unknown" } : { kind: "missing" };
 }
 
 /** The workflow run id in an Actions check URL (`.../actions/runs/<run_id>/job/<job_id>`), or null. */
@@ -82,16 +86,18 @@ async function gh<T>(path: string, token: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-const markers = new Map<number, boolean>();
+const markers = new Map<number, true>();
 
-/** Whether CI run `runId` uploaded the `ci-full` marker (expired artifacts still count). An API error means no, not memoized. */
+/**
+ * Whether CI run `runId` uploaded the `ci-full` marker (expired artifacts still count). Only `true` is
+ * memoized, so a rerun that uploads the marker later is seen on the next poll; an API error means no.
+ */
 async function hasFullMarker(repo: string, runId: number, token: string): Promise<boolean> {
-  const known = markers.get(runId);
-  if (known !== undefined) return known;
+  if (markers.get(runId)) return true;
   try {
     const { total_count } = await gh<{ total_count: number }>(`/repos/${repo}/actions/runs/${runId}/artifacts?name=${CI_FULL_ARTIFACT}&per_page=1`, token);
     const full = total_count > 0;
-    markers.set(runId, full);
+    if (full) markers.set(runId, true);
     return full;
   } catch (error) {
     console.warn(`::warning::could not read the ${CI_FULL_ARTIFACT} marker of CI run ${runId}: ${error instanceof Error ? error.message : String(error)}`);
@@ -99,10 +105,10 @@ async function hasFullMarker(repo: string, runId: number, token: string): Promis
   }
 }
 
-/** The html_urls of finished CI checks that belong to a complete run. */
+/** The html_urls of green CI checks that belong to a complete run (red checks need no marker: they fail the deploy). */
 async function completeChecks(repo: string, checks: readonly CheckRun[], token: string): Promise<Set<string>> {
   const urls = new Set<string>();
-  for (const check of checks.filter((c) => isCi(c) && c.status === "completed")) {
+  for (const check of checks.filter((c) => isCi(c) && isGreen(c))) {
     const runId = runIdFromUrl(check.html_url);
     if (runId !== null && (await hasFullMarker(repo, runId, token))) urls.add(check.html_url);
   }
