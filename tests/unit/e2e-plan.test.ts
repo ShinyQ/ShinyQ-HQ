@@ -27,6 +27,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("maps the mission code to the specs that run the missions (highlights and journey included)", () => {
+    expect(specsForChanges(["src/experience/missions/host3d.ts"]).specs).toEqual(["career", "experience", "highlights", "library-roof", "missions"]);
+    expect(specsForChanges(["src/experience/missions/runner.ts"]).specs).toEqual(["career", "experience", "highlights", "library-roof", "missions"]);
+  });
+
   it("maps the floor chunk loader to its spec and the ride", () => {
     expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride", "experience"]));
   });

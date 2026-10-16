@@ -171,7 +171,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
-  { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof"] },
+  // Missions: the runner, the 3D host and the reworked missions (highlights drives to the hall, journey to the first career room).
+  { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof", "highlights", "career"] },
   // Boost (owner pick: trails, body lean and squat, camera kick, streaks, sparks; the touch toggle).
   {
     test: /^src\/experience\/fx\/(BoostFx\.tsx|boostConfig\.ts|boostTrail\.ts|sparks\.ts|streaks\.ts)$|^src\/experience\/rover\/(boost|bodyDynamics)\.ts$|^src\/experience\/camera\/boostView\.ts$|^src\/hud\/BoostButton\.tsx$/,
