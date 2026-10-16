@@ -9,7 +9,7 @@ import { LIBRARY_ZONES, YEAR_POST, ZONE_TONE, type LibraryLayout, type LibrarySt
 /** One height rule (Round 7 F): every floating plate on the L4 timeline has its bottom here, above the rover and the station icons. */
 export const L4_SIGN = { bottom: 5.6 } as const;
 /** Zone sign type size. */
-export const ZONE_SIGN = { fontSize: 0.8, letterSpacing: 0.12 } as const;
+export const ZONE_SIGN = { fontSize: 0.6, letterSpacing: 0.12 } as const;
 /** Post titles: type size and the wrap width (characters). */
 export const TITLE_SIGN = { fontSize: 0.4, wrap: 22 } as const;
 export { YEAR_POST };
