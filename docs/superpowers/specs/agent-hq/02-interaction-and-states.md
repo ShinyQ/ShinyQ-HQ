@@ -1,5 +1,7 @@
 # Appendix 02: Interaction Model and State Machine
 
+Status: living appendix, implemented across #1 to #12 (phases 0 to 5) and the later rounds, kept current with the code (last updated in #104)
+
 Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 ## 1. Experience states
@@ -37,7 +39,7 @@ stateDiagram-v2
 
 ## 2. Transition rules
 
-"Reduced motion" below means the effective flag: on under the visitor's Reduced setting, or under System when `prefers-reduced-motion` asks for it, from the HUD Motion control and Cmd-K (AGENTS.md, "Motion setting"). Owner decision 2026-10-14: the default setting is Full on every OS, so the OS preference is no longer the default; the Motion menu (System or Reduced) restores it.
+"Reduced motion" below means the effective flag: on under the visitor's Reduced setting, or under System when `prefers-reduced-motion` asks for it, from the HUD Motion control and Cmd-K (`docs/agents/hud-and-drawer.md`, "Motion setting"). Owner decision 2026-10-14: the default setting is Full on every OS, so the OS preference is no longer the default; the Motion menu (System or Reduced) restores it.
 
 | From → To | Visual | Duration | Reduced motion |
 |---|---|---|---|

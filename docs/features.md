@@ -1,6 +1,6 @@
 # Feature reference
 
-What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is the short overview; implementation rules live in [`AGENTS.md`](../AGENTS.md), content rules in [`content.md`](content.md).
+What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is the short overview; implementation rules live in [`AGENTS.md`](../AGENTS.md) and [`agents/`](agents/), content rules in [`content.md`](content.md).
 
 ## Contents
 
@@ -297,7 +297,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ## Visual language
 
 - The Neon Grid tokens of spec appendix 05.
-- Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see `AGENTS.md`, "Styling").
+- Color marks state and category with a dot or icon chip next to the label and a full-outline glow on hover or selection, never with a colored left or top edge (see [`agents/styling-and-i18n.md`](agents/styling-and-i18n.md)).
 
 ## CI and deploys
 

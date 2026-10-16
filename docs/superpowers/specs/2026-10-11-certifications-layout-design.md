@@ -1,5 +1,7 @@
 # Certifications at scale: design
 
+Status: implemented in #46 (3b82309), 2026-10-11
+
 Date: 2026-10-11. Owner request: "And also can you do other layout for certification if i had lots certif current board might be not hold and its not really agoo ui ux". Follow-up: certification links may not be framed (security); show our own preview instead.
 
 ## Decision

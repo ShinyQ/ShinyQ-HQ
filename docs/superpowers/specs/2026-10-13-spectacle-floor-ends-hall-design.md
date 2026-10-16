@@ -1,5 +1,7 @@
 # Spectacle round: floor ends, Highlights Hall gallery, floating floor text (design)
 
+Status: implemented in #87 (43607d9), 2026-10-13 (Parts 1 and 3) and #88 (91a8a95), 2026-10-14 (Part 2)
+
 Date: 2026-10-13. Owner-approved design. Repo: ShinyQ/ShinyQ-HQ (main 94fc885 or later).
 
 ## Owner requests (verbatim)

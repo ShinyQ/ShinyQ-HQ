@@ -43,7 +43,7 @@ export function formatStaleReport(items: readonly StaleItem[], maxAgeDays = MAX_
     "",
     ...items.map((i) => `- **${i.name}**: last updated ${i.date} (${i.ageDays} days ago). ${i.hint}`),
     "",
-    "This is a warning only; it never blocks the PR. Checklist: AGENTS.md, section \"Ask the HQ\".",
+    "This is a warning only; it never blocks the PR. Checklist: docs/agents/ask.md, \"Content release checklist\".",
     "",
   ].join("\n");
 }

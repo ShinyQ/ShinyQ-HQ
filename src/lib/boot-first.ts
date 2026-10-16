@@ -61,7 +61,7 @@ export function isBotLike(n: BotLikeNavigator, search: string): boolean {
 
 /**
  * Self-contained (no imports, no closures, no TS-only syntax in the body) so it can be inlined via
- * toString(). Routes match the pages that mount ExperienceGate (AGENTS.md, "3D experience").
+ * toString(). Routes match the pages that mount ExperienceGate (docs/agents/3d-experience.md).
  */
 export function shouldBootFirst(i: BootFirstInput): boolean {
   if (!/^\/(en|id)(\/(journey|labs)(\/[^/]+)?|\/(library|contact))?\/?$/.test(i.path)) return false;

@@ -4,7 +4,7 @@ import { LOCALES } from "./locales";
 
 /**
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
- * Documented additions (see AGENTS.md): Confidence "self-reported" (C4),
+ * Documented additions (see docs/agents/content.md, "Schema additions"): Confidence "self-reported" (C4),
  * Profile.subheadline/currentRole/timezone/story/principles,
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, Pod.selected, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps

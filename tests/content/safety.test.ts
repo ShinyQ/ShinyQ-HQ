@@ -74,7 +74,7 @@ describe("public-safety lint", () => {
 
 describe("no em dashes in source", () => {
   const SOURCE_DIRS = ["src", "scripts", "tests", "e2e", "docs", "messages", "content", ".github"];
-  const ROOT_FILES = ["README.md", "AGENTS.md", "package.json"];
+  const ROOT_FILES = ["README.md", "AGENTS.md", "CLAUDE.md", "package.json"];
   const walk = (dir: string): string[] => {
     try {
       return readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((d) =>

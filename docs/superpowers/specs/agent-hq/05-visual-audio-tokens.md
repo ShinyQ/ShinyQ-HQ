@@ -1,5 +1,7 @@
 # Appendix 05: Visual and Audio Design Tokens
 
+Status: living appendix, implemented across #1 to #12 (phases 0 to 5) and the later rounds, kept current with the code (last updated in #83)
+
 Part of [Agent HQ design spec](../2026-10-09-agent-hq-design.md).
 
 ## 1. Color tokens
