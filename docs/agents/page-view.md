@@ -8,8 +8,37 @@ The static HTML pages (the Classic site): naming, navigation, layout, filters an
   - the 3D top bar button and its tooltip, the boot card link, the static-tier notice and the screen-reader canvas description
   - keys `hud.pageView`, `hud.pageViewHint`, `hud.staticNotice`, `hud.canvasDescription`
 - The way back stays **Back to 3D** (ID **Kembali ke 3D**, `hud.back3d`); `hud.explore3d` stays reserved.
-- "Page View" remains the internal name. These never change: code, the `pv-` classes, `data-testid="page-view"`, `?view=page` and `hq:view=page`.
+- The public parameter is `?view=classic` (`?view=page` stays accepted as an alias and is normalized to `?view=classic`).
+- "Page View" remains the internal name. These never change: code, the `pv-` classes, `data-testid="page-view"` and the stored value `hq:view=page`.
 - Playwright finds the button with `{ name: "Classic site" }`.
+
+## Shareable links
+
+Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in `src/lib/view-pref.ts`; the inline head script (see [3d-experience.md](3d-experience.md#head-script)) inlines `decideView` and `normalizeViewSearch`. Values: `page` (Classic) and `3d`; storage key `hq:view`.
+
+- **Precedence**, decided on every load:
+  1. An explicit `?view=` (`classic` or `page` is Classic, `3d` or `architecture` is 3D).
+  2. This tab's choice (`sessionStorage["hq:view"]`).
+  3. The remembered preference (`localStorage["hq:view"]`).
+  4. 3D.
+- The decided view is pinned into `sessionStorage["hq:view"]` on every load, so a tab keeps its view when the preference changes elsewhere.
+- **URL rules** (`normalizeViewSearch`):
+  - Classic shows `?view=classic` (other parameters kept, `view=classic` last; the `page` alias is rewritten).
+  - 3D drops `view=classic|page|3d` and keeps `view=architecture`.
+  - The URL is rewritten with `replaceState`, never a navigation.
+- `ViewParamSync` (`src/components/ViewParamSync.tsx`, in the locale layout):
+  - After every client navigation it restores `?view=classic` on the URL while the tab is Classic.
+  - It keeps every internal page `<a href>` in step (`viewHref`, `src/lib/view-links.ts`; a `MutationObserver` runs only on the Classic site), so copy link, new tab and middle click carry the view. The language switch carries it too.
+  - It skips `[data-hq-page-link]`, `[data-hq-view]` and `[download]`, files (paths with an extension) and other origins.
+  - The boot card's Classic site link is `?view=classic` (`data-hq-page-link`); Enter the 3D HQ has `data-hq-view="3d"`.
+- **Choosing a view:** `chooseView` (Classic site, Back to 3D) writes the tab and the remembered preference, normalizes the URL and fires the view events. `setTabView` (the drawer's Open page) writes the tab only.
+- **Share buttons** (`ShareLinks`, `src/components/ShareLinks.tsx`): "Copy Classic link" and "Copy 3D link" (copied state "Link copied", announced politely).
+  - Where: the case study header (`/labs/<slug>`), posts (`/blog/<slug>`, after the tags) and the room drawer's overflow menu.
+  - Classic: `${SITE_URL}${path}?view=classic${hash}`. 3D: `${SITE_URL}${threeDPath(path)}`; gated routes keep their path, posts open `/{locale}/library`, everything else the Lobby. Other query parameters are dropped.
+  - `SITE_URL` is `https://kurniadi.pages.dev` unless `NEXT_PUBLIC_SITE_URL` is set at build.
+- **SEO:** canonical, `og:url` and the sitemap never carry `view`; the parameter only selects what a visitor sees.
+- **Preference API** for a settings entry "Open links in": `getViewPreference`, `setViewPreference`, `subscribeViewPreference` in `view-pref.ts` (localStorage only). It decides new tabs and visits, not the current tab. The settings entry binds to this API.
+- Tests: `e2e/view-links.spec.ts`, `tests/unit` for the helpers.
 
 ## Design
 

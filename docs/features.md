@@ -119,6 +119,10 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
+- **Shareable links:**
+  - `?view=classic` opens the Classic site and stays in the URL through navigation, the language switch and copied links (`?view=page` still works).
+  - **Copy Classic link** and **Copy 3D link** sit on case studies, posts and the drawer's "..." menu; the 3D link opens the same page in the tower (posts open the Writing floor).
+  - The choice is remembered across tabs, and an explicit `?view=` in a link always wins.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer

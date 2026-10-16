@@ -87,6 +87,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 | `hq:recent` | recent rooms on the static tier |
 | `hq:visits` | alternates best-swe and best-ai |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
+| `hq:view` | the remembered "Open links in" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
 | `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
 
 `sessionStorage` keys:
@@ -320,7 +321,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
   2. "Visit live site" for pods with `RoomView.live` (new tab, `drawer-live-link`);
   3. the cross-floor link as a secondary amber button;
   4. View architecture.
-- The "..." menu offers the cross-floor link too.
+- The "..." menu offers the cross-floor link too, and "Copy Classic link" and "Copy 3D link" (`ShareLinks`, see [page-view.md](page-view.md#shareable-links)).
 - When the title scrolls away the bar condenses (`data-condensed`) and shows it.
 - Result cards use `MetricTiles fluid` (two columns by container width).
 
