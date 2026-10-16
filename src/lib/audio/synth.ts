@@ -41,7 +41,7 @@ function cleanupOnEnded(source: AudioScheduledSourceNode, nodes: AudioNode[]): v
   };
 }
 
-function envelope(gain: GainNode, when: number, peak: number, attack: number, end: number): void {
+export function envelope(gain: GainNode, when: number, peak: number, attack: number, end: number): void {
   gain.gain.setValueAtTime(SILENT, when);
   gain.gain.exponentialRampToValueAtTime(peak, when + attack);
   gain.gain.exponentialRampToValueAtTime(SILENT, end);
