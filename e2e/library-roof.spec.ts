@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForFloor, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 import { ROOF_STOPS } from "../src/experience/floors/roof/layout";
@@ -84,31 +84,19 @@ test.describe("deep links", () => {
 });
 
 test.describe("missions to the Library and the Roof", () => {
-  test("Read my writing rides to L4 and walks to the newest post, whose drawer mirrors its /blog page", async ({ page }) => {
+  test("Read my writing rides to L4 and opens the palette filtered to posts", async ({ page }) => {
     const errors = collectErrors(page);
+    await skipFloorLines(page);
     await enterHQ(page);
     await runMission(page, "blog");
-    const bar = page.getByTestId("walk-bar");
-    await expect(bar).toBeVisible({ timeout: 60_000 });
-    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
-    const room = (await bar.getAttribute("data-stop"))!;
-    expect(room.startsWith("L4:")).toBe(true);
-    await waitForRoom(page, room);
+    const palette = page.getByRole("dialog", { name: "Command palette" });
+    await expect(palette.getByRole("button", { name: "Clear filter" })).toBeVisible({ timeout: 90_000 });
     expect((await snapshot(page)).floor).toBe("L4");
-    const stop = await autopilotPoint(page);
-    expect(stop).not.toBeNull();
-    await expectRoverNear(page, stop!);
-    const post = content.floors.library.posts.find((p) => `L4:${p.slug}` === room)!;
-    const panel = page.getByTestId("room-drawer");
-    await expect(panel.getByRole("heading", { level: 2 })).toHaveText(post.title.en);
-    // A hosted post mirrors its page URL; the floor line never shows over a mission's walk.
-    await expect(page).toHaveURL(new RegExp(`/en/blog/${post.slug}\\?tier=lite$`));
-    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
-    const read = panel.getByRole("link", { name: "Read post" });
-    await expect(read).toHaveAttribute("href", `/en/blog/${post.slug}`);
-    await read.click();
-    await expect(page.getByTestId("hq")).toHaveCount(0);
-    await expect(page.locator("h1").first()).toHaveText(post.title.en);
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
+    const titles = content.floors.library.posts.map((post) => post.title.en);
+    const options = await palette.getByRole("option").allInnerTexts();
+    expect(options.length).toBeGreaterThan(0);
+    for (const option of options) expect(titles.some((title) => option.includes(title)), option).toBe(true);
     expect(errors).toEqual([]);
   });
 

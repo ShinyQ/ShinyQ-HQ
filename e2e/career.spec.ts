@@ -1,7 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
+import content from "../content/site-content.json";
+
+const journey = content.missions.find((m) => m.id === "journey")!;
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -110,18 +113,19 @@ test.describe("Career Road (L2)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("Follow my career starts the guided walk at the first room", async ({ page }) => {
+  test("Follow my career rides from the Lobby to L2 and leaves the rover exploring there", async ({ page }) => {
     const errors = collectErrors(page);
-    await openJourney(page);
-    await waitForPhase(page, "explore");
-    await waitForSceneLive(page);
+    await skipFloorLines(page);
+    await enterHQ(page);
+    const label = journey.label.en;
     await page.keyboard.press("Control+k");
-    await page.keyboard.type("Follow my career");
-    await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: /Follow my career/ }).first().click();
-    await expect(page.getByTestId("walk-bar")).toBeVisible();
-    await expect(page.getByTestId("walk-counter")).toContainText(/Stop 1 of \d+/);
-    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", "L2:prologue-2016");
-    await expect(page.getByTestId("dialog-box")).toHaveCount(0);
+    await page.keyboard.type(label);
+    await page.getByRole("dialog", { name: "Command palette" }).getByRole("option", { name: new RegExp(label) }).first().click();
+    await waitForFloor(page, "L2", 90_000);
+    await waitForSceneLive(page);
+    expect(await activeRoom(page)).toBeNull();
+    await expect(page.getByTestId("room-drawer")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
     expect(errors).toEqual([]);
   });
 
@@ -188,7 +192,7 @@ test.describe("Career Archive on touch", () => {
   test("a horizontal swipe scrubs forward and back through the years", async ({ page }) => {
     const errors = collectErrors(page);
     // Rover's L2 floor line would cover the swipe's start point on a phone.
-    await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L2"])));
+    await skipFloorLines(page);
     await openJourney(page);
     await waitForPhase(page, "explore");
     // Deep links reach "explore" before the first frame: a swipe before it lands on the SSR boot

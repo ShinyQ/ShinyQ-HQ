@@ -3,20 +3,21 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import { buildRoofLayout, ROOF_STOPS } from "../src/experience/floors/roof/layout";
-import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, skipFloorLines, snapshot, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 
 /**
- * RF roof deck (RF revamp plan): deep link, contact actions, render budget and the "Meet me" walk.
- * Walks are off unless a test turns them on, so the first-visit prompt never races the palette.
+ * RF roof deck (RF revamp plan): deep link, contact actions and render budget.
+ * The first-visit floor line is skipped, so it never races the palette.
  */
 test.describe.configure({ timeout: 150_000 });
 
 const CHANNELS = { linkedin: "LinkedIn", github: "GitHub", huggingface: "Hugging Face", medium: "Medium", googleScholar: "Google Scholar", ieeeXplore: "IEEE Xplore" } as const;
 
-async function openRoof(page: Page, { locale = "en", walk = "off" }: { locale?: "en" | "id"; walk?: "on" | "off" } = {}) {
+async function openRoof(page: Page, { locale = "en" }: { locale?: "en" | "id" } = {}) {
   await asReturningVisitor(page);
-  await page.goto(`/${locale}/contact?tier=lite&walk=${walk}`);
+  await skipFloorLines(page);
+  await page.goto(`/${locale}/contact?tier=lite`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
@@ -90,29 +91,6 @@ test.describe("RF roof deck", () => {
     const peaks = await expectRenderBudget(page);
     // The old roof measured 113 calls; the deck stays at least 30 below that (FLOOR_SCENE_CAPS.RF).
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.RF);
-  });
-
-  test("Meet me: the first visit offers the walk, which visits the about board, the availability, the CV and contact", async ({ page }) => {
-    const errors = collectErrors(page);
-    await openRoof(page, { walk: "on" });
-    const prompt = page.getByTestId("dialog-choices");
-    await expect(page.getByTestId("dialog-box")).toContainText(en.dialog.floor.RF.replace("{name}", content.profile.name.split(" ")[0]), { timeout: 15_000 });
-    await prompt.getByRole("button", { name: en.walk.meet.start }).click();
-    const bar = page.getByTestId("walk-bar");
-    await expect(page.getByTestId("walk-counter")).toContainText("Stop 1 of 4");
-    await expect(bar).toHaveAttribute("data-stop", "RF:about");
-    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
-    await expectRoverNear(page, ROOF_STOPS.about);
-    await page.keyboard.press("]");
-    await expect(page.getByTestId("walk-counter")).toContainText("Stop 2 of 4");
-    await expect(bar).toHaveAttribute("data-stop", "RF:availability");
-    await expect(bar).toHaveAttribute("data-status", "arrived", { timeout: 90_000 });
-    await expectRoverNear(page, ROOF_STOPS.availability);
-    await page.keyboard.press("]");
-    await waitForRoom(page, "RF:cv");
-    await page.keyboard.press("]");
-    await waitForRoom(page, "RF:contact");
-    expect(errors).toEqual([]);
   });
 
   test("reduced motion: the roof renders still and inside the budget", async ({ page }) => {
