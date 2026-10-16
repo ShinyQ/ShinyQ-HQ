@@ -81,6 +81,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Shareable Classic and 3D Links Implementation Plan](plans/2026-10-17-classic-links.md) | shipped | [#181](https://github.com/ShinyQ/ShinyQ-HQ/pull/181) |
 | [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review | [#176](https://github.com/ShinyQ/ShinyQ-HQ/pull/176) |
 | [Day and Night with a Moving Sun and Moon Implementation Plan](plans/2026-10-17-day-and-night.md) | shipped | [#182](https://github.com/ShinyQ/ShinyQ-HQ/pull/182), [#185](https://github.com/ShinyQ/ShinyQ-HQ/pull/185) |
+| [HUD Corners, Minimap and Settings Implementation Plan](plans/2026-10-17-hud-corners-minimap-settings.md) | in progress | |
 
 ## Specs
 
