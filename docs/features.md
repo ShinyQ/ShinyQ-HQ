@@ -202,6 +202,7 @@ Route `/en/library`.
 - **Press plaza**: a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book.
 - **Timeline lane**: one lane east with the other posts newest first, year marks on small low posts at the road edge, then the Research desk (its paper plates open the paper preview), Models and datasets, and Talks and workshops.
 - **Signs**: one sign per section (Posts, Research, Models and datasets, Talks and workshops) hangs over its first desk, and every floating plate on the lane shares one height. Post titles show only for the nearest stations (at most 6 on desktop, 4 on phones) and fade out as you drive away. Labels are placed on screen every frame, so none covers another, the rover or the end plaza's signs.
+- **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
 - **Read my writing**: offered on the first visit, a guided drive station by station (posts newest first, then Research, Models and datasets, Talks and workshops; a zone filter). Skip it to roam freely, or start it later from the launcher or the "Read my writing" pick in Ask Rover.
 
