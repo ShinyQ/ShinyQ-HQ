@@ -93,12 +93,16 @@ function smoothstep(a: number, b: number, x: number): number {
 }
 
 /** Unit direction of the sun (`offset` 0) or the moon (`offset` 0.5) at `phase`. */
-export function orbDirection(phase: number, offset: number, out = new Vector3()): Orb {
+function writeOrb(phase: number, offset: number, out: Vector3): number {
   const theta = 2 * Math.PI * (phase + offset);
   const elevation = SKY.horizon - SKY.arc * Math.cos(theta);
   const az = theta + SKY.azimuth;
   out.set(Math.sin(az) * Math.cos(elevation), Math.sin(elevation), Math.cos(az) * Math.cos(elevation));
-  return { dir: out, elevation };
+  return elevation;
+}
+
+export function orbDirection(phase: number, offset: number, out = new Vector3()): Orb {
+  return { dir: out, elevation: writeOrb(phase, offset, out) };
 }
 
 export function createSkyState(): SkyState {
@@ -138,7 +142,7 @@ export function skyState(phase: number, out: SkyState = createSkyState()): SkySt
   out.directional.color.copy(C.dirNight).lerp(C.dirDay, day);
   out.directional.intensity = NIGHT.directional.intensity + 0.1 * day;
   out.bloom = BLOOM_NIGHT + (BLOOM_DAY - BLOOM_NIGHT) * day;
-  out.sun.elevation = orbDirection(phase, 0, out.sun.dir).elevation;
-  out.moon.elevation = orbDirection(phase, 0.5, out.moon.dir).elevation;
+  out.sun.elevation = writeOrb(phase, 0, out.sun.dir);
+  out.moon.elevation = writeOrb(phase, 0.5, out.moon.dir);
   return out;
 }

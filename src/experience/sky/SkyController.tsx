@@ -2,6 +2,7 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
+import type { BloomEffect } from "postprocessing";
 import { Color, DirectionalLight, HemisphereLight, Fog, InstancedBufferAttribute, Object3D, PlaneGeometry, SphereGeometry, type Group, type InstancedMesh } from "three";
 import { readDayNight, subscribeDayNight } from "@/lib/day-night";
 import { useHQStore } from "@/store/useHQStore";
@@ -45,19 +46,15 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   useDispose(orbGeometry);
   const domeMaterial = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.sky, additive: false }), []);
   const orbMaterial = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.orb, params: [0.32, 5, 0.22, 0] }), []);
-  useEffect(
-    () => () => {
-      domeMaterial.dispose();
-      orbMaterial.dispose();
-    },
-    [domeMaterial, orbMaterial],
-  );
+  useDispose(domeMaterial);
+  useDispose(orbMaterial);
   const domeColor = useMemo(() => new Float32Array([1, 1, 1]), []);
   const orbColor = useMemo(() => new Float32Array([...neonColor("#ffb070", 2.2, tier).toArray(), ...neonColor("#dfe6ff", 1.4, tier).toArray()]), [tier]);
   useUniformTime(useMemo(() => [domeMaterial, orbMaterial], [domeMaterial, orbMaterial]));
 
   const mode = useRef<SkyMode>({ source: "held", phase: 0 });
   const last = useRef<number | null>(null);
+  const bloomWritten = useRef<BloomEffect | null>(null);
   useEffect(() => {
     const resolve = () => {
       mode.current = resolveSkyMode({
@@ -77,6 +74,12 @@ export function SkyController({ tier }: { tier: GpuTier }) {
 
   useFrame(({ scene }) => {
     group.current?.position.copy(camera.position);
+    // The full tier's composer mounts lazily (and can remount): write the bloom into whichever instance is live.
+    const live = postHandle.get()?.bloom() ?? null;
+    if (live && live !== bloomWritten.current) {
+      live.intensity = state.bloom;
+      bloomWritten.current = live;
+    }
     const m = mode.current;
     const phase = m.phase ?? clockPhase(Date.now());
     if (last.current !== null && Math.abs(phase - last.current) <= EPSILON) return;
@@ -94,8 +97,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
       dir.current.color.copy(state.directional.color);
       dir.current.intensity = state.directional.intensity;
     }
-    const bloom = postHandle.get()?.bloom();
-    if (bloom) bloom.intensity = state.bloom;
+    if (live) live.intensity = state.bloom;
 
     applyDome(domeMaterial, state);
     if (orbMesh.current) applyOrbs(orbMesh.current, orbAlpha, state, scratch);
