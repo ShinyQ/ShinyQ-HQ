@@ -40,9 +40,9 @@ describe("buildPaletteEntries", () => {
 });
 
 describe("searchPalette", () => {
-  it('finds the Quick tour mission for "quick tour" and the Indonesian "tur singkat"', () => {
-    expect(keys(searchPalette(entries, "quick tour"), "missions")[0]).toBe("mission:highlights");
-    expect(keys(searchPalette(entries, "tur singkat"), "missions")[0]).toBe("mission:highlights");
+  it('finds the highlights mission for "highlights" and the Indonesian "sorotan"', () => {
+    expect(keys(searchPalette(entries, "highlights"), "missions")[0]).toBe("mission:highlights");
+    expect(keys(searchPalette(entries, "sorotan"), "missions")[0]).toBe("mission:highlights");
     expect(entries.find((e) => e.key === "mission:highlights")?.floor).toBe("L1");
   });
 
