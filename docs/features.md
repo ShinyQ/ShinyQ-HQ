@@ -50,7 +50,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Visit stats fix | 2026-10-16: a finalized day is stored only from an unsampled, consistent Web Analytics answer; Pages Web Analytics stays off (its injected beacon took every page load from the site's own beacon and ignored the opt-out), and deploy-smoke and uptime fail if it comes back | Done |
 | Blog architecture figures | 2026-10-16: the four technical posts show architecture figures through an `<Architecture>` MDX tag (a case study's diagram or a post-local one from `content/blog/diagrams.json`), each with a caption and a numbered walkthrough; every architecture diagram (posts and case studies) is a real box and arrow drawing (build-time SVG: left to right from 1100 px, top to bottom below and on phones), and the Clearbox post's two figures use it too | Done |
 | Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
-| Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the settings switch lands with the settings panel; +2 scene calls, no new shader program | Done |
+| Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the "Day and night" switch is registered in the settings registry (`day-night`, display group, order 30), and its panel UI comes with the HUD settings work; +2 scene calls, no new shader program | Done |
 
 ## Controls and first visit
 
@@ -112,7 +112,7 @@ Open `/en` and press **Boot rover**.
 - The 3D tower runs an 8 minute cycle driven by clock time (`Date.now() % 8 min`), so every visitor sees the same phase and a reload continues.
 - Night is the neon look with a moon and twinkling stars; "day" is a deep twilight, an indigo to teal sky with a sun glow on the horizon. Dawn and dusk blend the two.
 - The sun and the moon cross a shallow arc around the tower, opposite each other; the lights, the fog and the bloom follow the phase, and the neon glows brighter at night.
-- The cycle follows the Motion setting: it runs unless reduced motion is on, and reduced motion holds night. A "Day and night" switch joins the settings panel when it lands; the choice is kept in this browser (`localStorage["hq:day-night"]`).
+- The cycle follows the Motion setting: it runs unless reduced motion is on, and reduced motion holds night. A "Day and night" switch is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, display group, order 30) and shows in the settings panel once the HUD settings work renders it; the choice is kept in this browser (`localStorage["hq:day-night"]`).
 - Automated browsers hold night; `?sky=night|dawn|day|dusk|<0..1>` pins a phase and `?sky=cycle` runs the clock.
 - The Classic site is unchanged. Rules: [`agents/3d-experience.md`](agents/3d-experience.md).
 

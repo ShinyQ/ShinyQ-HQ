@@ -368,7 +368,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - A visitor runs the clock (source `clock`) when the stored choice says on, or when there is no choice and reduced motion is off. Reduced motion holds night unless the visitor turns the cycle on.
 - The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 8 min`): every visitor sees the same phase and a reload continues.
 - Preference: `localStorage["hq:day-night"]` is `"on"`, `"off"` or unset (unset follows Motion). `src/lib/day-night.ts` (`readDayNight`, `setDayNight`, `subscribeDayNight`, `dayNightOn`) imports nothing, so the HUD bundle can use it.
-- The "Day and night" toggle is a settings panel entry (registry id `day-night`, group display, order 30), added when the settings panel lands.
+- The "Day and night" toggle is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, group display, order 30) and shows in the settings panel once the HUD settings work renders every entry of `SETTINGS`. Its `get` reads `dayNightOn(readDayNight(), reducedMotion)`, its `set` is `setDayNight`.
 
 ### Rendering
 
@@ -381,7 +381,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
 - Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
 - The RF star dome (`floors/roof/Sky.tsx`) fades with `skyRuntime.stars`.
 - Probe: `__hq.sky` is `{ phase, day, stars, source, fog, applied }` (`source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications), read from `skyRuntime`.
-- Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (held night under automation, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
+- Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `day-night-setting.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (held night under automation, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
 - Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite).
 - Budgets are authoritative in `e2e/budgets.ts` (3D bytes, draw calls, triangles) and `e2e/perf/baseline.json` (shader programs, memory); this section keeps only the invariants above.
 
