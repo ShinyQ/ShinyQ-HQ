@@ -98,7 +98,7 @@ describe.each(LIBRARY_CONCEPTS)("L4 concept %s", (concept) => {
     expect(inside(layout.floor.spawn, zone)).toBe(false);
   });
 
-  it.each(INPUTS)("gives every docked post and every shelf one station, in walk order, with %s", (_, input) => {
+  it.each(INPUTS)("gives every docked post and every shelf one station, in station order, with %s", (_, input) => {
     const layout = build(input);
     const posts = layout.stations.filter((s) => s.zone === "blog").map((s) => s.room);
     const docked = input.posts.slice(0, LIBRARY_FLOOR.maxPosts).map((p) => `L4:${p.slug}`);
