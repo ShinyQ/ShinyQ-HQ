@@ -143,6 +143,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     if (!ctx || disposed) return;
     if (isHidden()) {
       clearSuspendTimer();
+      if (muted || paused) stopMusic();
       ignore(ctx.suspend());
     } else if (!muted && !paused) {
       resume();

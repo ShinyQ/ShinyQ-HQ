@@ -7,7 +7,7 @@ import { envelope } from "./synth";
  * dry and wet gains).
  */
 
-/** Output trim: the audition track matched to the old hum's loudness (K-weighted RMS at hum gain 0.04), a hair under. */
+/** Output trim: calibrated to the K-weighted RMS of a 0.04-gain ambient pad, a hair under. */
 export const MUSIC_LEVEL = 0.6;
 /** Seconds between bell chances. */
 export const MUSIC_STEP = 0.5;
@@ -89,8 +89,18 @@ export function createSpaceMusic(
   dry.gain.setValueAtTime((1 - WET) * AUDITION_GAIN, t);
   const wet = ctx.createGain();
   wet.gain.setValueAtTime(WET * AUDITION_GAIN, t);
+  let stopped = false;
   const reverb = ctx.createConvolver();
-  reverb.buffer = getReverbImpulse(ctx);
+  // The first impulse build (tens of ms on a slow phone) runs off the gesture; the 2 s fade-in hides the gap.
+  let reverbTimer: ReturnType<typeof setTimeout> | null = null;
+  if (impulseCache.has(ctx)) {
+    reverb.buffer = getReverbImpulse(ctx);
+  } else {
+    reverbTimer = setTimeout(() => {
+      reverbTimer = null;
+      if (!stopped) reverb.buffer = getReverbImpulse(ctx);
+    }, 0);
+  }
   bus.connect(dry).connect(compressor);
   bus.connect(reverb).connect(wet).connect(compressor);
 
@@ -112,7 +122,6 @@ export function createSpaceMusic(
   const fixed: AudioNode[] = [output, compressor, bus, dry, wet, reverb, droneFilter, droneGain, ...drones];
 
   const notes = new Set<Note>();
-  let stopped = false;
 
   function release(note: Note): void {
     for (const source of note.sources) source.onended = null;
@@ -169,6 +178,7 @@ export function createSpaceMusic(
       if (stopped) return;
       stopped = true;
       clearInterval(timer);
+      if (reverbTimer) clearTimeout(reverbTimer);
       const now = ctx.currentTime;
       for (const note of [...notes]) {
         for (const source of note.sources) stopSource(source, now);

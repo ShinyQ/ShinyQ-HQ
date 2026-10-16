@@ -447,6 +447,20 @@ describe("audio engine: background music", () => {
     expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 0)).toBe(true);
   });
 
+  it.each([
+    ["mute", (engine: ReturnType<typeof setup>["engine"]) => engine.setMuted(true)],
+    ["pause", (engine: ReturnType<typeof setup>["engine"]) => engine.setPaused(true)],
+  ])("stops the music when the tab hides during a pending %s fade", (_name, silence) => {
+    const { engine, doc, ctx } = setup();
+    engine.setMuted(false);
+    silence(engine);
+    doc.setVisibility("hidden");
+    expect(drones(ctx())).toHaveLength(3);
+    expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 1 && o.disconnect.mock.calls.length > 0)).toBe(true);
+    expect(ctx().suspend).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("leaves no music nodes or timers after dispose", () => {
     const { engine, ctx } = setup();
     engine.setMuted(false);

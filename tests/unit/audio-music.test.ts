@@ -49,6 +49,7 @@ describe("deep space music: graph", () => {
     const { ctx, destination, music } = setup(never);
     expect(ctx.convolvers).toHaveLength(1);
     expect(ctx.compressors).toHaveLength(1);
+    vi.advanceTimersByTime(1);
     const impulse = ctx.convolvers[0].buffer as { numberOfChannels: number; length: number };
     expect(impulse.numberOfChannels).toBe(2);
     expect(impulse.length).toBe(ctx.sampleRate * 3);
@@ -56,6 +57,28 @@ describe("deep space music: graph", () => {
     const output = music.output as unknown as FakeGain;
     expect(output.connected).toEqual([destination]);
     expect(output.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(MUSIC_LEVEL, expect.any(Number));
+  });
+
+  it("builds the reverb impulse off the call: assigned on a 0 ms timeout, immediately once cached", () => {
+    const ctx = new FakeAudioContext();
+    const make = () => createSpaceMusic(ctx as unknown as AudioContext, new FakeGain() as unknown as AudioNode, never);
+    make();
+    expect(ctx.convolvers[0].buffer).toBeNull();
+    expect(ctx.buffers).toHaveLength(0);
+    vi.advanceTimersByTime(0);
+    expect(ctx.convolvers[0].buffer).toBe(getReverbImpulse(ctx as unknown as AudioContext));
+    make();
+    expect(ctx.convolvers[1].buffer).toBe(ctx.convolvers[0].buffer);
+    expect(ctx.buffers).toHaveLength(1);
+  });
+
+  it("stop before the impulse timeout leaves the convolver empty and no timers", () => {
+    const { ctx, music } = setup(never);
+    music.stop();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(10);
+    expect(ctx.convolvers[0].buffer).toBeNull();
+    expect(ctx.buffers).toHaveLength(0);
   });
 });
 
@@ -102,8 +125,9 @@ describe("deep space music: lookahead scheduler", () => {
     expect(late.every((t) => t >= 30 && t <= 30 + MUSIC_LOOKAHEAD)).toBe(true);
   });
 
-  it("does not advance while the context is suspended (currentTime frozen)", () => {
+  it("does nothing while the audio clock is frozen (suspended context)", () => {
     const { ctx } = setup();
+    ctx.state = "suspended";
     const before = bells(ctx).length;
     vi.advanceTimersByTime(MUSIC_TICK_MS * 20);
     expect(bells(ctx)).toHaveLength(before);
