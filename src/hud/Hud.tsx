@@ -147,6 +147,9 @@ function CornersTopBar({ data, layout, onExit }: { data: ExperienceData; layout:
 }
 
 /** Corners minimap: under the top-right cluster. */
+const TEASER_TOP_VAR = "--hq-teaser-top";
+/** Ask teaser top offset under the minimap (phone 72 px at 64 px, tablet 112 px at 76 px, plus a gap). */
+const TEASER_TOP: Record<Exclude<HudLayout, "desktop">, string> = { phone: "148px", tablet: "200px" };
 const MINIMAP_PLACE: Record<Exclude<HudLayout, "desktop">, string> = { phone: "top-[64px] right-3", tablet: "top-[76px] right-4" };
 
 /** Desktop bottom right: the minimap and the settings gear above the view controls. */
@@ -177,12 +180,19 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
   const explorable = phase !== "intro" && phase !== "room";
   const drive = coarse && phase !== "intro";
 
-  // The Ask teaser and other page-level styles position against the HUD layout.
+  // The Ask teaser and other page-level styles position against the HUD layout: the teaser sits under the
+  // minimap on phones and tablets, and under the desktop top bar (the profile card's right edge) otherwise.
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.hqHud = layout;
+    const wide = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 1024px)") : null;
+    const place = () => root.style.setProperty(TEASER_TOP_VAR, layout === "desktop" ? (wide?.matches ? "76px" : "124px") : TEASER_TOP[layout]);
+    place();
+    wide?.addEventListener("change", place);
     return () => {
+      wide?.removeEventListener("change", place);
       delete root.dataset.hqHud;
+      root.style.removeProperty(TEASER_TOP_VAR);
     };
   }, [layout]);
 

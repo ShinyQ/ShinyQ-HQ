@@ -161,4 +161,16 @@ describe("Hud composition", () => {
     unmount();
     expect(document.documentElement.dataset.hqHud).toBeUndefined();
   });
+
+  it("sets the Ask teaser offset per layout and clears it on unmount", () => {
+    const top = () => document.documentElement.style.getPropertyValue("--hq-teaser-top");
+    const { unmount } = mount();
+    expect(top()).toBe("124px");
+    act(() => device("tablet", true));
+    expect(top()).toBe("200px");
+    act(() => device("mobile", true));
+    expect(top()).toBe("148px");
+    unmount();
+    expect(top()).toBe("");
+  });
 });

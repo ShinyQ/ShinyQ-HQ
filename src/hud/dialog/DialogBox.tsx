@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { audio } from "@/lib/audio";
 import { BLIP_EVERY, CONTINUE_CHOICE, type DialogChoice, type DialogView } from "./engine";
 import { DIALOG_PLACE, type DialogPlacement } from "./placement";
@@ -11,6 +11,8 @@ import { dialog, useDialog } from "./store";
 const TEXT_INPUT = 'input, textarea, select, [contenteditable="true"], [contenteditable=""]';
 const CONTROL = "button, a, [role='button'], summary";
 const MODAL = "[role='dialog'][aria-modal='true']";
+/** How long a finished, choiceless toast on a phone stays before it moves on by itself. */
+export const TOAST_HOLD_MS = 4500;
 const NEXT_KEYS = new Set(["ArrowDown", "ArrowRight"]);
 const PREV_KEYS = new Set(["ArrowUp", "ArrowLeft"]);
 
@@ -25,6 +27,10 @@ function choicesOf(view: DialogView, continueLabel: string): readonly DialogChoi
  * the choices. Not modal: the world keeps driving behind it. Enter and Space advance unless a text
  * field, another control or a modal dialog has the key; arrows move between the choices once one has
  * focus; Esc picks a "cancel" choice. A tap or click anywhere on the box advances too.
+ *
+ * On phones (`placement === "phone"`) it is a slim toast: the text is clamped to two rows until a tap
+ * expands it, and a finished line without choices or a try-it task moves on by itself after
+ * `TOAST_HOLD_MS` (never while expanded).
  */
 export function DialogBox({ placement, reducedMotion }: { placement: DialogPlacement; reducedMotion: boolean }) {
   const t = useTranslations("dialog");
@@ -32,11 +38,22 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
   const nameId = useId();
   const textId = useId();
   const box = useRef<HTMLElement>(null);
+  const textRow = useRef<HTMLParagraphElement>(null);
+  const toast = placement === "phone";
+  const [expandedLine, setExpandedLine] = useState<unknown>(null);
   const line = view.line;
   const visible = Boolean(line) && !view.paused;
   const done = Boolean(line) && view.shown >= view.length;
   const choices = choicesOf(view, t("continue"));
   const choiceKey = choices.map((choice) => choice.id).join("|");
+  const expanded = toast && Boolean(line) && expandedLine === line;
+  const autoAdvance = toast && visible && done && !expanded && !line?.choices?.length && !line?.until;
+
+  useEffect(() => {
+    if (!autoAdvance) return;
+    const timer = window.setTimeout(() => dialog.advance(), TOAST_HOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [autoAdvance, line]);
 
   // Typewriter clock (also the try-it fallback clock) and one soft blip per few characters.
   useEffect(() => {
@@ -114,13 +131,21 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
       data-line={line.key}
       data-typing={done ? "false" : "true"}
       data-motion={reducedMotion ? "still" : "live"}
+      data-expanded={toast ? String(expanded) : undefined}
       onClick={(event) => {
         if (event.target instanceof Element && event.target.closest("button")) return;
+        const text = textRow.current;
+        if (toast && !expanded && text && text.scrollHeight > text.clientHeight) {
+          setExpandedLine(line);
+          return;
+        }
         dialog.advance();
       }}
-      className={`hq-dialog pointer-events-auto absolute z-20 flex cursor-pointer gap-3 p-3 font-mono text-[14px] leading-6 text-ink sm:p-4 ${DIALOG_PLACE[placement]}`}
+      className={`hq-dialog pointer-events-auto absolute z-20 flex cursor-pointer text-ink font-mono ${
+        toast ? "gap-2 p-2.5 text-[13px] leading-5" : "gap-3 p-3 text-[14px] leading-6 sm:p-4"
+      } ${DIALOG_PLACE[placement]}`}
     >
-      <RoverPortrait face={line.face ?? "idle"} still={reducedMotion} />
+      <RoverPortrait face={line.face ?? "idle"} still={reducedMotion} compact={toast} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <h2 id={nameId} className="label text-cyan">
@@ -141,7 +166,11 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
           {line.text}
         </p>
         {/* The untyped rest is laid out but invisible, so the box keeps its height while it types. */}
-        <p aria-hidden="true" className="min-h-12 whitespace-pre-line">
+        <p
+          ref={textRow}
+          aria-hidden="true"
+          className={`whitespace-pre-line ${toast ? `min-h-10 ${expanded ? "" : "line-clamp-2"}` : "min-h-12"}`}
+        >
           {line.text.slice(0, view.shown)}
           <span className="invisible">{line.text.slice(view.shown)}</span>
         </p>

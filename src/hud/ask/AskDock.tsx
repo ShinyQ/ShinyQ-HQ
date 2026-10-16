@@ -35,6 +35,9 @@ function markTeaserSeen() {
   }
 }
 
+const DIALOG_BOX = "[data-testid='dialog-box']";
+const DIALOG_WATCH_MS = 500;
+const dialogOpen = () => Boolean(document.querySelector(DIALOG_BOX));
 const modalOpen = () => Boolean(document.querySelector("[role='dialog'][aria-modal='true']"));
 
 /**
@@ -95,18 +98,24 @@ export function AskDock({ locale }: { locale: Locale }) {
     const delay = tower ? TEASER_DELAY_3D_MS : TEASER_DELAY_MS;
     const attempt = (retries: number) => {
       if (teaserSeen()) return;
-      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen()) {
+      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen() || dialogOpen()) {
         if (retries > 0) timer = window.setTimeout(() => attempt(retries - 1), delay);
         return;
       }
       markTeaserSeen();
       setTeaser(true);
       hide = window.setTimeout(() => setTeaser(false), TEASER_SHOW_MS);
+      // Rover speaking takes the stage: the nudge steps aside (it stays "seen").
+      watch = window.setInterval(() => {
+        if (dialogOpen()) setTeaser(false);
+      }, DIALOG_WATCH_MS);
     };
+    let watch: number | undefined;
     let timer = window.setTimeout(() => attempt(2), delay);
     return () => {
       window.clearTimeout(timer);
       window.clearTimeout(hide);
+      window.clearInterval(watch);
     };
   }, [enabled, open, tower, hero]);
 
@@ -118,7 +127,7 @@ export function AskDock({ locale }: { locale: Locale }) {
         <div
           className={`no-print pointer-events-none fixed z-40 flex gap-2 ${
             tower
-              ? "top-[116px] right-3 sm:top-[124px] sm:right-4 lg:top-[76px]"
+              ? "top-[var(--hq-teaser-top,116px)] right-3 sm:right-4"
               : "bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 flex-col-reverse items-start sm:bottom-6 sm:left-6 sm:flex-row sm:items-center sm:gap-3"
           }`}
         >

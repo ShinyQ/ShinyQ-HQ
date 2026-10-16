@@ -82,7 +82,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 | Key | Meaning |
 |---|---|
 | `hq:terminal-seen` | set when the terminal first opens; nothing opens it on its own |
-| `hq:onboarded` | `done` or `skipped`: the first-session tour ran |
+| `hq:onboarded` | `done` or `skipped`: the first-session tutorial ran |
 | `hq:hints` | `off` hides the hint bubbles |
 | `hq:recent` | recent rooms on the static tier |
 | `hq:visits` | alternates best-swe and best-ai |
@@ -203,7 +203,13 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 |---|---|
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
-| Phones | 232 px, and 68 px from the right edge (clear of the elevator panel) |
+| Phones | 168 px, 12 px from both edges: a slim toast above the joystick (120 px plus the 24 px band padding and a 24 px gap) |
+
+- The phone toast (`placement === "phone"`):
+  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
+  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion), never while expanded;
+  - choices and Skip still render (onboarding needs them).
+- The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 
 ### Onboarding
 
