@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react";
 import { getTranslations } from "next-intl/server";
+import { architectureLayers, orderArchitectureNodes } from "@/content/architecture";
 import type { Architecture, Locale } from "@/content/schema";
 
 /** Node kinds tint the border and the kind label only; names stay neutral. */
@@ -17,21 +19,21 @@ const KIND_STYLE: Record<Architecture["nodes"][number]["kind"], string> = {
  */
 export async function ArchitectureDiagram({ architecture, locale }: { architecture: Architecture; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "labs" });
-  const layers = Math.max(...architecture.nodes.map((n) => n.layer)) + 1;
+  const layers = architectureLayers(architecture.nodes);
   const byId = new Map(architecture.nodes.map((n) => [n.id, n]));
   return (
-    <div className="card space-y-6 p-4 sm:p-6">
-      <div className="overflow-x-auto pb-2">
+    <div className="not-prose card space-y-6 p-4 sm:p-6">
+      <div className="pb-2 sm:overflow-x-auto">
         <ol
-          className="grid min-w-[560px] gap-2.5"
-          style={{ gridTemplateColumns: `repeat(${layers}, minmax(0, 1fr))` }}
+          className="grid gap-2.5 sm:min-w-[520px] sm:[grid-template-columns:var(--arch-cols)]"
+          style={{ "--arch-cols": `repeat(${layers}, minmax(0, 1fr))` } as CSSProperties}
           aria-label={t("architecture")}
         >
-          {architecture.nodes.map((node) => (
+          {orderArchitectureNodes(architecture.nodes).map((node) => (
             <li
               key={node.id}
-              className={`flex flex-col gap-1 rounded-lg border bg-surface-2 p-3 ${KIND_STYLE[node.kind]}`}
-              style={{ gridColumn: node.layer + 1, gridRow: node.row + 1 }}
+              className={`flex flex-col gap-1 rounded-lg border bg-surface-2 p-3 sm:[grid-column:var(--arch-col)] sm:[grid-row:var(--arch-row)] ${KIND_STYLE[node.kind]}`}
+              style={{ "--arch-col": node.layer + 1, "--arch-row": node.row + 1 } as CSSProperties}
             >
               <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase">{t(`nodeKind.${node.kind}`)}</span>
               <span className="text-sm leading-5 font-semibold text-ink">{node.label}</span>
