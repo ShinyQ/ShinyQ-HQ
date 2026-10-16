@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   chooseMotion,
   asReturningVisitor,
+  skipFloorLines,
   collectErrors,
   DESKTOP_SAFE,
   expectRenderBudget,
@@ -260,10 +261,11 @@ for (const tier of ["lite", "full"] as const) {
 
 type PanelWindow = Window & { __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null } } };
 
-/** The L3 arrival as a returning visitor (walks off, so no prompt covers the floor), camera settled. */
+/** The L3 arrival as a returning visitor (no first-visit floor line covers the floor), camera settled. */
 async function openLabsArrival(page: Page) {
   await asReturningVisitor(page);
-  await page.goto("/en/labs?tier=lite&walk=off");
+  await skipFloorLines(page);
+  await page.goto("/en/labs?tier=lite");
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

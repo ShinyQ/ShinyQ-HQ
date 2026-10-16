@@ -1,10 +1,16 @@
+import type { FloorId } from "@/content/schema";
+
 /**
  * Browser flags of the Rover dialog (localStorage): `hq:onboarded` (`done` or `skipped`, the
- * first-session tour ran) and `hq:hints` (`off` hides the "!" bubbles; missing means on). Blocked
- * storage keeps the value for this page, so a skipped tour does not come back on every frame.
+ * first-session tour ran), `hq:hints` (`off` hides the "!" bubbles; missing means on) and
+ * `hq:floor-intro` (JSON list of floors whose first-visit line was spoken). Blocked storage keeps
+ * the value for this page, so a skipped tour does not come back on every frame.
  */
 export const ONBOARDED_KEY = "hq:onboarded";
 export const HINTS_KEY = "hq:hints";
+export const FLOOR_INTRO_KEY = "hq:floor-intro";
+/** Older browsers stored the floors whose first-visit line was spoken here; read only, never written. */
+const LEGACY_FLOOR_INTRO_KEY = "hq:walk-prompt";
 
 export type OnboardingMark = "done" | "skipped";
 
@@ -15,6 +21,7 @@ export interface FlagStorage {
 
 let memoryOnboarded: OnboardingMark | null = null;
 let memoryHints: boolean | null = null;
+const memoryFloors = new Set<FloorId>();
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((listener) => listener());
 
@@ -65,6 +72,32 @@ export function setHintsOn(on: boolean, storage: FlagStorage | null = local()) {
   notify();
 }
 
+function floorList(storage: FlagStorage | null, key: string): unknown[] {
+  try {
+    const raw = storage?.getItem(key);
+    const list: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Whether `floor`'s first-visit line was already spoken (`hq:floor-intro`, or the legacy `hq:walk-prompt`). */
+export function floorIntroSeen(floor: FloorId, storage: FlagStorage | null = local()): boolean {
+  return memoryFloors.has(floor) || floorList(storage, FLOOR_INTRO_KEY).includes(floor) || floorList(storage, LEGACY_FLOOR_INTRO_KEY).includes(floor);
+}
+
+export function markFloorIntroSeen(floor: FloorId, storage: FlagStorage | null = local()) {
+  memoryFloors.add(floor);
+  const seen = floorList(storage, FLOOR_INTRO_KEY);
+  if (seen.includes(floor)) return;
+  try {
+    storage?.setItem(FLOOR_INTRO_KEY, JSON.stringify([...seen, floor]));
+  } catch {
+    // Remembered for this page only.
+  }
+}
+
 export function subscribeFlags(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
@@ -76,4 +109,5 @@ export function subscribeFlags(listener: () => void): () => void {
 export function resetFlagMemory() {
   memoryOnboarded = null;
   memoryHints = null;
+  memoryFloors.clear();
 }

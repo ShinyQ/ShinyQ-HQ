@@ -1,4 +1,4 @@
-import type { DrawerTab, Locale, MissionStep, RoomId, WalkId } from "@/content/schema";
+import type { DrawerTab, Locale, MissionStep, RoomId } from "@/content/schema";
 import { canonicalRoom } from "./roomAliases";
 import type { MissionHost, MissionStatus, PaletteFilter } from "./host";
 import type { RoomInfo } from "./rooms";
@@ -29,7 +29,7 @@ let runner: MissionRunner | null = null;
 let autoOpenClaimed = false;
 const listeners = new Set<(state: MissionState) => void>();
 const waiting = new Set<(runner: MissionRunner | null) => void>();
-/** How long a cross-floor link or walk leg waits for the runner (MissionHud loads its index after hydration). */
+/** How long a cross-floor link or ad hoc step list waits for the runner (MissionHud loads its index after hydration). */
 const RUNNER_WAIT_MS = 5000;
 
 /** The active runner, or the next one registered within `timeoutMs` (null after that). */
@@ -85,25 +85,10 @@ export function goToRoom(id: RoomId, tab?: DrawerTab) {
   else void whenRunner().then((next) => next?.goTo(room, tab));
 }
 
-/** Runs ad hoc steps through the active runner (guided walk legs). Resolves "cancelled" when no runner shows up. */
+/** Runs ad hoc steps through the active runner. Resolves "cancelled" when no runner shows up. */
 export function runMissionSteps(id: string, steps: readonly MissionStep[]): Promise<MissionStatus> {
   if (runner) return runner.runSteps(id, steps);
   return whenRunner().then((next) => (next ? next.runSteps(id, steps) : "cancelled"));
-}
-
-let walkStarter: ((id: WalkId) => boolean) | null = null;
-
-/** WalkLayer registers the guided walks it offers; `start` returns false when that walk is off. */
-export function registerWalkStarter(start: (id: WalkId) => boolean): () => void {
-  walkStarter = start;
-  return () => {
-    if (walkStarter === start) walkStarter = null;
-  };
-}
-
-/** Starts a guided walk (mission step `{ kind: "walk" }`). False when no walk with that id is offered. */
-export function startWalk(id: WalkId): boolean {
-  return walkStarter ? walkStarter(id) : false;
 }
 
 /** Manual input cancels a running mission (appendix 02 section 3). */

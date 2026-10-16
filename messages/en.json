@@ -184,7 +184,9 @@
       "show": "Show projects using {tech}",
       "ringTarget": "Tech Reactor: {ring}",
       "selected": "Selected: {tech}"
-    }
+    },
+    "boardOpen": "Open the full list",
+    "boardCount": "{count, plural, one {# project} other {# projects}}"
   },
   "library": {
     "title": "Library",
@@ -716,93 +718,29 @@
       "topicsLabel": "Or start with"
     }
   },
-  "walk": {
-    "journey": {
-      "title": "Explore the career journey?",
-      "body": "A guided tour through every role and milestone, oldest first. Choose Explore freely to roam the floor on your own.",
-      "start": "Explore the career journey",
-      "name": "Journey tour"
-    },
-    "projects": {
-      "title": "Take the project tour?",
-      "body": "A guided tour through the key and featured projects, wing by wing. Choose Explore freely to roam the floor on your own.",
-      "start": "Start project tour",
-      "name": "Project tour"
-    },
-    "writing": {
-      "title": "Explore the writing?",
-      "body": "A guided tour past the newest posts, then research, models, talks and workshops. Choose Explore freely to roam the floor on your own.",
-      "start": "Start writing tour",
-      "name": "Writing tour"
-    },
-    "meet": {
-      "title": "Get to know Kurniadi?",
-      "body": "A short tour of Kurniadi's profile, availability, CV and contact details. Choose Explore freely to roam the roof on your own.",
-      "start": "Start introduction tour",
-      "name": "Introduction tour",
-      "about": "Profile",
-      "availability": "Availability",
-      "cv": "CV",
-      "contact": "Get in touch"
-    },
-    "highlights": {
-      "title": "Take the quick tour?",
-      "body": "Four stops in the Highlights Hall: profile, selected projects, work experience and how to reach Kurniadi.",
-      "start": "Quick tour",
-      "name": "Quick tour"
-    },
-    "explore": "Explore freely",
-    "resumeAt": "Resume at stop {index}",
-    "stopOf": "Stop {index} of {total}",
-    "stopShort": "{index}/{total}",
-    "visited": "{count} visited",
-    "driving": "On the way",
-    "here": "You are here",
-    "prev": "Previous",
-    "next": "Next",
-    "finish": "Finish",
-    "open": "Open",
-    "end": "End tour",
-    "resume": "Resume tour",
-    "filter": "Show",
-    "all": "All stops",
-    "done": "Tour complete",
-    "doneBody": "{count} of {total} stops visited.",
-    "again": "Take the tour again",
+  "proto": {
+    "title": "Walkable floors prototype",
+    "floor": "Floor",
+    "L2": "L2 Career Road",
+    "L3": "L3 Project Roads",
+    "road": "Road",
+    "straight": "Straight",
+    "meander": "Meander",
+    "view": "View",
+    "rover": "Rover",
+    "top": "Top-down",
+    "rules": "Space rules",
+    "pass": "pass",
+    "violations": "{count} violations",
+    "size": "{w} x {d} u, {rooms} rooms, {plazas} plazas",
+    "rooms": "{count} rooms",
+    "loop": "Loop",
+    "hint": "Drive with WASD or click the floor.",
     "close": "Close",
-    "keys": "[ and ] move between tour stops",
-    "swipe": "Swipe the card to step",
-    "workshopSub": "Side projects and public repositories",
+    "sheet": "2D chips",
+    "sheetTitle": "Type icons as classic site chips",
     "more": "More projects here",
-    "moreSub": "Open to see every project in this wing",
-    "moreWriting": "More writing here",
-    "moreWritingSub": "Open to see every post",
-    "boardCount": "{count, plural, one {# project} other {# projects}}",
-    "boardOpen": "Open the full list",
-    "proto": {
-      "title": "Walkable floors prototype",
-      "floor": "Floor",
-      "L2": "L2 Career Road",
-      "L3": "L3 Project Roads",
-      "road": "Road",
-      "straight": "Straight",
-      "meander": "Meander",
-      "view": "View",
-      "rover": "Rover",
-      "top": "Top-down",
-      "rules": "Space rules",
-      "pass": "pass",
-      "violations": "{count} violations",
-      "size": "{w} x {d} u, {rooms} rooms, {plazas} plazas",
-      "rooms": "{count} rooms",
-      "loop": "Loop",
-      "hint": "Drive with WASD or click the floor. The walk uses the road.",
-      "close": "Close",
-      "prompt": "Show the prompt again",
-      "sheet": "2D chips",
-      "sheetTitle": "Type icons as classic site chips"
-    },
-    "protoLibrary": {
+    "library": {
       "title": "Writing floor concepts",
       "concept": "Concept",
       "atrium": "A: Reading Room",
@@ -888,7 +826,7 @@
       "showMe": "Take me there",
       "later": "Later",
       "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
-      "askRover": "Not sure where to go? Ask Rover has guided tours.",
+      "askRover": "Not sure where to go? Ask Rover has shortcuts to the best rooms.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
       "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
@@ -912,7 +850,7 @@
       },
       "object": {
         "highlights": "The Highlights Hall: {name}'s selected work in one place.",
-        "askRover": "The Ask Rover kiosk: guided tours around the HQ.",
+        "askRover": "The Ask Rover kiosk: shortcuts to the best rooms in the HQ.",
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",

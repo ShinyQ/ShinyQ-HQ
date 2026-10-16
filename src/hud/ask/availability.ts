@@ -81,7 +81,7 @@ export function useHeroVisible(): boolean {
 let panelOpen = false;
 const panelListeners = new Set<() => void>();
 
-/** The dock reports whether its chat panel is open, so the 3D Walk HUD can step aside (left of the side panel). */
+/** The dock reports whether its chat panel is open: the room drawer narrows behind it, and Rover's dialog box and the hint bubbles step aside. */
 export function setAskPanelOpen(open: boolean) {
   if (panelOpen === open) return;
   panelOpen = open;

@@ -61,6 +61,14 @@ export async function asReturningVisitor(page: Page) {
 }
 
 /**
+ * Marks every floor's first-visit Rover line as already spoken (`hq:floor-intro`), so no floor line
+ * covers the floor or races a click. Call it before navigating.
+ */
+export async function skipFloorLines(page: Page) {
+  await page.addInitScript(() => localStorage.setItem("hq:floor-intro", JSON.stringify(["L1", "L2", "L3", "L4", "RF"])));
+}
+
+/**
  * Picks the Motion setting before every navigation (merged into the persisted store `hq:v1`, version 3).
  * Full is the default on every OS (owner decision 2026-10-14), so a spec that emulates
  * `prefers-reduced-motion: reduce` to test reduced motion picks System (the OS flag decides, as before)

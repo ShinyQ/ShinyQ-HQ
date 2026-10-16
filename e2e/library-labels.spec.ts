@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
-import { collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames } from "./hq";
+import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames } from "./hq";
 
 /**
  * L4 declutter (Round 7 F): the timeline signs (sections, post titles, year plates) and the end plaza signs
@@ -100,7 +100,7 @@ for (const device of [
       if (SHOTS) test.setTimeout(1_800_000);
       const errors = collectErrors(page);
       // Rover's first-visit floor line would cover the middle of the view (captures): mark it as spoken.
-      await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L4"])));
+      await skipFloorLines(page);
       await enterFloorRoute(page, "/en/library", { tier: device.tier });
       const spurs = await page.evaluate((rooms) => {
         const net = (window as unknown as LW).__hq.layouts.L4.road!;

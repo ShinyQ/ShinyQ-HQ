@@ -22,10 +22,10 @@ const pad: Interactable = {
   action: { type: "elevator-picker" },
 };
 
-function renderLayer(suppressed = false) {
+function renderLayer() {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <HintLayer suppressed={suppressed} name="Kurniadi" />
+      <HintLayer name="Kurniadi" />
     </NextIntlClientProvider>,
   );
 }
@@ -76,12 +76,10 @@ describe("HintLayer", () => {
     off();
   });
 
-  it("hides while hints are off, during walks, outside explore and while point-and-go has a target", () => {
-    const view = renderLayer(true);
-    act(() => setHintTarget({ item: pad, anchor: { x: 0, y: 0, z: 0 } }));
-    expect(screen.queryByTestId("hint-bubble")).toBeNull();
-    view.unmount();
+  it("hides while hints are off, outside explore and while point-and-go has a target", () => {
     renderLayer();
+    act(() => setHintTarget({ item: pad, anchor: { x: 0, y: 0, z: 0 } }));
+    expect(screen.getByTestId("hint-bubble")).toBeInTheDocument();
     act(() => setHintsOn(false));
     expect(screen.queryByTestId("hint-bubble")).toBeNull();
     act(() => setHintsOn(true));

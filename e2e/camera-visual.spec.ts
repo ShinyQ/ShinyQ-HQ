@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 
 /**
@@ -53,7 +53,7 @@ async function open(browser: Browser, v: Viewport, path: string, quiet = false) 
   const page = await context.newPage();
   await asReturningVisitor(page);
   // First-person captures: no first-visit floor line (Rover's box would sit under the fingers of a pinch).
-  if (quiet) await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L1", "L2", "L3", "L4", "RF"])));
+  if (quiet) await skipFloorLines(page);
   await page.goto(`${path}?tier=${v.tier}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore", WAIT);

@@ -1,7 +1,7 @@
 /**
  * Replay bridge between the always-mounted MissionHud (Ask Rover, Cmd-K) and the 3D HUD's
  * OnboardingLayer, which registers itself while the tower is open. Same pattern as
- * `registerWalkStarter` in experience/missions/bridge.ts.
+ * `register3DHost` and `registerRunner` in experience/missions/bridge.ts.
  */
 let host: (() => void) | null = null;
 const listeners = new Set<() => void>();

@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, driveTo, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, driveTo, skipFloorLines, emptyFloorPoint, hoverTarget, interactablesOf, padsOf, PHONE_SAFE, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import { heroPod } from "./routes";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
@@ -202,21 +202,19 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-/** L4 Writing: the floor with the first-visit prompt, the first stop of the writing tour and the Research drawer. */
+/** L4 Writing: the floor with the first-visit floor line and the Research drawer. */
 for (const viewport of L4_VIEWPORTS) {
   test(`3D hq-l4 @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(300_000);
     const { context, page } = await open3DAt(browser, viewport, "/en/library");
     // In-world text (troika) builds its glyphs slowly on SwiftShader.
     await page.waitForTimeout(8000);
-    const prompt = page.getByTestId("dialog-choices");
-    await expect(prompt).toBeVisible();
+    const line = page.getByTestId("dialog-box");
+    await expect(line).toHaveAttribute("data-dialog", "floor:L4");
+    await expect(line).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
     await page.screenshot({ path: shot("hq-l4-writing", viewport) });
-    await prompt.getByRole("button", { name: en.walk.writing.start }).click();
-    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-status", "arrived", { timeout: 120_000 });
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: shot("hq-l4-walk", viewport) });
-    await page.getByTestId("walk-bar").getByRole("button", { name: en.walk.end }).first().click();
+    await page.keyboard.press("Enter");
+    await expect(line).toHaveCount(0);
     await openRoomFromPalette(page, "Research shelf", "L4:research");
     await page.waitForTimeout(3000);
     await page.screenshot({ path: shot("hq-l4-research", viewport) });
@@ -301,7 +299,8 @@ for (const floor of FLOOR_THUMBS) {
     const context = await browser.newContext({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await asReturningVisitor(page);
-    await page.goto(`${floor.path}?tier=full&walk=off`);
+    await skipFloorLines(page);
+    await page.goto(`${floor.path}?tier=full`);
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await page.evaluate(() => document.fonts.ready);
@@ -384,11 +383,10 @@ test.describe("HUD layout (bottom band, top bar, drawer footer)", () => {
       const context = await browser.newContext({ viewport: vp, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
       const page = await context.newPage();
       await asReturningVisitor(page);
-      await page.goto("/en/labs?tier=lite&walk=on");
+      await skipFloorLines(page);
+      await page.goto("/en/labs?tier=lite");
       await waitForHQ(page);
       await waitForPhase(page, "explore");
-      await page.getByTestId("dialog-choices").getByRole("button", { name: "Explore freely" }).click();
-      await expect(page.getByTestId("walk-launcher")).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       // In-world text (troika) builds its glyphs slowly on SwiftShader.
       await page.waitForTimeout(3000);
@@ -446,7 +444,8 @@ test.describe("point and go", () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await asReturningVisitor(page);
-    await page.goto("/en/labs?tier=full&walk=off");
+    await skipFloorLines(page);
+    await page.goto("/en/labs?tier=full");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await page.evaluate(() => document.fonts.ready);
@@ -469,7 +468,8 @@ test.describe("point and go", () => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
     const page = await context.newPage();
     await asReturningVisitor(page);
-    await page.goto("/en/labs?tier=lite&walk=off");
+    await skipFloorLines(page);
+    await page.goto("/en/labs?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await page.evaluate(() => document.fonts.ready);
@@ -591,7 +591,8 @@ for (const floor of FLOOR_THUMBS) {
           cb(ts);
         });
     });
-    await page.goto(`${floor.path}?tier=full&walk=off`);
+    await skipFloorLines(page);
+    await page.goto(`${floor.path}?tier=full`);
     await waitForHQ(page);
     await waitForPhase(page, "explore", 240_000);
     if (floor.ogAt) {
@@ -797,7 +798,8 @@ async function p8Open(browser: Browser, v: Viewport, path: string, reducedMotion
   await chooseMotion(context, "system");
   const page = await context.newPage();
   await asReturningVisitor(page);
-  await page.goto(`${path}?tier=${v.tier}&walk=off`);
+  await skipFloorLines(page);
+  await page.goto(`${path}?tier=${v.tier}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

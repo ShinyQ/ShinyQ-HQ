@@ -90,7 +90,7 @@ test.describe("missions on static pages", () => {
     await expect(terminal).toBeHidden();
   });
 
-  test("journey opens the journey page (the guided walk needs 3D)", async ({ page }) => {
+  test("journey opens the journey page", async ({ page }) => {
     await openPage(page, "/en?tier=static");
     await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();

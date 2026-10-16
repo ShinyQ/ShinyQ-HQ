@@ -14,11 +14,13 @@ import {
   asReturningVisitor,
   collectErrors,
   driveTo,
+  enterFloorRoute,
   enterHQ,
   expectRenderBudget,
   hoveredTarget,
   interactablesOf,
   openPage,
+  skipFloorLines,
   snapshot,
   waitForCameraSettle,
   waitForFloor,
@@ -34,7 +36,7 @@ import { FLOOR_SCENE_CAPS } from "./budgets";
 /**
  * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md): the passage past the
  * certification wall, the four stations as point-and-go targets and their drawers, cards that ride to
- * L3 and L2, live links, the Quick tour (Ask Rover and Cmd-K), the #highlights deep link, the static
+ * L3 and L2, live links, the highlights mission (Ask Rover and Cmd-K), the #highlights deep link, the static
  * anchors and the render budget. Expectations come from the dataset, never from slugs or counts.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -103,8 +105,8 @@ async function clickablePoint(page: Page, targetId: string): Promise<ScreenPoint
 
 /**
  * The drawer shows `room` and the Director has rendered a frame since: it learns of opens once per frame
- * and ends any drive that is running then, so a drive requested before that frame (the next walk leg,
- * a setup drive) would stop at once.
+ * and ends any drive that is running then, so a drive requested before that frame (a setup drive)
+ * would stop at once.
  */
 async function roomOpen(page: Page, room: string) {
   await waitForRoom(page, room);
@@ -215,42 +217,33 @@ test.describe("Highlights Hall", () => {
     await waitForRoom(page, room);
   });
 
-  test("Quick tour from Ask Rover visits the four stations in order; L1 never shows the walk prompt", async ({ page }) => {
+  test("See the highlights from Ask Rover drives to the about station and opens it; L1 never shows a floor line", async ({ page }) => {
     const errors = collectErrors(page);
     await asReturningVisitor(page);
-    await page.goto("/en?tier=lite&walk=on");
+    await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    // Proving that nothing happens: other floors show Rover's floor line with the walk choice 700 ms after arrival.
+    // Proving that nothing happens: other floors show Rover's first-visit floor line 700 ms after arrival.
     await page.waitForTimeout(1500);
     await expect(page.getByTestId("dialog-box")).toHaveCount(0);
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
-    await expect(page.getByTestId("walk-launcher").getByRole("button", { name: new RegExp(en.walk.highlights.start) })).toBeVisible();
 
     await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
     await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: tour.label.en }).click();
-    const bar = page.getByTestId("walk-bar");
-    await expect(page.getByTestId("walk-counter")).toContainText(`Stop 1 of ${STATIONS.length}`);
-    await expect(bar).toHaveAttribute("data-stop", highlightRoom(STATIONS[0]));
     await roomOpen(page, highlightRoom(STATIONS[0]));
-    for (const [i, station] of STATIONS.slice(1).entries()) {
-      await page.keyboard.press("]");
-      await expect(page.getByTestId("walk-counter")).toContainText(`Stop ${i + 2} of ${STATIONS.length}`);
-      await roomOpen(page, highlightRoom(station));
-      await expectRoverNear(page, stationOf(station).pad);
-    }
+    await expectRoverNear(page, stationOf(STATIONS[0]).pad);
     expect(errors).toEqual([]);
   });
 
-  test("Cmd-K finds the Quick tour and starts it", async ({ page }) => {
-    await enterHQ(page);
+  test("Cmd-K finds the highlights mission, which rides to L1 and opens the about station", async ({ page }) => {
+    await skipFloorLines(page);
+    await enterFloorRoute(page, "/en/contact");
     await page.keyboard.press("Control+k");
     await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
-    await page.keyboard.type("quick tour");
+    await page.keyboard.type("highlights");
     await expect(page.getByRole("option", { name: new RegExp(tour.label.en) }).first()).toBeVisible();
     await page.keyboard.press("Enter");
-    await expect(page.getByTestId("walk-bar")).toHaveAttribute("data-stop", highlightRoom(STATIONS[0]));
+    await waitForFloor(page, "L1", 90_000);
     await waitForRoom(page, highlightRoom(STATIONS[0]));
   });
 

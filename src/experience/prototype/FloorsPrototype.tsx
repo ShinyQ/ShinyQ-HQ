@@ -5,10 +5,7 @@ import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ACESFilmicToneMapping, Vector3, type Group } from "three";
-import type { FloorId, MissionStep, RoomId } from "@/content/schema";
-import { WalkBar, type WalkPlacement } from "@/hud/walk/WalkBar";
-import { useWalkDefinitions, useWalkState } from "@/hud/walk/WalkLayer";
-import { WalkPrompt } from "@/hud/walk/WalkPrompt";
+import type { RoomId } from "@/content/schema";
 import "../text-config";
 import { COLORS, FLOOR_COLOR, ROVER } from "../config";
 import { buildCareerRoad, CAREER_ROAD, careerLayoutInput, type CareerRoadLayout, type RoadStyle } from "../floors/career/layout";
@@ -19,7 +16,6 @@ import { CAREER_ICONS, CAREER_TONE } from "../fx/holoIcons";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import { isMoveKey, moveVectorFromKeys } from "../input/intents";
 import type { MissionStatus } from "../missions/host";
-import { createWalk, type WalkController, type WalkStorage } from "../missions/walk";
 import { buildNavGrid, findPath } from "../nav/navgrid";
 import { buildRoadGraph, type RoadNetwork } from "../nav/road";
 import { roadRoute } from "../nav/roadRoute";
@@ -52,7 +48,7 @@ export type View = "rover" | "top";
 interface Sim {
   controller: RoverController;
   keys: Set<string>;
-  /** Running walk leg: resolves when the rover arrives or the leg is cancelled. */
+  /** Running autopilot leg: resolves when the rover arrives or the leg is cancelled. */
   leg: { resolve: (status: MissionStatus) => void } | null;
   cameraForward: Vec2;
 }
@@ -60,8 +56,8 @@ interface Sim {
 /** Prototype simulation state, mutated in useFrame and event handlers (like `roverRuntime`). */
 export const sim: Sim = { controller: new RoverController({ x: -21, z: 0 }, Math.PI / 2), keys: new Set(), leg: null, cameraForward: { x: 0, z: -1 } };
 
-/** Ends the running leg (manual input, a new leg or the walk ending). */
-export function cancelLeg() {
+/** Ends the running leg (manual input, a new leg or a reset). */
+function cancelLeg() {
   sim.leg?.resolve("cancelled");
   sim.leg = null;
   sim.controller.clearPath();
@@ -81,11 +77,6 @@ export function resetRover(at: Vec2) {
   cancelLeg();
   sim.controller = new RoverController(at, Math.PI / 2);
 }
-
-export const memoryStorage = (): WalkStorage => {
-  const map = new Map<string, string>();
-  return { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v) };
-};
 
 function readParams() {
   if (typeof window === "undefined") return { floor: "L2" as const, road: "meander" as RoadStyle, view: "rover" as View, tier: "full" as GpuTier, sheet: false, at: null as Vec2 | null };
@@ -444,8 +435,7 @@ const seg = (on: boolean) =>
 
 /** Dev-only playable prototype of the walkable L2 and L3 floors (design check before the rebuild). */
 export default function FloorsPrototype({ data }: { data: ExperienceData }) {
-  const t = useTranslations("walk");
-  const tp = useTranslations("walk.proto");
+  const tp = useTranslations("proto");
   const tc = useTranslations("hud.career");
   const [initial] = useState(readParams);
   const [floorId, setFloorId] = useState<"L2" | "L3">(initial.floor);
@@ -454,7 +444,6 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
   const [sheet, setSheet] = useState(initial.sheet);
   const tt = useTranslations("common.type");
   const [card, setCard] = useState<{ title: string; sub?: string } | null>(null);
-  const [prompted, setPrompted] = useState<Record<string, boolean>>({});
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
 
   useEffect(() => {
@@ -512,38 +501,7 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
     [floor, grid, graph],
   );
 
-  // Walk host for the prototype: legs drive the prototype rover along the road and open a card.
-  const definitions = useWalkDefinitions(data);
-  const walks = useMemo(() => {
-    const host = {
-      run: async (_id: string, steps: MissionStep[]): Promise<MissionStatus> => {
-        for (const step of steps) {
-          if (step.kind === "drive") {
-            const to = typeof step.to === "string" ? doorOf(step.to) : step.to;
-            if (!to) continue;
-            setCard(null);
-            const status = await drive(to, true);
-            if (status !== "done") return status;
-          } else if (step.kind === "open") setCard(titles.get(step.room) ?? { title: step.room });
-          else if (step.kind === "palette") setCard({ title: t("more"), sub: t("moreSub") });
-        }
-        return "done";
-      },
-      cancel: cancelLeg,
-    };
-    const out: Partial<Record<FloorId, WalkController>> = {};
-    for (const id of ["L2", "L3"] as const) {
-      const def = definitions[id];
-      if (def) out[id] = createWalk(def, host, { storage: memoryStorage() });
-    }
-    return out;
-  }, [definitions, doorOf, drive, titles, t]);
-  const walk = walks[floorId] ?? null;
-  const state = useWalkState(walk);
-
   const compact = viewport.w < 640;
-  const placement: WalkPlacement = compact ? "top" : "bottom";
-  const showPrompt = Boolean(walk && state?.status === "idle" && !prompted[floorId]);
   const b = floor.bounds;
   const roomCount = floor.doors.length;
 
@@ -581,11 +539,6 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
       {tp("rules")}: <span className={violations.length ? "text-pink" : "text-green"}>{violations.length ? tp("violations", { count: violations.length }) : tp("pass")}</span>
     </p>
     <p className="mt-1 hidden text-xs text-ink-3 md:block">{tp("hint")}</p>
-    {prompted[floorId] && state?.status === "idle" && (
-      <button type="button" className="link mt-1 min-h-11 text-xs" onClick={() => setPrompted((p) => ({ ...p, [floorId]: false }))}>
-        {tp("prompt")}
-      </button>
-    )}
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         <button type="button" className={seg(sheet)} aria-pressed={sheet} onClick={() => setSheet((x) => !x)}>
           {tp("sheet")}
@@ -611,16 +564,12 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
           data={data}
           tier={initial.tier}
           view={view}
-          onGoto={(p) => {
-            walk?.pause();
-            void drive(p, false);
-          }}
+          onGoto={(p) => void drive(p, false)}
           onRoom={(room) => {
             const at = doorOf(room);
-            walk?.pause();
             if (at) void drive(at, true).then((s) => s === "done" && setCard(titles.get(room) ?? { title: room }));
           }}
-          labels={{ rooms: (n) => tp("rooms", { count: n }), workshop: tc("workshop"), more: t("more"), loop: tp("loop") }}
+          labels={{ rooms: (n) => tp("rooms", { count: n }), workshop: tc("workshop"), more: tp("more"), loop: tp("loop") }}
           titles={titles}
         />
       </Canvas>
@@ -667,21 +616,6 @@ export default function FloorsPrototype({ data }: { data: ExperienceData }) {
             {tp("close")}
           </button>
         </section>
-      )}
-
-      {walk && state && showPrompt && (
-        <WalkPrompt
-          walkId={walk.definition.id}
-          placement={placement}
-          onStart={() => {
-            setPrompted((p) => ({ ...p, [floorId]: true }));
-            void walk.start({ restart: true });
-          }}
-          onExplore={() => setPrompted((p) => ({ ...p, [floorId]: true }))}
-        />
-      )}
-      {walk && state && !showPrompt && (
-        <WalkBar walk={walk} state={state} placement={placement} coarse={viewport.w < 1024} launcher={t(`${walk.definition.id}.start`)} />
       )}
     </div>
   );

@@ -25,7 +25,7 @@ import {
 
 /**
  * Rover's dialog (src/hud/dialog): the first-session onboarding after the boot and intro, its
- * replay, the floor lines with the walk choice and the "!" hint bubbles.
+ * replay, the first-visit floor lines and the "!" hint bubbles.
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -116,7 +116,7 @@ test.describe("replay", () => {
 });
 
 test.describe("floor lines", () => {
-  test("the first visit to L2 gets one Rover line that ends with the walk choice", async ({ page }) => {
+  test("the first visit to L2 gets one Rover line without choices, and continuing remembers it", async ({ page }) => {
     await asReturningVisitor(page);
     await page.goto("/en/journey?tier=lite");
     await waitForHQ(page);
@@ -124,15 +124,24 @@ test.describe("floor lines", () => {
     await waitForSceneLive(page);
     await expect(box(page)).toHaveAttribute("data-dialog", "floor:L2", { timeout: 15_000 });
     await expect(box(page)).toContainText(en.dialog.floor.L2);
-    // The choices show once the line has typed out. On CI's SwiftShader the neighbouring floors mount and compile
-    // right then (single 4 to 5 s main-thread tasks), so wait on the typing state with the line's own budget (as walk.spec.ts).
+    // On CI's SwiftShader the neighbouring floors mount and compile while the line types (single 4 to 5 s
+    // main-thread tasks), so `next` waits on the typing state with the line's own budget.
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    await expect(choices(page).getByRole("button", { name: en.walk.journey.start })).toBeVisible();
-    await expect(page.getByTestId("walk-prompt")).toHaveCount(0);
-    await choices(page).getByRole("button", { name: en.walk.explore }).click();
+    await expect(choices(page)).toHaveCount(0);
+    await next(page);
     await expect(box(page)).toHaveCount(0);
-    await expect(page.getByTestId("walk-launcher")).toBeVisible();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("hq:walk-prompt") ?? "[]"))).toContain("L2");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("hq:floor-intro") ?? "[]"))).toContain("L2");
+  });
+
+  test("an old ?walk=off link lands on L2 without errors and turns nothing off", async ({ page }) => {
+    const errors = collectErrors(page);
+    await asReturningVisitor(page);
+    await page.goto("/en/journey?tier=lite&walk=off");
+    await waitForHQ(page);
+    await waitForSceneLive(page);
+    await waitForFloor(page, "L2");
+    await expect(box(page)).toHaveAttribute("data-dialog", "floor:L2", { timeout: 15_000 });
+    expect(errors).toEqual([]);
   });
 });
 
@@ -269,7 +278,7 @@ test.describe("every step of the tour", () => {
     expect(errors).toEqual([]);
   });
 
-  test("a deep link rides on first, then runs the short tour, then the floor line with the walk choice", async ({ page }) => {
+  test("a deep link rides on first, then runs the short tour, then the floor line", async ({ page }) => {
     await freshVisit(page, "/en/library");
     await waitForFloor(page, "L4");
     await expect(box(page)).toHaveAttribute("data-dialog", "onboarding", { timeout: 30_000 });
@@ -292,7 +301,9 @@ test.describe("every step of the tour", () => {
     await expect(box(page)).toContainText(en.dialog.onboarding.closingShort);
     await next(page);
     await expect(box(page)).toHaveAttribute("data-dialog", "floor:L4", { timeout: 15_000 });
-    await expect(choices(page).getByRole("button", { name: en.walk.writing.start })).toBeVisible();
+    await expect(box(page)).toContainText(en.dialog.floor.L4);
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    await expect(choices(page)).toHaveCount(0);
   });
 
   test("the ! bubble adds no draw calls", async ({ page }) => {

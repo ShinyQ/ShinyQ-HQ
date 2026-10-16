@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt } from "@/experience/camera/orbit";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
-import { buildLabsLayout, directoryStop, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
+import { buildLabsLayout, LABS, tourOrder, WING_SIDE, WING_TINT } from "@/experience/floors/labs/layout";
 import { OPS } from "@/experience/floors/labs/ops";
 import { REACTOR } from "@/experience/floors/labs/reactor";
 import { roadGlow } from "@/experience/floors/labs/techReactor";
-import { labsWalk } from "@/experience/missions/walks";
 import { distanceToRect } from "@/experience/nav/collision";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { roadRoute } from "@/experience/nav/roadRoute";
@@ -183,19 +182,9 @@ describe("L3 Data and ML spine", () => {
     expect(segs).toHaveLength(1 + lit.length);
   });
 
-  it("tours Product, AI, then Data and ML, ending at all three boards of the wall", () => {
-    const walk = labsWalk(real, { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
-    const rooms = walk.stops.filter((s) => s.room).map((s) => s.room);
-    const by = (w: LabPod["wing"]) => layout.placed.filter((p) => p.pod.wing === w).map((p) => p.room);
-    expect(rooms).toEqual([...by("software"), ...by("ai"), ...by("data")]);
-    expect(walk.stops.slice(-3).map((s) => s.to)).toEqual([directoryStop("software"), directoryStop("ai"), directoryStop("data")]);
+  it("tints the spine amber and keeps Product Engineering north, AI Engineering south", () => {
     expect(WING_TINT.data).toBe("#fbbf24");
     expect(WING_SIDE).toEqual({ software: -1, ai: 1 });
-  });
-
-  it("has no Product Engineering directory stop when there are only AI pods", () => {
-    const walk = labsWalk(real.filter((p) => p.wing === "ai"), { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
-    expect(walk.stops.some((s) => s.group === "Product Engineering" && s.title === "More projects here")).toBe(false);
   });
 
   it("puts one floating sign at each road: wing signs past their mouths, the spine sign over the spine before the wall", () => {

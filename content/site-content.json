@@ -9682,8 +9682,8 @@
       "id": "highlights",
       "order": 2,
       "label": {
-        "en": "Quick tour: the highlights",
-        "id": "Tur singkat: sorotan utama"
+        "en": "See the highlights",
+        "id": "Lihat sorotan utama"
       },
       "steps": [
         {
@@ -9691,8 +9691,12 @@
           "floor": "L1"
         },
         {
-          "kind": "walk",
-          "walk": "highlights"
+          "kind": "drive",
+          "to": "L1:highlights-about"
+        },
+        {
+          "kind": "open",
+          "room": "L1:highlights-about"
         }
       ]
     },
@@ -9707,10 +9711,6 @@
         {
           "kind": "elevator",
           "floor": "L2"
-        },
-        {
-          "kind": "walk",
-          "walk": "journey"
         }
       ]
     },
@@ -9718,8 +9718,8 @@
       "id": "projects",
       "order": 4,
       "label": {
-        "en": "Tour my projects",
-        "id": "Ikuti tur proyek saya"
+        "en": "Browse my projects",
+        "id": "Jelajahi proyek saya"
       },
       "steps": [
         {
@@ -9727,8 +9727,8 @@
           "floor": "L3"
         },
         {
-          "kind": "walk",
-          "walk": "projects"
+          "kind": "palette",
+          "filter": "pods"
         }
       ]
     },
@@ -9789,8 +9789,8 @@
           "floor": "L4"
         },
         {
-          "kind": "walk",
-          "walk": "writing"
+          "kind": "palette",
+          "filter": "posts"
         }
       ]
     },

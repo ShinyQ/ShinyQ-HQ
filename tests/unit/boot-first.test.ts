@@ -261,7 +261,7 @@ describe("takePageViewParam", () => {
   it("removes only view=page and keeps other parameters", () => {
     expect(takePageViewParam("?view=page")).toBe("");
     expect(takePageViewParam("?tier=lite&view=page")).toBe("?tier=lite");
-    expect(takePageViewParam("?view=page&walk=off")).toBe("?walk=off");
+    expect(takePageViewParam("?view=page&tier=lite")).toBe("?tier=lite");
   });
 
   it("ignores other views and empty queries", () => {

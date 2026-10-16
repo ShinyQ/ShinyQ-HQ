@@ -5,7 +5,7 @@ import type { Rect, Vec2 } from "../../types";
  * L3 "Reactor core" (spectacle round, owner pick 2026-10-13): a tall spinning core with orbiting rings
  * in the middle of the east plaza, fed by the packet-lane spine, plus data waterfalls pouring off the
  * four slab corners. The wing roads no longer meet at the plaza center: they end on a closed ring road
- * around the core, so the floor stays one loop and every route (point-and-go, missions, walks) drives
+ * around the core, so the floor stays one loop and every route (point-and-go, missions) drives
  * around it. Pure (no React or three): Vitest runs it in node.
  */
 export const REACTOR = {

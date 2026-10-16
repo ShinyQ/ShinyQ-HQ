@@ -208,7 +208,7 @@ export default function Experience({
   const tDrawer = useTranslations("drawer");
   const tLibrary = useTranslations("library");
   const tContact = useTranslations("contact");
-  const tWalk = useTranslations("walk");
+  const tLabs = useTranslations("labs");
   const tHall = useTranslations("hall");
   const tReactor = useTranslations("labs.reactor");
   // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
@@ -457,8 +457,8 @@ export default function Experience({
       },
       labs: {
         directory: tDrawer("directory"),
-        open: tWalk("boardOpen"),
-        count: (count: number) => tWalk("boardCount", { count }),
+        open: tLabs("boardOpen"),
+        count: (count: number) => tLabs("boardCount", { count }),
         rings: Object.fromEntries(REACTOR_RINGS.map((ring) => [ring, tReactor(`rings.${ring}`)])) as Record<ReactorRingId, string>,
         uses: (count: number, tech: string) => tReactor("uses", { count, tech }),
       },
@@ -530,7 +530,7 @@ export default function Experience({
         metrics: tLibrary("topics.monument.target"),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tWalk, tHall, tReactor, tStats, metrics, data.locale],
+    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
   );
 
   return (

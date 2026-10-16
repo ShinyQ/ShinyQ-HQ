@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { getContent } from "@/content/load";
-import type { DrawerTab, FloorId, LocalizedText, RoomId, WalkId } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter, StepContext, Vec2 } from "@/experience/missions/host";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionState } from "@/experience/missions/runner";
@@ -28,7 +28,6 @@ function fakeHost(overrides: Partial<MissionHost> = {}) {
     openRoom: (room: RoomId, tab: DrawerTab | undefined, ctx) => record(`open ${room}${tab ? ` ${tab}` : ""}`, ctx),
     say: (text: LocalizedText, ms: number | undefined, ctx) => record(`say ${text.en}${ms ? ` ${ms}` : ""}`, ctx),
     openPalette: (filter: PaletteFilter | undefined, ctx) => record(`palette ${filter ?? ""}`.trim(), ctx),
-    walk: (id: WalkId, ctx) => record(`walk ${id}`, ctx),
     finish,
     ...overrides,
   };
@@ -46,12 +45,12 @@ describe("mission runner: catalog", () => {
   const expected: Record<string, Call[]> = {
     "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
     "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
-    highlights: ["elevator L1", "walk highlights"],
-    journey: ["elevator L2", "walk journey"],
-    projects: ["elevator L3", "walk projects"],
+    highlights: ["elevator L1", "drive L1:highlights-about", "open L1:highlights-about"],
+    journey: ["elevator L2"],
+    projects: ["elevator L3", "palette pods"],
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],
-    blog: ["elevator L4", "walk writing"],
+    blog: ["elevator L4", "palette posts"],
   };
 
   it("covers every mission in the content catalog", () => {

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
-import { asReturningVisitor, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, hoverTarget, interactablesOf, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { asReturningVisitor, skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, hoverTarget, interactablesOf, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * L3 Data and ML spine (owner request 2026-10-14; Round 7 G: three paths): the data pods dock along the
@@ -103,7 +103,8 @@ test("the Data ring lights every data pod through pandas", async ({ page }) => {
 test("a click on the data directory panel drives to its stop and opens the full project list", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await asReturningVisitor(page);
-  await page.goto("/en/labs?tier=lite&walk=off");
+  await skipFloorLines(page);
+  await page.goto("/en/labs?tier=lite");
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

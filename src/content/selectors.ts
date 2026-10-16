@@ -32,7 +32,7 @@ export function podLiveLink(pod: { liveUrl?: string }): PodLiveLink | null {
 
 const TIER_RANK: Record<Tier, number> = { hero: 0, featured: 1, listed: 2 };
 
-/** What decides a pod's place in every project list (Page View, Cmd-K, L3 docking, the tour, Ask). */
+/** What decides a pod's place in every project list (Page View, Cmd-K, L3 docking, Ask). */
 export interface PodRank {
   tier: Tier;
   order: number;

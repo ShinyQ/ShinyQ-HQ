@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
+import { skipFloorLines, chooseMotion, collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
 
 /**
  * Spectacle round, Session B (docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md):
@@ -117,7 +117,7 @@ test("L3 reactor core: autopilot across the east plaza drives around it", async 
 
 test("L3 reactor core: point-and-go to a pod beyond it drives around it and opens the pod", async ({ page }) => {
   // No first-visit floor line: its text box would sit over the middle of the view.
-  await page.addInitScript(() => localStorage.setItem("hq:walk-prompt", JSON.stringify(["L3"])));
+  await skipFloorLines(page);
   await enterFloorRoute(page, "/en/labs");
   const core = await coreRect(page);
   // The Tech Reactor stop on the ring road's east point has its own view zone: the camera stands east of

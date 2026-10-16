@@ -5,13 +5,10 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ACESFilmicToneMapping } from "three";
-import type { MissionStep, RoomId } from "@/content/schema";
+import type { RoomId } from "@/content/schema";
 import { DrawerHost } from "@/hud/drawer/DrawerHost";
 import { openPaperFor } from "@/hud/drawer/paper";
-import { WalkBar, type WalkPlacement } from "@/hud/walk/WalkBar";
-import { useWalkState } from "@/hud/walk/WalkLayer";
-import { WalkPrompt } from "@/hud/walk/WalkPrompt";
-import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { getHQStore } from "@/store/useHQStore";
 import "../../text-config";
 import { COLORS, FLOOR_COLOR, ROVER, SHAFT } from "../../config";
 import { CONCEPT_BUILDERS } from "../../floors/library/concepts";
@@ -20,16 +17,13 @@ import { LIBRARY_CONCEPTS, LIBRARY_FLOOR, libraryLayoutInput, type LibraryConcep
 import { GridFloor } from "../../fx/GridFloor";
 import { RoadMarkings } from "../../fx/RoadMarkings";
 import { isMoveKey } from "../../input/intents";
-import type { MissionStatus } from "../../missions/host";
-import { createWalk } from "../../missions/walk";
-import { libraryWalk } from "../../missions/walks";
 import { buildNavGrid, findPath } from "../../nav/navgrid";
 import { buildRoadGraph } from "../../nav/road";
 import { roadRoute } from "../../nav/roadRoute";
 import { spaceViolations } from "../../nav/space";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier, LibraryData, Vec2 } from "../../types";
-import { cancelLeg, Driver, memoryStorage, resetRover, RoverMesh, sim, startLeg, type ProtoFloor, type View } from "../FloorsPrototype";
+import { Driver, resetRover, RoverMesh, sim, startLeg, type ProtoFloor, type View } from "../FloorsPrototype";
 
 interface Params {
   concept: LibraryConcept;
@@ -101,18 +95,15 @@ const seg = (on: boolean) =>
 
 /**
  * Dev-only playable prototype of the three L4 Writing concepts (owner pick): the real layouts, decor,
- * Glass Drawer, paper modal and "Read my writing" walk on a simulated rover, at /{locale}/dev/library.
+ * Glass Drawer and paper modal on a simulated rover, at /{locale}/dev/library.
  */
 export default function LibraryPrototype({ data }: { data: ExperienceData }) {
-  const t = useTranslations("walk");
-  const tp = useTranslations("walk.proto");
-  const tl = useTranslations("walk.protoLibrary");
+  const tp = useTranslations("proto");
+  const tl = useTranslations("proto.library");
   const tLib = useTranslations("library");
   const [initial] = useState(readParams);
   const [concept, setConcept] = useState<LibraryConcept>(initial.concept);
   const [view, setView] = useState<View>(initial.view);
-  const [prompted, setPrompted] = useState(false);
-  const [card, setCard] = useState<string | null>(null);
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
   const [budget, setBudget] = useState({ calls: 0, triangles: 0 });
 
@@ -183,34 +174,7 @@ export default function LibraryPrototype({ data }: { data: ExperienceData }) {
     [doorOf, drive],
   );
 
-  const walk = useMemo(() => {
-    const def = libraryWalk(library, { zones, onMedium: tLib("onMedium"), more: t("moreWriting"), moreSub: t("moreWritingSub") }, layout);
-    const host = {
-      run: async (_id: string, steps: MissionStep[]): Promise<MissionStatus> => {
-        for (const step of steps) {
-          if (step.kind === "drive") {
-            const to = typeof step.to === "string" ? doorOf(step.to) : step.to;
-            if (!to) continue;
-            getHQStore().getState().closeRoom();
-            setCard(null);
-            const status = await drive(to, true);
-            if (status !== "done") return status;
-          } else if (step.kind === "open") getHQStore().getState().openRoom(step.room);
-          else if (step.kind === "palette") setCard(`${t("moreWriting")}: ${layout.archive.length}`);
-        }
-        return "done";
-      },
-      cancel: cancelLeg,
-    };
-    return createWalk(def, host, { storage: memoryStorage() });
-  }, [library, zones, tLib, t, layout, doorOf, drive]);
-  const state = useWalkState(walk);
-
   const compact = viewport.w < 640;
-  const drawerOpen = useHQStore((s) => s.phase === "room");
-  // Like the HUD: beside the side drawer on wide screens, under the controls on phones.
-  const placement: WalkPlacement = compact ? "top" : drawerOpen && viewport.w >= 900 ? "dock" : "bottom";
-  const showPrompt = state?.status === "idle" && !prompted;
   const Decor = CONCEPT_DECOR[concept];
   const b = layout.floor.bounds;
   const pad = LIBRARY_FLOOR.padZone;
@@ -242,11 +206,6 @@ export default function LibraryPrototype({ data }: { data: ExperienceData }) {
         {tl("budget", { calls: budget.calls, triangles: budget.triangles })}
       </p>
       <p className="mt-1 hidden text-xs text-ink-3 md:block">{tp("hint")}</p>
-      {prompted && state?.status === "idle" && (
-        <button type="button" className="link mt-1 min-h-11 text-xs" onClick={() => setPrompted(false)}>
-          {tp("prompt")}
-        </button>
-      )}
     </>
   );
 
@@ -266,10 +225,7 @@ export default function LibraryPrototype({ data }: { data: ExperienceData }) {
         <mesh
           position={[(b.minX + b.maxX) / 2, 0, (b.minZ + b.maxZ) / 2]}
           rotation={[-Math.PI / 2, 0, 0]}
-          onClick={(e: ThreeEvent<MouseEvent>) => {
-            walk.pause();
-            void drive({ x: e.point.x, z: e.point.z }, false);
-          }}
+          onClick={(e: ThreeEvent<MouseEvent>) => void drive({ x: e.point.x, z: e.point.z }, false)}
         >
           <planeGeometry args={[b.maxX - b.minX, b.maxZ - b.minZ]} />
           <meshBasicMaterial color="#0a0a12" />
@@ -282,10 +238,7 @@ export default function LibraryPrototype({ data }: { data: ExperienceData }) {
           tier={initial.tier}
           reducedMotion={initial.reduced}
           zones={zones}
-          onStation={(room) => {
-            walk.pause();
-            openStation(room);
-          }}
+          onStation={openStation}
           onPaper={(id) => void openPaperFor(data.locale, id)}
         />
         {/* Elevator shaft and the reserved call pad spot (parallel work). */}
@@ -317,29 +270,7 @@ export default function LibraryPrototype({ data }: { data: ExperienceData }) {
         </section>
       )}
 
-      {card && (
-        <section className={`glass glass-solid pointer-events-auto absolute right-3 w-[min(320px,calc(100%-1.5rem))] p-4 ${compact ? "bottom-[72px]" : "top-3"}`} data-testid="proto-card">
-          <p className="text-base font-semibold text-ink">{card}</p>
-          <button type="button" className="link mt-2 min-h-11 text-sm" onClick={() => setCard(null)}>
-            {tp("close")}
-          </button>
-        </section>
-      )}
-
       <DrawerHost locale={data.locale} />
-
-      {state && showPrompt && (
-        <WalkPrompt
-          walkId="writing"
-          placement={placement}
-          onStart={() => {
-            setPrompted(true);
-            void walk.start({ restart: true });
-          }}
-          onExplore={() => setPrompted(true)}
-        />
-      )}
-      {state && !showPrompt && <WalkBar walk={walk} state={state} placement={placement} coarse={viewport.w < 1024} launcher={t("writing.start")} />}
     </div>
   );
 }

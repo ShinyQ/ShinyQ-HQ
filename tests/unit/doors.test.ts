@@ -162,7 +162,7 @@ describe("a room open ends the rover's path", () => {
     rover.setPath([{ x: 5, z: 0 }]);
     const openedOn = rover.pathId;
     expect(openEndsPath(false, openedOn, rover.pathId)).toBe(true);
-    // Slow frames: the room opened, closed again and the next walk stop started its drive before the Director ran.
+    // Slow frames: the room opened, closed again and the next mission leg started its drive before the Director ran.
     rover.setPath([{ x: 0, z: 9 }], true);
     expect(rover.pathId).toBe(openedOn + 1);
     expect(openEndsPath(false, openedOn, rover.pathId)).toBe(false);

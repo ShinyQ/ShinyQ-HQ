@@ -4,6 +4,7 @@ import en from "../messages/en.json";
 import {
   chooseMotion,
   asReturningVisitor,
+  skipFloorLines,
   collectErrors,
   driveTo,
   expectRenderBudget,
@@ -35,10 +36,11 @@ type PadWindow = Window & {
   };
 };
 
-/** L2 as a returning visitor without the first-visit walk prompt (it sits over the floor on phones). */
+/** L2 as a returning visitor without the first-visit floor line (it sits over the floor on phones). */
 async function openJourney(page: Page) {
   await asReturningVisitor(page);
-  await page.goto("/en/journey?tier=lite&walk=off");
+  await skipFloorLines(page);
+  await page.goto("/en/journey?tier=lite");
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

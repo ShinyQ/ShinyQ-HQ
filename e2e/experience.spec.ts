@@ -264,8 +264,8 @@ test.describe("rover on desktop", () => {
   });
 
   test("a drive that starts right after a room opened and closed again (slow frames) still drives", async ({ page }) => {
-    // CI flake in walk.spec.ts (L2 walk, `]` then Esc): on a slow frame the open of one stop, its close and
-    // the next stop's drive all landed before the Director's next frame, and the stale open cut the new path.
+    // An old CI flake (a room opened, closed with Esc, then a new drive): on a slow frame the open, its close and
+    // the next drive all landed before the Director's next frame, and the stale open cut the new path.
     await enterHQ(page);
     const target = await page.evaluate(() => {
       const w = window as unknown as {

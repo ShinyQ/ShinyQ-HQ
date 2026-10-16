@@ -4,6 +4,7 @@ import en from "../messages/en.json";
 import {
   chooseMotion,
   asReturningVisitor,
+  skipFloorLines,
   collectErrors,
   driveTo,
   expectRenderBudget,
@@ -46,7 +47,8 @@ const firstProject = data.sideProjects[0];
 
 async function openWorkshop(page: Page) {
   await asReturningVisitor(page);
-  await page.goto(`/en/journey/${newest}?tier=lite&walk=off`);
+  await skipFloorLines(page);
+  await page.goto(`/en/journey/${newest}?tier=lite`);
   await waitForHQ(page);
   await waitForRoom(page, `L2:${newest}`);
   await page.keyboard.press("Escape");

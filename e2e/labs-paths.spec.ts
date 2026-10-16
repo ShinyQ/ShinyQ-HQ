@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, driveTo, expectRenderBudget, snapshot, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive, type RenderPeaks } from "./hq";
+import { asReturningVisitor, skipFloorLines, driveTo, expectRenderBudget, snapshot, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive, type RenderPeaks } from "./hq";
 
 /**
  * L3 three paths (Round 7 G): Product Engineering north, the Data and ML spine straight east and AI
@@ -69,8 +69,9 @@ async function openArrival(browser: Browser, size: (typeof SIZES)[number]) {
   const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, isMobile: size.phone, hasTouch: size.phone });
   const page = await context.newPage();
   await asReturningVisitor(page);
-  // Walks off: no first-visit floor line covers the view.
-  await page.goto(`/en/labs?tier=${size.tier}&walk=off`);
+  // No first-visit floor line covers the view.
+  await skipFloorLines(page);
+  await page.goto(`/en/labs?tier=${size.tier}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

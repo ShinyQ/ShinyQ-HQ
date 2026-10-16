@@ -7,18 +7,17 @@ import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { useAskPanelOpen } from "./ask/availability";
 import { BoostButton } from "./BoostButton";
 import { BootOverlay } from "./BootOverlay";
 // Rover's dialog rides in the 3D chunk (itself lazy): a second dynamic import here made Turbopack
 // regroup shared modules into Page View chunks (+7 KB JS on every page, over the Lighthouse budget).
 import DialogLayer from "./dialog/DialogLayer";
+import { FloorIntroLayer } from "./dialog/FloorIntroLayer";
 import { HintLayer } from "./dialog/HintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
 import { firstName } from "./dialog/onboarding";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
-import { drawerLayout } from "./drawer/layout";
 import { InteractStatus } from "./InteractStatus";
 import { lazyFromChunk } from "./lazyFromChunk";
 import { MobileMenu, TopBar } from "./Controls";
@@ -27,8 +26,6 @@ import { BeamFade, PadPicker } from "./pads/PadPicker";
 import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
 import { ViewControls } from "./ViewControls";
-import type { WalkPlacement } from "./walk/WalkBar";
-import { WalkLayer } from "./walk/WalkLayer";
 import { YearChip } from "./YearChip";
 
 type HologramOverlayProps = ComponentProps<typeof import("@/experience/floors/chunks/labs").HologramOverlay>;
@@ -53,7 +50,7 @@ function HologramView({ locale }: { locale: HologramOverlayProps["locale"] }) {
   );
 }
 
-/** Control hints, in the bottom band's center column under the walk pill. */
+/** Control hints, in the bottom band's center column under point-and-go's status. */
 function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
   const t = useTranslations("hud");
   const rail = useHQStore((s) => s.floor === "L2");
@@ -104,17 +101,17 @@ function CutFade() {
 }
 
 /**
- * Bottom HUD band: one flex row, so nothing in it can overlap (owner request: the hint and the walk
- * pill sit at the bottom on tablets and phones). Left: the joystick and the boost button (coarse
- * pointers; phones stack the boost button above the joystick). Center: the walk pill (WalkBar
- * portals it into `slotRef`) above the controls hint. Right: the view controls (vertical on phones).
- * It hugs the bottom edge above the iOS home indicator (safe area).
+ * Bottom HUD band: one flex row, so nothing in it can overlap (owner request: the hint sits at the
+ * bottom on tablets and phones). Left: the joystick and the boost button (coarse pointers; phones
+ * stack the boost button above the joystick). Center: point-and-go's status above the controls
+ * hint. Right: the view controls (vertical on phones). It hugs the bottom edge above the iOS home
+ * indicator (safe area).
  */
-function BottomBand({ left, right, children, slotRef }: { left: ReactNode; right: ReactNode; children: ReactNode; slotRef: (node: HTMLDivElement | null) => void }) {
+function BottomBand({ left, right, children }: { left: ReactNode; right: ReactNode; children: ReactNode }) {
   return (
     <div data-testid="hud-bottom" className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 pr-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-5 md:pr-4">
       <div className="flex shrink-0 flex-col-reverse items-end gap-3 sm:flex-1 sm:flex-row sm:items-center">{left}</div>
-      <div ref={slotRef} data-testid="hud-bottom-center" className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2 sm:flex-initial">
+      <div data-testid="hud-bottom-center" className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2 sm:flex-initial">
         {children}
       </div>
       <div className="flex shrink-0 justify-end sm:flex-1">{right}</div>
@@ -128,16 +125,7 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
   const viewport = useHQStore((s) => s.device.viewport);
   const coarse = useHQStore((s) => s.device.coarse);
   const mobile = viewport === "mobile";
-  const [walking, setWalking] = useState(false);
-  const [bottomSlot, setBottomSlot] = useState<HTMLDivElement | null>(null);
-  const askOpen = useAskPanelOpen();
   const speaking = useDialog((v) => v.line !== null);
-  // The room drawer and the Ask panel cover the bottom band (sheets) or the right side (side panels):
-  // the Walk HUD then docks beside the side panel or goes under the top controls. Otherwise its pills
-  // join the bottom band, and its card sits above the band (coarse) or at the bottom (fine pointers).
-  const side = typeof window !== "undefined" && drawerLayout(window.innerWidth, window.innerHeight) === "side";
-  const covered = phase === "room" || askOpen;
-  const walkPlacement: WalkPlacement = covered ? (side ? "dock" : "top") : mobile ? "top" : coarse ? "bottom-raised" : "bottom";
   const explorable = phase !== "intro" && phase !== "room";
 
   return (
@@ -155,9 +143,8 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
           {mobile ? <MobileMenu onExit={onExit} onToggleLang={onToggleLang} /> : <TopBar onExit={onExit} onToggleLang={onToggleLang} />}
           <ElevatorPanel data={data} compact={mobile} />
           <FloorNotice data={data} mobile={mobile} />
-          {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && (walking || phase === "room")} />}
+          {phase !== "intro" && <YearChip career={data.career} mobile={mobile} hidden={mobile && phase === "room"} />}
           <BottomBand
-            slotRef={setBottomSlot}
             left={
               coarse && phase !== "intro" ? (
                 <>
@@ -169,23 +156,15 @@ export function Hud({ data, onExit, onToggleLang }: { data: ExperienceData; onEx
             right={explorable ? <ViewControls /> : null}
           >
             <InteractStatus coarse={coarse} />
-            {explorable && !walking && !speaking && <HintBar coarse={coarse} mobile={mobile} />}
+            {explorable && !speaking && <HintBar coarse={coarse} mobile={mobile} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />
         </>
       )}
-      {/* Mounted in every phase so a walk keeps its state through the hologram view. */}
-      <WalkLayer
-        data={data}
-        placement={walkPlacement}
-        bottomSlot={covered ? null : bottomSlot}
-        coarse={coarse}
-        hidden={phase === "boot" || phase === "intro" || phase === "hologram"}
-        onActive={setWalking}
-      />
+      <FloorIntroLayer data={data} />
       <FloorAnnouncer data={data} />
       <OnboardingLayer data={data} />
-      <HintLayer suppressed={walking} name={firstName(data.profile.name)} />
+      <HintLayer name={firstName(data.profile.name)} />
       {speaking && <DialogLayer />}
       <PadPicker data={data} />
     </div>

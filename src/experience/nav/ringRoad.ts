@@ -3,7 +3,7 @@ import type { Rect, Vec2 } from "../types";
 /**
  * A closed ring road around a core obstacle in the middle of a round plaza (the L3 Tech Reactor and the
  * L4 Topic Constellation): roads arriving at the plaza end on the ring, never at its center, so every
- * route (point-and-go, missions, walks) drives around the core. Pure.
+ * route (point-and-go, missions) drives around the core. Pure.
  */
 
 /** `segments` points on a circle of `radius`, vertex 0 due north (-z), clockwise seen from above. */

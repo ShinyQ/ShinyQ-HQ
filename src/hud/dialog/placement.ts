@@ -3,8 +3,8 @@ import type { ViewportClass } from "@/experience/types";
 export type DialogPlacement = "bottom" | "raised" | "phone";
 
 /**
- * Where the box sits, always above the HUD bottom band's center column (walk pill, point-and-go's
- * one-time "Click a glowing object" hint or its "Go to {label}" chip in InteractStatus, the controls
+ * Where the box sits, always above the HUD bottom band's center column (point-and-go's one-time
+ * "Click a glowing object" hint or its "Go to {label}" chip in InteractStatus, then the controls
  * hint, which hides while Rover speaks): 128 px on fine pointers (pill 44 + hint 40 + gaps and
  * padding), above the joystick and boost on touch tablets, and on phones above the stacked boost
  * button and joystick and left of the elevator panel (right edge, vertically centered; 68 px clears its 54 px column, the 8 px edge gap and the frame ring).

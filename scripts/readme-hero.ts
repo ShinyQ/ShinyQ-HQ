@@ -14,7 +14,7 @@
  * Frames come from the visual gate's virtual frame clock (`e2e/vclock.ts`): every capture is exactly
  * `stride` rendered frames after the previous one, so the motion is smooth whatever the machine. macOS
  * renders on the real GPU (ANGLE Metal), other systems on SwiftShader (slow, same frames). Motion is
- * Full (the default), the tour, hint bubbles and walk prompts are off, and the Ask status is mocked so
+ * Full (the default), the tour, hint bubbles and floor lines are off, and the Ask status is mocked so
  * the Ask AI pill shows as in production.
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -111,7 +111,7 @@ async function newPage(browser: Browser, returning: boolean) {
     localStorage.setItem("hq:terminal-seen", "1");
     localStorage.setItem("hq:onboarded", "done");
     localStorage.setItem("hq:hints", "off");
-    localStorage.setItem("hq:walk-prompt", JSON.stringify(["L1", "L2", "L3", "L4", "RF"]));
+    localStorage.setItem("hq:floor-intro", JSON.stringify(["L2", "L3", "L4", "RF"]));
     sessionStorage.setItem("hq:ask-teaser", "1");
     if (returning) sessionStorage.setItem("hq:intro", "seen");
   }, returning);
@@ -121,7 +121,7 @@ async function newPage(browser: Browser, returning: boolean) {
 async function hero(browser: Browser) {
   const { context, page } = await newPage(browser, false);
   try {
-    await page.goto(`${BASE}/en?tier=full&walk=off`);
+    await page.goto(`${BASE}/en?tier=full`);
     await page.getByTestId("hq").waitFor({ timeout: 120_000 });
 
     // 1. Boot card: wait until the log has typed out, then hold it.
@@ -168,7 +168,7 @@ async function floorStills(browser: Browser) {
   for (const floor of FLOORS.filter((f) => !ONLY || ONLY.includes(f.id))) {
     const { context, page } = await newPage(browser, true);
     try {
-      await page.goto(`${BASE}${floor.path}?tier=full&walk=off`);
+      await page.goto(`${BASE}${floor.path}?tier=full`);
       await page.getByTestId("hq").waitFor({ timeout: 120_000 });
       await driveUntil(page, live, { maxFrames: SETTLE_FRAME, batch: 10 });
       await waitForQuiet(page);

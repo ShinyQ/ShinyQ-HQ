@@ -32,19 +32,20 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | 6 | Launch on Cloudflare Pages (`kurniadi.pages.dev`), SEO, Lighthouse CI | Done |
 | Ask | Ask the HQ: grounded AI Q&A (Gemma 4 with Mistral fallback), chat dock, weekly live facts | Done |
 | Ask: leads and lifestyle | "What can you do?", project inquiries with a contact card, 30 endorsed lifestyle, industry and policy answers, deterministic scope routing | Done |
-| Walkable floors | Road kit, guided walks, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
+| Walkable floors | Road kit, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
 | Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
-| Walkable floors 2 | L4 Writing as the walkable Newsroom with the "Read my writing" walk | Done |
+| Walkable floors 2 | L4 Writing as the walkable Newsroom | Done |
 | HUD polish | Shift boost (touch toggle; trails, lean, camera kick, streaks, sparks), Ask Rover, unskippable intro, top bar without Quick view, bottom band, drawer footer, centered Lobby | Done |
-| Walkable floors 3 | RF as a walkable roof deck: Signal Garden with the courier drone and the "Meet me" walk | Done |
-| Highlights Hall | L1 summary behind the certifications wall: about me, top 3 projects, work experience (employment and freelance), contact; the "Quick tour" walk | Done |
-| Onboarding | Rover's dialog (handheld RPG text box), first-session tour, "!" hint bubbles, first-visit floor lines with the walk choice | Done |
+| Walkable floors 3 | RF as a walkable roof deck: Signal Garden with the courier drone | Done |
+| Highlights Hall | L1 summary behind the certifications wall: about me, top 3 projects, work experience (employment and freelance), contact | Done |
+| Onboarding | Rover's dialog (handheld RPG text box), first-session tour, "!" hint bubbles, first-visit floor lines | Done |
 | Point-and-go | Hover or tap a glowing object (room doors, elevator pads, Return pads, teleporters, stations, the Ask Rover kiosk, boards) to see its name and drive there; no free click-to-move | Done |
 | SEO and link previews | Search titles within 60 characters, unique titles, `/` canonical to `/en`, baseline JFIF share cards with `og:image:secure_url`, Person, ProfilePage and SoftwareSourceCode structured data, content-dated sitemap, Search Console and Bing verification, LinkedInBot checks in e2e and the deploy smoke | Done |
 | Fast return | Any floor change more than 40 u from the elevator call pad beams the rover into the car; green "Back to elevator" pads at the far ends of L2 and L3 beam it to the call pad | Done |
 | Floor chunks | Round 7 B: L3, L4 and RF are separate chunks, prefetched after the first frame and on elevator intent, loaded at once on deep links; the car waits at closed doors for a slow chunk; the main 3D path is 16 KB gzip smaller | Done |
 | L3 three paths | Round 7 G: three roads leave the hub (Product Engineering north, Data and ML straight to the reactor, AI Engineering south), a raised three-board directory wall with a gate over the spine, smaller board text and one floating sign per road | Done |
 | L4 declutter | Round 7 F (2026-10-16): one sign per section over its first desk, post titles only for the nearest stations (6 on desktop, 4 on phones), year marks on small low posts, no label covers another or the rover; L4 draws 2 fewer scene calls and no more triangles | Done |
+| Guided walks removed | Owner request 2026-10-16: no tours on any floor (the walk bar, its launcher pill and the URL flag are gone); missions ride to a floor and, for most, open a room or a list, and first-visit floor lines stay without the walk choice | Done |
 
 ## Controls and first visit
 
@@ -89,7 +90,7 @@ Open `/en` and press **Boot rover**.
 - The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the Highlights Hall, the elevator and its call pads, then Ask Rover and Ask AI, each ringed while Rover talks about it.
 - A deep link rides on to its floor first and gets a shorter tour there.
 - Near anything you can use, a "!" bubble floats over it: press Enter or tap it for a one-line tip with a Go choice.
-- The first time you reach L2, L3, L4 or RF, Rover introduces the floor and offers its guided walk.
+- The first time you reach L2, L3, L4 or RF, Rover introduces the floor in one line. Driving, a point-and-go action or a swipe dismisses it, and it never comes back on that floor.
 
 ### Motion setting
 
@@ -99,7 +100,7 @@ Open `/en` and press **Boot rover**.
 
 ### Ask Rover and the Classic site
 
-- **Ask Rover** (top bar, or click the rover) offers guided trips, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
+- **Ask Rover** (top bar, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
 - **Classic site** (highlighted, with **Ask AI** on its right; ID **Situs klasik**) shows the same content as a regular website without 3D, and **Back to 3D** returns.
 
 ## Classic site
@@ -150,7 +151,7 @@ Behind the certifications wall, a road past its south end leads under a gateway 
   - **Work experience** on a lit arch split into Employment and Freelance (newest first; a card rides to the role on L2).
   - **Contact** beside a signal beacon: email with copy, channels, the CV viewer, availability.
 - Point at a station and click (or tap twice) to drive there and open its drawer. A project with a public site shows **Visit live site**.
-- **Quick tour** (Ask Rover, Cmd-K or the launcher pill) drives through all four.
+- **See the highlights** (Ask Rover or Cmd-K) rides to the hall and opens About me.
 - `/{locale}#highlights` or `/{locale}#highlights-<about|projects|experience|contact>` opens a station directly.
 
 ## L2 Career Road
@@ -160,7 +161,6 @@ Route `/en/journey`. One road runs forward in time.
 - **Year plazas**: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door. Each year floats as a big sign behind its plaza's north rooms.
 - **Teleporters**: every year plaza has a teleporter pad beside the road. Stop on it (or click it) and pick a year to beam straight to that plaza.
 - **Career types**: one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages.
-- **Walk my journey**: offered on the first visit, a guided drive through every room oldest first (Prev / Open / Next, `[` and `]`, a type filter). Skip it to roam freely, or start it later from the launcher or the "Follow my career" pick in Ask Rover.
 - **Workshop** at the end of the road:
   - A forecourt with the **time console**: click it and pick any year to beam there, or Back to elevator.
   - Beside the time console a green **Back to elevator** pad beams you straight back to the elevator call pad.
@@ -168,7 +168,7 @@ Route `/en/journey`. One road runs forward in time.
   - The public repos as a neon skyline (height by stars on a log scale, color by language; click a bar for the repo drawer and its GitHub link).
 - **Horizon**: past the Workshop window (clear glass, no label) a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
 - **Origin**: a light pillar rises at the start of the road.
-- Add `?walk=on` or `?walk=off` to force guided walks on or off.
+- **Follow my career, 2019 to 2026** (Ask Rover or Cmd-K) rides to L2, where the road starts at the 2019 prologue; on the Classic site it opens `/journey`.
 
 ## L3 Project Roads
 
@@ -178,7 +178,7 @@ Route `/en/labs`.
 - **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road and meet it in a loop right after their last pods, with every key and featured project docked along them. One floating sign over each road names it.
 - **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories docked on both sides, spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners.
-- **Tour my projects**: offered on the first visit, a guided drive pod by pod (Prev / Open / Next, `[` and `]`, a wing filter, swipe on phones). Skip it to roam, or start it later from the launcher or the "Tour my projects" pick in Ask Rover. The boards list each wing's top projects and open the full list on click. The tour visits Product, AI, then the Data and ML spine.
+- **Browse my projects** (Ask Rover or Cmd-K) rides to L3 and opens the full project list.
 
 ### Tech Reactor
 
@@ -204,7 +204,7 @@ Route `/en/library`.
 - **Signs**: one sign per section (Posts, Research, Models and datasets, Talks and workshops) hangs over its first desk, and every floating plate on the lane shares one height. Post titles show only for the nearest stations (at most 6 on desktop, 4 on phones) and fade out as you drive away. Labels are placed on screen every frame, so none covers another, the rover or the end plaza's signs.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
-- **Read my writing**: offered on the first visit, a guided drive station by station (posts newest first, then Research, Models and datasets, Talks and workshops; a zone filter). Skip it to roam freely, or start it later from the launcher or the "Read my writing" pick in Ask Rover.
+- **Read my writing** (Ask Rover or Cmd-K) rides to L4 and opens the list of posts.
 
 ### Topic Constellation
 
@@ -221,7 +221,6 @@ Route `/en/contact`. A walkable deck: a road from the elevator into a round plaz
 - **Comms station** (north): all contact channels and the email, an antenna per channel ringing in its own hue.
 - **CV kiosk** (east) and an **about board** with location and timezone (south-west).
 - **Courier drone**: patrols the mast and flies over the comms station or the CV kiosk while that room is open.
-- **Meet me**: offered on the first visit, a four-stop guided drive (about, availability, CV, contact).
 
 ## Routes
 
@@ -234,12 +233,12 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/quick`: Quick view, everything on one page.
 - `/{locale}/journey`, `/{locale}/journey/{slug}`: Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door).
 - `/{locale}/labs`, `/{locale}/labs/{slug}`: Product Engineering, AI Engineering and Data and ML case studies (`?wing=software|ai|data` filters the list); in 3D, L3 Project Roads (a slug deep link opens that pod at its door).
-- `/{locale}/library`, `/{locale}/blog/{slug}`: blog, publications, models, talks; in 3D, L4 Writing with the "Read my writing" walk. A post's drawer mirrors its `/blog/{slug}` URL, which is the article page.
+- `/{locale}/library`, `/{locale}/blog/{slug}`: blog, publications, models, talks; in 3D, L4 Writing. A post's drawer mirrors its `/blog/{slug}` URL, which is the article page.
 - `/{locale}/contact`: Roof. About, contact channels, availability, "How I work" and the CV.
   - "How I run AI in production" (`#production`): the owner-approved observability approach, proof tiles, a masked Grafana probe dashboard and alert rule, and the five case studies; in 3D the hash rides to the L3 Ops Control Room.
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
   - The full certifications list.
-  - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board) with the "Meet me" walk.
+  - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 4 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
