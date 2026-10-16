@@ -352,6 +352,7 @@
     "elevator": "Elevator",
     "goToFloor": "{floor} {label}: go to floor ({name})",
     "floorChip": "{floor} {label}: change floor ({name})",
+    "floorChipFull": "{floor} {label} {name}: change floor",
     "currentFloor": "Current floor: {floor}, {name}",
     "pageView": "Classic site",
     "pageViewHint": "Open this page as a classic website, without the 3D tower",

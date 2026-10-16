@@ -61,9 +61,10 @@ describe("FloorChip", () => {
     expect(chip).not.toHaveTextContent("Lobby");
   });
 
-  it("also shows the floor name on tablets", () => {
+  it("also shows the floor name on tablets, and its name starts with all of the visible text", () => {
     const chip = mount("tablet");
     expect(chip).toHaveTextContent("Lobby");
+    expect(chip).toHaveAccessibleName("L1 Home Lobby: change floor");
     expect(chip.textContent?.replace(/\s+/g, " ").trim().startsWith("L1 Home")).toBe(true);
   });
 

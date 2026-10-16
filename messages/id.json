@@ -352,6 +352,7 @@
     "elevator": "Lift",
     "goToFloor": "{floor} {label}: ke lantai ini ({name})",
     "floorChip": "{floor} {label}: ganti lantai ({name})",
+    "floorChipFull": "{floor} {label} {name}: ganti lantai",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
     "pageView": "Situs klasik",
     "pageViewHint": "Buka halaman ini sebagai situs klasik, tanpa menara 3D",

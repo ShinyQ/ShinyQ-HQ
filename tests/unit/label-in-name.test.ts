@@ -26,6 +26,13 @@ describe.each([
     }
   });
 
+  it("the tablet floor chip starts with the code, the floor label and the floor name", () => {
+    for (const [floor, label] of Object.entries(messages.hud.floorLabel)) {
+      const name = fill(messages.hud.floorChipFull, { floor, label, name: "Lobby" });
+      expect(name.startsWith(`${floor} ${label} Lobby`), name).toBe(true);
+    }
+  });
+
   it("the search launcher starts with its shortcut chip", () => {
     for (const shortcut of ["⌘K", "Ctrl K"]) {
       const name = fill(messages.hud.launcher.searchShortcut, { shortcut });

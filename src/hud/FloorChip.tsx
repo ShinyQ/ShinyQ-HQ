@@ -37,7 +37,8 @@ export function FloorChip({ data, layout }: { data: ExperienceData; layout: HudL
         data-onboard="elevator"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={t("floorChip", { floor, label, name })}
+        // Tablets show the floor name too, so the name must start with all of it (not a parenthetical).
+        aria-label={t(layout === "phone" ? "floorChip" : "floorChipFull", { floor, label, name })}
         onClick={() => setOpen(true)}
         className="glass glass-solid pointer-events-auto flex min-h-11 max-w-full items-center gap-2 rounded-full py-0.5 pr-3 pl-0.5 text-left"
       >
