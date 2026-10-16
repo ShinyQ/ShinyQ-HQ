@@ -45,7 +45,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Floor chunks | Round 7 B: L3, L4 and RF are separate chunks, prefetched after the first frame and on elevator intent, loaded at once on deep links; the car waits at closed doors for a slow chunk; the main 3D path is 16 KB gzip smaller | Done |
 | L3 three paths | Round 7 G: three roads leave the hub (Product Engineering north, Data and ML straight to the reactor, AI Engineering south), a raised three-board directory wall with a gate over the spine, smaller board text and one floating sign per road | Done |
 | L4 declutter | Round 7 F (2026-10-16): one sign per section over its first desk, post titles only for the nearest stations (6 on desktop, 4 on phones), year marks on small low posts, no label covers another or the rover; L4 draws 2 fewer scene calls and no more triangles | Done |
-| Guided walks removed | Owner request 2026-10-16: no tours on any floor (the walk bar, its launcher pill and the URL flag are gone); missions ride to a floor and open a room or a list, and first-visit floor lines stay without the walk choice | Done |
+| Guided walks removed | Owner request 2026-10-16: no tours on any floor (the walk bar, its launcher pill and the URL flag are gone); missions ride to a floor, then drive to a room, open it or open a list, and first-visit floor lines stay without the walk choice | Done |
 
 ## Controls and first visit
 
@@ -168,6 +168,7 @@ Route `/en/journey`. One road runs forward in time.
   - The public repos as a neon skyline (height by stars on a log scale, color by language; click a bar for the repo drawer and its GitHub link).
 - **Horizon**: past the Workshop window (clear glass, no label) a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
 - **Origin**: a light pillar rises at the start of the road.
+- **Follow my career, 2019 to 2026** (Ask Rover or Cmd-K) rides to L2 and drives to the first room of the road (the prologue) without opening it; on the Classic site it opens `/journey` at 2019.
 
 ## L3 Project Roads
 
