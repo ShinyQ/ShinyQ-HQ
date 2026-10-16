@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HINTS_KEY, ONBOARDED_KEY, hintsOn, markOnboarded, onboarded, resetFlagMemory, setHintsOn, subscribeFlags, type FlagStorage } from "@/hud/dialog/storage";
+import {
+  FLOOR_INTRO_KEY,
+  HINTS_KEY,
+  ONBOARDED_KEY,
+  floorIntroSeen,
+  hintsOn,
+  markFloorIntroSeen,
+  markOnboarded,
+  onboarded,
+  resetFlagMemory,
+  setHintsOn,
+  subscribeFlags,
+  type FlagStorage,
+} from "@/hud/dialog/storage";
 import { registerTutorial, replayTutorial, subscribeTutorial, tutorialAvailable } from "@/hud/dialog/tutorial";
 
 function memory(): FlagStorage & { data: Map<string, string> } {
@@ -61,6 +74,42 @@ describe("hints flag", () => {
     off();
     setHintsOn(true, storage);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("floor intro flag", () => {
+  it("is unset on a fresh browser and remembers each floor in hq:floor-intro", () => {
+    const storage = memory();
+    expect(FLOOR_INTRO_KEY).toBe("hq:floor-intro");
+    expect(floorIntroSeen("L3", storage)).toBe(false);
+    markFloorIntroSeen("L3", storage);
+    expect(storage.data.get(FLOOR_INTRO_KEY)).toBe(JSON.stringify(["L3"]));
+    expect(floorIntroSeen("L3", storage)).toBe(true);
+    expect(floorIntroSeen("L4", storage)).toBe(false);
+    markFloorIntroSeen("L3", storage);
+    markFloorIntroSeen("RF", storage);
+    expect(storage.data.get(FLOOR_INTRO_KEY)).toBe(JSON.stringify(["L3", "RF"]));
+  });
+
+  it("counts a floor listed in the legacy hq:walk-prompt as seen and never writes that key", () => {
+    const storage = memory();
+    storage.data.set("hq:walk-prompt", JSON.stringify(["L2", "RF"]));
+    expect(floorIntroSeen("L2", storage)).toBe(true);
+    expect(floorIntroSeen("L3", storage)).toBe(false);
+    markFloorIntroSeen("L3", storage);
+    expect(storage.data.get("hq:walk-prompt")).toBe(JSON.stringify(["L2", "RF"]));
+  });
+
+  it("tolerates bad JSON and blocked storage", () => {
+    const storage = memory();
+    storage.data.set(FLOOR_INTRO_KEY, "{oops");
+    storage.data.set("hq:walk-prompt", "nope");
+    expect(floorIntroSeen("L2", storage)).toBe(false);
+    markFloorIntroSeen("L2", storage);
+    expect(floorIntroSeen("L2", storage)).toBe(true);
+    expect(() => floorIntroSeen("L4", broken)).not.toThrow();
+    expect(floorIntroSeen("L4", broken)).toBe(false);
+    expect(() => markFloorIntroSeen("L4", broken)).not.toThrow();
   });
 });
 
