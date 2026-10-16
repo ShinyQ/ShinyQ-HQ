@@ -154,64 +154,6 @@ export interface LoopVoice {
   stop(): void;
 }
 
-/** Target gain of the ambient pad (roughly -24 LUFS against the other sounds). */
-export const AMBIENT_LEVEL = 0.04;
-
-/** Quiet low-passed pad: detuned saws plus a sine sub, with a slow LFO on the cutoff. */
-export function createAmbientPad(ctx: BaseAudioContext, destination: AudioNode): LoopVoice {
-  const t = ctx.currentTime;
-  const output = ctx.createGain();
-  output.gain.setValueAtTime(0, t);
-  output.gain.linearRampToValueAtTime(AMBIENT_LEVEL, t + 2);
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(420, t);
-  filter.Q.setValueAtTime(0.7, t);
-  filter.connect(output).connect(destination);
-
-  const voices: Array<[type: OscillatorType, frequency: number, detune: number, level: number]> = [
-    ["sawtooth", 55, -6, 0.35],
-    ["sawtooth", 82.5, 5, 0.25],
-    ["sine", 110, 0, 0.4],
-  ];
-  const sources: OscillatorNode[] = [];
-  const nodes: AudioNode[] = [filter, output];
-  for (const [type, frequency, detune, level] of voices) {
-    const osc = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.setValueAtTime(frequency, t);
-    osc.detune.setValueAtTime(detune, t);
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(level, t);
-    osc.connect(gain).connect(filter);
-    osc.start(t);
-    sources.push(osc);
-    nodes.push(osc, gain);
-  }
-
-  const lfo = ctx.createOscillator();
-  lfo.type = "sine";
-  lfo.frequency.setValueAtTime(0.07, t);
-  const lfoDepth = ctx.createGain();
-  lfoDepth.gain.setValueAtTime(160, t);
-  lfo.connect(lfoDepth).connect(filter.frequency);
-  lfo.start(t);
-  sources.push(lfo);
-  nodes.push(lfo, lfoDepth);
-
-  return {
-    output,
-    stop() {
-      const now = ctx.currentTime;
-      for (const source of sources) source.stop(now + 0.05);
-      sources[0].onended = () => {
-        for (const node of nodes) node.disconnect();
-      };
-    },
-  };
-}
-
 export const RUMBLE_MIN_SPEED = 1;
 export const RUMBLE_MAX_SPEED = 12;
 export const RUMBLE_MAX_GAIN = 0.2;
