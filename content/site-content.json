@@ -3400,6 +3400,10 @@
             "en": "Anime Figure E-Commerce Backend",
             "id": "Backend E-Commerce Figure Anime"
           },
+          "shortTitle": {
+            "en": "Anime Figure E-Commerce",
+            "id": "E-Commerce Figure Anime"
+          },
           "tagline": {
             "en": "Pre-order, payment and shipping workflows for an anime figure store that remains online.",
             "id": "Alur pre-order, pembayaran, dan pengiriman untuk toko figure anime yang masih online."
@@ -4118,6 +4122,10 @@
           "title": {
             "en": "Serupa Ticket Hub: Event Ticketing Platform",
             "id": "Serupa Ticket Hub: Platform Ticketing Acara"
+          },
+          "shortTitle": {
+            "en": "Serupa Ticket Hub",
+            "id": "Serupa Ticket Hub"
           },
           "tagline": {
             "en": "An event ticketing platform with an attendee site, an organizer dashboard and an Express API, from event discovery to QR e-tickets.",
@@ -5186,6 +5194,10 @@
           "title": {
             "en": "AI Code Security Platform",
             "id": "Platform Keamanan Kode Berbasis AI"
+          },
+          "shortTitle": {
+            "en": "AI Code Security",
+            "id": "Platform Keamanan Kode AI"
           },
           "tagline": {
             "en": "Pris.AI, MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
@@ -6501,6 +6513,10 @@
           "title": {
             "en": "Demand Forecasting on Microsoft Fabric",
             "id": "Forecasting Permintaan di Microsoft Fabric"
+          },
+          "shortTitle": {
+            "en": "Fabric Demand Forecasting",
+            "id": "Forecasting Permintaan Fabric"
           },
           "tagline": {
             "en": "A national bakery brand's demand-planning platform on Microsoft Fabric: an on-premise database migrated into a medallion lakehouse, a forecasting dashboard and a data agent in Microsoft 365 Copilot.",
@@ -8408,6 +8424,10 @@
             "en": "Sentiboard: IndoBERT University Sentiment Dashboard",
             "id": "Sentiboard: Dashboard Sentimen Universitas Berbasis IndoBERT"
           },
+          "shortTitle": {
+            "en": "Sentiboard (IndoBERT)",
+            "id": "Sentiboard (IndoBERT)"
+          },
           "tagline": {
             "en": "A fine-tuned IndoBERT model, a FastAPI inference API and a Django dashboard that tracks sentiment in university-related posts.",
             "id": "Model IndoBERT hasil fine-tuning, API inferensi FastAPI, dan dashboard Django yang memantau sentimen unggahan tentang kampus."
@@ -8515,6 +8535,10 @@
           "title": {
             "en": "IFEST 2021 Sentiment Analysis: E-Wallets and PPKM Policy",
             "id": "Analisis Sentimen IFEST 2021: E-Wallet dan Kebijakan PPKM"
+          },
+          "shortTitle": {
+            "en": "IFEST 2021 E-Wallet Sentiment",
+            "id": "Sentimen E-Wallet IFEST 2021"
           },
           "tagline": {
             "en": "A team's winning entry in a national data analysis competition: CNN-LSTM for e-wallet reviews in the selection phase, then IndoBERTweet for PPKM policy tweets in the final.",
@@ -8642,6 +8666,10 @@
           "title": {
             "en": "COVID-19 Herd Immunity Forecasting with N-BEATS",
             "id": "Prediksi Herd Immunity COVID-19 dengan N-BEATS"
+          },
+          "shortTitle": {
+            "en": "COVID-19 Herd Immunity Forecast",
+            "id": "Prediksi Herd Immunity COVID-19"
           },
           "tagline": {
             "en": "A study of Indonesia's COVID-19 case and vaccination dynamics, with N-BEATS forecasts of daily cases and full-dose vaccinations.",

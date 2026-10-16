@@ -14,7 +14,7 @@ import { Pods } from "./labs/Pods";
 import { Reactor, Waterfalls } from "./labs/ReactorCore";
 import { ReactorHighlights } from "./labs/ReactorHighlights";
 
-export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count"> & {
+export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count" | "more"> & {
   /** Tech Reactor ring names (`labs.reactor.rings`). */
   rings: Record<ReactorRingId, string>;
   /** "N projects use X" (`labs.reactor.uses`). */
@@ -25,7 +25,7 @@ export type LabsLabels = Pick<HubLabels, "directory" | "open" | "count"> & {
 export function Labs({ data, labels, tier }: { data: ExperienceData; labels: LabsLabels; tier: GpuTier }) {
   const layout = useMemo(() => buildLabsLayout(data.labs.pods), [data.labs.pods]);
   // Stable labels: the wall's BatchedText re-packs whenever its label list changes.
-  const hubLabels = useMemo(() => ({ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count }), [data.labs.wings, labels]);
+  const hubLabels = useMemo(() => ({ wings: data.labs.wings, directory: labels.directory, open: labels.open, count: labels.count, more: labels.more }), [data.labs.wings, labels]);
   const reactorLabels = useMemo(() => ({ rings: labels.rings, uses: labels.uses }), [labels]);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const t = tier === "full" ? "full" : "lite";

@@ -5,7 +5,7 @@ import {
   boardList,
   fitTitle,
   LIST_STYLE,
-  listChars,
+  listWidthEm,
   PANEL,
   panelRows,
   textWidth,
@@ -18,119 +18,214 @@ import {
 } from "@/experience/floors/labs/directory";
 import { buildLabsLayout, directoryBoard, LABS, LABS_WINGS, tourOrder, wallPosts, WING_TINT, type DirectoryBoard } from "@/experience/floors/labs/layout";
 import type { BatchedLabel } from "@/experience/fx/labelProps";
-import type { Rect, Vec2 } from "@/experience/types";
+import { interWidth } from "@/experience/fx/interWidth";
+import type { LabPod, Rect, Vec2 } from "@/experience/types";
 
 const NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
-const FONTS = { mono: "/fonts/mono.woff", monoBold: "/fonts/mono-bold.woff", sansBold: "/fonts/sans-bold.woff" };
+const FONTS = { mono: "/fonts/mono.woff", monoBold: "/fonts/mono-bold.woff", sans: "/fonts/sans.woff", sansBold: "/fonts/sans-bold.woff" };
 const WINGS = LABS_WINGS;
+const SIZES = ["full", "compact"] as const;
+const MONO_EM = 0.6;
+const MARKS = Object.values(TIER_MARK);
 
-/** Entries a list of `lines` lines always holds: every entry takes at most `perEntry` lines. */
-const minEntries = (top: number, lines: number, perEntry: number) => Math.min(top, Math.floor(lines / perEntry));
 const along = (b: DirectoryBoard, p: Vec2) => (p.x - b.center.x) * b.along.x + (p.z - b.center.z) * b.along.z;
 const off = (b: DirectoryBoard, p: Vec2) => (p.x - b.center.x) * b.normal.x + (p.z - b.center.z) * b.normal.z;
 /** The texts standing on one board (both faces). */
 const onBoard = (texts: readonly BatchedLabel[], b: DirectoryBoard) => texts.filter((t) => Math.hypot(t.position[0] - b.center.x, t.position[2] - b.center.z) <= LABS.board.width / 2 + 0.5);
 const inside = (r: Rect, x: number, z: number) => x >= r.minX - 1e-5 && x <= r.maxX + 1e-5 && z >= r.minZ - 1e-5 && z <= r.maxZ + 1e-5;
+const shown = (p: LabPod) => p.shortTitle ?? p.title;
 
 function setup(locale: "en" | "id") {
   const data = buildExperienceData(locale, NAMES);
-  const labels: DirectoryLabels = { wings: data.labs.wings, directory: "Directory", open: "Open the full list", count: (n) => `${n} projects` };
+  const more = locale === "en" ? (n: number) => `+${n} more` : (n: number) => `+${n} lainnya`;
+  const open = locale === "en" ? "Open the full list" : "Buka daftar lengkap";
+  const labels: DirectoryLabels = { wings: data.labs.wings, directory: "Directory", open, count: (n) => `${n} projects`, more };
   return { pods: data.labs.pods, labels };
 }
 
-describe("L3 directory wall content (owner request 2026-10-13)", () => {
-  it("fits the list between the title block and the footer, two entries at least on every size", () => {
-    for (const style of [LIST_STYLE.full, LIST_STYLE.compact]) {
+describe("L3 directory wall content (owner request 2026-10-13, clean board text 2026-10-16)", () => {
+  it("keeps the list between the underline block and the footer, with a line for every entry in both styles", () => {
+    const full = panelRows(LIST_STYLE.full);
+    expect(full.titleTop).toBeCloseTo(9.2, 9);
+    expect(full.underline).toBeCloseTo(8.38, 9);
+    expect(full.subTop).toBeCloseTo(8.16, 9);
+    expect(full.listTop).toBeCloseTo(7.54, 9);
+    expect(full.listBottom).toBeCloseTo(4.35, 9);
+    for (const size of SIZES) {
+      const style = LIST_STYLE[size];
       const rows = panelRows(style);
       expect(rows.titleTop).toBeLessThan(LABS.board.h);
       expect(rows.listTop).toBeLessThan(rows.subTop - PANEL.sub.size);
-      expect(rows.listBottom).toBeGreaterThanOrEqual(LABS.board.base);
       expect(rows.listBottom).toBeGreaterThan(LABS.board.base + PANEL.footer.y + PANEL.footer.size);
       expect(rows.listTop - rows.listLines * style.size * style.lineHeight).toBeGreaterThanOrEqual(rows.listBottom - 1e-9);
-      expect(rows.listLines).toBeGreaterThanOrEqual(2 * style.perEntry);
+      expect(rows.listLines, size).toBeGreaterThanOrEqual(style.entries);
     }
     expect(textWidth()).toBeCloseTo(LABS.board.width - 2 * PANEL.inset, 12);
   });
 
-  it("sets the titles about 25 percent and the lists about 20 percent smaller (owner request Round 7)", () => {
-    expect(PANEL.title.size).toBeCloseTo(0.8 * 0.75);
-    expect(PANEL.list.size).toBeCloseTo(0.46 * 0.8, 2);
-    expect(LIST_STYLE.compact.size).toBeCloseTo(0.56 * 0.8, 2);
+  it("sets the type: titles 0.6, lists 0.37 at line height 1.45 (phones 0.45 at 1.4), five entries on desktops and three on phones", () => {
+    expect(PANEL.title.size).toBe(0.6);
+    expect(LIST_STYLE.full).toEqual({ size: 0.37, lineHeight: 1.45, perEntry: 2, entries: 5 });
+    expect(LIST_STYLE.compact).toEqual({ size: 0.45, lineHeight: 1.4, perEntry: 2, entries: 3 });
+    expect(listWidthEm(LIST_STYLE.full)).toBeCloseTo((textWidth() - PANEL.mark * 0.37) / 0.37, 9);
+    expect(listWidthEm(LIST_STYLE.compact)).toBeCloseTo((textWidth() - PANEL.mark * 0.45) / 0.45, 9);
   });
 
-  it("wraps on word boundaries, the first line shorter to leave room for the tier mark", () => {
-    expect(wrapWords("Serupa Ticket Hub: Event Ticketing Platform", 23, 25)).toEqual(["Serupa Ticket Hub:", "Event Ticketing Platform"]);
-    expect(wrapWords("Supercalifragilistic", 5)).toEqual(["Supercalifragilistic"]);
-    expect(wrapWords("  a  b ", 10)).toEqual(["a b"]);
-  });
-
-  it("gives both wing names the same two-line title, uppercase, from messages", () => {
-    expect(fitTitle("Product Engineering", textWidth())).toEqual({ lines: ["PRODUCT", "ENGINEERING"], size: PANEL.title.size });
-    expect(fitTitle("AI Engineering", textWidth())).toEqual({ lines: ["AI", "ENGINEERING"], size: PANEL.title.size });
-    expect(fitTitle("Laboratorium", textWidth()).lines).toEqual(["LABORATORIUM"]);
+  it("keeps every wing name on one line at the title size, uppercase, from messages; a long name shrinks", () => {
+    for (const locale of ["en", "id"] as const) {
+      const { labels } = setup(locale);
+      for (const wing of WINGS) {
+        const name = labels.wings[wing];
+        expect(fitTitle(name, textWidth()), `${locale} ${wing}`).toEqual({ text: name.toUpperCase(), size: PANEL.title.size });
+        expect(MONO_EM * PANEL.title.size * name.length).toBeLessThanOrEqual(textWidth());
+      }
+    }
+    const long = fitTitle("Laboratorium Rekayasa Perangkat Lunak", textWidth());
+    expect(long.text).toBe("LABORATORIUM REKAYASA PERANGKAT LUNAK");
+    expect(long.size).toBeLessThan(PANEL.title.size);
+    expect(MONO_EM * long.size * long.text.length).toBeCloseTo(textWidth(), 9);
   });
 
   for (const locale of ["en", "id"] as const) {
-    it(`lists each wing's top docked pods in docking order, as many as fit, two lines at most each (${locale})`, () => {
-      const { pods } = setup(locale);
-      const rows = panelRows();
-      for (const wing of WINGS) {
-        const inWing = pods.filter((p) => p.wing === wing);
-        const top = tourOrder(inWing).slice(0, LABS.boardEntries);
-        const list = boardList(inWing, rows.listLines);
-        expect(list.entries, wing).toBeLessThanOrEqual(top.length);
-        expect(list.entries, wing).toBeGreaterThanOrEqual(minEntries(top.length, rows.listLines, PANEL.list.perEntry));
-        const lines = list.text.split("\n");
-        expect(lines).toHaveLength(list.lines);
-        expect(list.lines).toBeLessThanOrEqual(Math.min(rows.listLines, top.length * PANEL.list.perEntry));
-        for (const line of lines) expect(line.length, line).toBeLessThanOrEqual(listChars());
-        const heads = lines.filter((l) => Object.values(TIER_MARK).some((mark) => l.startsWith(`${mark} `)));
-        expect(heads).toHaveLength(list.entries);
-        heads.forEach((head, i) => expect(head.slice(2).split(" ")[0]).toBe(top[i].title.split(" ")[0]));
-      }
-    });
+    for (const size of SIZES) {
+      it(`lists each wing's top projects one line each, whole, marks in their own column (${locale}, ${size})`, () => {
+        const { pods } = setup(locale);
+        const style = LIST_STYLE[size];
+        const rows = panelRows(style);
+        const limit = 0.97 * listWidthEm(style);
+        for (const wing of WINGS) {
+          const inWing = pods.filter((p) => p.wing === wing);
+          const top = tourOrder(inWing).slice(0, style.entries);
+          const list = boardList(inWing, rows.listLines, style);
+          expect(list.entries, wing).toBe(top.length);
+          expect(list.more, wing).toBe(inWing.length - list.entries);
+          const text = list.text.split("\n");
+          const marks = list.marks.split("\n");
+          expect(text, wing).toEqual(top.map(shown));
+          expect(marks, wing).toEqual(top.map((p) => TIER_MARK[p.tier]));
+          expect(list.lines).toBe(top.length);
+          for (const line of text) {
+            expect(interWidth(line), line).toBeLessThanOrEqual(limit);
+            expect(line, line).not.toContain("...");
+          }
+        }
+      });
+    }
   }
 
-  it("puts the same four texts on both faces of each board; the front faces read left to right toward the board stop", () => {
+  it("shows exactly five entries on desktops and three on phones on every wing today", () => {
+    const { pods } = setup("en");
+    for (const size of SIZES) {
+      const style = LIST_STYLE[size];
+      for (const wing of WINGS) expect(boardList(pods.filter((p) => p.wing === wing), panelRows(style).listLines, style).entries, `${size} ${wing}`).toBe(style.entries);
+    }
+  });
+
+  it("wraps a title that still does not fit on word boundaries, two lines at most, ending on a whole word and ...", () => {
+    const style = LIST_STYLE.full;
+    const limit = 0.97 * listWidthEm(style);
+    const words = "Extraordinarily Long Placeholder Title For The Wrapping Fallback That Never Ends Anywhere Soon Enough Today".split(" ");
+    const pod = (slug: string, title: string, tier: LabPod["tier"]): LabPod => ({ slug, title, tier, wing: "software" }) as LabPod;
+    const list = boardList([pod("a", words.join(" "), "hero"), pod("b", "Short One", "featured")], 5, style);
+    const text = list.text.split("\n");
+    const marks = list.marks.split("\n");
+    expect(marks).toHaveLength(text.length);
+    expect(marks).toEqual([TIER_MARK.hero, "\u00A0", TIER_MARK.featured]);
+    expect(list.lines).toBe(3);
+    expect(text[2]).toBe("Short One");
+    expect(text[1].endsWith("...")).toBe(true);
+    for (const line of text) expect(interWidth(line), line).toBeLessThanOrEqual(limit);
+    // Whole words only: both lines rejoin into a prefix of the title.
+    const joined = `${text[0]} ${text[1].slice(0, -3)}`;
+    expect(words.join(" ").startsWith(joined)).toBe(true);
+    expect(wrapWords(words.join(" "), limit).every((l) => interWidth(l) <= limit || !l.includes(" "))).toBe(true);
+    // A list too short for every entry stops before the entry that would not fit.
+    expect(boardList([pod("a", words.join(" "), "hero"), pod("b", "Short One", "featured")], 2, style).entries).toBe(1);
+  });
+
+  it("puts the same five texts on both faces of each board; the front faces read left to right toward the board stop", () => {
+    for (const locale of ["en", "id"] as const) {
+      const { pods, labels } = setup(locale);
+      for (const size of SIZES) {
+        const style = LIST_STYLE[size];
+        const texts = wallLabels(pods, labels, FONTS, size);
+        expect(texts).toHaveLength(WINGS.length * 2 * 5);
+        for (const wing of WINGS) {
+          const b = directoryBoard(wing);
+          const mine = onBoard(texts, b);
+          expect(mine, wing).toHaveLength(10);
+          for (const t of mine) {
+            expect(t.position[1], t.text).toBeGreaterThanOrEqual(LABS.board.base);
+            expect(t.position[1], t.text).toBeLessThanOrEqual(LABS.board.h);
+            const p = { x: t.position[0], z: t.position[2] };
+            // PANEL.out off one face, inside the board's span.
+            expect(Math.abs(off(b, p)), t.text).toBeCloseTo(LABS.board.w / 2 + PANEL.out, 9);
+            expect(Math.abs(along(b, p)), t.text).toBeLessThanOrEqual(LABS.board.width / 2 + 1e-9);
+          }
+          const front = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) > 0);
+          const back = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) < 0);
+          expect(front).toHaveLength(5);
+          expect(back).toHaveLength(5);
+          expect(front.map((t) => t.text)).toEqual(back.map((t) => t.text));
+          const [title, sub, marks, list, footer] = front;
+          const inWing = pods.filter((p) => p.wing === wing);
+          const rows = panelRows(style);
+          const listed = boardList(inWing, rows.listLines, style);
+          expect(title.text).toBe(labels.wings[wing].toUpperCase());
+          expect(title.font).toBe(FONTS.monoBold);
+          expect(title.color).toBe(WING_TINT[wing]);
+          expect(sub.font).toBe(FONTS.mono);
+          expect(sub.color).toBe("#a1a1aa");
+          expect(sub.fontSize).toBe(PANEL.sub.size);
+          expect(marks.text).toBe(listed.marks);
+          expect(list.text).toBe(listed.text);
+          for (const t of [marks, list]) {
+            expect(t.font).toBe(FONTS.sans);
+            expect(t.fontSize).toBe(style.size);
+            expect(t.lineHeight).toBe(style.lineHeight);
+            expect(t.anchorX).toBe("left");
+            expect(t.position[1]).toBeCloseTo(rows.listTop, 9);
+          }
+          expect(marks.color).toBe("#8b8b94");
+          expect(list.color).toBe("#c4c4cc");
+          const more = inWing.length - listed.entries;
+          expect(footer.text).toBe(`\u25B8 ${labels.open.toUpperCase()}${more > 0 ? ` \u00B7 ${labels.more(more).toUpperCase()}` : ""}`);
+          expect(footer.font).toBe(FONTS.monoBold);
+          expect(footer.color).toBe(WING_TINT[wing]);
+          expect(footer.fontSize).toBe(PANEL.footer.size);
+          expect(MONO_EM * PANEL.footer.size * footer.text.length).toBeLessThanOrEqual(textWidth());
+          for (const t of front) {
+            expect(t.yaw).toBeCloseTo(b.yaw, 12);
+            // Text yaw turns its front to (sin yaw, cos yaw) and reads along (cos yaw, -sin yaw): the board's normal and along.
+            expect(Math.sin(t.yaw!) * b.normal.x + Math.cos(t.yaw!) * b.normal.z).toBeCloseTo(1, 12);
+            expect(Math.cos(t.yaw!) * b.along.x - Math.sin(t.yaw!) * b.along.z).toBeCloseTo(1, 12);
+          }
+          for (const t of back) expect(t.yaw).toBeCloseTo(b.yaw + Math.PI, 12);
+          // The marks start at the left text edge of each face (-along on the back face), the list PANEL.mark list em right of them.
+          const markAt = textWidth() / 2;
+          const listAt = textWidth() / 2 - PANEL.mark * style.size;
+          expect(along(b, { x: front[2].position[0], z: front[2].position[2] })).toBeCloseTo(-markAt, 9);
+          expect(along(b, { x: front[3].position[0], z: front[3].position[2] })).toBeCloseTo(-listAt, 9);
+          expect(along(b, { x: back[2].position[0], z: back[2].position[2] })).toBeCloseTo(markAt, 9);
+          expect(along(b, { x: back[3].position[0], z: back[3].position[2] })).toBeCloseTo(listAt, 9);
+        }
+      }
+    }
+  });
+
+  it("reads +N more on the footer of every wing today (more projects than entries)", () => {
     const { pods, labels } = setup("en");
-    const texts = wallLabels(pods, labels, FONTS);
-    expect(texts).toHaveLength(WINGS.length * 2 * 4);
+    const texts = wallLabels(pods, labels, FONTS, "full");
     for (const wing of WINGS) {
-      const b = directoryBoard(wing);
-      const mine = onBoard(texts, b);
-      expect(mine, wing).toHaveLength(8);
-      for (const t of mine) {
-        expect(t.position[1], t.text).toBeGreaterThanOrEqual(LABS.board.base);
-        expect(t.position[1], t.text).toBeLessThanOrEqual(LABS.board.h);
-        const p = { x: t.position[0], z: t.position[2] };
-        // PANEL.out off one face, inside the board's span.
-        expect(Math.abs(off(b, p)), t.text).toBeCloseTo(LABS.board.w / 2 + PANEL.out, 9);
-        expect(Math.abs(along(b, p)), t.text).toBeLessThanOrEqual(LABS.board.width / 2 + 1e-9);
-      }
-      const front = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) > 0);
-      const back = mine.filter((t) => off(b, { x: t.position[0], z: t.position[2] }) < 0);
-      expect(front).toHaveLength(4);
-      expect(back).toHaveLength(4);
-      expect(front.map((t) => t.text)).toEqual(back.map((t) => t.text));
-      expect(front[0].text).toBe(fitTitle(labels.wings[wing], textWidth()).lines.join("\n"));
-      expect(front[0].color).toBe(WING_TINT[wing]);
-      for (const t of front) {
-        expect(t.yaw).toBeCloseTo(b.yaw, 12);
-        // Text yaw turns its front to (sin yaw, cos yaw) and reads along (cos yaw, -sin yaw): the board's normal and along.
-        expect(Math.sin(t.yaw!) * b.normal.x + Math.cos(t.yaw!) * b.normal.z).toBeCloseTo(1, 12);
-        expect(Math.cos(t.yaw!) * b.along.x - Math.sin(t.yaw!) * b.along.z).toBeCloseTo(1, 12);
-      }
-      for (const t of back) expect(t.yaw).toBeCloseTo(b.yaw + Math.PI, 12);
-      // The list starts at the left text edge of each face: -along on the back face.
-      expect(along(b, { x: front[2].position[0], z: front[2].position[2] })).toBeCloseTo(-textWidth() / 2, 9);
-      expect(along(b, { x: back[2].position[0], z: back[2].position[2] })).toBeCloseTo(textWidth() / 2, 9);
+      const footer = onBoard(texts, directoryBoard(wing))[4];
+      expect(footer.text, wing).toMatch(/^\u25B8 OPEN THE FULL LIST \u00B7 \+\d+ MORE$/);
     }
     // The gate over the spine names the Data and ML wing on both faces.
     const gate = directoryBoard("data");
     expect(gate.yaw).toBeCloseTo(-Math.PI / 2, 12);
-    const titles = onBoard(texts, gate).filter((t) => t.color === WING_TINT.data && t.anchorY === "top" && t.textAlign === "center" && t.fontSize >= PANEL.sub.size * 1.5);
+    const titles = onBoard(texts, gate).filter((t) => t.color === WING_TINT.data && t.fontSize === PANEL.title.size);
     expect(titles).toHaveLength(2);
-    for (const t of titles) expect(t.text.replace(/\n/g, " ")).toBe(labels.wings.data.toUpperCase());
+    for (const t of titles) expect(t.text).toBe(labels.wings.data.toUpperCase());
   });
 
   it("raises three turned boards, the gate on two posts and each side board on a pylon, as solids that match the board geometry", () => {
@@ -210,40 +305,14 @@ describe("L3 directory wall content (owner request 2026-10-13)", () => {
       const layout = buildLabsLayout(pods);
       expect(wallSolids(layout.boards)).toEqual(wallSolids());
       expect(wallLines(layout.boards)).toEqual(wallLines());
-      for (const size of ["full", "compact"] as const) {
+      for (const size of SIZES) {
         expect(wallLabels(pods, labels, FONTS, size, layout.boards)).toEqual(wallLabels(pods, labels, FONTS, size));
         const texts = onBoard(wallLabels(pods, labels, FONTS, size), directoryBoard("data"));
-        expect(texts, size).toHaveLength(8);
-        const style = LIST_STYLE[size];
-        const top = tourOrder(pods.filter((p) => p.wing === "data")).slice(0, style.entries);
-        const heads = texts[2].text.split("\n").filter((l) => Object.values(TIER_MARK).some((m) => l.startsWith(`${m} `)));
-        expect(heads.length, size).toBeLessThanOrEqual(top.length);
-        expect(heads.length, size).toBeGreaterThanOrEqual(minEntries(top.length, panelRows(style).listLines, style.perEntry));
+        expect(texts, size).toHaveLength(10);
+        const top = tourOrder(pods.filter((p) => p.wing === "data")).slice(0, LIST_STYLE[size].entries);
+        expect(texts[3].text.split("\n"), size).toEqual(top.map(shown));
+        expect(texts[2].text.split("\n").every((m) => MARKS.includes(m)), size).toBe(true);
       }
     });
   }
-
-  it("lists the top three in larger type on phones, every title whole in two lines (coordinator decision 2026-10-13)", () => {
-    const compact = LIST_STYLE.compact;
-    const lines = panelRows(compact).listLines;
-    expect(compact.entries).toBe(3);
-    expect(compact.size).toBeGreaterThan(LIST_STYLE.full.size);
-    for (const locale of ["en", "id"] as const) {
-      const { pods, labels } = setup(locale);
-      for (const wing of WINGS) {
-        const inWing = pods.filter((p) => p.wing === wing);
-        const top = tourOrder(inWing).slice(0, compact.entries);
-        const list = boardList(inWing, lines, compact);
-        expect(list.entries, `${locale} ${wing}`).toBeLessThanOrEqual(top.length);
-        expect(list.entries, `${locale} ${wing}`).toBeGreaterThanOrEqual(minEntries(top.length, lines, compact.perEntry));
-        // The data titles are longer than two lines at any phone size; they shorten with "...".
-        if (wing !== "data") expect(list.text, `${locale} ${wing}`).not.toContain("...");
-        for (const line of list.text.split("\n")) expect(line.length, line).toBeLessThanOrEqual(listChars(compact));
-      }
-      const texts = wallLabels(pods, labels, FONTS, "compact");
-      const lists = texts.filter((t) => t.fontSize === compact.size);
-      expect(lists).toHaveLength(WINGS.length * 2);
-      for (const t of lists) expect(t.lineHeight).toBe(compact.lineHeight);
-    }
-  });
 });
