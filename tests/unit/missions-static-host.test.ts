@@ -36,22 +36,11 @@ describe("static mission host", () => {
     ["journey", "en", ["nav /en/journey"]],
     ["journey", "id", ["nav /id/journey"]],
     ["projects", "en", ["nav /en/labs", "palette pods"]],
+    ["highlights", "en", ["nav /en#intro"]],
   ] as const)("maps %s (%s) to one navigation", async (mission, locale, expected) => {
     const { runner, events } = setup(locale);
     await expect(runner.start(mission)).resolves.toBe("done");
     expect(events).toEqual(expected);
-  });
-
-  it("shows the floor page for a walk step (with the pods palette for the project tour, the posts palette for the writing walk)", async () => {
-    const { host, events } = setup("id");
-    const ctx = { signal: new AbortController().signal, missionId: "m" };
-    await host.walk("projects", ctx);
-    expect(events).toEqual(["nav /id/labs", "palette pods"]);
-    await host.walk("writing", ctx);
-    expect(events.slice(2)).toEqual(["nav /id/library", "palette posts"]);
-    await host.walk("journey", ctx);
-    host.finish?.("done", "m");
-    expect(events.at(-1)).toBe("nav /id/journey");
   });
 
   it("navigates surprise to the picked room page", async () => {

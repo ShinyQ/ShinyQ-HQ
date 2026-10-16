@@ -101,8 +101,6 @@ export function createMissionRunner({ host, missions, rooms, visited = () => [],
         return host.say(step.text, step.ms, ctx);
       case "palette":
         return host.openPalette(step.filter, ctx);
-      case "walk":
-        return host.walk(step.walk, ctx);
     }
   };
 

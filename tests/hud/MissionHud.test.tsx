@@ -197,22 +197,26 @@ describe("MissionHud on static pages", () => {
     expect(options).toHaveLength(index.rooms.filter((r) => r.kind === "pod").length);
   });
 
-  it("runs the journey walk mission as the journey page on static pages", async () => {
+  it("runs the journey mission as the journey page on static pages", async () => {
     renderHud();
     act(() => openTerminal());
     const journey = index.missions.find((m) => m.id === "journey")!;
-    expect(journey.steps.at(-1)).toEqual({ kind: "walk", walk: "journey" });
+    expect(journey.steps).toEqual([{ kind: "elevator", floor: "L2" }]);
     await userEvent.click(screen.getByRole("option", { name: journey.label.en }));
     await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en/journey"));
   });
 
-  it("runs the Quick tour as the landing page on static pages", async () => {
+  it("runs the highlights mission as the landing intro on static pages", async () => {
     renderHud();
     act(() => openTerminal());
-    const tour = index.missions.find((m) => m.id === "highlights")!;
-    expect(tour.steps).toEqual([{ kind: "elevator", floor: "L1" }, { kind: "walk", walk: "highlights" }]);
-    await userEvent.click(screen.getByRole("option", { name: tour.label.en }));
-    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en"));
+    const highlights = index.missions.find((m) => m.id === "highlights")!;
+    expect(highlights.steps).toEqual([
+      { kind: "elevator", floor: "L1" },
+      { kind: "drive", to: "L1:highlights-about" },
+      { kind: "open", room: "L1:highlights-about" },
+    ]);
+    await userEvent.click(screen.getByRole("option", { name: highlights.label.en }));
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/en#intro"));
   });
 
   it("records opened rooms and lists them under Recent", async () => {

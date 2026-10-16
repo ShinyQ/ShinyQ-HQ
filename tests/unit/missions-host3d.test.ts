@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StateStorage } from "zustand/middleware";
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
-import { isAutoOpenClaimed, claimAutoOpen, register3DHost, registerWalkStarter, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
+import { isAutoOpenClaimed, claimAutoOpen, register3DHost, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
 import { directoryStop } from "@/experience/floors/labs/layout";
 import { ROOF_STOPS } from "@/experience/floors/roof/layout";
@@ -236,26 +236,6 @@ describe("3D mission host", () => {
     expect(deps.say).toHaveBeenCalledWith("hi", 5000);
     await host.openPalette("pods", { signal: signal(), missionId: "m" });
     expect(deps.openPalette).toHaveBeenCalledWith("pods");
-  });
-
-  it("hands a walk step to the registered walk, else rides to its floor and lists the rooms", async () => {
-    const { store, deps, host } = setup();
-    const started: string[] = [];
-    const off = registerWalkStarter((id) => (id === "journey" ? (started.push(id), true) : false));
-    await host.walk("journey", { signal: signal(), missionId: "journey" });
-    expect(started).toEqual(["journey"]);
-    expect(store.getState().floor).toBe("L1");
-    await host.walk("projects", { signal: signal(), missionId: "projects" });
-    expect(store.getState().floor).toBe("L3");
-    expect(deps.openPalette).toHaveBeenCalledWith("pods");
-    await host.walk("writing", { signal: signal(), missionId: "blog" });
-    expect(store.getState().floor).toBe("L4");
-    expect(deps.openPalette).toHaveBeenLastCalledWith("posts");
-    off();
-    await host.walk("journey", { signal: signal(), missionId: "journey" });
-    expect(started).toEqual(["journey"]);
-    expect(store.getState().floor).toBe("L2");
-    expect(deps.openPalette).toHaveBeenLastCalledWith("rooms");
   });
 
   it("flashes o_o and clears the autopilot on cancel", () => {

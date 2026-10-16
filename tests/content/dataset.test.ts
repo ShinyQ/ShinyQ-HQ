@@ -158,6 +158,7 @@ describe("content/site-content.json", () => {
       ...content.floors.library.posts.map((p) => `L4:${p.slug}`),
       "RF:contact",
       "RF:cv",
+      "L1:highlights-about",
     ]);
     const missing = content.missions.flatMap((m) =>
       m.steps.flatMap((s) => {
@@ -166,6 +167,13 @@ describe("content/site-content.json", () => {
       }),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("has no guided walk step and no tour wording in mission labels (walks removed 2026-10-16)", () => {
+    const missions = (raw as { missions: { id: string; label: LocalizedText; steps: { kind: string }[] }[] }).missions;
+    expect(missions.flatMap((m) => m.steps.filter((s) => s.kind === "walk").map(() => m.id))).toEqual([]);
+    const tourWords = /\btours?\b|\btur\b/i;
+    expect(missions.flatMap((m) => [m.label.en, m.label.id].filter((l) => tourWords.test(l)))).toEqual([]);
   });
 });
 

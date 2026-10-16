@@ -1,8 +1,7 @@
 import { pickFeaturedPods } from "@/content/pageview";
 import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/content/selectors";
-import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, WalkId, Wing } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
 import { TOPICS } from "@/content/topic-map";
-import type { PaletteFilter } from "./host";
 
 export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops";
 
@@ -66,12 +65,6 @@ export const FLOOR_PATHS: Record<FloorId, string> = {
   L4: "/library",
   RF: "/contact",
 };
-
-/** Floor of each guided walk (mission step `{ kind: "walk" }`). */
-export const WALK_FLOOR: Record<WalkId, FloorId> = { journey: "L2", projects: "L3", writing: "L4", highlights: "L1" };
-
-/** Palette a walk's floor page opens next to it when the walk cannot run (static tier, or the walk is off). */
-export const WALK_PALETTE: Partial<Record<WalkId, PaletteFilter>> = { projects: "pods", writing: "posts" };
 
 const SURPRISE_WEIGHT: Record<Tier, number> = { hero: 6, featured: 2, listed: 1 };
 

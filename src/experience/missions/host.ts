@@ -1,4 +1,4 @@
-import type { DrawerTab, FloorId, LocalizedText, MissionStep, RoomId, WalkId } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, MissionStep, RoomId } from "@/content/schema";
 
 /** Filters the command palette can open with (mission step `{ kind: "palette" }`). */
 export type PaletteFilter = Extract<MissionStep, { kind: "palette" }>["filter"];
@@ -36,8 +36,6 @@ export interface MissionHost {
   say(text: LocalizedText, ms: number | undefined, ctx: StepContext): Promise<void>;
   /** Open the command palette, optionally pre-filtered. */
   openPalette(filter: PaletteFilter | undefined, ctx: StepContext): Promise<void>;
-  /** Start a guided walk (missions/walks.ts); the walk takes over once the mission ends. */
-  walk(id: WalkId, ctx: StepContext): Promise<void>;
   /** Called once when a mission ends, after the last step or on cancel. */
   finish?(status: "done" | "cancelled", missionId: string): void;
 }
