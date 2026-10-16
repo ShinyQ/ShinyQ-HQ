@@ -38,3 +38,26 @@ describe("workflow pinning (S4)", () => {
     expect(read(path.join(dir, "deploy.yml"))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
   });
 });
+
+describe("smart CI (ci.yml)", () => {
+  const ci = read(path.join(dir, "ci.yml"));
+  const job = (id: string) => ci.split(/\n  (?=[a-z][\w-]*:\n)/).find((block) => block.startsWith(`${id}:`)) ?? "";
+
+  it("keeps the required check names and never skips a heavy job at the job level", () => {
+    for (const name of ["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates ${{ matrix.shard }}/2", "E2E shard ${{ matrix.shard }}/4"]) expect(ci).toContain(`name: ${name}`);
+    for (const id of ["e2e", "perf", "lighthouse"]) {
+      expect(job(id)).toContain("needs: [site, changes]");
+      expect(job(id)).not.toMatch(/^\s{4}if:/m);
+    }
+  });
+
+  it("always runs the build, the safety scan and og:check", () => {
+    expect(job("site")).toContain("bun scripts/scan-export.ts out");
+    expect(job("site")).toContain("bun run og:check");
+    expect(job("site")).not.toMatch(/^\s{4}if:/m);
+  });
+
+  it("marks complete runs for the deploy gate", () => {
+    expect(job("build")).toContain("name: ci-full");
+  });
+});
