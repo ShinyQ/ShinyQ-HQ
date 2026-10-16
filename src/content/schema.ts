@@ -143,6 +143,8 @@ export const ArchitectureNodeSchema = z.strictObject({
   layer: z.number().int().min(0),
   row: z.number().int().min(0),
   kind: z.enum(["client", "service", "ai", "data", "human", "external"]),
+  /** Optional frame around related nodes in the drawn diagram (for example a cloud or a platform name). */
+  group: nonEmpty.optional(),
 });
 
 export const ArchitectureEdgeSchema = z.strictObject({

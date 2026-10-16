@@ -2,22 +2,421 @@
   "spec-driven-development-with-ai-coding-agents": {
     "delivery-loop": {
       "nodes": [
-        { "id": "engineer", "label": "Engineer", "sublabel": { "en": "Writes specs, reviews and merges", "id": "Menulis spec, me-review, dan me-merge" }, "layer": 0, "row": 0, "kind": "human" },
-        { "id": "spec", "label": "Numbered spec", "sublabel": { "en": "Task, AC and business-rule IDs", "id": "ID task, AC, dan business rule" }, "layer": 1, "row": 0, "kind": "data" },
-        { "id": "constitution", "label": "Constitution and conventions", "sublabel": { "en": "Rules every agent follows", "id": "Aturan untuk setiap agent" }, "layer": 1, "row": 1, "kind": "data" },
-        { "id": "agents", "label": "Coding agents", "sublabel": { "en": "GitHub Copilot and Claude, one worktree each", "id": "GitHub Copilot dan Claude, satu worktree per agent" }, "layer": 2, "row": 0, "kind": "ai" },
-        { "id": "ci", "label": "CI gates", "sublabel": { "en": "Spec IDs, contracts, architecture tests", "id": "ID spec, kontrak, architecture test" }, "layer": 3, "row": 0, "kind": "service" },
-        { "id": "main", "label": "Main branch", "layer": 4, "row": 0, "kind": "external" },
-        { "id": "app-service", "label": "Azure App Service", "sublabel": { "en": "Deploys only after green CI", "id": "Deploy hanya setelah CI hijau" }, "layer": 4, "row": 1, "kind": "external" }
+        {
+          "id": "engineer",
+          "label": "Engineer",
+          "sublabel": {
+            "en": "Writes specs, reviews and merges",
+            "id": "Menulis spec, me-review, dan me-merge"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "spec",
+          "label": "Numbered spec",
+          "sublabel": {
+            "en": "Task, AC and business-rule IDs",
+            "id": "ID task, AC, dan business rule"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "data"
+        },
+        {
+          "id": "constitution",
+          "label": "Constitution and conventions",
+          "sublabel": {
+            "en": "Rules every agent follows",
+            "id": "Aturan untuk setiap agent"
+          },
+          "layer": 1,
+          "row": 1,
+          "kind": "data"
+        },
+        {
+          "id": "agents",
+          "label": "Coding agents",
+          "sublabel": {
+            "en": "GitHub Copilot and Claude, one worktree each",
+            "id": "GitHub Copilot dan Claude, satu worktree per agent"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "ci",
+          "label": "CI gates",
+          "sublabel": {
+            "en": "Spec IDs, contracts, architecture tests",
+            "id": "ID spec, kontrak, architecture test"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "main",
+          "label": "Main branch",
+          "layer": 4,
+          "row": 0,
+          "kind": "external"
+        },
+        {
+          "id": "app-service",
+          "label": "Azure App Service",
+          "sublabel": {
+            "en": "Deploys only after green CI",
+            "id": "Deploy hanya setelah CI hijau"
+          },
+          "layer": 4,
+          "row": 1,
+          "kind": "external"
+        }
       ],
       "edges": [
-        { "from": "engineer", "to": "spec", "label": "write" },
-        { "from": "spec", "to": "agents", "label": "tasks" },
-        { "from": "constitution", "to": "agents", "label": "rules" },
-        { "from": "agents", "to": "ci", "label": "pull requests" },
-        { "from": "ci", "to": "engineer", "label": "review" },
-        { "from": "engineer", "to": "main", "label": "merge" },
-        { "from": "main", "to": "app-service", "label": "deploy" }
+        {
+          "from": "engineer",
+          "to": "spec",
+          "label": "write"
+        },
+        {
+          "from": "spec",
+          "to": "agents",
+          "label": "tasks"
+        },
+        {
+          "from": "constitution",
+          "to": "agents",
+          "label": "rules"
+        },
+        {
+          "from": "agents",
+          "to": "ci",
+          "label": "pull requests"
+        },
+        {
+          "from": "ci",
+          "to": "engineer",
+          "label": "review"
+        },
+        {
+          "from": "engineer",
+          "to": "main",
+          "label": "merge"
+        },
+        {
+          "from": "main",
+          "to": "app-service",
+          "label": "deploy"
+        }
+      ]
+    }
+  },
+  "clearbox-inbox-cleanup-with-microsoft-decision-1": {
+    "architecture": {
+      "nodes": [
+        {
+          "id": "browser",
+          "label": "Owner browser",
+          "sublabel": {
+            "en": "React 19 app: Review, Clean up, Undo, Insights",
+            "id": "Aplikasi React 19: Review, Clean up, Undo, Insights"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "client"
+        },
+        {
+          "id": "github",
+          "label": "GitHub Actions",
+          "sublabel": {
+            "en": "Tests and builds, never deploys",
+            "id": "Menguji dan membangun, tidak pernah deploy"
+          },
+          "layer": 0,
+          "row": 1,
+          "kind": "external"
+        },
+        {
+          "id": "access",
+          "label": "Cloudflare Access",
+          "sublabel": {
+            "en": "Owner email only",
+            "id": "Hanya email pemilik"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "service",
+          "group": "Cloudflare"
+        },
+        {
+          "id": "cron",
+          "label": "Cron Triggers",
+          "sublabel": {
+            "en": "Tick every minute, nightly job",
+            "id": "Tick setiap menit, job malam hari"
+          },
+          "layer": 1,
+          "row": 1,
+          "kind": "service",
+          "group": "Cloudflare"
+        },
+        {
+          "id": "worker",
+          "label": "Worker \"clearbox\"",
+          "sublabel": {
+            "en": "Hono API and the app; checks the Access JWT, fails closed",
+            "id": "API Hono dan aplikasi; memeriksa JWT Access, fail closed"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "service",
+          "group": "Cloudflare"
+        },
+        {
+          "id": "d1",
+          "label": "D1 \"clearbox\"",
+          "sublabel": {
+            "en": "EU jurisdiction: messages, priors, audit log",
+            "id": "Yurisdiksi EU: pesan, prior, audit log"
+          },
+          "layer": 2,
+          "row": 1,
+          "kind": "data",
+          "group": "Cloudflare"
+        },
+        {
+          "id": "gmail",
+          "label": "Gmail API",
+          "sublabel": {
+            "en": "Owner OAuth client, gmail.modify",
+            "id": "OAuth client pemilik, gmail.modify"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "external"
+        },
+        {
+          "id": "graph",
+          "label": "Microsoft Graph",
+          "sublabel": {
+            "en": "Owner Entra app, Mail.ReadWrite",
+            "id": "Entra app pemilik, Mail.ReadWrite"
+          },
+          "layer": 3,
+          "row": 1,
+          "kind": "external"
+        },
+        {
+          "id": "decision",
+          "label": "Microsoft-Decision-1",
+          "sublabel": {
+            "en": "Foundry deployment in Sweden Central",
+            "id": "Deployment Foundry di Sweden Central"
+          },
+          "layer": 3,
+          "row": 2,
+          "kind": "ai"
+        }
+      ],
+      "edges": [
+        {
+          "from": "browser",
+          "to": "access",
+          "label": "HTTPS"
+        },
+        {
+          "from": "access",
+          "to": "worker",
+          "label": "Access JWT"
+        },
+        {
+          "from": "cron",
+          "to": "worker",
+          "label": "tick"
+        },
+        {
+          "from": "worker",
+          "to": "d1"
+        },
+        {
+          "from": "worker",
+          "to": "gmail",
+          "label": "OAuth + PKCE"
+        },
+        {
+          "from": "worker",
+          "to": "graph",
+          "label": "OAuth + PKCE"
+        },
+        {
+          "from": "worker",
+          "to": "decision",
+          "label": "api-key, 5 questions"
+        }
+      ]
+    },
+    "pipeline": {
+      "nodes": [
+        {
+          "id": "fetch",
+          "label": "Fetch one page",
+          "sublabel": {
+            "en": "Up to 25 messages: headers, flags, snippet",
+            "id": "Hingga 25 pesan: header, flag, cuplikan"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "signals",
+          "label": "Signals",
+          "sublabel": {
+            "en": "Headers and history only",
+            "id": "Hanya header dan riwayat"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "guardrails",
+          "label": "Guardrails",
+          "sublabel": {
+            "en": "Set a ceiling: keep or archive at most",
+            "id": "Menetapkan batas: paling tinggi keep atau archive"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "state",
+          "label": "State for the model",
+          "sublabel": {
+            "en": "Compact JSON, at most 1,750 characters",
+            "id": "JSON ringkas, maksimal 1.750 karakter"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "data"
+        },
+        {
+          "id": "decision",
+          "label": "Microsoft-Decision-1",
+          "sublabel": {
+            "en": "One request per email, five questions",
+            "id": "Satu request per email, lima pertanyaan"
+          },
+          "layer": 4,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "validate",
+          "label": "Validate",
+          "sublabel": {
+            "en": "zod schema; retries, then unsure",
+            "id": "Schema zod; retry, lalu unsure"
+          },
+          "layer": 5,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "fuse",
+          "label": "Fuse",
+          "sublabel": {
+            "en": "Sender prior, flags, ceiling, tau_delete",
+            "id": "Prior pengirim, flag, batas, tau_delete"
+          },
+          "layer": 6,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "suggestion",
+          "label": "Suggestion",
+          "sublabel": {
+            "en": "Trash, archive, keep or unsure, up to 3 reasons",
+            "id": "Trash, archive, keep, atau unsure, hingga 3 alasan"
+          },
+          "layer": 7,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "owner",
+          "label": "Owner confirms",
+          "sublabel": {
+            "en": "Clean up of approved suggestions, Undo for 24 hours",
+            "id": "Clean up untuk saran yang disetujui, Undo selama 24 jam"
+          },
+          "layer": 8,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "learning",
+          "label": "Priors and threshold",
+          "sublabel": {
+            "en": "Every decision updates priors; nightly calibration",
+            "id": "Setiap keputusan memperbarui prior; kalibrasi malam hari"
+          },
+          "layer": 8,
+          "row": 1,
+          "kind": "data"
+        }
+      ],
+      "edges": [
+        {
+          "from": "fetch",
+          "to": "signals"
+        },
+        {
+          "from": "signals",
+          "to": "guardrails"
+        },
+        {
+          "from": "guardrails",
+          "to": "state"
+        },
+        {
+          "from": "state",
+          "to": "decision"
+        },
+        {
+          "from": "decision",
+          "to": "validate",
+          "label": "probabilities"
+        },
+        {
+          "from": "validate",
+          "to": "fuse"
+        },
+        {
+          "from": "fuse",
+          "to": "suggestion"
+        },
+        {
+          "from": "suggestion",
+          "to": "owner"
+        },
+        {
+          "from": "owner",
+          "to": "learning",
+          "label": "labels"
+        },
+        {
+          "from": "learning",
+          "to": "fuse",
+          "label": "priors, threshold",
+          "async": true
+        }
       ]
     }
   }

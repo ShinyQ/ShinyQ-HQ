@@ -1,65 +1,42 @@
-import type { CSSProperties } from "react";
 import { getTranslations } from "next-intl/server";
-import { architectureLayers, orderArchitectureNodes } from "@/content/architecture";
 import type { Architecture, Locale } from "@/content/schema";
-
-/** Node kinds tint the border and the kind label only; names stay neutral. */
-const KIND_STYLE: Record<Architecture["nodes"][number]["kind"], string> = {
-  client: "border-cyan/50 text-cyan",
-  service: "border-line-2 text-blue",
-  ai: "border-violet/50 text-violet",
-  data: "border-green/45 text-green",
-  human: "border-amber/45 text-amber",
-  external: "border-line-2 text-white",
-};
+import { DiagramSvg } from "./diagram/DiagramSvg";
+import { DIAGRAM_PRESETS, layoutArchitecture, type DiagramNode } from "./diagram/layout";
 
 /**
- * HTML rendering of the hologram data: nodes in a layer x row grid plus an
- * accessible list of edges. The 3D hologram (Phase 4) reuses the same data.
+ * Architecture diagram drawn at build time as inline SVG: boxes and arrows, left to right on wide screens and
+ * top to bottom on phones (one SVG each, swapped by a media query). No client JS. The figure is one image to
+ * assistive tech, named by a summary of its components and connections.
  */
 export async function ArchitectureDiagram({ architecture, locale }: { architecture: Architecture; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "labs" });
-  const layers = architectureLayers(architecture.nodes);
-  const byId = new Map(architecture.nodes.map((n) => [n.id, n]));
+  const td = await getTranslations({ locale, namespace: "diagram" });
+  const texts = (n: DiagramNode) => ({
+    kind: t(`nodeKind.${n.kind}`).toLocaleUpperCase(locale),
+    label: n.label,
+    sublabel: n.sublabel?.[locale],
+  });
+  const wideOrColumn = process.env.HQ_DIAGRAM_DESKTOP === "wide" ? DIAGRAM_PRESETS.wide : DIAGRAM_PRESETS.column;
+  const desktop = layoutArchitecture(architecture, texts, wideOrColumn);
+  const phone = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.phone);
+
+  const byId = new Map(architecture.nodes.map((n) => [n.id, n.label]));
+  const flows = architecture.edges
+    .map((e) =>
+      [td("flow", { from: byId.get(e.from)!, to: byId.get(e.to)! }), e.label, e.async ? td("async") : undefined].filter(Boolean).join(", "),
+    )
+    .join("; ");
+  const summary = td("summary", { count: architecture.nodes.length, flows: `${flows}.` });
+
   return (
-    <div className="not-prose card space-y-6 p-4 sm:p-6">
-      <div className="pb-2 sm:overflow-x-auto">
-        <ol
-          className="grid gap-2.5 sm:min-w-[520px] sm:[grid-template-columns:var(--arch-cols)]"
-          style={{ "--arch-cols": `repeat(${layers}, minmax(0, 1fr))` } as CSSProperties}
-          aria-label={t("architecture")}
-        >
-          {orderArchitectureNodes(architecture.nodes).map((node) => (
-            <li
-              key={node.id}
-              className={`flex flex-col gap-1 rounded-lg border bg-surface-2 p-3 sm:[grid-column:var(--arch-col)] sm:[grid-row:var(--arch-row)] ${KIND_STYLE[node.kind]}`}
-              style={{ "--arch-col": node.layer + 1, "--arch-row": node.row + 1 } as CSSProperties}
-            >
-              <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase">{t(`nodeKind.${node.kind}`)}</span>
-              <span className="text-sm leading-5 font-semibold text-ink">{node.label}</span>
-              {node.sublabel && <span className="text-xs leading-4 text-ink-2">{node.sublabel[locale]}</span>}
-            </li>
-          ))}
-        </ol>
-      </div>
-      {architecture.edges.length > 0 && (
-        <div>
-          <h3 className="pv-data mb-3">{t("architectureFlow")}</h3>
-          <ul className="grid gap-1.5 font-mono text-[13px] leading-5 text-ink-2 sm:grid-cols-2">
-            {architecture.edges.map((edge, i) => (
-              <li key={`${edge.from}-${edge.to}-${i}`}>
-                <span className="text-ink">{byId.get(edge.from)?.label}</span>{" "}
-                <span aria-hidden="true" className="text-violet">
-                  {edge.async ? "⇢" : "→"}
-                </span>
-                <span className="sr-only">{edge.async ? " sends asynchronously to " : " to "}</span>{" "}
-                <span className="text-ink">{byId.get(edge.to)?.label}</span>
-                {edge.label && <span className="text-ink-3"> ({edge.label})</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+    <div
+      className="not-prose card p-4 sm:p-6"
+      role="img"
+      aria-label={summary}
+      style={wideOrColumn === DIAGRAM_PRESETS.wide ? { width: "min(1120px, calc(100vw - 48px))", position: "relative", left: "50%", transform: "translateX(-50%)" } : undefined}
+    >
+      <DiagramSvg layout={desktop} className="hidden sm:block" />
+      <DiagramSvg layout={phone} className="block sm:hidden" />
     </div>
   );
 }
