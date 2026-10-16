@@ -4,7 +4,7 @@ import { buildExperienceData } from "@/content/experience";
 import { FLOOR_COLOR } from "@/experience/config";
 import { yearMarkerSigns, YEAR_MARKER } from "@/experience/floors/career/labels";
 import { buildCareerRoad, CAREER_ROAD, careerLayoutInput } from "@/experience/floors/career/layout";
-import { L4_SIGN, TITLE_SIGN, YEAR_POST, librarySigns, stationTitleSpecs, yearPostSegments, yearPostSpecs, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
+import { L4_SIGN, TITLE_SIGN, YEAR_POST, librarySigns, stationBackEdge, stationTitleSpecs, yearPostSegments, yearPostSpecs, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { DOCK, LIBRARY_FLOOR, libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
 import { signPlate } from "@/experience/fx/signLayout";
@@ -41,12 +41,22 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
   const featured = library.stations[0];
   const titled = library.stations.filter((s) => s !== featured);
 
-  it("floats one sign per present zone at its entrance, plate bottom on the one L4 height", () => {
+  it("hangs one sign per present zone over the back edge of its first station, off the road, plate bottom on the one L4 height", () => {
     const signs = zoneSignSpecs(library, zones);
     expect(signs).toHaveLength(new Set(library.stations.map((s) => s.zone)).size);
     for (const s of signs) {
       const zone = (Object.keys(zones) as (keyof typeof zones)[]).find((z) => zones[z].toUpperCase() === s.text)!;
-      expect([s.x, s.z]).toEqual([library.signs[zone].at.x, library.signs[zone].at.z]);
+      const first = library.stations.find((st) => st.zone === zone)!;
+      // The middle of the station's back edge: the rect side farthest from the road along `facing`.
+      const back = {
+        x: first.facing.x > 0.5 ? first.rect.maxX : first.facing.x < -0.5 ? first.rect.minX : first.center.x,
+        z: first.facing.z > 0.5 ? first.rect.maxZ : first.facing.z < -0.5 ? first.rect.minZ : first.center.z,
+      };
+      expect(s.x).toBeCloseTo(back.x);
+      expect(s.z).toBeCloseTo(back.z);
+      expect(stationBackEdge(first)).toEqual({ x: s.x, z: s.z });
+      // Outside the road: farther from the road centerline (the spur start) than half the road width.
+      expect(Math.abs((s.x - first.from.x) * first.facing.x + (s.z - first.from.z) * first.facing.z)).toBeGreaterThan(LIBRARY_FLOOR.road / 2);
       expect(s.color).toBe(ZONE_TONE[zone]);
       expect(s.y - signPlate(s).h / 2).toBeCloseTo(L4_SIGN.bottom);
     }

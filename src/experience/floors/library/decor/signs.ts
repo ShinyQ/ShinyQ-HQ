@@ -25,19 +25,37 @@ export interface LibrarySignMeta {
 /** A sign whose plate bottom sits at `bottom`. */
 const atBottom = (bottom: number, spec: Omit<SignSpec, "y">): SignSpec => ({ ...spec, y: bottom + signPlate(spec).h / 2 });
 
-/** One floating sign per zone that has a station, where its road starts (pure: the layout test reads it). */
+/**
+ * Back-edge anchor of a station: the middle of the edge farthest from the road (`facing` points from the
+ * pad into the station, `across` is the station's extent along it).
+ */
+export function stationBackEdge(s: LibraryStation): Vec2 {
+  const across = Math.abs(s.facing.x) * (s.rect.maxX - s.rect.minX) + Math.abs(s.facing.z) * (s.rect.maxZ - s.rect.minZ);
+  return { x: s.center.x + (s.facing.x * across) / 2, z: s.center.z + (s.facing.z * across) / 2 };
+}
+
+/**
+ * One floating sign per zone that has a station, hung over the back edge of the zone's first station (a
+ * storefront sign over the first desk; for the posts that is the featured stage). Off the road, so it is
+ * never the plate between the follow camera and the rover. `layout.signs` (the zone anchors on the road)
+ * stays for the dev concepts. Pure: the layout test reads it.
+ */
 export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibraryZone, string>): SignSpec[] {
-  return LIBRARY_ZONES.filter((z) => layout.stations.some((s) => s.zone === z)).map((zone) => {
-    const { at } = layout.signs[zone];
-    return atBottom(L4_SIGN.bottom, {
-      text: zones[zone].toUpperCase(),
-      x: at.x,
-      z: at.z,
-      color: ZONE_TONE[zone],
-      fontSize: ZONE_SIGN.fontSize,
-      letterSpacing: ZONE_SIGN.letterSpacing,
-      font: FONTS.monoBold,
-    });
+  return LIBRARY_ZONES.flatMap((zone) => {
+    const first = layout.stations.find((s) => s.zone === zone);
+    if (!first) return [];
+    const at = stationBackEdge(first);
+    return [
+      atBottom(L4_SIGN.bottom, {
+        text: zones[zone].toUpperCase(),
+        x: at.x,
+        z: at.z,
+        color: ZONE_TONE[zone],
+        fontSize: ZONE_SIGN.fontSize,
+        letterSpacing: ZONE_SIGN.letterSpacing,
+        font: FONTS.monoBold,
+      }),
+    ];
   });
 }
 
