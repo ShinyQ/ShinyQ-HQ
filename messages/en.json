@@ -865,10 +865,10 @@
     "choices": "Choices",
     "tryIt": "Try it now",
     "onboarding": {
-      "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick tour of how things work?",
+      "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick look at how things work?",
       "start": "Show me around",
       "skip": "Skip tutorial",
-      "skipped": "No problem. You can replay the tour from Ask Rover anytime.",
+      "skipped": "No problem. Replay the tutorial from Ask Rover anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
       "moveCoarse": "Drag the joystick to drive. Tap the boost button to go faster, tap it again to stop boosting.",
       "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
@@ -883,7 +883,7 @@
       "askRover": "Not sure where to go? Ask Rover has shortcuts to the best rooms.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
-      "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
+      "closingShort": "That's the basics! Replay the full tutorial from Ask Rover anytime."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",

@@ -39,14 +39,23 @@ describe("Rover dialog copy", () => {
   });
 });
 
+describe("removed tours", () => {
+  it("no dialog line mentions the removed tours", () => {
+    for (const { path, value } of collectStrings(en.dialog)) expect(value, `en${path}`).not.toMatch(/\btours?\b/i);
+    for (const { path, value } of collectStrings(id.dialog)) expect(value, `id${path}`).not.toMatch(/\btur\b/i);
+  });
+});
+
 describe("dialog placement", () => {
-  it("sits above the bottom band and point-and-go's chip and hint: low on fine pointers, raised over the joystick on touch, clear of the elevator panel on phones", () => {
+  it("sits above the bottom band and point-and-go's chip and hint: low on fine pointers, raised over the joystick on touch, a toast above the joystick on phones", () => {
     expect(dialogPlacement("desktop", false)).toBe("bottom");
     expect(dialogPlacement("mobile", false)).toBe("bottom");
     expect(dialogPlacement("tablet", true)).toBe("raised");
     expect(dialogPlacement("mobile", true)).toBe("phone");
     expect(DIALOG_PLACE.bottom).toContain("bottom-[128px]");
     expect(DIALOG_PLACE.raised).toContain("bottom-[160px]");
-    expect(DIALOG_PLACE.phone).toContain("right-[68px]");
+    expect(DIALOG_PLACE.phone).toContain("bottom-[calc(168px");
+    expect(DIALOG_PLACE.phone).toContain("right-3");
+    expect(DIALOG_PLACE.phone).not.toContain("right-[68px]");
   });
 });
