@@ -18,6 +18,7 @@ export const ALL_SPECS = [
   "camera",
   "career",
   "csp",
+  "daynight",
   "deploy",
   "drawer-solid",
   "experience",
@@ -155,7 +156,11 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
   { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "spectacle", "topics", "fast-return"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
-  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
+  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
+  // The shared holo shader also draws the sky dome and the sun and moon (day and night).
+  { test: /^src\/experience\/fx\/holoFx\.ts$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits", "daynight"] },
+  // Day and night: the sky controller, its dome and orbs, and the visitor's choice.
+  { test: /^src\/experience\/sky\/|^src\/lib\/day-night\.ts$/, specs: ["daynight", "experience"] },
   // Screen placement of floating labels (L4 timeline and end plaza): the label overlap gates.
   { test: /^src\/experience\/fx\/(labelPlacement|plateProjection)\.ts$/, specs: ["library-labels", "topics"] },
   // Generated geo data (Natural Earth): covered by unit tests and the visits spec through its output.

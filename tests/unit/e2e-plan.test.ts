@@ -81,7 +81,9 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle", "workshop"]);
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
+    expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "daynight", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
+    expect(specsForChanges(["src/experience/sky/SkyController.tsx"]).specs).toEqual(["daynight", "experience"]);
+    expect(specsForChanges(["src/lib/day-night.ts"]).specs).toEqual(["daynight", "experience"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
     expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/experience/fx/plateProjection.ts"]).specs).toEqual(["library-labels", "topics"]);
