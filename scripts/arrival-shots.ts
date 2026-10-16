@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
  * Elevator arrival captures (Round 8 J): rides L1 to L2, L3, L4, RF and back to L1 on a served export
- * and screenshots each floor once the arrival has settled (and, with --mid, 0.7 s after the doors open,
- * mid glide). Four review sizes: 1440x900, 1194x834, 834x1194 and 390x844. SwiftShader WebGL.
+ * and screenshots each floor once the arrival has settled (and, with --mid, about halfway through the glide
+ * out of the car). Four review sizes: 1440x900, 1194x834, 834x1194 and 390x844. SwiftShader WebGL.
  *
  *   bun scripts/serve-static.ts --port 4300 --dir out &
  *   bun scripts/arrival-shots.ts --base http://127.0.0.1:4300 --out screenshots/arrivals/after --mid
@@ -38,12 +38,15 @@ for (let i = 0; i < argv.length; i++) {
 }
 mkdirSync(out, { recursive: true });
 
-async function settle(page: Page) {
-  await page.waitForFunction(() => {
-    const w = window as unknown as { __hq: HQ };
+async function settle(page: Page, atArrival = true) {
+  // After a ride the rover rolls on to the floor's arrival point (`FloorLayout.arrival`): wait until it parks there.
+  await page.waitForFunction((atArrival) => {
+    const w = window as unknown as { __hq: HQ & { layouts?: Record<string, { arrival?: { x: number; z: number } }> } };
     const s = w.__hq.store.getState();
-    return s.ride === null && s.phase === "explore" && !w.__hq.rover.driving;
-  }, null, { timeout: 120_000 });
+    if (s.ride !== null || s.phase !== "explore" || w.__hq.rover.driving) return false;
+    const a = w.__hq.layouts?.[s.floor]?.arrival;
+    return !atArrival || !a || Math.hypot(w.__hq.rover.x - a.x, w.__hq.rover.z - a.z) < 1;
+  }, atArrival, { timeout: 120_000 });
   // The camera spring is slow on SwiftShader: wait for two equal camera reads 600 ms apart.
   for (let i = 0; i < 40; i++) {
     const a = await page.evaluate(() => (window as unknown as { __hq: HQ }).__hq.camera());
@@ -69,15 +72,12 @@ try {
     const page = await context.newPage();
     await page.goto(`${base}/en?tier=${vp.tier}`);
     await page.waitForFunction(() => ((window as unknown as { __hq?: HQ }).__hq?.rover.drawCalls ?? 0) > 0 && !document.documentElement.hasAttribute("data-hq-boot"), null, { timeout: 180_000 });
-    await settle(page);
+    await settle(page, false);
     for (const floor of ORDER) {
       await (await hq(page)).evaluate((h, f) => h.store.getState().goToFloor(f), floor);
       if (mid) {
-        await page.waitForFunction(() => {
-          const w = (window as unknown as { __hq: HQ }).__hq;
-          return (w.motion ? w.motion().ride : w.store.getState().ride)?.stage === "opening";
-        }, null, { timeout: 120_000 });
-        await page.waitForTimeout(700);
+        // Mid glide: about halfway out of the car (`roverRuntime.arrivalGlide`, eased progress 0 to 1).
+        await page.waitForFunction(() => ((window as unknown as { __hq: { rover: { arrivalGlide?: number } } }).__hq.rover.arrivalGlide ?? -1) >= 0.4, null, { timeout: 120_000, polling: "raf" });
         await page.screenshot({ path: join(out, `${floor}-mid-${vp.width}x${vp.height}.png`) });
       }
       await page.waitForFunction((f) => (window as unknown as { __hq: HQ }).__hq.store.getState().floor === f, floor, { timeout: 120_000 });
