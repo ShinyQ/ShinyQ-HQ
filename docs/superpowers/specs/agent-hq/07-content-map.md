@@ -51,6 +51,7 @@ This maps the consolidated career evidence onto the tower. Titles are **public-s
 | featured | Vulnerability-scanning automation for a national agency | 2023 | Freelance, anonymized |
 | featured | Serupa Ticket Hub: event ticketing platform (attendee site, organizer dashboard, Express API) | 2025 | Freelance (Serupa), two-person team; commit shares verified from git (added 2026-10-12) |
 | featured | MII Microsoft Solutions Website: MII's public bilingual Microsoft Solutions site, built from 17 specs | 2026 | Metrodata. Live link (R4-J). Moved from the AI list. |
+| featured | Sewise Fashion Labs: made-to-measure sewing patterns (2026 hackathon entry, owner approved 2026-10-16; planned for a four-person team, all code by Kurniadi; private repository, no live link) | 2026 | 118 commits in 40 PRs; 1,390 backend tests on a fresh clone; 9 feature specs |
 | listed | Limited-quota event ticketing with inventory locking | 2025 | Freelance (DariOrdal); listed since 2026-10-12 to keep 6 featured pods per wing |
 | listed | Digital products and training e-commerce platform; University alumni and counseling platforms; Event-tech search relevance and feedback analytics backend (listed since R4-J, at most 6 featured per wing) | | |
 

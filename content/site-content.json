@@ -8528,6 +8528,191 @@
           "liveUrl": "https://mii-microsoft.azurewebsites.net"
         },
         {
+          "id": "sewise-fashion-labs",
+          "slug": "sewise-fashion-labs",
+          "order": 13,
+          "tier": "featured",
+          "accent": "pink",
+          "wing": "software",
+          "title": {
+            "en": "Sewise Fashion Labs: Made-to-Measure Sewing Patterns",
+            "id": "Sewise Fashion Labs: Pattern Jahit Made-to-Measure"
+          },
+          "shortTitle": {
+            "en": "Sewise Fashion Labs",
+            "id": "Sewise Fashion Labs"
+          },
+          "tagline": {
+            "en": "A 2026 hackathon build that turns a garment sketch and five body measurements into a made-to-measure sewing pattern, the exact fabric to buy for each roll width and a shopping list, plus circular fashion tools for old clothes.",
+            "id": "Hasil hackathon 2026 yang mengubah sketsa pakaian dan lima ukuran tubuh menjadi pattern jahit made-to-measure, jumlah kain yang tepat untuk setiap lebar gulungan, dan daftar belanja, ditambah fitur circular fashion untuk pakaian lama."
+          },
+          "period": {
+            "start": "2026-10",
+            "end": "2026-10"
+          },
+          "role": {
+            "en": "Built for a 2026 hackathon (Deep Domain AI direction) and planned for a four-person team; Kurniadi wrote all the code (118 commits, 40 pull requests) with GitHub Copilot and GitHub Spec Kit",
+            "id": "Dibangun untuk hackathon 2026 (arah Deep Domain AI) dan direncanakan untuk tim empat orang; seluruh kodenya ditulis Kurniadi (118 commit, 40 pull request) dengan GitHub Copilot dan GitHub Spec Kit"
+          },
+          "problem": {
+            "en": "Home sewers, small tailors and fashion students in Indonesia need pattern-making skills to turn a design into a pattern that fits. Fabric is bought from generic charts that ignore the roll width, notions get forgotten, and old clothes are thrown away even when they could be reused.",
+            "id": "Penjahit rumahan, penjahit kecil, dan mahasiswa mode di Indonesia membutuhkan keahlian pattern making untuk mengubah desain menjadi pattern yang pas. Kain dibeli berdasarkan tabel umum yang mengabaikan lebar gulungan, perlengkapan jahit sering terlupa, dan pakaian lama dibuang padahal masih bisa dipakai ulang."
+          },
+          "approach": [
+            {
+              "en": "I kept every number that ends up on fabric in deterministic, tested code: a Python drafting engine drafts the bodice, sleeves, peplum and skirt from five measurements, and a fit report checks every pair of seams that are sewn together against its target in millimetres.",
+              "id": "Saya menjaga setiap angka yang berakhir di kain tetap berada di kode yang deterministik dan teruji: drafting engine Python menyusun bodice, lengan, peplum, dan rok dari lima ukuran, lalu fit report memeriksa setiap pasangan jahitan yang disatukan terhadap targetnya dalam milimeter."
+            },
+            {
+              "en": "A nesting engine lays the pieces out on 110, 115 and 150 cm fabric with grainline rules, falls back to a simpler layout heuristic when the main engine is unavailable, and turns the metres to buy into a shopping list with thread, zipper and needle.",
+              "id": "Nesting engine menata potongan pada kain selebar 110, 115, dan 150 cm sesuai aturan grainline, beralih ke heuristik tata letak yang lebih sederhana saat engine utama tidak tersedia, lalu mengubah jumlah meter yang harus dibeli menjadi daftar belanja lengkap dengan benang, ritsleting, dan jarum."
+            },
+            {
+              "en": "AI only reads intent and orchestrates: Azure OpenAI reads a sketch into a constrained design spec, and an assistant on Microsoft Agent Framework calls the deterministic services as tools. Without the model, the samples and the manual spec form keep the whole flow working.",
+              "id": "AI hanya membaca maksud pengguna dan mengorkestrasi: Azure OpenAI membaca sketsa menjadi design spec yang dibatasi, dan asisten di Microsoft Agent Framework memanggil layanan deterministik sebagai tool. Tanpa model, sampel dan formulir spec manual tetap membuat seluruh alur berjalan."
+            },
+            {
+              "en": "I froze the API contracts first (Pydantic models, OpenAPI and generated TypeScript types), then built nine feature specs with GitHub Copilot and GitHub Spec Kit on Cosmos DB, Blob Storage and Azure Container Apps scripts that need only Contributor access.",
+              "id": "Saya membekukan kontrak API terlebih dahulu (model Pydantic, OpenAPI, dan tipe TypeScript yang di-generate), lalu membangun sembilan feature spec dengan GitHub Copilot dan GitHub Spec Kit di atas Cosmos DB, Blob Storage, dan skrip Azure Container Apps yang hanya membutuhkan akses Contributor."
+            }
+          ],
+          "results": [
+            {
+              "value": "1,390",
+              "label": {
+                "en": "Backend tests passing",
+                "id": "Pengujian backend yang lolos"
+              },
+              "context": {
+                "en": "pytest without the live-model tests, run on a fresh clone, 16 Oct 2026.",
+                "id": "pytest tanpa pengujian model live, dijalankan pada clone baru, 16 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "118",
+              "label": {
+                "en": "Commits by Kurniadi in 40 pull requests",
+                "id": "Commit oleh Kurniadi dalam 40 pull request"
+              },
+              "context": {
+                "en": "Repository history, 9 to 10 Oct 2026.",
+                "id": "Riwayat repositori, 9 hingga 10 Okt 2026."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "9",
+              "label": {
+                "en": "Feature specs, 754 planned tasks",
+                "id": "Feature spec, 754 task terencana"
+              },
+              "context": {
+                "en": "GitHub Spec Kit overview in the repository.",
+                "id": "Ringkasan GitHub Spec Kit di repositori."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Python",
+            "FastAPI",
+            "Next.js",
+            "TypeScript",
+            "Tailwind CSS",
+            "Microsoft Agent Framework",
+            "Azure OpenAI",
+            "Azure Cosmos DB",
+            "Azure Blob Storage",
+            "Azure Container Apps",
+            "Application Insights",
+            "GitHub Spec Kit"
+          ],
+          "hologram": "template",
+          "assets": [
+            {
+              "src": "/media/sewise-fashion-labs/01-landing.webp",
+              "alt": {
+                "en": "Sewise Fashion Labs landing page: from sketch to stitch, made to measure, with a sketch, the drafted pattern pieces and the fabric layout counted in metres",
+                "id": "Halaman utama Sewise Fashion Labs: dari sketsa ke jahitan, sesuai ukuran, dengan sketsa, potongan pattern hasil drafting, dan tata letak kain yang dihitung dalam meter"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/02-measure.webp",
+              "alt": {
+                "en": "Step 2, Measure: five required measurements in centimetres, a how-to-measure guide and checks that confirm the values look right",
+                "id": "Langkah 2, Ukur: lima ukuran wajib dalam sentimeter, panduan cara mengukur, dan pemeriksaan yang memastikan nilainya wajar"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/03-pattern.webp",
+              "alt": {
+                "en": "Step 3, Pattern: the drafted pieces with cut and seam lines, notches and grainlines, the six pipeline stages and a fit report where six of six seam checks pass",
+                "id": "Langkah 3, Pattern: potongan hasil drafting dengan garis potong dan jahit, notch, dan grainline, enam tahap pipeline, serta fit report dengan enam dari enam pemeriksaan jahitan lolos"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/04-fabric.webp",
+              "alt": {
+                "en": "Step 4, Fabric: the same pattern laid out on 110, 115 and 150 cm fabric with the metres used, the metres to buy and the utilization, with the least-fabric width marked",
+                "id": "Langkah 4, Kain: pattern yang sama ditata pada kain 110, 115, dan 150 cm dengan meter terpakai, meter yang harus dibeli, dan utilisasi, serta lebar paling hemat yang ditandai"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/05-shopping-list.webp",
+              "alt": {
+                "en": "Step 5, Shopping list: fabric, thread and notions in the exact amounts for the pattern, each with why that amount and a marketplace search",
+                "id": "Langkah 5, Daftar belanja: kain, benang, dan perlengkapan jahit dalam jumlah yang tepat untuk pattern, masing-masing dengan alasan jumlahnya dan pencarian marketplace"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/06-export.webp",
+              "alt": {
+                "en": "Download page: one design PDF with the summary, the shopping list and the full-size pattern, print-at-100% guidance and the design summary computed by code",
+                "id": "Halaman unduhan: satu PDF desain berisi ringkasan, daftar belanja, dan pattern ukuran penuh, panduan cetak 100%, serta ringkasan desain yang dihitung oleh kode"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/07-circular.webp",
+              "alt": {
+                "en": "Circular fashion hub: upcycle an old garment into a new design, find a ready-made pre-loved piece in the same size, or estimate a garment's resale value",
+                "id": "Hub circular fashion: ubah pakaian lama menjadi desain baru, temukan pakaian pre-loved dengan ukuran yang sama, atau perkirakan nilai jual kembali pakaian"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/sewise-fashion-labs/08-mobile.webp",
+              "alt": {
+                "en": "Phone layouts: the landing page, the drafted pattern and the fabric widths",
+                "id": "Tampilan ponsel: halaman utama, pattern hasil drafting, dan pilihan lebar kain"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
+        },
+        {
           "id": "insurer-contact-center-architecture",
           "slug": "insurer-contact-center-architecture",
           "order": 18,

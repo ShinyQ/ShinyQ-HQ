@@ -39,6 +39,7 @@ export const TECH_ALIASES: Readonly<Record<string, string>> = {
   "vue.js": "vue",
   "azure openai realtime": "azure openai",
   "microsoft foundry": "azure ai foundry",
+  "azure cosmos db": "cosmos db",
 };
 
 /** Pod techs the CV skill groups do not list, by ring. Every key must be used by some pod (unit test). */
