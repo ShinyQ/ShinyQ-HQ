@@ -8,8 +8,8 @@ import { chooseMotion, enterHQ, expectNoGpuGrowth, readJsHeapAfterGc, readSettle
  * every ride a 150 ms cut; a warm-up tour first builds what exists once by design (programs, the
  * troika glyph atlas, the Highlights Hall). three counts a geometry or program only once it has been
  * drawn, so what the camera saw decides the counts: every trip calls the elevator the moment the
- * rover arrives, and the baseline is read after one trip shaped like the measured ones (a ride drops
- * the roll-on drive of the floor it leaves, so the rover always stops at the L1 approach). The
+ * rover arrives, and the baseline is read after one trip shaped like the measured ones (under reduced
+ * motion every arrival places the rover on the floor's arrival point, so it always stops at the L1 one). The
  * counts, trips, toggles and heap slack come from GPU_MEMORY_BUDGET (e2e/budgets.ts).
  */
 type MemoryWindow = Window & { __hq: { store: { getState: () => { goToFloor: (floor: string) => void } } } };

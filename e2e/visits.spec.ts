@@ -4,7 +4,7 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
@@ -30,6 +30,37 @@ type ProbeWindow = {
     layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }>;
   };
 };
+type ClickWindow = Window & {
+  __hq: {
+    rover: { x: number; y: number; z: number };
+    interact: {
+      project: ((p: { x: number; y: number; z: number }) => { x: number; y: number } | null) | null;
+      screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null;
+      hitAt: ((x: number, y: number) => string | null) | null;
+    };
+  };
+};
+
+/** A screen point where a click lands on target `id` (bare canvas, raycast hit, clear of the HUD and the rover), or null. */
+async function clickablePoint(page: Page, id: string) {
+  return page.evaluate((id) => {
+    const { interact, rover } = (window as unknown as ClickWindow).__hq;
+    if (!interact.project || !interact.hitAt) return null;
+    const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
+    const [w, h] = [window.innerWidth, window.innerHeight];
+    for (const lift of [0.85, 0.5, 0.2])
+      for (const fx of [0.5, 0.3, 0.7])
+        for (const fz of [0.5, 0.3, 0.7]) {
+          const p = interact.screenAt(id, fx, fz, lift);
+          if (!p || p.x < 40 || p.x > w - 40 || p.y < 90 || p.y > h - 90) continue;
+          if (document.elementFromPoint(p.x, p.y)?.tagName !== "CANVAS") continue;
+          if (self && Math.hypot(p.x - self.x, p.y - self.y) <= 100) continue;
+          if (interact.hitAt(p.x, p.y) === id) return p;
+        }
+    return null;
+  }, id);
+}
+
 const spectacle = (page: Page, key: string) => page.evaluate((k) => (window as unknown as ProbeWindow).__hq.probes.spectacle[k], key);
 
 /** Opens `path` in 3D as a returning visitor; a `#visits` deep link starts in the room, everything else in explore. */
@@ -111,10 +142,17 @@ test.describe("Visitor Observatory in the Lobby", () => {
     await enterFloorRoute(page, "/en/journey");
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L1"]').click();
     await waitForFloor(page, "L1");
-    // The arrival view turns toward the south-west corner (L1:arrival), so the station is on screen.
+    // The arrival view looks east at the hologram (L3-style arrivals, Round 8 J) with the south-west corner behind
+    // the camera: turn the view in 45 degree steps (the HUD's Rotate right) until the station is on screen.
     await waitForCameraSettle(page);
     await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
-    const point = await targetPoint(page, "L1:station:visits");
+    let point = await clickablePoint(page, "L1:station:visits");
+    for (let turn = 0; !point && turn < 8; turn++) {
+      await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
+      await waitForCameraSettle(page);
+      point = await clickablePoint(page, "L1:station:visits");
+    }
+    if (!point) throw new Error("L1:station:visits never came on screen");
     await page.mouse.click(point.x, point.y);
     await waitForRoom(page, "L1:visits");
     const { rover, floor } = await snapshot(page);

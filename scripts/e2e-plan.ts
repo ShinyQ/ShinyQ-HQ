@@ -12,6 +12,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 
 /** Every spec in the default (non-screenshot) suite. */
 export const ALL_SPECS = [
+  "arrivals",
   "ask",
   "boost",
   "boot-first",
@@ -198,10 +199,10 @@ export const RULES: Rule[] = [
   { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
-  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions"] },
+  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions", "arrivals", "memory"] },
   // View zones (travel direction, class views): the L3 three paths arrival and road entrances read them too.
-  { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths"] },
-  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
+  { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths", "arrivals"] },
+  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride", "arrivals"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).

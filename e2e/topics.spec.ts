@@ -78,6 +78,9 @@ test("picking a topic in the drawer lights its stations, glows their roads and f
   await waitForPhase(page, "explore");
   const stop = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:topics"]);
   await driveTo(page, { x: stop.x - 6, z: 0 });
+  // The deep link opens on the L4 arrival view, which looks east down the timeline (Round 8 J) and keeps that yaw
+  // on the drive; from the default view angle the headline above the cloud is on screen.
+  await page.getByRole("button", { name: en.hud.view.reset }).click();
   await waitForCameraSettle(page);
   await expect.poll(() => signs(page)).toContain(`${sentiment.items.length} pieces on Sentiment analysis`);
   await expect.poll(() => page.evaluate(() => location.hash)).toBe("#library-topic=sentiment-analysis");

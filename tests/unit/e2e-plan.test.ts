@@ -20,10 +20,10 @@ import path from "node:path";
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
-    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["experience", "fast-return", "gpu", "missions", "ride"]);
-    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["experience", "fast-return", "gpu", "missions", "ride"]);
+    expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["arrivals", "experience", "fast-return", "gpu", "memory", "missions", "ride"]);
+    expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["arrivals", "experience", "fast-return", "gpu", "memory", "missions", "ride"]);
     expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
-    expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["camera", "career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["arrivals", "camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
@@ -161,7 +161,7 @@ describe("specsForChanges", () => {
   });
 
   it("maps the camera, its input, the rover fade and the view buttons to the camera spec", () => {
-    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["camera", "career", "experience", "labs-paths", "ride"]);
+    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["arrivals", "camera", "career", "experience", "labs-paths", "ride"]);
     expect(specsForChanges(["src/experience/input/useInputSources.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
