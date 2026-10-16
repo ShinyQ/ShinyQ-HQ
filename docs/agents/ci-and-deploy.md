@@ -99,6 +99,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - Use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`.
 - Sounds are synthesized, so there are no audio files to add.
+- Background music is the procedural Deep Space Ambient track (`src/lib/audio/music.ts`); keep it at `MUSIC_LEVEL` (the site's ambient level, quiet enough that the effects stay on top), and stop it through `MusicVoice.stop()` (no leaked nodes or timers).
 - Sound is on by default (owner decision):
   - a missing `hq:sound` means on;
   - a stored `"off"` stays muted;

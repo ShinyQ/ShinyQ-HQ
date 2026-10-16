@@ -3,135 +3,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAudioEngine, useAudio, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
 import { rumbleTargets } from "@/lib/audio/synth";
-
-class FakeParam {
-  value: number;
-  constructor(value = 0) {
-    this.value = value;
-  }
-  setValueAtTime = vi.fn((v: number) => {
-    this.value = v;
-    return this;
-  });
-  linearRampToValueAtTime = vi.fn((v: number) => {
-    this.value = v;
-    return this;
-  });
-  exponentialRampToValueAtTime = vi.fn((v: number) => {
-    this.value = v;
-    return this;
-  });
-  setTargetAtTime = vi.fn((v: number) => {
-    this.value = v;
-    return this;
-  });
-  cancelScheduledValues = vi.fn(() => this);
-}
-
-class FakeNode {
-  connected: unknown[] = [];
-  connect = vi.fn((target: unknown) => {
-    this.connected.push(target);
-    return target;
-  });
-  disconnect = vi.fn();
-}
-
-class FakeGain extends FakeNode {
-  gain = new FakeParam(1);
-}
-
-class FakeFilter extends FakeNode {
-  type = "lowpass";
-  frequency = new FakeParam(350);
-  Q = new FakeParam(1);
-}
-
-class FakeSource extends FakeNode {
-  onended: (() => void) | null = null;
-  start = vi.fn();
-  stop = vi.fn();
-}
-
-class FakeOscillator extends FakeSource {
-  type = "sine";
-  frequency = new FakeParam(440);
-  detune = new FakeParam(0);
-}
-
-class FakeBufferSource extends FakeSource {
-  buffer: unknown = null;
-  loop = false;
-}
-
-class FakeBuffer {
-  private data: Float32Array;
-  constructor(public numberOfChannels: number, public length: number, public sampleRate: number) {
-    this.data = new Float32Array(length);
-  }
-  getChannelData() {
-    return this.data;
-  }
-}
-
-class FakeAudioContext {
-  static instances: FakeAudioContext[] = [];
-  currentTime = 0;
-  sampleRate = 8000;
-  state: AudioContextState = "suspended";
-  destination = new FakeNode();
-  oscillators: FakeOscillator[] = [];
-  bufferSources: FakeBufferSource[] = [];
-  gains: FakeGain[] = [];
-  filters: FakeFilter[] = [];
-  buffers: FakeBuffer[] = [];
-
-  constructor() {
-    FakeAudioContext.instances.push(this);
-  }
-
-  resume = vi.fn(() => {
-    this.state = "running";
-    return Promise.resolve();
-  });
-  suspend = vi.fn(() => {
-    this.state = "suspended";
-    return Promise.resolve();
-  });
-  close = vi.fn(() => {
-    this.state = "closed";
-    return Promise.resolve();
-  });
-  createOscillator = vi.fn(() => {
-    const node = new FakeOscillator();
-    this.oscillators.push(node);
-    return node;
-  });
-  createBufferSource = vi.fn(() => {
-    const node = new FakeBufferSource();
-    this.bufferSources.push(node);
-    return node;
-  });
-  createGain = vi.fn(() => {
-    const node = new FakeGain();
-    this.gains.push(node);
-    return node;
-  });
-  createBiquadFilter = vi.fn(() => {
-    const node = new FakeFilter();
-    this.filters.push(node);
-    return node;
-  });
-  createBuffer = vi.fn((channels: number, length: number, rate: number) => {
-    const buffer = new FakeBuffer(channels, length, rate);
-    this.buffers.push(buffer);
-    return buffer;
-  });
-
-  get sources(): FakeSource[] {
-    return [...this.oscillators, ...this.bufferSources];
-  }
-}
+import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
 
 class FakeStorage {
   map = new Map<string, string>();
@@ -255,7 +127,7 @@ describe("audio engine: on by default and lazy init", () => {
     engine.setMuted(true);
     expect(storage.setItem).toHaveBeenLastCalledWith("hq:sound", "off");
     expect(masterOf(ctx()).gain.setTargetAtTime).toHaveBeenLastCalledWith(0, expect.any(Number), expect.any(Number));
-    vi.runAllTimers();
+    vi.advanceTimersByTime(1000);
     expect(ctx().suspend).toHaveBeenCalledTimes(1);
     expect(ctx().state).toBe("suspended");
   });
@@ -265,7 +137,7 @@ describe("audio engine: on by default and lazy init", () => {
     engine.setMuted(false);
     engine.setMuted(true);
     engine.setMuted(false);
-    vi.runAllTimers();
+    vi.advanceTimersByTime(1000);
     expect(ctx().suspend).not.toHaveBeenCalled();
   });
 
@@ -288,7 +160,7 @@ describe("audio engine: persisted on", () => {
     expect(ctx().resume).toHaveBeenCalled();
   });
 
-  it("creates and resumes the context (and the ambient hum) on the first user gesture", async () => {
+  it("creates and resumes the context (and the background music) on the first user gesture", async () => {
     const { doc, createContext, ctx } = setup();
     expect(doc.count("pointerdown")).toBe(1);
     doc.fire("pointerdown");
@@ -335,7 +207,7 @@ describe("audio engine: paused outside the 3D view", () => {
     expect(engine.isPaused()).toBe(true);
     expect(engine.isMuted()).toBe(false);
     expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, expect.any(Number), expect.any(Number));
-    vi.runAllTimers();
+    vi.advanceTimersByTime(1000);
     expect(ctx().suspend).toHaveBeenCalled();
     engine.play("ding");
     expect(ctx().sources.length).toBe(before);
@@ -389,7 +261,7 @@ describe("audio engine: one-shots", () => {
     engine.play("whoosh");
     engine.play("whoosh");
     engine.play("click");
-    expect(ctx().buffers).toHaveLength(1);
+    expect(ctx().buffers.filter((b) => b.numberOfChannels === 1)).toHaveLength(1);
   });
 
   it("play while muted after unmuting is a no-op", () => {
@@ -485,7 +357,7 @@ describe("audio engine: visibility, subscribe, dispose", () => {
     expect(context.resume).toHaveBeenCalledTimes(1);
 
     engine.setMuted(true);
-    vi.runAllTimers();
+    vi.advanceTimersByTime(1000);
     context.resume.mockClear();
     doc.setVisibility("hidden");
     doc.setVisibility("visible");
@@ -518,6 +390,86 @@ describe("audio engine: visibility, subscribe, dispose", () => {
     const before = ctx().sources.length;
     engine.play("beep");
     expect(ctx().sources.length).toBe(before);
+  });
+});
+
+describe("audio engine: background music", () => {
+  const drones = (ctx: FakeAudioContext) => ctx.oscillators.filter((o) => o.type === "triangle");
+
+  it("starts the Deep Space music with the context: drones, reverb and compressor", () => {
+    const { engine, ctx } = setup();
+    engine.setMuted(false);
+    expect(drones(ctx())).toHaveLength(3);
+    expect(ctx().convolvers).toHaveLength(1);
+    expect(ctx().compressors).toHaveLength(1);
+  });
+
+  it("stops the music once the mute fade ends and starts a fresh one on unmute, reusing the impulse", () => {
+    const { engine, ctx } = setup();
+    engine.setMuted(false);
+    const first = drones(ctx());
+    engine.setMuted(true);
+    expect(first.every((o) => o.stop.mock.calls.length === 0)).toBe(true);
+    vi.advanceTimersByTime(1000);
+    expect(first.every((o) => o.stop.mock.calls.length === 1 && o.disconnect.mock.calls.length > 0)).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+    engine.setMuted(false);
+    expect(drones(ctx())).toHaveLength(6);
+    expect(ctx().buffers.filter((b) => b.numberOfChannels === 2)).toHaveLength(1);
+  });
+
+  it("keeps the music when unmuted again during the fade", () => {
+    const { engine, ctx } = setup();
+    engine.setMuted(false);
+    engine.setMuted(true);
+    engine.setMuted(false);
+    vi.advanceTimersByTime(1000);
+    expect(drones(ctx())).toHaveLength(3);
+    expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 0)).toBe(true);
+  });
+
+  it("stops on pause (Page View) and restarts on unpause", () => {
+    const { engine, ctx } = setup();
+    engine.setMuted(false);
+    engine.setPaused(true);
+    vi.advanceTimersByTime(1000);
+    expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 1)).toBe(true);
+    engine.setPaused(false);
+    expect(drones(ctx())).toHaveLength(6);
+  });
+
+  it("only suspends while the tab is hidden: the music keeps its nodes", () => {
+    const { engine, doc, ctx } = setup();
+    engine.setMuted(false);
+    doc.setVisibility("hidden");
+    doc.setVisibility("visible");
+    expect(drones(ctx())).toHaveLength(3);
+    expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 0)).toBe(true);
+  });
+
+  it.each([
+    ["mute", (engine: ReturnType<typeof setup>["engine"]) => engine.setMuted(true)],
+    ["pause", (engine: ReturnType<typeof setup>["engine"]) => engine.setPaused(true)],
+  ])("stops the music when the tab hides during a pending %s fade", (_name, silence) => {
+    const { engine, doc, ctx } = setup();
+    engine.setMuted(false);
+    silence(engine);
+    doc.setVisibility("hidden");
+    expect(drones(ctx())).toHaveLength(3);
+    expect(drones(ctx()).every((o) => o.stop.mock.calls.length === 1 && o.disconnect.mock.calls.length > 0)).toBe(true);
+    expect(ctx().suspend).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("leaves no music nodes or timers after dispose", () => {
+    const { engine, ctx } = setup();
+    engine.setMuted(false);
+    ctx().currentTime = 3;
+    vi.advanceTimersByTime(500);
+    engine.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+    const music = [...drones(ctx()), ...ctx().convolvers, ...ctx().compressors];
+    expect(music.every((n) => n.disconnect.mock.calls.length > 0)).toBe(true);
   });
 });
 
