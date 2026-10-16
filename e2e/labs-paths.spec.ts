@@ -32,9 +32,9 @@ const ENTRANCE = 18;
 type Pt = { x: number; z: number };
 type LW = Window & {
   __hq: {
-    layouts: Record<string, { road?: { roads: { id: string; points: Pt[] }[] }; stops?: Record<string, Pt>; arrival?: Pt }>;
+    layouts: Record<string, { road?: { roads: { id: string; points: Pt[] }[] }; stops?: Record<string, Pt>; directoryStops?: Record<string, Pt>; arrival?: Pt }>;
     probes: { signs: Record<string, { text: string; facing: number }[]> };
-    rover: { cameraYaw: number; cameraZoom: number };
+    rover: { cameraYaw: number; cameraZoom: number; cameraElevation: number };
     camera?: () => [number, number, number];
   };
 };
@@ -95,8 +95,29 @@ async function pose(page: Page, size: (typeof SIZES)[number], name: string): Pro
 
 /** The point each pose drives to from the arrival spot (null when this build has no such road or stop). */
 async function poseTarget(page: Page, name: string): Promise<Pt | null> {
-  if (name === "reactor") return page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.stops?.["L3:reactor"] ?? null);
+  if (name === "reactor" || name === "reactor-top") return page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.stops?.["L3:reactor"] ?? null);
+  if (name.startsWith("board-")) return page.evaluate((wing) => (window as unknown as LW).__hq.layouts.L3.directoryStops?.[wing] ?? null, name.slice("board-".length));
+  if (name === "reactor-approach") {
+    // On the spine 12 u before its ring entry, heading east: the camera looks along the spine at the plaza.
+    const end = await page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.road?.roads.find((r) => r.id === "data")?.points.at(-1) ?? null);
+    return end ? { x: end.x - 12, z: 0 } : null;
+  }
   return pointAlong(page, name.slice("entrance-".length), ENTRANCE);
+}
+
+/** Tilts the follow camera to its steepest pitch and zooms out, so the reactor plaza shows from above. */
+async function lookFromAbove(page: Page) {
+  const elevation = () => page.evaluate(() => (window as unknown as LW).__hq.rover.cameraElevation);
+  const before = await elevation();
+  // R and F tilt the view (intents.ts); hold whichever raises the camera.
+  for (const key of ["f", "r"]) {
+    await page.keyboard.down(key);
+    await page.waitForTimeout(2500);
+    await page.keyboard.up(key);
+    await waitForCameraSettle(page, SETTLE);
+    if ((await elevation()) > before + 0.1) break;
+  }
+  for (let i = 0; i < 4; i++) await page.keyboard.press("-");
 }
 
 for (const size of SIZES) {
@@ -126,7 +147,7 @@ for (const size of SIZES) {
     });
 
     // Road entrances (18 u into each road from the hub centre), then the reactor plaza where the three roads meet.
-    for (const name of [...ROADS.map((r) => `entrance-${r}`), "reactor"]) {
+    for (const name of [...ROADS.map((r) => `entrance-${r}`), ...ROADS.map((r) => `board-${r}`), "reactor", "reactor-approach", "reactor-top"]) {
       test(`${name}: the rover drives there along the road and the view stays within the budget`, async ({ browser }) => {
         const { context, page } = await openArrival(browser, size);
         const at = await poseTarget(page, name);
@@ -136,6 +157,7 @@ for (const size of SIZES) {
           const { rover } = await snapshot(page);
           // The autopilot ends a leg within its arrival radius, not on the exact point.
           check(Math.hypot(rover.x - at.x, rover.z - at.z), `rover at ${name}`).toBeLessThan(2);
+          if (name === "reactor-top") await lookFromAbove(page);
           await pose(page, size, name);
         }
         await context.close();
