@@ -1,9 +1,11 @@
 import { useSyncExternalStore } from "react";
 import { isBotLike, PROBE_KEY } from "@/lib/boot-first";
-import { decideTier, readTierInputs } from "@/lib/gpu-tier";
+import { applyQualityPref, decideTier, isTier, readTierInputs } from "@/lib/gpu-tier";
+import { qualityPref } from "@/lib/quality-pref";
 import type { GpuTier } from "./types";
 
 let detected: GpuTier | undefined;
+let overridden = false;
 let scheduled = false;
 const tierListeners = new Set<() => void>();
 
@@ -22,6 +24,7 @@ function subscribeTier(listener: () => void) {
       if (detected === undefined && isBotLike(navigator, window.location.search)) detected = "static";
       if (detected === undefined) {
         const inputs = readTierInputs(window.location.search);
+        overridden = isTier(inputs.override);
         detected = decideTier(inputs);
         // Remember an auto-detected static device, so the next page skips the boot cover.
         if (detected === "static" && !inputs.override) {
@@ -45,4 +48,13 @@ const readServerTier = () => null;
 /** The GPU tier of this page load: null on the server and until the probe has run after the first commit. */
 export function useGateTier(): GpuTier | null {
   return useSyncExternalStore(subscribeTier, readDetectedTier, readServerTier);
+}
+
+/** True when the probe saw a valid `?tier=` in the URL (it then beats the graphics quality setting). */
+export const tierOverridden = () => overridden;
+
+/** The effective tier: the probe's, adjusted by the Settings panel's graphics quality (applies at once). */
+export function useQualityTier(detected: GpuTier | null): GpuTier | null {
+  const pref = useSyncExternalStore(qualityPref.subscribe, qualityPref.get, () => "auto" as const);
+  return detected === null ? null : applyQualityPref(detected, pref, overridden);
 }
