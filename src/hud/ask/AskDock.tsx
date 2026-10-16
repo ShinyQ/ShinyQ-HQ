@@ -36,8 +36,6 @@ function markTeaserSeen() {
 }
 
 const modalOpen = () => Boolean(document.querySelector("[role='dialog'][aria-modal='true']"));
-/** The 3D Walk HUD (prompt, card or pill) sits where the tower teaser would show on phones. */
-const walkOnScreen = () => Boolean(document.querySelector("[data-testid^='walk-']"));
 
 /**
  * Ask the HQ dock, mounted once in the locale layout (outside #site-shell, so it works over the 3D
@@ -97,7 +95,7 @@ export function AskDock({ locale }: { locale: Locale }) {
     const delay = tower ? TEASER_DELAY_3D_MS : TEASER_DELAY_MS;
     const attempt = (retries: number) => {
       if (teaserSeen()) return;
-      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen() || walkOnScreen()) {
+      if (document.documentElement.hasAttribute(BOOT_ATTR) || modalOpen()) {
         if (retries > 0) timer = window.setTimeout(() => attempt(retries - 1), delay);
         return;
       }

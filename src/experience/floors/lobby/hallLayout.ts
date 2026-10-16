@@ -8,8 +8,8 @@ import { HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "./stat
  * L1 Highlights Hall (owner request, October 2026): the Lobby slab grows east from x = 28 to 64. A
  * lead road leaves the plaza south of the certification wall (which stays untouched and readable from
  * the plaza) into a 24 x 26 u hall plaza. Four stations stand flush with the slab edges, facing the
- * plaza, in walk order: about me (north-west), top projects (north-east), work experience (east),
- * contact (south). Pure: the floor layout, the scenery, the Quick tour and the e2e tests read it.
+ * plaza, in this order: about me (north-west), top projects (north-east), work experience (east),
+ * contact (south). Pure: the floor layout, the scenery and the e2e tests read it.
  * Checked by tests/unit/highlights-layout.test.ts (space rules with the real Lobby).
  */
 export const HALL = {

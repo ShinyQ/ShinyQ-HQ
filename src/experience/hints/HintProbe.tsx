@@ -17,7 +17,7 @@ const FIRST_PERSON_BUBBLE = 0.9;
 /**
  * Picks the one point-and-go target a "!" bubble floats over (10 times a second) and moves the HTML
  * bubble over its anchor every frame. No bubble while the rover is not free (ride, beam, any autopilot
- * drive: missions, walks, point-and-go) or while a target is hovered or tap-selected (point-and-go's
+ * drive: missions, point-and-go) or while a target is hovered or tap-selected (point-and-go's
  * label and Go chip own that moment). In first person the bubble floats just above eye height, so a
  * near target's bubble stays in view. Renders nothing: no draw calls.
  */

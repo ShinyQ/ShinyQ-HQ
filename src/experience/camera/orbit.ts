@@ -245,7 +245,7 @@ export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportCl
 
 /**
  * Cosine slack past perpendicular for `ViewZone.travel`: a rover arriving square to the travel direction
- * (the tour reaches the data board stop heading north) keeps the zone despite tiny heading errors.
+ * (a drive reaches the data board stop heading north) keeps the zone despite tiny heading errors.
  */
 export const TRAVEL_SLACK = 0.25;
 

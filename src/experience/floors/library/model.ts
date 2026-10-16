@@ -5,7 +5,7 @@ import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
 
 /**
  * Shared contract of the L4 Writing floor (walkable floors plan, part 3). Every concept builder
- * (`concepts/*.ts`) returns a `LibraryLayout`, so the floor, the walk, the camera zones and the decor
+ * (`concepts/*.ts`) returns a `LibraryLayout`, so the floor, the camera zones and the decor
  * read the same stations whatever concept ships. Pure: no React or three.
  */
 
@@ -90,7 +90,7 @@ export interface LibraryLayout {
   concept: LibraryConcept;
   floor: FloorLayout;
   network: RoadNetwork;
-  /** Walk order: docked posts (newest first, the featured post first where a concept has one), then research, models, talks. */
+  /** Station order: docked posts (newest first, the featured post first where a concept has one), then research, models, talks. */
   stations: LibraryStation[];
   /** Slugs of posts beyond `maxPosts` (archive board and the posts palette). */
   archive: string[];

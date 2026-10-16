@@ -3,7 +3,7 @@ export type DrawerLayout = "side" | "sheet";
 
 /**
  * Side panel width per viewport width. Mirrors `--hq-drawer-w` in `src/app/globals.css` (the CSS
- * is the source for layout; this copy feeds the camera shift and the Walk HUD dock).
+ * is the source for layout; this copy feeds the camera shift).
  */
 export const SIDE_WIDTHS = [
   { min: 1400, width: 600 },

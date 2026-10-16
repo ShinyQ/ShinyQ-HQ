@@ -9,7 +9,6 @@ import { chevronMarks } from "@/experience/nav/roadGeometry";
 import { buildLabsLayout, directoryStop, LABS, LABS_WINGS, SIDE_WINGS, tourOrder, wallPosts, WING_SIDE } from "@/experience/floors/labs/layout";
 import { REACTOR, ringEntry } from "@/experience/floors/labs/reactor";
 import { HINT } from "@/experience/hints/select";
-import { labsWalk } from "@/experience/missions/walks";
 import { distanceToRect } from "@/experience/nav/collision";
 import { DOOR_WIDTH } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
@@ -388,15 +387,6 @@ describe("L3 Project Roads layout", () => {
     }
     // Driving along a wing road does not turn the camera.
     for (const x of [0, 30, 60]) for (const wing of SIDE_WINGS) expect(zoneAt("L3", { x, z: WING_SIDE[wing] * layout.wingZ }, floor.viewZones)).toBeNull();
-  });
-
-  it("feeds the tour in docking order, wing by wing, ending at the directory boards", () => {
-    const walk = labsWalk(pods, { wings: { software: "Product Engineering", ai: "AI Engineering", data: "Data and ML" }, more: "More projects here", moreSub: "" });
-    const rooms = walk.stops.filter((s) => s.room).map((s) => s.room);
-    expect(rooms).toEqual(layout.placed.map((p) => p.room));
-    const boards = LABS_WINGS.map((wing) => layout.boards[wing].stop);
-    expect(walk.stops.slice(-boards.length).map((s) => s.to)).toEqual(boards);
-    expect(boards).toEqual([directoryStop("software"), directoryStop("ai"), directoryStop("data")]);
   });
 
   it("is what buildFloorLayouts uses for L3 when pods are given", () => {

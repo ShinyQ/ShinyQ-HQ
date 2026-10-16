@@ -32,7 +32,7 @@ function ProfilePhoto({ size }: { size: number }) {
 
 /**
  * Top-left card: name, title and current floor (appendix 04: collapses to a pill on mobile). Visited
- * rooms stay in the store for missions and walks, but the card no longer counts them (owner decision).
+ * rooms stay in the store for missions, but the card no longer counts them (owner decision).
  */
 export function ProfileCard({ data, mobile }: { data: ExperienceData; mobile: boolean }) {
   const t = useTranslations("hud");

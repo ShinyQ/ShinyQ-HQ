@@ -16,7 +16,7 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
  * around the centerpiece (telescope, drone cradle or antenna mast, per the picked concept). The
  * stations sit flush with the slab edges, facing the plaza: comms (RF:contact) north, the CV station
  * (RF:cv) east, the about board south-west. Pure (no React or three): the floor layout, the scenery
- * and the "Meet me" walk all read it.
+ * and the missions all read it.
  */
 export const ROOF_DECK = {
   bounds: { minX: -20, maxX: 22, minZ: -20, maxZ: 20 },
@@ -160,5 +160,5 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   };
 }
 
-/** Mission and walk stops on the roof (the door pads for RF:contact and RF:cv). */
+/** Mission stops on the roof (the door pads for RF:contact and RF:cv). */
 export const ROOF_STOPS: Record<RoofStop, Vec2> = buildRoofLayout().stops;

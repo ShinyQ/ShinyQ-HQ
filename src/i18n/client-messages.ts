@@ -24,8 +24,8 @@ export const CLIENT_NAMESPACES = [
   "library",
   "paper",
   "production",
+  "proto",
   "stats",
-  "walk",
   "work",
 ] as const;
 
