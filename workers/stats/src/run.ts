@@ -103,6 +103,14 @@ export function readWaExtra(raw: string | null): WaRows {
   return { days: rows.days.map(strip), countries: rows.countries.map(strip), paths: rows.paths.map(strip) };
 }
 
+/** Counts only: why a day's Web Analytics answer was not exact (page views per group, largest sample interval). */
+function waShape(date: string, wa: WaRows): string {
+  const rows = [...wa.days, ...wa.countries, ...wa.paths].filter((r) => r.date === date);
+  const total = (list: readonly { date: string; count: number }[]) => list.reduce((sum, r) => (r.date === date ? sum + r.count : sum), 0);
+  const interval = Math.max(1, ...rows.map((r) => r.sampleInterval ?? 1).map((v) => (Number.isFinite(v) ? v : Number.POSITIVE_INFINITY)));
+  return `page views ${total(wa.days)}, countries ${total(wa.countries)}, paths ${total(wa.paths)}, sample interval up to ${Number.isFinite(interval) ? Math.round(interval * 100) / 100 : "unknown"}`;
+}
+
 /** Valid, and the perf block (when built) survived validation instead of being dropped. */
 function validSnapshot(snapshot: StatsSnapshotV1 | null): snapshot is StatsSnapshotV1 {
   if (!snapshot) return false;
@@ -183,7 +191,7 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
   await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
   const range = (list: readonly DayRollup[]) => (list.length ? `${list[0].date} to ${list.at(-1)?.date}` : "none");
   const filled = missingPerf.length ? `, filled perf for ${missingPerf.length} stored days` : "";
-  const held = deferred.length ? `, held back ${deferred.join(", ")} (sampled or inconsistent Web Analytics answer)` : "";
+  const held = deferred.length ? `, held back ${deferred.map((date) => `${date} (${waShape(date, wa)})`).join(", ")}` : "";
   const late = forced.length ? `, stored ${forced.join(", ")} sampled after ${EXACT_GRACE_DAYS} days` : "";
   log(`hq-stats: added ${added.length} days (${range(added)})${filled}${held}${late}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days`);
   return { added: added.map((d) => d.date), provisional: provisional.map((d) => d.date), days: ledgerDays.length, snapshot: true };

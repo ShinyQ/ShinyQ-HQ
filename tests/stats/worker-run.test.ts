@@ -232,7 +232,7 @@ describe("hq-stats run", () => {
     expect(held).toMatchObject({ added: [], provisional: ["2026-10-15", "2026-10-16"], days: 1 });
     expect(ledgerOf(e).days.map((d) => d.date)).toEqual(["2026-10-14"]);
     expect(e.STATS_KV.puts).toEqual([STATS_KEY]);
-    expect(log.mock.calls.at(-1)?.[0]).toContain("held back 2026-10-15");
+    expect(log.mock.calls.at(-1)?.[0]).toContain("held back 2026-10-15 (page views 700, countries 700, paths 2000, sample interval up to 100)");
 
     const exact = fakeApi({ wa: { "2026-10-15": { count: 333, visits: 36 }, "2026-10-16": { count: 6, visits: 3 } } });
     const stored = await runStats(e, ATH("2026-10-16", 8), exact.fetcher, () => {});
@@ -461,7 +461,7 @@ describe("hq-stats run", () => {
     const e = env();
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher(String(input), init));
     try {
-      await worker.scheduled({ cron: "0 */4 * * *", scheduledTime: AT("2026-10-14") }, e);
+      await worker.scheduled({ cron: "17 */4 * * *", scheduledTime: AT("2026-10-14") }, e);
     } finally {
       spy.mockRestore();
     }

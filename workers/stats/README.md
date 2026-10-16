@@ -1,6 +1,6 @@
 # hq-stats: public visit stats Cron Worker
 
-Job every 4 hours (`0 */4 * * *`, UTC: 00, 04, 08, 12, 16 and 20 o'clock) behind the public visit stats
+Job every 4 hours (`17 */4 * * *`, UTC: 17 minutes past 00, 04, 08, 12, 16 and 20 o'clock) behind the public visit stats
 (Layer 1). It reads two sources with one read-only Account Analytics token, keeps one rollup per
 finalized UTC day, and writes the public snapshot (days so far, today included) that `GET /api/stats`
 (Pages Function, `functions/api/stats.ts`) serves.
@@ -39,7 +39,9 @@ flowchart LR
   groups adding up to the same page views. Otherwise the day (and every later day, the ledger stays
   contiguous) stays provisional and is fetched again on the next runs; after `EXACT_GRACE_DAYS` (3) it
   is stored anyway and the run log says so. Why: on 2026-10-16 the 04:00 run got a coarse answer (700
-  page views, 0 visits, 1000 per floor) for a day that had 333 page views and 36 visits, and kept it. Every run also rolls up the days after that from the same queries: yesterday during
+  page views, 0 visits, 1000 per floor) for a day that had 333 page views and 36 visits, and kept it;
+  the 12:00 run got the same answer and held the day back, a run at 12:15 got the exact one, so the cron
+  runs 17 minutes past the hour. Every run also rolls up the days after that from the same queries: yesterday during
   the 00:00 run (it is not settled yet) and today so far. These provisional days enter the public
   snapshot but are never stored; the next run recomputes them. `d30` is the 30 days ending today (today
   partial) and `updatedAt` is the run time. A failed run writes nothing, so the last good snapshot stays,
