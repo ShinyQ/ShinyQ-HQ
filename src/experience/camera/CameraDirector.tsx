@@ -10,16 +10,17 @@ import { floorY } from "../config";
 import { roadZAt } from "../floors/career/layout";
 import { intents, pitchAxisFromKeys, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
-import { RIDE_CAP } from "../tower/elevator";
+import { RIDE_CAP, type RideStage } from "../tower/elevator";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
+import { ARRIVAL_GLIDE, ARRIVAL_HEADING, cameraBehindHeading, glidePose, glideProgress, shoulderPose } from "./arrival";
 import { boostView } from "./boostView";
 import { clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, zoneAt, zoomBy } from "./orbit";
+import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
@@ -44,6 +45,17 @@ function holdThirdPerson(s: HQState): boolean {
 }
 
 const toVec3 = (v: Vector3): Vec3 => [v.x, v.y, v.z];
+
+/** The floor's arrival view zone: the zone at its arrival point for a rover heading east (null without one). */
+function arrivalZone(layout: FloorLayout | undefined): ViewZone | null {
+  return layout?.arrival ? zoneAt(layout.id, { ...layout.arrival, heading: ARRIVAL_HEADING }, layout.viewZones) : null;
+}
+
+/** Applies a floor's arrival view at once (rail-aware on L2; elsewhere a stale L2 arrival rail yaw is forgotten, the rail stays). */
+function primeArrival(orbit: OrbitState, zone: ViewZone, floor: FloorId, cls: HQState["device"]["camera"]): void {
+  primeZone(orbit, zone, cls, floor === "L2");
+  if (floor !== "L2") orbit.zoneRailYaw = null;
+}
 
 /**
  * Applies the active camera rig every frame with critically damped smoothing. The camera turns all the
@@ -78,6 +90,10 @@ export function CameraDirector({
     cut: false,
     /** Boost response this frame: FOV kick (degrees) and follow distance factor. */
     boost: { fovKick: 0, pull: 1 },
+    /** Arrival glide out of the elevator car (Round 8 J): seconds since it started and the destination; null when none runs. */
+    glide: null as { t: number; to: FloorId } | null,
+    /** Stage of the stored ride on the previous frame (null without a ride). */
+    prevStage: null as RideStage | null,
   });
 
   useEffect(
@@ -85,6 +101,8 @@ export function CameraDirector({
       intents.on((intent) => {
         const { orbit } = local.current;
         const s = getHQStore().getState();
+        // Any turn, zoom or reset hands the arrival glide over to the normal camera, which eases on from the drawn pose.
+        if (intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") local.current.glide = null;
         const rail = selectRig(s.phase, s.floor) === "rail";
         if (intent.type === "orbit") {
           // On L2 a one-finger swipe scrubs through the years; it does not turn the view.
@@ -124,12 +142,44 @@ export function CameraDirector({
     if (axis || tilt) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, tilt * KEY_PITCH_SPEED * dt, rail);
     // The session spawn (the L1 kiosk stop, a `prime` zone) starts in its zone's view at once: the intro flies into
     // that view and the first frame shows it, with no turn afterwards. Other zones keep easing in (never under reduced motion).
+    // A deep link that spawns on an arrival point (L4, RF) opens on the arrival view too (rail-aware).
     if (!l.ready || s.phase === "boot" || s.phase === "intro") {
       const zone = zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones);
-      if (zone?.prime) primeZone(orbit, zone, cls);
+      if (zone?.prime || zone?.arrivalOnly) primeZone(orbit, zone, cls, s.floor === "L2");
     }
-    if (exploring && !s.ride) updateZone(orbit, zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), s.reducedMotion, cls);
-    stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s));
+
+    // Arrival glide (Round 8 J): when the car doors start to open, the camera starts over the rover's shoulder
+    // in the car and glides to the destination's arrival view. Reduced motion has no doors stage: it cuts to the
+    // arrival view on the frame the ride ends, with the rover already on the arrival point.
+    const stage = s.ride?.stage ?? null;
+    if (s.ride && stage === "opening" && l.prevStage !== "opening" && !s.reducedMotion) {
+      const zone = arrivalZone(layouts?.[s.ride.to]);
+      if (zone) {
+        primeArrival(orbit, zone, s.ride.to, cls);
+        l.glide = { t: 0, to: s.ride.to };
+      }
+    } else if (l.glide) {
+      l.glide.t += dt;
+    }
+    if (!s.ride && l.prevStage !== null && l.prevStage !== "toDoor" && s.reducedMotion) {
+      const zone = arrivalZone(layouts?.[s.floor]);
+      if (zone && zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones)?.id === zone.id) {
+        primeArrival(orbit, zone, s.floor, cls);
+        // The follow look-ahead reads the last drawn forward (still the origin's view): cut straight to the settled one.
+        if (s.floor !== "L2") roverRuntime.cameraForward = followForward(cls, orbit.yaw);
+      }
+    }
+    l.prevStage = stage;
+    // The glide ends on manual steering or a key turn, a new ride, a beam, or a room or the hologram (turn and zoom intents end it in the intents handler).
+    if (l.glide && (roverRuntime.steering || axis || tilt || stage === "toDoor" || stage === "boarding" || s.beam || !exploring)) l.glide = null;
+    const glide = l.glide;
+
+    // The arrival view holds while the camera glides and the rover rolls on to the arrival point, so it parks in the primed zone.
+    const rollingOn = roverRuntime.autopilot?.arrival && roverRuntime.autopilot.state !== "done";
+    if (exploring && !s.ride && !glide && !rollingOn) {
+      updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), orbit), s.reducedMotion, cls, rail);
+    }
+    stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s) || glide !== null);
     roverRuntime.cameraYaw = orbit.yaw;
     roverRuntime.cameraRailYaw = orbit.railYaw;
     roverRuntime.cameraMode = orbit.firstPerson ? "first" : "third";
@@ -143,6 +193,8 @@ export function CameraDirector({
 
     let desired: CameraPose;
     let snap = false;
+    /** The rig the drawn pose belongs to: during a glide the destination's (the store still holds the origin floor until the ride ends). */
+    const drawRail = glide ? glide.to === "L2" : rail;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
     // Boost: widen and pull back a little (third person), a smaller FOV kick in first person; never under reduced motion.
     boostView(roverRuntime.boost, orbit.blend, !s.reducedMotion && !focus && rig !== "intro", l.boost);
@@ -171,6 +223,22 @@ export function CameraDirector({
           l.cut = s.reducedMotion;
         }
       }
+    } else if (glide) {
+      // The settled arrival view, as the follow or rail branch below draws it, then over the shoulder toward it.
+      let end: CameraPose;
+      if (drawRail) {
+        end = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
+      } else {
+        const ahead = FOLLOW_LOOK_AHEAD[cls];
+        const f = followForward(cls, orbit.yaw);
+        const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
+        end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
+      }
+      // In the car the rover leaves east (on the frame the doors start to open it still faces the ride's back wall).
+      const heading = s.ride ? ARRIVAL_HEADING : roverRuntime.heading;
+      const start = shoulderPose([roverRuntime.x, roverRuntime.y, roverRuntime.z], heading, end.fov);
+      desired = glidePose(start, end, glideProgress(glide.t));
+      snap = true;
     } else if (rail) {
       desired = railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, roadZAt(railAxis, roverRuntime.x), orbit.pitch);
     } else {
@@ -181,7 +249,7 @@ export function CameraDirector({
       desired = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
     }
     // A low third-person camera stays above the floor, on the slab and out of obstacles: pulled in along its view ray. High poses never move.
-    if (world && !focus && rig !== "intro") desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget) };
+    if (world && !focus && rig !== "intro" && !glide) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget) };
 
     // A teleport moved the rover far along the road: cut to it instead of gliding across the floor.
     if (roverRuntime.cameraSnap) {
@@ -208,7 +276,7 @@ export function CameraDirector({
     // First person: mix the smoothed third-person camera toward the rover's eyes by the eased blend.
     const fp = orbit.blend > 0 && rig !== "intro";
     let fov = desired.fov;
-    let forward: Vec2 = rail ? railForward(orbit.railYaw) : forwardOf(desired);
+    let forward: Vec2 = drawRail ? railForward(orbit.railYaw) : forwardOf(desired);
     l.outPos.copy(l.pos);
     l.outTarget.copy(l.target);
     if (fp) {
@@ -254,10 +322,16 @@ export function CameraDirector({
     // Steering is camera-relative: on L2 straight away from the camera, in first person where the eyes look.
     if (!focus) roverRuntime.cameraForward = forward;
     roverRuntime.cameraPosition = toVec3(l.outPos);
+    roverRuntime.cameraBehind = cameraBehindHeading(roverRuntime.cameraPosition, [roverRuntime.x, roverRuntime.y, roverRuntime.z]);
+    roverRuntime.arrivalGlide = glide ? glideProgress(glide.t) : -1;
+    // The last glide frame drew the settled view; the follow spring holds it from the next frame.
+    if (glide && glide.t >= ARRIVAL_GLIDE.duration) l.glide = null;
     roverRuntime.cameraElevation = Math.atan2(l.outPos.y - l.outTarget.y, Math.hypot(l.outPos.x - l.outTarget.x, l.outPos.z - l.outTarget.z));
     if (scene.fog instanceof Fog) {
       // Ease the linear fog range between rigs so the intro fly-in and the first-person glide do not pop.
-      const { near: fogNear, far: fogFar } = sceneSettings(s.tier, focus ? "focus" : fp && orbit.blend >= 0.5 ? "first" : rig).fog;
+      // A glide uses the destination's range from its first frame (a cut into the car), so the fog does not pop when the ride ends.
+      const fogRig = glide ? (drawRail ? "rail" : "follow") : rig;
+      const { near: fogNear, far: fogFar } = sceneSettings(s.tier, focus ? "focus" : fp && orbit.blend >= 0.5 ? "first" : fogRig).fog;
       const kf = snap ? 1 : springFactor(dt);
       scene.fog.near += (fogNear - scene.fog.near) * kf;
       scene.fog.far += (fogFar - scene.fog.far) * kf;

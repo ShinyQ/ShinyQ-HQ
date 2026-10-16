@@ -43,6 +43,12 @@ export const roverRuntime = {
   cameraPosition: [0, 0, 0] as [number, number, number],
   /** Set by the Director when a teleport moves the rover: the camera cuts to it on the next frame instead of gliding. */
   cameraSnap: false,
+  /** Manual drive input (keys, joystick) moved the rover this frame; set by the Director (ends the arrival glide). */
+  steering: false,
+  /** Arrival glide progress 0 to 1 while the camera glides out of the elevator car, -1 otherwise (test probe). */
+  arrivalGlide: -1,
+  /** Heading of the horizontal vector from the drawn camera to the rover (`cameraBehindHeading`; test probe). */
+  cameraBehind: 0,
   /** Mission autopilot request (see missions/host3d.ts). */
   autopilot: null as AutopilotRequest | null,
   /** A mission was cancelled: show o_o for 600 ms. */

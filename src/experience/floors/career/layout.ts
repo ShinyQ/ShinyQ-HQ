@@ -242,6 +242,7 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     zoom: C.arrivalZoom.desktop,
     classView: { tablet: { zoom: C.arrivalZoom.tablet }, mobile: { zoom: C.arrivalZoom.mobile } },
     travel: { x: 1, z: 0 },
+    arrivalOnly: true,
   };
 
   const archPosts: Rect[] = years.flatMap((y) => y.arch.posts.map((p) => rect(p, C.archPost, C.archPost)));

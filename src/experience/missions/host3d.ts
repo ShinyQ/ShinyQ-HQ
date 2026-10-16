@@ -11,6 +11,8 @@ import { floorOf, localize, roomPath, type RoomInfo } from "./rooms";
 export interface AutopilotRequest {
   point: Vec2;
   state: "pending" | "driving" | "done";
+  /** The roll-on after an elevator ride (Round 8 J): the camera holds the primed arrival view while it drives. */
+  arrival?: true;
 }
 
 /** The slice of the shared rover runtime the host talks to. */

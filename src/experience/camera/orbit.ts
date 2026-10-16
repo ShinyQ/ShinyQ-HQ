@@ -196,6 +196,12 @@ export interface ViewZone {
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
   prime?: boolean;
   /**
+   * An arrival view (Round 8 J): active only while `OrbitState.zone` already holds this id, set by an elevator
+   * arrival or a deep-link spawn (`primeZone`). Driving into it does nothing (`activeZone`), so a rover passing
+   * the arrival point later never swings the camera (or, on L2, the rail).
+   */
+  arrivalOnly?: true;
+  /**
    * Applies only while the rover faces within about 104 degrees of this direction (forward `(sin h, cos h)`,
    * `TRAVEL_SLACK` past perpendicular), so a zone that looks along a road never turns the camera against a
    * rover driving the other way, and a rover arriving square to it keeps the zone. Callers
@@ -271,6 +277,11 @@ export function zoneAt(floor: FloorId, p: Vec2 & { heading?: number }, extra: re
     p.z <= z.area.maxZ &&
     (!z.travel || heading === undefined || Math.sin(heading) * z.travel.x + Math.cos(heading) * z.travel.z >= -TRAVEL_SLACK);
   return VIEW_ZONES[floor]?.find(inside) ?? extra.find(inside) ?? null;
+}
+
+/** The zone `updateZone` should track: an `arrivalOnly` zone counts only while it is already the current zone. */
+export function activeZone(zone: ViewZone | null, s: Pick<OrbitState, "zone">): ViewZone | null {
+  return zone?.arrivalOnly && s.zone !== zone.id ? null : zone;
 }
 
 /** Eases a zone's rail yaw back to the nearest side view (leaving the zone, or moving to one without a rail yaw). */

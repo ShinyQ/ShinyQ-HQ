@@ -124,6 +124,8 @@ describe("L3-style arrivals on every floor (owner 2026-10-17)", () => {
       expect(zone.travel).toEqual({ x: 1, z: 0 });
       expect(zone.yaw).toBeCloseTo(LOOK_EAST_YAW, 9);
       if (floor === "L2") expect(zone.railYaw).toBeCloseTo(railYawBehind(), 9);
+      // Arrival views apply only when primed (an arrival or a deep link); the L3 overview is an ordinary zone.
+      expect(zone.arrivalOnly).toBe(floor === "L3" ? undefined : true);
       expect(arrival.z).toBe(layout.approach.z);
       expect(arrival.x).toBeGreaterThan(layout.approach.x + 5);
       // A rover driving the other way never gets the zone.

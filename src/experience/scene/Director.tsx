@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { WebGLRenderer } from "three";
 import type { FloorId, RoomId } from "@/content/schema";
 import { getHQStore, type HQState } from "@/store/useHQStore";
+import { ARRIVAL_HEADING } from "../camera/arrival";
 import { scrubSign } from "../camera/rigs";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
@@ -328,6 +329,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     }
     const canDrive = !s.beam && (s.phase === "explore" || (s.phase === "elevator" && s.ride?.stage === "toDoor"));
     const manual = canDrive && move ? cameraRelative(move, roverRuntime.cameraForward) : null;
+    roverRuntime.steering = manual !== null;
     const tuning: RoverTuning = {
       maxSpeed: s.device.coarse ? ROVER.maxSpeedCoarse : ROVER.maxSpeedFine,
       accel: ROVER.accel,
@@ -421,12 +423,16 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           s.setRide(next);
         } else {
           clearRide();
-          controller.teleport(to.approach, Math.PI / 2);
-          // The rover steps out onto the new floor's elevator pad: it stays quiet until the rover leaves it.
-          local.pad = primedPadLatch(to.pads, to.approach);
+          // Every floor rolls the rover on east from the shaft to its arrival point (a mission's drive replaces it);
+          // reduced motion cuts straight to the arrival point instead, and the camera cuts with it.
+          const rollOn = to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done") ? to.arrival : null;
+          const at = rollOn && s.reducedMotion ? rollOn : to.approach;
+          controller.teleport(at, at === rollOn ? ARRIVAL_HEADING : Math.PI / 2);
+          // The pad under the rover (the elevator pad; none at the arrival point) stays quiet until the rover leaves it.
+          local.pad = primedPadLatch(to.pads, at);
           s.arriveFloor(ride.to);
-          // Floors with an arrival spot roll the rover on from the shaft (a mission's drive replaces it).
-          if (to.arrival && (!roverRuntime.autopilot || roverRuntime.autopilot.state === "done")) roverRuntime.autopilot = { point: to.arrival, state: "pending" };
+          if (at === rollOn) roverRuntime.cameraSnap = true;
+          else if (rollOn) roverRuntime.autopilot = { point: rollOn, state: "pending", arrival: true };
           audio.play("ding");
           if (local.rideStats) {
             const summary = finishRideStats(local.rideStats, programCount(three.gl));

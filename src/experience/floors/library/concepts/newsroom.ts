@@ -164,6 +164,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         zoom: N.arrivalZoom,
         classView: { mobile: { zoom: N.arrivalZoomPhone } },
         travel: { x: 1, z: 0 },
+        arrivalOnly: true,
       },
       // In front of the headline wall: look north at it, zoomed out so the whole wall fits.
       { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4 },

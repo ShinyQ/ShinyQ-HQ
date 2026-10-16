@@ -228,6 +228,7 @@ function lobbyArrivalZone(): ViewZone {
     zoom: LOBBY.arrivalZoom,
     classView: { mobile: { zoom: LOBBY.arrivalZoomPhone } },
     travel: { x: 1, z: 0 },
+    arrivalOnly: true,
   };
 }
 

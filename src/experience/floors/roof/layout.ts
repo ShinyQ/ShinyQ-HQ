@@ -134,6 +134,7 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
       zoom: D.arrivalZoom,
       classView: { mobile: { zoom: D.arrivalZoomPhone } },
       travel: { x: 1, z: 0 },
+      arrivalOnly: true,
     },
     // Comms (facing south): the camera south of the rover, looking north at the station and the channels above it.
     { id: "RF:contact", area: { minX: comms.minX, maxX: comms.maxX, minZ: contactPad.z - 2, maxZ: contactPad.z + 2 }, yaw: -Math.PI / 4 },
