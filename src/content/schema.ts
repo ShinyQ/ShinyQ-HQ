@@ -172,6 +172,9 @@ export const ArchitectureSchema = z
     });
   });
 
+/** Post-local architecture diagrams (content/blog/diagrams.json): post slug, then diagram id, then a pod-shaped `architecture`. */
+export const PostDiagramsSchema = z.record(SlugSchema, z.record(SlugSchema, ArchitectureSchema));
+
 /** Longest `Pod.shortTitle` in either locale (one line on an L3 directory board). */
 export const SHORT_TITLE_MAX = 32;
 
@@ -561,6 +564,7 @@ export type Certification = z.infer<typeof CertificationSchema>;
 export type TimelineEntry = z.infer<typeof TimelineEntrySchema>;
 export type Result = z.infer<typeof ResultSchema>;
 export type Architecture = z.infer<typeof ArchitectureSchema>;
+export type PostDiagrams = z.infer<typeof PostDiagramsSchema>;
 export type Pod = z.infer<typeof PodSchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
