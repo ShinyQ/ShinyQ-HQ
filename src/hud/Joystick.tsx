@@ -19,7 +19,8 @@ type Boost = ReturnType<typeof useBoostToggle>;
  * With `boost` (the Corners HUD, which has no Boost button), a double tap toggles boost: a short, still
  * first tap, then a pointer down within `DOUBLE_TAP_MS` of its release; the first tap drives as usual.
  * Keyboard users hold Shift instead. Without `boost` it never touches the boost state, so a separate
- * Boost button keeps its own.
+ * Boost button keeps its own. The gesture is timed with the input events' own times, not the time a
+ * handler runs, so a slow frame between the taps (a shader compile on a phone) never breaks it.
  */
 export function Joystick({ boost = false }: { boost?: boolean }) {
   return boost ? <BoostJoystick /> : <Stick />;
@@ -64,7 +65,7 @@ function Stick({ boost }: { boost?: Boost }) {
     active.current = null;
     if (boost) {
       track(e);
-      const now = Date.now();
+      const now = e.timeStamp;
       const p = press.current;
       lastTap.current = up && !p.moved && now - p.at <= TAP_MAX_MS ? now : 0;
     }
@@ -81,7 +82,7 @@ function Stick({ boost }: { boost?: Boost }) {
       data-boost={boost ? (boost.on ? "on" : "off") : undefined}
       onPointerDown={(e) => {
         if (boost) {
-          const now = Date.now();
+          const now = e.timeStamp;
           const second = lastTap.current > 0 && now - lastTap.current <= DOUBLE_TAP_MS;
           lastTap.current = 0;
           if (second) boost.toggle();

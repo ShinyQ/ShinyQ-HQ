@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBoost } from "@/experience/input/joystick";
 import { DOUBLE_TAP_MS, Joystick } from "@/hud/Joystick";
@@ -95,6 +95,22 @@ describe("Joystick double-tap boost", () => {
     expect(stick()).toHaveAttribute("data-boost", "on");
     tapAt(10_300);
     expect(stick()).not.toHaveAttribute("data-boost", "on");
+  });
+
+  it("times the gesture with the events' own times, so a slow frame between them does not break it", () => {
+    render(<Joystick boost />);
+    /** A pointer event created at `stamp` (input time) and handled at `handled` (the clock when the handler runs). */
+    const at = (type: "pointerDown" | "pointerUp", stamp: number, handled: number) => {
+      vi.setSystemTime(handled);
+      const event = type === "pointerDown" ? createEvent.pointerDown(stick(), { pointerId: 1 }) : createEvent.pointerUp(stick(), { pointerId: 1 });
+      Object.defineProperty(event, "timeStamp", { value: stamp });
+      fireEvent(stick(), event);
+    };
+    // Input 50 ms apart, but a 400 ms frame ran before the release was handled.
+    at("pointerDown", 1_000, 10_000);
+    at("pointerUp", 1_050, 10_400);
+    at("pointerDown", 1_170, 10_800);
+    expect(stick()).toHaveAttribute("data-boost", "on");
   });
 
   it("a cancelled pointer is not a tap", () => {
