@@ -19,6 +19,14 @@ export const sceneProbes = {
   reactor: { tech: null as string | null, lit: [] as string[], roads: 0, surprise: null as string | null, boost: 1 },
   /** L4 Topic Constellation: the picked topic, its lit rooms (stations and desks, plus "L4:board:archive"), glowing road segments, orbit angle, the orbs' floor-local centers and the monument's texts. */
   topics: { topic: null as string | null, lit: [] as string[], roads: 0, orbit: 0, orbs: [] as { slug: string; x: number; y: number; z: number }[], monument: null as string[] | null, labels: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[] },
+  /** L4 timeline signs (sections, year marks, post titles) shown this frame: text, kind and their screen boxes and quads in CSS pixels (`useLibrarySignPlacement`). */
+  library: {
+    labels: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[],
+    /** On-screen candidates the placement left out (screen boxes), for diagnosing a missing label. */
+    hidden: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number }[],
+    /** The rover's screen box the labels keep clear of (null when behind the camera). */
+    rover: null as { x0: number; y0: number; x1: number; y1: number } | null,
+  },
   /** Texts drawn flat on a floor right now (spectacle round: there should be none, `flatTexts`). */
   flatText: (): string[] => (renderProbe.scene ? flatTexts(renderProbe.scene) : []),
   hallGate: { sweeps: 0, active: false },

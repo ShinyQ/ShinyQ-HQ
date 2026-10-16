@@ -8,7 +8,7 @@ import { roverRuntime } from "../rover/runtime";
 import { FONTS } from "../tower/primitives";
 import type { GpuTier } from "../types";
 import { BatchedLabels, type BatchedLabelsHandle } from "./BatchedLabels";
-import { orbitXZ, signFacing, signFacingDot, signPlate, type SignSpec } from "./signLayout";
+import { nextHiddenFrames, orbitXZ, SIGN_HIDDEN, signFacing, signFacingDot, signPlate, type SignSpec } from "./signLayout";
 import { createHoloMaterial, HOLO_MODE } from "./holoFx";
 import type { BatchedLabel } from "./labelProps";
 import { neonColor } from "./materials";
@@ -40,13 +40,28 @@ function sameUpdate(last: LastUpdate | null, signs: readonly SignSpec[], mesh: I
 /** Text sits this far in front of its plate (u). */
 const TEXT_LIFT = 0.03;
 
+/** Per-sign drop state for `dropHidden`, valid for one sign list and one member list. */
+interface DropState {
+  signs: readonly SignSpec[] | null;
+  members: readonly unknown[] | null;
+  frames: Uint32Array;
+  dropped: Uint8Array;
+}
+
+/** A sign's opacity: its distance fade along x (L2) times the caller's visibility. */
+const signOpacity = (s: SignSpec, visible: number) => (s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x)) * visible;
+
 /**
  * Floating signs for one floor in two draw calls: every plate in one instanced mesh (the holo `plate`
  * mode: a dark fill with a neon rim in the sign color) and every text in one `BatchedLabels`. Each
  * frame every sign turns to the camera (yaw only, `signFacing`), so it reads left to right from any
  * camera yaw and never shows its back, and fades with the rover's distance along x when it has a
- * `fadeX` (L2); with every sign faded out the group draws nothing. `name` keys the `__hq.probes.signs` entry e2e reads. Not raycast: clickable signs are
- * point-and-go targets (interact/registry.ts).
+ * `fadeX` (L2); with every sign faded out the group draws nothing. With `dropHidden`, a sign hidden for
+ * that many rendered frames in a row also leaves the text batch (its member text becomes "", so troika
+ * repacks without its glyphs) and gets its text back as soon as it fades in again, and hidden plates
+ * leave the instanced draw: a group of many mostly hidden signs (the L4 timeline) then costs no more
+ * triangles than the signs on screen. `name` keys the `__hq.probes.signs` entry e2e reads. Not
+ * raycast: clickable signs are point-and-go targets (interact/registry.ts).
  */
 export function FloatingSigns({
   signs,
@@ -54,6 +69,7 @@ export function FloatingSigns({
   tier,
   orbit,
   visibility,
+  dropHidden,
 }: {
   signs: readonly SignSpec[];
   name: string;
@@ -62,6 +78,8 @@ export function FloatingSigns({
   orbit?: { readonly current: number };
   /** Per-sign opacity multiplier, 0 to 1, written by the caller every frame (the L4 label placement); missing entries count as 1. */
   visibility?: { readonly current: ArrayLike<number> };
+  /** Rendered frames a sign stays hidden before its glyphs leave the text batch; off when unset. */
+  dropHidden?: number;
 }) {
   const group = useRef<Group>(null);
   const plates = useRef<InstancedMesh>(null);
@@ -95,8 +113,11 @@ export function FloatingSigns({
   const origin = useMemo(() => new Vector3(), []);
   // Instance colors exist from creation, so the floor's precompile builds the instanced-color program.
   const colors = useMemo(() => new Float32Array(signs.flatMap((s) => neonColor(s.color, 1.5, tier).toArray())), [signs, tier]);
+  // Packed plates (`dropHidden`) rewrite their slot colors, so they get their own copy.
+  const slotColors = useMemo(() => (dropHidden ? colors.slice() : colors), [colors, dropHidden]);
   const scratch = useRef(new Float64Array(0));
   const last = useRef<LastUpdate | null>(null);
+  const drop = useRef<DropState>({ signs: null, members: null, frames: new Uint32Array(0), dropped: new Uint8Array(0) });
 
   useEffect(
     () => () => {
@@ -124,23 +145,54 @@ export function FloatingSigns({
     inputs[3] = camera.position.z;
     inputs[4] = angle;
     inputs[5] = roverRuntime.x;
-    for (let i = 0; i < signs.length; i++) inputs[FIXED_INPUTS + i] = visibility?.current[i] ?? 1;
+    // With `dropHidden`, count each sign's hidden frames in the same pass (skipped frames count too) and
+    // drop or restore its member text; the matrices below do not depend on it, so the skip stays exact.
+    const d = drop.current;
+    const dropping = Boolean(dropHidden && members && members.length === signs.length);
+    if (dropping && (d.signs !== signs || d.members !== members)) {
+      d.signs = signs;
+      d.members = members!;
+      d.frames = new Uint32Array(signs.length);
+      d.dropped = new Uint8Array(signs.length);
+    }
+    for (let i = 0; i < signs.length; i++) {
+      const visible = visibility?.current[i] ?? 1;
+      inputs[FIXED_INPUTS + i] = visible;
+      if (!dropping) continue;
+      d.frames[i] = nextHiddenFrames(d.frames[i], signOpacity(signs[i], visible));
+      const off = d.frames[i] >= dropHidden! ? 1 : 0;
+      if (off !== d.dropped[i]) {
+        d.dropped[i] = off;
+        members![i].text = off ? "" : signs[i].text;
+      }
+    }
     if (sameUpdate(last.current, signs, mesh, alphas, members, inputs)) return;
     const cam = { x: camera.position.x, z: camera.position.z };
     const probe: { text: string; facing: number }[] = [];
     let any = false;
+    // With `dropHidden`, shown plates pack to the front of the instance buffer and the draw stops at the
+    // last one, so hidden plates cost nothing either (instance order, and so blending, stays sign order).
+    const pack = Boolean(dropHidden && mesh.instanceColor);
+    let slot = 0;
     signs.forEach((s, i) => {
       const local = s.orbit && angle ? orbitXZ(s.x, s.z, angle) : { x: s.x, z: s.z };
       const at = { x: origin.x + local.x, z: origin.z + local.z };
       const yaw = signFacing(at, cam);
-      const k = (s.fadeX === undefined ? 1 : labelFade(s.fadeX - roverRuntime.x)) * (visibility?.current[i] ?? 1);
-      const shown = k > 0.01;
+      const k = signOpacity(s, visibility?.current[i] ?? 1);
+      const shown = k > SIGN_HIDDEN;
       dummy.position.set(local.x, s.y, local.z);
       dummy.rotation.set(-(s.tilt ?? 0), yaw, 0, "YXZ");
       dummy.scale.set(shown ? sizes[i].w : 0, shown ? sizes[i].h : 0, 1);
       dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-      alphas.setX(i, k);
+      if (!pack) {
+        mesh.setMatrixAt(i, dummy.matrix);
+        alphas.setX(i, k);
+      } else if (shown) {
+        mesh.setMatrixAt(slot, dummy.matrix);
+        alphas.setX(slot, k);
+        mesh.instanceColor!.setXYZ(slot, colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+        slot++;
+      }
       const member = members?.[i];
       if (member) {
         member.position.copy(dummy.position);
@@ -154,6 +206,10 @@ export function FloatingSigns({
       }
     });
     mesh.instanceMatrix.needsUpdate = true;
+    if (pack) {
+      mesh.count = slot;
+      mesh.instanceColor!.needsUpdate = true;
+    }
     alphas.needsUpdate = true;
     // Every sign faded out (L2 far from its plazas): skip both draw calls.
     mesh.visible = any;
@@ -166,7 +222,7 @@ export function FloatingSigns({
   return (
     <group ref={group} name={name}>
       <instancedMesh key={signs.length} ref={plates} args={[geometry, material, signs.length]} frustumCulled={false} raycast={NO_RAYCAST} renderOrder={1}>
-        <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
+        <instancedBufferAttribute attach="instanceColor" args={[slotColors, 3]} />
       </instancedMesh>
       <BatchedLabels ref={batch} labels={labels} name={`${name}-text`} renderOrder={2} exactColors />
     </group>

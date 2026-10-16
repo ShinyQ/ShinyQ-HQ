@@ -31,6 +31,7 @@ export const ALL_SPECS = [
   "labs",
   "labs-data",
   "labs-paths",
+  "library-labels",
   "library-roof",
   "lifecycle",
   "memory",
@@ -154,9 +155,11 @@ export const RULES: Rule[] = [
   // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
   { test: /^src\/hud\/drawer\/(TopicsBody|filterParts)\.tsx$|^src\/content\/(topic-index|topic-map|room-views\/library)\.ts$|^src\/components\/page\/TopicFilter\.tsx$/, specs: ["topics", "library-roof", "reactor"] },
   { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-roof", "walk", "spectacle", "topics", "fast-return"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "walk", "spectacle", "topics", "fast-return"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
-  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-roof", "visits"] },
+  { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts|holoFx\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
+  // Screen placement of floating labels (L4 timeline and end plaza): the label overlap gates.
+  { test: /^src\/experience\/fx\/(labelPlacement|plateProjection)\.ts$/, specs: ["library-labels", "topics"] },
   // Generated geo data (Natural Earth): covered by unit tests and the visits spec through its output.
   { test: /^scripts\/visits-geo\.ts$/, specs: [] },
   // Public visit stats (S2): the shared model, store, panel and placements, the RF observatory and the L1 tile.

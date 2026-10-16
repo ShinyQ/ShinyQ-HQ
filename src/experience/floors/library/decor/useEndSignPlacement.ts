@@ -4,6 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Vector3, type Object3D } from "three";
 import { placeLabels, type LabelCandidate, type ScreenBox } from "../../../fx/labelPlacement";
+import { projectPlate } from "../../../fx/plateProjection";
 import { sceneProbes } from "../../../fx/probes";
 import { orbitXZ, signPlate, type SignSpec } from "../../../fx/signLayout";
 import type { EndSignMeta } from "./EndPlaza";
@@ -24,13 +25,9 @@ const NEAR: Record<EndSignMeta["kind"], number> = { topic: 8, count: 11, monumen
 /** A small margin around each plate. */
 const BOX_PAD = 1.04;
 const FADE_RATE = 8;
-/** Plate corners in order around the plate (left bottom, right bottom, right top, left top). */
-const CORNERS = [
-  [-1, -1],
-  [1, -1],
-  [1, 1],
-  [-1, 1],
-] as const;
+
+/** Screen boxes of the end plaza signs shown this frame, so the L4 timeline signs keep clear of them (`useLibrarySignPlacement`). */
+export const endPlazaScreen = { boxes: [] as ScreenBox[] };
 
 export function useEndSignPlacement({
   signs,
@@ -55,11 +52,11 @@ export function useEndSignPlacement({
   const sizes = useMemo(() => signs.map(signPlate), [signs]);
   const size = useThree((s) => s.size);
   const v = useMemo(() => new Vector3(), []);
-  const right = useMemo(() => new Vector3(), []);
   const origin = useMemo(() => new Vector3(), []);
   useEffect(
     () => () => {
       sceneProbes.topics.labels = [];
+      endPlazaScreen.boxes = [];
     },
     [],
   );
@@ -77,28 +74,11 @@ export function useEndSignPlacement({
       const d = Math.hypot(camera.position.x - wx, camera.position.z - wz);
       const fixed = m.kind !== "topic" || Boolean(m.picked);
       if (d < NEAR[m.kind]) return { box: null, priority: 0, fixed };
-      // Plates turn to the camera about y only and stay upright (`signFacing`): their screen box spans the
-      // four corners along the horizontal axis square to the camera direction and the world vertical.
-      right.set(camera.position.z - wz, 0, wx - camera.position.x).divideScalar(d);
-      const hw = (sizes[i].w / 2) * BOX_PAD;
-      const hh = (sizes[i].h / 2) * BOX_PAD;
-      const box: ScreenBox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-      const quad: [number, number][] = [];
-      for (const [sx, sy] of CORNERS) {
-        {
-          v.set(wx + right.x * hw * sx, origin.y + s.y + hh * sy, wz + right.z * hw * sx).project(camera);
-          if (v.z < -1 || v.z > 1) return { box: null, priority: 0, fixed };
-          const x = ((v.x + 1) / 2) * width;
-          const y = ((1 - v.y) / 2) * height;
-          box.x0 = Math.min(box.x0, x);
-          box.x1 = Math.max(box.x1, x);
-          box.y0 = Math.min(box.y0, y);
-          box.y1 = Math.max(box.y1, y);
-          quad.push([x, y]);
-        }
-      }
-      quads[i] = quad;
-      if (box.x1 < 0 || box.x0 > width || box.y1 < 0 || box.y0 > height) return { box: null, priority: 0, fixed };
+      const projected = projectPlate(camera, { x: wx, y: origin.y + s.y, z: wz }, { w: (sizes[i].w / 2) * BOX_PAD, h: (sizes[i].h / 2) * BOX_PAD }, size, v);
+      if (!projected) return { box: null, priority: 0, fixed };
+      quads[i] = projected.quad;
+      if (!projected.onScreen) return { box: null, priority: 0, fixed };
+      const box = projected.box;
       const priority = m.kind !== "topic" ? 0 : (hovered.current === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
       return { box, priority, fixed };
     });
@@ -121,6 +101,12 @@ export function useEndSignPlacement({
       candidates.push({ box: seen ? box : null, priority: 0, fixed: true });
     }
     const shown = placeLabels(candidates, width < 600 ? LABEL_MAX.narrow : LABEL_MAX.wide);
+    const screen: ScreenBox[] = [];
+    for (let i = 0; i < signs.length; i++) {
+      const box = candidates[i].box;
+      if (shown[i] && box) screen.push(box);
+    }
+    endPlazaScreen.boxes = screen;
     // A new sign list (a pick) starts hidden and fades in where it fits.
     if (alpha.current.length !== signs.length) alpha.current = new Float32Array(signs.length);
     const a = alpha.current;

@@ -3,6 +3,7 @@ import { coreRect, ringRoadEntry, ringRoadPoints } from "../../../nav/ringRoad";
 import { TOPICS_ROOM } from "../topicHash";
 import type { Rect, Vec2 } from "../../../types";
 import {
+  DOCK,
   dockAlong,
   floorBounds,
   LIBRARY_FLOOR,
@@ -10,8 +11,10 @@ import {
   shelfItems,
   signsFor,
   splitPosts,
+  STATION_SIZE,
   stationSpurs,
   tagLinks,
+  YEAR_POST,
   ZONE_TONE,
   type DockItem,
   type LibraryLayout,
@@ -113,8 +116,9 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     const year = input.posts.find((p) => `L4:${p.slug}` === item.room)!.date.slice(0, 4);
     if (year === last) return;
     last = year;
-    // On the road edge in front of the first post of the year (alternating sides keep marks apart).
-    years.push({ year, at: { x: lane[i].from.x, z: lane[i].from.z + lane[i].facing.z * (LIBRARY_FLOOR.road / 2 - 1.6) } });
+    // A low post on the road edge in the gap before the first post of the year (Round 7 F: no billboard in the camera path).
+    const s = lane[i];
+    years.push({ year, at: { x: s.from.x - (STATION_SIZE.blog.along / 2 + DOCK.gap / 2), z: s.from.z + s.facing.z * (LIBRARY_FLOOR.road / 2 + YEAR_POST.edge) } });
   });
 
   const monumentCenter = { x: end.x, z: end.z - radius - E.monument.gap - E.monument.d / 2 };
