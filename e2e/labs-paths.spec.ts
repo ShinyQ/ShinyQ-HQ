@@ -188,6 +188,8 @@ for (const size of SIZES) {
         const road = (id: string) => l3.road?.roads.find((r) => r.id === id)?.points ?? [];
         return { software: road("software"), ai: road("ai"), spine: road("data"), pad: l3.pads?.find((p) => p.id === "return:L3")?.at ?? null };
       });
+      check(end.software.length, "Product road has points").toBeGreaterThan(0);
+      check(end.ai.length, "AI road has points").toBeGreaterThan(0);
       check(end.ai.length, "AI road points match the Product road").toBe(end.software.length);
       end.software.forEach((p, i) => {
         const q = end.ai[i];
