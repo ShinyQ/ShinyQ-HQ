@@ -88,7 +88,7 @@ shadow = engine_v2(packet)  # stored only
 save_shadow(packet.id, shadow)
 ```
 
-<Architecture pod="fraud-review-platform" caption="The platform's architecture, from its case study. In the data flow, ⇢ marks the shadow path, which runs asynchronously and only writes to storage." />
+<Architecture pod="fraud-review-platform" caption="The platform's architecture, from its case study. The dashed arrows are the shadow path: it runs asynchronously and only writes to storage." />
 
 A packet takes two paths through the platform:
 

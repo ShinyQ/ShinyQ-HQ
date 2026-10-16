@@ -236,6 +236,16 @@
     background: var(--color-surface);
   }
 
+  /* A post's wide architecture diagram (ArchitectureDiagram): from 1100 px it may extend past the text column. */
+  @media (width >= 1100px) {
+    .arch-break {
+      position: relative;
+      left: 50%;
+      width: max(100%, min(var(--arch-w), calc(100vw - 48px)));
+      transform: translateX(-50%);
+    }
+  }
+
   /* AccentDot (src/components/AccentDot.tsx): the colored marker next to a label, never an edge stripe. */
   .hq-dot {
     display: inline-block;

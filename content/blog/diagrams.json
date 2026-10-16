@@ -6,8 +6,8 @@
           "id": "engineer",
           "label": "Engineer",
           "sublabel": {
-            "en": "Writes specs, reviews and merges",
-            "id": "Menulis spec, me-review, dan me-merge"
+            "en": "Writes the numbered spec",
+            "id": "Menulis spec bernomor"
           },
           "layer": 0,
           "row": 0,
@@ -58,9 +58,20 @@
           "kind": "service"
         },
         {
+          "id": "review",
+          "label": "Engineer review",
+          "sublabel": {
+            "en": "Reviews every pull request and decides what merges",
+            "id": "Me-review setiap pull request dan memutuskan yang di-merge"
+          },
+          "layer": 4,
+          "row": 0,
+          "kind": "human"
+        },
+        {
           "id": "main",
           "label": "Main branch",
-          "layer": 4,
+          "layer": 5,
           "row": 0,
           "kind": "external"
         },
@@ -71,7 +82,7 @@
             "en": "Deploys only after green CI",
             "id": "Deploy hanya setelah CI hijau"
           },
-          "layer": 4,
+          "layer": 5,
           "row": 1,
           "kind": "external"
         }
@@ -99,11 +110,11 @@
         },
         {
           "from": "ci",
-          "to": "engineer",
-          "label": "review"
+          "to": "review",
+          "label": "checks"
         },
         {
-          "from": "engineer",
+          "from": "review",
           "to": "main",
           "label": "merge"
         },

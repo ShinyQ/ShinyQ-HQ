@@ -90,7 +90,7 @@ shadow = engine_v2(packet)  # stored only
 save_shadow(packet.id, shadow)
 ```
 
-<Architecture pod="fraud-review-platform" caption="Arsitektur platform, dari studi kasusnya. Di alur data, ⇢ menandai jalur shadow, yang berjalan secara asinkron dan hanya menulis ke storage." />
+<Architecture pod="fraud-review-platform" caption="Arsitektur platform, dari studi kasusnya. Panah putus-putus adalah jalur shadow: berjalan secara asinkron dan hanya menulis ke storage." />
 
 Satu paket melewati dua jalur di platform ini:
 

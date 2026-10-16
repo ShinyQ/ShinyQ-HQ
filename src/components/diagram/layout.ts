@@ -72,6 +72,12 @@ export interface LaidGroup {
 
 export interface DiagramLayout {
   preset: DiagramPreset;
+  /** Routing quality counters that `layoutCost` weighs. */
+  quality: { relaxed: number; fallback: number; lanes: number; outer: number };
+  /** Lane candidates per lane edge, for the order search. */
+  laneOptions: Map<number, number>;
+  /** Edge indexes per gap in channel order, for the order search. */
+  gapEdges: Map<number, number[]>;
   width: number;
   height: number;
   nodes: LaidNode[];
@@ -96,15 +102,24 @@ export const textWidth = (text: string, size: number, bold = false) => interWidt
 export const monoWidth = (text: string, size: number) => text.length * size * MONO;
 export const lineHeight = (size: number) => size + LINE_GAP;
 
-/** Greedy word wrap by measured width; a word longer than the line keeps its own line. */
+/** Words, with a word wider than `max` split after its hyphens ("Microsoft-Decision-1" to "Microsoft-", "Decision-1"). */
+function wrapUnits(text: string, max: number, size: number, bold: boolean): string[] {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .flatMap((word) => (textWidth(word, size, bold) > max ? word.split(/(?<=-)/) : [word]));
+}
+
+/** Greedy word wrap by measured width; a unit longer than the line keeps its own line. */
 export function wrapText(text: string, max: number, size: number, bold = false): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    const next = line ? `${line} ${word}` : word;
+  for (const unit of wrapUnits(text, max, size, bold)) {
+    const glue = line && !line.endsWith("-") ? " " : "";
+    const next = line + glue + unit;
     if (line && textWidth(next, size, bold) > max) {
       lines.push(line);
-      line = word;
+      line = unit;
     } else line = next;
   }
   if (line) lines.push(line);
@@ -151,26 +166,80 @@ function measure(node: DiagramNode, text: DiagramText, p: DiagramPreset): Omit<B
 }
 
 /** Bands (main axis) and slots (cross axis) for every node. `right` keeps the authored grid; `down` packs each layer. */
-export function assignGrid(arch: Architecture, p: DiagramPreset): Map<string, { band: number; slot: number }> {
+/** Node order per layer (ids), and where a short overflow band sits: start, center or end of the row. */
+export interface GridOrder {
+  layers?: Map<number, string[]>;
+  overflow?: Map<number, "start" | "center" | "end">;
+  /** Explicit channel order (edge indexes, nearest the lower band first) per gap. */
+  gapOrders?: Map<number, number[]>;
+  /** Lane candidate index per edge (0: the lane nearest the target port). */
+  lanes?: Map<number, number>;
+  /** `move`: the longest cross move takes the channel nearest the source. `port`: ordered by port so fans do not cross. */
+  channels?: "move" | "port";
+}
+
+/** Bands (main axis) and slots (cross axis) for every node. `right` keeps the authored grid; `down` packs each layer. */
+export function assignGrid(arch: Architecture, p: DiagramPreset, order: GridOrder = {}): Map<string, { band: number; slot: number }> {
   const out = new Map<string, { band: number; slot: number }>();
   const layers = [...new Set(arch.nodes.map((n) => n.layer))].sort((a, b) => a - b);
   if (p.direction === "right") {
     layers.forEach((layer, band) => {
-      for (const n of arch.nodes.filter((x) => x.layer === layer)) out.set(n.id, { band, slot: n.row });
+      const ids = order.layers?.get(layer);
+      if (ids) ids.forEach((id, slot) => out.set(id, { band, slot }));
+      else for (const n of arch.nodes.filter((x) => x.layer === layer)) out.set(n.id, { band, slot: n.row });
     });
     return out;
   }
   let band = 0;
   for (const layer of layers) {
-    const nodes = arch.nodes.filter((n) => n.layer === layer).sort((a, b) => a.row - b.row);
-    for (let i = 0; i < nodes.length; i += p.perBand) {
-      const chunk = nodes.slice(i, i + p.perBand);
-      const offset = (p.perBand - chunk.length) / 2;
-      chunk.forEach((n, j) => out.set(n.id, { band, slot: offset + j }));
+    const ids = order.layers?.get(layer) ?? defaultOrder(arch, layer);
+    for (let i = 0; i < ids.length; i += p.perBand) {
+      const chunk = ids.slice(i, i + p.perBand);
+      const spare = p.perBand - chunk.length;
+      // A layer that fits one band is centered; a short overflow band can sit at either end to free a lane.
+      const place = ids.length <= p.perBand ? "center" : (order.overflow?.get(layer) ?? "center");
+      const offset = place === "start" ? 0 : place === "end" ? spare : spare / 2;
+      chunk.forEach((id, j) => out.set(id, { band, slot: offset + j }));
       band++;
     }
   }
   return out;
+}
+
+const defaultOrder = (arch: Architecture, layer: number) =>
+  arch.nodes
+    .filter((n) => n.layer === layer)
+    .sort((a, b) => a.row - b.row)
+    .map((n) => n.id);
+
+function permutations<T>(items: T[]): T[][] {
+  if (items.length <= 1) return [items];
+  return items.flatMap((item, i) => permutations([...items.slice(0, i), ...items.slice(i + 1)]).map((rest) => [item, ...rest]));
+}
+
+/** Crossings between edges, overlapping collinear runs, total length: the routing quality of a laid-out diagram. */
+export function edgeCrossings(edges: readonly { points: readonly Point[] }[]): { crossings: number; length: number } {
+  type Seg = { x0: number; x1: number; y0: number; y1: number; h: boolean };
+  const segsOf = (pts: readonly Point[]) =>
+    pts.slice(1).map(([x, y], k): Seg => {
+      const [px, py] = pts[k];
+      return { x0: Math.min(px, x), x1: Math.max(px, x), y0: Math.min(py, y), y1: Math.max(py, y), h: Math.abs(py - y) < 0.5 };
+    });
+  const all = edges.map((e) => segsOf(e.points));
+  let crossings = 0;
+  let length = 0;
+  for (const segs of all) for (const sg of segs) length += sg.x1 - sg.x0 + sg.y1 - sg.y0;
+  for (let i = 0; i < all.length; i++)
+    for (let j = i + 1; j < all.length; j++)
+      for (const a of all[i])
+        for (const b of all[j]) {
+          if (a.h !== b.h) {
+            const [h, v] = a.h ? [a, b] : [b, a];
+            if (v.x0 > h.x0 + 1 && v.x0 < h.x1 - 1 && h.y0 > v.y0 + 1 && h.y0 < v.y1 - 1) crossings++;
+          } else if (a.h ? Math.abs(a.y0 - b.y0) < 2 && Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) > 2 : Math.abs(a.x0 - b.x0) < 2 && Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) > 2)
+            crossings++;
+        }
+  return { crossings, length };
 }
 
 interface Route {
@@ -188,6 +257,11 @@ interface Route {
   lane?: number;
   /** True when the edge runs against the layer order (to an earlier band). */
   up: boolean;
+  /** The lane picked before same-lane offsets. */
+  laneBase?: number;
+  /** Neighbouring port positions on the source and target sides (a straight snap must stay between them). */
+  vsRange: [number, number];
+  vtRange: [number, number];
   /** Gap indexes of the channels, source side first (`elbow`: one, `lane`: two). */
   gaps: number[];
   channels: Map<number, number>;
@@ -198,18 +272,82 @@ interface Route {
  * as written (they are technical terms, like the case-study data flow).
  */
 export function layoutArchitecture(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
-  let layout = layoutOnce(arch, texts, preset);
+  let layout = bestLayout(arch, texts, preset);
   for (let i = 0; i < 4 && preset.maxWidth && layout.width > preset.maxWidth; i++) {
     const nodeWidth = layout.preset.nodeWidth - Math.ceil((layout.width - preset.maxWidth) / preset.perBand);
-    layout = layoutOnce(arch, texts, { ...preset, nodeWidth });
+    layout = bestLayout(arch, texts, { ...preset, nodeWidth });
   }
   return layout;
 }
 
-function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
+/** Lower is better: crossings and labels that could not sit cleanly weigh most, then lanes and length. */
+export function layoutCost(layout: DiagramLayout): number {
+  const { crossings, length } = edgeCrossings(layout.edges);
+  const q = layout.quality;
+  return crossings * 100 + q.relaxed * 60 + q.fallback * 400 + q.lanes * 25 + q.outer * 40 + length * 0.02;
+}
+
+/**
+ * `right` keeps the authored grid. `down` tries the node orders of each layer (and where an overflow band sits),
+ * one layer at a time for two passes, and keeps the cheapest layout.
+ */
+function bestLayout(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
+  const right = preset.direction === "right";
+  const layers = [...new Set(arch.nodes.map((n) => n.layer))].sort((a, b) => a - b);
+  // `right` starts from the authored grid (rows may leave gaps on purpose) and moves off it only to remove a crossing.
+  const authoredBonus = (order: GridOrder) => (right && !order.layers ? 30 : 0);
+  let best: DiagramLayout | undefined;
+  let bestCost = Infinity;
+  let bestOrder: GridOrder = {};
+  const consider = (order: GridOrder) => {
+    const layout = layoutOnce(arch, texts, preset, order);
+    const cost = layoutCost(layout) - authoredBonus(order);
+    if (cost < bestCost - 0.01) {
+      best = layout;
+      bestCost = cost;
+      bestOrder = order;
+      return true;
+    }
+    return false;
+  };
+  if (right) for (const channels of ["move", "port"] as const) consider({ channels });
+  for (const channels of ["move", "port"] as const) {
+    const layersOrder = new Map(layers.map((l) => [l, bestOrder.layers?.get(l) ?? defaultOrder(arch, l)]));
+    const overflow = new Map(bestOrder.overflow ?? []);
+    consider({ layers: new Map(layersOrder), overflow: new Map(overflow), channels });
+    for (let pass = 0; pass < 2; pass++) {
+      for (const layer of layers) {
+        const ids = layersOrder.get(layer)!;
+        const overflows =
+          !right && ids.length > preset.perBand && ids.length % preset.perBand ? (["center", "start", "end"] as const) : (["center"] as const);
+        for (const candidate of ids.length <= 5 ? permutations(ids) : [ids, [...ids].reverse()])
+          for (const place of overflows) {
+            const trial: GridOrder = {
+              layers: new Map(layersOrder).set(layer, candidate),
+              overflow: new Map(overflow).set(layer, place),
+              channels,
+            };
+            if (consider(trial)) {
+              layersOrder.set(layer, candidate);
+              overflow.set(layer, place);
+            }
+          }
+      }
+    }
+  }
+  // Last, each lane edge may take another free lane, and each gap may order its channels another way.
+  for (const [edge, count] of best!.laneOptions)
+    for (let k = 1; k < count; k++) consider({ ...bestOrder, lanes: new Map(bestOrder.lanes ?? []).set(edge, k) });
+  for (const [gap, list] of [...best!.gapEdges])
+    if (list.length >= 2 && list.length <= 4)
+      for (const perm of permutations(list)) consider({ ...bestOrder, gapOrders: new Map(bestOrder.gapOrders ?? []).set(gap, perm) });
+  return best!;
+}
+
+function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset, order: GridOrder = {}): DiagramLayout {
   const p = preset;
   const right = p.direction === "right";
-  const grid = assignGrid(arch, p);
+  const grid = assignGrid(arch, p, order);
   const boxes = new Map<string, Box>();
   for (const n of arch.nodes) {
     const m = measure(n, texts(n), p);
@@ -287,68 +425,104 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
       vt: 0,
       kind: to.band !== from.band ? "elbow" : "back",
       up: to.band < from.band,
+      vsRange: [-Infinity, Infinity],
+      vtRange: [-Infinity, Infinity],
       gaps: [],
       channels: new Map(),
     };
   });
 
-  // Ports: every edge end on a box side is spread along it, ordered by the other end. Forward edges leave the
-  // far side and enter the near side; edges against the layer order leave the near side and enter the far side.
+  const laneOptions = new Map<number, number>();
+  const gapEdges = new Map<number, number[]>();
+  let laneUses = new Map<number, number>();
   const center = (b: Box) => (b.v0 + b.v1) / 2;
-  type End = { r: Route; out: boolean };
-  for (const b of all) {
-    for (const far of [true, false]) {
-      const ends: End[] = [
-        ...routes.filter((r) => r.kind !== "back" && r.from === b && r.up !== far).map((r) => ({ r, out: true })),
-        ...routes.filter((r) => r.kind !== "back" && r.to === b && r.up === far).map((r) => ({ r, out: false })),
-      ];
-      ends
-        .sort((x, y) => center(x.out ? x.r.to : x.r.from) - center(y.out ? y.r.to : y.r.from))
-        .forEach((e, k) => {
-          const v = b.v0 + ((b.v1 - b.v0) * (k + 1)) / (ends.length + 1);
-          if (e.out) e.r.vs = v;
-          else e.r.vt = v;
-        });
-    }
-  }
   const adjacent = (r: Route) => Math.abs(r.to.band - r.from.band) === 1;
-  // A port pair that lines up becomes one straight line; so does a pair whose boxes overlap across.
-  for (const r of routes) {
-    if (r.kind === "back" || !adjacent(r)) continue;
-    if (Math.abs(r.vs - r.vt) < 1) r.kind = "straight";
-    else if (r.vt > r.from.v0 + 4 && r.vt < r.from.v1 - 4 && r.vs > r.to.v0 + 4 && r.vs < r.to.v1 - 4) {
-      const v = (Math.max(r.from.v0, r.to.v0) + Math.min(r.from.v1, r.to.v1)) / 2;
-      r.vs = v;
-      r.vt = v;
-      r.kind = "straight";
-    }
-  }
   const blocked = (v: number, a: number, b: number) =>
     all.some((x) => x.band > Math.min(a, b) && x.band < Math.max(a, b) && v > x.v0 - 4 && v < x.v1 + 4);
   // Lanes run between cells or past the far cross side; a lane is used only where no node blocks it.
   const outer = crossEnd + CROSS_GAP / 2;
   const laneVs: number[] = [outer];
   for (let s = 0; s < slots - 1; s++) if (cellOf(s) > 0) laneVs.push(vOf(s, -1) + cellOf(s) + CROSS_GAP / 2);
-  const laneUse = new Map<number, number>();
   const nearSource = (r: Route) => (r.up ? r.from.band - 1 : r.from.band);
   const nearTarget = (r: Route) => (r.up ? r.to.band : r.to.band - 1);
-  for (const r of routes) {
-    if (r.kind === "straight") r.gaps = [];
-    if (r.kind !== "elbow") continue;
-    if (adjacent(r)) r.gaps = [Math.min(r.from.band, r.to.band)];
-    else if (!blocked(r.vs, r.from.band, r.to.band)) r.gaps = [nearTarget(r)];
-    else if (!blocked(r.vt, r.from.band, r.to.band)) r.gaps = [nearSource(r)];
-    else {
-      r.kind = "lane";
-      const base = laneVs
-        .filter((v) => !blocked(v, r.from.band, r.to.band))
-        .sort((a, b) => Math.abs(a - r.vt) - Math.abs(b - r.vt))[0];
-      // A lane taken again moves one channel over: outward past the far side, alternating inside a cross gap.
-      const k = laneUse.get(base) ?? 0;
-      laneUse.set(base, k + 1);
-      r.lane = base === outer ? base + k * CHANNEL : base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (CHANNEL / 2);
-      r.gaps = [nearSource(r), nearTarget(r)];
+  /** Where an edge meets the cross axis away from this box: its lane when it has one, else the other box. */
+  const otherEnd = (r: Route, out: boolean) => (r.kind === "lane" ? r.lane! : center(out ? r.to : r.from));
+  type End = { r: Route; out: boolean };
+
+  // Two rounds: the first picks lanes, the second spreads ports knowing them, so a lane edge enters on its side.
+  for (let round = 0; round < 2; round++) {
+    // Ports: every edge end on a box side is spread along it, ordered by the other end. Forward edges leave the
+    // far side and enter the near side; edges against the layer order leave the near side and enter the far side.
+    for (const b of all) {
+      for (const far of [true, false]) {
+        const ends: End[] = [
+          ...routes.filter((r) => r.kind !== "back" && r.from === b && r.up !== far).map((r) => ({ r, out: true })),
+          ...routes.filter((r) => r.kind !== "back" && r.to === b && r.up === far).map((r) => ({ r, out: false })),
+        ];
+        // Ties go to the edge from the farther band on the outside, so it passes clear of the nearer edge's channel.
+        const key = (e: End) => {
+          const o = otherEnd(e.r, e.out);
+          return o - Math.sign(o - center(b)) * 0.001 * Math.abs(e.r.to.band - e.r.from.band);
+        };
+        ends
+          .sort((x, y) => key(x) - key(y) || x.r.edge - y.r.edge)
+          .forEach((e, k, list) => {
+            const at = (i: number) => b.v0 + ((b.v1 - b.v0) * (i + 1)) / (list.length + 1);
+            const range: [number, number] = [k > 0 ? at(k - 1) : -Infinity, k < list.length - 1 ? at(k + 1) : Infinity];
+            if (e.out) {
+              e.r.vs = at(k);
+              e.r.vsRange = range;
+            } else {
+              e.r.vt = at(k);
+              e.r.vtRange = range;
+            }
+          });
+      }
     }
+    // A port pair that lines up becomes one straight line; so does a pair whose boxes overlap across.
+    for (const r of routes) {
+      if (r.kind === "back" || r.kind === "lane" || !adjacent(r)) continue;
+      r.kind = "elbow";
+      if (Math.abs(r.vs - r.vt) < 1) r.kind = "straight";
+      else {
+        const v = (Math.max(r.from.v0, r.to.v0) + Math.min(r.from.v1, r.to.v1)) / 2;
+        const inside = (range: [number, number]) => v > range[0] + 4 && v < range[1] - 4;
+        if (v > r.from.v0 + 4 && v < r.from.v1 - 4 && v > r.to.v0 + 4 && v < r.to.v1 - 4 && inside(r.vsRange) && inside(r.vtRange)) {
+          r.vs = v;
+          r.vt = v;
+          r.kind = "straight";
+        }
+      }
+    }
+    const laneUse = new Map<number, number>();
+    for (const r of routes) {
+      if (r.kind === "straight") r.gaps = [];
+      if (r.kind !== "elbow" && !(r.kind === "lane" && round === 0)) {
+        if (r.kind === "lane") {
+          const base = r.laneBase!;
+          const k = laneUse.get(base) ?? 0;
+          laneUse.set(base, k + 1);
+          r.lane = base === outer ? base + k * CHANNEL : base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (CHANNEL / 2);
+        }
+        continue;
+      }
+      if (adjacent(r)) r.gaps = [Math.min(r.from.band, r.to.band)];
+      else if (!blocked(r.vs, r.from.band, r.to.band)) r.gaps = [nearTarget(r)];
+      else if (!blocked(r.vt, r.from.band, r.to.band)) r.gaps = [nearSource(r)];
+      else {
+        r.kind = "lane";
+        const options = laneVs.filter((v) => !blocked(v, r.from.band, r.to.band)).sort((a, b) => Math.abs(a - r.vt) - Math.abs(b - r.vt));
+        laneOptions.set(r.edge, options.length);
+        const base = options[Math.min(order.lanes?.get(r.edge) ?? 0, options.length - 1)];
+        r.laneBase = base;
+        // A lane taken again moves one channel over: outward past the far side, alternating inside a cross gap.
+        const k = laneUse.get(base) ?? 0;
+        laneUse.set(base, k + 1);
+        r.lane = base === outer ? base + k * CHANNEL : base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (CHANNEL / 2);
+        r.gaps = [nearSource(r), nearTarget(r)];
+      }
+    }
+    laneUses = laneUse;
   }
   // Neighbours in one band connect side to side when no node sits between them.
   for (const r of routes) {
@@ -358,7 +532,7 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
   }
   // Backward edges run on outer lanes past the far cross side.
   const back = routes.filter((r) => r.kind === "back");
-  const outerUse = laneUse.get(outer) ?? 0;
+  const outerUse = laneUses.get(outer) ?? 0;
   const outerEnd = outer + Math.max(0, outerUse - 1) * CHANNEL;
   const backStart = outerUse ? outerEnd + CHANNEL : crossEnd + CROSS_GAP;
   back.forEach((r, k) => (r.lane = backStart + k * (CHANNEL + Math.max(0, ...back.map((x) => x.lv)) / 2)));
@@ -393,15 +567,29 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     b.u1 = b.u0 + thick[b.band];
   }
   // Channels: ordered so edges heading further along v take the outer channels (fewer crossings).
+  const byPort = (a: Route, b: Route) => {
+    const da = Math.sign(a.vt - a.vs);
+    const db = Math.sign(b.vt - b.vs);
+    if (da !== db) return da - db;
+    return da < 0 ? a.vs - b.vs : b.vs - a.vs;
+  };
   gapChannels.forEach((list, g) => {
     const start = bandStart[g] + thick[g] + LABEL_PAD;
-    [...list]
-      .sort((a, b) => Math.abs(b.vt - b.vs) - Math.abs(a.vt - a.vs))
+    const explicit = order.gapOrders?.get(g);
+    const rank = (r: Route) => explicit?.indexOf(r.edge) ?? -1;
+    const sorted = [...list].sort(order.channels === "port" ? byPort : (a, b) => Math.abs(b.vt - b.vs) - Math.abs(a.vt - a.vs));
+    if (explicit && list.every((r) => rank(r) >= 0)) sorted.sort((a, b) => rank(a) - rank(b));
+    gapEdges.set(
+      g,
+      sorted.map((r) => r.edge),
+    );
+    sorted
       .forEach((r, k) => r.channels.set(g, start + CHANNEL / 2 + k * CHANNEL));
   });
 
   const toXY = (u: number, v: number): Point => (right ? [u, v] : [v, u]);
   const placed: { u0: number; u1: number; v0: number; v1: number }[] = [];
+  const quality = { relaxed: 0, fallback: 0, lanes: 0, outer: 0 };
   const fromXY = (x: number, y: number): [number, number] => (right ? [x, y] : [y, x]);
   // Group frames hug their members; each frame's name sits above its top-left corner and blocks edge labels.
   const groups: LaidGroup[] = [];
@@ -469,12 +657,14 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
           if (hi >= lo && (c < lo - 0.01 || c > hi + 0.01)) continue;
           const box = boxAt(seg, c, side);
           if (!hits(box) && (!strict || !crossesLine(box, own))) {
+            if (!strict || side !== 0) quality.relaxed++;
             placed.push(box);
             return box;
           }
         }
       }
     }
+    quality.fallback++;
     const seg = segs[0];
     const box = boxAt(seg, (seg.s0 + seg.s1) / 2, 0);
     placed.push(box);
@@ -556,6 +746,21 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     return { id: b.id, kind: b.kind, kindLabel: b.kindLabel, label: b.label, sublabel: b.sublabel, x, y, w: x1 - x, h: y1 - y };
   });
 
-  const [width, height] = right ? [mainTotal, crossTotal] : [crossTotal, mainTotal];
-  return { preset: p, width: Math.ceil(width), height: Math.ceil(height), nodes, edges, groups };
+  // Group names sit above their frames; a frame at the top edge pushes the whole drawing down to make room.
+  const lift = Math.max(0, ...groups.map((g) => p.kindSize + 10 - g.y));
+  if (lift > 0) {
+    for (const n of nodes) n.y += lift;
+    for (const g of groups) g.y += lift;
+    for (const e of edges) {
+      e.points = e.points.map(([x, y]) => [x, y + lift] as const);
+      if (e.label) e.label.y += lift;
+    }
+  }
+  const [width, height0] = right ? [mainTotal, crossTotal] : [crossTotal, mainTotal];
+  const height = height0 + lift;
+  for (const r of routes) {
+    if (r.kind === "lane") quality.lanes++;
+    if ((r.kind === "lane" && r.lane! >= outer) || r.kind === "back") quality.outer++;
+  }
+  return { preset: p, width: Math.ceil(width), height: Math.ceil(height), nodes, edges, groups, quality, laneOptions, gapEdges };
 }

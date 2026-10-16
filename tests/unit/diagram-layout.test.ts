@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignGrid, DIAGRAM_PRESETS, layoutArchitecture, wrapText, type DiagramLayout } from "@/components/diagram/layout";
+import { assignGrid, DIAGRAM_PRESETS, edgeCrossings, layoutArchitecture, PAD, textWidth, wrapText, type DiagramLayout } from "@/components/diagram/layout";
 import { arrowHead, edgePath } from "@/components/diagram/DiagramSvg";
 import { getPods } from "@/content/load";
 import { getPostDiagrams } from "@/content/post-diagrams";
@@ -47,12 +47,19 @@ function expectSound(name: string, arch: Architecture, layout: DiagramLayout) {
     }
   });
   for (const n of layout.nodes) expect(n.x >= 0 && n.y >= 0 && n.x + n.w <= layout.width && n.y + n.h <= layout.height, name).toBe(true);
+  for (const g of layout.groups) expect(g.y - layout.preset.kindSize - 6, `${name}: group "${g.label}" name inside`).toBeGreaterThanOrEqual(0);
+  const inner = (n: DiagramLayout["nodes"][number]) => n.w - 2 * PAD + 1;
+  for (const n of layout.nodes)
+    for (const line of n.label) expect(textWidth(line, layout.preset.labelSize, true), `${name}: "${line}" fits ${n.id}`).toBeLessThanOrEqual(inner(n));
+  for (const n of layout.nodes)
+    for (const line of n.sublabel) expect(textWidth(line, layout.preset.subSize), `${name}: "${line}" fits ${n.id}`).toBeLessThanOrEqual(inner(n));
 }
 
 describe("diagram layout", () => {
   it("wraps by measured width and keeps long words whole", () => {
     expect(wrapText("Agent Framework YAML agents", 120, 13, true)).toEqual(["Agent Framework", "YAML agents"]);
     expect(wrapText("Supercalifragilistic", 40, 12)).toEqual(["Supercalifragilistic"]);
+    expect(wrapText("Microsoft-Decision-1", 100, 13, true)).toEqual(["Microsoft-", "Decision-1"]);
   });
 
   it("keeps the authored grid left to right and packs layers top to bottom", () => {
@@ -92,6 +99,14 @@ describe("diagram layout", () => {
       }
     });
   }
+
+  it("draws every post diagram without crossing edges, in every layout", () => {
+    const postPods = ["voice-ai-contact-center", "ai-cv-screening-platform", "fraud-review-platform", "vendor-management-portal"];
+    const inPosts = diagrams.filter(([id]) => id.startsWith("post:") || postPods.some((slug) => id === `pod:${slug}`));
+    expect(inPosts.length).toBeGreaterThanOrEqual(7);
+    for (const [name, preset] of Object.entries(DIAGRAM_PRESETS))
+      for (const [id, arch] of inPosts) expect(edgeCrossings(layoutArchitecture(arch, texts, preset).edges).crossings, `${id} ${name}`).toBe(0);
+  });
 
   it("fits phones at scale 1 with text of at least 12 px", () => {
     const p = DIAGRAM_PRESETS.phone;
