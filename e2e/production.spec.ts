@@ -4,7 +4,7 @@ import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
-import { chooseMotion, asReturningVisitor, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * "How I run AI in production" (owner approved 2026-10-14): the About section on the Classic site, the
@@ -32,7 +32,8 @@ const opsProbe = (page: Page) => page.evaluate(() => (window as unknown as Probe
 
 async function openLabs(page: Page, hash = "") {
   await asReturningVisitor(page);
-  await page.goto(`/en/labs?tier=lite&walk=off${hash}`);
+  await skipFloorLines(page);
+  await page.goto(`/en/labs?tier=lite${hash}`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
@@ -110,7 +111,8 @@ test.describe("L3 Ops Control Room", () => {
   test("/en/contact#production rides to the room in 3D", async ({ page }) => {
     await mockStats(page);
     await asReturningVisitor(page);
-    await page.goto("/en/contact?tier=lite&walk=off#production");
+    await skipFloorLines(page);
+    await page.goto("/en/contact?tier=lite#production");
     await waitForHQ(page);
     await waitForRoom(page, "L3:ops");
     expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { floor: string } } } }).__hq.store.getState().floor)).toBe("L3");

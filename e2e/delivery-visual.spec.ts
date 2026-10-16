@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, skipFloorLines, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /** Opt-in (SCREENSHOTS=1): captures for the round 5 P1 before/after diff (scripts/shot-diff.ts). */
 test.skip(!process.env.SCREENSHOTS, "Set SCREENSHOTS=1 to capture screenshots");
@@ -42,7 +42,8 @@ for (const v of WORLD) {
       await chooseMotion(context, "system");
       const page = await context.newPage();
       await asReturningVisitor(page);
-      await page.goto(`${route}?tier=${v.tier}&walk=off`);
+      await skipFloorLines(page);
+      await page.goto(`${route}?tier=${v.tier}`);
       await waitForHQ(page);
       await waitForPhase(page, "explore", 180_000);
       await waitForSceneLive(page, 180_000);

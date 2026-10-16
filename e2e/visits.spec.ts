@@ -4,7 +4,7 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { chooseMotion, asReturningVisitor, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
@@ -36,7 +36,8 @@ const spectacle = (page: Page, key: string) => page.evaluate((k) => (window as u
 async function open3D(page: Page, path: string) {
   await asReturningVisitor(page);
   const [route, hash = ""] = path.split("#");
-  await page.goto(`${route}?tier=lite&walk=off${hash ? `#${hash}` : ""}`);
+  await skipFloorLines(page);
+  await page.goto(`${route}?tier=lite${hash ? `#${hash}` : ""}`);
   await waitForHQ(page);
   if (!hash) await waitForPhase(page, "explore");
   await waitForSceneLive(page);

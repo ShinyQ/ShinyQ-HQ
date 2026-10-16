@@ -3,6 +3,7 @@ import en from "../messages/en.json";
 import {
   chooseMotion,
   asReturningVisitor,
+  skipFloorLines,
   collectErrors,
   emptyFloorPoint,
   expectRenderBudget,
@@ -24,10 +25,11 @@ import {
 
 test.describe.configure({ timeout: 180_000 });
 
-/** A floor route as a returning visitor with guided walks off (the first-visit prompt would cover the floor). */
+/** A floor route as a returning visitor without the first-visit floor line (it would cover the floor). */
 async function openFloor(page: Page, path: string) {
   await asReturningVisitor(page);
-  await page.goto(`${path}?tier=lite&walk=off`);
+  await skipFloorLines(page);
+  await page.goto(`${path}?tier=lite`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);

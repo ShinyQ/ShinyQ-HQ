@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { chooseMotion, asReturningVisitor, collectErrors, driveTo, padsOf, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, padsOf, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Fast return (F1, owner decision 2026-10-14: "Beam when far"). Express Return pads beam the rover to
@@ -35,7 +35,8 @@ type FastWindow = Window & {
 
 async function openFloor(page: Page, path: string) {
   await asReturningVisitor(page);
-  await page.goto(`${path}?tier=lite&walk=off`);
+  await skipFloorLines(page);
+  await page.goto(`${path}?tier=lite`);
   await waitForHQ(page);
   await waitForPhase(page, "explore");
   await waitForSceneLive(page);
