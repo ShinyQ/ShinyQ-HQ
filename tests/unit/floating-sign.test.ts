@@ -41,7 +41,8 @@ describe("holo fx shader", () => {
   it("shares one program for every mode and declares each mode branch", () => {
     const modes = Object.values(HOLO_MODE);
     expect(new Set(modes).size).toBe(modes.length);
-    for (const m of modes.slice(0, -1)) expect(HOLO_FS).toContain(`uMode == ${m}`);
+    // Dot is the bare `else` fallback, so it has no `uMode ==` branch.
+    for (const m of modes.filter((m) => m !== HOLO_MODE.dot)) expect(HOLO_FS).toContain(`uMode == ${m}`);
     // Balanced braces and parentheses: a stray one fails the shared program on every floor at once.
     for (const src of [HOLO_VS, HOLO_FS]) {
       expect(src.split("{").length).toBe(src.split("}").length);
