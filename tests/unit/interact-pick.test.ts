@@ -173,7 +173,7 @@ describe("highlightOpacity", () => {
 });
 
 describe("parseCommand", () => {
-  it("knows Ask Rover, the palettes and the CV viewer", () => {
+  it("knows the Rover menu, the palettes and the CV viewer", () => {
     expect(parseCommand("terminal")).toEqual({ type: "terminal" });
     expect(parseCommand("cv")).toEqual({ type: "cv" });
     expect(parseCommand("palette:pods")).toEqual({ type: "palette", filter: "pods" });

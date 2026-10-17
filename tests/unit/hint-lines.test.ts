@@ -20,14 +20,14 @@ describe("hint lines", () => {
     for (const messages of [en, id]) {
       for (const kind of HINT_KINDS) expect(messages.dialog.hints.kind[kind], kind).toBeTruthy();
       for (const key of Object.values(HINT_OBJECTS)) expect(messages.dialog.hints.object[key as keyof typeof en.dialog.hints.object], key).toBeTruthy();
-      for (const key of ["open", "pickFloor", "pickYear", "toElevator", "askRover", "browse", "viewCv", "go"] as const) expect(messages.dialog.hints.go[key], key).toBeTruthy();
+      for (const key of ["open", "pickFloor", "pickYear", "toElevator", "roverMenu", "browse", "viewCv", "go"] as const) expect(messages.dialog.hints.go[key], key).toBeTruthy();
     }
   });
 
   it("finds the special line by the exact registry id", () => {
     expect(HINT_OBJECTS).toEqual({
       "L1:station:highlights-about": "highlights",
-      "L1:kiosk:ask-rover": "askRover",
+      "L1:kiosk:ask-rover": "roverMenu",
       "RF:station:cv": "cv",
       "RF:station:contact": "contact",
       "L4:door:research": "research",
@@ -36,7 +36,7 @@ describe("hint lines", () => {
       "L3:door:ops": "ops",
     });
     expect(hintObjectKey(item({ id: "RF:station:cv", floor: "RF", action: { type: "open-room", room: "RF:cv" } }))).toBe("cv");
-    expect(hintObjectKey(item({ id: "L1:kiosk:ask-rover", kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");
+    expect(hintObjectKey(item({ id: "L1:kiosk:ask-rover", kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("roverMenu");
     expect(hintObjectKey(item({}))).toBeNull();
   });
 
@@ -46,7 +46,7 @@ describe("hint lines", () => {
     expect(hintGoKey(item({ id: "L2:teleporter:2021", kind: "teleporter", action: { type: "teleport-picker", year: 2021 } }))).toBe("pickYear");
     expect(hintGoKey(item({ id: "L2:pad:return", kind: "return-pad", action: { type: "return-beam" } }))).toBe("toElevator");
     expect(hintGoKey(item({ id: "L2:station:time-console", kind: "station", action: { type: "console-picker" } }))).toBe("pickYear");
-    expect(hintGoKey(item({ kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("askRover");
+    expect(hintGoKey(item({ kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("roverMenu");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:pods" } }))).toBe("browse");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:posts" } }))).toBe("browse");
     expect(hintGoKey(item({ action: { type: "command", command: "cv" } }))).toBe("viewCv");

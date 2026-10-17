@@ -8,7 +8,7 @@ import { doubleTapJoystick } from "./touch";
 /**
  * Corners HUD (Round 8 I): phones and tablets show the floor chip top left, Ask AI and the menu top
  * right with the minimap under them, the joystick (double tap: boost) bottom left and one reset button
- * bottom right. Everything else (Classic site, search, Ask Rover, rotation, the map and every setting)
+ * bottom right. Everything else (Classic site, search, the Rover menu, rotation, the map and every setting)
  * is two taps away in the menu sheet, and floors in the floor sheet. Desktops keep the top bar and the
  * elevator rail, with the minimap above the settings gear and the view controls.
  */
@@ -104,7 +104,7 @@ test.describe("Corners menu and floor sheet on a phone", () => {
     await expect(sheet).toBeVisible();
     await expect(sheet.getByTestId("menu-profile")).toBeVisible();
     const actions = sheet.getByTestId("menu-actions");
-    for (const name of [en.hud.pageView, en.hud.launcher.search, en.hud.launcher.askRover, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]) {
+    for (const name of [en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]) {
       await expect(actions.getByRole("button", { name, exact: true }), name).toBeVisible();
     }
     for (const id of ["language", "open-links", "motion", "quality", "day-night", "minimap", "sound", "effects", "music", "ambience", "music-volume"]) {

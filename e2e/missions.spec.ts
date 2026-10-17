@@ -81,8 +81,8 @@ test.describe("missions on static pages", () => {
 
   test("terminal runs hire with its number key", async ({ page }) => {
     await openPage(page, `/en/labs/${heroPod.slug}`);
-    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
-    const terminal = page.getByRole("dialog", { name: en.hud.terminal.title });
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: en.hud.terminal.title, exact: true });
     await expect(terminal).toContainText(en.hud.terminal.prompt);
     await expect(terminal.getByRole("option").nth(6)).toContainText(mission("hire").label.en);
     await page.keyboard.press("7");
@@ -92,14 +92,14 @@ test.describe("missions on static pages", () => {
 
   test("journey opens the journey page", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();
     await expect(page).toHaveURL(/\/en\/journey$/, { timeout: NAV_TIMEOUT });
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
     await page.getByRole("option", { name: mission("projects").label.en }).click();
     await expect(page).toHaveURL(/\/en\/labs$/, { timeout: NAV_TIMEOUT });
     const palette = page.getByRole("dialog", { name: en.hud.palette.title });
@@ -110,7 +110,7 @@ test.describe("missions on static pages", () => {
 
   test("Esc means drive myself", async ({ page }) => {
     await openPage(page, "/en/journey");
-    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page).toHaveURL(/\/en\/journey$/);
@@ -123,7 +123,7 @@ test("the Page View Lobby never opens the Rover Terminal on its own; the header 
   await page.waitForTimeout(2500);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
-  await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+  await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
   await expect(page.getByRole("dialog", { name: en.hud.terminal.title })).toBeVisible();
 });
 
@@ -135,7 +135,7 @@ for (const viewport of [
     await seenTerminal(page);
     await page.setViewportSize(viewport);
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
     const menu = page.getByRole("dialog", { name: en.hud.terminal.title });
     await expect(menu).toBeVisible();
     const box = (await menu.boundingBox())!;
@@ -152,7 +152,7 @@ test("the Rover menu list scrolls inside a short landscape screen", async ({ pag
   await seenTerminal(page);
   await page.setViewportSize(viewport);
   await openPage(page, "/en?tier=static");
-  await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+  await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
   const menu = page.getByRole("dialog", { name: en.hud.terminal.title });
   await expect(menu).toBeVisible();
   const box = (await menu.boundingBox())!;
@@ -177,8 +177,8 @@ test.describe("accessibility (axe)", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await chooseMotion(page, "system");
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toBeVisible();
+    await page.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
+    await expect(page.getByRole("dialog", { name: en.hud.terminal.title, exact: true })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 

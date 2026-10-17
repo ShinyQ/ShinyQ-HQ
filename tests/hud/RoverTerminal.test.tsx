@@ -32,7 +32,7 @@ function Harness({ reducedMotion = true }: { reducedMotion?: boolean }) {
   return (
     <NextIntlClientProvider locale="en" messages={en}>
       <button type="button" onClick={() => setOpen(true)}>
-        Ask Rover
+        Rover menu
       </button>
       <RoverTerminal open={open} locale="en" missions={missions} onRun={() => setOpen(false)} onClose={() => setOpen(false)} now={morning} reducedMotion={reducedMotion} />
     </NextIntlClientProvider>
@@ -53,8 +53,8 @@ describe("RoverTerminal", () => {
 
   it("shows the prompt, greeting, numbered missions and drive myself", () => {
     renderTerminal();
-    const dialog = screen.getByRole("dialog", { name: "Ask Rover" });
-    expect(dialog).toHaveTextContent("rover@hq:~$ ./ask-rover");
+    const dialog = screen.getByRole("dialog", { name: "Rover menu" });
+    expect(dialog).toHaveTextContent("rover@hq:~$ ./rover-menu");
     expect(dialog).toHaveTextContent("good morning.");
     expect(dialog).toHaveTextContent(en.hud.terminal.question);
     const options = screen.getAllByRole("option");
@@ -113,14 +113,14 @@ describe("RoverTerminal", () => {
   it("traps Tab between the close button and the list", async () => {
     renderTerminal();
     await userEvent.tab();
-    expect(screen.getByRole("button", { name: "Close terminal" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: en.hud.terminal.close })).toHaveFocus();
     await userEvent.tab();
     expect(screen.getByRole("listbox")).toHaveFocus();
   });
 
   it("closes on Esc and returns focus to the opener", async () => {
     render(<Harness />);
-    const opener = screen.getByRole("button", { name: "Ask Rover" });
+    const opener = screen.getByRole("button", { name: "Rover menu" });
     await userEvent.click(opener);
     expect(screen.getByRole("listbox")).toHaveFocus();
     await userEvent.keyboard("{Escape}");
@@ -158,7 +158,7 @@ describe("RoverTerminal", () => {
       vi.useRealTimers();
       const { rerender, onClose } = renderTerminal({ reducedMotion: false });
       const props = { locale: "en" as const, missions, onRun: vi.fn(), onClose, now: morning, reducedMotion: false };
-      screen.getByRole("button", { name: "Close terminal" }).click();
+      screen.getByRole("button", { name: en.hud.terminal.close }).click();
       rerender(
         <NextIntlClientProvider locale="en" messages={en}>
           <RoverTerminal open={false} {...props} />
@@ -176,7 +176,7 @@ describe("RoverTerminal", () => {
 
   it("speaks Indonesian", () => {
     renderTerminal({ now: new Date(2026, 9, 9, 20, 0) }, "id");
-    const dialog = screen.getByRole("dialog", { name: "Tanya Rover" });
+    const dialog = screen.getByRole("dialog", { name: "Menu Rover" });
     expect(dialog).toHaveTextContent("selamat malam.");
     expect(dialog).toHaveTextContent(id.hud.terminal.question);
     expect(screen.getAllByRole("option").at(-1)).toHaveTextContent(id.hud.terminal.driveMyself);

@@ -65,7 +65,7 @@ async function open3DAt(browser: Browser, v: Viewport, path: string) {
 }
 
 /**
- * The Corners HUD (phones and tablets) keeps Classic site, Ask Rover and (on phones) search in the menu
+ * The Corners HUD (phones and tablets) keeps Classic site, the Rover menu and (on phones) search in the menu
  * sheet: opens it and returns it, or returns the HUD itself on desktops.
  */
 async function hudActions(page: Page) {
@@ -270,7 +270,7 @@ for (const viewport of VIEWPORTS) {
 }
 
 const OVERLAYS = [
-  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: "Ask Rover", exact: true }).click() },
+  { name: "terminal", open: (tab: Page) => tab.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click() },
   {
     name: "palette",
     open: async (tab: Page) => {
@@ -302,7 +302,7 @@ for (const viewport of VIEWPORTS) {
 
 /**
  * `ogAt`: where the share card still is taken when the start spot does not show the floor's centerpiece
- * (L1 spawns at the Ask Rover kiosk, so its still drives in front of the rover mark hologram).
+ * (L1 spawns at the Rover menu kiosk, so its still drives in front of the rover mark hologram).
  */
 const FLOOR_THUMBS: readonly { id: string; path: string; ogAt?: { x: number; z: number } }[] = [
   { id: "L1", path: "/en", ogAt: { x: 5, z: -8 } },
@@ -350,7 +350,7 @@ for (const viewport of L4_VIEWPORTS) {
   });
 }
 
-/** The L1 Ask Rover kiosk from its point-and-go stop, at the owner's review sizes (`hq-l1-kiosk-*`). */
+/** The L1 Rover menu kiosk from its point-and-go stop, at the owner's review sizes (`hq-l1-kiosk-*`). */
 for (const viewport of L4_VIEWPORTS) {
   test(`3D hq-l1-kiosk @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(180_000);

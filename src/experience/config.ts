@@ -83,7 +83,7 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
 const LOBBY_HOLOGRAM = { x: 6, z: 0, radius: 3 } as const;
 /**
  * Visitor Observatory footprint (public visit stats, owner decision 2026-10-14): the south-west corner,
- * flush with the west and south slab edges, between the elevator and the Ask Rover kiosk.
+ * flush with the west and south slab edges, between the elevator and the Rover menu kiosk.
  */
 const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: 21 } as const;
 /**
@@ -122,7 +122,7 @@ const LOBBY_SPAWN = onAxis(KIOSK_RADIUS - KIOSK_DEPTH / 2 - KIOSK_STOP_GAP);
 export const LOBBY = {
   /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
   bounds: { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 },
-  /** Session spawn: the kiosk stop, in front of the Ask Rover screen (floors/lobby/kiosk.ts `kioskStop`). */
+  /** Session spawn: the kiosk stop, in front of the Rover menu screen (floors/lobby/kiosk.ts `kioskStop`). */
   spawn: LOBBY_SPAWN,
   /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
   spawnHeading: Math.atan2(KIOSK_AXIS.x, KIOSK_AXIS.z),
@@ -152,7 +152,7 @@ export const LOBBY = {
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
   certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
   /**
-   * Ask Rover kiosk on the kiosk axis, turned to face the hologram (`yaw`, forward is (sin, cos)); `depth`
+   * Rover menu kiosk on the kiosk axis, turned to face the hologram (`yaw`, forward is (sin, cos)); `depth`
    * runs along the axis, `width` across it (the screen). floors/lobby/kiosk.ts builds its parts and bounds.
    */
   kiosk: { x: KIOSK_CENTER.x, z: KIOSK_CENTER.z, yaw: Math.atan2(-KIOSK_AXIS.x, -KIOSK_AXIS.z), depth: KIOSK_DEPTH, width: KIOSK_WIDTH, stopGap: KIOSK_STOP_GAP },

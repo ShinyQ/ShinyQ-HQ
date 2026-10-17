@@ -58,7 +58,7 @@ describe("floor pads in the real layouts", () => {
 
   it("drives from the everyday spots and beams only from the far ends (owner decision: 40 u)", () => {
     expect(FAST_RETURN.beamDistance).toBe(40);
-    // Drive: the L1 spawn (in front of the Ask Rover kiosk since 2026-10-14, about 16.5 u) and every floor's
+    // Drive: the L1 spawn (in front of the Rover menu kiosk since 2026-10-14, about 16.5 u) and every floor's
     // arrival spot (Round 8 J: on the main axis east of the approach, the L2 arrival and the L3 overview 27 u and 29.5 u out).
     expect(shouldBeamToCar(layouts.L1.spawn, layouts.L1)).toBe(false);
     expect(distanceToElevator(layouts.L1.spawn, layouts.L1)).toBeGreaterThan(10);

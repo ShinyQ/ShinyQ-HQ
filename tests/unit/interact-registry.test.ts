@@ -32,7 +32,7 @@ function labelsFrom(m: Messages): InteractLabels {
     returnPad: m.hud.interact.returnPad,
     teleporter: (year) => m.hud.interact.teleporter.replace("{year}", String(year)),
     console: m.hud.interact.console,
-    kiosk: m.hud.launcher.askRover,
+    kiosk: m.hud.launcher.roverMenu,
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
     archive: m.hud.interact.archive,
     rooms: m.hud.rooms,
@@ -187,7 +187,7 @@ describe("interactablesFor on the real content", () => {
     expect(new Set(items.L2.map((i) => i.id)).size).toBe(items.L2.length);
   });
 
-  it("adds the L1 profile hologram, skills wall, Ask Rover kiosk and Visitor Observatory", () => {
+  it("adds the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory", () => {
     expect(items.L1.map((i) => i.id)).toEqual(["L1:pad:elevator", "L1:station:profile", "L1:station:skills", "L1:kiosk:ask-rover", "L1:station:visits"]);
     const visits = find("L1", "L1:station:visits")!;
     expect(visits.at).toEqual(layouts.L1.doors!.find((d) => d.room === "L1:visits")!.at);
@@ -197,7 +197,7 @@ describe("interactablesFor on the real content", () => {
     const kiosk = find("L1", "L1:kiosk:ask-rover")!;
     expect(kiosk.kind).toBe("kiosk");
     expect(kiosk.action).toEqual({ type: "command", command: "terminal" });
-    expect(kiosk.label).toBe(en.hud.launcher.askRover);
+    expect(kiosk.label).toBe(en.hud.launcher.roverMenu);
   });
 
   it("adds all three raised L3 directory boards, which open the projects palette from their stop", () => {
@@ -300,7 +300,7 @@ describe("interactablesFor on the real content", () => {
     const indonesian = setup("id");
     expect(indonesian.items.L1[0].label).toBe(id.hud.pads.floorTitle);
     expect(indonesian.items.L1.find((i) => i.id === "L1:station:profile")!.label).toBe(id.hud.rooms.profile);
-    expect(indonesian.items.L1.find((i) => i.id === "L1:kiosk:ask-rover")!.label).toBe(id.hud.launcher.askRover);
+    expect(indonesian.items.L1.find((i) => i.id === "L1:kiosk:ask-rover")!.label).toBe(id.hud.launcher.roverMenu);
     expect(indonesian.items.L3.find((i) => i.id === "L3:board:software")!.label).toBe(`Direktori ${indonesian.experience.labs.wings.software}`);
   });
 });
@@ -332,7 +332,7 @@ describe("registerExtraInteractables", () => {
 
   it("keeps the built-in target when an extra reuses its id", () => {
     const dispose = registerExtraInteractables("L1", [{ ...hall, id: "L1:kiosk:ask-rover", label: "Clash" }]);
-    expect(interactablesFor("L1", layouts, data).filter((i) => i.id === "L1:kiosk:ask-rover").map((i) => i.label)).toEqual([en.hud.launcher.askRover]);
+    expect(interactablesFor("L1", layouts, data).filter((i) => i.id === "L1:kiosk:ask-rover").map((i) => i.label)).toEqual([en.hud.launcher.roverMenu]);
     dispose();
   });
 

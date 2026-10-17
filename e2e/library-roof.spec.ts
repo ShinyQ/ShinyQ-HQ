@@ -22,8 +22,8 @@ async function autopilotPoint(page: Page) {
 
 async function runMission(page: Page, missionId: string) {
   const label = content.missions.find((mission) => mission.id === missionId)!.label.en;
-  await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
-  await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: label }).click();
+  await page.getByTestId("hud").getByRole("button", { name: enMessages.hud.launcher.roverMenu, exact: true }).click();
+  await page.getByRole("dialog", { name: enMessages.hud.terminal.title, exact: true }).getByRole("option", { name: label }).click();
 }
 
 /** Rover parked near `point` (floor-local), within `tolerance`. */

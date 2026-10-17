@@ -59,7 +59,7 @@ describe("3D top bar", () => {
     expect(pageView.nextElementSibling).toBe(screen.getByTestId("ask-pill"));
     const controls = within(screen.getByTestId("hud-topbar")).getAllByRole("button");
     expect(controls.at(-1)).toBe(screen.getByTestId("ask-pill"));
-    expect(screen.getByRole("button", { name: en.hud.launcher.askRover })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: en.hud.launcher.roverMenu })).toBeInTheDocument();
     await userEvent.click(pageView);
     expect(onExit).toHaveBeenCalledTimes(1);
   });

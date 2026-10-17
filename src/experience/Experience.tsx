@@ -108,7 +108,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
   if (isQualityRemount(!started, prevTier, tier, canvasReplacedInCommit())) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
-    // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); a start on a floor's arrival point faces east like an
+    // The L1 spawn faces the Rover menu kiosk (owner 2026-10-14); a start on a floor's arrival point faces east like an
     // elevator arrival, under the arrival view (Round 8 J); every other start turns toward the default follow camera.
     const spawn = layouts.L1.spawn;
     const arrival = layouts[floor].arrival;
@@ -531,7 +531,7 @@ export default function Experience({
         // A string, so next-intl does not format the year as a number ("2,021").
         teleporter: (year: number) => t("interact.teleporter", { year: String(year) }),
         console: t("interact.console"),
-        kiosk: t("launcher.askRover"),
+        kiosk: t("launcher.roverMenu"),
         board: (wing: string) => t("interact.board", { wing }),
         archive: t("interact.archive"),
         rooms: {

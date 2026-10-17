@@ -129,7 +129,7 @@ async function hero(browser: Browser) {
     await waitForQuiet(page);
     await record(page, 48);
 
-    // 2. Intro fly-in to the spawn in front of the Ask Rover kiosk (2x: its first half is the bare shell).
+    // 2. Intro fly-in to the spawn in front of the Rover menu kiosk (2x: its first half is the bare shell).
     await page.getByTestId("boot").getByRole("button", { name: "Boot rover" }).click();
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 2);
     await record(page, 18);

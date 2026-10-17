@@ -161,7 +161,7 @@ test.describe("fast return on the Career Road (L2)", () => {
 
 test.describe("everyday spots within 40 u drive to the elevator (owner decision)", () => {
   for (const { name, path, floor, to, min, at } of [
-    // The L1 spawn stands in front of the Ask Rover kiosk (owner 2026-10-14): it drove under the old rule too.
+    // The L1 spawn stands in front of the Rover menu kiosk (owner 2026-10-14): it drove under the old rule too.
     { name: "the L1 spawn (about 16.5 u)", path: "/en", floor: "L1", to: "L2", min: 10 },
     { name: "the L3 overview (29.5 u)", path: "/en/labs", floor: "L3", to: "L4", min: 25 },
     // The RF deep link now spawns on the arrival point at the end of the lead road, about 9 u from the call pad:

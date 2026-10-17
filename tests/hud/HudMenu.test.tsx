@@ -91,13 +91,13 @@ async function openMenu(layout: HudLayout = "phone") {
 }
 
 describe("HudMenu", () => {
-  it("is a dialog button named Menu that carries the Ask Rover spotlight", () => {
+  it("is a dialog button named Menu that carries the Rover menu spotlight", () => {
     const { button } = mount();
     expect(button.tagName).toBe("BUTTON");
     expect(button).toHaveAccessibleName(en.hud.menu);
     expect(button).toHaveAttribute("aria-haspopup", "dialog");
     expect(button).toHaveAttribute("aria-expanded", "false");
-    expect(button).toHaveAttribute("data-onboard", "ask-rover");
+    expect(button).toHaveAttribute("data-onboard", "rover-menu");
     expect(button.className).toMatch(/size-11|min-h-11/);
   });
 
@@ -124,8 +124,8 @@ describe("HudMenu", () => {
       return copy.textContent?.replace(/\s+/g, " ").trim();
     };
     const names = within(actions).getAllByRole("button").map(visibleText);
-    expect(names).toEqual([en.hud.pageView, en.hud.launcher.search, en.hud.launcher.askRover, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]);
-    for (const name of ["Classic site", "Search", "Ask Rover", /^Rotate left/, /^Rotate right/, "Map"]) {
+    expect(names).toEqual([en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]);
+    for (const name of ["Classic site", "Search", "Rover menu", /^Rotate left/, /^Rotate right/, "Map"]) {
       const action = within(actions).getByRole("button", { name });
       expect(action.className).toMatch(/min-h-11/);
     }
@@ -143,14 +143,14 @@ describe("HudMenu", () => {
     expect(onExit).toHaveBeenCalledTimes(1);
   });
 
-  it("Search and Ask Rover close the menu, then open their overlay", async () => {
+  it("Search and the Rover menu close the menu, then open their overlay", async () => {
     const { button, sheet } = await openMenu();
     await userEvent.click(within(sheet).getByRole("button", { name: "Search" }));
     expect(screen.queryByTestId("menu-sheet")).toBeNull();
     expect(openPalette).toHaveBeenCalledTimes(1);
     expect(button).toHaveFocus();
     await userEvent.click(button);
-    await userEvent.click(within(screen.getByTestId("menu-sheet")).getByRole("button", { name: "Ask Rover" }));
+    await userEvent.click(within(screen.getByTestId("menu-sheet")).getByRole("button", { name: "Rover menu" }));
     expect(screen.queryByTestId("menu-sheet")).toBeNull();
     expect(openTerminal).toHaveBeenCalledTimes(1);
   });
@@ -199,10 +199,10 @@ describe("HudMenu", () => {
     const { sheet } = await openMenu("tablet");
     const actions = within(sheet).getByTestId("menu-actions");
     expect(within(actions).queryByRole("button", { name: "Search" })).toBeNull();
-    for (const name of ["Classic site", "Ask Rover", /^Rotate left/, /^Rotate right/, "Map"]) expect(within(actions).getByRole("button", { name })).toBeInTheDocument();
+    for (const name of ["Classic site", "Rover menu", /^Rotate left/, /^Rotate right/, "Map"]) expect(within(actions).getByRole("button", { name })).toBeInTheDocument();
   });
 
-  it("speaks Indonesian, and Ask Rover keeps its exact name in English", async () => {
+  it("speaks Indonesian, and the Rover menu keeps its exact name in English", async () => {
     render(
       <Wrap locale="id">
         <HudMenu data={data} layout="phone" onExit={vi.fn()} />
@@ -212,7 +212,7 @@ describe("HudMenu", () => {
     const sheet = screen.getByTestId("menu-sheet");
     expect(sheet).toHaveAccessibleName(id.hud.menuTitle);
     expect(within(sheet).getByRole("button", { name: id.hud.map.open })).toBeInTheDocument();
-    expect(within(sheet).getByRole("button", { name: id.hud.launcher.askRover })).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: id.hud.launcher.roverMenu })).toBeInTheDocument();
   });
 });
 

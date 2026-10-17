@@ -490,8 +490,8 @@
     "bootStart": "Nyalakan rover",
     "retry3d": "Coba 3D lagi",
     "staticNotice": "3D tidak tersedia. Situs klasik dibuka.",
-    "kioskTitle": "rover@hq:~$ ./ask-rover",
-    "kioskHint": "Pilih kios atau rover untuk membuka Tanya Rover",
+    "kioskTitle": "rover@hq:~$ ./rover-menu",
+    "kioskHint": "Pilih kios atau rover untuk membuka Menu Rover",
     "statusHello": "halo!",
     "rooms": {
       "profile": "Hologram profil",
@@ -516,11 +516,11 @@
     "launcher": {
       "search": "Cari",
       "searchShortcut": "{shortcut}, buka pencarian",
-      "askRover": "Tanya Rover"
+      "roverMenu": "Menu Rover"
     },
     "terminal": {
-      "title": "Tanya Rover",
-      "prompt": "rover@hq:~$ ./ask-rover",
+      "title": "Menu Rover",
+      "prompt": "rover@hq:~$ ./rover-menu",
       "greeting": {
         "morning": "selamat pagi",
         "afternoon": "selamat siang",
@@ -528,19 +528,19 @@
         "night": "selamat malam"
       },
       "question": "lanjut ke mana? ^_^",
-      "options": "Pilihan Tanya Rover",
+      "options": "Pilihan Menu Rover",
       "driveMyself": "saya jelajahi sendiri",
       "hint": "Pilih: 1 hingga {last} atau panah + Enter · Tutup: Esc",
-      "close": "Tutup terminal"
+      "close": "Tutup Menu Rover"
     },
     "palette": {
       "title": "Palet perintah",
-      "label": "Cari Tanya Rover, ruang, tahun, dan perintah",
-      "placeholder": "Cari pilihan Tanya Rover, ruang, tahun, atau perintah",
+      "label": "Cari Menu Rover, ruang, tahun, dan perintah",
+      "placeholder": "Cari pilihan Menu Rover, ruang, tahun, atau perintah",
       "results": "Hasil",
       "empty": "Tidak ada hasil untuk \"{query}\"",
       "groups": {
-        "missions": "Tanya Rover",
+        "missions": "Menu Rover",
         "recent": "Baru dikunjungi",
         "rooms": "Ruang",
         "years": "Tahun",
@@ -774,14 +774,14 @@
       "launcherLabel": "Tanya AI tentang Kurniadi",
       "teaser": "Ada pertanyaan tentang karya, proyek, atau karier Kurniadi?",
       "teaserDismiss": "Tutup",
-      "title": "Ask the HQ",
+      "title": "Asisten Rover",
       "subtitle": "Jawaban AI hanya dari isi situs ini",
       "close": "Tutup chat",
       "clear": "Hapus chat",
       "threadLabel": "Percakapan",
       "welcome": "Halo! Temukan jawaban tentang karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Jawaban AI bersumber dari isi situs ini. Pilih topik atau ketik pertanyaan.",
       "you": "Pengunjung",
-      "hq": "HQ",
+      "hq": "Rover",
       "startersLabel": "Coba tanyakan",
       "topicsLabel": "Pilih topik",
       "topicQuestions": "Pertanyaan {topic}",
@@ -923,7 +923,7 @@
       "welcome": "Hai, saya Rover! Selamat datang di HQ {name}. Mau lihat sekilas cara menjelajah di sini?",
       "start": "Ajak saya keliling",
       "skip": "Lewati tutorial",
-      "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Tanya Rover.",
+      "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Pengaturan.",
       "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
       "moveCoarse": "Geser joystick untuk mengemudi. Ketuk dua kali joystick untuk turbo, ketuk dua kali lagi untuk berhenti.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
@@ -935,10 +935,10 @@
       "showMe": "Antar saya ke sana",
       "later": "Nanti saja",
       "elevator": "Lift ini menuju semua lantai. Berhenti di pad panggil yang menyala di depannya untuk memilih lantai.",
-      "askRover": "Belum tahu mau ke mana? Tanya Rover punya jalan pintas ke ruang-ruang terbaik.",
+      "roverMenu": "Belum tahu mau ke mana? Menu Rover punya jalan pintas ke ruang-ruang terbaik.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
-      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Tanya Rover kapan saja."
+      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",
@@ -959,7 +959,7 @@
       },
       "object": {
         "highlights": "Aula Sorotan: karya pilihan {name} di satu tempat.",
-        "askRover": "Kios Tanya Rover: jalan pintas ke ruang terbaik di HQ.",
+        "roverMenu": "Kios Menu Rover: jalan pintas ke ruang terbaik di HQ.",
         "cv": "Kios CV: baca atau unduh CV.",
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: makalah lengkap dengan abstrak dan sitasi.",
@@ -972,7 +972,7 @@
         "pickFloor": "Pilih lantai",
         "pickYear": "Pilih tahun",
         "toElevator": "Ke lift",
-        "askRover": "Tanya Rover",
+        "roverMenu": "Menu Rover",
         "browse": "Telusuri",
         "viewCv": "Lihat CV",
         "go": "Pergi"

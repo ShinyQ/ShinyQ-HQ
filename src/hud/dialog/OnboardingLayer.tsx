@@ -62,7 +62,7 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
         showMe: t("showMe"),
         later: t("later"),
         elevator: t("elevator"),
-        askRover: t("askRover"),
+        roverMenu: t("roverMenu"),
         askAi: t("askAi", { name }),
         closing: t("closing"),
         closingShort: t("closingShort"),
@@ -91,7 +91,7 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
     [t, name, coarse],
   );
 
-  // "Replay the tutorial" (Ask Rover, Cmd-K): stop whatever Rover says, then start over in full.
+  // "Replay the tutorial" (Settings, Cmd-K): stop whatever Rover says, then start over in full.
   useEffect(
     () =>
       registerTutorial(() => {

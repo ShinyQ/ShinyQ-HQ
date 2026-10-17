@@ -43,7 +43,7 @@ export interface OnboardingCopy {
   showMe: string;
   later: string;
   elevator: string;
-  askRover: string;
+  roverMenu: string;
   askAi: string;
   closing: string;
   closingShort: string;
@@ -162,8 +162,8 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
     if (end) return end;
   }
 
-  // 5. Ask Rover and Ask AI, each ringed while Rover talks about it.
-  const ask: DialogLine[] = [{ key: "ask-rover", text: copy.askRover, spotlight: "ask-rover" }];
+  // 5. The Rover menu and Ask AI, each ringed while Rover talks about it.
+  const ask: DialogLine[] = [{ key: "rover-menu", text: copy.roverMenu, spotlight: "rover-menu" }];
   if (d.askAi()) ask.push({ key: "ask-ai", text: copy.askAi, spotlight: "ask-ai" });
   result = await d.say(ask, tour);
   end = await ended(result);

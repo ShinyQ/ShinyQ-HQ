@@ -12,6 +12,10 @@ describe.each([
   ["en", en],
   ["id", id],
 ] as const)("label in name (%s)", (_locale, messages) => {
+  it("the Rover menu launcher shows its full name", () => {
+    expect(messages.hud.launcher.roverMenu).toBe(messages.hud.terminal.title);
+  });
+
   it("elevator buttons start with the code and the floor label", () => {
     for (const [floor, label] of Object.entries(messages.hud.floorLabel)) {
       const name = fill(messages.hud.goToFloor, { floor, label, name: "Lobby" });

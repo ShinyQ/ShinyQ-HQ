@@ -20,7 +20,7 @@ const world = ([x, , z]: [number, number, number]) => {
   return { x: parts.group.position[0] + x * c + z * s, z: parts.group.position[2] - x * s + z * c };
 };
 
-describe("Ask Rover kiosk", () => {
+describe("Rover menu kiosk", () => {
   it("turns body, stand and screen as one unit, facing the hologram", () => {
     // The screen and the body have no yaw of their own: both use the group's.
     expect(parts.screen.yaw).toBe(0);

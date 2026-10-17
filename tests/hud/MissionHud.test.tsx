@@ -260,7 +260,7 @@ describe("MissionHud with Ask the HQ", () => {
   it("closes the terminal and the palette when openAsk runs", async () => {
     renderHud();
     act(() => openTerminal());
-    expect(screen.getByRole("dialog", { name: "Ask Rover" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Rover menu" })).toBeInTheDocument();
     act(() => openAsk("How can I contact him?"));
     expect(screen.queryByRole("dialog")).toBeNull();
   });

@@ -570,7 +570,7 @@ type ClickableHit = { item: InteractSnapshot; sample: Sample; point: ScreenPoint
  * Runs in the page (`page.evaluate(clickableHits, ...)`, so it is self-contained): the targets of `kinds` (or `ids`) at
  * least `minDistance` from the rover with the first `grid` sample where a click lands on them, nearest first. A sample
  * counts when it is inside the `safe` box, the bare canvas is under it, the raycast hits this very target (no other
- * volume in front) and it is 100 px or more from the rover (a click on the rover opens Ask Rover). Null before the
+ * volume in front) and it is 100 px or more from the rover (a click on the rover opens the Rover menu). Null before the
  * scene can pick.
  */
 function clickableHits({ kinds, ids, safe, minDistance, grid }: ClickableQuery): ClickableHit[] | null {
@@ -611,7 +611,7 @@ export async function clickablePoint(page: Page, id: string, safe = DESKTOP_SAFE
 
 /**
  * The target of `kinds` nearest to the rover whose pick volume shows on the bare canvas inside `safe`,
- * at least 100 px from the rover on screen (a click on the rover opens Ask Rover). Fails when none shows.
+ * at least 100 px from the rover on screen (a click on the rover opens the Rover menu). Fails when none shows.
  */
 export async function visibleTarget(page: Page, { kinds, safe = DESKTOP_SAFE, minDistance = 0 }: TargetQuery): Promise<InteractSnapshot> {
   const found = (await page.evaluate(clickableHits, { kinds, safe, minDistance, grid: SAMPLES }))?.[0];

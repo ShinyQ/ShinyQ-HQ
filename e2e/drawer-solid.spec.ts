@@ -43,7 +43,7 @@ for (const vp of VIEWPORTS) {
     const background = await drawer.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(alphaOf(background)).toBeGreaterThanOrEqual(0.9);
 
-    // No visible top-bar control (Ask Rover, search, language, sound, Classic site, Ask AI, menu) may sit under the drawer.
+    // No visible top-bar control (the Rover menu, search, language, sound, Classic site, Ask AI, menu) may sit under the drawer.
     const box = (await drawer.boundingBox())!;
     const controls = await page.locator("[data-testid='hud'] :is(a, button):visible").evaluateAll((els) =>
       els

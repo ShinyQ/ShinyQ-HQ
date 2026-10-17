@@ -18,7 +18,7 @@ export interface KioskLabels {
 
 /**
  * Diegetic mirror of the Rover Terminal missions; a point-and-go target (L1:kiosk:ask-rover) that opens
- * Ask Rover. Body, stand and screen turn as one unit (floors/lobby/kiosk.ts); lines never wrap.
+ * the Rover menu. Body, stand and screen turn as one unit (floors/lobby/kiosk.ts); lines never wrap.
  */
 export function MissionKiosk({ missions, labels }: { missions: ExperienceData["missions"]; labels: KioskLabels }) {
   const parts = useMemo(() => kioskParts(), []);

@@ -44,7 +44,7 @@ test.describe("3D top bar", () => {
       await enterHQ(page);
       const hud = page.getByTestId("hud");
       await expect(hud.getByRole("link", { name: "Quick view" })).toHaveCount(0);
-      await expect(hud.getByRole("button", { name: "Ask Rover", exact: true })).toBeVisible();
+      await expect(hud.getByRole("button", { name: en.hud.launcher.roverMenu, exact: true })).toBeVisible();
       const pageView = hud.getByTestId("page-view");
       const ask = hud.locator("[data-testid='ask-pill']:visible");
       await expect(pageView).toBeVisible();

@@ -106,7 +106,7 @@ async function expectAnswerStartInView(page: Page) {
 
 const enabled = (turnstileSiteKey: string | null = null) => ({ enabled: true, turnstileSiteKey, asOf: AS_OF, maxLength: 300 });
 
-const dock = (page: Page) => page.getByRole("dialog", { name: "Ask the HQ" });
+const dock = (page: Page) => page.getByRole("dialog", { name: en.ask.dock.title, exact: true });
 const thread = (page: Page) => dock(page).getByTestId("ask-thread");
 
 // A rendered payload would run `alert`; every test asserts that no dialog opened.

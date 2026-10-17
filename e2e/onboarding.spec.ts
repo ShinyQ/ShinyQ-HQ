@@ -84,14 +84,14 @@ export async function freshVisit(page: Page, path = "/en") {
 }
 
 test.describe("first-session onboarding", () => {
-  test("Rover greets after the intro instead of the Ask Rover terminal, and Skip ends it for good", async ({ page }) => {
+  test("Rover greets after the intro instead of the Rover menu, and Skip ends it for good", async ({ page }) => {
     const errors = collectErrors(page);
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);
     await expect(box(page)).toHaveAttribute("data-dialog", "onboarding", { timeout: 15_000 });
     await expectLine(page, "welcome");
     await expect(box(page)).toContainText("Kurniadi");
-    await expect(page.getByRole("dialog", { name: "Ask Rover" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: en.hud.terminal.title, exact: true })).toHaveCount(0);
 
     await choices(page).getByRole("button", { name: en.dialog.onboarding.skip }).click();
     await expectLine(page, "skipped");
@@ -255,8 +255,8 @@ test.describe("every step of the tour", () => {
     await expectLine(page, "elevator");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "elevator");
     await next(page);
-    await expectLine(page, "ask-rover");
-    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "ask-rover");
+    await expectLine(page, "rover-menu");
+    await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "rover-menu");
     await next(page);
     await expectLine(page, "ask-ai");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "ask-ai");
@@ -312,7 +312,7 @@ test.describe("every step of the tour", () => {
     await next(page);
     await expectLine(page, "camera");
     await next(page);
-    await expectLine(page, "ask-rover");
+    await expectLine(page, "rover-menu");
     await next(page);
     await expectLine(page, "ask-ai");
     await next(page);
@@ -411,7 +411,7 @@ test.describe("phone layout", () => {
     const from = (await snapshot(page)).rover;
     await go.tap();
     await waitForRoverMove(page, from, 2.5);
-    // Stop the drive before it arrives (arrival would open a drawer, a picker or Ask Rover and pause the line).
+    // Stop the drive before it arrives (arrival would open a drawer, a picker or the Rover menu and pause the line).
     await page.keyboard.press("Escape");
     await expectLine(page, "moved");
 

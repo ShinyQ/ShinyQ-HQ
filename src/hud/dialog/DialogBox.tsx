@@ -121,7 +121,7 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
         event.stopImmediatePropagation();
       }
     };
-    // Capture on window runs before the game's keyboard handler (Enter would open Ask Rover).
+    // Capture on window runs before the game's keyboard handler (Enter would open the Rover menu).
     window.addEventListener("keydown", onKey, { capture: true });
     return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, [visible]);
