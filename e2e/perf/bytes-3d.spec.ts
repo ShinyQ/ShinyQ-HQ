@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Response } from "@playwright/test";
 import { chunkName, kb, sum, type ChunkMap } from "../../scripts/perf-report";
+import { B1_QUERY } from "../b1";
 import { BYTES_3D_BUDGET } from "../budgets";
 import { asReturningVisitor, openPage, waitForHQ, waitForPhase, waitForSceneLive } from "../hq";
 import { writePerfEntry } from "./helpers";
@@ -9,14 +10,25 @@ import { writePerfEntry } from "./helpers";
  * gzip as served (scripts/serve-static.ts gzips like Cloudflare), on both tiers. Two cold contexts:
  * the Page View (`?tier=static`) and the 3D view until the scene runs and the network is quiet. Every
  * response the Page View did not fetch is 3D-path bytes: scripts are gated, fonts, JSON, CSS and
- * images are reported. The main path is measured with `?prefetch=off`; then each on-demand floor chunk
- * (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at 450 KB; main plus every
- * floor chunk (what idle prefetch downloads in a normal session) must stay under the session cap
- * (`BYTES_3D_BUDGET.session`: full 470 KB, lite 446.4 KB).
+ * images are reported. The main path is measured with `?prefetch=off`; then each public on-demand floor
+ * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at 450 KB; main plus
+ * every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in a normal
+ * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 470 KB, lite 446.4 KB).
+ * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
+ * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap.
  */
 test.describe.configure({ timeout: 150_000 });
 
 type FloorChunkId = keyof typeof BYTES_3D_BUDGET.floors;
+type FloorChunks = { __hq: { floorChunks?: { load: (id: string) => Promise<void> } } };
+
+/** Bytes of the script chunks a floor load added on top of the Page View and the paths already counted; the loaded paths join `counted`. */
+async function measureFloor(page: Page, floor: FloorChunkId, seen: Set<string>, counted: Set<string>): Promise<number> {
+  const loaded = await recordTransfers(page, () => page.evaluate((f) => (window as unknown as FloorChunks).__hq.floorChunks!.load(f), floor), 2000);
+  const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
+  for (const t of loaded) counted.add(t.path);
+  return bytes;
+}
 
 interface Transfer {
   path: string;
@@ -79,21 +91,34 @@ for (const tier of ["lite", "full"] as const) {
 
     const seen = new Set(pageViewTransfers.map((t) => t.path));
     const mainPaths = new Set(transfers.map((t) => t.path));
+    const lockedMainPaths = new Set(mainPaths);
     const floors: Partial<Record<FloorChunkId, number>> = {};
     // false on a build without on-demand floor chunks (a main build in a before/after run).
-    const hasChunks = await page.evaluate(() => Boolean((window as unknown as { __hq: { floorChunks?: unknown } }).__hq.floorChunks));
+    const hasChunks = await page.evaluate(() => Boolean((window as unknown as FloorChunks).__hq.floorChunks));
     if (hasChunks) {
-      for (const floor of Object.keys(BYTES_3D_BUDGET.floors) as FloorChunkId[]) {
-        const loaded = await recordTransfers(
-          page,
-          () => page.evaluate((f) => (window as unknown as { __hq: { floorChunks: { load: (id: string) => Promise<void> } } }).__hq.floorChunks.load(f), floor),
-          2000,
-        );
-        floors[floor] = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !mainPaths.has(t.path)).reduce((n, t) => n + t.bytes, 0);
-        for (const t of loaded) mainPaths.add(t.path);
-      }
+      for (const floor of BYTES_3D_BUDGET.sessionFloors) floors[floor] = await measureFloor(page, floor, seen, mainPaths);
     }
     await context.close();
+
+    // B1 only loads when unlocked. It is a near floor of the Lobby, so it may arrive during the main path even with
+    // ?prefetch=off: B1's bytes are every script this session fetched that the locked main path and the Page View did not.
+    let b1: number | null = null;
+    if (hasChunks) {
+      const unlocked = await browser.newContext();
+      const upage = await unlocked.newPage();
+      await asReturningVisitor(upage);
+      const unlockedMain = await recordTransfers(upage, async () => {
+        await upage.goto(`/en?tier=${tier}&prefetch=off&${B1_QUERY}`);
+        await waitForHQ(upage);
+        await waitForPhase(upage, "explore");
+        await waitForSceneLive(upage);
+      });
+      const counted = new Set([...seen, ...lockedMainPaths]);
+      const fromMain = unlockedMain.filter((t) => t.type === "script" && !counted.has(t.path));
+      for (const t of fromMain) counted.add(t.path);
+      b1 = fromMain.reduce((n, t) => n + t.bytes, 0) + (await measureFloor(upage, "B1", seen, counted));
+      await unlocked.close();
+    }
 
     const js: ChunkMap = {};
     const other: ChunkMap = {};
@@ -107,10 +132,11 @@ for (const tier of ["lite", "full"] as const) {
     const total = sum(js);
     const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
     const sessionTotal = total + floorsTotal;
-    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors, sessionTotal } : {}) });
+    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors: { ...floors, ...(b1 === null ? {} : { B1: b1 }) }, sessionTotal } : {}) });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
-    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + floor chunks ${kb(floorsTotal)}, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
+    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
+    if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
 
     if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
     expect(total, "no 3D JavaScript measured: did the gate load the 3D chunk?").toBeGreaterThan(BYTES_3D_BUDGET.minExpected);
@@ -119,6 +145,10 @@ for (const tier of ["lite", "full"] as const) {
       const cap = BYTES_3D_BUDGET.floors[floor as FloorChunkId];
       expect(bytes, `${floor} chunk: did __hq.floorChunks.load fetch any script?`).toBeGreaterThan(0);
       expect(bytes, `${floor} chunk ${kb(bytes)} is over its ${kb(cap)} cap`).toBeLessThan(cap);
+    }
+    if (b1 !== null) {
+      expect(b1, "B1 chunk: did __hq.floorChunks.load fetch any script in an unlocked session?").toBeGreaterThan(0);
+      expect(b1, `B1 chunk ${kb(b1)} is over its ${kb(BYTES_3D_BUDGET.floors.B1)} cap`).toBeLessThan(BYTES_3D_BUDGET.floors.B1);
     }
     if (hasChunks) expect(sessionTotal, `main + floor chunks ${kb(sessionTotal)} is over the ${kb(BYTES_3D_BUDGET.session[tier])} session cap (${tier})`).toBeLessThan(BYTES_3D_BUDGET.session[tier]);
   });

@@ -57,7 +57,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
   - 450 KB gates the critical path before the first frame (`?prefetch=off`).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
-- Session total: idle prefetch loads every floor in a normal session, so the session total (main + all floor chunks) has its own cap, `BYTES_3D_BUDGET.session` (owner decision).
+- Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`.
   - full 470 KB: measured 457.0 KB, so about 13 KB of headroom catches creep early.
   - lite 446.4 KB: measured 433.4 KB, about 13 KB of headroom.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".

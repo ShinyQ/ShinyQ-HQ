@@ -54,6 +54,13 @@ const probe = (page: Page) =>
       ambience: h.audio().floor,
     };
   });
+/** Idle prefetch has run once every public floor is ready (prefetchAll and the idle apply share one callback). */
+const publicFloorsReady = (page: Page) =>
+  expect
+    .poll(async () => Object.values((await probe(page)).chunks).filter((s) => s === "ready").length, { timeout: 60_000 })
+    .toBe(3);
+/** The page issued its requests and none is in flight: absence assertions after this cannot be an early read. */
+const settled = (page: Page) => page.waitForLoadState("networkidle");
 const angleGap = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 const elevator = (page: Page) => page.getByRole("navigation", { name: "Elevator" });
 
@@ -95,14 +102,14 @@ test.describe("the unlock flag", () => {
     await expect(elevator(page).locator("[data-floor]")).toHaveCount(5);
     await expect(elevator(page).locator('[data-floor="B1"]')).toHaveCount(0);
     // Idle prefetch has run once every public floor is ready; B1 must still be untouched.
-    await expect
-      .poll(async () => Object.values((await probe(page)).chunks).filter((s) => s === "ready").length, { timeout: 60_000 })
-      .toBe(3);
+    await publicFloorsReady(page);
     const p = await probe(page);
     expect(p.unlocked).toBe(false);
     expect(p.chunks.B1).toBe("idle");
     await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().goToFloor("B1"));
     expect((await probe(page)).ride).toBeNull();
+    await settled(page);
+    expect((await probe(page)).chunks.B1).toBe("idle");
     expect(b1ChunkFiles().length, "the B1 chunk is found in the build").toBeGreaterThan(0);
     expect(b1Requests(requests)).toEqual([]);
     expect(errors).toEqual([]);
@@ -117,6 +124,8 @@ test.describe("the unlock flag", () => {
     await waitForSceneLive(page);
     await expect(elevator(page).locator("[data-floor]")).toHaveCount(5);
     await expect(elevator(page).locator('[data-floor="B1"]')).toHaveCount(0);
+    await publicFloorsReady(page);
+    await settled(page);
     const p = await probe(page);
     expect(p.unlocked).toBe(false);
     expect(p.chunks.B1).toBe("idle");
@@ -154,6 +163,7 @@ test.describe("the unlock flag", () => {
     await waitForPhase(locked, "explore");
     await waitForSceneLive(locked);
     const p = await probe(locked);
+    await locked.close();
     expect(p.floor).toBe("L1");
     expect(p.unlocked).toBe(false);
   });
@@ -163,15 +173,14 @@ test.describe("a locked session", () => {
   test("never requests the B1 chunk or its room data, through prefetch, hover, a ride and a picker", async ({ page }) => {
     const requests = recordRequests(page);
     await enterHQ(page);
-    await expect
-      .poll(async () => Object.values((await probe(page)).chunks).filter((s) => s === "ready").length, { timeout: 60_000 })
-      .toBe(3);
+    await publicFloorsReady(page);
     for (const floor of ["RF", "L1"]) {
       await elevator(page).locator(`[data-floor="${floor}"]`).hover();
       await rideTo(page, floor);
     }
     await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().openPicker({ kind: "floor" }));
     await expect(page.getByTestId("pad-picker")).toBeVisible();
+    await settled(page);
     expect((await probe(page)).chunks.B1).toBe("idle");
     expect(b1ChunkFiles().length, "the B1 chunk is found in the build").toBeGreaterThan(0);
     expect(b1Requests(requests)).toEqual([]);

@@ -71,7 +71,7 @@ interface Rule {
 }
 
 /**
- * First matching rule wins, so specific paths come before their parent folders.
+ * First matching rule wins, so specific paths come before their parent folders (`ALSO_RULES` below add specs on top).
  * Keep this in sync with the "Fast verification" section of docs/agents/performance.md.
  */
 export const RULES: Rule[] = [
@@ -322,6 +322,17 @@ export function specSeconds(durations: Durations | null | undefined, spec: strin
   return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : UNKNOWN_SPEC_SECONDS;
 }
 
+/**
+ * Extra specs added on top of the first matching rule (never instead of it). Shared files that the B1 Engine Room
+ * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
+ */
+const ALSO_RULES: Rule[] = [
+  {
+    test: /^src\/lib\/(floors\.ts|audio\/(engine|ambience)\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/hud\/dialog\/engine\.ts$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["engine-room"],
+  },
+];
+
 const SPEC_FILE = /^e2e\/([a-z0-9-]+)\.spec\.ts$/;
 
 export interface ChangePlan {
@@ -349,6 +360,7 @@ export function specsForChanges(files: readonly string[]): ChangePlan {
     }
     if (rule.specs === "all") return { specs: "all", unmatched: [] };
     for (const s of rule.specs) specs.add(s);
+    for (const also of ALSO_RULES) if (also.test.test(file) && also.specs !== "all") for (const s of also.specs) specs.add(s);
   }
   if (unmatched.length) for (const s of SMOKE_SPECS) specs.add(s);
   return { specs: [...specs].sort(), unmatched };

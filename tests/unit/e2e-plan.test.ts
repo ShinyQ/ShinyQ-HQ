@@ -63,6 +63,33 @@ describe("specsForChanges", () => {
     ]) {
       expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["engine-room", "memory"]));
     }
+    for (const file of [
+      "src/lib/floors.ts",
+      "src/hud/drawer/data.ts",
+      "src/hud/drawer/data-path.ts",
+      "src/hud/drawer/bodies.tsx",
+      "src/hud/drawer/DrawerHost.tsx",
+      "src/hud/dialog/engine.ts",
+      "src/lib/audio/engine.ts",
+      "src/lib/audio/ambience.ts",
+      "src/experience/tower/ElevatorShaft.tsx",
+      "src/experience/tower/Tower.tsx",
+      "src/experience/sky/SkyController.tsx",
+      "src/experience/floors/floorChunks.ts",
+      "src/experience/floors/floorPrefetch.ts",
+      "src/experience/floors/FloorChunkPrefetch.tsx",
+      "src/experience/floors/lazyFloors.tsx",
+      "src/hud/FloorButtons.tsx",
+      "src/hud/CommandPalette.tsx",
+      "src/hud/pads/picker.ts",
+      "src/hud/pads/PadPicker.tsx",
+      "src/app/data/[...path]/route.ts",
+    ]) {
+      expect(specsForChanges([file]).specs, file).toContain("engine-room");
+    }
+    // The extra spec is added on top of the existing mapping, never instead of it.
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(expect.arrayContaining(["hud-corners", "experience"]));
+    expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride"]));
   });
 
   it("keeps the perf lane out of the regular suite and treats the budgets as shared infrastructure", () => {
@@ -79,12 +106,12 @@ describe("specsForChanges", () => {
   });
 
   it("maps the audio engine and the floor ambience spec", () => {
-    expect(specsForChanges(["src/lib/audio/ambience.ts"]).specs).toEqual(["ambience", "experience", "pageview"]);
+    expect(specsForChanges(["src/lib/audio/ambience.ts"]).specs).toEqual(["ambience", "engine-room", "experience", "pageview"]);
     expect(specsForChanges(["e2e/ambience.spec.ts"]).specs).toEqual(["ambience"]);
   });
 
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
-    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "engine-room", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/dialog/FloorIntroLayer.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
@@ -116,7 +143,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "daynight", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
-    expect(specsForChanges(["src/experience/sky/SkyController.tsx"]).specs).toEqual(["daynight", "experience"]);
+    expect(specsForChanges(["src/experience/sky/SkyController.tsx"]).specs).toEqual(["daynight", "engine-room", "experience"]);
     expect(specsForChanges(["src/lib/day-night.ts"]).specs).toEqual(["daynight", "experience"]);
     expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
     expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
@@ -173,7 +200,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/page/AskEntry.tsx"]).specs).toEqual(["ask", "pageview"]);
     expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
     expect(specsForChanges(["content/ask/suggestions.json"]).specs).toEqual(["ask"]);
-    expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "experience", "lifecycle", "missions"]);
+    expect(specsForChanges(["src/hud/CommandPalette.tsx"]).specs).toEqual(["ask", "drawer-solid", "engine-room", "experience", "lifecycle", "missions"]);
   });
 
   it("runs no e2e for the RUM Function", () => {
@@ -233,7 +260,7 @@ describe("specsForChanges", () => {
     ]) {
       expect(specsForChanges([file]).specs, file).toEqual(corners);
     }
-    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "experience", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "engine-room", "experience", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost"]);
     expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
@@ -264,7 +291,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/fastReturn.ts"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
     expect(specsForChanges(["src/experience/fx/ReturnPadSign.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
-    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
+    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["engine-room", "experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads"]);
     expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);
