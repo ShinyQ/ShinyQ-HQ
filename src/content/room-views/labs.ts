@@ -5,7 +5,7 @@ import { labPods } from "../experience";
 import { getLibrary, getPod, getPods, getProduction, getTechIndex, getTimelineEntryById } from "../load";
 import { getTechLogo } from "../tech";
 import type { Locale, Pod } from "../schema";
-import { clientLabel, podLiveLink, podPublications, publicationDate, repoName } from "../selectors";
+import { clientLabel, headlineResults, podLiveLink, podPublications, publicationDate, repoName } from "../selectors";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { chain, galleryOf, linkLogo, messages, roomId, single, stackItems } from "./shared";
@@ -39,6 +39,7 @@ export function podView(pod: Pod, locale: Locale): RoomView {
   const m = messages(locale);
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
   const architecture = architectureOf(pod, locale);
+  const top = new Set(headlineResults(pod.results));
   return {
     id: roomId("L3", pod.slug),
     floor: "L3",
@@ -58,7 +59,12 @@ export function podView(pod: Pod, locale: Locale): RoomView {
       { title: m.labs.approach, bullets: pod.approach.map((a) => a[locale]) },
       ...[codeResearch(pod, locale)].filter((x): x is RoomSection => x !== null),
     ],
-    metrics: pod.results.map((r) => ({ value: r.value, label: r.label[locale], context: r.context?.[locale] })),
+    metrics: pod.results.map((r) => ({
+      value: r.value,
+      label: r.label[locale],
+      context: r.context?.[locale],
+      ...(top.has(r) ? { headline: true as const } : {}),
+    })),
     architecture,
     stack: stackItems(pod.stack),
     gallery: galleryOf(pod.assets, locale),

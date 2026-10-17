@@ -5,7 +5,7 @@ import { pickFeaturedPods } from "@/content/pageview";
 import { buildRoomViews } from "@/content/room-views";
 import { podView } from "@/content/room-views/labs";
 import { LOCALES } from "@/content/schema";
-import { podLiveLink } from "@/content/selectors";
+import { headlineResults, podLiveLink } from "@/content/selectors";
 import { repoRoom, repoSlug, sideProjectRoom } from "@/content/workshop";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
@@ -67,6 +67,13 @@ describe("room views (Glass Drawer content)", () => {
         expect(view.metrics.length).toBe(pod.results.length);
         expect(view.metrics.map((m) => m.context)).toEqual(pod.results.map((r) => r.context?.[locale]));
         expect(view.page).toBe(`/labs/${pod.slug}`);
+      }
+    });
+
+    it(`marks up to three headline metrics on every pod view (${locale})`, () => {
+      for (const pod of getPods()) {
+        const marked = views[`L3:${pod.slug}`].metrics.filter((m) => m.headline).map((m) => m.value);
+        expect(marked).toEqual(headlineResults(pod.results).map((r) => r.value));
       }
     });
 

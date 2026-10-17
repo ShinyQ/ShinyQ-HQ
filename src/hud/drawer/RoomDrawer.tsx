@@ -7,6 +7,7 @@ import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { AccentDot } from "@/components/AccentDot";
 import { Gallery as ImageGallery } from "@/components/Gallery";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
+import { MetricStrip } from "@/components/MetricStrip";
 import { ShareLinks } from "@/components/ShareLinks";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
@@ -278,19 +279,21 @@ function TabPanel({ view, tab, onHologram }: { view: RoomView; tab: DrawerTab; o
       return <MetricTiles metrics={view.metrics} fluid />;
     case "stack":
       return <Chips items={view.stack.map((s) => s.name)} logos={view.stack.map((s) => s.logo)} />;
-    default:
+    default: {
+      const headline = view.metrics.filter((m) => m.headline);
       return (
         <div className="space-y-5">
-          {view.metrics.length > 0 && (
+          {headline.length > 0 && (
             <section className="space-y-2">
               <h3 className="label text-ink-2">{t("keyResults")}</h3>
-              <MetricTiles metrics={view.metrics.slice(0, 3)} fluid />
+              <MetricStrip items={headline} label={t("keyResults")} variant="panel" />
             </section>
           )}
           <Sections sections={view.sections} />
           <Gallery view={view} />
         </div>
       );
+    }
   }
 }
 

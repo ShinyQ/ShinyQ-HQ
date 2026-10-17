@@ -17,6 +17,8 @@ export interface RoomMetric {
   label: string;
   /** How the number was measured, e.g. "controlled A/B, n=4". */
   context?: string;
+  /** One of the results the case study opens with (`headlineResults`): the drawer's metric strip. */
+  headline?: true;
 }
 
 export interface RoomLinkItem {
