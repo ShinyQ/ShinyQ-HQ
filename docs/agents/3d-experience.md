@@ -172,6 +172,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - The Director rolls every elevator arrival on from the shaft to `FloorLayout.arrival` (the autopilot drive, `roverRuntime.autopilot`, carries `arrival: true`); a queued mission drive still replaces it.
 - Glide (`CameraDirector`, lifecycle in the pure `stepGlide`): it starts when the ride's stage becomes `opening`, not under reduced motion.
   - It primes the destination's arrival zone (`primeZone`) and draws from `shoulderPose` (`ARRIVAL_GLIDE.start`: low behind the rover, inside the car, looking east) to the destination rig's settled pose (`rigPose`: follow, or the L2 rail), eased by `glideProgress` over `ARRIVAL_GLIDE.duration` (1.5 s).
+  - The start pose pitches down by half the vertical FOV plus `belowHorizon` (4 degrees), so the top edge of the view stays below the horizon over the whole glide (the far floor stays out of the frustum; the ride peaks stay in budget).
   - The pose is snapped (no spring) and skips the collision clamp.
   - It uses the destination's rig and fog range from its first frame, so nothing pops when the ride ends.
   - After `ARRIVAL_GLIDE.duration` it holds at full progress (still snapped to the rover at the settled view, `arrivalGlide` stays 1) until the arrival roll-on ends, then hands over to the follow spring with the rover parked, so the camera never lags a rover at autopilot speed.
@@ -184,7 +185,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - L3's arrival view `L3:overview` is an ordinary zone: it is not primed and eases in like any zone the rover is in (never under reduced motion).
 - Zones: `ViewZone.arrivalOnly` and `ViewZone.railYaw` (see [Orbit](#orbit)). Zooms are capped per camera class by `shaftClearZoom`, so the camera stays east of the shaft (`SHAFT_CLEAR_X`).
 - Probes on `roverRuntime`: `arrivalGlide` (0 to 1, -1 when not gliding), `cameraBehind` (heading of the vector from the camera to the rover) and `steering`.
-- Tests: `tests/unit/arrivals.test.ts` (per floor: the arrival point and its east-facing zone, the free roll-on path, the settled camera behind the rover and clear of the shaft at four sizes, the deep-link spawns), `arrival-glide.test.ts` (`shoulderPose`, `glideProgress`, `glidePose`, the `stepGlide` lifecycle (start, progress, the hold while rolling on, each end, none under reduced motion), `cameraBehindHeading`, `railYawBehind`, `shaftClearZoom` and rail-aware zone priming and easing in `orbit.ts`), `orbit-arrival-only.test.ts` (`activeZone`: an `arrivalOnly` zone counts only once primed); `e2e/arrivals.spec.ts` (camera behind the rover within 0.1 rad of east and the rover heading east on every floor, glide cancel on input, reduced-motion cut); `scripts/arrival-shots.ts` captures the arrivals at four sizes.
+- Tests: `tests/unit/arrivals.test.ts` (per floor: the arrival point and its east-facing zone, the free roll-on path, the settled camera behind the rover and clear of the shaft at four sizes, the deep-link spawns), `arrival-glide.test.ts` (`shoulderPose`, the top view edge below the horizon over the glide for every camera class, `glideProgress`, `glidePose`, the `stepGlide` lifecycle (start, progress, the hold while rolling on, each end, none under reduced motion), `cameraBehindHeading`, `railYawBehind`, `shaftClearZoom` and rail-aware zone priming and easing in `orbit.ts`), `orbit-arrival-only.test.ts` (`activeZone`: an `arrivalOnly` zone counts only once primed); `e2e/arrivals.spec.ts` (camera behind the rover within 0.1 rad of east and the rover heading east on every floor, glide cancel on input, reduced-motion cut); `scripts/arrival-shots.ts` captures the arrivals at four sizes.
 
 ## Pure modules
 
@@ -277,7 +278,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 - Floors above the rover render as ghosts each frame (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`.
 - Only the current floor, the ride target and their neighbours mount content (`nearFloors` in `tower/near.ts`). The neighbours mount on idle after the first frames, so a deep link builds one floor first.
-- Content of floors below the rover is not drawn unless the elevator is moving (the opaque slab above hides it).
+- Content of floors below the rover is not drawn unless the elevator is moving (the opaque slab above hides it). Once the car is parked at the target (`opening`, `exiting`) the floors below hide again (`belowParkedCar` in `tower/near.ts`): the arrival glide starts low in the car, where the ride cull cannot prove them hidden.
 - Content visibility is one pure rule (`tower/visibility.ts`):
   - the boot and intro exterior shows the Lobby's detail only;
   - a ride shows its target floor and floors within one floor gap under the car;
@@ -369,6 +370,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - instanced meshes union their instances (cached by `instanceMatrix.version`);
   - other geometry recomputes when its position attribute version changes.
 - A culled troika text still gets `sync()`, so the ride's typesetting wait ([Elevator ride](#elevator-ride)) is unchanged, and `gl.compile` never runs the hooks, so precompile sees every mesh.
+- A floor under the car parked at the target (`belowParkedCar`) is hidden whole for the render (`CullFloor.hide`): FloorLevel decides visibility before the Director advances the ride, so this covers the frame the doors start to open, when the arrival glide already looks out of the car.
 - Probe: `__hq.rideCull` (`meshes`, `triangles` of the last culling render).
 - It keeps the ride peaks under 30k triangles with no visible change (`e2e/visual-gate.spec.ts` ride poses `ride-down-l2-l1-*`, `ride-down-l3-l2-*`).
 - New floor content that moves vertices in a shader must use a shader material (or stay out of the cull) so its bounds are never trusted.

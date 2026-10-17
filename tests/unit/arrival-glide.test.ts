@@ -19,6 +19,7 @@ import {
   nearestAngle,
   primeZone,
   resetView,
+  ZOOM_RANGE,
   rotate,
   rotateStep,
   stepOrbit,
@@ -32,6 +33,15 @@ import { SHAFT_EAST_FACE } from "@/experience/config";
 import type { ViewportClass } from "@/experience/types";
 
 const CLASSES: readonly ViewportClass[] = ["desktop", "tablet", "mobile"];
+const DEG = Math.PI / 180;
+
+/** Degrees between the horizon and the top edge of the view (positive: the edge is below the horizon; no roll). */
+function topBelowHorizon(pose: CameraPose): number {
+  const dx = pose.target[0] - pose.position[0];
+  const dy = pose.target[1] - pose.position[1];
+  const dz = pose.target[2] - pose.position[2];
+  return Math.atan2(-dy, Math.hypot(dx, dz)) / DEG - pose.fov / 2;
+}
 const ASPECTS = [16 / 9, 4 / 3, 1, 9 / 19.5];
 
 describe("shoulderPose", () => {
@@ -46,11 +56,18 @@ describe("shoulderPose", () => {
     expect(pose.fov).toBe(40);
   });
 
-  it("looks along the heading, slightly above the floor", () => {
-    const { look, lookUp } = ARRIVAL_GLIDE.start;
+  it("looks along the heading, pitched down so the top of the view sits below the horizon", () => {
+    const { look, belowHorizon } = ARRIVAL_GLIDE.start;
     expect(pose.target[0]).toBeCloseTo(rover[0] + look);
-    expect(pose.target[1]).toBeCloseTo(rover[1] + lookUp);
     expect(pose.target[2]).toBeCloseTo(rover[2]);
+    expect(pose.target[1]).toBeLessThan(pose.position[1]);
+    expect(topBelowHorizon(pose)).toBeCloseTo(belowHorizon);
+  });
+
+  it("keeps the rover in the lower part of the view", () => {
+    const pitch = (topBelowHorizon(pose) + pose.fov / 2) * DEG;
+    const roverAngle = Math.atan2(pose.position[1] - (rover[1] + 0.8), Math.hypot(pose.position[0] - rover[0], pose.position[2] - rover[2]));
+    expect(Math.abs(roverAngle - pitch)).toBeLessThan((pose.fov / 2) * DEG);
   });
 
   it("follows any heading (north is +z)", () => {
@@ -59,6 +76,30 @@ describe("shoulderPose", () => {
     expect(north.position[0]).toBeCloseTo(-ARRIVAL_GLIDE.start.side);
     expect(north.target[2]).toBeCloseTo(ARRIVAL_GLIDE.start.look);
   });
+});
+
+describe("the glide keeps the horizon out of frame", () => {
+  // Each settled arrival rig at the zoom range's ends and 1, at every camera class (desktop and mobile FOVs included).
+  const rover: Vec3 = [-18, 3, 0];
+  for (const cls of CLASSES) {
+    for (const rig of ["follow", "rail"] as const) {
+      it(`${cls} ${rig}: the top view edge stays below the horizon from the shoulder to the settled view`, () => {
+        for (const zoom of [ZOOM_RANGE[0], 1, ZOOM_RANGE[1]]) {
+          const forward = followForward(cls, LOOK_EAST_YAW);
+          const ahead = FOLLOW_LOOK_AHEAD[cls];
+          const end =
+            rig === "rail"
+              ? railPose(cls, rover[0], rover[1], zoom, rover[2], railYawBehind(), 0, 0, true)
+              : followPose(cls, [rover[0] + forward.x * ahead, rover[1] + 1, rover[2] + forward.z * ahead], LOOK_EAST_YAW, zoom);
+          const start = shoulderPose(rover, ARRIVAL_HEADING, end.fov);
+          expect(topBelowHorizon(start)).toBeCloseTo(ARRIVAL_GLIDE.start.belowHorizon);
+          for (let t = 0; t <= ARRIVAL_GLIDE.duration + 1e-9; t += 1 / 60) {
+            expect(topBelowHorizon(glidePose(start, end, glideProgress(t))), `${zoom} at ${t.toFixed(2)} s`).toBeGreaterThan(1);
+          }
+        }
+      });
+    }
+  }
 });
 
 describe("glideProgress", () => {

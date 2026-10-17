@@ -9,7 +9,7 @@ import { followOffsetScale } from "./offset";
  * Arrival glide (Round 8 J): every floor's elevator door faces east, and the camera starts over the rover's
  * shoulder as it leaves the car, then glides to the floor's settled view. Pure math, no React or three.
  */
-export const ARRIVAL_GLIDE = { duration: 1.5, start: { back: 2.4, up: 2.1, side: 0.7, look: 10, lookUp: 1.4 } } as const;
+export const ARRIVAL_GLIDE = { duration: 1.5, start: { back: 2.4, up: 2.1, side: 0.7, look: 10, belowHorizon: 4 } } as const;
 
 /** The rover leaves the car heading east; rover forward is `(sin h, cos h)`, so east is PI / 2. */
 export const ARRIVAL_HEADING = Math.PI / 2;
@@ -21,18 +21,22 @@ export const SHAFT_CLEAR_X = SHAFT_EAST_FACE + 1.5;
 
 /**
  * Over-the-right-shoulder camera: behind the rover along its heading, a little to its right (as seen looking
- * along the heading, which is `(-cos h, sin h)` on the floor) and above it, looking `look` ahead.
- * `rover` is the rover's floor position (y is the floor height).
+ * along the heading, which is `(-cos h, sin h)` on the floor) and above it, looking `look` ahead of the rover.
+ * It pitches down so the top edge of its view (vertical `fov`, degrees) sits `belowHorizon` degrees under the
+ * horizon: the far floor and the sky stay out of the frustum, which keeps the ride's draw calls and triangles
+ * in budget. `rover` is the rover's floor position (y is the floor height).
  */
 export function shoulderPose(rover: Vec3, heading: number, fov: number): CameraPose {
-  const { back, up, side, look, lookUp } = ARRIVAL_GLIDE.start;
+  const { back, up, side, look, belowHorizon } = ARRIVAL_GLIDE.start;
   const fx = Math.sin(heading);
   const fz = Math.cos(heading);
   const rx = -fz;
   const rz = fx;
+  const pitch = ((fov / 2 + belowHorizon) * Math.PI) / 180;
+  const y = rover[1] + up;
   return {
-    position: [rover[0] - fx * back + rx * side, rover[1] + up, rover[2] - fz * back + rz * side],
-    target: [rover[0] + fx * look, rover[1] + lookUp, rover[2] + fz * look],
+    position: [rover[0] - fx * back + rx * side, y, rover[2] - fz * back + rz * side],
+    target: [rover[0] + fx * look, y - Math.hypot(back + look, side) * Math.tan(pitch), rover[2] + fz * look],
     fov,
   };
 }
