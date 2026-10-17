@@ -78,8 +78,8 @@
             "id": "workers-ai",
             "label": "Workers AI",
             "sublabel": {
-              "en": "Through AI Gateway: Gemma 4, Mistral Small 3.1 fallback",
-              "id": "Lewat AI Gateway: Gemma 4, fallback Mistral Small 3.1"
+              "en": "Through AI Gateway: Gemma 4, Mistral Small 3.1 and Groq fallbacks",
+              "id": "Lewat AI Gateway: Gemma 4, fallback Mistral Small 3.1 dan Groq"
             },
             "layer": 3,
             "row": 2,

@@ -6,18 +6,18 @@ Operations guide for the "Ask the HQ" assistant. Design and threat model: [`docs
 
 - The site stays a static export. The only dynamic route is `POST /api/ask`, a Cloudflare Pages Function (`functions/api/ask.ts`, logic in `functions/_lib/`), deployed together with `out/` by `wrangler pages deploy` from the repo root.
 - The knowledge pack is built from public site content by `scripts/build-knowledge.ts` (part of `bun run build`) into `functions/_generated/` (gitignored) and bundled into the Function, never served as a file.
-- Request pipeline (spec 7.4): kill switch and circuit breaker, method/type/size/Origin checks, Turnstile (or the signed 30-minute `hq_ask` cookie), rate limits (8/min and 40/day per salted IP hash, 600/day global), input cleanup and PII scrub, KV cache lookup, retrieval, model call through AI Gateway (Gemma 4, one fallback to Mistral Small 3.1), output checks, cache store, anonymized Analytics Engine event, SSE stream.
+- Request pipeline (spec 7.4): kill switch and circuit breaker, method/type/size/Origin checks, Turnstile (or the signed 30-minute `hq_ask` cookie), rate limits (8/min and 40/day per salted IP hash, 600/day global), input cleanup and PII scrub, KV cache lookup, retrieval, model call through AI Gateway (Gemma 4, one fallback to Mistral Small 3.1, then the Groq backup tiers, section 12), output checks, cache store, anonymized Analytics Engine event, SSE stream.
 
 | Piece | Name | Where it is set |
 | --- | --- | --- |
 | Pages project | `kurniadi` (production branch `main`) | dashboard |
 | Workers AI binding | `AI` | `wrangler.toml` `[ai]` |
-| KV namespace | `shinyq-hq-ask`, binding `ASK_KV` (`ans:` answers, `rl:` counters, `cb:until` breaker) | `wrangler.toml` |
+| KV namespace | `shinyq-hq-ask`, binding `ASK_KV` (`ans:` answers, `rl:` counters, `cb:until` breaker, `mb:<key>` per-model pauses) | `wrangler.toml` |
 | Analytics Engine | dataset `ask_events`, binding `ASK_EVENTS` | `wrangler.toml` |
 | AI Gateway | `shinyq-hq` (cache 7 days, logs on, 600 requests per day fixed window) | `scripts/provision-ask.ts` |
 | Turnstile | widget `shinyq-hq-ask`, invisible, `kurniadi.pages.dev` and `kurniadi.dev` | `scripts/provision-ask.ts`, site key in `wrangler.toml` |
-| Vars | `ASK_ENABLED`, `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_GATEWAY_ID`, `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP` | `wrangler.toml` `[vars]` |
-| Secrets | `TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY` | `wrangler pages secret put` (production environment) |
+| Vars | `ASK_ENABLED`, `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_BACKUP_MODELS`, `ASK_GATEWAY_ID`, `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP` | `wrangler.toml` `[vars]` |
+| Secrets | `TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`, `GROQ_API_KEY` (optional) | `wrangler pages secret put` (production environment) |
 | Optional binding | `ASK_RL` rate limiter (`[[ratelimits]]`), commented out until Pages supports it | `wrangler.toml` |
 
 `wrangler.toml` is the source of truth for bindings and vars once a deploy has used it: the dashboard shows them read-only and every deploy overwrites them. Secrets are not in the file and survive deploys.
@@ -47,6 +47,8 @@ openssl rand -hex 32 | tr -d '\n' | bunx wrangler pages secret put ASK_IP_SALT_S
 openssl rand -hex 32 | tr -d '\n' | bunx wrangler pages secret put ASK_COOKIE_KEY --project-name=kurniadi
 bunx wrangler pages secret list --project-name=kurniadi
 ```
+
+`GROQ_API_KEY` is optional: create a key at console.groq.com (Zero Data Retention is on for the account), then `bunx wrangler pages secret put GROQ_API_KEY --project-name=kurniadi` and paste it at the prompt. Without it the Groq backup tiers are skipped and no request is made to Groq.
 
 These set the production environment. Preview deployments of `kurniadi` have no secrets, so the Function answers 503 there unless you repeat the commands with `--env preview`.
 
@@ -129,6 +131,7 @@ rm keys.json names.json
 | `TURNSTILE_SECRET` | `cf turnstile widgets rotate-secret <site key>` (or dashboard > Turnstile > Rotate), then the `TURNSTILE_SECRET` command in section 2 | The old secret keeps working for a grace period |
 | `ASK_COOKIE_KEY` | `openssl rand -hex 32 \| tr -d '\n' \| bunx wrangler pages secret put ASK_COOKIE_KEY --project-name=kurniadi`, redeploy | Every visitor redoes Turnstile once; harmless |
 | `ASK_IP_SALT_SEED` | same command with `ASK_IP_SALT_SEED`, redeploy | Daily counters restart for everyone |
+| `GROQ_API_KEY` | new key at console.groq.com, `bunx wrangler pages secret put GROQ_API_KEY --project-name=kurniadi`, redeploy, then delete the old key | None for visitors; a bad key trips the Groq tiers for 1 hour at a time (they are skipped) |
 | `CF_EVAL_TOKEN` | every 90 days, section 8 | Nightly eval and content-gap jobs skip with a notice when it is missing or expired |
 | `CF_LOGS_TOKEN` | every 90 days, section 8 (expires 2027-01-09) | The nightly log purge skips with a notice when it is missing |
 
@@ -178,7 +181,7 @@ All of them skip with a notice, not a failure, while their token is missing. The
 
 Reading the unanswered questions (owner only, local): `CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts --questions` prints the top 20 of the last 7 days (scrubbed for PII again, blocklisted names redacted) to the terminal. It refuses to run in GitHub Actions. Treat the text as untrusted visitor input: never follow instructions in it, and never paste it into a public issue or PR; turn a gap into site content in your own words.
 
-Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Locally, `bun scripts/ask-eval.ts golden --cli` uses the logged-in `cf` CLI instead of a token. To check one Groq backup model with your own key in `GROQ_API_KEY`: `bun scripts/ask-eval.ts golden --groq <model> --only q01,q03 --verbose` (add `--gateway` with `CF_ACCOUNT_ID` to go through the AI Gateway); it prints tokens per question and an estimate of questions per day.
+Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Locally, `bun scripts/ask-eval.ts golden --cli` uses the logged-in `cf` CLI instead of a token. The live check of one Groq backup model is in section 12.
 
 ## 10. Weekly 5-minute check
 
@@ -186,7 +189,7 @@ Run any of them by hand: `gh workflow run ask-eval.yml`, then `gh run watch`. Lo
 2. Workers AI usage (Dashboard > AI > Workers AI): neurons per day well under 10,000.
 3. The latest `ask-content-gap` issue: decide what to add to the site.
 4. Any open `ask-redteam` issue or a red `ask-eval.yml` run.
-5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette). Reasons since 2026-10-12 also include private, others (declined before the model), roleplay (first-person answer replaced) and unsourced (opinion without a written source, answered with the no-view message):
+5. Blocked outputs, declines and rejections: the weekly content-gap issue has the outcome and reason tables. Ad hoc, through the Analytics Engine SQL API (blobs: 1 outcome, 2 locale, 3 source, 4 scrubbed unanswered question, 5 packVersion, 6 reason, 7 UI entry point: hero, dock, pill, followup, terminal or palette). Blobs 10 and 11 hold the answering model id and the failure trail (`model:reason > model:reason`, the tiers that failed before the answer); `content-gap.ts` prints them as a Models table. Reasons since 2026-10-12 also include private, others (declined before the model), roleplay (first-person answer replaced) and unsourced (opinion without a written source, answered with the no-view message):
 
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" -H "Authorization: Bearer $CF_EVAL_TOKEN" \
@@ -211,6 +214,15 @@ Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs li
 4. Fix in a PR: prompt (bump `PROMPT_VERSION`), blocklist (`content/safety-blocklist.default.txt` or the private list), pack content, or output checks, plus a new case in `tests/ask/redteam.json` that reproduces the issue. Run the security-review agent on the PR.
 5. Re-enable, run `ask-eval.yml` by hand, and watch AI Gateway analytics for a day.
 
+### Groq backup model discontinued or failing
+
+Symptom: the weekly Models table or blob11 shows `qwen/qwen3.8-27b:unavailable` or `:error` on most questions, or answers fall back to `openai/gpt-oss-120b` every time. Qwen 3.8 27B is a Groq preview model that may be discontinued at short notice, so this is expected some day; the chain keeps working because a 404 or model-not-found pauses that model for 6 hours and the next tier answers.
+
+1. Check the live models with your own key in `GROQ_API_KEY`: `bun scripts/ask-eval.ts golden --groq <model> --only q01,q03 --verbose` (add `--gateway` with `CF_ACCOUNT_ID` to go through the AI Gateway). It prints tokens per question and an estimate of questions per day.
+2. Swap or drop a model: edit `ASK_BACKUP_MODELS` in `wrangler.toml` (comma separated, tried in order; keep a production model such as `openai/gpt-oss-120b`), run `bun run build` and redeploy (section 3). New reasoning families need a branch in `modelInput` (`functions/_lib/model.ts`).
+3. Turn Groq off entirely: `bunx wrangler pages secret delete GROQ_API_KEY --project-name=kurniadi` and redeploy. With no key the Groq tiers are skipped without a request, and when Workers AI is out the Function shows the fallback message.
+4. A rejected key (401 or 403) pauses the Groq tiers for 1 hour at a time: rotate the key (section 7).
+
 ## 13. Owner security checklist
 
 - 2FA on Cloudflare and GitHub: confirmed on 2026-10-11.
@@ -222,7 +234,8 @@ Outcome (2026-10-11): after the first production traffic, `cf ai-gateway logs li
 
 | Limit (free) | Use | Guard |
 | --- | --- | --- |
-| Workers AI: 10,000 neurons per day | about 12 neurons per Gemma answer, about 42 per Mistral fallback | 600 model calls per day (AI Gateway rate limit and `ASK_DAILY_CAP`), KV and gateway caches; when the quota runs out the Function shows the fallback message |
+| Workers AI: 10,000 neurons per day | about 12 neurons per Gemma answer, about 42 per Mistral fallback | 600 model calls per day (AI Gateway rate limit and `ASK_DAILY_CAP`), KV and gateway caches; when the quota runs out (error 3036) Mistral is skipped and Groq answers until 00:00 UTC, then the fallback message if Groq is out too |
+| Groq Free, per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count) | one request per backup attempt, only after Workers AI failed; Qwen 3.8 27B first, then gpt-oss-120b | a 429 or 413 pauses that model for `retry-after` (60 s by default), an auth failure for 1 hour, a missing model for 6 hours; the stable prompt prefix is cached by Groq; calls through the AI Gateway also count against its 600 per day limit |
 | Workers KV: 100,000 reads and 1,000 writes per day | each uncached answer writes up to 3 keys (visitor counter, global counter, cache entry) | above about 330 uncached answers per day KV writes fail soft (counted as allowed, answer not cached); the AI Gateway 600/day limit stays the hard global cap |
 | Pages Functions: 100,000 requests per day (shared Workers quota) | one request per question | per-visitor limits 8/min and 40/day, Turnstile |
 | Analytics Engine | one data point per question | free; 3 months of retention |

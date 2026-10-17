@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-82 plans: 52 shipped and still current, 24 shipped with a part later removed or replaced, 5 in review, 1 planned (see each plan's status line).
+83 plans: 52 shipped and still current, 24 shipped with a part later removed or replaced, 6 in review, 1 planned (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -97,6 +97,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Deploy On Merge With Auto-Rollback Implementation Plan](plans/2026-10-18-deploy-on-merge.md) | in review |  |
 | [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | in review | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
 | [Ask Multi-Turn Memory Implementation Plan](plans/2026-10-17-ask-multi-turn.md) | in review |  |
+| [Ask Groq Backup Tiers Implementation Plan](plans/2026-10-18-ask-groq-backup-tiers.md) | in review |  |
 
 ## Specs
 

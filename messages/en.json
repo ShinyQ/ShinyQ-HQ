@@ -767,7 +767,7 @@
     "thinking": "Rover is thinking . . .",
     "asOf": "Answered by AI from this site, as of {date}",
     "privacyTitle": "Privacy",
-    "privacy": "Questions and answers are processed by Cloudflare Workers AI. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
+    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) when its daily quota runs out. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
       "offline": "Ask AI is unavailable right now. Try search or browse the site pages.",
