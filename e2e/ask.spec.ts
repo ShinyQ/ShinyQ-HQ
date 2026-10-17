@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { chooseMotion, asReturningVisitor, collectCspViolations, collectErrors, openPage, snapshot, waitForHQ, waitForPhase } from "./hq";
 import en from "../messages/en.json";
+import { ASK_SEED_KEY, starterQuestions } from "../src/ask/suggestions";
 
 /**
  * Ask the HQ in the browser, against a mocked `/api/ask` (the static server has no Functions):
@@ -14,6 +15,8 @@ const AS_OF = "2026-10-01";
 const AS_OF_LINE = "Answered by AI from this site, as of Oct 1, 2026";
 const HOSTILE = "<img src=x onerror=alert(1)>";
 const TEASER_SEEN = "hq:ask-teaser";
+/** Stored seed value that keeps the pills in bank order. */
+const BANK_ORDER = "order";
 
 interface MockOptions {
   /** Status body, or a number for an error status (404: no Functions, 503: disabled). */
@@ -117,13 +120,16 @@ test.beforeEach(async ({ page }, testInfo) => {
   });
   // The teaser has its own test; elsewhere it would sit next to the launcher.
   const teaser = testInfo.title.startsWith("teaser");
+  // Bank order for the pills (the known first ones), except where the sampling itself is tested.
+  const seeded = testInfo.title.startsWith("seeded pills");
   await page.addInitScript(
-    ({ key, teaser }) => {
+    ({ key, teaser, seedKey, seed }) => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
       if (!teaser) sessionStorage.setItem(key, "1");
+      if (seed) sessionStorage.setItem(seedKey, seed);
     },
-    { key: TEASER_SEEN, teaser },
+    { key: TEASER_SEEN, teaser, seedKey: ASK_SEED_KEY, seed: seeded ? "" : BANK_ORDER },
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
   await chooseMotion(page, "system");
@@ -153,8 +159,11 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
   await expect(dock(page)).toHaveAttribute("data-layout", "side");
   await expect(dock(page)).toHaveAttribute("aria-modal", "false");
   await expect(dock(page).getByRole("textbox", { name: "Your question" })).toBeFocused();
+  // Bank order: the "Try asking" row starts with the first pill of the first three topics.
+  await expect(dock(page).getByTestId("ask-starters").locator("li > button:first-child")).toHaveText(["What are his best software projects?", "How does the voice AI contact center work?", "What is he working on now?"]);
 
   await dock(page).getByTestId("ask-topics").getByRole("button", { name: "AI" }).click();
+  await expect(dock(page).getByTestId("ask-starters")).toHaveCount(0);
   await dock(page).getByRole("button", { name: "How does the voice AI contact center work?", exact: true }).click();
   await expect(thread(page)).toContainText(`Here is markup: ${HOSTILE} and text.`);
   await expect(thread(page)).toContainText(AS_OF_LINE);
@@ -179,6 +188,45 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
   await expect(dock(page)).toBeHidden();
   await expect(launcher).toBeFocused();
   expect(errors).toEqual([]);
+});
+
+/** Opens the dock on the Classic site and reads the "Try asking" pill texts. */
+async function starterTexts(page: Page): Promise<string[]> {
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  const starters = dock(page).getByTestId("ask-starters");
+  await expect(starters.locator("li")).toHaveCount(3);
+  return starters.locator("li > button:first-child").allTextContents();
+}
+
+test("seeded pills: two seeds give different starters, and a session keeps its own across a reload", async ({ page }) => {
+  // Five Classic site loads with hydration each.
+  test.slow();
+  await mockAsk(page, { status: enabled() });
+  const expected = (n: number) => starterQuestions(new Set(), n).map((s) => s.q.en);
+  // No stored seed: one is drawn and kept for the page session.
+  const drawn = await starterTexts(page);
+  const seed = await page.evaluate((key) => sessionStorage.getItem(key), ASK_SEED_KEY);
+  expect(seed).toMatch(/^\d+$/);
+  expect(drawn).toEqual(expected(Number(seed)));
+  expect(await starterTexts(page)).toEqual(drawn);
+  expect(await page.evaluate((key) => sessionStorage.getItem(key), ASK_SEED_KEY)).toBe(seed);
+
+  // Later init scripts run last, so each one sets the seed for the following loads.
+  await page.addInitScript((key) => sessionStorage.setItem(key, "1"), ASK_SEED_KEY);
+  const one = await starterTexts(page);
+  expect(one).toEqual(expected(1));
+  expect(await starterTexts(page)).toEqual(one);
+
+  await page.addInitScript((key) => sessionStorage.setItem(key, "2"), ASK_SEED_KEY);
+  const two = await starterTexts(page);
+  expect(two).toEqual(expected(2));
+  expect(two).not.toEqual(one);
+  expect(await starterTexts(page)).toEqual(two);
+
+  // Starters ask like any pill and leave the topics view.
+  await dock(page).getByTestId("ask-starters").getByRole("button", { name: two[0], exact: true }).click();
+  await expect(thread(page).locator("[data-role='user']")).toContainText(two[0]);
 });
 
 test("hero bar: typing a question or a topic opens the dock", async ({ page }) => {

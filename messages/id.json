@@ -776,6 +776,7 @@
       "welcome": "Halo! Temukan jawaban tentang karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Jawaban AI bersumber dari isi situs ini. Pilih topik atau ketik pertanyaan.",
       "you": "Pengunjung",
       "hq": "HQ",
+      "startersLabel": "Coba tanyakan",
       "topicsLabel": "Pilih topik",
       "topicQuestions": "Pertanyaan {topic}",
       "backToTopics": "Semua topik",
@@ -794,7 +795,9 @@
       "ai": "AI",
       "career": "Karier",
       "contact": "Kontak",
-      "perspectives": "Perspektif"
+      "perspectives": "Perspektif",
+      "about": "Tentang saya",
+      "site": "Situs ini"
     },
     "cite": {
       "how": "Cara kerja Kurniadi di halaman Tentang",

@@ -9,7 +9,7 @@
  * without counts (dots only), sorted alphabetically so the order leaks no ranking.
  */
 export const STATS_PERIODS = ["d30", "all"] as const;
-/** Same ids as the Ask the HQ topic pills (`ASK_TOPICS` in src/ask/suggestions.ts; a test keeps them equal). */
+/** The first five Ask the HQ topic pills (`ASK_TOPICS`); newer pill topics count under one of these (`STATS_TOPIC_OF` in src/ask/suggestions.ts, checked by a test). */
 export const STATS_TOPICS = ["work", "ai", "career", "contact", "perspectives"] as const;
 export const STATS_FLOORS = ["L1", "L2", "L3", "L4", "RF"] as const;
 /** KV key of the public snapshot in `STATS_KV`. */

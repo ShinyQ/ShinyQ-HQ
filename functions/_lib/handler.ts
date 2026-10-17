@@ -1,5 +1,6 @@
 import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
 import { markdownToPlain } from "../../src/ask/markdown";
+import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
 import { findBlocked } from "./checks";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
@@ -218,7 +219,7 @@ export function createAskHandler(deps: HandlerDeps) {
     if (!question || question.length > ASK_MAX_QUESTION) return fail(400, "bad_request");
     const locale = detectLocale(question, body.locale);
     const chip = chipFor(question, body.chip);
-    const stats = (tags: readonly AskTag[]) => ({ topic: chip ? chip.topic : topicOfTags(tags), chip: chip?.id ?? "" });
+    const stats = (tags: readonly AskTag[]) => ({ topic: chip ? STATS_TOPIC_OF[chip.topic] : topicOfTags(tags), chip: chip?.id ?? "" });
 
     // 6. Cache (answers that passed every check only; re-checked against the blocklist on read).
     const key = await cacheKey(pack.packVersion, locale, question);

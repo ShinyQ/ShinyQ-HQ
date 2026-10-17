@@ -776,6 +776,7 @@
       "welcome": "Hi! Find answers about Kurniadi's work, projects, career, approach or how to reach him. AI answers use the content on this site. Pick a topic or type a question.",
       "you": "You",
       "hq": "HQ",
+      "startersLabel": "Try asking",
       "topicsLabel": "Pick a topic",
       "topicQuestions": "{topic} questions",
       "backToTopics": "All topics",
@@ -794,7 +795,9 @@
       "ai": "AI",
       "career": "Career",
       "contact": "Contact",
-      "perspectives": "Perspectives"
+      "perspectives": "Perspectives",
+      "about": "About me",
+      "site": "This site"
     },
     "cite": {
       "how": "Kurniadi's approach on the About page",

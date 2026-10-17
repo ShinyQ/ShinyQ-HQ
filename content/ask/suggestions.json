@@ -1,5 +1,5 @@
 {
-  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career, contact or perspectives (the five topic pills; the first four of a topic show when it expands). tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
+  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career, contact, perspectives, about or site (the seven topic pills; public stats fold about into perspectives and site into work, STATS_TOPIC_OF). A topic expands into four of its unasked pills and the Try asking row shows one pill from each of three topics, both sampled per page session by a seeded shuffle (src/ask/suggestions.ts, seed in sessionStorage hq:ask-seed), so order within a topic does not decide what shows; follow-ups stay deterministic. tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
   "items": [
     {
       "id": "work-best",
@@ -18,6 +18,14 @@
       "expect": ["project-vendor-management-portal"]
     },
     {
+      "id": "work-template",
+      "topic": "work",
+      "q": { "en": "What is his full-stack AI app template?", "id": "Apa itu template aplikasi AI full-stack miliknya?" },
+      "tags": ["work", "ai", "agents"],
+      "followUps": ["work-cowork", "ai-agents", "work-stack"],
+      "expect": ["project-ai-app-accelerator"]
+    },
+    {
       "id": "work-security",
       "topic": "work",
       "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
@@ -26,9 +34,33 @@
       "expect": ["project-vulnerability-scanning-automation"]
     },
     {
+      "id": "work-ticket-hub",
+      "topic": "work",
+      "q": { "en": "What is Serupa Ticket Hub?", "id": "Apa itu Serupa Ticket Hub?" },
+      "tags": ["work", "software"],
+      "followUps": ["work-tickets", "career-freelance", "work-stack"],
+      "expect": ["project-event-ticketing-platform"]
+    },
+    {
+      "id": "work-sewise",
+      "topic": "work",
+      "q": { "en": "What is Sewise Fashion Labs?", "id": "Apa itu Sewise Fashion Labs?" },
+      "tags": ["work", "software"],
+      "followUps": ["work-jagarupa", "ai-clearbox", "work-side"],
+      "expect": ["project-sewise-fashion-labs"]
+    },
+    {
+      "id": "work-cowork",
+      "topic": "work",
+      "q": { "en": "What did he change in MII Cowork?", "id": "Apa yang dia ubah di MII Cowork?" },
+      "tags": ["work", "software", "agents"],
+      "followUps": ["ai-deck", "work-template", "work-best"],
+      "expect": ["project-mii-cowork"]
+    },
+    {
       "id": "work-banking",
       "topic": "work",
-      "q": { "en": "How did he build the digital banking integrations?", "id": "Bagaimana dia membangun integrasi digital banking?" },
+      "q": { "en": "How did he build digital banking integrations?", "id": "Bagaimana dia membangun integrasi digital banking?" },
       "tags": ["work", "software"],
       "followUps": ["work-stack", "work-tickets", "ai-fraud"],
       "expect": ["project-digital-banking-integrations"]
@@ -66,13 +98,12 @@
       "expect": ["side-*"]
     },
     {
-      "id": "work-site",
+      "id": "work-jagarupa",
       "topic": "work",
-      "q": { "en": "How was this site built?", "id": "Bagaimana situs ini dibuat?" },
-      "tags": ["work", "agents"],
-      "followUps": ["ai-agents", "work-github", "ai-solutions-assistant"],
-      "expect": ["site-build"],
-      "answer": { "any": ["Next.js", "Cloudflare", "three.js"] }
+      "q": { "en": "What is JagaRupa?", "id": "Apa itu JagaRupa?" },
+      "tags": ["work", "ai", "agents"],
+      "followUps": ["work-side", "work-sewise", "ai-agents"],
+      "expect": ["side-jagarupa"]
     },
     {
       "id": "ai-voice",
@@ -93,7 +124,7 @@
     {
       "id": "ai-fraud",
       "topic": "ai",
-      "q": { "en": "How did the fraud review platform cut false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
+      "q": { "en": "How did the fraud review cut false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
       "tags": ["ai", "fraud", "documents"],
       "followUps": ["ai-shadow", "ai-documents", "ai-voice"],
       "expect": ["project-fraud-review-platform"]
@@ -149,10 +180,26 @@
     {
       "id": "ai-solutions-assistant",
       "topic": "ai",
-      "q": { "en": "How does the assistant on his MII Microsoft AI portfolio work?", "id": "Bagaimana cara kerja asisten di portofolio MII Microsoft AI miliknya?" },
+      "q": { "en": "How does his MII AI portfolio assistant work?", "id": "Bagaimana cara kerja asisten portofolio MII AI miliknya?" },
       "tags": ["ai", "agents", "rag"],
       "followUps": ["ai-agents", "ai-voice", "career-certs"],
       "expect": ["project-ai-solutions-assistant"]
+    },
+    {
+      "id": "ai-deck",
+      "topic": "ai",
+      "q": { "en": "What is MII Deck?", "id": "Apa itu MII Deck?" },
+      "tags": ["ai", "agents"],
+      "followUps": ["work-cowork", "ai-agents", "work-template"],
+      "expect": ["project-agent-deck-platform"]
+    },
+    {
+      "id": "ai-clearbox",
+      "topic": "ai",
+      "q": { "en": "How does Clearbox clean up an inbox?", "id": "Bagaimana Clearbox membersihkan inbox?" },
+      "tags": ["ai"],
+      "followUps": ["work-sewise", "ai-deck", "work-github"],
+      "expect": ["project-clearbox"]
     },
     {
       "id": "ai-agents",
@@ -178,6 +225,14 @@
       "followUps": ["ai-research", "work-github", "career-education"],
       "expect": ["publication-*"],
       "answer": { "any": ["IndoBERT", "{{facts.huggingface.models}} model"] }
+    },
+    {
+      "id": "ai-observability",
+      "topic": "ai",
+      "q": { "en": "How does he monitor AI in production?", "id": "Bagaimana dia memantau AI di production?" },
+      "tags": ["ai"],
+      "followUps": ["ai-security", "ai-voice", "ai-agents"],
+      "expect": ["production"]
     },
     {
       "id": "career-now",
@@ -244,6 +299,38 @@
       "expect": ["skills-*"]
     },
     {
+      "id": "career-metrodata",
+      "topic": "career",
+      "q": { "en": "What does he do at Metrodata?", "id": "Apa perannya di Metrodata?" },
+      "tags": ["career", "now"],
+      "followUps": ["career-now", "work-template", "career-certs"],
+      "expect": ["career-metrodata-2026"]
+    },
+    {
+      "id": "career-mnc",
+      "topic": "career",
+      "q": { "en": "What did he build at MNC?", "id": "Apa yang dia bangun di MNC?" },
+      "tags": ["career", "software"],
+      "followUps": ["career-jatis", "career-history", "work-stack"],
+      "expect": ["career-mnc-2022"]
+    },
+    {
+      "id": "career-jatis",
+      "topic": "career",
+      "q": { "en": "What did he do at Jatis?", "id": "Apa yang dia kerjakan di Jatis?" },
+      "tags": ["career", "software"],
+      "followUps": ["career-mnc", "career-jenius", "career-history"],
+      "expect": ["career-jatis-2023"]
+    },
+    {
+      "id": "career-school",
+      "topic": "career",
+      "q": { "en": "Where did he go to vocational school?", "id": "Di SMK mana dia sekolah?" },
+      "tags": ["career", "education"],
+      "followUps": ["career-education", "career-history", "career-awards"],
+      "expect": ["career-prologue-2016"]
+    },
+    {
       "id": "contact-capabilities",
       "topic": "contact",
       "q": { "en": "What can you do?", "id": "Apa saja yang bisa ditanyakan di sini?" },
@@ -300,6 +387,30 @@
       "expect": ["talk-*"]
     },
     {
+      "id": "contact-freelance",
+      "topic": "contact",
+      "q": { "en": "Is he available for freelance work?", "id": "Apakah dia menerima pekerjaan freelance?" },
+      "tags": ["contact", "now"],
+      "followUps": ["contact-engagements", "contact-reach", "career-freelance"],
+      "expect": ["now"]
+    },
+    {
+      "id": "contact-engagements",
+      "topic": "contact",
+      "q": { "en": "What freelance engagements does he take?", "id": "Pekerjaan freelance seperti apa yang dia cari?" },
+      "tags": ["contact", "career"],
+      "followUps": ["contact-freelance", "contact-reach", "career-freelance"],
+      "expect": ["perspective-freelance-engagements"]
+    },
+    {
+      "id": "contact-scholar",
+      "topic": "contact",
+      "q": { "en": "Is he on Google Scholar and Medium?", "id": "Apakah dia ada di Google Scholar dan Medium?" },
+      "tags": ["contact", "research", "writing"],
+      "followUps": ["ai-research", "contact-writing", "contact-channels"],
+      "expect": ["contact"]
+    },
+    {
       "id": "persp-principles",
       "topic": "perspectives",
       "q": { "en": "What are his coding principles?", "id": "Apa prinsip coding-nya?" },
@@ -340,20 +451,357 @@
       "expect": ["principles"]
     },
     {
-      "id": "persp-outside-work",
+      "id": "persp-replace",
       "topic": "perspectives",
+      "q": { "en": "Will AI agents replace engineers?", "id": "Apakah AI agent akan menggantikan engineer?" },
+      "tags": ["perspectives", "agents", "ai"],
+      "followUps": ["persp-agents", "persp-hype", "persp-ai-jobs"],
+      "expect": ["perspective-agents-replace-engineers"]
+    },
+    {
+      "id": "persp-hype",
+      "topic": "perspectives",
+      "q": { "en": "Which AI trends are overhyped?", "id": "Tren AI apa yang terlalu di-hype?" },
+      "tags": ["perspectives", "ai"],
+      "followUps": ["persp-where-not-ai", "persp-replace"],
+      "expect": ["perspective-ai-hype"]
+    },
+    {
+      "id": "persp-where-not-ai",
+      "topic": "perspectives",
+      "q": { "en": "Where should AI not be used?", "id": "Di mana AI sebaiknya tidak dipakai?" },
+      "tags": ["perspectives", "ai"],
+      "followUps": ["persp-hype", "persp-uu-pdp", "persp-reliability"],
+      "expect": ["perspective-where-not-ai"]
+    },
+    {
+      "id": "persp-open-models",
+      "topic": "perspectives",
+      "q": { "en": "Open or closed models for enterprise?", "id": "Model open-source atau closed untuk enterprise?" },
+      "tags": ["perspectives", "ai"],
+      "followUps": ["persp-indo-llm", "persp-hype", "ai-solutions-assistant"],
+      "expect": ["perspective-open-vs-closed-models"]
+    },
+    {
+      "id": "persp-ai-indonesia",
+      "topic": "perspectives",
+      "q": { "en": "How far is AI adoption in Indonesia?", "id": "Sejauh mana adopsi AI di Indonesia?" },
+      "tags": ["perspectives", "ai"],
+      "followUps": ["persp-build-indonesia", "persp-ai-regulation", "persp-compete"],
+      "expect": ["perspective-ai-adoption-indonesia"]
+    },
+    {
+      "id": "persp-build-indonesia",
+      "topic": "perspectives",
+      "q": { "en": "What is unique about building for Indonesia?", "id": "Apa yang khas dari membangun untuk Indonesia?" },
+      "tags": ["perspectives", "software"],
+      "followUps": ["persp-ai-indonesia", "persp-indo-llm"],
+      "expect": ["perspective-building-for-indonesia"]
+    },
+    {
+      "id": "persp-compete",
+      "topic": "perspectives",
+      "q": { "en": "Can Indonesian engineers compete globally?", "id": "Bisakah engineer Indonesia bersaing secara global?" },
+      "tags": ["perspectives", "career"],
+      "followUps": ["persp-build-indonesia", "persp-replace", "about-growth"],
+      "expect": ["perspective-compete-globally"]
+    },
+    {
+      "id": "persp-indo-llm",
+      "topic": "perspectives",
+      "q": { "en": "How good are Indonesian language models?", "id": "Seberapa bagus model bahasa Indonesia?" },
+      "tags": ["perspectives", "ai", "research"],
+      "followUps": ["ai-models", "persp-open-models", "persp-build-indonesia"],
+      "expect": ["perspective-indonesian-language-models"]
+    },
+    {
+      "id": "persp-ai-regulation",
+      "topic": "perspectives",
+      "q": { "en": "How should Indonesia regulate AI?", "id": "Bagaimana Indonesia sebaiknya mengatur AI?" },
+      "tags": ["perspectives", "ai"],
+      "followUps": ["persp-uu-pdp", "persp-ai-jobs"],
+      "expect": ["perspective-ai-regulation"]
+    },
+    {
+      "id": "persp-uu-pdp",
+      "topic": "perspectives",
+      "q": { "en": "How does UU PDP work in practice?", "id": "Bagaimana UU PDP berjalan dalam praktik?" },
+      "tags": ["perspectives", "data"],
+      "followUps": ["persp-ai-regulation", "persp-dev-policy"],
+      "expect": ["perspective-uu-pdp-in-practice"]
+    },
+    {
+      "id": "persp-ai-jobs",
+      "topic": "perspectives",
+      "q": { "en": "Will AI take jobs in Indonesia?", "id": "Apakah AI akan mengambil pekerjaan di Indonesia?" },
+      "tags": ["perspectives", "ai", "career"],
+      "followUps": ["persp-replace", "persp-compete", "persp-ai-regulation"],
+      "expect": ["perspective-ai-and-jobs"]
+    },
+    {
+      "id": "persp-dev-policy",
+      "topic": "perspectives",
+      "q": { "en": "Which tech policy would help developers?", "id": "Kebijakan apa yang paling membantu developer?" },
+      "tags": ["perspectives", "software"],
+      "followUps": ["persp-build-indonesia", "persp-ai-regulation", "persp-uu-pdp"],
+      "expect": ["perspective-public-digital-interfaces"]
+    },
+    {
+      "id": "persp-outside-work",
+      "topic": "about",
       "q": { "en": "What does he do outside work?", "id": "Apa kegiatannya di luar pekerjaan?" },
       "tags": ["perspectives"],
       "followUps": ["persp-principles", "persp-agents", "contact-reach"],
       "expect": ["perspective-outside-work"]
     },
     {
-      "id": "ai-observability",
-      "topic": "ai",
-      "q": { "en": "How does he monitor AI in production?", "id": "Bagaimana dia memantau AI di production?" },
-      "tags": ["ai"],
-      "followUps": ["ai-security", "ai-voice", "ai-agents"],
-      "expect": ["production"]
+      "id": "about-shinyq",
+      "topic": "about",
+      "q": { "en": "Who is ShinyQ?", "id": "Siapa ShinyQ?" },
+      "tags": ["contact", "career"],
+      "followUps": ["about-nickname", "about-one-line", "career-now"],
+      "expect": ["profile"]
+    },
+    {
+      "id": "about-nickname",
+      "topic": "about",
+      "q": { "en": "Is ShinyQ his nickname?", "id": "Apakah ShinyQ nama panggilannya?" },
+      "tags": ["contact", "github"],
+      "followUps": ["about-shinyq", "work-github", "about-fun-fact"],
+      "expect": ["profile"]
+    },
+    {
+      "id": "about-one-line",
+      "topic": "about",
+      "q": { "en": "How would he describe himself?", "id": "Bagaimana dia menggambarkan dirinya?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-problems", "about-team", "about-fun-fact"],
+      "expect": ["perspective-self-description"]
+    },
+    {
+      "id": "about-games",
+      "topic": "about",
+      "q": { "en": "What games does he play?", "id": "Game apa yang dia mainkan?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-anime", "about-coffee", "persp-outside-work"],
+      "expect": ["perspective-hobbies-and-games"]
+    },
+    {
+      "id": "about-anime",
+      "topic": "about",
+      "q": { "en": "Which anime does he like?", "id": "Anime apa yang dia suka?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-books", "about-games", "about-fun-fact"],
+      "expect": ["perspective-books-and-anime"]
+    },
+    {
+      "id": "about-books",
+      "topic": "about",
+      "q": { "en": "Which books shaped him?", "id": "Buku apa yang membentuk cara berpikirnya?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-anime", "persp-hype", "about-growth"],
+      "expect": ["perspective-books-and-anime"]
+    },
+    {
+      "id": "about-coffee",
+      "topic": "about",
+      "q": { "en": "Why does he explore coffee shops?", "id": "Kenapa dia suka menjelajah coffee shop?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-weekend", "about-games", "about-anime"],
+      "expect": ["perspective-fun-fact"]
+    },
+    {
+      "id": "about-weekend",
+      "topic": "about",
+      "q": { "en": "What does he do on weekends?", "id": "Apa yang dia lakukan di akhir pekan?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-coffee", "about-games", "about-burnout"],
+      "expect": ["perspective-outside-work"]
+    },
+    {
+      "id": "about-fun-fact",
+      "topic": "about",
+      "q": { "en": "What is a fun fact about him?", "id": "Apa fakta unik tentang dia?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-anime", "about-books", "about-shinyq"],
+      "expect": ["perspective-fun-fact"]
+    },
+    {
+      "id": "about-burnout",
+      "topic": "about",
+      "q": { "en": "How does he avoid burnout?", "id": "Bagaimana dia menghindari burnout?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-week", "about-games", "about-pressure"],
+      "expect": ["perspective-avoiding-burnout"]
+    },
+    {
+      "id": "about-week",
+      "topic": "about",
+      "q": { "en": "What does a great work week look like?", "id": "Seperti apa minggu kerja yang ideal baginya?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-team", "about-burnout", "about-problems"],
+      "expect": ["perspective-great-week"]
+    },
+    {
+      "id": "about-team",
+      "topic": "about",
+      "q": { "en": "What kind of team brings out his best?", "id": "Tim seperti apa yang membuatnya bekerja paling baik?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-week", "about-problems", "contact-open"],
+      "expect": ["perspective-best-team"]
+    },
+    {
+      "id": "about-problems",
+      "topic": "about",
+      "q": { "en": "Which problems does he enjoy most?", "id": "Masalah apa yang paling dia nikmati?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-one-line", "about-pressure", "persp-principles"],
+      "expect": ["perspective-problems-enjoyed"]
+    },
+    {
+      "id": "about-pressure",
+      "topic": "about",
+      "q": { "en": "How does he handle a production incident?", "id": "Bagaimana dia menghadapi insiden pukul 2 pagi?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-mistake", "about-burnout", "persp-reliability"],
+      "expect": ["perspective-pressure-incidents"]
+    },
+    {
+      "id": "about-mistake",
+      "topic": "about",
+      "q": { "en": "Which mistake changed how he works?", "id": "Kesalahan apa yang mengubah cara kerjanya?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-pressure", "persp-review", "about-growth"],
+      "expect": ["perspective-mistake-green-ci"]
+    },
+    {
+      "id": "about-growth",
+      "topic": "about",
+      "q": { "en": "What is he getting better at this year?", "id": "Apa yang sedang dia tingkatkan tahun ini?" },
+      "tags": ["perspectives"],
+      "followUps": ["about-mistake", "career-certs", "about-books"],
+      "expect": ["perspective-growth-focus"]
+    },
+    {
+      "id": "work-site",
+      "topic": "site",
+      "q": { "en": "How was this site built?", "id": "Bagaimana situs ini dibuat?" },
+      "tags": ["work", "agents"],
+      "followUps": ["ai-agents", "work-github", "ai-solutions-assistant"],
+      "expect": ["site-build"],
+      "answer": { "any": ["Next.js", "Cloudflare", "three.js"] }
+    },
+    {
+      "id": "site-stack",
+      "topic": "site",
+      "q": { "en": "What tech stack does this site use?", "id": "Tech stack apa yang dipakai situs ini?" },
+      "tags": ["work", "agents"],
+      "followUps": ["site-3d", "site-hosting", "site-source"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-3d",
+      "topic": "site",
+      "q": { "en": "How does the 3D on this site work?", "id": "Bagaimana cara kerja 3D di situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-floors", "site-rover", "site-classic"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-rover",
+      "topic": "site",
+      "q": { "en": "What can Rover do on this site?", "id": "Apa yang bisa dilakukan Rover di situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-drive", "site-minimap", "site-floors"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-drive",
+      "topic": "site",
+      "q": { "en": "How do I drive Rover on this site?", "id": "Bagaimana cara mengemudikan Rover di situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-rover", "site-minimap", "site-settings"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-floors",
+      "topic": "site",
+      "q": { "en": "What is on each floor of this tower?", "id": "Apa saja isi setiap lantai di menara ini?" },
+      "tags": ["work"],
+      "followUps": ["site-rover", "site-share", "site-3d"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-minimap",
+      "topic": "site",
+      "q": { "en": "What does the minimap on this site show?", "id": "Apa yang ditampilkan minimap di situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-settings", "site-drive", "site-floors"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-settings",
+      "topic": "site",
+      "q": { "en": "What can I change in this site's settings?", "id": "Apa saja yang bisa saya ubah di situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-minimap", "site-classic", "site-share"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-classic",
+      "topic": "site",
+      "q": { "en": "Is there a version of this site without 3D?", "id": "Apakah ada versi situs ini tanpa 3D?" },
+      "tags": ["work"],
+      "followUps": ["site-share", "site-3d"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-share",
+      "topic": "site",
+      "q": { "en": "Can I share a link to a page of this site?", "id": "Bisakah saya membagikan tautan halaman situs ini?" },
+      "tags": ["work"],
+      "followUps": ["site-classic", "site-floors", "contact-reach"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-model",
+      "topic": "site",
+      "q": { "en": "Which AI model powers this chatbot?", "id": "Model AI apa yang dipakai chatbot ini?" },
+      "tags": ["ai", "agents"],
+      "followUps": ["site-stack", "site-agents", "ai-solutions-assistant"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-hosting",
+      "topic": "site",
+      "q": { "en": "Where is this site hosted?", "id": "Di mana situs ini di-hosting?" },
+      "tags": ["work"],
+      "followUps": ["site-stack", "site-tests", "site-source"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-tests",
+      "topic": "site",
+      "q": { "en": "How is this site tested?", "id": "Bagaimana situs ini diuji?" },
+      "tags": ["work"],
+      "followUps": ["site-agents", "site-stack", "persp-review"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-source",
+      "topic": "site",
+      "q": { "en": "Is this site open source?", "id": "Apakah kode situs ini open source?" },
+      "tags": ["work", "github"],
+      "followUps": ["work-github", "site-stack", "site-agents"],
+      "expect": ["site-build"]
+    },
+    {
+      "id": "site-agents",
+      "topic": "site",
+      "q": { "en": "Did AI agents build this site?", "id": "Apakah situs ini dibuat dengan AI agent?" },
+      "tags": ["agents", "ai"],
+      "followUps": ["persp-agents", "site-tests", "ai-agents"],
+      "expect": ["site-build"]
     }
   ]
 }
