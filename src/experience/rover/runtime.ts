@@ -48,6 +48,10 @@ export const roverRuntime = {
   steering: false,
   /** Arrival glide progress 0 to 1 while the camera glides out of the elevator car, -1 otherwise (test probe). */
   arrivalGlide: -1,
+  /** Intro fly-in progress 0 to 1 while the camera flies down to the rover, -1 otherwise (CameraDirector; slabs and test probe). */
+  introFly: -1,
+  /** Shared rover clock time (s) until which the eyes blink on demand (the intro's landing beat). */
+  blinkUntil: 0,
   /** Heading of the horizontal vector from the drawn camera to the rover (`cameraBehindHeading`; test probe). */
   cameraBehind: 0,
   /** Mission autopilot request (see missions/host3d.ts). */

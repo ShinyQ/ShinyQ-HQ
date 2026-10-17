@@ -28,6 +28,9 @@ import {
   forwardOf,
   hologramShift,
   INTRO_DURATION,
+  INTRO_ORBIT,
+  INTRO_REDUCED,
+  introFlyProgress,
   introPose,
   pitchRange,
   railForward,
@@ -91,6 +94,8 @@ export function CameraDirector({
     shift: { x: 0, y: 0 },
     /** Reduced motion: cut (no glide) from the still intro shot to the follow camera on the next frame. */
     cut: false,
+    /** Drive, turn, zoom or reset input during the intro fly-in: the visitor takes over on the next frame. */
+    takeover: false,
     /** Boost response this frame: FOV kick (degrees) and follow distance factor. */
     boost: { fovKick: 0, pull: 1 },
     /** Arrival glide out of the elevator car (Round 8 J): seconds since it started and the destination; null when none runs. */
@@ -104,6 +109,11 @@ export function CameraDirector({
       intents.on((intent) => {
         const { orbit } = local.current;
         const s = getHQStore().getState();
+        // Input during the intro fly-in (never during the exterior orbit, which nothing skips) hands the view over.
+        const l = local.current;
+        if (s.phase === "intro" && !s.reducedMotion && l.introStart !== null && l.now - l.introStart >= INTRO_ORBIT) {
+          if (intent.type === "move" || intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") l.takeover = true;
+        }
         // Any turn, zoom or reset hands the arrival glide over to the normal camera, which eases on from the drawn pose.
         if (intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") local.current.glide = null;
         const rail = selectRig(s.phase, s.floor) === "rail";
@@ -208,6 +218,8 @@ export function CameraDirector({
 
     let desired: CameraPose;
     let snap = false;
+    /** Intro fly-in progress this frame (0 to 1), -1 outside it. */
+    let introFly = -1;
     /** The rig the drawn pose belongs to: during a glide the destination's (the store still holds the origin floor until the ride ends). */
     const drawRail = glide ? glide.to === "L2" : rail;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
@@ -239,15 +251,26 @@ export function CameraDirector({
       snap = true;
       if (s.phase === "boot") {
         l.introStart = null;
+        l.takeover = false;
         desired = introPose(cls, 0, end);
+      } else if (s.reducedMotion) {
+        // Reduced motion holds a still exterior shot for INTRO_REDUCED, then cuts to the follow camera.
+        l.introStart ??= l.now;
+        desired = reducedIntroPose(cls, end);
+        if (l.now - l.introStart >= INTRO_REDUCED) {
+          s.finishIntro();
+          l.cut = true;
+        }
       } else {
-        // The intro always runs its full length; reduced motion holds a still exterior shot instead of the orbit.
+        // The exterior orbit always runs; the fly-in then comes down to the follow pose in one move (Round 9 M). Input
+        // during the fly-in ends it early: the follow spring eases on from the drawn pose.
         l.introStart ??= l.now;
         const t = l.now - l.introStart;
-        desired = s.reducedMotion ? reducedIntroPose(cls, end) : introPose(cls, t, end);
-        if (t >= INTRO_DURATION) {
+        desired = introPose(cls, t, end);
+        introFly = introFlyProgress(t);
+        if (t >= INTRO_DURATION || l.takeover) {
           s.finishIntro();
-          l.cut = s.reducedMotion;
+          l.takeover = false;
         }
       }
     } else if (glide) {
@@ -261,10 +284,12 @@ export function CameraDirector({
     } else {
       desired = rigPose(rail, roverRuntime.cameraForward);
     }
-    // A low third-person camera stays above the floor and out of obstacles, and no camera looks past the slab edge into the
-    // void under it (the bottom of the view stays on the slab): pulled in along its view ray. Default high poses never move.
+    // A low third-person camera stays above the floor and out of obstacles, and a follow camera never looks past the slab
+    // edge into the void under it (the bottom of the view stays on the slab): pulled in along its view ray. Default high
+    // poses never move. The L2 rail view stands beside the narrow road by design, so it skips the view rule.
     const clamped = world !== null && !focus && rig !== "intro" && !glide;
-    if (clamped) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget, desired.fov) };
+    const viewFov = rail ? undefined : desired.fov;
+    if (clamped) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget, viewFov) };
 
     // A teleport moved the rover far along the road: cut to it instead of gliding across the floor.
     if (roverRuntime.cameraSnap) {
@@ -290,7 +315,7 @@ export function CameraDirector({
     // The spring runs straight between two clamped poses and may cut through blocked space (around a wall, off the slab
     // edge while turning): the drawn pose is clamped too, so it never shows the void or the inside of a wall for a frame.
     if (clamped) {
-      const drawn = clampCamera(toVec3(l.target), toVec3(l.pos), world, roverTarget, desired.fov);
+      const drawn = clampCamera(toVec3(l.target), toVec3(l.pos), world, roverTarget, viewFov);
       l.pos.set(drawn[0], drawn[1], drawn[2]);
     }
 
@@ -345,12 +370,19 @@ export function CameraDirector({
     roverRuntime.cameraPosition = toVec3(l.outPos);
     roverRuntime.cameraBehind = cameraBehindHeading(roverRuntime.cameraPosition, [roverRuntime.x, roverRuntime.y, roverRuntime.z]);
     roverRuntime.arrivalGlide = glide ? glideProgress(glide.t) : -1;
+    roverRuntime.introFly = introFly;
     roverRuntime.cameraElevation = Math.atan2(l.outPos.y - l.outTarget.y, Math.hypot(l.outPos.x - l.outTarget.x, l.outPos.z - l.outTarget.z));
     if (scene.fog instanceof Fog) {
       // Ease the linear fog range between rigs so the intro fly-in and the first-person glide do not pop.
       // A glide uses the destination's range from its first frame (a cut into the car), so the fog does not pop when the ride ends.
       const fogRig = glide ? (drawRail ? "rail" : "follow") : rig;
-      const { near: fogNear, far: fogFar } = sceneSettings(s.tier, focus ? "focus" : fp && orbit.blend >= 0.5 ? "first" : fogRig).fog;
+      let { near: fogNear, far: fogFar } = sceneSettings(s.tier, focus ? "focus" : fp && orbit.blend >= 0.5 ? "first" : fogRig).fog;
+      // The intro fly-in brings the fog in from the exterior range to the follow range, so explore starts on it.
+      if (introFly >= 0) {
+        const follow = sceneSettings(s.tier, "follow").fog;
+        fogNear += (follow.near - fogNear) * introFly;
+        fogFar += (follow.far - fogFar) * introFly;
+      }
       const kf = snap ? 1 : springFactor(dt);
       scene.fog.near += (fogNear - scene.fog.near) * kf;
       scene.fog.far += (fogFar - scene.fog.far) * kf;
