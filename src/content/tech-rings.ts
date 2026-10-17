@@ -8,7 +8,10 @@
 export const REACTOR_RINGS = ["ai", "azure", "backend", "frontend", "data", "devops"] as const;
 export type ReactorRingId = (typeof REACTOR_RINGS)[number];
 
-/** CV skill group id (`content/site-content.json` `skills[].id`) to ring; `languages` goes per tech. */
+/**
+ * CV skill group id (`content/site-content.json` `skills[].id`) to ring; `languages` goes per tech. The
+ * site-only `ds` group (Data science and ML) has no ring: its techs keep their `EXTRA_RING` ring.
+ */
 export const GROUP_RING: Readonly<Record<string, ReactorRingId>> = {
   ai: "ai",
   azure: "azure",

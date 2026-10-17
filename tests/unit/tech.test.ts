@@ -31,6 +31,21 @@ describe("tech logos", () => {
     expect(allTechLogos().every((logo) => logo.src.startsWith("/tech/"))).toBe(true);
   });
 
+  it("reuses committed logos for the Data science and ML group and keeps the rest as text", () => {
+    const logo = (name: string) => getTechLogo(name)?.src ?? null;
+    expect(logo("pandas")).toBe("/tech/pandas.svg");
+    expect(logo("Plotly")).toBe("/tech/plotly.svg");
+    expect(logo("Streamlit")).toBe("/tech/streamlit.webp");
+    expect(logo("Jupyter")).toBe("/tech/jupyter.svg");
+    expect(logo("scikit-learn")).toBe("/tech/scikit-learn.svg");
+    expect(logo("PyTorch")).toBe("/tech/pytorch.svg");
+    expect(logo("Hugging Face Transformers")).toBe("/tech/huggingface.webp");
+    for (const name of ["NumPy", "Matplotlib", "Seaborn", "Keras", "Sastrawi"]) {
+      expect(logo(name), name).toBeNull();
+      expect(isTextOnlyTech(name), name).toBe(true);
+    }
+  });
+
   it("normalizes case, versions and parentheticals", () => {
     expect(normalizeTech("Next.js 14")).toBe("next.js");
     expect(normalizeTech("Azure OpenAI (incl. Realtime)")).toBe("azure openai");

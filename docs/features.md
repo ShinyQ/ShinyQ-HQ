@@ -172,7 +172,7 @@ Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer.
 
 Route `/en`. The stats ring, the skills wall and the certifications wall surround the plaza in front of the elevator.
 
-- **Skills wall**: four of the CV's skill groups (Backend, AI and LLM, Azure and DevOps); its drawer and the Page View list all seven.
+- **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (Round 9 R: every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging.
 - **Ask Rover kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
 - The camera looks past the kiosk at the hologram's name and at the Visitor Observatory in the south-west corner.

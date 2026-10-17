@@ -367,6 +367,27 @@
       ]
     },
     {
+      "id": "ds",
+      "label": {
+        "en": "Data science and ML",
+        "id": "Data science dan ML"
+      },
+      "items": [
+        "pandas",
+        "NumPy",
+        "Matplotlib",
+        "Seaborn",
+        "Plotly",
+        "Streamlit",
+        "Jupyter",
+        "scikit-learn",
+        "PyTorch",
+        "Hugging Face Transformers",
+        "Keras",
+        "Sastrawi"
+      ]
+    },
+    {
       "id": "azure",
       "label": {
         "en": "Azure",

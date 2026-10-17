@@ -88,6 +88,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan](plans/2026-10-17-b1-build-story-page.md) | in review | [#190](https://github.com/ShinyQ/ShinyQ-HQ/pull/190) |
 | [Case-Study Metric Strip (Round 9 P) Implementation Plan](plans/2026-10-17-case-study-metric-strip.md) | shipped |  |
 | [Floor Ambience Implementation Plan](plans/2026-10-17-floor-ambience.md) | in review | [#193](https://github.com/ShinyQ/ShinyQ-HQ/pull/193) |
+| [L1 Skills Wall: Neat and Compact (Round 9 R) Implementation Plan](plans/2026-10-17-l1-skills-wall-compact.md) | shipped |  |
 
 ## Specs
 

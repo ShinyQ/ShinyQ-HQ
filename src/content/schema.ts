@@ -87,9 +87,12 @@ export const StatSchema = z.strictObject({
   confidence: ConfidenceSchema,
 });
 
-/** Skill groups follow the CV's taxonomy, in CV order (round 5 CV refresh, 2026-10-13). */
+/**
+ * Skill groups follow the CV's taxonomy, in CV order (round 5 CV refresh, 2026-10-13), plus the site-only
+ * Data science and ML group (`ds`, owner 2026-10-17) after AI and LLM.
+ */
 export const SkillGroupSchema = z.strictObject({
-  id: z.enum(["ai", "azure", "languages", "backend", "frontend", "data", "devops"]),
+  id: z.enum(["ai", "ds", "azure", "languages", "backend", "frontend", "data", "devops"]),
   label: LocalizedTextSchema,
   items: z.array(nonEmpty).min(1),
 });

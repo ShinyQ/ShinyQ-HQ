@@ -144,8 +144,11 @@ export const LOBBY = {
   statsRadius: 10,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
-  /** Raised on a 0.35 u glowing plinth; 8.5 u tall so the longest column (12 items) reads at a larger size. */
-  skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 8.5, plinth: 0.35 },
+  /**
+   * Raised on a 0.35 u glowing plinth; 40 u wide for 4 by 2 groups. h is the drawn height (skillsWallLayout) for today's
+   * skills, used by the hit box and bounds; a unit test fails when content grows the wall past it.
+   */
+  skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 11.25, plinth: 0.35 },
   /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
   certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
   /**

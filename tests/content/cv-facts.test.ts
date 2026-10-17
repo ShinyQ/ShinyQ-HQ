@@ -213,12 +213,31 @@ const CV_SKILLS: { id: string; cv: string; items: string[] }[] = [
   { id: "data", cv: "Data and messaging:", items: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Kafka", "RabbitMQ", "Elasticsearch"] },
   { id: "devops", cv: "DevOps:", items: ["Docker", "Bicep", "GitHub Actions", "Jenkins", "AWS", "LiveKit", "k6", "SonarQube", "Sentry"] },
 ];
+/** Site-only groups the CV does not list (owner, 2026-10-17: Data science and ML, after AI and LLM). */
+const SITE_ONLY_SKILLS: { id: string; after: string; items: string[] }[] = [
+  {
+    id: "ds",
+    after: "ai",
+    items: ["pandas", "NumPy", "Matplotlib", "Seaborn", "Plotly", "Streamlit", "Jupyter", "scikit-learn", "PyTorch", "Hugging Face Transformers", "Keras", "Sastrawi"],
+  },
+];
 const siteName = (item: string) => item.split("|")[0];
 const cvName = (item: string) => item.split("|").pop()!;
 
 describe("skills follow the CV taxonomy", () => {
   it("lists the CV groups in CV order with the CV items", () => {
-    expect(getSkills().map((g) => ({ id: g.id, items: g.items }))).toEqual(CV_SKILLS.map((g) => ({ id: g.id, items: g.items.map(siteName) })));
+    const siteOnly = new Set(SITE_ONLY_SKILLS.map((g) => g.id));
+    const cvGroups = getSkills().filter((g) => !siteOnly.has(g.id));
+    expect(cvGroups.map((g) => ({ id: g.id, items: g.items }))).toEqual(CV_SKILLS.map((g) => ({ id: g.id, items: g.items.map(siteName) })));
+  });
+
+  it("adds the site-only groups after their anchor group", () => {
+    const ids: string[] = getSkills().map((g) => g.id);
+    for (const group of SITE_ONLY_SKILLS) {
+      expect(ids.indexOf(group.id), group.id).toBe(ids.indexOf(group.after) + 1);
+      expect(getSkills().find((g) => g.id === group.id)?.items).toEqual(group.items);
+    }
+    expect(getSkills().find((g) => g.id === "ds")?.label).toEqual({ en: "Data science and ML", id: "Data science dan ML" });
   });
 
   it.skipIf(!hasPdftotext)("matches the skills section of the committed PDF", () => {
