@@ -20,13 +20,20 @@ describe("day and night model", () => {
   });
   it("resolves the mode: param, automation, preference, reduced motion", () => {
     const base = { param: null, pref: null, reducedMotion: false, automated: false } as const;
-    expect(resolveSkyMode(base)).toEqual({ source: "clock", phase: null });
-    expect(resolveSkyMode({ ...base, reducedMotion: true })).toEqual({ source: "held", phase: 0 });
-    expect(resolveSkyMode({ ...base, reducedMotion: true, pref: "on" })).toEqual({ source: "clock", phase: null });
-    expect(resolveSkyMode({ ...base, pref: "off" })).toEqual({ source: "held", phase: 0 });
-    expect(resolveSkyMode({ ...base, automated: true })).toEqual({ source: "held", phase: 0 });
-    expect(resolveSkyMode({ ...base, automated: true, param: { kind: "cycle" } })).toEqual({ source: "clock", phase: null });
-    expect(resolveSkyMode({ ...base, pref: "off", param: { kind: "phase", phase: 0.5 } })).toEqual({ source: "param", phase: 0.5 });
+    expect(resolveSkyMode(base)).toEqual({ source: "clock", phase: null, still: false });
+    expect(resolveSkyMode({ ...base, reducedMotion: true })).toEqual({ source: "held", phase: 0, still: false });
+    expect(resolveSkyMode({ ...base, reducedMotion: true, pref: "on" })).toEqual({ source: "clock", phase: null, still: false });
+    expect(resolveSkyMode({ ...base, pref: "off" })).toEqual({ source: "held", phase: 0, still: false });
+    expect(resolveSkyMode({ ...base, automated: true })).toEqual({ source: "held", phase: 0, still: true });
+    expect(resolveSkyMode({ ...base, automated: true, param: { kind: "cycle" } })).toEqual({ source: "clock", phase: null, still: false });
+    expect(resolveSkyMode({ ...base, pref: "off", param: { kind: "phase", phase: 0.5 } })).toEqual({ source: "param", phase: 0.5, still: false });
+  });
+  it("only the automation hold is still: a visitor's held night keeps the moon and stars", () => {
+    const base = { param: null, pref: null, reducedMotion: false, automated: false } as const;
+    expect(resolveSkyMode({ ...base, pref: "off" }).still).toBe(false);
+    expect(resolveSkyMode({ ...base, reducedMotion: true }).still).toBe(false);
+    expect(resolveSkyMode({ ...base, automated: true }).still).toBe(true);
+    expect(resolveSkyMode({ ...base, automated: true, param: { kind: "phase", phase: 0 } }).still).toBe(false);
   });
   it("night reproduces today's scene settings exactly", () => {
     const s = skyState(SKY_PHASES.night);

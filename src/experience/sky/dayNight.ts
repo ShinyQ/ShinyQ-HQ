@@ -38,15 +38,18 @@ export interface SkyMode {
   source: "param" | "clock" | "held";
   /** null: follow the clock. */
   phase: number | null;
+  /** True only for the automation hold: the night renders without stars, moon or sun so visual baselines keep today's exact look (the dome and the orb mesh still draw). */
+  still: boolean;
 }
 
-const HELD: SkyMode = { source: "held", phase: SKY_PHASES.night };
+const HELD: SkyMode = { source: "held", phase: SKY_PHASES.night, still: false };
+const STILL: SkyMode = { ...HELD, still: true };
 
 export function resolveSkyMode(i: { param: SkyParam; pref: DayNightPref; reducedMotion: boolean; automated: boolean }): SkyMode {
-  if (i.param?.kind === "phase") return { source: "param", phase: i.param.phase };
-  if (i.param?.kind === "cycle") return { source: "clock", phase: null };
-  if (i.automated) return HELD;
-  return dayNightOn(i.pref, i.reducedMotion) ? { source: "clock", phase: null } : HELD;
+  if (i.param?.kind === "phase") return { source: "param", phase: i.param.phase, still: false };
+  if (i.param?.kind === "cycle") return { source: "clock", phase: null, still: false };
+  if (i.automated) return STILL;
+  return dayNightOn(i.pref, i.reducedMotion) ? { source: "clock", phase: null, still: false } : HELD;
 }
 
 export interface Orb {

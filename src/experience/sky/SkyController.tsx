@@ -55,7 +55,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const orbColor = useMemo(() => new Float32Array([...neonColor("#ffa860", 1.8, tier).toArray(), ...neonColor("#dfe6ff", 1.4, tier).toArray()]), [tier]);
   useUniformTime(useMemo(() => [domeMaterial, orbMaterial], [domeMaterial, orbMaterial]));
 
-  const mode = useRef<SkyMode>({ source: "held", phase: 0 });
+  const mode = useRef<SkyMode>({ source: "held", phase: 0, still: false });
   const last = useRef<number | null>(null);
   const bloomWritten = useRef<BloomEffect | null>(null);
   useEffect(() => {
@@ -113,13 +113,14 @@ export function SkyController({ tier }: { tier: GpuTier }) {
     }
     if (bloom) bloom.intensity = state.bloom;
 
-    applyDome(domeMaterial, state);
-    if (orbMesh.current) applyOrbs(orbMesh.current, orbAlpha, state, scratch);
+    applyDome(domeMaterial, state, m.still);
+    if (orbMesh.current) applyOrbs(orbMesh.current, orbAlpha, state, scratch, m.still);
 
     skyRuntime.phase = phase;
     skyRuntime.day = state.day;
     skyRuntime.stars = state.stars;
     skyRuntime.source = m.source;
+    skyRuntime.still = m.still;
     skyRuntime.fog = state.fog.getHex();
     skyRuntime.applied += 1;
   });
