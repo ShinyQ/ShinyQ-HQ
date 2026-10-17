@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { enterB1Route, rideTo } from "../b1";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
 import { enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
 import baseline from "./baseline.json";
@@ -38,27 +39,37 @@ const FLOORS = [
 
 const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 
+async function measureFloor(page: Page, tier: "lite" | "full", floor: string) {
+  await waitForCameraSettle(page);
+  const programs = await waitForStablePrograms(page);
+  const peaks = await expectRenderBudget(page);
+  const gpu = await readGpuCounters(page);
+  writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
+  // Floors P2's precompile has warmed (programs pinned): explains a program count that differs between runs.
+  const warm = await page.evaluate(() => (window as unknown as { __hq: { render?: { warmFloors(): string[] } } }).__hq.render?.warmFloors().sort().join(",") ?? "");
+  console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
+
+  if (tier === "lite") expect(peaks.postCalls, "lite has no composer").toBe(0);
+  else expect(peaks.postCalls, "the full tier composer must render").toBeGreaterThan(0);
+  const cap = FLOOR_SCENE_CAPS[floor];
+  if (cap !== undefined) expect(peaks.sceneCalls).toBeLessThanOrEqual(cap);
+
+  const base = PROGRAMS[tier]?.[floor];
+  expect(base, `no shader program baseline for ${tier} ${floor}: run "bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json"`).toBeDefined();
+  expect(programs, `${programs} programs vs baseline ${base} + ${PROGRAM_HEADROOM}`).toBeLessThanOrEqual(base! + PROGRAM_HEADROOM);
+}
+
 for (const tier of ["lite", "full"] as const) {
   for (const { floor, path } of FLOORS) {
     test(`${floor} ${tier}: settled draw calls and shader programs`, async ({ page }) => {
       await enterFloorRoute(page, path, { tier });
-      await waitForCameraSettle(page);
-      const programs = await waitForStablePrograms(page);
-      const peaks = await expectRenderBudget(page);
-      const gpu = await readGpuCounters(page);
-      writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
-      // Floors P2's precompile has warmed (programs pinned): explains a program count that differs between runs.
-      const warm = await page.evaluate(() => (window as unknown as { __hq: { render?: { warmFloors(): string[] } } }).__hq.render?.warmFloors().sort().join(",") ?? "");
-      console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
-
-      if (tier === "lite") expect(peaks.postCalls, "lite has no composer").toBe(0);
-      else expect(peaks.postCalls, "the full tier composer must render").toBeGreaterThan(0);
-      const cap = FLOOR_SCENE_CAPS[floor];
-      if (cap !== undefined) expect(peaks.sceneCalls).toBeLessThanOrEqual(cap);
-
-      const base = PROGRAMS[tier]?.[floor];
-      expect(base, `no shader program baseline for ${tier} ${floor}: run "bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json"`).toBeDefined();
-      expect(programs, `${programs} programs vs baseline ${base} + ${PROGRAM_HEADROOM}`).toBeLessThanOrEqual(base! + PROGRAM_HEADROOM);
+      await measureFloor(page, tier, floor);
     });
   }
+  test(`B1 ${tier}: settled draw calls and shader programs`, async ({ page }) => {
+    // B1 has no route: unlock it on the Lobby and ride down (its baseline includes the Lobby's programs).
+    await enterB1Route(page, "/en", tier);
+    await rideTo(page, "B1");
+    await measureFloor(page, tier, "B1");
+  });
 }

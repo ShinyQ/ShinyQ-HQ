@@ -26,9 +26,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * `failAt` gates the critical path before the first frame (`?prefetch=off`). `floors`: each on-demand floor chunk
  * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
- * session total (main + all floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
+ * session total (main + the public floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
  * (measured 457.0 KB, about 13 KB headroom so creep is caught early), lite 446.4 KB (measured 433.4 KB).
- * B1 is measured after RF, so modules it shares with RF (the roof kit) count toward RF, and it is left out of the session total.
+ * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`), after the public floors it
+ * shares modules with, and it is left out of the session total: only unlocked visitors load it.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
