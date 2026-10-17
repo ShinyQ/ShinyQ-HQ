@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getBuildFacts, getBuildStory, STATION_IDS } from "@/content/build-story";
-import { buildRoomViews } from "@/content/room-views";
+import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
 import { DIAGRAM_PRESETS } from "@/components/diagram/layout";
 import { dashboardTiles, prUrl, timelineRows } from "@/lib/build-page";
@@ -10,7 +10,13 @@ const facts = getBuildFacts();
 
 describe("B1 Engine Room drawers", () => {
   for (const locale of LOCALES) {
-    const views = buildRoomViews(locale);
+    it(`keeps the secret B1 views out of the shared rooms file every 3D visitor fetches (${locale})`, () => {
+      expect(Object.keys(buildRoomViews(locale)).filter((k) => k.startsWith("B1:"))).toEqual([]);
+    });
+  }
+
+  for (const locale of LOCALES) {
+    const views = buildEngineRoomViews(locale);
     const view = (id: string) => views[`B1:${id}`]!;
 
     it(`gives every station a single-pane engine view on B1, chained in station order, linking its /build section (${locale})`, () => {

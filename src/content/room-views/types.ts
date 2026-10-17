@@ -211,7 +211,7 @@ export interface RoomEngine {
   /** Dashboard: only the numbers the snapshot carries, formatted. */
   tiles?: { id: string; value: string; label: string }[];
   /** Resolved words (the drawer loads no `build` messages on the client). */
-  labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string };
+  labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string };
 }
 
 /** L3:ops, the Ops Control Room (`OpsBody`): "How I run AI in production"; tiles ride in `metrics`, case studies in `cards`. */

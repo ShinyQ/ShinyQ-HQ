@@ -20,6 +20,7 @@ type StationContent = { engine: Omit<RoomEngine, "station" | "labels">; sections
 export function buildEngineViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const t = createTranslator({ locale, messages: m, namespace: "build" });
+  const tCommon = createTranslator({ locale, messages: m, namespace: "common" });
   const tLabs = createTranslator({ locale, messages: m, namespace: "labs" });
   const tDiagram = createTranslator({ locale, messages: m, namespace: "diagram" });
   const story = getBuildStory();
@@ -39,6 +40,7 @@ export function buildEngineViews(locale: Locale): RoomView[] {
     hourly: t("hourly"),
     uptime: t("tiles.uptime"),
     visits: t("tiles.visits"),
+    newTab: tCommon("external"),
   };
   const shot = (s: { src: string; width: number; height: number; alt: LocalizedText }) => ({ src: s.src, width: s.width, height: s.height, alt: s.alt[locale] });
   const { blueprint, agents, gates } = story.stations;

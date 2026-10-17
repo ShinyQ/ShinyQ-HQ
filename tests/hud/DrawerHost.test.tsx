@@ -4,6 +4,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
+import { primeEngineViews, primeRoomViews } from "@/hud/drawer/data";
 import { DrawerHost } from "@/hud/drawer/DrawerHost";
 import { getHQStore } from "@/store/useHQStore";
 
@@ -79,5 +81,47 @@ describe("DrawerHost", () => {
     getHQStore().setState({ phase: "explore", activeRoom: null });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(getHQStore().getState().phase).toBe("explore");
+  });
+});
+
+describe("DrawerHost B1 data", () => {
+  const shared = buildRoomViews("en");
+  const engine = buildEngineRoomViews("en");
+  const requested: string[] = [];
+
+  beforeEach(() => {
+    requested.length = 0;
+    primeRoomViews("en", null);
+    primeEngineViews("en", null);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        requested.push(url);
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes("/b1-") ? engine : shared) });
+      }),
+    );
+    getHQStore().setState({ phase: "explore", activeRoom: null, b1Unlocked: false });
+  });
+
+  afterEach(() => {
+    primeRoomViews("en", null);
+    primeEngineViews("en", null);
+    getHQStore().setState({ b1Unlocked: false });
+  });
+
+  it("never requests the B1 file in a locked session, even after a room opens", async () => {
+    renderHost();
+    act(() => getHQStore().getState().openRoom("L1:visits"));
+    await screen.findByTestId("room-drawer");
+    expect(requested.filter((url) => url.startsWith("/data/rooms/"))).toEqual(["/data/rooms/en.json"]);
+  });
+
+  it("opens a B1 station from the separate file, merged over the shared views", async () => {
+    getHQStore().setState({ b1Unlocked: true });
+    renderHost();
+    act(() => getHQStore().getState().openRoom("B1:timeline"));
+    const drawer = await screen.findByTestId("room-drawer");
+    await vi.waitFor(() => expect(drawer.querySelector("[data-engine-station='timeline']")).not.toBeNull());
+    expect(requested.filter((url) => url.startsWith("/data/rooms/")).sort()).toEqual(["/data/rooms/b1-en.json", "/data/rooms/en.json"]);
   });
 });

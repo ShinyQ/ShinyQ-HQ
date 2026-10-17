@@ -2,14 +2,14 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildRoomViews } from "@/content/room-views";
+import { buildEngineRoomViews } from "@/content/room-views";
 import { EngineBody } from "@/hud/drawer/EngineBody";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
 }));
 
-const views = buildRoomViews("en");
+const views = buildEngineRoomViews("en");
 const body = (id: string) => render(<EngineBody view={views[`B1:${id}`]!} locale="en" />).container;
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline")))));
@@ -37,7 +37,14 @@ describe("EngineBody (B1 station drawers)", () => {
     expect(body("gates").querySelectorAll("[data-gate] [data-accent-dot]")).toHaveLength(views["B1:gates"]!.engine!.gates!.length);
     cleanup();
     const agents = body("agents");
-    expect(agents.querySelector(`a[href='${views["B1:agents"]!.engine!.excerpt!.href}']`)).not.toBeNull();
+    const link = agents.querySelector(`a[href='${views["B1:agents"]!.engine!.excerpt!.href}']`);
+    expect(link).not.toBeNull();
+    expect([link!.getAttribute("target"), link!.textContent]).toEqual(["_blank", expect.stringContaining("(opens in a new tab)")]);
+  });
+
+  it("titles each gate as a level 3 heading, like the round titles", () => {
+    const gates = views["B1:gates"]!.engine!.gates!;
+    expect([...body("gates").querySelectorAll("[data-gate] h3")].map((h) => h.textContent)).toEqual(gates.map((g) => g.title));
   });
 
   it("shows the measured numbers and the hourly uptime check", () => {

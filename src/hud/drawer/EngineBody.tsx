@@ -20,7 +20,7 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
   return (
     <div className="space-y-6" data-engine-station={e.station}>
       {e.diagram && (
-        <figure role="img" aria-label={e.diagram.label} className="card overflow-x-auto p-3">
+        <figure role="img" aria-label={e.diagram.label} className="card p-3">
           <DiagramSvg layout={e.diagram.layout} className="mx-auto block h-auto max-w-full" />
         </figure>
       )}
@@ -41,10 +41,10 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
         <ul className="space-y-4">
           {e.gates.map((g) => (
             <li key={g.id} data-gate={g.id}>
-              <p className="flex items-center gap-2 font-semibold text-ink">
+              <h3 className="flex items-center gap-2 font-semibold text-ink">
                 <AccentDot tone={g.required ? "green" : "muted"} glow={g.required} />
                 {g.title}
-              </p>
+              </h3>
               <p className="mt-1 text-sm text-ink-2">{g.text}</p>
               <p className="mt-1 text-sm text-ink">
                 <span className="label text-ink-3">{l.budget}</span> {g.budget}
@@ -101,6 +101,7 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
             <span className="font-semibold text-ink">{l.excerpt}</span>
             <a href={e.excerpt.href} target="_blank" rel="noopener noreferrer" className="text-sm text-ink-2 hover:text-cyan">
               {l.source}
+              <span className="sr-only"> ({l.newTab})</span>
             </a>
           </figcaption>
           <pre className="card p-3 font-mono text-[13px] whitespace-pre-wrap text-ink-2">

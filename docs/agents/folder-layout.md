@@ -126,7 +126,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json.
+- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json.
 
 ### src/assets/
 

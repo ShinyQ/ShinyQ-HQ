@@ -350,6 +350,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 
 - One builder per floor in `src/content/room-views/` (`lobby`, `career`, `labs`, `library`, `roof`), aggregated by `buildRoomViews(locale)`.
 - Exported at build time to `/data/rooms/{locale}.json`.
+- The secret B1 station views (`engine.ts`, `buildEngineRoomViews`) are a separate file, `/data/rooms/b1-{locale}.json`, never part of the shared one. `DrawerHost` fetches it (`loadEngineViews`) only when `b1Unlocked` is set or a `B1:` room opens, and merges it over the shared views.
 - The drawer fetches it once (`loadRoomViews`), after the first 3D frame on idle or when a room opens first, so pages do not grow.
 - A floor phase owns its builder file; a test checks that every catalog room has a view.
 

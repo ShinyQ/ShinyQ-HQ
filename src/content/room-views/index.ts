@@ -8,7 +8,7 @@ import { buildLobbyViews } from "./lobby";
 import { buildRoofViews } from "./roof";
 import type { RoomViews } from "./types";
 
-/** Every room's drawer content for one locale (served as /data/rooms/{locale}.json). */
+/** Every room's drawer content for one locale (served as /data/rooms/{locale}.json). The secret B1 views are not here: see `buildEngineViews` (/data/rooms/b1-{locale}.json). */
 export function buildRoomViews(locale: Locale): RoomViews {
   const views = [
     ...buildLobbyViews(locale),
@@ -17,7 +17,11 @@ export function buildRoomViews(locale: Locale): RoomViews {
     ...buildLabsViews(locale),
     ...buildLibraryViews(locale),
     ...buildRoofViews(locale),
-    ...buildEngineViews(locale),
   ];
   return Object.fromEntries(views.map((view) => [view.id, view])) as RoomViews;
+}
+
+/** The secret B1 Engine Room drawers for one locale (served as /data/rooms/b1-{locale}.json, fetched only when unlocked). */
+export function buildEngineRoomViews(locale: Locale): RoomViews {
+  return Object.fromEntries(buildEngineViews(locale).map((view) => [view.id, view])) as RoomViews;
 }
