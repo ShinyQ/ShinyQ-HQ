@@ -347,8 +347,8 @@
         {
           "title": { "en": "Deploy", "id": "Deploy" },
           "text": {
-            "en": "The owner merges the pull request. A push to main never deploys: production goes out only through the deploy workflow, by hand or after the weekly live-facts update, and it reuses a complete green CI run.",
-            "id": "Pemilik me-merge pull request. Push ke main tidak pernah men-deploy: produksi hanya dirilis lewat workflow deploy, secara manual atau setelah pembaruan live-facts mingguan, dan workflow itu memakai ulang satu run CI hijau yang lengkap."
+            "en": "The owner merges the pull request and the deploy workflow ships it within minutes when the pull request passed every required check on the same code; otherwise it waits for the full CI on main. That full CI still runs after every merge, and a red run rolls production back to the last good deployment.",
+            "id": "Pemilik me-merge pull request, lalu workflow deploy merilisnya dalam hitungan menit bila pull request itu lulus semua check wajib pada kode yang sama; jika tidak, workflow menunggu CI lengkap di main. CI lengkap itu tetap berjalan setelah setiap merge, dan run yang merah mengembalikan produksi ke deployment terakhir yang baik."
           }
         }
       ],
