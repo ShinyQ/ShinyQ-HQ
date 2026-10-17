@@ -79,7 +79,7 @@ export function ciRunning(runs: readonly { status: string }[]): boolean {
   return runs.some((r) => r.status !== "completed");
 }
 
-async function gh<T>(path: string, token: string): Promise<T> {
+export async function gh<T>(path: string, token: string): Promise<T> {
   const response = await fetch(`https://api.github.com${path}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
   });
@@ -107,7 +107,7 @@ async function hasFullMarker(repo: string, runId: number, token: string): Promis
 }
 
 /** The html_urls of green CI checks that belong to a complete run (red checks need no marker: they fail the deploy). */
-async function completeChecks(repo: string, checks: readonly CheckRun[], token: string): Promise<Set<string>> {
+export async function completeChecks(repo: string, checks: readonly CheckRun[], token: string): Promise<Set<string>> {
   const urls = new Set<string>();
   for (const check of checks.filter((c) => isCi(c) && isGreen(c))) {
     const runId = runIdFromUrl(check.html_url);
@@ -118,7 +118,7 @@ async function completeChecks(repo: string, checks: readonly CheckRun[], token: 
 
 const treeOf = (repo: string, sha: string, token: string) => gh<{ commit: { tree: { sha: string } } }>(`/repos/${repo}/commits/${sha}`, token).then((c) => c.commit.tree.sha);
 
-async function checkRuns(repo: string, sha: string, token: string): Promise<CheckRun[]> {
+export async function checkRuns(repo: string, sha: string, token: string): Promise<CheckRun[]> {
   const { check_runs } = await gh<{ check_runs: CheckRun[] }>(`/repos/${repo}/commits/${sha}/check-runs?check_name=${encodeURIComponent(CI_CHECK)}&per_page=100`, token);
   return check_runs;
 }
