@@ -174,3 +174,49 @@ test.describe("point and go with reduced motion", () => {
     expect(await highlightOf(page)).toBeCloseTo(0.9, 5);
   });
 });
+
+test.describe("L3 directory boards", () => {
+  test("sweeping the pointer across each board hovers it once and never toggles while inside", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openFloor(page, "/en/labs");
+    type HoverLog = { __hover: string[]; __hq: { store: { getState: () => { hover: { item: { id: string } } | null }; subscribe: (f: (s: { hover: { item: { id: string } } | null }, p: { hover: { item: { id: string } } | null }) => void) => void } } };
+    await page.evaluate(() => {
+      const w = window as unknown as HoverLog;
+      w.__hover = [];
+      w.__hq.store.subscribe((s, p) => {
+        const a = s.hover?.item.id ?? null;
+        const b = p.hover?.item.id ?? null;
+        if (a !== b) w.__hover.push(`${b}->${a}`);
+      });
+    });
+    let swept = 0;
+    for (const wing of ["software", "data", "ai"]) {
+      const id = `L3:board:${wing}`;
+      // Twenty points along the board face, at mid height, kept to points where the click raycast hits this board.
+      const points = await page.evaluate((id) => {
+        const it = (window as unknown as { __hq: { interact: { screenAt: (id: string, fx: number, fz: number, lift: number) => { x: number; y: number } | null; hitAt: (x: number, y: number) => string | null } } }).__hq.interact;
+        const out: { x: number; y: number }[] = [];
+        for (let i = 0; i < 20; i++) {
+          const p = it.screenAt(id, 0.5, 0.05 + (0.9 * i) / 19, 0.6);
+          if (p && p.x > 320 && p.x < innerWidth - 160 && p.y > 160 && p.y < innerHeight - 120 && document.elementFromPoint(p.x, p.y)?.tagName === "CANVAS" && it.hitAt(p.x, p.y) === id) out.push(p);
+        }
+        return out;
+      }, id);
+      if (points.length < 5) continue;
+      swept += 1;
+      await page.mouse.move(points[0].x, points[0].y);
+      await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "pointer" });
+      await page.evaluate(() => {
+        (window as unknown as HoverLog).__hover = [];
+      });
+      for (const p of points.slice(1)) {
+        await page.mouse.move(p.x, p.y, { steps: 3 });
+        await waitForFrames(page, 3);
+        expect(await hoveredTarget(page)).toEqual({ id, via: "pointer" });
+      }
+      // Not a single hover change while the pointer stayed on the board.
+      expect(await page.evaluate(() => (window as unknown as HoverLog).__hover)).toEqual([]);
+    }
+    expect(swept).toBeGreaterThanOrEqual(2);
+  });
+});
