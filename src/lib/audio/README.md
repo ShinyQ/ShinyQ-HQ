@@ -11,7 +11,7 @@ import { audio, useAudio } from "@/lib/audio";
 | Member | Signature | Notes |
 | --- | --- | --- |
 | `audio` | `AudioEngine` | Lazy singleton proxy. Importing creates nothing; the real engine is built on the first method call. |
-| `createAudioEngine` | `(deps?: Partial<AudioEngineDeps>) => AudioEngine` | For tests or isolated instances. Deps: `createContext`, `storage`, `doc`, `now`. |
+| `createAudioEngine` | `(deps?: Partial<AudioEngineDeps>) => AudioEngine` | For tests or isolated instances. Deps: `createContext`, `storage`, `doc`, `now`, `loadAmbience` (loads the ambience chunk), `paused` (the initial pause state). |
 | `play` | `(name: SoundName) => void` | `"beep" \| "ding" \| "whoosh" \| "click"`. No-op while muted. |
 | `setRumble` | `(speed: number) => void` | Rover speed in u/s. At or below 1 is silent, clamps at 12. Gain and cutoff glide with `setTargetAtTime`. |
 | `setMuted` | `(muted: boolean) => void` | Persists `"on"` / `"off"` in `localStorage["hq:sound"]`. The first unmute creates the `AudioContext`, resumes it and starts the background music. |
@@ -36,11 +36,24 @@ import { audio, useAudio } from "@/lib/audio";
 | Sound | Call | Length | Synthesis |
 | --- | --- | --- | --- |
 | Background music: "Deep Space Ambient" | automatic while unmuted | endless, never repeats exactly | Three triangle drones (MIDI 36, 43, 48) through a 600 Hz lowpass; every 0.5 s a 35 percent chance of a C major pentatonic glass bell (sine, 2.6 s decay, plus a 2.01x partial); 3 s synthetic convolution reverb at 60 percent wet and a compressor on the music bus; output trim 0.6 (the site's ambient level, quiet enough that the effects stay on top) |
+| Floor ambience | automatic while unmuted and a floor is set | endless, crossfades 2 s on a floor change | One quiet texture per floor, mixed under the music (table below) |
 | Rover beep | `play("beep")` | about 120 ms | Two square tones (1320 Hz then 1980 Hz) |
 | Tread rumble | `setRumble(speed)` | loop | Looped brown noise through a lowpass; gain and cutoff follow speed |
 | Elevator ding | `play("ding")` | about 550 ms | Inharmonic sine partials with exponential decay |
 | Drawer whoosh | `play("whoosh")` | about 220 ms | Band-passed noise with a rising sweep |
 | Key click | `play("click")` | about 25 ms | High-passed noise burst, rate limited to 20 per second (extras dropped) |
+
+### Floor ambience layers
+
+`src/lib/audio/ambience.ts`, loudness matched to each other and trimmed by `AMBIENCE_LEVEL` (0.4) to sit about 10 to 11 LU under the music. Every pitched note is C major pentatonic and every layer is a texture, never a melody. Same lookahead scheduler as the music (0.6 s window, 100 ms tick).
+
+| Floor | Layer | Synthesis |
+| --- | --- | --- |
+| L1 Lobby | Soft chime pad | Open pentatonic chords (three notes from six voicings) on an airy periodic-wave chime, swelling in about 1.8 s and ringing about 7 s, every 4 to 5.5 s, with an occasional high glint; lowpass 2.4 kHz into a lowpassed feedback echo |
+| L2 Career | Warm analog pulse | A slow "lub dub" at 66 BPM: two detuned sawtooths (plus or minus 7 cents, a slow tape wow) under a closing lowpass, root and fifth over four bars (C, Am, G, Dsus), with rests and a tape echo |
+| L3 Labs | Light electronic arpeggio | Short square plucks under a snapping lowpass, 0.3 s steps over four chords in 16 step phrases, about 30 percent rests and some quiet half phrases, with an echo |
+| L4 Writing | Typewriter and paper | Band-passed noise ticks in word-like bursts, a soft E7 sine carriage bell and a return swish at line ends, and slow paper rustle swells from a looped noise bed |
+| RF Roof | Wind and a distant beacon | Gusting band-passed noise (with a low body) as wind, and a high sine radio beacon (G6, A6, C7) sending short morse-like patterns, the last one spelling HQ |
 
 ## Behavior
 

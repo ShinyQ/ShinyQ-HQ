@@ -134,9 +134,20 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** A small seeded generator (mulberry32), so a sparse layer such as the RF beacon never lands under the count by chance. */
+function seeded(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 describe("floor ambience: single layers", () => {
   it.each(AMBIENCE_FLOORS)("%s schedules bounded notes and stop() cleans up fully", (floor) => {
-    const layer = AMBIENCE_LAYERS[floor](ctx, destination);
+    const layer = AMBIENCE_LAYERS[floor](ctx, destination, seeded(7));
     let maxNotes = 0;
     advance(30_000, () => {
       maxNotes = Math.max(maxNotes, layer.activeNotes());

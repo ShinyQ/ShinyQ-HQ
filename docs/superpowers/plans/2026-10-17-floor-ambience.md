@@ -1,8 +1,8 @@
 # Floor Ambience Implementation Plan
 
-Status: in progress.
+Status: in review.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Each floor adds a quiet procedural layer under Deep Space Ambient (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper noise, RF wind and distant radio beeps) that crossfades over 2 s on a floor change, with a "Floor ambience" toggle in the settings panel's sound group (Round 9 O, spec section 5.1).
 
@@ -30,8 +30,8 @@ Status: in progress.
 **Interfaces:**
 - Produces (unchanged from the audition): `AmbienceFloor`, `AMBIENCE_FLOORS`, `AMBIENCE_CROSSFADE` (2), `AMBIENCE_LEVEL` (0.4), `AmbienceLayer`, `AMBIENCE_LAYERS`, `AmbienceVoice { output; setFloor(floor | null); floor(); activeLayers(); stop() }`, `createAmbience(ctx, destination, random?)`.
 
-- [ ] Step 1: Port the audition sanity checks (`files/ambience/check.ts`) into Vitest with the repo's fake AudioContext pattern (see `tests/unit/audio-music.test.ts`): every layer schedules notes and `stop()` leaves 0 active notes, 0 connected nodes and no timers; rapid `setFloor` L1 to RF then null within 1 s never has more than 3 live layers; same floor is a no-op; a 5 s stall schedules at most one step; every pitched frequency in C major pentatonic.
-- [ ] Step 2: Copy the module, rewrite imports, run the test, typecheck, lint. Commit `feat(audio): floor ambience layers`.
+- [x] Step 1: Port the audition sanity checks (`files/ambience/check.ts`) into Vitest with the repo's fake AudioContext pattern (see `tests/unit/audio-music.test.ts`): every layer schedules notes and `stop()` leaves 0 active notes, 0 connected nodes and no timers; rapid `setFloor` L1 to RF then null within 1 s never has more than 3 live layers; same floor is a no-op; a 5 s stall schedules at most one step; every pitched frequency in C major pentatonic.
+- [x] Step 2: Copy the module, rewrite imports, run the test, typecheck, lint. Commit `feat(audio): floor ambience layers`.
 
 ### Task 2: Engine integration and the setting
 
@@ -54,9 +54,9 @@ Behavior:
 - `useAudioSettings` server snapshot gains `ambience: true`.
 - `Experience` calls `audio.setFloor(store.floor)` on mount and on every floor change (subscribe), and `audio.setFloor(null)` on unmount before pausing.
 
-- [ ] Step 1: Failing unit tests in `tests/unit/audio.test.ts` with the existing fake context: ambience starts after the gesture with the floor set; floor change crossfades (voice `setFloor` called); mute stops it and unmute restarts it; `setAmbience(false)` stops and persists; `hq:ambience` `"off"` read at creation; no ambience while paused; the effects path is unchanged (`play("beep")` connects to the master, not the music bus).
-- [ ] Step 2: Implement engine, types, singleton proxy, `useAudioSettings`, setting def, messages (EN "Floor ambience", ID "Suasana lantai"), `Experience` floor reporting.
-- [ ] Step 3: `bun run verify:quick`; commit `feat(audio): floor ambience in the engine and the Floor ambience setting`.
+- [x] Step 1: Failing unit tests in `tests/unit/audio.test.ts` with the existing fake context: ambience starts after the gesture with the floor set; floor change crossfades (voice `setFloor` called); mute stops it and unmute restarts it; `setAmbience(false)` stops and persists; `hq:ambience` `"off"` read at creation; no ambience while paused; the effects path is unchanged (`play("beep")` connects to the master, not the music bus).
+- [x] Step 2: Implement engine, types, singleton proxy, `useAudioSettings`, setting def, messages (EN "Floor ambience", ID "Suasana lantai"), `Experience` floor reporting.
+- [x] Step 3: `bun run verify:quick`; commit `feat(audio): floor ambience in the engine and the Floor ambience setting`.
 
 ### Task 3: E2E and docs
 
@@ -64,5 +64,5 @@ Behavior:
 - Test: `e2e/hud-corners.spec.ts` or a new `e2e/ambience.spec.ts` (the setting row exists in the sound group with the EN label and toggles `hq:ambience`; with sound on, after a gesture, `__hq` or the engine probe reports the current floor and follows a floor change)
 - Modify: docs listed in Global Constraints; `scripts/e2e-plan.ts` mapping if needed.
 
-- [ ] Step 1: Write the e2e (wait on state), run it and `bun run e2e:changed`.
-- [ ] Step 2: Docs (current state), the decisions row (2026-10-17: owner approved the five floor layers as auditioned), plans index row. Commit `docs: floor ambience`.
+- [x] Step 1: Write the e2e (wait on state), run it and `bun run e2e:changed`.
+- [x] Step 2: Docs (current state), the decisions row (2026-10-17: owner approved the five floor layers as auditioned), plans index row. Commit `docs: floor ambience`.

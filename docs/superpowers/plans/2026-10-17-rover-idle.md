@@ -1,6 +1,6 @@
 # Rover Idle Animations Implementation Plan
 
-Status: in review (Round 9, sub-project O). The perf lane (Task 3, Step 2) runs in CI.
+Status: shipped in [#188](https://github.com/ShinyQ/ShinyQ-HQ/pull/188) (Round 9, sub-project O).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
@@ -82,5 +82,5 @@ Steps:
 - Modify: `scripts/ci-plan.ts` only if the new spec needs a mapping (check how e2e specs are selected).
 
 - [x] **Step 1:** Write the docs (current state only), run `bun run verify:quick` and `bun run e2e:changed`.
-- [ ] **Step 2:** Run the perf lane `E2E_PORT=<free port> bun run e2e:perf` (render path touched): draw calls and programs unchanged, memory gates green.
+- [x] **Step 2:** Run the perf lane (green in CI on #188) `E2E_PORT=<free port> bun run e2e:perf` (render path touched): draw calls and programs unchanged, memory gates green.
 - [x] **Step 3:** Commit `docs: rover idle`.

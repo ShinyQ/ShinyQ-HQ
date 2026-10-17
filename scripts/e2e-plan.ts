@@ -12,6 +12,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 
 /** Every spec in the default (non-screenshot) suite. */
 export const ALL_SPECS = [
+  "ambience",
   "arrivals",
   "ask",
   "boost",
@@ -258,7 +259,7 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
   { test: /^src\/(app|components)\/|^src\/content\/pageview\.ts$/, specs: ["pageview", "static-routes", "gallery"] },
   { test: /^src\/i18n\//, specs: ["static-routes", "experience"] },
-  { test: /^src\/lib\/audio\//, specs: ["experience", "pageview"] },
+  { test: /^src\/lib\/audio\//, specs: ["ambience", "experience", "pageview"] },
   { test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },
   { test: /^src\/lib\//, specs: ["static-routes", "pageview"] },
   { test: /^(content|messages)\/|^src\/content\//, specs: ["static-routes", "pageview", "seo"] },

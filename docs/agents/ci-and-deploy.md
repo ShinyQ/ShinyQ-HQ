@@ -157,6 +157,11 @@ it. The classes live in `CLASSES` in `scripts/ci-plan.ts` (the code wins over th
 - Use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext`.
 - Sounds are synthesized, so there are no audio files to add.
 - Background music is the procedural Deep Space Ambient track (`src/lib/audio/music.ts`); keep it at `MUSIC_LEVEL` (the site's ambient level, quiet enough that the effects stay on top), and stop it through `MusicVoice.stop()` (no leaked nodes or timers).
+- Floor ambience is one quiet procedural layer per floor (`src/lib/audio/ambience.ts`, layers in `src/lib/audio/README.md`) mixed under the music; keep `AMBIENCE_LEVEL` (0.4) and `AMBIENCE_CROSSFADE` (2 s) as the owner approved them, and stop a voice through `AmbienceVoice.stop()` (no leaked nodes or timers).
+  - It is a lazy chunk (`loadAmbience`, about 3.4 KB gzip): never import `ambience.ts` statically from the engine or the first-frame 3D path.
+  - It feeds the `musicBus`, so the music volume scales it, the master mute, pause and tab rules apply, and it never touches the effects path.
+  - `Experience` reports the store floor with `audio.setFloor(floor)` (and `null` on unmount); the "Floor ambience" setting (`hq:ambience`, `audio.setAmbience`) is independent of the music toggle.
+  - `window.__hq.audio()` is a read-only probe (`floor`, `ambience`, `muted`) for `e2e/ambience.spec.ts`; e2e never asserts on real sound output.
 - Sound is on by default (owner decision):
   - a missing `hq:sound` means on;
   - a stored `"off"` stays muted;
