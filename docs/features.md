@@ -110,7 +110,7 @@ Open `/en` and press **Boot rover**.
 ### Sound
 
 - While sound is on, the tower plays procedural "Deep Space Ambient" background music (drones, random pentatonic bells, a long reverb), quiet enough to keep the effects clear; muting or leaving the 3D view stops it.
-- Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
+- Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon, and the unlockable B1 Engine Room a low machine hum with soft relay ticks) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
 
 ### Motion setting
 

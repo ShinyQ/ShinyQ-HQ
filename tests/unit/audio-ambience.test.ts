@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AMBIENCE_CROSSFADE, AMBIENCE_FLOORS, AMBIENCE_LAYERS, createAmbience, type AmbienceFloor } from "@/lib/audio/ambience";
+import { AMBIENCE_CROSSFADE, AMBIENCE_FLOORS, AMBIENCE_LAYERS, B1_HUM_MIDI, createAmbience, type AmbienceFloor } from "@/lib/audio/ambience";
 
 // The ambience graph needs delay, analyser and periodic wave nodes that the shared fake does not model, so this
 // file keeps its own context. It also records every frequency an oscillator is given.
@@ -164,6 +164,12 @@ describe("floor ambience: single layers", () => {
     const before = sources.length;
     advance(2_000);
     expect(sources.length).toBe(before);
+  });
+
+  it("has a B1 Engine Room layer: a low C and G hum and relay ticks in the scale", () => {
+    expect(AMBIENCE_FLOORS).toContain("B1");
+    expect(B1_HUM_MIDI).toEqual([36, 43]);
+    expect(typeof AMBIENCE_LAYERS.B1).toBe("function");
   });
 
   it("keeps every pitched oscillator in C major pentatonic", () => {
