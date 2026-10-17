@@ -146,7 +146,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
 | `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
-| `src/experience/input/**` and the rover mesh, fade and runtime | `camera` and `experience` |
+| `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
+| `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |

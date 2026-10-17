@@ -98,6 +98,17 @@ The same script sets these on every page before first paint:
 - Crawlers, Lighthouse and the static tier never load the 3D chunk.
 - E2E: `asReturningVisitor` sets the flag, so `enterHQ` and `enterFloorRoute` land in explore (`enterHQ` also waits for `waitForSceneLive`); tests of the boot itself open without it.
 
+## Rover idle
+
+After 15 s without input (`IDLE.delay`) the rover plays a short scripted sequence (look around, blink, a hop or a spin, one beep), waits 8 to 14 s and plays another.
+
+- `rover/idle.ts` (pure): `stepIdle` runs the sequences, `idleEligible` gates them (exploring, no mission, ride, beam or picker, not driving, parked, third person, no Ask face). Open rooms (the drawer) and the HUD overlays leave `phase` `explore`, so nothing plays then.
+- `rover/activity.ts`: `activity.seq` counts input (`watchActivity` on the document plus every intent); any change restarts the wait.
+- `Rover.tsx` draws it: the head parts sit in a pivot group (look yaw), the body spin goes on `body.rotation.y`, `blink` and `hop` reuse the blink timer and `hopUntil`, `beep` plays through `audio`. Raw yaw and spin are drawn as is; at 0 they decay out in about 0.15 s (the spin first wrapped to the nearest turn), so input stops it at once without a visible unwind. No extra meshes, materials or programs.
+- Reduced motion plays only the blinks. A spin and a look never run under it.
+- Probes on `roverRuntime`: `idle` (the step playing, null when not idling), `idleYaw`, `idleSpin` (as drawn) and `idleDelay` (infinite under `navigator.webdriver` so captures never catch an idle hop; tests set it to 1).
+- E2E: `e2e/rover-idle.spec.ts`.
+
 ## Boost
 
 - Input: hold Shift, or double-tap the joystick on coarse pointers (`Joystick boost`, `useBoostToggle` in `src/hud/boost.ts`, `setBoost` in `input/joystick.ts`).
