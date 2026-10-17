@@ -179,6 +179,8 @@ test.describe("boot and intro", () => {
 
 test.describe("elevator", () => {
   test("the panel reaches every floor", async ({ page }) => {
+    // Five rides on SwiftShader: about 2.4 minutes on a CI runner, so the default 150 s left no headroom.
+    test.setTimeout(240_000);
     const errors = collectErrors(page);
     await enterHQ(page);
     const panel = page.getByRole("navigation", { name: "Elevator" });

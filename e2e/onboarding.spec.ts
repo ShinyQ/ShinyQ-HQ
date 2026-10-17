@@ -32,6 +32,12 @@ test.describe.configure({ timeout: 180_000 });
 export const box = (page: Page) => page.getByTestId("dialog-box");
 export const choices = (page: Page) => page.getByTestId("dialog-choices");
 
+/**
+ * Taps the toast's text near its left edge. A tap on the box center lands a few pixels from the Skip
+ * button on a phone, and Chromium's touch adjustment can move it onto Skip (as a real finger would).
+ */
+const tapText = (page: Page) => box(page).locator("p[aria-hidden='true']").first().tap({ position: { x: 12, y: 10 } });
+
 /** Waits for Rover to show the line with this key. */
 export async function expectLine(page: Page, key: string | RegExp, timeout = 30_000) {
   await expect(box(page)).toHaveAttribute("data-line", key, { timeout });
@@ -374,8 +380,8 @@ test.describe("phone layout", () => {
     await expect(box(page)).toContainText(en.dialog.onboarding.moveCoarse);
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
     // The phone toast clamps a long line to two rows: the first tap expands it, the next one moves on.
-    await box(page).tap();
-    if ((await box(page).getAttribute("data-line")) === "move" && (await box(page).getAttribute("data-expanded")) === "true") await box(page).tap();
+    await tapText(page);
+    if ((await box(page).getAttribute("data-line")) === "move" && (await box(page).getAttribute("data-expanded")) === "true") await tapText(page);
     await expectLine(page, "point-go");
     await expect(box(page)).toContainText(en.dialog.onboarding.pointGoCoarse);
 
@@ -400,10 +406,10 @@ test.describe("phone layout", () => {
     await page.getByTestId("dialog-skip").tap();
     await expectLine(page, "skipped");
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    await box(page).tap();
+    await tapText(page);
     // The first tap either dismisses the line or expands it; wait for whichever happened, then act on it.
     await expect.poll(async () => ((await box(page).count()) === 0 ? "gone" : await box(page).getAttribute("data-expanded"))).toMatch(/^(gone|true)$/);
-    if ((await box(page).count()) > 0) await box(page).tap();
+    if ((await box(page).count()) > 0) await tapText(page);
     await expect(box(page)).toHaveCount(0);
     await context.close();
   });
