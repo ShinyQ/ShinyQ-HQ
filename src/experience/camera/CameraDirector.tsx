@@ -16,7 +16,7 @@ import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
 import { ARRIVAL_HEADING, cameraBehindHeading, glidePose, glideProgress, shoulderPose, stepGlide } from "./arrival";
 import { boostView } from "./boostView";
-import { clampCamera, type CameraWorld } from "./collision";
+import { cameraWorld, clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
@@ -214,7 +214,7 @@ export function CameraDirector({
 
     // Camera collision works against the current floor; rides cross floors, so it rests during them.
     const layout = layouts && !s.ride ? layouts[s.floor] : undefined;
-    const world: CameraWorld | null = layout ? { obstacles: layout.obstacles, bounds: layout.bounds, floorY: floorY(s.floor), tall: layout.tall } : null;
+    const world: CameraWorld | null = layout ? cameraWorld(layout, floorY(s.floor)) : null;
 
     let desired: CameraPose;
     let snap = false;

@@ -1,4 +1,5 @@
-import type { Rect } from "../types";
+import { FLOOR_GAP, SHAFT, SHAFT_EAST_FACE } from "../config";
+import type { FloorLayout, Rect } from "../types";
 import type { Vec3 } from "./rigs";
 
 /**
@@ -35,6 +36,20 @@ function blockHeight(w: CameraWorld): number {
   let h: number = CAMERA_CLEARANCE.obstacle;
   for (const t of w.tall ?? []) h = Math.max(h, t.h);
   return h;
+}
+
+/** The elevator shaft (glass, west of every slab) as a camera column a floor high, so a low camera never ends up inside it. */
+export const SHAFT_COLUMN: TallObstacle = {
+  minX: SHAFT.x - SHAFT.size / 2,
+  maxX: SHAFT_EAST_FACE,
+  minZ: SHAFT.z - SHAFT.size / 2,
+  maxZ: SHAFT.z + SHAFT.size / 2,
+  h: FLOOR_GAP,
+};
+
+/** The camera's collision world for a floor at `floorY`: its obstacles, slab bounds, tall columns and the elevator shaft. */
+export function cameraWorld(layout: Pick<FloorLayout, "obstacles" | "bounds" | "tall">, floorY: number): CameraWorld {
+  return { obstacles: layout.obstacles, bounds: layout.bounds, floorY, tall: [...(layout.tall ?? []), SHAFT_COLUMN] };
 }
 
 const inside = (x: number, z: number, o: Rect, r: number) => x > o.minX - r && x < o.maxX + r && z > o.minZ - r && z < o.maxZ + r;

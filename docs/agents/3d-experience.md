@@ -240,6 +240,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - The near planes never reach the floor: `CAMERA_NEAR / cos(fov / 2)` stays under `CAMERA_CLEARANCE.ground` (unit test).
 - Cameras above `CAMERA_CLEARANCE.obstacle` (3.2 u) are never touched, except near taller columns a floor lists in `FloorLayout.tall` (rects with a height `h`: the 9.6 u L3 directory boards and the 11 u reactor core), so the default views do not change.
 - Add every new tall piece to `FloorLayout.tall`.
+- `cameraWorld(layout, floorY)` builds the camera's world: the floor's obstacles, bounds and tall columns plus the glass elevator shaft (`SHAFT_COLUMN`, a floor high), so a low camera never ends up inside the shaft.
 
 ### Wheel zoom and first person
 

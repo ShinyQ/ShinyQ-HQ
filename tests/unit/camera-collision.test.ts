@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CAMERA_CLEARANCE, cameraBlocked, clampCamera, viewOnSlab, type CameraWorld } from "@/experience/camera/collision";
+import { CAMERA_CLEARANCE, cameraBlocked, cameraWorld, clampCamera, SHAFT_COLUMN, viewOnSlab, type CameraWorld } from "@/experience/camera/collision";
 import { CAMERA_NEAR, FIRST_PERSON, FIRST_PERSON_FOV } from "@/experience/camera/firstPerson";
-import { followPose, railPose, type Vec3 } from "@/experience/camera/rigs";
+import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type Vec3 } from "@/experience/camera/rigs";
+import { zoneAt, zoneView } from "@/experience/camera/orbit";
+import { FLOOR_GAP, SHAFT, SHAFT_EAST_FACE } from "@/experience/config";
 import { buildFloorLayouts } from "@/experience/config";
 
 const world: CameraWorld = {
@@ -120,5 +122,50 @@ describe("camera collision", () => {
     // Third person (follow, rail, hologram FOVs) with CAMERA_NEAR; first person with its own near plane at eye height.
     for (const fov of [35, 40, 42, 45, 50, 55]) expect(reach(CAMERA_NEAR, fov)).toBeLessThan(CAMERA_CLEARANCE.ground);
     for (const fov of Object.values(FIRST_PERSON_FOV)) expect(reach(FIRST_PERSON.near, fov)).toBeLessThan(FIRST_PERSON.eyeHeight);
+  });
+});
+
+describe("camera world", () => {
+  it("adds the elevator shaft as a column on every floor, so a low camera never ends up inside the glass", () => {
+    expect(SHAFT_COLUMN).toEqual({ minX: SHAFT.x - SHAFT.size / 2, maxX: SHAFT_EAST_FACE, minZ: SHAFT.z - SHAFT.size / 2, maxZ: SHAFT.z + SHAFT.size / 2, h: FLOOR_GAP });
+    const layouts = buildFloorLayouts(8);
+    for (const layout of Object.values(layouts)) {
+      const w = cameraWorld(layout, 0);
+      expect(w.tall).toContainEqual(SHAFT_COLUMN);
+      expect(cameraBlocked([SHAFT.x, 3, SHAFT.z], w)).toBe(true);
+    }
+    // A low camera west of the L1 door, looking east at the rover, comes in out of the shaft.
+    const w = cameraWorld(layouts.L1, 0);
+    const target: Vec3 = [-14, 1, 0];
+    const out = clampCamera(target, [-30, 3, 0.5], w, [-18, 1, 0], 40);
+    expect(out[0]).toBeGreaterThan(SHAFT_EAST_FACE);
+    expect(cameraBlocked(out, w)).toBe(false);
+  });
+
+  it("leaves every floor's default views alone (follow at its zone view, every class; the L2 rail without the view rule)", () => {
+    const layouts = buildFloorLayouts(8);
+    let moved = 0;
+    let total = 0;
+    for (const layout of Object.values(layouts)) {
+      const w = cameraWorld(layout, 0);
+      const points = [layout.spawn, layout.approach, ...(layout.arrival ? [layout.arrival] : [])];
+      for (const p of points) {
+        for (const cls of ["desktop", "tablet", "mobile"] as const) {
+          total += 1;
+          if (layout.id === "L2") {
+            const rail = railPose(cls, p.x, 0, 1, p.z);
+            if (clampCamera(rail.target, rail.position, w, [p.x, 1, p.z]) !== rail.position) moved += 1;
+            continue;
+          }
+          const zone = zoneAt(layout.id, p, layout.viewZones);
+          const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined };
+          const f = followForward(cls, view.yaw);
+          const pose = followPose(cls, [p.x + f.x * FOLLOW_LOOK_AHEAD[cls], 1, p.z + f.z * FOLLOW_LOOK_AHEAD[cls]], view.yaw, view.zoom ?? 1);
+          if (clampCamera(pose.target, pose.position, w, [p.x, 1, p.z], pose.fov) !== pose.position) moved += 1;
+        }
+      }
+    }
+    expect(total).toBeGreaterThan(30);
+    expect(moved).toBe(0);
   });
 });
