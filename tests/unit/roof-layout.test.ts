@@ -83,16 +83,22 @@ describe("RF roof deck layout", () => {
     }
   });
 
-  it("hangs the availability sign square to the availability stop's camera, the stop in front of it", () => {
+  it("hangs the availability sign square to the availability stop's and the arrival's cameras, the stop in front of it", () => {
     const s = layout.stops.availability;
     const zone = (floor.viewZones ?? []).find((z) => z.id === "RF:availability")!;
-    expect(zone.yaw).toBe(ROOF_DECK.overviewYaw);
+    expect(zone.yaw).toBe(ROOF_DECK.availabilityYaw);
     const forward = forwardOf(followPose("desktop", [s.x, 0, s.z], zone.yaw, zone.zoom ?? 1));
     const normal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
     expect(forward.x * normal.x + forward.z * normal.z).toBeCloseTo(-1, 3);
     const c = layout.centerpiece.center;
     const d = Math.hypot(s.x - c.x, s.z - c.z);
     expect(((s.x - c.x) / d) * normal.x + ((s.z - c.z) / d) * normal.z).toBeGreaterThan(0.999);
+    // The arrival (owner 2026-10-17): the camera behind a rover heading east reads the sign head on.
+    const arrival = (floor.viewZones ?? []).find((z) => z.id === "RF:arrival")!;
+    const ahead = forwardOf(followPose("desktop", [floor.spawn.x, 0, floor.spawn.z], arrival.yaw, arrival.zoom ?? 1));
+    expect(ahead.x * normal.x + ahead.z * normal.z).toBeCloseTo(-1, 3);
+    // Only eastbound rovers get the stop's view, so driving back to the elevator never turns the camera.
+    expect(zone.travel).toEqual({ x: 1, z: 0 });
   });
 
   it("has view zones that never overlap, with the arrival view around the spawn", () => {

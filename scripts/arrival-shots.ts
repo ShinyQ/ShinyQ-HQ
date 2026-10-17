@@ -17,7 +17,7 @@ const VIEWPORTS = [
   { width: 834, height: 1194, tier: "full" },
   { width: 390, height: 844, tier: "lite" },
 ] as const;
-const ORDER = ["L2", "L3", "L4", "RF", "L1"] as const;
+let ORDER: readonly string[] = ["L2", "L3", "L4", "RF", "L1"];
 
 type HQ = {
   store: { getState: () => { floor: string; ride: { stage: string } | null; phase: string; goToFloor: (f: string) => void } };
@@ -35,6 +35,8 @@ for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--base") base = argv[++i];
   else if (argv[i] === "--out") out = argv[++i];
   else if (argv[i] === "--mid") mid = true;
+  // `--floors RF,L1`: ride only to these floors, in this order (starting from the Lobby).
+  else if (argv[i] === "--floors") ORDER = argv[++i].split(",");
 }
 mkdirSync(out, { recursive: true });
 

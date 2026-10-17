@@ -35,8 +35,8 @@ export const ROOF_DECK = {
   spurWidth: 4,
   /** About board front to the rover stop in front of it. */
   aboutStop: 3.5,
-  /** Rover stop south of the centerpiece, on the line the availability sign faces (`signYaw`). */
-  availability: { x: 4.5, z: 6.1 },
+  /** Rover stop west of the centerpiece, on the line the availability sign faces (`signYaw`), between the arrival point and the mast. */
+  availability: { x: -4, z: 0 },
   /**
    * Deep links spawn here and elevator arrivals roll on here (Round 8 J, like L3): the end of the lead road at
    * the plaza rim. The camera stands behind the rover and looks east over the plaza at the centerpiece mast.
@@ -45,10 +45,13 @@ export const ROOF_DECK = {
   /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`). */
   arrivalZoom: 0.95,
   arrivalZoomPhone: 0.8,
-  /** View yaw at the availability stop (offset from the default angle): looks north-north-west at the mast. */
-  overviewYaw: -Math.PI / 8,
-  /** The availability sign on the mast faces the availability stop's camera head on (yaw PI/4 is the default camera's direction). */
-  signYaw: Math.PI / 8,
+  /** View yaw at the availability stop (offset from the default angle): looks east at the sign and the mast, like the arrival. */
+  availabilityYaw: (-3 * Math.PI) / 4,
+  /**
+   * The availability sign on the mast faces west (owner 2026-10-17: in view on arrival together with the mast), square to
+   * the arrival camera and the availability stop's camera, both behind a rover heading east.
+   */
+  signYaw: -Math.PI / 2,
 } as const;
 
 export type RoofStop = "about" | "availability" | "cv" | "contact";
@@ -126,7 +129,7 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   const spawn: Vec2 = { x: D.spawn.x, z: D.spawn.z };
   const box = (p: Vec2, r = 2): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
   const viewZones: ViewZone[] = [
-    // Spawn and arrival: behind a rover heading east, looking over the plaza at the mast (eastbound rovers only).
+    // Spawn and arrival: behind a rover heading east, looking over the plaza at the mast and its availability sign (eastbound rovers only).
     {
       id: "RF:arrival",
       area: box(spawn),
@@ -142,8 +145,9 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
     { id: "RF:cv", area: { minX: cvPad.x - 2, maxX: cv.minX, minZ: cv.minZ, maxZ: cv.maxZ }, yaw: (-3 * Math.PI) / 4 },
     // About board (facing north): the camera north of the rover, looking south.
     { id: "RF:about", area: { minX: about.minX, maxX: about.maxX, minZ: stops.about.z - 2, maxZ: about.minZ }, yaw: (3 * Math.PI) / 4 },
-    // Availability sign on the mast (facing `signYaw`): looking straight at it.
-    { id: "RF:availability", area: box(stops.availability, 1.8), yaw: D.overviewYaw },
+    // Availability sign on the mast (facing `signYaw`, west): looking straight at it. Eastbound rovers only, so driving
+    // back west to the elevator along the axis never turns the camera around.
+    { id: "RF:availability", area: box(stops.availability, 1.5), yaw: D.availabilityYaw, travel: { x: 1, z: 0 } },
   ];
   return {
     floor: {

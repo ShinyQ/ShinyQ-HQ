@@ -11,7 +11,7 @@ import { buildCareerRoad, careerLayoutInput, roadZAt } from "@/experience/floors
 import { directoryBoard, LABS } from "@/experience/floors/labs/layout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
-import { buildRoofLayout } from "@/experience/floors/roof/layout";
+import { buildRoofLayout, ROOF_DECK } from "@/experience/floors/roof/layout";
 import { doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable, segmentWalkable } from "@/experience/nav/navgrid";
 import { padAt } from "@/experience/nav/pads";
@@ -52,6 +52,15 @@ const stationFront: Vec2 = {
 };
 const dataBoard = directoryBoard("data");
 const mast = buildRoofLayout().centerpiece.center;
+/**
+ * The RF availability sign's four corners (owner 2026-10-17: in view on arrival with the mast): `SIGN` in
+ * floors/roof/SignalGarden.tsx (2.3 u out from the mast along `signYaw`, 8 u wide, from 4.2 u to 7.6 u up).
+ */
+const signNormal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
+const signCenter = { x: mast.x + signNormal.x * 2.3, z: mast.z + signNormal.z * 2.3 };
+const signCorners = [-1, 1].flatMap((k) =>
+  [4.2, 7.6].map((y) => ({ label: `availability sign corner ${k < 0 ? "left" : "right"} ${y}`, at: [signCenter.x + k * 4 * signNormal.z, y, signCenter.z - k * 4 * signNormal.x] as Vec3 })),
+);
 
 /** The floor's main sight on arrival: what the camera looks at down the main axis. */
 const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
@@ -65,6 +74,7 @@ const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
   RF: [
     { label: "centerpiece base", at: [mast.x, 0, mast.z] },
     { label: "centerpiece mast and sign", at: [mast.x, 6, mast.z] },
+    ...signCorners,
   ],
 };
 
