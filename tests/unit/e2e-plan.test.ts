@@ -27,6 +27,13 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("maps the rover idle code to the rover-idle spec", () => {
+    expect(specsForChanges(["src/experience/rover/idle.ts"]).specs).toEqual(["rover-idle"]);
+    expect(specsForChanges(["src/experience/rover/activity.ts"]).specs).toEqual(["rover-idle"]);
+    expect(specsForChanges(["src/experience/rover/Rover.tsx"]).specs).toEqual(["camera", "experience", "rover-idle"]);
+    expect(specsForChanges(["e2e/rover-idle.spec.ts"]).specs).toEqual(["rover-idle"]);
+  });
+
   it("maps the mission code to the specs that run the missions (highlights and journey included)", () => {
     expect(specsForChanges(["src/experience/missions/host3d.ts"]).specs).toEqual(["career", "experience", "highlights", "library-roof", "missions"]);
     expect(specsForChanges(["src/experience/missions/runner.ts"]).specs).toEqual(["career", "experience", "highlights", "library-roof", "missions"]);

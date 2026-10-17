@@ -181,6 +181,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     sky: skyRuntime,
     quality: qualityHandle,
     frames: () => framePacer.frames,
+    clock: () => framePacer.elapsed,
     motion: () => {
       const live = store.getState();
       return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };

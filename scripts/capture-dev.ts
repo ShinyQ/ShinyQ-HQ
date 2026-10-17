@@ -66,6 +66,13 @@ try {
       if (opts.ready === "hq") {
         await page.waitForFunction(() => ((window as unknown as { __hq?: { rover: { drawCalls: number } } }).__hq?.rover.drawCalls ?? 0) > 20, null, { timeout: 180_000 });
       } else await page.waitForSelector(opts.ready, { timeout: 180_000 });
+      // The rover idle is only infinite by default under webdriver, which this script hides: stop it for the shots.
+      await page.evaluate(() => {
+        const hq = (window as unknown as { __hq?: { rover: { idleDelay: number } } }).__hq;
+        if (!hq) return;
+        hq.rover.idleDelay = Number.POSITIVE_INFINITY;
+        document.dispatchEvent(new Event("pointermove"));
+      });
       await page.waitForTimeout(opts.settle);
       const m = await page.evaluate(() => {
         const hq = (window as unknown as { __hq?: { rover: { drawCalls: number; triangles: number } } }).__hq;
