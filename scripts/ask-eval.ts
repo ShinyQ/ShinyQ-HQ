@@ -6,11 +6,21 @@
  *   bun scripts/ask-eval.ts redteam   # 52 attacks, fails on any unsafe displayed answer
  *   bun scripts/ask-eval.ts suggestions # every curated pill (content/ask/suggestions.json) in EN and ID,
  *                                       # fails below SUGGESTIONS_PASS_RATIO answered
- *   options: --limit N, --only q01,rt12, --cli (use the logged-in `cf` CLI instead of a token)
+ *   options: --limit N, --only q01,rt12, --verbose, --cli (use the logged-in `cf` CLI instead of a token)
  *
- * Env: CF_EVAL_TOKEN (read-only token, see docs/ask-runbook.md), CF_ACCOUNT_ID, ASK_EVAL_REPORT
- * (Markdown report path, default ask-eval-report.md). Without a token and without --cli it prints a
- * notice and exits 0, so the nightly workflow skips cleanly until the owner adds the secret.
+ * Groq live check (local, owner's own key; checks the answer quality of one Groq backup model):
+ *   bun scripts/ask-eval.ts golden --groq qwen/qwen3.8-27b --only q01,q03 --verbose
+ *   --groq <model>  run every question on that Groq model alone (no Workers AI, no fallback), one at a
+ *                   time, 15 s timeouts; a rate limit waits retry-after (at most 65 s) and retries up to
+ *                   3 times; prints answer length and tokens per question and a summary with an estimate
+ *                   of questions per day under the free limits
+ *   --gateway       send it through the Cloudflare AI Gateway (needs CF_ACCOUNT_ID; gateway shinyq-hq,
+ *                   cache skipped) instead of straight to api.groq.com
+ *
+ * Env: CF_EVAL_TOKEN (read-only token, see docs/ask-runbook.md), CF_ACCOUNT_ID, GROQ_API_KEY (Groq mode
+ * only, never printed), ASK_EVAL_REPORT (Markdown report path, default ask-eval-report.md). Without a
+ * token and without --cli or --groq it prints a notice and exits 0, so the nightly workflow skips
+ * cleanly until the owner adds the secret.
  */
 import { execFile } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -23,6 +33,7 @@ import { markdownToPlain } from "@/ask/markdown";
 import { SUGGESTIONS, type Suggestion } from "@/ask/suggestions";
 import { redactBlockedText } from "@/content/safety";
 import { findBlocked, leaksPrompt } from "../functions/_lib/checks";
+import { groqClient, GROQ_DIRECT_URL, type GroqUsage } from "../functions/_lib/groq";
 import { extractText, type ModelClient } from "../functions/_lib/model";
 import { scrubPII } from "../functions/_lib/pii";
 import type { HistoryTurn } from "../functions/_lib/history";
@@ -202,6 +213,62 @@ function cliClient(): ModelClient {
   };
 }
 
+export interface GroqRow {
+  pass: boolean;
+  ms: number;
+  chars: number;
+  usage?: { prompt: number; cached: number; completion: number };
+}
+
+export interface GroqSummary {
+  passed: number;
+  total: number;
+  medianMs: number;
+  maxMs: number;
+  meanChars: number;
+  meanPrompt: number;
+  meanCached: number;
+  meanCompletion: number;
+  /** Questions per day the free limits allow; cached prompt tokens do not count toward Groq's token limit. */
+  perDay: number;
+}
+
+const mean = (values: number[]) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0);
+
+export function groqSummary(rows: readonly GroqRow[], limits = { tokensPerDay: 200_000, requestsPerDay: 1_000 }): GroqSummary {
+  const sorted = rows.map((r) => r.ms).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const medianMs = sorted.length ? (sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2) : 0;
+  const usages = rows.flatMap((r) => (r.usage ? [r.usage] : []));
+  const meanPrompt = mean(usages.map((u) => u.prompt));
+  const meanCached = mean(usages.map((u) => u.cached));
+  const meanCompletion = mean(usages.map((u) => u.completion));
+  const counted = Math.max(1, meanPrompt - meanCached + meanCompletion);
+  return {
+    passed: rows.filter((r) => r.pass).length,
+    total: rows.length,
+    medianMs,
+    maxMs: sorted.at(-1) ?? 0,
+    meanChars: mean(rows.map((r) => r.chars)),
+    meanPrompt,
+    meanCached,
+    meanCompletion,
+    perDay: Math.min(limits.requestsPerDay, Math.floor(limits.tokensPerDay / counted)),
+  };
+}
+
+function formatGroqSummary(s: GroqSummary): string[] {
+  return [
+    `Groq summary: ${s.passed}/${s.total} passed; latency median ${Math.round(s.medianMs)} ms, max ${s.maxMs} ms; mean answer ${Math.round(s.meanChars)} characters.`,
+    `Mean tokens per question: prompt ${Math.round(s.meanPrompt)} (cached ${Math.round(s.meanCached)}), completion ${Math.round(s.meanCompletion)}.`,
+    `Estimate: about ${s.perDay} questions per day under 200K tokens and 1K requests per day (cached prompt tokens not counted).`,
+  ];
+}
+
+const sleep = (seconds: number) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+const MAX_RATE_LIMIT_RETRIES = 3;
+const MAX_RATE_LIMIT_WAIT_S = 65;
+
 async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
@@ -220,7 +287,7 @@ async function main() {
   const args = process.argv.slice(2);
   const set = args[0];
   if (set !== "golden" && set !== "redteam" && set !== "suggestions") {
-    console.error("Usage: bun scripts/ask-eval.ts golden|redteam|suggestions [--limit N] [--only id,id] [--cli]");
+    console.error("Usage: bun scripts/ask-eval.ts golden|redteam|suggestions [--limit N] [--only id,id] [--cli] [--groq <model> [--gateway]]");
     process.exit(2);
   }
   const flag = (name: string) => {
@@ -230,12 +297,49 @@ async function main() {
   const useCli = args.includes("--cli");
   const token = process.env.CF_EVAL_TOKEN;
   const accountId = process.env.CF_ACCOUNT_ID;
-  if (!useCli && (!token || !accountId)) {
+  const groqModel = args.includes("--groq") ? flag("--groq") : undefined;
+  const groqMode = args.includes("--groq");
+  const gateway = args.includes("--gateway");
+  if (groqMode && (!groqModel || groqModel.startsWith("--"))) {
+    console.error("--groq needs a model id, e.g. --groq qwen/qwen3.8-27b");
+    process.exit(2);
+  }
+  if (gateway && !groqMode) {
+    console.error("--gateway only works together with --groq <model>.");
+    process.exit(2);
+  }
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (groqMode && !groqKey) {
+    console.error("GROQ_API_KEY is not set: the Groq live check needs your own Groq API key in the environment.");
+    process.exit(2);
+  }
+  if (gateway && !accountId) {
+    console.error("--gateway needs CF_ACCOUNT_ID (the Cloudflare account that owns the shinyq-hq AI Gateway).");
+    process.exit(2);
+  }
+  if (!groqMode && !useCli && (!token || !accountId)) {
     console.log("::notice::CF_EVAL_TOKEN or CF_ACCOUNT_ID is not set; skipping the Ask the HQ eval.");
     return;
   }
-  const client = useCli ? cliClient() : restClient(token as string, accountId as string);
-  const timeouts = useCli ? { firstTokenMs: 60_000, totalMs: 60_000 } : { firstTokenMs: 20_000, totalMs: 30_000 };
+  // Groq mode keeps the usage of the last model call; it runs one question at a time, so one slot is enough.
+  const last: { usage?: GroqRow["usage"] } = {};
+  const groqBase = gateway ? `https://gateway.ai.cloudflare.com/v1/${accountId}/shinyq-hq/groq` : GROQ_DIRECT_URL;
+  const groqRoute = gateway ? "gateway" : "direct";
+  const client = groqMode
+    ? groqClient({
+        apiKey: groqKey as string,
+        baseUrl: async () => groqBase,
+        skipCache: true,
+        viaGateway: gateway,
+        onUsage: (_model: string, usage: GroqUsage) => {
+          last.usage = { prompt: usage.prompt_tokens ?? 0, cached: usage.prompt_tokens_details?.cached_tokens ?? 0, completion: usage.completion_tokens ?? 0 };
+        },
+      })
+    : useCli
+      ? cliClient()
+      : restClient(token as string, accountId as string);
+  const models = groqMode ? { primary: groqModel as string } : undefined;
+  const timeouts = groqMode ? { firstTokenMs: 15_000, totalMs: 15_000 } : useCli ? { firstTokenMs: 60_000, totalMs: 60_000 } : { firstTokenMs: 20_000, totalMs: 30_000 };
 
   const { pack, safety, errors } = buildRepoPack();
   if (errors.length) throw new Error(`Knowledge pack failed its checks: ${errors.join("; ")}`);
@@ -253,30 +357,48 @@ async function main() {
   );
   const items = resolved.filter((i) => !only || only.includes(i.id)).slice(0, limit);
 
-  const rows = await pool(items, 3, async (item) => {
+  const rows = await pool(items, groqMode ? 1 : 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
-    const ask = (q: string, history: HistoryTurn[]) => {
+    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, history, ...(models ? { models } : {}) });
+    // Groq mode waits out a rate limit (retry-after) and asks again, at most MAX_RATE_LIMIT_RETRIES times.
+    const ask = async (q: string, history: HistoryTurn[]) => {
       const question = scrubPII(cleanText(q));
-      return runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, history }).then((result) => ({ question, result }));
+      let result = await run(question, history);
+      for (let retry = 1; groqMode && retry <= MAX_RATE_LIMIT_RETRIES; retry++) {
+        const limited = result.failures.find((f) => f.reason === "rate_limited");
+        if (!limited) break;
+        const wait = Math.min(limited.retryAfterSec ?? 10, MAX_RATE_LIMIT_WAIT_S);
+        console.log(`${item.id} rate limited, waiting ${wait} s (retry ${retry} of ${MAX_RATE_LIMIT_RETRIES})`);
+        await sleep(wait);
+        last.usage = undefined;
+        result = await run(question, history);
+      }
+      return { question, result };
     };
     // Earlier turns: fixed ones (red team), or earlier questions asked live whose model answers join the history, as the server signs only those.
     const earlierTurns = (item.history ?? []) as (string | { q: string; a: string })[];
     const history: HistoryTurn[] = earlierTurns.filter((h): h is { q: string; a: string } => typeof h === "object").map((h) => ({ q: scrubPII(cleanText(h.q)), a: cleanText(h.a) }));
     for (const earlier of earlierTurns.filter((h): h is string => typeof h === "string")) {
       const { question, result } = await ask(earlier, history.slice(-3));
-      if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback")) history.push({ q: question, a: cleanText(result.text) });
+      if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup")) history.push({ q: question, a: cleanText(result.text) });
     }
+    last.usage = undefined;
     const started = Date.now();
     const { result } = await ask(item.q, history.slice(-3));
     const ms = Date.now() - started;
+    const chars = result.text.length;
+    const usage = last.usage as GroqRow["usage"];
     const verdict =
       set === "golden" ? scoreGolden(result.text, item as GoldenItem) : set === "suggestions" ? scoreSuggestion(result, item as GoldenItem) : (() => {
       const r = redTeamSafe(result, item as RedTeamItem, safety.blocklist);
       return { pass: r.safe, notes: r.notes };
     })();
-    console.log(`${item.id} ${verdict.pass ? "PASS" : "FAIL"} ${result.outcome}/${result.source}${result.reason ? ` (${checkSummary(result)})` : ""} ${ms} ms ${verdict.notes.join(", ")}`);
+    const groqInfo = groqMode
+      ? ` ${chars} chars, tokens prompt ${usage?.prompt ?? "n/a"} cached ${usage?.cached ?? "n/a"} completion ${usage?.completion ?? "n/a"}${result.failures.length ? ` [${result.failures.map((f) => `${f.model}: ${f.reason}`).join(", ")}]` : ""}`
+      : "";
+    console.log(`${item.id} ${verdict.pass ? "PASS" : "FAIL"} ${result.outcome}/${result.source}${result.reason ? ` (${checkSummary(result)})` : ""} ${ms} ms${groqInfo} ${verdict.notes.join(", ")}`);
     if (args.includes("--verbose")) console.log(`  shown: ${redactBlockedText(result.text, safety.blocklist)}\n  raw: ${redactBlockedText(result.raw ?? "", safety.blocklist)}`);
-    return { item, result, ms, ...verdict };
+    return { item, result, ms, chars, usage, ...verdict };
   });
 
   const passed = rows.filter((r) => r.pass).length;
@@ -286,8 +408,10 @@ async function main() {
   const deterministic = new Set(["harmful", "private", "others"]);
   const guarded = rows.filter((r) => r.result.reason && !deterministic.has(r.result.reason)).length;
   const fallbacks = rows.filter((r) => r.result.source === "fallback").length;
+  const summary = groqMode ? formatGroqSummary(groqSummary(rows)) : [];
+  const title = groqMode ? `Ask the HQ ${set} eval on Groq ${groqModel} (${groqRoute})` : `Ask the HQ ${set} eval`;
   const report = [
-    `# Ask the HQ ${set} eval: ${ok ? "PASS" : "FAIL"} (${passed}/${items.length}, need ${threshold})`,
+    `# ${title}: ${ok ? "PASS" : "FAIL"} (${passed}/${items.length}, need ${threshold})`,
     "",
     `Pack ${pack.packVersion} as of ${pack.packDate}. Output checks replaced ${guarded} raw answer(s); the fallback model answered ${fallbacks}.`,
     "",
@@ -295,8 +419,10 @@ async function main() {
     "|---|---|---|---|---|---|---|---|",
     ...rows.map((r) => reportRow(r, safety.blocklist)),
     "",
+    ...(summary.length ? [...summary.map((line) => `${line}\n`), ""] : []),
   ].join("\n");
   writeFileSync(process.env.ASK_EVAL_REPORT ?? path.join(ROOT, "ask-eval-report.md"), report);
+  for (const line of summary) console.log(line);
   console.log(`${set}: ${passed}/${items.length} (need ${threshold}) ${ok ? "PASS" : "FAIL"}`);
   if (!ok) process.exit(1);
 }
