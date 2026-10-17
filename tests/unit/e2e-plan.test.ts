@@ -56,6 +56,11 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/perf-probes.spec.ts"]).specs).toEqual(["perf-probes"]);
   });
 
+  it("maps the audio engine and the floor ambience spec", () => {
+    expect(specsForChanges(["src/lib/audio/ambience.ts"]).specs).toEqual(["ambience", "experience", "pageview"]);
+    expect(specsForChanges(["e2e/ambience.spec.ts"]).specs).toEqual(["ambience"]);
+  });
+
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
     expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);

@@ -1,11 +1,13 @@
 import { createSpaceMusic, type MusicVoice } from "./music";
 import { ONE_SHOTS, createRumble, type RumbleVoice } from "./synth";
-import type { AudioEngine, AudioEngineDeps, AudioSettings, SoundName } from "./types";
+import type { AmbienceVoice } from "./ambience";
+import type { AmbienceFloor, AudioEngine, AudioEngineDeps, AudioSettings, SoundName } from "./types";
 
 export const SOUND_STORAGE_KEY = "hq:sound";
 export const EFFECTS_STORAGE_KEY = "hq:sfx";
 export const MUSIC_STORAGE_KEY = "hq:music";
 export const MUSIC_VOLUME_STORAGE_KEY = "hq:music-volume";
+export const AMBIENCE_STORAGE_KEY = "hq:ambience";
 export const CLICK_RATE_LIMIT = 20;
 const CLICK_WINDOW_MS = 1000;
 /** Time constant of the master fade when muting or unmuting (seconds). */
@@ -14,6 +16,11 @@ const FADE_TIME_CONSTANT = 0.03;
 const SUSPEND_DELAY_MS = 150;
 /** Time constant of the music volume glide (seconds). */
 const VOLUME_TIME_CONSTANT = 0.05;
+/**
+ * How long a switched-off ambience voice lives: `AMBIENCE_CROSSFADE` (2 s, in ambience.ts, which is a lazy
+ * chunk and so not imported here; a unit test keeps them in step) plus a margin.
+ */
+const AMBIENCE_RETIRE_MS = 2100;
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
 /**
  * User-activation events. Browsers only let an AudioContext start inside one of these; on touch screens
@@ -56,6 +63,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   const storage = deps.storage !== undefined ? deps.storage : defaultStorage();
   const doc = deps.doc !== undefined ? deps.doc : defaultDoc();
   const now = deps.now ?? defaultNow;
+  const loadAmbience = deps.loadAmbience ?? (() => import("./ambience"));
 
   const listeners = new Set<() => void>();
   let muted = readMuted();
@@ -70,6 +78,11 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let music: MusicVoice | null = null;
   let rumble: RumbleVoice | null = null;
   let rumbleSpeed = 0;
+  let floor: AmbienceFloor | null = null;
+  let ambience: AmbienceVoice | null = null;
+  /** Voices switched off by the setting: fading out, stopped by their timer (or earlier by a mute or dispose). */
+  const retiring = new Map<AmbienceVoice, ReturnType<typeof setTimeout>>();
+  let ambienceModule: ReturnType<AudioEngineDeps["loadAmbience"]> | null = null;
   let suspendTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimes: number[] = [];
 
@@ -95,6 +108,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       effects: get(EFFECTS_STORAGE_KEY) !== "off",
       music: get(MUSIC_STORAGE_KEY) !== "off",
       musicVolume: volume === null ? 1 : clamp01(Number(volume)),
+      ambience: get(AMBIENCE_STORAGE_KEY) !== "off",
     };
   }
 
@@ -112,7 +126,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     if (
       next.effects === settings.effects &&
       next.music === settings.music &&
-      next.musicVolume === settings.musicVolume
+      next.musicVolume === settings.musicVolume &&
+      next.ambience === settings.ambience
     ) {
       return false;
     }
@@ -155,6 +170,39 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     music = null;
   }
 
+  /**
+   * Starts the floor ambience on the music bus (so the music volume scales it, the music toggle does not).
+   * The module is a separate chunk, loaded once; the conditions are checked again when it arrives.
+   */
+  function startAmbience(): void {
+    if (ambience || !settings.ambience || floor === null || !ctx || !musicBus || silent() || ctx.state === "closed") {
+      return;
+    }
+    ambienceModule ??= loadAmbience();
+    ambienceModule
+      .then(({ createAmbience }) => {
+        if (ambience || !settings.ambience || floor === null || !ctx || !musicBus || silent() || ctx.state === "closed") {
+          return;
+        }
+        ambience = createAmbience(ctx, musicBus);
+        ambience.setFloor(floor);
+      })
+      .catch(() => {
+        ambienceModule = null;
+      });
+  }
+
+  /** Stops every ambience voice at once, the fading ones included. */
+  function stopAmbience(): void {
+    ambience?.stop();
+    ambience = null;
+    for (const [voice, timer] of retiring) {
+      clearTimeout(timer);
+      voice.stop();
+    }
+    retiring.clear();
+  }
+
   /** Creates the context, master bus and background music on demand. Only called while unmuted. */
   function ensureContext(): AudioContext | null {
     if (ctx || unavailable || disposed) return ctx;
@@ -175,6 +223,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     musicBus.gain.setValueAtTime(settings.musicVolume, ctx.currentTime);
     musicBus.connect(master);
     startMusic();
+    startAmbience();
     return ctx;
   }
 
@@ -195,7 +244,10 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     if (!ctx || disposed) return;
     if (isHidden()) {
       clearSuspendTimer();
-      if (muted || paused) stopMusic();
+      if (muted || paused) {
+        stopMusic();
+        stopAmbience();
+      }
       ignore(ctx.suspend());
     } else if (!muted && !paused) {
       resume();
@@ -251,6 +303,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       suspendTimer = null;
       if ((muted || paused) && !disposed) {
         stopMusic();
+        stopAmbience();
         ignore(context.suspend());
       }
     }, SUSPEND_DELAY_MS);
@@ -300,6 +353,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
           master.gain.setTargetAtTime(1, context.currentTime, FADE_TIME_CONSTANT);
           if (context.state !== "closed") ignore(context.resume());
           startMusic();
+          startAmbience();
           if (rumble) rumble.setSpeed(settings.effects ? rumbleSpeed : 0);
         }
       } else {
@@ -321,6 +375,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       master.gain.setTargetAtTime(1, ctx.currentTime, FADE_TIME_CONSTANT);
       resume();
       startMusic();
+      startAmbience();
       rumble?.setSpeed(settings.effects ? rumbleSpeed : 0);
     },
 
@@ -364,6 +419,37 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       }
     },
 
+    setAmbience(on: boolean) {
+      if (!update({ ambience: on })) return;
+      write(AMBIENCE_STORAGE_KEY, on ? "on" : "off");
+      if (on) {
+        startAmbience();
+        return;
+      }
+      const voice = ambience;
+      ambience = null;
+      if (!voice) return;
+      voice.setFloor(null);
+      retiring.set(
+        voice,
+        setTimeout(() => {
+          retiring.delete(voice);
+          voice.stop();
+        }, AMBIENCE_RETIRE_MS),
+      );
+    },
+
+    setFloor(next: AmbienceFloor | null) {
+      if (next === floor) return;
+      floor = next;
+      if (ambience) ambience.setFloor(next);
+      else startAmbience();
+    },
+
+    ambienceFloor() {
+      return floor;
+    },
+
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => {
@@ -379,6 +465,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       removeGestureListeners();
       listeners.clear();
       stopMusic();
+      stopAmbience();
       rumble?.stop();
       rumble = null;
       master = null;

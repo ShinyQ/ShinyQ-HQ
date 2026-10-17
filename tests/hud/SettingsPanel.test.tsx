@@ -14,7 +14,7 @@ import { getHQStore } from "@/store/useHQStore";
 
 const { fakeAudio } = vi.hoisted(() => {
   const listeners = new Set<() => void>();
-  const state = { muted: false, effects: true, music: true, musicVolume: 0.5 };
+  const state = { muted: false, effects: true, music: true, musicVolume: 0.5, ambience: true };
   const emit = () => listeners.forEach((l) => l());
   const fakeAudio = {
     state,
@@ -27,13 +27,17 @@ const { fakeAudio } = vi.hoisted(() => {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
-    getSettings: () => ({ effects: state.effects, music: state.music, musicVolume: state.musicVolume }),
+    getSettings: () => ({ effects: state.effects, music: state.music, musicVolume: state.musicVolume, ambience: state.ambience }),
     setEffects: vi.fn((v: boolean) => {
       state.effects = v;
       emit();
     }),
     setMusic: vi.fn((v: boolean) => {
       state.music = v;
+      emit();
+    }),
+    setAmbience: vi.fn((v: boolean) => {
+      state.ambience = v;
       emit();
     }),
     setMusicVolume: vi.fn((v: number) => {
@@ -54,7 +58,7 @@ const Wrap = ({ children }: { children: ReactNode }) => (
 );
 
 beforeEach(() => {
-  Object.assign(fakeAudio.state, { muted: false, effects: true, music: true, musicVolume: 0.5 });
+  Object.assign(fakeAudio.state, { muted: false, effects: true, music: true, musicVolume: 0.5, ambience: true });
   vi.clearAllMocks();
 });
 afterEach(() => {
@@ -68,7 +72,7 @@ describe("SettingsPanel", () => {
   it("renders every group and setting from the registry", () => {
     render(<SettingsPanel />, { wrapper: Wrap });
     for (const name of ["General", "Display", "Sound"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument();
-    for (const id of ["language", "open-links", "motion", "quality", "day-night", "minimap", "sound", "effects", "music", "music-volume"]) {
+    for (const id of ["language", "open-links", "motion", "quality", "day-night", "minimap", "sound", "effects", "music", "ambience", "music-volume"]) {
       expect(screen.getByTestId(`setting-${id}`)).toBeInTheDocument();
     }
     expect(screen.getByTestId("settings-panel")).toBeInTheDocument();
@@ -81,6 +85,15 @@ describe("SettingsPanel", () => {
     await userEvent.click(music);
     expect(fakeAudio.setMusic).toHaveBeenCalledWith(false);
     expect(screen.getByRole("switch", { name: "Music" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("the Floor ambience switch writes through to the engine", async () => {
+    render(<SettingsPanel />, { wrapper: Wrap });
+    const ambience = screen.getByRole("switch", { name: "Floor ambience" });
+    expect(ambience).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(ambience);
+    expect(fakeAudio.setAmbience).toHaveBeenCalledWith(false);
+    expect(screen.getByRole("switch", { name: "Floor ambience" })).toHaveAttribute("aria-checked", "false");
   });
 
   it("the master Sound switch is the inverse of muted", async () => {

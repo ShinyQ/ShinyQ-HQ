@@ -82,7 +82,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
   - While the panel loads, a `min-h-[36rem]` placeholder (`settings-loading`) holds the sheet's height.
 - To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
-- Today: language, Open links in, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Music, Music volume.
+- Today: language, Open links in, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Music, Floor ambience, Music volume.
 
 ### Graphics quality
 
@@ -134,6 +134,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:sound` | master mute, `"off"` mutes (a missing key is on), see [Audio](ci-and-deploy.md#audio) |
 | `hq:sfx` | sound effects, `"off"` disables them (missing is on) |
 | `hq:music` | background music, `"off"` disables it (missing is on) |
+| `hq:ambience` | floor ambience, `"off"` disables it (missing is on); independent of the music toggle, see [Audio](ci-and-deploy.md#audio) |
 | `hq:music-volume` | music volume, 0 to 1 (missing is 1) |
 | `hq:quality` | graphics quality: `auto` (default), `full` or `lite`, see [Graphics quality](#graphics-quality) |
 | `hq:minimap` | `on` (default) or `off`: whether the corner minimap shows, see [Minimap](#minimap) |

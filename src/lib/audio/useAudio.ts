@@ -26,10 +26,10 @@ export function useAudio(engine: AudioEngine = audio): UseAudioResult {
   };
 }
 
-const serverSettings: AudioSettings = { effects: true, music: true, musicVolume: 1 };
+const serverSettings: AudioSettings = { effects: true, music: true, musicVolume: 1, ambience: true };
 const serverSettingsSnapshot = () => serverSettings;
 
-/** Effects, music and music volume (Settings panel). Server render reports the defaults. */
+/** Effects, music, music volume and ambience (Settings panel). Server render reports the defaults. */
 export function useAudioSettings(engine: AudioEngine = audio): AudioSettings {
   return useSyncExternalStore(engine.subscribe, engine.getSettings, serverSettingsSnapshot);
 }

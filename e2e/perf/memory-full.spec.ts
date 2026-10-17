@@ -22,7 +22,13 @@ test.describe.configure({ timeout: 900_000 });
 test.use({ reducedMotion: "no-preference" });
 test.beforeEach(({ page }) => chooseMotion(page, "full"));
 // The perf gates measure the sky as visitors see it at night (automation otherwise skips drawing it).
-test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem("hq:sky", "night")));
+test.beforeEach(({ page }) =>
+  page.addInitScript(() => {
+    sessionStorage.setItem("hq:sky", "night");
+    // Floor ambience off: synthesizing it on the CI CPU skews SwiftShader frame timing (unit tests and ambience.spec cover it).
+    localStorage.setItem("hq:ambience", "off");
+  }),
+);
 
 async function ride(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as MemoryWindow).__hq.store.getState().goToFloor(f), floor);

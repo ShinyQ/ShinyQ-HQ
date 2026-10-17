@@ -40,6 +40,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
 - `floors`, `peaks` and `memory-full` set `sessionStorage["hq:sky"] = "night"` in a `beforeEach`: automation's still night draws no sky, so the gates opt in to measure it as visitors see it at night (`look`, `bytes-3d` and `timeline` do not).
+- The same `beforeEach` sets `localStorage["hq:ambience"] = "off"`: synthesizing the floor ambience (the L3 and L4 layers cost about as much as the music) competes with SwiftShader for the CI CPU and skews ride timing, so the render gates carry only the music; `tests/unit/audio-ambience.test.ts`, `tests/unit/audio.test.ts` and `e2e/ambience.spec.ts` cover the ambience.
 - Each test writes `perf-report/<id>.json`; `bun scripts/perf-summary.ts gates --head perf-report` prints the tables.
 
 | Spec | What it gates |

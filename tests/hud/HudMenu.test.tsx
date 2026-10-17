@@ -27,7 +27,7 @@ const { fakeAudio } = vi.hoisted(() => {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
-    getSettings: () => ({ effects: true, music: true, musicVolume: 0.5 }),
+    getSettings: () => ({ effects: true, music: true, musicVolume: 0.5, ambience: true }),
     setEffects: vi.fn(),
     setMusic: vi.fn(),
     setMusicVolume: vi.fn(),
@@ -129,7 +129,7 @@ describe("HudMenu", () => {
       const action = within(actions).getByRole("button", { name });
       expect(action.className).toMatch(/min-h-11/);
     }
-    for (const row of ["language", "motion", "sound", "music"]) expect(within(sheet).getByTestId(`setting-${row}`)).toBeInTheDocument();
+    for (const row of ["language", "motion", "sound", "music", "ambience"]) expect(within(sheet).getByTestId(`setting-${row}`)).toBeInTheDocument();
     expect(within(settings).getAllByRole("heading", { level: 3 }).length).toBeGreaterThan(0);
   });
 
@@ -238,7 +238,7 @@ describe("SettingsSheet", () => {
     expect(sheet).toHaveAccessibleName(en.hud.settings.title);
     expect((await within(sheet).findByTestId("settings-panel"))).toBeInTheDocument();
     expect(within(sheet).getByRole("heading", { level: 2, name: en.hud.settings.title })).toBeInTheDocument();
-    for (const row of ["language", "motion", "sound", "music"]) expect(within(sheet).getByTestId(`setting-${row}`)).toBeInTheDocument();
+    for (const row of ["language", "motion", "sound", "music", "ambience"]) expect(within(sheet).getByTestId(`setting-${row}`)).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledTimes(1);
     await userEvent.click(within(sheet).getByRole("button", { name: en.hud.pads.close }));

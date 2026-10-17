@@ -28,7 +28,7 @@ vi.mock("@/hud/ask/AskPill", () => ({
 }));
 vi.mock("@/lib/audio", () => ({
   useAudio: () => ({ muted: false, toggleMuted: vi.fn() }),
-  audio: { isMuted: () => false, subscribe: () => () => {}, getSettings: () => ({ effects: true, music: true, musicVolume: 0.5 }) },
+  audio: { isMuted: () => false, subscribe: () => () => {}, getSettings: () => ({ effects: true, music: true, musicVolume: 0.5, ambience: true }) },
 }));
 vi.mock("@/hud/dialog/DialogLayer", () => ({ default: () => null }));
 vi.mock("@/hud/dialog/FloorIntroLayer", () => ({ FloorIntroLayer: () => null }));

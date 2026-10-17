@@ -24,6 +24,9 @@ export const audio: AudioEngine = {
   setEffects: (on) => engine().setEffects(on),
   setMusic: (on) => engine().setMusic(on),
   setMusicVolume: (volume) => engine().setMusicVolume(volume),
+  setAmbience: (on) => engine().setAmbience(on),
+  setFloor: (floor) => engine().setFloor(floor),
+  ambienceFloor: () => engine().ambienceFloor(),
   subscribe: (listener) => engine().subscribe(listener),
   dispose: () => {
     instance?.dispose();

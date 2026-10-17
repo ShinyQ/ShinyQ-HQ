@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-73 plans: 47 shipped and still current, 23 shipped with a part later removed or replaced, 3 in review (see each plan's status line).
+75 plans: 49 shipped and still current, 23 shipped with a part later removed or replaced, 3 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -83,10 +83,11 @@ Plans are history: they record what was decided and built at the time, and later
 | [Day and Night with a Moving Sun and Moon Implementation Plan](plans/2026-10-17-day-and-night.md) | shipped | [#182](https://github.com/ShinyQ/ShinyQ-HQ/pull/182), [#185](https://github.com/ShinyQ/ShinyQ-HQ/pull/185) |
 | [HUD Corners, Minimap and Settings Implementation Plan](plans/2026-10-17-hud-corners-minimap-settings.md) | shipped | [#183](https://github.com/ShinyQ/ShinyQ-HQ/pull/183) |
 | [Round 8 J: L3-Style Arrivals Implementation Plan](plans/2026-10-17-l3-style-arrivals.md) | shipped | [#184](https://github.com/ShinyQ/ShinyQ-HQ/pull/184) |
-| [Rover Idle Animations Implementation Plan](plans/2026-10-17-rover-idle.md) | in review | [#188](https://github.com/ShinyQ/ShinyQ-HQ/pull/188) |
+| [Rover Idle Animations Implementation Plan](plans/2026-10-17-rover-idle.md) | shipped | [#188](https://github.com/ShinyQ/ShinyQ-HQ/pull/188) |
 | [Ask Pills 100 Implementation Plan](plans/2026-10-17-ask-pills-100.md) | shipped | [#187](https://github.com/ShinyQ/ShinyQ-HQ/pull/187) |
 | [B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan](plans/2026-10-17-b1-build-story-page.md) | in review | [#190](https://github.com/ShinyQ/ShinyQ-HQ/pull/190) |
 | [Case-Study Metric Strip (Round 9 P) Implementation Plan](plans/2026-10-17-case-study-metric-strip.md) | shipped |  |
+| [Floor Ambience Implementation Plan](plans/2026-10-17-floor-ambience.md) | in review | [#193](https://github.com/ShinyQ/ShinyQ-HQ/pull/193) |
 
 ## Specs
 

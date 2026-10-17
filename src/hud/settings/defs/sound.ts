@@ -32,6 +32,17 @@ export const musicSetting = defineSetting({
   available: () => true,
 });
 
+/** The per-floor background layer; independent of the music toggle, scaled by the music volume. */
+export const ambienceSetting = defineSetting({
+  id: "ambience",
+  group: "sound",
+  order: 35,
+  labelKey: "ambience.label",
+  control: { kind: "toggle", get: () => audio.getSettings().ambience, set: (on) => audio.setAmbience(on) },
+  subscribe: (listener) => audio.subscribe(listener),
+  available: () => true,
+});
+
 /** The slider works in percent (0 to 100); the engine volume is 0 to 1. */
 export const musicVolumeSetting = defineSetting({
   id: "music-volume",
