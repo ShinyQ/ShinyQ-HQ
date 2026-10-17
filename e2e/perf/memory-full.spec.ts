@@ -10,13 +10,12 @@ import { writePerfEntry } from "./helpers";
  * cuts), plus the Page View toggles. Same trip shape, helpers and budget (GPU_MEMORY_BUDGET in
  * e2e/budgets.ts, `fullTierRoundTrips` trips): a warm-up tour first builds what exists once by design, the
  * baseline is read after one trip shaped like the measured ones, and every trip calls the elevator the
- * moment the rover arrives. The warm-up tour rides with Motion Reduced (150 ms cuts; it only mounts and draws
- * every floor once, and Motion Full rides took about a minute each here); the shaped trip and the measured
- * trips ride with Motion Full, so the baseline already holds what a Motion Full ride builds. Per-trip numbers
- * are for the failure message only and read unsettled; the baseline and the final read are settled. No full-tier toggle test: each canvas mount compiles 39 or 40 shader programs
+ * moment the rover arrives. The warm-up tour rides with Motion Full too: with Motion Reduced cuts the baseline
+ * missed 2 geometries and a program that the first measured trips then built (PR #201, CI). Per-trip numbers are
+ * for the failure message only and read unsettled; the baseline and the final read are settled. No full-tier toggle test: each canvas mount compiles 39 or 40 shader programs
  * (one program is drawn in some mounts only), so an exact program baseline across remounts is not stable.
  */
-type MemoryWindow = Window & { __hq: { store: { getState: () => { goToFloor: (floor: string) => void; setMotion: (motion: "full" | "reduced") => void } } } };
+type MemoryWindow = Window & { __hq: { store: { getState: () => { goToFloor: (floor: string) => void } } } };
 
 const { fullTierRoundTrips: TRIPS, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
 
@@ -33,10 +32,6 @@ test.beforeEach(({ page }) =>
   }),
 );
 
-async function setMotion(page: Page, motion: "full" | "reduced") {
-  await page.evaluate((m) => (window as unknown as MemoryWindow).__hq.store.getState().setMotion(m), motion);
-}
-
 async function ride(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as MemoryWindow).__hq.store.getState().goToFloor(f), floor);
   await waitForFloor(page, floor, 120_000);
@@ -44,9 +39,7 @@ async function ride(page: Page, floor: string) {
 
 test("full tier, Motion Full: Lobby to Roof round trips leave renderer memory at its baseline", async ({ page }) => {
   await enterHQ(page, { tier: "full" });
-  await setMotion(page, "reduced");
   for (const floor of ["L2", "L3", "L4", "RF", "L1"]) await ride(page, floor);
-  await setMotion(page, "full");
   await readSettledGpuCounters(page);
   await ride(page, "RF");
   await ride(page, "L1");
