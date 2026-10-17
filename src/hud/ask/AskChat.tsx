@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { prepareAsk } from "@/ask/client";
 import { ASK_MAX_QUESTION, type AskEntry, type AskStatus } from "@/ask/protocol";
-import { ASK_TOPICS, pickFollowUps, topicQuestions, type AskTopic, type Suggestion } from "@/ask/suggestions";
+import { ASK_TOPICS, pickFollowUps, readAskSeed, starterQuestions, SUGGESTIONS, TOPIC_SIZE, topicQuestions, type AskSeed, type AskTopic, type Suggestion } from "@/ask/suggestions";
 import type { ThreadMessage } from "@/ask/thread";
 import { RoverMark } from "@/components/RoverMark";
 import type { Locale } from "@/content/schema";
@@ -41,6 +41,18 @@ type PillMode = "auto" | "topics" | AskTopic;
 /** Dragging the sheet handle down this far closes it. */
 const SHEET_CLOSE_PX = 110;
 
+/** The page session's pill sampling seed (sessionStorage may throw in Safari private mode). */
+function initialSeed(): AskSeed {
+  if (typeof window === "undefined") return null;
+  let storage: Storage | null = null;
+  try {
+    storage = window.sessionStorage;
+  } catch {
+    storage = null;
+  }
+  return readAskSeed(storage);
+}
+
 /**
  * Ask the HQ chat panel (lazy chunk): thread, topic and follow-up pills, input. Side panel on
  * desktop (non-modal, the page or 3D view stays usable), modal bottom sheet on phones and portrait
@@ -54,6 +66,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
   const { messages, phase, busy, send, clear, asked } = useAskThread(locale, { roverFace: tower, ask });
   const [value, setValue] = useState("");
   const [mode, setMode] = useState<PillMode>(request?.topic ?? "auto");
+  const [seed] = useState<AskSeed>(initialSeed);
   const [seenRequest, setSeenRequest] = useState<number | undefined>(undefined);
   const [drag, setDrag] = useState(0);
   const dragStart = useRef<number | null>(null);
@@ -205,6 +218,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
 
   const topic = mode !== "auto" && mode !== "topics" ? mode : null;
   const showFollowUps = mode === "auto" && followUps.length > 0;
+  const starters = showFollowUps || topic ? [] : starterQuestions(asked, seed);
 
   const panelClass = sheet
     ? "fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col rounded-t-[20px] border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] motion-safe:animate-[ask-sheet-in_.34s_cubic-bezier(.16,1,.3,1)]"
@@ -289,6 +303,18 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
           ) : (
             !busy && (
               <section aria-labelledby={`${id}-pills`} className="mt-5" data-testid="ask-pills">
+                {starters.length > 0 && (
+                  <div className="mb-4">
+                    <p id={`${id}-starters`} className="mb-2.5 text-xs font-medium text-ink-2">
+                      {td("startersLabel")}
+                    </p>
+                    <ul aria-labelledby={`${id}-starters`} className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pt-1.5 pb-1 [scrollbar-width:thin]" data-testid="ask-starters">
+                      {starters.map((s) => (
+                        <QuestionPill key={s.id} compact suggestion={s} locale={locale} onAsk={() => ask_(s.q[locale], "pill", s.id)} onEdit={() => edit(s)} editLabel={td("edit", { q: s.q[locale] })} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <h3 id={`${id}-pills`} className="mb-2.5 text-xs font-medium text-ink-2">
                   {showFollowUps ? td("followUpsLabel") : topic ? td("topicQuestions", { topic: t(`topics.${topic}`) }) : td("topicsLabel")}
                 </h3>
@@ -305,7 +331,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
                   </ul>
                 ) : topic ? (
                   <ul className="flex flex-col items-start gap-2" data-testid="ask-topic-questions" data-topic={topic}>
-                    {topicQuestions(topic, asked).map((s) => (
+                    {topicQuestions(topic, asked, SUGGESTIONS, TOPIC_SIZE, seed).map((s) => (
                       <QuestionPill key={s.id} suggestion={s} locale={locale} onAsk={() => ask_(s.q[locale], "pill", s.id)} onEdit={() => edit(s)} editLabel={td("edit", { q: s.q[locale] })} />
                     ))}
                     <li>
@@ -459,7 +485,7 @@ function QuestionPill({
   onAsk: () => void;
   onEdit: () => void;
   editLabel: string;
-  /** Follow-up row: the pill keeps its width and sits in one horizontally scrolling row. */
+  /** Follow-up and starter rows: the pill keeps its width and sits in one horizontally scrolling row. */
   compact?: boolean;
 }) {
   return (

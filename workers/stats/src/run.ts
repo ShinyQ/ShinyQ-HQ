@@ -1,4 +1,4 @@
-import { SUGGESTIONS } from "../../../src/ask/suggestions";
+import { STATS_TOPIC_OF, SUGGESTIONS } from "../../../src/ask/suggestions";
 import { parseStatsSnapshot, STATS_KEY, type StatsSnapshotV1, type StatsTopic } from "../../../src/lib/stats/protocol";
 import { addDays, buildPerf, buildRollups, buildSnapshot, dayRange, trimLeadingEmpty, waExact } from "./rollup";
 import { fetchAnalyticsEngine, fetchPerf, fetchWebAnalytics, type SourceConfig } from "./sources";
@@ -28,8 +28,8 @@ export const WA_WINDOW_DAYS = 90;
 /** Analytics Engine keeps points for 3 months: stored days without `perf` this recent get it filled once. */
 export const AE_RETENTION_DAYS = 90;
 
-/** Curated chip ids and their topics (content/ask/suggestions.json, bundled at deploy). */
-export const CHIP_TOPICS: ReadonlyMap<string, StatsTopic> = new Map(SUGGESTIONS.map((s) => [s.id, s.topic]));
+/** Curated chip ids and their stats topics (content/ask/suggestions.json, bundled at deploy; `STATS_TOPIC_OF` folds the newer pill topics in). */
+export const CHIP_TOPICS: ReadonlyMap<string, StatsTopic> = new Map(SUGGESTIONS.map((s) => [s.id, STATS_TOPIC_OF[s.topic]]));
 
 export interface RunResult {
   /** Days appended to the ledger by this run. */

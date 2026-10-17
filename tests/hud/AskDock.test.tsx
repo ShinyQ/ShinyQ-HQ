@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import type { AskOptions, AskResult } from "@/ask/client";
 import type { AskStatus, AskTag } from "@/ask/protocol";
+import { ASK_SEED_KEY } from "@/ask/suggestions";
 import { THREAD_KEY } from "@/ask/thread";
 import { AskDock, TEASER_KEY } from "@/hud/ask/AskDock";
 import { requestAskStatus, resetAskAvailability } from "@/hud/ask/availability";
@@ -59,6 +60,8 @@ beforeEach(() => {
   askMock.ask.mockReset();
   askMock.ask.mockResolvedValue({ outcome: "answer", source: "primary", asOf: "2026-10-11" });
   sessionStorage.setItem(TEASER_KEY, "1");
+  // Bank order, so the pills below are the known first ones.
+  sessionStorage.setItem(ASK_SEED_KEY, "order");
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   Object.defineProperty(window, "innerHeight", { configurable: true, value: 900 });
 });

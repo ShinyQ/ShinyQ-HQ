@@ -148,6 +148,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:hall-gate` | `floors/lobby/gateSweep.ts` | the Highlights Hall gateway light curtain swept this session |
 | `hq:ask-thread` | Ask dock | chat thread, last 20 messages |
 | `hq:ask-teaser` | Ask dock | teaser shown this session |
+| `hq:ask-seed` | Ask dock | pill sampling seed for this page session (a 32-bit unsigned integer, `readAskSeed` in `src/ask/suggestions.ts`); `order` keeps bank order for tests |
 
 - Tests and screenshots that must not see the tour or the bubbles use `asReturningVisitor` (it sets `hq:onboarded=done` and `hq:hints=off`) or set `hq:onboarded` next to `hq:terminal-seen`.
 

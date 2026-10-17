@@ -96,7 +96,7 @@ describe("pill logic", () => {
   it("expands a topic into its first unasked questions", () => {
     expect(topicQuestions("ai", new Set(), list).map((s) => s.id)).toEqual(["a1", "a2"]);
     expect(topicQuestions("ai", new Set(["a1"]), list).map((s) => s.id)).toEqual(["a2"]);
-    expect(topicQuestions("ai", new Set(["a1", "a2"]), list).map((s) => s.id)).toEqual(["a1", "a2"]);
+    expect(topicQuestions("ai", new Set(["a1", "a2"]), list)).toEqual([]);
     expect(topicQuestions("work", new Set(), SUGGESTIONS)).toHaveLength(TOPIC_SIZE);
   });
 
