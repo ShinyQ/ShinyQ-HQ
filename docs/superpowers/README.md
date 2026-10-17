@@ -80,7 +80,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Public Visit Stats Every 4 Hours Implementation Plan](plans/2026-10-16-stats-every-4h.md) | shipped | [#161](https://github.com/ShinyQ/ShinyQ-HQ/pull/161) |
 | [Shareable Classic and 3D Links Implementation Plan](plans/2026-10-17-classic-links.md) | shipped | [#181](https://github.com/ShinyQ/ShinyQ-HQ/pull/181) |
 | [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review | [#176](https://github.com/ShinyQ/ShinyQ-HQ/pull/176) |
-| [Day and Night with a Moving Sun and Moon Implementation Plan](plans/2026-10-17-day-and-night.md) | in review |  |
+| [Day and Night with a Moving Sun and Moon Implementation Plan](plans/2026-10-17-day-and-night.md) | in review || [#182](https://github.com/ShinyQ/ShinyQ-HQ/pull/182) |
 
 ## Specs
 

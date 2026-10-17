@@ -1,6 +1,6 @@
 # Day and Night with a Moving Sun and Moon Implementation Plan
 
-Status: in review (Round 8 K), 2026-10-17
+Status: in review in #182 (Round 8 K), 2026-10-17
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
