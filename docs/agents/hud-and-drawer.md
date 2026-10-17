@@ -82,7 +82,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
   - While the panel loads, a `min-h-[36rem]` placeholder (`settings-loading`) holds the sheet's height.
 - To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
-- Today: language, Open links in, Motion, Graphics quality, Minimap, Sound, Sound effects, Music, Music volume.
+- Today: language, Open links in, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Music, Music volume.
 
 ### Graphics quality
 

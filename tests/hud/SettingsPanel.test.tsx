@@ -68,7 +68,7 @@ describe("SettingsPanel", () => {
   it("renders every group and setting from the registry", () => {
     render(<SettingsPanel />, { wrapper: Wrap });
     for (const name of ["General", "Display", "Sound"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument();
-    for (const id of ["language", "motion", "quality", "minimap", "sound", "effects", "music", "music-volume"]) {
+    for (const id of ["language", "open-links", "motion", "quality", "day-night", "minimap", "sound", "effects", "music", "music-volume"]) {
       expect(screen.getByTestId(`setting-${id}`)).toBeInTheDocument();
     }
     expect(screen.getByTestId("settings-panel")).toBeInTheDocument();
@@ -151,7 +151,7 @@ describe("SettingsPanel", () => {
 
   it("accepts an extra registered setting (sibling extension point)", () => {
     const extra = defineSetting({
-      id: "day-night",
+      id: "sibling-extra",
       group: "display",
       order: 30,
       labelKey: "minimap.label",
@@ -159,6 +159,6 @@ describe("SettingsPanel", () => {
       subscribe: () => () => {},
     });
     render(<SettingsPanel defs={[...SETTINGS, extra]} />, { wrapper: Wrap });
-    expect(screen.getByTestId("setting-day-night")).toBeInTheDocument();
+    expect(screen.getByTestId("setting-sibling-extra")).toBeInTheDocument();
   });
 });
