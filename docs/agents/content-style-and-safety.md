@@ -148,8 +148,8 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 ### Wing names in mission labels
 
-- Mission labels that name a wing use the wing names from `common.wing` ("Product Engineering", "AI Engineering").
-- `tests/content/dataset.test.ts` checks `best-swe` and `best-ai`.
+- The `work` mission's Rover line names every wing exactly as `common.wing` ("Product Engineering", "AI Engineering", "Data and ML" / "Data dan ML").
+- `tests/content/dataset.test.ts` checks the `work` mission.
 
 ## Public-safety lint
 

@@ -12,7 +12,7 @@ import type { Locale } from "@/content/schema";
 import { RoverTerminal, markTerminalSeen, type RoverTerminalProps } from "@/hud/RoverTerminal";
 import { greetingKey, orderTerminalMissions } from "@/hud/terminal";
 
-const missions = orderTerminalMissions(getContent().missions, 0);
+const missions = orderTerminalMissions(getContent().missions);
 const morning = new Date(2026, 9, 9, 8, 0);
 
 function renderTerminal(props: Partial<RoverTerminalProps> = {}, locale: Locale = "en") {
@@ -75,11 +75,13 @@ describe("RoverTerminal", () => {
   });
 
   it.each(["en", "id"] as const)("shows all nine choices and runs the ninth shortcut in %s", async (locale) => {
-    const { onRun } = renderTerminal({}, locale);
-    expect(missions).toHaveLength(9);
+    const all = getContent().missions;
+    const nine = orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))]);
+    const { onRun } = renderTerminal({ missions: nine }, locale);
+    expect(nine).toHaveLength(9);
     expect(screen.getByRole("dialog")).toHaveTextContent(locale === "en" ? "1 to 9" : "1 hingga 9");
     await userEvent.keyboard("9");
-    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[8].id);
+    expect(onRun).toHaveBeenCalledExactlyOnceWith(nine[8].id);
   });
 
   it("moves with arrows and runs with Enter", async () => {
@@ -219,12 +221,19 @@ describe("terminal helpers", () => {
     ]);
   });
 
-  it("leads with software and AI, alternating per visit", () => {
+  it("lists the Rover menu in catalog order, at most 9", () => {
     const all = getContent().missions;
-    expect(orderTerminalMissions(all, 0).slice(0, 2).map((m) => m.id)).toEqual(["best-swe", "best-ai"]);
-    expect(orderTerminalMissions(all, 1).slice(0, 2).map((m) => m.id)).toEqual(["best-ai", "best-swe"]);
-    expect(orderTerminalMissions(all, 1).map((m) => m.id).slice(2)).toEqual(["highlights", "journey", "projects", "hire", "cv", "blog", "surprise"]);
-    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(9);
+    expect(orderTerminalMissions(all).map((m) => m.id)).toEqual(["work", "highlights", "journey", "projects", "blog", "cv", "hire"]);
+    expect(orderTerminalMissions(all).map((m) => m.label.en)).toEqual([
+      "Explore my work",
+      "See the highlights",
+      "Follow my career, 2019 to 2026",
+      "Browse my projects",
+      "Read my writing",
+      "View CV",
+      "Discuss a role or project",
+    ]);
+    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))])).toHaveLength(9);
   });
 
   it("records that the terminal was seen", () => {

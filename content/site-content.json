@@ -10070,11 +10070,11 @@
   ],
   "missions": [
     {
-      "id": "best-swe",
+      "id": "work",
       "order": 0,
       "label": {
-        "en": "Explore my Product Engineering work",
-        "id": "Lihat karya Product Engineering saya"
+        "en": "Explore my work",
+        "id": "Jelajahi karya saya"
       },
       "steps": [
         {
@@ -10082,42 +10082,17 @@
           "floor": "L3"
         },
         {
-          "kind": "drive",
-          "to": "L3:digital-banking-integrations"
-        },
-        {
-          "kind": "open",
-          "room": "L3:digital-banking-integrations",
-          "tab": "overview"
-        }
-      ]
-    },
-    {
-      "id": "best-ai",
-      "order": 1,
-      "label": {
-        "en": "Explore my AI Engineering work",
-        "id": "Lihat karya AI Engineering saya"
-      },
-      "steps": [
-        {
-          "kind": "elevator",
-          "floor": "L3"
-        },
-        {
-          "kind": "drive",
-          "to": "L3:voice-ai-contact-center"
-        },
-        {
-          "kind": "open",
-          "room": "L3:voice-ai-contact-center",
-          "tab": "overview"
+          "kind": "say",
+          "text": {
+            "en": "Pick a wing: Product Engineering,\nAI Engineering, or Data and ML.",
+            "id": "Pilih wing: Product Engineering,\nAI Engineering, atau Data dan ML."
+          }
         }
       ]
     },
     {
       "id": "highlights",
-      "order": 2,
+      "order": 1,
       "label": {
         "en": "See the highlights",
         "id": "Lihat sorotan utama"
@@ -10139,7 +10114,7 @@
     },
     {
       "id": "journey",
-      "order": 3,
+      "order": 2,
       "label": {
         "en": "Follow my career, 2019 to 2026",
         "id": "Telusuri karier saya, 2019 hingga 2026"
@@ -10153,7 +10128,7 @@
     },
     {
       "id": "projects",
-      "order": 4,
+      "order": 3,
       "label": {
         "en": "Browse my projects",
         "id": "Jelajahi proyek saya"
@@ -10170,30 +10145,26 @@
       ]
     },
     {
-      "id": "hire",
-      "order": 5,
+      "id": "blog",
+      "order": 4,
       "label": {
-        "en": "Discuss a role or project",
-        "id": "Diskusikan peluang kerja atau proyek"
+        "en": "Read my writing",
+        "id": "Baca tulisan saya"
       },
       "steps": [
         {
           "kind": "elevator",
-          "floor": "RF"
+          "floor": "L4"
         },
         {
-          "kind": "drive",
-          "to": "RF:contact"
-        },
-        {
-          "kind": "open",
-          "room": "RF:contact"
+          "kind": "palette",
+          "filter": "posts"
         }
       ]
     },
     {
       "id": "cv",
-      "order": 6,
+      "order": 5,
       "label": {
         "en": "View CV",
         "id": "Lihat CV"
@@ -10214,33 +10185,24 @@
       ]
     },
     {
-      "id": "blog",
-      "order": 7,
+      "id": "hire",
+      "order": 6,
       "label": {
-        "en": "Read my writing",
-        "id": "Baca tulisan saya"
+        "en": "Discuss a role or project",
+        "id": "Diskusikan peluang kerja atau proyek"
       },
       "steps": [
         {
           "kind": "elevator",
-          "floor": "L4"
+          "floor": "RF"
         },
         {
-          "kind": "palette",
-          "filter": "posts"
-        }
-      ]
-    },
-    {
-      "id": "surprise",
-      "order": 8,
-      "label": {
-        "en": "Pick something for me",
-        "id": "Pilihkan sesuatu untuk saya"
-      },
-      "steps": [
+          "kind": "drive",
+          "to": "RF:contact"
+        },
         {
-          "kind": "surprise"
+          "kind": "open",
+          "room": "RF:contact"
         }
       ]
     }

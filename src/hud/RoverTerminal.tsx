@@ -39,7 +39,7 @@ export function usePrefersReducedMotion(): boolean {
 export interface RoverTerminalProps {
   open: boolean;
   locale: Locale;
-  /** Already ordered for this visit (see `orderTerminalMissions`), at most 9. */
+  /** Already ordered (see `orderTerminalMissions`), at most 9. */
   missions: readonly Mission[];
   onRun: (missionId: string) => void;
   /** Esc, "drive myself", close button or backdrop. */
