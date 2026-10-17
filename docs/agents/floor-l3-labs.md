@@ -165,8 +165,8 @@ Source: `buildLabsLayout`, `LABS.data`.
 ### E2E
 
 - `e2e/labs-data.spec.ts`: the spine.
-- `e2e/labs-paths.spec.ts`: arrival with board gaps and no floating sign naming a wing, the three road entrances, the board stops, the mirrored end and the reactor plaza, at 1440x900 full and 390x844 lite.
-  - `LABS_SHOTS=<dir>` saves captures; poses `entrance-<road>`, `board-<wing>`, `reactor`, `reactor-approach` and `reactor-top`.
+- `e2e/labs-paths.spec.ts`: the arrival (board gaps, no floating sign naming a wing, the mirrored end, the L3 budget) at 1440x900 full and 390x844 lite, and the drive to the reactor stop within the budget at 1440x900 full.
+  - `LABS_SHOTS=<dir>` adds and saves every pose on both sizes: `entrance-<road>`, `board-<wing>`, `reactor`, `reactor-approach` and `reactor-top`. Without it those poses are not listed (all measured 44 to 67 scene calls of 150); the roads and board stops they drive are pinned by `tests/unit/labs-layout.test.ts` and `labs-arrival.test.ts`.
 
 ## Ops Control Room
 

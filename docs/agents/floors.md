@@ -194,7 +194,7 @@ Pure rules in `nav/fastReturn.ts` (owner decision).
 | L4 | south of the end plaza | `LibraryLayout.end.returnPad` |
 
 - The L2 and L3 floor code (`floors/career/*`, `floors/labs/*`) may move the coordinate; the pad rules in `tests/unit/floor-pads.test.ts` check it.
-- E2E: `e2e/fast-return.spec.ts`.
+- E2E: `e2e/fast-return.spec.ts`. The everyday spots within 40 u (the L3 deep-link spawn, the RF plaza corner) are layout distances in `tests/unit/fast-return.test.ts`; the e2e drives from the L1 spawn and within 40 u on L2.
 
 ## Floating signs and spectacle effects
 

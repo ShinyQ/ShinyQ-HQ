@@ -343,11 +343,11 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | Career Archive | `career.spec.ts` |
 | Labs + drawer + hologram | `labs.spec.ts` |
 | L3 Data and ML spine | `labs-data.spec.ts` |
-| L3 three paths | `labs-paths.spec.ts`: arrival, road entrances, board stops, reactor plaza, the mirrored end |
+| L3 three paths | `labs-paths.spec.ts`: arrival and the mirrored end on both tiers, the reactor drive on full; every pose with `LABS_SHOTS` |
 | Library + Roof | `library-roof.spec.ts` |
 | L4 label overlap and caps | `library-labels.spec.ts` |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
-| Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget |
+| Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
 | RF roof deck | `roof.spec.ts` |
 | Missions + axe | missions |
 | Floor pads and pickers | `pads.spec.ts` |

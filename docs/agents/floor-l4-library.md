@@ -115,7 +115,7 @@ No label may cover another (owner decision).
 
 - `e2e/topics.spec.ts`: includes no label overlap from the approach, the camera zones and while orbiting, desktop and phone, by `polygonOverlap` of the quads.
 - `e2e/library-labels.spec.ts`:
-  - timeline label overlap under 2 percent of the smaller plate over the approach, the posts, mid-timeline and each zone, at 1440x900 full and 390x844 lite;
+  - timeline label overlap under 2 percent of the smaller plate over the approach, the posts, mid-timeline and each zone, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
   - the title caps, no duplicate text, no label on the rover;
   - each zone's sign on its approach, road or door pose;
   - opt-in `L4_SHOTS` captures and numbers.

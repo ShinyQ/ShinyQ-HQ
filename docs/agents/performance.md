@@ -64,8 +64,9 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 #### Memory gates
 
 - `memory-full` (owner decision): `GPU_MEMORY_BUDGET.fullTierRoundTrips` (3) Lobby to Roof round trips on the full tier with Motion Full leave geometries, textures and programs at their baseline and the heap within the budget.
+  - Its warm-up tour (every floor once, before the shaped trip) rides with Motion Reduced; the shaped trip and the measured trips ride with Motion Full, so the baseline holds what a Motion Full ride builds.
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite.
-- Both use the `e2e/hq.ts` memory helpers and the one budget.
+- Both use the `e2e/hq.ts` memory helpers and the one budget. The baseline and the final read are settled (`readSettledGpuCounters`); the per-trip numbers are for the failure message only and read unsettled (`readGpuCounters`), so each trip still calls the elevator the moment the rover arrives.
 
 #### Program baseline and known peaks
 
@@ -145,6 +146,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
 | `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `ChunkFailed`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
+| `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
 | `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
@@ -222,6 +224,17 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 - `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas).
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
+
+### Keeping the suite lean
+
+Each check lives in one place, at the cheapest level that can see the regression (the 2026-10-18 trim, [decisions.md](../decisions.md)):
+
+- Settled floor budgets on a deep link belong to `e2e/perf/floors.spec.ts` (both tiers, with the program baseline). A default-suite spec measures a budget only where the perf lane does not look: a drive, a pose, a station, reduced motion, first person.
+- A check with no quality-tier input runs on lite (label placement, routes, HUD, drawers). Run the full tier only for what it adds (bloom, motes, programs, its own budget numbers).
+- Do not sample a pose sweep in CI when every pose sits far under budget: keep the highest pose and put the rest behind a capture switch (`LABS_SHOTS`, `L4_SHOTS`) or the local visual gate.
+- Layout facts (positions, distances, mirror symmetry, reachable stops, counts) go into Vitest against the pure layout modules; the e2e keeps one case that proves the wiring.
+- One ride tour covers the elevator panel, arrivals and routes on every floor (`e2e/arrivals.spec.ts`); add per-floor ride checks there rather than in a new tour.
+- Before adding an e2e, search the suite for the same flow (`grep -rn "<the probe or test id>" e2e/`); fold a new assertion into the test that already reaches that state.
 
 ### Retries and flaky tests
 
