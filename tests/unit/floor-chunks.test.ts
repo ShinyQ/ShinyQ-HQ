@@ -12,14 +12,15 @@ function deferred<T>() {
 }
 
 function setup(speculative = true) {
-  const d = { L3: deferred<string>(), L4: deferred<string>(), RF: deferred<string>() };
-  const calls = { L3: 0, L4: 0, RF: 0 };
+  const d = { L3: deferred<string>(), L4: deferred<string>(), RF: deferred<string>(), B1: deferred<string>() };
+  const calls = { L3: 0, L4: 0, RF: 0, B1: 0 };
   let clock = 100;
   const chunks = createFloorChunks(
     {
       L3: () => (calls.L3++, d.L3.promise),
       L4: () => (calls.L4++, d.L4.promise),
       RF: () => (calls.RF++, d.RF.promise),
+      B1: () => (calls.B1++, d.B1.promise),
     },
     { speculative: () => speculative, now: () => clock },
   );
@@ -28,13 +29,13 @@ function setup(speculative = true) {
 
 describe("floor chunks", () => {
   it("lists L3, L4 and RF as lazy; L1 and L2 are eager and always settled", () => {
-    expect(LAZY_FLOORS).toEqual(["L3", "L4", "RF"]);
+    expect(LAZY_FLOORS).toEqual(["L3", "L4", "RF", "B1"]);
     expect(isLazyFloor("L1")).toBe(false);
     expect(isLazyFloor("L3")).toBe(true);
     const { chunks } = setup();
     expect(chunks.state("L1")).toBe("eager");
     expect(chunks.settled("L2")).toBe(true);
-    expect(chunks.snapshot()).toEqual({ L1: "eager", L2: "eager", L3: "idle", L4: "idle", RF: "idle" });
+    expect(chunks.snapshot()).toEqual({ B1: "idle", L1: "eager", L2: "eager", L3: "idle", L4: "idle", RF: "idle" });
   });
 
   it("loads once, records the request time and settles when the module arrives", async () => {
@@ -57,19 +58,20 @@ describe("floor chunks", () => {
     const { chunks, calls } = setup();
     chunks.ensure("L1");
     chunks.prefetch("L2");
-    expect(calls).toEqual({ L3: 0, L4: 0, RF: 0 });
+    expect(calls).toEqual({ L3: 0, L4: 0, RF: 0, B1: 0 });
   });
 
   it("prefetches speculatively unless ?prefetch=off, but ensure always loads", () => {
     const off = setup(false);
     off.chunks.prefetchAll();
     off.chunks.prefetch("L4");
-    expect(off.calls).toEqual({ L3: 0, L4: 0, RF: 0 });
+    expect(off.calls).toEqual({ L3: 0, L4: 0, RF: 0, B1: 0 });
     off.chunks.ensure("RF");
     expect(off.calls.RF).toBe(1);
     const on = setup(true);
     on.chunks.prefetchAll();
-    expect(on.calls).toEqual({ L3: 1, L4: 1, RF: 1 });
+    // B1 is never part of the idle prefetch: only unlocked sessions load it (FloorChunkPrefetch)
+    expect(on.calls).toEqual({ L3: 1, L4: 1, RF: 1, B1: 0 });
   });
 
   it("marks a failed load settled (the crash path takes over) and retries on the next load", async () => {
@@ -134,7 +136,7 @@ describe("floor chunks", () => {
       expect(rideChunkHold(chunks, "RF")).toBe(false);
       expect(rideChunkHold(chunks, "L1")).toBe(false);
       expect(rideChunkHold(chunks, "L2")).toBe(false);
-      expect(calls).toEqual({ L3: 0, L4: 0, RF: 1 });
+      expect(calls).toEqual({ L3: 0, L4: 0, RF: 1, B1: 0 });
     });
   });
 

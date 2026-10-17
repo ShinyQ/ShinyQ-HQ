@@ -42,6 +42,7 @@ export const ENGINE = {
   workbench: { minX: 44, maxX: 48, minZ: -5, maxZ: 5 },
   returnPad: { x: 40, z: 9 },
   /** Elevator arrivals roll on here and deep links spawn here (Round 8 J), looking east down the aisle. */
+  // x -8 as on RF: far enough east of the shaft that the arrival camera clears the glass (`shaftClearZoom`).
   arrival: { x: -8, z: 0 },
   /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`), as on RF. */
   arrivalZoom: 0.95,

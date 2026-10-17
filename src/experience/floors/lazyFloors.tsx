@@ -44,6 +44,7 @@ const appFloor = floorGetters<FloorChunkModules>(floorChunks);
 export const labsFloor = appFloor("L3", (m) => m.Labs);
 export const libraryFloor = appFloor("L4", (m) => m.Library);
 export const roofFloor = appFloor("RF", (m) => m.Roof);
+export const engineFloor = appFloor("B1", (m) => m.EngineRoom);
 
 /**
  * Re-renders on every floor chunk state change and starts the import of each near floor that has not

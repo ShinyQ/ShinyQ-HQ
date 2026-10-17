@@ -531,6 +531,7 @@ export default function Experience({
         about: t("world.about"),
         availability: t("world.availability"),
       },
+      engine: { title: t("engine.title"), subtitle: t("engine.subtitle"), soon: t("engine.soon") },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
       interact: {

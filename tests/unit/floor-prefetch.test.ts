@@ -19,6 +19,13 @@ describe("floor chunk prefetch triggers", () => {
     expect(prefetchFor({ ...idle, hover: { item: { kind: "door" } } })).toEqual({ need: [], soon: [] });
     expect(prefetchFor(idle)).toEqual({ need: [], soon: [] });
   });
+
+  it("adds B1 to the picker and call pad prefetch, and to the idle prefetch, only once unlocked", () => {
+    expect(prefetchFor({ ...idle, picker: { kind: "floor" }, b1Unlocked: true })).toEqual({ need: [], soon: ["L3", "L4", "RF", "B1"] });
+    expect(prefetchFor({ ...idle, b1Unlocked: true })).toEqual({ need: [], soon: [] });
+    expect(prefetchFor({ ...idle, b1Unlocked: true, idle: true })).toEqual({ need: [], soon: ["B1"] });
+    expect(prefetchFor({ ...idle, idle: true })).toEqual({ need: [], soon: [] });
+  });
 });
 
 describe("failed chunk retry at ride start", () => {

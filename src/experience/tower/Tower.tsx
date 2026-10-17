@@ -7,9 +7,10 @@ import { COLORS, floorY, SHAFT, towerFloors } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import type { LabsLabels } from "../floors/Labs";
 import type { LibraryLabels } from "../floors/Library";
+import type { EngineLabels } from "../floors/EngineRoom";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import type { RoofLabels } from "../floors/Roof";
-import { labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
+import { engineFloor, labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { DrawnWork } from "../scene/DrawnWorkHook";
@@ -29,6 +30,8 @@ export interface TowerLabels {
   career: CareerLabels;
   library: LibraryLabels;
   roof: RoofLabels;
+  /** B1 Engine Room floor words (`hud.engine`). */
+  engine: EngineLabels;
   /** "Back to elevator": the sign over Express Return pads (`hud.interact.returnPad`). */
   returnPad: string;
 }
@@ -101,13 +104,14 @@ export function Tower({
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
   const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0, null, floors);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
-  // L3, L4 and RF load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
+  // L3, L4, RF and B1 load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
   // ordinary update like L1 and L2 (`floorMount`); until then the floor's own slab (FloorLevel) shows.
   // Rides hold for the chunk (elevator.ts).
   useFloorChunks(near);
   const Labs = labsFloor();
   const Library = libraryFloor();
   const Roof = roofFloor();
+  const EngineRoom = engineFloor();
   /** The floor's component, or null for a lazy floor whose chunk is still loading (the slab shows). */
   const floorContent = (id: FloorId) => {
     switch (id) {
@@ -122,8 +126,7 @@ export function Tower({
       case "RF":
         return Roof && <Roof data={data} labels={labels.roof} tier={tier} />;
       case "B1":
-        // The Engine Room mounts here once its chunk exists; until then nothing below the Lobby is drawn.
-        return null;
+        return EngineRoom && <EngineRoom data={data} labels={labels.engine} tier={tier} />;
     }
   };
 
