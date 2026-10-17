@@ -228,16 +228,20 @@ void main(){
     vec3 d = normalize(vW - vC);
     float h = d.y - uParams.x;
     col = mix(uFill, c, smoothstep(0., h > 0. ? .3 : .25, abs(h)));
-    float s = max(dot(d, uSun), 0.);
-    float hug = exp(-h * h * 60.);
-    col += uGlow * (pow(s, 6.) * (.2 + .6 * hug) + pow(s, 64.) * .5);
-    vec2 sp = vec2(atan(d.z, d.x), asin(clamp(d.y, -1., 1.))) * 160.;
-    vec2 cell = floor(sp);
-    float r = hash(cell.x * 91.7 + cell.y * 13.3);
-    vec2 at = vec2(hash(cell.x + cell.y * 7.1), hash(cell.y + cell.x * 3.9));
-    float star = step(.985, r) * (1. - smoothstep(.06, .16, length(fract(sp) - at)));
-    float tw = .65 + .35 * sin(uTime * (1. + 2. * r) + r * 40.);
-    col += vec3(.85, .9, 1.) * star * tw * uParams.y * smoothstep(-.05, .2, h + .3);
+    if (uGlow.r + uGlow.g + uGlow.b > 0.) {
+      float s = max(dot(d, uSun), 0.);
+      float hug = exp(-h * h * 60.);
+      col += uGlow * (pow(s, 6.) * (.2 + .6 * hug) + pow(s, 64.) * .5);
+    }
+    if (uParams.y > 0.) {
+      vec2 sp = vec2(atan(d.z, d.x), asin(clamp(d.y, -1., 1.))) * 160.;
+      vec2 cell = floor(sp);
+      float r = hash(cell.x * 91.7 + cell.y * 13.3);
+      vec2 at = vec2(hash(cell.x + cell.y * 7.1), hash(cell.y + cell.x * 3.9));
+      float star = step(.985, r) * (1. - smoothstep(.06, .16, length(fract(sp) - at)));
+      float tw = .65 + .35 * sin(uTime * (1. + 2. * r) + r * 40.);
+      col += vec3(.85, .9, 1.) * star * tw * uParams.y * smoothstep(-.05, .2, h + .3);
+    }
     a = 1.;
   } else if (uMode == 13) {
     vec2 p = vUv * 2. - 1.;
