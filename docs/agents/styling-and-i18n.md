@@ -111,7 +111,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 ### Blur policy
 
 - No `backdrop-filter`:
-  - under a panel that is at least 94% opaque (`.glass-solid`, the Rover Terminal, the lightbox)
+  - under a panel that is at least 94% opaque (`.glass-solid`, the Rover menu, the lightbox)
   - on a scrim that a full-screen panel hides (the palette and non-sheet modals below 640 px use `sm:backdrop-blur-sm`)
   - on coarse pointers
 - `.glass` (64% fill) keeps its 18 px blur on fine pointers.
@@ -157,8 +157,8 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - desktop (fine pointer, at least 1024 px): the profile card, the top bar and the elevator rail;
   - phones and tablets (any coarse pointer counts as a tablet) get the "Corners" HUD:
     - top left the floor chip (`FloorChip`, opens the floor sheet; tablets also show the floor name);
-    - top right `hud-topbar`: Ask AI (icon only on phones), search on tablets, then the menu button (`HudMenu`, `data-testid="hud-menu"`, it carries the `ask-rover` onboarding spotlight);
-    - the menu opens a side sheet (`menu-sheet`, a bottom sheet on phones): the profile, the actions (Classic site `page-view` as the primary, Search on phones, Ask Rover, Rotate left and right, Map) and the settings panel;
+    - top right `hud-topbar`: Ask AI (icon only on phones), search on tablets, then the menu button (`HudMenu`, `data-testid="hud-menu"`, it carries the `rover-menu` onboarding spotlight);
+    - the menu opens a side sheet (`menu-sheet`, a bottom sheet on phones): the profile, the actions (Classic site `page-view` as the primary, Search on phones, Rover menu, Rotate left and right, Map) and the settings panel;
     - under the top right cluster the minimap (`hud-minimap`: phones `top-[64px] right-3`, tablets `top-[76px] right-4`), hidden on phones while a room is open;
     - `FloorNotice` and the L2 `YearChip` place by the HUD layout (never the viewport): under the floor chip on phones, clear of the minimap.
     - no profile card, elevator rail or Boost button; the key `,` opens the menu sheet.

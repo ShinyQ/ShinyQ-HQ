@@ -426,6 +426,14 @@
         "page": "Classic site",
         "3d": "3D"
       },
+      "tutorial": {
+        "label": "Replay the tutorial",
+        "hint": "Rover shows you around the HQ again."
+      },
+      "hints": {
+        "label": "Hints",
+        "hint": "Shows ! bubbles near things you can use."
+      },
       "title": "Settings",
       "open": "Settings",
       "close": "Close settings",
@@ -482,8 +490,8 @@
     "bootStart": "Boot rover",
     "retry3d": "Retry 3D",
     "staticNotice": "3D is unavailable. Showing the classic site.",
-    "kioskTitle": "rover@hq:~$ ./ask-rover",
-    "kioskHint": "Select the kiosk or the rover to open Ask Rover",
+    "kioskTitle": "rover@hq:~$ ./rover-menu",
+    "kioskHint": "Select the kiosk or the rover for the Rover menu",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",
@@ -508,11 +516,11 @@
     "launcher": {
       "search": "Search",
       "searchShortcut": "{shortcut}, open search",
-      "askRover": "Ask Rover"
+      "roverMenu": "Rover menu"
     },
     "terminal": {
-      "title": "Ask Rover",
-      "prompt": "rover@hq:~$ ./ask-rover",
+      "title": "Rover menu",
+      "prompt": "rover@hq:~$ ./rover-menu",
       "greeting": {
         "morning": "good morning",
         "afternoon": "good afternoon",
@@ -520,19 +528,19 @@
         "night": "hello, night owl"
       },
       "question": "where next? ^_^",
-      "options": "Ask Rover options",
+      "options": "Rover menu options",
       "driveMyself": "explore on my own",
-      "hint": "Pick: 1 to 9 or arrows + Enter · Close: Esc",
-      "close": "Close terminal"
+      "hint": "Pick: 1 to {last} or arrows + Enter · Close: Esc",
+      "close": "Close the Rover menu"
     },
     "palette": {
       "title": "Command palette",
-      "label": "Search Ask Rover, rooms, years and actions",
-      "placeholder": "Find an Ask Rover pick, room, year or action",
+      "label": "Search the Rover menu, rooms, years and actions",
+      "placeholder": "Find a Rover menu pick, room, year or action",
       "results": "Results",
       "empty": "No results for \"{query}\"",
       "groups": {
-        "missions": "Ask Rover",
+        "missions": "Rover menu",
         "recent": "Recent",
         "rooms": "Rooms",
         "years": "Years",
@@ -757,10 +765,6 @@
       "offline": "Ask AI is unavailable right now. Try search or browse the site pages.",
       "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
     },
-    "terminal": {
-      "option": "ask AI about the work ^_^",
-      "hintMenu": "Pick: a, 1 to 9 or arrows + Enter · Close: Esc"
-    },
     "palette": {
       "row": "Ask: \"{q}\"",
       "subtitle": "Answered by AI from this site"
@@ -770,14 +774,14 @@
       "launcherLabel": "Ask AI about Kurniadi",
       "teaser": "Questions about Kurniadi's work, projects or career?",
       "teaserDismiss": "Dismiss",
-      "title": "Ask the HQ",
+      "title": "Ask Rover Assistant",
       "subtitle": "AI answers from this site only",
       "close": "Close chat",
       "clear": "Clear chat",
       "threadLabel": "Conversation",
       "welcome": "Hi! Find answers about Kurniadi's work, projects, career, approach or how to reach him. AI answers use the content on this site. Pick a topic or type a question.",
       "you": "You",
-      "hq": "HQ",
+      "hq": "Rover",
       "startersLabel": "Try asking",
       "topicsLabel": "Pick a topic",
       "topicQuestions": "{topic} questions",
@@ -919,7 +923,7 @@
       "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick look at how things work?",
       "start": "Show me around",
       "skip": "Skip tutorial",
-      "skipped": "No problem. Replay the tutorial from Ask Rover anytime.",
+      "skipped": "No problem. Replay the tutorial from Settings anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
       "moveCoarse": "Drag the joystick to drive. Double-tap the joystick to boost, double-tap it again to stop.",
       "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
@@ -931,10 +935,10 @@
       "showMe": "Take me there",
       "later": "Later",
       "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
-      "askRover": "Not sure where to go? Ask Rover has shortcuts to the best rooms.",
+      "roverMenu": "Not sure where to go? The Rover menu has shortcuts to the best rooms.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
-      "closingShort": "That's the basics! Replay the full tutorial from Ask Rover anytime."
+      "closingShort": "That's the basics! Replay the full tutorial from Settings anytime."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",
@@ -955,7 +959,7 @@
       },
       "object": {
         "highlights": "The Highlights Hall: {name}'s selected work in one place.",
-        "askRover": "The Ask Rover kiosk: shortcuts to the best rooms in the HQ.",
+        "roverMenu": "The Rover menu kiosk: shortcuts to the best rooms in the HQ.",
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
@@ -968,7 +972,7 @@
         "pickFloor": "Pick a floor",
         "pickYear": "Pick a year",
         "toElevator": "To the elevator",
-        "askRover": "Ask Rover",
+        "roverMenu": "Rover menu",
         "browse": "Browse",
         "viewCv": "View CV",
         "go": "Go"
@@ -976,7 +980,6 @@
       "notNow": "Not now"
     },
     "menu": {
-      "replay": "replay the tutorial",
       "hintsOn": "hints: on",
       "hintsOff": "hints: off"
     }

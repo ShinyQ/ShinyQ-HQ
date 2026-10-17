@@ -48,7 +48,7 @@ describe("Lobby layout", () => {
     expect((LOBBY.bounds.minZ + LOBBY.bounds.maxZ) / 2).toBe(axis);
     expect(LOBBY.bounds.maxZ - LOBBY.bounds.minZ).toBe(42);
     expect(LOBBY.certWall.z).toBe(axis);
-    // The spawn stands in front of the Ask Rover kiosk on the kiosk axis (owner 2026-10-14; tests/unit/kiosk.test.ts).
+    // The spawn stands in front of the Rover menu kiosk on the kiosk axis (owner 2026-10-14; tests/unit/kiosk.test.ts).
     expect(Math.hypot(LOBBY.spawn.x - LOBBY.hologram.x, LOBBY.spawn.z - LOBBY.hologram.z)).toBeGreaterThan(LOBBY.laneRadius + ROVER.radius);
   });
 

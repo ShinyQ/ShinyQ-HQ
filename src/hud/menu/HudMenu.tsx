@@ -59,8 +59,8 @@ function MenuProfile({ data }: { data: ExperienceData }) {
 
 /**
  * Corners HUD menu (phones and tablets, top right): a button that opens a side sheet (a bottom sheet
- * on phones) with the profile, the actions (Classic site, search, Ask Rover, rotate, map) and every
- * setting. Ask Rover lives here, so the button carries its onboarding spotlight. The `,` key opens
+ * on phones) with the profile, the actions (Classic site, search, Rover menu, rotate, map) and every
+ * setting. The Rover menu lives here, so the button carries its onboarding spotlight. The `,` key opens
  * it; closing returns focus to the button. Tablets show search in the bar, so the menu leaves it out.
  */
 export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout: HudLayout; onExit: () => void }) {
@@ -79,8 +79,8 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
   const actions: { key: string; label: string; icon: ReactNode; run: () => void; close: boolean }[] = [
     ...(layout === "tablet" ? [] : [{ key: "search", label: t("launcher.search"), icon: <SearchIcon />, run: () => openPalette(), close: true }]),
     {
-      key: "ask-rover",
-      label: t("launcher.askRover"),
+      key: "rover-menu",
+      label: t("launcher.roverMenu"),
       icon: (
         <span aria-hidden="true" className="w-[18px] shrink-0 text-center font-mono text-cyan">
           &gt;_
@@ -100,7 +100,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
         ref={button}
         type="button"
         data-testid="hud-menu"
-        data-onboard="ask-rover"
+        data-onboard="rover-menu"
         aria-label={t("menu")}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -137,7 +137,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 </button>
               ))}
             </div>
-            <LazySettingsPanel headingLevel={3} />
+            <LazySettingsPanel headingLevel={3} onClose={close} />
           </div>
         </Modal>
       )}

@@ -103,7 +103,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 - The boost control is `Boost` / `Turbo`.
 - Use navigation's localized page names.
-- Keep `Ask Rover` / `Tanya Rover`, `Classic site` / `Situs klasik` and all three wing names unchanged.
+- Keep `Rover menu` / `Menu Rover`, `Ask Rover Assistant` / `Asisten Rover`, `Classic site` / `Situs klasik` and all three wing names unchanged.
 - Use `makalah` for reader-facing paper controls, `repositori` for public code links, and `situs aktif` for a live-site action when appropriate.
 - Keep `paper`, `repo`, `live`, `production`, RAG, backend, guardrail, observability and shadow mode where technical prose needs them.
 - Never apply global term replacements.
@@ -148,8 +148,8 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 ### Wing names in mission labels
 
-- Mission labels that name a wing use the wing names from `common.wing` ("Product Engineering", "AI Engineering").
-- `tests/content/dataset.test.ts` checks `best-swe` and `best-ai`.
+- The `work` mission's Rover line names every wing exactly as `common.wing` ("Product Engineering", "AI Engineering", "Data and ML" / "Data dan ML").
+- `tests/content/dataset.test.ts` checks the `work` mission.
 
 ## Public-safety lint
 

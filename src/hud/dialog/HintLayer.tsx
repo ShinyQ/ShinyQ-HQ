@@ -48,7 +48,7 @@ export function HintLayer({ name }: { name: string }) {
     });
   };
 
-  // Enter is the bubble's A press while it shows (instead of opening Ask Rover).
+  // Enter is the bubble's A press while it shows (instead of opening the Rover menu).
   useEffect(() => {
     if (!item) return;
     const onKey = (event: KeyboardEvent) => {

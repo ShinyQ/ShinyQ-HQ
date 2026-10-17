@@ -70,7 +70,7 @@ describe("glide", () => {
 describe("holding third person", () => {
   const idle = { phase: "explore", ride: false, beam: false, mission: false, driving: false };
 
-  it("keeps first person while exploring and under Ask Rover or the palette", () => {
+  it("keeps first person while exploring and under the Rover menu or the palette", () => {
     expect(viewSuspended(idle)).toBe(false);
     expect(viewSuspended({ ...idle, phase: "terminal" })).toBe(false);
     expect(viewSuspended({ ...idle, phase: "palette" })).toBe(false);

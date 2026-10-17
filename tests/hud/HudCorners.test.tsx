@@ -83,7 +83,7 @@ describe("Hud composition", () => {
     expect(screen.getByTestId("hud-bottom")).toContainElement(corner);
     expect(screen.queryByTestId("joystick")).toBeNull();
     expect(document.documentElement.dataset.hqHud).toBe("desktop");
-    for (const name of ["elevator", "view", "ask-rover"]) expect(onboardTargets(name)).toHaveLength(1);
+    for (const name of ["elevator", "view", "rover-menu"]) expect(onboardTargets(name)).toHaveLength(1);
   });
 
   it("phones get the Corners HUD: floor chip, compact Ask AI and the menu, the boost joystick and one reset button", () => {
@@ -101,8 +101,8 @@ describe("Hud composition", () => {
     expect(screen.getByTestId("joystick")).toHaveAttribute("data-boost", "off");
     expect(within(screen.getByTestId("view-controls")).getAllByRole("button")).toHaveLength(1);
     expect(document.documentElement.dataset.hqHud).toBe("phone");
-    for (const name of ["elevator", "view", "ask-rover"]) expect(onboardTargets(name)).toHaveLength(1);
-    expect(onboardTargets("ask-rover")[0]).toBe(screen.getByTestId("hud-menu"));
+    for (const name of ["elevator", "view", "rover-menu"]) expect(onboardTargets(name)).toHaveLength(1);
+    expect(onboardTargets("rover-menu")[0]).toBe(screen.getByTestId("hud-menu"));
     const place = screen.getByTestId("hud-minimap");
     expect(place).toHaveClass("top-[64px]", "right-3");
     expect(within(place).getByTestId("minimap")).toHaveClass("size-[72px]");
@@ -145,12 +145,12 @@ describe("Hud composition", () => {
     expect(buttons[0]).toHaveAttribute("data-compact", "false");
     expect(buttons[1]).toHaveAccessibleName(/open search$/);
     expect(buttons[2]).toBe(screen.getByTestId("hud-menu"));
-    expect(within(bar).queryByRole("button", { name: en.hud.launcher.askRover })).toBeNull();
+    expect(within(bar).queryByRole("button", { name: en.hud.launcher.roverMenu })).toBeNull();
     expect(screen.getByTestId("floor-chip")).toHaveTextContent("Lobby");
     expect(screen.getByTestId("floor-chip")).toHaveAccessibleName("L1 Home Lobby: change floor");
     expect(screen.queryByTestId("elevator-panel")).toBeNull();
     expect(document.documentElement.dataset.hqHud).toBe("tablet");
-    for (const name of ["elevator", "view", "ask-rover"]) expect(onboardTargets(name)).toHaveLength(1);
+    for (const name of ["elevator", "view", "rover-menu"]) expect(onboardTargets(name)).toHaveLength(1);
   });
 
   it("follows a layout change and clears the root attribute on unmount", () => {

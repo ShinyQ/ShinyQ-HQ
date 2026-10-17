@@ -2,7 +2,7 @@ import { kioskRect, LOBBY } from "../../config";
 import type { Rect, Vec2 } from "../../types";
 
 /**
- * Ask Rover kiosk. Body, stand and screen are one unit turned by one yaw (owner review, October 2026:
+ * Rover menu kiosk. Body, stand and screen are one unit turned by one yaw (owner review, October 2026:
  * "the line is not straight"; every text line sits on one baseline). Owner review 2026-10-14 ("the rover
  * kiosk not straight line into the circle"): the kiosk stands on the kiosk axis (`LOBBY.kioskAxis`, from
  * the hologram toward the Visitor Observatory) facing the hologram, its lane spoke runs straight along the

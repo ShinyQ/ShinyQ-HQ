@@ -36,7 +36,7 @@ import { FLOOR_SCENE_CAPS } from "./budgets";
 /**
  * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md): the passage past the
  * certification wall, the four stations as point-and-go targets and their drawers, cards that ride to
- * L3 and L2, live links, the highlights mission (Ask Rover and Cmd-K), the #highlights deep link, the static
+ * L3 and L2, live links, the highlights mission (the Rover menu and Cmd-K), the #highlights deep link, the static
  * anchors and the render budget. Expectations come from the dataset, never from slugs or counts.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -79,7 +79,7 @@ async function expectRoverNear(page: Page, point: { x: number; z: number }, tole
 
 /**
  * A point on the bare canvas where the click raycast hits this very target, clear of the HUD edges and
- * 100 px or more from the rover (a click on the rover opens Ask Rover).
+ * 100 px or more from the rover (a click on the rover opens the Rover menu).
  */
 async function clickablePoint(page: Page, targetId: string): Promise<ScreenPoint> {
   const point = await page.evaluate((targetId) => {
@@ -217,7 +217,7 @@ test.describe("Highlights Hall", () => {
     await waitForRoom(page, room);
   });
 
-  test("See the highlights from Ask Rover drives to the about station and opens it; L1 never shows a floor line", async ({ page }) => {
+  test("See the highlights from the Rover menu drives to the about station and opens it; L1 never shows a floor line", async ({ page }) => {
     const errors = collectErrors(page);
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");
@@ -228,8 +228,8 @@ test.describe("Highlights Hall", () => {
     await page.waitForTimeout(1500);
     await expect(page.getByTestId("dialog-box")).toHaveCount(0);
 
-    await page.getByTestId("hud").getByRole("button", { name: "Ask Rover", exact: true }).click();
-    await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: tour.label.en }).click();
+    await page.getByTestId("hud").getByRole("button", { name: en.hud.launcher.roverMenu, exact: true }).click();
+    await page.getByRole("dialog", { name: en.hud.terminal.title, exact: true }).getByRole("option", { name: tour.label.en }).click();
     await roomOpen(page, highlightRoom(STATIONS[0]));
     await expectRoverNear(page, stationOf(STATIONS[0]).pad);
     expect(errors).toEqual([]);

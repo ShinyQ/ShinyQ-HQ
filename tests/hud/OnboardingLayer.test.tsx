@@ -114,7 +114,7 @@ describe("OnboardingLayer", () => {
       dialog.advance();
       dialog.advance();
     });
-    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("ask-rover"));
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("rover-menu"));
   });
 
   it("replays the full tour on request, even when onboarded", () => {

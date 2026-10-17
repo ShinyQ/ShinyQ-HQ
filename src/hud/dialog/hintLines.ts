@@ -7,7 +7,7 @@ export const HINT_KINDS = ["door", "elevator-pad", "return-pad", "teleporter", "
 /** Targets with their own line (`dialog.hints.object.<key>`), by exact registry id (r4-i ids; r4-g for the hall). */
 export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "L1:station:highlights-about": "highlights",
-  "L1:kiosk:ask-rover": "askRover",
+  "L1:kiosk:ask-rover": "roverMenu",
   "RF:station:cv": "cv",
   "RF:station:contact": "contact",
   "L4:door:research": "research",
@@ -20,7 +20,7 @@ export function hintObjectKey(item: Pick<Interactable, "id">): string | null {
   return HINT_OBJECTS[item.id] ?? null;
 }
 
-export type HintGoKey = "open" | "pickFloor" | "pickYear" | "toElevator" | "askRover" | "browse" | "viewCv" | "go";
+export type HintGoKey = "open" | "pickFloor" | "pickYear" | "toElevator" | "roverMenu" | "browse" | "viewCv" | "go";
 
 /** Label key of the Go choice (`dialog.hints.go.<key>`), named after what point-and-go will do on arrival. */
 export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
@@ -36,7 +36,7 @@ export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
     case "return-beam":
       return "toElevator";
     case "command":
-      if (action.command === "terminal") return "askRover";
+      if (action.command === "terminal") return "roverMenu";
       if (action.command === "cv") return "viewCv";
       if (action.command.startsWith("palette:")) return "browse";
       return "go";

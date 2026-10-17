@@ -64,7 +64,7 @@ export interface Interactable {
   action: InteractAction;
 }
 
-/** UI labels for targets without a content title (`hud.pads.floorTitle`, `hud.interact.*`, `hud.launcher.askRover`, `hud.rooms`). */
+/** UI labels for targets without a content title (`hud.pads.floorTitle`, `hud.interact.*`, `hud.launcher.roverMenu`, `hud.rooms`). */
 export interface InteractLabels {
   elevator: string;
   /** Express Return pads: "Back to elevator" (`hud.interact.returnPad`). */

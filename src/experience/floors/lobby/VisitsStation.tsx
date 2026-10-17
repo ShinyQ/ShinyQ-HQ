@@ -42,7 +42,7 @@ function Dots({ data, geometry, material, name }: { data: DotInstances; geometry
 
 /**
  * L1 Visitor Observatory (public visit stats; owner decision 2026-10-14: the Lobby's south-west corner,
- * between the elevator and the Ask Rover kiosk): a hologram globe whose land is one instanced dot layer
+ * between the elevator and the Rover menu kiosk): a hologram globe whose land is one instanced dot layer
  * and whose visited countries glow as a second (dots only, never numbers), plus a floating panel with the
  * last 30 days, the since-launch total, countries, questions, the most explored floor and the 3D vs
  * Classic split, the source and the cadence. Seven draw calls: the plinth and its outline, then five on

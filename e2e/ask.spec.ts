@@ -106,7 +106,7 @@ async function expectAnswerStartInView(page: Page) {
 
 const enabled = (turnstileSiteKey: string | null = null) => ({ enabled: true, turnstileSiteKey, asOf: AS_OF, maxLength: 300 });
 
-const dock = (page: Page) => page.getByRole("dialog", { name: "Ask the HQ" });
+const dock = (page: Page) => page.getByRole("dialog", { name: en.ask.dock.title, exact: true });
 const thread = (page: Page) => dock(page).getByTestId("ask-thread");
 
 // A rendered payload would run `alert`; every test asserts that no dialog opened.
@@ -450,22 +450,6 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
   expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill", chip: "contact-reach" });
   expect(errors).toEqual([]);
   expect(csp).toEqual([]);
-});
-
-test("Ask Rover's ask option opens the dock", async ({ page }) => {
-  const api = await mockAsk(page, { status: enabled() });
-  await openPage(page, "/en/labs?tier=static");
-  await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-  const terminal = page.getByRole("dialog", { name: "Ask Rover" });
-  await expect(terminal.getByRole("option", { name: en.ask.terminal.option, exact: true })).toBeVisible();
-  await page.keyboard.press("a");
-  await expect(terminal).toBeHidden();
-  const input = dock(page).getByRole("textbox", { name: "Your question" });
-  await expect(input).toBeFocused();
-  await input.fill("What now?");
-  await input.press("Enter");
-  await expect(thread(page)).toContainText("Kurniadi is building AI agents.");
-  expect(api.bodies()[0]).toMatchObject({ q: "What now?", source: "terminal" });
 });
 
 test("Cmd-K Ask row sends the question to the dock", async ({ page }) => {

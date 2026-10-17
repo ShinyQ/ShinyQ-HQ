@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { getContent } from "@/content/load";
-import type { DrawerTab, FloorId, LocalizedText, RoomId } from "@/content/schema";
+import type { DrawerTab, FloorId, LocalizedText, Mission, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter, StepContext, Vec2 } from "@/experience/missions/host";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionState } from "@/experience/missions/runner";
@@ -8,6 +8,9 @@ import { structuralLabels } from "@/hud/index-data";
 
 const content = getContent();
 const missions = content.missions;
+// The `surprise` step kind stays supported; the catalog no longer ships a mission that uses it.
+const surpriseMission: Mission = { id: "surprise", order: 99, label: { en: "x", id: "x" }, steps: [{ kind: "surprise" }] };
+const withSurprise = [...missions, surpriseMission];
 const rooms = buildRoomCatalog(content, structuralLabels());
 
 type Call = string;
@@ -43,8 +46,7 @@ function deferred() {
 
 describe("mission runner: catalog", () => {
   const expected: Record<string, Call[]> = {
-    "best-swe": ["elevator L3", "drive L3:digital-banking-integrations", "open L3:digital-banking-integrations overview"],
-    "best-ai": ["elevator L3", "drive L3:voice-ai-contact-center", "open L3:voice-ai-contact-center overview"],
+    work: ["elevator L3", "say Pick a wing: Product Engineering,\nAI Engineering, or Data and ML."],
     highlights: ["elevator L1", "drive L1:highlights-about", "open L1:highlights-about"],
     journey: ["elevator L2"],
     projects: ["elevator L3", "palette pods"],
@@ -54,7 +56,7 @@ describe("mission runner: catalog", () => {
   };
 
   it("covers every mission in the content catalog", () => {
-    expect(missions.map((m) => m.id).sort()).toEqual([...Object.keys(expected), "surprise"].sort());
+    expect(missions.map((m) => m.id).sort()).toEqual(Object.keys(expected).sort());
   });
 
   for (const [id, sequence] of Object.entries(expected)) {
@@ -70,7 +72,7 @@ describe("mission runner: catalog", () => {
 
   it("runs surprise as elevator, drive and open of a weighted unvisited room", async () => {
     const { host, calls } = fakeHost();
-    const runner = createMissionRunner({ host, missions, rooms, random: () => 0, visited: () => [] });
+    const runner = createMissionRunner({ host, missions: withSurprise, rooms, random: () => 0, visited: () => [] });
     await expect(runner.start("surprise")).resolves.toBe("done");
     const first = rooms.find((r) => r.surpriseWeight > 0)!;
     expect(calls).toEqual([`elevator ${first.floor}`, `drive ${first.id}`, `open ${first.id}`]);
@@ -79,7 +81,7 @@ describe("mission runner: catalog", () => {
   it("does not surprise with a visited room", async () => {
     const first = rooms.find((r) => r.surpriseWeight > 0)!;
     const { host, calls } = fakeHost();
-    const runner = createMissionRunner({ host, missions, rooms, random: () => 0, visited: () => [first.id] });
+    const runner = createMissionRunner({ host, missions: withSurprise, rooms, random: () => 0, visited: () => [first.id] });
     await runner.start("surprise");
     expect(calls).not.toContain(`open ${first.id}`);
     expect(calls).toHaveLength(3);
@@ -117,7 +119,7 @@ describe("mission runner: control", () => {
       },
     });
     const runner = createMissionRunner({ host, missions, rooms });
-    const run = runner.start("best-ai");
+    const run = runner.start("hire");
     await vi.waitFor(() => expect(calls).toHaveLength(2));
     runner.cancel();
     expect(runner.state.status).toBe("cancelled");
@@ -125,8 +127,8 @@ describe("mission runner: control", () => {
     expect(signals[1].aborted).toBe(true);
     gate.resolve();
     await Promise.resolve();
-    expect(calls).toEqual(["elevator L3", "drive L3:voice-ai-contact-center"]);
-    expect(finish).toHaveBeenCalledExactlyOnceWith("cancelled", "best-ai");
+    expect(calls).toEqual(["elevator RF", "drive RF:contact"]);
+    expect(finish).toHaveBeenCalledExactlyOnceWith("cancelled", "hire");
   });
 
   it("cancel is a no-op when idle or finished", async () => {

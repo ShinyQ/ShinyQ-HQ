@@ -17,7 +17,7 @@ import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
 import { CommandPalette } from "./CommandPalette";
-import { useHintsOn, useTutorialAvailable } from "./dialog/hooks";
+import { useTutorialAvailable } from "./dialog/hooks";
 import { hintsOn, setHintsOn } from "./dialog/storage";
 import { replayTutorial } from "./dialog/tutorial";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
@@ -26,11 +26,10 @@ import type { HudIndex } from "./index-data";
 import { useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
-import { RoverTerminal, markTerminalSeen, type TerminalExtra } from "./RoverTerminal";
+import { RoverTerminal, markTerminalSeen } from "./RoverTerminal";
 import { buildPaletteEntries } from "./search";
 import { orderTerminalMissions } from "./terminal";
 
-const VISITS_KEY = "hq:visits";
 const MIN_TOAST_MS = 2400;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view", "motion-system", "motion-full", "motion-reduced"];
 const MOTION_ACTIONS: Partial<Record<PaletteActionId, MotionPref>> = { "motion-system": "system", "motion-full": "full", "motion-reduced": "reduced" };
@@ -50,19 +49,6 @@ function isEditable(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-/** Counts visits once per browser session; drives the best-swe / best-ai alternation. */
-function countVisit(): number {
-  try {
-    const current = Number(localStorage.getItem(VISITS_KEY) ?? "0") || 0;
-    if (sessionStorage.getItem(VISITS_KEY)) return Math.max(0, current - 1);
-    sessionStorage.setItem(VISITS_KEY, "1");
-    localStorage.setItem(VISITS_KEY, String(current + 1));
-    return current;
-  } catch {
-    return 0;
-  }
-}
-
 /**
  * Missions HUD for the static pages: wires the Rover Terminal and the command palette to the
  * mission runner through the static host (route navigation). The 3D experience can reuse the
@@ -78,12 +64,10 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [filter, setFilter] = useState<PaletteFilter | null>(null);
   const [recent, setRecent] = useState<RoomId[]>([]);
-  const [visit, setVisit] = useState(0);
   const [toast, setToast] = useState<{ text: string; ms: number; id: number } | null>(null);
   // Ask the HQ: the status is fetched on idle by the dock, or now when the terminal or the palette opens.
   const askEnabled = isAskEnabled(useAskStatus());
   const tutorial = useTutorialAvailable();
-  const hints = useHintsOn();
   const tMenu = useTranslations("dialog.menu");
 
   const loadAskStatus = useCallback(() => {
@@ -168,28 +152,10 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS) : []),
     [index, tutorial],
   );
-  const extras = useMemo<TerminalExtra[]>(
-    () =>
-      tutorial
-        ? [
-            {
-              key: "r",
-              label: tMenu("replay"),
-              onSelect: () => {
-                setTerminalOpen(false);
-                replayTutorial();
-              },
-            },
-            { key: "h", label: hints ? tMenu("hintsOn") : tMenu("hintsOff"), onSelect: () => setHintsOn(!hints) },
-          ]
-        : [],
-    [tutorial, hints, tMenu],
-  );
-  const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions, visit) : []), [index, visit]);
+  const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions) : []), [index]);
 
-  // Visit counter, HUD commands and global shortcuts.
+  // HUD commands and global shortcuts.
   useEffect(() => {
-    const visitTimer = window.setTimeout(() => setVisit(countVisit()), 0);
     const offCommand = onHudCommand((command) => {
       if (command.type === "terminal") showTerminal();
       else if (command.type === "palette") showPalette(command.filter ?? null);
@@ -220,7 +186,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      window.clearTimeout(visitTimer);
       offCommand();
       window.removeEventListener("keydown", onKeyDown);
     };
@@ -359,12 +324,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         open={terminalOpen}
         locale={locale}
         missions={terminalMissions}
-        ask={askEnabled}
-        extras={extras}
-        onAsk={() => {
-          setTerminalOpen(false);
-          openAsk(undefined, { source: "terminal" });
-        }}
         onRun={(id) => {
           setTerminalOpen(false);
           void runner?.start(id);

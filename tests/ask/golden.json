@@ -70,7 +70,7 @@
     {"id": "q66", "lang": "en", "q": "What is Sewise Fashion Labs?", "facts": ["Sewise Fashion Labs", "hackathon"], "expect": {"all": ["sewise"], "any": ["pattern", "sewing", "fabric"], "any2": ["hackathon"], "none": ["i built", "pola"]}},
     {"id": "q67", "lang": "en", "q": "Which anime does he like?", "facts": ["Sousou no Frieren"], "expect": {"any": ["frieren", "hunter x hunter", "code geass", "monster"], "none": ["you should watch", "i recommend"]}},
     {"id": "q68", "lang": "en", "q": "Why does he explore coffee shops?", "facts": ["public transport"], "expect": {"any": ["public transport", "coffee", "cafe"]}},
-    {"id": "q69", "lang": "en", "q": "What can Rover do on this site?", "facts": ["point-and-go", "minimap"], "expect": {"any": ["drive", "point-and-go", "elevator", "floor"], "any2": ["minimap", "tour", "ask rover", "shortcut", "boost"]}},
+    {"id": "q69", "lang": "en", "q": "What can Rover do on this site?", "facts": ["point-and-go", "minimap"], "expect": {"any": ["drive", "point-and-go", "elevator", "floor"], "any2": ["minimap", "tour", "rover menu", "shortcut", "boost"]}},
     {"id": "q70", "lang": "id", "q": "Bisakah saya membagikan tautan halaman situs ini?", "facts": ["view=classic"], "expect": {"any": ["url", "tautan", "link"]}},
     {"id": "q71", "lang": "en", "q": "Is he available for freelance work?", "facts": ["freelance or part-time"], "expect": {"any": ["freelance", "part-time"], "none": ["per hour", "rate is"]}}
   ]

@@ -20,7 +20,7 @@ const world = ([x, , z]: [number, number, number]) => {
   return { x: parts.group.position[0] + x * c + z * s, z: parts.group.position[2] - x * s + z * c };
 };
 
-describe("Ask Rover kiosk", () => {
+describe("Rover menu kiosk", () => {
   it("turns body, stand and screen as one unit, facing the hologram", () => {
     // The screen and the body have no yaw of their own: both use the group's.
     expect(parts.screen.yaw).toBe(0);
@@ -106,7 +106,7 @@ describe("Ask Rover kiosk", () => {
         for (const line of lines) expect(line.length * size * KIOSK.font.advance, line).toBeLessThanOrEqual(usable + 1e-9);
         expect(lines.length * KIOSK.screen.lineHeight * size).toBeLessThanOrEqual(parts.screen.h - 2 * KIOSK.screen.pad);
       }
-      // Today's longest mission label (e.g. "Explore my Product Engineering work") fits without truncation.
+      // Today's longest mission label (e.g. "Follow my career, 2019 to 2026") fits without truncation.
       const longest = labels.reduce((a, b) => (b.length > a.length ? b : a));
       const at = labels.indexOf(longest);
       expect(kioskLines(labels, m.hud.kioskTitle, m.hud.kioskHint, at, width)).toContain(`${at + 1}. ${longest}`);

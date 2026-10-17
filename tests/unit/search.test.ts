@@ -28,8 +28,7 @@ describe("buildPaletteEntries", () => {
   });
 
   it("takes the mission floor from its first elevator step", () => {
-    expect(entries.find((e) => e.key === "mission:best-ai")?.floor).toBe("L3");
-    expect(entries.find((e) => e.key === "mission:surprise")?.floor).toBeUndefined();
+    expect(entries.find((e) => e.key === "mission:work")?.floor).toBe("L3");
   });
 
   it("builds year entries on L2 with the year as title", () => {

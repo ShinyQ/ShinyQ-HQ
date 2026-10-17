@@ -14,16 +14,16 @@ const isApple = () => /mac|iphone|ipad|ipod/i.test(navigator.platform || navigat
 const CTRL_CHIP_COMPACT = "lg:max-[1100px]:hidden";
 
 /**
- * Header entry points: Ask Rover (the Rover Terminal and its missions) and the command palette (⌘K).
+ * Header entry points: the Rover menu (the Rover Terminal and its missions) and the command palette (⌘K).
  * `compactShortcut` hides the "Ctrl K" chip from 1024 to 1099 px (the search button keeps its icon and name).
- * `parts` picks the buttons (the tablet Corners bar shows search only; Ask Rover lives in its menu).
+ * `parts` picks the buttons (the tablet Corners bar shows search only; the Rover menu lives in its menu).
  */
 export function HudLaunchers({
   buttonClassName,
   labelClassName = "sr-only sm:not-sr-only",
   compactShortcut = false,
-  parts = ["askRover", "search"],
-}: { buttonClassName?: string; labelClassName?: string; compactShortcut?: boolean; parts?: readonly ("askRover" | "search")[] } = {}) {
+  parts = ["roverMenu", "search"],
+}: { buttonClassName?: string; labelClassName?: string; compactShortcut?: boolean; parts?: readonly ("roverMenu" | "search")[] } = {}) {
   const t = useTranslations("hud.launcher");
   const shortcut = useSyncExternalStore(noop, () => (isApple() ? "⌘K" : "Ctrl K"), () => "Ctrl K");
   const chip = compactShortcut && shortcut !== "⌘K" ? ` ${CTRL_CHIP_COMPACT}` : "";
@@ -32,12 +32,12 @@ export function HudLaunchers({
     "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border border-glass-border px-2.5 text-sm text-ink-2 transition hover:border-cyan/50 hover:text-ink";
   return (
     <div className="flex items-center gap-1.5">
-      {parts.includes("askRover") && (
-        <button type="button" onClick={openTerminal} className={button} aria-haspopup="dialog" data-onboard="ask-rover">
+      {parts.includes("roverMenu") && (
+        <button type="button" onClick={openTerminal} className={button} aria-haspopup="dialog" data-onboard="rover-menu">
           <span aria-hidden="true" className="font-mono text-cyan">
             &gt;_
           </span>
-          <span className={labelClassName}>{t("askRover")}</span>
+          <span className={labelClassName}>{t("roverMenu")}</span>
         </button>
       )}
       {parts.includes("search") && (

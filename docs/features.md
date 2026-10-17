@@ -35,11 +35,11 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Walkable floors | Road kit, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
 | Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
 | Walkable floors 2 | L4 Writing as the walkable Newsroom | Done |
-| HUD polish | Shift boost (touch toggle; trails, lean, camera kick, streaks, sparks), Ask Rover, unskippable intro, top bar without Quick view, bottom band, drawer footer, centered Lobby | Done |
+| HUD polish | Shift boost (touch toggle; trails, lean, camera kick, streaks, sparks), Rover menu, unskippable intro, top bar without Quick view, bottom band, drawer footer, centered Lobby | Done |
 | Walkable floors 3 | RF as a walkable roof deck: Signal Garden with the courier drone | Done |
 | Highlights Hall | L1 summary behind the certifications wall: about me, top 3 projects, work experience (employment and freelance), contact | Done |
 | Onboarding | Rover's dialog (handheld RPG text box), first-session tour, "!" hint bubbles, first-visit floor lines | Done |
-| Point-and-go | Hover or tap a glowing object (room doors, elevator pads, Return pads, teleporters, stations, the Ask Rover kiosk, boards) to see its name and drive there; no free click-to-move | Done |
+| Point-and-go | Hover or tap a glowing object (room doors, elevator pads, Return pads, teleporters, stations, the Rover menu kiosk, boards) to see its name and drive there; no free click-to-move | Done |
 | SEO and link previews | Search titles within 60 characters, unique titles, `/` canonical to `/en`, baseline JFIF share cards with `og:image:secure_url`, Person, ProfilePage and SoftwareSourceCode structured data, content-dated sitemap, Search Console and Bing verification, LinkedInBot checks in e2e and the deploy smoke | Done |
 | Fast return | Any floor change more than 40 u from the elevator call pad beams the rover into the car; green "Back to elevator" pads at the far ends of L2 and L3 beam it to the call pad | Done |
 | Floor chunks | Round 7 B: L3, L4 and RF are separate chunks, prefetched after the first frame and on elevator intent, loaded at once on deep links; the car waits at closed doors for a slow chunk; the main 3D path is 16 KB gzip smaller | Done |
@@ -100,7 +100,7 @@ Open `/en` and press **Boot rover**.
 
 - Right after the boot and intro of your first session, Rover runs a short tour in a classic text box at the bottom of the screen (typewriter text, its face as the portrait).
 - Press Enter, Space, the round A button, click or tap to continue, or "Skip tutorial".
-- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the Highlights Hall, the elevator and its call pads, then Ask Rover and Ask AI, each ringed while Rover talks about it.
+- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the Highlights Hall, the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it.
 - A deep link rides on to its floor first and gets a shorter tour there.
 - Near anything you can use, a "!" bubble floats over it: press Enter or tap it for a one-line tip with a Go choice.
 - The first time you reach L2, L3, L4 or RF, Rover introduces the floor in one line. Driving, a point-and-go action or a swipe dismisses it, and it never comes back on that floor.
@@ -127,7 +127,7 @@ Open `/en` and press **Boot rover**.
 ### Phones and tablets ("Corners" HUD)
 
 - The four corners hold the controls: the floor chip top left (tap it to pick a floor), Ask AI, search (tablets) and the **Menu** top right, the joystick bottom left and **Reset view** bottom right.
-- **Menu** opens a sheet with the profile (name, title and current floor), the actions (**Classic site**, Search, Ask Rover, Rotate left and right, Map) and every setting (language, Open links in, motion, graphics quality, day and night, minimap, sound and music).
+- **Menu** opens a sheet with the profile (name, title and current floor), the actions (**Classic site**, Search, Rover menu, Rotate left and right, Map) and every setting (language, Open links in, motion, graphics quality, day and night, minimap, sound and music, plus **Replay the tutorial** and **Hints** while in 3D).
 - Desktops keep the top bar, the profile card and the elevator; a gear button above the view controls opens the same settings. The **,** key opens the settings on every device.
 
 ### Minimap and floor overview
@@ -136,9 +136,11 @@ Open `/en` and press **Boot rover**.
 - Tap it, press **N** or pick **Map** in the menu to open the overview: the whole floor with its places named, and a list of the places (visited ones marked). Picking a place drives the rover there and opens it, like clicking it in the world.
 - The minimap can be switched off in the settings (**N** still opens the overview); phones hide it while a room sheet is open. It is plain HTML and SVG over the canvas, so it costs no 3D draw call.
 
-### Ask Rover and the Classic site
+### Rover menu and the Classic site
 
-- **Ask Rover** (top bar, the menu on phones and tablets, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
+- **Rover menu** (ID **Menu Rover**; the `>_` button in the top bar, the menu on phones and tablets, or click the rover) is a terminal (`rover@hq:~$ ./rover-menu`) with eight entries: **Explore my work** (rides to L3, where Rover asks you to pick a wing: Product Engineering, AI Engineering or Data and ML), **See the highlights**, **Follow my career, 2019 to 2026**, **Browse my projects**, **Read my writing**, **View CV**, **Discuss a role or project** and **Explore on my own** (Esc). Keys 1 to 7 pick an entry.
+- The panel always fits the visible screen: the header and the hint stay put and the list scrolls inside on short phones and landscape.
+- **Replay the tutorial** and **Hints** are rows in the settings panel, general group, while in 3D (also in Cmd-K).
 - **Classic site** (highlighted, with **Ask AI** on its right; ID **Situs klasik**) shows the same content as a regular website without 3D, and **Back to 3D** returns.
 
 ## Classic site
@@ -158,7 +160,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
   - A short "coming soon" section follows the five.
   - Text lives in `content/build-story.json`; every number comes from a snapshot taken at build time (`content/generated/build-facts.json`), shown with its date and commit, and the page links the public repository.
   - Ask the HQ answers about the site with a "Read on this site" link to it.
-- The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
+- The Rover menu never opens on its own; the **Rover menu** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer
 
@@ -174,7 +176,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 - **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (Round 9 R: every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging.
-- **Ask Rover kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
+- **Rover menu kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
 - The camera looks past the kiosk at the hologram's name and at the Visitor Observatory in the south-west corner.
 
 ### Visitor Observatory
@@ -198,7 +200,7 @@ Behind the certifications wall, a road past its south end leads under a gateway 
   - **Work experience** on a lit arch split into Employment and Freelance (newest first; a card rides to the role on L2).
   - **Contact** beside a signal beacon: email with copy, channels, the CV viewer, availability.
 - Point at a station and click (or tap twice) to drive there and open its drawer. A project with a public site shows **Visit live site**.
-- **See the highlights** (Ask Rover or Cmd-K) rides to the hall and opens About me.
+- **See the highlights** (Rover menu or Cmd-K) rides to the hall and opens About me.
 - `/{locale}#highlights` or `/{locale}#highlights-<about|projects|experience|contact>` opens a station directly.
 
 ## L2 Career Road
@@ -215,7 +217,7 @@ Route `/en/journey`. One road runs forward in time.
   - The public repos as a neon skyline (height by stars on a log scale, color by language; click a bar for the repo drawer and its GitHub link).
 - **Horizon**: past the Workshop window (clear glass, no label) a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
 - **Origin**: a light pillar rises at the start of the road.
-- **Follow my career, 2019 to 2026** (Ask Rover or Cmd-K) rides to L2, where the road starts at the 2019 prologue; on the Classic site it opens `/journey`.
+- **Follow my career, 2019 to 2026** (Rover menu or Cmd-K) rides to L2, where the road starts at the 2019 prologue; on the Classic site it opens `/journey`.
 
 ## L3 Project Roads
 
@@ -225,7 +227,7 @@ Route `/en/labs`.
 - **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road, with every key and featured project docked along them. The board titles name the roads; there are no floating road signs. At the far end both wing roads turn toward the axis and meet the reactor ring due north and south, a mirror image about the spine.
 - **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories and the demand forecasting work on Microsoft Fabric (on-premise data into a medallion lakehouse) docked on both sides (the Fabric pod first), spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners. A green **Back to elevator** pad waits on the axis just east of the ring.
-- **Browse my projects** (Ask Rover or Cmd-K) rides to L3 and opens the full project list.
+- **Browse my projects** (Rover menu or Cmd-K) rides to L3 and opens the full project list.
 
 ### Tech Reactor
 
@@ -251,7 +253,7 @@ Route `/en/library`.
 - **Signs**: one sign per section (Posts, Research, Models and datasets, Talks and workshops) hangs over its first desk, and every floating plate on the lane shares one height. Post titles show only for the nearest stations (at most 6 on desktop, 4 on phones) and fade out as you drive away. Labels are placed on screen every frame, so none covers another, the rover or the end plaza's signs.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
-- **Read my writing** (Ask Rover or Cmd-K) rides to L4 and opens the list of posts.
+- **Read my writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
 
 ### Topic Constellation
 
@@ -309,7 +311,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Where
 
-- The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, the Rover Terminal (`a`) and the Cmd-K "Ask AI" row.
+- The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, and the Cmd-K "Ask AI" row. The chat panel is titled **Ask Rover Assistant** (ID **Asisten Rover**) and its answers are labelled Rover; the floating button stays **Ask AI**.
 - A "Try asking" row offers 3 curated questions from different topics, and topic pills (Work, AI, Career, Contact, Perspectives, About me, This site) expand into 4 of a bank of 100 curated questions (`content/ask/suggestions.json`); both are a random sample, fixed for the page session, and a question already asked never comes back. Each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
 - The thread is kept in `sessionStorage` only.
 - **What can you do?** (also a Contact pill, ID "Apa saja yang bisa ditanyakan di sini?") lists what the assistant covers, the two languages, sources, and what it will not discuss.

@@ -24,7 +24,7 @@ const labels: InteractLabels = {
   returnPad: en.hud.interact.returnPad,
   teleporter: (year) => en.hud.interact.teleporter.replace("{year}", String(year)),
   console: en.hud.interact.console,
-  kiosk: en.hud.launcher.askRover,
+  kiosk: en.hud.launcher.roverMenu,
   board: (wing) => en.hud.interact.board.replace("{wing}", wing),
   archive: en.hud.interact.archive,
   rooms: en.hud.rooms,

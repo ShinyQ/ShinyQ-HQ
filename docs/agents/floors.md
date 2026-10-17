@@ -178,7 +178,7 @@ Pure rules in `nav/fastReturn.ts` (owner decision).
 - On the first `toDoor` frame of every ride (all triggers go through `requestElevator`):
   - a rover more than `FAST_RETURN.beamDistance` (40 u, straight line to `approach`) from the call pad beams onto it (`shouldBeamToCar`), and the ride boards on the jump frame;
   - closer, it drives as before.
-- 40 u is an owner decision: the L3 overview and the RF arrival drive; the L1 spawn, in front of the Ask Rover kiosk, is about 16.5 u away.
+- 40 u is an owner decision: the L3 overview and the RF arrival drive; the L1 spawn, in front of the Rover menu kiosk, is about 16.5 u away.
 
 ### Shared behaviour
 
@@ -318,8 +318,8 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF doors are `station`s);
   - pads from `FloorLayout.pads`;
-  - plus the L1 profile hologram, skills wall and Ask Rover kiosk, the L3 wing boards and the L4 archive board.
-- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}`, `L1:kiosk:ask-rover`, `L3:board:${wing}`, `L4:board:archive`.
+  - plus the L1 profile hologram, skills wall and Rover menu kiosk, the L3 wing boards and the L4 archive board.
+- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}`, `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
 
 ### Adding targets
 

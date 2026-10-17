@@ -5,7 +5,7 @@ import { VISITS_ROOM } from "./visitsRoom";
 
 /**
  * L1 Visitor Observatory and the views around it (owner decision 2026-10-14: "South-west corner of the
- * lobby, between the elevator and the Ask Rover kiosk: you see it right after stepping out of the
+ * lobby, between the elevator and the Rover menu kiosk: you see it right after stepping out of the
  * elevator"). Pure, import-light (config.ts reads it, and the store loads config.ts on every page).
  *
  * The follow camera keeps one default yaw that looks north-west, so the south-west corner is behind it

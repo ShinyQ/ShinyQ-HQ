@@ -67,7 +67,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
   - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
-- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Ask Rover, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
+- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
 - Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
@@ -76,7 +76,9 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 ### Settings registry
 
 - One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
-- A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range`) with `get`/`set`, a `subscribe`, and an optional `available`.
+- Layout (owner request 2026-10-17, "more neat"): each group is a heading plus one rounded card with hairline dividers. Every row has the same anatomy: the label and its one-line note on the left, the control on the right (switch, or a round icon button for an action); choices put a full-width segmented control under the label, the volume slider sits under its label and value. The label is a `<label for>` that names the control (`aria-labelledby`), so a tap on the text works the switch and the accessible name stays exactly the label.
+- A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range` with `get`/`set`, or `action` with `run` and an optional `closesPanel`), a `subscribe`, and an optional `available` (the panel re-renders when a setting with `available` fires its `subscribe`).
+- An `action` is a button; with `closesPanel` the panel calls its `onClose` prop (the menu and settings sheets pass their close) before `run`, so the result is visible. `replay-tutorial` (general, order 30, `action`) and `hints` (general, order 40, a switch on `hq:hints`) live in `defs/tutorial.ts` and show only while the 3D HUD has registered its tutorial host (`tutorialAvailable`).
 - The control binds to an external store (the audio engine, `qualityPref`, `minimapPref`, the Motion and language stores); the panel persists nothing itself. Duplicate ids throw.
 - `LazySettingsPanel` loads the panel and its registry when a settings sheet first opens, and `Minimap` loads `MapOverview` when the overview first opens, to keep both out of the first-frame 3D path (byte budget in [performance.md](performance.md)). Tests find their content with `findBy*`.
   - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
@@ -127,7 +129,6 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:onboarded` | `done` or `skipped`: the first-session tutorial ran |
 | `hq:hints` | `off` hides the hint bubbles |
 | `hq:recent` | recent rooms on the static tier |
-| `hq:visits` | alternates best-swe and best-ai |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
 | `hq:view` | the remembered "Open links in" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
 | `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
@@ -153,14 +154,20 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - Tests and screenshots that must not see the tour or the bubbles use `asReturningVisitor` (it sets `hq:onboarded=done` and `hq:hints=off`) or set `hq:onboarded` next to `hq:terminal-seen`.
 
-### Ask Rover name
+### Rover menu name
 
-- User-facing name (owner decision): the Rover Terminal and its missions are **Ask Rover** (ID **Tanya Rover**) wherever a visitor reads them:
-  - the desktop 3D top bar, the Corners menu sheet's actions and the Page View header button (`hud.launcher.askRover`);
-  - the terminal title and prompt (`./ask-rover`);
-  - the Cmd-K group, aria labels and the Lobby kiosk.
-- Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`.
-- Playwright finds the button with `{ name: "Ask Rover", exact: true }` (the Ask AI pill also starts with "Ask").
+- User-facing name (owner decision): the `>_` button and the terminal are the **Rover menu** (ID **Menu Rover**) wherever a visitor reads them:
+  - the desktop 3D top bar, the Corners menu sheet's actions and the Page View header button (`hud.launcher.roverMenu`);
+  - the terminal title and prompt (`rover@hq:~$ ./rover-menu`);
+  - the Cmd-K group, aria labels and the Lobby kiosk;
+  - the onboarding spotlight (`data-onboard="rover-menu"`) and the hint lines (`dialog.onboarding.roverMenu`, `dialog.hints.object.roverMenu`, `dialog.hints.go.roverMenu`).
+- Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`, and the point-and-go id `L1:kiosk:ask-rover` (stored visits use it).
+- The chat panel is not the Rover menu: it is **Ask Rover Assistant** (see [ask.md](ask.md#names)).
+- The menu has exactly 8 entries, listed in catalog `order` (`orderTerminalMissions`, at most 9 missions): `1` Explore my work (the `work` mission: the elevator to L3, then Rover says to pick a wing: Product Engineering, AI Engineering or Data and ML), `2` See the highlights, `3` Follow my career, 2019 to 2026, `4` Browse my projects, `5` Read my writing, `6` View CV, `7` Discuss a role or project, and "Explore on my own" (`Esc`).
+  - No Ask option, no "Pick something for me", no replay or hints (Ask AI has its own entry points; replay and hints are settings). The `surprise` step kind stays supported by the runner.
+  - The footer hint is `hud.terminal.hint` with `{last}`.
+- Fit: the panel is `max-h-[calc(100dvh-...)]` (safe-area insets removed) with a `flex-col` layout (header, typed lines and footer `shrink-0`, the option list `min-h-0 flex-1 overflow-y-auto`), so it stays on screen on short phones; `e2e/missions.spec.ts` checks 390x844, 375x667 and 667x375.
+- Playwright finds the button with `{ name: en.hud.launcher.roverMenu, exact: true }`.
 
 ## Motion setting
 
@@ -242,7 +249,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - The rover face drawn by `drawFace` is the portrait.
 - Input:
   - an A button (keyboard "a" stays the strafe key);
-  - Enter and Space through a window capture listener (so the game's Enter does not open Ask Rover);
+  - Enter and Space through a window capture listener (so the game's Enter does not open the Rover menu);
   - arrows between focused choices.
 - A soft `blip` (`audio.play("blip")`, shares the click rate limit).
 - It pauses and hides during boot, intro, a room drawer, the hologram, the pad picker, the Ask panel and any `aria-modal` dialog.
@@ -270,12 +277,12 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   3. the camera (look around, zoom, first person; spotlight on the view controls, `data-onboard="view"`);
   4. the Highlights Hall (registry extra `L1:station:highlights-about`, room `L1:highlights-about`) when it is registered;
   5. elevator and call pads;
-  6. Ask Rover;
+  6. the Rover menu;
   7. Ask AI when its pill shows;
   8. closing.
 - After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
 - Onboarding replaces the Director's first-visit terminal auto-open.
-- Replay: Ask Rover "replay the tutorial" (`r`), Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
+- Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 
 ### Floor lines
 
@@ -295,7 +302,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Enter, a tap or a click opens `dialog.hints.kind.<kind>` (with the registry `label`) or an object line (`HINT_OBJECTS`, keyed by registry id such as `L1:pad:elevator`, `RF:station:cv`, `L1:station:highlights-about`).
 - Go emits point-and-go's `{ type: "interact", item }`, so it drives and acts exactly like a click.
 - No bubble during missions, autopilot, rides, beams, pickers, drawers, the Ask panel, while Rover talks or while point-and-go has a hovered or tap-selected target.
-- Toggle: "hints: on/off" in Ask Rover (`h`) and Cmd-K.
+- Toggle: the "Hints" switch in the settings panel and Cmd-K ("hints: on/off" toast).
 
 ### Copy
 

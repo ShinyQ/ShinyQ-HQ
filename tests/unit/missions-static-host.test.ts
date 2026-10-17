@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getContent } from "@/content/load";
-import type { Locale } from "@/content/schema";
+import type { Locale, Mission } from "@/content/schema";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { createMissionRunner } from "@/experience/missions/runner";
 import { createStaticHost } from "@/experience/missions/staticHost";
@@ -8,6 +8,8 @@ import { structuralLabels } from "@/hud/index-data";
 
 const content = getContent();
 const rooms = buildRoomCatalog(content, structuralLabels());
+// The `surprise` step kind stays supported; the catalog no longer ships a mission that uses it.
+const surpriseMission: Mission = { id: "surprise", order: 99, label: { en: "x", id: "x" }, steps: [{ kind: "surprise" }] };
 
 function setup(locale: Locale = "en") {
   const events: string[] = [];
@@ -18,7 +20,7 @@ function setup(locale: Locale = "en") {
     onSay: (text, ms) => events.push(`say ${text} ${ms}`),
     onPalette: (filter) => events.push(`palette ${filter ?? ""}`.trim()),
   });
-  const runner = createMissionRunner({ host, missions: content.missions, rooms, random: () => 0 });
+  const runner = createMissionRunner({ host, missions: [...content.missions, surpriseMission], rooms, random: () => 0 });
   return { host, runner, events };
 }
 
@@ -28,8 +30,8 @@ describe("static mission host", () => {
   });
 
   it.each([
-    ["best-ai", "en", ["nav /en/labs/voice-ai-contact-center"]],
-    ["best-swe", "id", ["nav /id/labs/digital-banking-integrations"]],
+    ["work", "en", ["nav /en/labs", "say Pick a wing: Product Engineering,\nAI Engineering, or Data and ML. 2400"]],
+    ["work", "id", ["nav /id/labs", "say Pilih wing: Product Engineering,\nAI Engineering, atau Data dan ML. 2400"]],
     ["hire", "id", ["nav /id/contact"]],
     ["cv", "en", ["nav /en/cv"]],
     ["blog", "en", ["nav /en/library", "palette posts"]],

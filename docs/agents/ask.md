@@ -4,6 +4,11 @@ The Ask the HQ assistant: code, bindings, knowledge pack, chat dock, answer pipe
 
 Index: [AGENTS.md](../../AGENTS.md).
 
+## Names
+
+- Visible name (owner decision): the chat panel is **Ask Rover Assistant** (ID **Asisten Rover**) and answers are labelled "Rover"; the floating launcher stays **Ask AI**. The `>_` terminal is the Rover menu, a separate feature (see [hud-and-drawer.md](hud-and-drawer.md#rover-menu-name)).
+- The internal name **Ask the HQ** stays in code, the Pages Function, workflows, scripts, the runbook and the design spec; so do `/api/ask` and the `hq:ask-*` keys.
+
 ## Design and operations
 
 - Design: [`docs/superpowers/specs/2026-10-11-ask-hq-design.md`](../superpowers/specs/2026-10-11-ask-hq-design.md).
@@ -69,7 +74,6 @@ All bindings and vars live in `wrangler.toml`.
 - The floating "Ask AI" launcher: Page View, bottom-left, mirroring Back to 3D; it steps aside while the home hero bar reaches its bottom band.
 - The "Ask AI" pill at the far right of the 3D top bar, right of the highlighted Classic site button (both on their own row below 1024 px).
 - The home hero ask bar (`src/components/page/AskEntry.tsx`). About has no Ask section (owner decision).
-- Rover Terminal option `[a]`.
 - The Cmd-K "Ask:" row.
 - `openAsk(q?, { topic?, source? })` (`hq:hud` command `{ type: "ask", q?, topic?, source? }`).
 - A teaser shows once per session, and never while Rover's dialog box is up (see the Rover dialog section in [hud-and-drawer.md](hud-and-drawer.md)).

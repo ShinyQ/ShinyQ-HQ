@@ -12,7 +12,7 @@ import type { Locale } from "@/content/schema";
 import { RoverTerminal, markTerminalSeen, type RoverTerminalProps } from "@/hud/RoverTerminal";
 import { greetingKey, orderTerminalMissions } from "@/hud/terminal";
 
-const missions = orderTerminalMissions(getContent().missions, 0);
+const missions = orderTerminalMissions(getContent().missions);
 const morning = new Date(2026, 9, 9, 8, 0);
 
 function renderTerminal(props: Partial<RoverTerminalProps> = {}, locale: Locale = "en") {
@@ -32,7 +32,7 @@ function Harness({ reducedMotion = true }: { reducedMotion?: boolean }) {
   return (
     <NextIntlClientProvider locale="en" messages={en}>
       <button type="button" onClick={() => setOpen(true)}>
-        Ask Rover
+        Rover menu
       </button>
       <RoverTerminal open={open} locale="en" missions={missions} onRun={() => setOpen(false)} onClose={() => setOpen(false)} now={morning} reducedMotion={reducedMotion} />
     </NextIntlClientProvider>
@@ -53,14 +53,17 @@ describe("RoverTerminal", () => {
 
   it("shows the prompt, greeting, numbered missions and drive myself", () => {
     renderTerminal();
-    const dialog = screen.getByRole("dialog", { name: "Ask Rover" });
-    expect(dialog).toHaveTextContent("rover@hq:~$ ./ask-rover");
+    const dialog = screen.getByRole("dialog", { name: "Rover menu" });
+    expect(dialog).toHaveTextContent("rover@hq:~$ ./rover-menu");
     expect(dialog).toHaveTextContent("good morning.");
     expect(dialog).toHaveTextContent(en.hud.terminal.question);
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(missions.length + 1);
-    expect(options[0]).toHaveTextContent(`[1]${missions[0].label.en}`);
-    expect(options.at(-1)).toHaveTextContent(`[esc]${en.hud.terminal.driveMyself}`);
+    expect(options.map((o) => o.textContent?.replace(/^>/, ""))).toEqual([
+      ...missions.map((m, i) => `[${i + 1}]${m.label.en}`),
+      `[esc]${en.hud.terminal.driveMyself}`,
+    ]);
+    expect(options).toHaveLength(8);
+    expect(dialog).toHaveTextContent("Pick: 1 to 7 or arrows + Enter · Close: Esc");
   });
 
   it("focuses the mission list on open", () => {
@@ -75,11 +78,13 @@ describe("RoverTerminal", () => {
   });
 
   it.each(["en", "id"] as const)("shows all nine choices and runs the ninth shortcut in %s", async (locale) => {
-    const { onRun } = renderTerminal({}, locale);
-    expect(missions).toHaveLength(9);
+    const all = getContent().missions;
+    const nine = orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))]);
+    const { onRun } = renderTerminal({ missions: nine }, locale);
+    expect(nine).toHaveLength(9);
     expect(screen.getByRole("dialog")).toHaveTextContent(locale === "en" ? "1 to 9" : "1 hingga 9");
     await userEvent.keyboard("9");
-    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[8].id);
+    expect(onRun).toHaveBeenCalledExactlyOnceWith(nine[8].id);
   });
 
   it("moves with arrows and runs with Enter", async () => {
@@ -108,14 +113,14 @@ describe("RoverTerminal", () => {
   it("traps Tab between the close button and the list", async () => {
     renderTerminal();
     await userEvent.tab();
-    expect(screen.getByRole("button", { name: "Close terminal" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: en.hud.terminal.close })).toHaveFocus();
     await userEvent.tab();
     expect(screen.getByRole("listbox")).toHaveFocus();
   });
 
   it("closes on Esc and returns focus to the opener", async () => {
     render(<Harness />);
-    const opener = screen.getByRole("button", { name: "Ask Rover" });
+    const opener = screen.getByRole("button", { name: "Rover menu" });
     await userEvent.click(opener);
     expect(screen.getByRole("listbox")).toHaveFocus();
     await userEvent.keyboard("{Escape}");
@@ -153,7 +158,7 @@ describe("RoverTerminal", () => {
       vi.useRealTimers();
       const { rerender, onClose } = renderTerminal({ reducedMotion: false });
       const props = { locale: "en" as const, missions, onRun: vi.fn(), onClose, now: morning, reducedMotion: false };
-      screen.getByRole("button", { name: "Close terminal" }).click();
+      screen.getByRole("button", { name: en.hud.terminal.close }).click();
       rerender(
         <NextIntlClientProvider locale="en" messages={en}>
           <RoverTerminal open={false} {...props} />
@@ -171,41 +176,10 @@ describe("RoverTerminal", () => {
 
   it("speaks Indonesian", () => {
     renderTerminal({ now: new Date(2026, 9, 9, 20, 0) }, "id");
-    const dialog = screen.getByRole("dialog", { name: "Tanya Rover" });
+    const dialog = screen.getByRole("dialog", { name: "Menu Rover" });
     expect(dialog).toHaveTextContent("selamat malam.");
     expect(dialog).toHaveTextContent(id.hud.terminal.question);
     expect(screen.getAllByRole("option").at(-1)).toHaveTextContent(id.hud.terminal.driveMyself);
-  });
-});
-
-describe("RoverTerminal ask option", () => {
-  it("adds ask as the first option on key a, keeping missions on 1 to 9", async () => {
-    const { onRun } = renderTerminal({ ask: true });
-    const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(missions.length + 2);
-    expect(options[0]).toHaveTextContent(`[a]${en.ask.terminal.option}`);
-    expect(options[0]).toHaveAttribute("aria-selected", "true");
-    expect(options[1]).toHaveTextContent(`[1]${missions[0].label.en}`);
-    expect(screen.getByRole("dialog")).toHaveTextContent(en.ask.terminal.hintMenu);
-    await userEvent.keyboard("5");
-    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[4].id);
-  });
-
-  it("hides the ask option when the feature is off", () => {
-    renderTerminal();
-    expect(screen.queryByText(en.ask.terminal.option)).toBeNull();
-  });
-
-  it("hands the ask option to the Ask dock on key a, Enter or a tap", async () => {
-    const onAsk = vi.fn();
-    renderTerminal({ ask: true, onAsk });
-    await userEvent.keyboard("a");
-    expect(onAsk).toHaveBeenCalledTimes(1);
-    await userEvent.keyboard("{Enter}");
-    expect(onAsk).toHaveBeenCalledTimes(2);
-    await userEvent.click(screen.getByRole("option", { name: en.ask.terminal.option }));
-    expect(onAsk).toHaveBeenCalledTimes(3);
-    expect(screen.queryByRole("textbox")).toBeNull();
   });
 });
 
@@ -219,35 +193,23 @@ describe("terminal helpers", () => {
     ]);
   });
 
-  it("leads with software and AI, alternating per visit", () => {
+  it("lists the Rover menu in catalog order, at most 9", () => {
     const all = getContent().missions;
-    expect(orderTerminalMissions(all, 0).slice(0, 2).map((m) => m.id)).toEqual(["best-swe", "best-ai"]);
-    expect(orderTerminalMissions(all, 1).slice(0, 2).map((m) => m.id)).toEqual(["best-ai", "best-swe"]);
-    expect(orderTerminalMissions(all, 1).map((m) => m.id).slice(2)).toEqual(["highlights", "journey", "projects", "hire", "cv", "blog", "surprise"]);
-    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))], 0)).toHaveLength(9);
+    expect(orderTerminalMissions(all).map((m) => m.id)).toEqual(["work", "highlights", "journey", "projects", "blog", "cv", "hire"]);
+    expect(orderTerminalMissions(all).map((m) => m.label.en)).toEqual([
+      "Explore my work",
+      "See the highlights",
+      "Follow my career, 2019 to 2026",
+      "Browse my projects",
+      "Read my writing",
+      "View CV",
+      "Discuss a role or project",
+    ]);
+    expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))])).toHaveLength(9);
   });
 
   it("records that the terminal was seen", () => {
     markTerminalSeen();
     expect(localStorage.getItem("hq:terminal-seen")).toBe("1");
-  });
-
-  it("lists extra options after the missions and runs them by key or tap", async () => {
-    const replay = vi.fn();
-    const hints = vi.fn();
-    renderTerminal({
-      extras: [
-        { key: "r", label: "replay the tutorial", onSelect: replay },
-        { key: "h", label: "hints: on", onSelect: hints },
-      ],
-    });
-    const options = screen.getAllByRole("option").map((o) => o.textContent);
-    expect(options.at(-3)).toContain("[r]replay the tutorial");
-    expect(options.at(-2)).toContain("[h]hints: on");
-    expect(options.at(-1)).toContain(en.hud.terminal.driveMyself);
-    await userEvent.keyboard("r");
-    expect(replay).toHaveBeenCalledTimes(1);
-    await userEvent.click(screen.getByRole("option", { name: /hints: on/ }));
-    expect(hints).toHaveBeenCalledTimes(1);
   });
 });

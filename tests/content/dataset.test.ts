@@ -145,11 +145,12 @@ describe("content/site-content.json", () => {
     expect(hackathon2026).toEqual([]);
   });
 
-  it("names the L3 wings in the best-swe and best-ai mission labels (common.wing)", () => {
-    for (const [id, wing] of [["best-swe", "software"], ["best-ai", "ai"]] as const) {
-      const label = content.missions.find((m) => m.id === id)!.label;
-      expect(label.en, id).toContain(en.common.wing[wing]);
-      expect(label.id, id).toContain(idMessages.common.wing[wing]);
+  it("the work mission rides to L3 and names every L3 wing (common.wing)", () => {
+    const work = content.missions.find((m) => m.id === "work")!;
+    expect(work.steps[0]).toEqual({ kind: "elevator", floor: "L3" });
+    const say = work.steps.find((s) => s.kind === "say")!;
+    for (const [locale, messages] of [["en", en], ["id", idMessages]] as const) {
+      for (const wing of Object.values(messages.common.wing)) expect(say.text[locale]).toContain(wing);
     }
   });
 

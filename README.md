@@ -51,8 +51,8 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator and five themed floors.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Day and night**: an 8 minute twilight and neon night cycle from clock time, with a moving sun and moon.
-- **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles.
-- **Ask the HQ**: grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
+- **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles, plus the Rover menu (`>_`) with shortcuts to the best rooms.
+- **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, Mistral fallback) with Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a rollup every 4 hours by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
@@ -62,7 +62,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 
 | | Floor | Route | What is there |
 |---|---|---|---|
-| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Ask Rover kiosk and the Visitor Observatory. Behind it, the Highlights Hall. |
+| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk and the Visitor Observatory. Behind it, the Highlights Hall. |
 | <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://kurniadi.pages.dev/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
 | <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
 | <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts with year posts and one sign per section, research, models and talks desks, and the Topic Constellation. |
