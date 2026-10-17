@@ -9,6 +9,7 @@ import { ChipList } from "@/components/Chip";
 import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
+import { MetricStrip } from "@/components/MetricStrip";
 import { ShareLinks } from "@/components/ShareLinks";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
 import { CaseToc } from "@/components/page/CaseToc";
@@ -17,7 +18,7 @@ import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
-import { adjacent, clientLabel, podLiveLink } from "@/content/selectors";
+import { adjacent, clientLabel, headlineResults, podLiveLink } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { WING_ACCENT } from "@/lib/accent";
@@ -54,8 +55,11 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const images = toGalleryImages(pod.assets, locale);
   const live = podLiveLink(pod);
   const codeResearch = Boolean(pod.repos?.length || pod.publications?.length);
+  const headline = headlineResults(pod.results);
+  // The full results chapter only when it adds something to the strip: more results, or how they were measured.
+  const detail = pod.results.length > headline.length || pod.results.some((r) => r.context);
   const toc = [
-    { id: "results", label: t("results") },
+    ...(detail ? [{ id: "results", label: t("results") }] : []),
     { id: "problem", label: t("problem") },
     { id: "approach", label: t("approach") },
     ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
@@ -79,6 +83,13 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             </p>
             <h1 className="pv-d-l mt-5">{pod.title[locale]}</h1>
             <p className="pv-lead mt-6">{pod.tagline[locale]}</p>
+            {/* Without a results chapter the strip keeps the `#results` anchor (3D drawer tabs link to it). */}
+            <section id={detail ? undefined : "results"} aria-labelledby="key-results-title" className="mt-8">
+              <h2 id="key-results-title" className="sr-only">
+                {t("keyResults")}
+              </h2>
+              <MetricStrip items={headline.map((r) => ({ value: r.value, label: r.label[locale] }))} label={t("keyResults")} />
+            </section>
             {live && (
               <p className="mt-8">
                 <LiveSiteLink href={live.href} label={tc("visitLive")} srHint={tc("external")} className="pv-btn pv-btn-primary" />
@@ -95,16 +106,15 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               { label: t("client"), value: clientLabel(pod.client, locale) },
             ]}
           />
-          <section id="results" aria-labelledby="results-title">
-            <h2 id="results-title" className="sr-only">
-              {t("results")}
-            </h2>
-            <MetricLedger results={pod.results} locale={locale} />
-          </section>
         </header>
 
         <div className="pv-wrap grid gap-6 lg:grid-cols-12">
           <div className="min-w-0 lg:col-span-8">
+            {detail && (
+              <Chapter id="results" title={t("results")}>
+                <MetricLedger results={pod.results} locale={locale} />
+              </Chapter>
+            )}
             <Chapter id="problem" title={t("problem")}>
               <p className="pv-lead text-ink-2">{pod.problem[locale]}</p>
             </Chapter>

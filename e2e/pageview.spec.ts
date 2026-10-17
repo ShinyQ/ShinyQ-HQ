@@ -11,6 +11,7 @@ import en from "../messages/en.json";
 import { perspectiveFingerprints } from "../src/content/perspectives";
 import { PerspectivesFileSchema } from "../src/content/schema";
 import { scanBuildOutput } from "../src/content/safety";
+import { headlineResults } from "../src/content/selectors";
 
 /** Every Page View template, on the static tier so the HTML page is what renders. */
 const TEMPLATES = [
@@ -687,3 +688,29 @@ test.describe("architecture diagrams", () => {
     }
   });
 });
+
+const heroResults: { value: string; headline?: boolean }[] = data.floors.labs.pods.find((p) => p.slug === heroPod.slug)!.results;
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`case study opens with the metric strip at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    await openPage(page, staticTier(`/en/labs/${heroPod.slug}`));
+    const strip = page.getByRole("list", { name: en.labs.keyResults });
+    const items = strip.getByTestId("metric-strip-item");
+    const expected = headlineResults(heroResults);
+    await expect(items).toHaveCount(expected.length);
+    await expect(items.first()).toContainText(expected[0].value);
+    await expect(strip).toBeInViewport();
+    const tops = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
+    // Desktop (md and up): one row, 3 across. Phone: stacked rows.
+    if (viewport.width >= 768) expect(new Set(tops.map(Math.round)).size).toBe(1);
+    else expect(new Set(tops.map(Math.round)).size).toBe(expected.length);
+    // No confidence marker (decision #44); scoped because body copy may say "verified" in its own words.
+    for (const block of [strip, page.locator("#results")]) await expect(block).not.toContainText(/self-reported|strongly-inferred|verified/i);
+    await context.close();
+  });
+}
