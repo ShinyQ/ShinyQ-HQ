@@ -114,4 +114,4 @@ Code: `floors/lobby/observatoryLayout.ts`.
 - The intro's end pose is that follow pose (yaw, zoom, look-ahead, offset scale), so the intro lands on the spawn view with no jump.
 - `resetView` returns to the default north-west look.
 - The elevator rolls the rover on east from the shaft to `LOBBY.arrival`; the camera glides out of the car into the arrival zone ([Elevator arrival](3d-experience.md#elevator-arrival)). Under reduced motion the rover and the camera cut to it.
-- The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The kiosk spawn and `L1:kiosk` are unchanged.
+- The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The session still spawns at the kiosk stop in `L1:kiosk` (a `prime` zone), not on the arrival point.

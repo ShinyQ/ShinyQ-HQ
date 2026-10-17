@@ -1,6 +1,6 @@
 # Round 8 J: L3-Style Arrivals Implementation Plan
 
-Status: in progress.
+Status: in review.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -76,11 +76,11 @@ Status: in progress.
   - `shaftClearZoom(cls, aspect, rig: "follow" | "rail", x: number): number` the largest zoom keeping the arrival camera at `x >= SHAFT_EAST_FACE + 1.5` for a rover at `x`
   - `ViewZone.railYaw?: number`, `OrbitState.zoneRailYaw: number | null`, `primeZone(s, zone, cls?, rail = false)`, `updateZone(s, zone, reduced, cls?, rail = false)`
 
-- [ ] **Step 1: Write failing tests** for `shoulderPose` (behind and above the rover, looking along the heading), `glidePose` (p 0 is start, p 1 is end, fov mixes), `glideProgress` (0 at 0, 1 at and after 1.5 s, monotonic), `cameraBehindHeading` (camera due west of the rover gives `PI / 2`), `shaftClearZoom` (the follow pose at that zoom has `x` equal to the limit), rail zones (`primeZone(..., rail)` sets `railYaw`, `updateZone` eases `railYawTarget` in and back to the nearest side view on exit, a hand rotation inside the zone keeps the rail where the visitor left it).
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/arrival-glide.test.ts` and see them fail.
-- [ ] **Step 3: Implement** `arrival.ts` and the orbit changes.
-- [ ] **Step 4: Run** the new tests and the orbit and camera unit tests: pass.
-- [ ] **Step 5: Commit** `feat(camera): arrival glide math and rail-aware view zones`.
+- [x] **Step 1: Write failing tests** for `shoulderPose` (behind and above the rover, looking along the heading), `glidePose` (p 0 is start, p 1 is end, fov mixes), `glideProgress` (0 at 0, 1 at and after 1.5 s, monotonic), `cameraBehindHeading` (camera due west of the rover gives `PI / 2`), `shaftClearZoom` (the follow pose at that zoom has `x` equal to the limit), rail zones (`primeZone(..., rail)` sets `railYaw`, `updateZone` eases `railYawTarget` in and back to the nearest side view on exit, a hand rotation inside the zone keeps the rail where the visitor left it).
+- [x] **Step 2: Run** `bunx vitest run tests/unit/arrival-glide.test.ts` and see them fail.
+- [x] **Step 3: Implement** `arrival.ts` and the orbit changes.
+- [x] **Step 4: Run** the new tests and the orbit and camera unit tests: pass.
+- [x] **Step 5: Commit** `feat(camera): arrival glide math and rail-aware view zones`.
 
 ### Task 2: Floor arrivals and their views
 
@@ -92,11 +92,11 @@ Status: in progress.
 - Consumes: Task 1 (`LOOK_EAST_YAW`, `railYawBehind`, `shaftClearZoom`, `ViewZone.railYaw`).
 - Produces: `FloorLayout.arrival` on every floor; a zone `"<floor>:arrival"` (L3 keeps `L3:overview`) that contains the arrival point and the road from the approach to it, `travel: { x: 1, z: 0 }`.
 
-- [ ] **Step 1: Write `tests/unit/arrivals.test.ts`** with, for every floor and the four sizes (1440x900, 1194x834, 834x1194, 390x844): `zoneAt(floor, { ...arrival, heading: PI/2 }, viewZones)` exists; the settled camera (follow: `followPose` with look-ahead and `followOffsetScale`, as in `labs-arrival.test.ts`; L2: `railPose` with the zone's `railYaw` and zoom) has `cameraBehindHeading` within 0.1 of `PI/2`; camera `x >= SHAFT_EAST_FACE + 1.5`; the rover and the main sight point project inside the safe box (`DESKTOP_SAFE` / `PHONE_SAFE`); the zone covers the straight road from the approach to the arrival.
-- [ ] **Step 2: Run** it and see L1, L2, L4, RF fail.
-- [ ] **Step 3: Implement** the arrival points and zones (numbers from captures; start from L1 `(-6, 0)`, L2 the 2019 plaza at `x = 0`, L4 `(-4, 0)`, RF `(-8, 0)`), drop `L1:arrival`, set L4 and RF spawn equal to arrival, move the RF availability sign yaw if the overview zone changes.
-- [ ] **Step 4: Run** all unit tests touching layouts: pass.
-- [ ] **Step 5: Commit** `feat(floors): L3-style arrival point and view on every floor`.
+- [x] **Step 1: Write `tests/unit/arrivals.test.ts`** with, for every floor and the four sizes (1440x900, 1194x834, 834x1194, 390x844): `zoneAt(floor, { ...arrival, heading: PI/2 }, viewZones)` exists; the settled camera (follow: `followPose` with look-ahead and `followOffsetScale`, as in `labs-arrival.test.ts`; L2: `railPose` with the zone's `railYaw` and zoom) has `cameraBehindHeading` within 0.1 of `PI/2`; camera `x >= SHAFT_EAST_FACE + 1.5`; the rover and the main sight point project inside the safe box (`DESKTOP_SAFE` / `PHONE_SAFE`); the zone covers the straight road from the approach to the arrival.
+- [x] **Step 2: Run** it and see L1, L2, L4, RF fail.
+- [x] **Step 3: Implement** the arrival points and zones (numbers from captures; start from L1 `(-6, 0)`, L2 the 2019 plaza at `x = 0`, L4 `(-4, 0)`, RF `(-8, 0)`), drop `L1:arrival`, set L4 and RF spawn equal to arrival, move the RF availability sign yaw if the overview zone changes.
+- [x] **Step 4: Run** all unit tests touching layouts: pass.
+- [x] **Step 5: Commit** `feat(floors): L3-style arrival point and view on every floor`.
 
 ### Task 3: Roll-on, reduced-motion cut and the glide in the cameras
 
@@ -107,10 +107,10 @@ Status: in progress.
 - Consumes: Task 1 and Task 2.
 - Produces: `roverRuntime.steering: boolean` (manual drive input this frame), `roverRuntime.cameraBehind: number` (probe, `cameraBehindHeading` of the drawn camera), `roverRuntime.arrivalGlide: number` (probe: glide progress 0..1, -1 when no glide), the roll-on request `{ point, state, arrival: true }`.
 
-- [ ] **Step 1:** Director: flag the roll-on request `arrival: true`; under reduced motion teleport the rover to `to.arrival` heading `ARRIVAL_HEADING` and set `cameraSnap` instead of rolling; write `roverRuntime.steering = manual` every frame.
-- [ ] **Step 2:** CameraDirector: on the frame the stored ride enters `opening` (not reduced) prime the orbit to the destination's arrival zone (rail-aware) and start the glide; each glide frame compute the rig pose as usual (`end`), `shoulderPose` (`start`), draw `glidePose(start, end, glideProgress(t))` with `snap`, no collision clamp. End the glide at 1.5 s, on any orbit, zoom or view intent, on `roverRuntime.steering`, or when the phase leaves explore and elevator. Skip `updateZone` while the glide runs or the arrival roll-on drives. Under reduced motion prime the arrival zone on the frame the ride ends. Pass `rail` to `primeZone` and `updateZone`. Write the probes.
-- [ ] **Step 3:** Run `bun run typecheck && bun run lint && bun run test`.
-- [ ] **Step 4:** Commit `feat(camera): glide out of the elevator car into the arrival view`.
+- [x] **Step 1:** Director: flag the roll-on request `arrival: true`; under reduced motion teleport the rover to `to.arrival` heading `ARRIVAL_HEADING` and set `cameraSnap` instead of rolling; write `roverRuntime.steering = manual` every frame.
+- [x] **Step 2:** CameraDirector: on the frame the stored ride enters `opening` (not reduced) prime the orbit to the destination's arrival zone (rail-aware) and start the glide; each glide frame compute the rig pose as usual (`end`), `shoulderPose` (`start`), draw `glidePose(start, end, glideProgress(t))` with `snap`, no collision clamp. End the glide at 1.5 s, on any orbit, zoom or view intent, on `roverRuntime.steering`, or when the phase leaves explore and elevator. Skip `updateZone` while the glide runs or the arrival roll-on drives. Under reduced motion prime the arrival zone on the frame the ride ends. Pass `rail` to `primeZone` and `updateZone`. Write the probes.
+- [x] **Step 3:** Run `bun run typecheck && bun run lint && bun run test`.
+- [x] **Step 4:** Commit `feat(camera): glide out of the elevator car into the arrival view`.
 
 ### Task 4: E2E and captures
 
@@ -118,17 +118,17 @@ Status: in progress.
 - Create: `e2e/arrivals.spec.ts`
 - Modify: e2e specs that relied on the old arrival (`e2e/visits.spec.ts`, `e2e/roof.spec.ts`, `e2e/fast-return.spec.ts`, others found by `bun run e2e:changed`).
 
-- [ ] **Step 1:** `e2e/arrivals.spec.ts`: ride L1 to L2, L3, L4, RF and back to L1 at 1440x900 (lite) and 390x844 (lite); after each arrival settles, `cameraBehind` within 0.1 of `PI/2` and rover heading within 0.1 of `PI/2`; the glide probe passes 0 < p < 1 during the ride end; a key press during the glide ends it (`arrivalGlide` -1 within a few frames); reduced motion: no glide frame, rover at the arrival point, same yaw check.
-- [ ] **Step 2:** Run `bun run e2e:changed` and fix fallout.
-- [ ] **Step 3:** After captures with `scripts/arrival-shots.ts` at four sizes, before (main) and after; send them to the coordinator.
-- [ ] **Step 4:** Perf: `E2E_PORT=4321 bun run e2e:perf` ride and floor peaks against main.
-- [ ] **Step 5:** Commit `test(e2e): arrival camera behind the rover on every floor`.
+- [x] **Step 1:** `e2e/arrivals.spec.ts`: ride L1 to L2, L3, L4, RF and back to L1 at 1440x900 (lite) and 390x844 (lite); after each arrival settles, `cameraBehind` within 0.1 of `PI/2` and rover heading within 0.1 of `PI/2`; the glide probe passes 0 < p < 1 during the ride end; a key press during the glide ends it (`arrivalGlide` -1 within a few frames); reduced motion: no glide frame, rover at the arrival point, same yaw check.
+- [x] **Step 2:** Run `bun run e2e:changed` and fix fallout.
+- [x] **Step 3:** After captures with `scripts/arrival-shots.ts` at four sizes, before (main) and after; send them to the coordinator.
+- [x] **Step 4:** Perf: `E2E_PORT=4321 bun run e2e:perf` ride and floor peaks against main.
+- [x] **Step 5:** Commit `test(e2e): arrival camera behind the rover on every floor`.
 
 ### Task 5: Docs
 
-- [ ] `docs/agents/3d-experience.md`: new "Elevator arrival" section (glide, hold, reduced motion, probes).
-- [ ] `docs/agents/floors.md`: `FloorLayout.arrival` on every floor and its zone rule.
-- [ ] Floor files: L1 (arrival zone replaces `L1:arrival`), L2 (rail arrival zone), L4, RF (spawn and arrival).
-- [ ] `docs/decisions.md`: dated row (2026-10-17, owner words). `docs/features.md`: status log line.
-- [ ] `docs/superpowers/README.md`: plan row.
-- [ ] Commit `docs: L3-style arrivals`.
+- [x] `docs/agents/3d-experience.md`: new "Elevator arrival" section (glide, hold, reduced motion, probes).
+- [x] `docs/agents/floors.md`: `FloorLayout.arrival` on every floor and its zone rule.
+- [x] Floor files: L1 (arrival zone replaces `L1:arrival`), L2 (rail arrival zone), L4, RF (spawn and arrival).
+- [x] `docs/decisions.md`: dated row (2026-10-17, owner words). `docs/features.md`: status log line.
+- [x] `docs/superpowers/README.md`: plan row.
+- [x] Commit `docs: L3-style arrivals`.

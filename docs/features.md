@@ -52,7 +52,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
 | Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the "Day and night" switch is registered in the settings registry (`day-night`, display group, order 30), and its panel UI comes with the HUD settings work; +2 scene calls, no new shader program | Done |
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume), a round minimap with a floor overview, a slim Rover toast on phones | Done |
-| L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
+| L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | In review |
 
 ## Controls and first visit
 
@@ -89,7 +89,7 @@ Open `/en` and press **Boot rover**.
 - Every floor has a glowing call pad in front of the elevator door: stop on it (or click it) and pick a floor from a list with previews.
 - Far from the elevator (more than 40 u: the L2 Workshop, the L3 east plaza, the deep L4 desks), any floor change beams the rover into the car instead of driving all the way back (a fade cut under reduced motion).
 - The far ends of L2, L3 and L4 have a green **Back to elevator** pad that beams you to the call pad.
-- Every floor arrives like L3: the rover rolls out of the car heading east and the camera ends behind it, looking east down the floor's main axis at its main sight (the Lobby hologram, the Career Road, the Labs hub, the Writing timeline lane, the roof plaza mast). The camera starts over the rover's shoulder in the car and glides out in 1.5 s; any turn, zoom, key or drive input takes over, and reduced motion cuts straight to the view.
+- Every floor arrives like L3: the rover rolls out of the car heading east and the camera ends behind it, looking east down the floor's main axis at its main sight (the Lobby hologram, the Career Road, the Labs hub, the Writing timeline lane, the roof plaza mast). The camera starts over the rover's shoulder in the car and glides out in 1.5 s, then stays locked behind the rover until it parks; any turn, zoom, key or drive input takes over, and reduced motion cuts straight to the view.
 
 ### Rover's tour, hints and floor lines
 
