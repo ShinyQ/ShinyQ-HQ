@@ -1,14 +1,28 @@
 "use client";
 
-import { lazy, Suspense, type ComponentProps } from "react";
+import { createElement, Suspense, useReducer, type ComponentProps } from "react";
+import { ChunkFailed } from "../ChunkFailed";
+import { lazyFromChunk } from "../lazyFromChunk";
+import type { SettingsPanel } from "./SettingsPanel";
 
-const SettingsPanel = lazy(() => import("./SettingsPanel").then((m) => ({ default: m.SettingsPanel })));
+type PanelProps = ComponentProps<typeof SettingsPanel>;
+type LoadProps = PanelProps & { onRetry: () => void };
 
-/** The panel and its registry load when a settings sheet first opens, so they stay out of the first-frame 3D path. */
-export function LazySettingsPanel(props: ComponentProps<typeof SettingsPanel>) {
+function PanelFailed({ onRetry }: LoadProps) {
+  return <ChunkFailed onRetry={onRetry} testId="settings-failed" />;
+}
+
+const lazyPanel = lazyFromChunk<LoadProps>(() => import("./SettingsPanel").then((m) => m.SettingsPanel), PanelFailed);
+
+/**
+ * The panel and its registry load when a settings sheet first opens, so they stay out of the first-frame
+ * 3D path. While loading, a placeholder holds the sheet's height (no jump); a failed load shows Retry.
+ */
+export function LazySettingsPanel(props: PanelProps) {
+  const [, retry] = useReducer((n: number) => n + 1, 0);
   return (
-    <Suspense fallback={null}>
-      <SettingsPanel {...props} />
+    <Suspense fallback={<div aria-hidden="true" data-testid="settings-loading" className="min-h-[36rem]" />}>
+      {createElement(lazyPanel(), { ...props, onRetry: retry })}
     </Suspense>
   );
 }

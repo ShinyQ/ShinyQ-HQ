@@ -408,6 +408,8 @@
     },
     "menu": "Menu",
     "menuTitle": "Menu",
+    "loadFailed": "Panel ini gagal dimuat.",
+    "retry": "Coba lagi",
     "map": {
       "open": "Peta",
       "label": "Peta {floor} {name}: buka ikhtisar",

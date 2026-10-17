@@ -1,17 +1,43 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { forwardRef, lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { createElement, forwardRef, Suspense, useEffect, useId, useLayoutEffect, useReducer, useRef, useSyncExternalStore, type ComponentProps } from "react";
+import { Modal } from "@/components/Modal";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
+import { ChunkFailed } from "../ChunkFailed";
+import { lazyFromChunk } from "../lazyFromChunk";
+import { SheetHeader } from "../menu/SheetHeader";
 import { useHudToggle } from "../menu/useHudToggles";
 import { MapLayers, useFloorMap } from "./MapLayers";
 import { MINIMAP_RADIUS, windowBox } from "./model";
+import type { MapOverview } from "./MapOverview";
 import { minimapPref } from "./pref";
 
-/** Loaded when the overview first opens, so it stays out of the first-frame 3D path. */
-const MapOverview = lazy(() => import("./MapOverview").then((m) => ({ default: m.MapOverview })));
+type OverviewProps = ComponentProps<typeof MapOverview> & { onRetry: () => void };
+
+/** A failed overview chunk: the same dialog shell (Esc and close work) with a note and Retry. */
+function OverviewFailed({ onClose, onRetry }: OverviewProps) {
+  const t = useTranslations("hud");
+  const titleId = useId();
+  return (
+    <Modal labelledBy={titleId} onClose={onClose} width="sm" testId="map-overview-failed">
+      <SheetHeader id={titleId} title={t("map.open")} onClose={onClose} closeLabel={t("map.close")} />
+      <div className="px-2 py-5">
+        <ChunkFailed onRetry={onRetry} />
+      </div>
+    </Modal>
+  );
+}
+
+/** Loaded when the overview first opens, so it stays out of the first-frame 3D path; a failed load is retried from its fallback. */
+const lazyOverview = lazyFromChunk<OverviewProps>(() => import("./MapOverview").then((m) => m.MapOverview), OverviewFailed);
+
+function LazyOverview(props: Omit<OverviewProps, "onRetry">) {
+  const [, retry] = useReducer((n: number) => n + 1, 0);
+  return <Suspense fallback={null}>{createElement(lazyOverview(), { ...props, onRetry: retry })}</Suspense>;
+}
 
 /** Phone 72 px, tablet 112 px, desktop 96 px (static classes for Tailwind). */
 const SIZE: Record<HudLayout, string> = { phone: "size-[72px]", tablet: "size-28", desktop: "size-24" };
@@ -19,8 +45,8 @@ const SIZE: Record<HudLayout, string> = { phone: "size-[72px]", tablet: "size-28
 /**
  * Round corner minimap (HTML SVG over the canvas: no draw call, no frame loop): the floor around the
  * rover, north-up, refreshed by the store's 10 Hz rover mirror. It opens the full-floor overview,
- * which the `N` key and the menu's Map action toggle too (even with the minimap switched off).
- * `hidden` keeps the button away (a phone's room sheet) while the overview still opens.
+ * which the `N` key and the menu's Map action open too (even with the minimap switched off).
+ * `hidden` keeps the button away while a phone's room sheet covers it.
  */
 export function Minimap({ data, layouts, size, hidden = false }: { data: ExperienceData; layouts: FloorLayouts; size: HudLayout; hidden?: boolean }) {
   const pref = useSyncExternalStore(minimapPref.subscribe, minimapPref.get, () => "on" as const);
@@ -54,9 +80,7 @@ export function Minimap({ data, layouts, size, hidden = false }: { data: Experie
     <>
       {pref === "on" && !blocked && !hidden && <MinimapButton ref={button} layouts={layouts} size={size} open={open} onOpen={() => setOpen(true)} />}
       {open && !blocked && (
-        <Suspense fallback={null}>
-          <MapOverview open onClose={close} data={data} layouts={layouts} />
-        </Suspense>
+        <LazyOverview open onClose={close} data={data} layouts={layouts} />
       )}
     </>
   );

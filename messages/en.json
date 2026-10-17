@@ -408,6 +408,8 @@
     },
     "menu": "Menu",
     "menuTitle": "Menu",
+    "loadFailed": "Could not load this panel.",
+    "retry": "Retry",
     "map": {
       "open": "Map",
       "label": "Map of {floor} {name}: open overview",
