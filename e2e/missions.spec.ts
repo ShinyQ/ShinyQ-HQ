@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, openPage } from "./hq";
+import { NAV_TIMEOUT, chooseMotion, openPage } from "./hq";
 import { heroPod } from "./routes";
 import rawData from "../content/site-content.json";
 import { SiteContentSchema } from "../src/content/schema";
@@ -35,7 +35,7 @@ test.describe("command palette", () => {
     await page.keyboard.type("voice");
     await expect(palette.getByRole("option").first()).toContainText(data.floors.labs.pods.find((pod) => pod.slug === "voice-ai-contact-center")!.title.en);
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/en\/labs\/voice-ai-contact-center$/);
+    await expect(page).toHaveURL(/\/en\/labs\/voice-ai-contact-center$/, { timeout: NAV_TIMEOUT });
     await expect(page.locator("h1").first()).toBeVisible();
     await expect(palette).toBeHidden();
   });
@@ -81,36 +81,36 @@ test.describe("missions on static pages", () => {
 
   test("terminal runs hire with its number key", async ({ page }) => {
     await openPage(page, `/en/labs/${heroPod.slug}`);
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
-    await expect(terminal).toContainText("rover@hq:~$ ./ask-rover");
+    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    const terminal = page.getByRole("dialog", { name: en.hud.terminal.title });
+    await expect(terminal).toContainText(en.hud.terminal.prompt);
     await expect(terminal.getByRole("option").nth(5)).toContainText(mission("hire").label.en);
     await page.keyboard.press("6");
-    await expect(page).toHaveURL(/\/en\/contact$/);
+    await expect(page).toHaveURL(/\/en\/contact$/, { timeout: NAV_TIMEOUT });
     await expect(terminal).toBeHidden();
   });
 
   test("journey opens the journey page", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
     await page.getByRole("option", { name: mission("journey").label.en }).click();
-    await expect(page).toHaveURL(/\/en\/journey$/);
+    await expect(page).toHaveURL(/\/en\/journey$/, { timeout: NAV_TIMEOUT });
   });
 
   test("all projects opens the palette filtered to pods", async ({ page }) => {
     await openPage(page, "/en?tier=static");
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
     await page.getByRole("option", { name: mission("projects").label.en }).click();
-    await expect(page).toHaveURL(/\/en\/labs$/);
-    const palette = page.getByRole("dialog", { name: "Command palette" });
-    await expect(palette.getByRole("button", { name: "Clear filter" })).toBeVisible();
+    await expect(page).toHaveURL(/\/en\/labs$/, { timeout: NAV_TIMEOUT });
+    const palette = page.getByRole("dialog", { name: en.hud.palette.title });
+    await expect(palette.getByRole("button", { name: en.hud.palette.clearFilter })).toBeVisible();
     await palette.getByRole("option").first().click();
-    await expect(page).toHaveURL(/\/en\/labs\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/en\/labs\/[a-z0-9-]+$/, { timeout: NAV_TIMEOUT });
   });
 
   test("Esc means drive myself", async ({ page }) => {
     await openPage(page, "/en/journey");
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
+    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(page).toHaveURL(/\/en\/journey$/);
