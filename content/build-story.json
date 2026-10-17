@@ -149,7 +149,7 @@
         {
           "id": "r2",
           "number": 2,
-          "title": { "en": "Game-First Load, Classic Site and Ask the HQ", "id": "Muat Game-First, Situs Klasik, dan Ask the HQ" },
+          "title": { "en": "Game-First Load, Classic Site and Ask the HQ", "id": "Pemuatan Game-First, Situs Klasik, dan Ask the HQ" },
           "summary": {
             "en": "The Classic site was revamped, the 3D boot cover and CI fast pipeline arrived, client names were hidden and the Ask the HQ assistant launched, with the first walkable floors, the CV viewer and a performance pass.",
             "id": "Situs klasik dirombak, boot cover 3D dan pipeline CI cepat hadir, nama klien disembunyikan, dan asisten Ask the HQ diluncurkan, bersama lantai pertama yang bisa dijelajahi, penampil CV, dan perbaikan performa."
@@ -383,7 +383,7 @@
           },
           "budget": { "en": "Zero secrets found", "id": "Nol rahasia ditemukan" },
           "jobs": ["Secret scan"],
-          "required": false
+          "required": true
         },
         {
           "id": "public-safety",
@@ -398,7 +398,7 @@
         },
         {
           "id": "csp",
-          "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP Per Halaman" },
+          "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP untuk Setiap Halaman" },
           "text": {
             "en": "Hashes every inline script of every page and fails the build when one is missing its hash.",
             "id": "Meng-hash setiap inline script di setiap halaman dan menggagalkan build bila ada yang tanpa hash."
@@ -466,7 +466,7 @@
           },
           "budget": { "en": "Pushes to main always run every job", "id": "Push ke main selalu menjalankan semua job" },
           "jobs": ["Plan CI"],
-          "required": false
+          "required": true
         }
       ]
     },

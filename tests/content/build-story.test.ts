@@ -11,6 +11,11 @@ const root = process.cwd();
 const raw = JSON.parse(readFileSync(path.join(root, "content", "build-story.json"), "utf8"));
 const story = BuildStorySchema.parse(raw);
 
+const ciJobNames = () => {
+  const ci = readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
+  return [...ci.matchAll(/^ {4}name: (.+)$/gm)].map((m) => m[1].trim());
+};
+
 const titles = (s: BuildStory) => [
   { at: "title", value: s.title },
   ...STATION_IDS.map((id) => ({ at: `stations.${id}.title`, value: s.stations[id].title })),
@@ -66,10 +71,21 @@ describe("build story content", () => {
   });
 
   it("names only real ci.yml jobs in the gates", () => {
-    const ci = readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
-    const names = [...ci.matchAll(/^ {4}name: (.+)$/gm)].map((m) => m[1].trim());
+    const names = ciJobNames();
     for (const gate of story.stations.gates.gates)
       for (const job of gate.jobs) expect(names, `${gate.id}: ${job}`).toContain(job);
+  });
+
+  it("marks a gate required exactly when it blocks a merge through the aggregate job", () => {
+    const ci = readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
+    const aggregate = "Build, CV and e2e";
+    const nameByKey = new Map([...ci.matchAll(/^ {2}([a-z][\w-]*):\n(?: {4}#.*\n)* {4}name: (.+)$/gm)].map((m) => [m[1], m[2].trim()] as const));
+    const needs = ci.match(new RegExp(`name: ${aggregate}\\n(?:.*\\n)*? {4}needs: \\[([^\\]]+)\\]`))?.[1];
+    expect(needs, "aggregate needs list").toBeTruthy();
+    const neededNames = needs!.split(",").map((k) => nameByKey.get(k.trim()));
+    expect(neededNames.every(Boolean), `needs resolve to job names: ${needs}`).toBe(true);
+    for (const gate of story.stations.gates.gates)
+      expect(gate.required, gate.id).toBe(gate.jobs.some((j) => j === aggregate || neededNames.includes(j)));
   });
 
   it("quotes the agents excerpt verbatim from its plan", () => {
