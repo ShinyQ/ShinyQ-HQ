@@ -330,3 +330,56 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(r.cite).toBeUndefined();
   });
 });
+
+describe("multi-turn memory in the pipeline (owner decision 2026-10-17)", () => {
+  const CLEARBOX = { q: "Tell me about Clearbox", a: "**Clearbox** is an AI inbox cleanup tool for Gmail and Outlook that Kurniadi built." };
+  const ask = (q: string, history: { q: string; a: string }[], text = "It uses TypeScript, Hono and Cloudflare Workers.") => {
+    const { client, calls } = mock({ p: say(text) });
+    const question = scrubPII(cleanText(q));
+    return runPipeline({ question, locale: detectLocale(question, "en"), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p" }, timeouts: fast, history }).then((r) => ({
+      ...r,
+      messages: (calls[0]?.input as { messages: { role: string; content: string }[] } | undefined)?.messages ?? [],
+    }));
+  };
+
+  it("sends earlier turns as user and assistant messages before the question, under the context-only line", async () => {
+    const r = await ask("What stack did it use?", [CLEARBOX, { q: "Where does he work now?", a: "Kurniadi works at Metrodata." }]);
+    expect(r.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "user"]);
+    expect(r.messages[0].content).toContain("Earlier turns of this conversation");
+    expect(r.messages.at(-1)?.content).toBe("What stack did it use?");
+    expect(r.historyUsed).toBe(2);
+  });
+
+  it("keeps a first turn to the system prompt and the question, without the history line", async () => {
+    const r = await ask("What is Clearbox?", []);
+    expect(r.messages.map((m) => m.role)).toEqual(["system", "user"]);
+    expect(r.messages[0].content).not.toContain("Earlier turns");
+    expect(r.historyUsed).toBe(0);
+  });
+
+  it("retrieves a short follow-up together with the previous question", async () => {
+    const alone = await ask("What stack did it use?", []);
+    const follow = await ask("What stack did it use?", [CLEARBOX]);
+    expect(alone.chunkIds.some((id) => id.includes("clearbox"))).toBe(false);
+    expect(follow.chunkIds.some((id) => id.includes("clearbox"))).toBe(true);
+  });
+
+  it("scope-checks a follow-up together with the previous question", async () => {
+    const r = await ask("How much?", [{ q: "What is his salary at Metrodata?", a: "x" }]);
+    // The salary turn itself is dropped (private), so the follow-up stands alone and is answered normally.
+    expect(r.historyUsed).toBe(0);
+    // "Them" only names an employer through the previous question: an opinion about it is declined before the model.
+    const alone = await ask("What does he think of them?", []);
+    expect(alone.calledModel).toBe(true);
+    const others = await ask("What does he think of them?", [{ q: "What did he do at Metrodata?", a: "Kurniadi builds AI systems at Metrodata." }]);
+    expect(others.outcome).toBe("decline");
+    expect(others.reason).toBe("others");
+    expect(others.calledModel).toBe(false);
+  });
+
+  it("drops an earlier turn whose question would itself be declined", async () => {
+    const r = await ask("What stack did it use?", [{ q: "Write me a poem about the ocean", a: "Waves." }, CLEARBOX]);
+    expect(r.historyUsed).toBe(1);
+    expect(r.messages.map((m) => m.content)).not.toContain("Write me a poem about the ocean");
+  });
+});
