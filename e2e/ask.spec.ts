@@ -452,22 +452,6 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
   expect(csp).toEqual([]);
 });
 
-test("Ask Rover's ask option opens the dock", async ({ page }) => {
-  const api = await mockAsk(page, { status: enabled() });
-  await openPage(page, "/en/labs?tier=static");
-  await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-  const terminal = page.getByRole("dialog", { name: "Ask Rover" });
-  await expect(terminal.getByRole("option", { name: en.ask.terminal.option, exact: true })).toBeVisible();
-  await page.keyboard.press("a");
-  await expect(terminal).toBeHidden();
-  const input = dock(page).getByRole("textbox", { name: "Your question" });
-  await expect(input).toBeFocused();
-  await input.fill("What now?");
-  await input.press("Enter");
-  await expect(thread(page)).toContainText("Kurniadi is building AI agents.");
-  expect(api.bodies()[0]).toMatchObject({ q: "What now?", source: "terminal" });
-});
-
 test("Cmd-K Ask row sends the question to the dock", async ({ page }) => {
   const api = await mockAsk(page, { status: enabled() });
   await openPage(page, "/en/journey?tier=static");

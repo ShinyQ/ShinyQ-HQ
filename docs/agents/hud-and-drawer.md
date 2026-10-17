@@ -160,6 +160,8 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - the terminal title and prompt (`./ask-rover`);
   - the Cmd-K group, aria labels and the Lobby kiosk.
 - Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`.
+- The terminal lists the 7 missions (keys `1` to `7`) plus "explore on my own" (`Esc`); no Ask option, replay or hints (Ask AI has its own entry points, replay and hints live in settings). The footer hint is `hud.terminal.hint` with `{last}`.
+- Fit: the panel is `max-h-[calc(100dvh-...)]` with a `flex-col` layout (header, typed lines and footer `shrink-0`, the option list `min-h-0 flex-1 overflow-y-auto`), so it stays on screen on short phones; `e2e/missions.spec.ts` checks 390x844 and 375x667.
 - Playwright finds the button with `{ name: "Ask Rover", exact: true }` (the Ask AI pill also starts with "Ask").
 
 ## Motion setting
@@ -275,7 +277,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   8. closing.
 - After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
 - Onboarding replaces the Director's first-visit terminal auto-open.
-- Replay: Ask Rover "replay the tutorial" (`r`), Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
+- Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 
 ### Floor lines
 
@@ -295,7 +297,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Enter, a tap or a click opens `dialog.hints.kind.<kind>` (with the registry `label`) or an object line (`HINT_OBJECTS`, keyed by registry id such as `L1:pad:elevator`, `RF:station:cv`, `L1:station:highlights-about`).
 - Go emits point-and-go's `{ type: "interact", item }`, so it drives and acts exactly like a click.
 - No bubble during missions, autopilot, rides, beams, pickers, drawers, the Ask panel, while Rover talks or while point-and-go has a hovered or tap-selected target.
-- Toggle: "hints: on/off" in Ask Rover (`h`) and Cmd-K.
+- Toggle: the "Hints" switch in the settings panel and Cmd-K ("hints: on/off" toast).
 
 ### Copy
 

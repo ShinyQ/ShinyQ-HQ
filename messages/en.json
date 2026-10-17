@@ -530,7 +530,7 @@
       "question": "where next? ^_^",
       "options": "Ask Rover options",
       "driveMyself": "explore on my own",
-      "hint": "Pick: 1 to 9 or arrows + Enter · Close: Esc",
+      "hint": "Pick: 1 to {last} or arrows + Enter · Close: Esc",
       "close": "Close terminal"
     },
     "palette": {
@@ -765,10 +765,6 @@
       "offline": "Ask AI is unavailable right now. Try search or browse the site pages.",
       "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
     },
-    "terminal": {
-      "option": "ask AI about the work ^_^",
-      "hintMenu": "Pick: a, 1 to 9 or arrows + Enter · Close: Esc"
-    },
     "palette": {
       "row": "Ask: \"{q}\"",
       "subtitle": "Answered by AI from this site"
@@ -984,7 +980,6 @@
       "notNow": "Not now"
     },
     "menu": {
-      "replay": "replay the tutorial",
       "hintsOn": "hints: on",
       "hintsOff": "hints: off"
     }

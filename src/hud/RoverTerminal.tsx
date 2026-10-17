@@ -50,19 +50,6 @@ export interface RoverTerminalProps {
   reducedMotion?: boolean;
   /** Positioning override, e.g. to anchor next to the rover in 3D. */
   className?: string;
-  /** Ask the HQ is enabled: adds "ask me anything" as the first option (key `a`). */
-  ask?: boolean;
-  /** The "ask me anything" option: the caller closes the terminal and opens the Ask dock. */
-  onAsk?: () => void;
-  /** Options after the missions, before "explore on my own" (3D only: replay the tutorial, hints). */
-  extras?: readonly TerminalExtra[];
-}
-
-export interface TerminalExtra {
-  /** Single lowercase key that picks it (not a digit and not `a`). */
-  key: string;
-  label: string;
-  onSelect: () => void;
 }
 
 /**
@@ -93,9 +80,8 @@ interface PanelProps extends Omit<RoverTerminalProps, "open" | "reducedMotion"> 
   animate: boolean;
 }
 
-function TerminalPanel({ locale, missions, onRun, onClose, now, className, animate, ask = false, onAsk, extras = [] }: PanelProps) {
+function TerminalPanel({ locale, missions, onRun, onClose, now, className, animate }: PanelProps) {
   const t = useTranslations("hud.terminal");
-  const tAsk = useTranslations("ask.terminal");
   const id = useId();
   const [time] = useState(() => now ?? new Date());
   const lines = [t("prompt"), `${t(`greeting.${greetingKey(time.getHours(), locale)}`)}.`, t("question")];
@@ -105,9 +91,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
   const listRef = useRef<HTMLUListElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const typing = typed < total;
-  const askOffset = ask ? 1 : 0;
-  const extraOffset = askOffset + missions.length;
-  const optionCount = extraOffset + extras.length + 1;
+  const optionCount = missions.length + 1;
 
   useEffect(() => {
     if (!animate) return;
@@ -133,17 +117,8 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
     document.getElementById(`${id}-opt-${active}`)?.scrollIntoView?.({ block: "nearest" });
   }, [active, id]);
 
-  const enterAsk = () => {
-    setTyped(total);
-    onAsk?.();
-  };
-
   const choose = (index: number) => {
-    if (ask && index === 0) return enterAsk();
-    const mission = index - askOffset;
-    if (mission < missions.length) return onRun(missions[mission].id);
-    const extra = index - extraOffset;
-    if (extra < extras.length) return extras[extra].onSelect();
+    if (index < missions.length) return onRun(missions[index].id);
     onClose();
   };
 
@@ -153,22 +128,11 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (typing) setTyped(total);
     const key = event.key;
-    if (ask && key.toLowerCase() === "a") {
-      event.preventDefault();
-      enterAsk();
-      return;
-    }
-    const extra = extras.findIndex((option) => option.key === key.toLowerCase());
-    if (extra >= 0) {
-      event.preventDefault();
-      choose(extraOffset + extra);
-      return;
-    }
     if (/^[1-9]$/.test(key)) {
       const index = Number(key) - 1;
       if (index < missions.length) {
         event.preventDefault();
-        choose(index + askOffset);
+        choose(index);
       }
       return;
     }
@@ -222,7 +186,10 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-void/60 sm:items-end sm:justify-end sm:bg-transparent sm:p-6" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-void/60 pt-[max(0.75rem,env(safe-area-inset-top))] sm:justify-end sm:bg-transparent sm:p-6"
+      onClick={onClose}
+    >
       <div
         ref={panelRef}
         role="dialog"
@@ -232,10 +199,10 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
         onClick={(event) => event.stopPropagation()}
         className={
           className ??
-          "w-full rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg/95 pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_12px_40px_rgb(0_0_0/0.45),0_0_32px_rgb(52_211_153/0.18),inset_0_1px_0_rgb(255_255_255/0.05)] sm:w-[360px] sm:rounded-2xl sm:pb-0"
+          "flex max-h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top)))] w-full flex-col overflow-hidden rounded-t-2xl border border-terminal-fg/40 bg-terminal-bg/95 pb-[env(safe-area-inset-bottom)] font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_12px_40px_rgb(0_0_0/0.45),0_0_32px_rgb(52_211_153/0.18),inset_0_1px_0_rgb(255_255_255/0.05)] sm:max-h-[calc(100dvh-3rem)] sm:w-[360px] sm:rounded-2xl sm:pb-0"
         }
       >
-        <div className="flex items-center justify-between border-b border-terminal-fg/25 py-1 pr-1 pl-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-terminal-fg/25 py-1 pr-1 pl-4">
           <h2 id={`${id}-title`} className="label text-terminal-fg">
             {t("title")}
           </h2>
@@ -249,7 +216,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
           </button>
         </div>
 
-        <div className="px-4 pt-3 pb-2">
+        <div className="shrink-0 px-4 pt-3 pb-2">
           <p className="sr-only">{lines.join(" ")}</p>
           <div aria-hidden="true" className="min-h-[60px]">
             {/* The untyped rest is laid out but invisible and the cursor takes no width, so the bottom
@@ -274,13 +241,11 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
           tabIndex={0}
           aria-label={t("options")}
           aria-activedescendant={`${id}-opt-${active}`}
-          className="mx-3 mb-3 max-h-[50vh] overflow-y-auto rounded-[10px] border border-terminal-fg/25 bg-black/40 p-1 outline-none focus-visible:ring-1 focus-visible:ring-terminal-fg/60 sm:max-h-none"
+          className="mx-3 mb-3 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-[10px] border border-terminal-fg/25 bg-black/40 p-1 outline-none focus-visible:ring-1 focus-visible:ring-terminal-fg/60"
         >
-          {[...(ask ? [tAsk("option")] : []), ...missions.map((m) => m.label[locale]), ...extras.map((option) => option.label), t("driveMyself")].map((label, index) => {
+          {[...missions.map((m) => m.label[locale]), t("driveMyself")].map((label, index) => {
             const selected = index === active;
-            const mission = index - askOffset;
-            const extra = index - extraOffset;
-            const key = ask && index === 0 ? "a" : mission < missions.length ? String(mission + 1) : extra < extras.length ? extras[extra].key : "esc";
+            const key = index < missions.length ? String(index + 1) : "esc";
             return (
               <li
                 key={key}
@@ -305,8 +270,8 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
             );
           })}
         </ul>
-        <p className="hidden border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block">
-          {ask ? tAsk("hintMenu") : t("hint")}
+        <p className="hidden shrink-0 border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block">
+          {t("hint", { last: missions.length })}
         </p>
       </div>
     </div>

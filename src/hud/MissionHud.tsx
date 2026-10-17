@@ -17,7 +17,7 @@ import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
 import { CommandPalette } from "./CommandPalette";
-import { useHintsOn, useTutorialAvailable } from "./dialog/hooks";
+import { useTutorialAvailable } from "./dialog/hooks";
 import { hintsOn, setHintsOn } from "./dialog/storage";
 import { replayTutorial } from "./dialog/tutorial";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
@@ -26,7 +26,7 @@ import type { HudIndex } from "./index-data";
 import { useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
-import { RoverTerminal, markTerminalSeen, type TerminalExtra } from "./RoverTerminal";
+import { RoverTerminal, markTerminalSeen } from "./RoverTerminal";
 import { buildPaletteEntries } from "./search";
 import { orderTerminalMissions } from "./terminal";
 
@@ -68,7 +68,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   // Ask the HQ: the status is fetched on idle by the dock, or now when the terminal or the palette opens.
   const askEnabled = isAskEnabled(useAskStatus());
   const tutorial = useTutorialAvailable();
-  const hints = useHintsOn();
   const tMenu = useTranslations("dialog.menu");
 
   const loadAskStatus = useCallback(() => {
@@ -152,23 +151,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const entries = useMemo(
     () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS) : []),
     [index, tutorial],
-  );
-  const extras = useMemo<TerminalExtra[]>(
-    () =>
-      tutorial
-        ? [
-            {
-              key: "r",
-              label: tMenu("replay"),
-              onSelect: () => {
-                setTerminalOpen(false);
-                replayTutorial();
-              },
-            },
-            { key: "h", label: hints ? tMenu("hintsOn") : tMenu("hintsOff"), onSelect: () => setHintsOn(!hints) },
-          ]
-        : [],
-    [tutorial, hints, tMenu],
   );
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions) : []), [index]);
 
@@ -342,12 +324,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         open={terminalOpen}
         locale={locale}
         missions={terminalMissions}
-        ask={askEnabled}
-        extras={extras}
-        onAsk={() => {
-          setTerminalOpen(false);
-          openAsk(undefined, { source: "terminal" });
-        }}
         onRun={(id) => {
           setTerminalOpen(false);
           void runner?.start(id);

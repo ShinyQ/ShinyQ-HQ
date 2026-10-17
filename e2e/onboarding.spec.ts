@@ -32,6 +32,16 @@ test.describe.configure({ timeout: 180_000 });
 export const box = (page: Page) => page.getByTestId("dialog-box");
 export const choices = (page: Page) => page.getByTestId("dialog-choices");
 
+/** Opens the settings panel: the desktop gear, or the menu sheet on phones and tablets. */
+async function openSettings(page: Page) {
+  const gear = page.getByTestId("settings-open");
+  if (await gear.count()) await gear.click();
+  else await page.getByTestId("hud-menu").click();
+  const panel = page.getByTestId("settings-panel");
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
 /**
  * Taps the toast's text near its left edge. A tap on the box center lands a few pixels from the Skip
  * button on a phone, and Chromium's touch adjustment can move it onto Skip (as a real finger would).
@@ -101,12 +111,11 @@ test.describe("first-session onboarding", () => {
 });
 
 test.describe("replay", () => {
-  test("Ask Rover and Cmd-K replay the tour for a returning visitor", async ({ page }) => {
+  test("the settings panel and Cmd-K replay the tour for a returning visitor", async ({ page }) => {
     await enterHQ(page);
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-    const terminal = page.getByRole("dialog", { name: "Ask Rover" });
-    await terminal.getByRole("option", { name: new RegExp(en.dialog.menu.replay) }).click();
-    await expect(terminal).toBeHidden();
+    const panel = await openSettings(page);
+    await panel.getByTestId("setting-replay-tutorial").getByRole("button", { name: en.hud.settings.tutorial.label }).click();
+    await expect(panel).toBeHidden();
     await expectLine(page, "welcome");
     await expect(box(page)).toHaveAttribute("data-dialog", "onboarding");
     await choices(page).getByRole("button", { name: en.dialog.onboarding.skip }).click();
@@ -177,9 +186,12 @@ test.describe("hint bubbles", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("pad-picker")).toHaveCount(0);
 
-    // Hints off from Ask Rover: the bubble goes away.
-    await page.getByRole("button", { name: "Ask Rover", exact: true }).click();
-    await page.getByRole("dialog", { name: "Ask Rover" }).getByRole("option", { name: new RegExp(en.dialog.menu.hintsOn) }).click();
+    // Hints off from the settings panel: the bubble goes away.
+    const panel = await openSettings(page);
+    const hints = panel.getByTestId("setting-hints").getByRole("switch", { name: en.hud.settings.hints.label });
+    await expect(hints).toBeChecked();
+    await hints.click();
+    await expect(hints).not.toBeChecked();
     await page.keyboard.press("Escape");
     await expect(bubble).toHaveCount(0);
   });

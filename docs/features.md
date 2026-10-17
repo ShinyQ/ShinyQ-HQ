@@ -138,7 +138,7 @@ Open `/en` and press **Boot rover**.
 
 ### Ask Rover and the Classic site
 
-- **Ask Rover** (top bar, the menu on phones and tablets, or click the rover) offers shortcuts to the best rooms, "replay the tutorial" and "hints: on/off" (also in Cmd-K).
+- **Ask Rover** (top bar, the menu on phones and tablets, or click the rover) offers shortcuts to the best rooms. "Replay the tutorial" and "Hints" are rows in the settings panel (also in Cmd-K).
 - **Classic site** (highlighted, with **Ask AI** on its right; ID **Situs klasik**) shows the same content as a regular website without 3D, and **Back to 3D** returns.
 
 ## Classic site

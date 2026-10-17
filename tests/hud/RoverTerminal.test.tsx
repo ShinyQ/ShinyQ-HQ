@@ -58,9 +58,12 @@ describe("RoverTerminal", () => {
     expect(dialog).toHaveTextContent("good morning.");
     expect(dialog).toHaveTextContent(en.hud.terminal.question);
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(missions.length + 1);
-    expect(options[0]).toHaveTextContent(`[1]${missions[0].label.en}`);
-    expect(options.at(-1)).toHaveTextContent(`[esc]${en.hud.terminal.driveMyself}`);
+    expect(options.map((o) => o.textContent?.replace(/^>/, ""))).toEqual([
+      ...missions.map((m, i) => `[${i + 1}]${m.label.en}`),
+      `[esc]${en.hud.terminal.driveMyself}`,
+    ]);
+    expect(options).toHaveLength(8);
+    expect(dialog).toHaveTextContent("Pick: 1 to 7 or arrows + Enter · Close: Esc");
   });
 
   it("focuses the mission list on open", () => {
@@ -180,37 +183,6 @@ describe("RoverTerminal", () => {
   });
 });
 
-describe("RoverTerminal ask option", () => {
-  it("adds ask as the first option on key a, keeping missions on 1 to 9", async () => {
-    const { onRun } = renderTerminal({ ask: true });
-    const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(missions.length + 2);
-    expect(options[0]).toHaveTextContent(`[a]${en.ask.terminal.option}`);
-    expect(options[0]).toHaveAttribute("aria-selected", "true");
-    expect(options[1]).toHaveTextContent(`[1]${missions[0].label.en}`);
-    expect(screen.getByRole("dialog")).toHaveTextContent(en.ask.terminal.hintMenu);
-    await userEvent.keyboard("5");
-    expect(onRun).toHaveBeenCalledExactlyOnceWith(missions[4].id);
-  });
-
-  it("hides the ask option when the feature is off", () => {
-    renderTerminal();
-    expect(screen.queryByText(en.ask.terminal.option)).toBeNull();
-  });
-
-  it("hands the ask option to the Ask dock on key a, Enter or a tap", async () => {
-    const onAsk = vi.fn();
-    renderTerminal({ ask: true, onAsk });
-    await userEvent.keyboard("a");
-    expect(onAsk).toHaveBeenCalledTimes(1);
-    await userEvent.keyboard("{Enter}");
-    expect(onAsk).toHaveBeenCalledTimes(2);
-    await userEvent.click(screen.getByRole("option", { name: en.ask.terminal.option }));
-    expect(onAsk).toHaveBeenCalledTimes(3);
-    expect(screen.queryByRole("textbox")).toBeNull();
-  });
-});
-
 describe("terminal helpers", () => {
   it("picks the greeting by hour and locale", () => {
     expect([5, 11, 12, 16, 17, 21, 22, 2].map((h) => greetingKey(h, "en"))).toEqual([
@@ -239,24 +211,5 @@ describe("terminal helpers", () => {
   it("records that the terminal was seen", () => {
     markTerminalSeen();
     expect(localStorage.getItem("hq:terminal-seen")).toBe("1");
-  });
-
-  it("lists extra options after the missions and runs them by key or tap", async () => {
-    const replay = vi.fn();
-    const hints = vi.fn();
-    renderTerminal({
-      extras: [
-        { key: "r", label: "replay the tutorial", onSelect: replay },
-        { key: "h", label: "hints: on", onSelect: hints },
-      ],
-    });
-    const options = screen.getAllByRole("option").map((o) => o.textContent);
-    expect(options.at(-3)).toContain("[r]replay the tutorial");
-    expect(options.at(-2)).toContain("[h]hints: on");
-    expect(options.at(-1)).toContain(en.hud.terminal.driveMyself);
-    await userEvent.keyboard("r");
-    expect(replay).toHaveBeenCalledTimes(1);
-    await userEvent.click(screen.getByRole("option", { name: /hints: on/ }));
-    expect(hints).toHaveBeenCalledTimes(1);
   });
 });

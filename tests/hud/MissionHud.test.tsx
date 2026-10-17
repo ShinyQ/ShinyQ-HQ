@@ -13,7 +13,6 @@ import { primeHudIndex } from "@/hud/index-client";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { registerTutorial } from "@/hud/dialog/tutorial";
-import { HINTS_KEY, resetFlagMemory } from "@/hud/dialog/storage";
 import { RECENT_KEY } from "@/hud/recent";
 import { TERMINAL_SEEN_KEY } from "@/hud/RoverTerminal";
 
@@ -242,18 +241,6 @@ describe("MissionHud on static pages", () => {
 describe("MissionHud with Ask the HQ", () => {
   const enabled: AskStatus = { enabled: true, turnstileSiteKey: null, asOf: "2026-10-01", maxLength: 300 };
 
-  it("offers ask in the terminal only when the status says enabled", async () => {
-    renderHud();
-    act(() => openTerminal());
-    await act(async () => {});
-    expect(screen.queryByRole("option", { name: en.ask.terminal.option })).toBeNull();
-    cleanup();
-    askMock.status = enabled;
-    renderHud();
-    act(() => openTerminal());
-    expect(await screen.findByRole("option", { name: en.ask.terminal.option })).toBeInTheDocument();
-  });
-
   it("sends the palette Ask row to the Ask dock and closes the palette", async () => {
     askMock.status = enabled;
     const commands: HudCommand[] = [];
@@ -270,18 +257,6 @@ describe("MissionHud with Ask the HQ", () => {
     off();
   });
 
-  it("hands the terminal's ask option to the dock and closes the terminal", async () => {
-    askMock.status = enabled;
-    const commands: HudCommand[] = [];
-    const off = onHudCommand((command) => commands.push(command));
-    renderHud();
-    act(() => openTerminal());
-    await userEvent.click(await screen.findByRole("option", { name: en.ask.terminal.option }));
-    expect(commands.at(-1)).toEqual({ type: "ask", source: "terminal" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    off();
-  });
-
   it("closes the terminal and the palette when openAsk runs", async () => {
     renderHud();
     act(() => openTerminal());
@@ -292,25 +267,14 @@ describe("MissionHud with Ask the HQ", () => {
 });
 
 describe("MissionHud with the 3D HUD open", () => {
-  it("offers replay and hints in Ask Rover only while the tutorial host is registered", async () => {
-    resetFlagMemory();
+  it("the Rover menu never lists replay or hints, even with the 3D HUD open", () => {
+    const off = registerTutorial(vi.fn());
     renderHud();
     act(() => openTerminal());
-    expect(screen.queryByRole("option", { name: /replay the tutorial/ })).toBeNull();
-    act(() => screen.getByRole("button", { name: en.hud.terminal.close }).click());
-    const replay = vi.fn();
-    let off = () => {};
-    act(() => {
-      off = registerTutorial(replay);
-    });
-    act(() => openTerminal());
-    await userEvent.click(screen.getByRole("option", { name: new RegExp(en.dialog.menu.hintsOn) }));
-    expect(localStorage.getItem(HINTS_KEY)).toBe("off");
-    expect(screen.getByRole("option", { name: new RegExp(en.dialog.menu.hintsOff) })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("option", { name: new RegExp(en.dialog.menu.replay) }));
-    expect(replay).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog", { name: en.hud.terminal.title })).toBeNull();
-    act(() => off());
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(8);
+    expect(options.filter((o) => /tutorial|hints/i.test(o.textContent ?? ""))).toEqual([]);
+    off();
   });
 
   it("finds Replay the tutorial in Cmd-K while the 3D HUD is open", async () => {

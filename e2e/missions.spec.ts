@@ -84,8 +84,8 @@ test.describe("missions on static pages", () => {
     await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
     const terminal = page.getByRole("dialog", { name: en.hud.terminal.title });
     await expect(terminal).toContainText(en.hud.terminal.prompt);
-    await expect(terminal.getByRole("option").nth(5)).toContainText(mission("hire").label.en);
-    await page.keyboard.press("6");
+    await expect(terminal.getByRole("option").nth(6)).toContainText(mission("hire").label.en);
+    await page.keyboard.press("7");
     await expect(page).toHaveURL(/\/en\/contact$/, { timeout: NAV_TIMEOUT });
     await expect(terminal).toBeHidden();
   });
@@ -126,6 +126,26 @@ test("the Page View Lobby never opens the Rover Terminal on its own; the header 
   await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
   await expect(page.getByRole("dialog", { name: en.hud.terminal.title })).toBeVisible();
 });
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 375, height: 667 },
+]) {
+  test(`the Rover menu fits a ${viewport.width}x${viewport.height} screen`, async ({ page }) => {
+    await seenTerminal(page);
+    await page.setViewportSize(viewport);
+    await openPage(page, "/en?tier=static");
+    await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+    const menu = page.getByRole("dialog", { name: en.hud.terminal.title });
+    await expect(menu).toBeVisible();
+    const box = (await menu.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 0.5);
+    await expect(menu.getByRole("option")).toHaveCount(8);
+    await expect(menu.getByRole("button", { name: en.hud.terminal.close })).toBeInViewport();
+    await expect(menu.getByRole("option").last()).toBeInViewport();
+  });
+}
 
 test.describe("accessibility (axe)", () => {
   test.beforeEach(async ({ page }) => seenTerminal(page));

@@ -37,11 +37,9 @@ describe("bilingual UI copy", () => {
     }
   });
 
-  it("describes all nine number shortcuts, with Ask AI on a separate key", () => {
-    expect(en.hud.terminal.hint).toContain("1 to 9");
-    expect(id.hud.terminal.hint).toContain("1 hingga 9");
-    expect(en.ask.terminal.hintMenu).toContain("a, 1 to 9");
-    expect(id.ask.terminal.hintMenu).toContain("a, 1 hingga 9");
+  it("describes the number shortcuts with the last key as a placeholder", () => {
+    expect(en.hud.terminal.hint).toContain("1 to {last}");
+    expect(id.hud.terminal.hint).toContain("1 hingga {last}");
   });
 
   it("includes the Data and ML wing in the L3 picker and introduction", () => {

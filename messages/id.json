@@ -530,7 +530,7 @@
       "question": "lanjut ke mana? ^_^",
       "options": "Pilihan Tanya Rover",
       "driveMyself": "saya jelajahi sendiri",
-      "hint": "Pilih: 1 hingga 9 atau panah + Enter · Tutup: Esc",
+      "hint": "Pilih: 1 hingga {last} atau panah + Enter · Tutup: Esc",
       "close": "Tutup terminal"
     },
     "palette": {
@@ -765,10 +765,6 @@
       "offline": "Ask AI sedang tidak tersedia. Coba pencarian atau jelajahi halaman situs.",
       "fallback": "Jawaban belum tersedia saat ini. Coba pencarian atau halaman Karya dan Perjalanan."
     },
-    "terminal": {
-      "option": "tanya AI tentang karya ^_^",
-      "hintMenu": "Pilih: a, 1 hingga 9 atau panah + Enter · Tutup: Esc"
-    },
     "palette": {
       "row": "Tanya: \"{q}\"",
       "subtitle": "Dijawab oleh AI dari isi situs ini"
@@ -984,7 +980,6 @@
       "notNow": "Nanti saja"
     },
     "menu": {
-      "replay": "putar ulang tutorial",
       "hintsOn": "petunjuk: aktif",
       "hintsOff": "petunjuk: mati"
     }
