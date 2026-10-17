@@ -12,3 +12,5 @@ import type { KnowledgePack, PagesContext, SafetyData } from "../_lib/types";
 const handler = createAskHandler({ pack: knowledge as unknown as KnowledgePack, safety: safety as SafetyData });
 
 export const onRequest = (context: PagesContext) => handler(context);
+
+// CI measurement: throwaway Functions change (do not merge).
