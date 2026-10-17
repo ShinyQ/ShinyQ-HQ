@@ -231,6 +231,8 @@ jobs:
       contents: read
       deployments: write
       issues: read
+      checks: read
+      actions: read
     environment:
       name: production
       url: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
@@ -271,12 +273,25 @@ jobs:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/build-knowledge.ts
       - name: Fast path still open (no deploy-rollback issue)
-        # A red main CI may have opened it while this run built; then main CI decides, not this upload.
+        id: still
+        # A red main CI may have opened it while this run built (rollback.yml opens it before it rolls back).
         if: steps.gate.outputs.enabled == 'true' && needs.verify.outputs.fast == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bun scripts/merge-gate.ts --repo "$REPO" --check-block-only true
+      - name: Fast path closed meanwhile, so wait for main CI on this commit
+        id: ci
+        if: steps.still.outputs.blocked == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bun scripts/ci-status.ts --repo "$REPO" --sha "$SHA" --wait-minutes 40 --grace-minutes 3
+      - name: Require a complete green main CI
+        if: steps.still.outputs.blocked == 'true' && steps.ci.outputs.reuse != 'true'
+        run: |
+          echo "::error::No complete green CI on $SHA; not uploading. Rerun CI or deploy by hand (docs/deploy.md)."
+          exit 1
       - name: Deploy to Cloudflare Pages
         id: deploy
         if: steps.gate.outputs.enabled == 'true'

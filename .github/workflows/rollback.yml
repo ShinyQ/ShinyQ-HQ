@@ -6,10 +6,11 @@ name: Rollback
 #   - red (failure or timed out): scripts/rollback.ts rolls Cloudflare Pages production back to the newest earlier
 #     production deployment that does not contain the failing commit and is not red itself (Pages rollback API;
 #     only when production serves the failing commit or a later, not green, commit built on it), redeploys the
-#     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false"), and
-#     opens or updates the one `deploy-rollback` issue with the failing run. While that issue is open, deploy.yml
-#     takes no fast path: every merge waits for a green complete main CI.
-#   - green: closes the `deploy-rollback` issue once the green commit equals or follows the last failing one.
+#     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false"). Before
+#     any of that it opens or updates the one `deploy-rollback` issue with the failing run; while it is open,
+#     deploy.yml takes no fast path: every merge waits for a green complete main CI. The outcome is commented there.
+#   - green: closes the `deploy-rollback` issue once the green commit equals or follows the last failing one, then
+#     dispatches deploy.yml for the tip of main (a rollback may have left production behind main).
 # Only CI runs from pushes to main count (not the nightly, not dispatches). Dispatch it by hand for a drill:
 # `gh workflow run rollback.yml --ref main -f sha=<commit> [-f dry_run=false] [-f project=<drill project>]`;
 # dry_run (the default) does everything except the rollback call, the Worker deploy and the issue write.
@@ -90,6 +91,13 @@ jobs:
           fi
           echo "SHA=$full" >> "$GITHUB_ENV"
           echo "CI failed on \`$full\` ($(git log -1 --format=%s "$full")): $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+      - name: Block the fast path (open or update the deploy-rollback issue)
+        # First, so no new fast-path upload can race the rollback (deploy.yml checks the label before uploading).
+        # A GitHub API error here must not stop the rollback itself.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/rollback.ts block --repo "$GITHUB_REPOSITORY" --sha "$SHA" --run-url "$RUN_URL" --dry-run "$DRY_RUN"
       - name: Roll Cloudflare Pages back
         id: pages
         # The deploy token only in this step (S4, H1).
@@ -134,12 +142,12 @@ jobs:
           packageManager: npm
           quiet: true
           command: deploy
-      - name: Open or update the deploy-rollback issue
-        # Also when the rollback step failed (the issue then asks for a manual rollback); not for a bad sha input.
+      - name: Report on the deploy-rollback issue
+        # Also when the rollback step failed (the comment then asks for a manual rollback); not for a bad sha input.
         if: ${{ !cancelled() && steps.pages.conclusion != 'skipped' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bun scripts/rollback.ts issue --repo "$GITHUB_REPOSITORY" --sha "$SHA" --run-url "$RUN_URL" --result rollback.json --dry-run "$DRY_RUN"
+        run: bun scripts/rollback.ts report --repo "$GITHUB_REPOSITORY" --sha "$SHA" --run-url "$RUN_URL" --result rollback.json --dry-run "$DRY_RUN"
 
   clear:
     name: Close the deploy-rollback issue
@@ -153,6 +161,8 @@ jobs:
     permissions:
       contents: read
       issues: write
+      # Dispatches deploy.yml for the tip of main after closing the issue.
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

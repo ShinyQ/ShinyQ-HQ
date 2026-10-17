@@ -14,8 +14,9 @@
  *   newest attempt from GitHub Actions on the PR head. Selective smart CI runs count: the owner accepted
  *   that weaker guarantee, mitigated by the full main CI and the automatic rollback (rollback.yml).
  * Otherwise `fast=false`: the deploy waits for the complete main CI (scripts/ci-status.ts), as before.
- * `--check-block-only true` only checks the `deploy-rollback` label (the deploy job, right before upload)
- * and exits 1 while one is open. API errors mean not fast. Uses fetch and GH_TOKEN only; no dependencies.
+ * `--check-block-only true` only checks the `deploy-rollback` label (the deploy job, right before upload) and
+ * writes `blocked=true|false`; when blocked, the deploy job waits for the complete main CI instead. API errors mean
+ * not fast (and blocked). Uses fetch and GH_TOKEN only; no dependencies.
  */
 import { appendFileSync } from "node:fs";
 import { gh } from "./ci-status";
@@ -121,12 +122,11 @@ async function main() {
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
   if (!repo || !token) throw new Error("usage: GH_TOKEN=... bun scripts/merge-gate.ts --repo owner/name --sha <sha> [--check-block-only true]");
   if (flag("--check-block-only") === "true") {
-    const open = await openRollbackIssue(repo, token);
-    if (open) {
-      console.error(`::error::The ${ROLLBACK_LABEL} issue #${open} opened while this fast-path deploy ran; not uploading. Main CI decides (docs/deploy.md section 6).`);
-      process.exit(1);
-    }
-    return console.log(`No open ${ROLLBACK_LABEL} issue.`);
+    const open = await openRollbackIssue(repo, token).catch(() => -1);
+    const note = open ? `the ${ROLLBACK_LABEL} issue ${open === -1 ? "could not be read" : `#${open} opened`} while this fast-path deploy ran: waiting for the complete main CI before the upload.` : `no open ${ROLLBACK_LABEL} issue.`;
+    console.log(note);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `blocked=${Boolean(open)}\n`);
+    return;
   }
   if (!sha) throw new Error("--sha is required");
   const verdict = await gate(repo, sha, token).catch((error: unknown): FastPath => ({ fast: false, note: `fast-path check failed (${error instanceof Error ? error.message : String(error)}): waiting for the complete main CI.` }));

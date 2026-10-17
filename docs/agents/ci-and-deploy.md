@@ -142,7 +142,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
   - the commit is the merge commit of a pull request from this repository (`GET /repos/{repo}/commits/{sha}/pulls`);
   - the PR head's tree equals the merged tree (a squash of an up-to-date PR). The ruleset stays non-strict on purpose: "require up to date" would force a PR CI rerun after every merge. 13 of the 15 merges before the change matched; a mismatch falls back;
   - every required check of the `main` ruleset (read from `GET /repos/{repo}/rules/branches/main`) has a green newest GitHub Actions attempt on the PR head. Selective PR runs count: the owner accepted that weaker guarantee, backed by the full `main` CI and the rollback.
-  - The deploy job re-checks the `deploy-rollback` label right before the upload.
+  - The deploy job re-checks the `deploy-rollback` label right before the upload; when it opened meanwhile, the job waits for the complete green `main` CI on its commit (`scripts/ci-status.ts`) before uploading, and fails without one.
   - Merge to live: about 4 minutes on the fast path, about 25 minutes plus a manual dispatch before.
 - Otherwise (fallback, every dispatch):
   1. Reuses CI's green `Build, CV and e2e` for the commit (or for a commit with the same tree, from a push to `main` or a same-repository PR run only).
@@ -158,13 +158,14 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
   5. Opens a `deploy-failed` issue on failure.
 - Rollback (`.github/workflows/rollback.yml`, `scripts/rollback.ts`), on every completed CI run from a push to `main`:
   - Red (failure or timed out):
+    - first opens or updates the one `deploy-rollback` issue (failing run link; the last failing commit in a hidden marker), which closes the fast path, so no new fast-path upload can race the rollback;
     - waits up to 10 minutes while a deploy job is uploading, then reads what is live (the Pages project's `canonical_deployment`);
     - rolls back only when production serves the failing commit, or a later commit built on it whose own CI is not green;
-    - target: the newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and whose `Build, CV and e2e` is not red. No stored state: the Cloudflare and GitHub APIs are the record;
+    - target: the newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and is proven good: a green complete CI, or no CI run at all (the weekly facts merge, which the deploy shipped after its own e2e shards). A cancelled or unfinished CI (a `main` push whose pending run a newer push replaced) proves nothing, so that deployment is skipped. No stored state: the Cloudflare and GitHub APIs are the record;
     - calls `POST /accounts/{id}/pages/projects/{project}/deployments/{target}/rollback`, then waits until the target is live and `/en` answers 200;
     - redeploys the hq-stats Worker from the target commit when `workers/stats/` differs and `STATS_WORKER_DEPLOY` is not `false`;
-    - opens or updates the one `deploy-rollback` issue (failing run link, from and to deployment ids; the last failing commit in a hidden marker). It blocks the fast path.
-  - Green: closes the issue once the green commit equals or follows the last failing commit.
+    - comments the outcome on the issue (from and to deployment ids, or why nothing was rolled back).
+  - Green: closes the issue once the green commit equals or follows the last failing commit, then dispatches `deploy.yml` for the tip of `main` (a rollback may have left production behind `main`).
   - The nightly and dispatched CI runs never trigger it.
   - Drill: `gh workflow run rollback.yml --ref main -f sha=<commit>` (a dry run by default: decides and reports, no rollback call, no Worker deploy, no issue); `-f dry_run=false -f project=<throwaway project>` for a real rollback on a drill project.
   - Manual rollback: [deploy.md section 6](../deploy.md#6-rollback).

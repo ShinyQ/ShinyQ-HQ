@@ -2,24 +2,29 @@
  * Automatic production rollback (rollback.yml, owner decision 2026-10-18). Merges deploy before main CI
  * finishes (scripts/merge-gate.ts); when that main CI then fails, this puts the last good deployment back.
  *
- *   bun scripts/rollback.ts pages --repo o/r --sha <failing commit> --project <pages project> [--site URL] [--dry-run true] [--out result.json]
- *   bun scripts/rollback.ts issue --repo o/r --sha <failing commit> --run-url <CI run> --result result.json [--dry-run true]
- *   bun scripts/rollback.ts clear --repo o/r --sha <green commit> --run-url <CI run>
+ *   bun scripts/rollback.ts block  --repo o/r --sha <failing commit> --run-url <CI run> [--dry-run true]
+ *   bun scripts/rollback.ts pages  --repo o/r --sha <failing commit> --project <pages project> [--site URL] [--dry-run true] [--out result.json]
+ *   bun scripts/rollback.ts report --repo o/r --sha <failing commit> --run-url <CI run> --result result.json [--dry-run true]
+ *   bun scripts/rollback.ts clear  --repo o/r --sha <green commit> --run-url <CI run>
  *
+ * `block` runs first: it opens or updates the one `deploy-rollback` issue (the last failing commit in a hidden
+ * marker), which closes the fast path, so no new fast-path upload can race the rollback (deploy.yml re-checks the
+ * label right before it uploads).
  * `pages` (needs CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, GH_TOKEN) waits up to 10 minutes while a deploy.yml
  * upload is in flight, then reads what is live (the project's canonical deployment). It rolls back only when the
  * live commit is the failing commit, or a later commit built on it whose own CI is not green. The target is the
- * newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and whose
- * own `Build, CV and e2e` is not red; no state is stored, the Cloudflare and GitHub APIs are the record. It calls the
- * Pages rollback API (POST .../deployments/{id}/rollback), waits until the target is live and /en answers 200.
- * `--dry-run true` does everything except the rollback call. Writes `action`, `target_sha`, `live_sha` to
- * $GITHUB_OUTPUT and the result JSON to --out. Exits 1 when a rollback is needed but impossible.
- * `issue` opens or updates the one `deploy-rollback` issue (it blocks the fast path until main is green again);
- * with `--dry-run true` it only prints the comment. `clear` closes that issue once a green main CI ran on the last
- * failing commit or a later one. Uses fetch only; no dependencies.
+ * newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and is
+ * proven good (a green complete CI, or no CI run at all, like the weekly facts merge); no state is stored, the
+ * Cloudflare and GitHub APIs are the record. It calls the Pages rollback API (POST .../deployments/{id}/rollback)
+ * and waits until the target is live and /en answers 200. `--dry-run true` does everything except the rollback
+ * call. Writes `action`, `target_sha`, `live_sha` to $GITHUB_OUTPUT and the result JSON to --out. Exits 1 when a
+ * rollback is needed but no target qualifies.
+ * `report` comments the outcome on the issue. With `--dry-run true`, `block` and `report` only print.
+ * `clear` closes the issue once a green main CI ran on the last failing commit or a later one, then dispatches
+ * deploy.yml for the tip of main, so production does not stay on the rollback target. Uses fetch only.
  */
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
-import { checkRuns, completeChecks, gh, verdictFromChecks } from "./ci-status";
+import { checkRuns, ciRunsOn, completeChecks, gh, verdictFromChecks } from "./ci-status";
 import { ROLLBACK_LABEL } from "./merge-gate";
 
 export interface PagesDeployment {
@@ -51,7 +56,7 @@ export function needsRollback({ relation, liveGreen }: { relation: Relation; liv
 export async function pickTarget(
   deployments: readonly PagesDeployment[],
   live: PagesDeployment,
-  probes: { isStrictAncestor: (commit: string) => Promise<boolean>; isRed: (commit: string) => Promise<boolean> },
+  probes: { isStrictAncestor: (commit: string) => Promise<boolean>; isGood: (commit: string) => Promise<boolean> },
 ): Promise<PagesDeployment | undefined> {
   const before = Date.parse(live.created_on);
   const candidates = deployments
@@ -59,7 +64,7 @@ export async function pickTarget(
     .sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on));
   for (const d of candidates) {
     const commit = commitOf(d) as string;
-    if ((await probes.isStrictAncestor(commit)) && !(await probes.isRed(commit))) return d;
+    if ((await probes.isStrictAncestor(commit)) && (await probes.isGood(commit))) return d;
   }
   return undefined;
 }
@@ -84,6 +89,10 @@ export function issueBody(sha: string): string {
     "",
     `<!-- failing-sha: ${sha} -->`,
   ].join("\n");
+}
+
+export function blockComment(sha: string, runUrl: string): string {
+  return `CI failed on \`main\` at \`${sha.slice(0, 7)}\`: ${runUrl}\n\nFast path blocked; checking whether production needs a rollback.`;
 }
 
 export function resultComment({ sha, runUrl, result }: { sha: string; runUrl: string; result: RollbackResult }): string {
@@ -111,12 +120,28 @@ async function ghWrite<T>(method: string, path: string, token: string, body: unk
     body: JSON.stringify(body),
   });
   if (!response.ok) throw new Error(`GitHub API ${method} ${path}: HTTP ${response.status}`);
-  return (await response.json()) as T;
+  return (response.status === 204 ? undefined : await response.json()) as T;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const relationOf = (repo: string, base: string, head: string, token: string) => gh<{ status: Relation }>(`/repos/${repo}/compare/${base}...${head}`, token).then((c) => c.status);
+
+/**
+ * A rollback target must be proven good: a green complete CI on its commit, or no CI run on it at all (the weekly
+ * facts merge, which deploy.yml only ships after running the e2e shards itself). A cancelled or still running CI
+ * (a main push whose pending run a newer push replaced) proves nothing, so such a deployment is skipped.
+ */
+export function provenGoodFrom(verdict: ReturnType<typeof verdictFromChecks>["kind"], ciRuns: number): boolean {
+  return verdict === "reuse" || (verdict === "missing" && ciRuns === 0);
+}
+
+async function provenGood(repo: string, commit: string, token: string): Promise<boolean> {
+  const checks = await checkRuns(repo, commit, token);
+  const full = await completeChecks(repo, checks, token);
+  const verdict = verdictFromChecks(checks, (c) => full.has(c.html_url)).kind;
+  return provenGoodFrom(verdict, verdict === "missing" ? (await ciRunsOn(repo, commit, token)).length : 1);
+}
 
 /** A deploy.yml upload in flight could make its commit live right after this reads production. */
 async function uploadInFlight(repo: string, token: string): Promise<boolean> {
@@ -169,12 +194,12 @@ async function pages(flag: (name: string) => string | undefined): Promise<Rollba
     deployments.push(...batch);
     if (batch.length < 25) break;
   }
-  const red = new Map<string, boolean>();
+  const good = new Map<string, boolean>();
   const target = await pickTarget(deployments, live, {
     isStrictAncestor: async (commit) => (await relationOf(repo, commit, sha, ghToken).catch(() => "diverged")) === "ahead",
-    isRed: async (commit) => {
-      if (!red.has(commit)) red.set(commit, verdictFromChecks(await checkRuns(repo, commit, ghToken)).kind === "red");
-      return red.get(commit) as boolean;
+    isGood: async (commit) => {
+      if (!good.has(commit)) good.set(commit, await provenGood(repo, commit, ghToken));
+      return good.get(commit) as boolean;
     },
   });
   if (!target) return { action: "stuck", note: "no earlier good production deployment found.", live: summary, dryRun };
@@ -198,22 +223,16 @@ async function openIssue(repo: string, token: string): Promise<{ number: number;
   return issues.find((i) => !i.pull_request);
 }
 
-async function issue(flag: (name: string) => string | undefined) {
+/** Before anything else: opening the issue closes the fast path, so no new upload can race the rollback. */
+async function block(flag: (name: string) => string | undefined) {
   const repo = flag("--repo") ?? process.env.GITHUB_REPOSITORY;
   const sha = flag("--sha");
   const runUrl = flag("--run-url") ?? "";
-  const resultFile = flag("--result");
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
-  if (!repo || !sha || !token) throw new Error("usage: GH_TOKEN=... bun scripts/rollback.ts issue --repo o/r --sha <sha> --run-url <url> --result <file>");
-  let result: RollbackResult = { action: "stuck", note: "the rollback step did not report; check production by hand.", dryRun: flag("--dry-run") === "true" };
-  try {
-    if (resultFile) result = JSON.parse(readFileSync(resultFile, "utf8")) as RollbackResult;
-  } catch {
-    // Keep the "did not report" result: the rollback step failed before writing it.
-  }
-  const comment = resultComment({ sha, runUrl, result });
-  if (flag("--dry-run") === "true") return console.log(`Dry run, no issue written. Comment:\n${comment}`);
-  await ghWrite("POST", `/repos/${repo}/labels`, token, { name: ROLLBACK_LABEL, color: "B60205", description: "Main CI failed after a fast-path deploy; fast path blocked (rollback.yml)" }).catch(() => undefined);
+  if (!repo || !sha || !token) throw new Error("usage: GH_TOKEN=... bun scripts/rollback.ts block --repo o/r --sha <sha> --run-url <url>");
+  const comment = blockComment(sha, runUrl);
+  if (flag("--dry-run") === "true") return console.log(`Dry run, no issue written. Would open or update the ${ROLLBACK_LABEL} issue with:\n${comment}`);
+  await ghWrite("POST", `/repos/${repo}/labels`, token, { name: ROLLBACK_LABEL, color: "B60205", description: "Main CI failed; fast-path deploys blocked (rollback.yml)" }).catch(() => undefined);
   const open = await openIssue(repo, token);
   if (open) {
     await ghWrite("PATCH", `/repos/${repo}/issues/${open.number}`, token, { body: withFailingSha(open.body ?? issueBody(sha), sha) });
@@ -224,6 +243,28 @@ async function issue(flag: (name: string) => string | undefined) {
     await ghWrite("POST", `/repos/${repo}/issues/${created.number}/comments`, token, { body: comment });
     console.log(`Opened #${created.number}.`);
   }
+}
+
+/** After the rollback step, whatever it did (or when it failed before reporting). */
+async function report(flag: (name: string) => string | undefined) {
+  const repo = flag("--repo") ?? process.env.GITHUB_REPOSITORY;
+  const sha = flag("--sha");
+  const runUrl = flag("--run-url") ?? "";
+  const resultFile = flag("--result");
+  const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+  if (!repo || !sha || !token) throw new Error("usage: GH_TOKEN=... bun scripts/rollback.ts report --repo o/r --sha <sha> --run-url <url> --result <file>");
+  let result: RollbackResult = { action: "stuck", note: "the rollback step did not report; check production by hand.", dryRun: flag("--dry-run") === "true" };
+  try {
+    if (resultFile) result = JSON.parse(readFileSync(resultFile, "utf8")) as RollbackResult;
+  } catch {
+    // Keep the "did not report" result: the rollback step failed before writing it.
+  }
+  const comment = resultComment({ sha, runUrl, result });
+  if (flag("--dry-run") === "true") return console.log(`Dry run, no issue written. Would comment:\n${comment}`);
+  const open = await openIssue(repo, token);
+  if (!open) return console.log(`No open ${ROLLBACK_LABEL} issue to report on (closed meanwhile):\n${comment}`);
+  await ghWrite("POST", `/repos/${repo}/issues/${open.number}/comments`, token, { body: comment });
+  console.log(`Reported on #${open.number}.`);
 }
 
 async function clear(flag: (name: string) => string | undefined) {
@@ -237,12 +278,16 @@ async function clear(flag: (name: string) => string | undefined) {
   const failing = failingShaFrom(open.body);
   const relation = failing ? await relationOf(repo, failing, sha, token).catch(() => "diverged") : "ahead";
   if (relation !== "identical" && relation !== "ahead") return console.log(`#${open.number} stays open: ${sha.slice(0, 7)} does not contain the failing ${failing?.slice(0, 7)} (${relation}).`);
-  await ghWrite("POST", `/repos/${repo}/issues/${open.number}/comments`, token, { body: `CI is green on \`main\` at \`${sha.slice(0, 7)}\`: ${runUrl}\n\nThe fast path is open again.` });
+  await ghWrite("POST", `/repos/${repo}/issues/${open.number}/comments`, token, { body: `CI is green on \`main\` at \`${sha.slice(0, 7)}\`: ${runUrl}\n\nThe fast path is open again; deploy.yml is dispatched for the tip of \`main\`.` });
   await ghWrite("PATCH", `/repos/${repo}/issues/${open.number}`, token, { state: "closed", state_reason: "completed" });
   console.log(`Closed #${open.number}.`);
+  // A rollback may have left production behind main (a later merge deployed before the failure, then rolled back):
+  // ship the tip of main. deploy.yml reuses its CI result, or waits for it, and queues behind any running deploy.
+  await ghWrite("POST", `/repos/${repo}/actions/workflows/deploy.yml/dispatches`, token, { ref: "main", inputs: { reason: `main is green again at ${sha.slice(0, 7)} after #${open.number}` } });
+  console.log("Dispatched deploy.yml for the tip of main.");
 }
 
-function report(result: RollbackResult, out: string | undefined) {
+function writeResult(result: RollbackResult, out: string | undefined) {
   console.log(`${result.action}: ${result.note}`);
   if (out) writeFileSync(out, JSON.stringify(result, null, 2));
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `action=${result.action}\ntarget_sha=${result.target?.commit ?? ""}\nlive_sha=${result.live?.commit ?? ""}\n`);
@@ -261,11 +306,12 @@ async function main() {
   };
   if (command === "pages") {
     const result = await pages(flag);
-    report(result, flag("--out"));
+    writeResult(result, flag("--out"));
     if (result.action === "stuck") process.exit(1);
-  } else if (command === "issue") await issue(flag);
+  } else if (command === "block") await block(flag);
+  else if (command === "report") await report(flag);
   else if (command === "clear") await clear(flag);
-  else throw new Error("usage: bun scripts/rollback.ts pages|issue|clear ...");
+  else throw new Error("usage: bun scripts/rollback.ts block|pages|report|clear ...");
 }
 
 if (import.meta.main) {

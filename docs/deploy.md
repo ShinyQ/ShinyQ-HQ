@@ -199,7 +199,7 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 
 ## 6. Rollback
 
-Automatic: `rollback.yml` runs after every CI run from a push to `main`. When it is red and production serves the failing commit (or a later, not green, commit built on it), it rolls Cloudflare Pages back to the newest earlier production deployment that does not contain the failure and is not red, redeploys the hq-stats Worker from that commit when `workers/stats/` changed (unless `STATS_WORKER_DEPLOY=false`), and opens or updates the `deploy-rollback` issue with the failing run. While the issue is open every merge waits for a green `main` CI before it deploys; a green `main` CI on the failing commit or a later one closes it. Details: [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#production-deploy).
+Automatic: `rollback.yml` runs after every CI run from a push to `main`. When it is red, it first opens or updates the `deploy-rollback` issue with the failing run (closing the fast path), and when production serves the failing commit (or a later, not green, commit built on it), it rolls Cloudflare Pages back to the newest earlier production deployment that does not contain the failure and whose own CI was green (or that never had CI, like the facts merge), and redeploys the hq-stats Worker from that commit when `workers/stats/` changed (unless `STATS_WORKER_DEPLOY=false`). While the issue is open every merge waits for a green `main` CI before it deploys; a green `main` CI on the failing commit or a later one closes it and dispatches a deploy of the tip of `main`. Details: [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#production-deploy).
 
 By hand:
 

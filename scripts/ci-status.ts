@@ -123,7 +123,7 @@ export async function checkRuns(repo: string, sha: string, token: string): Promi
   return check_runs;
 }
 
-async function ciRunsOn(repo: string, sha: string, token: string): Promise<{ status: string }[]> {
+export async function ciRunsOn(repo: string, sha: string, token: string): Promise<{ status: string }[]> {
   const { workflow_runs } = await gh<{ workflow_runs: { status: string }[] }>(`/repos/${repo}/actions/workflows/${CI_WORKFLOW}/runs?head_sha=${sha}&per_page=20`, token);
   return workflow_runs;
 }
