@@ -7,10 +7,10 @@ import { CertificationSchema } from "@/content/schema";
 import { CERT_FIXTURE, certFixture } from "@/experience/prototype/certs/fixture";
 
 describe("certification helpers", () => {
-  it("keeps the scale fixture valid against the schema, with the live 7 first", () => {
+  it("keeps the scale fixture valid against the schema, with the live 8 first", () => {
     expect(CERT_FIXTURE).toHaveLength(30);
     for (const cert of CERT_FIXTURE) expect(CertificationSchema.safeParse(cert).success, cert.id).toBe(true);
-    expect(certFixture(7).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
+    expect(certFixture(8).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
   });
 
   it("sorts earned newest first, then in progress, then expired", () => {
@@ -26,9 +26,9 @@ describe("certification helpers", () => {
   });
 
   it("features pinned certs first, then the newest earned with an exam code", () => {
-    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["gh-600", "ai-103", "ai-901"]);
+    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-600", "ai-103"]);
     const pinned = CERT_FIXTURE.map((c) => (c.id === "gh-900" ? { ...c, featured: true } : c));
-    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["gh-900", "gh-600", "ai-103"]);
+    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-900", "gh-600"]);
     expect(featuredCertifications(CERT_FIXTURE.filter((c) => !c.code))).toHaveLength(3);
     expect(featuredCertifications(CERT_FIXTURE).every((c) => c.status === "earned")).toBe(true);
   });
@@ -45,9 +45,9 @@ describe("certification helpers", () => {
 
   it("builds wall tabs: All, issuers with 2 or more, then Other", () => {
     expect(issuerTabs(getCertifications()).map((t) => [t.key, t.count])).toEqual([
-      ["all", 7],
+      ["all", 8],
       ["Microsoft", 3],
-      ["other", 4],
+      ["other", 5],
     ]);
     const tabs = issuerTabs(CERT_FIXTURE);
     expect(tabs.map((t) => t.key)).toEqual(["all", "Microsoft", "GitHub", "AWS", "other"]);
@@ -76,6 +76,7 @@ describe("certification helpers", () => {
     expect(issuerLogo("Microsoft")).toBe("/tech/microsoft.svg");
     expect(issuerLogo("GitHub")).toBe("/tech/github.svg");
     expect(issuerLogo("AWS")).toBe("/tech/aws.webp");
+    expect(issuerLogo("Google")).toBe("/tech/google.svg");
     expect(issuerLogo("Google Cloud")).toBe("/tech/google.svg");
     expect(issuerLogo("HackerRank")).toBe("/tech/hackerrank.svg");
     expect(issuerLogo("Kominfo x IBM")).toBeNull();
@@ -86,6 +87,7 @@ describe("certification helpers", () => {
     expect(shortCertName("Microsoft Certified: Azure Fundamentals")).toBe("Azure Fundamentals");
     expect(shortCertName("AWS Certified Cloud Practitioner")).toBe("Cloud Practitioner");
     expect(shortCertName("GitHub Certified: Agentic AI Developer")).toBe("Agentic AI Developer");
+    expect(shortCertName("Google Certified: Generative AI Leader")).toBe("Generative AI Leader");
     expect(shortCertName("GitHub Copilot")).toBe("GitHub Copilot");
   });
 
