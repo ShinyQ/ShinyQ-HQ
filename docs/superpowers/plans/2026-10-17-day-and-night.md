@@ -1,6 +1,6 @@
 # Day and Night with a Moving Sun and Moon Implementation Plan
 
-Status: in review in #182 (Round 8 K), 2026-10-17
+Status: shipped in #182 (ffce806) and #185 (5a632b3), 2026-10-17; the CI follow-up (#185) skips drawing the sky under automation's still night and the perf lane opts in with `sessionStorage["hq:sky"]`
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -448,6 +448,6 @@ export const skyRuntime = { phase: 0, day: 0, stars: 1, source: "held" as SkyMod
 **Files:** `docs/agents/3d-experience.md` (new "Day and night" section: model, mode resolution, `?sky=`, dome and orbs on the holo program, draw order, probes `__hq.sky`, `hq:day-night`), `docs/agents/folder-layout.md` (`src/experience/sky/`), `docs/features.md` (feature and status log entry), `docs/decisions.md` (dated owner decision row), `docs/superpowers/README.md` (this plan, count), `README.md` (one highlight bullet if the overview lists the look).
 
 - [x] **Step 1:** Write the docs.
-- [ ] **Step 2:** `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=<port> bun run e2e:perf` (floors, peaks, bytes, memory-full). Program counts must equal the baseline; scene calls +2; bytes within budget.
-- [ ] **Step 3:** Final captures at four phases on L1 and L3, desktop and phone (`scripts/sky-shots.ts`).
-- [ ] **Step 4:** Check the CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), rebase on `origin/main` (add the `day-night` registry entry and its EN and ID copy if I's registry has landed), push, open the PR (do not merge).
+- [x] **Step 2:** `bun run verify:quick`, `bun run e2e:changed`, `E2E_PORT=<port> bun run e2e:perf` (floors, peaks, bytes, memory-full). Program counts must equal the baseline; scene calls +2; bytes within budget.
+- [x] **Step 3:** Final captures at four phases on L1 and L3, desktop and phone (`scripts/sky-shots.ts`).
+- [x] **Step 4:** Check the CI queue (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), rebase on `origin/main` (add the `day-night` registry entry and its EN and ID copy if I's registry has landed), push, open the PR (do not merge).
