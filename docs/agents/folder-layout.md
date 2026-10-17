@@ -257,7 +257,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/experience/floors/lobby/`: L1.
   - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP).
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
-  - kiosk.ts (Ask Rover kiosk parts, lines, the radial spoke end and the spawn stop).
+  - kiosk.ts (Rover menu kiosk parts, lines, the radial spoke end and the spawn stop).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).

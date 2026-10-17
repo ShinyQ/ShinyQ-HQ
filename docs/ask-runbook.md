@@ -75,7 +75,7 @@ Local: `bun run build && bunx wrangler pages dev out` (put the test Turnstile ke
 ## 4. Production smoke test
 
 1. Deploy with `ASK_ENABLED = "true"` in a local, uncommitted `wrangler.toml` change, or flip it in a PR and deploy `main`.
-2. In a browser on https://kurniadi.pages.dev, open the Ask box (Home or About) or the Rover Terminal and ask the first question. This passes Turnstile and sets the `hq_ask` cookie (30 minutes, bound to your IP hash).
+2. In a browser on https://kurniadi.pages.dev, open the Ask box (Home or About) or the Ask AI button (Ask Rover Assistant) and ask the first question. This passes Turnstile and sets the `hq_ask` cookie (30 minutes, bound to your IP hash).
 3. Ask the other questions in the UI, or copy the `hq_ask` cookie value from the browser devtools (Application > Cookies) and use curl from the same network. `Origin` must be an allowed origin:
 
 ```sh

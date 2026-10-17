@@ -1,6 +1,6 @@
 # L1 Lobby
 
-The L1 Lobby floor: the certification wall, the Highlights Hall, the Ask Rover kiosk and the Lobby camera views.
+The L1 Lobby floor: the certification wall, the Highlights Hall, the Rover menu kiosk and the Lobby camera views.
 Index: [AGENTS.md](../../AGENTS.md).
 
 Related: floor rules shared by every floor live in [floors.md](floors.md); the Visitor Observatory (`L1:visits`) is described in [stats.md](stats.md) and [hud-and-drawer.md](hud-and-drawer.md).
@@ -102,7 +102,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 - The stations are point-and-go targets `L1:station:highlights-<station>` (kind `station`, `open-room`), registered by `HighlightsHall` with `registerExtraInteractables` (`hallInteract.ts`); see [floors.md](floors.md).
 - The registry's L1 built-ins do not derive targets from L1 doors.
 
-## Ask Rover kiosk
+## Rover menu kiosk
 
 Code: `floors/lobby/kiosk.ts`. The kiosk lines up straight, radially into the hologram circle (owner decision).
 

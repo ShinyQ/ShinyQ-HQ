@@ -9,7 +9,8 @@ the workflow, the key commands and budgets live here; everything else lives in [
 
 ShinyQ HQ is Kurniadi's bilingual (EN/ID) portfolio: a static Next.js export whose pages are the "Classic site",
 with an optional walkable 3D tower (five floors, a rover, an elevator) mounted client-side on top, plus Ask the HQ
-(a grounded chat assistant on Cloudflare Pages Functions) and public visit stats (a Cloudflare Cron Worker).
+(shown as Ask Rover Assistant; a grounded chat assistant on Cloudflare Pages Functions) and public visit stats (a
+Cloudflare Cron Worker).
 
 ## Source of truth
 

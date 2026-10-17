@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in progress (Round 9 sub-project N).
+Status: shipped, 2026-10-17 (Round 9 sub-project N).
 
 **Goal:** Rename the `>_` terminal to "Rover menu" and the chat panel to "Ask Rover Assistant", trim the menu to 8 entries, move "Replay the tutorial" and "Hints" into the settings panel, and keep the menu fully on screen on phones.
 
