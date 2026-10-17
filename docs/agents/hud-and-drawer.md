@@ -1,6 +1,6 @@
 # HUD and drawer
 
-Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hint bubbles, and the Glass Drawer room panel. Index: [AGENTS.md](../../AGENTS.md).
+Missions and the HUD, the Corners layout, the settings registry, the minimap, the Motion setting, Rover's dialog with onboarding and hint bubbles, and the Glass Drawer room panel. Index: [AGENTS.md](../../AGENTS.md).
 
 ## Missions and HUD
 
@@ -58,6 +58,42 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `goToRoom` and `runMissionSteps` wait up to 5 s for the runner.
 - HUD components get data through props.
 
+### Corners layout
+
+Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (`useHudLayout`); the pixel layout is in [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
+
+- Owner decision 2026-10-17 (layout A "Corners"): phones and tablets keep the corners for controls, so the canvas stays clear.
+  - Phone: at most 5 controls plus the minimap (floor chip, Ask AI, menu, joystick, Reset view).
+  - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
+  - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
+- `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
+- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Ask Rover, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
+- `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
+- Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
+- Keys: `,` toggles the settings (the menu sheet on Corners, the settings sheet on desktop), `N` toggles the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent, so a second press closes).
+
+### Settings registry
+
+- One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
+- A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range`) with `get`/`set`, a `subscribe`, and an optional `available`.
+- The control binds to an external store (the audio engine, `qualityPref`, `minimapPref`, the Motion and language stores); the panel persists nothing itself. Duplicate ids throw.
+- To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
+- Today: language, Open links in, Motion, Graphics quality, Minimap, Sound, Sound effects, Music, Music volume.
+
+### Graphics quality
+
+- `hq:quality` (`src/lib/quality-pref.ts`) is `auto`, `full` or `lite`. `useQualityTier` (`src/experience/gate-tier.ts`) applies it over the probe through `applyQualityPref`; see [3d-experience.md](3d-experience.md#gate-and-tiers).
+- A change remounts the canvas (the gate key is `mount:tier`); `src/experience/qualityRemount.ts` keeps the rover, floor, phase and open room in place.
+
+### Minimap
+
+- `src/hud/minimap/`: the pure `model.ts` (from `buildFloorLayouts` and `interactRuntime.items`), the round `Minimap`, the `MapOverview` dialog and `pref.ts` (`hq:minimap`). Geometry and sizes: [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
+- It is HTML and SVG over the canvas: zero draw calls, updated from the store's 10 Hz rover mirror, never a second frame loop.
+- Places come from `interactRuntime.items` (`subscribe`, `setItems`), so a floor that adds or moves a point-and-go target shows up on the map with no minimap change.
+- The overview's room list emits the same `interact` event as clicking in the world (the rover drives there, then the room opens).
+- Off in the settings hides the minimap only; `N` still opens the overview.
+- The minimap is hidden during boot, intro and the hologram, and on phones while a room is open.
+
 ### Opening overlays and modals
 
 - From anywhere, through `src/hud/events.ts` (window `hq:hud` events):
@@ -89,6 +125,12 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
 | `hq:view` | the remembered "Open links in" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
 | `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
+| `hq:sound` | master mute, `"off"` mutes (a missing key is on), see [Audio](ci-and-deploy.md#audio) |
+| `hq:sfx` | sound effects, `"off"` disables them (missing is on) |
+| `hq:music` | background music, `"off"` disables it (missing is on) |
+| `hq:music-volume` | music volume, 0 to 1 (missing is 1) |
+| `hq:quality` | graphics quality: `auto` (default), `full` or `lite`, see [Graphics quality](#graphics-quality) |
+| `hq:minimap` | `on` (default) or `off`: whether the corner minimap shows, see [Minimap](#minimap) |
 
 `sessionStorage` keys:
 

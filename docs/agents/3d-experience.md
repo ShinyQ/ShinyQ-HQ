@@ -27,6 +27,9 @@ Index: [AGENTS.md](../../AGENTS.md).
 - It then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page.
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.
+- The effective tier is the probe's tier adjusted by the graphics quality preference (`hq:quality`: `auto`, `full`, `lite`; `useQualityTier`, `applyQualityPref` in `src/lib/gpu-tier.ts`).
+  - A `?tier=` override and a static device (no WebGL2, Save-Data, a software renderer) always win over the preference.
+  - A change re-keys the canvas (`mount:tier`) and applies at once; `qualityRemount.ts` (`isQualityRemount`, `markCanvasReplaced`) makes `Experience` keep the rover, floor, phase and open room instead of re-resuming.
 
 ## Game-first load
 

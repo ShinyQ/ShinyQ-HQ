@@ -298,8 +298,12 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 ### src/hud/
 
 - `src/hud/`: HUD over the canvas.
-  - Profile card, elevator panel with named floors from `hud.floorLabel`, controls, boot, bottom band with joystick and BoostButton.
+  - Profile card, elevator panel with named floors from `hud.floorLabel`, controls, boot, bottom band with the joystick (double tap boosts); `layout.ts` is the per-device HUD composition.
+  - Corners (phones and tablets): FloorChip (floor sheet) and FloorButtons, ViewControls (ResetView).
   - Plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events, HologramOverlay, InteractStatus (point-and-go: aria-live target, Go chip, one-time hint).
+- `src/hud/menu/`: HudMenu (the Corners menu sheet), SettingsSheet (desktop), SheetHeader, useHudToggles (the `N` and `,` keys).
+- `src/hud/settings/`: the settings registry (`registry.ts`), SettingsPanel and one file per setting in `defs/`.
+- `src/hud/minimap/`: the pure model, Minimap, MapOverview, MapLayers and the `hq:minimap` preference.
 - `src/hud/ask/`: Ask the HQ dock: AskDock (launcher, teaser, mounted in the layout), AskChat (lazy panel), AskPill (3D), useAskThread, availability (status, tower, layout).
 - `src/hud/dialog/`: Rover's dialog.
   - Pure engine.ts (say, queue, typewriter), store.ts (singleton, useDialog).
