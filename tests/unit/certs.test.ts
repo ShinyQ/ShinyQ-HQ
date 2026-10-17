@@ -97,6 +97,8 @@ describe("certification helpers", () => {
     expect(en[0]).toMatchObject({ id: "gh-600", short: "Agentic AI Developer", logo: "/tech/github.svg", issuedLabel: "Oct 2026", expiresLabel: "Oct 2027" });
     expect(en.find((c) => c.id === "ai-103")).toMatchObject({ short: "Azure AI Apps and Agents Developer Associate", logo: "/tech/microsoft.svg", issuedLabel: "Sep 2026" });
     expect(id.find((c) => c.id === "az-305")?.issuedLabel).toBe("Okt 2026");
+    expect(en.find((c) => c.id === "google-gen-ai-leader")).toMatchObject({ code: null, shortLabel: "Gen AI Leader", short: "Generative AI Leader", logo: "/tech/google.svg" });
+    expect(en.find((c) => c.id === "ai-103")?.shortLabel).toBeNull();
     expect(en.find((c) => c.id === "dp-203")).toMatchObject({ status: "expired", expires: "2024-04" });
     expect(JSON.stringify(en)).not.toMatch(/verified/i);
   });

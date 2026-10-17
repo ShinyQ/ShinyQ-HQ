@@ -106,6 +106,8 @@ export const CertificationSchema = z.strictObject({
   credentialUrl: httpsUrl.optional(),
   /** Public credential or certificate ID, shown in the preview card. */
   credentialId: nonEmpty.optional(),
+  /** Display-only title for a certification without an exam code, shown in a featured card's big title slot (never as a code). */
+  shortLabel: nonEmpty.max(16).optional(),
   status: z.enum(["earned", "in-progress", "expired"]),
   /** Renewal or expiry month (role-based Microsoft certifications renew yearly). */
   expires: YearMonthSchema.optional(),

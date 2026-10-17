@@ -575,7 +575,7 @@ test.describe("missions in 3D", () => {
     await waitForHydration(page);
     const cert = data.certifications[0];
     // A 3D badge sends this command; DialogHost shows the card outside the inert shell.
-    const view = { id: cert.id, code: cert.code ?? null, name: cert.name, short: cert.name, issuer: cert.issuer, logo: null, issued: cert.issued, issuedLabel: cert.issued, expires: null, expiresLabel: null, status: cert.status, url: cert.credentialUrl ?? null, credentialId: null, featured: false };
+    const view = { id: cert.id, code: cert.code ?? null, name: cert.name, short: cert.name, issuer: cert.issuer, logo: null, issued: cert.issued, issuedLabel: cert.issued, expires: null, expiresLabel: null, status: cert.status, url: cert.credentialUrl ?? null, credentialId: null, shortLabel: null, featured: false };
     await page.evaluate((c) => window.dispatchEvent(new CustomEvent("hq:hud", { detail: { type: "cert", cert: c } })), view);
     const dialog = page.getByRole("dialog", { name: cert.name });
     await expect(dialog).toBeVisible();

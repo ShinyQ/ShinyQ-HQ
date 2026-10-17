@@ -35,6 +35,7 @@ export function toCertViews(certs: readonly Certification[], locale: Locale): Ce
     status: c.status,
     url: c.credentialUrl ?? null,
     credentialId: c.credentialId ?? null,
+    shortLabel: c.shortLabel ?? null,
     featured: c.featured ?? false,
   }));
 }

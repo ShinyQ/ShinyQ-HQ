@@ -24,6 +24,7 @@ const cert = (status: CertView["status"]): CertView => ({
   status,
   url: null,
   credentialId: null,
+  shortLabel: null,
   featured: false,
 });
 

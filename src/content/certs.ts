@@ -20,6 +20,8 @@ export interface CertView {
   status: CertStatus;
   url: string | null;
   credentialId: string | null;
+  /** Featured card title for a certification without an exam code (Classic only; not a code). */
+  shortLabel: string | null;
   featured: boolean;
 }
 
