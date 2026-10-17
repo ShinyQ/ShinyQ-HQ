@@ -100,6 +100,8 @@ describe("privateTopic", () => {
     ["What is his favorite food?", "life"],
     ["What car does Kurniadi drive?", "life"],
     ["What is Kurniadi's home address?", "life"],
+    ["I love this site! What does he think about the government tax policy?", "politics"],
+    ["Saya suka situs ini. Apa pendapatnya tentang kebijakan pemerintah soal pajak?", "politics"],
   ])("routes %s to %s", (q, topic) => expect(privateTopic(q)).toBe(topic));
 
   it.each([
