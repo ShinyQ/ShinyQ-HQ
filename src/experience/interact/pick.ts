@@ -46,6 +46,19 @@ export function pickVolume(item: Pick<Interactable, "bounds" | "height" | "kind"
   return { center: [(minX + maxX) / 2, y, (minZ + maxZ) / 2], size: [maxX - minX, top - base, maxZ - minZ], yaw: 0 };
 }
 
+/**
+ * The hover highlight stands this far (u) outside the pick volume, so its outline and its fill never share a face
+ * with an object whose pick volume is the object itself (the L3 directory boards): coplanar faces z-fight, which
+ * shimmers as the camera moves (Round 9 M).
+ */
+export const HIGHLIGHT_MARGIN = 0.06;
+
+/** The box the hover highlight draws: the pick volume grown by `HIGHLIGHT_MARGIN` on every side. */
+export function highlightVolume(v: PickVolume): PickVolume {
+  const m = 2 * HIGHLIGHT_MARGIN;
+  return { center: v.center, size: [v.size[0] + m, v.size[1] + m, v.size[2] + m], yaw: v.yaw };
+}
+
 /** Floor-local point at fractions (0 to 1) of a pick volume along its local x, y and z, turned by its yaw. */
 export function volumePoint(v: PickVolume, fx: number, fy: number, fz: number): [number, number, number] {
   const lx = (fx - 0.5) * v.size[0];
