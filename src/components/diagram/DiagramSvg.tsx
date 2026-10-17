@@ -1,5 +1,5 @@
-import type { DiagramKind, DiagramLayout, LaidEdge, Point } from "./layout";
-import { LINE_GAP, PAD, lineHeight } from "./layout";
+import type { DiagramKind, DrawnDiagram, LaidEdge, Point } from "./layout";
+import { LINE_GAP, PAD, lineHeight } from "./metrics";
 
 /** Site tokens (globals.css), written as SVG attributes so the figure adds no CSS. */
 const INK = "#f4f4f5";
@@ -82,7 +82,7 @@ function Edge({ edge, size }: { edge: LaidEdge; size: number }) {
 }
 
 /** One laid-out diagram as inline SVG (decorative to assistive tech: the figure carries the summary). */
-export function DiagramSvg({ layout, className }: { layout: DiagramLayout; className?: string }) {
+export function DiagramSvg({ layout, className }: { layout: DrawnDiagram; className?: string }) {
   const p = layout.preset;
   return (
     <svg

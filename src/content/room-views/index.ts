@@ -1,5 +1,6 @@
 import type { Locale } from "../schema";
 import { buildCareerViews } from "./career";
+import { buildEngineViews } from "./engine";
 import { buildHighlightsViews } from "./highlights";
 import { buildLabsViews } from "./labs";
 import { buildLibraryViews } from "./library";
@@ -16,6 +17,7 @@ export function buildRoomViews(locale: Locale): RoomViews {
     ...buildLabsViews(locale),
     ...buildLibraryViews(locale),
     ...buildRoofViews(locale),
+    ...buildEngineViews(locale),
   ];
   return Object.fromEntries(views.map((view) => [view.id, view])) as RoomViews;
 }

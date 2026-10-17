@@ -22,6 +22,7 @@ const LAZY_ONLY = [
   "src/hud/drawer/ReactorBody.tsx",
   "src/hud/drawer/ResearchBody.tsx",
   "src/hud/drawer/TopicsBody.tsx",
+  "src/hud/drawer/EngineBody.tsx",
   "src/hud/HologramOverlay.tsx",
   "src/components/stats/VisitsPanel.tsx",
 ];
@@ -47,6 +48,7 @@ describe("floor chunk boundaries (Round 7 B)", () => {
     expect(["src/experience/floors/Library.tsx", "src/hud/drawer/ResearchBody.tsx", "src/hud/drawer/TopicsBody.tsx"].every((f) => library.has(f))).toBe(true);
     expect(staticClosure("src/experience/floors/chunks/roof.ts").has("src/experience/floors/Roof.tsx")).toBe(true);
     expect(staticClosure("src/experience/floors/chunks/engine.ts").has("src/experience/floors/EngineRoom.tsx")).toBe(true);
+    expect(staticClosure("src/experience/floors/chunks/engine.ts").has("src/hud/drawer/EngineBody.tsx")).toBe(true);
   });
 
   it("imports each chunk entry dynamically from floorChunks.ts only", () => {

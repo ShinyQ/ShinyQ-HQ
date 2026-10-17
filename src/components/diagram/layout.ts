@@ -1,5 +1,8 @@
 import type { Architecture } from "@/content/schema";
 import { interWidth } from "@/experience/fx/interWidth";
+import { LINE_GAP, PAD, lineHeight } from "./metrics";
+
+export { LINE_GAP, PAD, lineHeight };
 
 /**
  * Build-time architecture diagram layout (pure, no DOM): nodes on the authored `layer` x `row` grid, orthogonal
@@ -85,8 +88,6 @@ export interface DiagramLayout {
   groups: LaidGroup[];
 }
 
-export const PAD = 10;
-export const LINE_GAP = 4;
 const MARGIN = 8;
 const CROSS_GAP = 18;
 const CHANNEL = 10;
@@ -100,7 +101,6 @@ const MONO = 0.66;
 
 export const textWidth = (text: string, size: number, bold = false) => interWidth(text) * size * (bold ? BOLD : 1);
 export const monoWidth = (text: string, size: number) => text.length * size * MONO;
-export const lineHeight = (size: number) => size + LINE_GAP;
 
 /** Words, with a word wider than `max` split after its hyphens ("Microsoft-Decision-1" to "Microsoft-", "Decision-1"). */
 function wrapUnits(text: string, max: number, size: number, bold: boolean): string[] {
@@ -763,4 +763,11 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     if ((r.kind === "lane" && r.lane! >= outer) || r.kind === "back") quality.outer++;
   }
   return { preset: p, width: Math.ceil(width), height: Math.ceil(height), nodes, edges, groups, quality, laneOptions, gapEdges };
+}
+
+/** What `DiagramSvg` draws: a laid-out diagram without the order-search bookkeeping (JSON-safe: a room view can carry it). */
+export type DrawnDiagram = Pick<DiagramLayout, "preset" | "width" | "height" | "nodes" | "edges" | "groups">;
+
+export function drawnDiagram({ preset, width, height, nodes, edges, groups }: DiagramLayout): DrawnDiagram {
+  return { preset, width, height, nodes, edges, groups };
 }

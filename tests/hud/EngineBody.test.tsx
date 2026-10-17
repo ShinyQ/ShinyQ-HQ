@@ -1,0 +1,48 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildRoomViews } from "@/content/room-views";
+import { EngineBody } from "@/hud/drawer/EngineBody";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
+}));
+
+const views = buildRoomViews("en");
+const body = (id: string) => render(<EngineBody view={views[`B1:${id}`]!} locale="en" />).container;
+
+beforeEach(() => vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline")))));
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe("EngineBody (B1 station drawers)", () => {
+  it("draws the site diagram as one named image", () => {
+    const root = body("blueprint");
+    expect(root.querySelector("[data-engine-station='blueprint'] svg")).not.toBeNull();
+    expect(screen.getByRole("img", { name: views["B1:blueprint"]!.engine!.diagram!.label })).toBeInTheDocument();
+  });
+
+  it("links every linked pull request in a new tab", () => {
+    const root = body("timeline");
+    const links = [...root.querySelectorAll<HTMLAnchorElement>("a[href*='/pull/']")];
+    const expected = views["B1:timeline"]!.engine!.rounds!.flatMap((r) => r.prs.filter((p) => p.href));
+    expect(links).toHaveLength(expected.length);
+    for (const a of links) expect([a.target, a.rel]).toEqual(["_blank", "noopener noreferrer"]);
+  });
+
+  it("lists every gate with a status dot, and the excerpt with its source link", () => {
+    expect(body("gates").querySelectorAll("[data-gate] [data-accent-dot]")).toHaveLength(views["B1:gates"]!.engine!.gates!.length);
+    cleanup();
+    const agents = body("agents");
+    expect(agents.querySelector(`a[href='${views["B1:agents"]!.engine!.excerpt!.href}']`)).not.toBeNull();
+  });
+
+  it("shows the measured numbers and the hourly uptime check", () => {
+    const root = body("dashboard");
+    for (const tile of views["B1:dashboard"]!.engine!.tiles!) expect(root.textContent).toContain(tile.value);
+    expect(root.querySelector("[data-tile='uptime']")).not.toBeNull();
+  });
+});

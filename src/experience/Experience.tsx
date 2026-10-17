@@ -406,8 +406,9 @@ export default function Experience({
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
     // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync), and so does the
     // Ops Control Room (the Classic site shows it on /contact#production) and the Visitor Observatory (/contact#visits).
+    // B1 Engine Room stations keep the floor URL (/{locale}) and are remembered in the history entry.
     return (room: RoomId) =>
-      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && !room.startsWith("B1:") && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Topic Constellation pick in the hash (`#library-topic=<slug>`), like the Tech Reactor below.
