@@ -1,7 +1,8 @@
-import { ASK_MAX_QUESTION, isAskEntry, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
+import { ASK_MAX_QUESTION, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
 import { markdownToPlain } from "../../src/ask/markdown";
 import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
 import { findBlocked } from "./checks";
+import { parseHistory, signTurn, verifyHistory } from "./history";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
 import { scrubPII } from "./pii";
@@ -21,7 +22,8 @@ const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "ot
 
 /** Request pipeline in the security order of spec 7.4. */
 
-export const MAX_BODY_BYTES = 2048;
+/** The question plus up to 3 signed earlier turns (multi-turn memory, owner decision 2026-10-17). */
+export const MAX_BODY_BYTES = 8192;
 export const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const STREAM_PIECE = 24;
 const STREAM_DELAY_MS = 15;
@@ -66,6 +68,8 @@ interface ParsedBody {
   entry: AskEntry | "";
   /** Curated chip id the client sent (checked against the question by `chipFor` before it is logged). */
   chip?: string;
+  /** Well-formed earlier turns, not yet verified. */
+  history: AskTurn[];
 }
 
 function parseBody(raw: string): ParsedBody | null {
@@ -76,12 +80,12 @@ function parseBody(raw: string): ParsedBody | null {
     return null;
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const { q, locale, turnstileToken, source, chip } = data as Record<string, unknown>;
+  const { q, locale, turnstileToken, source, chip, history } = data as Record<string, unknown>;
   if (typeof q !== "string" || (locale !== "en" && locale !== "id")) return null;
   if (turnstileToken !== undefined && (typeof turnstileToken !== "string" || turnstileToken.length > 2048)) return null;
   if (source !== undefined && typeof source !== "string") return null;
   if (chip !== undefined && (typeof chip !== "string" || chip.length > 64)) return null;
-  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "", ...(chip ? { chip } : {}) };
+  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "", ...(chip ? { chip } : {}), history: parseHistory(history) };
 }
 
 /** SSE frames are JSON, so a model token can never break the event stream (T6). */
@@ -145,18 +149,21 @@ interface EventData {
   topic?: StatsTopic | "";
   chip?: string;
   latencyMs: number;
+  /** Earlier turns that reached the model (multi-turn memory); 0 for a first turn. */
+  historyUsed?: number;
 }
 
 /**
  * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
  * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
  * topic, chip id (the last two feed the public visit stats; appended so older queries keep working).
+ * Doubles: latency, count, earlier turns sent to the model.
  */
 function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
       blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? ""],
-      doubles: [e.latencyMs, 1],
+      doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
   } catch {
@@ -221,10 +228,16 @@ export function createAskHandler(deps: HandlerDeps) {
     const chip = chipFor(question, body.chip);
     const stats = (tags: readonly AskTag[]) => ({ topic: chip ? STATS_TOPIC_OF[chip.topic] : topicOfTags(tags), chip: chip?.id ?? "" });
 
-    // 6. Cache (answers that passed every check only; re-checked against the blocklist on read).
+    // 5b. Earlier turns: only the ones this server signed for this panel language and pack (a failed signature is dropped, never an error).
+    const turnScope = { locale: body.locale, packVersion: pack.packVersion };
+    const history = await verifyHistory(body.history, env.ASK_COOKIE_KEY, turnScope);
+    // Signs a model answer so the client can send it back as history.
+    const sign = async (text: string) => (env.ASK_COOKIE_KEY ? { sig: await signTurn(env.ASK_COOKIE_KEY, turnScope, { q: question, a: text }) } : {});
+
+    // 6. Cache (answers that passed every check only; re-checked against the blocklist on read). First turns only: a follow-up depends on its history.
     const key = await cacheKey(pack.packVersion, locale, question);
     try {
-      const hit = await env.ASK_KV?.get(key);
+      const hit = history.length === 0 ? await env.ASK_KV?.get(key) : null;
       const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
       // Cached text is markdown: scan it and its plain text, which joins words that marks split ("SM**BC**").
       const blocked = (text: string) => [text, markdownToPlain(text)].some((s) => findBlocked(s, safety.blocklist).length > 0);
@@ -235,7 +248,7 @@ export function createAskHandler(deps: HandlerDeps) {
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
-        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }, tags), delay, responseHeaders);
+        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cached.text)) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -257,6 +270,7 @@ export function createAskHandler(deps: HandlerDeps) {
       safety,
       client,
       models: { primary: env.ASK_PRIMARY || DEFAULT_PRIMARY, fallback: env.ASK_FALLBACK || DEFAULT_FALLBACK },
+      history,
     });
 
     // 9. Count, cache passing answers, log, stream.
@@ -266,17 +280,19 @@ export function createAskHandler(deps: HandlerDeps) {
       const bad = result.reason === "model_failed" || (result.reason !== undefined && !EXPECTED_REASONS.has(result.reason));
       background.push(recordSample(env.ASK_KV, bad, started));
     }
-    if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback") && env.ASK_KV) {
+    const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback");
+    if (modelAnswer && result.historyUsed === 0 && env.ASK_KV) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), latencyMs: now() - started });
+    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), latencyMs: now() - started, historyUsed: result.historyUsed });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;
     // Lead intent: the contact card values come from the dataset (the pack), never from the model.
     const contact = result.lead && shareable ? pack.contact : undefined;
-    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }, tags), delay, responseHeaders);
+    const signature = modelAnswer ? await sign(result.text) : {};
+    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...signature }, tags), delay, responseHeaders);
   }
 
   return async function onRequest(context: PagesContext): Promise<Response> {
