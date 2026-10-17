@@ -133,6 +133,7 @@ const SECTION_PAGES: Record<string, OgPage> = {
   "/library": "library",
   "/contact": "contact",
   "/cv": "cv",
+  "/build": "build",
 };
 
 /** "Kurniadi Ahmad Wijaya" -> "Kurniadi": the short attribution in search titles. */

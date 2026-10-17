@@ -68,7 +68,7 @@ export function languageAlternates(path: string, toUrl: (p: string) => string = 
 }
 
 /** Section pages with their own share card; journey entries share the journey card. */
-export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv"] as const;
+export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv", "build"] as const;
 export type OgPage = (typeof OG_PAGES)[number];
 
 export type OgTarget =
