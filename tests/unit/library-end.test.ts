@@ -5,6 +5,7 @@ import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, type LibraryLayoutInput } from "@/experience/floors/library/model";
 import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
+import { zoneAt } from "@/experience/camera/orbit";
 import { distanceToRect } from "@/experience/nav/collision";
 import { distanceToElevator, FAST_RETURN } from "@/experience/nav/fastReturn";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
@@ -109,5 +110,17 @@ describe.each([
     if (layout.board) expect(L4.tall).toContainEqual({ ...layout.board.rect, h: NEWSROOM.board.h });
     const zone = L4.viewZones!.find((z) => z.id === TOPICS_ROOM)!;
     expect(inside(end.ringStop, zone.area)).toBe(true);
+  });
+
+  it("gives an eastbound rover the constellation view on the timeline approach, at the stop any heading", () => {
+    const east = Math.PI / 2;
+    const approach = { x: end.ringStop.x - NEWSROOM.end.approach + 0.5, z: end.ringStop.z };
+    for (const x of [approach.x, end.ringStop.x - 6, end.ringStop.x - 3]) expect(zoneAt("L4", { x, z: 0, heading: east }, L4.viewZones)?.id, `${x}`).toBe(TOPICS_ROOM);
+    expect(zoneAt("L4", { ...approach, heading: -east }, L4.viewZones)?.id).not.toBe(TOPICS_ROOM);
+    for (const heading of [east, -east, 0, Math.PI]) expect(zoneAt("L4", { ...end.ringStop, heading }, L4.viewZones)?.id).toBe(TOPICS_ROOM);
+    // The approach is clear of every station's door zone, so a door on the last stretch keeps its own view.
+    const doors = (L4.viewZones ?? []).filter((z) => layout.stations.some((s) => s.room === z.id));
+    for (const z of L4.viewZones!.filter((v) => v.id === TOPICS_ROOM))
+      for (const d of doors) expect(z.area.maxX < d.area.minX || z.area.minX > d.area.maxX || z.area.maxZ < d.area.minZ || z.area.minZ > d.area.maxZ, d.id).toBe(true);
   });
 });

@@ -71,6 +71,8 @@ export const NEWSROOM = {
     lookEast: (-3 * Math.PI) / 4,
     /** Zoom out at the constellation stop so the whole cloud fits. */
     zoom: 1.35,
+    /** How far west of the constellation stop an eastbound rover already gets its view (along the timeline). */
+    approach: 8,
   },
 } as const;
 
@@ -170,6 +172,15 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
       { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4 },
       // The end plaza: look east over the constellation from where the timeline meets the ring road.
       { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom },
+      // Its approach on the timeline, same id and view: a rover heading east toward the plaza already sees the
+      // whole cloud with the topic count above it. Eastbound only, so a drive back west from the plaza keeps its view.
+      {
+        id: TOPICS_ROOM,
+        area: { minX: ringStop.x - E.approach, maxX: ringStop.x - 2.5, minZ: ringStop.z - 2.5, maxZ: ringStop.z + 2.5 },
+        yaw: E.lookEast,
+        zoom: E.zoom,
+        travel: { x: 1, z: 0 },
+      },
       ...(monument ? [{ id: "L4:metrics", area: around(monument.stop, 2.5), yaw: E.lookNorth, zoom: 1.2 }] : []),
       ...(board ? [{ id: "L4:board:archive", area: around(board.stop, 2), yaw: E.lookEast }] : []),
     ],
