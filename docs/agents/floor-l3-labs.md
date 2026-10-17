@@ -88,6 +88,7 @@ Three free-standing boards stand at the fork (`LABS.board`; owner decision: a ne
 
 ### Arrival and camera views
 
+- L3 is the reference arrival; the rule for the other floors is in [floors.md](floors.md#arrival). Its zone is the ordinary `L3:overview` (from `LABS.overview.x - 4` to the data board stop x - 1, z +/-2), not an `arrivalOnly` `<floor>:arrival` zone.
 - Deep links to `/labs` spawn, and elevator arrivals roll on (`FloorLayout.arrival`), to `LABS.overview` (8.5, 0) on the hub's east rim, more than `HINT.radius` from every board stop.
 - `FloorLayout.viewZones` are checked in order: the board stops, the overview, the doors.
 

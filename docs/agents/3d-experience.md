@@ -169,7 +169,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 
 Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the car heading east and the camera ends behind it, looking east. Pure math in `camera/arrival.ts`; floor points and zones in [floors.md](floors.md#arrival).
 
-- The Director rolls every elevator arrival on from the shaft to `FloorLayout.arrival` (the request carries `arrival: true`); a queued mission drive still replaces it.
+- The Director rolls every elevator arrival on from the shaft to `FloorLayout.arrival` (the autopilot drive, `roverRuntime.autopilot`, carries `arrival: true`); a queued mission drive still replaces it.
 - Glide (`CameraDirector`): it starts when the ride's stage becomes `opening`, not under reduced motion.
   - It primes the destination's arrival zone (`primeZone`) and draws from `shoulderPose` (`ARRIVAL_GLIDE.start`: low behind the rover, inside the car, looking east) to the destination rig's settled pose (`rigPose`: follow, or the L2 rail), eased by `glideProgress` over `ARRIVAL_GLIDE.duration` (1.5 s).
   - The pose is snapped (no spring) and skips the collision clamp.
