@@ -1,16 +1,18 @@
 name: CI
 
-# PR pipeline: build once, run e2e in 4 parallel shards and the 3D perf gates (e2e/perf/, 2 shards)
-# against the same `out/`, then merge the reports. "Build, CV and e2e" is the aggregate job: it fails if
+# PR pipeline: build once, run e2e and the 3D perf gates (e2e/perf/) in parallel shards against the
+# same `out/`, then merge the reports. "Build, CV and e2e" is the aggregate job: it fails if
 # any job before it failed (Lighthouse and 3D budgets included), so it stays the single required check,
 # and it writes the 3D perf summary against the last green main run. Screenshots run in screenshots.yml
 # (nightly, label, manual); the game-first timeline in perf-nightly.yml.
 #
-# Smart CI (docs/agents/ci-and-deploy.md): the `changes` job (scripts/ci-plan.ts) plans which heavy jobs
-# a pull request needs from its changed paths: the e2e shards (every spec, only the mapped specs, or
-# none), the 3D perf gates and Lighthouse. Typecheck, lint, unit tests, the build, the safety scan and
-# og:check always run. Pushes to main, manual dispatches, the nightly schedule and any planner failure
-# run everything. A heavy job never skips at the job level (a skipped matrix job would report an
+# Smart CI (docs/agents/ci-and-deploy.md): the `changes` job (scripts/ci-plan.ts) plans which tests a
+# pull request needs from its changed paths: the affected e2e specs plus a PR smoke set on a shard count
+# sized from e2e/durations.json, the affected 3D perf tests (a --grep; memory-full only for memory paths)
+# and the affected Lighthouse URLs. Typecheck, lint, unit tests, the build, the safety scan and og:check
+# always run. Pushes to main, manual dispatches, the nightly schedule, the `full-ci` label, CI or
+# dependency changes, unmapped paths and any planner failure run everything: 8 e2e and 4 perf shards
+# (2 perf shards on pull requests, so the required checks keep the names `3D perf gates 1/2` and `2/2`). A heavy job never skips at the job level (a skipped matrix job would report an
 # unexpanded check name and block the required checks): its steps skip and one "Not needed" step
 # passes. Complete runs upload the `ci-full` artifact for the deploy gate (scripts/ci-status.ts).
 # The nightly schedule runs the full pipeline on main every night, plus the nightly-only `nightly` job
@@ -67,16 +69,25 @@ jobs:
       full: ${{ steps.plan.outputs.full }}
       e2e: ${{ steps.plan.outputs.e2e }}
       e2e_files: ${{ steps.plan.outputs.e2e_files }}
+      e2e_shards: ${{ steps.plan.outputs.e2e_shards }}
+      e2e_total: ${{ steps.plan.outputs.e2e_total }}
       perf: ${{ steps.plan.outputs.perf }}
+      perf_grep: ${{ steps.plan.outputs.perf_grep }}
+      perf_shards: ${{ steps.plan.outputs.perf_shards }}
+      perf_total: ${{ steps.plan.outputs.perf_total }}
       lighthouse: ${{ steps.plan.outputs.lighthouse }}
+      lighthouse_urls: ${{ steps.plan.outputs.lighthouse_urls }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Cone mode keeps the root files (package.json, lighthouserc.json); src for the import closures,
+          # e2e for the durations and the smoke test lines.
           sparse-checkout: |
             src
             scripts
-      # No install: scripts/ci-plan.ts imports only scripts/e2e-plan.ts.
+            e2e
+      # No install: scripts/ci-plan.ts imports only node builtins and other dependency-free scripts.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: package.json
@@ -199,7 +210,7 @@ jobs:
           retention-days: 7
 
   e2e:
-    name: E2E shard ${{ matrix.shard }}/4
+    name: E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}
     runs-on: ubuntu-latest
     # No job-level `if:` (smart CI): a skipped matrix job reports an unexpanded check name, so the
     # steps skip instead and "Not needed" passes.
@@ -207,7 +218,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        # Sized by the plan: 8 for a full run, 1 to 8 for the affected specs of a pull request.
+        shard: ${{ fromJSON(needs.changes.outputs.e2e_shards) }}
     steps:
       - name: Not needed
         if: needs.changes.outputs.e2e == 'none'
@@ -226,17 +238,18 @@ jobs:
         with:
           name: site
           path: out
-      - name: Playwright e2e (shard ${{ matrix.shard }}/4)
+      - name: Playwright e2e (shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }})
         # Duration-balanced test list (scripts/e2e-shard.ts, e2e/durations.json); keep the total in sync
-        # with the matrix and with deploy.yml. e2e/deploy.spec.ts repeats the out/ scan with the private list.
-        # E2E_FILES: the planned spec files of a selective run; empty means every spec.
+        # e2e/deploy.spec.ts repeats the out/ scan with the private list.
+        # E2E_FILES: the planned spec files and `file:line` smoke tests of a selective run; empty means every spec.
         if: needs.changes.outputs.e2e != 'none'
         env:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           E2E_FILES: ${{ needs.changes.outputs.e2e_files }}
+          SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}
         run: |
           # shellcheck disable=SC2086 # E2E_FILES splits into one argument per spec file on purpose.
-          bun run e2e:shard ${{ matrix.shard }}/4 $E2E_FILES
+          bun run e2e:shard "$SHARD" $E2E_FILES
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && needs.changes.outputs.e2e != 'none' }}
         with:
@@ -252,15 +265,15 @@ jobs:
     # after round trips on the full tier with Motion Full (the lite, reduced-motion memory gate,
     # e2e/memory.spec.ts, runs in the e2e shards). Counters and bytes only; time-based numbers are never
     # gated here.
-    name: 3D perf gates ${{ matrix.shard }}/2
+    name: 3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}
     runs-on: ubuntu-latest
     # No job-level `if:` (smart CI), as in the e2e job: the required checks "3D perf gates 1/2" and
-    # "2/2" need the expanded matrix names.
+    # "2/2" need the expanded matrix names, so pull requests always plan 2 perf shards (4 elsewhere).
     needs: [site, changes]
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: ${{ fromJSON(needs.changes.outputs.perf_shards) }}
     steps:
       - name: Not needed
         if: needs.changes.outputs.perf == 'false'
@@ -279,11 +292,20 @@ jobs:
         with:
           name: site
           path: out
-      - name: 3D perf gates (shard ${{ matrix.shard }}/2)
+      - name: 3D perf gates (shard ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }})
         # Same duration-balanced split as the e2e shards (perf lane timings in e2e/durations.json), not
         # Playwright's contiguous --shard, which put all four slow full-tier floors into shard 1.
+        # PERF_GREP: the affected perf tests of a pull request (scripts/perf-plan.ts); empty runs the lane.
         if: needs.changes.outputs.perf != 'false'
-        run: bun run e2e:perf:shard ${{ matrix.shard }}/2
+        env:
+          PERF_GREP: ${{ needs.changes.outputs.perf_grep }}
+          SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}
+        run: |
+          if [ -n "$PERF_GREP" ]; then
+            bun run e2e:perf:shard "$SHARD" --grep "$PERF_GREP"
+          else
+            bun run e2e:perf:shard "$SHARD"
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && needs.changes.outputs.perf != 'false' }}
         with:
@@ -367,7 +389,7 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
       - name: Mark a complete run (deploy gate)
-        # scripts/ci-status.ts reuses only CI runs that ran every e2e shard, the perf gates and Lighthouse.
+        # scripts/ci-status.ts reuses only CI runs that ran every e2e test, every perf test and every Lighthouse URL.
         if: needs.changes.outputs.full == 'true'
         run: echo "${{ github.sha }}" > ci-full.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -420,9 +442,18 @@ jobs:
         with:
           bun-version-file: package.json
       - name: Run Lighthouse CI
-        # Uses the preinstalled Google Chrome and lighthouserc.json.
+        # Uses the preinstalled Google Chrome and lighthouserc.json. LHCI_URLS: the affected URLs of a pull
+        # request (warm-up first, scripts/ci-plan.ts); empty runs every URL in lighthouserc.json.
         if: needs.changes.outputs.lighthouse != 'false'
-        run: bunx @lhci/cli@0.15.1 autorun
+        env:
+          LHCI_URLS: ${{ needs.changes.outputs.lighthouse_urls }}
+        run: |
+          if [ -n "$LHCI_URLS" ]; then
+            jq --argjson urls "$LHCI_URLS" '.ci.collect.url = $urls' lighthouserc.json > lighthouserc.pr.json
+            bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.pr.json
+          else
+            bunx @lhci/cli@0.15.1 autorun
+          fi
       - name: Main baseline for the JS chunk diff
         if: ${{ !cancelled() && needs.changes.outputs.lighthouse != 'false' }}
         env:
