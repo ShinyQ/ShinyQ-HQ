@@ -47,6 +47,7 @@ export const ALL_SPECS = [
   "production",
   "reactor",
   "ride",
+  "rover-idle",
   "roof",
   "seo",
   "spectacle",
@@ -210,8 +211,11 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride", "arrivals"] },
   // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone.
   { test: /^src\/experience\/config\.ts$/, specs: ["experience", "arrivals"] },
+  // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
+  { test: /^src\/experience\/rover\/(idle|activity)\.ts$/, specs: ["rover-idle"] },
+  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "camera", "experience"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
-  { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
+  { test: /^src\/experience\/input\/|^src\/experience\/rover\/fade\.ts$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
   { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
   { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding", "view-links"] },

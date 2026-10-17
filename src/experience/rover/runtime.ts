@@ -1,6 +1,7 @@
 import { LOBBY } from "../config";
 import type { AutopilotRequest } from "../missions/host3d";
 import type { RoverFace, Vec2 } from "../types";
+import { IDLE } from "./idle";
 
 /**
  * Per-frame rover state shared between the director, the rover mesh and the
@@ -69,6 +70,17 @@ export const roverRuntime = {
   /** Camera FOV kick (degrees) and follow distance factor from the boost (test probes). */
   boostFov: 0,
   boostPull: 1,
+  /**
+   * Seconds of stillness before the rover plays an idle sequence (`idle.ts`). Infinite under
+   * `navigator.webdriver`, so existing visual and screenshot captures never catch an idle hop; tests
+   * opt in by setting `window.__hq.rover.idleDelay`.
+   */
+  idleDelay: (typeof navigator !== "undefined" && navigator.webdriver ? Number.POSITIVE_INFINITY : IDLE.delay) as number,
+  /** The idle step playing now (look, blink, hop, spin or beep), null when not idling (test probe). */
+  idle: null as string | null,
+  /** Idle head yaw and body spin (radians) as drawn this frame (test probes). */
+  idleYaw: 0,
+  idleSpin: 0,
   /** Whole-frame draw calls (scene plus post passes), mirrored every 0.1 s; the split is in `__hq.perf.stats`. */
   drawCalls: 0,
   /** Whole-frame triangles, mirrored every 0.1 s. */

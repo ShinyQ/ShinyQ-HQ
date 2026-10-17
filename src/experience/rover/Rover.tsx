@@ -18,6 +18,7 @@ import {
   type Mesh,
   type MeshBasicMaterial,
 } from "three";
+import { audio } from "@/lib/audio";
 import { getHQStore } from "@/store/useHQStore";
 import { roverOpacity } from "../camera/firstPerson";
 import { COLORS, ROVER } from "../config";
@@ -29,8 +30,11 @@ import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
 import { BOOST } from "./boost";
 import { createBodyState, stepBody } from "./bodyDynamics";
+import { activity, bumpActivity, watchActivity } from "./activity";
+import { askFace } from "./askFace";
 import { MAX_FRAME_DT } from "./controller";
 import { faceFrame } from "./faces";
+import { createIdleState, idleEligible, stepIdle } from "./idle";
 import { drawBlob, drawFace, FACE_H, FACE_W } from "./faceTexture";
 import { prepareFade, setFadeOpacity } from "./fade";
 import { roverRuntime } from "./runtime";
@@ -73,6 +77,7 @@ function readMonoFont() {
 export function Rover({ tier }: { tier: GpuTier }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
+  const head = useRef<Group>(null);
   const wheels = useRef<InstancedMesh>(null);
   const tip = useRef<Mesh>(null);
   const flag = useRef<Group>(null);
@@ -119,6 +124,9 @@ export function Rover({ tier }: { tier: GpuTier }) {
     nextDust: 0,
     dummy: new Object3D(),
     body: createBodyState(),
+    idle: createIdleState(),
+    idleYaw: 0,
+    idleSpin: 0,
   });
 
 
@@ -129,6 +137,16 @@ export function Rover({ tier }: { tier: GpuTier }) {
     document.fonts?.ready.then(() => {
       l.lastKey = "";
     });
+  }, []);
+
+  useEffect(() => {
+    const stop = watchActivity(document);
+    const bump = () => bumpActivity();
+    const off = intents.on(bump);
+    return () => {
+      stop();
+      off();
+    };
   }, []);
 
   // Hashed alpha goes on before the first compile, so the first-person fade never recompiles a shader.
@@ -159,6 +177,44 @@ export function Rover({ tier }: { tier: GpuTier }) {
     r.boostPitch = l.body.pitch.x;
     r.boostRoll = l.body.roll.x;
     body.current.rotation.x = l.body.pitch.x;
+
+    const store = getHQStore().getState();
+    const out = stepIdle(l.idle, {
+      t,
+      seq: activity.seq,
+      reduced,
+      delay: r.idleDelay,
+      random: Math.random,
+      eligible: idleEligible({
+        phase: store.phase,
+        missionRunning: store.mission?.status === "running",
+        ride: store.ride !== null,
+        beam: store.beam !== null,
+        picker: store.picker !== null,
+        driving: r.driving,
+        speed: r.speed,
+        cameraBlend: r.cameraBlend,
+        askFace: askFace() !== null,
+      }),
+    });
+    if (out.blink) l.blinkUntil = t + 0.15;
+    if (out.hop) r.hopUntil = t + 0.35;
+    if (out.beep) audio.play("beep");
+    // Raw yaw and spin are drawn as is; at 0 they decay out, the spin first wrapped to the nearest turn
+    // (the end of a spin jumps from 2 pi to 0, the same pose), so the rover never unwinds or snaps.
+    const decay = Math.exp(-dt * 30);
+    l.idleYaw = out.headYaw !== 0 ? out.headYaw : Math.abs(l.idleYaw) < 1e-3 ? 0 : l.idleYaw * decay;
+    if (out.spin !== 0) l.idleSpin = out.spin;
+    else {
+      const wrapped = Math.atan2(Math.sin(l.idleSpin), Math.cos(l.idleSpin));
+      l.idleSpin = Math.abs(wrapped) < 1e-3 ? 0 : wrapped * decay;
+    }
+    r.idle = out.action;
+    r.idleYaw = l.idleYaw;
+    r.idleSpin = l.idleSpin;
+    if (head.current) head.current.rotation.y = l.idleYaw;
+    body.current.rotation.y = l.idleSpin;
+
     body.current.rotation.z = r.tilt + l.body.roll.x + l.body.buzzRoll;
     const hop = t < r.hopUntil && !reduced ? Math.sin(((r.hopUntil - t) / 0.35) * Math.PI) * 0.3 : 0;
     body.current.position.y = hop + (reduced ? 0 : Math.sin(t * 2.2) * 0.04) + l.body.buzzY;
@@ -300,30 +356,32 @@ export function Rover({ tier }: { tier: GpuTier }) {
           <RoundedBox args={[1.3, 0.55, 1.0]} radius={0.12} smoothness={3} position={[0, 0.68, 0]}>
             <meshStandardMaterial color="#d4d4d8" roughness={0.55} />
           </RoundedBox>
-          <RoundedBox args={[1.2, 1.1, 0.9]} radius={0.16} smoothness={3} position={[0, 1.5, 0]}>
-            <meshStandardMaterial color="#e5e7eb" roughness={0.5} />
-          </RoundedBox>
-          <mesh position={[0, 1.52, 0.452]}>
-            <planeGeometry args={[0.9, 0.7]} />
-            <meshBasicMaterial color={neon.face} toneMapped={false}>
-              <canvasTexture ref={screenTexture} attach="map" args={[screenCanvas]} colorSpace={SRGBColorSpace} />
-            </meshBasicMaterial>
-          </mesh>
-          <mesh position={[0, 1.62, -0.455]}>
-            <boxGeometry args={[0.8, 0.09, 0.02]} />
-            <meshBasicMaterial color={neon.strip} toneMapped={false} />
-          </mesh>
+          <group ref={head} position={[0, 1.5, 0]}>
+            <RoundedBox args={[1.2, 1.1, 0.9]} radius={0.16} smoothness={3}>
+              <meshStandardMaterial color="#e5e7eb" roughness={0.5} />
+            </RoundedBox>
+            <mesh position={[0, 0.02, 0.452]}>
+              <planeGeometry args={[0.9, 0.7]} />
+              <meshBasicMaterial color={neon.face} toneMapped={false}>
+                <canvasTexture ref={screenTexture} attach="map" args={[screenCanvas]} colorSpace={SRGBColorSpace} />
+              </meshBasicMaterial>
+            </mesh>
+            <mesh position={[0, 0.12, -0.455]}>
+              <boxGeometry args={[0.8, 0.09, 0.02]} />
+              <meshBasicMaterial color={neon.strip} toneMapped={false} />
+            </mesh>
+            <mesh position={[0.35, 0.85, -0.1]}>
+              <cylinderGeometry args={[0.025, 0.025, 0.6, 6]} />
+              <meshStandardMaterial color="#a1a1aa" />
+            </mesh>
+            <mesh ref={tip} position={[0.35, 1.18, -0.1]}>
+              <sphereGeometry args={[0.08, 12, 12]} />
+              <meshBasicMaterial color={neon.tip} toneMapped={false} />
+            </mesh>
+          </group>
           <mesh position={[0, 0.72, -0.505]}>
             <boxGeometry args={[0.9, 0.12, 0.02]} />
             <meshBasicMaterial color={neon.belt} toneMapped={false} />
-          </mesh>
-          <mesh position={[0.35, 2.35, -0.1]}>
-            <cylinderGeometry args={[0.025, 0.025, 0.6, 6]} />
-            <meshStandardMaterial color="#a1a1aa" />
-          </mesh>
-          <mesh ref={tip} position={[0.35, 2.68, -0.1]}>
-            <sphereGeometry args={[0.08, 12, 12]} />
-            <meshBasicMaterial color={neon.tip} toneMapped={false} />
           </mesh>
         </group>
       </group>

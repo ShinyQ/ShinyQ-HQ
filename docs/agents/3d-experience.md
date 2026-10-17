@@ -98,6 +98,17 @@ The same script sets these on every page before first paint:
 - Crawlers, Lighthouse and the static tier never load the 3D chunk.
 - E2E: `asReturningVisitor` sets the flag, so `enterHQ` and `enterFloorRoute` land in explore (`enterHQ` also waits for `waitForSceneLive`); tests of the boot itself open without it.
 
+## Rover idle
+
+After 15 s without input (`IDLE.delay`) the rover plays a short scripted sequence (look around, blink, a hop or a spin, one beep), waits 8 to 14 s and plays another.
+
+- `rover/idle.ts` (pure): `stepIdle` runs the sequences, `idleEligible` gates them (exploring, no mission, ride, beam or picker, not driving, parked, third person, no Ask face). Phases `room` (the drawer), `hologram`, `elevator`, `autopilot`, `boot`, `intro` and `static` are not `explore`, so nothing plays then. The terminal, the command palette, the settings panel, the menu sheet, the map overview and the Ask dock keep `phase` `explore` (only the Ask face is gated), so the idle can play behind them.
+- `rover/activity.ts`: `activity.seq` counts input (`watchActivity` on the document plus every intent); any change restarts the wait.
+- `Rover.tsx` draws it: the head parts sit in a pivot group (look yaw), the body spin goes on `body.rotation.y`, `blink` and `hop` reuse the blink timer and `hopUntil`, `beep` plays through `audio`. Raw yaw and spin are drawn as is; at 0 they decay out in about 0.15 s (the spin first wrapped to the nearest turn), so input stops it at once without a visible unwind. No extra meshes, materials or programs.
+- Reduced motion plays only the blinks. A spin and a look never run under it.
+- Probes on `roverRuntime`: `idle` (the step playing, null when not idling), `idleYaw`, `idleSpin` (as drawn) and `idleDelay` (infinite by default under `navigator.webdriver`, so Playwright runs and captures never catch an idle hop; the capture scripts that hide webdriver (`scripts/sky-shots.ts`, `scripts/capture-dev.ts`) set it to infinite themselves; e2e specs that use `asHumanBrowser` run with the normal delay; the idle spec sets it to 1).
+- E2E: `e2e/rover-idle.spec.ts`.
+
 ## Boost
 
 - Input: hold Shift, or double-tap the joystick on coarse pointers (`Joystick boost`, `useBoostToggle` in `src/hud/boost.ts`, `setBoost` in `input/joystick.ts`).
@@ -261,7 +272,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - The canvas runs `frameloop="never"`. `FrameLoop` (`scene/FrameLoop.tsx`) calls R3F `advance` from its own rAF loop through `framePacer` (`scene/framePacer.ts`).
   - At most 60 fps (`FRAME_CAP_FPS`): 90, 120 and 144 Hz displays skip refreshes, 60 Hz displays render every one, no idle cap.
 - Animate with `useFrame` deltas; never start another rAF loop or rely on `invalidate` in the scene.
-- `__hq.frames()` counts rendered frames.
+- `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused).
 - A runtime quality monitor must take 60 fps as the ceiling and restart its sample window across a pause: `scene/frameMonitor.ts` treats a gap above `pauseMs` (a paused loop, a hidden tab) as a pause.
 
 ### Pausing when covered

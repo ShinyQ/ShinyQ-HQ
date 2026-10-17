@@ -54,6 +54,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Build story page | Round 9 (2026-10-17): the Classic page `/{locale}/build` ("How this site was built") tells the build from the blueprint to the quality gates, with numbers measured at build time (`content/build-story.json`, `content/generated/build-facts.json`); Ask the HQ now cites it for questions about the site | Done |
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume), a round minimap with a floor overview, a slim Rover toast on phones | Done |
 | L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
+| Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
 
 ## Controls and first visit
 
@@ -70,6 +71,7 @@ Open `/en` and press **Boot rover**.
 - Drive with WASD or the arrow keys.
 - Hold **Shift** to boost to about twice the speed: twin light trails follow the path, the rover squats and leans, the view widens, and speed streaks and wheel sparks rush past.
 - On touch screens use the joystick; double-tap it to toggle boost on or off (the joystick glows while boost is on).
+- Leave the rover parked for 15 s with no input and it idles: it looks around, blinks, hops or spins and beeps once if sound is on. The sequence varies, any key, pointer or touch input stops it at once, and it never runs during a mission, a point-and-go drive, a ride or while the drawer is open. With reduced motion it only blinks.
 
 ### Point-and-go
 
