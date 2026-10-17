@@ -49,6 +49,22 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride", "experience"]));
   });
 
+  it("maps the B1 Engine Room files to its spec", () => {
+    expect(specsForChanges(["src/experience/floors/engine/scenery.ts"]).specs).toEqual(expect.arrayContaining(["engine-room", "floor-chunks"]));
+    expect(specsForChanges(["src/experience/floors/engine/layout.ts"]).specs).toEqual(expect.arrayContaining(["engine-room", "arrivals"]));
+    for (const file of [
+      "src/experience/floors/EngineRoom.tsx",
+      "src/experience/floors/chunks/engine.ts",
+      "src/hud/drawer/EngineBody.tsx",
+      "src/content/room-views/engine.ts",
+      "src/experience/b1.ts",
+      "src/hud/floorRows.ts",
+      "e2e/b1.ts",
+    ]) {
+      expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["engine-room", "memory"]));
+    }
+  });
+
   it("keeps the perf lane out of the regular suite and treats the budgets as shared infrastructure", () => {
     expect(specsForChanges(["e2e/perf/look.spec.ts"]).specs).toEqual([]);
     expect(specsForChanges(["e2e/perf/baseline.json"]).specs).toEqual([]);

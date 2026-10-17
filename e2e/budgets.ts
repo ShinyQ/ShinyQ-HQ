@@ -15,8 +15,8 @@ export interface RenderBudget {
 
 export const RENDER_BUDGET: RenderBudget = { sceneCalls: 150, postCalls: 20, triangles: 30_000, minSceneCalls: 10 };
 
-/** Tighter caps on settled scene calls (inclusive): L1 is the densest floor, RF stays light. */
-export const FLOOR_SCENE_CAPS: Readonly<Record<string, number>> = { L1: 125, RF: 79 };
+/** Tighter caps on settled scene calls (inclusive): L1 is the densest floor, RF stays light, B1 is mostly instanced. */
+export const FLOOR_SCENE_CAPS: Readonly<Record<string, number>> = { L1: 125, RF: 79, B1: 100 };
 
 /** A settled budget check watches at least this many frames and this long (every frame counts). */
 export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
@@ -28,12 +28,15 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
  * session total (main + all floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
  * (measured 457.0 KB, about 13 KB headroom so creep is caught early), lite 446.4 KB (measured 433.4 KB).
+ * B1 is measured after RF, so modules it shares with RF (the roof kit) count toward RF, and it is left out of the session total.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
   spec: 600 * 1024,
   minExpected: 100 * 1024,
-  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 },
+  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
+  /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
+  sessionFloors: ["L3", "L4", "RF"],
   session: { lite: Math.round(446.4 * 1024), full: 470 * 1024 },
 } as const;
 
