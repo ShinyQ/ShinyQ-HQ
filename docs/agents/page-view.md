@@ -69,6 +69,12 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Ruled rows (`pv-rows`) instead of card grids.
 - Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
 
+### Case study (`/labs/<slug>`)
+
+- The header opens with the metric strip (`MetricStrip`, `src/components/MetricStrip.tsx`, server-rendered, no client JS) under the tagline: up to 3 headline results (`headlineResults`), a big value (`pv-num`) and its label, as a list named "Key results" (`labs.keyResults`). 3 across from `md`, stacked rows below.
+- No confidence marker: `Result.confidence` is never rendered (decision 2026-10-11, confirmed 2026-10-17).
+- A "Results" chapter (`MetricLedger`, every result with how it was measured) opens the main column only when it adds something: more results than the strip, or any `context`. The TOC lists it only then. Without it, the strip's section carries the `#results` anchor (the drawer's Results tab links there).
+
 ## Filters
 
 - Client islands over server-rendered rows: `WorkIndex`, `JourneyFilter`, and `TopicFilter` on `/library` with `?topic=`.
