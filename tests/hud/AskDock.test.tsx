@@ -104,6 +104,32 @@ describe("Ask dock teaser and Rover's dialog", () => {
     expect(screen.queryByTestId("ask-teaser")).toBeNull();
     expect(sessionStorage.getItem(TEASER_KEY)).toBe("1");
   });
+
+  it("stops watching for the dialog box once the teaser hides after its hold", async () => {
+    await ready();
+    await act(async () => vi.advanceTimersByTime(7000));
+    expect(screen.getByTestId("ask-teaser")).toBeInTheDocument();
+    await act(async () => vi.advanceTimersByTime(14000));
+    expect(screen.queryByTestId("ask-teaser")).toBeNull();
+    const query = vi.spyOn(document, "querySelector");
+    await act(async () => vi.advanceTimersByTime(5000));
+    expect(query.mock.calls.filter(([selector]) => selector === "[data-testid='dialog-box']")).toHaveLength(0);
+    query.mockRestore();
+  });
+
+  it("stops watching for the dialog box when the teaser is dismissed", async () => {
+    await ready();
+    await act(async () => vi.advanceTimersByTime(7000));
+    const clear = vi.spyOn(window, "clearInterval");
+    await userEvent.click(screen.getByRole("button", { name: d.teaserDismiss }));
+    expect(screen.queryByTestId("ask-teaser")).toBeNull();
+    expect(clear).toHaveBeenCalled();
+    const query = vi.spyOn(document, "querySelector");
+    await act(async () => vi.advanceTimersByTime(5000));
+    expect(query.mock.calls.filter(([selector]) => selector === "[data-testid='dialog-box']")).toHaveLength(0);
+    clear.mockRestore();
+    query.mockRestore();
+  });
 });
 
 describe("Ask dock launcher", () => {

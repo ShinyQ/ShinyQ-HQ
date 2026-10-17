@@ -105,19 +105,23 @@ export function AskDock({ locale }: { locale: Locale }) {
       markTeaserSeen();
       setTeaser(true);
       hide = window.setTimeout(() => setTeaser(false), TEASER_SHOW_MS);
-      // Rover speaking takes the stage: the nudge steps aside (it stays "seen").
-      watch = window.setInterval(() => {
-        if (dialogOpen()) setTeaser(false);
-      }, DIALOG_WATCH_MS);
     };
-    let watch: number | undefined;
     let timer = window.setTimeout(() => attempt(2), delay);
     return () => {
       window.clearTimeout(timer);
       window.clearTimeout(hide);
-      window.clearInterval(watch);
     };
   }, [enabled, open, tower, hero]);
+
+  // Rover speaking takes the stage: the nudge steps aside (it stays "seen"). The watch runs only while the
+  // teaser shows, so hiding it (the hold ends, dismiss, Ask opens) stops the interval.
+  useEffect(() => {
+    if (!teaser) return;
+    const watch = window.setInterval(() => {
+      if (dialogOpen()) setTeaser(false);
+    }, DIALOG_WATCH_MS);
+    return () => window.clearInterval(watch);
+  }, [teaser]);
 
   const showLauncher = enabled && !tower && !open && !hero;
 
