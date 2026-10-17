@@ -92,6 +92,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Rover Menu and Ask Naming Implementation Plan](plans/2026-10-17-rover-menu-and-naming.md) | shipped | [#191](https://github.com/ShinyQ/ShinyQ-HQ/pull/191) |
 | [Camera Fixes (Round 9 M) Implementation Plan](plans/2026-10-17-camera-fixes.md) | shipped | [#197](https://github.com/ShinyQ/ShinyQ-HQ/pull/197) |
 | [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | shipped, later removed | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
+| [Deploy On Merge With Auto-Rollback Implementation Plan](plans/2026-10-18-deploy-on-merge.md) | in review |  |
 
 ## Specs
 

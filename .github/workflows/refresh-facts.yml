@@ -114,8 +114,9 @@ jobs:
         # --match-head-commit refuses to merge if the branch moved after CI ran.
         run: gh pr merge "$NUMBER" --squash --delete-branch --match-head-commit "$SHA"
       - name: Deploy production
-        # Only this workflow deploys automatically (owner decision 2026-10-11); a push to main never
-        # does. Set the repository variable AUTO_DEPLOY_FACTS=false to stop it (docs/deploy.md).
+        # Its GITHUB_TOKEN merge starts no push run, so deploy.yml's merge trigger never sees it: this
+        # dispatch deploys the facts (owner decision 2026-10-11). Set the repository variable
+        # AUTO_DEPLOY_FACTS=false to stop it (docs/deploy.md).
         if: steps.facts.outputs.changed == 'true' && vars.AUTO_DEPLOY_FACTS != 'false'
         env:
           GH_TOKEN: ${{ github.token }}

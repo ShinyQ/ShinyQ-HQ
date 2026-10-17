@@ -3,12 +3,18 @@ name: Deploy
 # Production deploy of the static export and the Pages Functions (Ask the HQ, the performance beacon,
 # the public visit stats) to Cloudflare Pages, then the hq-stats Cron Worker (workers/stats/).
 #
-# Runs only when dispatched, never on a push to main:
+# Runs on a push to main (a merge) and when dispatched:
+#   - push: the fast path (owner decision 2026-10-18). scripts/merge-gate.ts deploys at once, without waiting
+#     for the push CI on main, when the commit is the merge of a same-repository pull request whose head has the
+#     same tree and whose required checks were green there, and no `deploy-rollback` issue is open. Otherwise it
+#     falls back to waiting for the complete main CI as below. Main CI still runs the full suite in parallel;
+#     when it fails, rollback.yml rolls production back and opens the `deploy-rollback` issue, which blocks
+#     the fast path until main is green again. A GITHUB_TOKEN merge (the weekly facts PR) starts no push run.
 #   - by refresh-facts.yml after it merged a weekly live-facts PR (sha = the merge commit), unless
 #     the repository variable AUTO_DEPLOY_FACTS is "false";
 #   - by hand: Actions > Deploy > Run workflow, or `gh workflow run deploy.yml --ref main [-f sha=<commit>]`.
-# The sha must be on main. The deploy does not rerun e2e on a tested commit: `Reuse the CI result`
-# (scripts/ci-status.ts) waits for CI's `Build, CV and e2e` check on the sha, or finds a green CI run on
+# The sha must be on main. Outside the fast path the deploy does not rerun e2e on a tested commit: `Reuse the CI
+# result` (scripts/ci-status.ts) waits for CI's `Build, CV and e2e` check on the sha, or finds a green CI run on
 # a commit with the same tree (a push to main or a same-repository PR run only; the facts merge finds
 # none, since its PR was tested by a workflow_dispatch run, so it runs the e2e shards). Only complete runs are
 # reused: those with the `ci-full` artifact (every e2e shard, the perf gates and Lighthouse ran); a
@@ -24,6 +30,8 @@ name: Deploy
 # Secrets are passed only to the steps that read them (H1). docs/deploy.md.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       sha:
@@ -67,9 +75,11 @@ jobs:
         id: sha
         env:
           INPUT_SHA: ${{ inputs.sha }}
-          REASON: ${{ inputs.reason }}
+          # A push deploys the pushed commit, even if main moved on while this run waited in the queue.
+          PUSH_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
+          REASON: ${{ github.event_name == 'push' && 'Merge to main (push)' || inputs.reason }}
         run: |
-          sha="${INPUT_SHA:-$(git rev-parse HEAD)}"
+          sha="${INPUT_SHA:-${PUSH_SHA:-$(git rev-parse HEAD)}}"
           if ! [[ "$sha" =~ ^[0-9a-f]{7,40}$ ]]; then
             echo "::error::sha must be a commit hash."
             exit 1
@@ -91,8 +101,12 @@ jobs:
       contents: read
       checks: read
       actions: read
+      issues: read
+      pull-requests: read
     outputs:
-      reuse: ${{ steps.ci.outputs.reuse }}
+      reuse: ${{ steps.fast.outputs.fast == 'true' || steps.ci.outputs.reuse == 'true' }}
+      fast: ${{ steps.fast.outputs.fast == 'true' }}
+      pr: ${{ steps.fast.outputs.pr }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -101,8 +115,17 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: package.json
+      - name: Fast path (merged PR green on the same tree)
+        id: fast
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: bun scripts/merge-gate.ts --repo "$REPO" --sha "$SHA"
       - name: Green CI on this commit (waits while CI runs)
         id: ci
+        if: steps.fast.outputs.fast != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -207,6 +230,9 @@ jobs:
     permissions:
       contents: read
       deployments: write
+      issues: read
+      checks: read
+      actions: read
     environment:
       name: production
       url: ${{ vars.SITE_URL || 'https://kurniadi.pages.dev' }}
@@ -246,6 +272,26 @@ jobs:
         env:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/build-knowledge.ts
+      - name: Fast path still open (no deploy-rollback issue)
+        id: still
+        # A red main CI may have opened it while this run built (rollback.yml opens it before it rolls back).
+        if: steps.gate.outputs.enabled == 'true' && needs.verify.outputs.fast == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bun scripts/merge-gate.ts --repo "$REPO" --check-block-only true
+      - name: Fast path closed meanwhile, so wait for main CI on this commit
+        id: ci
+        if: steps.still.outputs.blocked == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bun scripts/ci-status.ts --repo "$REPO" --sha "$SHA" --wait-minutes 40 --grace-minutes 3
+      - name: Require a complete green main CI
+        if: steps.still.outputs.blocked == 'true' && steps.ci.outputs.reuse != 'true'
+        run: |
+          echo "::error::No complete green CI on $SHA; not uploading. Rerun CI or deploy by hand (docs/deploy.md)."
+          exit 1
       - name: Deploy to Cloudflare Pages
         id: deploy
         if: steps.gate.outputs.enabled == 'true'
@@ -267,12 +313,15 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
+          FAST: ${{ needs.verify.outputs.fast }}
+          PR: ${{ needs.verify.outputs.pr }}
         run: |
           {
             echo "Deployed \`$SHA\` to Cloudflare Pages project \`$CF_PAGES_PROJECT\`; the smoke check passed."
             echo ""
             echo "- Deployment: $URL"
             echo "- Production: $NEXT_PUBLIC_SITE_URL"
+            if [ "$FAST" = "true" ]; then echo "- Fast path: #$PR (main CI still runs; rollback.yml rolls back if it fails)"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   stats-worker:

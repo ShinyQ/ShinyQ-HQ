@@ -100,6 +100,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 ### Deploy, Ask and stats operations
 
 - `scripts/ci-status.ts`: deploy gate: reuse the green complete CI result (`ci-full` artifact) for a commit or its tree.
+- `scripts/merge-gate.ts`: fast-path gate of a merge deploy: merged same-repository PR, same tree, required checks green on its head, no open `deploy-rollback` issue.
+- `scripts/rollback.ts`: `rollback.yml`: rolls Pages production back after a red `main` CI (`pages`), opens or updates (`issue`) and closes (`clear`) the `deploy-rollback` issue.
 - `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`).
 - `scripts/ask-eval.ts`: real-model golden and red-team runs (ask-eval.yml).
 - `scripts/provision-ask.ts`: idempotent Cloudflare provisioning (dry run unless --apply).

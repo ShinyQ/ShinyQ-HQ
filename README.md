@@ -253,7 +253,7 @@ Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/perf
 ## Deploy
 
 Production is the Cloudflare Pages project `kurniadi` at [kurniadi.pages.dev](https://kurniadi.pages.dev).
-`deploy.yml` runs on dispatch (or after the weekly live-facts merge), reuses CI's green result for the commit, deploys `out/` plus `functions/`, smoke-checks production and deploys the `hq-stats` Worker. A push to `main` never deploys on its own.
+`deploy.yml` runs on every merge to `main` (at once when the merged PR was green on the same tree, else after `main` CI), on dispatch and after the weekly live-facts merge; it deploys `out/` plus `functions/`, smoke-checks production and deploys the `hq-stats` Worker. A red `main` CI rolls production back (`rollback.yml`).
 
 Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/deploy.md).
 
