@@ -33,6 +33,8 @@ beforeAll(() => {
   write("tests/unit/a.test.ts");
   write("tests/unit/b.test.ts");
   write("tests/helpers/not-a-test.ts");
+  write("tests/hud/Panel.test.tsx");
+  write("tests/ask/node_modules/dep.test.ts");
   write("e2e/hud.spec.ts");
   write("e2e/screenshots.spec.ts");
   write("e2e/perf/gate.spec.ts");
@@ -121,13 +123,13 @@ describe("gitFacts", () => {
 });
 
 describe("collectFacts", () => {
-  it("counts files, docs and CI without spawning the runners", () => {
+  it("counts files (vitest includes `.test.tsx` too), docs and CI without spawning the runner", () => {
     const facts = collectFacts(repo, { runners: false, rounds });
     expect(facts.rounds).toEqual([
       { id: "r1", prs: [1, 2], first: "2026-10-02", last: "2026-10-03" },
       { id: "r2", prs: [] },
     ]);
-    expect(facts.tests).toEqual({ unitFiles: 2, e2eFiles: 1 });
+    expect(facts.tests).toEqual({ unitFiles: 3, e2eFiles: 1 });
     expect(facts.docs).toEqual({ specs: 2, plans: 2 });
     expect(facts.ci).toEqual({ jobs: ["First job", "Second job"], workflows: 2 });
     expect(facts.budgets).toMatchObject({ js3dKb: 450, sessionFullKb: 470, sceneCalls: 150, triangles: 30000, floorChunkKb: { L3: 20, L4: 16, RF: 8 } });

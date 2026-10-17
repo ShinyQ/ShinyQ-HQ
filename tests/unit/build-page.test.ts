@@ -1,3 +1,5 @@
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import { describe, expect, it } from "vitest";
 import { type BuildFacts, getBuildFacts, getBuildStory } from "@/content/build-story";
 import { LOCALES } from "@/content/schema";
@@ -38,6 +40,7 @@ describe("techArticleJsonLd", () => {
       headline: story.title.en,
       url: `${SITE_URL}/en/build`,
       inLanguage: "en",
+      datePublished: story.published,
       dateModified: facts.generatedAt,
       author: { "@id": PERSON_ID },
       publisher: { "@id": PERSON_ID },
@@ -85,9 +88,24 @@ describe("timelineRows", () => {
   });
 
   it("writes merge date ranges with words, one date when they match", () => {
-    expect(roundDates({ first: "2026-10-09", last: "2026-10-10" }, "en")).toBe("Oct 9, 2026 to Oct 10, 2026");
-    expect(roundDates({ first: "2026-10-12", last: "2026-10-12" }, "id")).toBe("12 Okt 2026");
-    expect(roundDates({}, "en")).toBeUndefined();
+    expect(roundDates({ first: "2026-10-09", last: "2026-10-10" }, "en", "to")).toBe("Oct 9, 2026 to Oct 10, 2026");
+    expect(roundDates({ first: "2026-10-09", last: "2026-10-10" }, "id", "hingga")).toBe("9 Okt 2026 hingga 10 Okt 2026");
+    expect(roundDates({ first: "2026-10-12", last: "2026-10-12" }, "id", "hingga")).toBe("12 Okt 2026");
+    expect(roundDates({}, "en", "to")).toBeUndefined();
+  });
+
+  it("takes the range word from the build messages", () => {
+    expect(en.build.dateTo).toBe("to");
+    expect(id.build.dateTo).toBe("hingga");
+  });
+
+  it("counts a pull request that is shown without a link, and only that one", () => {
+    const rows = timelineRows(story, facts);
+    const r2 = rows.find((r) => r.round.id === "r2")!;
+    expect(r2.prs).toContain(26);
+    expect(r2.unlinked).toEqual([26]);
+    expect(rows.flatMap((r) => r.unlinked)).toEqual([26]);
+    expect(facts.git?.mergedPrs).toBeGreaterThanOrEqual(rows.reduce((n, r) => n + r.prs.length, 0));
   });
 
   it("links pull requests to the public repository", () => {
@@ -100,21 +118,22 @@ describe("dashboardTiles", () => {
     expect(dashboardTiles({ generatedAt: "2026-10-17" }, 5).map((t) => t.id)).toEqual(["floors"]);
     expect(dashboardTiles({ generatedAt: "2026-10-17" }).map((t) => t.id)).toEqual([]);
     const ids = dashboardTiles(facts, 5).map((t) => t.id);
-    expect(ids).toEqual(["mergedPrs", "commits", "unitTests", "e2eTests", "specs", "plans", "floors", "js3dKb", "sceneCalls", "triangles"]);
+    expect(ids).toEqual(["mergedPrs", "commits", "unitFiles", "e2eTests", "specs", "plans", "floors", "js3dKb", "sceneCalls", "triangles"]);
   });
 
   it("takes every value from the facts", () => {
     const tiles = Object.fromEntries(dashboardTiles(facts, 5).map((t) => [t.id, t]));
     expect(tiles.mergedPrs.value).toBe(facts.git?.mergedPrs);
     expect(tiles.commits).toMatchObject({ value: facts.git?.commits, since: facts.git?.firstCommit });
-    expect(tiles.unitTests.value).toBe(facts.tests?.unit);
+    expect(tiles.unitFiles.value).toBe(facts.tests?.unitFiles);
     expect(tiles.e2eTests.value).toBe(facts.tests?.e2e);
     expect(tiles.js3dKb).toMatchObject({ value: facts.budgets?.js3dKb, unit: "kb" });
     expect(tiles.triangles.value).toBe(facts.budgets?.triangles);
   });
 
-  it("drops a test count the snapshot could not measure", () => {
+  it("drops an end-to-end count the snapshot could not measure and never shows a unit test count", () => {
     const partial: BuildFacts = { generatedAt: "2026-10-17", tests: { unitFiles: 3, e2eFiles: 2 } };
-    expect(dashboardTiles(partial).map((t) => t.id)).toEqual([]);
+    expect(dashboardTiles(partial).map((t) => t.id)).toEqual(["unitFiles"]);
+    expect(dashboardTiles(facts, 5).map((t) => t.id)).not.toContain("unitTests");
   });
 });

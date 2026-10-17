@@ -1,9 +1,10 @@
 {
   "$comment": "The build story (B1 Engine Room, owner request 2026-10-17): how this site was built, for the Classic page /{locale}/build and the secret B1 floor. Text only: every count comes from content/generated/build-facts.json (scripts/build-facts.ts), never from here. Round ranges are merged pull request numbers. Third person or neutral voice; never a client company (C3), a cloud resource id, a gateway id or a hostname. Validated by BuildStorySchema (src/content/build-story.ts) and the public-safety lint.",
+  "published": "2026-10-17",
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
-    "en": "ShinyQ HQ was built in the open, one pull request at a time, by AI coding agents working from written specs and plans while Kurniadi reviewed and merged every change. This page follows the build from the blueprint to the gates that keep it honest.",
-    "id": "ShinyQ HQ dibangun secara terbuka, satu pull request demi satu, oleh AI coding agent yang bekerja dari spec dan rencana tertulis, sementara Kurniadi me-review dan me-merge setiap perubahan. Halaman ini mengikuti pembangunannya dari cetak biru sampai gate yang menjaganya tetap jujur."
+    "en": "ShinyQ HQ was built in the open, one pull request at a time, by AI coding agents working from written specs and plans while Kurniadi reviewed and merged the work. This page follows the build from the blueprint to the gates that keep it honest.",
+    "id": "ShinyQ HQ dibangun secara terbuka, satu pull request demi satu, oleh AI coding agent yang bekerja dari spec dan rencana tertulis, sementara Kurniadi me-review dan me-merge pekerjaannya. Halaman ini mengikuti pembangunannya dari cetak biru sampai gate yang menjaganya tetap jujur."
   },
   "stations": {
     "blueprint": {
@@ -151,8 +152,8 @@
           "number": 2,
           "title": { "en": "Game-First Load, Classic Site and Ask the HQ", "id": "Pemuatan Game-First, Situs Klasik, dan Ask the HQ" },
           "summary": {
-            "en": "The Classic site was revamped, the 3D boot cover and CI fast pipeline arrived, client names were hidden and the Ask the HQ assistant launched, with the first walkable floors, the CV viewer and a performance pass.",
-            "id": "Situs klasik dirombak, boot cover 3D dan pipeline CI cepat hadir, nama klien disembunyikan, dan asisten Ask the HQ diluncurkan, bersama lantai pertama yang bisa dijelajahi, penampil CV, dan perbaikan performa."
+            "en": "The Classic site was revamped, the 3D boot cover and CI fast pipeline arrived, client work moved to sector labels and the Ask the HQ assistant launched, with the first walkable floors, the CV viewer and a performance pass.",
+            "id": "Situs klasik dirombak, boot cover 3D dan pipeline CI cepat hadir, pekerjaan klien dipindah ke label sektor, dan asisten Ask the HQ diluncurkan, bersama lantai pertama yang bisa dijelajahi, penampil CV, dan perbaikan performa."
           },
           "prs": { "from": 16, "to": 51 },
           "shots": {
@@ -293,12 +294,13 @@
           "number": 9,
           "title": { "en": "Camera Polish and the Engine Room", "id": "Poles Kamera dan Ruang Mesin" },
           "summary": {
-            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room that tells it.",
-            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan B1 Engine Room rahasia yang menceritakannya."
+            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that will tell it.",
+            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan lantai rahasia B1 Engine Room yang akan menceritakannya."
           },
           "prs": { "from": 187, "to": null }
         }
-      ]
+      ],
+      "unlinkedPrs": [26]
     },
     "agents": {
       "title": { "en": "Working with AI Agents", "id": "Bekerja dengan AI Agent" },
@@ -345,8 +347,8 @@
         {
           "title": { "en": "Deploy", "id": "Deploy" },
           "text": {
-            "en": "The owner merges the pull request. A push to main never deploys: production goes out through a manual workflow that reuses a complete green CI run.",
-            "id": "Pemilik me-merge pull request. Push ke main tidak pernah men-deploy: produksi dirilis lewat workflow manual yang memakai ulang satu run CI hijau yang lengkap."
+            "en": "The owner merges the pull request. A push to main never deploys: production goes out only through the deploy workflow, by hand or after the weekly live-facts update, and it reuses a complete green CI run.",
+            "id": "Pemilik me-merge pull request. Push ke main tidak pernah men-deploy: produksi hanya dirilis lewat workflow deploy, secara manual atau setelah pembaruan live-facts mingguan, dan workflow itu memakai ulang satu run CI hijau yang lengkap."
           }
         }
       ],
@@ -389,8 +391,8 @@
           "id": "public-safety",
           "title": { "en": "Public-Safety Scan", "id": "Pemindaian Keamanan Publik" },
           "text": {
-            "en": "Scans every text file of the built export and the share cards against the private blocklist.",
-            "id": "Memindai setiap file teks hasil build dan kartu share terhadap blocklist privat."
+            "en": "Scans every text file of the built export against the private blocklist.",
+            "id": "Memindai setiap file teks hasil build terhadap blocklist privat."
           },
           "budget": { "en": "Zero blocklisted terms in the export", "id": "Nol istilah dalam blocklist pada hasil export" },
           "jobs": ["Build static export"],

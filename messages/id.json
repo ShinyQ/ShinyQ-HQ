@@ -131,6 +131,7 @@
     "tools": "Agent yang dipakai",
     "excerpt": "Dari rencana sungguhan",
     "excerptSource": "Baca rencana lengkapnya di GitHub",
+    "dateTo": "hingga",
     "prHint": "Nomor pull request terbuka di GitHub pada tab baru.",
     "round": "Ronde {n}",
     "inProgress": "Sedang berjalan",
@@ -146,9 +147,9 @@
     "tiles": {
       "mergedPrs": "Pull request di-merge",
       "commits": "Commit sejak {date}",
-      "unitTests": "Unit test",
+      "unitFiles": "File unit test",
       "e2eTests": "Test end-to-end",
-      "specs": "Design spec",
+      "specs": "Dokumen spec",
       "plans": "Rencana tertulis",
       "floors": "Lantai di menara 3D",
       "js3dKb": "Batas JavaScript 3D sebelum frame pertama (gzip)",
@@ -1049,8 +1050,8 @@
         "3": "Baca atau unduh."
       },
       "build": {
-        "1": "Lengkap dengan timeline, gate CI, dan angka langsung dari repositori.",
-        "2": "Dengan timeline, gate, dan angka langsung.",
+        "1": "Lengkap dengan timeline, gate CI, dan angka yang diukur saat build.",
+        "2": "Dengan timeline, gate, dan angka terukur.",
         "3": "Dengan timeline dan gate."
       }
     },

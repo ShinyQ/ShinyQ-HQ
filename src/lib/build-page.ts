@@ -8,8 +8,6 @@ import type { Locale } from "@/content/schema";
 import { formatDate } from "@/lib/format";
 import { REPO_URL } from "@/lib/site";
 
-const RANGE_JOIN: Record<Locale, string> = { en: "to", id: "hingga" };
-
 export function prUrl(n: number): string {
   return `${REPO_URL}/pull/${n}`;
 }
@@ -25,28 +23,32 @@ export interface TimelineRow {
   prs: number[];
   first?: string;
   last?: string;
+  /** Pull requests shown as plain text, still counted (`unlinkedPrs`: their diff shows text the site hides). */
+  unlinked: number[];
   /** The open round (`prs.to` is null): still in progress. */
   open: boolean;
 }
 
 /** The story's rounds, oldest first, each with the merged pull requests and merge dates the snapshot measured. */
 export function timelineRows(story: BuildStory, facts: BuildFacts): TimelineRow[] {
+  const hidden = new Set(story.stations.timeline.unlinkedPrs ?? []);
   return story.stations.timeline.rounds.map((round) => {
     const measured = facts.rounds?.find((r) => r.id === round.id);
-    return { round, prs: measured?.prs ?? [], first: measured?.first, last: measured?.last, open: round.prs.to === null };
+    const prs = measured?.prs ?? [];
+    return { round, prs, unlinked: prs.filter((n) => hidden.has(n)), first: measured?.first, last: measured?.last, open: round.prs.to === null };
   });
 }
 
-/** "Oct 9, 2026 to Oct 10, 2026", one date when both match, undefined without dates. */
-export function roundDates({ first, last }: { first?: string; last?: string }, locale: Locale): string | undefined {
+/** "Oct 9, 2026 to Oct 10, 2026" (`join` is the translated "to"), one date when both match, undefined without dates. */
+export function roundDates({ first, last }: { first?: string; last?: string }, locale: Locale, join: string): string | undefined {
   const from = first ?? last;
   const to = last ?? first;
   if (!from || !to) return undefined;
   if (from === to) return formatDate(from, locale);
-  return `${formatDate(from, locale)} ${RANGE_JOIN[locale]} ${formatDate(to, locale)}`;
+  return `${formatDate(from, locale)} ${join} ${formatDate(to, locale)}`;
 }
 
-export type DashboardTileId = "mergedPrs" | "commits" | "unitTests" | "e2eTests" | "specs" | "plans" | "floors" | "js3dKb" | "sceneCalls" | "triangles";
+export type DashboardTileId = "mergedPrs" | "commits" | "unitFiles" | "e2eTests" | "specs" | "plans" | "floors" | "js3dKb" | "sceneCalls" | "triangles";
 
 export interface DashboardTile {
   id: DashboardTileId;
@@ -61,7 +63,7 @@ export function dashboardTiles(facts: BuildFacts, floors?: number): DashboardTil
   const tiles: (DashboardTile | false | undefined)[] = [
     facts.git && { id: "mergedPrs", value: facts.git.mergedPrs },
     facts.git && { id: "commits", value: facts.git.commits, since: facts.git.firstCommit },
-    facts.tests?.unit !== undefined && { id: "unitTests", value: facts.tests.unit },
+    facts.tests && { id: "unitFiles", value: facts.tests.unitFiles },
     facts.tests?.e2e !== undefined && { id: "e2eTests", value: facts.tests.e2e },
     facts.docs && { id: "specs", value: facts.docs.specs },
     facts.docs && { id: "plans", value: facts.docs.plans },

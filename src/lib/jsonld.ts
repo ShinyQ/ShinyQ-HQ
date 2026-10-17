@@ -160,7 +160,7 @@ export function postJsonLd(post: PostRef, locale: Locale, contentLocale: Locale)
 /** Topics of the build story page (/build), as schema.org Things. */
 const BUILD_ABOUT = ["Next.js", "React Three Fiber", "Cloudflare Pages", "AI coding agents"];
 
-/** The build story page (/build): a TechArticle by the owner, dated by the build facts snapshot. */
+/** The build story page (/build): a TechArticle by the owner, published on the story's date and modified on the build facts snapshot's. */
 export function techArticleJsonLd(locale: Locale): JsonLdObject {
   const url = absoluteUrl(localePath(locale, "/build"));
   return {
@@ -173,6 +173,7 @@ export function techArticleJsonLd(locale: Locale): JsonLdObject {
     url,
     mainEntityOfPage: url,
     inLanguage: LANGUAGE_TAG[locale],
+    datePublished: getBuildStory().published,
     dateModified: getBuildFacts().generatedAt,
     about: BUILD_ABOUT.map((name) => ({ "@type": "Thing", name })),
     author: personRef(locale),

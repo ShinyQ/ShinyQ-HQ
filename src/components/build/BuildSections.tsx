@@ -14,7 +14,9 @@ export { DashboardBody, TimelineBody };
 
 /**
  * The build story stations (/[locale]/build). Each `*Section` is a `SectionSplit` with the station id as its
- * anchor; the `*Body` components are the bare content, so the B1 Engine Room drawers can reuse them.
+ * anchor; the `*Body` components are the bare content. They are async server components, so the client-side
+ * B1 Engine Room drawers (PR 2) cannot render them: the drawers reuse the pure helpers in `src/lib/build-page.ts`
+ * and the story data through a serializable room view instead.
  */
 type Props = { locale: Locale };
 

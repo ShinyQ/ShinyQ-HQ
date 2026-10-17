@@ -6,6 +6,8 @@ import { prUrl, roundDates, timelineRows } from "@/lib/build-page";
 /** Pull request links stay bare (no per-link arrow or hint, one hint above the rounds) and reuse existing utilities (CSS budget). */
 const PR_LINK = "pv-uline inline-flex min-h-6 items-center px-1 font-mono text-[13px] text-ink-2 hover:text-cyan";
 
+const PR_TEXT = "inline-flex min-h-6 items-center px-1 font-mono text-[13px] text-ink-2";
+
 /** The build rounds, oldest first: title, merge dates, summary, merged pull requests and the optional before and after captures. */
 export async function TimelineBody({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "build" });
@@ -14,8 +16,8 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
     <>
       <p className="pv-small mb-6">{t("prHint")}</p>
       <ol className="pv-rows pv-rows-closed">
-        {rows.map(({ round, prs, first, last, open }) => {
-          const dates = roundDates({ first, last }, locale);
+        {rows.map(({ round, prs, unlinked, first, last, open }) => {
+          const dates = roundDates({ first, last }, locale, t("dateTo"));
           return (
             <li key={round.id} id={`round-${round.number}`} className="py-6">
               <p className="pv-data flex flex-wrap gap-x-4 gap-y-1">
@@ -31,7 +33,11 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
                   <ul aria-label={t("prList", { n: round.number })} className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                     {prs.map((n) => (
                       <li key={n}>
-                        <a href={prUrl(n)} target="_blank" rel="noopener noreferrer" className={PR_LINK}>{`#${n}`}</a>
+                        {unlinked.includes(n) ? (
+                          <span className={PR_TEXT}>{`#${n}`}</span>
+                        ) : (
+                          <a href={prUrl(n)} target="_blank" rel="noopener noreferrer" className={PR_LINK}>{`#${n}`}</a>
+                        )}
                       </li>
                     ))}
                   </ul>

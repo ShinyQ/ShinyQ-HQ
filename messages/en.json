@@ -131,6 +131,7 @@
     "tools": "Agents used",
     "excerpt": "From a real plan",
     "excerptSource": "Read the full plan on GitHub",
+    "dateTo": "to",
     "prHint": "Pull request numbers open on GitHub in a new tab.",
     "round": "Round {n}",
     "inProgress": "In progress",
@@ -146,9 +147,9 @@
     "tiles": {
       "mergedPrs": "Merged pull requests",
       "commits": "Commits since {date}",
-      "unitTests": "Unit tests",
+      "unitFiles": "Unit test files",
       "e2eTests": "End-to-end tests",
-      "specs": "Design specs",
+      "specs": "Spec documents",
       "plans": "Written plans",
       "floors": "Floors in the 3D tower",
       "js3dKb": "3D JavaScript ceiling before the first frame (gzip)",
@@ -1049,8 +1050,8 @@
         "3": "View or download."
       },
       "build": {
-        "1": "With the build timeline, the CI gates and live repository numbers.",
-        "2": "With the timeline, the gates and live numbers.",
+        "1": "With the build timeline, the CI gates and numbers measured at build time.",
+        "2": "With the timeline, the gates and measured numbers.",
         "3": "With the timeline and the gates."
       }
     },

@@ -50,10 +50,16 @@ export const BuildStorySchema = z
   .strictObject({
     $comment: z.string().optional(),
     title: LocalizedTextSchema,
+    /** ISO date the page first went public (JSON-LD `datePublished`). */
+    published: IsoDateSchema,
     lead: LocalizedTextSchema,
     stations: z.strictObject({
       blueprint: station({ architecture: ArchitectureSchema, steps: z.array(LocalizedTextSchema).min(3).max(10) }),
-      timeline: station({ rounds: z.array(BuildRoundSchema).min(1) }),
+      timeline: station({
+        rounds: z.array(BuildRoundSchema).min(1),
+        /** Pull requests that are counted but shown without a link: their diff exposes text the site hides (C3). */
+        unlinkedPrs: z.array(z.number().int().min(1)).optional(),
+      }),
       agents: station({
         steps: z.array(z.strictObject({ title: LocalizedTextSchema, text: LocalizedTextSchema })).min(4).max(8),
         tools: z.array(z.string().min(1)).min(1),
@@ -104,7 +110,7 @@ export const BuildFactsSchema = z.strictObject({
       }),
     )
     .optional(),
-  tests: z.strictObject({ unit: count.optional(), unitFiles: count, e2e: count.optional(), e2eFiles: count }).optional(),
+  tests: z.strictObject({ unitFiles: count, e2e: count.optional(), e2eFiles: count }).optional(),
   docs: z.strictObject({ specs: count, plans: count }).optional(),
   ci: z.strictObject({ jobs: z.array(z.string()).min(1), workflows: count }).optional(),
   budgets: z

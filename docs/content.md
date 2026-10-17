@@ -28,7 +28,10 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 
 - Edit `content/build-story.json` (title, lead, the five stations, the quality gates, the "coming soon" notes). Text is `{ en, id }`, neutral or third person, no client names (C3), no cloud resource ids or hostnames. `tests/content/build-story.test.ts` (schema) and `tests/content/safety.test.ts` (public-safety lint) check it.
 - Build rounds: each round lists its merged pull request range (`prs.from` to `prs.to`, `to: null` while the round is open). Add a round with its range when a round ships; the page counts pull requests and dates per round from the snapshot.
-- Never type a count in the text (commits, pull requests, tests, budgets): put it in the snapshot or leave it out.
+- Never type a snapshot count in the text (commits, pull requests, tests, files, documents): put it in the snapshot or leave it out. Budgets may be written in a gate's copy (`budget`) because `tests/content/build-story.test.ts` pins each one to its source (`e2e/budgets.ts`, `lighthouserc.json`); change the number in both places.
+- Pull requests whose diff exposes text the site hides (client names, C3) go into the timeline's `unlinkedPrs`: they are still counted and listed, as plain text without a link. Round summaries never mention what was hidden.
+- `published` is the page's first public date (JSON-LD `datePublished`); the snapshot date is `dateModified`.
+- The dashboard shows unit test files (a count of `tests/**/*.test.{ts,tsx}`), not unit tests: Vitest lists an `it.each` template once, so a test count would be wrong. The end-to-end count comes from `playwright test --list`. "Spec documents" counts the design spec files under `docs/superpowers/specs/` (appendices included).
 - Refresh the snapshot with `bun scripts/build-facts.ts --write` (needs a full git history; CI and deploy builds do this themselves, and local builds use the committed `content/generated/build-facts.json`).
 - Before and after captures live in `public/build-story/` (WebP, named `r<round>-before.webp` and `r<round>-after.webp`) and are referenced from the round's `shots` with alt text in both languages.
 - Ask the HQ keeps its own short note about the site in `content/ask/site-build.json`; it points visitors to this page.

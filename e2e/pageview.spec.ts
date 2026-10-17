@@ -138,6 +138,9 @@ test("the build story page: stations by id, a working table of contents, the dia
     const prs = page.locator('#timeline a[href^="https://github.com/ShinyQ/ShinyQ-HQ/pull/"]');
     expect(await prs.count()).toBeGreaterThan(0);
     await expect(prs.first()).toHaveAttribute("target", "_blank");
+    // PR 26 is counted but its diff shows text the site hides: plain text, never a link.
+    await expect(page.locator("#timeline li").filter({ hasText: /^#26$/ }), `${locale} #26 is listed`).toHaveCount(1);
+    await expect(page.locator('#timeline a[href$="/pull/26"]'), `${locale} #26 is not a link`).toHaveCount(0);
     await expect(page.locator("#gates th[scope=row]").first()).toBeVisible();
     await expect(page.locator("#dashboard [data-tile]").first()).toBeVisible();
     expect(await page.locator("main").innerText()).not.toContain("\u2014");
