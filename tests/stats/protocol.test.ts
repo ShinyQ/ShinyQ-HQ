@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ASK_TOPICS, suggestionById } from "@/ask/suggestions";
+import { ASK_TOPICS, STATS_TOPIC_OF, suggestionById } from "@/ask/suggestions";
 import { RUM_TIMES } from "@/lib/rum/protocol";
 import { STATS_FIXTURE, STATS_FIXTURE_EMPTY, STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
 import { isCountryCode, parseStatsSnapshot, STATS_EXPLORE, STATS_TOPICS, type StatsSnapshotV1 } from "@/lib/stats/protocol";
@@ -18,12 +18,17 @@ describe("stats snapshot protocol", () => {
     expect(parseStatsSnapshot(JSON.parse(JSON.stringify(STATS_FIXTURE)))).toEqual(STATS_FIXTURE);
   });
 
-  it("uses real curated chip ids with their own topics in the fixture", () => {
-    for (const chip of [...STATS_FIXTURE.asks.d30.chips, ...STATS_FIXTURE.asks.all.chips]) expect(suggestionById(chip.id)?.topic).toBe(chip.topic);
+  it("uses real curated chip ids with their stats topics in the fixture", () => {
+    for (const chip of [...STATS_FIXTURE.asks.d30.chips, ...STATS_FIXTURE.asks.all.chips]) {
+      const suggestion = suggestionById(chip.id);
+      expect(suggestion, chip.id).toBeDefined();
+      expect(STATS_TOPIC_OF[suggestion!.topic]).toBe(chip.topic);
+    }
   });
 
-  it("uses the Ask topic pills as its topics", () => {
-    expect([...STATS_TOPICS]).toEqual([...ASK_TOPICS]);
+  it("uses Ask topic pills as its topics and maps every pill topic onto one", () => {
+    for (const topic of STATS_TOPICS) expect(ASK_TOPICS).toContain(topic);
+    for (const topic of ASK_TOPICS) expect(STATS_TOPICS).toContain(STATS_TOPIC_OF[topic]);
   });
 
   it("accepts ISO alpha-2 country codes only", () => {

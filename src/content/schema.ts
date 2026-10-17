@@ -454,10 +454,11 @@ export const PerspectivesFileSchema = z
 /**
  * How ShinyQ HQ itself was built (content/ask/site-build.json, owner request 2026-10-15): Ask the HQ
  * knowledge only, no page. One knowledge chunk (`site-build`) that answers questions about the site's
- * stack, 3D engine, hosting, the assistant, testing and process, cited to the public repository.
- * Facts only, third person, never a client, resource or host name.
+ * stack, 3D engine, hosting, the assistant, testing and process, and how visitors use it (Rover, floors,
+ * minimap, settings, links; the "This site" pills), cited to the public repository. Facts only, third
+ * person, never a client, resource or host name.
  */
-export const SITE_BUILD_TEXT_MAX = 1600;
+export const SITE_BUILD_TEXT_MAX = 2600;
 export const SITE_BUILD_SOURCE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
 export const SiteBuildSchema = z.strictObject({

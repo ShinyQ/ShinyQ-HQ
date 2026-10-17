@@ -7,6 +7,7 @@ import { getContent } from "@/content/load";
 import { findBlockedLabels, FORBIDDEN_PATTERNS } from "@/content/safety";
 import { orderPods } from "@/content/selectors";
 import { retrieve } from "../../functions/_lib/retrieve";
+import { isSiteQuestion, resolveNickname, routedTopic } from "../../functions/_lib/scope";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import { scoreSuggestion, suggestionItems } from "../../scripts/ask-eval";
 
@@ -18,21 +19,35 @@ beforeAll(() => {
 });
 
 const ids = new Set(SUGGESTIONS.map((s) => s.id));
+/** Each topic offers at least this many pills, so a random four still varies between visits. */
+const MIN_PER_TOPIC = 10;
+/** Compact pills (#162) fit about 48 characters of English. */
+const PILL_MAX_EN = 48;
 const hit = (chunkIds: string[], expected: string) => (expected.endsWith("*") ? chunkIds.some((id) => id.startsWith(expected.slice(0, -1))) : chunkIds.includes(expected));
 
 describe("curated question bank (content/ask/suggestions.json)", () => {
-  it("offers a Perspectives topic of 4 to 6 questions, each grounded in his written sources", () => {
+  it("offers a Perspectives topic grounded in his written sources", () => {
     const perspectives = SUGGESTIONS.filter((s) => s.topic === "perspectives");
-    expect(perspectives.length).toBeGreaterThanOrEqual(4);
-    expect(perspectives.length).toBeLessThanOrEqual(6);
+    expect(perspectives.length).toBeGreaterThanOrEqual(MIN_PER_TOPIC);
     for (const s of perspectives) {
       expect(s.tags, s.id).toContain("perspectives");
       expect((s.expect ?? []).some((chunk) => /^(principles|perspective-|post-|talk-)/.test(chunk)), s.id).toBe(true);
     }
   });
 
-  it("has about 30 well-formed bilingual questions with unique ids", () => {
-    expect(SUGGESTIONS.length).toBeGreaterThanOrEqual(28);
+  it("grounds About me in his profile or his written perspectives, and This site in the site-build note", () => {
+    for (const s of SUGGESTIONS.filter((x) => x.topic === "about")) expect((s.expect ?? []).every((chunk) => /^(profile$|perspective-)/.test(chunk)), s.id).toBe(true);
+    for (const s of SUGGESTIONS.filter((x) => x.topic === "site")) expect(s.expect, s.id).toEqual(["site-build"]);
+    for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(s.topic === "site");
+    // Lifestyle pills go through the lifestyle route, never a decline (scope.test.ts checks privateTopic).
+    const lifestyle = SUGGESTIONS.filter((s) => s.expect?.some((chunk) => /^perspective-(outside-work|hobbies-and-games|books-and-anime|avoiding-burnout|fun-fact)$/.test(chunk)));
+    expect(lifestyle.length).toBeGreaterThanOrEqual(5);
+    for (const s of lifestyle) for (const locale of ["en", "id"] as const) expect(routedTopic(s.q[locale]), `${s.id} ${locale}`).toBe("lifestyle");
+  });
+
+  it("has about 100 well-formed bilingual questions with unique ids, short enough for compact pills", () => {
+    expect(SUGGESTIONS.length).toBeGreaterThanOrEqual(95);
+    expect(SUGGESTIONS.length).toBeLessThanOrEqual(110);
     expect(ids.size).toBe(SUGGESTIONS.length);
     for (const s of SUGGESTIONS) {
       expect(ASK_TOPICS, s.id).toContain(s.topic);
@@ -40,6 +55,7 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
         expect(s.q[locale].trim().length, `${s.id} ${locale}`).toBeGreaterThan(8);
         expect(s.q[locale].length).toBeLessThanOrEqual(ASK_MAX_QUESTION);
       }
+      expect(s.q.en.length, `${s.id} en`).toBeLessThanOrEqual(PILL_MAX_EN);
       expect(s.q.en).not.toBe(s.q.id);
       expect(s.tags.length, s.id).toBeGreaterThan(0);
       for (const tag of s.tags) expect(ASK_TAGS, `${s.id} tag ${tag}`).toContain(tag);
@@ -48,7 +64,7 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
   });
 
   it("gives every topic enough questions and every question valid follow-ups", () => {
-    for (const topic of ASK_TOPICS) expect(SUGGESTIONS.filter((s) => s.topic === topic).length, topic).toBeGreaterThanOrEqual(TOPIC_SIZE + 1);
+    for (const topic of ASK_TOPICS) expect(SUGGESTIONS.filter((s) => s.topic === topic).length, topic).toBeGreaterThanOrEqual(MIN_PER_TOPIC);
     for (const s of SUGGESTIONS) {
       expect(s.followUps?.length ?? 0, s.id).toBeGreaterThanOrEqual(2);
       for (const id of s.followUps ?? []) {
@@ -78,7 +94,8 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
 
   // Quality gate: no pill may lead to "I don't know". The nightly eval checks the real answers.
   it.each(SUGGESTIONS.flatMap((s) => (["en", "id"] as const).map((locale) => [s.id, locale, s] as const)))("%s (%s) retrieves its expected chunks", (_id, locale, s: Suggestion) => {
-    const chunkIds = retrieve(pack, s.q[locale], locale).chunks.map((c) => c.id);
+    // The pipeline resolves the "ShinyQ" nickname before retrieval, so the test does too.
+    const chunkIds = retrieve(pack, resolveNickname(s.q[locale]), locale).chunks.map((c) => c.id);
     for (const expected of s.expect ?? []) expect(hit(chunkIds, expected), `${expected} in ${chunkIds.join(", ")}`).toBe(true);
   });
 });
@@ -96,7 +113,7 @@ describe("pill logic", () => {
   it("expands a topic into its first unasked questions", () => {
     expect(topicQuestions("ai", new Set(), list).map((s) => s.id)).toEqual(["a1", "a2"]);
     expect(topicQuestions("ai", new Set(["a1"]), list).map((s) => s.id)).toEqual(["a2"]);
-    expect(topicQuestions("ai", new Set(["a1", "a2"]), list).map((s) => s.id)).toEqual(["a1", "a2"]);
+    expect(topicQuestions("ai", new Set(["a1", "a2"]), list)).toEqual([]);
     expect(topicQuestions("work", new Set(), SUGGESTIONS)).toHaveLength(TOPIC_SIZE);
   });
 

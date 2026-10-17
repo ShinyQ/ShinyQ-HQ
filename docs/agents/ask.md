@@ -80,7 +80,8 @@ All bindings and vars live in `wrangler.toml`.
 - Layout (`drawerLayout`): a non-modal side panel on desktop and landscape tablets, a modal bottom sheet otherwise.
 - Shows:
   - a thread (sessionStorage, last 20 messages; the server still answers each question on its own);
-  - topic pills that expand into curated questions;
+  - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills;
+  - topic pills that expand into 4 curated questions;
   - 2 or 3 deterministic follow-ups (`pickFollowUps` in `src/ask/suggestions.ts`: the question's own `followUps`, then the answer's `tags`, then other topics).
 - Every pill has an edit button that puts its text in the input.
 - In 3D it mirrors the state on the rover face (`src/experience/rover/askFace.ts`).
@@ -93,9 +94,17 @@ All bindings and vars live in `wrangler.toml`.
 
 ## Curated pills
 
-- `content/ask/suggestions.json`: about 40 questions in five topics (work, ai, career, contact, perspectives).
+- `content/ask/suggestions.json`: 100 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
-- `tests/ask/suggestions.test.ts` checks every question retrieves its expected chunks in EN and ID.
+  - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
+  - "About me" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
+- Sampling (`src/ask/suggestions.ts`), seeded once per page session (`sessionStorage["hq:ask-seed"]`, read by `readAskSeed`):
+  - `topicQuestions` shows a seeded random 4 of a topic, `starterQuestions` the "Try asking" mix (one pill from each of 3 topics in seeded order);
+  - a pill asked in the thread never shows again (an exhausted topic shows none); the order stays stable while the panel is open;
+  - tests inject the seed: `"order"` keeps bank order (every Ask e2e spec but the seeded one), a number fixes the sample;
+  - follow-ups stay deterministic (`pickFollowUps`).
+- Public stats keep five topics: `STATS_TOPIC_OF` counts `about` pills under perspectives and `site` pills under work (handler blob8, the `hq-stats` Worker's `CHIP_TOPICS`).
+- `tests/ask/suggestions.test.ts` checks every question retrieves its expected chunks in EN and ID (after `resolveNickname`, as the pipeline does); `tests/ask/sampler.test.ts` covers determinism, no repeats and coverage.
 - `bun scripts/ask-eval.ts suggestions` asks them against the real model nightly (at least 90% must get a real answer).
 
 ## Wire additions
@@ -126,14 +135,14 @@ Security order (spec 7.4):
 ### Site-build chunk
 
 - `content/ask/site-build.json` (`SiteBuildSchema`, read through `getSiteBuild()`; never import it into a client component).
-  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process.
+  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`), at most `SITE_BUILD_TEXT_MAX` (2600) characters per language.
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url the public repository).
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
   - Such an answer carries `cite` = `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, the only external value `isAskCite` accepts; the dock opens it in a new tab).
 - Every fact must be backed by the repository.
   - Update the note in the same PR when the stack, hosting, the assistant or the test gates change.
-  - Keep golden q45 to q47 true (runbook section 16).
+  - Keep golden q45 to q47, q69 and q70 true (runbook section 16).
 - To fit it, project chunks keep as keywords only the stack names that carry a topic tag (`stackKeywords` in `src/ask/pack.ts`; the text still lists the whole stack).
 
 ### Production chunk
@@ -180,7 +189,7 @@ Spec section 13.
 |---|---|---|
 | `isHarmful` | harmful requests | declines |
 | `isCapabilityQuestion` | "What can you do?", "Apa yang bisa kamu lakukan?", the `contact-capabilities` pill | the fixed `MESSAGES.capabilities` (no model call) |
-| `privateTopic` | family, relationships, health, religion, partisan politics (parties, candidates, elections, named politicians, voting, contested social policy, and policy questions with no tech angle) and pay | declines |
+| `privateTopic` | family, relationships, health, religion, partisan politics (parties, candidates, elections, named politicians, voting, contested social policy, and policy questions with no tech angle; in a question about this site, "Pengaturan" names its settings panel and does not count) and pay | declines |
 | `opinionAboutOthers` | opinions about others | declines |
 | `isGeneralAssistantRequest` | writing code, essays, poems or homework, tutorials, translations, recommendations for the visitor and "you are now a general chatbot" jailbreaks | `MESSAGES.decline`, which points back to what the assistant covers |
 | `routedTopic` | lifestyle (hobbies, games, books, anime, coffee shops, the gym, burnout) and tech-adjacent policy (AI regulation, UU PDP, government AI use, AI and jobs, public digital interfaces) | his perspectives with that topic tag ONLY |
