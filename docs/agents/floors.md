@@ -334,6 +334,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 ### Rendering and actions
 
 - `InteractLayer` (mounted in `Scene`) puts every target of the current floor into one invisible instanced unit box (no draw call) and handles hover and clicks.
+- The highlight draws the pick volume grown by `HIGHLIGHT_MARGIN` (0.06 u) on every side (`highlightVolume` in `interact/pick.ts`), so it never shares a face with a target whose pick volume is the object itself (the L3 directory boards) and never z-fights.
 - Highlight cost while a target is hovered: 4 draw calls on lite (outline, ring, tag text and pill), 5 on full (plus the additive fill). No pulse under reduced motion.
 - The name tag stands over the approach point (`labelAnchor`), never over the object, so it never doubles or covers in-world titles.
 - The `interact` intent carries the target; the Director runs `performInteract`:
