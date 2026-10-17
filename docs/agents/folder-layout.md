@@ -8,7 +8,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 - `content/site-content.json`: public dataset (validated by `src/content/schema.ts`).
 - `content/ask/suggestions.json`: curated Ask the HQ question pills (EN/ID, topics, tags, follow-ups). See "Ask the HQ" in [ask.md](ask.md).
-- `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only (no page). See "Ask the HQ" in [ask.md](ask.md).
+- `content/build-story.json`: the build story (EN/ID) behind the `/build` page; read by `src/content/build-story.ts`. See "Build story" in [content.md](content.md).
+- `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only; it points to the `/build` page. See "Ask the HQ" in [ask.md](ask.md).
 - `content/perspectives.json`: Kurniadi's professional Q&A (EN/ID), Ask knowledge only once approved (no page). See "Content access" in [content.md](content.md).
 - `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
 - `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
@@ -16,6 +17,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `content/safety-allowlist.txt`: product names the lint must never flag (removed from the merged blocklist).
 - `content/.safety-blocklist.local.txt`: PRIVATE, gitignored; private repo and cloud resource names.
 - `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only), written by `scripts/refresh-facts.ts`.
+- `content/generated/build-facts.json`: the build page's measured numbers (git, tests, CI jobs, budgets), written by `scripts/build-facts.ts` (CI and deploy builds refresh it).
 - `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
 - `content/generated/paper-pages.json`: paper PDF page image manifest (sizes, PDF sha256), written by `scripts/paper-pages.ts`.
 
@@ -70,6 +72,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
 - `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
 - `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+- `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
 
 ### Fonts, brand and content
 

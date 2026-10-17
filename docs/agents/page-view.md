@@ -58,6 +58,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 | About | `/contact` | RF |
 
 - Quick view and CV live in the footer, the Home hero and About.
+- How this site was built (`/build`, key `nav.build`) is a footer link and a link under About's story; it is not in the primary nav. It is a Classic page without a 3D counterpart yet, with its own share card and TechArticle JSON-LD.
 - URLs and anchors never change (the room catalog and missions link to them).
 - Back to 3D stays owned by `ExperienceGate`; the footer keeps 112 px of bottom padding for it.
 

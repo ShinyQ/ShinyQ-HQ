@@ -1,6 +1,6 @@
 # B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan
 
-Status: in progress (PR 1 of 3; PR 2 floor and PR 3 unlock follow in their own plans)
+Status: in review (PR 1 of 3; PR 2 floor and PR 3 unlock follow in their own plans)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

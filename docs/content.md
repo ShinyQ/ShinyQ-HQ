@@ -5,6 +5,7 @@ How the site's content is stored, checked and published. The authoritative rules
 ## Contents
 
 - [Dataset and posts](#dataset-and-posts)
+- [Build story](#build-story)
 - [Perspectives](#perspectives)
 - [Titles and ordering](#titles-and-ordering)
 - [Project galleries and live sites](#project-galleries-and-live-sites)
@@ -20,6 +21,17 @@ How the site's content is stored, checked and published. The authoritative rules
 - Blog posts are MDX files in `content/blog/<slug>.<locale>.mdx`. A missing translation falls back to the original with a note.
 - A technical post can show an architecture figure: `<Architecture pod="<pod-slug>" caption="..." />` reuses a case study's diagram, and `<Architecture diagram="<id>" caption="..." />` draws a post-local one from `content/blog/diagrams.json` (keyed by post slug, then diagram id; each value has the pod `architecture` shape: nodes with layer, row and kind, plus edges). Props are strings only, and the tag is self-closing with double-quoted props, so `tests/content/post-diagrams.test.ts` can read it. Follow each figure with a numbered walkthrough of the flow, put the same tags in both locales (only the caption is translated), and note that an unknown pod or diagram fails the build and that test (which also flags unused diagrams). Diagrams are drawn at build time as inline SVG (boxes and arrows; dashed for `async` edges): left to right from 1100 px when the drawing fits (a post figure may extend past the text column), top to bottom below that and on phones. An optional node `group` (for example "Cloudflare") draws a frame around its nodes; keep a group on neighbouring layers and rows so the frame holds only its members. `tests/unit/diagram-layout.test.ts` fails when a post diagram has crossing edges in any layout.
 - Check an edit quickly with `bun run validate:content`.
+
+## Build story
+
+The "How this site was built" page (`/{locale}/build`) renders `content/build-story.json`; its numbers come from a snapshot, never from the text.
+
+- Edit `content/build-story.json` (title, lead, the five stations, the quality gates, the "coming soon" notes). Text is `{ en, id }`, neutral or third person, no client names (C3), no cloud resource ids or hostnames. `tests/content/build-story.test.ts` (schema) and `tests/content/safety.test.ts` (public-safety lint) check it.
+- Build rounds: each round lists its merged pull request range (`prs.from` to `prs.to`, `to: null` while the round is open). Add a round with its range when a round ships; the page counts pull requests and dates per round from the snapshot.
+- Never type a count in the text (commits, pull requests, tests, budgets): put it in the snapshot or leave it out.
+- Refresh the snapshot with `bun scripts/build-facts.ts --write` (needs a full git history; CI and deploy builds do this themselves, and local builds use the committed `content/generated/build-facts.json`).
+- Before and after captures live in `public/build-story/` (WebP, named `r<round>-before.webp` and `r<round>-after.webp`) and are referenced from the round's `shots` with alt text in both languages.
+- Ask the HQ keeps its own short note about the site in `content/ask/site-build.json`; it points visitors to this page.
 
 ## Perspectives
 

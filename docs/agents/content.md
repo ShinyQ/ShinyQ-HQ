@@ -14,6 +14,10 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - `getTimeline()` (oldest first), `getTimelineEntry(slug)`, `getTimelineEntryById(id)`.
   - `getYears()`: year rooms; pre-2019 entries fold into 2019 as the prologue.
   - `getPosts()`, `getPost(slug)`, `getLibrary()`, `getRoof()`, `getContact()`, `getSideProjects()`, `getPublicRepos()`, `getMissions()`, `tr(text, locale)`.
+- The build story has its own module, `@/content/build-story` (schemas `BuildStorySchema` and `BuildFactsSchema`, `STATION_IDS`):
+  - `getBuildStory()` reads `content/build-story.json`; `getBuildFacts()` reads the snapshot `content/generated/build-facts.json` written by `scripts/build-facts.ts`.
+  - It pulls zod into the bundle, so it is server-side only: import it from server components and scripts, never from a client component (client pieces take plain props; `src/lib/build-page.ts` holds the pure joins).
+  - Counts always come from the snapshot, never from the story text. See [../content.md](../content.md#build-story).
 - Types come from `@/content/schema` (`Pod`, `TimelineEntry`, `Mission`, `MissionStep`, `RoomId`, `Locale`, ...). Do not redeclare them.
 - Client code imports the locale values from `@/content/locales`, never values from `@/content/schema` (type-only imports are fine); `bun run build` fails otherwise.
 

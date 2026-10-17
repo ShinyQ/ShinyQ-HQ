@@ -200,6 +200,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/labs`, `/labs/{slug}` | Case studies, `?wing=software\|ai\|data` filter | L3 Project Roads; a slug opens that pod |
 | `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, `?topic=` filter | L4 Newsroom and the Topic Constellation |
 | `/{locale}/contact` | About, contact, "How I run AI in production", visit stats, CV, certifications | RF roof deck |
+| `/{locale}/build` | How this site was built: blueprint, build rounds, AI agent workflow, quality gates, measured numbers | |
 | `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
 | `/api/stats` | Public visit stats snapshot, refreshed every 4 hours (200 or 204) | |
