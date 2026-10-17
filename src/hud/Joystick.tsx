@@ -16,10 +16,9 @@ type Boost = ReturnType<typeof useBoostToggle>;
 
 /**
  * Virtual joystick for coarse pointers: left of the bottom band, 120 px, 12% dead zone (appendix 03 section 3).
- * With `boost` (the Corners HUD, which has no Boost button), a double tap toggles boost: a short, still
+ * With `boost` (the Corners HUD), a double tap toggles boost: a short, still
  * first tap, then a pointer down within `DOUBLE_TAP_MS` of its release; the first tap drives as usual.
- * Keyboard users hold Shift instead. Without `boost` it never touches the boost state, so a separate
- * Boost button keeps its own. The gesture is timed with the input events' own times, not the time a
+ * Keyboard users hold Shift instead. Without `boost` it never touches the boost state. The gesture is timed with the input events' own times, not the time a
  * handler runs, so a slow frame between the taps (a shader compile on a phone) never breaks it.
  */
 export function Joystick({ boost = false }: { boost?: boolean }) {

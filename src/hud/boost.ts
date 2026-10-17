@@ -5,7 +5,7 @@ import { setBoost } from "@/experience/input/joystick";
 import { getHQStore } from "@/store/useHQStore";
 
 /**
- * Touch boost state shared by the Boost button and the joystick's double tap. Boost only applies
+ * Touch boost state behind the joystick's double tap. Boost only applies
  * while driving by hand (`boostOn`), so the rover still stops when the joystick is released. A floor
  * change, an elevator ride and unmount (Classic site, the hologram, reload) turn it off; it is never
  * persisted.

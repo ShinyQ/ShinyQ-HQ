@@ -24,8 +24,9 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
 
 /**
  * Desktop gear button (bottom right, above the view controls) and its settings sheet; the `,` key
- * toggles the sheet too. `showButton` hides the gear while the world is not explorable (intro, an
- * open room) but keeps the key working. Closing returns focus to the gear.
+ * opens the sheet too (Esc closes it: world keys pause while an `aria-modal` dialog is open). `showButton`
+ * hides the gear while the world is not explorable: in the intro the key still opens the sheet; an open
+ * room is an `aria-modal` dialog, so the key waits until it closes. Closing returns focus to the gear.
  */
 export function SettingsLauncher({ showButton = true }: { showButton?: boolean }) {
   const t = useTranslations("hud.settings");

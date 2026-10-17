@@ -60,7 +60,7 @@ function MenuProfile({ data }: { data: ExperienceData }) {
 /**
  * Corners HUD menu (phones and tablets, top right): a button that opens a side sheet (a bottom sheet
  * on phones) with the profile, the actions (Classic site, search, Ask Rover, rotate, map) and every
- * setting. Ask Rover lives here, so the button carries its onboarding spotlight. The `,` key toggles
+ * setting. Ask Rover lives here, so the button carries its onboarding spotlight. The `,` key opens
  * it; closing returns focus to the button. Tablets show search in the bar, so the menu leaves it out.
  */
 export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout: HudLayout; onExit: () => void }) {

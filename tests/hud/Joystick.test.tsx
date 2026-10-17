@@ -122,7 +122,7 @@ describe("Joystick double-tap boost", () => {
     expect(stick()).not.toHaveAttribute("data-boost", "on");
   });
 
-  it("a boost-less joystick never touches boost (a separate Boost button keeps its state)", () => {
+  it("a boost-less joystick never touches boost", () => {
     const { unmount } = render(<Joystick />);
     act(() => getHQStore().getState().arriveFloor("L2"));
     unmount();
@@ -144,6 +144,34 @@ describe("Joystick double-tap boost", () => {
     expect(stick()).toHaveAttribute("data-boost", "on");
     act(() => getHQStore().getState().arriveFloor("L2"));
     expect(stick()).not.toHaveAttribute("data-boost", "on");
+    expect(setBoost).toHaveBeenLastCalledWith(false);
+  });
+
+  it("turns boost off when an elevator ride starts", () => {
+    render(<Joystick boost />);
+    tapAt(10_000);
+    tapAt(10_100);
+    expect(stick()).toHaveAttribute("data-boost", "on");
+    act(() => getHQStore().getState().setRide({ from: "L1", to: "L3", stage: "toDoor", t: 0 }));
+    expect(stick()).not.toHaveAttribute("data-boost", "on");
+    expect(setBoost).toHaveBeenLastCalledWith(false);
+  });
+
+  it("stays on through other store changes", () => {
+    render(<Joystick boost />);
+    tapAt(10_000);
+    tapAt(10_100);
+    act(() => getHQStore().setState({ reducedMotion: true }));
+    expect(stick()).toHaveAttribute("data-boost", "on");
+    act(() => getHQStore().setState({ reducedMotion: false }));
+  });
+
+  it("never leaves the boost on when it unmounts", () => {
+    const { unmount } = render(<Joystick boost />);
+    tapAt(10_000);
+    tapAt(10_100);
+    expect(setBoost).toHaveBeenLastCalledWith(true);
+    unmount();
     expect(setBoost).toHaveBeenLastCalledWith(false);
   });
 });

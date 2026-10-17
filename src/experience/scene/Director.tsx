@@ -336,7 +336,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       radius: ROVER.radius,
       maxTilt: ROVER.maxTilt,
     };
-    // Hold Shift or the touch boost button for about 2x speed: manual driving only, never the autopilot.
+    // Hold Shift or double-tap the touch joystick for about 2x speed: manual driving only, never the autopilot.
     const boosting = boostOn(manual, held.current ?? [], joystick.boost);
     const driveTuning = boostTuning(tuning, boosting);
 

@@ -570,7 +570,6 @@
       "back": "Back to elevator",
       "backDetail": "Beam to the elevator call pad at the start of the road"
     },
-    "boost": "Boost",
     "interact": {
       "teleporter": "Teleporter {year}",
       "returnPad": "Back to elevator",

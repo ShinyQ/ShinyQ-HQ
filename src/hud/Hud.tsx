@@ -220,7 +220,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
               </div>
               <CornersTopBar data={data} layout={layout} onExit={onExit} />
               <div className={`pointer-events-none absolute ${MINIMAP_PLACE[layout]}`} data-testid="hud-minimap">
-                {/* A phone's room sheet covers the lower screen: the minimap steps aside, the overview (N) still opens. */}
+                {/* A phone's room sheet covers the lower screen: the minimap steps aside until it closes (the room is aria-modal, so N waits too). */}
                 <Minimap data={data} layouts={layouts} size={layout} hidden={phone && phase === "room"} />
               </div>
             </>
@@ -228,7 +228,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
           <FloorNotice data={data} layout={layout} />
           {phase !== "intro" && <YearChip career={data.career} layout={layout} hidden={phone && phase === "room"} />}
           <BottomBand
-            // Coarse pointers always get the Corners HUD, which has no Boost button: a double tap on the joystick toggles boost.
+            // Coarse pointers always get the Corners HUD: a double tap on the joystick toggles boost.
             left={drive ? <Joystick boost /> : null}
             right={desktop ? <DesktopCorner data={data} layouts={layouts} explorable={explorable} /> : explorable ? <ResetView /> : null}
           >

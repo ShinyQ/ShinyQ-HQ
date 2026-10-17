@@ -2,8 +2,7 @@ import type { Vec2 } from "../types";
 import type { RoverTuning } from "./movement";
 
 /**
- * Hold-to-boost (owner request): Shift on keyboards, the boost button beside the joystick on touch
- * screens. Manual driving only; the autopilot (missions, the elevator approach and
+ * Boost (owner request): hold Shift on keyboards, double-tap the joystick on touch screens (a toggle). Manual driving only; the autopilot (missions, the elevator approach and
  * point-and-go drives) keeps its speed. Pure, so Vitest runs it in node.
  */
 export const BOOST = {
@@ -16,7 +15,7 @@ export const BOOST = {
   trailMin: 0.05,
 } as const;
 
-/** True while the visitor drives by hand and holds Shift or the touch boost button. */
+/** True while the visitor drives by hand and holds Shift or has the touch boost on. */
 export function boostOn(manual: Vec2 | null, held: Iterable<string>, button: boolean): boolean {
   if (!manual || Math.hypot(manual.x, manual.z) < 1e-3) return false;
   if (button) return true;
