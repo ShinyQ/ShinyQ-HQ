@@ -39,7 +39,7 @@ export function usePrefersReducedMotion(): boolean {
 export interface RoverTerminalProps {
   open: boolean;
   locale: Locale;
-  /** Already ordered (see `orderTerminalMissions`), at most 9. */
+  /** Already ordered (see `orderTerminalMissions`); the keys 1 to 9 cover up to 9. */
   missions: readonly Mission[];
   onRun: (missionId: string) => void;
   /** Esc, "drive myself", close button or backdrop. */
@@ -53,8 +53,9 @@ export interface RoverTerminalProps {
 }
 
 /**
- * Rover Terminal (spec appendix 02 section 4): `rover@hq:~$ ./missions`, a greeting, numbered
- * missions and "drive myself". Keys 1 to 9, arrows plus Enter, tap, Esc. Bottom sheet on mobile.
+ * Rover menu (spec appendix 02 section 4), a terminal-styled panel: a greeting, the numbered missions and
+ * "drive myself". Digit keys 1 to N (one per mission), arrows plus Home/End and Enter, tap, Esc. Bottom sheet on
+ * mobile; the panel never outgrows the viewport and its option list scrolls.
  */
 export function RoverTerminal({ open, reducedMotion, onRun, onClose, ...rest }: RoverTerminalProps) {
   const systemReduced = usePrefersReducedMotion();

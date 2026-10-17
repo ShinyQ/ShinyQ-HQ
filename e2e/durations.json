@@ -329,6 +329,7 @@
     "missions.spec.ts › the Page View Lobby never opens the Rover Terminal on its own; the header button does": 4,
     "missions.spec.ts › the Rover menu fits a 375x667 screen": 3,
     "missions.spec.ts › the Rover menu fits a 390x844 screen": 3,
+    "missions.spec.ts › the Rover menu list scrolls inside a short landscape screen": 3,
     "motion.spec.ts › Classic site: Full by default under the OS flag; Cmd-K sets Reduced or System and the page CSS follows": 8.6,
     "motion.spec.ts › Full is the default even when the OS asks for reduced motion: rides animate": 25,
     "motion.spec.ts › Reduced without the OS flag gives the cut and the reduced page CSS": 16.1,

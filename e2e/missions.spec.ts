@@ -147,6 +147,29 @@ for (const viewport of [
   });
 }
 
+test("the Rover menu list scrolls inside a short landscape screen", async ({ page }) => {
+  const viewport = { width: 667, height: 375 };
+  await seenTerminal(page);
+  await page.setViewportSize(viewport);
+  await openPage(page, "/en?tier=static");
+  await page.getByRole("button", { name: en.hud.launcher.askRover, exact: true }).click();
+  const menu = page.getByRole("dialog", { name: en.hud.terminal.title });
+  await expect(menu).toBeVisible();
+  const box = (await menu.boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 0.5);
+  await expect(menu.getByRole("button", { name: en.hud.terminal.close })).toBeInViewport();
+  const list = menu.getByRole("listbox");
+  const metrics = await list.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }));
+  expect(metrics.scroll).toBeGreaterThan(metrics.client);
+  await page.keyboard.press("End");
+  await expect(menu.getByRole("option").last()).toBeInViewport();
+  const after = (await menu.boundingBox())!;
+  expect(after.y).toBeGreaterThanOrEqual(0);
+  expect(after.y + after.height).toBeLessThanOrEqual(viewport.height + 0.5);
+  await expect(menu.getByRole("button", { name: en.hud.terminal.close })).toBeInViewport();
+});
+
 test.describe("accessibility (axe)", () => {
   test.beforeEach(async ({ page }) => seenTerminal(page));
 
