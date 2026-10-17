@@ -417,7 +417,7 @@
             "id": "Playwright menjalankan situs hasil build dalam beberapa shard yang seimbang durasinya, menunggu state dan tidak pernah menunggu waktu."
           },
           "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
-          "jobs": ["E2E shard ${{ matrix.shard }}/4"],
+          "jobs": ["E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}"],
           "required": true
         },
         {
@@ -428,7 +428,7 @@
             "id": "Mengukur JavaScript gzip yang diunduh pengalaman 3D sebelum frame pertama, untuk tier lite dan full."
           },
           "budget": { "en": "Under 450 KB gzip on the first-frame path", "id": "Di bawah 450 KB gzip pada jalur frame pertama" },
-          "jobs": ["3D perf gates ${{ matrix.shard }}/2"],
+          "jobs": ["3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}"],
           "required": true
         },
         {
@@ -442,7 +442,7 @@
             "en": "Under 150 scene draw calls and 30k triangles; zero GPU object growth and under 2 MB heap growth",
             "id": "Di bawah 150 draw call scene dan 30 ribu segitiga; nol pertumbuhan objek GPU dan pertumbuhan heap di bawah 2 MB"
           },
-          "jobs": ["3D perf gates ${{ matrix.shard }}/2"],
+          "jobs": ["3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}"],
           "required": true
         },
         {
