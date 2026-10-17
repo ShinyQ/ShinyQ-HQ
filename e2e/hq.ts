@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { BUDGET_WINDOW, GPU_MEMORY_BUDGET, RENDER_BUDGET, type RenderBudget } from "./budgets";
 
 export interface HQSnapshot {
@@ -296,16 +296,85 @@ export async function waitForPhase(page: Page, phase: string, timeout = 30_000) 
   await page.waitForFunction((p) => (window as unknown as HQWindow).__hq.store.getState().phase === p, phase, { timeout });
 }
 
-/** Waits until the elevator has delivered the rover to `floor`. */
+type RideProbeWindow = Window & {
+  __hq: {
+    store: { getState: () => { floor: string; phase: string; ride: unknown } };
+    motion: () => { ride: { stage: string; t: number; held?: number; chunkHeld?: number } | null };
+    rover: { x: number; z: number };
+    frames: () => number;
+  };
+};
+
+/**
+ * Most frames one elevator trip may take before `waitForFloor` calls it stuck: 40 s of ride time at 60 fps,
+ * several times the longest trip (door drive, the five stages, the closed-door wait, the arrival roll).
+ */
+export const RIDE_FRAME_BUDGET = 2400;
+
+/**
+ * Waits until the elevator has delivered the rover to `floor`.
+ *
+ * Rides are frame-bound by design: one frame adds at most 1/20 s of ride time (`RIDE_CAP`) and the rover's
+ * drive at most 1/30 s (`MAX_PHYSICS_STEP`), so at 1 fps (a busy SwiftShader runner) a trip that takes 6 s
+ * at 60 fps takes minutes of wall time. The wait therefore follows the ride, not the clock:
+ * - it fails when the ride makes no progress (floor, phase, stage, ride time, closed-door waits, rover position) for `timeout` ms;
+ * - it fails when the trip runs past `RIDE_FRAME_BUDGET` frames;
+ * - wall time spent while the ride progresses extends the test's timeout, so a slow runner finishes the trip.
+ */
 export async function waitForFloor(page: Page, floor: string, timeout = 45_000) {
-  await page.waitForFunction(
-    (f) => {
-      const s = (window as unknown as HQWindow).__hq.store.getState();
-      return s.floor === f && s.ride === null && s.phase === "explore";
-    },
-    floor,
-    { timeout },
-  );
+  // Live per-frame state: the store writes the ride once per stage, `__hq.motion()` and `__hq.rover` every frame.
+  const progress = () =>
+    page.evaluate((f) => {
+      const hq = (window as unknown as RideProbeWindow).__hq;
+      const s = hq.store.getState();
+      const ride = hq.motion().ride;
+      const done = s.floor === f && s.ride === null && s.phase === "explore";
+      const mark = [s.floor, s.phase, ride?.stage, ride?.t.toFixed(3), ride?.held?.toFixed(3), ride?.chunkHeld?.toFixed(3), hq.rover.x.toFixed(2), hq.rover.z.toFixed(2)].join(" ");
+      return { done, mark, frames: hq.frames() };
+    }, floor);
+  const info = test.info();
+  const firstBase = info.timeout;
+  const firstStarted = Date.now();
+  info.setTimeout(firstBase + timeout);
+  const first = await progress();
+  // The ride started with the caller's request, so this read counts as ride time.
+  info.setTimeout(firstBase + (Date.now() - firstStarted));
+  if (first.done) return;
+  let last = first;
+  let lastProgress = Date.now();
+  for (;;) {
+    // Credit up front: one check may block for a long frame (a floor compiling on a slow runner). The test
+    // keeps the time only when the ride moved; a stalled ride gives it back and fails below.
+    const base = info.timeout;
+    const started = Date.now();
+    info.setTimeout(base + timeout);
+    const arrived = await page
+      .waitForFunction(
+        (f) => {
+          const s = (window as unknown as RideProbeWindow).__hq.store.getState();
+          return s.floor === f && s.ride === null && s.phase === "explore";
+        },
+        floor,
+        { timeout: 2_000 },
+      )
+      .then(
+        () => true,
+        (error: Error) => {
+          if (error.name !== "TimeoutError") throw error;
+          return false;
+        },
+      );
+    const now = arrived ? null : await progress();
+    const moved = arrived || now!.done || now!.mark !== last.mark;
+    info.setTimeout(base + (moved ? Date.now() - started : 0));
+    if (arrived || now!.done) return;
+    if (moved) {
+      lastProgress = Date.now();
+      last = now!;
+    }
+    if (now!.frames - first.frames > RIDE_FRAME_BUDGET) throw new Error(`waitForFloor(${floor}): the trip ran past ${RIDE_FRAME_BUDGET} frames (${now!.mark})`);
+    if (Date.now() - lastProgress > timeout) throw new Error(`waitForFloor(${floor}): no ride progress for ${timeout} ms (${now!.mark}, frame ${now!.frames})`);
+  }
 }
 
 /** Opens /en (or `path`) as a returning visitor (intro already played this session) and waits until input is handled. */
