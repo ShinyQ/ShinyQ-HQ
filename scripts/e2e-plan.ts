@@ -84,6 +84,13 @@ export const RULES: Rule[] = [
   { test: /^e2e\/perf\//, specs: [] },
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks): never part of the export.
+  {
+    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    specs: [],
+  },
+  // Build-time scans of the export: the script policy and the deploy rules.
+  { test: /^scripts\/(scan-export|injected-analytics)\.ts$/, specs: ["deploy", "csp"] },
 
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
@@ -263,12 +270,53 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/(Gallery|Lightbox|Chip)\.tsx$|^src\/content\/(media|tech)\.ts$|^public\/(media|tech)\//, specs: ["gallery", "pageview"] },
   { test: /^src\/(app|components)\/|^src\/content\/pageview\.ts$/, specs: ["pageview", "static-routes", "gallery"] },
   { test: /^src\/i18n\//, specs: ["static-routes", "experience"] },
+  // Ambient type declarations: a broken one fails the build, which every route needs.
+  { test: /^src\/types\//, specs: ["static-routes"] },
+  // Self-hosted fonts and other assets the 3D text and the boot card load.
+  { test: /^src\/assets\//, specs: ["experience", "highlights", "boot-first", "ride"] },
+  // Pages bindings: the Ask and visit Functions read them.
+  { test: /^wrangler\.toml$/, specs: ["ask", "visit"] },
   { test: /^src\/lib\/audio\//, specs: ["ambience", "experience", "pageview"] },
   { test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },
   { test: /^src\/lib\//, specs: ["static-routes", "pageview"] },
   { test: /^(content|messages)\/|^src\/content\//, specs: ["static-routes", "pageview", "seo"] },
   { test: /^public\//, specs: ["static-routes"] },
 ];
+
+/**
+ * Smoke tests every selective pull request run adds when 3D or page code changed (scripts/ci-plan.ts):
+ * whole specs, or one test of a spec by its exact title (run as a `file:line` filter).
+ */
+export const PR_SMOKE: readonly { spec: Spec; title?: string }[] = [
+  { spec: "static-routes" },
+  { spec: "boot-first" },
+  { spec: "deploy" },
+  { spec: "ride", title: "the car waits for the new floor with the doors closed, then compiles nothing while it moves" },
+  { spec: "experience", title: "the 3D HUD has no serious accessibility violations" },
+];
+
+/** 1-based line of the first `test(` call whose title string equals `title`, or null. */
+export function locateTest(source: string, title: string): number | null {
+  for (const m of source.matchAll(/\btest\(\s*(["'`])((?:(?!\1)[^\\]|\\.)*)\1/g)) {
+    if (m[2] === title) return source.slice(0, m.index).split("\n").length;
+  }
+  return null;
+}
+
+/** Seconds assumed for a spec with no measured test, and for a test with no measured duration. */
+export const UNKNOWN_SPEC_SECONDS = 150;
+export const UNKNOWN_TEST_SECONDS = 30;
+
+/** Estimated worker-seconds of a spec (sum of its durations), or of one test when `title` is given. */
+export function specSeconds(durations: Durations | null | undefined, spec: string, title?: string): number {
+  const prefix = `${spec}.spec.ts › `;
+  const keys = Object.keys(durations ?? {}).filter((k) => k.startsWith(prefix));
+  if (title !== undefined) {
+    const key = keys.find((k) => k.endsWith(` › ${title}`));
+    return key ? durations![key] : UNKNOWN_TEST_SECONDS;
+  }
+  return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : UNKNOWN_SPEC_SECONDS;
+}
 
 const SPEC_FILE = /^e2e\/([a-z0-9-]+)\.spec\.ts$/;
 
