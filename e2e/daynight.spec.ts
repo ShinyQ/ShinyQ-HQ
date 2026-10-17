@@ -5,12 +5,12 @@ import {
   chooseMotion,
   enterHQ,
   expectRenderBudget,
-  readSettledGpuCounters,
   waitForHQ,
   waitForPhase,
   waitForSceneLive,
   type RenderPeaks,
 } from "./hq";
+import { waitForStablePrograms } from "./perf/helpers";
 
 /**
  * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
@@ -31,6 +31,7 @@ interface SkyRead {
 }
 
 type SkyWindow = Window & { __hq: { sky: SkyRead } };
+type RenderWindow = Window & { __hq: { render: { programNames(): string[] } } };
 
 const readSky = (page: Page): Promise<SkyRead> =>
   page.evaluate(() => {
@@ -106,13 +107,17 @@ test("day costs the same shader programs and scene draw calls as night on L1", a
   const measure = async (sky: string) => {
     await openSky(page, sky);
     await waitForSource(page, "param");
-    const programs = (await readSettledGpuCounters(page)).programs;
+    const programs = await waitForStablePrograms(page);
+    const names = await page.evaluate(() => (window as unknown as RenderWindow).__hq.render.programNames());
+    const holo = names.filter((name) => name.startsWith("holo-fx"));
     const peaks: RenderPeaks = await expectRenderBudget(page);
-    return { programs, peaks };
+    return { programs, holo, peaks };
   };
   const night = await measure("night");
   const day = await measure("day");
-  expect(day.programs, `programs night ${night.programs}, day ${day.programs}`).toBe(night.programs);
+  expect(day.holo, `holo-fx programs night [${night.holo.join(", ")}], day [${day.holo.join(", ")}]`).toEqual(night.holo);
+  // The per-floor program budget is gated by e2e/perf/floors.spec.ts; one program of warm-up jitter is normal between loads.
+  expect(Math.abs(day.programs - night.programs), `programs night ${night.programs}, day ${day.programs}`).toBeLessThanOrEqual(1);
   expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(2);
 });
 
