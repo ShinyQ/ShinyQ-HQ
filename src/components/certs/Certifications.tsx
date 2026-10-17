@@ -9,6 +9,7 @@ import { IssuerMark } from "./IssuerMark";
 const STATUS_CLASS = { earned: "text-green", "in-progress": "text-amber", expired: "text-ink-3" } as const;
 
 function FeaturedCard({ cert, details }: { cert: CertView; details: string }) {
+  const title = cert.code ?? cert.shortLabel;
   return (
     <button
       type="button"
@@ -20,8 +21,8 @@ function FeaturedCard({ cert, details }: { cert: CertView; details: string }) {
         <IssuerMark cert={cert} size={20} />
         <span className="pv-data">{cert.issuer}</span>
       </span>
-      {cert.code && <span className="pv-num mt-4 block text-[clamp(30px,3vw,40px)] leading-none">{cert.code}</span>}
-      <span className={`block leading-snug text-ink ${cert.code ? "mt-3 text-[15px]" : "mt-4 text-[17px] font-semibold"}`}>{cert.short}</span>
+      {title && <span className="pv-num mt-4 block text-[clamp(30px,3vw,40px)] leading-none">{title}</span>}
+      <span className={`block leading-snug text-ink ${title ? "mt-3 text-[15px]" : "mt-4 text-[17px] font-semibold"}`}>{cert.short}</span>
       <span className="mt-auto flex items-center justify-between gap-3 pt-4">
         <span className="pv-data">{cert.issuedLabel}</span>
         <span className="text-sm text-ink-2">{details}</span>

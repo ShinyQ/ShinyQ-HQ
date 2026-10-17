@@ -74,7 +74,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
   - The 3D Lobby shows a curved wall with issuer tabs and paging.
 - Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed.
 - New issuers get a logo through `src/content/tech.ts` (`public/tech/`).
-- A certification without an exam code (Google's Generative AI Leader) leaves `code` out; featured cards prefer certifications with a code, so pin a new code-less one with `featured: true`.
+- A certification without an exam code (Google's Generative AI Leader) leaves `code` out and may set `shortLabel` (at most 16 characters, for example "Gen AI Leader"), which fills the featured card's big title slot on the Classic site and is never shown as a code; featured cards prefer certifications with a code, so pin a new code-less one with `featured: true`.
 - When a certification is added, also update the `microsoft-certifications` fact (count and codes), the `certification-desk-2026` journey entry and the Ask golden set (`tests/ask/golden.json`). The weekly live-facts job checks every `credentialUrl` (Microsoft Learn, Credly) for reachability.
 
 ## CV
