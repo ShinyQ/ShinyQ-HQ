@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { assignGrid, DIAGRAM_PRESETS, edgeCrossings, layoutArchitecture, PAD, textWidth, wrapText, type DiagramLayout } from "@/components/diagram/layout";
 import { arrowHead, edgePath } from "@/components/diagram/DiagramSvg";
+import { getBuildStory } from "@/content/build-story";
 import { getPods } from "@/content/load";
 import { getPostDiagrams } from "@/content/post-diagrams";
 import type { Architecture } from "@/content/schema";
@@ -12,6 +13,7 @@ const diagrams: [string, Architecture][] = [
   ...Object.entries(getPostDiagrams()).flatMap(([post, list]) =>
     Object.entries(list).map(([id, a]) => [`post:${post}/${id}`, a] as [string, Architecture]),
   ),
+  ["build-story:blueprint", getBuildStory().stations.blueprint.architecture],
 ];
 
 type Rect = { x: number; y: number; w: number; h: number };

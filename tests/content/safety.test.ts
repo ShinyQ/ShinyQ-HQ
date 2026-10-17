@@ -9,6 +9,7 @@ const content = JSON.parse(read("content", "site-content.json"));
 const perspectives = JSON.parse(read("content", "perspectives.json"));
 const siteBuild = JSON.parse(read("content", "ask", "site-build.json"));
 const postDiagrams = JSON.parse(read("content", "blog", "diagrams.json"));
+const buildStory = JSON.parse(read("content", "build-story.json"));
 const blogFiles = readdirSync(path.join(root, "content", "blog")).filter((f) => f.endsWith(".mdx"));
 const messageFiles = readdirSync(path.join(root, "messages")).filter((f) => f.endsWith(".json"));
 
@@ -45,6 +46,14 @@ describe("public-safety lint", () => {
 
   it("finds no blocklisted term or forbidden pattern in content/blog/diagrams.json (post architecture diagrams)", () => {
     const hits = collectStrings(postDiagrams).flatMap(({ path: at, value }) => {
+      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      return found.length ? [`${at}: ${found.join(", ")}`] : [];
+    });
+    expect(hits).toEqual([]);
+  });
+
+  it("finds no blocklisted term or forbidden pattern in content/build-story.json (the public build story)", () => {
+    const hits = collectStrings(buildStory).flatMap(({ path: at, value }) => {
       const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
