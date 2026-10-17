@@ -36,7 +36,8 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/2`, 2 duration-balanced shards; on a PR only for 3D code or a `src/` file the 3D roots import, always on `main` and nightly ([ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards: the whole lane on 4 shards on `main`, dispatches and the nightly; on a PR, 2 shards running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+  - Run one perf key locally with the same grep, for example `PERF=1 bunx playwright test --grep "L3 (full|lite): settled"`.
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
 - `floors`, `peaks` and `memory-full` set `sessionStorage["hq:sky"] = "night"` in a `beforeEach`: automation's still night draws no sky, so the gates opt in to measure it as visitors see it at night (`look`, `bytes-3d` and `timeline` do not).
@@ -111,7 +112,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 ## Fast verification
 
-The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the heavy jobs your change needs (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); pushes to `main` and the nightly run the full suite, the perf gates and Lighthouse.
+The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the tests your change affects plus a small smoke set (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); pushes to `main` and the nightly run the full suite (8 e2e shards), the whole perf lane (4 shards) and Lighthouse. A test the map does not tie to your paths runs only after the merge, so keep the `RULES` in `scripts/e2e-plan.ts` current when you add a spec or move code, and add the `full-ci` label for a risky cross-cutting change.
 
 ### Which command when
 
@@ -200,10 +201,10 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `playwright test --list`, then the longest test first onto the least-loaded shard by the CI medians in `e2e/durations.json`.
   - Unknown tests count as the median; without the file it falls back to round-robin.
   - Playwright's own `--shard` cuts contiguous blocks.
-- Refresh the timings with `bun run e2e:durations` when the `E2E shard n/4` job times drift apart.
-- `bun run e2e:shard 1/4 --dry` prints the plan.
+- Refresh the timings with `bun run e2e:durations` when the `E2E shard n/8` job times drift apart; PR shard counts are sized from the same file.
+- `bun run e2e:shard 1/8 --dry` prints the plan.
 - Shards upload blob reports that `Build, CV and e2e` merges into the `playwright-report` artifact.
-- Reproduce a shard locally: `bun run e2e:shard 2/4`.
+- Reproduce a shard locally: `bun run e2e:shard 2/8`.
 
 ## Writing 3D tests
 

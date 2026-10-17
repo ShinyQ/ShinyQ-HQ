@@ -108,9 +108,10 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
   pushes, deletion and direct pushes are rejected. In-progress runs on `main` are never cancelled; check main's CI after a merge.
 - Production deploys only through `.github/workflows/deploy.yml` (`workflow_dispatch`, by hand or from the weekly
   live-facts PR). A push to `main` never deploys; the deploy reuses only a complete green CI run (`ci-full` artifact).
-- Smart CI: every PR runs typecheck, lint, unit tests, the secret scan and the build; e2e, the 3D perf gates and
-  Lighthouse run only when the changed paths need them (`scripts/ci-plan.ts`). Pushes to `main`, dispatches and the
-  nightly run everything. Detail: [ci-and-deploy.md](docs/agents/ci-and-deploy.md#ci).
+- Smart CI: every PR runs typecheck, lint, unit tests, the secret scan and the build, then only the e2e specs, perf
+  tests and Lighthouse URLs its changed paths affect, plus a smoke set (`scripts/ci-plan.ts`; label `full-ci` for
+  everything). Pushes to `main`, dispatches and the nightly run everything on 8 e2e and 4 perf shards. Detail:
+  [ci-and-deploy.md](docs/agents/ci-and-deploy.md#ci).
 - Before pushing: `bun run verify:quick`, then `bun run e2e:changed`. Add the perf lane when you touch the
   render path, materials, floor mounting, the elevator or what the 3D chunk imports.
 - Details: [ci-and-deploy.md](docs/agents/ci-and-deploy.md), [performance.md](docs/agents/performance.md),
