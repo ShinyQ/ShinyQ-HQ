@@ -1,6 +1,8 @@
 # Rover Idle Animations Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+Status: in review (Round 9, sub-project O). The perf lane (Task 3, Step 2) runs in CI.
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** After 15 s with no input and the rover standing still, the rover looks around, blinks, hops or spins and beeps once; it varies the sequence and stops at once on any input (Round 9 O, spec section 5.2).
 
@@ -49,11 +51,11 @@ Behavior of `stepIdle`:
 - Reduced motion: only `blink` steps fire; `look`, `hop`, `spin`, `beep` are skipped (yaw and spin stay 0).
 - When the last step ends: no sequence, next start at `end + gapMin + random() * (gapMax - gapMin)`.
 
-- [ ] **Step 1: Write the failing tests** in `tests/unit/rover-idle.test.ts` covering: nothing before 15 s; a sequence starts at 15 s; every template fires exactly one beep and at least one blink, a look and a hop or spin; a bump of `seq` mid-sequence returns the zero output on that frame and restarts the 15 s wait; `eligible: false` behaves the same; two consecutive sequences use different templates; reduced motion fires only blinks; beep at most once per idle period across several sequences; spin ends at a multiple of 2 pi and yaw returns to 0 at a step end; `idleEligible` truth table (each blocker alone makes it false); `watchActivity` adds and removes the five listeners and bumps `activity.seq`.
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/rover-idle.test.ts`, expect failures (module missing).
-- [ ] **Step 3: Implement** `idle.ts` and `activity.ts` (pure, no three.js imports in `idle.ts`).
-- [ ] **Step 4: Run** the test file, expect PASS; run `bun run typecheck` and `bun run lint`.
-- [ ] **Step 5: Commit** `feat: add the rover idle state machine and activity counter`.
+- [x] **Step 1: Write the failing tests** in `tests/unit/rover-idle.test.ts` covering: nothing before 15 s; a sequence starts at 15 s; every template fires exactly one beep and at least one blink, a look and a hop or spin; a bump of `seq` mid-sequence returns the zero output on that frame and restarts the 15 s wait; `eligible: false` behaves the same; two consecutive sequences use different templates; reduced motion fires only blinks; beep at most once per idle period across several sequences; spin ends at a multiple of 2 pi and yaw returns to 0 at a step end; `idleEligible` truth table (each blocker alone makes it false); `watchActivity` adds and removes the five listeners and bumps `activity.seq`.
+- [x] **Step 2: Run** `bunx vitest run tests/unit/rover-idle.test.ts`, expect failures (module missing).
+- [x] **Step 3: Implement** `idle.ts` and `activity.ts` (pure, no three.js imports in `idle.ts`).
+- [x] **Step 4: Run** the test file, expect PASS; run `bun run typecheck` and `bun run lint`.
+- [x] **Step 5: Commit** `feat: add the rover idle state machine and activity counter`.
 
 ### Task 2: Wire idle into the rover
 
@@ -67,11 +69,11 @@ Behavior of `stepIdle`:
 - Produces: `roverRuntime.idle`, `roverRuntime.idleDelay` (default `IDLE.delay`, `Infinity` under `navigator.webdriver`; tests set it), `roverRuntime.idleYaw`, `roverRuntime.idleSpin` (as drawn).
 
 Steps:
-- [ ] **Step 1:** Wrap the head parts (head RoundedBox at y 1.5, face plane, back strip, antenna, tip) in `<group ref={head} position={[0, 1.5, 0]}>` with each child's y reduced by 1.5. No new mesh or material.
-- [ ] **Step 2:** In `useEffect`, `watchActivity(document)` plus `intents.on(bumpActivity)`; clean both up.
-- [ ] **Step 3:** In `useFrame`, compute `idleEligible` from the store (`phase`, `mission?.status === "running"`, `ride`, `beam`, `picker`), `roverRuntime.driving`, `roverRuntime.speed`, `roverRuntime.cameraBlend`, `askFace() !== null`; call `stepIdle`. Apply: `blink` sets `l.blinkUntil = t + 0.15`; `hop` sets `r.hopUntil = t + 0.35`; `beep` calls `audio.play("beep")`; yaw and spin: drawn values follow the output, and when the output drops to 0 mid-move they decay to 0 within about 0.15 s (`x *= exp(-dt * 30)`, the spin first wrapped to the nearest turn). `head.rotation.y = idleYaw`, `body.rotation.y = idleSpin`.
-- [ ] **Step 4:** Write `e2e/rover-idle.spec.ts` (helpers from `e2e/hq.ts`): enter the HQ as a returning visitor, set `__hq.rover.idleDelay = 1`, wait (on state) for `__hq.rover.idle` to become non-null and for a nonzero `idleYaw` or `idleSpin` (or a hop), press a key, then expect `idle === null` on the next frames and yaw and spin back to 0 within 0.5 s; a second test with reduced motion (`chooseMotion`) expects only `blink` and zero yaw and spin; a third checks that with a room open (drawer) `idle` stays null for 3 s. Also assert draw calls (`__hq.rover.drawCalls`) stay within 1 of the pre-idle value during idle.
-- [ ] **Step 5:** Run `bun run verify:quick`, then `bunx playwright test e2e/rover-idle.spec.ts`; commit `feat: rover idle animations (look, blink, hop or spin, beep)`.
+- [x] **Step 1:** Wrap the head parts (head RoundedBox at y 1.5, face plane, back strip, antenna, tip) in `<group ref={head} position={[0, 1.5, 0]}>` with each child's y reduced by 1.5. No new mesh or material.
+- [x] **Step 2:** In `useEffect`, `watchActivity(document)` plus `intents.on(bumpActivity)`; clean both up.
+- [x] **Step 3:** In `useFrame`, compute `idleEligible` from the store (`phase`, `mission?.status === "running"`, `ride`, `beam`, `picker`), `roverRuntime.driving`, `roverRuntime.speed`, `roverRuntime.cameraBlend`, `askFace() !== null`; call `stepIdle`. Apply: `blink` sets `l.blinkUntil = t + 0.15`; `hop` sets `r.hopUntil = t + 0.35`; `beep` calls `audio.play("beep")`; yaw and spin: drawn values follow the output, and when the output drops to 0 mid-move they decay to 0 within about 0.15 s (`x *= exp(-dt * 30)`, the spin first wrapped to the nearest turn). `head.rotation.y = idleYaw`, `body.rotation.y = idleSpin`.
+- [x] **Step 4:** Write `e2e/rover-idle.spec.ts` (helpers from `e2e/hq.ts`): enter the HQ as a returning visitor, set `__hq.rover.idleDelay = 1`, wait (on state) for `__hq.rover.idle` to become non-null and for a nonzero `idleYaw` or `idleSpin` (or a hop), press a key, then expect `idle === null` on the next frames and yaw and spin back to 0 within 0.5 s; a second test with reduced motion (`chooseMotion`) expects only `blink` and zero yaw and spin; a third checks that with a room open (drawer) `idle` stays null for 3 s. Also assert draw calls (`__hq.rover.drawCalls`) stay within 1 of the pre-idle value during idle.
+- [x] **Step 5:** Run `bun run verify:quick`, then `bunx playwright test e2e/rover-idle.spec.ts`; commit `feat: rover idle animations (look, blink, hop or spin, beep)`.
 
 ### Task 3: Docs and gates
 
@@ -79,6 +81,6 @@ Steps:
 - Modify: `docs/agents/3d-experience.md` (new "Rover idle" section after "Boost feel"), `docs/features.md` (rover bullet and status log), `docs/decisions.md` (dated row: 2026-10-17 Rover idle after 15 s, reduced motion blink only)
 - Modify: `scripts/ci-plan.ts` only if the new spec needs a mapping (check how e2e specs are selected).
 
-- [ ] **Step 1:** Write the docs (current state only), run `bun run verify:quick` and `bun run e2e:changed`.
+- [x] **Step 1:** Write the docs (current state only), run `bun run verify:quick` and `bun run e2e:changed`.
 - [ ] **Step 2:** Run the perf lane `E2E_PORT=<free port> bun run e2e:perf` (render path touched): draw calls and programs unchanged, memory gates green.
-- [ ] **Step 3:** Commit `docs: rover idle`.
+- [x] **Step 3:** Commit `docs: rover idle`.

@@ -53,6 +53,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the "Day and night" switch is registered in the settings registry (`day-night`, display group, order 30), and its panel UI comes with the HUD settings work; +2 scene calls, no new shader program | Done |
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume), a round minimap with a floor overview, a slim Rover toast on phones | Done |
 | L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
+| Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
 
 ## Controls and first visit
 
@@ -69,6 +70,7 @@ Open `/en` and press **Boot rover**.
 - Drive with WASD or the arrow keys.
 - Hold **Shift** to boost to about twice the speed: twin light trails follow the path, the rover squats and leans, the view widens, and speed streaks and wheel sparks rush past.
 - On touch screens use the joystick; double-tap it to toggle boost on or off (the joystick glows while boost is on).
+- Leave the rover parked for 15 s with no input and it idles: it looks around, blinks, hops or spins and beeps once if sound is on. The sequence varies, any key, pointer or touch input stops it at once, and it never runs during a mission, a point-and-go drive, a ride or while the drawer is open. With reduced motion it only blinks.
 
 ### Point-and-go
 

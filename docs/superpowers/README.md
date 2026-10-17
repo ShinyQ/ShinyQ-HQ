@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-70 plans: 46 shipped and still current, 23 shipped with a part later removed or replaced, 1 in review (see each plan's status line).
+71 plans: 46 shipped and still current, 23 shipped with a part later removed or replaced, 2 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -83,6 +83,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Day and Night with a Moving Sun and Moon Implementation Plan](plans/2026-10-17-day-and-night.md) | shipped | [#182](https://github.com/ShinyQ/ShinyQ-HQ/pull/182), [#185](https://github.com/ShinyQ/ShinyQ-HQ/pull/185) |
 | [HUD Corners, Minimap and Settings Implementation Plan](plans/2026-10-17-hud-corners-minimap-settings.md) | shipped | [#183](https://github.com/ShinyQ/ShinyQ-HQ/pull/183) |
 | [Round 8 J: L3-Style Arrivals Implementation Plan](plans/2026-10-17-l3-style-arrivals.md) | shipped | [#184](https://github.com/ShinyQ/ShinyQ-HQ/pull/184) |
+| [Rover Idle Animations Implementation Plan](plans/2026-10-17-rover-idle.md) | in review | pending |
 
 ## Specs
 
