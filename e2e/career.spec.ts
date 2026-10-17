@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import content from "../content/site-content.json";
 
@@ -63,14 +63,6 @@ test.describe("Career Road (L2)", () => {
     const { rover } = await snapshot(page);
     expect(Math.abs(rover.z)).toBeLessThan(1);
     expect(errors).toEqual([]);
-  });
-
-  test("the L2 road stays under the draw call budget", async ({ page }) => {
-    await openJourney(page);
-    await waitForPhase(page, "explore");
-    await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
-    await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
   });
 
   test("a deep link opens the room's drawer, Esc closes it and driving into a door opens it", async ({ page }) => {

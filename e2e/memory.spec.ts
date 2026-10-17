@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { GPU_MEMORY_BUDGET } from "./budgets";
-import { chooseMotion, enterHQ, expectNoGpuGrowth, readJsHeapAfterGc, readSettledGpuCounters, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
+import { chooseMotion, enterHQ, expectNoGpuGrowth, readGpuCounters, readJsHeapAfterGc, readSettledGpuCounters, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
 
 /**
  * Appendix 08 memory budget (perf report SP8): floor round trips and Page View toggles must leave
@@ -37,7 +37,8 @@ test("10 Lobby to Roof round trips leave renderer memory at its baseline", async
   for (let i = 0; i < TRIPS; i++) {
     await ride(page, "RF");
     await ride(page, "L1");
-    perTrip.push(JSON.stringify(await readSettledGpuCounters(page)));
+    // For the failure message only: unsettled, so the next trip still starts the moment the rover arrives.
+    perTrip.push(JSON.stringify(await readGpuCounters(page)));
   }
   const after = await readSettledGpuCounters(page);
   const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;

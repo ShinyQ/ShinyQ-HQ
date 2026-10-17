@@ -126,6 +126,8 @@ describe("specsForChanges", () => {
 
   it("selects the arrivals spec for arrival points, zones and the camera (Round 8 J)", () => {
     expect(specsForChanges(["src/experience/config.ts"]).specs).toEqual(["arrivals", "experience"]);
+    // The 3D root writes each built floor's route; the arrivals tour checks it on every floor.
+    expect(specsForChanges(["src/experience/Experience.tsx"]).specs).toEqual(["arrivals", "experience"]);
     expect(specsForChanges(["src/experience/floors/career/YearGates.tsx"]).specs).toContain("arrivals");
     expect(specsForChanges(["src/experience/floors/library/concepts/newsroom.ts"]).specs).toContain("arrivals");
     expect(specsForChanges(["src/experience/floors/lobby/observatoryLayout.ts"]).specs).toEqual(["arrivals", "experience", "highlights", "pageview", "visits"]);
@@ -209,8 +211,8 @@ describe("specsForChanges", () => {
     ]) {
       expect(specsForChanges([file]).specs, file).toEqual(corners);
     }
-    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["experience", "hud", "hud-corners", "onboarding"]);
-    expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost", "hud-corners"]);
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "experience", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost"]);
     expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);
@@ -218,7 +220,7 @@ describe("specsForChanges", () => {
   });
 
   it("adds hud-corners to the HUD hosts that shape the corner layout, keeping their own specs", () => {
-    expect(specsForChanges(["src/hud/Hud.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "hud-corners", "missions"]);
+    expect(specsForChanges(["src/hud/Hud.tsx"]).specs).toEqual(["arrivals", "drawer-solid", "experience", "hud", "hud-corners", "missions"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
     expect(specsForChanges(["src/components/Modal.tsx"]).specs).toEqual(["gallery", "hud-corners", "lifecycle", "pageview"]);
     expect(specsForChanges(["src/hud/dialog/DialogBox.tsx"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding"]);

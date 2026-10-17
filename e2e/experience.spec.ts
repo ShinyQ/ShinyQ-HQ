@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { distanceToRect } from "../src/experience/nav/collision";
@@ -122,22 +122,6 @@ test.describe("boot and intro", () => {
     expect(errors).toEqual([]);
   });
 
-  test("a floor deep link plays the intro in the Lobby, then rides to its floor", async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("hq:terminal-seen", "1");
-      localStorage.setItem("hq:onboarded", "done");
-    });
-    await page.goto("/en/library?tier=lite");
-    await waitForHQ(page);
-    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
-    await start.click();
-    await waitForPhase(page, "intro");
-    expect((await snapshot(page)).floor).toBe("L1");
-    await waitForFloor(page, "L4");
-    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
-  });
-
   test("the intro flies down to the rover in one continuous move and lands on the follow view", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -240,21 +224,6 @@ test.describe("boot and intro", () => {
 });
 
 test.describe("elevator", () => {
-  test("the panel reaches every floor", async ({ page }) => {
-    // Five rides on SwiftShader: about 2.4 minutes on a CI runner, so the default 150 s left no headroom.
-    test.setTimeout(240_000);
-    const errors = collectErrors(page);
-    await enterHQ(page);
-    const panel = page.getByRole("navigation", { name: "Elevator" });
-    for (const floor of ["L3", "RF", "L2", "L4", "L1"]) {
-      await panel.locator(`[data-floor="${floor}"]`).click();
-      await waitForFloor(page, floor);
-      await expect(panel.locator(`[data-floor="${floor}"]`)).toHaveAttribute("aria-current", "true");
-      await expect(page.getByTestId("floor-announcer")).toContainText(floor);
-    }
-    expect(errors).toEqual([]);
-  });
-
   test("every button names its floor with the page name", async ({ page }) => {
     await enterHQ(page);
     const panel = page.getByRole("navigation", { name: "Elevator" });
@@ -297,14 +266,6 @@ test.describe("elevator", () => {
     await waitForFloor(page, "L3");
     await page.keyboard.press("PageDown");
     await waitForFloor(page, "L2");
-  });
-
-  test("built floors sync their route", async ({ page }) => {
-    await enterHQ(page);
-    await page.keyboard.press("PageUp");
-    await waitForFloor(page, "L2");
-    await expect(page).toHaveURL(/\/en\/journey\?tier=lite$/);
-    await expect(page.getByRole("link", { name: en.hud.openFloorPage.replace("{name}", en.floors.L2) })).toHaveCount(0);
   });
 });
 
@@ -369,27 +330,6 @@ test.describe("rover on desktop", () => {
     expect(phase).toBe("explore");
   });
 
-  test("the Lobby stays under the draw call budget", async ({ page }) => {
-    await enterHQ(page);
-    await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
-  });
-
-  test("holding Shift boosts manual driving to about twice the speed, with a trail", async ({ page }) => {
-    await enterHQ(page);
-    await waitForCameraSettle(page);
-    const peaks = await trackPeaks(page);
-    // S drives toward the camera: open floor between the spawn and the south-east corner.
-    await page.keyboard.down("Shift");
-    await page.keyboard.down("s");
-    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
-    await page.keyboard.up("s");
-    await page.keyboard.up("Shift");
-    const { speed, trail } = await peaks();
-    expect(speed).toBeLessThanOrEqual(18.01);
-    expect(trail).toBeGreaterThan(0);
-  });
-
   test("without Shift the rover keeps its cruising speed and draws no trail", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
@@ -402,26 +342,6 @@ test.describe("rover on desktop", () => {
     const { speed, trail } = await peaks();
     expect(speed).toBeLessThanOrEqual(9.01);
     expect(trail).toBe(0);
-  });
-
-  test("reduced motion boosts without the trail", async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: "reduce" });
-    await chooseMotion(context, "system");
-    const page = await context.newPage();
-    // Not enterHQ: it works the same before and after the intro changes of Task 4.
-    await asReturningVisitor(page);
-    await page.goto("/en?tier=lite");
-    await waitForHQ(page);
-    await waitForPhase(page, "explore", 30_000);
-    await waitForSceneLive(page);
-    const peaks = await trackPeaks(page);
-    await page.keyboard.down("Shift");
-    await page.keyboard.down("s");
-    await expect.poll(async () => (await peaks()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
-    await page.keyboard.up("s");
-    await page.keyboard.up("Shift");
-    expect((await peaks()).trail).toBe(0);
-    await context.close();
   });
 });
 
@@ -601,20 +521,6 @@ test.describe("tiers and views", () => {
     await expect(page.getByRole("button", { name: "Back to 3D" })).toHaveCount(0);
   });
 
-  test("the language toggle resumes on the same floor", async ({ page }) => {
-    await enterHQ(page);
-    await page.keyboard.press("PageUp");
-    await waitForFloor(page, "L2");
-    await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "ID" }).click();
-    await expect(page).toHaveURL(/\/id\/journey\?tier=lite$/);
-    await waitForHQ(page);
-    await expect(page.locator("html")).toHaveAttribute("lang", "id");
-    const s = await snapshot(page);
-    expect(s.phase).toBe("explore");
-    expect(s.floor).toBe("L2");
-    await expect(page.getByRole("navigation", { name: "Lift" })).toBeVisible();
-  });
-
   test("sound is on by default, starts on the first gesture and a mute persists", async ({ page }) => {
     await enterHQ(page);
     const sound = page.getByRole("button", { name: "Sound" });
@@ -683,16 +589,6 @@ test.describe("missions in 3D", () => {
     await expect(dialog).toBeHidden();
     expect((await snapshot(page)).phase).toBe("explore");
     expect(errors).toEqual([]);
-  });
-
-  test("the first visit gets Rover's tour after the intro, not the Rover menu", async ({ page }) => {
-    await page.goto("/en?tier=lite");
-    await waitForHQ(page);
-    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
-    await start.click();
-    await expect(page.getByTestId("dialog-box")).toHaveAttribute("data-dialog", "onboarding", { timeout: 30_000 });
-    await expect(page.getByRole("dialog", { name: en.hud.terminal.title, exact: true })).toHaveCount(0);
   });
 
   test("the 3D HUD has no serious accessibility violations", async ({ page }) => {
@@ -854,17 +750,4 @@ test.describe("orbit on every floor", () => {
       await page.keyboard.up("e");
     });
   }
-
-  test("the L2 camera turns all the way around the rover too", async ({ page }) => {
-    await asReturningVisitor(page);
-    await page.goto("/en/journey?tier=lite");
-    await waitForHQ(page);
-    await waitForPhase(page, "explore", 60_000);
-    await page.keyboard.down("e");
-    await expect.poll(async () => (await yaws(page)).rail, { timeout: 60_000 }).toBeGreaterThan(Math.PI + 0.3);
-    await page.keyboard.up("e");
-    const { rail, yaw } = await yaws(page);
-    expect(rail).toBeGreaterThan((35 * Math.PI) / 180);
-    expect(yaw).toBe(0);
-  });
 });

@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-77 plans: 51 shipped and still current, 23 shipped with a part later removed or replaced, 3 in review (see each plan's status line).
+79 plans: 52 shipped and still current, 23 shipped with a part later removed or replaced, 4 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -91,6 +91,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [L1 Skills Wall: Neat and Compact (Round 9 R) Implementation Plan](plans/2026-10-17-l1-skills-wall-compact.md) | shipped |  |
 | [Rover Menu and Ask Naming Implementation Plan](plans/2026-10-17-rover-menu-and-naming.md) | shipped | [#191](https://github.com/ShinyQ/ShinyQ-HQ/pull/191) |
 | [Camera Fixes (Round 9 M) Implementation Plan](plans/2026-10-17-camera-fixes.md) | shipped | [#197](https://github.com/ShinyQ/ShinyQ-HQ/pull/197) |
+| [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | in review | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
 
 ## Specs
 

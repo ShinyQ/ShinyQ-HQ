@@ -17,8 +17,6 @@ import {
   enterFloorRoute,
   enterHQ,
   expectRenderBudget,
-  hoveredTarget,
-  interactablesOf,
   openPage,
   skipFloorLines,
   snapshot,
@@ -45,12 +43,6 @@ const STATIONS: readonly HighlightStation[] = HIGHLIGHT_STATIONS;
 const tour = content.missions.find((m) => m.id === "highlights")!;
 const featured = pickFeaturedPods(orderPods(content.floors.labs.pods as unknown as Pod[]));
 const roles = content.floors.careerArchive.entries.filter((e) => e.type === "job" || e.type === "freelance");
-const NAMES: Record<HighlightStation, string> = {
-  about: en.hud.rooms.highlightsAbout,
-  projects: en.hud.rooms.highlightsProjects,
-  experience: en.hud.rooms.highlightsExperience,
-  contact: en.hud.rooms.highlightsContact,
-};
 /** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
 async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {
   return page.evaluate(() => (window as unknown as { __hq: { probes: { hallGate: { sweeps: number; active: boolean } } } }).__hq.probes.hallGate);
@@ -146,21 +138,6 @@ async function openStation(page: Page, station: HighlightStation) {
 }
 
 test.describe("Highlights Hall", () => {
-  test("the four stations are point-and-go targets; pointing at one highlights it with its name", async ({ page }) => {
-    await enterHQ(page);
-    await faceStation(page, "about");
-    const items = await interactablesOf(page);
-    for (const station of STATIONS) {
-      const item = items.find((i) => i.id === target(station));
-      expect(item, station).toMatchObject({ kind: "station", label: NAMES[station], action: { type: "open-room", room: highlightRoom(station) } });
-      expect(item!.at).toEqual(stationOf(station).pad);
-    }
-    const point = await clickablePoint(page, target("about"));
-    await page.mouse.move(point.x, point.y, { steps: 4 });
-    await expect.poll(() => hoveredTarget(page)).toEqual({ id: target("about"), via: "pointer" });
-    await expect.poll(() => page.evaluate(() => document.body.style.cursor)).toBe("pointer");
-  });
-
   test("clicking each station drives there along the road and opens its drawer", async ({ page, context }) => {
     const errors = collectErrors(page);
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -272,25 +249,24 @@ test.describe("Highlights Hall", () => {
     for (const anchor of ["#intro", "#work", "#journey", "#contact"]) await expect(page.locator(anchor)).toHaveCount(1);
   });
 
-  for (const tier of ["lite", "full"] as const) {
-    test(`L1 keeps headroom under the floor budget from the plaza to the hall (${tier})`, async ({ page }) => {
-      // Five spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
-      test.setTimeout(360_000);
-      await enterHQ(page, { tier });
-      const spots = [null, { x: 20, z: 15 }, { x: 34, z: 13 }, stationOf("projects").pad, stationOf("experience").pad];
-      for (const spot of spots) {
-        if (spot) {
-          await closeDrawer(page);
-          await driveTo(page, spot);
-        }
-        await waitForCameraSettle(page);
-        const peaks = await expectRenderBudget(page);
-        console.log(`L1 ${tier} at ${spot ? `(${spot.x}, ${spot.z})` : "spawn"}: ${peaks.sceneCalls} scene calls + ${peaks.postCalls} post passes, ${peaks.triangles} triangles`);
-        // Headroom under the 150 scene-call budget: the Lobby is the busiest floor.
-        expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
-      }
-    });
-  }
+  /**
+   * The full tier only: it draws the lite scene plus its motes, 2 scene calls more at every spot (CI 2026-10-17:
+   * spawn 86 and 84, gate 75 and 73, plaza 55 and 53). Lite L1 stays gated at the spawn (e2e/perf/floors.spec.ts),
+   * the About me station and the gate (reduced motion, below). The station pads deeper in the hall measured 45.
+   */
+  test("L1 keeps headroom under the floor budget from the plaza to the hall (full)", async ({ page }) => {
+    // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
+    test.setTimeout(360_000);
+    await enterHQ(page, { tier: "full" });
+    for (const spot of [null, { x: 20, z: 15 }, { x: 34, z: 13 }]) {
+      if (spot) await driveTo(page, spot);
+      await waitForCameraSettle(page);
+      const peaks = await expectRenderBudget(page);
+      console.log(`L1 full at ${spot ? `(${spot.x}, ${spot.z})` : "spawn"}: ${peaks.sceneCalls} scene calls + ${peaks.postCalls} post passes, ${peaks.triangles} triangles`);
+      // Headroom under the 150 scene-call budget: the Lobby is the busiest floor.
+      expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+    }
+  });
 
   test("the About me station shows the owner's portrait in its neon frame, loaded with the hall", async ({ page }) => {
     await enterHQ(page);

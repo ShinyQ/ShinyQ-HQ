@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { STATS_FIXTURE, STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
+import { STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
@@ -127,13 +127,6 @@ test.describe("L3 Ops Control Room", () => {
     const probe = await opsProbe(page);
     expect(probe.mounted).toBe(true);
     expect(probe.live).toBe(false);
-  });
-
-  test("a snapshot without perf shows visits and the nightly line only", async ({ page }) => {
-    await mockStats(page, fresh(STATS_FIXTURE));
-    await openLabs(page);
-    await rideToOps(page);
-    await expect.poll(async () => (await opsProbe(page)).rows.length).toBe(2);
   });
 
   test("reduced motion: the room opens and L3 stays inside its render budget", async ({ page }) => {

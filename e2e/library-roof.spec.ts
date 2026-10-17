@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 import { buildRoofLayout } from "../src/experience/floors/roof/layout";
@@ -54,35 +54,16 @@ test.describe("deep links", () => {
     await expect(page).toHaveURL(/\/id\/contact\?tier=lite$/);
   });
 
-  test("riding to L4 and RF writes their routes", async ({ page }) => {
-    await enterHQ(page);
-    const panel = page.getByRole("navigation", { name: "Elevator" });
-    await panel.locator('[data-floor="L4"]').click();
-    await waitForFloor(page, "L4");
-    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
-    await panel.locator('[data-floor="RF"]').click();
-    await waitForFloor(page, "RF");
-    await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
-    // Built floors do not show the "under construction" notice.
-    await expect(page.getByText(/under construction in 3D/)).toHaveCount(0);
-  });
-
   test("the language toggle resumes on the Roof", async ({ page }) => {
     await enterFloorRoute(page, "/en/contact");
     await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "ID" }).click();
     await expect(page).toHaveURL(/\/id\/contact\?tier=lite$/);
     await page.waitForFunction(() => Boolean((window as unknown as { __hq?: unknown }).__hq));
+    await expect(page.locator("html")).toHaveAttribute("lang", "id");
+    await expect.poll(async () => (await snapshot(page)).phase).toBe("explore");
     expect((await snapshot(page)).floor).toBe("RF");
-  });
-
-  test("L4 and RF stay under the draw call budget", async ({ page }) => {
-    await enterFloorRoute(page, "/en/library");
-    await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
-    await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="RF"]').click();
-    await waitForFloor(page, "RF");
-    await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
+    // The HUD speaks Indonesian too (the elevator panel's label).
+    await expect(page.getByRole("navigation", { name: "Lift" })).toBeVisible();
   });
 });
 

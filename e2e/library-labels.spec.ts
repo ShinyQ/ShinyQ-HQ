@@ -7,11 +7,13 @@ import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBu
 /**
  * L4 declutter (Round 7 F): the timeline signs (sections, post titles, year plates) and the end plaza signs
  * never cover each other or the rover on screen, from the arrival, along the posts, mid-floor and at each zone, on a
- * desktop (full tier) and a phone (lite tier). Titles stay within their cap, no text shows twice and each
- * zone shows its own sign. `L4_SHOTS=<dir>` also writes a screenshot per pose and the render numbers per
+ * desktop and a phone. Titles stay within their cap, no text shows twice and each zone shows its own sign.
+ * Both run on the lite tier: the placement has no quality-tier input (`signPlacement.ts`, `useEndSignPlacement.ts`),
+ * and the full tier drew about 3 frames a second here (6 minutes per CI run); the full-tier L4 budget is
+ * gated by `e2e/perf/floors.spec.ts`. `L4_SHOTS=<dir>` also writes a screenshot per pose and the render numbers per
  * device; `L4_SHOTS_BASELINE=1` skips the checks that need the new placement (a run against `out-main`).
  */
-// The full tier draws a few frames a second on SwiftShader (CI), and the rover drives per rendered frame.
+// The rover drives per rendered frame, a few a second on SwiftShader (CI).
 test.describe.configure({ timeout: 600_000 });
 
 type Box = { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] };
@@ -90,13 +92,13 @@ function audit(boxes: Box[], titleCap: number, rover: [number, number][] | null 
 }
 
 for (const device of [
-  { id: "desktop", tier: "full", titleCap: 6, use: { viewport: { width: 1440, height: 900 } } },
+  { id: "desktop", tier: "lite", titleCap: 6, use: { viewport: { width: 1440, height: 900 } } },
   { id: "phone", tier: "lite", titleCap: 4, use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
 ] as const) {
   test.describe(`L4 timeline labels (${device.id})`, () => {
     test.use(device.use);
     test("never overlap, stay within the title cap and show each zone's sign", async ({ page }) => {
-      // Captures add the door poses and a measured window per pose (the full tier draws about 3 frames a second on SwiftShader).
+      // Captures add the door poses and a measured window per pose.
       if (SHOTS) test.setTimeout(1_800_000);
       const errors = collectErrors(page);
       // Rover's first-visit floor line would cover the middle of the view (captures): mark it as spoken.

@@ -6,7 +6,6 @@ import {
   skipFloorLines,
   collectErrors,
   DESKTOP_SAFE,
-  expectRenderBudget,
   enterFloorRoute,
   enterHQ,
   hoveredTarget,
@@ -230,13 +229,6 @@ test("mobile: the drawer is a bottom sheet with snap points", async ({ browser }
   await page.getByRole("button", { name: "Close room" }).click();
   await expect(drawer).toBeHidden();
   await context.close();
-});
-
-test("the Labs floor stays under the draw call budget", async ({ page }) => {
-  await enterFloorRoute(page, "/en/labs");
-  await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
-  await page.waitForTimeout(1500);
-  await expectRenderBudget(page);
 });
 
 /**

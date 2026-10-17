@@ -105,7 +105,8 @@ export const RULES: Rule[] = [
   // Corners HUD hosts (Round 8 I): the HUD root, the view controls, the shared modal, Rover's toast and its
   // placement, and the Ask dock's teaser under the minimap shape the corner layout, so each keeps its own
   // specs and adds hud-corners (listed before the folder rules below, which would match first).
-  { test: /^src\/hud\/Hud\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud", "hud-corners"] },
+  // Hud.tsx also shows the "open the floor page" link for unbuilt floors, which the arrivals tour checks on every built floor.
+  { test: /^src\/hud\/Hud\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud", "hud-corners", "arrivals"] },
   { test: /^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience", "hud-corners"] },
   { test: /^src\/components\/Modal\.tsx$/, specs: ["gallery", "lifecycle", "pageview", "hud-corners"] },
   { test: /^src\/hud\/dialog\/(DialogBox\.tsx|placement\.ts)$/, specs: ["onboarding", "experience", "camera", "hud-corners"] },
@@ -227,6 +228,8 @@ export const RULES: Rule[] = [
   { test: /^src\/lib\/view-[a-z-]+\.ts$|^src\/components\/(ViewParamSync|ShareLinks)\.tsx$/, specs: ["view-links", "boot-first", "pageview", "experience"] },
   // The Page view glyph: the boot card link and the HUD top bar button.
   { test: /^src\/components\/PageViewIcon\.tsx$/, specs: ["boot-first", "hud", "experience"] },
+  // The 3D root writes each built floor's route on arrival (the arrivals tour checks every floor).
+  { test: /^src\/experience\/Experience\.tsx$/, specs: ["experience", "arrivals"] },
   // Render budget, quality safety net, precompile, content visibility and the tower's mount set.
   { test: /^src\/experience\/(scene|tower)\//, specs: ["experience", "gpu"] },
   { test: /^src\/experience\//, specs: ["experience"] },
@@ -236,10 +239,11 @@ export const RULES: Rule[] = [
   // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
   { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
   { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|ChunkFailed)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
-  // FloorButtons also renders the desktop elevator rail, which e2e/experience.spec.ts covers.
-  { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience"] },
-  // The shared joystick double-tap helper.
-  { test: /^e2e\/touch\.ts$/, specs: ["boost", "hud-corners"] },
+  // FloorButtons also renders the desktop elevator rail: e2e/experience.spec.ts checks its labels and keys, and the
+  // e2e/arrivals.spec.ts tour rides it to every floor.
+  { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience", "arrivals"] },
+  // The shared joystick double-tap helper (the boost toggle test).
+  { test: /^e2e\/touch\.ts$/, specs: ["boost"] },
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },

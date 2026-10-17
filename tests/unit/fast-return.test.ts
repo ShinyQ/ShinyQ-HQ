@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { buildExperienceData } from "@/content/experience";
+import { buildFloorLayouts, ROVER } from "@/experience/config";
+import { careerLayoutInput } from "@/experience/floors/career/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import { CAR_HEADING, distanceToElevator, elevatorBeam, FAST_RETURN, isElevatorBeam, returnPad, returnPadId, returnSign, shouldBeamToCar } from "@/experience/nav/fastReturn";
 import { PAD } from "@/experience/nav/pads";
 import { startBeam } from "@/experience/nav/teleport";
@@ -18,6 +23,34 @@ describe("the fast return rule (owner decision: beam when more than 40 u from th
     expect(shouldBeamToCar({ x: -21 + 40.1, z: 0 }, lift)).toBe(true);
     expect(shouldBeamToCar({ x: -21, z: -41 }, lift)).toBe(true);
   });
+});
+
+/**
+ * Everyday spots the owner wants to drive from (the reason for 40 u): the L3 deep-link spawn (the overview, about
+ * 29.5 u) and the RF plaza's south-east corner (about 25.9 u). The L1 spawn (about 16.5 u) and the L2 drive keep
+ * their e2e cases in e2e/fast-return.spec.ts; these two are pure layout distances.
+ */
+describe("everyday spots within 40 u of the elevator drive (owner decision)", () => {
+  const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
+  const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career), library: libraryLayoutInput(data.library) });
+  const byId = (id: "L3" | "RF") => layouts[id];
+
+  for (const { name, floor, at, min } of [
+    { name: "the L3 deep-link spawn (the overview)", floor: "L3" as const, at: () => byId("L3").spawn, min: 25 },
+    { name: "the RF plaza's south-east corner", floor: "RF" as const, at: () => ({ x: 8, z: 7 }), min: 25 },
+  ]) {
+    it(`drives from ${name}: farther than the old 25 u rule, within 40 u, on clear floor with a path to the call pad`, () => {
+      const layout = byId(floor);
+      const from = at();
+      const d = distanceToElevator(from, layout);
+      expect(d).toBeGreaterThan(min);
+      expect(d).toBeLessThan(FAST_RETURN.beamDistance);
+      expect(shouldBeamToCar(from, layout)).toBe(false);
+      const grid = buildNavGrid(layout, ROVER.radius);
+      expect(isWalkable(grid, from)).toBe(true);
+      expect(findPath(grid, from, layout.approach)).not.toBeNull();
+    });
+  }
 });
 
 describe("the Express Return pad", () => {

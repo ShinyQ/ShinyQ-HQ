@@ -82,10 +82,12 @@ test("boot warms every floor: first arrivals add at most 3 programs each (full t
   for (const [floor, names] of Object.entries(added)) expect(names.length, `${floor}: ${names.join(", ")}`).toBeLessThanOrEqual(3);
 });
 
+/**
+ * The renderer applies the pixel budget: one desktop (full tier, MSAA on) and one phone (lite, touch). The rule's
+ * other cases (Retina, DPR 1.5 and up, the 5K pixel cap) are unit tested in tests/unit/scene-settings.test.ts.
+ */
 const BUDGET_CASES = [
-  { name: "Retina laptop", width: 1440, height: 900, dpr: 2, tier: "full", touch: false, pixelRatio: 2, msaa: 0 },
   { name: "DPR 1 desktop", width: 1440, height: 900, dpr: 1, tier: "full", touch: false, pixelRatio: 1, msaa: 4 },
-  { name: "5K display", width: 2560, height: 1440, dpr: 2, tier: "full", touch: false, pixelRatio: 1.5, msaa: 0 },
   { name: "phone", width: 390, height: 844, dpr: 3, tier: "lite", touch: true, pixelRatio: 1.25, msaa: null },
 ] as const;
 

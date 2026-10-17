@@ -9,13 +9,17 @@ import { asReturningVisitor, skipFloorLines, driveTo, expectRenderBudget, snapsh
  * L3 three paths (Round 7 G): Product Engineering north, the Data and ML spine straight east and AI
  * Engineering south, all three from the hub fork to the Tech Reactor plaza. On a desktop (full tier) and
  * a phone (lite tier): the arrival view (the `L3:overview` zone; three separate directory boards are the
- * one name per road, no floating sign repeats a wing name), a point 18 u into each road, each board stop and
- * the reactor stop, each within the L3 render budget. The end is mirror-symmetric: both wing roads mirror
- * across the spine, the spine ends on z = 0 and the Return pad sits on the axis.
+ * one name per road, no floating sign repeats a wing name) within the L3 render budget, and on the desktop
+ * the drive to the reactor stop, the highest drive pose (67 scene calls of 150 in CI). The end is
+ * mirror-symmetric: both wing roads mirror across the spine, the spine ends on z = 0 and the Return pad sits
+ * on the axis.
  *
- * Captures: with `LABS_SHOTS=<dir>` every pose is saved as `<dir>/<size>-<pose>.png`. The poses only read
- * `__hq.layouts`, so the same spec captures a main build too (`E2E_DIR=out-main`); geometry checks are soft
- * then, so a before capture runs through every pose.
+ * Captures: with `LABS_SHOTS=<dir>` every pose (a point 18 u into each road, each board stop, the reactor
+ * approach and top, on both sizes) runs and is saved as `<dir>/<size>-<pose>.png`. Without it those poses
+ * are not listed: they sat at 44 to 67 scene calls and under 18.2k triangles (2026-10-17), and the layout
+ * unit tests (`tests/unit/labs-layout.test.ts`, `labs-arrival.test.ts`) pin the roads and stops they drive.
+ * The poses only read `__hq.layouts`, so the same spec captures a main build too (`E2E_DIR=out-main`);
+ * geometry checks are soft then, so a before capture runs through every pose.
  */
 const SHOTS = process.env.LABS_SHOTS;
 // A main build's data road starts past the reactor, so its entrance is a much longer drive.
@@ -203,7 +207,9 @@ for (const size of SIZES) {
     });
 
     // Road entrances (18 u into each road from the hub centre), then the reactor plaza where the three roads meet.
-    for (const name of [...ROADS.map((r) => `entrance-${r}`), ...ROADS.map((r) => `board-${r}`), "reactor", "reactor-approach", "reactor-top"]) {
+    // Without captures only the desktop reactor drive runs (see the file comment).
+    const poses = SHOTS ? [...ROADS.map((r) => `entrance-${r}`), ...ROADS.map((r) => `board-${r}`), "reactor", "reactor-approach", "reactor-top"] : size.phone ? [] : ["reactor"];
+    for (const name of poses) {
       test(`${name}: the rover drives there along the road and the view stays within the budget`, async ({ browser }) => {
         const { context, page } = await openArrival(browser, size);
         const at = await poseTarget(page, name);
