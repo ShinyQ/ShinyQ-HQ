@@ -26,7 +26,13 @@ import { writePerfEntry } from "./helpers";
  */
 test.describe.configure({ timeout: 180_000 });
 // The perf gates measure the sky as visitors see it at night (automation otherwise skips drawing it).
-test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem("hq:sky", "night")));
+test.beforeEach(({ page }) =>
+  page.addInitScript(() => {
+    sessionStorage.setItem("hq:sky", "night");
+    // Floor ambience off: synthesizing it on the CI CPU skews SwiftShader frame timing (unit tests and ambience.spec cover it).
+    localStorage.setItem("hq:ambience", "off");
+  }),
+);
 
 type Tier = "lite" | "full";
 
