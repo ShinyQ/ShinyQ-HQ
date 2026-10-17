@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectRenderBudget, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForFloor, waitForRoom } from "./hq";
+import { collectErrors, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForRoom } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 import { buildRoofLayout } from "../src/experience/floors/roof/layout";

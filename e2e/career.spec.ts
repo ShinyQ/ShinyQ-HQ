@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, expectRenderBudget, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import en from "../messages/en.json";
 import content from "../content/site-content.json";
 

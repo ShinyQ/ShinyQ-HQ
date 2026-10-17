@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { STATS_FIXTURE, STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
+import { STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**

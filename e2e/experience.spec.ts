@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, expectRenderBudget, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, visibleTarget } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { distanceToRect } from "../src/experience/nav/collision";

@@ -17,8 +17,6 @@ import {
   enterFloorRoute,
   enterHQ,
   expectRenderBudget,
-  hoveredTarget,
-  interactablesOf,
   openPage,
   skipFloorLines,
   snapshot,
@@ -45,12 +43,6 @@ const STATIONS: readonly HighlightStation[] = HIGHLIGHT_STATIONS;
 const tour = content.missions.find((m) => m.id === "highlights")!;
 const featured = pickFeaturedPods(orderPods(content.floors.labs.pods as unknown as Pod[]));
 const roles = content.floors.careerArchive.entries.filter((e) => e.type === "job" || e.type === "freelance");
-const NAMES: Record<HighlightStation, string> = {
-  about: en.hud.rooms.highlightsAbout,
-  projects: en.hud.rooms.highlightsProjects,
-  experience: en.hud.rooms.highlightsExperience,
-  contact: en.hud.rooms.highlightsContact,
-};
 /** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
 async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {
   return page.evaluate(() => (window as unknown as { __hq: { probes: { hallGate: { sweeps: number; active: boolean } } } }).__hq.probes.hallGate);
