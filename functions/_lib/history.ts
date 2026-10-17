@@ -1,0 +1,83 @@
+import { ASK_HISTORY_ANSWER_MAX, ASK_HISTORY_TURNS, ASK_MAX_QUESTION, isAskSig, type AskLocale, type AskTurn } from "../../src/ask/protocol";
+import { scrubPII } from "./pii";
+import { isSiteQuestion } from "./scope";
+import { hmac, timingSafeEqual } from "./security";
+import { cleanText } from "./text";
+
+/**
+ * Multi-turn memory (owner decision 2026-10-17). The server signs every model answer it streams and
+ * the client sends up to `ASK_HISTORY_TURNS` signed turns back. A turn whose signature fails is
+ * dropped, never an error, so a visitor cannot put words in the assistant's mouth.
+ */
+
+/** A verified earlier turn, in canonical form. */
+export interface HistoryTurn {
+  q: string;
+  a: string;
+}
+
+/** What the signature binds a turn to: the panel language and the knowledge pack it was answered from. */
+export interface TurnScope {
+  locale: AskLocale;
+  packVersion: string;
+}
+
+/** The handler's own question normalization (step 5), so a re-sent question canonicalizes the same. */
+export const canonicalQuestion = (q: string) => scrubPII(cleanText(q));
+export const canonicalAnswer = (a: string) => cleanText(a);
+
+const message = (scope: TurnScope, turn: HistoryTurn) =>
+  JSON.stringify(["ask-turn-v1", scope.locale, scope.packVersion, canonicalQuestion(turn.q), canonicalAnswer(turn.a)]);
+
+export function signTurn(key: string, scope: TurnScope, turn: HistoryTurn): Promise<string> {
+  return hmac(key, message(scope, turn));
+}
+
+/** Well-formed wire turns only, the last `ASK_HISTORY_TURNS`; anything else is ignored. */
+export function parseHistory(raw: unknown): AskTurn[] {
+  if (!Array.isArray(raw)) return [];
+  const out: AskTurn[] = [];
+  for (const item of raw.slice(-ASK_HISTORY_TURNS * 2)) {
+    if (!item || typeof item !== "object") continue;
+    const { q, a, sig } = item as Record<string, unknown>;
+    if (typeof q !== "string" || typeof a !== "string" || !isAskSig(sig)) continue;
+    if (!q.trim() || q.length > ASK_MAX_QUESTION || !a.trim() || a.length > ASK_HISTORY_ANSWER_MAX) continue;
+    out.push({ q, a, sig });
+  }
+  return out.slice(-ASK_HISTORY_TURNS);
+}
+
+/** The canonical turns whose signature matches, oldest first. Without a key nothing verifies. */
+export async function verifyHistory(turns: readonly AskTurn[], key: string | undefined, scope: TurnScope): Promise<HistoryTurn[]> {
+  if (!key) return [];
+  const out: HistoryTurn[] = [];
+  for (const turn of turns.slice(-ASK_HISTORY_TURNS)) {
+    const q = canonicalQuestion(turn.q);
+    const a = canonicalAnswer(turn.a);
+    if (!q || !a) continue;
+    if (timingSafeEqual(turn.sig, await signTurn(key, scope, { q, a }))) out.push({ q, a });
+  }
+  return out;
+}
+
+/** Words that point back at the previous turn (EN and ID). "He" and "his" mean Kurniadi, so they do not count. */
+const REFERENT = /\b(?:it|its|that|this|those|these|they|them|their|there|one|ones|same|ini|itu|tersebut|mereka|sana|tadi|\p{L}{3,}nya)\b/iu;
+const LEAD_IN = /^(?:and|also|what about|how about|dan|lalu|terus|kalau|bagaimana dengan)\b/i;
+/** Fewer words than this reads as a follow-up on its own ("Which stack?"). */
+export const FOLLOW_UP_WORDS = 6;
+/** A question this long stands alone even with a "that" or "there" in it. */
+const STANDALONE_WORDS = 12;
+
+/** A short or referring question that only makes sense after the previous one. Site questions stand alone. */
+export function isFollowUp(question: string): boolean {
+  const text = cleanText(question);
+  if (!text || isSiteQuestion(text)) return false;
+  const words = text.match(/[\p{L}\p{N}]+/gu) ?? [];
+  return words.length < FOLLOW_UP_WORDS || LEAD_IN.test(text) || (words.length < STANDALONE_WORDS && REFERENT.test(text));
+}
+
+/** Retrieval and routing text: a follow-up carries the previous question along. */
+export function followUpText(question: string, history: readonly HistoryTurn[]): string {
+  const previous = history.at(-1);
+  return previous && isFollowUp(question) ? `${question} ${previous.q}` : question;
+}
