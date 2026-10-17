@@ -1,7 +1,15 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAudioEngine, useAudio, useAudioSettings, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import {
+  createAudioEngine,
+  useAudio,
+  useAudioSettings,
+  type AmbienceFloor,
+  type AudioEngine,
+  type AudioEngineDeps,
+} from "@/lib/audio";
+import { AMBIENCE_CROSSFADE, type AmbienceVoice } from "@/lib/audio/ambience";
 import { rumbleTargets } from "@/lib/audio/synth";
 import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
 
@@ -44,7 +52,7 @@ interface Setup {
   ctx: () => FakeAudioContext;
 }
 
-function setup(stored?: string, initial: Record<string, string> = {}): Setup {
+function setup(stored?: string, initial: Record<string, string> = {}, extra: Partial<AudioEngineDeps> = {}): Setup {
   const storage = new FakeStorage();
   if (stored !== undefined) storage.map.set("hq:sound", stored);
   for (const [key, value] of Object.entries(initial)) storage.map.set(key, value);
@@ -57,6 +65,7 @@ function setup(stored?: string, initial: Record<string, string> = {}): Setup {
     doc: doc as unknown as AudioEngineDeps["doc"],
     now: () => clock.t,
     paused: false,
+    ...extra,
   });
   return {
     engine,
@@ -523,9 +532,9 @@ describe("audio settings", () => {
 
   it("defaults to effects on, music on, full volume, and reads stored values", () => {
     const { engine } = setup();
-    expect(engine.getSettings()).toEqual({ effects: true, music: true, musicVolume: 1 });
+    expect(engine.getSettings()).toEqual({ effects: true, music: true, musicVolume: 1, ambience: true });
     const stored = setup(undefined, { "hq:sfx": "off", "hq:music": "off", "hq:music-volume": "0.4" });
-    expect(stored.engine.getSettings()).toEqual({ effects: false, music: false, musicVolume: 0.4 });
+    expect(stored.engine.getSettings()).toEqual({ effects: false, music: false, musicVolume: 0.4, ambience: true });
     expect(setup(undefined, { "hq:music-volume": "junk" }).engine.getSettings().musicVolume).toBe(1);
   });
 
@@ -643,5 +652,226 @@ describe("audio settings", () => {
     m.engine.play("beep");
     start(m);
     expect(FakeAudioContext.instances).toHaveLength(0);
+  });
+});
+
+describe("audio engine: floor ambience", () => {
+  interface FakeVoice extends AmbienceVoice {
+    setFloor: Mock<(floor: AmbienceFloor | null) => void>;
+    stop: Mock<() => void>;
+  }
+
+  function ambienceSetup(stored?: string, initial: Record<string, string> = {}) {
+    const voices: FakeVoice[] = [];
+    const buses: AudioNode[] = [];
+    const createAmbience = vi.fn((_ctx: BaseAudioContext, bus: AudioNode) => {
+      buses.push(bus);
+      let current: AmbienceFloor | null = null;
+      const voice = {
+        output: {} as GainNode,
+        setFloor: vi.fn((f: AmbienceFloor | null) => {
+          current = f;
+        }),
+        floor: () => current,
+        activeLayers: () => 0,
+        stop: vi.fn(),
+      } as FakeVoice;
+      voices.push(voice);
+      return voice;
+    });
+    const loadAmbience = vi.fn(() => Promise.resolve({ createAmbience }));
+    const s = setup(stored, initial, { loadAmbience });
+    const flush = async () => {
+      for (let i = 0; i < 4; i++) await Promise.resolve();
+    };
+    return { ...s, voices, buses, createAmbience, loadAmbience, flush };
+  }
+
+  it("starts after the gesture once a floor is set, on the music bus, and loads the module once", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    await s.flush();
+    expect(s.createAmbience).not.toHaveBeenCalled();
+    s.doc.fire("pointerdown");
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+    const master = masterOf(s.ctx());
+    const musicBus = s.ctx().gains.find((g) => g.connected.includes(master) && g !== master);
+    expect(s.buses[0]).toBe(musicBus);
+    expect(s.voices[0].setFloor).toHaveBeenCalledWith("L1");
+    s.engine.setMuted(true);
+    vi.advanceTimersByTime(1000);
+    s.engine.setMuted(false);
+    await s.flush();
+    expect(s.loadAmbience).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for a floor: a context without one makes no voice, and the first floor starts it", async () => {
+    const s = ambienceSetup();
+    s.doc.fire("pointerdown");
+    await s.flush();
+    expect(s.createAmbience).not.toHaveBeenCalled();
+    expect(s.engine.ambienceFloor()).toBeNull();
+    s.engine.setFloor("L3");
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+    expect(s.voices[0].setFloor).toHaveBeenCalledWith("L3");
+    expect(s.engine.ambienceFloor()).toBe("L3");
+  });
+
+  it("crossfades on a floor change and fades out on null; the same floor is a no-op", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setFloor("L1");
+    expect(s.voices[0].setFloor).toHaveBeenCalledTimes(1);
+    s.engine.setFloor("L2");
+    expect(s.voices[0].setFloor).toHaveBeenLastCalledWith("L2");
+    s.engine.setFloor(null);
+    expect(s.voices[0].setFloor).toHaveBeenLastCalledWith(null);
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+  });
+
+  it("mute stops it when the fade ends and unmute restarts it with the remembered floor", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L4");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setMuted(true);
+    expect(s.voices[0].stop).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1000);
+    expect(s.voices[0].stop).toHaveBeenCalledTimes(1);
+    s.engine.setFloor("RF");
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+    s.engine.setMuted(false);
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(2);
+    expect(s.voices[1].setFloor).toHaveBeenCalledWith("RF");
+  });
+
+  it("pause stops it, stays silent while paused, and unpause restarts it", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L2");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setPaused(true);
+    vi.advanceTimersByTime(1000);
+    expect(s.voices[0].stop).toHaveBeenCalledTimes(1);
+    s.engine.setFloor("L3");
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+    s.engine.setPaused(false);
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(2);
+    expect(s.voices[1].setFloor).toHaveBeenCalledWith("L3");
+  });
+
+  it("makes no ambience while paused from the start, even after a gesture", async () => {
+    const s = ambienceSetup();
+    s.engine.setPaused(true);
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    expect(FakeAudioContext.instances).toHaveLength(0);
+    expect(s.createAmbience).not.toHaveBeenCalled();
+  });
+
+  it("a hidden tab only suspends; the voice keeps living", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.doc.setVisibility("hidden");
+    await s.flush();
+    expect(s.ctx().suspend).toHaveBeenCalled();
+    expect(s.voices[0].stop).not.toHaveBeenCalled();
+  });
+
+  it("setAmbience(false) fades it out, stops it after the crossfade, and persists off", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setAmbience(false);
+    expect(s.storage.map.get("hq:ambience")).toBe("off");
+    expect(s.engine.getSettings().ambience).toBe(false);
+    expect(s.voices[0].setFloor).toHaveBeenLastCalledWith(null);
+    expect(s.voices[0].stop).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(AMBIENCE_CROSSFADE * 1000);
+    expect(s.voices[0].stop).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(100);
+    expect(s.voices[0].stop).toHaveBeenCalledTimes(1);
+    s.engine.setFloor("L2");
+    await s.flush();
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+    s.engine.setAmbience(true);
+    await s.flush();
+    expect(s.storage.map.get("hq:ambience")).toBe("on");
+    expect(s.createAmbience).toHaveBeenCalledTimes(2);
+    expect(s.voices[1].setFloor).toHaveBeenCalledWith("L2");
+  });
+
+  it("a mute or dispose during the fade-out stops the retiring voice at once", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setAmbience(false);
+    s.engine.dispose();
+    expect(s.voices[0].stop).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(5000);
+    expect(s.voices[0].stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads a stored off at creation: no voice, and the module is never loaded", async () => {
+    const s = ambienceSetup(undefined, { "hq:ambience": "off" });
+    expect(s.engine.getSettings().ambience).toBe(false);
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    expect(s.loadAmbience).not.toHaveBeenCalled();
+    expect(s.createAmbience).not.toHaveBeenCalled();
+  });
+
+  it("is independent of the music toggle", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    s.engine.setMusic(false);
+    expect(s.voices[0].stop).not.toHaveBeenCalled();
+    s.engine.setMusic(true);
+    expect(s.createAmbience).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a module that arrives after a mute or a switch-off", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    s.engine.setMuted(true);
+    await s.flush();
+    expect(s.createAmbience).not.toHaveBeenCalled();
+    s.engine.setMuted(false);
+    s.engine.setAmbience(false);
+    await s.flush();
+    expect(s.createAmbience).not.toHaveBeenCalled();
+  });
+
+  it("never touches the effects path: one-shots still connect to the master, not the music bus", async () => {
+    const s = ambienceSetup();
+    s.engine.setFloor("L1");
+    s.doc.fire("pointerdown");
+    await s.flush();
+    const ctx = s.ctx();
+    const master = masterOf(ctx);
+    const musicBus = ctx.gains.find((g) => g.connected.includes(master) && g !== master)!;
+    const before = ctx.oscillators.length;
+    s.engine.play("beep");
+    const beepGains = ctx.gains.filter((g) => g.connected.includes(master) && g !== musicBus && g !== master);
+    expect(ctx.oscillators.length).toBeGreaterThan(before);
+    expect(beepGains.length).toBeGreaterThan(0);
+    expect(master.gain.setTargetAtTime).not.toHaveBeenCalledWith(0, expect.any(Number), expect.any(Number));
   });
 });

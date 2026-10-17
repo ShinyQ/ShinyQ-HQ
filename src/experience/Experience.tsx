@@ -329,15 +329,23 @@ export default function Experience({
 
   // The audio engine owns the sound setting (localStorage "hq:sound", on unless the visitor muted);
   // the store mirrors it. Sound only plays while the 3D view is open: the first gesture in the HQ starts
-  // it, and leaving for the Page View pauses it without changing the setting.
+  // it, and leaving for the Page View pauses it without changing the setting. It also reports the floor to the ambience.
   useEffect(() => {
     const mirror = () => getHQStore().setState({ sound: !audio.isMuted() });
     mirror();
     const off = audio.subscribe(mirror);
     audio.setPaused(false);
+    // The floor ambience follows the floor the rover is on.
+    const store = getHQStore();
+    audio.setFloor(store.getState().floor);
+    const offFloor = store.subscribe((s, prev) => {
+      if (s.floor !== prev.floor) audio.setFloor(s.floor);
+    });
     return () => {
       off();
+      offFloor();
       audio.setRumble(0);
+      audio.setFloor(null);
       audio.setPaused(true);
       resetFirstFrame();
     };

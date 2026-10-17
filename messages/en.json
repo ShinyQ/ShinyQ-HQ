@@ -450,6 +450,7 @@
       "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
       "effects": { "label": "Sound effects" },
       "music": { "label": "Music" },
+      "ambience": { "label": "Floor ambience" },
       "musicVolume": { "label": "Music volume" }
     },
     "menu": "Menu",

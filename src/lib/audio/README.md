@@ -19,14 +19,17 @@ import { audio, useAudio } from "@/lib/audio";
 | `setPaused` | `(paused: boolean) => void` | Silences everything while the 3D view is closed (Page View) without touching the stored setting. `Experience` pauses on unmount and unpauses on mount. |
 | `isPaused` | `() => boolean` | Current pause state. |
 | `isMuted` | `() => boolean` | Current setting. |
-| `getSettings` | `() => AudioSettings` | `{ effects, music, musicVolume }`. The same object until a setting changes (stable for `useSyncExternalStore`). |
+| `getSettings` | `() => AudioSettings` | `{ effects, music, musicVolume, ambience }`. The same object until a setting changes (stable for `useSyncExternalStore`). |
 | `setEffects` | `(on: boolean) => void` | Persists `localStorage["hq:sfx"]` (`"off"` disables, missing is on). Off makes `play` a no-op and keeps the rumble silent. |
 | `setMusic` | `(on: boolean) => void` | Persists `localStorage["hq:music"]` (`"off"` disables, missing is on). Off stops the music voice at once; on starts a fresh one when audible. |
 | `setMusicVolume` | `(volume: number) => void` | Clamped 0 to 1, persisted in `localStorage["hq:music-volume"]` (missing is 1). Glides the music bus with `setTargetAtTime` (time constant 0.05). |
+| `setAmbience` | `(on: boolean) => void` | Persists `localStorage["hq:ambience"]` (`"off"` disables, missing is on). Off fades the floor ambience out over `AMBIENCE_CROSSFADE` and stops it; on starts it when audible and a floor is set. Independent of the music toggle. |
+| `setFloor` | `(floor: AmbienceFloor \| null) => void` | The floor the ambience follows (`"L1"` to `"RF"`). Crossfades while sounding, is remembered while silent, `null` fades out. `Experience` reports the store floor on mount and on every change, and `null` on unmount. |
+| `ambienceFloor` | `() => AmbienceFloor \| null` | The remembered floor (a probe). |
 | `subscribe` | `(listener: () => void) => () => void` | Called on mute and setting changes. Shaped for `useSyncExternalStore`. |
 | `dispose` | `() => void` | Removes document listeners and closes the context. |
 | `useAudio` | `(engine?: AudioEngine) => { muted, setMuted, toggleMuted, play, setRumble }` | Client hook. Server render and hydration report `muted: true`. |
-| `useAudioSettings` | `(engine?: AudioEngine) => AudioSettings` | Client hook for the Settings panel. Server render reports `{ effects: true, music: true, musicVolume: 1 }`. |
+| `useAudioSettings` | `(engine?: AudioEngine) => AudioSettings` | Client hook for the Settings panel. Server render reports `{ effects: true, music: true, musicVolume: 1, ambience: true }`. |
 
 ## Sounds
 
@@ -46,6 +49,7 @@ import { audio, useAudio } from "@/lib/audio";
 - **Paused outside 3D.** The engine starts paused, so the Page View and the static tier never create a context, even after a click or a dialog sound. `Experience` unpauses on mount and pauses again on unmount; `setPaused(true)` fades out and suspends like a mute but keeps the setting.
 - **Background music** (`src/lib/audio/music.ts`) is scheduled by a lookahead scheduler on `AudioContext.currentTime`: a 0.6 s window, woken every 100 ms; it skips missed steps after a stall and does nothing while the context is suspended. The reverb impulse is built once per context, off the first gesture (on a 0 ms timeout), and reused. Muting or pausing stops the music when the fade ends (every scheduled note cancelled, every node disconnected, the timer cleared); unmuting or unpausing starts a fresh one with a 2 s fade in. A hidden tab only suspends the context. The compressor sits on the music bus, so the effects are unchanged. Reduced motion does not affect audio.
 - **Settings.** `hq:sfx`, `hq:music` and `hq:music-volume` are read when the engine is created and written on change. The master mute (`hq:sound`, key `m`) wins over all of them. The music voice feeds a `musicBus` gain (set to the volume) that feeds the master, so the volume never touches the effects. `setMusic(true)` while muted or paused only records the setting; the music starts on the next unmute or unpause. `setEffects(true)` restores the rumble speed only while audible.
+- **Floor ambience** (`src/lib/audio/ambience.ts`) is a lazy chunk: the engine loads it with one cached `import("./ambience")` (the `loadAmbience` dep, injectable in tests) the first time it should sound, and checks again when it arrives (not muted, not paused, not disposed, ambience on, a floor set, context open, no voice yet). The voice feeds the `musicBus`, so the music volume scales it and the music toggle does not; it never touches the master gain or the effects path. It stops where the music stops (after the mute or pause fade, in `dispose`) and starts where the music starts (unmute, unpause, the first gesture). Switching the setting off calls `voice.setFloor(null)` (a fade) and stops the voice after `AMBIENCE_CROSSFADE` plus 100 ms (or at once on a mute or dispose). A hidden tab only suspends.
 - **Muting** fades the master bus (music and rumble included) over about 100 ms, then suspends the context. `play` is a no-op while muted; `setRumble` only remembers the speed.
 - **Tab visibility.** Hidden suspends the context; visible resumes it only when unmuted.
 

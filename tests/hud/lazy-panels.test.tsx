@@ -46,7 +46,7 @@ vi.mock("@/lib/audio", () => ({
     isMuted: () => false,
     setMuted: () => {},
     subscribe: () => () => {},
-    getSettings: () => ({ effects: true, music: true, musicVolume: 0.5 }),
+    getSettings: () => ({ effects: true, music: true, musicVolume: 0.5, ambience: true }),
     setEffects: () => {},
     setMusic: () => {},
     setMusicVolume: () => {},

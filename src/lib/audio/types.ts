@@ -1,3 +1,6 @@
+import type { AmbienceFloor } from "./ambience";
+
+export type { AmbienceFloor };
 export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip";
 
 export interface AudioSettings {
@@ -7,6 +10,8 @@ export interface AudioSettings {
   music: boolean;
   /** Music level, 0 to 1 (scales the music bus; the master mute still wins). */
   musicVolume: number;
+  /** Per-floor background layer (the ambience), independent of the music toggle. */
+  ambience: boolean;
 }
 
 export interface AudioEngine {
@@ -29,6 +34,12 @@ export interface AudioEngine {
   setMusic(on: boolean): void;
   /** Persists `hq:music-volume` (clamped 0 to 1) and glides the music bus to it. */
   setMusicVolume(volume: number): void;
+  /** Persists `hq:ambience`. Off fades the floor ambience out and stops it; on starts it again when audible and a floor is set. */
+  setAmbience(on: boolean): void;
+  /** The floor the ambience follows (`null` fades it out). Crossfades while sounding; remembered while silent. */
+  setFloor(floor: AmbienceFloor | null): void;
+  /** The remembered floor (a probe for tests). */
+  ambienceFloor(): AmbienceFloor | null;
   /** Notified whenever the muted state or a setting changes. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
   /** Removes document listeners and closes the AudioContext. */
@@ -43,4 +54,6 @@ export interface AudioEngineDeps {
   now: () => number;
   /** Start state of the Page View pause; true unless a test drives the 3D state directly. `Experience` unpauses on mount. */
   paused: boolean;
+  /** Loads the ambience module on demand (a separate chunk). Tests inject a fake. */
+  loadAmbience: () => Promise<Pick<typeof import("./ambience"), "createAmbience">>;
 }

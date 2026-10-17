@@ -450,6 +450,7 @@
       "sound": { "label": "Suara", "hint": "Mati membisukan semuanya (tombol M)." },
       "effects": { "label": "Efek suara" },
       "music": { "label": "Musik" },
+      "ambience": { "label": "Suasana lantai" },
       "musicVolume": { "label": "Volume musik" }
     },
     "menu": "Menu",
