@@ -40,6 +40,8 @@ export function classify(file: string): ChangeClass {
 export const ROOTS = /^src\/(experience|hud|store)\/.+\.(ts|tsx)$/;
 // Assumes semicolon-terminated statements (the codebase style): `[^;]*?` stops a static import at its `;`.
 const IMPORT = /(?:import|export)\s+(?!type\s)[^;]*?\sfrom\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)|import\s+["']([^"']+)["']/g;
+/** `@import "x.css"` and `@import url(x.css)` in stylesheets; bare package names (tailwindcss) do not resolve. */
+const CSS_IMPORT = /@import\s+(?:url\(\s*)?["']?([^"')\s;]+)["']?/g;
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".mjs", ".json", "/index.ts", "/index.tsx"];
 
 function resolveImport(from: string, spec: string, read: (f: string) => string | null): string | null {
@@ -52,8 +54,8 @@ function resolveImport(from: string, spec: string, read: (f: string) => string |
 }
 
 /**
- * Every repo file reachable from `roots` through value, re-export, side-effect and dynamic imports
- * (`dynamic: false` skips `import()`, for what a page loads before any lazy chunk).
+ * Every repo file reachable from `roots` through value, re-export, side-effect and dynamic imports, and
+ * relative CSS `@import` (`dynamic: false` skips `import()`, for what a page loads before any lazy chunk).
  */
 export function importClosure(roots: readonly string[], read: (f: string) => string | null, options: { dynamic?: boolean } = {}): Set<string> {
   const seen = new Set<string>();
@@ -64,6 +66,13 @@ export function importClosure(roots: readonly string[], read: (f: string) => str
     const source = read(file);
     if (source === null) continue;
     seen.add(file);
+    if (file.endsWith(".css")) {
+      for (const m of source.matchAll(CSS_IMPORT)) {
+        const target = resolveImport(file, m[1], read);
+        if (target && !seen.has(target)) queue.push(target);
+      }
+      continue;
+    }
     if (!/\.(ts|tsx|js|mjs)$/.test(file)) continue;
     for (const m of source.matchAll(IMPORT)) {
       if (m[2] !== undefined && options.dynamic === false) continue;
@@ -166,17 +175,19 @@ export function planFor(files: readonly string[] | null, in3d: (file: string) =>
   }
   const reasons: string[] = [];
 
-  // e2e: the mapped specs of every non-docs, non-tests file; a changed helper or an unmapped path runs everything.
+  // e2e: the mapped specs of every non-docs, non-tests file; an unmapped path is a full run, a changed helper every e2e shard.
   let e2e: "all" | Spec[];
   const e2eTests: string[] = [];
   const helpers = (classes.e2e ?? []).filter((f) => !SPEC_FILE.test(f));
-  const mapped = specsForChanges(files.filter((f) => !["docs", "tests"].includes(classify(f))));
+  // Helpers have no rule of their own (any spec may import them): they are handled below, not as unmapped.
+  const mapped = specsForChanges(files.filter((f) => !["docs", "tests"].includes(classify(f)) && !helpers.includes(f)));
+  if (mapped.unmatched.length) return full(classes, [`no e2e rule covers ${mapped.unmatched.join(", ")}: full run`]);
   if (helpers.length) {
     e2e = "all";
     reasons.push(`e2e helpers changed: ${helpers.join(", ")} (every e2e shard)`);
-  } else if (mapped.specs === "all" || mapped.unmatched.length) {
+  } else if (mapped.specs === "all") {
     e2e = "all";
-    reasons.push(mapped.unmatched.length ? `no e2e rule covers ${mapped.unmatched.join(", ")}: every e2e shard` : "the e2e mapping asks for the full suite");
+    reasons.push("the e2e mapping asks for the full suite");
   } else {
     const specs = new Set<Spec>(mapped.specs);
     if (classes.code3d || classes.ui) {
@@ -291,7 +302,8 @@ export function pagesFromRepo(read: (f: string) => string | null): (file: string
   return (file) => {
     if (file === "content/generated/build-facts.json") return [BUILD_URL];
     if (/^content\/(blog|posts)\//.test(file)) return [BLOG_URL];
-    if (/^messages\/|^public\/(fonts|brand)\/|^src\/assets\/fonts\/[^/]+\.woff2$|^content\/(site-content\.json$|generated\/)/.test(file)) return "all";
+    // src/i18n/request.ts is loaded by createNextIntlPlugin in next.config.ts, not through an import.
+    if (/^src\/i18n\/request\.ts$|^messages\/|^public\/(fonts|brand)\/|^src\/assets\/fonts\/[^/]+\.woff2$|^content\/(site-content\.json$|generated\/)/.test(file)) return "all";
     if (classify(file) === "ui" && file.startsWith("scripts/")) return "all";
     if (layouts.has(file)) return "all";
     return pageClosures.filter(([, closure]) => closure.has(file)).map(([url]) => url);

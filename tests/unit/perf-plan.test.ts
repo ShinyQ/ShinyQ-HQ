@@ -69,6 +69,10 @@ describe("perfGrep", () => {
     expect(perfGrep(["bytes"])).toBe("(3D JS after the gate)");
   });
 
+  it("refuses an empty key list (callers plan perf: false instead)", () => {
+    expect(() => perfGrep([])).toThrow();
+  });
+
   it("every fragment matches at least one real perf title", () => {
     const titles = perfTitles();
     for (const key of ALL_PERF_KEYS) {

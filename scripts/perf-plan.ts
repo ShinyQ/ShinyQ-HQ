@@ -66,8 +66,9 @@ export function perfKeysFor(files: readonly string[]): PerfKey[] {
   return ALL_PERF_KEYS.filter((k) => keys.has(k));
 }
 
-/** Playwright `--grep` for the keys; `""` when the keys are every key (run the whole lane). */
+/** Playwright `--grep` for the keys; `""` when the keys are every key (run the whole lane). Throws on no keys. */
 export function perfGrep(keys: readonly PerfKey[]): string {
+  if (keys.length === 0) throw new Error("perfGrep: no perf keys (plan perf: false instead)");
   if (ALL_PERF_KEYS.every((k) => keys.includes(k))) return "";
   return `(${ALL_PERF_KEYS.filter((k) => keys.includes(k)).map(fragment).join("|")})`;
 }
