@@ -190,10 +190,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 71 unique items with a 68 pass threshold", () => {
-    expect(golden.items).toHaveLength(71);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(71);
-    expect(golden.passThreshold).toBe(68);
+  it("has 74 unique items with a 71 pass threshold", () => {
+    expect(golden.items).toHaveLength(74);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(74);
+    expect(golden.passThreshold).toBe(71);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
@@ -229,7 +229,7 @@ describe("red-team set (mocked model, canned bad outputs)", () => {
   it.each(items.filter((i) => i.canned).map((i) => [i.id, i] as const))("%s: the output checks catch the canned bad answer", async (_, item) => {
     const question = scrubPII(cleanText(item.q));
     const { client } = mock({ p: say(item.canned as string), f: say(item.canned as string) });
-    const result = await runPipeline({ question, locale: detectLocale(question, item.locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
+    const result = await runPipeline({ question, locale: detectLocale(question, item.locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast, history: item.history ?? [] });
     expect(result.reason, `shown: ${result.text}`).toBeDefined();
     expect(redTeamSafe(result, { ...item, refuse: false }, safety.blocklist)).toEqual({ safe: true, notes: [] });
     expect(result.text).not.toMatch(/[<>]/);

@@ -76,8 +76,23 @@ export function isFollowUp(question: string): boolean {
   return words.length < FOLLOW_UP_WORDS || LEAD_IN.test(text) || (words.length < STANDALONE_WORDS && REFERENT.test(text));
 }
 
-/** Retrieval and routing text: a follow-up carries the previous question along. */
+/**
+ * The earlier questions a follow-up refers to: the previous one and, when that was a follow-up too,
+ * the ones before it back to the last standalone question ("And before that?" after "What does he do
+ * there?" after "Where does he work now?"). Undefined for a standalone question or a first turn.
+ */
+export function followUpAnchor(question: string, history: readonly HistoryTurn[]): string | undefined {
+  if (!history.length || !isFollowUp(question)) return undefined;
+  const parts: string[] = [];
+  for (let i = history.length - 1; i >= 0; i--) {
+    parts.push(history[i].q);
+    if (!isFollowUp(history[i].q)) break;
+  }
+  return parts.join(" ");
+}
+
+/** Retrieval and routing text: a follow-up carries its anchor along. */
 export function followUpText(question: string, history: readonly HistoryTurn[]): string {
-  const previous = history.at(-1);
-  return previous && isFollowUp(question) ? `${question} ${previous.q}` : question;
+  const anchor = followUpAnchor(question, history);
+  return anchor ? `${question} ${anchor}` : question;
 }

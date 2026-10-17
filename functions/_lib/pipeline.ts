@@ -3,7 +3,7 @@ import { checkAnswer, closestSource, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
-import { followUpText, type HistoryTurn } from "./history";
+import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
@@ -93,7 +93,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const modelQuestion = nicknameForModel(input.question);
   const history = usableHistory(input.history ?? [], pack);
   // A short or referring follow-up ("What stack did it use?") is routed and retrieved together with the previous question.
-  const routed = history.length ? resolveNickname(followUpText(input.question, history)) : question;
+  const anchor = followUpAnchor(input.question, history);
+  const routed = anchor ? resolveNickname(`${input.question} ${anchor}`) : question;
   const either = <T>(check: (text: string) => T): T => {
     const own = check(question);
     return own || routed === question ? own : check(routed);
@@ -122,7 +123,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   if (!lead && either(isGeneralAssistantRequest)) return early("decline", "general");
 
   const topic = lead ? undefined : routedTopic(routed);
-  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead });
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, ...(anchor ? { anchor: resolveNickname(anchor) } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
   const matches = lead ? leadMatches(pack, routed) : [];
