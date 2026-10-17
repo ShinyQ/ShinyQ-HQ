@@ -458,7 +458,7 @@
       "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
       "effects": { "label": "Sound effects" },
       "music": { "label": "Music" },
-      "ambience": { "label": "Floor ambience" },
+      "ambience": { "label": "Floor ambience", "hint": "Each floor plays its own track instead of the background music." },
       "musicVolume": { "label": "Music volume" }
     },
     "menu": "Menu",

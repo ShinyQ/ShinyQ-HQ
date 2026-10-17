@@ -2,7 +2,8 @@ import { midiToHz } from "./music";
 import { envelope, getNoiseBuffer } from "./synth";
 
 /**
- * Floor ambience: one quiet procedural texture per floor, mixed under "Deep Space Ambient". Every pitched note
+ * Floor ambience: one procedural texture per floor that replaces "Deep Space Ambient" while it plays (the engine
+ * crossfades the music out, so two soundtracks never overlap). Every pitched note
  * stays in C major pentatonic (the scale of the music's bells and drones), and every layer is a texture, never a
  * melody: slow chime chords (L1), a warm analog pulse (L2), a sparse plucked arpeggio (L3), typewriter ticks and
  * paper rustle (L4), wind and a distant radio beacon (RF). Same lookahead scheduler as `music.ts`.
@@ -14,11 +15,11 @@ export const AMBIENCE_FLOORS: readonly AmbienceFloor[] = ["L1", "L2", "L3", "L4"
 /** Seconds of the linear crossfade between two floor layers (and of the fade in and out). */
 export const AMBIENCE_CROSSFADE = 2;
 /**
- * Output trim of the ambience voice. The layers are loudness matched to each other at unity; this trim puts each
- * one about 10 to 11 LU (K-weighted) under "Deep Space Ambient": about half its perceived loudness, a third of
- * its RMS amplitude. The typing ticks are transient, so their integrated level reads lower still.
+ * Output trim of the ambience voice. The layers are loudness matched to each other at unity, which sits about 2 to
+ * 3 LU (K-weighted) under "Deep Space Ambient": a floor layer takes over from the music at about its loudness,
+ * so the effects stay on top. The typing ticks are transient, so their integrated level reads lower still.
  */
-export const AMBIENCE_LEVEL = 0.4;
+export const AMBIENCE_LEVEL = 1;
 /** Notes are scheduled this far ahead of `ctx.currentTime` (s). */
 export const AMBIENCE_LOOKAHEAD = 0.6;
 /** How often the scheduler wakes (ms). Timing comes from the audio clock, never from this interval. */

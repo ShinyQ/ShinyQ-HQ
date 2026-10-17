@@ -347,8 +347,9 @@ export default function Experience({
       off();
       offFloor();
       audio.setRumble(0);
-      audio.setFloor(null);
+      // Pause first, so clearing the floor does not hand the soundtrack back to the music for one fade.
       audio.setPaused(true);
+      audio.setFloor(null);
       resetFirstFrame();
     };
   }, []);

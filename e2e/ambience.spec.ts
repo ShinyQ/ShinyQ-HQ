@@ -31,6 +31,7 @@ test("the Floor ambience switch sits in the sound group, persists and drives the
   await expect(row).toBeVisible();
   const group = sheet.getByRole("region", { name: en.hud.settings.groups.sound });
   await expect(group.getByTestId("setting-ambience")).toHaveCount(1);
+  await expect(row).toContainText(en.hud.settings.ambience.hint);
   const toggle = row.getByRole("switch", { name: en.hud.settings.ambience.label });
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 
@@ -83,4 +84,5 @@ test("Indonesian pages label the row Suasana lantai", async ({ page }) => {
   const sheet = await openSettings(page);
   await expect(sheet.getByTestId("setting-ambience").getByRole("switch", { name: id.hud.settings.ambience.label })).toBeVisible();
   expect(id.hud.settings.ambience.label).toBe("Suasana lantai");
+  await expect(sheet.getByTestId("setting-ambience")).toContainText(id.hud.settings.ambience.hint);
 });
