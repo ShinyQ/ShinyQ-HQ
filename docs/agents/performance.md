@@ -36,7 +36,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/2`, 2 duration-balanced shards.
+  - CI job `3D perf gates`: `bun run e2e:perf:shard i/2`, 2 duration-balanced shards; on a PR only for 3D code or a `src/` file the 3D roots import, always on `main` and nightly ([ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
 - Each test writes `perf-report/<id>.json`; `bun scripts/perf-summary.ts gates --head perf-report` prints the tables.
@@ -109,7 +109,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 ## Fast verification
 
-The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally and let CI run everything.
+The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the heavy jobs your change needs (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); pushes to `main` and the nightly run the full suite, the perf gates and Lighthouse.
 
 ### Which command when
 

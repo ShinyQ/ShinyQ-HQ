@@ -38,3 +38,47 @@ describe("workflow pinning (S4)", () => {
     expect(read(path.join(dir, "deploy.yml"))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
   });
 });
+
+describe("smart CI (ci.yml)", () => {
+  const ci = read(path.join(dir, "ci.yml"));
+  const job = (id: string) => ci.split(/\n  (?=[a-z][\w-]*:\n)/).find((block) => block.startsWith(`${id}:`)) ?? "";
+
+  it("keeps the required check names and never skips a heavy job at the job level", () => {
+    for (const name of ["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates ${{ matrix.shard }}/2", "E2E shard ${{ matrix.shard }}/4"]) expect(ci).toContain(`name: ${name}`);
+    for (const id of ["e2e", "perf", "lighthouse"]) {
+      expect(job(id)).toContain("needs: [site, changes]");
+      expect(job(id)).not.toMatch(/^\s{4}if:/m);
+    }
+  });
+
+  it("always runs the build, the safety scan and og:check", () => {
+    expect(job("site")).toContain("bun scripts/scan-export.ts out");
+    expect(job("site")).toContain("bun run og:check");
+    expect(job("site")).not.toMatch(/^\s{4}if:/m);
+  });
+
+  it("marks complete runs for the deploy gate", () => {
+    expect(job("build")).toContain("name: ci-full");
+    expect(job("build")).toContain("if: needs.changes.outputs.full == 'true'");
+  });
+
+  it("passes skipped heavy jobs with a Not needed step and fails safe on a missing plan output", () => {
+    for (const id of ["e2e", "perf", "lighthouse"]) expect(job(id)).toContain("name: Not needed");
+    expect(job("perf")).not.toContain("outputs.perf == 'true'");
+    expect(job("perf")).toContain("if: needs.changes.outputs.perf == 'false'");
+    expect(job("lighthouse")).not.toContain("outputs.lighthouse == 'true'");
+    expect(job("lighthouse")).toContain("if: needs.changes.outputs.lighthouse == 'false'");
+    expect(job("build")).not.toContain("outputs.perf == 'true'");
+  });
+
+  it("runs the ci-nightly report only on the nightly schedule or the nightly input, with no visual gate in CI", () => {
+    expect(ci).toContain('- cron: "15 20 * * *"');
+    expect(job("visual")).toBe("");
+    expect(ci).not.toContain("visual_base");
+    expect(job("nightly")).toContain("needs: [changes, check, secrets, site, e2e, perf, lighthouse, build]");
+    expect(job("nightly")).toContain("if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.nightly) }}");
+    expect(job("nightly")).toContain("NEEDS: ${{ toJSON(needs) }}");
+    expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
+    expect(job("nightly")).toContain("run: bun scripts/ci-nightly.ts");
+  });
+});

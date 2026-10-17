@@ -312,7 +312,8 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### CI
 
-- GitHub Actions runs typecheck, lint and unit tests next to the static build, then the Playwright suite in 4 parallel shards and the 3D perf gates in 2 shards against that build.
+- GitHub Actions runs typecheck, lint, unit tests and the secret scan next to the static build (CSP hashes, export safety scan, `og:check`), then the Playwright suite in 4 parallel shards and the 3D perf gates in 2 shards against that build.
+- Smart CI: on a pull request, `scripts/ci-plan.ts` runs e2e (every shard, only the mapped specs, or none), the 3D perf gates and Lighthouse only when the changed paths need them; pushes to `main`, dispatches and the nightly run everything. The nightly keeps one `ci-nightly` issue while it fails ([`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#ci)).
 - `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). `Lighthouse CI` enforces the Page View budgets and the `3D perf gates` job the 3D ones. Both publish per-chunk JS and gate tables against the last green `main` run in the job summary.
 - Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`).
 - The game-first timeline runs nightly as a trend (`.github/workflows/perf-nightly.yml`).
@@ -322,7 +323,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - The Cloudflare Pages project `kurniadi` at https://kurniadi.pages.dev.
 - `deploy.yml` deploys a commit on `main` when dispatched (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`) and after each weekly facts merge.
-- It reuses CI's green result for that commit instead of rerunning e2e (it runs the e2e shards only when no CI result exists or with `-f rerun_e2e=true`), builds, deploys with `wrangler pages deploy`, then smoke-checks `/api/ask`, `/api/rum`, `/en` and the analytics beacon, opening a `deploy-failed` issue on any failure.
+- It reuses CI's green complete result (`ci-full` artifact) for that commit instead of rerunning e2e (it runs the e2e shards only when no complete CI result exists or with `-f rerun_e2e=true`), builds, deploys with `wrangler pages deploy`, then smoke-checks `/api/ask`, `/api/rum`, `/en` and the analytics beacon, opening a `deploy-failed` issue on any failure.
 - Ordinary merges to `main` do not deploy by themselves. PR previews (project `shinyq-hq`) are off unless `CF_PREVIEWS=true`.
 
 ### Analytics and public visit stats

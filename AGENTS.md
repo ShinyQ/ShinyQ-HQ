@@ -104,9 +104,12 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
   and wait for a free slot (e2e renders WebGL on the CPU; parallel runs starve each other).
 - `main` is protected by a ruleset: changes land only through a PR whose head has the required checks
   (`Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`, `3D perf gates 1/2` and `2/2`). Force
-  pushes, deletion and direct pushes are rejected. Runs on `main` are never cancelled; check main's CI after a merge.
+  pushes, deletion and direct pushes are rejected. In-progress runs on `main` are never cancelled; check main's CI after a merge.
 - Production deploys only through `.github/workflows/deploy.yml` (`workflow_dispatch`, by hand or from the weekly
-  live-facts PR). A push to `main` never deploys; the deploy reuses CI's green `Build, CV and e2e` result.
+  live-facts PR). A push to `main` never deploys; the deploy reuses only a complete green CI run (`ci-full` artifact).
+- Smart CI: every PR runs typecheck, lint, unit tests, the secret scan and the build; e2e, the 3D perf gates and
+  Lighthouse run only when the changed paths need them (`scripts/ci-plan.ts`). Pushes to `main`, dispatches and the
+  nightly run everything. Detail: [ci-and-deploy.md](docs/agents/ci-and-deploy.md#ci).
 - Before pushing: `bun run verify:quick`, then `bun run e2e:changed`. Add the perf lane when you touch the
   render path, materials, floor mounting, the elevator or what the 3D chunk imports.
 - Details: [ci-and-deploy.md](docs/agents/ci-and-deploy.md), [performance.md](docs/agents/performance.md),

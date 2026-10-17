@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-65 plans: 42 shipped and still current, 23 shipped with a part later removed or replaced (see each plan's status line).
+66 plans: 42 shipped and still current, 23 shipped with a part later removed or replaced, 1 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -79,6 +79,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Remove Guided Walks Implementation Plan](plans/2026-10-16-remove-guided-walks.md) | shipped | [#167](https://github.com/ShinyQ/ShinyQ-HQ/pull/167) |
 | [Public Visit Stats Every 4 Hours Implementation Plan](plans/2026-10-16-stats-every-4h.md) | shipped | [#161](https://github.com/ShinyQ/ShinyQ-HQ/pull/161) |
 | [Shareable Classic and 3D Links Implementation Plan](plans/2026-10-17-classic-links.md) | shipped | [#181](https://github.com/ShinyQ/ShinyQ-HQ/pull/181) |
+| [Smart CI Implementation Plan](plans/2026-10-17-smart-ci.md) | in review | [#176](https://github.com/ShinyQ/ShinyQ-HQ/pull/176) |
 
 ## Specs
 

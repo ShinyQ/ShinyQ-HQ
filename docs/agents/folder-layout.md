@@ -85,6 +85,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 ### E2E planning and perf reports
 
+- `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run.
 - `scripts/e2e-plan.ts`: pure path-to-spec map, duration-balanced shard split and CI log timing parser (unit tested, including the shard union against the real `--list`).
 - `scripts/e2e-changed.ts`: `e2e:changed`: runs the specs that cover your changed paths.
 - `scripts/e2e-shard.ts`: `e2e:shard i/N` and `e2e:perf:shard i/N`: duration-balanced CI shard (e2e/durations.json) with a blob report; `--dry` prints the plan.
@@ -95,7 +96,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 ### Deploy, Ask and stats operations
 
-- `scripts/ci-status.ts`: deploy gate: reuse the green CI result for a commit or its tree.
+- `scripts/ci-status.ts`: deploy gate: reuse the green complete CI result (`ci-full` artifact) for a commit or its tree.
+- `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`).
 - `scripts/ask-eval.ts`: real-model golden and red-team runs (ask-eval.yml).
 - `scripts/provision-ask.ts`: idempotent Cloudflare provisioning (dry run unless --apply).
 - `scripts/refresh-facts.ts`, `scripts/ask-staleness.ts`, `scripts/content-gap.ts`, `scripts/purge-ask-logs.ts`: live facts, freshness warning, unanswered-question report, gateway log purge.

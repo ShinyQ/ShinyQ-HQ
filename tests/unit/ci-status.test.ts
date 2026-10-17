@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CI_CHECK, ciRunning, sameTreeRun, trustedRun, verdictFromChecks, type CheckRun } from "../../scripts/ci-status";
+import { CI_CHECK, CI_FULL_ARTIFACT, ciRunning, runIdFromUrl, sameTreeRun, trustedRun, verdictFromChecks, type CheckRun } from "../../scripts/ci-status";
 
 const run = (status: string, conclusion: string | null, url = "https://github.com/o/r/runs/1", name = CI_CHECK): CheckRun => ({ name, status, conclusion, html_url: url });
 
@@ -52,5 +52,29 @@ describe("deploy reuses the CI result", () => {
     expect(ciRunning([{ status: "queued" }, { status: "completed" }])).toBe(true);
     expect(ciRunning([{ status: "completed" }])).toBe(false);
     expect(ciRunning([])).toBe(false);
+  });
+
+  it("reuses a green check only from a complete run, but a red selective check still fails", () => {
+    const complete = (c: CheckRun) => c.html_url !== "smart";
+    expect(verdictFromChecks([run("completed", "success", "smart")], complete)).toEqual({ kind: "missing" });
+    expect(verdictFromChecks([run("completed", "success", "smart"), run("completed", "success", "full")], complete)).toEqual({ kind: "reuse", url: "full" });
+    expect(verdictFromChecks([run("completed", "failure", "smart")], complete)).toEqual({ kind: "red", url: "smart", conclusion: "failure" });
+    expect(verdictFromChecks([run("completed", "failure", "smart"), run("completed", "success", "full")], complete)).toEqual({ kind: "reuse", url: "full" });
+    expect(verdictFromChecks([run("completed", "success", "smart"), run("completed", "failure", "full")], complete)).toEqual({ kind: "red", url: "full", conclusion: "failure" });
+    expect(verdictFromChecks([run("in_progress", null, "smart")], complete)).toEqual({ kind: "wait" });
+  });
+
+  it("reads the run id from a check run URL", () => {
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123/job/456")).toBe(123);
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123?pr=1")).toBe(123);
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123/job/456#step:3:1")).toBe(123);
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123#step")).toBe(123);
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123")).toBe(123);
+    expect(runIdFromUrl("https://github.com/o/r/actions/runs/123abc")).toBeNull();
+    expect(runIdFromUrl("https://github.com/o/r/runs/1")).toBeNull();
+  });
+
+  it("names the marker artifact CI uploads on a complete run", () => {
+    expect(CI_FULL_ARTIFACT).toBe("ci-full");
   });
 });
