@@ -17,10 +17,12 @@ const SUSPEND_DELAY_MS = 150;
 /** Time constant of the music volume glide (seconds). */
 const VOLUME_TIME_CONSTANT = 0.05;
 /**
- * How long a switched-off ambience voice lives: `AMBIENCE_CROSSFADE` (2 s, in ambience.ts, which is a lazy
- * chunk and so not imported here; a unit test keeps them in step) plus a margin.
+ * The crossfade between floor layers, and between the music and a floor layer (s). Mirrors `AMBIENCE_CROSSFADE`
+ * in ambience.ts, a lazy chunk and so not imported here; a unit test keeps them in step.
  */
-const AMBIENCE_RETIRE_MS = 2100;
+export const SOUNDTRACK_CROSSFADE = 2;
+/** How long a fading voice (an ambience switched off, the music handing over) lives: the crossfade plus a margin. */
+const AMBIENCE_RETIRE_MS = SOUNDTRACK_CROSSFADE * 1000 + 100;
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
 /**
  * User-activation events. Browsers only let an AudioContext start inside one of these; on touch screens
@@ -80,8 +82,13 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let rumbleSpeed = 0;
   let floor: AmbienceFloor | null = null;
   let ambience: AmbienceVoice | null = null;
-  /** Voices switched off by the setting: fading out, stopped by their timer (or earlier by a mute or dispose). */
-  const retiring = new Map<AmbienceVoice, ReturnType<typeof setTimeout>>();
+  /** Set when the ambience chunk failed to load, so the music plays instead (cleared by the next good load). */
+  let ambienceFailed = false;
+  /**
+   * Voices fading out (an ambience switched off, or the music handing over to a floor layer): stopped by their
+   * timer, or earlier by a mute, pause or dispose.
+   */
+  const retiring = new Map<{ stop(): void }, ReturnType<typeof setTimeout>>();
   let ambienceModule: ReturnType<AudioEngineDeps["loadAmbience"]> | null = null;
   let suspendTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimes: number[] = [];
@@ -157,11 +164,45 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
     }
   }
 
-  /** Starts the background music on the master bus if it is not playing. */
+  /** Fades a voice out over the ambience crossfade, then stops it. */
+  function retire(voice: { stop(): void }): void {
+    retiring.set(
+      voice,
+      setTimeout(() => {
+        retiring.delete(voice);
+        voice.stop();
+      }, AMBIENCE_RETIRE_MS),
+    );
+  }
+
+  /**
+   * One soundtrack at a time: while the floor ambience is on and a floor is set, the floor layer replaces the
+   * background music (the two never play on top of each other). True also while the ambience chunk is loading,
+   * so the music does not start only to fade out again.
+   */
+  function ambienceOwnsSoundtrack(): boolean {
+    return settings.ambience && floor !== null && !ambienceFailed;
+  }
+
+  /** Starts the background music on the music bus if it is not playing and no floor layer replaces it. */
   function startMusic(): void {
-    if (!music && settings.music && ctx && musicBus && !silent() && ctx.state !== "closed") {
+    if (!music && settings.music && !ambienceOwnsSoundtrack() && ctx && musicBus && !silent() && ctx.state !== "closed") {
       music = createSpaceMusic(ctx, musicBus);
     }
+  }
+
+  /** Crossfades the music out (over `AMBIENCE_CROSSFADE`) while a floor layer fades in, then stops it. */
+  function yieldMusic(): void {
+    if (!music || !ctx) return;
+    const voice = music;
+    music = null;
+    const gain = voice.output.gain;
+    const t = ctx.currentTime;
+    const value = gain.value;
+    gain.cancelScheduledValues(t);
+    gain.setValueAtTime(value, t);
+    gain.linearRampToValueAtTime(0, t + SOUNDTRACK_CROSSFADE);
+    retire(voice);
   }
 
   /** Cancels every scheduled note and disconnects the music graph. */
@@ -184,15 +225,19 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
         if (ambience || !settings.ambience || floor === null || !ctx || !musicBus || silent() || ctx.state === "closed") {
           return;
         }
+        ambienceFailed = false;
         ambience = createAmbience(ctx, musicBus);
         ambience.setFloor(floor);
+        yieldMusic();
       })
       .catch(() => {
         ambienceModule = null;
+        ambienceFailed = true;
+        startMusic();
       });
   }
 
-  /** Stops every ambience voice at once, the fading ones included. */
+  /** Stops every ambience voice at once, the fading ones (and a music handing over) included. */
   function stopAmbience(): void {
     ambience?.stop();
     ambience = null;
@@ -428,15 +473,11 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       }
       const voice = ambience;
       ambience = null;
-      if (!voice) return;
-      voice.setFloor(null);
-      retiring.set(
-        voice,
-        setTimeout(() => {
-          retiring.delete(voice);
-          voice.stop();
-        }, AMBIENCE_RETIRE_MS),
-      );
+      if (voice) {
+        voice.setFloor(null);
+        retire(voice);
+      }
+      startMusic();
     },
 
     setFloor(next: AmbienceFloor | null) {
@@ -444,6 +485,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       floor = next;
       if (ambience) ambience.setFloor(next);
       else startAmbience();
+      if (ambience?.floor()) yieldMusic();
+      else startMusic();
     },
 
     ambienceFloor() {
