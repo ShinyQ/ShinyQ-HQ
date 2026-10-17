@@ -35,7 +35,7 @@ describe("workflow pinning (S4)", () => {
   });
 
   it("deploys the hq-stats Worker with the same wrangler version", () => {
-    expect(read(path.join(dir, "deploy.yml"))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
+    for (const file of ["deploy.yml", "rollback.yml"]) expect(read(path.join(dir, file))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
   });
 });
 
@@ -93,5 +93,43 @@ describe("smart CI (ci.yml)", () => {
     expect(job("nightly")).toContain("NEEDS: ${{ toJSON(needs) }}");
     expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
     expect(job("nightly")).toContain("run: bun scripts/ci-nightly.ts");
+  });
+});
+
+describe("deploy on merge (deploy.yml, rollback.yml)", () => {
+  const split = (text: string) => (id: string) => text.split(/\n  (?=[a-z][\w-]*:\n)/).find((block) => block.startsWith(`${id}:`)) ?? "";
+  const deploy = read(path.join(dir, "deploy.yml"));
+  const rollback = read(path.join(dir, "rollback.yml"));
+  const deployJob = split(deploy);
+  const rollbackJob = split(rollback);
+
+  it("deploys a push to main through the fast-path gate and keeps the manual dispatch", () => {
+    expect(deploy).toMatch(/on:\n  push:\n    branches: \[main\]\n  workflow_dispatch:/);
+    expect(deployJob("verify")).toContain("bun scripts/merge-gate.ts");
+    expect(deployJob("verify")).toContain("if: github.event_name == 'push'");
+    expect(deployJob("verify")).toContain("if: steps.fast.outputs.fast != 'true'");
+    expect(deployJob("deploy")).toContain("--check-block-only true");
+  });
+
+  it("shares one queue for every production deploy and never cancels a running one", () => {
+    expect(deploy).toMatch(/concurrency:\n  group: deploy-production\n  cancel-in-progress: false/);
+  });
+
+  it("rolls back only after CI on a push to main fails, and clears only after it passes", () => {
+    expect(rollback).toMatch(/workflow_run:\n    workflows: \[CI\]\n    types: \[completed\]\n    branches: \[main\]/);
+    expect(rollbackJob("rollback")).toContain("github.event.workflow_run.event == 'push'");
+    expect(rollbackJob("rollback")).toContain("github.event.workflow_run.conclusion == 'failure'");
+    expect(rollbackJob("clear")).toContain("github.event.workflow_run.conclusion == 'success'");
+    expect(rollbackJob("clear")).not.toContain("secrets.");
+  });
+
+  it("keeps the Cloudflare secrets in the production environment, in step-level env only", () => {
+    expect(rollbackJob("rollback")).toMatch(/environment:\n      name: production/);
+    const jobEnv = rollbackJob("rollback").split("    steps:")[0];
+    expect(jobEnv).not.toContain("secrets.");
+  });
+
+  it("defaults the drill to a dry run", () => {
+    expect(rollback).toMatch(/dry_run:[\s\S]*?default: true/);
   });
 });

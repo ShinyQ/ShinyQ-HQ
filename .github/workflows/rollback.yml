@@ -1,0 +1,169 @@
+name: Rollback
+
+# Automatic production rollback for the deploy fast path (owner decision 2026-10-18, docs/deploy.md section 6).
+# deploy.yml deploys a merge to main before the push CI on main finishes (scripts/merge-gate.ts). This workflow
+# reacts when that CI run completes:
+#   - red (failure or timed out): scripts/rollback.ts rolls Cloudflare Pages production back to the newest earlier
+#     production deployment that does not contain the failing commit and is not red itself (Pages rollback API;
+#     only when production serves the failing commit or a later, not green, commit built on it), redeploys the
+#     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false"), and
+#     opens or updates the one `deploy-rollback` issue with the failing run. While that issue is open, deploy.yml
+#     takes no fast path: every merge waits for a green complete main CI.
+#   - green: closes the `deploy-rollback` issue once the green commit equals or follows the last failing one.
+# Only CI runs from pushes to main count (not the nightly, not dispatches). Dispatch it by hand for a drill:
+# `gh workflow run rollback.yml --ref main -f sha=<commit> [-f dry_run=false] [-f project=<drill project>]`;
+# dry_run (the default) does everything except the rollback call, the Worker deploy and the issue write.
+# Cloudflare secrets only in the steps that need them, from the main-only `production` environment (H1).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit on main to treat as the one whose CI failed
+        required: true
+        type: string
+      dry_run:
+        description: Decide and report only (no rollback call, no Worker deploy, no issue)
+        required: false
+        type: boolean
+        default: true
+      project:
+        description: Cloudflare Pages project (default the CF_PAGES_PROJECT variable; a throwaway project for a real drill)
+        required: false
+        type: string
+      site:
+        description: Site whose /en must answer 200 after a real rollback (default the production URL)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    name: Roll production back
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Same main-only environment as the deploy (its secrets), without a deployment record.
+    environment:
+      name: production
+      deployment: false
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+      issues: write
+    env:
+      SHA: ${{ inputs.sha || github.event.workflow_run.head_sha }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+      CF_PAGES_PROJECT: ${{ inputs.project || vars.CF_PAGES_PROJECT }}
+      SITE: ${{ inputs.site || vars.SITE_URL || 'https://kurniadi.pages.dev' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: main
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - name: Check the commit is on main
+        run: |
+          if ! [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::sha must be a commit hash."
+            exit 1
+          fi
+          full=$(git rev-parse --verify "$SHA^{commit}")
+          if ! git merge-base --is-ancestor "$full" HEAD; then
+            echo "::error::$SHA is not on main."
+            exit 1
+          fi
+          echo "SHA=$full" >> "$GITHUB_ENV"
+          echo "CI failed on \`$full\` ($(git log -1 --format=%s "$full")): $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+      - name: Roll Cloudflare Pages back
+        id: pages
+        # The deploy token only in this step (S4, H1).
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/rollback.ts pages --repo "$GITHUB_REPOSITORY" --sha "$SHA" --project "$CF_PAGES_PROJECT" --site "$SITE" --dry-run "$DRY_RUN" --out rollback.json
+      - name: Did the hq-stats Worker change?
+        id: worker
+        if: steps.pages.outputs.action == 'rollback' || steps.pages.outputs.action == 'dry-run'
+        env:
+          TARGET: ${{ steps.pages.outputs.target_sha }}
+          LIVE: ${{ steps.pages.outputs.live_sha }}
+          SKIP: ${{ vars.STATS_WORKER_DEPLOY == 'false' }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "- hq-stats Worker: STATS_WORKER_DEPLOY is false (deployed by hand), not touched." >> "$GITHUB_STEP_SUMMARY"
+          elif git diff --quiet "$TARGET" "$LIVE" -- workers/stats; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "- hq-stats Worker: unchanged between \`${TARGET:0:7}\` and \`${LIVE:0:7}\`, not touched." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "- hq-stats Worker: changed since \`${TARGET:0:7}\`; redeploying it from there (dry run: $DRY_RUN)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.worker.outputs.changed == 'true' && env.DRY_RUN != 'true'
+        with:
+          persist-credentials: false
+          ref: ${{ steps.pages.outputs.target_sha }}
+          path: target
+      - name: Redeploy hq-stats from the rollback target
+        if: steps.worker.outputs.changed == 'true' && env.DRY_RUN != 'true'
+        # Its secrets (WA_TOKEN, WA_ACCOUNT_ID) persist across deploys; same pinned wrangler as deploy.yml.
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: target/workers/stats
+          wranglerVersion: "4.151.0"
+          packageManager: npm
+          quiet: true
+          command: deploy
+      - name: Open or update the deploy-rollback issue
+        # Also when the rollback step failed (the issue then asks for a manual rollback); not for a bad sha input.
+        if: ${{ !cancelled() && steps.pages.conclusion != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/rollback.ts issue --repo "$GITHUB_REPOSITORY" --sha "$SHA" --run-url "$RUN_URL" --result rollback.json --dry-run "$DRY_RUN"
+
+  clear:
+    name: Close the deploy-rollback issue
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: main
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - name: Close it once main is green past the failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: bun scripts/rollback.ts clear --repo "$GITHUB_REPOSITORY" --sha "$SHA" --run-url "$RUN_URL"
