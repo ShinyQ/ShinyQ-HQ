@@ -214,6 +214,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `expect.poll` for values.
 - Static pages: `openPage(page, url)` (or `waitForHydration` after a reload or full navigation) before clicking client islands.
   - The Next.js chunks load after first paint, so `load` fires before hydration (signal: `html[data-hydrated]`, set by `MissionHud`).
+  - A URL assertion after a client-side navigation (`router.push`: the RSC payload plus the page chunk) uses `{ timeout: NAV_TIMEOUT }` (`e2e/hq.ts`, 15 s): a CI runner shared with WebGL workers can stall the whole browser for 5 to 6 s, longer than the 5 s expect default.
+  - Name UI by its message key (`en.hud.launcher.askRover`), not literal text, so a rename breaks the typecheck instead of a test run.
 - `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas).
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).

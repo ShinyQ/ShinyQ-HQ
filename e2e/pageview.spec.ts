@@ -248,6 +248,18 @@ for (const viewport of [
   });
 }
 
+test("landing: the first paint waits for the whole hero (a render-blocking expect link on its last node)", async ({ page }) => {
+  // A busy device can paint a half-parsed hero; the rest arriving then shifts the backdrop and the centered column (#156).
+  await openPage(page, staticTier("/en"));
+  const block = await page.evaluate(() => {
+    const link = document.head.querySelector<HTMLLinkElement>("link[rel='expect'][blocking='render']");
+    const target = link ? document.getElementById(link.getAttribute("href")!.slice(1)) : null;
+    const hero = document.querySelector(".hx");
+    return { link: Boolean(link), last: Boolean(target && hero && hero.lastElementChild === target) };
+  });
+  expect(block).toEqual({ link: true, last: true });
+});
+
 for (const viewport of [
   { width: 1440, height: 900 },
   { width: 1999, height: 1129 },
