@@ -1,8 +1,8 @@
 {
   "generatedAt": "2026-10-17",
-  "commit": "8030ae2",
+  "commit": "365706d",
   "git": {
-    "commits": 181,
+    "commits": 184,
     "firstCommit": "2026-10-09",
     "mergedPrs": 154,
     "latestPr": 186
@@ -224,13 +224,13 @@
     }
   ],
   "tests": {
-    "unitFiles": 317,
-    "e2e": 586,
+    "unitFiles": 318,
+    "e2e": 587,
     "e2eFiles": 46
   },
   "docs": {
     "specs": 13,
-    "plans": 71
+    "plans": 72
   },
   "ci": {
     "jobs": [
