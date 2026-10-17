@@ -11,7 +11,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { chromium } from "@playwright/test";
+import { chromium, type Page } from "@playwright/test";
 
 const args = process.argv.slice(2);
 const flag = (name: string, fallback: string) => {
@@ -38,6 +38,14 @@ const FLOORS = pick(ALL_FLOORS, process.env.FLOORS);
 const PHASES = (process.env.PHASES ?? "night,dawn,day,dusk").split(",");
 
 type Probe = { __hq?: { store: { getState(): { phase: string } }; rover: { drawCalls: number; triangles: number }; render?: { programs(): number } } };
+
+/** The rover idle is only infinite by default under webdriver, which this script hides: stop it for the shots (a pointer move restarts the wait with the new delay). */
+async function noIdle(page: Page) {
+  await page.evaluate(() => {
+    (window as unknown as { __hq: { rover: { idleDelay: number } } }).__hq.rover.idleDelay = Number.POSITIVE_INFINITY;
+    document.dispatchEvent(new Event("pointermove"));
+  });
+}
 
 mkdirSync(OUT, { recursive: true });
 const metrics: Record<string, unknown> = {};
@@ -68,6 +76,7 @@ try {
           null,
           { timeout: 240_000 },
         );
+        await noIdle(page);
         await page.waitForTimeout(SETTLE);
         const m = await page.evaluate(() => {
           const hq = (window as unknown as Probe).__hq!;

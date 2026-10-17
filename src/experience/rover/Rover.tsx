@@ -141,7 +141,8 @@ export function Rover({ tier }: { tier: GpuTier }) {
 
   useEffect(() => {
     const stop = watchActivity(document);
-    const off = intents.on(bumpActivity);
+    const bump = () => bumpActivity();
+    const off = intents.on(bump);
     return () => {
       stop();
       off();

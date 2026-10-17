@@ -11,11 +11,12 @@ export function bumpActivity(): void {
 
 export const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel", "touchstart"] as const;
 
-/** Listens for user input on `target` and bumps the counter. Returns the cleanup. */
+/** Listens for user input on `target` and bumps the counter. Returns the cleanup (per-call handler, so a late cleanup of an old canvas never removes a new canvas's listeners). */
 export function watchActivity(target: Pick<Document, "addEventListener" | "removeEventListener">): () => void {
   const options = { capture: true, passive: true } as const;
-  for (const type of ACTIVITY_EVENTS) target.addEventListener(type, bumpActivity, options);
+  const onInput = () => bumpActivity();
+  for (const type of ACTIVITY_EVENTS) target.addEventListener(type, onInput, options);
   return () => {
-    for (const type of ACTIVITY_EVENTS) target.removeEventListener(type, bumpActivity, options);
+    for (const type of ACTIVITY_EVENTS) target.removeEventListener(type, onInput, options);
   };
 }
