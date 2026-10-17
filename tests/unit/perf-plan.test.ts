@@ -31,15 +31,14 @@ describe("perfKeysFor", () => {
 
   it("selects the bytes gate, the B1 settled gate and the B1 rides for B1 code", () => {
     const b1Files = [
-      "src/experience/floors/engine/layout.ts",
       "src/experience/floors/EngineRoom.tsx",
       "src/experience/floors/chunks/engine.ts",
+      "src/experience/floors/engine/scenery.ts",
       "src/hud/drawer/EngineBody.tsx",
       "src/content/room-views/engine.ts",
-      "src/experience/b1.ts",
     ];
     for (const file of b1Files) expect(perfKeysFor([file])).toEqual(["bytes", "floor:B1", "ride:B1"]);
-    const re = new RegExp(perfGrep(perfKeysFor(["src/experience/floors/engine/layout.ts"])));
+    const re = new RegExp(perfGrep(perfKeysFor(["src/experience/floors/EngineRoom.tsx"])));
     for (const t of [
       "B1 lite: settled draw calls and shader programs",
       "B1 full: settled draw calls and shader programs",
@@ -47,6 +46,14 @@ describe("perfKeysFor", () => {
       "the ride RF to B1 stays under the scene budget (full)",
     ]) expect(t).toMatch(re);
     expect("L3 full: settled draw calls and shader programs").not.toMatch(re);
+  });
+
+  it("keeps the full lane, B1 keys included, for the B1 files on the main 3D path", () => {
+    for (const file of ["src/experience/floors/engine/layout.ts", "src/experience/b1.ts"]) {
+      const keys = perfKeysFor([file]);
+      expect(keys).toEqual([...ALL_BUT_MEMORY]);
+      for (const k of ["hover", "boot", "boost", "bytes", "floor:B1", "ride:B1"] as const) expect(keys).toContain(k);
+    }
   });
 
   it("does not pull B1 into public-floor changes", () => {
