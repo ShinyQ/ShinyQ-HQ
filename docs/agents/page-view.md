@@ -102,6 +102,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
   - `AskHeroBar` (visible "Ask AI about my work" label) across the full width; no illustration beside the name (owner decision)
   - the `StatTicker` band
+- First paint waits for the whole hero: `<link rel="expect" href="#hero-end" blocking="render">` (hoisted into the head by React) targets `#hero-end`, an empty hidden span after the ticker. Chrome unblocks on the target's start tag, so the target is the hero's last node. Without it a busy device can paint a half-parsed hero, and the ticker arriving grows `.hx`, which moves the percentage-sized backdrop (glow, ground) and the centered column: a layout shift.
 
 ### Stat ticker
 

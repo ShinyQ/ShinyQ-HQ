@@ -104,6 +104,13 @@ export async function waitForHydration(page: Page, timeout = 15_000) {
   await page.locator("html[data-hydrated]").waitFor({ state: "attached", timeout });
 }
 
+/**
+ * Timeout for a URL assertion after a client-side navigation (`router.push`: the RSC payload plus the
+ * page's JS chunk). The 5 s expect default suits UI state, not a navigation: a CI runner shared with
+ * WebGL workers can stall the whole browser for 5 to 6 s mid-navigation (issue #152).
+ */
+export const NAV_TIMEOUT = 15_000;
+
 /** `page.goto` plus `waitForHydration`, for static pages that a test interacts with. */
 export async function openPage(page: Page, url: string, options?: Parameters<Page["goto"]>[1]) {
   const response = await page.goto(url, options);
