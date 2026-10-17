@@ -236,8 +236,10 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
         maxZ: LOBBY.skillsWall.z + 6,
       },
       yaw: -Math.PI / 4,
-      // The 40 u by 8.5 u wall needs a wider view than the default follow distance.
+      // The 40 u by 11.3 u wall (every group, 4 by 2) fits a desktop view from its stop (the old 40 u by 9.3 u wall used
+      // 1.7); a portrait phone frames part of the wall closer so the text reads, and the visitor pans for the rest.
       zoom: 1.7,
+      classView: { mobile: { zoom: 1.15 } },
     },
   ],
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, LOBBY, ROVER, ROVER_HEIGHT, SHAFT } from "@/experience/config";
+import { buildFloorLayouts, FLOOR_GAP, LOBBY, ROVER, ROVER_HEIGHT, SHAFT } from "@/experience/config";
 import {
   arcPoint,
   boxesOverlap,
@@ -12,9 +12,13 @@ import {
   faceYaw,
   lobbyElements,
   radialSpan,
+  SKILLS_GRID,
   SKILLS_PAD,
+  SKILLS_SPLIT,
   SKILLS_TEXT,
+  skillItemWidth,
   skillsWallLayout,
+  skillsWallTop,
   wrapCount,
   type Box,
 } from "@/experience/floors/lobby/layout";
@@ -111,26 +115,83 @@ describe("Lobby layout", () => {
     expect(isWalkable(grid, l1.approach)).toBe(true);
   });
 
-  it("measures the skills wall so every heading and column fits with margin (both locales)", () => {
+  it("shows every group and every skill 4 across by 2 down with tidy sub-columns (both locales)", () => {
+    const line = SKILLS_TEXT.itemSize * SKILLS_TEXT.itemLine;
     for (const locale of ["en", "id"] as const) {
+      const splits = Array.from({ length: SKILLS_GRID.columns }, () => new Set<string>());
       const groups = wallSkillGroups(getSkills()).map((g) => ({ label: tr(g.label, locale), items: g.items }));
-      expect(groups).toHaveLength(4);
+      expect(groups).toHaveLength(8);
       const l = skillsWallLayout(groups);
-      expect(l.h).toBeGreaterThanOrEqual(LOBBY.skillsWall.h);
-      // The CV refresh must not make the wall taller than it was (9.85 u at f61fbba).
-      expect(l.h).toBeLessThanOrEqual(9.85);
-      // The longest heading wraps; every column reserves its lines, so items start below it.
-      const headingBottom = SKILLS_PAD.top + l.labelLines * SKILLS_TEXT.labelSize * SKILLS_TEXT.labelLine;
-      expect(l.itemTop - headingBottom).toBeGreaterThanOrEqual(0.3);
-      for (const g of groups) {
+      expect(LOBBY.skillsWall.w).toBe(40);
+      expect(l.column).toBe(10);
+      expect(l.cells).toHaveLength(8);
+      // Four grid columns, two rows, aligned edges; a row is as tall as its tallest cell.
+      expect(new Set(l.cells.map((c) => c.left)).size).toBe(4);
+      expect(new Set(l.cells.map((c) => c.top)).size).toBe(2);
+      expect(l.rowHeights).toHaveLength(2);
+      for (const [r, rh] of l.rowHeights.entries()) {
+        const lines = Math.max(...l.cells.filter((_, i) => Math.floor(i / SKILLS_GRID.columns) === r).map((c) => c.lines));
+        expect(rh).toBeCloseTo(l.itemTop + lines * line, 6);
+      }
+      for (const [i, c] of l.cells.entries()) {
+        const g = groups[i];
+        // Every item exactly once, in dataset order, each sub-column starting where the previous ended.
+        expect(c.columns.flatMap((col) => col.items)).toEqual([...g.items]);
+        let start = 0;
+        for (const col of c.columns) {
+          expect(col.start).toBe(start);
+          start += col.items.length;
+        }
+        expect(c.lines).toBe(Math.max(...c.columns.map((col) => col.items.length)));
+        // A long group splits in two (first half left, column-major) unless an item would not fit its slot.
+        if (c.columns.length === 2) {
+          expect(g.items.length).toBeGreaterThan(SKILLS_SPLIT.over);
+          expect(c.columns[0].items).toHaveLength(Math.ceil(g.items.length / 2));
+          expect(c.columns[0].x).toBe(c.left);
+          // Slots: the left one ends a gap before the second sub-column, which runs to the cell's text edge.
+          const offset = c.columns[1].x - c.left;
+          expect(c.columns[0].width).toBeCloseTo(offset - SKILLS_SPLIT.gap, 6);
+          expect(c.columns[1].width).toBeCloseTo(l.textWidth - offset, 6);
+          splits[i % SKILLS_GRID.columns].add(offset.toFixed(6));
+        } else {
+          expect(c.columns[0].x).toBe(c.left);
+          expect(c.columns[0].width).toBe(l.textWidth);
+        }
+        // Every sub-column's estimated width (icon gap plus about 0.5 em per glyph) fits its slot.
+        for (const col of c.columns) {
+          for (const item of col.items) expect(skillItemWidth(item), `${locale} ${item}`).toBeLessThanOrEqual(col.width + 1e-9);
+        }
+        // Every cell ends above the next row, and the base row clears the plinth lip.
+        const bottom = c.top + l.itemTop + c.lines * line;
+        expect(l.h - bottom, `${locale} ${g.label}`).toBeGreaterThanOrEqual(1.8);
+        const row = Math.floor(i / SKILLS_GRID.columns);
+        if (row + 1 < l.rowHeights.length) {
+          const nextTop = l.cells[(row + 1) * SKILLS_GRID.columns].top;
+          expect(nextTop - bottom).toBeGreaterThanOrEqual(SKILLS_PAD.rowGap - 1e-9);
+        }
+        // Headings fit their cell.
         const charW = SKILLS_TEXT.labelSize * (0.6 + SKILLS_TEXT.labelTracking);
         expect(wrapCount(g.label.toUpperCase(), Math.floor(l.textWidth / charW))).toBeLessThanOrEqual(l.labelLines);
-        const bottom = l.h - l.itemTop - g.items.length * SKILLS_TEXT.itemSize * SKILLS_TEXT.itemLine;
-        expect(bottom, `${locale} ${g.label}`).toBeGreaterThanOrEqual(1.2);
       }
+      // Split cells in one grid column share one second sub-column edge, so the sub-columns line up down the wall.
+      for (const offsets of splits) expect(offsets.size).toBeLessThanOrEqual(1);
+      // Today: AI keeps one column ("Azure OpenAI (incl. Realtime)" is too wide for half a cell); Azure and Data science split.
+      expect(l.cells.map((c) => c.columns.map((col) => col.items.length))).toEqual([[9], [6, 6], [6, 6], [6], [4, 4], [5], [4, 3], [5, 4]]);
     }
-    expect(skillsWallLayout([{ label: "Cloud infrastructure and DevOps", items: [] }]).labelLines).toBe(1);
-    expect(skillsWallLayout([{ label: "a", items: [] }, { label: "b", items: [] }, { label: "c", items: [] }, { label: "Cloud infrastructure and DevOps", items: [] }]).labelLines).toBe(2);
+    const short = skillsWallLayout([{ label: "a", items: ["1", "2", "3", "4", "5", "6"] }]);
+    expect(short.cells[0].columns).toHaveLength(1);
+    const long = skillsWallLayout([{ label: "a", items: ["1", "2", "3", "4", "5", "6", "7"] }]);
+    expect(long.cells[0].columns.map((col) => col.items)).toEqual([["1", "2", "3", "4"], ["5", "6", "7"]]);
+  });
+
+  it("keeps the skills wall and its title under one storey, with LOBBY.skillsWall.h covering it (both locales)", () => {
+    for (const locale of ["en", "id"] as const) {
+      const l = skillsWallLayout(wallSkillGroups(getSkills()).map((g) => ({ label: tr(g.label, locale), items: g.items })));
+      // The hit box, the bounds and the colliders read LOBBY.skillsWall.h: a content change that grows the wall must update it.
+      expect(l.h, locale).toBeLessThanOrEqual(LOBBY.skillsWall.h + 0.01);
+      expect(skillsWallTop(l.h), locale).toBeLessThanOrEqual(12.5);
+    }
+    expect(skillsWallTop(LOBBY.skillsWall.h)).toBeLessThan(FLOOR_GAP - 1);
   });
 
   it("wraps headings by words", () => {
@@ -138,8 +199,9 @@ describe("Lobby layout", () => {
     expect(wrapCount("SOFTWARE ENGINEERING", 25)).toBe(1);
   });
 
-  it("gives each skill column room to breathe", () => {
-    expect(LOBBY.skillsWall.w / 4).toBeGreaterThanOrEqual(9);
+  it("gives each skill cell 10 u on the 40 u wall, 4 across by 2 down", () => {
+    expect(SKILLS_GRID).toEqual({ columns: 4, rows: 2 });
+    expect(LOBBY.skillsWall.w / SKILLS_GRID.columns).toBeGreaterThanOrEqual(10);
   });
 
   describe("certification wall", () => {

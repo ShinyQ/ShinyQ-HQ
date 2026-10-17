@@ -140,8 +140,7 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 
 - The 3D chunk gets its content as a serializable `ExperienceData` prop from the server page, so it never bundles `site-content.json` or zod.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
-- `skills` carries only the four L1 wall groups (`wallSkillGroups` and `SKILLS_WALL_GROUPS` in `@/content/selectors`: backend, ai, azure, devops, in that column order).
-  - The skills drawer, Page View and Ask list all seven CV groups.
+- `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.
   - The L1 skills wall draws them as one merged quad mesh over a runtime canvas atlas (`floors/lobby/LogoQuads.tsx`, pure layout in `logoAtlas.ts`), one draw call in total.
 

@@ -128,15 +128,14 @@ export function researchPublications(publications: readonly Publication[]): Publ
   return publications.filter((p) => isResearch(p.kind)).sort((a, b) => (b.date ?? String(b.year)).localeCompare(a.date ?? String(a.year)));
 }
 
-/**
- * Skill groups on the L1 skills wall, in column order (40 u wall, 10 u columns, appendix 01). The
- * CV has seven groups; the wall shows these four with the accents it always had (cyan, violet,
- * blue, amber), and the skills drawer, Page View and Ask list every group.
- */
-export const SKILLS_WALL_GROUPS = ["backend", "ai", "azure", "devops"] as const satisfies readonly SkillGroup["id"][];
+/** L1 skills wall order, 4 across by 2 down (owner, 2026-10-17): AI and LLM, Data science and ML, Azure, Languages on top. */
+export const SKILLS_WALL_ORDER = ["ai", "ds", "azure", "languages", "backend", "frontend", "data", "devops"] as const satisfies readonly SkillGroup["id"][];
 
+/** Every skill group once, in `SKILLS_WALL_ORDER`; a group the order does not list follows in content order. */
 export function wallSkillGroups(groups: readonly SkillGroup[]): SkillGroup[] {
-  return SKILLS_WALL_GROUPS.flatMap((id) => groups.filter((g) => g.id === id));
+  const order: readonly string[] = SKILLS_WALL_ORDER;
+  const listed = order.flatMap((id) => groups.filter((g) => g.id === id));
+  return [...listed, ...groups.filter((g) => !order.includes(g.id))];
 }
 
 /** "Technical Consultant, Software & AI · Metrodata (...)": the current role line on the boot card and in the 3D profile card. */

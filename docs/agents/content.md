@@ -65,6 +65,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 - `getTechLogo(name)` from `@/content/tech` returns `{ src, label } | null`. It normalizes case, versions like "Next.js 14", parentheticals, "A / B" compounds and kebab-case tags such as "azure-openai".
 - Unknown names render as text chips.
 - Every stack and skill name in content must resolve or be listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`).
+- Skill group ids (`SkillGroupSchema`): `ai`, `ds` (Data science and ML, site-only, after `ai`), `azure`, `languages`, `backend`, `frontend`, `data` (Data and messaging), `devops`. The CV groups match the CV (`tests/content/cv-facts.test.ts`, `SITE_ONLY_SKILLS` for the rest).
 - Add a logo: drop the file in `public/tech/`, add an entry in `tech.ts` and a line in `public/tech/README.md`.
 - `ChipList items logos` and `TechLogoRow` (`src/components/Chip.tsx`) render them on static pages.
 
@@ -160,7 +161,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 ### Tech Reactor index
 
 - `getTechIndex()` merges every pod `stack` spelling (`techKey`, `TECH_ALIASES`) and puts each tech on one of six rings (`REACTOR_RINGS`):
-  - its CV skill group first (`GROUP_RING`, languages by `LANGUAGE_RING`), else `EXTRA_RING`;
+  - its CV skill group first (`GROUP_RING`, languages by `LANGUAGE_RING`), else `EXTRA_RING` (the site-only `ds` group has no ring, so its techs keep their `EXTRA_RING` ring);
   - third-party integrations that fit no ring go in `MISC_TECH`.
 - A new pod tech must get a ring or a misc entry in `src/content/tech-rings.ts` (`tests/unit/tech-index.test.ts` fails otherwise, and also on stale entries).
 - Slugs (`techSlug`) come from the canonical key, so a display spelling can change without breaking `#labs-tech=` links.

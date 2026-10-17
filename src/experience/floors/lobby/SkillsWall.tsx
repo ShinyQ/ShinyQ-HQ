@@ -6,48 +6,55 @@ import { BatchedLabels } from "../../fx/BatchedLabels";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { ExperienceData } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
-import { SKILLS_PAD, SKILLS_TEXT, skillsWallLayout } from "./layout";
+import { SKILLS_PAD, SKILLS_TEXT, SKILLS_TITLE, skillsWallLayout } from "./layout";
 import type { LogoQuad } from "./logoAtlas";
 import { LogoQuads } from "./LogoQuads";
 
-// 10 u columns on the 40 u wall (appendix 01 section 2); heights come from skillsWallLayout.
+// 10 u cells, 4 across by 2 down, on the 40 u wall; heights and sub-columns come from skillsWallLayout.
 const { itemSize: ITEM_SIZE, itemLine: ITEM_LINE, icon: ICON, iconGap: ICON_GAP, labelSize: LABEL_SIZE, labelLine: LABEL_LINE, labelTracking: LABEL_TRACKING } = SKILLS_TEXT;
-const COLUMN_PAD = SKILLS_PAD.column;
 
-// Keyed by the wall groups (`SKILLS_WALL_GROUPS`): the same four colors left to right as before the CV refresh.
+// Heading color per skill group (palette colors only; backend, ai, azure and devops keep their colors from before).
 const GROUP_ACCENT: Record<string, string> = {
-  backend: COLORS.cyan,
   ai: COLORS.violet,
+  ds: COLORS.green,
   azure: "#60a5fa",
+  languages: COLORS.pink,
+  backend: COLORS.cyan,
+  frontend: COLORS.lane,
+  data: COLORS.packet,
   devops: COLORS.amber,
 };
 
-/** Skill groups on a long glass wall north of the hologram, facing the plaza. */
+/** Every skill group, 4 across by 2 down, on a glass wall north of the hologram, facing the plaza; every item shows. */
 export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]; title: string }) {
   const { x, z, w, d, plinth } = LOBBY.skillsWall;
-  const { h, column, textWidth, itemTop: ITEM_TOP } = useMemo(() => skillsWallLayout(skills), [skills]);
-  // Logo centers line up with each item line of the text block (anchorY top, fixed line height).
+  const { h, textWidth, itemTop: ITEM_TOP, cells } = useMemo(() => skillsWallLayout(skills), [skills]);
+  // Logo centers line up with each item line of their sub-column's text block (anchorY top, fixed line height).
   const quads = useMemo<LogoQuad[]>(
     () =>
       skills.flatMap((group, i) => {
-        const left = -w / 2 + i * column + COLUMN_PAD;
-        return group.logos.flatMap((src, j) =>
-          src ? [{ src, x: left + ICON / 2, y: h - ITEM_TOP - (j + 0.5) * ITEM_SIZE * ITEM_LINE, size: ICON }] : [],
+        const cell = cells[i];
+        return cell.columns.flatMap((col) =>
+          col.items.flatMap((_, j) => {
+            const src = group.logos[col.start + j];
+            return src ? [{ src, x: col.x + ICON / 2, y: h - cell.top - ITEM_TOP - (j + 0.5) * ITEM_SIZE * ITEM_LINE, size: ICON }] : [];
+          }),
         );
       }),
-    [skills, w, h, column, ITEM_TOP],
+    [skills, cells, h, ITEM_TOP],
   );
-  // Title, headings and item columns in one BatchedText (one draw call instead of one per text).
+  // Title, headings and item sub-columns in one BatchedText (one draw call instead of one per text).
   const labels = useMemo<BatchedLabel[]>(
     () => [
-      { text: title.toUpperCase(), position: [0, h + 0.3, 0], font: FONTS.monoBold, fontSize: 0.42, letterSpacing: 0.12, color: COLORS.green, anchorX: "center", anchorY: "bottom" },
+      { text: title.toUpperCase(), position: [0, h + SKILLS_TITLE.gap, 0], font: FONTS.monoBold, fontSize: SKILLS_TITLE.size, letterSpacing: 0.12, color: COLORS.green, anchorX: "center", anchorY: "bottom" },
       ...skills.flatMap((group, i): BatchedLabel[] => {
-        const left = -w / 2 + i * column + COLUMN_PAD;
+        const cell = cells[i];
         const front = d / 2 + 0.03;
+        const top = h - cell.top;
         return [
           {
             text: group.label.toUpperCase(),
-            position: [left, h - SKILLS_PAD.top, front],
+            position: [cell.left, top - SKILLS_PAD.top, front],
             font: FONTS.monoBold,
             fontSize: LABEL_SIZE,
             letterSpacing: LABEL_TRACKING,
@@ -59,11 +66,21 @@ export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]
             maxWidth: textWidth,
           },
           // No maxWidth: one item per line, never wrapped (the drei Text used whiteSpace="nowrap").
-          { text: group.items.join("\n"), position: [left + ICON_GAP, h - ITEM_TOP, front], font: FONTS.sans, fontSize: ITEM_SIZE, lineHeight: ITEM_LINE, color: "#e4e4e7", anchorX: "left", anchorY: "top", textAlign: "left" },
+          ...cell.columns.map((col): BatchedLabel => ({
+            text: col.items.join("\n"),
+            position: [col.x + ICON_GAP, top - ITEM_TOP, front],
+            font: FONTS.sans,
+            fontSize: ITEM_SIZE,
+            lineHeight: ITEM_LINE,
+            color: "#e4e4e7",
+            anchorX: "left",
+            anchorY: "top",
+            textAlign: "left",
+          })),
         ];
       }),
     ],
-    [skills, title, h, w, d, column, textWidth, ITEM_TOP],
+    [skills, cells, title, h, d, textWidth, ITEM_TOP],
   );
   return (
     <group position={[x, 0, z]}>

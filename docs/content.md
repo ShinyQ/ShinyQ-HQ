@@ -9,6 +9,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - [Perspectives](#perspectives)
 - [Titles and ordering](#titles-and-ordering)
 - [Project galleries and live sites](#project-galleries-and-live-sites)
+- [Skills](#skills)
 - [Certifications](#certifications)
 - [CV](#cv)
 - [Research papers](#research-papers)
@@ -58,6 +59,12 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - Two client projects stay text only by the owner's choice: the coal mining chart-of-accounts assistant and the automotive fraud review dashboard.
 - Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the MII Microsoft Solutions Website and the MII Microsoft AI Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer.
 - It opens a new tab with `rel="noopener noreferrer"`; internal apps never get a link.
+
+## Skills
+
+- `skills[]` holds the skill groups (`id`, `label` as `{ en, id }`, `items`). The seven CV groups follow the CV's taxonomy and order (`tests/content/cv-facts.test.ts`); the site-only Data science and ML group (`ds`, owner decision 2026-10-17) comes right after AI and LLM.
+- Every group shows everywhere: the L1 skills wall (4 across by 2 down in `SKILLS_WALL_ORDER`; a new group is appended), its drawer, the Page View skills sections (home, About, Quick view), Cmd-K and Ask (dataset order). A group that grows the wall past `LOBBY.skillsWall.h` fails `tests/unit/lobby-layout.test.ts`.
+- Each item gets a logo through `src/content/tech.ts` (`public/tech/`) or is listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`); never add a logo file without a source in `public/tech/README.md`.
 
 ## Certifications
 

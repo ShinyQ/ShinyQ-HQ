@@ -22,7 +22,7 @@ describe("buildExperienceData", () => {
     const data = buildExperienceData("en", names);
     expect(data.stats.length).toBeGreaterThanOrEqual(4);
     expect(data.stats.length).toBeLessThanOrEqual(6);
-    expect(data.skills.map((s) => s.id)).toEqual(["backend", "ai", "azure", "devops"]);
+    expect(data.skills.map((s) => s.id)).toEqual(["ai", "ds", "azure", "languages", "backend", "frontend", "data", "devops"]);
     expect(data.certifications).toHaveLength(getCertifications().length);
   });
 
