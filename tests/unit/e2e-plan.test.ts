@@ -4,19 +4,25 @@ import {
   assignShard,
   durationKey,
   listTestIds,
+  locateTest,
   medianDurations,
   parseListReporter,
   parseShard,
   planShards,
+  PR_SMOKE,
   shardSeconds,
   SMOKE_SPECS,
+  specSeconds,
   specsForChanges,
+  UNKNOWN_SPEC_SECONDS,
+  UNKNOWN_TEST_SECONDS,
   type DurationsFile,
   type ListSuite,
 } from "../../scripts/e2e-plan";
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { classify } from "../../scripts/ci-plan";
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
@@ -257,6 +263,62 @@ describe("specsForChanges", () => {
   it("maps the render pipeline and the tower to the gpu spec", () => {
     expect(specsForChanges(["src/experience/scene/settings.ts"]).specs).toEqual(["experience", "gpu"]);
     expect(specsForChanges(["src/experience/tower/FloorLevel.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "memory", "ride"]);
+  });
+});
+
+describe("offline tooling and the remaining unmapped paths", () => {
+  it("runs no e2e for offline scripts", () => {
+    for (const f of ["scripts/arrival-shots.ts", "scripts/ask-eval.ts", "scripts/brand-wordmark.py", "scripts/subset-fonts.sh", "scripts/readme-hero.ts", "scripts/refresh-facts.ts", "scripts/uptime.ts", "scripts/check-client-chunks.ts"]) {
+      expect(specsForChanges([f]), f).toEqual({ specs: [], unmatched: [] });
+    }
+  });
+
+  it("maps the export scans, the shared types, the 3D assets and the Pages bindings", () => {
+    expect(specsForChanges(["scripts/scan-export.ts"]).specs).toEqual(["csp", "deploy"]);
+    expect(specsForChanges(["scripts/injected-analytics.ts"]).specs).toEqual(["csp", "deploy"]);
+    expect(specsForChanges(["src/types/troika-three-text.d.ts"]).specs).toEqual(["static-routes"]);
+    expect(specsForChanges(["src/assets/fonts/inter-latin1-wght400-800.woff2"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
+    expect(specsForChanges(["wrangler.toml"]).specs).toEqual(["ask", "visit"]);
+  });
+
+  it("leaves no tracked file outside the ci, docs and tests classes and the e2e helpers unmatched", () => {
+    const files = execFileSync("git", ["ls-files"], { encoding: "utf8" }).split("\n").filter(Boolean);
+    const unmatched = files
+      .filter((f) => !["ci", "docs", "tests"].includes(classify(f)) && !(f.startsWith("e2e/") && !f.endsWith(".spec.ts")))
+      .filter((f) => specsForChanges([f]).unmatched.length > 0);
+    expect(unmatched).toEqual([]);
+  });
+});
+
+describe("PR smoke set", () => {
+  it("locates a test by its exact title", () => {
+    const source = ['import { test } from "@playwright/test";', "", 'test("first one", async () => {});', "test.describe(\"group\", () => {", "  test('second one', async () => {});", "  test(`third one`, async () => {});", "});"].join("\n");
+    expect(locateTest(source, "first one")).toBe(3);
+    expect(locateTest(source, "second one")).toBe(5);
+    expect(locateTest(source, "third one")).toBe(6);
+    expect(locateTest(source, "group")).toBeNull();
+    expect(locateTest(source, "first")).toBeNull();
+  });
+
+  it("names real specs and finds every titled test in its spec file", () => {
+    expect(PR_SMOKE.map((s) => s.spec)).toEqual(["static-routes", "boot-first", "deploy", "ride", "experience"]);
+    for (const { spec, title } of PR_SMOKE) {
+      const file = `e2e/${spec}.spec.ts`;
+      expect(existsSync(file), file).toBe(true);
+      expect((ALL_SPECS as readonly string[]).includes(spec)).toBe(true);
+      if (title) expect(locateTest(readFileSync(file, "utf8"), title), `${file}: ${title}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("estimates the seconds of a spec or one of its tests", () => {
+    const durations = { "ride.spec.ts › a": 10, "ride.spec.ts › group › b": 5, "ride-x.spec.ts › c": 100, "experience.spec.ts › d": 7 };
+    expect(specSeconds(durations, "ride")).toBe(15);
+    expect(specSeconds(durations, "ride", "b")).toBe(5);
+    expect(specSeconds(durations, "ride", "a")).toBe(10);
+    expect(specSeconds(durations, "ride", "missing")).toBe(UNKNOWN_TEST_SECONDS);
+    expect(specSeconds(durations, "camera")).toBe(UNKNOWN_SPEC_SECONDS);
+    expect(specSeconds(null, "ride")).toBe(UNKNOWN_SPEC_SECONDS);
+    expect(specSeconds(undefined, "ride", "a")).toBe(UNKNOWN_TEST_SECONDS);
   });
 });
 
