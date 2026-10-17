@@ -2,6 +2,15 @@ import { formatDate, formatYearMonth } from "@/lib/format";
 import { isPublicLiveUrl } from "./live-links";
 import type { Locale, LocalizedText, Pod, Publication, SkillGroup, Tier, TimelineEntry } from "./schema";
 
+/** Results a case study opens with (the metric strip). Lives here, import-free, so client modules can read it. */
+export const HEADLINE_MAX = 3;
+
+/** The results a case study opens with: the ones flagged `headline`, else the first `HEADLINE_MAX`. */
+export function headlineResults<T extends { headline?: boolean }>(results: readonly T[]): T[] {
+  const flagged = results.filter((r) => r.headline);
+  return (flagged.length > 0 ? flagged : results).slice(0, HEADLINE_MAX);
+}
+
 /** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */
 export function clientLabel(client: Pod["client"], locale: Locale): string | undefined {
   if (!client) return undefined;

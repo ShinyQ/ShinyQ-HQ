@@ -246,6 +246,7 @@ Keep them documented here.
   - Render it with `LiveSiteLink`.
   - Ask chunks say a live site exists but never carry the hostname.
   - Adding a host is an owner decision, never a content-only edit.
+- `Result.headline`: optional `true` puts a result in the case study's metric strip; at most `HEADLINE_MAX` (3) per pod (schema check). Read the strip's results through `headlineResults(results)` from `@/content/selectors`: the flagged ones in dataset order, else the first three. `HEADLINE_MAX` lives in `selectors.ts` (client-safe) and is re-exported from `schema.ts`. The room-view builder marks those metrics `RoomMetric.headline`.
 
 ### Other types
 

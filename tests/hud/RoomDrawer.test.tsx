@@ -101,11 +101,16 @@ describe("RoomDrawer", () => {
     expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("shows up to 3 metric tiles with their context on the overview", () => {
+  it("opens a case study with the metric strip of its headline results", () => {
     render(<Harness view={hero} />);
-    const tiles = screen.getAllByTestId("metric");
-    expect(tiles.length).toBe(Math.min(3, hero.metrics.length));
-    expect(within(tiles[0]).getByText(hero.metrics[0].context!)).toBeInTheDocument();
+    const strip = screen.getByRole("list", { name: en.drawer.keyResults });
+    const marked = hero.metrics.filter((m) => m.headline);
+    expect(marked.length).toBeGreaterThan(0);
+    expect(within(strip).getAllByTestId("metric-strip-item")).toHaveLength(marked.length);
+    expect(strip).toHaveTextContent(marked[0].value);
+    expect(strip).toHaveTextContent(marked[0].label);
+    // Value and label only: how a number was measured stays on the Results tab.
+    expect(screen.queryAllByTestId("metric")).toHaveLength(0);
   });
 
   it("offers View architecture on hero pods only", async () => {

@@ -379,6 +379,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 - The "..." menu offers the cross-floor link too, and "Copy Classic link" and "Copy 3D link" (`ShareLinks`, see [page-view.md](page-view.md#shareable-links)).
 - When the title scrolls away the bar condenses (`data-condensed`) and shows it.
 - Result cards use `MetricTiles fluid` (two columns by container width).
+- A case study's Overview tab opens with the metric strip (`MetricStrip variant="panel"`): the metrics marked `headline`, 3 across from a 22 rem container, stacked below, under the visible "Key results" label; values and labels only, never confidence. The Results tab keeps every result as `MetricTiles`.
 
 ### Keyboard
 

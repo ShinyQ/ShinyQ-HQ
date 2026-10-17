@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { liveUrlProblem } from "./live-links";
 import { LOCALES } from "./locales";
+import { HEADLINE_MAX } from "./selectors";
 
 /**
  * Content contracts for ShinyQ HQ. Source of truth: spec appendix 06.
@@ -127,6 +128,9 @@ export const TimelineEntrySchema = z.strictObject({
   logo: AssetSchema.optional(),
 });
 
+/** Results a case study opens with (the metric strip): flagged ones, else the first ones. Defined client-safe in `selectors.ts`. */
+export { HEADLINE_MAX };
+
 export const ResultSchema = z.strictObject({
   value: nonEmpty,
   label: LocalizedTextSchema,
@@ -134,6 +138,8 @@ export const ResultSchema = z.strictObject({
   context: LocalizedTextSchema.optional(),
   /** Internal provenance for content review; never rendered on the site or sent to Ask. */
   confidence: ConfidenceSchema,
+  /** Opens the case study in the metric strip (at most `HEADLINE_MAX` per pod); unflagged pods show their first results. */
+  headline: z.boolean().optional(),
 });
 
 export const ArchitectureNodeSchema = z.strictObject({
@@ -234,6 +240,9 @@ export const PodSchema = z
           ctx.addIssue({ code: "custom", path: ["shortTitle", locale], message: "Short title must be shorter than the title" });
         }
       }
+    }
+    if (pod.results.filter((r) => r.headline).length > HEADLINE_MAX) {
+      ctx.addIssue({ code: "custom", path: ["results"], message: `At most ${HEADLINE_MAX} headline results per pod` });
     }
     if (pod.selected !== undefined && pod.assets.length === 0) {
       ctx.addIssue({ code: "custom", path: ["selected"], message: "Selected work needs at least one gallery image" });
