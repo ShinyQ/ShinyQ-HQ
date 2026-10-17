@@ -212,6 +212,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `waitForSceneLive`: the phase is `explore` before the first frame on deep links, and input sent earlier is dropped.
   - `waitForCameraSettle`: counts rendered frames, so a stalled main thread does not look settled.
   - `waitForFrames`, `waitForFloor`, `waitForRoom`, `waitForRoverMove`.
+  - `waitForFloor` follows the ride, not the clock: rides are frame-bound (`RIDE_CAP`, `MAX_PHYSICS_STEP`), so at about 1 fps on a busy SwiftShader runner one trip takes minutes. Its `timeout` is a no-progress window (the live ride from `__hq.motion()` and the rover position); time spent while the ride moves extends the test's timeout, and a trip past `RIDE_FRAME_BUDGET` frames fails. The budgets themselves (scene calls, triangles, memory) never loosen.
   - `expect.poll` for values.
 - Static pages: `openPage(page, url)` (or `waitForHydration` after a reload or full navigation) before clicking client islands.
   - The Next.js chunks load after first paint, so `load` fires before hydration (signal: `html[data-hydrated]`, set by `MissionHud`).
