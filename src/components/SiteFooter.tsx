@@ -20,7 +20,7 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
     ...(contact.medium ? [{ label: "Medium", href: contact.medium }] : []),
     ...(contact.googleScholar ? [{ label: "Google Scholar", href: contact.googleScholar }] : []),
   ];
-  const pages = [...PRIMARY_NAV.map((item) => ({ href: item.href, label: tn(item.key) })), { href: "/quick", label: tn("quick") }];
+  const pages = [...PRIMARY_NAV.map((item) => ({ href: item.href, label: tn(item.key) })), { href: "/quick", label: tn("quick") }, { href: "/build", label: tn("build") }];
   return (
     <footer className="no-print mt-24 border-t border-line sm:mt-32 lg:mt-40">
       {/* Bottom padding keeps the fixed Back to 3D button off the last links. */}

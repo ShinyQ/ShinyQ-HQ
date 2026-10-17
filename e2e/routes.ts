@@ -31,5 +31,6 @@ export function staticRoutes(locale: string): string[] {
     ...(hostedPost ? [`/${locale}/blog/${hostedPost.slug}`] : []),
     `/${locale}/contact`,
     `/${locale}/cv`,
+    `/${locale}/build`,
   ];
 }
