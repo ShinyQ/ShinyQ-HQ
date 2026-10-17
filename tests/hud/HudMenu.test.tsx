@@ -10,6 +10,7 @@ import id from "../../messages/id.json";
 import { ROTATE_STEP } from "@/experience/camera/orbit";
 import { intents, type Intent } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
+import { registerTutorial } from "@/hud/dialog/tutorial";
 import { openPalette, openTerminal } from "@/hud/events";
 import type { HudLayout } from "@/hud/layout";
 import { HudMenu } from "@/hud/menu/HudMenu";
@@ -202,6 +203,21 @@ describe("HudMenu", () => {
     for (const name of ["Classic site", "Rover menu", /^Rotate left/, /^Rotate right/, "Map"]) expect(within(actions).getByRole("button", { name })).toBeInTheDocument();
   });
 
+  it("Replay the tutorial closes the sheet, returns focus to the menu button and starts the tour once", async () => {
+    const run = vi.fn();
+    const stop = registerTutorial(run);
+    try {
+      const { button, sheet } = await openMenu();
+      const panel = await within(sheet).findByTestId("settings-panel");
+      await userEvent.click(within(panel).getByRole("button", { name: en.hud.settings.tutorial.label }));
+      expect(screen.queryByTestId("menu-sheet")).toBeNull();
+      expect(button).toHaveFocus();
+      expect(run).toHaveBeenCalledTimes(1);
+    } finally {
+      stop();
+    }
+  });
+
   it("speaks Indonesian, and the Rover menu keeps its exact name in English", async () => {
     render(
       <Wrap locale="id">
@@ -265,6 +281,27 @@ describe("SettingsLauncher (desktop)", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByTestId("settings-sheet")).toBeNull();
     expect(gear).toHaveFocus();
+  });
+
+  it("Replay the tutorial in the sheet closes it, returns focus to the gear and starts the tour once", async () => {
+    const run = vi.fn();
+    const stop = registerTutorial(run);
+    try {
+      render(
+        <Wrap>
+          <SettingsLauncher />
+        </Wrap>,
+      );
+      const gear = screen.getByTestId("settings-open");
+      await userEvent.click(gear);
+      const panel = await within(screen.getByTestId("settings-sheet")).findByTestId("settings-panel");
+      await userEvent.click(within(panel).getByRole("button", { name: en.hud.settings.tutorial.label }));
+      expect(screen.queryByTestId("settings-sheet")).toBeNull();
+      expect(gear).toHaveFocus();
+      expect(run).toHaveBeenCalledTimes(1);
+    } finally {
+      stop();
+    }
   });
 
   it("the , key's toggle intent opens and closes it, with or without the gear", () => {

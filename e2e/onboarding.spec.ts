@@ -35,8 +35,10 @@ export const choices = (page: Page) => page.getByTestId("dialog-choices");
 /** Opens the settings panel: the desktop gear, or the menu sheet on phones and tablets. */
 async function openSettings(page: Page) {
   const gear = page.getByTestId("settings-open");
-  if (await gear.count()) await gear.click();
-  else await page.getByTestId("hud-menu").click();
+  const menu = page.getByTestId("hud-menu");
+  const opener = gear.or(menu).first();
+  await expect(opener).toBeVisible();
+  await opener.click();
   const panel = page.getByTestId("settings-panel");
   await expect(panel).toBeVisible();
   return panel;

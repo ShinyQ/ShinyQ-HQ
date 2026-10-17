@@ -229,7 +229,7 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
   - Client props of the locale layout are inlined into every HTML file (RSC payload). Large client data goes into a static file under `/data/` instead: the Glass Drawer content (`/data/rooms/{locale}.json`) and the HUD index (`/data/hud/index.json`, fetched by `MissionHud` after hydration).
   - Always-loaded client islands import only small modules: the Ask status from `src/ask/status.ts` (not the Turnstile and SSE client), certification helpers from `src/content/certs.ts` (the tech logo registry stays in the server-only `cert-views.ts`).
   - The landing's motion is CSS only and compositor only (`src/app/landing.css`): the backdrop has no image or text, so the `h1` stays the LCP element; featured images load lazily below the first screen; "Enter the 3D HQ" is shown by `html[data-hq-3d]` from the head script, never by client state, so it cannot shift the layout.
-  - Elements that appear after first paint on their own must not move content or cover the landing: the Rover menu never opens on its own over the Page View (the 3D Lobby opens it after the intro), and its greeting types into reserved space.
+  - Elements that appear after first paint on their own must not move content or cover the landing: the Rover menu never opens on its own over the Page View, and its greeting types into reserved space.
 - Medians at the time of writing (round 5 P1, local `lhci collect` with the warm-up URL, 3 runs, 2026-10-13): LCP `/en` 1.81 s, `/en/quick` 1.81 s, `/en/journey` 1.67 s, the pod page 1.66 s; CLS 0; TBT 38 to 61 ms; script transfer 204 to 207 KB. Production adds the real TTFB of Cloudflare Pages (simulated at 50 to 500 ms).
 
 ## 9. Headers and redirects
