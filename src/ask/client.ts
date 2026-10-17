@@ -5,7 +5,7 @@
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6, T8, T13).
  */
 import { ASK_ENDPOINT, fetchAskStatus, isAskEnabled, resetAskStatus } from "./status";
-import { cleanTags, isAskCite, isAskContact, type AskContact, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag } from "./protocol";
+import { ASK_HISTORY_TURNS, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag, type AskTurn } from "./protocol";
 
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 export const TURNSTILE_SRC = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`;
@@ -21,7 +21,7 @@ export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<
 export type AskClientError = AskErrorCode | "network" | "stream" | "aborted" | "unavailable";
 
 export type AskResult =
-  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact }
+  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact; sig?: string }
   | { error: AskClientError; retryAfter?: number };
 
 export const isAskError = (result: AskResult): result is Extract<AskResult, { error: AskClientError }> => "error" in result;
@@ -115,6 +115,7 @@ export function parseFrame(data: string): AskFrame | null {
       ...(tags.length ? { tags } : {}),
       ...(isAskCite(v.cite) ? { cite: v.cite } : {}),
       ...(isAskContact(v.contact) ? { contact: { email: v.contact.email, linkedin: v.contact.linkedin } } : {}),
+      ...(isAskSig(v.sig) ? { sig: v.sig } : {}),
     };
   }
   return null;
@@ -242,6 +243,8 @@ export interface AskOptions {
   source?: AskEntry;
   /** Curated question id, for the public stats (the server counts it only when the text matches). */
   chip?: string;
+  /** Earlier signed turns of this conversation, oldest first (`historyFor`); posted only when non-empty. */
+  history?: readonly AskTurn[];
   /** Called with each sanitized text chunk, in order. */
   onDelta: (text: string) => void;
 }
@@ -286,6 +289,7 @@ function errorFor(status: number, body: AskError | null, response: Response): As
 export async function askQuestion(options: AskOptions, overrides: Partial<AskDeps> = {}): Promise<AskResult> {
   const deps = { ...defaultDeps(), ...overrides };
   const { q, locale, signal, onDelta, source, chip } = options;
+  const history = (options.history ?? []).slice(-ASK_HISTORY_TURNS).map(({ q, a, sig }) => ({ q, a, sig }));
   const status = await deps.status();
   if (!isAskEnabled(status)) return { error: "disabled" };
   const siteKey = status.turnstileSiteKey;
@@ -302,7 +306,7 @@ export async function askQuestion(options: AskOptions, overrides: Partial<AskDep
   };
 
   const post = (turnstileToken: string | null) => {
-    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}), ...(chip && chip.length <= 64 ? { chip } : {}) };
+    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}), ...(chip && chip.length <= 64 ? { chip } : {}), ...(history.length ? { history } : {}) };
     return deps.fetch(ASK_ENDPOINT, {
       method: "POST",
       credentials: "same-origin",
@@ -387,7 +391,7 @@ async function readStream(response: Response, onDelta: (text: string) => void, s
   if (signal?.aborted) return { error: "aborted" };
   const final = done as Extract<AskFrame, { done: true }> | null;
   return final
-    ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}), ...(final.cite ? { cite: final.cite } : {}), ...(final.contact ? { contact: final.contact } : {}) }
+    ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}), ...(final.cite ? { cite: final.cite } : {}), ...(final.contact ? { contact: final.contact } : {}), ...(final.sig ? { sig: final.sig } : {}) }
     : { error: "stream" };
 }
 
