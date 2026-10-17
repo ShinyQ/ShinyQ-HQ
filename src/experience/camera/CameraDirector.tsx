@@ -261,8 +261,10 @@ export function CameraDirector({
     } else {
       desired = rigPose(rail, roverRuntime.cameraForward);
     }
-    // A low third-person camera stays above the floor, on the slab and out of obstacles: pulled in along its view ray. High poses never move.
-    if (world && !focus && rig !== "intro" && !glide) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget) };
+    // A low third-person camera stays above the floor and out of obstacles, and no camera looks past the slab edge into the
+    // void under it (the bottom of the view stays on the slab): pulled in along its view ray. Default high poses never move.
+    const clamped = world !== null && !focus && rig !== "intro" && !glide;
+    if (clamped) desired = { ...desired, position: clampCamera(desired.target, desired.position, world, roverTarget, desired.fov) };
 
     // A teleport moved the rover far along the road: cut to it instead of gliding across the floor.
     if (roverRuntime.cameraSnap) {
@@ -284,6 +286,12 @@ export function CameraDirector({
       const k = followEase(dt, s.reducedMotion);
       l.pos.lerp(l.desiredPos, k);
       l.target.lerp(l.desiredTarget, k);
+    }
+    // The spring runs straight between two clamped poses and may cut through blocked space (around a wall, off the slab
+    // edge while turning): the drawn pose is clamped too, so it never shows the void or the inside of a wall for a frame.
+    if (clamped) {
+      const drawn = clampCamera(toVec3(l.target), toVec3(l.pos), world, roverTarget, desired.fov);
+      l.pos.set(drawn[0], drawn[1], drawn[2]);
     }
 
     // First person: mix the smoothed third-person camera toward the rover's eyes by the eased blend.

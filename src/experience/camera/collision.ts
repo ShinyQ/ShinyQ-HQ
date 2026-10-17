@@ -51,6 +51,27 @@ export function cameraBlocked(p: Vec3, w: CameraWorld): boolean {
   return w.obstacles.some((o) => inside(x, z, o, r));
 }
 
+const onSlab = (x: number, z: number, b: Rect) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+
+/**
+ * True when the bottom edge of the view (vertical `fov`, degrees) lands on the slab: the camera stands on it, or
+ * the bottom-center ray (aimed at `target`, tilted down by half the FOV) meets the floor plane inside the bounds.
+ * Off the slab a low camera would otherwise look past the slab edge into the void under it: a black band at the
+ * bottom of the view that pops on and off as the camera crosses the edge (Round 9 M).
+ */
+export function viewOnSlab(camera: Vec3, target: Vec3, w: CameraWorld, fov: number): boolean {
+  if (onSlab(camera[0], camera[2], w.bounds)) return true;
+  const dx = target[0] - camera[0];
+  const dz = target[2] - camera[2];
+  const run = Math.hypot(dx, dz);
+  const h = camera[1] - w.floorY;
+  const down = Math.atan2(camera[1] - target[1], run) + (fov * Math.PI) / 360;
+  if (h <= 0 || down <= 0) return false;
+  if (run < 1e-9 || down >= Math.PI / 2) return false;
+  const d = h / Math.tan(down);
+  return onSlab(camera[0] + (dx / run) * d, camera[2] + (dz / run) * d, w.bounds);
+}
+
 const STEPS = 32;
 const REFINE = 6;
 const lerp3 = (a: Vec3, b: Vec3, t: number): Vec3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -68,24 +89,28 @@ function startParam(target: Vec3, camera: Vec3, from: Vec3): number {
 /**
  * Pulls a low camera in along its view ray (from `target` toward `camera`) to just before the first
  * blocked point, marching outward from the point next to the rover (`from`), so a wall between the
- * rover and a low camera brings the camera in front of it. Returns `camera` itself when it is high
- * enough, when nothing blocks the ray, or when the ray already starts blocked.
+ * rover and a low camera brings the camera in front of it. With the view's vertical `fov` (degrees) a
+ * camera off the slab also counts as blocked while the bottom of its view leaves the slab (`viewOnSlab`),
+ * at any height. Returns `camera` itself when it is high enough and on the slab, when nothing blocks the
+ * ray, or when the ray already starts blocked.
  */
-export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target): Vec3 {
-  if (camera[1] - w.floorY >= blockHeight(w)) return camera;
+export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target, fov?: number): Vec3 {
+  const offSlab = fov !== undefined && !onSlab(camera[0], camera[2], w.bounds);
+  if (camera[1] - w.floorY >= blockHeight(w) && !offSlab) return camera;
+  const blocked = (p: Vec3) => cameraBlocked(p, w) || (fov !== undefined && !viewOnSlab(p, target, w, fov));
   const t0 = startParam(target, camera, from);
-  if (cameraBlocked(lerp3(target, camera, t0), w)) return camera;
+  if (blocked(lerp3(target, camera, t0))) return camera;
   let free = t0;
   for (let i = 1; i <= STEPS; i++) {
     const t = t0 + ((1 - t0) * i) / STEPS;
-    if (!cameraBlocked(lerp3(target, camera, t), w)) {
+    if (!blocked(lerp3(target, camera, t))) {
       free = t;
       continue;
     }
-    let blocked = t;
+    let hit = t;
     for (let k = 0; k < REFINE; k++) {
-      const mid = (free + blocked) / 2;
-      if (cameraBlocked(lerp3(target, camera, mid), w)) blocked = mid;
+      const mid = (free + hit) / 2;
+      if (blocked(lerp3(target, camera, mid))) hit = mid;
       else free = mid;
     }
     return lerp3(target, camera, free);

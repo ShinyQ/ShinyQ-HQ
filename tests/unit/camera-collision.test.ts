@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CAMERA_CLEARANCE, cameraBlocked, clampCamera, type CameraWorld } from "@/experience/camera/collision";
+import { CAMERA_CLEARANCE, cameraBlocked, clampCamera, viewOnSlab, type CameraWorld } from "@/experience/camera/collision";
+import { CAMERA_NEAR, FIRST_PERSON, FIRST_PERSON_FOV } from "@/experience/camera/firstPerson";
 import { followPose, railPose, type Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts } from "@/experience/config";
 
@@ -62,10 +63,46 @@ describe("camera collision", () => {
       const w: CameraWorld = { floorY: 0, bounds: layout.bounds, obstacles: layout.obstacles };
       for (const p of [layout.spawn, layout.approach]) {
         const follow = followPose("desktop", [p.x, 1, p.z]);
-        expect(clampCamera(follow.target, follow.position, w)).toBe(follow.position);
+        expect(clampCamera(follow.target, follow.position, w, follow.target, follow.fov)).toBe(follow.position);
         const rail = railPose("desktop", p.x, 0, 1, p.z);
-        expect(clampCamera(rail.target, rail.position, w)).toBe(rail.position);
+        expect(clampCamera(rail.target, rail.position, w, rail.target, rail.fov)).toBe(rail.position);
       }
     }
+  });
+
+  it("pulls a low camera off the slab edge back until the bottom of its view lands on the slab", () => {
+    // A low view (about 3.5 degrees) from outside the east edge (x = 20), looking west at the rover.
+    const target: Vec3 = [10, 1, 0];
+    const cam: Vec3 = [44, 3.1, 0];
+    expect(cameraBlocked(cam, world)).toBe(false);
+    expect(viewOnSlab(cam, target, world, 40)).toBe(false);
+    const out = clampCamera(target, cam, world, target, 40);
+    expect(viewOnSlab(out, target, world, 40)).toBe(true);
+    expect(out[0]).toBeLessThan(28);
+    // The same view ray: the camera only moves in.
+    expect((out[1] - 1) / (out[0] - 10)).toBeCloseTo((3.1 - 1) / 34);
+    // Above obstacle height the plain rule (no FOV, as for the first-person mix) leaves it off the slab; the view rule does not.
+    const higher: Vec3 = [44, 3.6, 0];
+    expect(clampCamera(target, higher, world)).toBe(higher);
+    expect(viewOnSlab(clampCamera(target, higher, world, target, 40), target, world, 40)).toBe(true);
+  });
+
+  it("keeps a high camera outside the slab while the bottom of its view lands on the slab", () => {
+    const target: Vec3 = [0, 1, 0];
+    const cam: Vec3 = [24, 19, 0];
+    expect(viewOnSlab(cam, target, world, 40)).toBe(true);
+    expect(clampCamera(target, cam, world, target, 40)).toBe(cam);
+    // Far out at the same height the bottom of the view leaves the slab, so it moves in.
+    const far: Vec3 = [44, 19, 0];
+    expect(viewOnSlab(far, target, world, 40)).toBe(false);
+    expect(viewOnSlab(clampCamera(target, far, world, target, 40), target, world, 40)).toBe(true);
+  });
+
+  it("keeps the near plane above the floor at the ground clearance for every FOV", () => {
+    // The near plane reaches at most near / cos(fov / 2) below the eye (looking down by half the FOV).
+    const reach = (near: number, fov: number) => near / Math.cos(((fov / 2) * Math.PI) / 180);
+    // Third person (follow, rail, hologram FOVs) with CAMERA_NEAR; first person with its own near plane at eye height.
+    for (const fov of [35, 40, 42, 45, 50, 55]) expect(reach(CAMERA_NEAR, fov)).toBeLessThan(CAMERA_CLEARANCE.ground);
+    for (const fov of Object.values(FIRST_PERSON_FOV)) expect(reach(FIRST_PERSON.near, fov)).toBeLessThan(FIRST_PERSON.eyeHeight);
   });
 });
