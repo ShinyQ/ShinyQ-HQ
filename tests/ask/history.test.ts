@@ -72,4 +72,13 @@ describe("follow-up questions", () => {
     expect(followUpText("Where did Kurniadi study computer science?", history)).toBe("Where did Kurniadi study computer science?");
     expect(followUpText("What stack did it use?", [])).toBe("What stack did it use?");
   });
+
+  it("walks back through a chain of follow-ups to the last standalone question", () => {
+    const history = [
+      { q: "Tell me about Clearbox", a: A },
+      { q: "Where did Kurniadi study computer science?", a: "x" },
+      { q: "What did he study there?", a: "y" },
+    ];
+    expect(followUpText("And after that?", history)).toBe("And after that? What did he study there? Where did Kurniadi study computer science?");
+  });
 });
