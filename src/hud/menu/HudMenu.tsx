@@ -144,3 +144,5 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
     </>
   );
 }
+
+// CI measurement: throwaway HUD change (do not merge).
