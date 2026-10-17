@@ -77,6 +77,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
 - A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range`) with `get`/`set`, a `subscribe`, and an optional `available`.
 - The control binds to an external store (the audio engine, `qualityPref`, `minimapPref`, the Motion and language stores); the panel persists nothing itself. Duplicate ids throw.
+- `LazySettingsPanel` (`React.lazy` plus `Suspense`) loads the panel and its registry when a settings sheet first opens, and `Minimap` lazy-loads `MapOverview` the same way, to keep both out of the first-frame 3D path (byte budget in [performance.md](performance.md)). Tests find their content with `findBy*`.
 - To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
 - Today: language, Open links in, Motion, Graphics quality, Minimap, Sound, Sound effects, Music, Music volume.
 
