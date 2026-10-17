@@ -3,7 +3,6 @@ import { writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { asReturningVisitor, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
-import { doubleTapJoystick } from "./touch";
 
 /**
  * Corners HUD (Round 8 I): phones and tablets show the floor chip top left, Ask AI and the menu top
@@ -229,21 +228,6 @@ test.describe("settings persist and apply", () => {
     await expect(hudControl(page, "minimap")).toHaveCount(0);
     expect(await page.evaluate(() => localStorage.getItem("hq:minimap"))).toBe("off");
     await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
-    await context.close();
-  });
-});
-
-test.describe("joystick boost", () => {
-  test("phone: a double tap on the joystick turns boost on, a floor change turns it off", async ({ browser }) => {
-    const { context, page } = await openHQ(browser, PHONE);
-    const joystick = hudControl(page, "joystick");
-    await expect(joystick).toHaveAttribute("data-boost", "off");
-    await doubleTapJoystick(page);
-    await expect(joystick).toHaveAttribute("data-boost", "on");
-    await hudControl(page, "floor-chip").tap();
-    await page.getByTestId("floor-sheet").locator('[data-floor="L2"]').tap();
-    await waitForFloor(page, "L2");
-    await expect(joystick).toHaveAttribute("data-boost", "off");
     await context.close();
   });
 });

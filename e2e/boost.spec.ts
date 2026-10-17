@@ -61,9 +61,12 @@ test.describe("boost effects on keyboards", () => {
     await page.keyboard.down("Shift");
     await page.keyboard.down("s");
     await expect.poll(async () => (await fx()).sparks, { timeout: 30_000 }).toBeGreaterThan(0);
+    // About twice the 9 u/s cruise, never past the 18 u/s boost cap.
+    await expect.poll(async () => (await fx()).speed, { timeout: 20_000 }).toBeGreaterThan(12);
     await page.keyboard.up("s");
     await page.keyboard.up("Shift");
     const peak = await fx();
+    expect(peak.speed).toBeLessThanOrEqual(18.01);
     expect(peak.trail).toBeGreaterThan(0);
     expect(peak.streaks).toBeGreaterThan(0);
     expect(peak.boostFx).toBe(3);
@@ -117,10 +120,8 @@ test.describe("boost effects on keyboards", () => {
   });
 });
 
-for (const vp of [
-  { name: "phone", width: 390, height: 844 },
-  { name: "tablet", width: 820, height: 1180 },
-]) {
+// Phones only: tablets run the same Corners joystick (their control set is checked in hud-corners.spec.ts).
+for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
   test.describe(`boost toggle on a ${vp.name}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 

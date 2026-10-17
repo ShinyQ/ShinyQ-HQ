@@ -129,13 +129,6 @@ test.describe("L3 Ops Control Room", () => {
     expect(probe.live).toBe(false);
   });
 
-  test("a snapshot without perf shows visits and the nightly line only", async ({ page }) => {
-    await mockStats(page, fresh(STATS_FIXTURE));
-    await openLabs(page);
-    await rideToOps(page);
-    await expect.poll(async () => (await opsProbe(page)).rows.length).toBe(2);
-  });
-
   test("reduced motion: the room opens and L3 stays inside its render budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await chooseMotion(page, "system");

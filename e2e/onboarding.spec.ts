@@ -301,7 +301,10 @@ test.describe("every step of the tour", () => {
 
   test("a deep link rides on first, then runs the short tour, then the floor line", async ({ page }) => {
     await freshVisit(page, "/en/library");
+    // The intro plays in the Lobby, then the rover rides to the deep link's floor, which keeps its route.
+    expect((await snapshot(page)).floor).toBe("L1");
     await waitForFloor(page, "L4");
+    await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
     await expect(box(page)).toHaveAttribute("data-dialog", "onboarding", { timeout: 30_000 });
     await expectLine(page, "welcome");
     await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).click();
