@@ -103,6 +103,8 @@ class Source extends Node {
   stopAt: number | null = null;
   ended = false;
   onended: (() => void) | null = null;
+  /** The floor whose layer this source feeds, read when it starts (an ended note is disconnected later). */
+  floor: AmbienceFloor | null = null;
   constructor(kind: string) {
     super(kind);
     started.push(this);
@@ -110,6 +112,7 @@ class Source extends Node {
   start(when = 0) {
     if (this.startAt !== null) throw new Error("start twice");
     this.startAt = when;
+    this.floor = layers.find((l) => reaches(this, l.output))?.floor ?? null;
   }
   stop(when = 0) {
     if (this.startAt === null) throw new Error("stop before start");
@@ -227,19 +230,18 @@ function connectedFloors(): AmbienceFloor[] {
   return layers.filter((l) => l.output.out.size > 0).map((l) => l.floor);
 }
 
-/** Floors that started a new source in the last `ms` (a running scheduler), by reachability to the layer output. */
+function reaches(n: Node, target: Node, seen = new Set<Node>()): boolean {
+  if (n === target) return true;
+  if (seen.has(n)) return false;
+  seen.add(n);
+  for (const m of n.out) if (reaches(m, target, seen)) return true;
+  return false;
+}
+
+/** Floors whose scheduler started a source since `fromIndex` (attributed when each source started). */
 function schedulingFloors(fromIndex: number): AmbienceFloor[] {
-  const reaches = (n: Node, target: Node, seen = new Set<Node>()): boolean => {
-    if (n === target) return true;
-    if (seen.has(n)) return false;
-    seen.add(n);
-    for (const m of n.out) if (reaches(m, target, seen)) return true;
-    return false;
-  };
   const floors = new Set<AmbienceFloor>();
-  for (const source of started.slice(fromIndex)) {
-    for (const layer of layers) if (reaches(source, layer.output)) floors.add(layer.floor);
-  }
+  for (const source of started.slice(fromIndex)) if (source.floor) floors.add(source.floor);
   return [...floors];
 }
 
