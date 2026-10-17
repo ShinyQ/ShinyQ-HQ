@@ -436,3 +436,5 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 - To check a device, open any 3D route with `?perf=1` (for example `/en?perf=1`), open the browser console (F12) and ride. Every ride prints one `[hq ride]` line with the dolly frames, car heights, biggest jump, longest frame, wait and shaders compiled while moving.
 - Good: at least 12 car heights, biggest jump at most 25% of the trip, "0 shaders compiled while moving".
 - The same flag shows a small overlay with FPS p50/p10, frame p95, scene and post draw calls, GPU objects, tier, DPR and pixels, and after the first ride a sixth line with that ride's summary (nothing of it runs without the flag).
+
+<!-- CI measurement: throwaway docs change (do not merge). -->
