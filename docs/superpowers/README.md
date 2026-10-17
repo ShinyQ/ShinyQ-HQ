@@ -93,6 +93,8 @@ Plans are history: they record what was decided and built at the time, and later
 | [Camera Fixes (Round 9 M) Implementation Plan](plans/2026-10-17-camera-fixes.md) | shipped | [#197](https://github.com/ShinyQ/ShinyQ-HQ/pull/197) |
 | [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | shipped, later removed | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
 | [Deploy On Merge With Auto-Rollback Implementation Plan](plans/2026-10-18-deploy-on-merge.md) | in review |  |
+| [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | in review | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
+| [Ask Multi-Turn Memory Implementation Plan](plans/2026-10-17-ask-multi-turn.md) | in review |  |
 
 ## Specs
 
