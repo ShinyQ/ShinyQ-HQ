@@ -177,7 +177,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - It ends at 1.5 s, on an `orbit`, `zoom` or `view` intent, held Q/E/R/F, drive input (`roverRuntime.steering`), a beam, a new ride, or a phase other than explore or elevator. The normal camera then eases on from the drawn pose.
 - Zone hold: no `updateZone` runs while the glide runs or the arrival roll-on drives (`autopilot.arrival`), so the camera parks in the primed zone. Steering releases the hold.
 - Reduced motion: no glide. The Director teleports the rover to the arrival point heading east and sets `cameraSnap`; the camera primes the arrival zone on the frame the ride ends.
-- Floor deep links that spawn on an arrival point (L4, RF) and the first-frame prime pass open on the arrival view too: the pass primes an `arrivalOnly` zone under the rover.
+- Floor deep links that spawn on an arrival point (L4, RF) and the first-frame prime pass open on the arrival view too: the pass primes an `arrivalOnly` zone under the rover, and the rover spawns heading east (`ARRIVAL_HEADING`, `place` in `Experience.tsx`).
 - Zones: `ViewZone.arrivalOnly` and `ViewZone.railYaw` (see [Orbit](#orbit)). Zooms are capped per camera class by `shaftClearZoom`, so the camera stays east of the shaft (`SHAFT_CLEAR_X`).
 - Probes on `roverRuntime`: `arrivalGlide` (0 to 1, -1 when not gliding), `cameraBehind` (heading of the vector from the camera to the rover) and `steering`.
 - Tests: `tests/unit/arrivals.test.ts` (per floor point, zone and shaft clearance), `arrival-glide.test.ts` (glide math, Director and camera rules), `orbit-arrival-only.test.ts`; `e2e/arrivals.spec.ts` (camera behind the rover within 0.1 rad of east and the rover heading east on every floor, glide cancel on input, reduced-motion cut); `scripts/arrival-shots.ts` captures the arrivals at four sizes.
@@ -475,7 +475,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 - The tier gate is a local heuristic instead of `detect-gpu`: no runtime CDN fetch; software renderers such as SwiftShader map to `static` like detect-gpu tier 0, so headless browsers and Lighthouse see the HTML page unless `?tier=` is set.
 - L3 keeps the global shaft and puts the hub plaza in front of its door, with the wing roads running east (Software north, AI south).
   - Appendix 01 section 4 ([01-world-and-layout.md](../superpowers/specs/agent-hq/01-world-and-layout.md)) is updated, now superseded by the Project Roads in [floor-l3-labs.md](floor-l3-labs.md).
-- The rover spawns turned toward the camera so its face greets the visitor.
+- The rover spawns turned toward the camera so its face greets the visitor, except on the L1 kiosk spawn (facing the kiosk) and on a floor's arrival point (heading east).
 
 ## Testing hooks
 
