@@ -165,7 +165,7 @@ export interface AskRequest {
  */
 export type AskOutcome = "answer" | "unknown" | "decline" | "fallback";
 
-/** Which model produced the text: primary Gemma, fallback Mistral, the KV cache, or none (canned text). */
+/** Which tier produced the text: primary Gemma, fallback Mistral (Workers AI), backup (a Groq model), the KV cache, or none (canned text). */
 export type AskSource = "primary" | "fallback" | "backup" | "cache" | "none";
 
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
