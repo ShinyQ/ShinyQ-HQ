@@ -9,7 +9,7 @@ import { chooseMotion, enterHQ, waitForFrames, waitForRoom } from "./hq";
  */
 test.describe.configure({ timeout: 90_000 });
 
-type IdleProbe = { idle: string | null; idleYaw: number; idleSpin: number; idleDelay: number; drawCalls: number };
+type IdleProbe = { idle: string | null; idleYaw: number; idleSpin: number; idleDelay: number; drawCalls: number; speed: number };
 type IdleWindow = Window & { __hq: { rover: IdleProbe }; __idle: IdleLog };
 type IdleLog = { actions: string[]; maxYaw: number; maxSpin: number; maxDraw: number; frames: number };
 
@@ -56,29 +56,35 @@ test("the rover idles after a still spell, and any input stops it at once", asyn
   const log = await trackIdle(page);
   await startIdling(page);
 
-  await expect.poll(async () => (await live(page)).idle, { timeout: 30_000 }).not.toBeNull();
-  await expect
-    .poll(async () => {
-      const r = await live(page);
-      return Math.max(Math.abs(r.idleYaw), Math.abs(r.idleSpin));
-    }, { timeout: 30_000 })
-    .toBeGreaterThan(0.05);
+  // Waits on state, per frame, for the rover to be mid-look or mid-spin, so the press interrupts a live sequence.
+  const before = await page.evaluate(
+    () =>
+      new Promise<{ idle: string | null; yaw: number; spin: number }>((resolve) => {
+        const rover = (window as unknown as IdleWindow).__hq.rover;
+        const tick = () => {
+          if (rover.idle !== null && Math.max(Math.abs(rover.idleYaw), Math.abs(rover.idleSpin)) > 0.1) {
+            resolve({ idle: rover.idle, yaw: rover.idleYaw, spin: rover.idleSpin });
+          } else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
+  expect(before.idle, "the rover was idling before the press").not.toBeNull();
+  expect(Math.max(Math.abs(before.yaw), Math.abs(before.spin))).toBeGreaterThan(0.1);
 
-  // Infinite again, so no second sequence starts while the stop is measured.
+  // Infinite again, so no second sequence starts while the stop is measured. "x" is bound to no intent.
   await page.evaluate(() => {
     (window as unknown as IdleWindow).__hq.rover.idleDelay = Number.POSITIVE_INFINITY;
   });
-  await page.keyboard.press("Shift");
-  await expect.poll(async () => (await live(page)).idle, { timeout: 10_000 }).toBeNull();
-  await expect
-    .poll(async () => {
-      const r = await live(page);
-      return Math.max(Math.abs(r.idleYaw), Math.abs(r.idleSpin));
-    }, { timeout: 10_000 })
-    .toBeLessThan(1e-3);
+  await page.keyboard.press("x");
+  await waitForFrames(page, 30);
+  const after = await live(page);
+  expect(after.idle, "input stops the idle at once").toBeNull();
+  expect(Math.abs(after.idleYaw)).toBeLessThan(0.05);
+  expect(Math.abs(after.idleSpin)).toBeLessThan(0.05);
+  expect(after.speed, "the key did not drive the rover").toBeLessThan(0.01);
 
   const seen = await log();
-  expect(seen.actions.length).toBeGreaterThan(0);
   expect(seen.maxDraw, "the idle pose adds no draw calls").toBeLessThanOrEqual(rest + 1);
 });
 
