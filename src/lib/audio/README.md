@@ -19,9 +19,14 @@ import { audio, useAudio } from "@/lib/audio";
 | `setPaused` | `(paused: boolean) => void` | Silences everything while the 3D view is closed (Page View) without touching the stored setting. `Experience` pauses on unmount and unpauses on mount. |
 | `isPaused` | `() => boolean` | Current pause state. |
 | `isMuted` | `() => boolean` | Current setting. |
-| `subscribe` | `(listener: () => void) => () => void` | Called on mute changes. Shaped for `useSyncExternalStore`. |
+| `getSettings` | `() => AudioSettings` | `{ effects, music, musicVolume }`. The same object until a setting changes (stable for `useSyncExternalStore`). |
+| `setEffects` | `(on: boolean) => void` | Persists `localStorage["hq:sfx"]` (`"off"` disables, missing is on). Off makes `play` a no-op and keeps the rumble silent. |
+| `setMusic` | `(on: boolean) => void` | Persists `localStorage["hq:music"]` (`"off"` disables, missing is on). Off stops the music voice at once; on starts a fresh one when audible. |
+| `setMusicVolume` | `(volume: number) => void` | Clamped 0 to 1, persisted in `localStorage["hq:music-volume"]` (missing is 1). Glides the music bus with `setTargetAtTime` (time constant 0.05). |
+| `subscribe` | `(listener: () => void) => () => void` | Called on mute and setting changes. Shaped for `useSyncExternalStore`. |
 | `dispose` | `() => void` | Removes document listeners and closes the context. |
 | `useAudio` | `(engine?: AudioEngine) => { muted, setMuted, toggleMuted, play, setRumble }` | Client hook. Server render and hydration report `muted: true`. |
+| `useAudioSettings` | `(engine?: AudioEngine) => AudioSettings` | Client hook for the Settings panel. Server render reports `{ effects: true, music: true, musicVolume: 1 }`. |
 
 ## Sounds
 
@@ -40,6 +45,7 @@ import { audio, useAudio } from "@/lib/audio";
 - **Lazy init and first gesture.** No `AudioContext` exists until it is needed. Browser autoplay policy keeps any context suspended until a user activation, so while unmuted the engine listens (capture) for `pointerdown`, `pointerup`, `keydown`, `touchend` and `click` (on touch screens activation comes at the end of a tap, not `touchstart`). The first one creates the context, starts the background music and resumes it; the listeners stay until the context really runs. The engine is created when `Experience` mounts, so the Boot rover button or the first click, tap or key in the HQ starts the sound. Sounds requested before that gesture may be silent; this is expected.
 - **Paused outside 3D.** The engine starts paused, so the Page View and the static tier never create a context, even after a click or a dialog sound. `Experience` unpauses on mount and pauses again on unmount; `setPaused(true)` fades out and suspends like a mute but keeps the setting.
 - **Background music** (`src/lib/audio/music.ts`) is scheduled by a lookahead scheduler on `AudioContext.currentTime`: a 0.6 s window, woken every 100 ms; it skips missed steps after a stall and does nothing while the context is suspended. The reverb impulse is built once per context, off the first gesture (on a 0 ms timeout), and reused. Muting or pausing stops the music when the fade ends (every scheduled note cancelled, every node disconnected, the timer cleared); unmuting or unpausing starts a fresh one with a 2 s fade in. A hidden tab only suspends the context. The compressor sits on the music bus, so the effects are unchanged. Reduced motion does not affect audio.
+- **Settings.** `hq:sfx`, `hq:music` and `hq:music-volume` are read when the engine is created and written on change. The master mute (`hq:sound`, key `m`) wins over all of them. The music voice feeds a `musicBus` gain (set to the volume) that feeds the master, so the volume never touches the effects. `setMusic(true)` while muted or paused only records the setting; the music starts on the next unmute or unpause. `setEffects(true)` restores the rumble speed only while audible.
 - **Muting** fades the master bus (music and rumble included) over about 100 ms, then suspends the context. `play` is a no-op while muted; `setRumble` only remembers the speed.
 - **Tab visibility.** Hidden suspends the context; visible resumes it only when unmuted.
 

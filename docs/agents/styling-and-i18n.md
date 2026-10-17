@@ -153,7 +153,19 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 
 ### 3D HUD layout (owner decision)
 
-- Top bar:
+- Layout per device (`hudLayout` in `src/hud/layout.ts`; `Hud` sets `html[data-hq-hud="phone|tablet|desktop"]`):
+  - desktop (fine pointer, at least 1024 px): the profile card, the top bar and the elevator rail;
+  - phones and tablets (any coarse pointer counts as a tablet) get the "Corners" HUD:
+    - top left the floor chip (`FloorChip`, opens the floor sheet; tablets also show the floor name);
+    - top right `hud-topbar`: Ask AI (icon only on phones), search on tablets, then the menu button (`HudMenu`, `data-testid="hud-menu"`, it carries the `ask-rover` onboarding spotlight);
+    - the menu opens a side sheet (`menu-sheet`, a bottom sheet on phones): the profile, the actions (Classic site `page-view` as the primary, Search on phones, Ask Rover, Rotate left and right, Map) and the settings panel;
+    - under the top right cluster the minimap (`hud-minimap`: phones `top-[64px] right-3`, tablets `top-[76px] right-4`), hidden on phones while a room is open;
+    - `FloorNotice` and the L2 `YearChip` place by the HUD layout (never the viewport): under the floor chip on phones, clear of the minimap.
+    - no profile card, elevator rail or Boost button; the key `,` opens the menu sheet.
+- Desktop settings: a round gear (`settings-open`) above the view controls in the bottom right opens the settings sheet (`settings-sheet`); the key `,` toggles it. The minimap sits above the gear in the same column (`hud-corner`).
+- Minimap (`src/hud/minimap/`): `model.ts` is pure (no React, no three; `tests/unit/minimap-model.test.ts` guards the import graph). `Minimap` is a round button (`minimap`, phone 72 px, tablet 112 px, desktop 96 px) with an aria-hidden SVG centred on the rover (`windowBox(rover, MINIMAP_RADIUS)`), north-up (SVG y is world z); it re-renders from the store's 10 Hz `rover` mirror, never its own loop, and reads `interactRuntime.items` through `useSyncExternalStore`. Hidden when `minimapPref` is off or in boot, intro and hologram.
+  - The overview (`map-overview`, `MapOverview`) opens from the minimap, the `N` key and the menu's Map action (`useHudToggle("map")`): the floor SVG with labels (aria-hidden) and the room list (`map-room` buttons, name starts with the label, visited ones add "visited"). A room closes it and emits `{ type: "interact", item }` (point-and-go).
+- Desktop top bar:
   - No Quick view (it stays in the Page View footer, the Home hero and About).
   - Classic site (`hud.pageView`, the Page View button) is the one primary (solid cyan) control, with the Ask AI pill on its right at the far right.
   - The Motion button ("Motion setting") sits right of Sound.
@@ -161,12 +173,10 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - From 1024 px everything is one row.
   - From 1024 to 1099 px the search button drops its "Ctrl K" chip on Windows and Linux (never "⌘K"), so the Indonesian row clears the profile card.
     - `compactShortcut` on `HudLaunchers`, checked by `e2e/hud.spec.ts` for both chips and both locales.
-  - Below 1024 px Classic site and Ask AI get their own row: tablets under the bar, phones under the menu row.
-  - So phone overlays under the top controls start at 116 px.
 - Bottom band: the screen bottom is one flex band (`BottomBand` in `Hud.tsx`):
-  - left: joystick and boost button (phones stack the boost button above the joystick)
+  - left: the joystick on coarse pointers (a double tap toggles boost)
   - center: point-and-go's `InteractStatus` above the controls hint
-  - right: the view controls (vertical on phones)
+  - right: desktops the minimap and the settings gear above the three view controls; Corners one reset button (`ResetView`)
   - Nothing in the band can overlap; it hugs the bottom edge above the safe area.
   - `e2e/hud.spec.ts` checks the boxes at 834 x 1112 and 390 x 844.
 - The profile card shows no rooms-visited counter; the store still records `visited`.

@@ -10,7 +10,7 @@ import { chooseView, currentView, VIEW_EVENT } from "@/lib/view-pref";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
-import { useGateTier } from "./gate-tier";
+import { useGateTier, useQualityTier } from "./gate-tier";
 import { claimAutoOpen } from "./missions/bridge";
 import type { Recovery } from "./recovery";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -35,7 +35,7 @@ const loadRecovery = () => import("./recovery");
 
 export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
-  const detectedTier = useGateTier();
+  const detectedTier = useQualityTier(useGateTier());
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : currentView()));
   // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}#visits` and
   // `/{locale}/contact#visits` the Visitor Observatory in the Lobby, and `/{locale}/contact#production` the L3 Ops Control Room (read once on the client; never on other
@@ -159,7 +159,7 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
 
   return createPortal(
     <Experience
-      key={mount}
+      key={`${mount}:${tier}`}
       data={data}
       tier={tier}
       startFloor={hashFloor}

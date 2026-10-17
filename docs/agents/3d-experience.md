@@ -27,6 +27,9 @@ Index: [AGENTS.md](../../AGENTS.md).
 - It then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page.
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.
+- The effective tier is the probe's tier adjusted by the graphics quality preference (`hq:quality`: `auto`, `full`, `lite`; `useQualityTier`, `applyQualityPref` in `src/lib/gpu-tier.ts`).
+  - A `?tier=` override and a static device (no WebGL2, Save-Data, a software renderer) always win over the preference.
+  - A change re-keys the canvas (`mount:tier`) and applies at once; `qualityRemount.ts` (`isQualityRemount`, `markCanvasReplaced`) makes `Experience` keep the rover, floor, phase and open room instead of re-resuming.
 
 ## Game-first load
 
@@ -97,8 +100,8 @@ The same script sets these on every page before first paint:
 
 ## Boost
 
-- Input: hold Shift, or toggle the boost button beside the joystick on coarse pointers (`src/hud/BoostButton.tsx`, `setBoost` in `input/joystick.ts`).
-  - The button toggles: one tap on, the next off, `aria-pressed` (owner decision).
+- Input: hold Shift, or double-tap the joystick on coarse pointers (`Joystick boost`, `useBoostToggle` in `src/hud/boost.ts`, `setBoost` in `input/joystick.ts`).
+  - A double tap is a short first tap (released within 250 ms, moved under 12 px), then a pointer down within 300 ms of its release (`DOUBLE_TAP_MS`); each double tap toggles. There is no Boost button: the joystick's double tap is the only touch control.
   - A floor change, a ride start and unmount reset it; never persisted.
 - Effect: 2x top speed and acceleration (`BOOST`, `boostOn`, `boostTuning`, `stepBoostLevel` in `rover/boost.ts`, pure).
 - Manual driving only: the autopilot (missions, the elevator approach, point-and-go drives) keeps its speed.
@@ -369,7 +372,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - A visitor runs the clock (source `clock`) when the stored choice says on, or when there is no choice and reduced motion is off. Reduced motion holds night unless the visitor turns the cycle on.
 - The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 8 min`): every visitor sees the same phase and a reload continues.
 - Preference: `localStorage["hq:day-night"]` is `"on"`, `"off"` or unset (unset follows Motion). `src/lib/day-night.ts` (`readDayNight`, `setDayNight`, `subscribeDayNight`, `dayNightOn`) imports nothing, so the HUD bundle can use it.
-- The "Day and night" toggle is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, group display, order 30) and shows in the settings panel once the HUD settings work renders every entry of `SETTINGS`. Its `get` reads `dayNightOn(readDayNight(), reducedMotion)`, its `set` is `setDayNight`.
+- The "Day and night" toggle is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, group display, order 30) and shows in the settings panel (Display group, between Graphics quality and Minimap). Its `get` reads `dayNightOn(readDayNight(), reducedMotion)`, its `set` is `setDayNight`.
 
 ### Rendering
 

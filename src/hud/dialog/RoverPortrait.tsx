@@ -5,8 +5,8 @@ import { drawFace, FACE_H, FACE_W } from "@/experience/rover/faceTexture";
 import { faceFrame } from "@/experience/rover/faces";
 import type { RoverFace } from "@/experience/types";
 
-/** Rover's screen as a 2D portrait: the same drawing as the in-world face texture, blinking unless still. */
-export function RoverPortrait({ face, still }: { face: RoverFace; still: boolean }) {
+/** Rover's screen as a 2D portrait: the same drawing as the in-world face texture, blinking unless still. `compact` is the 32 px toast size. */
+export function RoverPortrait({ face, still, compact = false }: { face: RoverFace; still: boolean; compact?: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [blink, setBlink] = useState(false);
 
@@ -39,7 +39,7 @@ export function RoverPortrait({ face, still }: { face: RoverFace; still: boolean
       width={FACE_W}
       height={FACE_H}
       aria-hidden="true"
-      className="h-9 w-12 shrink-0 rounded-sm border-2 border-terminal-fg/60 [image-rendering:pixelated] sm:h-12 sm:w-16"
+      className={`shrink-0 rounded-sm border-2 border-terminal-fg/60 [image-rendering:pixelated] ${compact ? "h-8 w-[43px]" : "h-9 w-12 sm:h-12 sm:w-16"}`}
     />
   );
 }

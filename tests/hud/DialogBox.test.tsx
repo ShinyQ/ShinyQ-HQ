@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import type { SayResult } from "@/hud/dialog/engine";
-import { DialogBox } from "@/hud/dialog/DialogBox";
+import { DialogBox, TOAST_HOLD_MS } from "@/hud/dialog/DialogBox";
 import type { DialogPlacement } from "@/hud/dialog/placement";
 import { cancelAllDialogs, dialog, say } from "@/hud/dialog/store";
 
@@ -142,9 +142,135 @@ describe("DialogBox", () => {
     expect(screen.queryByTestId("dialog-box")).toBeNull();
   });
 
-  it("clears the joystick, boost and elevator panel on phones", () => {
+  it("renders a compact two-line toast above the joystick on phones", () => {
     renderBox("phone");
     act(() => void say("Hi"));
-    expect(screen.getByTestId("dialog-box").className).toContain("right-[68px]");
+    const box = screen.getByTestId("dialog-box");
+    expect(box.className).toContain("bottom-[calc(168px");
+    expect(box.className).toContain("right-3");
+    expect(box).toHaveAttribute("data-expanded", "false");
+    expect(box.querySelector(".line-clamp-2")).not.toBeNull();
+  });
+
+  it("expands a clamped toast on the first tap and advances on the second", async () => {
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+    renderBox("phone");
+    let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+    act(() => {
+      result = say("A long line that needs more than two rows on a narrow phone screen");
+    });
+    const box = screen.getByTestId("dialog-box");
+    act(() => void fireEvent.click(box));
+    expect(box).toHaveAttribute("data-expanded", "true");
+    expect(box.querySelector(".line-clamp-2")).toBeNull();
+    expect(box).toBeInTheDocument();
+    act(() => void fireEvent.click(box));
+    await expect(result).resolves.toMatchObject({ status: "done" });
+  });
+
+  it("advances a short toast on the first tap", async () => {
+    renderBox("phone");
+    let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+    act(() => {
+      result = say("Short");
+    });
+    act(() => void fireEvent.click(screen.getByTestId("dialog-box")));
+    await expect(result).resolves.toMatchObject({ status: "done" });
+  });
+
+  describe("auto-advance", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("moves a choiceless phone toast on after the hold", async () => {
+      renderBox("phone");
+      let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+      act(() => {
+        result = say("Short");
+      });
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS - 1));
+      expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+      act(() => void vi.advanceTimersByTime(1));
+      await expect(result).resolves.toMatchObject({ status: "done" });
+      expect(screen.queryByTestId("dialog-box")).toBeNull();
+    });
+
+    it("never moves a clamped line on by itself: a tap expands it and the next one advances", async () => {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+      renderBox("phone");
+      let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+      act(() => {
+        result = say("A floor intro line that runs well past the two rows a phone toast can show");
+      });
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 3));
+      const box = screen.getByTestId("dialog-box");
+      expect(box).toHaveAttribute("data-expanded", "false");
+      act(() => void fireEvent.click(box));
+      expect(box).toHaveAttribute("data-expanded", "true");
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 3));
+      expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+      act(() => void fireEvent.click(box));
+      await expect(result).resolves.toMatchObject({ status: "done" });
+    });
+
+    it("still moves a line that fits in the two rows on after the hold", async () => {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(40);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+      renderBox("phone");
+      let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+      act(() => {
+        result = say("Nice driving!");
+      });
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS));
+      await expect(result).resolves.toMatchObject({ status: "done" });
+      expect(screen.queryByTestId("dialog-box")).toBeNull();
+    });
+
+    it("never auto-advances on the bottom or raised placements", () => {
+      for (const placement of ["bottom", "raised"] as const) {
+        renderBox(placement);
+        act(() => void say("Short"));
+        act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 3));
+        expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+        act(() => cancelAllDialogs());
+        cleanup();
+      }
+    });
+
+    it("waits for choices, a pending until line and an expanded toast", () => {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+      renderBox("phone");
+      act(() => void say({ text: "Pick", choices: [{ id: "a", label: "Alpha" }] }));
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 2));
+      expect(screen.getByTestId("dialog-box")).toHaveTextContent("Pick");
+      act(() => cancelAllDialogs());
+      act(() => void say({ text: "Drive", until: () => new Promise(() => {}) }));
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 2));
+      expect(screen.getByTestId("dialog-box")).toHaveTextContent("Drive");
+      act(() => cancelAllDialogs());
+      act(() => void say("Long line"));
+      act(() => void fireEvent.click(screen.getByTestId("dialog-box")));
+      expect(screen.getByTestId("dialog-box")).toHaveAttribute("data-expanded", "true");
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 2));
+      expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+    });
+
+    it("counts the hold from the end of typing", () => {
+      dialog.setInstant(false);
+      vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
+      renderBox("phone");
+      act(() => void say("Typing line"));
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 2));
+      expect(screen.getByTestId("dialog-box")).toHaveAttribute("data-typing", "true");
+      act(() => void dialog.tick(10000));
+      expect(screen.getByTestId("dialog-box")).toHaveAttribute("data-typing", "false");
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS - 1));
+      expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+      act(() => void vi.advanceTimersByTime(1));
+      expect(screen.queryByTestId("dialog-box")).toBeNull();
+    });
   });
 });

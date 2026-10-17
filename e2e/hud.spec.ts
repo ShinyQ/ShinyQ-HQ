@@ -4,9 +4,10 @@ import id from "../messages/id.json";
 import { asReturningVisitor, enterHQ, skipFloorLines, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
- * 3D HUD layout (owner round R3-B): the top bar (no Quick view, a highlighted Classic site with Ask AI
- * on its right), the bottom band (the hint at the bottom, clear of the joystick, boost and
- * view controls) and the room drawer footer (cross-floor link right of the primary action).
+ * 3D HUD layout (owner round R3-B, Corners in Round 8 I): the desktop top bar (no Quick view, a
+ * highlighted Classic site with Ask AI on its right), the Corners top corners on phones and tablets,
+ * the bottom band (the hint at the bottom, clear of the joystick, the reset button and Ask AI) and the
+ * room drawer footer (cross-floor link right of the primary action).
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -30,14 +31,14 @@ async function newPage(browser: Browser, vp: { width: number; height: number; to
   return { context, page };
 }
 
-const TOP_BAR = [
-  { name: "desktop", width: 1440, height: 900, touch: false },
+const DESKTOP = { name: "desktop", width: 1440, height: 900, touch: false } as const;
+const CORNERS = [
   { name: "tablet", width: 834, height: 1112, touch: true },
   { name: "phone", width: 390, height: 844, touch: true },
 ] as const;
 
 test.describe("3D top bar", () => {
-  for (const vp of TOP_BAR) {
+  for (const vp of [DESKTOP]) {
     test(`${vp.name}: no Quick view, a highlighted Classic site and Ask AI on its right`, async ({ browser }) => {
       const { context, page } = await newPage(browser, vp);
       await enterHQ(page);
@@ -61,6 +62,37 @@ test.describe("3D top bar", () => {
       expect(Math.abs(a.y + a.height / 2 - (p.y + p.height / 2))).toBeLessThan(4);
       // Ask AI is the last control on the right edge.
       expect(vp.width - (a.x + a.width)).toBeLessThanOrEqual(24);
+      await context.close();
+    });
+  }
+
+  for (const vp of CORNERS) {
+    test(`${vp.name}: Corners puts the floor chip top left, Ask AI and the menu top right`, async ({ browser }) => {
+      const { context, page } = await newPage(browser, vp);
+      await enterHQ(page);
+      const hud = page.getByTestId("hud");
+      await expect(hud.getByRole("link", { name: "Quick view" })).toHaveCount(0);
+      await expect(hud.getByTestId("page-view")).toHaveCount(0);
+      const chipLocator = hud.getByTestId("floor-chip");
+      const askLocator = hud.getByTestId("ask-pill");
+      const menuLocator = hud.getByTestId("hud-menu");
+      await expect(chipLocator).toBeVisible();
+      await expect(menuLocator).toBeVisible();
+      await expect(askLocator).toBeVisible({ timeout: 15_000 });
+      const chip = await box(chipLocator);
+      const ask = await box(askLocator);
+      const menu = await box(menuLocator);
+      await page.getByTestId("hud-topbar").screenshot({ path: test.info().outputPath(`topbar-${vp.name}.png`) });
+      // Within 24 px of the top and the side edges.
+      expect(chip.x).toBeLessThanOrEqual(24);
+      expect(chip.y).toBeLessThanOrEqual(24);
+      expect(vp.width - (menu.x + menu.width)).toBeLessThanOrEqual(24);
+      expect(menu.y).toBeLessThanOrEqual(24);
+      // Ask AI left of the menu, on the same row, and clear of the chip.
+      expect(ask.x + ask.width).toBeLessThanOrEqual(menu.x);
+      expect(ask.x).toBeGreaterThanOrEqual(chip.x + chip.width);
+      expect(Math.abs(ask.y + ask.height / 2 - (menu.y + menu.height / 2))).toBeLessThan(4);
+      expect(overlaps(chip, ask)).toBe(false);
       await context.close();
     });
   }
@@ -108,11 +140,17 @@ test.describe("one-row top bar at 1024 px", () => {
 });
 
 test.describe("profile photo badge", () => {
-  for (const vp of TOP_BAR) {
-    test(`${vp.name}: the profile card shows the owner's round photo`, async ({ browser }) => {
+  for (const vp of [DESKTOP, CORNERS[1]]) {
+    test(`${vp.name}: the ${vp.touch ? "menu sheet" : "profile card"} shows the owner's round photo`, async ({ browser }) => {
       const { context, page } = await newPage(browser, vp);
       await enterHQ(page);
-      const img = page.getByTestId("hud").getByTestId("profile-photo").locator("img");
+      // Corners has no profile card: the photo sits in the menu sheet's profile block.
+      if (vp.touch) {
+        await expect(page.getByTestId("hud").getByTestId("profile-photo")).toHaveCount(0);
+        await page.getByTestId("hud").getByTestId("hud-menu").click();
+      }
+      const scope = vp.touch ? page.getByTestId("menu-sheet").getByTestId("menu-profile") : page.getByTestId("hud");
+      const img = scope.getByTestId("profile-photo").locator("img");
       await expect(img).toBeVisible();
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
       const b = await box(img);
@@ -123,14 +161,9 @@ test.describe("profile photo badge", () => {
   }
 });
 
-const BOTTOM = [
-  { name: "tablet", width: 834, height: 1112, touch: true },
-  { name: "phone", width: 390, height: 844, touch: true },
-] as const;
-
 test.describe("bottom band", () => {
-  for (const vp of BOTTOM) {
-    test(`${vp.name}: the hint sits at the bottom, clear of the joystick, boost, view controls and Ask AI`, async ({ browser }) => {
+  for (const vp of CORNERS) {
+    test(`${vp.name}: the hint sits at the bottom, clear of the joystick, the reset button and Ask AI`, async ({ browser }) => {
       const { context, page } = await newPage(browser, vp);
       await asReturningVisitor(page);
       await skipFloorLines(page);
@@ -140,12 +173,12 @@ test.describe("bottom band", () => {
       await waitForSceneLive(page);
       const ask = page.locator("[data-testid='ask-pill']:visible");
       await expect(ask).toBeVisible({ timeout: 15_000 });
-      await expect(page.getByTestId("boost")).toBeVisible();
+      await expect(page.getByTestId("view-reset")).toBeVisible();
+      await expect(page.getByTestId("boost")).toHaveCount(0);
 
       const controls = {
         joystick: await box(page.getByTestId("joystick")),
-        boost: await box(page.getByTestId("boost")),
-        view: await box(page.getByTestId("view-controls")),
+        reset: await box(page.getByTestId("view-reset")),
         ask: await box(ask),
       };
       // The hint auto-hides on phones 6 s after it mounts; a room opened and closed mounts it again.
@@ -162,8 +195,7 @@ test.describe("bottom band", () => {
       expect(hint.x).toBeGreaterThanOrEqual(0);
       expect(hint.x + hint.width).toBeLessThanOrEqual(vp.width);
       for (const [name, control] of Object.entries(controls)) expect(overlaps(hint, control), `overlaps ${name}`).toBe(false);
-      expect(overlaps(controls.joystick, controls.boost)).toBe(false);
-      expect(overlaps(controls.joystick, controls.view)).toBe(false);
+      expect(overlaps(controls.joystick, controls.reset)).toBe(false);
       await context.close();
     });
   }

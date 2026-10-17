@@ -283,7 +283,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 ### Behaviour
 
 - The rover never drives to a clicked floor point (owner decision).
-- Visitors drive with WASD or the arrows (Shift boost) or the joystick (boost button), or point at a glowing target:
+- Visitors drive with WASD or the arrows (Shift boost) or the joystick (double tap boosts), or point at a glowing target:
   - desktop: hover highlights it (outline, destination ring, a name tag on a dark pill over the ring, pointer cursor); a click drives there along the road and runs its action;
   - touch: the first tap selects it (HUD "Go to ..." chip, aria-live text); a second tap or Go drives.
 - A click on empty floor only closes an open room, clears a tap selection and shows a hint once per session (`hq:point-hint`).
@@ -315,6 +315,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - Add new in-world targets to `baseInteractables` (built-in floor content), or call `registerExtraInteractables(floor, items)` from the feature.
   - It returns the dispose function; ids must be unique, and the built-in entry wins a clash.
 - Readers: `extraInteractables(floor)`, `onInteractablesChange(listener)`, `useInteractables(floor, layouts, data)`; inside the canvas `interactRuntime.items` holds the current floor's full list.
+- The HUD minimap reads `buildFloorLayouts` and `interactRuntime.items` (`subscribe`, `setItems`): a floor change that alters roads or targets shows up on the minimap and the overview automatically, with no map code to touch (see [Minimap](hud-and-drawer.md#minimap)).
 - Never put navigation `onClick` or hover handlers on scene objects.
   - L1 certification badges and pills and L4 research paper plates keep their own clicks (they open previews, not drives).
 - Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument).

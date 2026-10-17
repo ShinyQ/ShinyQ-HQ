@@ -1,4 +1,4 @@
-/** Shared touch state written by the HUD joystick and boost button, polled by the Director each frame. */
+/** Shared touch state written by the HUD joystick (its double tap toggles boost), polled by the Director each frame. */
 export const joystick = { x: 0, y: 0, active: false, boost: false };
 
 export function setJoystick(x: number, y: number, active: boolean) {

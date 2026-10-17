@@ -64,9 +64,29 @@ async function open3DAt(browser: Browser, v: Viewport, path: string) {
   return { context, page };
 }
 
+/**
+ * The Corners HUD (phones and tablets) keeps Classic site, Ask Rover and (on phones) search in the menu
+ * sheet: opens it and returns it, or returns the HUD itself on desktops.
+ */
+async function hudActions(page: Page) {
+  const menu = page.getByTestId("hud").getByTestId("hud-menu");
+  if (!(await menu.isVisible())) return page.getByTestId("hud");
+  await menu.click();
+  const sheet = page.getByTestId("menu-sheet");
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+/** Opens search from the top bar (desktops and tablets) or the menu sheet (phones). */
+async function openSearch(page: Page) {
+  const launcher = page.getByTestId("hud").getByRole("button", { name: /open search/i });
+  if (await launcher.isVisible()) await launcher.click();
+  else await (await hudActions(page)).getByRole("button", { name: en.hud.launcher.search, exact: true }).click();
+}
+
 /** Opens a room through the command palette (drive and open), like a visitor would. */
 async function openRoomFromPalette(page: Page, query: string, room: string) {
-  await page.getByRole("button", { name: /open search/i }).click();
+  await openSearch(page);
   await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
   await page.keyboard.type(query);
   await page.keyboard.press("Enter");
@@ -135,7 +155,7 @@ for (const viewport of VIEWPORTS) {
 
   test(`classic site with Back to 3D @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     const { context, page } = await open3D(browser, viewport);
-    await page.getByRole("button", { name: "Classic site" }).click();
+    await (await hudActions(page)).getByRole("button", { name: "Classic site" }).click();
     await expect(page.getByRole("button", { name: "Back to 3D" })).toBeInViewport({ timeout: 30_000 });
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: shot("page-view", viewport) });
@@ -705,7 +725,7 @@ test.describe("CV refresh captures", () => {
       test.setTimeout(budget);
       const { context, page } = await open3DStill(browser, v, "/en");
       await settleFloor(page, v);
-      await page.getByRole("button", { name: /open search/i }).click();
+      await openSearch(page);
       await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
       await page.keyboard.type("Skills wall");
       await page.keyboard.press("Enter");
@@ -736,8 +756,8 @@ test.describe("CV refresh captures", () => {
 /**
  * R5 P6 review poses at the round 5 sizes, for before/after captures:
  * `SHOT_DIR=screenshots/before` on main, `SHOT_DIR=screenshots/after` on the branch.
- * l1-plaza and l3-arrival are diff-gated (must not change); topbar, profile and l1-about are the
- * intended changes (icon, photo badge, hall portrait) for owner review.
+ * l1-plaza and l3-arrival are diff-gated (must not change); topbar, profile (the floor chip on phones)
+ * and l1-about are the intended changes (icon, photo badge, hall portrait) for owner review.
  */
 const P6_VIEWPORTS: readonly Viewport[] = [VIEWPORTS[0], { name: "desktop-qhd", width: 2560, height: 1440, tier: "full", touch: false }, VIEWPORTS[2]];
 const p6Shot = (name: string, v: Viewport) => `${process.env.SHOT_DIR ?? "screenshots"}/p6/${name}-${v.width}x${v.height}.png`;
@@ -751,9 +771,9 @@ for (const viewport of P6_VIEWPORTS) {
     const { context, page } = await open3D(browser, viewport);
     await waitForCameraSettle(page, SETTLE);
     await page.getByTestId("hud-topbar").screenshot({ path: p6Shot("topbar", viewport) });
-    const profile =
-      viewport.name === "mobile" ? page.getByRole("button", { name: new RegExp(`^${en.hud.profile}:`) }) : page.getByRole("region", { name: en.hud.profile });
-    await profile.screenshot({ path: p6Shot("profile", viewport) });
+    // Phones (Corners HUD) show the floor chip top left where desktops show the profile card.
+    const profile = viewport.name === "mobile" ? page.getByTestId("floor-chip") : page.getByRole("region", { name: en.hud.profile });
+    await profile.screenshot({ path: p6Shot(viewport.name === "mobile" ? "floor-chip" : "profile", viewport) });
     const hide = await page.addStyleTag({ content: HIDE_HUD });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: p6Shot("l1-plaza", viewport) });
@@ -763,6 +783,8 @@ for (const viewport of P6_VIEWPORTS) {
     await page.waitForTimeout(2500);
     await page.screenshot({ path: p6Shot("l1-about", viewport) });
     await hide.evaluate((el) => (el as Element).remove());
+    if (viewport.name === "mobile") await page.getByTestId("floor-chip").click();
+    // The desktop elevator rail, or the phone's floor sheet (both are navigation landmarks named Elevator).
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L3"]').click();
     await waitForFloor(page, "L3", SETTLE.timeout);
     await waitForCameraSettle(page, SETTLE);

@@ -19,8 +19,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 455.0 KB plus a 15 KB margin) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (the measured 431.4 KB plus 15 KB) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 457.0 KB, 13 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 446.4 KB (measured 433.4 KB, 13 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -56,8 +56,8 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + all floor chunks) has its own cap, `BYTES_3D_BUDGET.session` (owner decision).
-  - full 470 KB: measured 455.0 KB plus a 15 KB margin so creep is caught early.
-  - lite 446.4 KB: the measured 431.4 KB plus 15 KB.
+  - full 470 KB: measured 457.0 KB, so about 13 KB of headroom catches creep early.
+  - lite 446.4 KB: measured 433.4 KB, about 13 KB of headroom.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 
 #### Memory gates
@@ -142,8 +142,10 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
+| `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `ChunkFailed`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |
+| `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
 | `src/experience/camera/**` | `camera`, `experience`, `career` and `ride` |
-| `src/experience/input/**`, the rover mesh, fade and runtime and `src/hud/ViewControls.tsx` | `camera` and `experience` |
+| `src/experience/input/**` and the rover mesh, fade and runtime | `camera` and `experience` |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |

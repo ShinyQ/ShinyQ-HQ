@@ -1,5 +1,14 @@
 export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip";
 
+export interface AudioSettings {
+  /** One-shots and the tread rumble. */
+  effects: boolean;
+  /** Background music ("Deep Space Ambient"). */
+  music: boolean;
+  /** Music level, 0 to 1 (scales the music bus; the master mute still wins). */
+  musicVolume: number;
+}
+
 export interface AudioEngine {
   /** Plays a one-shot sound. No-op while muted or when Web Audio is unavailable. */
   play(name: SoundName): void;
@@ -12,7 +21,15 @@ export interface AudioEngine {
   isPaused(): boolean;
   toggleMuted(): void;
   isMuted(): boolean;
-  /** Notified whenever the muted state changes. Returns an unsubscribe function. */
+  /** Effects, music and music volume. The same object is returned until a setting changes. */
+  getSettings(): AudioSettings;
+  /** Persists `hq:sfx`. Off silences one-shots and the rumble; the master mute still wins. */
+  setEffects(on: boolean): void;
+  /** Persists `hq:music`. Off stops the music; on starts it again when the engine is audible. */
+  setMusic(on: boolean): void;
+  /** Persists `hq:music-volume` (clamped 0 to 1) and glides the music bus to it. */
+  setMusicVolume(volume: number): void;
+  /** Notified whenever the muted state or a setting changes. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
   /** Removes document listeners and closes the AudioContext. */
   dispose(): void;

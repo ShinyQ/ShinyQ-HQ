@@ -1,10 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { doubleTapJoystick } from "./touch";
 
 /**
  * Realistic boost (owner pick: "Full package: path-following light trails, rover leans and squats,
- * camera widens and pulls back, speed streaks, wheel sparks") and the touch boost toggle (owner: tap
- * on, tap off). Shift stays hold-to-boost on keyboards.
+ * camera widens and pulls back, speed streaks, wheel sparks") and the touch boost toggle (Round 8 I: a
+ * double tap on the joystick turns it on, the next double tap off). Shift stays hold-to-boost on keyboards.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -123,20 +124,21 @@ for (const vp of [
   test.describe(`boost toggle on a ${vp.name}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-    test("a tap turns boost on and it stays on while driving; the next tap turns it off; a floor change resets it", async ({ page }) => {
+    test("a double tap on the joystick turns boost on and it stays on while driving; the next double tap turns it off; a floor change resets it", async ({ page }) => {
       const errors = collectErrors(page);
       await enterHQ(page);
       await waitForCameraSettle(page);
-      const boost = page.getByTestId("boost");
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      const joystick = page.getByTestId("joystick");
+      await expect(page.getByTestId("boost")).toHaveCount(0);
+      await expect(joystick).toHaveAttribute("data-boost", "off");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       // On but parked: boost only applies while driving by hand.
       await waitForFrames(page, 20);
       expect((await liveFx(page)).boostFx).toBe(0);
 
       const fx = await trackFx(page);
-      const box = (await page.getByTestId("joystick").boundingBox())!;
+      const box = (await joystick.boundingBox())!;
       const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
       // Joystick down: drive toward the camera, onto open floor.
       await holdTouch(page, [c, { x: c.x, y: c.y + 30 }, { x: c.x, y: c.y + 55 }], 2500);
@@ -145,17 +147,17 @@ for (const vp of [
       expect(peak.trail).toBeGreaterThan(0);
       expect(peak.boostFx).toBeGreaterThan(0);
       // Still on after the joystick is released, with no effects once the rover stops.
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       await expect.poll(async () => (await liveFx(page)).boostFx, { timeout: 15_000 }).toBe(0);
 
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "off");
 
-      await boost.tap();
-      await expect(boost).toHaveAttribute("aria-pressed", "true");
+      await doubleTapJoystick(page);
+      await expect(joystick).toHaveAttribute("data-boost", "on");
       await page.keyboard.press("PageUp");
       await waitForFloor(page, "L2");
-      await expect(boost).toHaveAttribute("aria-pressed", "false");
+      await expect(joystick).toHaveAttribute("data-boost", "off");
       expect(errors).toEqual([]);
     });
   });

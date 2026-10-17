@@ -1,4 +1,5 @@
 import type { GpuTier } from "@/experience/types";
+import type { QualityPref } from "./quality-pref";
 
 export interface TierInputs {
   /** Value of the `?tier=` query parameter, if any. */
@@ -70,4 +71,13 @@ export function readTierInputs(search: string): TierInputs {
     deviceMemory: nav.deviceMemory,
     cores: nav.hardwareConcurrency,
   };
+}
+
+/**
+ * The visitor's graphics quality over the probe's tier. A `?tier=` override (tests, debugging) and a
+ * static device (no WebGL2, Save-Data, software renderer) always win.
+ */
+export function applyQualityPref(detected: GpuTier, pref: QualityPref, overridden: boolean): GpuTier {
+  if (overridden || detected === "static" || pref === "auto") return detected;
+  return pref;
 }

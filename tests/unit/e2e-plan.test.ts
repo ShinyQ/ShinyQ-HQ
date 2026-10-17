@@ -164,9 +164,41 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["camera", "career", "experience", "labs-paths", "ride"]);
     expect(specsForChanges(["src/experience/input/useInputSources.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
-    expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience"]);
+    expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
     expect(specsForChanges(["e2e/camera.spec.ts"]).specs).toEqual(["camera"]);
     expect(specsForChanges(["src/experience/fx/Readable.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "ride", "spectacle"]);
+  });
+
+  it("maps the Corners HUD (menu, settings, minimap, floor chip, layout, joystick boost, preferences) to hud-corners", () => {
+    const corners = ["hud", "hud-corners", "onboarding"];
+    for (const file of [
+      "src/hud/menu/HudMenu.tsx",
+      "src/hud/minimap/Minimap.tsx",
+      "src/hud/settings/defs/motion.ts",
+      "src/hud/FloorChip.tsx",
+      "src/hud/layout.ts",
+      "src/lib/local-pref.ts",
+      "src/lib/quality-pref.ts",
+    ]) {
+      expect(specsForChanges([file]).specs, file).toEqual(corners);
+    }
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["experience", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost", "hud-corners"]);
+    expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);
+    expect(specsForChanges(["src/hud/ChunkFailed.tsx"]).specs).toEqual(corners);
+  });
+
+  it("adds hud-corners to the HUD hosts that shape the corner layout, keeping their own specs", () => {
+    expect(specsForChanges(["src/hud/Hud.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "hud-corners", "missions"]);
+    expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
+    expect(specsForChanges(["src/components/Modal.tsx"]).specs).toEqual(["gallery", "hud-corners", "lifecycle", "pageview"]);
+    expect(specsForChanges(["src/hud/dialog/DialogBox.tsx"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/placement.ts"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/store.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/ask/AskDock.tsx"]).specs).toEqual(["ask", "experience", "hud-corners", "pageview"]);
+    expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
   });
 
   it("never runs the visual gate or the perf scripts as part of e2e:changed", () => {

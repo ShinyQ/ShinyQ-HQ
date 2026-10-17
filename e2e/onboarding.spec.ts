@@ -32,6 +32,12 @@ test.describe.configure({ timeout: 180_000 });
 export const box = (page: Page) => page.getByTestId("dialog-box");
 export const choices = (page: Page) => page.getByTestId("dialog-choices");
 
+/**
+ * Taps the toast's text near its left edge. A tap on the box center lands a few pixels from the Skip
+ * button on a phone, and Chromium's touch adjustment can move it onto Skip (as a real finger would).
+ */
+const tapText = (page: Page) => box(page).locator("p[aria-hidden='true']").first().tap({ position: { x: 12, y: 10 } });
+
 /** Waits for Rover to show the line with this key. */
 export async function expectLine(page: Page, key: string | RegExp, timeout = 30_000) {
   await expect(box(page)).toHaveAttribute("data-line", key, { timeout });
@@ -61,7 +67,8 @@ export async function freshVisit(page: Page, path = "/en") {
   await page.goto(`${path}?tier=lite`);
   await waitForHQ(page);
   const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-  await expect(start).not.toHaveAttribute("aria-disabled", "true");
+  // Boot rover enables once the scene is ready; two SwiftShader boots at once can take longer than the default 5 s.
+  await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
   await start.click();
   await waitForPhase(page, "intro");
 }
@@ -349,20 +356,22 @@ test.describe("reduced motion", () => {
 });
 
 test.describe("phone layout", () => {
-  test("390x844: the box clears the joystick, boost, view controls, elevator panel and the Go chip; tap, Go and taps advance", async ({ browser }: { browser: Browser }) => {
+  test("390x844: the toast sits above the joystick, clears the Corners controls and the Go chip; tap, Go and taps advance", async ({ browser }: { browser: Browser }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);
     await expectLine(page, "welcome");
-    await expect(page.getByTestId("boost")).toBeVisible();
+    await expect(page.getByTestId("minimap")).toBeVisible();
     const dialog = await rect(box(page));
     expect(dialog.x).toBeGreaterThanOrEqual(0);
     expect(dialog.x + dialog.width).toBeLessThanOrEqual(390);
     expect(dialog.y + dialog.height).toBeLessThanOrEqual(844);
-    for (const id of ["joystick", "boost", "view-controls", "elevator-panel"]) {
+    for (const id of ["joystick", "view-controls", "floor-chip", "hud-menu", "minimap"]) {
       expect(overlaps(dialog, await rect(page.getByTestId(id))), id).toBe(false);
     }
+    // The phone toast sits above the joystick.
+    expect(dialog.y + dialog.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
     await showPointHint(page);
     expect(overlaps(dialog, await rect(page.getByTestId("point-hint")))).toBe(false);
 
@@ -370,7 +379,9 @@ test.describe("phone layout", () => {
     await expectLine(page, "move");
     await expect(box(page)).toContainText(en.dialog.onboarding.moveCoarse);
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    await box(page).tap();
+    // The phone toast clamps a long line to two rows: the first tap expands it, the next one moves on.
+    await tapText(page);
+    if ((await box(page).getAttribute("data-line")) === "move" && (await box(page).getAttribute("data-expanded")) === "true") await tapText(page);
     await expectLine(page, "point-go");
     await expect(box(page)).toContainText(en.dialog.onboarding.pointGoCoarse);
 
@@ -394,8 +405,11 @@ test.describe("phone layout", () => {
 
     await page.getByTestId("dialog-skip").tap();
     await expectLine(page, "skipped");
-    await box(page).tap();
-    if ((await box(page).count()) > 0) await box(page).tap();
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    await tapText(page);
+    // The first tap either dismisses the line or expands it; wait for whichever happened, then act on it.
+    await expect.poll(async () => ((await box(page).count()) === 0 ? "gone" : await box(page).getAttribute("data-expanded"))).toMatch(/^(gone|true)$/);
+    if ((await box(page).count()) > 0) await tapText(page);
     await expect(box(page)).toHaveCount(0);
     await context.close();
   });

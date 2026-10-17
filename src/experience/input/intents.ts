@@ -17,7 +17,8 @@ export type Intent =
   | { type: "cancel" }
   | { type: "palette" }
   | { type: "terminal" }
-  | { type: "toggle"; what: "sound" | "lang" | "readme" }
+  /** `map` and `settings` belong to the HUD (the map overview, the settings sheet or the Corners menu); the Director ignores them. */
+  | { type: "toggle"; what: "sound" | "lang" | "readme" | "map" | "settings" }
   | { type: "zoom"; factor: number }
   | { type: "orbit"; dyaw: number; dpitch?: number; smooth?: boolean; source: OrbitSource }
   | { type: "view"; action: "reset" };
@@ -115,6 +116,10 @@ export function keyToIntent(key: string, ctx: KeyContext = {}): Intent | null {
       return { type: "toggle", what: "lang" };
     case "t":
       return { type: "toggle", what: "readme" };
+    case "n":
+      return { type: "toggle", what: "map" };
+    case ",":
+      return { type: "toggle", what: "settings" };
     case "enter":
       return ctx.inControl ? null : { type: "terminal" };
     case "+":

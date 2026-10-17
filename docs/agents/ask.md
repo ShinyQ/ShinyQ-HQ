@@ -72,7 +72,7 @@ All bindings and vars live in `wrangler.toml`.
 - Rover Terminal option `[a]`.
 - The Cmd-K "Ask:" row.
 - `openAsk(q?, { topic?, source? })` (`hq:hud` command `{ type: "ask", q?, topic?, source? }`).
-- A teaser shows once per session.
+- A teaser shows once per session, and never while Rover's dialog box is up (see the Rover dialog section in [hud-and-drawer.md](hud-and-drawer.md)).
 
 ### Panel
 

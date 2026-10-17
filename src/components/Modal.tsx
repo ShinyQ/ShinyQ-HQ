@@ -15,6 +15,8 @@ export interface ModalProps {
   testId?: string;
   /** Phones: a bottom sheet sized to its content instead of the full-screen sheet (short lists such as the pad pickers). */
   sheet?: boolean;
+  /** From 640 px a full-height panel on the right edge (settings and menus); phones keep the bottom sheet. Ignores `width`. */
+  side?: boolean;
 }
 
 const WIDTH = { sm: "sm:h-auto sm:max-w-[480px]", md: "sm:h-auto sm:max-w-[720px]", lg: "sm:h-[min(92dvh,1100px)] sm:max-w-[1040px]" };
@@ -26,7 +28,8 @@ const WIDTH = { sm: "sm:h-auto sm:max-w-[480px]", md: "sm:h-auto sm:max-w-[720px
  * window so the drawer, hologram and rover ignore it; other world keys already pause while an
  * `aria-modal` dialog exists. The caller restores focus to the opener.
  */
-export function Modal({ labelledBy, onClose, children, width = "md", testId, sheet = false }: ModalProps) {
+export function Modal({ labelledBy, onClose, children, width = "md", testId, sheet = false, side = false }: ModalProps) {
+  const bottom = sheet || side;
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   useEffect(() => {
@@ -72,10 +75,10 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId, she
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[60] flex ${sheet ? "items-end" : "items-stretch"} justify-center sm:items-center sm:p-6`}
+      className={`fixed inset-0 z-[60] flex ${bottom ? "items-end" : "items-stretch"} justify-center ${side ? "sm:items-stretch sm:justify-end sm:p-0" : "sm:items-center sm:p-6"}`}
       data-testid={testId ? `${testId}-root` : undefined}
     >
-      <div aria-hidden="true" className={`absolute inset-0 bg-void/80 ${sheet ? "backdrop-blur-sm" : "sm:backdrop-blur-sm"}`} onClick={() => close.current()} />
+      <div aria-hidden="true" className={`absolute inset-0 bg-void/80 ${bottom ? "backdrop-blur-sm" : "sm:backdrop-blur-sm"}`} onClick={() => close.current()} />
       <div
         ref={panel}
         role="dialog"
@@ -83,12 +86,13 @@ export function Modal({ labelledBy, onClose, children, width = "md", testId, she
         aria-labelledby={labelledBy}
         tabIndex={-1}
         data-testid={testId}
-        data-sheet={sheet ? "bottom" : undefined}
+        data-sheet={bottom ? "bottom" : undefined}
+        data-side={side ? "right" : undefined}
         data-hq-cover=""
         onKeyDown={onKeyDown}
-        className={`glass glass-solid relative flex w-full flex-col overflow-hidden shadow-[0_0_64px_-16px_rgb(0_0_0/0.9)] outline-none sm:max-h-[min(92dvh,1100px)] sm:rounded-2xl sm:border ${
-          sheet ? "max-h-[85dvh] rounded-t-2xl rounded-b-none border-t" : "h-full rounded-none border-0"
-        } ${WIDTH[width]}`}
+        className={`glass glass-solid relative flex w-full flex-col overflow-hidden shadow-[0_0_64px_-16px_rgb(0_0_0/0.9)] outline-none ${
+          bottom ? "max-h-[85dvh] rounded-t-2xl rounded-b-none border-t" : "h-full rounded-none border-0"
+        } ${side ? "sm:h-dvh sm:max-h-dvh sm:max-w-[400px] sm:rounded-none sm:border-0 sm:border-l" : `sm:max-h-[min(92dvh,1100px)] sm:rounded-2xl sm:border ${WIDTH[width]}`}`}
       >
         {children}
       </div>

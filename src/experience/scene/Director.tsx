@@ -246,6 +246,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
         case "toggle":
           if (intent.what === "sound") audio.toggleMuted();
           else if (intent.what === "lang") onToggleLang();
+          // The HUD owns the other toggles (readme, map, settings).
           break;
         case "terminal":
           if (s.phase === "explore") {
@@ -335,7 +336,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       radius: ROVER.radius,
       maxTilt: ROVER.maxTilt,
     };
-    // Hold Shift or the touch boost button for about 2x speed: manual driving only, never the autopilot.
+    // Hold Shift or double-tap the touch joystick for about 2x speed: manual driving only, never the autopilot.
     const boosting = boostOn(manual, held.current ?? [], joystick.boost);
     const driveTuning = boostTuning(tuning, boosting);
 

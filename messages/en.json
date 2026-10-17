@@ -351,6 +351,9 @@
     "floor": "Floor",
     "elevator": "Elevator",
     "goToFloor": "{floor} {label}: go to floor ({name})",
+    "goToFloorFull": "{floor} {label} {name}: go to floor",
+    "floorChip": "{floor} {label}: change floor ({name})",
+    "floorChipFull": "{floor} {label} {name}: change floor",
     "currentFloor": "Current floor: {floor}, {name}",
     "pageView": "Classic site",
     "pageViewHint": "Open this page as a classic website, without the 3D tower",
@@ -366,10 +369,58 @@
       "reduced": "Reduced",
       "note": "System follows the device's reduced motion setting."
     },
+    "settings": {
+      "dayNight": {
+        "label": "Day and night",
+        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
+      },
+      "openLinks": {
+        "label": "Open links in",
+        "hint": "New tabs and links without a view open here",
+        "page": "Classic site",
+        "3d": "3D"
+      },
+      "title": "Settings",
+      "open": "Settings",
+      "close": "Close settings",
+      "percent": "{value} percent",
+      "groups": { "general": "General", "display": "Display", "sound": "Sound" },
+      "language": { "label": "Language", "en": "English", "id": "Bahasa Indonesia" },
+      "motion": {
+        "label": "Motion",
+        "hint": "System follows your device. Reduced cuts rides and glides.",
+        "system": "System",
+        "full": "Full",
+        "reduced": "Reduced"
+      },
+      "quality": {
+        "label": "Graphics quality",
+        "hint": "Lite saves battery. A change reloads the 3D view.",
+        "auto": "Auto",
+        "full": "Full",
+        "lite": "Lite"
+      },
+      "minimap": { "label": "Minimap" },
+      "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
+      "effects": { "label": "Sound effects" },
+      "music": { "label": "Music" },
+      "musicVolume": { "label": "Music volume" }
+    },
     "menu": "Menu",
+    "menuTitle": "Menu",
+    "loadFailed": "Could not load this panel.",
+    "retry": "Retry",
+    "map": {
+      "open": "Map",
+      "label": "Map of {floor} {name}: open overview",
+      "title": "{floor} {name}",
+      "rooms": "Places on this floor",
+      "visited": "visited",
+      "close": "Close map"
+    },
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
-    "hintCoarse": "Drive: joystick · Boost: tap the boost button to toggle · Go: tap a glowing object twice · Rotate: drag · Zoom: pinch · Floors: swipe up or down",
+    "hintCoarse": "Drive: joystick · Boost: double-tap the joystick · Go: tap a glowing object twice · Rotate: drag · Zoom: pinch · Floors: swipe up or down",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "joystick": "Rover joystick",
@@ -519,7 +570,6 @@
       "back": "Back to elevator",
       "backDetail": "Beam to the elevator call pad at the start of the road"
     },
-    "boost": "Boost",
     "interact": {
       "teleporter": "Teleporter {year}",
       "returnPad": "Back to elevator",
@@ -531,18 +581,6 @@
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console"
-    },
-    "settings": {
-      "openLinks": {
-        "label": "Open links in",
-        "hint": "New tabs and links without a view open here",
-        "page": "Classic site",
-        "3d": "3D"
-      },
-      "dayNight": {
-        "label": "Day and night",
-        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
-      }
     }
   },
   "drawer": {
@@ -827,12 +865,12 @@
     "choices": "Choices",
     "tryIt": "Try it now",
     "onboarding": {
-      "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick tour of how things work?",
+      "welcome": "Hi, I'm Rover! Welcome to {name}'s HQ. Want a quick look at how things work?",
       "start": "Show me around",
       "skip": "Skip tutorial",
-      "skipped": "No problem. You can replay the tour from Ask Rover anytime.",
+      "skipped": "No problem. Replay the tutorial from Ask Rover anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
-      "moveCoarse": "Drag the joystick to drive. Tap the boost button to go faster, tap it again to stop boosting.",
+      "moveCoarse": "Drag the joystick to drive. Double-tap the joystick to boost, double-tap it again to stop.",
       "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
       "pointGoCoarse": "Or tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
       "moved": "Nice driving!",
@@ -845,7 +883,7 @@
       "askRover": "Not sure where to go? Ask Rover has shortcuts to the best rooms.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
-      "closingShort": "That's the basics! Replay the full tour from Ask Rover anytime."
+      "closingShort": "That's the basics! Replay the full tutorial from Ask Rover anytime."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",

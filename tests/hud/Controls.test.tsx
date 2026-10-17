@@ -6,7 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
-import { MobileMenu, TopBar } from "@/hud/Controls";
+import { TopBar } from "@/hud/Controls";
 import { getHQStore } from "@/store/useHQStore";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -97,25 +97,5 @@ describe("3D top bar", () => {
     expect(document.documentElement).toHaveAttribute("data-motion", "full");
     await userEvent.click(document.body);
     expect(screen.queryByTestId("motion-popover")).toBeNull();
-  });
-
-  it("phones: Classic site and Ask AI get their own row; the menu holds language, sound and motion", async () => {
-    render(
-      <Wrap>
-        <MobileMenu onExit={vi.fn()} onToggleLang={vi.fn()} />
-      </Wrap>,
-    );
-    expect(screen.getByTestId("page-view").nextElementSibling).toBe(screen.getByTestId("ask-pill"));
-    expect(screen.getByTestId("page-view").firstElementChild).toBe(screen.getByTestId("page-view-icon"));
-    const menuButton = screen.getByRole("button", { name: en.hud.menu });
-    await userEvent.click(menuButton);
-    const menu = document.getElementById(menuButton.getAttribute("aria-controls")!)!;
-    expect(within(menu).queryByText("Quick view")).toBeNull();
-    expect(within(menu).queryByText(en.hud.pageView)).toBeNull();
-    expect(within(menu).getByRole("group", { name: en.hud.language })).toBeInTheDocument();
-    expect(within(menu).getByRole("button", { name: en.hud.sound })).toBeInTheDocument();
-    const motion = within(menu).getByRole("group", { name: en.hud.motion.label });
-    await userEvent.click(within(motion).getByRole("radio", { name: en.hud.motion.full }));
-    expect(getHQStore().getState().motion).toBe("full");
   });
 });

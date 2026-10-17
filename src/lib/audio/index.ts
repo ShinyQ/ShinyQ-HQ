@@ -1,4 +1,11 @@
-export type { AudioEngine, AudioEngineDeps, SoundName } from "./types";
-export { createAudioEngine, SOUND_STORAGE_KEY, CLICK_RATE_LIMIT } from "./engine";
+export type { AudioEngine, AudioEngineDeps, AudioSettings, SoundName } from "./types";
+export {
+  createAudioEngine,
+  SOUND_STORAGE_KEY,
+  EFFECTS_STORAGE_KEY,
+  MUSIC_STORAGE_KEY,
+  MUSIC_VOLUME_STORAGE_KEY,
+  CLICK_RATE_LIMIT,
+} from "./engine";
 export { audio } from "./singleton";
-export { useAudio, type UseAudioResult } from "./useAudio";
+export { useAudio, useAudioSettings, type UseAudioResult } from "./useAudio";

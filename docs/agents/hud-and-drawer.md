@@ -1,6 +1,6 @@
 # HUD and drawer
 
-Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hint bubbles, and the Glass Drawer room panel. Index: [AGENTS.md](../../AGENTS.md).
+Missions and the HUD, the Corners layout, the settings registry, the minimap, the Motion setting, Rover's dialog with onboarding and hint bubbles, and the Glass Drawer room panel. Index: [AGENTS.md](../../AGENTS.md).
 
 ## Missions and HUD
 
@@ -58,6 +58,48 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `goToRoom` and `runMissionSteps` wait up to 5 s for the runner.
 - HUD components get data through props.
 
+### Corners layout
+
+Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (`useHudLayout`); the pixel layout is in [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
+
+- Owner decision 2026-10-17 (layout A "Corners"): phones and tablets keep the corners for controls, so the canvas stays clear.
+  - Phone: at most 5 controls plus the minimap (floor chip, Ask AI, menu, joystick, Reset view).
+  - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
+  - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
+- `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
+- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Ask Rover, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
+- `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
+- Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
+- Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
+- The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
+
+### Settings registry
+
+- One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
+- A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range`) with `get`/`set`, a `subscribe`, and an optional `available`.
+- The control binds to an external store (the audio engine, `qualityPref`, `minimapPref`, the Motion and language stores); the panel persists nothing itself. Duplicate ids throw.
+- `LazySettingsPanel` loads the panel and its registry when a settings sheet first opens, and `Minimap` loads `MapOverview` when the overview first opens, to keep both out of the first-frame 3D path (byte budget in [performance.md](performance.md)). Tests find their content with `findBy*`.
+  - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
+  - While the panel loads, a `min-h-[36rem]` placeholder (`settings-loading`) holds the sheet's height.
+- To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
+- Today: language, Open links in, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Music, Music volume.
+
+### Graphics quality
+
+- `hq:quality` (`src/lib/quality-pref.ts`) is `auto`, `full` or `lite`. `useQualityTier` (`src/experience/gate-tier.ts`) applies it over the probe through `applyQualityPref`; see [3d-experience.md](3d-experience.md#gate-and-tiers).
+- A change remounts the canvas (the gate key is `mount:tier`); `src/experience/qualityRemount.ts` keeps the rover, floor, phase and open room in place.
+- The setting (`src/hud/settings/defs/quality.ts`) applies a choice after `QUALITY_APPLY_MS` (400 ms) without another one: the radios show the pending value at once, and arrow keys passing Full on the way to Lite remount once.
+- The open sheet survives the remount (`hudToggles`), and its `takeFocus` hook puts focus back on the checked quality radio once the new panel mounts.
+
+### Minimap
+
+- `src/hud/minimap/`: the pure `model.ts` (from `buildFloorLayouts` and `interactRuntime.items`), the round `Minimap`, the `MapOverview` dialog and `pref.ts` (`hq:minimap`). Geometry and sizes: [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
+- It is HTML and SVG over the canvas: zero draw calls, updated from the store's 10 Hz rover mirror, never a second frame loop.
+- Places come from `interactRuntime.items` (`subscribe`, `setItems`), so a floor that adds or moves a point-and-go target shows up on the map with no minimap change.
+- The overview's room list emits the same `interact` event as clicking in the world (the rover drives there, then the room opens).
+- Off in the settings hides the minimap only; `N` still opens the overview.
+- The minimap is hidden during boot, intro and the hologram, and on phones while a room is open.
+
 ### Opening overlays and modals
 
 - From anywhere, through `src/hud/events.ts` (window `hq:hud` events):
@@ -82,13 +124,19 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 | Key | Meaning |
 |---|---|
 | `hq:terminal-seen` | set when the terminal first opens; nothing opens it on its own |
-| `hq:onboarded` | `done` or `skipped`: the first-session tour ran |
+| `hq:onboarded` | `done` or `skipped`: the first-session tutorial ran |
 | `hq:hints` | `off` hides the hint bubbles |
 | `hq:recent` | recent rooms on the static tier |
 | `hq:visits` | alternates best-swe and best-ai |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
 | `hq:view` | the remembered "Open links in" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
 | `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
+| `hq:sound` | master mute, `"off"` mutes (a missing key is on), see [Audio](ci-and-deploy.md#audio) |
+| `hq:sfx` | sound effects, `"off"` disables them (missing is on) |
+| `hq:music` | background music, `"off"` disables it (missing is on) |
+| `hq:music-volume` | music volume, 0 to 1 (missing is 1) |
+| `hq:quality` | graphics quality: `auto` (default), `full` or `lite`, see [Graphics quality](#graphics-quality) |
+| `hq:minimap` | `on` (default) or `off`: whether the corner minimap shows, see [Minimap](#minimap) |
 
 `sessionStorage` keys:
 
@@ -106,7 +154,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 ### Ask Rover name
 
 - User-facing name (owner decision): the Rover Terminal and its missions are **Ask Rover** (ID **Tanya Rover**) wherever a visitor reads them:
-  - the 3D top bar and Page View header button (`hud.launcher.askRover`);
+  - the desktop 3D top bar, the Corners menu sheet's actions and the Page View header button (`hud.launcher.askRover`);
   - the terminal title and prompt (`./ask-rover`);
   - the Cmd-K group, aria labels and the Lobby kiosk.
 - Code names stay: `MissionHud`, `RoverTerminal`, `missions`, `hq:terminal-seen`.
@@ -124,7 +172,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 
 - Full is the default for every visitor on every OS. The OS preference (`prefers-reduced-motion`) is not the default.
 - The Motion menu restores it: System follows the OS again, Reduced always reduces.
-- That menu is the only way to reduce motion, so keep it easy to find: the HUD icon, the phone menu and the three Cmd-K actions.
+- That menu is the only way to reduce motion, so keep it easy to find: the desktop HUD icon, the settings panel (the Corners menu sheet and the desktop settings sheet) and the three Cmd-K actions.
 - Existing visitors: store version 3 migrates a stored `system` (the old default, never a choice) to `full` and keeps `reduced` as is (`migrateMotion`); a System picked from version 3 on stays.
 - Without JavaScript the page CSS still follows the OS (no `data-motion` attribute).
 
@@ -154,7 +202,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `MotionMenu` (`src/hud/MotionControl.tsx`): a round icon button right of Sound in the 3D top bar (`data-testid="motion-menu"`, `data-onboard="motion"`).
   - It opens a small popover with `MotionChoices`: a fieldset of three native radios (legend "Motion", arrow keys move and select).
   - Esc and an outside click close it and return focus.
-- Phones show `MotionChoices` inline in the menu under language and sound.
+- Phones and tablets (the Corners HUD) set Motion in the menu sheet's settings panel (`setting-motion`); desktops also have it in the settings sheet (gear button or `,`).
 - Cmd-K has `motion-system`, `motion-full` and `motion-reduced` on every page (a toast confirms).
 - There is no motion hint: the one-time "turn on full motion" Rover line (`MotionHintLayer`, copy `dialog.motion`) was removed with the Full default; do not reintroduce it. A stale `hq:motion-hint` key in old browsers is ignored.
 
@@ -164,7 +212,7 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 - `e2e/motion.spec.ts` (`page.emulateMedia({ reducedMotion: "reduce" })`):
   - `lastRide.distinctY` at least 12 and a moving intro by default;
   - the cut under System and under Reduced;
-  - the version 2 migration, axe, the phone menu, Cmd-K on the Classic site.
+  - the version 2 migration, axe, the Corners menu, Cmd-K on the Classic site.
 - Specs that test reduced motion by emulating the OS flag pick System first with `chooseMotion(page | context, "system")` from `e2e/hq.ts` (it rewrites `hq:v1` before every navigation), so the flag decides as before.
 
 ## Rover dialog, onboarding and hints
@@ -203,7 +251,13 @@ Missions and the HUD, the Motion setting, Rover's dialog with onboarding and hin
 |---|---|
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
-| Phones | 232 px, and 68 px from the right edge (clear of the elevator panel) |
+| Phones | 168 px, 12 px from both edges: a slim toast above the joystick (120 px plus the 24 px band padding and a 24 px gap) |
+
+- The phone toast (`placement === "phone"`):
+  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
+  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the two rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
+  - choices and Skip still render (onboarding needs them).
+- The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 
 ### Onboarding
 

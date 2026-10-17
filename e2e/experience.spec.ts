@@ -179,6 +179,8 @@ test.describe("boot and intro", () => {
 
 test.describe("elevator", () => {
   test("the panel reaches every floor", async ({ page }) => {
+    // Five rides on SwiftShader: about 2.4 minutes on a CI runner, so the default 150 s left no headroom.
+    test.setTimeout(240_000);
     const errors = collectErrors(page);
     await enterHQ(page);
     const panel = page.getByRole("navigation", { name: "Elevator" });
@@ -201,15 +203,18 @@ test.describe("elevator", () => {
     }
   });
 
-  test("phone buttons keep their short names inside the compact column", async ({ browser }) => {
+  test("phone floor sheet rows show their names unclipped", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const page = await context.newPage();
     // Indonesian has the longest names (Perjalanan).
     await enterHQ(page, { path: "/id" });
     await page.evaluate(() => document.fonts.ready);
-    const panel = page.getByTestId("elevator-panel");
-    expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(56);
-    const clipped = await panel.locator("[data-testid='elevator-floor-label']").evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent));
+    await expect(page.getByTestId("elevator-panel")).toHaveCount(0);
+    await page.getByTestId("floor-chip").tap();
+    const sheet = page.getByTestId("floor-sheet");
+    await expect(sheet.locator("[data-floor]")).toHaveCount(5);
+    // Every text span in each row (the nav label and the floor name) fits its box.
+    const clipped = await sheet.locator("[data-floor] span span").evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent));
     expect(clipped).toEqual([]);
     await context.close();
   });
@@ -757,8 +762,10 @@ test.describe("free orbit on touch", () => {
     expect(Math.hypot(after.rover.x - before.rover.x, after.rover.z - before.rover.z)).toBeLessThan(0.5);
 
 
+    // Phones rotate from the menu sheet (Corners HUD); the sheet stays open while rotating.
     const dragged = await currentYaw(page);
-    await page.getByRole("button", { name: en.hud.view.rotateLeft }).click();
+    await page.getByTestId("hud-menu").tap();
+    await page.getByTestId("menu-sheet").getByRole("button", { name: en.hud.view.rotateLeft }).tap();
     await expect.poll(() => cameraYaw(page)).toBeLessThan(dragged - 0.4);
   });
 });

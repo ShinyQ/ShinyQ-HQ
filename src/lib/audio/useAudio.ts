@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { audio } from "./singleton";
-import type { AudioEngine, SoundName } from "./types";
+import type { AudioEngine, AudioSettings, SoundName } from "./types";
 
 export interface UseAudioResult {
   muted: boolean;
@@ -24,4 +24,12 @@ export function useAudio(engine: AudioEngine = audio): UseAudioResult {
     play: engine.play,
     setRumble: engine.setRumble,
   };
+}
+
+const serverSettings: AudioSettings = { effects: true, music: true, musicVolume: 1 };
+const serverSettingsSnapshot = () => serverSettings;
+
+/** Effects, music and music volume (Settings panel). Server render reports the defaults. */
+export function useAudioSettings(engine: AudioEngine = audio): AudioSettings {
+  return useSyncExternalStore(engine.subscribe, engine.getSettings, serverSettingsSnapshot);
 }

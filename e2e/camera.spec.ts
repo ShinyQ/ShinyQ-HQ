@@ -406,12 +406,14 @@ test.describe("touch", () => {
   test("pinch zooms, all the way into first person and back out, and never changes floors", async ({ page }) => {
     await enterHQ(page);
     await waitForCameraSettle(page);
+    // The Corners HUD keeps the view controls group (one reset button) bottom right.
+    await expect(page.getByRole("group", { name: en.hud.view.label })).toBeVisible();
     // The session starts on the kiosk spawn view (L1:kiosk, zoomed out): zoom steps are relative to it.
     const start = (await probe(page)).zoom;
     await pinch(page, 120, 160);
     await expect.poll(async () => (await probe(page)).zoom).toBeLessThan(start * 0.95);
     expect((await probe(page)).mode).toBe("third");
-    // Fingers stay clear of the elevator panel on the right edge (a finger that lands on it is not a pinch).
+    // Fingers stay on the open floor at mid-height, clear of the HUD corners (a finger that lands on a control is not a pinch).
     await pinch(page, 60, 220);
     await expect.poll(async () => (await probe(page)).blend, { timeout: 30_000 }).toBe(1);
     await pinch(page, 220, 90);

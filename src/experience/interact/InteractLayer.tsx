@@ -149,8 +149,8 @@ export function InteractLayer({ layouts, data, tier }: { layouts: FloorLayouts; 
   }, [items]);
 
   useEffect(() => {
-    interactRuntime.items = items;
     interactRuntime.floorY = y;
+    interactRuntime.setItems(items);
   }, [items, y]);
 
   useEffect(() => {

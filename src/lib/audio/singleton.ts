@@ -20,6 +20,10 @@ export const audio: AudioEngine = {
   isPaused: () => engine().isPaused(),
   toggleMuted: () => engine().toggleMuted(),
   isMuted: () => engine().isMuted(),
+  getSettings: () => engine().getSettings(),
+  setEffects: (on) => engine().setEffects(on),
+  setMusic: (on) => engine().setMusic(on),
+  setMusicVolume: (volume) => engine().setMusicVolume(volume),
   subscribe: (listener) => engine().subscribe(listener),
   dispose: () => {
     instance?.dispose();

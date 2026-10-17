@@ -351,6 +351,9 @@
     "floor": "Lantai",
     "elevator": "Lift",
     "goToFloor": "{floor} {label}: ke lantai ini ({name})",
+    "goToFloorFull": "{floor} {label} {name}: ke lantai ini",
+    "floorChip": "{floor} {label}: ganti lantai ({name})",
+    "floorChipFull": "{floor} {label} {name}: ganti lantai",
     "currentFloor": "Lantai saat ini: {floor}, {name}",
     "pageView": "Situs klasik",
     "pageViewHint": "Buka halaman ini sebagai situs klasik, tanpa menara 3D",
@@ -366,10 +369,58 @@
       "reduced": "Dikurangi",
       "note": "Sistem mengikuti pengaturan pengurangan gerak di perangkat."
     },
+    "settings": {
+      "dayNight": {
+        "label": "Siang dan malam",
+        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
+      },
+      "openLinks": {
+        "label": "Buka tautan di",
+        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
+        "page": "Situs klasik",
+        "3d": "3D"
+      },
+      "title": "Pengaturan",
+      "open": "Pengaturan",
+      "close": "Tutup pengaturan",
+      "percent": "{value} persen",
+      "groups": { "general": "Umum", "display": "Tampilan", "sound": "Suara" },
+      "language": { "label": "Bahasa", "en": "English", "id": "Bahasa Indonesia" },
+      "motion": {
+        "label": "Gerakan",
+        "hint": "Sistem mengikuti perangkat Anda. Dikurangi memotong perjalanan dan transisi kamera.",
+        "system": "Sistem",
+        "full": "Penuh",
+        "reduced": "Dikurangi"
+      },
+      "quality": {
+        "label": "Kualitas grafis",
+        "hint": "Lite menghemat baterai. Perubahan memuat ulang tampilan 3D.",
+        "auto": "Otomatis",
+        "full": "Penuh",
+        "lite": "Lite"
+      },
+      "minimap": { "label": "Peta mini" },
+      "sound": { "label": "Suara", "hint": "Mati membisukan semuanya (tombol M)." },
+      "effects": { "label": "Efek suara" },
+      "music": { "label": "Musik" },
+      "musicVolume": { "label": "Volume musik" }
+    },
     "menu": "Menu",
+    "menuTitle": "Menu",
+    "loadFailed": "Panel ini gagal dimuat.",
+    "retry": "Coba lagi",
+    "map": {
+      "open": "Peta",
+      "label": "Peta {floor} {name}: buka ikhtisar",
+      "title": "{floor} {name}",
+      "rooms": "Tempat di lantai ini",
+      "visited": "sudah dikunjungi",
+      "close": "Tutup peta"
+    },
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
-    "hintCoarse": "Kemudi: joystick · Turbo: ketuk tombol turbo untuk menyalakan atau mematikan · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Zoom: cubit · Lantai: geser ke atas atau bawah",
+    "hintCoarse": "Kemudi: joystick · Turbo: ketuk dua kali joystick · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Zoom: cubit · Lantai: geser ke atas atau bawah",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "joystick": "Joystick rover",
@@ -519,7 +570,6 @@
       "back": "Kembali ke lift",
       "backDetail": "Pindah ke pad panggil lift di awal jalan"
     },
-    "boost": "Turbo",
     "interact": {
       "teleporter": "Teleporter {year}",
       "returnPad": "Kembali ke lift",
@@ -531,18 +581,6 @@
       "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
       "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
       "console": "Konsol waktu"
-    },
-    "settings": {
-      "openLinks": {
-        "label": "Buka tautan di",
-        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
-        "page": "Situs klasik",
-        "3d": "3D"
-      },
-      "dayNight": {
-        "label": "Siang dan malam",
-        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
-      }
     }
   },
   "drawer": {
@@ -827,12 +865,12 @@
     "choices": "Pilihan",
     "tryIt": "Coba sekarang",
     "onboarding": {
-      "welcome": "Hai, saya Rover! Selamat datang di HQ {name}. Mau tur singkat cara menjelajah di sini?",
+      "welcome": "Hai, saya Rover! Selamat datang di HQ {name}. Mau lihat sekilas cara menjelajah di sini?",
       "start": "Ajak saya keliling",
       "skip": "Lewati tutorial",
-      "skipped": "Tidak masalah. Tur ini bisa diputar ulang kapan saja dari Tanya Rover.",
+      "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Tanya Rover.",
       "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
-      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk tombol turbo agar lebih cepat, ketuk lagi untuk mematikannya.",
+      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk dua kali joystick untuk turbo, ketuk dua kali lagi untuk berhenti.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
       "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
       "moved": "Mantap, kemudinya lancar!",
@@ -845,7 +883,7 @@
       "askRover": "Belum tahu mau ke mana? Tanya Rover punya jalan pintas ke ruang-ruang terbaik.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
-      "closingShort": "Itu dasarnya! Tur lengkap bisa diputar ulang dari Tanya Rover kapan saja."
+      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Tanya Rover kapan saja."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",
