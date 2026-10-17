@@ -382,6 +382,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 ### Keyboard
 
 - Focus moves in and is trapped; Esc closes.
+  - `DrawerHost` owns Esc for an open room: one window listener, mounted with the HUD, reads the store at key time and closes the room unless another `aria-modal` dialog owns the keyboard or the key was already handled. It works from the moment the store opens a room: while the room data loads (the loading card) and before `RoomDrawer` mounts (its own Esc handler stays for standalone use).
 - `t` toggles the README terminal view (`hud/drawer/ascii.ts` renders the architecture with box-drawing characters).
 - The drawer is `aria-modal`, so world keys pause while it is open.
 - Clicking empty floor closes it; the rover does not move.

@@ -101,6 +101,22 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   const views = useRoomViews(locale, open || idle);
   const returnFocus = useRef<HTMLElement | null>(null);
 
+  // Esc closes the open room from the moment the store opens it: while its data loads (the loading card)
+  // and before the Glass Drawer has mounted its own handler. Read at key time, so it never waits on React.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      const s = getHQStore().getState();
+      if (!s.activeRoom || s.phase !== "room") return;
+      const drawer = document.querySelector("[data-testid='room-drawer']");
+      if ([...document.querySelectorAll("[role='dialog'][aria-modal='true']")].some((d) => d !== drawer)) return;
+      event.preventDefault();
+      s.closeRoom();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Whoosh on open and close; focus returns to the world when the drawer closes.
   useEffect(() => {
     if (open) {
