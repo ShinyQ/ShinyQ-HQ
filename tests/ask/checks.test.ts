@@ -116,7 +116,7 @@ describe("markdown answers (owner request 2026-10-16)", () => {
     const links = answerLinkPaths(r.chunks);
     for (const page of ["/", "/labs", "/journey", "/library", "/contact", "/quick", "/cv"]) expect(links.has(page)).toBe(true);
     expect(links.has("/labs/voice-ai-contact-center")).toBe(true);
-    expect(answerLinkPaths(retrieve(pack, "How was this site built?", "en").chunks).has(ASK_REPO_CITE)).toBe(true);
+    expect(answerLinkPaths(retrieve(pack, "How was this site built?", "en").chunks).has("/build")).toBe(true);
     expect(r.context).toContain("[link: /labs/voice-ai-contact-center]");
   });
 
@@ -281,16 +281,18 @@ describe("citation paths (done frame)", () => {
     for (const bad of ["https://evil.example", "//evil.example", '/contact#how"><script>', "javascript:alert(1)", "/labs/", "/labs/a/b", "/contact#perspectives-spec-before-code", "/contact#perspectives-", 42, undefined]) {
       expect(isAskCite(bad), String(bad)).toBe(false);
     }
-    expect(["/contact#how", "/blog/a", "/labs/a", "/library"].map(citeKind)).toEqual(["how", "blog", "project", "library"]);
+    expect(isAskCite("/build")).toBe(true);
+    for (const bad of ["/build/", "/build#x", "/build/a", "/en/build"]) expect(isAskCite(bad), bad).toBe(false);
+    expect(["/contact#how", "/blog/a", "/labs/a", "/library", "/build"].map(citeKind)).toEqual(["how", "blog", "project", "library", "build"]);
   });
 
-  it("allows exactly one external cite: the site's public repository", () => {
+  it("still accepts the site's public repository as the one external cite (old cached answers)", () => {
     expect(isAskCite(ASK_REPO_CITE)).toBe(true);
     expect(citeKind(ASK_REPO_CITE)).toBe("repo");
     for (const bad of [`${ASK_REPO_CITE}/`, `${ASK_REPO_CITE}/issues`, "https://github.com/ShinyQ/ShinyQ-Dev", "http://github.com/ShinyQ/ShinyQ-HQ"]) expect(isAskCite(bad), bad).toBe(false);
   });
 
-  it("cites the repository for an answer about how this site was built, and nothing for other factual answers", () => {
+  it("cites the build page for an answer about how this site was built, and nothing for other factual answers", () => {
     const siteCheck = (answer: string, question: string, locale: "en" | "id" = "en") => {
       const r = retrieve(pack, question, locale);
       return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks, site: isSiteQuestion(question), locale });
@@ -299,12 +301,13 @@ describe("citation paths (done frame)", () => {
       ok: true,
       text: expect.any(String),
       outcome: "answer",
-      cite: ASK_REPO_CITE,
+      cite: "/build",
     });
-    expect(siteCheck("Ya. Kurniadi membangunnya dengan AI coding agent seperti GitHub Copilot, lalu me-review dan me-merge setiap perubahan.", "Apakah situs ini dibuat dengan AI?", "id")).toMatchObject({ ok: true, cite: ASK_REPO_CITE });
+    expect(siteCheck("Ya. Kurniadi membangunnya dengan AI coding agent seperti GitHub Copilot, lalu me-review dan me-merge setiap perubahan.", "Apakah situs ini dibuat dengan AI?", "id")).toMatchObject({ ok: true, cite: "/build" });
     const other = siteCheck("Kurniadi currently works at Metrodata.", "What does he do now?");
     expect(other).toMatchObject({ ok: true });
     expect(other).not.toHaveProperty("cite");
+    expect(noViewMessage("en", { title: "How ShinyQ HQ Was Built", url: "/build" })).toContain("on the How this site was built page");
     expect(noViewMessage("en", { title: "How ShinyQ HQ Was Built", url: ASK_REPO_CITE })).toContain("in the site's public repository");
   });
 });

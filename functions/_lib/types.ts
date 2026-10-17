@@ -32,7 +32,7 @@ export interface KnowledgeChunk {
   text_id: string;
   /** YYYY-MM or YYYY-MM-DD of the fact, when known. */
   updatedAt?: string;
-  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center"; the `site` chunk holds the public repository URL (`ASK_REPO_CITE`). */
+  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center"; the `site` chunk holds `/build`. */
   url?: string;
   keywords: string[];
 }

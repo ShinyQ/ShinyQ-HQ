@@ -12,7 +12,7 @@ export const ASK_SITE_ORIGINS: readonly string[] = ["https://kurniadi.pages.dev"
 export const ASK_LINK_PAGES: readonly string[] = ["/", "/labs", "/journey", "/library", "/contact", "/quick", "/cv"];
 
 const SLUG = "[a-z0-9]+(?:-[a-z0-9]+)*";
-const SITE_PATH = new RegExp(`^/(?:(?:labs|journey|blog)/${SLUG}|labs|journey|library|contact|quick|cv)?(?:#${SLUG}(?:=${SLUG})?)?$`);
+const SITE_PATH = new RegExp(`^/(?:(?:labs|journey|blog)/${SLUG}|labs|journey|library|contact|quick|cv|build)?(?:#${SLUG}(?:=${SLUG})?)?$`);
 const UNSAFE = /[\s\\<>"'`\u0000-\u001F\u007F]/;
 
 export type AskLinkTarget = { kind: "site"; path: string } | { kind: "external"; href: string };

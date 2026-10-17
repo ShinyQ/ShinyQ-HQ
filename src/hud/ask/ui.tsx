@@ -26,8 +26,7 @@ export function AskAsOf({ asOf, locale, className }: { asOf?: string; locale: Lo
 /**
  * "Read on this site" link under a cited answer (spec section 13). A plain anchor on purpose, so a
  * same-page hash (`/contact#how`) still scrolls; the path is allowlisted (`isAskCite`) and never
- * comes from the model's text. The site's public repository (answers about how this site was
- * built) opens in a new tab instead and leaves the chat open.
+ * comes from the model's text. The site's public repository (a cite kept for older cached answers) opens in a new tab instead and leaves the chat open.
  */
 export function AskCiteLink({ path, locale, className, onNavigate }: { path: string; locale: Locale; className?: string; onNavigate?: () => void }) {
   const t = useTranslations("ask");

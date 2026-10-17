@@ -42,6 +42,8 @@ export const POST_LEAD_PARAGRAPHS = 1;
 export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 /** Id of the chunk built from content/ask/site-build.json (`SITE_INCLUDE` in functions/_lib/retrieve.ts). */
 export const SITE_CHUNK = "site-build";
+/** The page the site chunk is cited to (the How this site was built page; it links the public repository). */
+export const SITE_BUILD_PAGE = "/build";
 
 export interface PackSources {
   content: SiteContent;
@@ -172,13 +174,13 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     ]),
   });
 
-  // How this site was built (owner request 2026-10-15): Ask knowledge only, cited to the public repository.
+  // How this site was built (owner request 2026-10-15): Ask knowledge, cited to the /build page.
   if (siteBuild) {
     out.push({
       id: SITE_CHUNK,
       type: "site",
       title: siteBuild.title.en,
-      url: siteBuild.source,
+      url: SITE_BUILD_PAGE,
       updatedAt: siteBuild.asOf,
       keywords: siteBuild.keywords,
       text: loc(siteBuild.text),

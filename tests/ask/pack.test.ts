@@ -3,7 +3,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
-import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, SITE_CHUNK, stackKeywords, validatePack } from "@/ask/pack";
+import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, SITE_BUILD_PAGE, SITE_CHUNK, stackKeywords, validatePack } from "@/ask/pack";
 import { ASK_REPO_CITE, isAskCite } from "@/ask/protocol";
 import { getContent, getPerspectivesFile, getSiteBuild } from "@/content/load";
 import { SITE_BUILD_SOURCE } from "@/content/schema";
@@ -345,14 +345,15 @@ describe("pack budget for project chunks", () => {
 });
 
 describe("how this site was built (content/ask/site-build.json, owner request 2026-10-15)", () => {
-  it("adds one site-build chunk with the file's text, cited to the public repository", () => {
+  it("adds one site-build chunk with the file's text, cited to the build page", () => {
     const file = getSiteBuild();
     const chunk = pack.chunks.find((c) => c.id === SITE_CHUNK)!;
     expect(SITE_CHUNK).toBe(SITE_INCLUDE);
     expect(chunk.type).toBe("site");
     expect(chunk.text_en).toBe(file.text.en);
     expect(chunk.text_id).toBe(file.text.id);
-    expect(chunk.url).toBe(ASK_REPO_CITE);
+    expect(chunk.url).toBe(SITE_BUILD_PAGE);
+    expect(chunk.url).toBe("/build");
     expect(isAskCite(chunk.url)).toBe(true);
     expect([ASK_REPO_CITE, SITE_BUILD_SOURCE]).toEqual([REPO_URL, REPO_URL]);
     expect(chunkTags(chunk)).toEqual(["work", "agents"]);

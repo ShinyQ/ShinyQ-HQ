@@ -13,6 +13,8 @@ describe("askLinkTarget", () => {
     expect(askLinkTarget("/")).toEqual({ kind: "site", path: "/" });
     expect(askLinkTarget("/#highlights")).toEqual({ kind: "site", path: "/#highlights" });
     expect(askLinkTarget("/en#highlights")).toEqual({ kind: "site", path: "/#highlights" });
+    expect(askLinkTarget("/build")).toEqual({ kind: "site", path: "/build" });
+    expect(askLinkTarget("/en/build/")).toEqual({ kind: "site", path: "/build" });
     expect(askLinkTarget("/id/")).toEqual({ kind: "site", path: "/" });
     expect(askLinkTarget("/en/labs/")).toEqual({ kind: "site", path: "/labs" });
     expect(askLinkTarget("/labs/#labs-tech=python")).toEqual({ kind: "site", path: "/labs#labs-tech=python" });
