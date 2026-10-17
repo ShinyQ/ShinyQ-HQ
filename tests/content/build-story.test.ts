@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { BuildFactsSchema, BuildStorySchema, COMING_SOON_IDS, STATION_IDS, getBuildFacts, getBuildStory, type BuildStory } from "@/content/build-story";
+import { parseCiJobs } from "../../scripts/build-facts";
 import { hasFirstPerson } from "@/lib/first-person";
 import { LOCALES } from "@/content/locales";
 import { EM_DASH, collectStrings } from "@/content/safety";
@@ -13,7 +14,7 @@ const story = BuildStorySchema.parse(raw);
 
 const ciJobNames = () => {
   const ci = readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
-  return [...ci.matchAll(/^ {4}name: (.+)$/gm)].map((m) => m[1].trim());
+  return parseCiJobs(ci);
 };
 
 const titles = (s: BuildStory) => [
