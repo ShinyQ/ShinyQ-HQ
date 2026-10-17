@@ -262,7 +262,7 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 | Doc | What it covers |
 |---|---|
 | [`docs/features.md`](docs/features.md) | Every feature floor by floor, controls, Ask the HQ, CI, performance, status log |
-| [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, public-safety lint |
+| [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, build story, public-safety lint |
 | [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, workflow, key commands, budgets, index of the detail docs |
 | [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, performance, CI |
 | [`docs/decisions.md`](docs/decisions.md) | Dated log of owner decisions |
