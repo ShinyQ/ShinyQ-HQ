@@ -78,13 +78,13 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "labs-data", "production", "reactor"]);
     expect(specsForChanges(["src/experience/floors/labs/OpsRoom.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
     expect(specsForChanges(["src/components/page/Production.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
-    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["career", "fast-return", "pads", "spectacle", "workshop"]);
+    expect(specsForChanges(["src/experience/floors/career/layout.ts"]).specs).toEqual(["arrivals", "career", "fast-return", "pads", "spectacle", "workshop"]);
     expect(specsForChanges(["src/content/workshop.ts"]).specs).toEqual(["career", "missions", "pageview", "workshop"]);
     expect(specsForChanges(["src/experience/fx/FloatingSign.tsx"]).specs).toEqual(["career", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "daynight", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/sky/SkyController.tsx"]).specs).toEqual(["daynight", "experience"]);
     expect(specsForChanges(["src/lib/day-night.ts"]).specs).toEqual(["daynight", "experience"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
     expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/experience/fx/plateProjection.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
@@ -103,12 +103,27 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/components/Analytics.tsx"]).specs).toEqual(["boot-first", "csp", "pageview", "static-routes", "visit"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/Controls.tsx"]).specs).toEqual(["drawer-solid", "experience", "hud", "missions"]);
-    expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["library-roof", "pads", "roof"]);
+    expect(specsForChanges(["src/experience/floors/roof/layout.ts"]).specs).toEqual(["arrivals", "library-roof", "pads", "roof"]);
     expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).toEqual(["library-roof", "pads", "roof"]);
     expect(specsForChanges(["src/content/room-views/roof.ts"]).specs).toEqual(["library-roof", "roof"]);
     // The Visitor Observatory lives in the Lobby (owner decision 2026-10-14).
     expect(specsForChanges(["src/experience/floors/lobby/VisitsStation.tsx"]).specs).toEqual(["experience", "highlights", "pageview", "visits"]);
+    expect(specsForChanges(["src/experience/floors/lobby/observatory.ts"]).specs).toEqual(["experience", "highlights", "pageview", "visits"]);
     expect(specsForChanges(["src/experience/floors/lobby/kiosk.ts"]).specs).toEqual(["camera", "experience", "highlights", "interact", "onboarding", "visits"]);
+  });
+
+  it("selects the arrivals spec for arrival points, zones and the camera (Round 8 J)", () => {
+    expect(specsForChanges(["src/experience/config.ts"]).specs).toEqual(["arrivals", "experience"]);
+    expect(specsForChanges(["src/experience/floors/career/YearGates.tsx"]).specs).toContain("arrivals");
+    expect(specsForChanges(["src/experience/floors/library/concepts/newsroom.ts"]).specs).toContain("arrivals");
+    expect(specsForChanges(["src/experience/floors/lobby/observatoryLayout.ts"]).specs).toEqual(["arrivals", "experience", "highlights", "pageview", "visits"]);
+    expect(specsForChanges(["src/experience/floors/labs/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "spectacle"]);
+    expect(specsForChanges(["src/experience/camera/arrival.ts"]).specs).toEqual(["arrivals", "camera", "career", "experience", "ride"]);
+    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toContain("arrivals");
+    // Only the roof layout moves the RF arrival; the deck mesh does not.
+    expect(specsForChanges(["src/experience/floors/Roof.tsx"]).specs).not.toContain("arrivals");
+    // The labs layout carries the L3 arrival; its other files do not.
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).not.toContain("arrivals");
   });
 
   it("maps static pages and content", () => {
