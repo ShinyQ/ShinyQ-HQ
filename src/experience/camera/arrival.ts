@@ -1,5 +1,6 @@
+import type { FloorId } from "@/content/schema";
 import { SHAFT_EAST_FACE } from "../config";
-import { easeInOutCubic } from "../tower/elevator";
+import { easeInOutCubic, type RideStage } from "../tower/elevator";
 import type { ViewportClass } from "../types";
 import { followForward, followPose, FOLLOW_LOOK_AHEAD, railPose, type CameraPose, type Vec3 } from "./rigs";
 import { followOffsetScale } from "./offset";
@@ -39,6 +40,52 @@ export function shoulderPose(rover: Vec3, heading: number, fov: number): CameraP
 /** Eased glide progress 0..1 after `t` seconds. */
 export function glideProgress(t: number): number {
   return easeInOutCubic(Math.max(0, Math.min(1, t / ARRIVAL_GLIDE.duration)));
+}
+
+/** A running arrival glide: seconds since it started and the destination floor. */
+export interface GlideState {
+  t: number;
+  to: FloorId;
+}
+
+/** What one frame of the glide lifecycle reads. */
+export interface GlideInput {
+  dt: number;
+  /** Stage of the stored ride this frame and on the previous frame (null without a ride). */
+  stage: RideStage | null;
+  prevStage: RideStage | null;
+  /** The ride's destination (null without a ride). */
+  to: FloorId | null;
+  reduced: boolean;
+  /** The destination has an arrival view zone. */
+  hasZone: boolean;
+  /** Visitor input or a state that takes the view: steering, a key turn, a beam, or a phase other than explore or elevator. */
+  interrupted: boolean;
+  /** The rover is still rolling on to the arrival point (or about to). */
+  rollingOn: boolean;
+}
+
+/**
+ * One frame of the arrival glide's lifecycle. It starts when the car doors start to open (never under reduced
+ * motion, which has no doors stage), then advances by `dt`. It ends at once on input, a new ride or a beam;
+ * otherwise once a frame at full progress was drawn and the arrival roll-on is over, so the camera stays snapped
+ * to the rover at the settled view until it stops (no follow-spring lag behind a rover at autopilot speed).
+ * `started` is true on the frame it starts (the caller primes the arrival view then).
+ */
+export function stepGlide(state: GlideState | null, input: GlideInput): { glide: GlideState | null; started: boolean } {
+  const { stage, prevStage, to } = input;
+  let glide = state;
+  let started = false;
+  if (stage === "opening" && prevStage !== "opening" && to !== null && !input.reduced && input.hasZone) {
+    glide = { t: 0, to };
+    started = true;
+  } else if (glide) {
+    // The previous frame drew full progress: the follow spring holds the settled view from here, once the rover parked.
+    if (glide.t >= ARRIVAL_GLIDE.duration && !input.rollingOn) glide = null;
+    else glide = { t: glide.t + input.dt, to: glide.to };
+  }
+  if (glide && (input.interrupted || stage === "toDoor" || stage === "boarding")) glide = null;
+  return { glide, started };
 }
 
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;

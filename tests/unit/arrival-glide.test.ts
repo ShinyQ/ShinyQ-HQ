@@ -6,10 +6,12 @@ import {
   glidePose,
   glideProgress,
   LOOK_EAST_YAW,
+  type GlideInput,
   railYawBehind,
   shaftClearZoom,
   SHAFT_CLEAR_X,
   shoulderPose,
+  stepGlide,
 } from "@/experience/camera/arrival";
 import { followOffsetScale } from "@/experience/camera/offset";
 import {
@@ -75,6 +77,81 @@ describe("glideProgress", () => {
       expect(p).toBeGreaterThanOrEqual(last);
       last = p;
     }
+  });
+});
+
+describe("stepGlide", () => {
+  const DT = 1 / 60;
+  /** A plain frame after the ride ended: no ride, no input, the rover parked. */
+  const frame = (over: Partial<GlideInput> = {}): GlideInput => ({
+    dt: DT,
+    stage: null,
+    prevStage: null,
+    to: null,
+    reduced: false,
+    hasZone: false,
+    interrupted: false,
+    rollingOn: false,
+    ...over,
+  });
+  const opening = (over: Partial<GlideInput> = {}) => frame({ stage: "opening", prevStage: "moving", to: "L3", hasZone: true, ...over });
+
+  it("starts at 0 toward the destination when the doors start to open", () => {
+    expect(stepGlide(null, opening())).toEqual({ glide: { t: 0, to: "L3" }, started: true });
+  });
+
+  it("does not start under reduced motion, without an arrival zone or while the doors stay open", () => {
+    expect(stepGlide(null, opening({ reduced: true }))).toEqual({ glide: null, started: false });
+    expect(stepGlide(null, opening({ hasZone: false }))).toEqual({ glide: null, started: false });
+    expect(stepGlide(null, opening({ prevStage: "opening" }))).toEqual({ glide: null, started: false });
+    expect(stepGlide(null, frame()).glide).toBeNull();
+  });
+
+  it("advances by dt through the doors and past the ride's end", () => {
+    let glide = stepGlide(null, opening()).glide;
+    glide = stepGlide(glide, frame({ stage: "opening", prevStage: "opening", to: "L3" })).glide;
+    expect(glide?.t).toBeCloseTo(DT);
+    glide = stepGlide(glide, frame({ stage: "exiting", prevStage: "opening", to: "L3" })).glide;
+    glide = stepGlide(glide, frame({ prevStage: "exiting", rollingOn: true })).glide;
+    expect(glide).toEqual({ t: expect.closeTo(3 * DT, 9), to: "L3" });
+    expect(glideProgress(glide!.t)).toBeGreaterThan(0);
+    expect(glideProgress(glide!.t)).toBeLessThan(1);
+  });
+
+  it("draws one frame at full progress, then ends once the rover is parked", () => {
+    const full = stepGlide({ t: ARRIVAL_GLIDE.duration - DT / 2, to: "L3" }, frame()).glide;
+    expect(full).not.toBeNull();
+    expect(glideProgress(full!.t)).toBe(1);
+    expect(stepGlide(full, frame())).toEqual({ glide: null, started: false });
+  });
+
+  it("holds at full progress while the rover still rolls on, then ends when it stops", () => {
+    let glide: ReturnType<typeof stepGlide>["glide"] = { t: ARRIVAL_GLIDE.duration, to: "L4" };
+    for (let i = 0; i < 120; i++) {
+      glide = stepGlide(glide, frame({ rollingOn: true })).glide;
+      expect(glide).not.toBeNull();
+      expect(glideProgress(glide!.t)).toBe(1);
+    }
+    expect(stepGlide(glide, frame()).glide).toBeNull();
+  });
+
+  it("ends at once on input, a beam, a room or the hologram (one interrupted flag), even while rolling on", () => {
+    const mid = { t: 0.4, to: "L2" as const };
+    expect(stepGlide(mid, frame({ interrupted: true })).glide).toBeNull();
+    expect(stepGlide({ t: ARRIVAL_GLIDE.duration, to: "L2" }, frame({ interrupted: true, rollingOn: true })).glide).toBeNull();
+    expect(stepGlide(null, opening({ interrupted: true }))).toEqual({ glide: null, started: true });
+  });
+
+  it("ends at once when a new ride starts (driving to the door or boarding)", () => {
+    const mid = { t: 0.4, to: "RF" as const };
+    expect(stepGlide(mid, frame({ stage: "toDoor", to: "L1", rollingOn: true })).glide).toBeNull();
+    expect(stepGlide(mid, frame({ stage: "boarding", prevStage: "toDoor", to: "L1" })).glide).toBeNull();
+  });
+
+  it("does not change the state it is given", () => {
+    const state = { t: 0.2, to: "L3" as const };
+    stepGlide(state, frame());
+    expect(state).toEqual({ t: 0.2, to: "L3" });
   });
 });
 

@@ -14,13 +14,13 @@ import { RIDE_CAP, type RideStage } from "../tower/elevator";
 import { roverRuntime } from "../rover/runtime";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
-import { ARRIVAL_GLIDE, ARRIVAL_HEADING, cameraBehindHeading, glidePose, glideProgress, shoulderPose } from "./arrival";
+import { ARRIVAL_HEADING, cameraBehindHeading, glidePose, glideProgress, shoulderPose, stepGlide } from "./arrival";
 import { boostView } from "./boostView";
 import { clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
@@ -51,10 +51,13 @@ function arrivalZone(layout: FloorLayout | undefined): ViewZone | null {
   return layout?.arrival ? zoneAt(layout.id, { ...layout.arrival, heading: ARRIVAL_HEADING }, layout.viewZones) : null;
 }
 
-/** Applies a floor's arrival view at once (rail-aware on L2; elsewhere a stale L2 arrival rail yaw is forgotten, the rail stays). */
+/** Applies a floor's arrival view at once (rail-aware on L2; elsewhere a stale L2 zone rail yaw goes back to the nearest side view). */
 function primeArrival(orbit: OrbitState, zone: ViewZone, floor: FloorId, cls: HQState["device"]["camera"]): void {
   primeZone(orbit, zone, cls, floor === "L2");
-  if (floor !== "L2") orbit.zoneRailYaw = null;
+  if (floor !== "L2" && orbit.zoneRailYaw !== null) {
+    orbit.railYaw = orbit.railYawTarget = orbit.railYaw - wrapPi(orbit.railYaw);
+    orbit.zoneRailYaw = null;
+  }
 }
 
 /**
@@ -148,19 +151,29 @@ export function CameraDirector({
       if (zone?.prime || zone?.arrivalOnly) primeZone(orbit, zone, cls, s.floor === "L2");
     }
 
+    // The arrival roll-on (the Director drives the rover from the car to the arrival point). A roll-on still pending
+    // while the visitor steers does not start (the Director waits for the keys or the stick to let go), so it does not count.
+    const arrival = roverRuntime.autopilot?.arrival ? roverRuntime.autopilot.state : null;
+    const rollingOn = arrival === "driving" || (arrival === "pending" && !roverRuntime.steering);
     // Arrival glide (Round 8 J): when the car doors start to open, the camera starts over the rover's shoulder
-    // in the car and glides to the destination's arrival view. Reduced motion has no doors stage: it cuts to the
+    // in the car and glides to the destination's arrival view, then holds it (snapped to the rover) until the
+    // roll-on ends. It ends at once on manual steering or a key turn, a new ride, a beam, or a room or the hologram
+    // (turn and zoom intents end it in the intents handler). Reduced motion has no doors stage: it cuts to the
     // arrival view on the frame the ride ends, with the rover already on the arrival point.
     const stage = s.ride?.stage ?? null;
-    if (s.ride && stage === "opening" && l.prevStage !== "opening" && !s.reducedMotion) {
-      const zone = arrivalZone(layouts?.[s.ride.to]);
-      if (zone) {
-        primeArrival(orbit, zone, s.ride.to, cls);
-        l.glide = { t: 0, to: s.ride.to };
-      }
-    } else if (l.glide) {
-      l.glide.t += dt;
-    }
+    // The destination's arrival zone, looked up only on the frame the doors start to open (the glide may start then).
+    const destZone = s.ride && stage === "opening" && l.prevStage !== "opening" && !s.reducedMotion ? arrivalZone(layouts?.[s.ride.to]) : null;
+    const step = stepGlide(l.glide, {
+      dt,
+      stage,
+      prevStage: l.prevStage,
+      to: s.ride?.to ?? null,
+      reduced: s.reducedMotion,
+      hasZone: destZone !== null,
+      interrupted: roverRuntime.steering || axis !== 0 || tilt !== 0 || s.beam !== null || !exploring,
+      rollingOn,
+    });
+    if (step.started && destZone && s.ride) primeArrival(orbit, destZone, s.ride.to, cls);
     // This sees the ride end on the frame the Director ends it (rover on the arrival point, `cameraSnap` set): both
     // `useFrame`s use the default priority 0 and R3F runs equal priorities in subscription order, which is mount
     // order here (Scene.tsx mounts the Director just before the CameraDirector).
@@ -173,15 +186,11 @@ export function CameraDirector({
       }
     }
     l.prevStage = stage;
-    // The glide ends on manual steering or a key turn, a new ride, a beam, or a room or the hologram (turn and zoom intents end it in the intents handler).
-    if (l.glide && (roverRuntime.steering || axis || tilt || stage === "toDoor" || stage === "boarding" || s.beam || !exploring)) l.glide = null;
+    l.glide = step.glide;
     const glide = l.glide;
 
     // The arrival view holds while the camera glides and the rover rolls on to the arrival point, so it parks in the primed zone.
-    // A roll-on still pending while the visitor steers does not start (the Director waits for the keys or the stick to
-    // let go), so it releases the hold: the zones follow the steered rover.
-    const arrival = roverRuntime.autopilot?.arrival ? roverRuntime.autopilot.state : null;
-    const rollingOn = arrival === "driving" || (arrival === "pending" && !roverRuntime.steering);
+    // A pending roll-on while the visitor steers releases the hold: the zones follow the steered rover.
     if (exploring && !s.ride && !glide && !rollingOn) {
       updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), orbit), s.reducedMotion, cls, rail);
     }
@@ -328,8 +337,6 @@ export function CameraDirector({
     roverRuntime.cameraPosition = toVec3(l.outPos);
     roverRuntime.cameraBehind = cameraBehindHeading(roverRuntime.cameraPosition, [roverRuntime.x, roverRuntime.y, roverRuntime.z]);
     roverRuntime.arrivalGlide = glide ? glideProgress(glide.t) : -1;
-    // The last glide frame drew the settled view; the follow spring holds it from the next frame.
-    if (glide && glide.t >= ARRIVAL_GLIDE.duration) l.glide = null;
     roverRuntime.cameraElevation = Math.atan2(l.outPos.y - l.outTarget.y, Math.hypot(l.outPos.x - l.outTarget.x, l.outPos.z - l.outTarget.z));
     if (scene.fog instanceof Fog) {
       // Ease the linear fog range between rigs so the intro fly-in and the first-person glide do not pop.
