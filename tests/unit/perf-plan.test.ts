@@ -29,6 +29,33 @@ describe("perfKeysFor", () => {
     expect(perfKeysFor(["src/experience/floors/Labs.tsx"])).toEqual(["bytes", "floor:L3", "ride:L3"]);
   });
 
+  it("selects the bytes gate, the B1 settled gate and the B1 rides for B1 code", () => {
+    const b1Files = [
+      "src/experience/floors/engine/layout.ts",
+      "src/experience/floors/EngineRoom.tsx",
+      "src/experience/floors/chunks/engine.ts",
+      "src/hud/drawer/EngineBody.tsx",
+      "src/content/room-views/engine.ts",
+      "src/experience/b1.ts",
+    ];
+    for (const file of b1Files) expect(perfKeysFor([file])).toEqual(["bytes", "floor:B1", "ride:B1"]);
+    const re = new RegExp(perfGrep(perfKeysFor(["src/experience/floors/engine/layout.ts"])));
+    for (const t of [
+      "B1 lite: settled draw calls and shader programs",
+      "B1 full: settled draw calls and shader programs",
+      "the ride L1 to B1 stays under the scene budget (lite)",
+      "the ride RF to B1 stays under the scene budget (full)",
+    ]) expect(t).toMatch(re);
+    expect("L3 full: settled draw calls and shader programs").not.toMatch(re);
+  });
+
+  it("does not pull B1 into public-floor changes", () => {
+    for (const file of ["src/experience/floors/labs/OpsRoom.tsx", "src/experience/floors/lobby/kiosk.ts", "src/experience/floors/roof/Deck.tsx"]) {
+      expect(perfKeysFor([file])).not.toContain("floor:B1");
+      expect(perfKeysFor([file])).not.toContain("ride:B1");
+    }
+  });
+
   it("selects only the bytes gate for HUD code and floor thumbnails", () => {
     expect(perfKeysFor(["src/hud/menu/RoverMenu.tsx"])).toEqual(["bytes"]);
     expect(perfKeysFor(["public/floors/l3.webp"])).toEqual(["bytes"]);

@@ -21,8 +21,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 457.0 KB, 13 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 433.4 KB, 13 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 465.2 KB, about 4.8 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 446.4 KB (measured 441.5 KB, about 4.9 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -49,7 +49,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier: settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 
@@ -60,8 +60,8 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`.
-  - full 470 KB: measured 457.0 KB, so about 13 KB of headroom catches creep early.
-  - lite 446.4 KB: measured 433.4 KB, about 13 KB of headroom.
+  - full 470 KB: measured 465.2 KB, so about 4.8 KB of headroom catches creep early.
+  - lite 446.4 KB: measured 441.5 KB, about 4.9 KB of headroom.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 
 #### Memory gates

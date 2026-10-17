@@ -27,7 +27,7 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
  * session total (main + the public floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
- * (measured 457.0 KB, about 13 KB headroom so creep is caught early), lite 446.4 KB (measured 433.4 KB).
+ * (measured 465.2 KB, about 4.8 KB headroom so creep is caught early), lite 446.4 KB (measured 441.5 KB).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`), after the public floors it
  * shares modules with, and it is left out of the session total: only unlocked visitors load it.
  */
