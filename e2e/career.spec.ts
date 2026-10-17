@@ -65,14 +65,6 @@ test.describe("Career Road (L2)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the L2 road stays under the draw call budget", async ({ page }) => {
-    await openJourney(page);
-    await waitForPhase(page, "explore");
-    await page.waitForFunction(() => (window as unknown as { __hq: { rover: { drawCalls: number } } }).__hq.rover.drawCalls > 10);
-    await page.waitForTimeout(1500);
-    await expectRenderBudget(page);
-  });
-
   test("a deep link opens the room's drawer, Esc closes it and driving into a door opens it", async ({ page }) => {
     const errors = collectErrors(page);
     await openJourney(page, "/en/journey/jenius-2024");

@@ -1,11 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, enterHQ, skipFloorLines, waitForCameraSettle, waitForFloor, waitForFrames } from "./hq";
+import en from "../messages/en.json";
+import { chooseMotion, collectErrors, enterHQ, skipFloorLines, waitForCameraSettle, waitForFloor, waitForFrames } from "./hq";
 
 /**
  * L3-style arrivals on every floor (Round 8 J, owner 2026-10-17): after an elevator ride the rover rolls on east
  * to `FloorLayout.arrival` and the camera glides out of the car to stand behind it, looking east. Reduced motion
  * cuts to the same view with the rover already on the arrival point. Reads the probes on `window.__hq.rover`
- * (`arrivalGlide`, `cameraBehind`, `heading`); every wait is on state, never on time.
+ * (`arrivalGlide`, `cameraBehind`, `heading`); every wait is on state, never on time. The desktop tour rides through
+ * the elevator panel, so it also covers the panel reaching every floor and each built floor writing its route.
+ * There is no phone tour: the arrival point, heading and glide have no viewport input (`camera/arrival.ts`), the
+ * phone camera classes are unit tested (`tests/unit/arrivals.test.ts`) and phone rides run in `pads` and `hud-corners`.
  */
 test.describe.configure({ timeout: 600_000 });
 
@@ -106,29 +110,35 @@ async function openLobby(page: Page, motion: "full" | "reduced" = "full") {
   await enterHQ(page);
 }
 
-for (const { name, size, phone } of [
-  { name: "desktop", size: { width: 1440, height: 900 }, phone: false },
-  { name: "phone", size: { width: 390, height: 844 }, phone: true },
-]) {
-  test.describe(`elevator arrivals on every floor (${name} ${size.width}x${size.height})`, () => {
-    test.use(phone ? { viewport: size, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } : { viewport: size });
+/** The route each built floor writes when the rover arrives (`Experience.tsx`). */
+const ROUTE = { L1: /\/en\?tier=lite$/, L2: /\/en\/journey\?tier=lite$/, L3: /\/en\/labs\?tier=lite$/, L4: /\/en\/library\?tier=lite$/, RF: /\/en\/contact\?tier=lite$/ } as const;
 
-    test("each ride parks the rover on the arrival point heading east with the camera behind it", async ({ page }) => {
-      await openLobby(page);
-      const glides = await sampleGlide(page);
-      for (const floor of TOUR) {
-        await glides.reset();
-        await goToFloor(page, floor);
-        await waitForArrival(page, floor);
-        await expectBehindLookingEast(page, floor);
-        // The camera glides out of the car on every floor: some drawn frame of this ride sits strictly inside the glide.
-        const seen = await glides.read();
-        expect(seen.some((p) => p > 0 && p < 1), `${floor} glide frames ${seen.filter((p) => p >= 0).length}`).toBe(true);
-      }
-      await glides.stop();
-    });
+test.describe("elevator arrivals on every floor (desktop 1440x900)", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("each ride through the panel parks the rover on the arrival point heading east with the camera behind it, and writes the floor's route", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openLobby(page);
+    const panel = page.getByRole("navigation", { name: "Elevator" });
+    const glides = await sampleGlide(page);
+    for (const floor of TOUR) {
+      await glides.reset();
+      await panel.locator(`[data-floor="${floor}"]`).click();
+      await waitForArrival(page, floor);
+      await expect(panel.locator(`[data-floor="${floor}"]`)).toHaveAttribute("aria-current", "true");
+      await expect(page.getByTestId("floor-announcer")).toContainText(floor);
+      await expect(page).toHaveURL(ROUTE[floor]);
+      // Built floors link no "open the floor's page" notice.
+      await expect(page.getByRole("link", { name: en.hud.openFloorPage.replace("{name}", en.floors[floor]) })).toHaveCount(0);
+      await expectBehindLookingEast(page, floor);
+      // The camera glides out of the car on every floor: some drawn frame of this ride sits strictly inside the glide.
+      const seen = await glides.read();
+      expect(seen.some((p) => p > 0 && p < 1), `${floor} glide frames ${seen.filter((p) => p >= 0).length}`).toBe(true);
+    }
+    await glides.stop();
+    expect(errors).toEqual([]);
   });
-}
+});
 
 test.describe("arrival glide and reduced motion (1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });

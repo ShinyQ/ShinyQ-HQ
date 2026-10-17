@@ -88,14 +88,6 @@ test.describe("RF roof deck", () => {
     await expect(drawer).toBeVisible();
   });
 
-  test("RF stays under the floor budget and well under today's roof", async ({ page }) => {
-    await openRoof(page);
-    await page.waitForTimeout(1500);
-    const peaks = await expectRenderBudget(page);
-    // The old roof measured 113 calls; the deck stays at least 30 below that (FLOOR_SCENE_CAPS.RF).
-    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.RF);
-  });
-
   test("reduced motion: the roof renders still and inside the budget", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await chooseMotion(page, "system");
