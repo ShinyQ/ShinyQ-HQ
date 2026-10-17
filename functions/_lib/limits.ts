@@ -1,3 +1,4 @@
+import type { ModelBreaker } from "./model";
 import type { KvNamespace, RateLimitBinding } from "./types";
 import { utcDay } from "./security";
 
@@ -128,4 +129,39 @@ export async function recordSample(kv: KvNamespace | undefined, bad: boolean, no
     return true;
   }
   return false;
+}
+
+/**
+ * Per-model breaker: a tier that hit its quota, rate limit or an outage is skipped until `until`.
+ * Memory is checked first, then KV (`mb:<key>`, the until timestamp in ms) so other isolates learn of it.
+ * KV writes are scarce (1,000 a day), so only pauses of a minute or more are written, and KV errors fail soft.
+ */
+const modelPauses = new Map<string, number>();
+const MODEL_BREAKER_MIN_KV_SECONDS = 60;
+
+export function resetModelBreakers() {
+  modelPauses.clear();
+}
+
+export function modelBreaker(kv: KvNamespace | undefined): ModelBreaker {
+  return {
+    async isOpen(key, now) {
+      if ((modelPauses.get(key) ?? 0) > now) return true;
+      const until = await readCount(kv, `mb:${key}`);
+      if (until > now) {
+        modelPauses.set(key, until);
+        return true;
+      }
+      return false;
+    },
+    async trip(key, seconds, now) {
+      modelPauses.set(key, now + seconds * 1000);
+      if (!kv || seconds < MODEL_BREAKER_MIN_KV_SECONDS) return;
+      try {
+        await kv.put(`mb:${key}`, String(now + seconds * 1000), { expirationTtl: Math.ceil(seconds) + 60 });
+      } catch {
+        // The in-memory pause still holds for this isolate.
+      }
+    },
+  };
 }

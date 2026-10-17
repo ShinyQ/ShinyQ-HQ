@@ -1,3 +1,4 @@
+import { secondsToMidnight } from "./limits";
 import type { ChatMessage } from "./prompt";
 import type { AiBinding } from "./types";
 
@@ -7,12 +8,24 @@ export const MAX_TOKENS = 300;
 export const TEMPERATURE = 0.2;
 export const FIRST_TOKEN_MS = 4000;
 export const TOTAL_MS = 8000;
+export const GPT_OSS_MAX_TOKENS = 1024;
+export const GROQ_TIMEOUTS: Timeouts = { firstTokenMs: 6000, totalMs: 6000 };
+/** Whole chain budget: the client stream timeout is 30 s. */
+export const CHAIN_MS = 24_000;
+export const MIN_ATTEMPT_MS = 1500;
+export const WORKERS_AI_KEY = "wai";
+export const groqKey = (model: string) => `groq:${model}`;
+export const UNAVAILABLE_SECONDS = 6 * 3600;
+export const AUTH_SECONDS = 3600;
+export const RATE_LIMIT_DEFAULT_SECONDS = 60;
 
 export interface ModelInput {
   messages: ChatMessage[];
   max_tokens: number;
   temperature: number;
   chat_template_kwargs?: Record<string, unknown>;
+  reasoning_effort?: "none" | "low";
+  include_reasoning?: boolean;
 }
 
 /** Anything that can stream text deltas for a model: the Workers AI binding, or REST in the nightly eval. */
@@ -20,11 +33,39 @@ export interface ModelClient {
   stream(model: string, input: ModelInput, signal: AbortSignal): AsyncIterable<string>;
 }
 
-/** Gemma 4 returns an empty answer unless thinking is disabled (benchmark finding). */
+/**
+ * Gemma 4 returns an empty answer unless thinking is disabled (benchmark finding). The Groq backups
+ * keep reasoning off (Qwen) or low and hidden with a larger token cap (gpt-oss).
+ */
 export function modelInput(model: string, messages: ChatMessage[]): ModelInput {
   const input: ModelInput = { messages, max_tokens: MAX_TOKENS, temperature: TEMPERATURE };
   if (/gemma-4/i.test(model)) input.chat_template_kwargs = { enable_thinking: false };
+  if (/qwen/i.test(model)) input.reasoning_effort = "none";
+  if (/gpt-oss/i.test(model)) {
+    input.reasoning_effort = "low";
+    input.include_reasoning = false;
+    input.max_tokens = GPT_OSS_MAX_TOKENS;
+  }
   return input;
+}
+
+export type UpstreamReason = "quota" | "rate_limited" | "unavailable" | "auth" | "error";
+
+/** A classified upstream failure that a ModelClient can throw. */
+export class UpstreamError extends Error {
+  constructor(
+    readonly reason: UpstreamReason,
+    readonly retryAfterSec?: number,
+    message?: string,
+  ) {
+    super(message ?? reason);
+  }
+}
+
+/** Workers AI code 3036 ("You have used up your daily free allocation of 10,000 neurons") and 4006. */
+export function isQuotaError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : (error as { message?: unknown } | null | undefined)?.message;
+  return typeof message === "string" && /\b(3036|4006)\b|daily free allocation|neurons/i.test(message);
 }
 
 /** Text of one streamed or whole Workers AI result in either the classic or the OpenAI-compatible shape. */
@@ -95,10 +136,23 @@ export function bindingClient(ai: AiBinding, gatewayId?: string, metadata?: Reco
   };
 }
 
-export type AttemptFailure = "error" | "first_token_timeout" | "total_timeout" | "empty";
+export type AttemptFailure =
+  | "error"
+  | "first_token_timeout"
+  | "total_timeout"
+  | "empty"
+  | "quota"
+  | "rate_limited"
+  | "unavailable"
+  | "auth"
+  | "breaker_open"
+  | "deadline";
 
 class AttemptError extends Error {
-  constructor(readonly reason: AttemptFailure) {
+  constructor(
+    readonly reason: AttemptFailure,
+    readonly retryAfterSec?: number,
+  ) {
     super(reason);
   }
 }
@@ -134,7 +188,8 @@ export async function attempt(client: ModelClient, model: string, input: ModelIn
     }
   } catch (error) {
     if (error instanceof AttemptError) throw error;
-    throw new AttemptError("error");
+    if (error instanceof UpstreamError) throw new AttemptError(error.reason, error.retryAfterSec);
+    throw new AttemptError(isQuotaError(error) ? "quota" : "error");
   } finally {
     controller.abort();
     void iterator?.return?.()?.catch(() => {});
@@ -143,30 +198,100 @@ export async function attempt(client: ModelClient, model: string, input: ModelIn
   return text;
 }
 
+export interface BackupTier {
+  model: string;
+  client: ModelClient;
+  timeouts?: Timeouts;
+}
+
+/** Per-model pause shared across requests (see `modelBreaker` in limits.ts). */
+export interface ModelBreaker {
+  isOpen(key: string, now: number): Promise<boolean>;
+  trip(key: string, seconds: number, now: number): Promise<void>;
+}
+
+export interface GenerateOptions {
+  backups?: BackupTier[];
+  breaker?: ModelBreaker;
+  deadlineMs?: number;
+  now?: () => number;
+}
+
 export interface Generation {
   text: string;
-  source: "primary" | "fallback" | "none";
-  failures: { model: string; reason: AttemptFailure }[];
+  source: "primary" | "fallback" | "backup" | "none";
+  model?: string;
+  failures: { model: string; reason: AttemptFailure; retryAfterSec?: number }[];
+}
+
+interface Tier {
+  model: string;
+  client: ModelClient;
+  source: Exclude<Generation["source"], "none">;
+  key: string;
+  timeouts: Timeouts;
+}
+
+/** Seconds a failed backup tier stays paused; timeouts, plain errors and empty answers never pause it. */
+function pauseSeconds(reason: AttemptFailure, retryAfterSec: number | undefined): number | undefined {
+  if (reason === "rate_limited") return retryAfterSec ?? RATE_LIMIT_DEFAULT_SECONDS;
+  if (reason === "auth") return AUTH_SECONDS;
+  if (reason === "unavailable") return UNAVAILABLE_SECONDS;
+  return undefined;
 }
 
 /**
- * Primary, then at most one fallback (never both in parallel, to save quota). Fallback triggers:
- * an error, no first token in 4 s, over 8 s in total, or an empty answer.
+ * Primary, then at most one fallback, then the backup tiers in order (never in parallel, to save quota).
+ * A tier is tried after an error, no first token in time, a total timeout or an empty answer. A quota
+ * failure skips every tier on the same key (both Workers AI models) and pauses it until UTC midnight;
+ * backup tiers also pause on rate limits, auth failures and outages. The whole chain stops at the deadline.
  */
 export async function generate(
   client: ModelClient,
   models: { primary: string; fallback?: string },
   messages: ChatMessage[],
   t: Timeouts = { firstTokenMs: FIRST_TOKEN_MS, totalMs: TOTAL_MS },
+  opts: GenerateOptions = {},
 ): Promise<Generation> {
+  const now = opts.now ?? Date.now;
+  const started = now();
+  const deadlineMs = opts.deadlineMs ?? CHAIN_MS;
   const failures: Generation["failures"] = [];
-  const chain: [string, Generation["source"]][] = [[models.primary, "primary"]];
-  if (models.fallback && models.fallback !== models.primary) chain.push([models.fallback, "fallback"]);
-  for (const [model, source] of chain) {
+  const tiers: Tier[] = [{ model: models.primary, client, source: "primary", key: WORKERS_AI_KEY, timeouts: t }];
+  if (models.fallback && models.fallback !== models.primary) {
+    tiers.push({ model: models.fallback, client, source: "fallback", key: WORKERS_AI_KEY, timeouts: t });
+  }
+  for (const backup of opts.backups ?? []) {
+    tiers.push({ model: backup.model, client: backup.client, source: "backup", key: groqKey(backup.model), timeouts: backup.timeouts ?? GROQ_TIMEOUTS });
+  }
+
+  const skipped = new Set<string>();
+  for (const tier of tiers) {
+    if (skipped.has(tier.key) || (await opts.breaker?.isOpen(tier.key, now()))) {
+      failures.push({ model: tier.model, reason: "breaker_open" });
+      continue;
+    }
+    const remaining = deadlineMs - (now() - started);
+    if (remaining < MIN_ATTEMPT_MS) {
+      failures.push({ model: tier.model, reason: "deadline" });
+      continue;
+    }
+    const timeouts = { firstTokenMs: Math.min(tier.timeouts.firstTokenMs, remaining), totalMs: Math.min(tier.timeouts.totalMs, remaining) };
     try {
-      return { text: await attempt(client, model, modelInput(model, messages), t), source, failures };
+      const text = await attempt(tier.client, tier.model, modelInput(tier.model, messages), timeouts);
+      return { text, source: tier.source, model: tier.model, failures };
     } catch (error) {
-      failures.push({ model, reason: error instanceof AttemptError ? error.reason : "error" });
+      const reason = error instanceof AttemptError ? error.reason : "error";
+      const retryAfterSec = error instanceof AttemptError ? error.retryAfterSec : undefined;
+      failures.push(retryAfterSec === undefined ? { model: tier.model, reason } : { model: tier.model, reason, retryAfterSec });
+      let seconds: number | undefined;
+      if (reason === "quota") {
+        skipped.add(tier.key);
+        seconds = secondsToMidnight(now());
+      } else if (tier.source === "backup") {
+        seconds = pauseSeconds(reason, retryAfterSec);
+      }
+      if (seconds !== undefined) await opts.breaker?.trip(tier.key, seconds, now());
     }
   }
   return { text: "", source: "none", failures };

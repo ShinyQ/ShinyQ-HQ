@@ -92,7 +92,7 @@ export function createSseParser(onData: (data: string) => void) {
 }
 
 const OUTCOMES: readonly AskOutcome[] = ["answer", "unknown", "decline", "fallback"];
-const SOURCES: readonly AskSource[] = ["primary", "fallback", "cache", "none"];
+const SOURCES: readonly AskSource[] = ["primary", "fallback", "backup", "cache", "none"];
 
 /** One `data:` payload to a frame, or null for anything unknown or malformed. */
 export function parseFrame(data: string): AskFrame | null {
