@@ -3,7 +3,9 @@ import type { MissionStep } from "@/content/schema";
 import {
   canPoint,
   clickDecision,
+  HIGHLIGHT_MARGIN,
   highlightOpacity,
+  highlightVolume,
   isDragClick,
   LABEL_HEIGHT,
   LABEL_PAD_HEIGHT,
@@ -19,6 +21,8 @@ import {
 } from "@/experience/interact/pick";
 import type { Interactable } from "@/experience/interact/registry";
 import { PAD, type PickerRequest } from "@/experience/nav/pads";
+import { wallSolids } from "@/experience/floors/labs/directory";
+import { directoryBoard, LABS, LABS_WINGS } from "@/experience/floors/labs/layout";
 
 const pod: Interactable = {
   id: "L3:door:demo",
@@ -283,5 +287,41 @@ describe("performInteract", () => {
     await performInteract({ ...board, action: { type: "command", command: "launch" } }, d);
     expect(d.runSteps).toHaveBeenCalledTimes(1);
     expect(d.command).not.toHaveBeenCalled();
+  });
+});
+
+describe("hover highlight volume", () => {
+  it("grows the pick volume by the margin on every side, keeping its center and yaw", () => {
+    const v = pickVolume(pod);
+    const h = highlightVolume(v);
+    expect(h.center).toEqual(v.center);
+    expect(h.yaw).toBe(v.yaw);
+    h.size.forEach((n, i) => expect(n).toBeCloseTo(v.size[i] + 2 * HIGHLIGHT_MARGIN));
+  });
+
+  it("never shares a face with an L3 directory board (its pick volume is the board solid), so it cannot z-fight", () => {
+    const solids = wallSolids();
+    LABS_WINGS.forEach((wing, i) => {
+      const board = directoryBoard(wing);
+      const v = pickVolume({
+        kind: "board",
+        bounds: board,
+        box: { center: board.center, w: LABS.board.w, d: LABS.board.width, yaw: board.yaw + Math.PI / 2 },
+        base: LABS.board.base,
+        height: LABS.board.h,
+      });
+      const solid = solids[i];
+      // The pick volume is the solid itself: that is why the highlight must stand outside it.
+      expect(v.size[0]).toBeCloseTo(solid.w);
+      expect(v.size[2]).toBeCloseTo(solid.d);
+      const h = highlightVolume(v);
+      expect(h.center[0]).toBeCloseTo(solid.x);
+      expect(h.center[2]).toBeCloseTo(solid.z);
+      expect(h.yaw).toBeCloseTo(solid.yaw ?? 0);
+      expect((h.size[0] - solid.w) / 2).toBeGreaterThanOrEqual(HIGHLIGHT_MARGIN - 1e-9);
+      expect((h.size[2] - solid.d) / 2).toBeGreaterThanOrEqual(HIGHLIGHT_MARGIN - 1e-9);
+      expect(h.center[1] - h.size[1] / 2).toBeLessThanOrEqual(solid.y - HIGHLIGHT_MARGIN + 1e-9);
+      expect(h.center[1] + h.size[1] / 2).toBeGreaterThanOrEqual(solid.y + solid.h + HIGHLIGHT_MARGIN - 1e-9);
+    });
   });
 });

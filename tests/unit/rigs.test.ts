@@ -5,7 +5,10 @@ import {
   followPose,
   forwardOf,
   INTRO_DURATION,
+  INTRO_FLY,
   INTRO_ORBIT,
+  INTRO_REDUCED,
+  introFlyProgress,
   INTRO_SWEEP,
   introAngle,
   introPose,
@@ -86,7 +89,58 @@ describe("camera rigs", () => {
     expect(last.position[0]).toBeCloseTo(end.position[0]);
     expect(last.position[1]).toBeCloseTo(end.position[1]);
     expect(last.target[2]).toBeCloseTo(6);
-    expect(INTRO_DURATION).toBeCloseTo(2.5);
+    expect(INTRO_DURATION).toBeCloseTo(INTRO_ORBIT + INTRO_FLY);
+    // Reduced motion keeps today's length: a still shot, then a cut.
+    expect(INTRO_REDUCED).toBeCloseTo(2.5);
+  });
+
+  it("flies in for 1.5 to 2 s on the arrival glide's eased curve, at rest at both ends", () => {
+    expect(INTRO_FLY).toBeGreaterThanOrEqual(1.5);
+    expect(INTRO_FLY).toBeLessThanOrEqual(2);
+    expect(introFlyProgress(0)).toBe(-1);
+    expect(introFlyProgress(INTRO_ORBIT - 0.01)).toBe(-1);
+    expect(introFlyProgress(INTRO_ORBIT)).toBe(0);
+    expect(introFlyProgress(INTRO_DURATION)).toBe(1);
+    expect(introFlyProgress(INTRO_DURATION + 1)).toBe(1);
+    let prev = 0;
+    for (let i = 1; i <= 100; i++) {
+      const p = introFlyProgress(INTRO_ORBIT + (INTRO_FLY * i) / 100);
+      expect(p).toBeGreaterThanOrEqual(prev);
+      prev = p;
+    }
+    const h = 1e-3;
+    expect(introFlyProgress(INTRO_ORBIT + h) / h).toBeLessThan(0.01);
+    expect((1 - introFlyProgress(INTRO_DURATION - h)) / h).toBeLessThan(0.01);
+  });
+
+  it("flies in on one continuous curve that lands behind the rover along the follow line", () => {
+    for (const cls of ["desktop", "tablet", "mobile"] as const) {
+      for (const end of [followPose(cls, [-6, 1, 8], -0.6, 1.7), followPose(cls, [4, 1, -3], 0.4, 1)]) {
+        // One sample per 60 fps frame.
+        const samples = Math.round(INTRO_DURATION * 60);
+        const at = (i: number) => introPose(cls, (INTRO_DURATION * i) / samples, end).position;
+        const from = introPose(cls, INTRO_ORBIT, end).position;
+        const flyLength = Math.hypot(from[0] - end.position[0], from[1] - end.position[1], from[2] - end.position[2]);
+        const top = Math.max(from[1], end.position[1]);
+        for (let i = 1; i <= samples; i++) {
+          const a = at(i - 1);
+          const b = at(i);
+          if ((INTRO_DURATION * i) / samples <= INTRO_ORBIT) continue;
+          // No jump: at 60 fps no frame covers 5 percent of the fly-in (the old 0.6 s line peaked at 8 percent a frame).
+          expect(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2])).toBeLessThan(flyLength * 0.05);
+          // It never climbs above the orbit's last height or the follow pose.
+          expect(b[1]).toBeLessThanOrEqual(top + 1e-6);
+        }
+        const last = introPose(cls, INTRO_DURATION, end);
+        last.position.forEach((v, i) => expect(v).toBeCloseTo(end.position[i]));
+        last.target.forEach((v, i) => expect(v).toBeCloseTo(end.target[i]));
+        // The last moves come in from behind the rover along the follow line (in plan view), not sideways.
+        const near = introPose(cls, INTRO_DURATION - 0.05, end).position;
+        const off = [end.position[0] - end.target[0], end.position[2] - end.target[2]];
+        const move = [near[0] - end.position[0], near[2] - end.position[2]];
+        expect((move[0] * off[0] + move[1] * off[1]) / (Math.hypot(move[0], move[1]) * Math.hypot(off[0], off[1]))).toBeGreaterThan(0.99);
+      }
+    }
   });
 
   it("smooths with a 0.18 s half-life spring", () => {

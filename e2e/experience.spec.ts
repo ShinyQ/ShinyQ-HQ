@@ -138,6 +138,68 @@ test.describe("boot and intro", () => {
     await expect(page).toHaveURL(/\/en\/library\?tier=lite$/);
   });
 
+  test("the intro flies down to the rover in one continuous move and lands on the follow view", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await page.evaluate(() => {
+      type W = { __fly: { t: number; phase: string; fly: number; cam: number[]; ghost: boolean }[]; __hq: { store: { getState: () => { phase: string } }; rover: { introFly: number }; camera: () => number[]; probes: { ghosts: Record<string, boolean> } } };
+      const w = window as unknown as W;
+      w.__fly = [];
+      const tick = () => {
+        const phase = w.__hq.store.getState().phase;
+        w.__fly.push({ t: performance.now(), phase, fly: w.__hq.rover.introFly, cam: w.__hq.camera(), ghost: w.__hq.probes.ghosts.L2 ?? false });
+        if (phase === "explore" && w.__fly.filter((f) => f.phase === "explore").length > 3) return;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await start.click();
+    await waitForPhase(page, "explore", 60_000);
+    await waitForFrames(page, 6);
+    type Sample = { t: number; phase: string; fly: number; cam: number[]; ghost: boolean };
+    const log = await page.evaluate(() => (window as unknown as { __fly: Sample[] }).__fly);
+    const fly = log.filter((f) => f.phase === "intro" && f.fly >= 0);
+    // Several drawn frames inside the fly-in, the progress never going back, over at least 1.5 s.
+    expect(fly.filter((f) => f.fly > 0 && f.fly < 1).length).toBeGreaterThanOrEqual(4);
+    for (let i = 1; i < fly.length; i++) expect(fly[i].fly).toBeGreaterThanOrEqual(fly[i - 1].fly);
+    expect(fly[fly.length - 1].t - fly[0].t).toBeGreaterThanOrEqual(1400);
+    // The L2 slab is a ghost before explore starts: no opaque slab between the camera and the Lobby.
+    expect(fly[fly.length - 1].ghost).toBe(true);
+    // It lands where explore starts: the first explore frame continues from the last intro frame.
+    const lastIntro = log.filter((f) => f.phase === "intro").pop()!;
+    const firstExplore = log.find((f) => f.phase === "explore")!;
+    expect(Math.hypot(...lastIntro.cam.map((v, i) => v - firstExplore.cam[i]))).toBeLessThan(1);
+  });
+
+  test("driving during the fly-in takes over the view at once", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("hq:terminal-seen", "1");
+      localStorage.setItem("hq:onboarded", "done");
+    });
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await start.click();
+    await waitForPhase(page, "intro");
+    await page.waitForFunction(() => {
+      const fly = (window as unknown as { __hq: { rover: { introFly: number } } }).__hq.rover.introFly;
+      return fly > 0.02 && fly < 0.5;
+    }, null, { timeout: 60_000, polling: "raf" });
+    await page.keyboard.down("w");
+    await waitForPhase(page, "explore", 10_000);
+    await page.keyboard.up("w");
+    await waitForFrames(page, 2);
+    expect((await snapshot(page)).phase).toBe("explore");
+    expect(await page.evaluate(() => (window as unknown as { __hq: { rover: { introFly: number } } }).__hq.rover.introFly)).toBe(-1);
+  });
+
   test("reduced motion holds a still intro of the same length", async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     await chooseMotion(context, "system");

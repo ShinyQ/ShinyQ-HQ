@@ -232,7 +232,7 @@ export function Rover({ tier }: { tier: GpuTier }) {
       l.blinkUntil = t + 0.15;
       l.nextBlink = t + 3 + Math.random() * 3;
     }
-    const frame = faceFrame(r.face, t, { blinking: t < l.blinkUntil, status: r.status });
+    const frame = faceFrame(r.face, t, { blinking: t < l.blinkUntil || t < r.blinkUntil, status: r.status });
     const ctx = screenCanvas.getContext("2d");
     if (frame.key !== l.lastKey && ctx && screenTexture.current) {
       drawFace(ctx, frame, l.font);

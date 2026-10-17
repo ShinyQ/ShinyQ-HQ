@@ -377,6 +377,108 @@ const BUDGET_FLOORS = [
   { floor: "RF", path: "/en/contact", cap: 80 },
 ] as const;
 
+/**
+ * Round 9 M: a low camera never shows the void under the slab. Per settled view: the bottom-center ray of the drawn
+ * camera lands on the slab (or the camera stands on it), and the bottom rows of the canvas are not a flat band of the
+ * clear color (the void under the slab; the floor shows its grid). Lite tier: no bloom or tone mapping on the pixels.
+ */
+type LowView = { onSlab: boolean; offSlab: number; flatRows: number; rows: number; elevation: number; yaw: number };
+
+/** Reads the drawn camera's view against the floor's slab and the canvas' bottom rows right after the next render. */
+async function lowView(page: Page): Promise<LowView> {
+  return page.evaluate(
+    () =>
+      new Promise<LowView>((resolve) => {
+        type V3 = { x: number; y: number; z: number };
+        type Gl = { render: (s: unknown, c: unknown) => void; getRenderTarget: () => unknown; getContext: () => WebGL2RenderingContext };
+        type Cam = { position: V3; fov: number; matrixWorld: { elements: number[] } };
+        const w = window as unknown as {
+          __hq: {
+            render: { gl: Gl };
+            store: { getState: () => { floor: string } };
+            layouts: Record<string, { bounds: { minX: number; maxX: number; minZ: number; maxZ: number } }>;
+            rover: { y: number; cameraElevation: number; cameraYaw: number };
+          };
+        };
+        const gl = w.__hq.render.gl;
+        const original = gl.render;
+        gl.render = function (scene, camera) {
+          original.call(gl, scene, camera);
+          if (gl.getRenderTarget() !== null) return;
+          gl.render = original;
+          const ctx = gl.getContext();
+          const W = ctx.drawingBufferWidth;
+          const H = ctx.drawingBufferHeight;
+          // The bottom 8% of the canvas (readPixels rows count from the bottom), every pixel of every fourth row.
+          const rows = Math.max(4, Math.round(H * 0.08));
+          const px = new Uint8Array(W * 4);
+          let flatRows = 0;
+          let sampled = 0;
+          for (let y = 0; y < rows; y += 4) {
+            ctx.readPixels(0, y, W, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px);
+            let lo = 255;
+            let hi = 0;
+            for (let i = 0; i < W * 4; i += 4) for (let c = 0; c < 3; c++) {
+              lo = Math.min(lo, px[i + c]);
+              hi = Math.max(hi, px[i + c]);
+            }
+            sampled += 1;
+            // The void is the clear color everywhere (#0a0a0f); the floor has grid lines, lanes or objects.
+            if (hi - lo <= 6 && hi <= 20) flatRows += 1;
+          }
+          const cam = camera as Cam;
+          const e = cam.matrixWorld.elements;
+          const forward = { x: -e[8], y: -e[9], z: -e[10] };
+          const up = { x: e[4], y: e[5], z: e[6] };
+          const half = (cam.fov * Math.PI) / 360;
+          const dir = { x: forward.x * Math.cos(half) - up.x * Math.sin(half), y: forward.y * Math.cos(half) - up.y * Math.sin(half), z: forward.z * Math.cos(half) - up.z * Math.sin(half) };
+          const s = w.__hq.store.getState();
+          const b = w.__hq.layouts[s.floor].bounds;
+          const p = cam.position;
+          const inside = (x: number, z: number) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+          const t = dir.y < 0 ? (w.__hq.rover.y - p.y) / dir.y : Infinity;
+          const onSlab = inside(p.x, p.z) || (Number.isFinite(t) && inside(p.x + dir.x * t, p.z + dir.z * t));
+          const offSlab = Math.max(b.minX - p.x, p.x - b.maxX, b.minZ - p.z, p.z - b.maxZ, 0);
+          resolve({ onSlab, offSlab, flatRows, rows: sampled, elevation: w.__hq.rover.cameraElevation, yaw: w.__hq.rover.cameraYaw });
+        };
+      }),
+  );
+}
+
+test.describe("low camera", () => {
+  for (const [floor, path] of [
+    ["L1", "/en"],
+    ["L3", "/en/labs"],
+    ["L4", "/en/library"],
+  ] as const) {
+    test(`${floor}: at the lowest tilt the camera turns all the way around and never looks off the slab into the void`, async ({ page }) => {
+      test.setTimeout(360_000);
+      await enterFloorRoute(page, path);
+      expect((await snapshot(page)).floor).toBe(floor);
+      await waitForCameraSettle(page);
+      await verticalDrag(page, -600);
+      await waitForCameraSettle(page);
+      expect((await probe(page)).elevation).toBeLessThan(0.12);
+      const start = (await probe(page)).yaw;
+      const views: LowView[] = [];
+      // Sixteen short turns with Q (1.7 rad/s, about 25 to 50 degrees each on SwiftShader), each read once the camera settled.
+      for (let i = 0; i < 16; i++) {
+        await page.keyboard.down("q");
+        await waitForFrames(page, 1, 230);
+        await page.keyboard.up("q");
+        await waitForCameraSettle(page);
+        views.push(await lowView(page));
+      }
+      expect(Math.abs(views[views.length - 1].yaw - start)).toBeGreaterThan(2 * Math.PI);
+      for (const v of views) {
+        expect(v.elevation, JSON.stringify(v)).toBeLessThan(0.2);
+        expect(v.onSlab, JSON.stringify(v)).toBe(true);
+        expect(v.flatRows, JSON.stringify(v)).toBeLessThan(v.rows);
+      }
+    });
+  }
+});
+
 test.describe("first person render budget", () => {
   for (const { floor, path, cap } of BUDGET_FLOORS) {
     test(`first person on ${floor} stays under ${cap} draw calls and 30k triangles all the way around`, async ({ page }) => {

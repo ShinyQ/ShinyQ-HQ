@@ -36,8 +36,16 @@ export const RAIL_LOOK_AHEAD = 4;
 export const INTRO_RADIUS: Record<ViewportClass, number> = { desktop: 70, tablet: 80, mobile: 90 };
 export const INTRO_SWEEP = (120 * Math.PI) / 180;
 export const INTRO_ORBIT = 1.9;
-export const INTRO_FLY = 0.6;
+/** The fly-in (Round 9 M): one continuous eased move from the orbit's end down to the follow pose behind the rover. */
+export const INTRO_FLY = 1.7;
 export const INTRO_DURATION = INTRO_ORBIT + INTRO_FLY;
+/** Reduced motion holds the still exterior shot this long (s), then cuts to the follow camera. */
+export const INTRO_REDUCED = 2.5;
+/**
+ * The fly-in curve's control point lies this many follow offsets past the follow pose (away from the rover), so the
+ * camera settles in along the follow line, from behind and above the rover.
+ */
+export const INTRO_APPROACH = 0.8;
 export const TOWER_CENTER: Vec3 = [0, 28, 0];
 
 export const SPRING_HALF_LIFE = 0.18;
@@ -163,7 +171,22 @@ export function introAngle(end: CameraPose, p: number): number {
   return endAngle - INTRO_SWEEP * (1 - p);
 }
 
-/** Exterior orbit around the tower (120 degrees while descending), then a fly-in to `end`. */
+/**
+ * Eased fly-in progress 0 to 1 at intro time `t` (s), with `easeInOutCubic` (the arrival glide's curve), so it
+ * starts and lands at rest; -1 during the orbit before it.
+ */
+export function introFlyProgress(t: number): number {
+  if (t < INTRO_ORBIT) return -1;
+  return easeInOutCubic(Math.min(1, (t - INTRO_ORBIT) / INTRO_FLY));
+}
+
+const bezier = (a: number, c: number, b: number, q: number) => (1 - q) * (1 - q) * a + 2 * (1 - q) * q * c + q * q * b;
+
+/**
+ * Exterior orbit around the tower (120 degrees while descending), then a fly-in to `end`: a quadratic curve from
+ * the orbit's end whose control point extends the follow offset past `end` (`INTRO_APPROACH`, no higher than the
+ * orbit's end or `end`), so the camera comes down in one move and lands along the follow line behind the rover.
+ */
 export function introPose(cls: ViewportClass, t: number, end: CameraPose): CameraPose {
   const r = INTRO_RADIUS[cls];
   const orbitAt = (p: number): CameraPose => {
@@ -175,10 +198,16 @@ export function introPose(cls: ViewportClass, t: number, end: CameraPose): Camer
     };
   };
   if (t <= INTRO_ORBIT) return orbitAt(easeInOutCubic(Math.max(0, t / INTRO_ORBIT)));
-  const q = easeInOutCubic(Math.min(1, (t - INTRO_ORBIT) / INTRO_FLY));
+  const q = introFlyProgress(t);
   const from = orbitAt(1);
+  const [ex, ey, ez] = end.position;
+  const control: Vec3 = [
+    ex + (ex - end.target[0]) * INTRO_APPROACH,
+    Math.min(Math.max(from.position[1], ey), ey + (ey - end.target[1]) * INTRO_APPROACH),
+    ez + (ez - end.target[2]) * INTRO_APPROACH,
+  ];
   return {
-    position: lerp3(from.position, end.position, q),
+    position: [0, 1, 2].map((i) => bezier(from.position[i], control[i], end.position[i], q)) as Vec3,
     target: lerp3(from.target, end.target, q),
     fov: lerp(from.fov, end.fov, q),
   };

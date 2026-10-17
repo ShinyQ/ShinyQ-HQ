@@ -22,7 +22,7 @@ import { floorY } from "../config";
 import { intents } from "../input/intents";
 import { FONTS } from "../tower/primitives";
 import type { FloorLayouts, GpuTier } from "../types";
-import { canPoint, clickDecision, highlightOpacity, isDragClick, labelAnchor, pickVolume } from "./pick";
+import { canPoint, clickDecision, highlightOpacity, highlightVolume, isDragClick, labelAnchor, pickVolume } from "./pick";
 import type { Interactable, InteractData } from "./registry";
 import { interactRuntime } from "./runtime";
 import { useInteractables } from "./useInteractables";
@@ -30,7 +30,7 @@ import { useInteractables } from "./useInteractables";
 const GLOW = "#67e8f9";
 const NO_RAYCAST = () => null;
 
-/** Outline of the pick volume, a destination ring where the rover will stop, and (full tier) a faint additive fill. */
+/** Outline of the pick volume (grown a little, so it never z-fights with the object), a destination ring where the rover will stop, and (full tier) a faint additive fill. */
 function Highlight({ item, tier, reducedMotion }: { item: Interactable; tier: GpuTier; reducedMotion: boolean }) {
   const edges = useMemo(() => {
     const box = new BoxGeometry(1, 1, 1);
@@ -42,7 +42,7 @@ function Highlight({ item, tier, reducedMotion }: { item: Interactable; tier: Gp
   const line = useRef<LineSegments>(null);
   const fill = useRef<Mesh>(null);
   const ring = useRef<Mesh>(null);
-  const { center, size, yaw } = pickVolume(item);
+  const { center, size, yaw } = highlightVolume(pickVolume(item));
   const rotation: [number, number, number] = [0, yaw, 0];
 
   useFrame(({ clock }) => {

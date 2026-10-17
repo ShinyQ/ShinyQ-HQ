@@ -94,7 +94,12 @@ The same script sets these on every page before first paint:
   - No Skip button; Esc does nothing in `boot` or `intro`.
   - Mission steps wait for the intro (`afterIntro` in `host3d.ts`).
   - Boot rover only starts once the log has typed out (`aria-disabled` until then, same pace with reduced motion).
-- Reduced motion keeps the 2.5 s length but holds one still exterior shot (`reducedIntroPose`), then cuts to the follow camera.
+- The intro (`camera/rigs.ts`): a 1.9 s exterior orbit (`INTRO_ORBIT`), then a 1.7 s fly-in (`INTRO_FLY`) down to the follow pose behind the rover in one continuous move (Round 9 M).
+  - The fly-in is a quadratic curve whose control point extends the follow offset past the follow pose (`INTRO_APPROACH`), on `easeInOutCubic` like the arrival glide (`introFlyProgress`), so it starts and lands at rest along the follow line.
+  - `roverRuntime.introFly` is its progress (0 to 1, -1 outside it). The slabs above the rover fade from solid to ghosts over its first 20 percent (`introGhost`, `INTRO_GHOST_BY` in `tower/visibility.ts`) and L2's detail stops drawing once it starts, so the camera never comes down onto an opaque slab. The fog eases from the exterior range to the follow range with it.
+  - Landing beat: when the intro hands over, the rover hops, blinks (`roverRuntime.blinkUntil`) and beeps (silent with the sound off).
+  - Drive, turn, zoom or reset input during the fly-in (never the orbit) hands over at once; the follow spring eases on from the drawn pose.
+- Reduced motion holds one still exterior shot (`reducedIntroPose`) for `INTRO_REDUCED` (2.5 s), then cuts to the follow camera.
 - Crawlers, Lighthouse and the static tier never load the 3D chunk.
 - E2E: `asReturningVisitor` sets the flag, so `enterHQ` and `enterFloorRoute` land in explore (`enterHQ` also waits for `waitForSceneLive`); tests of the boot itself open without it.
 
@@ -230,8 +235,12 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ### Collision
 
 - A low third-person camera stays above the floor, on the slab and out of obstacle columns: `clampCamera` (`camera/collision.ts`) pulls it in along the view ray.
+- A follow camera never looks off the slab into the void under it (Round 9 M): with the view's FOV, `clampCamera` also counts a camera off the slab as blocked while its bottom-center ray lands outside the bounds (`viewOnSlab`), at any height. The L2 rail view stands beside its narrow road by design and passes no FOV.
+- The clamp runs on the wanted pose and again on the smoothed (drawn) pose, so the spring never cuts through a wall or past the slab edge for a frame. A blocked stretch next to the rover (the look-ahead ray crossing the L1 kiosk) is skipped, not taken as "nothing to clamp".
+- The near planes never reach the floor: `CAMERA_NEAR / cos(fov / 2)` stays under `CAMERA_CLEARANCE.ground` (unit test).
 - Cameras above `CAMERA_CLEARANCE.obstacle` (3.2 u) are never touched, except near taller columns a floor lists in `FloorLayout.tall` (rects with a height `h`: the 9.6 u L3 directory boards and the 11 u reactor core), so the default views do not change.
 - Add every new tall piece to `FloorLayout.tall`.
+- `cameraWorld(layout, floorY)` builds the camera's world: the floor's obstacles, bounds and tall columns plus the glass elevator shaft (`SHAFT_COLUMN`, a floor high), so a low camera never ends up inside the shaft.
 
 ### Wheel zoom and first person
 
@@ -253,7 +262,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - `viewSuspended` holds third person during autopilot drives (`roverRuntime.driving` from the Director: missions, point-and-go, scrubs, arrival roll-ons), rides, beams, missions, rooms, the hologram, the boot and the intro; first person returns afterwards.
 - R/F tilt.
 - Probes: `__hq.rover.cameraMode`, `cameraBlend`, `cameraZoom`, `cameraLook`, `cameraElevation`, `cameraRailYaw`, `driving`.
-- E2E: `e2e/camera.spec.ts`. The opt-in `e2e/camera-visual.spec.ts` (`CAMERA_SHOTS=baseline|compare`) proves third-person poses still match (at most 0.5% of pixels off by more than 24/255).
+- E2E: `e2e/camera.spec.ts` (including the low camera sweep: L1, L3 and L4 at the lowest tilt, turned all the way around, the drawn view on the slab and no flat void band in the canvas' bottom rows). The opt-in `e2e/camera-visual.spec.ts` (`CAMERA_SHOTS=baseline|compare`) proves third-person poses still match (at most 0.5% of pixels off by more than 24/255).
 
 ### Readable signs
 
