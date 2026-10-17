@@ -426,6 +426,14 @@
         "page": "Classic site",
         "3d": "3D"
       },
+      "tutorial": {
+        "label": "Replay the tutorial",
+        "hint": "Rover shows you around the HQ again."
+      },
+      "hints": {
+        "label": "Hints",
+        "hint": "Shows ! bubbles near things you can use."
+      },
       "title": "Settings",
       "open": "Settings",
       "close": "Close settings",

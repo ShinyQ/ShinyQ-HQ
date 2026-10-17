@@ -11,7 +11,9 @@ export const SETTING_GROUPS: readonly SettingGroup[] = ["general", "display", "s
 export type SettingControl =
   | { kind: "toggle"; get: () => boolean; set: (on: boolean) => void }
   | { kind: "choice"; options: readonly { value: string; labelKey: string }[]; get: () => string; set: (value: string) => void }
-  | { kind: "range"; min: number; max: number; step: number; get: () => number; set: (value: number) => void };
+  | { kind: "range"; min: number; max: number; step: number; get: () => number; set: (value: number) => void }
+  /** A one-shot command shown as a button with the label; `closesPanel` closes the sheet before it runs. */
+  | { kind: "action"; run: () => void; closesPanel?: boolean };
 
 export interface SettingDef {
   /** kebab-case; the row gets `data-testid="setting-<id>"`. */
@@ -25,7 +27,7 @@ export interface SettingDef {
   hintKey?: string;
   control: SettingControl;
   subscribe: (listener: () => void) => () => void;
-  /** Hides the row when it returns false. */
+  /** Hides the row when it returns false; the panel re-renders when this setting's `subscribe` fires. */
   available?: () => boolean;
   /**
    * Checked once when the row mounts: true moves focus to the row's current value. A setting whose change

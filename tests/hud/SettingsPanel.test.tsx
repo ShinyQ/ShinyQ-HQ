@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import { hintsOn, resetFlagMemory, setHintsOn } from "@/hud/dialog/storage";
+import { registerTutorial } from "@/hud/dialog/tutorial";
 import { SettingsPanel } from "@/hud/settings/SettingsPanel";
 import { SETTINGS } from "@/hud/settings/defs";
 import { defineSetting } from "@/hud/settings/registry";
@@ -66,6 +68,7 @@ afterEach(() => {
   getHQStore().getState().setMotion("full");
   getHQStore().getState().setLocale("en");
   window.localStorage.clear();
+  resetFlagMemory();
 });
 
 describe("SettingsPanel", () => {
@@ -173,5 +176,50 @@ describe("SettingsPanel", () => {
     });
     render(<SettingsPanel defs={[...SETTINGS, extra]} />, { wrapper: Wrap });
     expect(screen.getByTestId("setting-sibling-extra")).toBeInTheDocument();
+  });
+});
+
+describe("SettingsPanel tutorial rows", () => {
+  it("replays the tutorial from the general group and closes the sheet first", async () => {
+    const calls: string[] = [];
+    const run = vi.fn(() => calls.push("run"));
+    const onClose = vi.fn(() => calls.push("close"));
+    const stop = registerTutorial(run);
+    render(<SettingsPanel onClose={onClose} />, { wrapper: Wrap });
+    const general = screen.getByRole("region", { name: en.hud.settings.groups.general });
+    await userEvent.click(within(general).getByRole("button", { name: en.hud.settings.tutorial.label }));
+    expect(calls).toEqual(["close", "run"]);
+    stop();
+  });
+
+  it("toggles hints as a switch in the general group", async () => {
+    const stop = registerTutorial(vi.fn());
+    setHintsOn(true);
+    render(<SettingsPanel />, { wrapper: Wrap });
+    const hints = within(screen.getByTestId("setting-hints")).getByRole("switch", { name: en.hud.settings.hints.label });
+    expect(hints).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(hints);
+    expect(hintsOn()).toBe(false);
+    expect(hints).toHaveAttribute("aria-checked", "false");
+    stop();
+  });
+
+  it("hides replay and hints while the 3D tutorial host is not registered", () => {
+    render(<SettingsPanel />, { wrapper: Wrap });
+    expect(screen.queryByTestId("setting-replay-tutorial")).toBeNull();
+    expect(screen.queryByTestId("setting-hints")).toBeNull();
+  });
+
+  it("shows the rows when the host registers while the panel is open", () => {
+    render(<SettingsPanel />, { wrapper: Wrap });
+    expect(screen.queryByTestId("setting-hints")).toBeNull();
+    let stop = () => {};
+    act(() => {
+      stop = registerTutorial(vi.fn());
+    });
+    expect(screen.getByTestId("setting-hints")).toBeInTheDocument();
+    expect(screen.getByTestId("setting-replay-tutorial")).toBeInTheDocument();
+    act(() => stop());
+    expect(screen.queryByTestId("setting-hints")).toBeNull();
   });
 });

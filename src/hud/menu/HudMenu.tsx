@@ -137,7 +137,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 </button>
               ))}
             </div>
-            <LazySettingsPanel headingLevel={3} />
+            <LazySettingsPanel headingLevel={3} onClose={close} />
           </div>
         </Modal>
       )}

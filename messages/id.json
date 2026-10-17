@@ -426,6 +426,14 @@
         "page": "Situs klasik",
         "3d": "3D"
       },
+      "tutorial": {
+        "label": "Putar ulang tutorial",
+        "hint": "Rover memandu keliling HQ lagi."
+      },
+      "hints": {
+        "label": "Petunjuk",
+        "hint": "Menampilkan gelembung ! di dekat hal yang bisa dipakai."
+      },
       "title": "Pengaturan",
       "open": "Pengaturan",
       "close": "Tutup pengaturan",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useSyncExternalStore } from "react";
+import { useEffect, useId, useReducer, useRef, useSyncExternalStore } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { SETTINGS } from "./defs";
 import { settingsByGroup, type SettingControl, type SettingDef } from "./registry";
@@ -110,7 +110,28 @@ function RangeRow({ def, control }: RowProps<"range">) {
   );
 }
 
-function Row({ def }: { def: SettingDef }) {
+function ActionRow({ def, control, onClose }: RowProps<"action"> & { onClose?: () => void }) {
+  const t = useTranslations("hud.settings");
+  const hint = useId();
+  return (
+    <div data-testid={`setting-${def.id}`}>
+      <button
+        type="button"
+        aria-describedby={def.hintKey ? hint : undefined}
+        onClick={() => {
+          if (control.closesPanel) onClose?.();
+          control.run();
+        }}
+        className="hq-glow flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm text-ink"
+      >
+        {t(def.labelKey)}
+      </button>
+      <Hint id={hint} hintKey={def.hintKey} />
+    </div>
+  );
+}
+
+function Row({ def, onClose }: { def: SettingDef; onClose?: () => void }) {
   const { control } = def;
   switch (control.kind) {
     case "toggle":
@@ -119,12 +140,20 @@ function Row({ def }: { def: SettingDef }) {
       return <ChoiceRow def={def} control={control} />;
     case "range":
       return <RangeRow def={def} control={control} />;
+    case "action":
+      return <ActionRow def={def} control={control} onClose={onClose} />;
   }
 }
 
 /** Renders every registered setting generically, grouped and ordered by the registry. Mounted by the menu sheet and the desktop settings sheet. */
-export function SettingsPanel({ defs = SETTINGS, headingLevel = 3 }: { defs?: readonly SettingDef[]; headingLevel?: 2 | 3 }) {
+export function SettingsPanel({ defs = SETTINGS, headingLevel = 3, onClose }: { defs?: readonly SettingDef[]; headingLevel?: 2 | 3; onClose?: () => void }) {
   const t = useTranslations("hud.settings");
+  const [, refresh] = useReducer((n: number) => n + 1, 0);
+  // Rows with `available` can appear or vanish while the sheet is open (the 3D HUD mounts late).
+  useEffect(() => {
+    const stops = defs.filter((d) => d.available).map((d) => d.subscribe(refresh));
+    return () => stops.forEach((stop) => stop());
+  }, [defs]);
   const prefix = useId();
   const Heading = `h${headingLevel}` as "h2" | "h3";
   return (
@@ -137,7 +166,7 @@ export function SettingsPanel({ defs = SETTINGS, headingLevel = 3 }: { defs?: re
               {t(`groups.${group}`)}
             </Heading>
             {items.map((def) => (
-              <Row key={def.id} def={def} />
+              <Row key={def.id} def={def} onClose={onClose} />
             ))}
           </section>
         );
