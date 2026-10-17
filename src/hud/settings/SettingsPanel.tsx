@@ -8,39 +8,49 @@ import { settingsByGroup, type SettingControl, type SettingDef } from "./registr
 
 type RowProps<K extends SettingControl["kind"]> = { def: SettingDef; control: Extract<SettingControl, { kind: K }> };
 
-function Hint({ id, hintKey }: { id: string; hintKey?: string }) {
+/** One row of a group card: the label and its one-line note on the left, the control on the right. */
+const ROW = "flex min-h-14 items-center gap-4 px-4 py-2.5 transition-colors hover:bg-surface-2";
+
+/** Label and note; the label names the control (`htmlFor`), so a tap on the text works the control too. */
+function RowText({ def, labelId, hintId, htmlFor }: { def: SettingDef; labelId: string; hintId: string; htmlFor: string }) {
   const t = useTranslations("hud.settings");
-  if (!hintKey) return null;
   return (
-    <p id={id} className="mt-1 px-3 text-xs leading-4 text-ink-3">
-      {t(hintKey)}
-    </p>
+    <div className="min-w-0 flex-1">
+      <label id={labelId} htmlFor={htmlFor} className="block cursor-pointer text-sm leading-5 text-ink">
+        {t(def.labelKey)}
+      </label>
+      {def.hintKey && (
+        <p id={hintId} className="mt-0.5 text-xs leading-4 text-ink-3">
+          {t(def.hintKey)}
+        </p>
+      )}
+    </div>
   );
 }
 
 function ToggleRow({ def, control }: RowProps<"toggle">) {
-  const t = useTranslations("hud.settings");
   const on = useSyncExternalStore(def.subscribe, control.get, control.get);
-  const hint = useId();
+  const id = useId();
   return (
-    <div data-testid={`setting-${def.id}`}>
+    <div className={ROW} data-testid={`setting-${def.id}`}>
+      <RowText def={def} labelId={`${id}-label`} hintId={`${id}-hint`} htmlFor={id} />
       <button
+        id={id}
         type="button"
         role="switch"
         aria-checked={on}
-        aria-describedby={def.hintKey ? hint : undefined}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={def.hintKey ? `${id}-hint` : undefined}
         onClick={() => control.set(!on)}
-        className="hq-glow flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-sm text-ink"
+        className="-mr-1 grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full"
       >
-        {t(def.labelKey)}
         <span
           aria-hidden="true"
-          className={`inline-flex h-6 w-10 shrink-0 items-center rounded-full border px-0.5 transition ${on ? "justify-end border-cyan/60 bg-cyan/20" : "justify-start border-glass-border"}`}
+          className={`inline-flex h-6 w-10 items-center rounded-full border px-0.5 transition ${on ? "justify-end border-cyan/60 bg-cyan/20" : "justify-start border-line-2 bg-void/40"}`}
         >
           <AccentDot tone={on ? "cyan" : "line"} glow={on} size="md" />
         </span>
       </button>
-      <Hint id={hint} hintKey={def.hintKey} />
     </div>
   );
 }
@@ -56,24 +66,27 @@ function ChoiceRow({ def, control }: RowProps<"choice">) {
     if (def.takeFocus?.()) row.current?.querySelector<HTMLInputElement>("input:checked")?.focus({ preventScroll: true });
   }, [def]);
   return (
-    <fieldset ref={row} className="min-w-0 px-3" data-testid={`setting-${def.id}`} aria-describedby={def.hintKey ? hint : undefined}>
-      <legend className="label mb-1.5 text-ink-3">{t(def.labelKey)}</legend>
-      <div className="grid gap-0.5 rounded-full border border-glass-border p-0.5" style={{ gridTemplateColumns: `repeat(${control.options.length}, minmax(0, 1fr))` }}>
+    <fieldset ref={row} className="min-w-0 px-4 py-3" data-testid={`setting-${def.id}`} aria-describedby={def.hintKey ? hint : undefined}>
+      <legend className="float-left w-full text-sm leading-5 text-ink">{t(def.labelKey)}</legend>
+      {def.hintKey && (
+        <p id={hint} className="clear-left pt-0.5 text-xs leading-4 text-ink-3">
+          {t(def.hintKey)}
+        </p>
+      )}
+      <div
+        className="clear-left mt-2.5 grid gap-0.5 rounded-full border border-line-2 bg-void/40 p-0.5"
+        style={{ gridTemplateColumns: `repeat(${control.options.length}, minmax(0, 1fr))` }}
+      >
         {control.options.map((option) => (
           <label
             key={option.value}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full px-1.5 text-[13px] text-ink-2 transition hover:text-ink has-[:checked]:bg-cyan/15 has-[:checked]:text-cyan has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan"
+            className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full px-1.5 text-[13px] text-ink-2 transition hover:text-ink has-[:checked]:bg-cyan/15 has-[:checked]:text-cyan has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan"
           >
             <input type="radio" name={name} value={option.value} checked={value === option.value} onChange={() => control.set(option.value)} className="sr-only" />
             <span lang={def.id === "language" ? option.value : undefined}>{t(option.labelKey)}</span>
           </label>
         ))}
       </div>
-      {def.hintKey && (
-        <p id={hint} className="mt-1.5 text-xs leading-4 text-ink-3">
-          {t(def.hintKey)}
-        </p>
-      )}
     </fieldset>
   );
 }
@@ -82,51 +95,57 @@ function RangeRow({ def, control }: RowProps<"range">) {
   const t = useTranslations("hud.settings");
   const value = useSyncExternalStore(def.subscribe, control.get, control.get);
   const id = useId();
-  const hint = useId();
   return (
-    <div data-testid={`setting-${def.id}`}>
-      <div className="flex min-h-11 items-center gap-3 px-3">
-        <label htmlFor={id} className="shrink-0 text-sm text-ink">
-          {t(def.labelKey)}
-        </label>
-        <input
-          id={id}
-          type="range"
-          min={control.min}
-          max={control.max}
-          step={control.step}
-          value={value}
-          aria-valuetext={t("percent", { value })}
-          aria-describedby={def.hintKey ? hint : undefined}
-          onChange={(event) => control.set(Number(event.target.value))}
-          className="min-h-11 min-w-0 flex-1 accent-[var(--color-cyan)]"
-        />
-        <span aria-hidden="true" className="w-10 shrink-0 text-right text-xs text-ink-3 tabular-nums">
+    <div className="px-4 py-3" data-testid={`setting-${def.id}`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <RowText def={def} labelId={`${id}-label`} hintId={`${id}-hint`} htmlFor={id} />
+        <span aria-hidden="true" className="shrink-0 text-xs text-ink-2 tabular-nums">
           {value}%
         </span>
       </div>
-      <Hint id={hint} hintKey={def.hintKey} />
+      <input
+        id={id}
+        type="range"
+        min={control.min}
+        max={control.max}
+        step={control.step}
+        value={value}
+        aria-valuetext={t("percent", { value })}
+        aria-describedby={def.hintKey ? `${id}-hint` : undefined}
+        onChange={(event) => control.set(Number(event.target.value))}
+        className="block min-h-11 w-full accent-[var(--color-cyan)]"
+      />
     </div>
   );
 }
 
-function ActionRow({ def, control, onClose }: RowProps<"action"> & { onClose?: () => void }) {
-  const t = useTranslations("hud.settings");
-  const hint = useId();
+function ReplayIcon() {
   return (
-    <div data-testid={`setting-${def.id}`}>
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </svg>
+  );
+}
+
+function ActionRow({ def, control, onClose }: RowProps<"action"> & { onClose?: () => void }) {
+  const id = useId();
+  return (
+    <div className={ROW} data-testid={`setting-${def.id}`}>
+      <RowText def={def} labelId={`${id}-label`} hintId={`${id}-hint`} htmlFor={id} />
       <button
+        id={id}
         type="button"
-        aria-describedby={def.hintKey ? hint : undefined}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={def.hintKey ? `${id}-hint` : undefined}
         onClick={() => {
           if (control.closesPanel) onClose?.();
           control.run();
         }}
-        className="hq-glow flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm text-ink"
+        className="hq-glow -mr-1 grid size-11 shrink-0 place-items-center rounded-full border border-line-2 bg-void/40 text-cyan hover:bg-cyan/10"
       >
-        {t(def.labelKey)}
+        <ReplayIcon />
       </button>
-      <Hint id={hint} hintKey={def.hintKey} />
     </div>
   );
 }
@@ -157,17 +176,19 @@ export function SettingsPanel({ defs = SETTINGS, headingLevel = 3, onClose }: { 
   const prefix = useId();
   const Heading = `h${headingLevel}` as "h2" | "h3";
   return (
-    <div data-testid="settings-panel" className="flex flex-col gap-5">
+    <div data-testid="settings-panel" className="flex flex-col gap-6 px-3">
       {settingsByGroup(defs).map(({ group, items }) => {
         const headingId = `${prefix}-${group}`;
         return (
-          <section key={group} aria-labelledby={headingId} className="flex flex-col gap-2">
-            <Heading id={headingId} className="label px-3 text-ink-3">
+          <section key={group} aria-labelledby={headingId}>
+            <Heading id={headingId} className="label mb-2 px-1 text-ink-3">
               {t(`groups.${group}`)}
             </Heading>
-            {items.map((def) => (
-              <Row key={def.id} def={def} onClose={onClose} />
-            ))}
+            <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+              {items.map((def) => (
+                <Row key={def.id} def={def} onClose={onClose} />
+              ))}
+            </div>
           </section>
         );
       })}
