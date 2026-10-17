@@ -27,15 +27,17 @@ interface MockOptions {
   cite?: string;
   /** Contact card of a lead-intent answer (the `done` frame). */
   contact?: { email: string; linkedin: string };
+  /** Server signature of the answer (the `done` frame), sent back as history with the next question. */
+  sig?: string;
   /** HTTP status for POSTs (429: rate limited). */
   post?: number;
 }
 
-const sse = (deltas: string[], outcome: string, tags: string[], cite?: string, contact?: MockOptions["contact"]) =>
-  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
+const sse = (deltas: string[], outcome: string, tags: string[], cite?: string, contact?: MockOptions["contact"], sig?: string) =>
+  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(sig ? { sig } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
 
 /** Routes `/api/ask` and records every request to it. */
-async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, contact, post = 200 }: MockOptions) {
+async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, contact, sig, post = 200 }: MockOptions) {
   const requests: Request[] = [];
   await page.route("**/api/ask", async (route) => {
     const request = route.request();
@@ -45,7 +47,7 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(status) });
     }
     if (post !== 200) return route.fulfill({ status: post, contentType: "application/json", headers: { "retry-after": "90" }, body: JSON.stringify({ error: "rate_limited", retryAfter: 90 }) });
-    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite, contact) });
+    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite, contact, sig) });
   });
   return {
     all: requests,
@@ -227,6 +229,32 @@ test("seeded pills: two seeds give different starters, and a session keeps its o
   // Starters ask like any pill and leave the topics view.
   await dock(page).getByTestId("ask-starters").getByRole("button", { name: two[0], exact: true }).click();
   await expect(thread(page).locator("[data-role='user']")).toContainText(two[0]);
+});
+
+test("multi-turn memory: the next question carries the signed turn, New chat forgets it", async ({ page }) => {
+  const sig = "A".repeat(43);
+  const api = await mockAsk(page, { status: enabled(), sig });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  const input = dock(page).getByRole("textbox", { name: "Your question" });
+  await input.fill("What is he   building now?");
+  await input.press("Enter");
+  await expect(thread(page)).toContainText(AS_OF_LINE);
+  expect(api.bodies()[0]).not.toHaveProperty("history");
+
+  await input.fill("Which agents?");
+  await input.press("Enter");
+  await expect.poll(() => api.posts().length).toBe(2);
+  expect(api.bodies()[1]).toMatchObject({ q: "Which agents?", history: [{ q: "What is he building now?", a: "Kurniadi is building AI agents.", sig }] });
+  await expect(thread(page).locator("[data-role='assistant']")).toHaveCount(2);
+  await expect(dock(page).getByTestId("ask-followups")).toBeVisible();
+
+  await dock(page).getByRole("button", { name: en.ask.dock.newChat }).click();
+  await expect(thread(page).locator("[data-role='user']")).toHaveCount(0);
+  await input.fill("Where does he work?");
+  await input.press("Enter");
+  await expect.poll(() => api.posts().length).toBe(3);
+  expect(api.bodies()[2]).not.toHaveProperty("history");
 });
 
 test("hero bar: typing a question or a topic opens the dock", async ({ page }) => {

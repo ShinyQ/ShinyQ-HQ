@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,6 +12,7 @@ import { THREAD_KEY } from "@/ask/thread";
 import { AskDock, TEASER_KEY } from "@/hud/ask/AskDock";
 import { requestAskStatus, resetAskAvailability } from "@/hud/ask/availability";
 import { openAsk } from "@/hud/events";
+import { useAskThread } from "@/hud/ask/useAskThread";
 
 const askMock = vi.hoisted(() => ({
   status: null as AskStatus | null,
@@ -372,8 +373,53 @@ describe("Ask dock chat", () => {
     act(() => openAsk());
     const again = await dock();
     expect(within(again).getByTestId("ask-thread")).toHaveTextContent("Mostly AI agents.");
-    await userEvent.click(within(again).getByRole("button", { name: d.clear }));
+    const newChat = within(again).getByRole("button", { name: d.newChat });
+    expect(newChat).toHaveTextContent("New chat");
+    await userEvent.click(newChat);
     expect(within(again).getByTestId("ask-thread")).not.toHaveTextContent("Mostly AI agents.");
     await vi.waitFor(() => expect(sessionStorage.getItem(THREAD_KEY)).toBeNull());
+  });
+
+  it("sends the signed earlier turn with the next question, and none after New chat", async () => {
+    const sig = "S".repeat(43);
+    askMock.ask.mockImplementation(async ({ onDelta }) => {
+      onDelta("Mostly AI agents.");
+      return { outcome: "answer", source: "primary", asOf: "2026-10-17", sig };
+    });
+    await ready();
+    act(() => openAsk("What is he building   now?"));
+    const panel = await dock();
+    await vi.waitFor(() => expect(within(panel).getByTestId("ask-thread")).toHaveTextContent("as of Oct 17, 2026"));
+    expect(askMock.ask.mock.calls[0][0]).not.toHaveProperty("history");
+    await vi.waitFor(() => expect(JSON.parse(sessionStorage.getItem(THREAD_KEY) ?? "[]").at(-1)).toMatchObject({ sig, sigLocale: "en" }));
+    const input = within(panel).getByRole("textbox", { name: d.inputLabel });
+    await userEvent.type(input, "Which ones?{Enter}");
+    expect(askMock.ask).toHaveBeenCalledTimes(2);
+    expect(askMock.ask.mock.calls[1][0]).toMatchObject({ q: "Which ones?", history: [{ q: "What is he building now?", a: "Mostly AI agents.", sig }] });
+    await vi.waitFor(() => expect(within(panel).getAllByText("Mostly AI agents.")).toHaveLength(2));
+    await userEvent.click(within(panel).getByRole("button", { name: d.newChat }));
+    await userEvent.type(within(panel).getByRole("textbox", { name: d.inputLabel }), "Where does he work?{Enter}");
+    expect(askMock.ask).toHaveBeenCalledTimes(3);
+    expect(askMock.ask.mock.calls[2][0]).not.toHaveProperty("history");
+  });
+});
+
+describe("Ask thread memory across locales", () => {
+  it("forgets every signature when the locale changes, keeping the thread visible", async () => {
+    const sig = "L".repeat(43);
+    const ask = vi.fn(async ({ onDelta }: AskOptions): Promise<AskResult> => {
+      onDelta("Mostly AI agents.");
+      return { outcome: "answer", source: "primary", asOf: "2026-10-17", sig };
+    });
+    const { result, rerender } = renderHook(({ locale }) => useAskThread(locale, { ask }), { initialProps: { locale: "en" as "en" | "id" } });
+    await act(() => result.current.send("What is he building now?", { source: "dock" }));
+    expect(result.current.messages.at(-1)).toMatchObject({ sig, sigLocale: "en" });
+    rerender({ locale: "id" });
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages.at(-1)).not.toHaveProperty("sig");
+    expect(result.current.messages.at(-1)).not.toHaveProperty("sigLocale");
+    rerender({ locale: "en" });
+    await act(() => result.current.send("Which ones?", { source: "dock" }));
+    expect(ask.mock.calls[1][0]).not.toHaveProperty("history");
   });
 });

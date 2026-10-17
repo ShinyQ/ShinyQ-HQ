@@ -235,3 +235,34 @@ describe("done frame contact card (lead intent)", () => {
     }
   });
 });
+
+describe("signed multi-turn history", () => {
+  const SIG = "Ab_-".repeat(10) + "xyz";
+  const done = (sig: unknown) => parseFrame(JSON.stringify({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-17", sig }));
+  const signedAnswer = () => sse([frame({ delta: "Hi" }), frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-17", sig: SIG })]);
+  const turn = (i: number) => ({ q: `Question ${i}`, a: `Answer ${i}`, sig: SIG });
+
+  it("keeps a valid signature on the done frame and drops an invalid one", () => {
+    expect(SIG).toHaveLength(43);
+    expect(done(SIG)).toHaveProperty("sig", SIG);
+    for (const sig of ["A".repeat(42), "A".repeat(44), `${"A".repeat(42)}=`, `${"A".repeat(42)}+`, 42, null]) {
+      expect(done(sig), String(sig)).not.toHaveProperty("sig");
+    }
+  });
+
+  it("returns the answer's signature", async () => {
+    const result = await askQuestion({ q: "Where does he work?", locale: "en", onDelta: () => {} }, deps([signedAnswer()]));
+    expect(result).toEqual({ outcome: "answer", source: "primary", asOf: "2026-10-17", sig: SIG });
+    expect(await askQuestion({ q: "Where does he work?", locale: "en", onDelta: () => {} }, deps([answer()]))).not.toHaveProperty("sig");
+  });
+
+  it("posts history only when there is some, at most three turns", async () => {
+    const d = deps([answer(), answer(), answer()]);
+    await askQuestion({ q: "And before that?", locale: "en", history: [turn(1)], onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[0])).toMatchObject({ q: "And before that?", history: [turn(1)] });
+    await askQuestion({ q: "Fresh question", locale: "en", history: [], onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[1])).not.toHaveProperty("history");
+    await askQuestion({ q: "Long thread", locale: "en", history: [1, 2, 3, 4].map(turn), onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[2]).history).toEqual([2, 3, 4].map(turn));
+  });
+});

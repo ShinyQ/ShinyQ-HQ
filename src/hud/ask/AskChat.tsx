@@ -264,7 +264,7 @@ export default function AskChat({ open, locale, layout, tower, status, request, 
           </div>
           {messages.length > 0 && (
             <button type="button" onClick={clear} className="min-h-11 rounded-full px-3 text-sm text-ink-2 transition hover:text-ink">
-              {td("clear")}
+              {td("newChat")}
             </button>
           )}
           <button
