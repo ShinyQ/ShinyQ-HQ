@@ -65,7 +65,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 #### Memory gates
 
 - `memory-full` (owner decision): `GPU_MEMORY_BUDGET.fullTierRoundTrips` (3) Lobby to Roof round trips on the full tier with Motion Full leave geometries, textures and programs at their baseline and the heap within the budget.
-  - Its warm-up tour (every floor once, before the shaped trip) rides with Motion Reduced; the shaped trip and the measured trips ride with Motion Full, so the baseline holds what a Motion Full ride builds.
+  - Its warm-up tour rides with Motion Full as well: a Motion Reduced warm-up left 2 geometries and a program for the first measured trips to build (a false failure in PR #201's CI).
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite.
 - Both use the `e2e/hq.ts` memory helpers and the one budget. The baseline and the final read are settled (`readSettledGpuCounters`); the per-trip numbers are for the failure message only and read unsettled (`readGpuCounters`), so each trip still calls the elevator the moment the rover arrives.
 

@@ -1,6 +1,6 @@
 # Test Suite Trim Implementation Plan
 
-Status: in review.
+Status: shipped in #201; its Motion Reduced warm-up for `memory-full` was reverted in a follow-up (Task 8).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -81,7 +81,7 @@ Baseline: e2e lane 9453 worker-s (600 tests), perf lane 3211 worker-s (29 tests)
 **Files:** `e2e/memory.spec.ts`, `e2e/perf/memory-full.spec.ts`
 
 - [x] Per-trip numbers (failure message only) read unsettled; base and after stay settled reads.
-- [x] `memory-full`: the warm-up tour rides with Motion Reduced; the shaped trip and the measured trips stay Motion Full.
+- [x] `memory-full`: a warm-up tour with Motion Reduced was tried and dropped: in CI its baseline (125 geometries, 65 programs) missed objects the first Motion Full trips built (127, 66), a false failure that passed only on retry. The warm-up stays Motion Full.
 
 ### Task 9: planner, docs
 
