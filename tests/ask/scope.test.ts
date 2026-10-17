@@ -110,6 +110,10 @@ describe("privateTopic", () => {
     "Where is he based?",
     "What is his favorite tool?",
     "What does he think about working with clients?",
+    // The settings panel is "Pengaturan" in Indonesian: a question about this site is never policy.
+    "Pengaturan apa saja yang ada di situs ini?",
+    "Apa isi panel Pengaturan situs ini?",
+    "What settings can I change on this site?",
   ])("leaves %s to the model", (q) => expect(privateTopic(q)).toBeNull());
 
   it("never fires on a curated question or a golden question that expects an answer", () => {

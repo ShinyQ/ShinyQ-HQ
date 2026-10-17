@@ -88,7 +88,8 @@ export function privateTopic(question: string): PrivateTopic | null {
   const hit = PRIVATE.find(([, re]) => re.test(question))?.[0];
   if (hit) return hit;
   // Policy questions are answerable only when they are tech-adjacent (his written policy views, 2026-10-15).
-  return POLICY.test(question) && !TECH.test(question) && !WORK_CONTEXT.test(question) ? "politics" : null;
+  // A question about this site is never policy: its settings panel is "Pengaturan" in Indonesian.
+  return POLICY.test(question) && !TECH.test(question) && !WORK_CONTEXT.test(question) && !isSiteQuestion(question) ? "politics" : null;
 }
 
 /**

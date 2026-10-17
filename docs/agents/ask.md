@@ -189,7 +189,7 @@ Spec section 13.
 |---|---|---|
 | `isHarmful` | harmful requests | declines |
 | `isCapabilityQuestion` | "What can you do?", "Apa yang bisa kamu lakukan?", the `contact-capabilities` pill | the fixed `MESSAGES.capabilities` (no model call) |
-| `privateTopic` | family, relationships, health, religion, partisan politics (parties, candidates, elections, named politicians, voting, contested social policy, and policy questions with no tech angle) and pay | declines |
+| `privateTopic` | family, relationships, health, religion, partisan politics (parties, candidates, elections, named politicians, voting, contested social policy, and policy questions with no tech angle; a question about this site, such as its "Pengaturan" panel, never counts) and pay | declines |
 | `opinionAboutOthers` | opinions about others | declines |
 | `isGeneralAssistantRequest` | writing code, essays, poems or homework, tutorials, translations, recommendations for the visitor and "you are now a general chatbot" jailbreaks | `MESSAGES.decline`, which points back to what the assistant covers |
 | `routedTopic` | lifestyle (hobbies, games, books, anime, coffee shops, the gym, burnout) and tech-adjacent policy (AI regulation, UU PDP, government AI use, AI and jobs, public digital interfaces) | his perspectives with that topic tag ONLY |
