@@ -55,13 +55,13 @@ describe("signed history turns", () => {
 
 describe("follow-up questions", () => {
   it("treats short and referring questions as follow-ups", () => {
-    for (const q of ["What stack did it use?", "Teknologinya apa?", "and that one?", "Which one is the newest of those projects?", "Bagaimana dengan proyek AI lainnya?", "Itu dibuat di acara apa?"]) {
+    for (const q of ["What stack did it use?", "Teknologinya apa?", "and that one?", "Which year?", "Why?", "Which one is the newest of those projects?", "Bagaimana dengan proyek AI lainnya?", "Itu dibuat di acara apa?"]) {
       expect(isFollowUp(q), q).toBe(true);
     }
   });
 
   it("leaves standalone questions and site questions alone", () => {
-    for (const q of ["How was this site built?", "Which companies has Kurniadi worked for since he graduated from university?", "Where did Kurniadi study computer science?"]) {
+    for (const q of ["How was this site built?", "Which companies has Kurniadi worked for since he graduated from university?", "Where did Kurniadi study computer science?", "Where did he study?", "Where does he work now?", "Is he open to work?", "What is his tech stack?", "What is Clearbox?"]) {
       expect(isFollowUp(q), q).toBe(false);
     }
   });

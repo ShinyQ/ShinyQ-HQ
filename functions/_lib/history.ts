@@ -63,17 +63,23 @@ export async function verifyHistory(turns: readonly AskTurn[], key: string | und
 /** Words that point back at the previous turn (EN and ID). "He" and "his" mean Kurniadi, so they do not count. */
 const REFERENT = /\b(?:it|its|that|this|those|these|they|them|their|there|one|ones|same|ini|itu|tersebut|mereka|sana|tadi|\p{L}{3,}nya)\b/iu;
 const LEAD_IN = /^(?:and|also|what about|how about|dan|lalu|terus|kalau|bagaimana dengan)\b/i;
-/** Fewer words than this reads as a follow-up on its own ("Which stack?"). */
-export const FOLLOW_UP_WORDS = 6;
+/** A question this short with no name of its own reads as a follow-up ("Which year?", "Why?"). */
+export const FOLLOW_UP_WORDS = 3;
 /** A question this long stands alone even with a "that" or "there" in it. */
 const STANDALONE_WORDS = 12;
 
-/** A short or referring question that only makes sense after the previous one. Site questions stand alone. */
+/**
+ * A question that only makes sense after the previous one: a lead-in ("and", "what about", "kalau"), a
+ * referent ("it", "that one", "itu", a "-nya" word), or at most 3 words with no name of its own
+ * ("Which year?", but not "What is Clearbox?"). Short standalone questions ("Where did he study?") and
+ * site questions stand alone.
+ */
 export function isFollowUp(question: string): boolean {
   const text = cleanText(question);
   if (!text || isSiteQuestion(text)) return false;
   const words = text.match(/[\p{L}\p{N}]+/gu) ?? [];
-  return words.length < FOLLOW_UP_WORDS || LEAD_IN.test(text) || (words.length < STANDALONE_WORDS && REFERENT.test(text));
+  const named = words.slice(1).some((w) => /^\p{Lu}/u.test(w));
+  return LEAD_IN.test(text) || (words.length < STANDALONE_WORDS && REFERENT.test(text)) || (words.length <= FOLLOW_UP_WORDS && !named);
 }
 
 /**
