@@ -8,6 +8,7 @@ import { ZOOM_RANGE, zoneAt, zoneView, type ViewZone } from "@/experience/camera
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type CameraPose, type Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts, FLOOR_IDS, LOBBY, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput, roadZAt } from "@/experience/floors/career/layout";
+import { ENGINE } from "@/experience/floors/engine/layout";
 import { directoryBoard, LABS } from "@/experience/floors/labs/layout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
@@ -42,7 +43,7 @@ const SIZES = [
   [390, 844],
 ] as const;
 
-const ZONE_ID: Record<FloorId, string> = { L1: "L1:arrival", L2: "L2:arrival", L3: "L3:overview", L4: "L4:arrival", RF: "RF:arrival" };
+const ZONE_ID: Record<FloorId, string> = { B1: "B1:arrival", L1: "L1:arrival", L2: "L2:arrival", L3: "L3:overview", L4: "L4:arrival", RF: "RF:arrival" };
 
 /** The first timeline station on L4 (the newest post north of the lane) and the point of its front nearest its door. */
 const firstStation = library.stations.find((s) => s.center.z < library.floor.approach.z)!;
@@ -64,6 +65,10 @@ const signCorners = [-1, 1].flatMap((k) =>
 
 /** The floor's main sight on arrival: what the camera looks at down the main axis. */
 const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
+  B1: [
+    { label: "the aisle ahead", at: [ENGINE.arrival.x + 10, 0, 0] },
+    { label: "the aisle at the second bay", at: [ENGINE.bay.x0 + ENGINE.bay.pitch, 0, 0] },
+  ],
   L1: [
     { label: "name above the profile hologram", at: [LOBBY.hologram.x, LOBBY.titleY, LOBBY.hologram.z] },
     { label: "profile hologram base", at: [LOBBY.hologram.x, 0, LOBBY.hologram.z] },

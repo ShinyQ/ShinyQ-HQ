@@ -1,5 +1,6 @@
 import type { FloorId } from "@/content/schema";
-import { FLOOR_IDS, floorIndex } from "../config";
+import { PUBLIC_FLOORS } from "@/lib/floors";
+import { floorIndex } from "../config";
 import type { RideStage } from "./elevator";
 
 const BEFORE_MOVING: ReadonlySet<RideStage> = new Set(["toDoor", "boarding", "closing"]);
@@ -20,8 +21,8 @@ export function belowParkedCar(floorY: number, roverY: number, ride: { stage: Ri
  * text and meshes, not three (about 100 ms less main-thread work on a throttled phone). `warm` is the
  * floor the boot warm-up mounts hidden to compile its programs (scene/ProgramWarmup.tsx).
  */
-export function nearFloors(floor: FloorId, target: FloorId | null, exterior: boolean, reach = 1, warm: FloorId | null = null): FloorId[] {
-  return FLOOR_IDS.filter((id) => {
+export function nearFloors(floor: FloorId, target: FloorId | null, exterior: boolean, reach = 1, warm: FloorId | null = null, floors: readonly FloorId[] = PUBLIC_FLOORS): FloorId[] {
+  return floors.filter((id) => {
     if (id === warm) return true;
     if (exterior && id === "L1") return true;
     const d = Math.abs(floorIndex(id) - floorIndex(floor));

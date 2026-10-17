@@ -2,8 +2,9 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
+import { PUBLIC_FLOORS } from "@/lib/floors";
 import { useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
+import { COLORS, floorY, SHAFT } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import type { LabsLabels } from "../floors/Labs";
 import type { LibraryLabels } from "../floors/Library";
@@ -118,12 +119,15 @@ export function Tower({
         return Library && <Library data={data} labels={labels.library} tier={tier} />;
       case "RF":
         return Roof && <Roof data={data} labels={labels.roof} tier={tier} />;
+      case "B1":
+        // The Engine Room mounts here once its chunk exists; until then nothing below the Lobby is drawn.
+        return null;
     }
   };
 
   return (
     <group name="tower">
-      {FLOOR_IDS.map((id) => {
+      {PUBLIC_FLOORS.map((id) => {
         const isNear = near.includes(id);
         const content = isNear ? floorContent(id) : null;
         return (

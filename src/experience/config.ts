@@ -1,7 +1,9 @@
 import type { FloorId } from "@/content/schema";
+import { PUBLIC_FLOORS, SECRET_FLOOR } from "@/lib/floors";
 import { yawLooking } from "./camera/look";
 import type { ViewZone } from "./camera/orbit";
 import { buildCareerRoad } from "./floors/career/layout";
+import { buildEngineLayout, ENGINE } from "./floors/engine/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
@@ -14,11 +16,12 @@ import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
 /** Tower constants from spec appendix 01 section 1. */
 export const FLOOR_GAP = 14;
-export const FLOOR_IDS = ["L1", "L2", "L3", "L4", "RF"] as const satisfies readonly FloorId[];
+/** Every floor bottom up: the secret B1 Engine Room under the Lobby, then the five public floors (`PUBLIC_FLOORS`). */
+export const FLOOR_IDS = [SECRET_FLOOR, ...PUBLIC_FLOORS] as const satisfies readonly FloorId[];
 export const SLAB_THICKNESS = 0.4;
 
-/** Floors whose 3D content is built. Others are placeholders and keep the URL at /{locale}. */
-export const READY_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
+/** Floors whose 3D content is built (B1 has no route of its own: its URL stays /{locale}, `FLOOR_ROUTE`). */
+export const READY_FLOORS: readonly FloorId[] = FLOOR_IDS;
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -26,6 +29,7 @@ export const CAR: Vec2 = { x: SHAFT.x, z: SHAFT.z };
 
 /** Floor accent colors (appendix 05). */
 export const FLOOR_COLOR: Record<FloorId, string> = {
+  B1: ENGINE.accent,
   L1: "#34d399",
   L2: "#fbbf24",
   L3: "#a78bfa",
@@ -65,8 +69,20 @@ export function floorIndex(id: FloorId): number {
   return FLOOR_IDS.indexOf(id);
 }
 
+/** Height of a floor's slab top: L1 stays at 0, so every public floor keeps its height and B1 sits one gap below. */
 export function floorY(id: FloorId): number {
-  return floorIndex(id) * FLOOR_GAP;
+  return (floorIndex(id) - floorIndex("L1")) * FLOOR_GAP;
+}
+
+/** The floors the tower draws and the elevator serves: B1 only once it is unlocked (store `b1Unlocked`). */
+export function towerFloors(b1Unlocked: boolean): readonly FloorId[] {
+  return b1Unlocked ? FLOOR_IDS : PUBLIC_FLOORS;
+}
+
+/** The glass shaft's span for the floors the tower draws: from under the lowest slab to 8 u above the roof. */
+export function shaftSpan(floors: readonly FloorId[]): { bottom: number; height: number } {
+  const bottom = Math.min(...floors.map(floorY)) - SLAB_THICKNESS;
+  return { bottom, height: floorY("RF") + 8 - bottom };
 }
 
 export function floorAt(index: number): FloorId | undefined {
@@ -206,10 +222,10 @@ function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
  * Elevator pad icon yaw per floor: toward the L2 rail camera (+z), elsewhere east, where the follow
  * camera sits when the rover drives up to the shaft.
  */
-const ELEVATOR_PAD_FACE: Record<FloorId, number> = { L1: Math.PI / 2, L2: 0, L3: Math.PI / 2, L4: Math.PI / 2, RF: Math.PI / 2 };
+const ELEVATOR_PAD_FACE: Record<FloorId, number> = { B1: Math.PI / 2, L1: Math.PI / 2, L2: 0, L3: Math.PI / 2, L4: Math.PI / 2, RF: Math.PI / 2 };
 
 /** Return pad icon yaw: toward the L2 rail camera (+z), elsewhere west, where the follow camera sits when the rover heads east to a floor's far end. */
-const RETURN_PAD_FACE: Record<FloorId, number> = { L1: -Math.PI / 2, L2: 0, L3: -Math.PI / 2, L4: -Math.PI / 2, RF: -Math.PI / 2 };
+const RETURN_PAD_FACE: Record<FloorId, number> = { B1: -Math.PI / 2, L1: -Math.PI / 2, L2: 0, L3: -Math.PI / 2, L4: -Math.PI / 2, RF: -Math.PI / 2 };
 
 /**
  * Every floor gets the elevator call pad on its approach (3 u in front of the shaft door, so it follows
@@ -248,6 +264,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
   const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
   const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis });
   const layouts: Record<FloorId, FloorLayout> = {
+    // B1 Engine Room: the aisle, seven bays and the workbench (floors/engine/layout.ts).
+    B1: buildEngineLayout().floor,
     L1: {
       ...standard(
         "L1",

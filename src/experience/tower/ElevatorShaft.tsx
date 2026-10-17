@@ -5,8 +5,9 @@ import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { MeshBasicMaterial, type Group } from "three";
 import type { FloorId } from "@/content/schema";
+import { PUBLIC_FLOORS } from "@/lib/floors";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_COLOR, FLOOR_IDS, floorY, SHAFT, SHAFT_EAST_FACE, SLAB_THICKNESS } from "../config";
+import { COLORS, FLOOR_COLOR, floorY, SHAFT, SHAFT_EAST_FACE, SLAB_THICKNESS } from "../config";
 import { rimGeometry } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
 import type { FloorLayout } from "../types";
@@ -124,7 +125,7 @@ export function ElevatorShaft({ layouts, near }: { layouts: Record<FloorId, Floo
         </group>
       ))}
       <Suspense fallback={null}>
-        {FLOOR_IDS.map((id) => (
+        {PUBLIC_FLOORS.map((id) => (
           <Indicator key={id} floor={id} visible={near.includes(id)} />
         ))}
       </Suspense>

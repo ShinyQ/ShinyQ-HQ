@@ -59,6 +59,7 @@ export type StructuralRoom =
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
+  B1: "/build",
   L1: "/",
   L2: "/journey",
   L3: "/labs",

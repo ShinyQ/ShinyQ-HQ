@@ -33,14 +33,14 @@ export const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected Y
 
 export const ConfidenceSchema = z.enum(["verified", "strongly-inferred", "self-reported"]);
 export const TierSchema = z.enum(["hero", "featured", "listed"]);
-export const FloorIdSchema = z.enum(["L1", "L2", "L3", "L4", "RF"]);
+export const FloorIdSchema = z.enum(["L1", "L2", "L3", "L4", "RF", "B1"]);
 export const AccentSchema = z.enum(["violet", "pink", "green", "amber", "cyan", "blue", "white"]);
 /** L3 wings: `software` (north), `ai` (south) and `data` (the Data and ML annex east of the Tech Reactor, owner request 2026-10-14). */
 export const WingSchema = z.enum(["software", "ai", "data"]);
 export const SlugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected kebab-case slug");
 export const RoomIdSchema = z
   .string()
-  .regex(/^(L1|L2|L3|L4|RF):[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected FloorId:slug");
+  .regex(/^(L1|L2|L3|L4|RF|B1):[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected FloorId:slug");
 
 const httpsUrl = z.url({ protocol: /^https$/ });
 /** A public repository of the owner on GitHub (repo root only). */

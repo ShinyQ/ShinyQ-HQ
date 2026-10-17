@@ -12,6 +12,8 @@ export interface HQUrlState {
 
 /** Locale-relative route of each floor without a room (appendix 06 section 3). */
 export const FLOOR_ROUTE: Record<FloorId, string> = {
+  // B1 has no route: its URL stays the Lobby's (/{locale}); its Classic counterpart is /build (`FLOOR_PATHS`).
+  B1: "/",
   L1: "/",
   L2: "/journey",
   L3: "/labs",

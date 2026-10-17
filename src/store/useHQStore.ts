@@ -11,6 +11,7 @@ import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { applyMotionAttr, DEFAULT_MOTION, isMotionPref, migrateMotion, resolveReducedMotion, type MotionPref } from "@/lib/motion";
+import { isPublicFloor } from "@/lib/floors";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { skipUnchanged } from "./persist-storage";
 
@@ -195,9 +196,9 @@ const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", 
 export const initialRover: RoverState = { x: LOBBY.spawn.x, z: LOBBY.spawn.z, heading: LOBBY.spawnHeading, speed: 0, face: "idle" };
 
 function resolveTarget(base: FloorId, target: ElevatorTarget): FloorId | undefined {
-  if (target === "up") return FLOOR_IDS[floorIndex(base) + 1];
-  if (target === "down") return FLOOR_IDS[floorIndex(base) - 1];
-  return target;
+  const to = target === "up" ? FLOOR_IDS[floorIndex(base) + 1] : target === "down" ? FLOOR_IDS[floorIndex(base) - 1] : target;
+  // B1 stays out of reach until the unlock flag exists.
+  return to && isPublicFloor(to) ? to : undefined;
 }
 
 export function createHQStore(storage?: StateStorage) {

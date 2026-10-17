@@ -23,10 +23,12 @@ describe("viewport classes", () => {
 
 describe("tower config", () => {
   it("stacks floors 14 u apart", () => {
-    expect(floorIndex("L1")).toBe(0);
+    expect(floorIndex("B1")).toBe(0);
+    expect(floorIndex("L1")).toBe(1);
+    expect(floorY("L1")).toBe(0);
     expect(floorY("RF")).toBe(56);
-    expect(floorAt(2)).toBe("L3");
-    expect(floorAt(5)).toBeUndefined();
+    expect(floorAt(3)).toBe("L3");
+    expect(floorAt(6)).toBeUndefined();
   });
 
   it("parks the rover 3 u in front of each elevator door", () => {

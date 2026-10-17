@@ -10,6 +10,7 @@ import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
 import { formatYearMonth } from "@/lib/format";
+import { isPublicFloor } from "@/lib/floors";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { TOPICS_ROOM } from "./floors/library/topicHash";
 import { createTopicHashSync } from "./floors/library/topicUrl";
@@ -339,9 +340,10 @@ export default function Experience({
     audio.setPaused(false);
     // The floor ambience follows the floor the rover is on.
     const store = getHQStore();
-    audio.setFloor(store.getState().floor);
+    const ambient = (f: FloorId) => (isPublicFloor(f) ? f : null);
+    audio.setFloor(ambient(store.getState().floor));
     const offFloor = store.subscribe((s, prev) => {
-      if (s.floor !== prev.floor) audio.setFloor(s.floor);
+      if (s.floor !== prev.floor) audio.setFloor(ambient(s.floor));
     });
     return () => {
       off();

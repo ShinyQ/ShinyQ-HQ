@@ -2,14 +2,15 @@
 
 import { useTranslations } from "next-intl";
 import type { FloorId } from "@/content/schema";
-import { FLOOR_IDS } from "@/experience/config";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
+import { PUBLIC_FLOORS } from "@/lib/floors";
 import { useHQStore } from "@/store/useHQStore";
 
 /** Lit code circle of the current floor, in the floor's accent. */
 export const FLOOR_ACTIVE: Record<FloorId, string> = {
+  B1: "border-amber bg-amber/15 text-amber",
   L1: "border-green bg-green/15 text-green",
   L2: "border-amber bg-amber/15 text-amber",
   L3: "border-violet bg-violet/15 text-violet",
@@ -17,7 +18,7 @@ export const FLOOR_ACTIVE: Record<FloorId, string> = {
   RF: "border-blue bg-blue/15 text-blue",
 };
 
-const TOP_DOWN = [...FLOOR_IDS].reverse();
+const TOP_DOWN = [...PUBLIC_FLOORS].reverse();
 
 export type FloorButtonsVariant = "rail" | "rail-compact" | "rail-codes" | "sheet";
 

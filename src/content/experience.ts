@@ -3,9 +3,10 @@ import id from "../../messages/id.json";
 import type { OpsData } from "@/experience/floors/labs/ops";
 import type { CareerData, ExperienceData, LabPod } from "@/experience/types";
 import { formatPeriod } from "@/lib/format";
+import type { PublicFloor } from "@/lib/floors";
 import { FLOOR_ROUTE } from "@/lib/url-sync";
 import { certViews } from "./cert-views";
-import { buildLibraryData, buildRoofData } from "./experience-floors";
+import { buildEngineData, buildLibraryData, buildRoofData } from "./experience-floors";
 import { buildHighlightsData } from "./highlights";
 import {
   getAwards,
@@ -94,9 +95,10 @@ export function countRooms(): number {
  * Builds the small, locale-resolved, serializable payload that the 3D chunk
  * needs, so the client bundle never ships the full dataset or zod.
  */
-export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, string>): ExperienceData {
+export function buildExperienceData(locale: Locale, floorNames: Record<PublicFloor, string>): ExperienceData {
   getContent();
   const profile = getProfile();
+  const names: Record<FloorId, string> = { ...floorNames, B1: (locale === "en" ? en : id).floors.B1 };
   return {
     locale,
     profile: {
@@ -111,7 +113,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     certifications: certViews(locale),
     missions: getMissions().map((m) => ({ id: m.id, label: m.label[locale] })),
     floors: Object.fromEntries(
-      (Object.keys(FLOOR_ROUTE) as FloorId[]).map((f) => [f, { name: floorNames[f], route: FLOOR_ROUTE[f] }]),
+      (Object.keys(FLOOR_ROUTE) as FloorId[]).map((f) => [f, { name: names[f], route: FLOOR_ROUTE[f] }]),
     ) as ExperienceData["floors"],
     years: getYears().map((y) => y.year),
     roomCount: countRooms(),
@@ -120,5 +122,6 @@ export function buildExperienceData(locale: Locale, floorNames: Record<FloorId, 
     library: buildLibraryData(locale),
     roof: buildRoofData(locale),
     highlights: buildHighlightsData(locale),
+    engine: buildEngineData(locale),
   };
 }

@@ -23,6 +23,7 @@ export interface CommandPaletteProps {
 }
 
 const FLOOR_BADGE: Record<FloorId, string> = {
+  B1: "text-amber border-amber/40",
   L1: "text-green border-green/40",
   L2: "text-amber border-amber/40",
   L3: "text-violet border-violet/40",

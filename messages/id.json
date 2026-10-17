@@ -27,6 +27,7 @@
     "mobile": "Bagian"
   },
   "floors": {
+    "B1": "Ruang Mesin",
     "L1": "Lobi",
     "L2": "Arsip Karier",
     "L3": "Labs",
@@ -599,7 +600,13 @@
       "rotateRight": "Putar ke kanan (E)",
       "reset": "Atur ulang tampilan (0)"
     },
+    "engine": {
+      "title": "Ruang Mesin",
+      "subtitle": "Cara situs ini dibuat",
+      "soon": "Segera hadir"
+    },
     "floorLabel": {
+      "B1": "Pembuatan",
       "L1": "Beranda",
       "L2": "Perjalanan",
       "L3": "Karya",
@@ -614,6 +621,7 @@
       "close": "Tutup",
       "here": "Posisi saat ini",
       "floorDesc": {
+        "B1": "Cara situs ini dibuat: lima stasiun",
         "L1": "Profil, Aula Sorotan, keahlian dan sertifikasi",
         "L2": "Career Road: satu plaza per tahun",
         "L3": "Product Engineering, AI Engineering, serta Data dan ML",
