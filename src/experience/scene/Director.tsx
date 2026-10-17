@@ -161,6 +161,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           if (path?.length) {
             controller.setPath(path, false);
             roverRuntime.target = path[path.length - 1];
+            // The scrub replaces an arrival roll-on: the arrival view hold and the camera glide release.
+            roverRuntime.autopilot = null;
           }
           break;
         }
@@ -173,6 +175,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
             s.cancelRide();
             controller?.clearPath();
           }
+          // Point-and-go replaces an arrival roll-on: the arrival view hold and the camera glide release.
+          roverRuntime.autopilot = null;
           // The drive ends with the rover stopping on the pad, so the pad latch may open the same picker
           // before this promise resolves; opening it again would undo an Esc pressed in between.
           const padOpensBefore = local.padOpens;
