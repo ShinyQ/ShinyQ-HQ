@@ -99,6 +99,14 @@ export const RULES: Rule[] = [
   { test: /^src\/components\/page\/AskEntry/, specs: ["ask", "pageview"] },
   // The landing's way into the tower: exercised from page view (experience) and on a software renderer (boot-first).
   { test: /^src\/components\/page\/EnterHqButton\.tsx$/, specs: ["boot-first", "experience", "pageview"] },
+  // Corners HUD hosts (Round 8 I): the HUD root, the view controls, the shared modal, Rover's toast and its
+  // placement, and the Ask dock's teaser under the minimap shape the corner layout, so each keeps its own
+  // specs and adds hud-corners (listed before the folder rules below, which would match first).
+  { test: /^src\/hud\/Hud\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud", "hud-corners"] },
+  { test: /^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience", "hud-corners"] },
+  { test: /^src\/components\/Modal\.tsx$/, specs: ["gallery", "lifecycle", "pageview", "hud-corners"] },
+  { test: /^src\/hud\/dialog\/(DialogBox\.tsx|placement\.ts)$/, specs: ["onboarding", "experience", "camera", "hud-corners"] },
+  { test: /^src\/hud\/ask\/AskDock\.tsx$/, specs: ["ask", "experience", "pageview", "hud-corners"] },
   // The dock is mounted on every page and over the 3D HUD (top-right pill).
   { test: /^src\/hud\/ask\//, specs: ["ask", "experience", "pageview"] },
 
@@ -182,7 +190,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof", "highlights", "career"] },
   // Boost (owner pick: trails, body lean and squat, camera kick, streaks, sparks; the touch toggle).
   {
-    test: /^src\/experience\/fx\/(BoostFx\.tsx|boostConfig\.ts|boostTrail\.ts|sparks\.ts|streaks\.ts)$|^src\/experience\/rover\/(boost|bodyDynamics)\.ts$|^src\/experience\/camera\/boostView\.ts$|^src\/hud\/BoostButton\.tsx$/,
+    test: /^src\/experience\/fx\/(BoostFx\.tsx|boostConfig\.ts|boostTrail\.ts|sparks\.ts|streaks\.ts)$|^src\/experience\/rover\/(boost|bodyDynamics)\.ts$|^src\/experience\/camera\/boostView\.ts$/,
     specs: ["boost", "experience", "hud", "gpu"],
   },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
@@ -214,7 +222,7 @@ export const RULES: Rule[] = [
   // Corners HUD (Round 8 I): the menu and settings sheets, the minimap and overview, the floor chip and sheet, the
   // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
   { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
-  { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/FloorChip\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
+  { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|ChunkFailed)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
   // FloorButtons also renders the desktop elevator rail, which e2e/experience.spec.ts covers.
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience"] },
   // The shared joystick double-tap helper.
