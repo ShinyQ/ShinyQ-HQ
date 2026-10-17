@@ -122,10 +122,11 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("Bahasa Indonesia")).toHaveAttribute("lang", "id");
   });
 
-  it("the quality choice persists through its local preference", async () => {
+  it("the quality choice shows at once and persists through its local preference after the debounce", async () => {
     render(<SettingsPanel />, { wrapper: Wrap });
     await userEvent.click(screen.getByRole("radio", { name: "Lite" }));
-    expect(window.localStorage.getItem("hq:quality")).toBe("lite");
+    expect(screen.getByRole("radio", { name: "Lite" })).toBeChecked();
+    await vi.waitFor(() => expect(window.localStorage.getItem("hq:quality")).toBe("lite"), { timeout: 2000 });
   });
 
   it("the music volume slider reports percent", () => {

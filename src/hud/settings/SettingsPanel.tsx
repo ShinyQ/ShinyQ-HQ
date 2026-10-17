@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useId, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { SETTINGS } from "./defs";
 import { settingsByGroup, type SettingControl, type SettingDef } from "./registry";
@@ -50,8 +50,13 @@ function ChoiceRow({ def, control }: RowProps<"choice">) {
   const value = useSyncExternalStore(def.subscribe, control.get, control.get);
   const name = useId();
   const hint = useId();
+  const row = useRef<HTMLFieldSetElement>(null);
+  // A passive effect, so it runs after the sheet's own initial focus (the Modal's layout effect).
+  useEffect(() => {
+    if (def.takeFocus?.()) row.current?.querySelector<HTMLInputElement>("input:checked")?.focus({ preventScroll: true });
+  }, [def]);
   return (
-    <fieldset className="min-w-0 px-3" data-testid={`setting-${def.id}`} aria-describedby={def.hintKey ? hint : undefined}>
+    <fieldset ref={row} className="min-w-0 px-3" data-testid={`setting-${def.id}`} aria-describedby={def.hintKey ? hint : undefined}>
       <legend className="label mb-1.5 text-ink-3">{t(def.labelKey)}</legend>
       <div className="grid gap-0.5 rounded-full border border-glass-border p-0.5" style={{ gridTemplateColumns: `repeat(${control.options.length}, minmax(0, 1fr))` }}>
         {control.options.map((option) => (

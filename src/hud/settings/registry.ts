@@ -27,6 +27,11 @@ export interface SettingDef {
   subscribe: (listener: () => void) => () => void;
   /** Hides the row when it returns false. */
   available?: () => boolean;
+  /**
+   * Checked once when the row mounts: true moves focus to the row's current value. A setting whose change
+   * remounts the HUD (graphics quality) uses it, so the reopened sheet keeps the visitor's place.
+   */
+  takeFocus?: () => boolean;
 }
 
 export function defineSetting(def: SettingDef): SettingDef {

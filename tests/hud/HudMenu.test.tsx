@@ -14,7 +14,8 @@ import { openPalette, openTerminal } from "@/hud/events";
 import type { HudLayout } from "@/hud/layout";
 import { HudMenu } from "@/hud/menu/HudMenu";
 import { SettingsLauncher, SettingsSheet } from "@/hud/menu/SettingsSheet";
-import { useHudToggle } from "@/hud/menu/useHudToggles";
+import { hudToggles, useHudToggle } from "@/hud/menu/useHudToggles";
+import { qualityPref } from "@/lib/quality-pref";
 import { getHQStore } from "@/store/useHQStore";
 
 const { fakeAudio } = vi.hoisted(() => {
@@ -303,5 +304,51 @@ describe("useHudToggle", () => {
     act(() => intents.emit({ type: "toggle", what: "map" }));
     act(() => intents.emit({ type: "toggle", what: "map" }));
     expect(probe).toHaveAttribute("data-open", "false");
+  });
+
+  it("keeps the open state through a keyed remount (a graphics quality change) with one key subscription", () => {
+    const { rerender } = render(<Probe key="a" what="settings" />);
+    act(() => intents.emit({ type: "toggle", what: "settings" }));
+    expect(screen.getByTestId("probe")).toHaveAttribute("data-open", "true");
+    rerender(<Probe key="b" what="settings" />);
+    expect(screen.getByTestId("probe")).toHaveAttribute("data-open", "true");
+    act(() => intents.emit({ type: "toggle", what: "settings" }));
+    expect(screen.getByTestId("probe")).toHaveAttribute("data-open", "false");
+    act(() => intents.emit({ type: "toggle", what: "settings" }));
+    expect(screen.getByTestId("probe")).toHaveAttribute("data-open", "true");
+  });
+
+  it("closes once nothing holds the toggle after the commit (Classic site), and stops listening for the key", async () => {
+    const { unmount } = render(<Probe what="map" />);
+    act(() => intents.emit({ type: "toggle", what: "map" }));
+    expect(hudToggles.get("map")).toBe(true);
+    unmount();
+    await Promise.resolve();
+    expect(hudToggles.get("map")).toBe(false);
+    intents.emit({ type: "toggle", what: "map" });
+    expect(hudToggles.get("map")).toBe(false);
+  });
+});
+
+describe("graphics quality change with the settings sheet open", () => {
+  afterEach(() => qualityPref.set("auto"));
+
+  it("keeps the sheet open across the HUD remount and focuses the checked quality radio", async () => {
+    const view = (key: string) => (
+      <Wrap key={key}>
+        <SettingsLauncher />
+      </Wrap>
+    );
+    const { rerender } = render(view("full"));
+    await userEvent.click(screen.getByTestId("settings-open"));
+    await userEvent.click(await screen.findByRole("radio", { name: "Lite" }));
+    await vi.waitFor(() => expect(qualityPref.get()).toBe("lite"), { timeout: 2000 });
+    // The gate keys the experience by tier, so the whole HUD remounts here.
+    rerender(view("lite"));
+    const sheet = screen.getByTestId("settings-sheet");
+    const lite = await within(sheet).findByRole("radio", { name: "Lite" });
+    expect(lite).toBeChecked();
+    await vi.waitFor(() => expect(lite).toHaveFocus());
+    expect(document.activeElement).not.toBe(document.body);
   });
 });
