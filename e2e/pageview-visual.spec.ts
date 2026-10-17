@@ -172,6 +172,8 @@ test.describe("P10 accent stripes", () => {
         localStorage.setItem("hq:onboarded", "done");
         localStorage.setItem("hq:hints", "off");
         sessionStorage.setItem("hq:ask-teaser", "1");
+        // Bank order: before and after show the same Ask pills.
+        sessionStorage.setItem("hq:ask-seed", "order");
       });
       await context.route("**/api/ask", (route) => route.fulfill({ status: 200, contentType: "application/json", body: ASK_ON }));
       const page = await context.newPage();
