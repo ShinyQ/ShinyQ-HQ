@@ -6,7 +6,7 @@
  * Without run ids it takes the last `--runs` successful `ci.yml` push runs on `--branch`. Needs `gh` (or GH_TOKEN) with
  * read access to the repository (`GH_REPO` or the current checkout). Each test gets its median over the
  * runs (passes only, a pass on retry included; skipped tests count as 0). Commit the result; rerun it when
- * shards drift apart in CI (compare the `E2E shard n/4` job times).
+ * shards drift apart in CI (compare the `E2E shard n/8` job times).
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";

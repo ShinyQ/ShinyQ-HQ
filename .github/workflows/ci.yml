@@ -81,10 +81,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Cone mode keeps the root files (package.json, lighthouserc.json); src for the import closures,
-          # e2e for the durations and the smoke test lines.
+          # Cone mode keeps the root files (package.json, lighthouserc.json); src and content for the import
+          # closures (pages import content JSON), e2e for the durations and the smoke test lines.
           sparse-checkout: |
             src
+            content
             scripts
             e2e
       # No install: scripts/ci-plan.ts imports only node builtins and other dependency-free scripts.

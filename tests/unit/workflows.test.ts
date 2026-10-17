@@ -60,8 +60,8 @@ describe("smart CI (ci.yml)", () => {
     for (const out of ["e2e_shards", "e2e_total", "perf_grep", "perf_shards", "perf_total", "lighthouse_urls"]) {
       expect(job("changes")).toContain(`${out}: \${{ steps.plan.outputs.${out} }}`);
     }
-    // The planner reads e2e/durations.json and the smoke test lines.
-    expect(job("changes")).toMatch(/sparse-checkout: \|\n\s+src\n\s+scripts\n\s+e2e\n/);
+    // The planner follows imports into content JSON and reads e2e/durations.json and the smoke test lines.
+    expect(job("changes")).toMatch(/sparse-checkout: \|\n\s+src\n\s+content\n\s+scripts\n\s+e2e\n/);
   });
 
   it("always runs the build, the safety scan and og:check", () => {

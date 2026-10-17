@@ -31,7 +31,7 @@ jobs:
   refresh:
     name: Refresh live facts
     runs-on: ubuntu-latest
-    # CI takes about 10 minutes (build, 4 e2e shards, Lighthouse); the wait below gives up after 45.
+    # CI takes about 10 minutes (build, 8 e2e shards, 4 perf shards, Lighthouse); the wait below gives up after 45.
     timeout-minutes: 60
     env:
       BRANCH: chore/refresh-live-facts
