@@ -76,7 +76,8 @@ describe("isPerspectiveQuestion", () => {
 
   it("leaves every existing curated and golden question alone", () => {
     for (const s of SUGGESTIONS) {
-      if ((s.topic as string) === "perspectives") continue;
+      // Perspectives and About me pills are answered from his written views.
+      if (s.topic === "perspectives" || s.topic === "about") continue;
       for (const q of [s.q.en, s.q.id]) expect(isPerspectiveQuestion(q), q).toBe(false);
     }
     for (const item of originalGolden) expect(isPerspectiveQuestion(item.q), item.q).toBe(false);
@@ -224,8 +225,8 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
   ])("treats %s as a question about his work", (q) => expect(isSiteQuestion(q)).toBe(false));
 
   it("fires on no curated or golden question except the ones about this site", () => {
-    const site = new Set(["work-site", "q45", "q46", "q47"]);
-    for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(site.has(s.id));
+    const site = new Set(["q45", "q46", "q47", "q69", "q70"]);
+    for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(s.topic === "site");
     for (const item of golden.items) expect(isSiteQuestion(item.q), item.id).toBe(site.has(item.id));
   });
 
