@@ -869,7 +869,7 @@
       "skip": "Lewati tutorial",
       "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Tanya Rover.",
       "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
-      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk tombol turbo agar lebih cepat, ketuk lagi untuk mematikannya.",
+      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk dua kali joystick untuk turbo, ketuk dua kali lagi untuk berhenti.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
       "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
       "moved": "Mantap, kemudinya lancar!",

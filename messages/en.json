@@ -869,7 +869,7 @@
       "skip": "Skip tutorial",
       "skipped": "No problem. Replay the tutorial from Ask Rover anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
-      "moveCoarse": "Drag the joystick to drive. Tap the boost button to go faster, tap it again to stop boosting.",
+      "moveCoarse": "Drag the joystick to drive. Double-tap the joystick to boost, double-tap it again to stop.",
       "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
       "pointGoCoarse": "Or tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
       "moved": "Nice driving!",

@@ -46,6 +46,18 @@ describe("removed tours", () => {
   });
 });
 
+describe("touch boost copy", () => {
+  it("no dialog or HUD line mentions a boost button (touch boost is a joystick double tap)", () => {
+    for (const { path, value } of collectStrings({ dialog: en.dialog, hud: en.hud })) expect(value, `en${path}`).not.toMatch(/boost button/i);
+    for (const { path, value } of collectStrings({ dialog: id.dialog, hud: id.hud })) expect(value, `id${path}`).not.toMatch(/tombol (boost|turbo)/i);
+  });
+
+  it("teaches the joystick double tap in the touch onboarding line", () => {
+    expect(en.dialog.onboarding.moveCoarse).toMatch(/double-tap the joystick/i);
+    expect(id.dialog.onboarding.moveCoarse).toMatch(/ketuk dua kali joystick/i);
+  });
+});
+
 describe("dialog placement", () => {
   it("sits above the bottom band and point-and-go's chip and hint: low on fine pointers, raised over the joystick on touch, a toast above the joystick on phones", () => {
     expect(dialogPlacement("desktop", false)).toBe("bottom");
