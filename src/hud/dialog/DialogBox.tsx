@@ -30,7 +30,8 @@ function choicesOf(view: DialogView, continueLabel: string): readonly DialogChoi
  *
  * On phones (`placement === "phone"`) it is a slim toast: the text is clamped to two rows until a tap
  * expands it, and a finished line without choices or a try-it task moves on by itself after
- * `TOAST_HOLD_MS` (never while expanded).
+ * `TOAST_HOLD_MS` only when it fits in those two rows: a clamped line waits for a tap, and an expanded
+ * line never moves on by itself.
  */
 export function DialogBox({ placement, reducedMotion }: { placement: DialogPlacement; reducedMotion: boolean }) {
   const t = useTranslations("dialog");
@@ -51,7 +52,15 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
 
   useEffect(() => {
     if (!autoAdvance) return;
-    const timer = window.setTimeout(() => dialog.advance(), TOAST_HOLD_MS);
+    // The untyped rest is laid out invisibly, so the row already has the line's full height here.
+    const clamped = () => {
+      const text = textRow.current;
+      return Boolean(text && text.scrollHeight > text.clientHeight);
+    };
+    if (clamped()) return;
+    const timer = window.setTimeout(() => {
+      if (!clamped()) dialog.advance();
+    }, TOAST_HOLD_MS);
     return () => window.clearTimeout(timer);
   }, [autoAdvance, line]);
 

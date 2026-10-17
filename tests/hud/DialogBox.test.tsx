@@ -196,6 +196,38 @@ describe("DialogBox", () => {
       expect(screen.queryByTestId("dialog-box")).toBeNull();
     });
 
+    it("never moves a clamped line on by itself: a tap expands it and the next one advances", async () => {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+      renderBox("phone");
+      let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+      act(() => {
+        result = say("A floor intro line that runs well past the two rows a phone toast can show");
+      });
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 3));
+      const box = screen.getByTestId("dialog-box");
+      expect(box).toHaveAttribute("data-expanded", "false");
+      act(() => void fireEvent.click(box));
+      expect(box).toHaveAttribute("data-expanded", "true");
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS * 3));
+      expect(screen.getByTestId("dialog-box")).toBeInTheDocument();
+      act(() => void fireEvent.click(box));
+      await expect(result).resolves.toMatchObject({ status: "done" });
+    });
+
+    it("still moves a line that fits in the two rows on after the hold", async () => {
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(40);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(40);
+      renderBox("phone");
+      let result: Promise<SayResult> = Promise.resolve({ status: "done", choice: null });
+      act(() => {
+        result = say("Nice driving!");
+      });
+      act(() => void vi.advanceTimersByTime(TOAST_HOLD_MS));
+      await expect(result).resolves.toMatchObject({ status: "done" });
+      expect(screen.queryByTestId("dialog-box")).toBeNull();
+    });
+
     it("never auto-advances on the bottom or raised placements", () => {
       for (const placement of ["bottom", "raised"] as const) {
         renderBox(placement);
