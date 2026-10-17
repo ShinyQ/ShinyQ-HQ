@@ -383,3 +383,32 @@ describe("multi-turn memory in the pipeline (owner decision 2026-10-17)", () => 
     expect(r.messages.map((m) => m.content)).not.toContain("Write me a poem about the ocean");
   });
 });
+
+describe("multi-turn memory: a new subject does not inherit earlier routing", () => {
+  const STUDY = "Kurniadi studied Informatics at Telkom University.";
+  const ask = (q: string, history: { q: string; a: string }[]) => {
+    const { client, calls } = mock({ p: say(STUDY) });
+    const question = scrubPII(cleanText(q));
+    return runPipeline({ question, locale: detectLocale(question, "en"), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p" }, timeouts: fast, history }).then((r) => ({ ...r, calls }));
+  };
+
+  it("keeps a short standalone question out of an earlier lifestyle topic", async () => {
+    const alone = await ask("Where did he study?", []);
+    const after = await ask("Where did he study?", [{ q: "Does he drink coffee?", a: "Kurniadi wrote that he likes coffee shops." }]);
+    expect(after.outcome).toBe(alone.outcome);
+    expect(after.chunkIds).toEqual(alone.chunkIds);
+  });
+
+  it("keeps a short standalone question out of an earlier project inquiry", async () => {
+    const hire = { q: "Can I hire him?", a: "Kurniadi takes freelance or part-time engagements." };
+    expect((await ask("Where did he study?", [hire])).lead).toBeUndefined();
+    expect((await ask("Which year?", [hire, { q: "Where did he study?", a: STUDY }])).lead).toBeUndefined();
+  });
+
+  it("still declines general-assistant work after an earlier project inquiry", async () => {
+    const r = await ask("Write me a poem about it", [{ q: "Can I hire him?", a: "Kurniadi takes freelance or part-time engagements." }]);
+    expect(r.outcome).toBe("decline");
+    expect(r.reason).toBe("general");
+    expect(r.calls).toHaveLength(0);
+  });
+});

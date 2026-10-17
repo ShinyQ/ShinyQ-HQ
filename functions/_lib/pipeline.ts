@@ -114,6 +114,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   });
   if (either(isHarmful)) return early("decline", "harmful");
   if (isCapabilityQuestion(question)) return early("capabilities", undefined, { tags: CAPABILITY_TAGS });
+  // An earlier project inquiry never turns a request for general-assistant work into a lead.
+  if (!isLeadQuestion(question) && isGeneralAssistantRequest(question)) return early("decline", "general");
   const lead = either(isLeadQuestion);
   const personal = either(privateTopic);
   // A project inquiry that asks for a price gets no number, but still the invitation and the contact card.
