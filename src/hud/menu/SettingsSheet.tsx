@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useId, useRef } from "react";
 import { Modal } from "@/components/Modal";
-import { SettingsPanel } from "../settings/SettingsPanel";
+import { LazySettingsPanel } from "../settings/LazySettingsPanel";
 import { SheetHeader } from "./SheetHeader";
 import { useHudToggle } from "./useHudToggles";
 
@@ -16,7 +16,7 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
     <Modal labelledBy={titleId} onClose={onClose} side testId="settings-sheet">
       <SheetHeader id={titleId} title={t("title")} onClose={onClose} />
       <div className="overflow-y-auto px-2 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <SettingsPanel headingLevel={3} />
+        <LazySettingsPanel headingLevel={3} />
       </div>
     </Modal>
   );

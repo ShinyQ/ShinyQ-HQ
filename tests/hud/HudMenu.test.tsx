@@ -114,7 +114,7 @@ describe("HudMenu", () => {
     expect(within(profile).queryByRole("button")).toBeNull();
     expect(within(profile).getByTestId("profile-photo").querySelector("img")).toHaveAttribute("alt", "");
     const actions = within(sheet).getByTestId("menu-actions");
-    const settings = within(sheet).getByTestId("settings-panel");
+    const settings = (await within(sheet).findByTestId("settings-panel"));
     expect(profile.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(actions.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const visibleText = (el: HTMLElement) => {
@@ -235,7 +235,7 @@ describe("SettingsSheet", () => {
     const sheet = screen.getByTestId("settings-sheet");
     expect(sheet).toHaveAttribute("data-side", "right");
     expect(sheet).toHaveAccessibleName(en.hud.settings.title);
-    expect(within(sheet).getByTestId("settings-panel")).toBeInTheDocument();
+    expect((await within(sheet).findByTestId("settings-panel"))).toBeInTheDocument();
     expect(within(sheet).getByRole("heading", { level: 2, name: en.hud.settings.title })).toBeInTheDocument();
     for (const row of ["language", "motion", "sound", "music"]) expect(within(sheet).getByTestId(`setting-${row}`)).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");

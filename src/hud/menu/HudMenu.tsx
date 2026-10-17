@@ -11,7 +11,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { openPalette, openTerminal } from "../events";
 import type { HudLayout } from "../layout";
 import { ProfilePhoto } from "../ProfileCard";
-import { SettingsPanel } from "../settings/SettingsPanel";
+import { LazySettingsPanel } from "../settings/LazySettingsPanel";
 import { RotateLeftIcon, RotateRightIcon, rotateView } from "../ViewControls";
 import { SheetHeader } from "./SheetHeader";
 import { useHudToggle } from "./useHudToggles";
@@ -137,7 +137,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 </button>
               ))}
             </div>
-            <SettingsPanel headingLevel={3} />
+            <LazySettingsPanel headingLevel={3} />
           </div>
         </Modal>
       )}

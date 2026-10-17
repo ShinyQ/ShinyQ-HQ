@@ -75,11 +75,11 @@ describe("Minimap", () => {
     expect(rooms.map((r) => r.getAttribute("class"))).toEqual([expect.not.stringContaining("opacity-40"), expect.stringContaining("opacity-40")]);
   });
 
-  it("opens the overview with a room list west to east; a room closes it and drives there", () => {
+  it("opens the overview with a room list west to east; a room closes it and drives there", async () => {
     getHQStore().setState({ visited: ["L1:stats"] });
     mount();
     fireEvent.click(screen.getByTestId("minimap"));
-    const dialog = screen.getByTestId("map-overview");
+    const dialog = (await screen.findByTestId("map-overview"));
     expect(within(dialog).getByRole("heading", { name: "L1 Home" })).toBeInTheDocument();
     const rooms = within(dialog).getAllByTestId("map-room");
     expect(rooms.map((r) => r.textContent)).toEqual(["Profile", "Visits visited"]);
@@ -93,37 +93,37 @@ describe("Minimap", () => {
     expect(screen.getByTestId("minimap")).toHaveFocus();
   });
 
-  it("keeps the overview map from shrinking in the scrolling sheet", () => {
+  it("keeps the overview map from shrinking in the scrolling sheet", async () => {
     mount();
     fireEvent.click(screen.getByTestId("minimap"));
-    expect(screen.getByTestId("map-overview-svg").getAttribute("class")).toContain("shrink-0");
+    expect((await screen.findByTestId("map-overview-svg")).getAttribute("class")).toContain("shrink-0");
   });
 
-  it("labels kinds other than doors always, and doors only when few", () => {
+  it("labels kinds other than doors always, and doors only when few", async () => {
     interactRuntime.items = [...items, { ...items[0], id: "L1:kiosk:k", kind: "kiosk", label: "Ask" } as Interactable, ...Array.from({ length: 12 }, (_, i) => door(`d${i}`, `L1:d${i}`, `D${i}`, i, 8))];
     mount();
     fireEvent.click(screen.getByTestId("minimap"));
-    const texts = [...screen.getByTestId("map-overview-svg").querySelectorAll("text")].map((t) => t.textContent);
+    const texts = [...(await screen.findByTestId("map-overview-svg")).querySelectorAll("text")].map((t) => t.textContent);
     expect(texts).toEqual(["Ask"]);
   });
 
-  it("Esc and the close button close the overview and return focus to the minimap", () => {
+  it("Esc and the close button close the overview and return focus to the minimap", async () => {
     mount();
     fireEvent.click(screen.getByTestId("minimap"));
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("map-overview")).toBeNull();
     expect(screen.getByTestId("minimap")).toHaveFocus();
     fireEvent.click(screen.getByTestId("minimap"));
-    fireEvent.click(within(screen.getByTestId("map-overview")).getByRole("button", { name: "Close map" }));
+    fireEvent.click(within((await screen.findByTestId("map-overview"))).getByRole("button", { name: "Close map" }));
     expect(screen.queryByTestId("map-overview")).toBeNull();
   });
 
-  it("the N key (map toggle intent) opens and closes the overview, even with the minimap off", () => {
+  it("the N key (map toggle intent) opens and closes the overview, even with the minimap off", async () => {
     minimapPref.set("off");
     mount();
     expect(screen.queryByTestId("minimap")).toBeNull();
     act(() => intents.emit({ type: "toggle", what: "map" }));
-    expect(screen.getByTestId("map-overview")).toBeInTheDocument();
+    expect((await screen.findByTestId("map-overview"))).toBeInTheDocument();
     act(() => intents.emit({ type: "toggle", what: "map" }));
     expect(screen.queryByTestId("map-overview")).toBeNull();
   });
@@ -143,11 +143,11 @@ describe("Minimap", () => {
     expect(screen.queryByTestId("map-overview")).toBeNull();
   });
 
-  it("lists only the current floor's targets", () => {
+  it("lists only the current floor's targets", async () => {
     interactRuntime.items = [...items, { ...items[0], id: "L2:door:x", floor: "L2", label: "Elsewhere" } as Interactable];
     mount();
     fireEvent.click(screen.getByTestId("minimap"));
-    expect(within(screen.getByTestId("map-overview")).getAllByTestId("map-room")).toHaveLength(2);
+    expect(within((await screen.findByTestId("map-overview"))).getAllByTestId("map-room")).toHaveLength(2);
   });
 
   it("follows the point-and-go targets without any store change", () => {
@@ -160,25 +160,25 @@ describe("Minimap", () => {
     expect(svg().querySelectorAll("[data-map='room']")).toHaveLength(3);
   });
 
-  it("returns focus to the opener when the minimap button is off", () => {
+  it("returns focus to the opener when the minimap button is off", async () => {
     minimapPref.set("off");
     const opener = document.createElement("button");
     document.body.append(opener);
     mount();
     opener.focus();
     act(() => intents.emit({ type: "toggle", what: "map" }));
-    fireEvent.click(screen.getByRole("button", { name: "Close map" }));
+    fireEvent.click((await screen.findByRole("button", { name: "Close map" })));
     expect(opener).toHaveFocus();
     opener.remove();
   });
 
-  it("speaks Indonesian", () => {
+  it("speaks Indonesian", async () => {
     getHQStore().setState({ visited: ["L1:stats"] });
     mount("id");
     const button = screen.getByTestId("minimap");
     expect(button).toHaveAccessibleName(`Peta L1 ${id.hud.floorLabel.L1}: buka ikhtisar`);
     fireEvent.click(button);
-    const dialog = screen.getByTestId("map-overview");
+    const dialog = (await screen.findByTestId("map-overview"));
     expect(within(dialog).getByRole("heading", { level: 3, name: "Tempat di lantai ini" })).toBeInTheDocument();
     expect(within(dialog).getAllByTestId("map-room")[1]).toHaveAccessibleName("Visits sudah dikunjungi");
     expect(within(dialog).getByRole("button", { name: "Tutup peta" })).toBeInTheDocument();

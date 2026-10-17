@@ -1,15 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { forwardRef, useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { forwardRef, lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
 import { useHudToggle } from "../menu/useHudToggles";
-import { MapOverview } from "./MapOverview";
 import { MapLayers, useFloorMap } from "./MapLayers";
 import { MINIMAP_RADIUS, windowBox } from "./model";
 import { minimapPref } from "./pref";
+
+/** Loaded when the overview first opens, so it stays out of the first-frame 3D path. */
+const MapOverview = lazy(() => import("./MapOverview").then((m) => ({ default: m.MapOverview })));
 
 /** Phone 72 px, tablet 112 px, desktop 96 px (static classes for Tailwind). */
 const SIZE: Record<HudLayout, string> = { phone: "size-[72px]", tablet: "size-28", desktop: "size-24" };
@@ -51,7 +53,11 @@ export function Minimap({ data, layouts, size, hidden = false }: { data: Experie
   return (
     <>
       {pref === "on" && !blocked && !hidden && <MinimapButton ref={button} layouts={layouts} size={size} open={open} onOpen={() => setOpen(true)} />}
-      <MapOverview open={open && !blocked} onClose={close} data={data} layouts={layouts} />
+      {open && !blocked && (
+        <Suspense fallback={null}>
+          <MapOverview open onClose={close} data={data} layouts={layouts} />
+        </Suspense>
+      )}
     </>
   );
 }

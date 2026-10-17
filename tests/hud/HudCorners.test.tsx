@@ -109,13 +109,13 @@ describe("Hud composition", () => {
     expect(screen.getAllByTestId("minimap")).toHaveLength(1);
   });
 
-  it("phones hide the minimap while a room sheet is open, tablets keep it; N still opens the overview", () => {
+  it("phones hide the minimap while a room sheet is open, tablets keep it; N still opens the overview", async () => {
     device("mobile", true);
     mount();
     act(() => getHQStore().setState({ phase: "room" }));
     expect(screen.queryByTestId("minimap")).toBeNull();
     act(() => intents.emit({ type: "toggle", what: "map" }));
-    expect(screen.getByTestId("map-overview")).toBeInTheDocument();
+    expect((await screen.findByTestId("map-overview"))).toBeInTheDocument();
     act(() => intents.emit({ type: "toggle", what: "map" }));
     act(() => device("tablet", true));
     act(() => getHQStore().setState({ phase: "room" }));
