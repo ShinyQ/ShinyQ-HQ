@@ -58,6 +58,8 @@ export interface SafetyData {
 
 export interface AiBinding {
   run(model: string, inputs: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown>;
+  /** AI Gateway handle; `getUrl("groq")` is the gateway base URL of a third-party provider. */
+  gateway?(id: string): { getUrl(provider?: string): Promise<string> };
 }
 
 export interface KvNamespace {
@@ -79,6 +81,10 @@ export interface AskEnv {
   ASK_PRIMARY?: string;
   ASK_FALLBACK?: string;
   ASK_GATEWAY_ID?: string;
+  /** Groq API key (Pages secret). Unset means the Groq backup tiers are skipped. */
+  GROQ_API_KEY?: string;
+  /** Comma list of Groq model ids, tried in order after Workers AI; empty means the defaults. */
+  ASK_BACKUP_MODELS?: string;
   ASK_ALLOWED_ORIGINS?: string;
   ASK_DAILY_CAP?: string;
   TURNSTILE_SITE_KEY?: string;
