@@ -98,7 +98,7 @@
         "edges": [
           { "from": "owner", "to": "github", "label": "Specs, review, merge" },
           { "from": "agents", "to": "github", "label": "Pull requests" },
-          { "from": "github", "to": "pages", "label": "Deploy after green CI" },
+          { "from": "github", "to": "pages", "label": "After green CI" },
           { "from": "visitor", "to": "pages", "label": "HTML, JS, 3D" },
           { "from": "visitor", "to": "functions", "label": "Ask, beacons, stats" },
           { "from": "functions", "to": "workers-ai" },
@@ -132,8 +132,8 @@
     "timeline": {
       "title": { "en": "The Build Timeline", "id": "Lini Masa Pembangunan" },
       "summary": {
-        "en": "Nine rounds of merged pull requests, from the first foundation to this page. The counts and dates come from the repository history.",
-        "id": "Sembilan putaran pull request yang di-merge, dari fondasi pertama sampai halaman ini. Jumlah dan tanggalnya berasal dari riwayat repositori."
+        "en": "Rounds of merged pull requests, from the first foundation to this page. The counts and dates come from the repository history.",
+        "id": "Putaran pull request yang di-merge, dari fondasi pertama sampai halaman ini. Jumlah dan tanggalnya berasal dari riwayat repositori."
       },
       "rounds": [
         {
@@ -411,10 +411,10 @@
           "id": "e2e",
           "title": { "en": "End-to-End Shards", "id": "Shard End-to-End" },
           "text": {
-            "en": "Playwright drives the built site in four duration-balanced shards, waiting on state and never on time.",
-            "id": "Playwright menjalankan situs hasil build dalam empat shard yang seimbang durasinya, menunggu state dan tidak pernah menunggu waktu."
+            "en": "Playwright drives the built site in duration-balanced shards, waiting on state and never on time.",
+            "id": "Playwright menjalankan situs hasil build dalam beberapa shard yang seimbang durasinya, menunggu state dan tidak pernah menunggu waktu."
           },
-          "budget": { "en": "Every spec passes in all four shards", "id": "Setiap spec lulus di keempat shard" },
+          "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
           "jobs": ["E2E shard ${{ matrix.shard }}/4"],
           "required": true
         },
@@ -473,8 +473,8 @@
     "dashboard": {
       "title": { "en": "The Dashboard", "id": "Dasbor" },
       "summary": {
-        "en": "Live numbers measured from the repository itself: commits, merged pull requests, tests, specs, plans and budgets.",
-        "id": "Angka langsung yang diukur dari repositori itu sendiri: commit, pull request yang di-merge, test, spec, plan, dan budget."
+        "en": "Numbers measured from the repository when the site is built: commits, merged pull requests, tests, specs, plans and budgets.",
+        "id": "Angka yang diukur dari repositori saat situs dibangun: commit, pull request yang di-merge, test, spec, plan, dan budget."
       }
     }
   },
@@ -482,15 +482,15 @@
     "brain": {
       "title": { "en": "Rover's Brain", "id": "Otak Rover" },
       "summary": {
-        "en": "Coming soon: how Ask the HQ finds, grounds and checks its answers.",
-        "id": "Segera hadir: cara Ask the HQ menemukan, mendasari, dan memeriksa jawabannya."
+        "en": "How Ask the HQ finds, grounds and checks its answers.",
+        "id": "Cara Ask the HQ menemukan, mendasari, dan memeriksa jawabannya."
       }
     },
     "rejected": {
       "title": { "en": "Rejected Designs", "id": "Desain yang Ditolak" },
       "summary": {
-        "en": "Coming soon: ideas that were tried and dropped, and why.",
-        "id": "Segera hadir: ide yang dicoba lalu dibuang, beserta alasannya."
+        "en": "Ideas that were tried and dropped, and why.",
+        "id": "Ide yang dicoba lalu dibuang, beserta alasannya."
       }
     }
   }

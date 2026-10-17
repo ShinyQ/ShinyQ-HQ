@@ -4,7 +4,7 @@ import type { Locale } from "@/content/schema";
 import { prUrl, roundDates, timelineRows } from "@/lib/build-page";
 
 /** Pull request links stay bare (no per-link arrow or hint, one hint above the rounds) and reuse existing utilities (CSS budget). */
-const PR_LINK = "pv-uline px-1 font-mono text-[13px] text-ink-2 hover:text-cyan";
+const PR_LINK = "pv-uline inline-flex min-h-6 items-center px-1 font-mono text-[13px] text-ink-2 hover:text-cyan";
 
 /** The build rounds, oldest first: title, merge dates, summary, merged pull requests and the optional before and after captures. */
 export async function TimelineBody({ locale }: { locale: Locale }) {

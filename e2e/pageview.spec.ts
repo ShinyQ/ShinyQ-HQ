@@ -126,6 +126,15 @@ test("the build story page: stations by id, a working table of contents, the dia
       await expect(img).toHaveAttribute("loading", "lazy");
       await expect(img).toHaveAttribute("alt", /\S/);
     }
+    // Lazy images only load once near the viewport: scroll each into view, then wait for it to decode.
+    for (const img of await shots.all()) {
+      await img.scrollIntoViewIfNeeded();
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0), { message: `${locale} ${await img.getAttribute("src")}` }).toBe(true);
+    }
+    const text = await page.locator("main").innerText();
+    expect(text).not.toContain("${{");
+    const commit = /commit ([0-9a-f]{7,40})/.exec(text)?.[1];
+    if (commit) await expect(page.locator("main a").filter({ hasText: commit }), `${locale} snapshot commit is not a link`).toHaveCount(0);
     const prs = page.locator('#timeline a[href^="https://github.com/ShinyQ/ShinyQ-HQ/pull/"]');
     expect(await prs.count()).toBeGreaterThan(0);
     await expect(prs.first()).toHaveAttribute("target", "_blank");
