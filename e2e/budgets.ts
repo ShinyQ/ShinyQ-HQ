@@ -27,7 +27,7 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
  * session total (main + all floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
- * (measured 455.0 KB, 15 KB margin so creep is caught early), lite the measured 431.4 KB plus 15 KB.
+ * (measured 457.0 KB, about 13 KB headroom so creep is caught early), lite 446.4 KB (measured 433.4 KB).
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,

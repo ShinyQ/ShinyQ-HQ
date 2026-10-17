@@ -70,14 +70,17 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Ask Rover, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
 - Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
-- Keys: `,` toggles the settings (the menu sheet on Corners, the settings sheet on desktop), `N` toggles the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent, so a second press closes).
+- Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
+- The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
 
 ### Settings registry
 
 - One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
 - A setting is data (`defineSetting` in `src/hud/settings/registry.ts`): `id` (the row gets `data-testid="setting-<id>"`), `group` (`general`, `display`, `sound`), `order`, `labelKey` (and `hintKey`) under `hud.settings`, a `control` (`toggle`, `choice` or `range`) with `get`/`set`, a `subscribe`, and an optional `available`.
 - The control binds to an external store (the audio engine, `qualityPref`, `minimapPref`, the Motion and language stores); the panel persists nothing itself. Duplicate ids throw.
-- `LazySettingsPanel` (`React.lazy` plus `Suspense`) loads the panel and its registry when a settings sheet first opens, and `Minimap` lazy-loads `MapOverview` the same way, to keep both out of the first-frame 3D path (byte budget in [performance.md](performance.md)). Tests find their content with `findBy*`.
+- `LazySettingsPanel` loads the panel and its registry when a settings sheet first opens, and `Minimap` loads `MapOverview` when the overview first opens, to keep both out of the first-frame 3D path (byte budget in [performance.md](performance.md)). Tests find their content with `findBy*`.
+  - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
+  - While the panel loads, a `min-h-[36rem]` placeholder (`settings-loading`) holds the sheet's height.
 - To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
 - Today: language, Open links in, Motion, Graphics quality, Minimap, Sound, Sound effects, Music, Music volume.
 
@@ -85,6 +88,8 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `hq:quality` (`src/lib/quality-pref.ts`) is `auto`, `full` or `lite`. `useQualityTier` (`src/experience/gate-tier.ts`) applies it over the probe through `applyQualityPref`; see [3d-experience.md](3d-experience.md#gate-and-tiers).
 - A change remounts the canvas (the gate key is `mount:tier`); `src/experience/qualityRemount.ts` keeps the rover, floor, phase and open room in place.
+- The setting (`src/hud/settings/defs/quality.ts`) applies a choice after `QUALITY_APPLY_MS` (400 ms) without another one: the radios show the pending value at once, and arrow keys passing Full on the way to Lite remount once.
+- The open sheet survives the remount (`hudToggles`), and its `takeFocus` hook puts focus back on the checked quality radio once the new panel mounts.
 
 ### Minimap
 
@@ -250,7 +255,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - The phone toast (`placement === "phone"`):
   - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
-  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion), never while expanded;
+  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the two rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
   - choices and Skip still render (onboarding needs them).
 - The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 
