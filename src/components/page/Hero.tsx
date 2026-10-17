@@ -11,6 +11,12 @@ import { Portrait } from "./Portrait";
  * Landing hero: the owner portrait beside the name (no eyebrow), the headline and the motto over the Neon
  * Grid backdrop (CSS only, src/app/landing.css), the two ways in (Enter the 3D HQ and the Ask AI bar) across
  * the full width, and the stats ticker at the bottom of the first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
+ *
+ * The first paint waits until the whole first screen (ticker included) is parsed: a busy device can
+ * otherwise paint a half-parsed hero, and the rest arriving moves the backdrop and the centered column
+ * (a layout shift, issue #156). Rendering unblocks once `#hero-end`, the hero's last node, is parsed
+ * (Chrome unblocks on the target's start tag, so the target sits at the end). React hoists the
+ * `rel="expect"` link into the head; browsers without render-blocking `expect` links ignore it.
  */
 export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: ReactNode }) {
   const t = await getTranslations({ locale, namespace: "home" });
@@ -18,6 +24,7 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
 
   return (
     <div className="hx">
+      <link rel="expect" href="#hero-end" blocking="render" />
       <div className="hx-bg" aria-hidden="true">
         <div className="hx-glow" />
         <div className="hx-ground">
@@ -47,6 +54,7 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
         </div>
       </section>
       {ticker}
+      <span id="hero-end" hidden />
     </div>
   );
 }
